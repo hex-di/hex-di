@@ -5,6 +5,11 @@
  * with the GraphBuilder. The graph is validated at compile-time to ensure
  * all dependencies are satisfied.
  *
+ * Demonstrates async factory support:
+ * - ConfigAdapter is async (uses provideAsync) - simulates API config loading
+ * - NotificationServiceAdapter is sync but depends on async ConfigPort
+ * - This works because container.initialize() resolves all async adapters first
+ *
  * @packageDocumentation
  */
 
@@ -26,51 +31,52 @@ import {
  * The complete dependency graph for the React Showcase application.
  *
  * This graph contains all 6 adapters registered in dependency order:
- * 1. ConfigAdapter (singleton, no dependencies)
- * 2. LoggerAdapter (singleton, no dependencies)
- * 3. MessageStoreAdapter (singleton, requires Logger)
- * 4. UserSessionAdapter (scoped, no dependencies)
- * 5. ChatServiceAdapter (scoped, requires Logger, UserSession, MessageStore)
- * 6. NotificationServiceAdapter (request, requires Logger, Config)
+ * 1. LoggerAdapter (singleton, sync, no dependencies)
+ * 2. ConfigAdapter (singleton, ASYNC - simulates API config loading)
+ * 3. MessageStoreAdapter (singleton, ASYNC - simulates localStorage with async init)
+ * 4. UserSessionAdapter (scoped, sync, no dependencies)
+ * 5. ChatServiceAdapter (scoped, sync, requires Logger, UserSession, MessageStore)
+ * 6. NotificationServiceAdapter (request, sync, requires Logger, Config)
+ *
+ * Note: NotificationServiceAdapter is a sync adapter that depends on ConfigPort (async).
+ * This demonstrates HexDI's support for sync adapters depending on async ports.
+ * The container must be initialized before use: `await container.initialize()`.
  *
  * The graph is validated at compile-time. If any required dependencies
  * are missing, TypeScript will produce a compile error with a message
  * like "Missing dependencies: PortName".
  *
- * @example Using the graph with createContainer
+ * @example Using the graph
  * ```typescript
  * import { createContainer } from "@hex-di/runtime";
  * import { appGraph } from "./di/graph";
  *
  * const container = createContainer(appGraph);
+ * await container.initialize(); // Required for async adapters
  * const logger = container.resolve(LoggerPort);
- * ```
- *
- * @example Using with DevTools
- * ```typescript
- * import { DevToolsFloating } from "@hex-di/devtools";
- * import { appGraph } from "./di/graph";
- *
- * <DevToolsFloating graph={appGraph} position="bottom-right" />
  * ```
  */
 export const appGraph = GraphBuilder.create()
-  // Singleton adapters (no dependencies first)
-  .provide(ConfigAdapter)
+  // Singleton adapters
   .provide(LoggerAdapter)
-  // Singleton adapter with dependencies
-  .provide(MessageStoreAdapter)
+  .provideAsync(ConfigAdapter) // Async adapter - simulates API config loading
+  .provideAsync(MessageStoreAdapter) // Async adapter - simulates async storage access
   // Scoped adapters
   .provide(UserSessionAdapter)
   .provide(ChatServiceAdapter)
-  // Request-scoped adapter
+  // Request-scoped adapter (sync but depends on async ConfigPort)
   .provide(NotificationServiceAdapter)
   .build();
 
 /**
  * Type representing all ports provided by the application graph.
  */
-export type AppPorts = typeof appGraph extends Graph<infer P> ? P : never;
+export type AppPorts = typeof appGraph extends Graph<infer P, infer _A> ? P : never;
+
+/**
+ * Type representing async ports in the application graph.
+ */
+export type AppAsyncPorts = typeof appGraph extends Graph<infer _P, infer A> ? A : never;
 
 /**
  * Type assertion to verify the graph is complete.

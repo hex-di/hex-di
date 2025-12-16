@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { Lifetime } from "@hex-di/graph";
+import type { Lifetime, FactoryKind } from "@hex-di/graph";
 
 // =============================================================================
 // Exported Graph Types
@@ -41,6 +41,8 @@ export interface ExportedNode {
   readonly label: string;
   /** Service instance lifetime scope */
   readonly lifetime: Lifetime;
+  /** Factory kind - sync or async */
+  readonly factoryKind: FactoryKind;
 }
 
 /**

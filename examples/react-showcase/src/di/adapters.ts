@@ -4,10 +4,14 @@
  * This file defines all 6 adapters that implement the port contracts.
  * Each adapter specifies its lifetime, dependencies, and factory function.
  *
+ * Demonstrates async factory support with:
+ * - ConfigAdapter: Simulates loading config from API
+ * - MessageStoreAdapter: Loads/persists messages to localStorage
+ *
  * @packageDocumentation
  */
 
-import { createAdapter } from "@hex-di/graph";
+import { createAdapter, createAsyncAdapter } from "@hex-di/graph";
 import {
   ConfigPort,
   LoggerPort,
@@ -26,6 +30,15 @@ import type {
   ChatService,
   NotificationService,
 } from "../types.js";
+
+// =============================================================================
+// Constants
+// =============================================================================
+
+/**
+ * Storage key for persisted messages in localStorage.
+ */
+const MESSAGES_STORAGE_KEY = "hex-di-chat-messages";
 
 // =============================================================================
 // User Selection State
@@ -82,21 +95,27 @@ let notificationInstanceCounter = 0;
 /**
  * Adapter for the application configuration service.
  *
- * Provides static configuration values used throughout the application.
- * This is a singleton with no dependencies.
+ * Simulates loading configuration from an API endpoint.
+ * This demonstrates async factory support - the config is loaded
+ * asynchronously at container initialization time.
  *
  * @remarks
  * - Lifetime: singleton - one instance for the entire application
  * - Dependencies: none
+ * - Async: Simulates API call with delay
  */
-export const ConfigAdapter = createAdapter({
+export const ConfigAdapter = createAsyncAdapter({
   provides: ConfigPort,
   requires: [],
   lifetime: "singleton",
-  factory: (): Config => ({
-    notificationDuration: 3000,
-    maxMessages: 100,
-  }),
+  factory: async (): Promise<Config> => {
+    // Simulate loading config from API
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    return {
+      notificationDuration: 3000,
+      maxMessages: 100,
+    };
+  },
 });
 
 /**
@@ -129,19 +148,51 @@ export const LoggerAdapter = createAdapter({
 /**
  * Adapter for the message store service.
  *
- * Implements an in-memory message store with reactive subscription support.
- * Messages persist across scope changes since this is a singleton.
+ * Implements localStorage persistence with async initialization:
+ * - Loads message history from localStorage asynchronously on initialization
+ * - Persists messages to localStorage on every add
+ * - Messages survive page reloads!
+ *
+ * This demonstrates async factory support - the message store is loaded
+ * asynchronously at container initialization time.
  *
  * @remarks
  * - Lifetime: singleton - messages persist for the entire application
  * - Dependencies: LoggerPort - for logging message operations
+ * - Async: Simulates async storage access with delay
  */
-export const MessageStoreAdapter = createAdapter({
+export const MessageStoreAdapter = createAsyncAdapter({
   provides: MessageStorePort,
   requires: [LoggerPort],
   lifetime: "singleton",
-  factory: (deps): MessageStore => {
-    const messages: Message[] = [];
+  initPriority: 2, // Initialize after Logger (default is 100)
+  factory: async (deps): Promise<MessageStore> => {
+    // Simulate async storage access
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    // Load persisted messages from localStorage
+    let messages: Message[] = [];
+    try {
+      const stored = localStorage.getItem(MESSAGES_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as Array<{
+          id: string;
+          senderId: string;
+          senderName: string;
+          content: string;
+          timestamp: string;
+        }>;
+        // Convert timestamp strings back to Date objects
+        messages = parsed.map((m) => ({
+          ...m,
+          timestamp: new Date(m.timestamp),
+        }));
+        deps.Logger.log(`Loaded ${messages.length} messages from storage`);
+      }
+    } catch (e) {
+      deps.Logger.warn("Failed to load messages from storage, starting fresh");
+    }
+
     const listeners = new Set<MessageListener>();
 
     const notifyListeners = (): void => {
@@ -149,7 +200,15 @@ export const MessageStoreAdapter = createAdapter({
       listeners.forEach((listener) => listener(frozenMessages));
     };
 
-    deps.Logger.log("MessageStore initialized");
+    const persistMessages = (): void => {
+      try {
+        localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
+      } catch (e) {
+        deps.Logger.warn("Failed to persist messages to storage");
+      }
+    };
+
+    deps.Logger.log("MessageStore initialized with localStorage persistence (async)");
 
     return {
       getMessages: (): readonly Message[] => {
@@ -158,6 +217,7 @@ export const MessageStoreAdapter = createAdapter({
       addMessage: (message: Message): void => {
         messages.push(message);
         deps.Logger.log(`Message added from ${message.senderName}`);
+        persistMessages();
         notifyListeners();
       },
       subscribe: (listener: MessageListener): Unsubscribe => {
@@ -246,9 +306,13 @@ export const ChatServiceAdapter = createAdapter({
  * This demonstrates the request lifetime where every resolution
  * gets a fresh instance.
  *
+ * This is a sync adapter that depends on ConfigPort (async).
+ * This works because all async adapters are initialized before
+ * the container is used, making their instances available synchronously.
+ *
  * @remarks
  * - Lifetime: request - new instance for every resolution
- * - Dependencies: LoggerPort, ConfigPort
+ * - Dependencies: LoggerPort, ConfigPort (async - requires container.initialize())
  */
 export const NotificationServiceAdapter = createAdapter({
   provides: NotificationServicePort,

@@ -20,7 +20,7 @@ import React, {
 } from "react";
 import type { Port } from "@hex-di/ports";
 import type { Graph } from "@hex-di/graph";
-import type { Container } from "@hex-di/runtime";
+import type { Container, ContainerPhase } from "@hex-di/runtime";
 import { TRACING_ACCESS } from "@hex-di/runtime";
 import { toJSON } from "../to-json.js";
 import type { TracingAPI } from "../tracing/types.js";
@@ -103,10 +103,19 @@ export type DevToolsPanelMode = "tabs" | "sections";
  * ```
  */
 export interface DevToolsPanelProps {
-  /** The dependency graph to visualize */
-  readonly graph: Graph<Port<unknown, string>>;
-  /** Optional container for runtime inspection */
-  readonly container?: Container<Port<unknown, string>>;
+  /**
+   * The dependency graph to visualize.
+   *
+   * Accepts graphs with any async ports configuration.
+   */
+  readonly graph: Graph<Port<unknown, string>, Port<unknown, string>>;
+  /**
+   * Optional container for runtime inspection.
+   *
+   * Accepts containers in any phase (initialized or uninitialized) and with
+   * any async ports configuration.
+   */
+  readonly container?: Container<Port<unknown, string>, Port<unknown, string>, ContainerPhase>;
   /**
    * Display mode for the panel.
    * - "tabs" (default): Modern tabbed interface
@@ -218,11 +227,12 @@ function GraphView({ exportedGraph }: GraphViewProps): ReactElement {
     );
   }
 
-  // Transform nodes to include lifetime property required by DependencyGraph
+  // Transform nodes to include lifetime and factoryKind for DependencyGraph
   const graphNodes = exportedGraph.nodes.map((node) => ({
     id: node.id,
     label: node.label,
     lifetime: node.lifetime as "singleton" | "scoped" | "request",
+    factoryKind: node.factoryKind as "sync" | "async",
   }));
 
   return (
@@ -338,6 +348,7 @@ function buildServicesFromGraph(exportedGraph: ExportedGraph): readonly ServiceI
   return exportedGraph.nodes.map((node) => ({
     portName: node.id,
     lifetime: node.lifetime,
+    factoryKind: node.factoryKind,
     isResolved: false,
     isScopeRequired: node.lifetime !== "singleton",
     resolvedAt: undefined,

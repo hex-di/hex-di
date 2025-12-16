@@ -84,12 +84,13 @@ export function relabelPorts(
   exportedGraph: ExportedGraph,
   labelFn: LabelTransform
 ): ExportedGraph {
-  // Transform nodes, preserving id and lifetime, only changing label
+  // Transform nodes, preserving id, lifetime, and factoryKind, only changing label
   const nodes = exportedGraph.nodes.map(
     (node): ExportedNode => ({
       id: node.id,
       label: labelFn(node),
       lifetime: node.lifetime,
+      factoryKind: node.factoryKind,
     })
   );
 

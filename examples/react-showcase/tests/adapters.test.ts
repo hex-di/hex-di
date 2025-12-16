@@ -26,12 +26,12 @@ import type { Logger, Config, MessageStore, UserSession } from "../src/types.js"
 // =============================================================================
 
 describe("ConfigAdapter", () => {
-  it("returns correct configuration shape with expected properties", () => {
+  it("returns correct configuration shape with expected properties", async () => {
     // Create harness with no dependencies (ConfigAdapter has none)
     const harness = createAdapterTest(ConfigAdapter, {});
 
-    // Invoke factory to get the config service
-    const config = harness.invoke();
+    // Invoke factory to get the config service (async adapter returns Promise)
+    const config = await harness.invoke();
 
     // Verify configuration shape
     expect(config).toHaveProperty("notificationDuration");
@@ -89,13 +89,14 @@ describe("MessageStoreAdapter", () => {
     error: vi.fn(),
   });
 
-  it("getMessages() returns an empty array initially", () => {
+  it("getMessages() returns an empty array initially", async () => {
     const mockLogger = createMockLogger();
     const harness = createAdapterTest(MessageStoreAdapter, {
       Logger: mockLogger,
     });
 
-    const store = harness.invoke();
+    // Async adapter - await the invoke
+    const store = await harness.invoke();
     const messages = store.getMessages();
 
     // Verify empty array returned
@@ -103,13 +104,14 @@ describe("MessageStoreAdapter", () => {
     expect(messages).toHaveLength(0);
   });
 
-  it("addMessage() notifies subscribers with updated messages", () => {
+  it("addMessage() notifies subscribers with updated messages", async () => {
     const mockLogger = createMockLogger();
     const harness = createAdapterTest(MessageStoreAdapter, {
       Logger: mockLogger,
     });
 
-    const store = harness.invoke();
+    // Async adapter - await the invoke
+    const store = await harness.invoke();
 
     // Create a mock subscriber
     const subscriber = vi.fn();

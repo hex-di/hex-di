@@ -79,7 +79,9 @@ import type { ExportedGraph, ExportedNode, ExportedEdge } from "./types.js";
  * const singletons = filterGraph(toJSON(appGraph), byLifetime('singleton'));
  * ```
  */
-export function toJSON(graph: Graph<Port<unknown, string> | never>): ExportedGraph {
+export function toJSON(
+  graph: Graph<Port<unknown, string>, Port<unknown, string>>
+): ExportedGraph {
   const adapters = graph.adapters;
 
   // Extract nodes from adapters
@@ -87,6 +89,7 @@ export function toJSON(graph: Graph<Port<unknown, string> | never>): ExportedGra
     id: adapter.provides.__portName,
     label: adapter.provides.__portName,
     lifetime: adapter.lifetime,
+    factoryKind: adapter.factoryKind,
   }));
 
   // Extract edges from adapter dependencies
