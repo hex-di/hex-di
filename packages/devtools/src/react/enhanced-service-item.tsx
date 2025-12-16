@@ -60,7 +60,7 @@ const enhancedStyles: {
 } = {
   container: {
     ...serviceItemStyles.container,
-    marginBottom: "4px",
+    flexShrink: 0,
   },
   header: {
     ...serviceItemStyles.header,
