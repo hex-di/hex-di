@@ -174,6 +174,62 @@ export class MemoMap {
   }
 
   /**
+   * Gets a cached instance or asynchronously creates and caches a new one.
+   *
+   * Similar to getOrElseMemoize but supports async factory functions.
+   * Lookup order:
+   * 1. Check parent cache (if parent exists) - for singleton inheritance
+   * 2. Check own cache
+   * 3. Call async factory, cache result, and track creation order
+   *
+   * @typeParam T - The service type
+   * @param port - The port to use as cache key
+   * @param factory - Async function to create the instance if not cached
+   * @param finalizer - Optional cleanup function called during disposal
+   * @returns A promise that resolves to the cached or newly created instance
+   *
+   * @example
+   * ```typescript
+   * const database = await memoMap.getOrElseMemoizeAsync(
+   *   DatabasePort,
+   *   async () => await createPool(connectionString),
+   *   async (instance) => await instance.close()
+   * );
+   * ```
+   */
+  async getOrElseMemoizeAsync<T>(
+    port: Port<T, string>,
+    factory: () => Promise<T>,
+    finalizer?: (instance: T) => void | Promise<void>
+  ): Promise<T> {
+    // Check parent cache first (for singleton inheritance)
+    if (this.parent !== undefined && this.parent.has(port)) {
+      return this.parent.getOrElseMemoizeAsync(port, factory, finalizer);
+    }
+
+    // Check own cache
+    if (this.cache.has(port)) {
+      return this.cache.get(port) as T;
+    }
+
+    // Create new instance asynchronously
+    const instance = await factory();
+
+    // Cache the instance
+    this.cache.set(port, instance);
+
+    // Track creation order with finalizer and metadata (cast finalizer to unknown handler)
+    this.creationOrder.push({
+      port,
+      finalizer: finalizer as ((instance: unknown) => void | Promise<void>) | undefined,
+      resolvedAt: Date.now(),
+      resolutionOrder: this.resolutionCounter++,
+    });
+
+    return instance;
+  }
+
+  /**
    * Checks if a port has a cached instance.
    *
    * Checks both own cache and parent cache (if parent exists).

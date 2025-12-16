@@ -22,6 +22,7 @@ import {
   InferGraphProvides,
   Lifetime,
   Adapter,
+  FactoryKind,
 } from "../src/index.js";
 import type { Port } from "@hex-di/ports";
 
@@ -436,7 +437,8 @@ describe("built graph is immutable (type-level readonly)", () => {
     type IsReadonly = GraphAdapters extends readonly Adapter<
       Port<unknown, string>,
       Port<unknown, string> | never,
-      Lifetime
+      Lifetime,
+      FactoryKind
     >[]
       ? true
       : false;
@@ -484,7 +486,8 @@ describe("built graph contains all registered adapters", () => {
     type IsAdapter = ElementType extends Adapter<
       Port<unknown, string>,
       Port<unknown, string> | never,
-      Lifetime
+      Lifetime,
+      FactoryKind
     >
       ? true
       : false;

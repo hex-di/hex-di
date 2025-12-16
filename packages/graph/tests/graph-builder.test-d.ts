@@ -192,7 +192,7 @@ describe("GraphBuilder internal adapter registry", () => {
     // Adapters should be a readonly array
     type AdaptersType = (typeof builder)["adapters"];
     expectTypeOf<AdaptersType>().toMatchTypeOf<
-      readonly Adapter<any, any, any>[]
+      readonly Adapter<any, any, any, any>[]
     >();
   });
 
@@ -204,7 +204,7 @@ describe("GraphBuilder internal adapter registry", () => {
 
     // The array should be assignable to readonly Adapter array
     expectTypeOf<AdaptersType>().toMatchTypeOf<
-      readonly Adapter<Port<unknown, string>, any, any>[]
+      readonly Adapter<Port<unknown, string>, any, any, any>[]
     >();
   });
 });

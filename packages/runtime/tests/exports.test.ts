@@ -107,9 +107,13 @@ describe("@hex-di/runtime exports", () => {
         "FactoryError",
         "DisposedScopeError",
         "ScopeRequiredError",
+        "AsyncFactoryError",
+        "AsyncInitializationRequiredError",
         "INTERNAL_ACCESS",
         "TRACING_ACCESS",
         "getInternalAccessor",
+        "ContainerBrand",
+        "ScopeBrand",
       ];
 
       // Verify all expected exports exist

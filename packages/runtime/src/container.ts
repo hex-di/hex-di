@@ -9,7 +9,7 @@
  */
 
 import type { Port, InferService, InferPortName } from "@hex-di/ports";
-import type { Graph, Adapter, Lifetime } from "@hex-di/graph";
+import type { Graph, Adapter, Lifetime, FactoryKind } from "@hex-di/graph";
 import { ContainerBrand, ScopeBrand } from "./types.js";
 import type { Container, Scope } from "./types.js";
 import type {
@@ -26,6 +26,8 @@ import {
   DisposedScopeError,
   ScopeRequiredError,
   FactoryError,
+  AsyncFactoryError,
+  AsyncInitializationRequiredError,
 } from "./errors.js";
 import type {
   ContainerOptions,
@@ -42,7 +44,12 @@ import type {
  * Internal adapter type with runtime-accessible properties.
  * @internal
  */
-type RuntimeAdapter = Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>;
+type RuntimeAdapter = Adapter<
+  Port<unknown, string>,
+  Port<unknown, string> | never,
+  Lifetime,
+  FactoryKind
+>;
 
 /**
  * Entry in the parent stack for tracking resolution hierarchy.
@@ -100,9 +107,17 @@ function generateScopeId(): string {
  * - Child scope tracking for cascade disposal
  * - LIFO disposal ordering via MemoMap
  *
+ * @typeParam TProvides - Union of Port types that this scope can resolve
+ * @typeParam TAsyncPorts - Union of Port types with async factories (phantom type)
+ * @typeParam TPhase - The initialization phase (phantom type)
+ *
  * @internal
  */
-class ScopeImpl<TProvides extends Port<unknown, string>> {
+class ScopeImpl<
+  TProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> = never,
+  TPhase extends "uninitialized" | "initialized" = "uninitialized",
+> {
   /**
    * Unique identifier for this scope.
    * Generated at construction time using the module-level counter.
@@ -112,7 +127,7 @@ class ScopeImpl<TProvides extends Port<unknown, string>> {
   /**
    * Reference to the root container for adapter lookup and singleton resolution.
    */
-  private readonly container: ContainerImpl<TProvides>;
+  private readonly container: ContainerImpl<TProvides, TAsyncPorts>;
 
   /**
    * MemoMap for caching scoped instances.
@@ -129,13 +144,13 @@ class ScopeImpl<TProvides extends Port<unknown, string>> {
    * Set of child scopes created from this scope.
    * Used for cascade disposal - children must be disposed before parent.
    */
-  private readonly childScopes: Set<ScopeImpl<TProvides>> = new Set();
+  private readonly childScopes: Set<ScopeImpl<TProvides, TAsyncPorts, TPhase>> = new Set();
 
   /**
    * Reference to parent scope (if this is a nested scope).
    * Used to remove self from parent's childScopes on disposal.
    */
-  private readonly parentScope: ScopeImpl<TProvides> | null;
+  private readonly parentScope: ScopeImpl<TProvides, TAsyncPorts, TPhase> | null;
 
   /**
    * Creates a new ScopeImpl instance.
@@ -145,9 +160,9 @@ class ScopeImpl<TProvides extends Port<unknown, string>> {
    * @param parentScope - The parent scope (null for scopes created directly from container)
    */
   constructor(
-    container: ContainerImpl<TProvides>,
+    container: ContainerImpl<TProvides, TAsyncPorts>,
     singletonMemo: MemoMap,
-    parentScope: ScopeImpl<TProvides> | null = null
+    parentScope: ScopeImpl<TProvides, TAsyncPorts, TPhase> | null = null
   ) {
     this.id = generateScopeId();
     this.container = container;
@@ -181,6 +196,32 @@ class ScopeImpl<TProvides extends Port<unknown, string>> {
   }
 
   /**
+   * Resolves a service instance for the given port asynchronously within this scope.
+   *
+   * This method works for any port regardless of whether it has a sync or async factory.
+   * For sync adapters, it wraps the sync resolution in a Promise.
+   * For async adapters, it uses async resolution with concurrent protection.
+   *
+   * Lifetime handling:
+   * - singleton: Delegates to container's singleton memo (shared globally)
+   * - scoped: Uses this scope's scopedMemo (unique to this scope)
+   * - request: Creates new instance (no caching)
+   *
+   * @param port - The port to resolve
+   * @returns A promise that resolves to the service instance
+   * @throws DisposedScopeError if scope is disposed
+   */
+  async resolveAsync<P extends TProvides>(port: P): Promise<InferService<P>> {
+    const portName = (port as Port<unknown, string>).__portName;
+
+    if (this.disposed) {
+      throw new DisposedScopeError(portName);
+    }
+
+    return this.container.resolveAsyncInternal(port, this.scopedMemo, this.id);
+  }
+
+  /**
    * Creates a child scope from this scope.
    *
    * The child scope:
@@ -190,10 +231,10 @@ class ScopeImpl<TProvides extends Port<unknown, string>> {
    *
    * @returns A frozen Scope interface wrapping the child ScopeImpl
    */
-  createScope(): Scope<TProvides> {
+  createScope(): Scope<TProvides, TAsyncPorts, TPhase> {
     // Child scope forks from container's singleton memo, NOT this scope's scopedMemo
     // This ensures scoped instances are isolated per scope
-    const child = new ScopeImpl(
+    const child = new ScopeImpl<TProvides, TAsyncPorts, TPhase>(
       this.container,
       this.container.getSingletonMemo(),
       this
@@ -315,12 +356,17 @@ function createMemoMapSnapshot(memo: MemoMap): MemoMapSnapshot {
  * @returns A frozen Scope interface
  * @internal
  */
-function createScopeWrapper<TProvides extends Port<unknown, string>>(
-  impl: ScopeImpl<TProvides>
-): Scope<TProvides> {
-  const scope = {
-    resolve: <P extends TProvides>(port: P): InferService<P> => impl.resolve(port),
-    createScope: (): Scope<TProvides> => impl.createScope(),
+function createScopeWrapper<
+  TProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> = never,
+  TPhase extends "uninitialized" | "initialized" = "uninitialized",
+>(
+  impl: ScopeImpl<TProvides, TAsyncPorts, TPhase>
+): Scope<TProvides, TAsyncPorts, TPhase> {
+  const scope: Scope<TProvides, TAsyncPorts, TPhase> = {
+    resolve: (<P extends TProvides>(port: P): InferService<P> => impl.resolve(port)) as Scope<TProvides, TAsyncPorts, TPhase>["resolve"],
+    resolveAsync: <P extends TProvides>(port: P): Promise<InferService<P>> => impl.resolveAsync(port),
+    createScope: (): Scope<TProvides, TAsyncPorts, TPhase> => impl.createScope(),
     dispose: (): Promise<void> => impl.dispose(),
     get isDisposed(): boolean {
       return impl.isDisposed;
@@ -332,7 +378,7 @@ function createScopeWrapper<TProvides extends Port<unknown, string>>(
       return undefined as never;
     },
   };
-  return Object.freeze(scope) as Scope<TProvides>;
+  return Object.freeze(scope);
 }
 
 // =============================================================================
@@ -345,13 +391,19 @@ function createScopeWrapper<TProvides extends Port<unknown, string>>(
  * Manages service resolution, lifetime handling, and circular dependency detection.
  * This class is internal and should not be exported from the package.
  *
+ * @typeParam TProvides - Union of Port types that this container can resolve
+ * @typeParam TAsyncPorts - Union of Port types with async factories (phantom type)
+ *
  * @internal
  */
-class ContainerImpl<TProvides extends Port<unknown, string>> {
+class ContainerImpl<
+  TProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> = never,
+> {
   /**
    * The validated graph containing all adapters.
    */
-  private readonly graph: Graph<TProvides>;
+  private readonly graph: Graph<TProvides, Port<unknown, string>>;
 
   /**
    * MemoMap for caching singleton instances.
@@ -374,6 +426,21 @@ class ContainerImpl<TProvides extends Port<unknown, string>> {
   }
 
   /**
+   * Flag indicating whether the container has been initialized.
+   * After initialization, all ports (including async) can be resolved synchronously.
+   */
+  private initialized: boolean = false;
+
+  /**
+   * Whether the container has been initialized.
+   *
+   * After initialization, all ports can be resolved synchronously.
+   */
+  get isInitialized(): boolean {
+    return this.initialized;
+  }
+
+  /**
    * Resolution context for tracking resolution path and detecting circular dependencies.
    */
   private readonly resolutionContext: ResolutionContext;
@@ -384,9 +451,24 @@ class ContainerImpl<TProvides extends Port<unknown, string>> {
   private readonly adapterMap: Map<Port<unknown, string>, RuntimeAdapter>;
 
   /**
-   * Set of child scopes for disposal propagation.
+   * Set of ports that have async factories.
+   * Used to check if a port requires async resolution.
    */
-  private readonly childScopes: Set<ScopeImpl<TProvides>> = new Set();
+  private readonly asyncPorts: Set<Port<unknown, string>> = new Set();
+
+  /**
+   * Map of pending async resolutions for concurrent resolution protection.
+   * Ensures that concurrent calls to resolveAsync for the same port
+   * share the same Promise instead of creating duplicate instances.
+   */
+  private readonly pendingResolutions: Map<Port<unknown, string>, Promise<unknown>> = new Map();
+
+  /**
+   * Set of child scopes for disposal propagation.
+   * The phase type parameter is not needed for disposal tracking since dispose()
+   * works the same regardless of phase.
+   */
+  private readonly childScopes: Set<ScopeImpl<TProvides, TAsyncPorts, "uninitialized" | "initialized">> = new Set();
 
   /**
    * Optional hooks state for resolution instrumentation.
@@ -394,15 +476,19 @@ class ContainerImpl<TProvides extends Port<unknown, string>> {
    */
   private readonly hooksState: HooksState | undefined;
 
-  constructor(graph: Graph<TProvides>, options?: ContainerOptions) {
+  constructor(graph: Graph<TProvides, Port<unknown, string>>, options?: ContainerOptions) {
     this.graph = graph;
     this.singletonMemo = new MemoMap();
     this.resolutionContext = new ResolutionContext();
 
-    // Build adapter lookup map for O(1) access
+    // Build adapter lookup map for O(1) access and track async ports
     this.adapterMap = new Map();
     for (const adapter of graph.adapters) {
       this.adapterMap.set(adapter.provides, adapter);
+      // Track async ports for initialization and sync resolution checks
+      if (adapter.factoryKind === "async") {
+        this.asyncPorts.add(adapter.provides);
+      }
     }
 
     // Only create hooks state if hooks are provided (zero overhead otherwise)
@@ -415,12 +501,13 @@ class ContainerImpl<TProvides extends Port<unknown, string>> {
   }
 
   /**
-   * Resolves a service instance for the given port.
+   * Resolves a service instance for the given port synchronously.
    *
    * @param port - The port to resolve
    * @returns The service instance
    * @throws DisposedScopeError if container is disposed
    * @throws ScopeRequiredError if resolving scoped port from root container
+   * @throws AsyncInitializationRequiredError if resolving async port before initialization
    * @throws CircularDependencyError if circular dependency detected
    * @throws FactoryError if factory throws
    */
@@ -441,6 +528,11 @@ class ContainerImpl<TProvides extends Port<unknown, string>> {
     // Check for scoped lifetime - cannot resolve from root container
     if (adapter.lifetime === "scoped") {
       throw new ScopeRequiredError(portName);
+    }
+
+    // Check for async port before initialization
+    if (!this.initialized && this.asyncPorts.has(port as Port<unknown, string>)) {
+      throw new AsyncInitializationRequiredError(portName);
     }
 
     return this.resolveWithAdapter(port, adapter, this.singletonMemo, null);
@@ -603,6 +695,298 @@ class ContainerImpl<TProvides extends Port<unknown, string>> {
   }
 
   /**
+   * Resolves a service instance for the given port asynchronously.
+   *
+   * This method works for any port regardless of whether it has a sync or async factory.
+   * For sync adapters, it wraps the sync resolution in a Promise.
+   * For async adapters, it uses async resolution with concurrent protection.
+   *
+   * @param port - The port to resolve
+   * @returns A promise that resolves to the service instance
+   * @throws DisposedScopeError if container is disposed
+   * @throws ScopeRequiredError if resolving scoped port from root container
+   * @throws CircularDependencyError if circular dependency detected
+   * @throws AsyncFactoryError if async factory throws
+   */
+  async resolveAsync<P extends TProvides>(port: P): Promise<InferService<P>> {
+    const portName = (port as Port<unknown, string>).__portName;
+
+    // Check disposed flag
+    if (this.disposed) {
+      throw new DisposedScopeError(portName);
+    }
+
+    // Lookup adapter
+    const adapter = this.adapterMap.get(port as Port<unknown, string>);
+    if (adapter === undefined) {
+      throw new Error(`No adapter registered for port '${portName}'`);
+    }
+
+    // Check for scoped lifetime - cannot resolve from root container
+    if (adapter.lifetime === "scoped") {
+      throw new ScopeRequiredError(portName);
+    }
+
+    return this.resolveAsyncWithAdapter(port, adapter, this.singletonMemo, null);
+  }
+
+  /**
+   * Internal async resolve method that can use a specific MemoMap.
+   * Used by ScopeImpl for async scoped resolution.
+   *
+   * @param port - The port to resolve
+   * @param scopedMemo - The MemoMap for scoped instances
+   * @param scopeId - The scope ID (null for container-level)
+   * @internal
+   */
+  async resolveAsyncInternal<P extends TProvides>(
+    port: P,
+    scopedMemo: MemoMap,
+    scopeId: string | null = null
+  ): Promise<InferService<P>> {
+    const portName = (port as Port<unknown, string>).__portName;
+
+    // Lookup adapter
+    const adapter = this.adapterMap.get(port as Port<unknown, string>);
+    if (adapter === undefined) {
+      throw new Error(`No adapter registered for port '${portName}'`);
+    }
+
+    return this.resolveAsyncWithAdapter(port, adapter, scopedMemo, scopeId);
+  }
+
+  /**
+   * Core async resolution logic with adapter and memo context.
+   * Handles both sync and async adapters with concurrent resolution protection.
+   */
+  private async resolveAsyncWithAdapter<P extends TProvides>(
+    port: P,
+    adapter: RuntimeAdapter,
+    scopedMemo: MemoMap,
+    scopeId: string | null
+  ): Promise<InferService<P>> {
+    // If adapter has sync factory, delegate to sync resolution
+    if (adapter.factoryKind === "sync") {
+      return this.resolveWithAdapter(port, adapter, scopedMemo, scopeId);
+    }
+
+    // Handle async adapter resolution
+    return this.resolveAsyncAdapter(port, adapter, scopedMemo, scopeId);
+  }
+
+  /**
+   * Resolves an async adapter with concurrent resolution protection.
+   * Ensures that concurrent calls for the same port share the same Promise.
+   */
+  private async resolveAsyncAdapter<P extends TProvides>(
+    port: P,
+    adapter: RuntimeAdapter,
+    scopedMemo: MemoMap,
+    scopeId: string | null
+  ): Promise<InferService<P>> {
+    // Check cache based on lifetime
+    const cacheHit = this.checkAsyncCacheHit(port as Port<unknown, string>, adapter, scopedMemo);
+    if (cacheHit !== undefined) {
+      return cacheHit as InferService<P>;
+    }
+
+    // Check for pending resolution (concurrent protection)
+    const pending = this.pendingResolutions.get(port as Port<unknown, string>);
+    if (pending !== undefined) {
+      return pending as Promise<InferService<P>>;
+    }
+
+    // Create new resolution promise
+    const promise = this.createAsyncInstance(port, adapter, scopedMemo, scopeId);
+    this.pendingResolutions.set(port as Port<unknown, string>, promise);
+
+    try {
+      const instance = await promise;
+      return instance;
+    } finally {
+      // Clean up pending resolution
+      this.pendingResolutions.delete(port as Port<unknown, string>);
+    }
+  }
+
+  /**
+   * Checks if an async resolution would hit a cached instance.
+   * Returns the cached instance if found, undefined otherwise.
+   */
+  private checkAsyncCacheHit(
+    port: Port<unknown, string>,
+    adapter: RuntimeAdapter,
+    scopedMemo: MemoMap
+  ): unknown | undefined {
+    switch (adapter.lifetime) {
+      case "singleton":
+        if (this.singletonMemo.has(port)) {
+          return this.singletonMemo.getOrElseMemoize(port, () => {
+            throw new Error("unreachable");
+          });
+        }
+        return undefined;
+      case "scoped":
+        if (scopedMemo.has(port)) {
+          return scopedMemo.getOrElseMemoize(port, () => {
+            throw new Error("unreachable");
+          });
+        }
+        return undefined;
+      case "request":
+        // Request lifetime never caches
+        return undefined;
+      default:
+        return undefined;
+    }
+  }
+
+  /**
+   * Creates a new instance using an async adapter's factory.
+   * Handles resolution context entry/exit and async dependency resolution.
+   */
+  private async createAsyncInstance<P extends TProvides>(
+    port: P,
+    adapter: RuntimeAdapter,
+    scopedMemo: MemoMap,
+    scopeId: string | null
+  ): Promise<InferService<P>> {
+    const portName = (port as Port<unknown, string>).__portName;
+
+    // Enter resolution context (circular check)
+    this.resolutionContext.enter(portName);
+
+    try {
+      // Resolve dependencies (parallel for independent deps)
+      const deps = await this.resolveDependenciesAsync(adapter, scopedMemo, scopeId);
+
+      // Call async factory with resolved deps
+      try {
+        // Cast factory to async function since we know factoryKind is 'async'
+        const asyncFactory = adapter.factory as (deps: Record<string, unknown>) => Promise<unknown>;
+        const instance = await asyncFactory(deps);
+
+        // Cache based on lifetime
+        this.cacheAsyncInstance(port as Port<unknown, string>, instance, adapter, scopedMemo);
+
+        return instance as InferService<P>;
+      } catch (error) {
+        throw new AsyncFactoryError(portName, error);
+      }
+    } finally {
+      // Exit resolution context
+      this.resolutionContext.exit(portName);
+    }
+  }
+
+  /**
+   * Resolves all dependencies for an async adapter.
+   * Dependencies are resolved in parallel for performance.
+   */
+  private async resolveDependenciesAsync(
+    adapter: RuntimeAdapter,
+    scopedMemo: MemoMap,
+    scopeId: string | null
+  ): Promise<Record<string, unknown>> {
+    const deps: Record<string, unknown> = {};
+
+    // Resolve all dependencies in parallel
+    const entries = await Promise.all(
+      adapter.requires.map(async (requiredPort) => {
+        const requiredPortName = (requiredPort as Port<unknown, string>).__portName;
+        const requiredAdapter = this.adapterMap.get(requiredPort);
+
+        if (requiredAdapter === undefined) {
+          throw new Error(`No adapter registered for dependency port '${requiredPortName}'`);
+        }
+
+        const instance = await this.resolveAsyncWithAdapter(
+          requiredPort as TProvides,
+          requiredAdapter,
+          scopedMemo,
+          scopeId
+        );
+
+        return [requiredPortName, instance] as const;
+      })
+    );
+
+    for (const [name, instance] of entries) {
+      deps[name] = instance;
+    }
+
+    return deps;
+  }
+
+  /**
+   * Caches an async instance based on its lifetime.
+   */
+  private cacheAsyncInstance(
+    port: Port<unknown, string>,
+    instance: unknown,
+    adapter: RuntimeAdapter,
+    scopedMemo: MemoMap
+  ): void {
+    const finalizer = adapter.finalizer as ((instance: unknown) => void | Promise<void>) | undefined;
+
+    switch (adapter.lifetime) {
+      case "singleton":
+        this.singletonMemo.getOrElseMemoize(port, () => instance, finalizer);
+        break;
+      case "scoped":
+        scopedMemo.getOrElseMemoize(port, () => instance, finalizer);
+        break;
+      case "request":
+        // Request lifetime doesn't cache
+        break;
+    }
+  }
+
+  /**
+   * Initializes all async ports in priority order.
+   *
+   * After initialization, all ports can be resolved synchronously.
+   * Async adapters are initialized in order based on their initPriority
+   * (lower values first), respecting dependencies.
+   *
+   * @returns This container (marked as initialized)
+   * @throws DisposedScopeError if container is disposed
+   * @throws AsyncFactoryError if any async factory throws
+   */
+  async initialize(): Promise<ContainerImpl<TProvides>> {
+    if (this.disposed) {
+      throw new DisposedScopeError("container");
+    }
+
+    if (this.initialized) {
+      return this;
+    }
+
+    // Get async adapters sorted by priority (lower first, default 100)
+    const asyncAdapters: RuntimeAdapter[] = [];
+    for (const adapter of this.graph.adapters) {
+      if (adapter.factoryKind === "async") {
+        asyncAdapters.push(adapter);
+      }
+    }
+
+    // Sort by initPriority (lower = earlier, default = 100)
+    asyncAdapters.sort((a, b) => {
+      const priorityA = a.initPriority ?? 100;
+      const priorityB = b.initPriority ?? 100;
+      return priorityA - priorityB;
+    });
+
+    // Initialize each async adapter
+    for (const adapter of asyncAdapters) {
+      await this.resolveAsync(adapter.provides as TProvides);
+    }
+
+    this.initialized = true;
+    return this;
+  }
+
+  /**
    * Creates a new instance using the adapter's factory.
    * Handles resolution context entry/exit and dependency resolution.
    */
@@ -682,10 +1066,11 @@ class ContainerImpl<TProvides extends Port<unknown, string>> {
    * - Has its own scoped instance cache (not shared with other scopes)
    * - Is tracked for cascade disposal when container is disposed
    *
+   * @typeParam TPhase - The initialization phase of the scope (matches container phase)
    * @returns A frozen Scope interface
    */
-  createScope(): Scope<TProvides> {
-    const scope = new ScopeImpl(this, this.singletonMemo, null);
+  createScope<TPhase extends "uninitialized" | "initialized">(): Scope<TProvides, TAsyncPorts, TPhase> {
+    const scope = new ScopeImpl<TProvides, TAsyncPorts, TPhase>(this, this.singletonMemo, null);
     this.childScopes.add(scope);
     return createScopeWrapper(scope);
   }
@@ -775,6 +1160,7 @@ class ContainerImpl<TProvides extends Port<unknown, string>> {
  * - Circular dependency detection at resolution time
  * - LIFO disposal ordering with finalizer support
  * - Optional resolution hooks for instrumentation
+ * - Async factory support with initialization
  *
  * @typeParam TProvides - Union of Port types that the container can resolve
  * @param graph - A validated Graph from @hex-di/graph
@@ -783,7 +1169,8 @@ class ContainerImpl<TProvides extends Port<unknown, string>> {
  *
  * @remarks
  * - The container is immutable (frozen) - no dynamic registration after creation
- * - Resolution is synchronous - all factory functions must be sync
+ * - Sync adapters use synchronous resolution
+ * - Async adapters require resolveAsync() or initialize() before sync resolve
  * - Scoped ports cannot be resolved from the root container - use createScope()
  * - When hooks are not provided, there is zero overhead
  *
@@ -818,6 +1205,16 @@ class ContainerImpl<TProvides extends Port<unknown, string>> {
  * }
  * ```
  *
+ * @example With async adapters
+ * ```typescript
+ * // Async resolution
+ * const db = await container.resolveAsync(DatabasePort);
+ *
+ * // Or initialize all async adapters upfront
+ * const initialized = await container.initialize();
+ * const db2 = initialized.resolve(DatabasePort);  // Now sync works!
+ * ```
+ *
  * @example With resolution hooks
  * ```typescript
  * const container = createContainer(graph, {
@@ -828,16 +1225,30 @@ class ContainerImpl<TProvides extends Port<unknown, string>> {
  * });
  * ```
  */
-export function createContainer<TProvides extends Port<unknown, string>>(
-  graph: Graph<TProvides>,
+export function createContainer<
+  TProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> = never,
+>(
+  graph: Graph<TProvides, TAsyncPorts>,
   options?: ContainerOptions
-): Container<TProvides> {
-  const impl = new ContainerImpl(graph, options);
+): Container<TProvides, TAsyncPorts, "uninitialized"> {
+  const impl = new ContainerImpl<TProvides, TAsyncPorts>(graph, options);
 
   // Create the container object with the public API
-  const container = {
-    resolve: <P extends TProvides>(port: P): InferService<P> => impl.resolve(port),
-    createScope: (): Scope<TProvides> => impl.createScope(),
+  const container: Container<TProvides, TAsyncPorts, "uninitialized"> = {
+    resolve: (<P extends TProvides>(port: P): InferService<P> => impl.resolve(port)) as Container<TProvides, TAsyncPorts, "uninitialized">["resolve"],
+    resolveAsync: <P extends TProvides>(port: P): Promise<InferService<P>> => impl.resolveAsync(port),
+    initialize: async (): Promise<Container<TProvides, TAsyncPorts, "initialized">> => {
+      await impl.initialize();
+      // Return a new frozen object with updated initialization state
+      // The impl tracks isInitialized internally, but we return a new wrapper
+      // to support the type-state pattern (Container<..., 'initialized'>)
+      return createInitializedContainer<TProvides, TAsyncPorts>(impl);
+    },
+    get isInitialized(): boolean {
+      return impl.isInitialized;
+    },
+    createScope: (): Scope<TProvides, TAsyncPorts, "uninitialized"> => impl.createScope<"uninitialized">(),
     dispose: (): Promise<void> => impl.dispose(),
     get isDisposed(): boolean {
       return impl.isDisposed;
@@ -850,6 +1261,41 @@ export function createContainer<TProvides extends Port<unknown, string>>(
     },
   };
 
-  // Freeze and return as Container<TProvides>
-  return Object.freeze(container) as Container<TProvides>;
+  // Freeze and return
+  return Object.freeze(container);
+}
+
+/**
+ * Creates an initialized container wrapper.
+ * This is a separate function to support the type-state pattern.
+ *
+ * @internal
+ */
+function createInitializedContainer<
+  TProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> = never,
+>(
+  impl: ContainerImpl<TProvides, TAsyncPorts>
+): Container<TProvides, TAsyncPorts, "initialized"> {
+  const container: Container<TProvides, TAsyncPorts, "initialized"> = {
+    resolve: <P extends TProvides>(port: P): InferService<P> => impl.resolve(port),
+    resolveAsync: <P extends TProvides>(port: P): Promise<InferService<P>> => impl.resolveAsync(port),
+    // initialize is 'never' on initialized container, but we still provide the method
+    // for runtime compatibility. TypeScript will prevent calling it at compile time.
+    initialize: undefined as never,
+    get isInitialized(): boolean {
+      return impl.isInitialized;
+    },
+    createScope: (): Scope<TProvides, TAsyncPorts, "initialized"> => impl.createScope<"initialized">(),
+    dispose: (): Promise<void> => impl.dispose(),
+    get isDisposed(): boolean {
+      return impl.isDisposed;
+    },
+    [INTERNAL_ACCESS]: (): ContainerInternalState => impl.getInternalState(),
+    get [ContainerBrand](): { provides: TProvides } {
+      return undefined as never;
+    },
+  };
+
+  return Object.freeze(container);
 }

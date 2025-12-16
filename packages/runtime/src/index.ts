@@ -148,6 +148,8 @@ export type {
  * @see {@link FactoryError} - Thrown when adapter factory throws
  * @see {@link DisposedScopeError} - Thrown when resolving from disposed scope
  * @see {@link ScopeRequiredError} - Thrown when resolving scoped port from container
+ * @see {@link AsyncFactoryError} - Thrown when async factory throws
+ * @see {@link AsyncInitializationRequiredError} - Thrown when resolving async port before init
  */
 export {
   ContainerError,
@@ -155,6 +157,8 @@ export {
   FactoryError,
   DisposedScopeError,
   ScopeRequiredError,
+  AsyncFactoryError,
+  AsyncInitializationRequiredError,
 } from "./errors.js";
 
 // =============================================================================
@@ -167,7 +171,19 @@ export {
  * @see {@link Container} - Root container created from a validated graph
  * @see {@link Scope} - Child scope for managing scoped service lifetimes
  */
-export type { Container, Scope } from "./types.js";
+export type { Container, Scope, ContainerPhase } from "./types.js";
+
+/**
+ * Brand symbols for Container and Scope nominal typing.
+ *
+ * These symbols are used internally for nominal typing and are exposed
+ * primarily for testing purposes to create properly typed mock containers
+ * and scopes.
+ *
+ * @see {@link ContainerBrand} - Unique symbol for Container nominal typing
+ * @see {@link ScopeBrand} - Unique symbol for Scope nominal typing
+ */
+export { ContainerBrand, ScopeBrand } from "./types.js";
 
 // =============================================================================
 // Type Utility Functions

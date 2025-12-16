@@ -9,7 +9,7 @@
  */
 
 import type { Port, InferPortName } from "@hex-di/ports";
-import type { Graph, Adapter, Lifetime } from "@hex-di/graph";
+import type { Graph, Adapter, Lifetime, FactoryKind } from "@hex-di/graph";
 
 // Type augmentation for V8-specific Error.captureStackTrace
 declare global {
@@ -119,7 +119,7 @@ function getPortName(port: Port<unknown, string>): string {
 function findAdapterForPort(
   graph: Graph<Port<unknown, string>>,
   port: Port<unknown, string>
-): Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime> | undefined {
+): Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind> | undefined {
   const portName = getPortName(port);
   return graph.adapters.find((adapter) => getPortName(adapter.provides) === portName);
 }

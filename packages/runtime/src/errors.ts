@@ -10,12 +10,11 @@
  * @packageDocumentation
  */
 
-// Type augmentation for V8-specific Error.captureStackTrace
-declare global {
-  interface ErrorConstructor {
-    captureStackTrace?(targetObject: object, constructorOpt?: Function): void;
-  }
-}
+// V8-specific Error.captureStackTrace type
+// We use a type alias to type the V8-specific static method without conflicts
+type V8ErrorConstructor = typeof Error & {
+  captureStackTrace?(targetObject: object, constructorOpt?: unknown): void;
+};
 
 // =============================================================================
 // ContainerError Abstract Base Class
@@ -78,8 +77,9 @@ export abstract class ContainerError extends Error {
 
     // Capture stack trace excluding this constructor for cleaner traces
     // Note: captureStackTrace is V8-specific (Node.js, Chrome)
-    if (typeof Error.captureStackTrace === "function") {
-      Error.captureStackTrace(this, new.target);
+    const ErrorWithCapture = Error as V8ErrorConstructor;
+    if (typeof ErrorWithCapture.captureStackTrace === "function") {
+      ErrorWithCapture.captureStackTrace(this, new.target);
     }
   }
 
@@ -295,6 +295,120 @@ export class ScopeRequiredError extends ContainerError {
     super(
       `Cannot resolve scoped port '${portName}' from the root container. ` +
         `Scoped ports must be resolved from a scope created via createScope().`
+    );
+
+    this.portName = portName;
+  }
+}
+
+// =============================================================================
+// AsyncFactoryError
+// =============================================================================
+
+/**
+ * Error thrown when an async adapter's factory function throws during instance creation.
+ *
+ * This error wraps the original exception thrown by the async factory, providing
+ * context about which port's factory failed.
+ *
+ * @remarks
+ * - This is NOT a programming error - async factory failures are runtime conditions
+ * - The `cause` property contains the original exception for investigation
+ * - The error message includes both the port name and original error message
+ * - Similar to FactoryError but specific to async factory resolution
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await container.resolveAsync(DatabasePort);
+ * } catch (error) {
+ *   if (error instanceof AsyncFactoryError) {
+ *     console.log(`Async factory for ${error.portName} failed`);
+ *     console.log('Original error:', error.cause);
+ *   }
+ * }
+ * ```
+ */
+export class AsyncFactoryError extends ContainerError {
+  readonly code = "ASYNC_FACTORY_FAILED" as const;
+  readonly isProgrammingError = false as const;
+
+  /**
+   * The name of the port whose async factory failed.
+   */
+  readonly portName: string;
+
+  /**
+   * The original exception thrown by the async factory function.
+   * Can be any value since JavaScript allows throwing non-Error values.
+   */
+  readonly cause: unknown;
+
+  /**
+   * Creates a new AsyncFactoryError.
+   *
+   * @param portName - The name of the port whose async factory threw
+   * @param cause - The original exception thrown by the factory
+   */
+  constructor(portName: string, cause: unknown) {
+    const causeMessage = cause instanceof Error ? cause.message : String(cause);
+    super(`Async factory for port '${portName}' failed: ${causeMessage}`);
+
+    this.portName = portName;
+    this.cause = cause;
+  }
+}
+
+// =============================================================================
+// AsyncInitializationRequiredError
+// =============================================================================
+
+/**
+ * Error thrown when attempting to synchronously resolve an async port before initialization.
+ *
+ * Async ports (those created with createAsyncAdapter) require either:
+ * - Async resolution via resolveAsync(), or
+ * - Container initialization via initialize() before sync resolve
+ *
+ * @remarks
+ * - This is a programming error - use resolveAsync() or call initialize() first
+ * - The container must be initialized before sync-resolving async ports
+ * - Using resolveAsync() always works regardless of initialization state
+ *
+ * @example
+ * ```typescript
+ * // DatabasePort has an async factory
+ * const container = createContainer(graph);
+ *
+ * // This will throw AsyncInitializationRequiredError:
+ * container.resolve(DatabasePort);
+ *
+ * // Solution 1: Use async resolution
+ * const db = await container.resolveAsync(DatabasePort);
+ *
+ * // Solution 2: Initialize first, then sync resolve
+ * const initialized = await container.initialize();
+ * const db = initialized.resolve(DatabasePort);
+ * ```
+ */
+export class AsyncInitializationRequiredError extends ContainerError {
+  readonly code = "ASYNC_INIT_REQUIRED" as const;
+  readonly isProgrammingError = true as const;
+
+  /**
+   * The name of the async port that was attempted to be resolved synchronously.
+   */
+  readonly portName: string;
+
+  /**
+   * Creates a new AsyncInitializationRequiredError.
+   *
+   * @param portName - The name of the async port that was attempted to be resolved
+   */
+  constructor(portName: string) {
+    super(
+      `Cannot resolve async port '${portName}' synchronously. ` +
+        `Use resolveAsync() or call container.initialize() first.`
     );
 
     this.portName = portName;

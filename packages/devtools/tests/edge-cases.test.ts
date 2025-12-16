@@ -98,7 +98,8 @@ describe("Edge case: Large graphs", () => {
 
     // Build graph by chaining provides
     // Dynamic adapter accumulation for stress test - type changes on each provide()
-    let builder: GraphBuilder<Port<unknown, string>, never> = GraphBuilder.create();
+    // @ts-expect-error Stress test with dynamic type - GraphBuilder.create() returns never types
+    let builder: GraphBuilder<Port<unknown, string>, never, never> = GraphBuilder.create();
     for (const adapter of adapters) {
       // @ts-expect-error Stress test with dynamic adapter array - TypeScript can't track type accumulation
       builder = builder.provide(adapter);
@@ -142,7 +143,8 @@ describe("Edge case: Large graphs", () => {
     }
 
     // Dynamic adapter accumulation for stress test - type changes on each provide()
-    let builder: GraphBuilder<Port<unknown, string>, never> = GraphBuilder.create();
+    // @ts-expect-error Stress test with dynamic type - GraphBuilder.create() returns never types
+    let builder: GraphBuilder<Port<unknown, string>, never, never> = GraphBuilder.create();
     for (const adapter of adapters) {
       // @ts-expect-error Stress test with dynamic adapter array - TypeScript can't track type accumulation
       builder = builder.provide(adapter);

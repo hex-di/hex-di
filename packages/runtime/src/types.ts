@@ -15,6 +15,22 @@ import { INTERNAL_ACCESS } from "./inspector-symbols.js";
 import type { ContainerInternalState, ScopeInternalState } from "./inspector-types.js";
 
 // =============================================================================
+// Container Phase Type
+// =============================================================================
+
+/**
+ * Represents the initialization phase of a container.
+ *
+ * Used for type-state tracking to enforce that async ports cannot be resolved
+ * synchronously before initialization.
+ *
+ * @remarks
+ * - `'uninitialized'`: Container has not been initialized; sync resolve limited to sync-only ports
+ * - `'initialized'`: All async ports have been initialized; sync resolve works for all ports
+ */
+export type ContainerPhase = "uninitialized" | "initialized";
+
+// =============================================================================
 // Brand Symbols
 // =============================================================================
 
@@ -65,11 +81,17 @@ export const ScopeBrand: unique symbol = Symbol("hex-di.Scope");
  *
  * @typeParam TProvides - Union of Port types that this container can resolve.
  *   The resolve method is constrained to only accept ports in this union.
+ * @typeParam TAsyncPorts - Union of Port types that have async factories.
+ *   These ports require async initialization before sync resolution.
+ * @typeParam TPhase - The initialization phase of the container.
+ *   Controls whether sync resolve can access async ports.
  *
  * @remarks
  * - The brand property carries the TProvides type for nominal typing
  * - The resolve method is generic to preserve the specific port type being resolved
- * - createScope returns a Scope with the same TProvides for consistent type safety
+ * - Before initialization, sync resolve is limited to non-async ports
+ * - After initialization, all ports can be resolved synchronously
+ * - createScope returns a Scope with the same type parameters
  * - dispose returns a Promise to support async cleanup of resources
  *
  * @see {@link Scope} - Child scope type with identical API but separate brand
@@ -89,6 +111,22 @@ export const ScopeBrand: unique symbol = Symbol("hex-di.Scope");
  * // container.resolve(UserServicePort);
  * ```
  *
+ * @example Async factory initialization
+ * ```typescript
+ * const container = createContainer(graph);
+ *
+ * // Before initialization, only sync ports can be resolved synchronously
+ * const logger = container.resolve(LoggerPort);  // OK - sync adapter
+ * // container.resolve(DatabasePort);            // Error - async port
+ *
+ * // Async ports can always be resolved asynchronously
+ * const db = await container.resolveAsync(DatabasePort);  // OK
+ *
+ * // After initialization, all ports can be resolved synchronously
+ * const initialized = await container.initialize();
+ * const db2 = initialized.resolve(DatabasePort);  // OK
+ * ```
+ *
  * @example Creating scopes
  * ```typescript
  * const scope = container.createScope();
@@ -98,14 +136,22 @@ export const ScopeBrand: unique symbol = Symbol("hex-di.Scope");
  * await scope.dispose();  // Clean up scope resources
  * ```
  */
-export type Container<TProvides extends Port<unknown, string>> = {
+export type Container<
+  TProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> = never,
+  TPhase extends ContainerPhase = "uninitialized",
+> = {
   /**
-   * Resolves a service instance for the given port.
+   * Resolves a service instance for the given port synchronously.
    *
    * The port must be in the TProvides union, enforced at compile time.
    * The return type is inferred from the port's phantom service type.
    *
-   * @typeParam P - The specific port type being resolved (must extend TProvides)
+   * **Phase-dependent behavior:**
+   * - Before initialization: Only non-async ports can be resolved
+   * - After initialization: All ports can be resolved
+   *
+   * @typeParam P - The specific port type being resolved
    * @param port - The port token to resolve
    * @returns The service instance for the given port
    *
@@ -113,18 +159,63 @@ export type Container<TProvides extends Port<unknown, string>> = {
    * @throws {ScopeRequiredError} If resolving a scoped port from root container
    * @throws {CircularDependencyError} If a circular dependency is detected
    * @throws {FactoryError} If the adapter's factory function throws
+   * @throws {AsyncInitializationRequiredError} If resolving an async port before initialization
    */
-  resolve<P extends TProvides>(port: P): InferService<P>;
+  resolve: TPhase extends "initialized"
+    ? <P extends TProvides>(port: P) => InferService<P>
+    : <P extends Exclude<TProvides, TAsyncPorts>>(port: P) => InferService<P>;
+
+  /**
+   * Resolves a service instance for the given port asynchronously.
+   *
+   * The port must be in the TProvides union, enforced at compile time.
+   * This method can resolve any port regardless of whether it has an async factory.
+   *
+   * @typeParam P - The specific port type being resolved (must extend TProvides)
+   * @param port - The port token to resolve
+   * @returns A promise that resolves to the service instance
+   *
+   * @throws {DisposedScopeError} If the container has been disposed
+   * @throws {ScopeRequiredError} If resolving a scoped port from root container
+   * @throws {CircularDependencyError} If a circular dependency is detected
+   * @throws {AsyncFactoryError} If the async factory function throws
+   */
+  resolveAsync<P extends TProvides>(port: P): Promise<InferService<P>>;
+
+  /**
+   * Initializes all async ports in priority order.
+   *
+   * This method resolves all ports with async factories, caching the results.
+   * After initialization, sync resolve works for all ports including async ones.
+   *
+   * Only available on uninitialized containers. Returns an initialized container
+   * where sync resolve is unrestricted.
+   *
+   * @returns A promise that resolves to an initialized container
+   *
+   * @throws {DisposedScopeError} If the container has been disposed
+   * @throws {AsyncFactoryError} If any async factory throws
+   */
+  initialize: TPhase extends "uninitialized"
+    ? () => Promise<Container<TProvides, TAsyncPorts, "initialized">>
+    : never;
+
+  /**
+   * Whether the container has been initialized.
+   *
+   * After initialization, all ports can be resolved synchronously.
+   */
+  readonly isInitialized: boolean;
 
   /**
    * Creates a child scope for managing scoped service lifetimes.
    *
    * Scoped services are created once per scope and shared within that scope.
-   * The returned scope has the same TProvides type parameter as the container.
+   * The returned scope has the same type parameters as the container.
    *
    * @returns A new Scope instance
    */
-  createScope(): Scope<TProvides>;
+  createScope(): Scope<TProvides, TAsyncPorts, TPhase>;
 
   /**
    * Disposes the container and all singleton instances.
@@ -175,12 +266,18 @@ export type Container<TProvides extends Port<unknown, string>> = {
  *
  * @typeParam TProvides - Union of Port types that this scope can resolve.
  *   The resolve method is constrained to only accept ports in this union.
+ * @typeParam TAsyncPorts - Union of Port types that have async factories.
+ *   These ports require async initialization before sync resolution.
+ * @typeParam TPhase - The initialization phase of the parent container.
+ *   Controls whether sync resolve can access async ports.
  *
  * @remarks
  * - The brand property carries the TProvides type for nominal typing
  * - Scopes inherit singleton instances from the parent container
  * - Scoped instances are created once per scope and not shared with siblings
  * - Request instances are created fresh on every resolve call
+ * - Before initialization, sync resolve is limited to non-async ports
+ * - After initialization, all ports can be resolved synchronously
  *
  * @see {@link Container} - Parent container type with identical API but separate brand
  * @see {@link Container.createScope} - Method that creates Scope instances
@@ -209,22 +306,49 @@ export type Container<TProvides extends Port<unknown, string>> = {
  * // parentScope is still usable
  * ```
  */
-export type Scope<TProvides extends Port<unknown, string>> = {
+export type Scope<
+  TProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> = never,
+  TPhase extends ContainerPhase = "uninitialized",
+> = {
   /**
-   * Resolves a service instance for the given port.
+   * Resolves a service instance for the given port synchronously.
    *
    * The port must be in the TProvides union, enforced at compile time.
    * The return type is inferred from the port's phantom service type.
    *
-   * @typeParam P - The specific port type being resolved (must extend TProvides)
+   * **Phase-dependent behavior:**
+   * - Before initialization: Only non-async ports can be resolved
+   * - After initialization: All ports can be resolved
+   *
+   * @typeParam P - The specific port type being resolved
    * @param port - The port token to resolve
    * @returns The service instance for the given port
    *
    * @throws {DisposedScopeError} If the scope has been disposed
    * @throws {CircularDependencyError} If a circular dependency is detected
    * @throws {FactoryError} If the adapter's factory function throws
+   * @throws {AsyncInitializationRequiredError} If resolving an async port before initialization
    */
-  resolve<P extends TProvides>(port: P): InferService<P>;
+  resolve: TPhase extends "initialized"
+    ? <P extends TProvides>(port: P) => InferService<P>
+    : <P extends Exclude<TProvides, TAsyncPorts>>(port: P) => InferService<P>;
+
+  /**
+   * Resolves a service instance for the given port asynchronously.
+   *
+   * The port must be in the TProvides union, enforced at compile time.
+   * This method can resolve any port regardless of whether it has an async factory.
+   *
+   * @typeParam P - The specific port type being resolved (must extend TProvides)
+   * @param port - The port token to resolve
+   * @returns A promise that resolves to the service instance
+   *
+   * @throws {DisposedScopeError} If the scope has been disposed
+   * @throws {CircularDependencyError} If a circular dependency is detected
+   * @throws {AsyncFactoryError} If the async factory function throws
+   */
+  resolveAsync<P extends TProvides>(port: P): Promise<InferService<P>>;
 
   /**
    * Creates a child scope for managing nested scoped service lifetimes.
@@ -234,7 +358,7 @@ export type Scope<TProvides extends Port<unknown, string>> = {
    *
    * @returns A new Scope instance
    */
-  createScope(): Scope<TProvides>;
+  createScope(): Scope<TProvides, TAsyncPorts, TPhase>;
 
   /**
    * Disposes the scope and all scoped instances.

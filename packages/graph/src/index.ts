@@ -55,6 +55,25 @@ const GRAPH_BUILDER_BRAND = Symbol("GraphBuilder");
 // Lifetime Type
 // =============================================================================
 
+// =============================================================================
+// Factory Kind Type
+// =============================================================================
+
+/**
+ * Discriminator for sync vs async factory functions.
+ *
+ * - `'sync'`: Factory returns the service instance directly (existing behavior)
+ * - `'async'`: Factory returns a Promise of the service instance (new behavior)
+ *
+ * This discriminator enables compile-time tracking of async adapters,
+ * ensuring that the container can enforce proper resolution patterns.
+ */
+export type FactoryKind = "sync" | "async";
+
+// =============================================================================
+// Lifetime Type
+// =============================================================================
+
 /**
  * Lifetime scope for an adapter's service instance.
  *
@@ -155,21 +174,26 @@ export type ResolvedDeps<TRequires extends Port<unknown, string> | never> =
  * 1. The same provided port type (TProvides)
  * 2. The same required ports union (TRequires)
  * 3. The same lifetime scope (TLifetime)
+ * 4. The same factory kind (TFactoryKind)
  *
  * @typeParam TProvides - The Port this adapter provides/implements (single port, not union)
  * @typeParam TRequires - Union of Ports this adapter depends on, or `never` for zero dependencies
  * @typeParam TLifetime - The lifetime scope literal type ('singleton' | 'scoped' | 'request')
+ * @typeParam TFactoryKind - Whether the factory is 'sync' or 'async'
  *
  * @remarks
- * - The `__adapterBrand` property carries all three type parameters in a tuple for nominal typing
+ * - The `__adapterBrand` property carries all four type parameters in a tuple for nominal typing
  * - The brand property value is undefined at runtime (zero overhead)
  * - The `provides` property exposes the provided port for type inference
  * - The `requires` property is an empty array when TRequires is `never`, otherwise a Port array
  * - The `factory` function receives resolved dependencies and returns the service instance
+ * - For async adapters, the factory returns a Promise of the service
  *
- * @see {@link createAdapter} - Factory function to create adapter instances
+ * @see {@link createAdapter} - Factory function to create sync adapter instances
+ * @see {@link createAsyncAdapter} - Factory function to create async adapter instances
  * @see {@link ResolvedDeps} - Utility type for the factory's dependencies parameter
  * @see {@link Lifetime} - The lifetime scope options
+ * @see {@link FactoryKind} - The factory kind discriminator
  *
  * @example
  * ```typescript
@@ -181,33 +205,30 @@ export type ResolvedDeps<TRequires extends Port<unknown, string> | never> =
  * const DatabasePort = createPort<'Database', Database>('Database');
  * const UserServicePort = createPort<'UserService', UserService>('UserService');
  *
- * // Adapter with no dependencies
- * type LoggerAdapterType = Adapter<typeof LoggerPort, never, 'singleton'>;
+ * // Sync adapter with no dependencies
+ * type LoggerAdapterType = Adapter<typeof LoggerPort, never, 'singleton', 'sync'>;
  *
- * // Adapter with dependencies
- * type UserServiceAdapterType = Adapter<
- *   typeof UserServicePort,
- *   typeof LoggerPort | typeof DatabasePort,
- *   'scoped'
- * >;
+ * // Async adapter with dependencies
+ * type DatabaseAdapterType = Adapter<typeof DatabasePort, never, 'singleton', 'async'>;
  * ```
  */
 export type Adapter<
   TProvides extends Port<unknown, string>,
   TRequires extends Port<unknown, string> | never,
   TLifetime extends Lifetime,
+  TFactoryKind extends FactoryKind = "sync",
   TRequiresTuple extends readonly Port<unknown, string>[] = [TRequires] extends [never]
     ? readonly []
     : readonly Port<unknown, string>[],
 > = {
   /**
    * Brand property for nominal typing.
-   * Contains a tuple of [TProvides, TRequires, TLifetime] at the type level.
+   * Contains a tuple of [TProvides, TRequires, TLifetime, TFactoryKind] at the type level.
    * Optional because the property exists only for type-level discrimination,
    * not at runtime. TypeScript uses this for structural distinction between
    * adapters with different type parameters.
    */
-  readonly [__adapterBrand]?: [TProvides, TRequires, TLifetime];
+  readonly [__adapterBrand]?: [TProvides, TRequires, TLifetime, TFactoryKind];
 
   /**
    * The port this adapter provides/implements.
@@ -226,10 +247,26 @@ export type Adapter<
   readonly lifetime: TLifetime;
 
   /**
-   * Factory function that creates the service instance.
-   * Receives resolved dependencies as an object and returns the service.
+   * The factory kind discriminator.
+   * Used at runtime to determine if the factory is sync or async.
    */
-  readonly factory: (deps: ResolvedDeps<TRequires>) => InferService<TProvides>;
+  readonly factoryKind: TFactoryKind;
+
+  /**
+   * Factory function that creates the service instance.
+   * For sync adapters: returns the service directly.
+   * For async adapters: returns a Promise of the service.
+   */
+  readonly factory: TFactoryKind extends "async"
+    ? (deps: ResolvedDeps<TRequires>) => Promise<InferService<TProvides>>
+    : (deps: ResolvedDeps<TRequires>) => InferService<TProvides>;
+
+  /**
+   * Optional initialization priority for async adapters.
+   * Lower numbers initialize first. Default is 100.
+   * Only meaningful for async adapters; ignored for sync adapters.
+   */
+  readonly initPriority?: number;
 
   /**
    * Optional finalizer function called during disposal.
@@ -407,14 +444,186 @@ export function createAdapter<
   TLifetime extends Lifetime,
 >(
   config: AdapterConfig<TProvides, TRequires, TLifetime>
-): Adapter<TProvides, TupleToUnion<TRequires>, TLifetime, TRequires> {
+): Adapter<TProvides, TupleToUnion<TRequires>, TLifetime, "sync", TRequires> {
   // Build base adapter without finalizer
   const baseAdapter = {
     provides: config.provides,
     requires: config.requires,
     lifetime: config.lifetime,
+    factoryKind: "sync" as const,
     factory: config.factory,
   };
+
+  // Only add finalizer if provided (for exactOptionalPropertyTypes compliance)
+  if (config.finalizer !== undefined) {
+    return Object.freeze({
+      ...baseAdapter,
+      finalizer: config.finalizer,
+    });
+  }
+
+  return Object.freeze(baseAdapter);
+}
+
+// =============================================================================
+// Async Adapter Configuration Type
+// =============================================================================
+
+/**
+ * Configuration object for creating an async adapter.
+ *
+ * @typeParam TProvides - The Port this adapter provides
+ * @typeParam TRequires - Tuple of Ports this adapter depends on
+ * @typeParam TLifetime - The lifetime scope literal
+ *
+ * @internal
+ */
+interface AsyncAdapterConfig<
+  TProvides extends Port<unknown, string>,
+  TRequires extends readonly Port<unknown, string>[],
+  TLifetime extends Lifetime,
+> {
+  /**
+   * The port this adapter provides/implements.
+   */
+  provides: TProvides;
+
+  /**
+   * Array of port tokens this adapter depends on.
+   * Use an empty array `[]` for adapters with no dependencies.
+   */
+  requires: TRequires;
+
+  /**
+   * The lifetime scope for this adapter's service instances.
+   */
+  lifetime: TLifetime;
+
+  /**
+   * Async factory function that creates the service instance.
+   * Receives resolved dependencies as a typed object and returns a Promise.
+   */
+  factory: (deps: ResolvedDeps<TupleToUnion<TRequires>>) => Promise<InferService<TProvides>>;
+
+  /**
+   * Optional initialization priority.
+   * Lower numbers initialize first. Default is 100.
+   */
+  initPriority?: number;
+
+  /**
+   * Optional finalizer function called during disposal.
+   * Used for cleanup of resources like closing connections or flushing buffers.
+   */
+  finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+}
+
+// =============================================================================
+// createAsyncAdapter Function
+// =============================================================================
+
+/**
+ * Creates a typed async adapter with dependency metadata for registration in a dependency graph.
+ *
+ * This function creates an immutable adapter object for services that require
+ * async initialization, such as:
+ * - Database connections that need to be established
+ * - External API clients that need authentication
+ * - Services that load configuration from remote sources
+ *
+ * All type information is inferred automatically - no explicit type annotations are needed.
+ *
+ * @typeParam TProvides - The Port this adapter provides (inferred from `provides` property)
+ * @typeParam TRequires - Tuple of Ports this adapter depends on (inferred from `requires` array)
+ * @typeParam TLifetime - The lifetime scope literal (inferred from `lifetime` property)
+ *
+ * @param config - Configuration object with provides, requires, lifetime, and async factory
+ * @param config.provides - The port token this adapter implements
+ * @param config.requires - Array of port tokens this adapter depends on (use `[]` for no dependencies)
+ * @param config.lifetime - Lifetime scope: `'singleton'`, `'scoped'`, or `'request'`
+ * @param config.factory - Async function that receives resolved dependencies and returns a Promise of the service
+ * @param config.initPriority - Optional initialization priority (lower = earlier, default 100)
+ * @param config.finalizer - Optional cleanup function called during disposal
+ *
+ * @returns A frozen Adapter object with factoryKind='async' and inferred type parameters
+ *
+ * @remarks
+ * - The returned adapter is frozen via `Object.freeze()` for immutability
+ * - Async adapters must be resolved using `container.resolveAsync()` or after `container.initialize()`
+ * - The `initPriority` controls initialization order when multiple async adapters are present
+ * - Async adapters can depend on both sync and async adapters
+ * - Sync adapters CANNOT depend on async adapters (compile-time error)
+ *
+ * @see {@link Adapter} - The branded adapter type returned by this function
+ * @see {@link createAdapter} - Factory function for sync adapters
+ * @see {@link FactoryKind} - The factory kind discriminator
+ *
+ * @example Basic async adapter - database connection
+ * ```typescript
+ * interface DatabasePool {
+ *   query(sql: string): Promise<unknown[]>;
+ *   close(): Promise<void>;
+ * }
+ *
+ * const DatabasePort = createPort<'Database', DatabasePool>('Database');
+ *
+ * const DatabaseAdapter = createAsyncAdapter({
+ *   provides: DatabasePort,
+ *   requires: [ConfigPort],
+ *   lifetime: 'singleton',
+ *   initPriority: 1, // Initialize first
+ *   factory: async (deps) => {
+ *     const pool = await createPool(deps.Config.connectionString);
+ *     return pool;
+ *   },
+ *   finalizer: async (pool) => {
+ *     await pool.close();
+ *   }
+ * });
+ * ```
+ *
+ * @example Async adapter depending on another async adapter
+ * ```typescript
+ * const CacheAdapter = createAsyncAdapter({
+ *   provides: CachePort,
+ *   requires: [DatabasePort], // Can depend on async adapter
+ *   lifetime: 'singleton',
+ *   initPriority: 2, // Initialize after database
+ *   factory: async (deps) => {
+ *     const cache = new Cache();
+ *     await cache.warmFromDatabase(deps.Database);
+ *     return cache;
+ *   }
+ * });
+ * ```
+ */
+export function createAsyncAdapter<
+  TProvides extends Port<unknown, string>,
+  const TRequires extends readonly Port<unknown, string>[],
+  TLifetime extends Lifetime,
+>(
+  config: AsyncAdapterConfig<TProvides, TRequires, TLifetime>
+): Adapter<TProvides, TupleToUnion<TRequires>, TLifetime, "async", TRequires> {
+  // Build base adapter
+  const baseAdapter: {
+    provides: TProvides;
+    requires: TRequires;
+    lifetime: TLifetime;
+    factoryKind: "async";
+    factory: (deps: ResolvedDeps<TupleToUnion<TRequires>>) => Promise<InferService<TProvides>>;
+    initPriority?: number;
+  } = {
+    provides: config.provides,
+    requires: config.requires,
+    lifetime: config.lifetime,
+    factoryKind: "async" as const,
+    factory: config.factory,
+  };
+
+  // Only add initPriority if provided
+  if (config.initPriority !== undefined) {
+    baseAdapter.initPriority = config.initPriority;
+  }
 
   // Only add finalizer if provided (for exactOptionalPropertyTypes compliance)
   if (config.finalizer !== undefined) {
@@ -450,7 +659,13 @@ export function createAdapter<
  * // typeof LoggerPort
  * ```
  */
-export type InferAdapterProvides<A> = A extends Adapter<infer TProvides, infer _TRequires, infer _TLifetime, infer _TTuple>
+export type InferAdapterProvides<A> = A extends Adapter<
+  infer TProvides,
+  infer _TRequires,
+  infer _TLifetime,
+  infer _TFactoryKind,
+  infer _TTuple
+>
   ? TProvides
   : never;
 
@@ -473,7 +688,13 @@ export type InferAdapterProvides<A> = A extends Adapter<infer TProvides, infer _
  * // typeof LoggerPort | typeof DatabasePort
  * ```
  */
-export type InferAdapterRequires<A> = A extends Adapter<infer _TProvides, infer TRequires, infer _TLifetime, infer _TTuple>
+export type InferAdapterRequires<A> = A extends Adapter<
+  infer _TProvides,
+  infer TRequires,
+  infer _TLifetime,
+  infer _TFactoryKind,
+  infer _TTuple
+>
   ? TRequires
   : never;
 
@@ -496,9 +717,71 @@ export type InferAdapterRequires<A> = A extends Adapter<infer _TProvides, infer 
  * // 'singleton'
  * ```
  */
-export type InferAdapterLifetime<A> = A extends Adapter<infer _TProvides, infer _TRequires, infer TLifetime, infer _TTuple>
+export type InferAdapterLifetime<A> = A extends Adapter<
+  infer _TProvides,
+  infer _TRequires,
+  infer TLifetime,
+  infer _TFactoryKind,
+  infer _TTuple
+>
   ? TLifetime
   : never;
+
+/**
+ * Extracts the factory kind from an Adapter type.
+ *
+ * @typeParam A - The Adapter type to extract from
+ * @returns The TFactoryKind literal type ('sync' | 'async'), or `never` if A is not an Adapter
+ *
+ * @example
+ * ```typescript
+ * const SyncAdapter = createAdapter({
+ *   provides: LoggerPort,
+ *   requires: [],
+ *   lifetime: 'singleton',
+ *   factory: () => ({ log: () => {} })
+ * });
+ *
+ * type SyncKind = InferAdapterFactoryKind<typeof SyncAdapter>;
+ * // 'sync'
+ *
+ * const AsyncAdapter = createAsyncAdapter({
+ *   provides: DatabasePort,
+ *   requires: [],
+ *   lifetime: 'singleton',
+ *   factory: async () => ({ query: async () => [] })
+ * });
+ *
+ * type AsyncKind = InferAdapterFactoryKind<typeof AsyncAdapter>;
+ * // 'async'
+ * ```
+ */
+export type InferAdapterFactoryKind<A> = A extends Adapter<
+  infer _TProvides,
+  infer _TRequires,
+  infer _TLifetime,
+  infer TFactoryKind,
+  infer _TTuple
+>
+  ? TFactoryKind
+  : never;
+
+/**
+ * Type predicate that evaluates to `true` if an adapter has an async factory.
+ *
+ * @typeParam A - The Adapter type to check
+ * @returns `true` if the adapter's factory is async, `false` otherwise
+ *
+ * @example
+ * ```typescript
+ * const SyncAdapter = createAdapter({ ... });
+ * const AsyncAdapter = createAsyncAdapter({ ... });
+ *
+ * type IsSyncAsync = IsAsyncAdapter<typeof SyncAdapter>; // false
+ * type IsAsyncAsync = IsAsyncAdapter<typeof AsyncAdapter>; // true
+ * ```
+ */
+export type IsAsyncAdapter<A> = InferAdapterFactoryKind<A> extends "async" ? true : false;
 
 // =============================================================================
 // GraphBuilder Type Inference Utilities
@@ -520,7 +803,11 @@ export type InferAdapterLifetime<A> = A extends Adapter<infer _TProvides, infer 
  * // typeof LoggerPort | typeof DatabasePort
  * ```
  */
-export type InferGraphProvides<G> = G extends GraphBuilder<infer TProvides, infer _TRequires>
+export type InferGraphProvides<G> = G extends GraphBuilder<
+  infer TProvides,
+  infer _TRequires,
+  infer _TAsyncPorts
+>
   ? TProvides
   : never;
 
@@ -539,8 +826,40 @@ export type InferGraphProvides<G> = G extends GraphBuilder<infer TProvides, infe
  * // typeof LoggerPort | typeof DatabasePort
  * ```
  */
-export type InferGraphRequires<G> = G extends GraphBuilder<infer _TProvides, infer TRequires>
+export type InferGraphRequires<G> = G extends GraphBuilder<
+  infer _TProvides,
+  infer TRequires,
+  infer _TAsyncPorts
+>
   ? TRequires
+  : never;
+
+/**
+ * Extracts the async ports union from a GraphBuilder type.
+ *
+ * This utility type extracts the `TAsyncPorts` type parameter from a GraphBuilder,
+ * which represents the union of all ports that have async factories.
+ *
+ * @typeParam G - The GraphBuilder type to extract from
+ * @returns The TAsyncPorts type parameter (union of ports), or `never` if G is not a GraphBuilder
+ *
+ * @example
+ * ```typescript
+ * const builder = GraphBuilder.create()
+ *   .provide(LoggerAdapter)        // sync
+ *   .provideAsync(DatabaseAdapter) // async
+ *   .provideAsync(CacheAdapter);   // async
+ *
+ * type AsyncPorts = InferGraphAsyncPorts<typeof builder>;
+ * // typeof DatabasePort | typeof CachePort
+ * ```
+ */
+export type InferGraphAsyncPorts<G> = G extends GraphBuilder<
+  infer _TProvides,
+  infer _TRequires,
+  infer TAsyncPorts
+>
+  ? TAsyncPorts
   : never;
 
 // =============================================================================
@@ -923,6 +1242,83 @@ export type DuplicateProviderError<DuplicatePort extends Port<unknown, string>> 
   readonly __duplicate: DuplicatePort;
 };
 
+/**
+ * A branded error type that produces a readable compile-time error message
+ * when a sync adapter depends on an async port.
+ *
+ * This error ensures that synchronous adapters cannot depend on ports that
+ * require async initialization, which would break the synchronous resolution
+ * guarantee.
+ *
+ * @typeParam TAsyncPort - The async Port type that is being depended upon
+ *
+ * @returns A branded error type with:
+ * - `__errorBrand: 'AsyncDependencyError'` - For type discrimination
+ * - `__message: 'Sync adapter cannot depend on async port: ${PortName}'` - Human-readable message
+ * - `__asyncPort: TAsyncPort` - The async Port type for programmatic access
+ *
+ * @remarks
+ * - This constraint prevents runtime errors where sync resolution would block on async
+ * - To fix this error, either:
+ *   1. Change the sync adapter to an async adapter using `createAsyncAdapter`
+ *   2. Remove the dependency on the async port
+ * - The error brand ensures this type cannot be confused with a valid result
+ *
+ * @see {@link MissingDependencyError} - Similar pattern for missing dependencies
+ * @see {@link DuplicateProviderError} - Similar pattern for duplicate providers
+ * @see {@link createAsyncAdapter} - Create async adapters that can depend on async ports
+ *
+ * @example
+ * ```typescript
+ * // DatabasePort has an async factory
+ * const BadAdapter = createAdapter({
+ *   provides: UserPort,
+ *   requires: [DatabasePort], // Error: AsyncDependencyError<typeof DatabasePort>
+ *   lifetime: 'scoped',
+ *   factory: (deps) => ({ /* ... *\/ })
+ * });
+ * ```
+ */
+export type AsyncDependencyError<TAsyncPort extends Port<unknown, string>> = {
+  readonly __valid: false;
+  readonly __errorBrand: "AsyncDependencyError";
+  readonly __message: `Sync adapter cannot depend on async port: ${InferPortName<TAsyncPort>}`;
+  readonly __asyncPort: TAsyncPort;
+};
+
+/**
+ * Extracts the subset of ports from TRequires that overlap with TAsyncPorts.
+ *
+ * This utility type finds which required ports are async ports, used for
+ * compile-time validation of sync adapters.
+ *
+ * @typeParam TRequires - Union of ports required by an adapter
+ * @typeParam TAsyncPorts - Union of ports with async factories
+ *
+ * @returns The intersection of TRequires and TAsyncPorts
+ *
+ * @internal
+ */
+export type AsyncDependencies<
+  TRequires extends Port<unknown, string> | never,
+  TAsyncPorts extends Port<unknown, string> | never,
+> = Extract<TRequires, TAsyncPorts>;
+
+/**
+ * Checks if an adapter requires any async ports.
+ *
+ * @typeParam TRequires - Union of ports required by an adapter
+ * @typeParam TAsyncPorts - Union of ports with async factories
+ *
+ * @returns `true` if TRequires overlaps with TAsyncPorts, `false` otherwise
+ *
+ * @internal
+ */
+export type HasAsyncDependency<
+  TRequires extends Port<unknown, string> | never,
+  TAsyncPorts extends Port<unknown, string> | never,
+> = [AsyncDependencies<TRequires, TAsyncPorts>] extends [never] ? false : true;
+
 // =============================================================================
 // Graph Type (Build Result)
 // =============================================================================
@@ -944,27 +1340,41 @@ export type DuplicateProviderError<DuplicatePort extends Port<unknown, string>> 
  *
  * @see {@link GraphBuilder.build} - Method that returns this type
  */
-export type Graph<TProvides extends Port<unknown, string> | never> = {
-  readonly adapters: readonly Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>[];
+export type Graph<
+  TProvides extends Port<unknown, string> | never,
+  TAsyncPorts extends Port<unknown, string> | never = never,
+> = {
+  readonly adapters: readonly Adapter<
+    Port<unknown, string>,
+    Port<unknown, string> | never,
+    Lifetime,
+    FactoryKind
+  >[];
   /**
    * Phantom type property for compile-time type tracking.
    * Optional because it carries type information only - the runtime value is always undefined.
    * Use `Graph<infer P>` conditional type inference to extract the TProvides type.
    */
   readonly __provides?: TProvides;
+  /**
+   * Phantom type property for compile-time async port tracking.
+   * Contains the union of ports that have async factories.
+   */
+  readonly __asyncPorts?: TAsyncPorts;
 };
 
 /**
  * The return type of `GraphBuilder.build()`.
  *
- * Conditionally returns either a valid `Graph<TProvides>` or a `MissingDependencyError`
+ * Conditionally returns either a valid `Graph<TProvides, TAsyncPorts>` or a `MissingDependencyError`
  * based on whether all dependencies are satisfied.
  *
  * @typeParam TProvides - Union of Port types that have been provided
  * @typeParam TRequires - Union of Port types that are required
+ * @typeParam TAsyncPorts - Union of Port types that have async factories
  *
  * @returns
- * - When satisfied: `Graph<TProvides>`
+ * - When satisfied: `Graph<TProvides, TAsyncPorts>`
  * - When unsatisfied: `MissingDependencyError<UnsatisfiedDependencies<TProvides, TRequires>>`
  *
  * @internal
@@ -972,33 +1382,79 @@ export type Graph<TProvides extends Port<unknown, string> | never> = {
 type BuildResult<
   TProvides extends Port<unknown, string> | never,
   TRequires extends Port<unknown, string> | never,
+  TAsyncPorts extends Port<unknown, string> | never,
 > = IsSatisfied<TProvides, TRequires> extends true
-  ? Graph<TProvides>
+  ? Graph<TProvides, TAsyncPorts>
   : MissingDependencyError<UnsatisfiedDependencies<TProvides, TRequires>>;
 
 /**
- * The return type of `GraphBuilder.provide()` with duplicate detection.
+ * The return type of `GraphBuilder.provide()` with duplicate and async dependency detection.
  *
  * Conditionally returns either a new `GraphBuilder` with accumulated types,
- * or a `DuplicateProviderError` if the adapter provides a port that is already provided.
+ * a `DuplicateProviderError` if the adapter provides a port that is already provided,
+ * or an `AsyncDependencyError` if a sync adapter depends on an async port.
  *
  * @typeParam TProvides - Current union of provided Port types
  * @typeParam TRequires - Current union of required Port types
+ * @typeParam TAsyncPorts - Current union of async Port types
  * @typeParam A - The Adapter type being provided
  *
  * @returns
- * - When no overlap: `GraphBuilder<TProvides | AdapterProvides, TRequires | AdapterRequires>`
- * - When overlap detected: `DuplicateProviderError<OverlappingPorts>`
+ * - When duplicate detected: `DuplicateProviderError<OverlappingPorts>`
+ * - When sync adapter depends on async port: `AsyncDependencyError<AsyncDeps>`
+ * - When no issues: `GraphBuilder<TProvides | AdapterProvides, TRequires | AdapterRequires, TAsyncPorts>`
  *
  * @internal
  */
 type ProvideResult<
   TProvides extends Port<unknown, string> | never,
   TRequires extends Port<unknown, string> | never,
-  A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>,
+  TAsyncPorts extends Port<unknown, string> | never,
+  A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>,
 > = HasOverlap<InferAdapterProvides<A>, TProvides> extends true
   ? DuplicateProviderError<OverlappingPorts<InferAdapterProvides<A>, TProvides>>
-  : GraphBuilder<TProvides | InferAdapterProvides<A>, TRequires | InferAdapterRequires<A>>;
+  : InferAdapterFactoryKind<A> extends "sync"
+    ? HasAsyncDependency<InferAdapterRequires<A>, TAsyncPorts> extends true
+      ? AsyncDependencyError<AsyncDependencies<InferAdapterRequires<A>, TAsyncPorts>>
+      : GraphBuilder<
+          TProvides | InferAdapterProvides<A>,
+          TRequires | InferAdapterRequires<A>,
+          TAsyncPorts
+        >
+    : GraphBuilder<
+        TProvides | InferAdapterProvides<A>,
+        TRequires | InferAdapterRequires<A>,
+        TAsyncPorts
+      >;
+
+/**
+ * The return type of `GraphBuilder.provideAsync()` with duplicate detection.
+ *
+ * Similar to ProvideResult but also accumulates the provided port to TAsyncPorts.
+ *
+ * @typeParam TProvides - Current union of provided Port types
+ * @typeParam TRequires - Current union of required Port types
+ * @typeParam TAsyncPorts - Current union of async Port types
+ * @typeParam A - The async Adapter type being provided
+ *
+ * @returns
+ * - When no overlap: `GraphBuilder<TProvides | AdapterProvides, TRequires | AdapterRequires, TAsyncPorts | AdapterProvides>`
+ * - When overlap detected: `DuplicateProviderError<OverlappingPorts>`
+ *
+ * @internal
+ */
+type ProvideAsyncResult<
+  TProvides extends Port<unknown, string> | never,
+  TRequires extends Port<unknown, string> | never,
+  TAsyncPorts extends Port<unknown, string> | never,
+  A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, "async">,
+> = HasOverlap<InferAdapterProvides<A>, TProvides> extends true
+  ? DuplicateProviderError<OverlappingPorts<InferAdapterProvides<A>, TProvides>>
+  : GraphBuilder<
+      TProvides | InferAdapterProvides<A>,
+      TRequires | InferAdapterRequires<A>,
+      TAsyncPorts | InferAdapterProvides<A>
+    >;
 
 // =============================================================================
 // GraphBuilder Class
@@ -1014,25 +1470,29 @@ type ProvideResult<
  * The type parameters track:
  * - `TProvides`: Union of all ports provided by registered adapters
  * - `TRequires`: Union of all ports required by registered adapters
+ * - `TAsyncPorts`: Union of ports that have async factories
  *
  * At build time, the builder validates that all required ports are provided,
  * producing compile-time errors with actionable messages when dependencies are missing.
  *
  * @typeParam TProvides - Union of Port types that have been provided (starts as `never`)
  * @typeParam TRequires - Union of Port types that are required (starts as `never`)
+ * @typeParam TAsyncPorts - Union of Port types with async factories (starts as `never`)
  *
  * @remarks
  * - GraphBuilder instances are immutable - each `provide()` returns a new instance
  * - Use the static `GraphBuilder.create()` method to create new builders
  * - The constructor is private to enforce the factory method pattern
  * - Internal adapters array is readonly and the instance is frozen
+ * - Use `provide()` for sync adapters and `provideAsync()` for async adapters
  *
  * @see {@link Adapter} - The adapter type registered with the builder
- * @see {@link createAdapter} - Factory function to create adapters
+ * @see {@link createAdapter} - Factory function to create sync adapters
+ * @see {@link createAsyncAdapter} - Factory function to create async adapters
  * @see {@link InferGraphProvides} - Utility to extract provided ports from builder
  * @see {@link InferGraphRequires} - Utility to extract required ports from builder
  *
- * @example Basic usage
+ * @example Basic usage with sync adapters
  * ```typescript
  * const LoggerAdapter = createAdapter({
  *   provides: LoggerPort,
@@ -1044,21 +1504,23 @@ type ProvideResult<
  * const builder = GraphBuilder.create()
  *   .provide(LoggerAdapter);
  *
- * // builder has type GraphBuilder<typeof LoggerPort, never>
+ * // builder has type GraphBuilder<typeof LoggerPort, never, never>
  * ```
  *
- * @example Building a complete graph
+ * @example Building a graph with async adapters
  * ```typescript
  * const graph = GraphBuilder.create()
  *   .provide(LoggerAdapter)
- *   .provide(DatabaseAdapter)
+ *   .provideAsync(DatabaseAdapter) // async adapter
  *   .provide(UserServiceAdapter)
  *   .build();
+ * // graph: Graph<typeof LoggerPort | typeof DatabasePort | typeof UserServicePort, typeof DatabasePort>
  * ```
  */
 export class GraphBuilder<
   TProvides extends Port<unknown, string> | never = never,
   TRequires extends Port<unknown, string> | never = never,
+  TAsyncPorts extends Port<unknown, string> | never = never,
 > {
   /**
    * Type-level brand property for nominal typing.
@@ -1067,7 +1529,7 @@ export class GraphBuilder<
    *
    * @internal
    */
-  declare private readonly [__graphBuilderBrand]: [TProvides, TRequires];
+  declare private readonly [__graphBuilderBrand]: [TProvides, TRequires, TAsyncPorts];
 
   /**
    * Runtime brand marker for GraphBuilder instances.
@@ -1083,7 +1545,12 @@ export class GraphBuilder<
    * This array contains all adapters that have been provided to the builder.
    * It is frozen and readonly to ensure immutability.
    */
-  readonly adapters: readonly Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>[];
+  readonly adapters: readonly Adapter<
+    Port<unknown, string>,
+    Port<unknown, string> | never,
+    Lifetime,
+    FactoryKind
+  >[];
 
   /**
    * Private constructor to enforce factory method pattern.
@@ -1095,7 +1562,12 @@ export class GraphBuilder<
    * @internal
    */
   private constructor(
-    adapters: readonly Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>[]
+    adapters: readonly Adapter<
+      Port<unknown, string>,
+      Port<unknown, string> | never,
+      Lifetime,
+      FactoryKind
+    >[]
   ) {
     // Freeze the adapters array for deep immutability
     this.adapters = Object.freeze([...adapters]);
@@ -1103,7 +1575,7 @@ export class GraphBuilder<
   }
 
   /**
-   * Creates a new empty GraphBuilder with `TProvides = never` and `TRequires = never`.
+   * Creates a new empty GraphBuilder with all type parameters as `never`.
    *
    * This is the entry point for building a dependency graph. The returned builder
    * has no adapters and no type constraints.
@@ -1113,13 +1585,13 @@ export class GraphBuilder<
    * @example
    * ```typescript
    * const builder = GraphBuilder.create();
-   * // builder has type GraphBuilder<never, never>
+   * // builder has type GraphBuilder<never, never, never>
    *
    * const withLogger = builder.provide(LoggerAdapter);
-   * // withLogger has type GraphBuilder<typeof LoggerPort, never>
+   * // withLogger has type GraphBuilder<typeof LoggerPort, never, never>
    * ```
    */
-  static create(): GraphBuilder<never, never> {
+  static create(): GraphBuilder<never, never, never> {
     return new GraphBuilder([]);
   }
 
@@ -1206,10 +1678,86 @@ export class GraphBuilder<
    * // Both branches share the same base adapters
    * ```
    */
-  provide<A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>>(
-    adapter: A
-  ): ProvideResult<TProvides, TRequires, A> {
-    return new GraphBuilder([...this.adapters, adapter]) as ProvideResult<TProvides, TRequires, A>;
+  provide<
+    A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>,
+  >(adapter: A): ProvideResult<TProvides, TRequires, TAsyncPorts, A> {
+    return new GraphBuilder([...this.adapters, adapter]) as ProvideResult<
+      TProvides,
+      TRequires,
+      TAsyncPorts,
+      A
+    >;
+  }
+
+  /**
+   * Registers an async adapter with the graph, returning a new builder with updated types.
+   *
+   * This method is similar to `provide()` but specifically for async adapters created with
+   * `createAsyncAdapter()`. It tracks the provided port in `TAsyncPorts` for compile-time
+   * validation of sync-to-async dependency constraints.
+   *
+   * **Type Accumulation Behavior:**
+   * - `TProvides` accumulates: `TProvides | InferAdapterProvides<A>`
+   * - `TRequires` accumulates: `TRequires | InferAdapterRequires<A>`
+   * - `TAsyncPorts` accumulates: `TAsyncPorts | InferAdapterProvides<A>`
+   *
+   * **Duplicate Detection:**
+   * - If the adapter provides a port that is already provided by another adapter,
+   *   a `DuplicateProviderError` type is returned instead of a new builder.
+   *
+   * @typeParam A - The async adapter type being provided (must have factoryKind: 'async')
+   *
+   * @param adapter - The async adapter to register with the graph
+   *
+   * @returns A new GraphBuilder with accumulated type parameters, or a DuplicateProviderError
+   *   if the adapter provides a port that is already provided.
+   *
+   * @example Basic async adapter
+   * ```typescript
+   * const DatabaseAdapter = createAsyncAdapter({
+   *   provides: DatabasePort,
+   *   requires: [ConfigPort],
+   *   lifetime: 'singleton',
+   *   factory: async (deps) => {
+   *     const pool = await createPool(deps.Config.connectionString);
+   *     return { query: (sql) => pool.query(sql) };
+   *   }
+   * });
+   *
+   * const graph = GraphBuilder.create()
+   *   .provide(ConfigAdapter)
+   *   .provideAsync(DatabaseAdapter)
+   *   .build();
+   * ```
+   *
+   * @example With initialization priority
+   * ```typescript
+   * const DatabaseAdapter = createAsyncAdapter({
+   *   provides: DatabasePort,
+   *   requires: [],
+   *   lifetime: 'singleton',
+   *   initPriority: 1,  // Initialize first
+   *   factory: async () => await connectToDatabase()
+   * });
+   *
+   * const CacheAdapter = createAsyncAdapter({
+   *   provides: CachePort,
+   *   requires: [],
+   *   lifetime: 'singleton',
+   *   initPriority: 2,  // Initialize second
+   *   factory: async () => await connectToCache()
+   * });
+   * ```
+   */
+  provideAsync<
+    A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, "async">,
+  >(adapter: A): ProvideAsyncResult<TProvides, TRequires, TAsyncPorts, A> {
+    return new GraphBuilder([...this.adapters, adapter]) as ProvideAsyncResult<
+      TProvides,
+      TRequires,
+      TAsyncPorts,
+      A
+    >;
   }
 
   /**
@@ -1254,16 +1802,25 @@ export class GraphBuilder<
    * @example Empty graph - builds successfully
    * ```typescript
    * const empty = GraphBuilder.create().build();
-   * // graph: Graph<never>
+   * // graph: Graph<never, never>
+   * ```
+   *
+   * @example Graph with async adapters
+   * ```typescript
+   * const graph = GraphBuilder.create()
+   *   .provide(ConfigAdapter)
+   *   .provideAsync(DatabaseAdapter)
+   *   .build();
+   * // graph: Graph<typeof ConfigPort | typeof DatabasePort, typeof DatabasePort>
    * ```
    */
   build(
     ..._: IsSatisfied<TProvides, TRequires> extends true
       ? []
       : [error: MissingDependencyError<UnsatisfiedDependencies<TProvides, TRequires>>]
-  ): Graph<TProvides> {
-    // Omit __provides entirely - it's a phantom type property that only exists at the type level.
-    // With exactOptionalPropertyTypes, we cannot set it to undefined.
+  ): Graph<TProvides, TAsyncPorts> {
+    // Omit __provides and __asyncPorts entirely - they're phantom type properties that only exist at the type level.
+    // With exactOptionalPropertyTypes, we cannot set them to undefined.
     return Object.freeze({
       adapters: this.adapters,
     });

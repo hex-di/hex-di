@@ -13,7 +13,8 @@ import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
 import { render, cleanup, act } from "@testing-library/react";
 import React, { Component, type ReactNode, type ErrorInfo } from "react";
 import { createPort } from "@hex-di/ports";
-import type { Container, Scope } from "@hex-di/runtime";
+import { ContainerBrand, ScopeBrand, INTERNAL_ACCESS } from "@hex-di/runtime";
+import type { Container, Scope, ContainerInternalState, ScopeInternalState } from "@hex-di/runtime";
 import { createTypedHooks } from "../src/create-typed-hooks.jsx";
 
 // =============================================================================
@@ -30,29 +31,69 @@ type TestContainer = Container<TestProvides>;
 type TestScope = Scope<TestProvides>;
 
 /**
- * Creates a mock scope for testing.
+ * Creates a mock scope for testing that satisfies the full Scope interface.
+ *
+ * The Container and Scope types from @hex-di/runtime are branded types
+ * with unique symbol properties. To create properly typed mocks without
+ * type assertions, we must satisfy the complete interface including the
+ * brand symbols and internal access methods.
  */
 function createMockScope(name: string = "scoped-service"): TestScope {
+  const mockResolve = vi.fn().mockReturnValue({ name });
+  const mockCreateScope = vi.fn().mockImplementation(() => createMockScope(`nested-${name}`));
+  const mockDispose = vi.fn().mockResolvedValue(undefined);
+  const mockResolveAsync = vi.fn().mockResolvedValue({ name });
+
+  const mockInternalState: ScopeInternalState = {
+    id: `mock-scope-${name}`,
+    disposed: false,
+    scopedMemo: { size: 0, entries: [] },
+    childScopes: [],
+  };
+
   const mockScope: TestScope = {
-    resolve: vi.fn().mockReturnValue({ name }),
-    createScope: vi.fn().mockImplementation(() => createMockScope(`nested-${name}`)),
-    dispose: vi.fn().mockResolvedValue(undefined),
-  } as unknown as TestScope;
+    resolve: mockResolve,
+    resolveAsync: mockResolveAsync,
+    createScope: mockCreateScope,
+    dispose: mockDispose,
+    isDisposed: false,
+    [ScopeBrand]: { provides: TestServicePort },
+    [INTERNAL_ACCESS]: () => mockInternalState,
+  };
 
   return mockScope;
 }
 
 /**
- * Creates a mock container for testing.
+ * Creates a mock container for testing that satisfies the full Container interface.
  */
 function createMockContainer(): TestContainer {
   const mockScope = createMockScope();
 
+  const mockResolve = vi.fn().mockReturnValue({ name: "container-service" });
+  const mockResolveAsync = vi.fn().mockResolvedValue({ name: "container-service" });
+  const mockCreateScope = vi.fn().mockReturnValue(mockScope);
+  const mockDispose = vi.fn().mockResolvedValue(undefined);
+  const mockInitialize = vi.fn().mockImplementation(async function(this: TestContainer) { return this; });
+
+  const mockInternalState: ContainerInternalState = {
+    disposed: false,
+    singletonMemo: { size: 0, entries: [] },
+    childScopes: [],
+    adapterMap: new Map(),
+  };
+
   const mockContainer: TestContainer = {
-    resolve: vi.fn().mockReturnValue({ name: "container-service" }),
-    createScope: vi.fn().mockReturnValue(mockScope),
-    dispose: vi.fn().mockResolvedValue(undefined),
-  } as unknown as TestContainer;
+    resolve: mockResolve,
+    resolveAsync: mockResolveAsync,
+    createScope: mockCreateScope,
+    dispose: mockDispose,
+    initialize: mockInitialize,
+    isInitialized: false,
+    isDisposed: false,
+    [ContainerBrand]: { provides: TestServicePort },
+    [INTERNAL_ACCESS]: () => mockInternalState,
+  };
 
   return mockContainer;
 }
