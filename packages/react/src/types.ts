@@ -7,9 +7,112 @@
  * @packageDocumentation
  */
 
-import type { ReactElement, ReactNode } from "react";
+import type { ReactElement, ReactNode, ComponentType } from "react";
 import type { Port, InferService } from "@hex-di/ports";
-import type { Container, Scope } from "@hex-di/runtime";
+import type { Container, ContainerPhase, Scope } from "@hex-di/runtime";
+
+// =============================================================================
+// Resolver Type
+// =============================================================================
+
+/**
+ * A type-safe resolver interface that abstracts over Container and Scope.
+ *
+ * This type captures the common resolution capability needed by React hooks
+ * without exposing phase-dependent conditional types that cause union
+ * incompatibility when creating `Container | Scope` unions.
+ *
+ * **Problem Solved:**
+ * Container and Scope have phase-dependent `resolve` signatures:
+ * ```typescript
+ * // Initialized: resolve<P extends TProvides>(port: P) => InferService<P>
+ * // Uninitialized: resolve<P extends Exclude<TProvides, TAsyncPorts>>(port: P) => InferService<P>
+ * ```
+ * A union of these produces "This expression is not callable" because TypeScript
+ * sees two incompatible function overloads.
+ *
+ * **Solution:**
+ * Define an interface with a single, non-conditional `resolve` signature.
+ * Both Container and Scope structurally satisfy this interface when initialized.
+ *
+ * **Design Decision:**
+ * We use the most permissive signature (all TProvides resolvable) because:
+ * 1. React hooks are typically used with initialized containers
+ * 2. AsyncContainerProvider ensures initialization before children render
+ * 3. For uninitialized usage, runtime errors provide the safety net
+ *
+ * @typeParam TProvides - Union of Port types that can be resolved
+ *
+ * @remarks
+ * This type is structural - any object with matching methods satisfies it.
+ * No type casts are needed when assigning Container or Scope to Resolver.
+ */
+export interface Resolver<TProvides extends Port<unknown, string>> {
+  /**
+   * Resolves a service instance for the given port synchronously.
+   *
+   * @typeParam P - The specific port type being resolved
+   * @param port - The port token to resolve
+   * @returns The service instance for the given port
+   */
+  resolve<P extends TProvides>(port: P): InferService<P>;
+
+  /**
+   * Resolves a service instance for the given port asynchronously.
+   *
+   * @typeParam P - The specific port type being resolved
+   * @param port - The port token to resolve
+   * @returns A promise that resolves to the service instance
+   */
+  resolveAsync<P extends TProvides>(port: P): Promise<InferService<P>>;
+
+  /**
+   * Creates a child scope for managing scoped service lifetimes.
+   *
+   * @returns A new resolver (Scope) for the child scope
+   */
+  createScope(): Resolver<TProvides>;
+
+  /**
+   * Disposes the resolver and all its cached instances.
+   *
+   * After disposal, resolve() will throw DisposedScopeError.
+   * Finalizers are called in LIFO order (last created first disposed).
+   *
+   * @returns A promise that resolves when disposal is complete
+   */
+  dispose(): Promise<void>;
+
+  /**
+   * Whether the resolver has been disposed.
+   *
+   * After disposal, resolve() will throw DisposedScopeError.
+   */
+  readonly isDisposed: boolean;
+}
+
+/**
+ * Type-level utility to extract a Resolver type from a Container or Scope.
+ *
+ * Uses conditional type inference to extract TProvides and return
+ * a Resolver interface that both Container and Scope can satisfy.
+ *
+ * @typeParam T - A Container or Scope type
+ * @returns Resolver<TProvides> if T is a valid Container or Scope, never otherwise
+ *
+ * @example
+ * ```typescript
+ * type AppContainer = Container<typeof LoggerPort | typeof DbPort>;
+ * type AppResolver = ToResolver<AppContainer>;
+ * // Resolver<typeof LoggerPort | typeof DbPort>
+ * ```
+ */
+export type ToResolver<T> =
+  T extends Container<infer P, infer _TAsync, infer _TPhase>
+    ? Resolver<P>
+    : T extends Scope<infer P, infer _TAsync, infer _TPhase>
+      ? Resolver<P>
+      : never;
 
 // =============================================================================
 // Provider Component Props Types
@@ -36,12 +139,17 @@ export interface ContainerProviderProps<TProvides extends Port<unknown, string>>
  * Props for the ScopeProvider component.
  *
  * @typeParam TProvides - Union of Port types that the scope can resolve
+ *
+ * @remarks
+ * Accepts Resolver<TProvides> which is satisfied by both Container and Scope.
+ * This allows passing the result of useScope() directly to ScopeProvider.
  */
 export interface ScopeProviderProps<TProvides extends Port<unknown, string>> {
   /**
-   * The externally managed Scope instance to provide to the React tree.
+   * The externally managed resolver (scope or container) to provide to the React tree.
+   * Accepts any Resolver<TProvides> - typically a Scope from useScope() or createScope().
    */
-  readonly scope: Scope<TProvides>;
+  readonly scope: Resolver<TProvides>;
 
   /**
    * React children that will resolve services from this scope.
@@ -57,6 +165,74 @@ export interface AutoScopeProviderProps {
    * React children that will resolve services from the auto-managed scope.
    */
   readonly children: ReactNode;
+}
+
+/**
+ * Props for the AsyncContainerProvider component.
+ *
+ * @typeParam TProvides - Union of Port types that the container can resolve
+ */
+export interface AsyncContainerProviderProps<
+  TProvides extends Port<unknown, string>
+> {
+  /**
+   * The uninitialized Container instance to initialize and provide.
+   * Must be created with createContainer() and NOT yet initialized.
+   */
+  readonly container: Container<TProvides, any, "uninitialized">;
+
+  /**
+   * React children - can be compound components or regular children.
+   */
+  readonly children: ReactNode;
+
+  /**
+   * Optional loading fallback for simple mode.
+   * Used when children are not compound components.
+   */
+  readonly loadingFallback?: ReactNode;
+
+  /**
+   * Optional error fallback for simple mode.
+   * Used when children are not compound components.
+   */
+  readonly errorFallback?: (error: Error) => ReactNode;
+}
+
+/**
+ * Props for the AsyncContainerProvider.Loading compound component.
+ */
+export interface AsyncContainerLoadingProps {
+  readonly children: ReactNode;
+}
+
+/**
+ * Props for the AsyncContainerProvider.Error compound component.
+ * Supports both static children and render prop pattern.
+ */
+export interface AsyncContainerErrorProps {
+  readonly children: ReactNode | ((error: Error) => ReactNode);
+}
+
+/**
+ * Props for the AsyncContainerProvider.Ready compound component.
+ */
+export interface AsyncContainerReadyProps {
+  readonly children: ReactNode;
+}
+
+/**
+ * Type for the AsyncContainerProvider component with compound components.
+ *
+ * @typeParam TProvides - Union of Port types that the container can resolve
+ */
+export interface AsyncContainerProviderComponent<
+  TProvides extends Port<unknown, string>
+> {
+  (props: AsyncContainerProviderProps<TProvides>): ReactElement;
+  Loading: ComponentType<AsyncContainerLoadingProps>;
+  Error: ComponentType<AsyncContainerErrorProps>;
+  Ready: ComponentType<AsyncContainerReadyProps>;
 }
 
 // =============================================================================
@@ -184,6 +360,40 @@ export interface TypedReactIntegration<TProvides extends Port<unknown, string>> 
    */
   readonly AutoScopeProvider: (props: AutoScopeProviderProps) => ReactElement;
 
+  /**
+   * Provider component that initializes async adapters before making
+   * the container available to React components.
+   *
+   * AsyncContainerProvider automatically calls container.initialize() and
+   * provides compound components for customizable loading, error, and ready
+   * states.
+   *
+   * @param props - The provider props including container and children
+   * @returns A React element that manages async initialization
+   *
+   * @remarks
+   * - Automatically initializes the container with async adapters
+   * - Supports Compound Component pattern (Loading, Error, Ready)
+   * - Supports simple mode with loadingFallback and errorFallback props
+   * - After initialization, all ports (sync and async) resolve synchronously
+   *
+   * @example Compound Component usage
+   * ```tsx
+   * <AsyncContainerProvider container={container}>
+   *   <AsyncContainerProvider.Loading>
+   *     <LoadingSpinner />
+   *   </AsyncContainerProvider.Loading>
+   *   <AsyncContainerProvider.Error>
+   *     {(error) => <ErrorDisplay error={error} />}
+   *   </AsyncContainerProvider.Error>
+   *   <AsyncContainerProvider.Ready>
+   *     <MyApp />
+   *   </AsyncContainerProvider.Ready>
+   * </AsyncContainerProvider>
+   * ```
+   */
+  readonly AsyncContainerProvider: AsyncContainerProviderComponent<TProvides>;
+
   // ===========================================================================
   // Resolution Hooks
   // ===========================================================================
@@ -252,13 +462,15 @@ export interface TypedReactIntegration<TProvides extends Port<unknown, string>> 
    * Use this hook when you need direct access to the container for advanced
    * operations like creating manual scopes or accessing the dispose method.
    *
-   * @returns The Container instance from the ContainerProvider
+   * @returns A Resolver interface for service resolution
    *
    * @throws {MissingProviderError} If called outside a ContainerProvider
    *
    * @remarks
    * - For service resolution, prefer usePort instead
    * - This is an escape hatch for advanced scenarios
+   * - Returns Resolver<TProvides> which provides resolve, resolveAsync,
+   *   createScope, and dispose methods without conditional type complexity.
    *
    * @example
    * ```tsx
@@ -269,7 +481,7 @@ export interface TypedReactIntegration<TProvides extends Port<unknown, string>> 
    * }
    * ```
    */
-  readonly useContainer: () => Container<TProvides>;
+  readonly useContainer: () => Resolver<TProvides>;
 
   /**
    * Hook that creates a scope and ties its lifecycle to the component.
@@ -277,7 +489,7 @@ export interface TypedReactIntegration<TProvides extends Port<unknown, string>> 
    * This hook creates a new scope from the current resolver and automatically
    * disposes it when the component unmounts.
    *
-   * @returns A Scope instance that is disposed when the component unmounts
+   * @returns A Resolver instance (the scope) that is disposed when the component unmounts
    *
    * @throws {MissingProviderError} If called outside a ContainerProvider tree
    *
@@ -285,18 +497,16 @@ export interface TypedReactIntegration<TProvides extends Port<unknown, string>> 
    * - The scope is created once and preserved across re-renders
    * - Each component instance gets its own scope
    * - The scope is disposed on unmount via useEffect cleanup
+   * - Returns Resolver<TProvides> which provides resolve, resolveAsync, createScope, and dispose
    *
    * @example
    * ```tsx
    * function ScopedSection() {
    *   const scope = useScope();
-   *   return (
-   *     <ScopeProvider scope={scope}>
-   *       <ChildComponents />
-   *     </ScopeProvider>
-   *   );
+   *   // Use scope.resolve() or pass to ScopeProvider
+   *   return <div>{scope.resolve(LoggerPort).name}</div>;
    * }
    * ```
    */
-  readonly useScope: () => Scope<TProvides>;
+  readonly useScope: () => Resolver<TProvides>;
 }

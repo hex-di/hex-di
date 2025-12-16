@@ -23,7 +23,7 @@ import {
 } from "./setup.js";
 import { createContainer, type Container } from "@hex-di/runtime";
 import type { Graph } from "@hex-di/graph";
-import { appGraph } from "../src/di/graph.js";
+import { appGraph, type AppPorts, type AppAsyncPorts } from "../src/di/graph.js";
 import {
   UserSessionPort,
   MessageStorePort,
@@ -31,7 +31,6 @@ import {
   NotificationServicePort,
   LoggerPort,
   ConfigPort,
-  type AppPorts,
 } from "../src/di/ports.js";
 import { ContainerProvider } from "../src/di/hooks.js";
 import type { Message, MessageListener, Unsubscribe } from "../src/types.js";
@@ -52,7 +51,7 @@ import { ChatRoom } from "../src/components/ChatRoom.js";
  */
 interface RenderWithAppContainerResult {
   readonly container: HTMLElement;
-  readonly diContainer: Container<AppPorts>;
+  readonly diContainer: Container<AppPorts, AppAsyncPorts>;
 }
 
 /**
@@ -63,7 +62,7 @@ interface RenderWithAppContainerResult {
  */
 function renderWithAppContainer(
   element: ReactElement,
-  graph: Graph<AppPorts>
+  graph: Graph<AppPorts, AppAsyncPorts>
 ): RenderWithAppContainerResult {
   const diContainer = createContainer(graph);
 

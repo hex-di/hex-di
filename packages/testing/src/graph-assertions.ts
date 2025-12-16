@@ -117,7 +117,7 @@ function getPortName(port: Port<unknown, string>): string {
  * @internal
  */
 function findAdapterForPort(
-  graph: Graph<Port<unknown, string>>,
+  graph: Graph<Port<unknown, string>, Port<unknown, string> | never>,
   port: Port<unknown, string>
 ): Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind> | undefined {
   const portName = getPortName(port);
@@ -132,7 +132,7 @@ function findAdapterForPort(
  *
  * @internal
  */
-function getProvidedPortNames(graph: Graph<Port<unknown, string>>): Set<string> {
+function getProvidedPortNames(graph: Graph<Port<unknown, string>, Port<unknown, string> | never>): Set<string> {
   const provided = new Set<string>();
   for (const adapter of graph.adapters) {
     provided.add(getPortName(adapter.provides));
@@ -148,7 +148,7 @@ function getProvidedPortNames(graph: Graph<Port<unknown, string>>): Set<string> 
  *
  * @internal
  */
-function getRequiredPortNames(graph: Graph<Port<unknown, string>>): Set<string> {
+function getRequiredPortNames(graph: Graph<Port<unknown, string>, Port<unknown, string> | never>): Set<string> {
   const required = new Set<string>();
   for (const adapter of graph.adapters) {
     for (const requiredPort of adapter.requires) {
@@ -197,7 +197,7 @@ function getRequiredPortNames(graph: Graph<Port<unknown, string>>): Set<string> 
  * });
  * ```
  */
-export function assertGraphComplete(graph: Graph<Port<unknown, string>>): void {
+export function assertGraphComplete(graph: Graph<Port<unknown, string>, Port<unknown, string> | never>): void {
   const providedPorts = getProvidedPortNames(graph);
   const requiredPorts = getRequiredPortNames(graph);
 
@@ -249,7 +249,7 @@ export function assertGraphComplete(graph: Graph<Port<unknown, string>>): void {
  * ```
  */
 export function assertPortProvided<P extends Port<unknown, string>>(
-  graph: Graph<Port<unknown, string>>,
+  graph: Graph<Port<unknown, string>, Port<unknown, string> | never>,
   port: P
 ): void {
   const portName = getPortName(port);
@@ -300,7 +300,7 @@ export function assertPortProvided<P extends Port<unknown, string>>(
  * ```
  */
 export function assertLifetime<P extends Port<unknown, string>>(
-  graph: Graph<Port<unknown, string>>,
+  graph: Graph<Port<unknown, string>, Port<unknown, string> | never>,
   port: P,
   expectedLifetime: Lifetime
 ): void {

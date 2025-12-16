@@ -472,16 +472,19 @@ export function createAdapter<
 /**
  * Configuration object for creating an async adapter.
  *
+ * Async adapters are always singletons because:
+ * - They're pre-initialized with `container.initialize()`
+ * - After initialization, they're cached and resolve synchronously
+ * - Scoped/request lifetimes need synchronous resolution for React hooks
+ *
  * @typeParam TProvides - The Port this adapter provides
  * @typeParam TRequires - Tuple of Ports this adapter depends on
- * @typeParam TLifetime - The lifetime scope literal
  *
  * @internal
  */
 interface AsyncAdapterConfig<
   TProvides extends Port<unknown, string>,
   TRequires extends readonly Port<unknown, string>[],
-  TLifetime extends Lifetime,
 > {
   /**
    * The port this adapter provides/implements.
@@ -493,11 +496,6 @@ interface AsyncAdapterConfig<
    * Use an empty array `[]` for adapters with no dependencies.
    */
   requires: TRequires;
-
-  /**
-   * The lifetime scope for this adapter's service instances.
-   */
-  lifetime: TLifetime;
 
   /**
    * Async factory function that creates the service instance.
@@ -525,8 +523,14 @@ interface AsyncAdapterConfig<
 /**
  * Creates a typed async adapter with dependency metadata for registration in a dependency graph.
  *
- * This function creates an immutable adapter object for services that require
- * async initialization, such as:
+ * **IMPORTANT: Async adapters are always singletons.**
+ *
+ * This constraint exists because:
+ * - Async adapters are pre-initialized with `container.initialize()`
+ * - After initialization, they're cached and resolve synchronously
+ * - Scoped/request lifetimes require synchronous resolution for React hooks
+ *
+ * Use this function for services that require async initialization, such as:
  * - Database connections that need to be established
  * - External API clients that need authentication
  * - Services that load configuration from remote sources
@@ -535,27 +539,26 @@ interface AsyncAdapterConfig<
  *
  * @typeParam TProvides - The Port this adapter provides (inferred from `provides` property)
  * @typeParam TRequires - Tuple of Ports this adapter depends on (inferred from `requires` array)
- * @typeParam TLifetime - The lifetime scope literal (inferred from `lifetime` property)
  *
- * @param config - Configuration object with provides, requires, lifetime, and async factory
+ * @param config - Configuration object with provides, requires, and async factory
  * @param config.provides - The port token this adapter implements
  * @param config.requires - Array of port tokens this adapter depends on (use `[]` for no dependencies)
- * @param config.lifetime - Lifetime scope: `'singleton'`, `'scoped'`, or `'request'`
  * @param config.factory - Async function that receives resolved dependencies and returns a Promise of the service
  * @param config.initPriority - Optional initialization priority (lower = earlier, default 100)
  * @param config.finalizer - Optional cleanup function called during disposal
  *
- * @returns A frozen Adapter object with factoryKind='async' and inferred type parameters
+ * @returns A frozen Adapter object with factoryKind='async' and lifetime='singleton'
  *
  * @remarks
  * - The returned adapter is frozen via `Object.freeze()` for immutability
- * - Async adapters must be resolved using `container.resolveAsync()` or after `container.initialize()`
+ * - Lifetime is always 'singleton' - this is enforced at compile-time
+ * - Async adapters must be resolved after `container.initialize()`
  * - The `initPriority` controls initialization order when multiple async adapters are present
  * - Async adapters can depend on both sync and async adapters
  * - Sync adapters CANNOT depend on async adapters (compile-time error)
  *
  * @see {@link Adapter} - The branded adapter type returned by this function
- * @see {@link createAdapter} - Factory function for sync adapters
+ * @see {@link createAdapter} - Factory function for sync adapters (supports all lifetimes)
  * @see {@link FactoryKind} - The factory kind discriminator
  *
  * @example Basic async adapter - database connection
@@ -570,7 +573,7 @@ interface AsyncAdapterConfig<
  * const DatabaseAdapter = createAsyncAdapter({
  *   provides: DatabasePort,
  *   requires: [ConfigPort],
- *   lifetime: 'singleton',
+ *   // No lifetime field - always singleton
  *   initPriority: 1, // Initialize first
  *   factory: async (deps) => {
  *     const pool = await createPool(deps.Config.connectionString);
@@ -587,7 +590,7 @@ interface AsyncAdapterConfig<
  * const CacheAdapter = createAsyncAdapter({
  *   provides: CachePort,
  *   requires: [DatabasePort], // Can depend on async adapter
- *   lifetime: 'singleton',
+ *   // No lifetime field - always singleton
  *   initPriority: 2, // Initialize after database
  *   factory: async (deps) => {
  *     const cache = new Cache();
@@ -600,22 +603,21 @@ interface AsyncAdapterConfig<
 export function createAsyncAdapter<
   TProvides extends Port<unknown, string>,
   const TRequires extends readonly Port<unknown, string>[],
-  TLifetime extends Lifetime,
 >(
-  config: AsyncAdapterConfig<TProvides, TRequires, TLifetime>
-): Adapter<TProvides, TupleToUnion<TRequires>, TLifetime, "async", TRequires> {
-  // Build base adapter
+  config: AsyncAdapterConfig<TProvides, TRequires>
+): Adapter<TProvides, TupleToUnion<TRequires>, "singleton", "async", TRequires> {
+  // Build base adapter - lifetime is always "singleton"
   const baseAdapter: {
     provides: TProvides;
     requires: TRequires;
-    lifetime: TLifetime;
+    lifetime: "singleton";
     factoryKind: "async";
     factory: (deps: ResolvedDeps<TupleToUnion<TRequires>>) => Promise<InferService<TProvides>>;
     initPriority?: number;
   } = {
     provides: config.provides,
     requires: config.requires,
-    lifetime: config.lifetime,
+    lifetime: "singleton", // Always singleton for async adapters
     factoryKind: "async" as const,
     factory: config.factory,
   };
@@ -1388,11 +1390,15 @@ type BuildResult<
   : MissingDependencyError<UnsatisfiedDependencies<TProvides, TRequires>>;
 
 /**
- * The return type of `GraphBuilder.provide()` with duplicate and async dependency detection.
+ * The return type of `GraphBuilder.provide()` with duplicate detection.
  *
  * Conditionally returns either a new `GraphBuilder` with accumulated types,
- * a `DuplicateProviderError` if the adapter provides a port that is already provided,
- * or an `AsyncDependencyError` if a sync adapter depends on an async port.
+ * or a `DuplicateProviderError` if the adapter provides a port that is already provided.
+ *
+ * Note: Sync adapters CAN depend on async ports because:
+ * - Async adapters are always singletons
+ * - Singletons are pre-initialized with `container.initialize()`
+ * - After initialization, they're cached and resolve synchronously
  *
  * @typeParam TProvides - Current union of provided Port types
  * @typeParam TRequires - Current union of required Port types
@@ -1401,7 +1407,6 @@ type BuildResult<
  *
  * @returns
  * - When duplicate detected: `DuplicateProviderError<OverlappingPorts>`
- * - When sync adapter depends on async port: `AsyncDependencyError<AsyncDeps>`
  * - When no issues: `GraphBuilder<TProvides | AdapterProvides, TRequires | AdapterRequires, TAsyncPorts>`
  *
  * @internal
@@ -1413,29 +1418,22 @@ type ProvideResult<
   A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>,
 > = HasOverlap<InferAdapterProvides<A>, TProvides> extends true
   ? DuplicateProviderError<OverlappingPorts<InferAdapterProvides<A>, TProvides>>
-  : InferAdapterFactoryKind<A> extends "sync"
-    ? HasAsyncDependency<InferAdapterRequires<A>, TAsyncPorts> extends true
-      ? AsyncDependencyError<AsyncDependencies<InferAdapterRequires<A>, TAsyncPorts>>
-      : GraphBuilder<
-          TProvides | InferAdapterProvides<A>,
-          TRequires | InferAdapterRequires<A>,
-          TAsyncPorts
-        >
-    : GraphBuilder<
-        TProvides | InferAdapterProvides<A>,
-        TRequires | InferAdapterRequires<A>,
-        TAsyncPorts
-      >;
+  : GraphBuilder<
+      TProvides | InferAdapterProvides<A>,
+      TRequires | InferAdapterRequires<A>,
+      TAsyncPorts
+    >;
 
 /**
  * The return type of `GraphBuilder.provideAsync()` with duplicate detection.
  *
  * Similar to ProvideResult but also accumulates the provided port to TAsyncPorts.
+ * Only accepts singleton async adapters (enforced at type level).
  *
  * @typeParam TProvides - Current union of provided Port types
  * @typeParam TRequires - Current union of required Port types
  * @typeParam TAsyncPorts - Current union of async Port types
- * @typeParam A - The async Adapter type being provided
+ * @typeParam A - The async singleton Adapter type being provided
  *
  * @returns
  * - When no overlap: `GraphBuilder<TProvides | AdapterProvides, TRequires | AdapterRequires, TAsyncPorts | AdapterProvides>`
@@ -1447,7 +1445,7 @@ type ProvideAsyncResult<
   TProvides extends Port<unknown, string> | never,
   TRequires extends Port<unknown, string> | never,
   TAsyncPorts extends Port<unknown, string> | never,
-  A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, "async">,
+  A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, "singleton", "async">,
 > = HasOverlap<InferAdapterProvides<A>, TProvides> extends true
   ? DuplicateProviderError<OverlappingPorts<InferAdapterProvides<A>, TProvides>>
   : GraphBuilder<
@@ -1692,9 +1690,13 @@ export class GraphBuilder<
   /**
    * Registers an async adapter with the graph, returning a new builder with updated types.
    *
-   * This method is similar to `provide()` but specifically for async adapters created with
-   * `createAsyncAdapter()`. It tracks the provided port in `TAsyncPorts` for compile-time
-   * validation of sync-to-async dependency constraints.
+   * This method is specifically for async adapters created with `createAsyncAdapter()`.
+   * It tracks the provided port in `TAsyncPorts` for compile-time validation of
+   * sync-to-async dependency constraints.
+   *
+   * **IMPORTANT: Async adapters are always singletons.**
+   * This is enforced at both the adapter creation level (`createAsyncAdapter`) and
+   * at the graph builder level (this method only accepts singleton async adapters).
    *
    * **Type Accumulation Behavior:**
    * - `TProvides` accumulates: `TProvides | InferAdapterProvides<A>`
@@ -1705,9 +1707,9 @@ export class GraphBuilder<
    * - If the adapter provides a port that is already provided by another adapter,
    *   a `DuplicateProviderError` type is returned instead of a new builder.
    *
-   * @typeParam A - The async adapter type being provided (must have factoryKind: 'async')
+   * @typeParam A - The async adapter type being provided (must have factoryKind: 'async', lifetime: 'singleton')
    *
-   * @param adapter - The async adapter to register with the graph
+   * @param adapter - The async singleton adapter to register with the graph
    *
    * @returns A new GraphBuilder with accumulated type parameters, or a DuplicateProviderError
    *   if the adapter provides a port that is already provided.
@@ -1717,7 +1719,7 @@ export class GraphBuilder<
    * const DatabaseAdapter = createAsyncAdapter({
    *   provides: DatabasePort,
    *   requires: [ConfigPort],
-   *   lifetime: 'singleton',
+   *   // No lifetime - always singleton
    *   factory: async (deps) => {
    *     const pool = await createPool(deps.Config.connectionString);
    *     return { query: (sql) => pool.query(sql) };
@@ -1735,7 +1737,7 @@ export class GraphBuilder<
    * const DatabaseAdapter = createAsyncAdapter({
    *   provides: DatabasePort,
    *   requires: [],
-   *   lifetime: 'singleton',
+   *   // No lifetime - always singleton
    *   initPriority: 1,  // Initialize first
    *   factory: async () => await connectToDatabase()
    * });
@@ -1743,14 +1745,14 @@ export class GraphBuilder<
    * const CacheAdapter = createAsyncAdapter({
    *   provides: CachePort,
    *   requires: [],
-   *   lifetime: 'singleton',
+   *   // No lifetime - always singleton
    *   initPriority: 2,  // Initialize second
    *   factory: async () => await connectToCache()
    * });
    * ```
    */
   provideAsync<
-    A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, "async">,
+    A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, "singleton", "async">,
   >(adapter: A): ProvideAsyncResult<TProvides, TRequires, TAsyncPorts, A> {
     return new GraphBuilder([...this.adapters, adapter]) as ProvideAsyncResult<
       TProvides,

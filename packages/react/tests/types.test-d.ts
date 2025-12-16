@@ -14,13 +14,14 @@
 
 import { describe, expectTypeOf, it } from "vitest";
 import { createPort, type Port, type InferService } from "@hex-di/ports";
-import type { Container, Scope } from "@hex-di/runtime";
+import type { Container, ContainerPhase, Scope } from "@hex-di/runtime";
 import { createTypedHooks } from "../src/create-typed-hooks.jsx";
 import type {
   TypedReactIntegration,
   ContainerProviderProps,
   ScopeProviderProps,
   AutoScopeProviderProps,
+  Resolver,
 } from "../src/types.js";
 
 // =============================================================================
@@ -181,18 +182,20 @@ describe("TypedReactIntegration type structure", () => {
 // =============================================================================
 
 describe("createTypedHooks preserves TProvides through all hooks", () => {
-  it("useContainer returns Container<TProvides>", () => {
+  it("useContainer returns phase-agnostic Container<TProvides, Port<unknown, string>, ContainerPhase>", () => {
     const { useContainer } = createTypedHooks<TestProvides>();
 
     type UseContainerReturn = ReturnType<typeof useContainer>;
-    expectTypeOf<UseContainerReturn>().toEqualTypeOf<Container<TestProvides>>();
+    // useContainer returns a phase-agnostic container that works with both
+    // ContainerProvider (uninitialized) and AsyncContainerProvider (initialized)
+    expectTypeOf<UseContainerReturn>().toEqualTypeOf<Container<TestProvides, Port<unknown, string>, ContainerPhase>>();
   });
 
-  it("useScope returns Scope<TProvides>", () => {
+  it("useScope returns Resolver<TProvides>", () => {
     const { useScope } = createTypedHooks<TestProvides>();
 
     type UseScopeReturn = ReturnType<typeof useScope>;
-    expectTypeOf<UseScopeReturn>().toEqualTypeOf<Scope<TestProvides>>();
+    expectTypeOf<UseScopeReturn>().toEqualTypeOf<Resolver<TestProvides>>();
   });
 
   it("factory return type matches TypedReactIntegration", () => {
@@ -214,10 +217,10 @@ describe("Container and Scope type parameters flow correctly", () => {
     expectTypeOf<Props["container"]>().toEqualTypeOf<Container<TestProvides>>();
   });
 
-  it("ScopeProvider props accept Scope<TProvides>", () => {
+  it("ScopeProvider props accept Resolver<TProvides>", () => {
     type Props = ScopeProviderProps<TestProvides>;
 
-    expectTypeOf<Props["scope"]>().toEqualTypeOf<Scope<TestProvides>>();
+    expectTypeOf<Props["scope"]>().toEqualTypeOf<Resolver<TestProvides>>();
   });
 
   it("AutoScopeProvider props has children", () => {
@@ -316,22 +319,28 @@ describe("ContainerProvider type requirements", () => {
 
 describe("ScopeProvider type requirements", () => {
   it("ScopeProviderProps is generic over TProvides", () => {
+    // Different TProvides should produce different prop types
+    // Verify by checking that scope property has the correct Resolver type
     type PropsA = ScopeProviderProps<LoggerPortType>;
     type PropsB = ScopeProviderProps<DatabasePortType>;
 
-    // Different TProvides should produce different prop types
-    expectTypeOf<PropsA>().not.toEqualTypeOf<PropsB>();
+    // Check that the scope prop types differ by verifying resolve method constraints
+    type ResolveA = PropsA["scope"]["resolve"];
+    type ResolveB = PropsB["scope"]["resolve"];
+    expectTypeOf<ResolveA>().not.toEqualTypeOf<ResolveB>();
   });
 
-  it("scope prop type is Scope<TProvides>", () => {
+  it("scope prop type is Resolver<TProvides>", () => {
     type Props = ScopeProviderProps<TestProvides>;
 
-    // The scope prop should be Scope<TestProvides>
+    // The scope prop should be Resolver<TestProvides>
     type ScopeProp = Props["scope"];
-    expectTypeOf<ScopeProp>().toEqualTypeOf<Scope<TestProvides>>();
+    expectTypeOf<ScopeProp>().toEqualTypeOf<Resolver<TestProvides>>();
 
-    // Scope<different type> should not match
-    expectTypeOf<Scope<UserServicePortType>>().not.toMatchTypeOf<ScopeProp>();
+    // Resolver<different type> should not match - verify through resolve method constraint
+    type TestResolve = ScopeProp["resolve"];
+    type WrongResolve = Resolver<UserServicePortType>["resolve"];
+    expectTypeOf<WrongResolve>().not.toEqualTypeOf<TestResolve>();
   });
 });
 

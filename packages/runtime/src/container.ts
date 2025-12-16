@@ -787,6 +787,8 @@ class ContainerImpl<
     // Check cache based on lifetime
     const cacheHit = this.checkAsyncCacheHit(port as Port<unknown, string>, adapter, scopedMemo);
     if (cacheHit !== undefined) {
+      // Emit hooks for cache hits
+      this.emitHooksForAsyncCacheHit(port, adapter, scopeId);
       return cacheHit as InferService<P>;
     }
 
@@ -842,8 +844,58 @@ class ContainerImpl<
   }
 
   /**
+   * Emits hooks for an async cache hit.
+   * Called when an async adapter's instance is already cached.
+   * @internal
+   */
+  private emitHooksForAsyncCacheHit<P extends TProvides>(
+    port: P,
+    adapter: RuntimeAdapter,
+    scopeId: string | null
+  ): void {
+    if (this.hooksState === undefined) {
+      return;
+    }
+
+    const { hooks, parentStack } = this.hooksState;
+    const portName = (port as Port<unknown, string>).__portName;
+
+    // Determine parent from stack
+    const parentEntry = parentStack.length > 0 ? parentStack[parentStack.length - 1] : null;
+    const parentPort = parentEntry?.port ?? null;
+
+    // Build hook context for cache hit
+    const context: ResolutionHookContext = {
+      port: port as Port<unknown, string>,
+      portName,
+      lifetime: adapter.lifetime,
+      scopeId,
+      parentPort,
+      isCacheHit: true,
+      depth: parentStack.length,
+    };
+
+    // Call beforeResolve hook
+    if (hooks.beforeResolve !== undefined) {
+      hooks.beforeResolve(context);
+    }
+
+    // Cache hits have ~0 duration
+    const resultContext: ResolutionResultContext = {
+      ...context,
+      duration: 0,
+      error: null,
+    };
+
+    // Call afterResolve hook
+    if (hooks.afterResolve !== undefined) {
+      hooks.afterResolve(resultContext);
+    }
+  }
+
+  /**
    * Creates a new instance using an async adapter's factory.
-   * Handles resolution context entry/exit and async dependency resolution.
+   * Handles resolution context entry/exit, async dependency resolution, and hooks.
    */
   private async createAsyncInstance<P extends TProvides>(
     port: P,
@@ -852,6 +904,36 @@ class ContainerImpl<
     scopeId: string | null
   ): Promise<InferService<P>> {
     const portName = (port as Port<unknown, string>).__portName;
+    const startTime = Date.now();
+    let error: Error | null = null;
+
+    // Build hook context if hooks are configured
+    let context: ResolutionHookContext | undefined;
+    if (this.hooksState !== undefined) {
+      const { hooks, parentStack } = this.hooksState;
+
+      // Determine parent from stack
+      const parentEntry = parentStack.length > 0 ? parentStack[parentStack.length - 1] : null;
+      const parentPort = parentEntry?.port ?? null;
+
+      context = {
+        port: port as Port<unknown, string>,
+        portName,
+        lifetime: adapter.lifetime,
+        scopeId,
+        parentPort,
+        isCacheHit: false,
+        depth: parentStack.length,
+      };
+
+      // Call beforeResolve hook
+      if (hooks.beforeResolve !== undefined) {
+        hooks.beforeResolve(context);
+      }
+
+      // Push onto parent stack before resolving dependencies
+      parentStack.push({ port: port as Port<unknown, string>, startTime });
+    }
 
     // Enter resolution context (circular check)
     this.resolutionContext.enter(portName);
@@ -870,12 +952,33 @@ class ContainerImpl<
         this.cacheAsyncInstance(port as Port<unknown, string>, instance, adapter, scopedMemo);
 
         return instance as InferService<P>;
-      } catch (error) {
-        throw new AsyncFactoryError(portName, error);
+      } catch (err) {
+        error = err instanceof Error ? err : new Error(String(err));
+        throw new AsyncFactoryError(portName, err);
       }
     } finally {
       // Exit resolution context
       this.resolutionContext.exit(portName);
+
+      // Call afterResolve hook if configured
+      if (this.hooksState !== undefined && context !== undefined) {
+        const { hooks, parentStack } = this.hooksState;
+
+        // Pop from parent stack
+        parentStack.pop();
+
+        const duration = Date.now() - startTime;
+
+        // Call afterResolve hook
+        if (hooks.afterResolve !== undefined) {
+          const resultContext: ResolutionResultContext = {
+            ...context,
+            duration,
+            error,
+          };
+          hooks.afterResolve(resultContext);
+        }
+      }
     }
   }
 
@@ -962,10 +1065,12 @@ class ContainerImpl<
       return this;
     }
 
-    // Get async adapters sorted by priority (lower first, default 100)
+    // Get singleton async adapters sorted by priority (lower first, default 100)
+    // Only singleton adapters can be pre-initialized at the container level.
+    // Scoped/request adapters must be initialized within their respective scopes.
     const asyncAdapters: RuntimeAdapter[] = [];
     for (const adapter of this.graph.adapters) {
-      if (adapter.factoryKind === "async") {
+      if (adapter.factoryKind === "async" && adapter.lifetime === "singleton") {
         asyncAdapters.push(adapter);
       }
     }

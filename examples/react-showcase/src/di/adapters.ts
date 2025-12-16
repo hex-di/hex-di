@@ -6,7 +6,7 @@
  *
  * Demonstrates async factory support with:
  * - ConfigAdapter: Simulates loading config from API
- * - MessageStoreAdapter: Loads/persists messages to localStorage
+ * - NotificationServiceAdapter: Async because it depends on ConfigPort (async)
  *
  * @packageDocumentation
  */
@@ -100,17 +100,17 @@ let notificationInstanceCounter = 0;
  * asynchronously at container initialization time.
  *
  * @remarks
- * - Lifetime: singleton - one instance for the entire application
+ * - Lifetime: singleton (async adapters are always singletons)
  * - Dependencies: none
  * - Async: Simulates API call with delay
  */
 export const ConfigAdapter = createAsyncAdapter({
   provides: ConfigPort,
   requires: [],
-  lifetime: "singleton",
+  // No lifetime field - async adapters are always singletons
   factory: async (): Promise<Config> => {
     // Simulate loading config from API
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     return {
       notificationDuration: 3000,
       maxMessages: 100,
@@ -148,28 +148,20 @@ export const LoggerAdapter = createAdapter({
 /**
  * Adapter for the message store service.
  *
- * Implements localStorage persistence with async initialization:
- * - Loads message history from localStorage asynchronously on initialization
+ * Implements localStorage persistence:
+ * - Loads message history from localStorage synchronously on initialization
  * - Persists messages to localStorage on every add
  * - Messages survive page reloads!
- *
- * This demonstrates async factory support - the message store is loaded
- * asynchronously at container initialization time.
  *
  * @remarks
  * - Lifetime: singleton - messages persist for the entire application
  * - Dependencies: LoggerPort - for logging message operations
- * - Async: Simulates async storage access with delay
  */
-export const MessageStoreAdapter = createAsyncAdapter({
+export const MessageStoreAdapter = createAdapter({
   provides: MessageStorePort,
   requires: [LoggerPort],
   lifetime: "singleton",
-  initPriority: 2, // Initialize after Logger (default is 100)
-  factory: async (deps): Promise<MessageStore> => {
-    // Simulate async storage access
-    await new Promise((resolve) => setTimeout(resolve, 150));
-
+  factory: (deps): MessageStore => {
     // Load persisted messages from localStorage
     let messages: Message[] = [];
     try {
@@ -208,7 +200,7 @@ export const MessageStoreAdapter = createAsyncAdapter({
       }
     };
 
-    deps.Logger.log("MessageStore initialized with localStorage persistence (async)");
+    deps.Logger.log("MessageStore initialized with localStorage persistence");
 
     return {
       getMessages: (): readonly Message[] => {
@@ -269,7 +261,7 @@ export const UserSessionAdapter = createAdapter({
  *
  * @remarks
  * - Lifetime: scoped - tied to the current user session scope
- * - Dependencies: LoggerPort, UserSessionPort, MessageStorePort
+ * - Dependencies: LoggerPort (sync), UserSessionPort (sync), MessageStorePort (sync)
  */
 export const ChatServiceAdapter = createAdapter({
   provides: ChatServicePort,
@@ -306,13 +298,13 @@ export const ChatServiceAdapter = createAdapter({
  * This demonstrates the request lifetime where every resolution
  * gets a fresh instance.
  *
- * This is a sync adapter that depends on ConfigPort (async).
- * This works because all async adapters are initialized before
- * the container is used, making their instances available synchronously.
+ * Although this adapter depends on ConfigPort (async singleton),
+ * it can be sync because ConfigPort is pre-initialized with
+ * `container.initialize()` and is available synchronously afterwards.
  *
  * @remarks
  * - Lifetime: request - new instance for every resolution
- * - Dependencies: LoggerPort, ConfigPort (async - requires container.initialize())
+ * - Dependencies: LoggerPort (sync), ConfigPort (pre-initialized async singleton)
  */
 export const NotificationServiceAdapter = createAdapter({
   provides: NotificationServicePort,

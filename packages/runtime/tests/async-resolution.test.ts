@@ -64,7 +64,7 @@ describe("Async Factory Resolution", () => {
       const DatabaseAdapter = createAsyncAdapter({
         provides: DatabasePort,
         requires: [ConfigPort],
-        lifetime: "singleton",
+
         factory: async (deps) => {
           // Simulate async connection
           await new Promise((resolve) => setTimeout(resolve, 10));
@@ -118,7 +118,7 @@ describe("Async Factory Resolution", () => {
       const DatabaseAdapter = createAsyncAdapter({
         provides: DatabasePort,
         requires: [],
-        lifetime: "singleton",
+
         factory: async () => {
           factoryCallCount++;
           await new Promise((resolve) => setTimeout(resolve, 5));
@@ -152,7 +152,7 @@ describe("Async Factory Resolution", () => {
       const DatabaseAdapter = createAsyncAdapter({
         provides: DatabasePort,
         requires: [],
-        lifetime: "singleton",
+
         factory: async () => {
           factoryCallCount++;
           // Add some delay to simulate real async work
@@ -213,7 +213,7 @@ describe("Async Factory Resolution", () => {
       const DatabaseAdapter = createAsyncAdapter({
         provides: DatabasePort,
         requires: [ConfigPort, LoggerPort],
-        lifetime: "singleton",
+
         factory: async (deps) => {
           resolutionOrder.push("Database-start");
           await new Promise((resolve) => setTimeout(resolve, 10));
@@ -263,7 +263,7 @@ describe("Container initialization", () => {
       const DatabaseAdapter = createAsyncAdapter({
         provides: DatabasePort,
         requires: [],
-        lifetime: "singleton",
+
         factory: async () => {
           await new Promise((resolve) => setTimeout(resolve, 5));
           dbInitialized = true;
@@ -277,7 +277,7 @@ describe("Container initialization", () => {
       const CacheAdapter = createAsyncAdapter({
         provides: CachePort,
         requires: [],
-        lifetime: "singleton",
+
         factory: async () => {
           await new Promise((resolve) => setTimeout(resolve, 5));
           cacheInitialized = true;
@@ -313,7 +313,7 @@ describe("Container initialization", () => {
       const DatabaseAdapter = createAsyncAdapter({
         provides: DatabasePort,
         requires: [],
-        lifetime: "singleton",
+
         initPriority: 1, // Lower = earlier
         factory: async () => {
           initOrder.push("Database");
@@ -328,7 +328,7 @@ describe("Container initialization", () => {
       const CacheAdapter = createAsyncAdapter({
         provides: CachePort,
         requires: [],
-        lifetime: "singleton",
+
         initPriority: 2, // Higher = later
         factory: async () => {
           initOrder.push("Cache");
@@ -358,7 +358,7 @@ describe("Container initialization", () => {
       const DatabaseAdapter = createAsyncAdapter({
         provides: DatabasePort,
         requires: [],
-        lifetime: "singleton",
+
         factory: async () => {
           await new Promise((resolve) => setTimeout(resolve, 5));
           return {
@@ -387,7 +387,7 @@ describe("Container initialization", () => {
       const DatabaseAdapter = createAsyncAdapter({
         provides: DatabasePort,
         requires: [],
-        lifetime: "singleton",
+
         factory: async () => {
           factoryCallCount++;
           return {
@@ -423,7 +423,7 @@ describe("Async error handling", () => {
       const DatabaseAdapter = createAsyncAdapter({
         provides: DatabasePort,
         requires: [],
-        lifetime: "singleton",
+
         factory: async () => {
           await new Promise((resolve) => setTimeout(resolve, 5));
           throw new Error("Connection failed");
@@ -457,7 +457,7 @@ describe("Async error handling", () => {
       const DatabaseAdapter = createAsyncAdapter({
         provides: DatabasePort,
         requires: [],
-        lifetime: "singleton",
+
         factory: async () => {
           throw new Error("Init failed");
         },
@@ -478,7 +478,7 @@ describe("Async error handling", () => {
       const DatabaseAdapter = createAsyncAdapter({
         provides: DatabasePort,
         requires: [],
-        lifetime: "singleton",
+
         factory: async () => ({
           query: async (sql: string) => `Result: ${sql}`,
           close: async () => {},
@@ -508,7 +508,7 @@ describe("Async error handling", () => {
       const DatabaseAdapter = createAsyncAdapter({
         provides: DatabasePort,
         requires: [],
-        lifetime: "singleton",
+
         factory: async () => ({
           query: async (sql: string) => `Result: ${sql}`,
           close: async () => {},
@@ -536,7 +536,7 @@ describe("Scope async resolution", () => {
     const DatabaseAdapter = createAsyncAdapter({
       provides: DatabasePort,
       requires: [],
-      lifetime: "singleton",
+
       factory: async () => ({
         query: async (sql: string) => `Result: ${sql}`,
         close: async () => {},
@@ -565,7 +565,7 @@ describe("Scope async resolution", () => {
     const DatabaseAdapter = createAsyncAdapter({
       provides: DatabasePort,
       requires: [],
-      lifetime: "singleton",
+
       factory: async () => {
         factoryCallCount++;
         return {
@@ -604,7 +604,7 @@ describe("Async adapter finalizers", () => {
     const DatabaseAdapter = createAsyncAdapter({
       provides: DatabasePort,
       requires: [],
-      lifetime: "singleton",
+
       factory: async () => ({
         query: async (sql: string) => `Result: ${sql}`,
         close: async () => {},
@@ -622,5 +622,224 @@ describe("Async adapter finalizers", () => {
     await container.dispose();
 
     expect(closeCalled).toHaveBeenCalled();
+  });
+});
+
+// =============================================================================
+// Resolution Hooks Tests for Async Adapters
+// =============================================================================
+
+describe("Resolution hooks for async adapters", () => {
+  it("should call beforeResolve and afterResolve hooks for async adapters", async () => {
+    const beforeResolveCalls: string[] = [];
+    const afterResolveCalls: { portName: string; duration: number; error: Error | null }[] = [];
+
+    const DatabaseAdapter = createAsyncAdapter({
+      provides: DatabasePort,
+      requires: [],
+      factory: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        return {
+          query: async (sql: string) => `Result: ${sql}`,
+          close: async () => {},
+        };
+      },
+    });
+
+    const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
+
+    const container = createContainer(graph, {
+      hooks: {
+        beforeResolve: (ctx) => {
+          beforeResolveCalls.push(ctx.portName);
+        },
+        afterResolve: (ctx) => {
+          afterResolveCalls.push({
+            portName: ctx.portName,
+            duration: ctx.duration,
+            error: ctx.error,
+          });
+        },
+      },
+    });
+
+    await container.resolveAsync(DatabasePort);
+
+    expect(beforeResolveCalls).toContain("Database");
+    expect(afterResolveCalls.find((c) => c.portName === "Database")).toBeDefined();
+
+    const dbResolve = afterResolveCalls.find((c) => c.portName === "Database")!;
+    expect(dbResolve.duration).toBeGreaterThanOrEqual(10);
+    expect(dbResolve.error).toBeNull();
+
+    await container.dispose();
+  });
+
+  it("should emit hooks with isCacheHit=true for cached async adapters", async () => {
+    const hookCalls: { portName: string; isCacheHit: boolean }[] = [];
+
+    const DatabaseAdapter = createAsyncAdapter({
+      provides: DatabasePort,
+      requires: [],
+      factory: async () => ({
+        query: async (sql: string) => `Result: ${sql}`,
+        close: async () => {},
+      }),
+    });
+
+    const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
+
+    const container = createContainer(graph, {
+      hooks: {
+        beforeResolve: (ctx) => {
+          hookCalls.push({ portName: ctx.portName, isCacheHit: ctx.isCacheHit });
+        },
+      },
+    });
+
+    // First resolution - should not be cache hit
+    await container.resolveAsync(DatabasePort);
+    // Second resolution - should be cache hit
+    await container.resolveAsync(DatabasePort);
+
+    expect(hookCalls.length).toBe(2);
+    expect(hookCalls[0]).toEqual({ portName: "Database", isCacheHit: false });
+    expect(hookCalls[1]).toEqual({ portName: "Database", isCacheHit: true });
+
+    await container.dispose();
+  });
+
+  it("should track parent-child relationships for async adapter dependencies", async () => {
+    const hookCalls: { portName: string; parentPort: string | null; depth: number }[] = [];
+
+    const ConfigAdapter = createAdapter({
+      provides: ConfigPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ connectionString: "postgres://localhost" }),
+    });
+
+    const DatabaseAdapter = createAsyncAdapter({
+      provides: DatabasePort,
+      requires: [ConfigPort],
+      factory: async () => ({
+        query: async (sql: string) => `Result: ${sql}`,
+        close: async () => {},
+      }),
+    });
+
+    const graph = GraphBuilder.create()
+      .provide(ConfigAdapter)
+      .provideAsync(DatabaseAdapter)
+      .build();
+
+    const container = createContainer(graph, {
+      hooks: {
+        beforeResolve: (ctx) => {
+          hookCalls.push({
+            portName: ctx.portName,
+            parentPort: ctx.parentPort?.__portName ?? null,
+            depth: ctx.depth,
+          });
+        },
+      },
+    });
+
+    await container.resolveAsync(DatabasePort);
+
+    // Database is resolved first (depth 0), then Config as dependency (depth 1)
+    const dbCall = hookCalls.find((c) => c.portName === "Database");
+    const configCall = hookCalls.find((c) => c.portName === "Config");
+
+    expect(dbCall).toBeDefined();
+    expect(dbCall!.depth).toBe(0);
+    expect(dbCall!.parentPort).toBeNull();
+
+    expect(configCall).toBeDefined();
+    expect(configCall!.depth).toBe(1);
+    expect(configCall!.parentPort).toBe("Database");
+
+    await container.dispose();
+  });
+
+  it("should emit hooks with error for failed async factories", async () => {
+    const afterResolveCalls: { portName: string; error: Error | null }[] = [];
+
+    const DatabaseAdapter = createAsyncAdapter({
+      provides: DatabasePort,
+      requires: [],
+      factory: async () => {
+        throw new Error("Connection failed");
+      },
+    });
+
+    const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
+
+    const container = createContainer(graph, {
+      hooks: {
+        afterResolve: (ctx) => {
+          afterResolveCalls.push({
+            portName: ctx.portName,
+            error: ctx.error,
+          });
+        },
+      },
+    });
+
+    await expect(container.resolveAsync(DatabasePort)).rejects.toThrow();
+
+    const dbResolve = afterResolveCalls.find((c) => c.portName === "Database");
+    expect(dbResolve).toBeDefined();
+    expect(dbResolve!.error).not.toBeNull();
+    expect(dbResolve!.error!.message).toBe("Connection failed");
+
+    await container.dispose();
+  });
+
+  it("should not emit duplicate hooks for concurrent async resolutions", async () => {
+    let beforeResolveCount = 0;
+    let afterResolveCount = 0;
+
+    const DatabaseAdapter = createAsyncAdapter({
+      provides: DatabasePort,
+      requires: [],
+      factory: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        return {
+          query: async (sql: string) => `Result: ${sql}`,
+          close: async () => {},
+        };
+      },
+    });
+
+    const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
+
+    const container = createContainer(graph, {
+      hooks: {
+        beforeResolve: () => {
+          beforeResolveCount++;
+        },
+        afterResolve: () => {
+          afterResolveCount++;
+        },
+      },
+    });
+
+    // Start 3 concurrent resolutions
+    const [db1, db2, db3] = await Promise.all([
+      container.resolveAsync(DatabasePort),
+      container.resolveAsync(DatabasePort),
+      container.resolveAsync(DatabasePort),
+    ]);
+
+    // All should be same instance
+    expect(db1).toBe(db2);
+    expect(db2).toBe(db3);
+
+    // Only one hook pair should be emitted (by factory owner)
+    expect(beforeResolveCount).toBe(1);
+    expect(afterResolveCount).toBe(1);
+
+    await container.dispose();
   });
 });

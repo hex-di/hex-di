@@ -12,7 +12,7 @@
 import { describe, it, expect, beforeEach } from "./setup.js";
 import { TRACING_ACCESS } from "@hex-di/runtime";
 import { createTracingContainer } from "@hex-di/devtools";
-import { appGraph, type AppPorts } from "../src/di/graph.js";
+import { appGraph } from "../src/di/graph.js";
 import { UserSessionPort } from "../src/di/ports.js";
 import { setCurrentUserSelection } from "../src/di/adapters.js";
 
@@ -28,7 +28,7 @@ describe("Tracing Integration", () => {
 
   describe("createTracingContainer", () => {
     it("should add TRACING_ACCESS Symbol to wrapped container", () => {
-      const tracingContainer = createTracingContainer<AppPorts>(appGraph);
+      const tracingContainer = createTracingContainer(appGraph);
 
       // Container should have TRACING_ACCESS Symbol
       expect(TRACING_ACCESS in tracingContainer).toBe(true);
@@ -38,7 +38,7 @@ describe("Tracing Integration", () => {
     });
 
     it("should provide TracingAPI via TRACING_ACCESS", () => {
-      const tracingContainer = createTracingContainer<AppPorts>(appGraph);
+      const tracingContainer = createTracingContainer(appGraph);
 
       const tracingAPI = tracingContainer[TRACING_ACCESS];
 
@@ -58,7 +58,7 @@ describe("Tracing Integration", () => {
 
   describe("trace recording", () => {
     it("should record traces when services are resolved", () => {
-      const tracingContainer = createTracingContainer<AppPorts>(appGraph);
+      const tracingContainer = createTracingContainer(appGraph);
       const scope = tracingContainer.createScope();
 
       // Initially no traces
@@ -84,7 +84,7 @@ describe("Tracing Integration", () => {
     });
 
     it("should capture trace metadata correctly", () => {
-      const tracingContainer = createTracingContainer<AppPorts>(appGraph);
+      const tracingContainer = createTracingContainer(appGraph);
       const scope = tracingContainer.createScope();
 
       scope.resolve(UserSessionPort);

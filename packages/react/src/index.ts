@@ -90,12 +90,21 @@ export { createTypedHooks } from "./create-typed-hooks.js";
  * @see {@link ContainerProviderProps} - Props for ContainerProvider
  * @see {@link ScopeProviderProps} - Props for ScopeProvider
  * @see {@link AutoScopeProviderProps} - Props for AutoScopeProvider
+ * @see {@link Resolver} - Type-safe resolver interface for Container/Scope
+ * @see {@link ToResolver} - Utility to extract Resolver from Container/Scope
  */
 export type {
   TypedReactIntegration,
   ContainerProviderProps,
   ScopeProviderProps,
   AutoScopeProviderProps,
+  AsyncContainerProviderProps,
+  AsyncContainerProviderComponent,
+  AsyncContainerLoadingProps,
+  AsyncContainerErrorProps,
+  AsyncContainerReadyProps,
+  Resolver,
+  ToResolver,
 } from "./types.js";
 
 // =============================================================================
@@ -118,6 +127,20 @@ export {
   ScopeProvider,
   AutoScopeProvider,
 } from "./context.js";
+
+/**
+ * Global AsyncContainerProvider component for async container initialization.
+ *
+ * This is exported for use cases where a global provider is needed, such as
+ * testing utilities. For application code, prefer using `createTypedHooks()`
+ * which provides better type safety.
+ *
+ * @see {@link AsyncContainerProvider} - Provider component documentation
+ */
+export {
+  AsyncContainerProvider,
+  useAsyncContainerState,
+} from "./async-container-provider.js";
 
 // =============================================================================
 // Global Hooks

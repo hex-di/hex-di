@@ -13,6 +13,7 @@ import type { Port, InferService, InferPortName } from "@hex-di/ports";
 import type {
   Adapter,
   Lifetime,
+  FactoryKind,
   ResolvedDeps,
   InferAdapterProvides,
   InferAdapterRequires,
@@ -30,15 +31,16 @@ import type {
  *
  * @typeParam TProvides - The port type this adapter provides
  * @typeParam TRequires - Union of port types this adapter requires
+ * @typeParam TFactoryKind - Whether the adapter factory is 'sync' or 'async'
  *
- * @example
+ * @example Sync adapter
  * ```typescript
  * const harness = createAdapterTest(UserServiceAdapter, {
  *   Logger: mockLogger,
  *   Database: mockDatabase,
  * });
  *
- * // Invoke factory to get service instance
+ * // Invoke factory to get service instance (sync)
  * const userService = harness.invoke();
  *
  * // Call service method
@@ -48,10 +50,23 @@ import type {
  * const deps = harness.getDeps();
  * expect(deps.Logger.log).toHaveBeenCalledWith('Fetching user 123');
  * ```
+ *
+ * @example Async adapter
+ * ```typescript
+ * const harness = createAdapterTest(DatabaseAdapter, {
+ *   Config: mockConfig,
+ * });
+ *
+ * // Invoke factory to get service instance (async)
+ * const database = await harness.invoke();
+ *
+ * expect(database.query).toBeDefined();
+ * ```
  */
 export interface AdapterTestHarness<
   TProvides extends Port<unknown, string>,
   TRequires extends Port<unknown, string> | never,
+  TFactoryKind extends FactoryKind = "sync",
 > {
   /**
    * Invokes the adapter's factory function with the mock dependencies.
@@ -59,15 +74,26 @@ export interface AdapterTestHarness<
    * Each call creates a fresh service instance by calling the factory,
    * allowing tests to verify factory behavior and service construction.
    *
-   * @returns The service instance typed according to the adapter's provides port
+   * For async adapters, this returns a Promise that resolves to the service.
    *
-   * @example
+   * @returns The service instance typed according to the adapter's provides port.
+   *   For async adapters, returns Promise<InferService<TProvides>>.
+   *
+   * @example Sync adapter
    * ```typescript
    * const service = harness.invoke();
    * const user = await service.getUser('123');
    * ```
+   *
+   * @example Async adapter
+   * ```typescript
+   * const service = await harness.invoke();
+   * const results = await service.query('SELECT * FROM users');
+   * ```
    */
-  invoke(): InferService<TProvides>;
+  invoke(): TFactoryKind extends "async"
+    ? Promise<InferService<TProvides>>
+    : InferService<TProvides>;
 
   /**
    * Returns a reference to the mock dependencies object.
@@ -108,8 +134,9 @@ function validateDependencies<
   TProvides extends Port<unknown, string>,
   TRequires extends Port<unknown, string> | never,
   TLifetime extends Lifetime,
+  TFactoryKind extends FactoryKind,
 >(
-  adapter: Adapter<TProvides, TRequires, TLifetime>,
+  adapter: Adapter<TProvides, TRequires, TLifetime, TFactoryKind>,
   mockDependencies: Record<string, unknown>
 ): void {
   const requires = adapter.requires as readonly Port<unknown, string>[];
@@ -133,6 +160,7 @@ function validateDependencies<
  * @typeParam TProvides - The port type this adapter provides (inferred from adapter)
  * @typeParam TRequires - Union of port types this adapter requires (inferred from adapter)
  * @typeParam TLifetime - The adapter's lifetime scope (inferred from adapter)
+ * @typeParam TFactoryKind - Whether the adapter factory is 'sync' or 'async' (inferred from adapter)
  *
  * @param adapter - The adapter to test
  * @param mockDependencies - An object containing mock implementations for each
@@ -146,10 +174,11 @@ function validateDependencies<
  * @remarks
  * - Dependencies are validated at creation time, not at `invoke()` time
  * - Each `invoke()` call creates a fresh service instance
+ * - For async adapters, `invoke()` returns a Promise that resolves to the service
  * - The `getDeps()` method returns the same mock objects passed at creation
  * - This harness is framework-agnostic and works with any test framework
  *
- * @example Basic usage with Vitest
+ * @example Basic usage with Vitest (sync adapter)
  * ```typescript
  * import { createAdapterTest } from '@hex-di/testing';
  * import { vi } from 'vitest';
@@ -179,6 +208,18 @@ function validateDependencies<
  * expect(harness.getDeps().Logger.log).toHaveBeenCalledWith('Fetching user 123');
  * ```
  *
+ * @example Async adapter (invoke returns Promise)
+ * ```typescript
+ * const harness = createAdapterTest(DatabaseAdapter, {
+ *   Config: mockConfig,
+ * });
+ *
+ * // Note: await is required for async adapters
+ * const database = await harness.invoke();
+ *
+ * expect(database.query).toBeDefined();
+ * ```
+ *
  * @example Adapter with no dependencies
  * ```typescript
  * const harness = createAdapterTest(ConfigAdapter, {});
@@ -203,20 +244,21 @@ export function createAdapterTest<
   TProvides extends Port<unknown, string>,
   TRequires extends Port<unknown, string> | never,
   TLifetime extends Lifetime,
+  TFactoryKind extends FactoryKind = FactoryKind,
 >(
-  adapter: Adapter<TProvides, TRequires, TLifetime>,
+  adapter: Adapter<TProvides, TRequires, TLifetime, TFactoryKind>,
   mockDependencies: ResolvedDeps<TRequires>
-): AdapterTestHarness<TProvides, TRequires> {
+): AdapterTestHarness<TProvides, TRequires, TFactoryKind> {
   // Validate all required dependencies are provided
   validateDependencies(adapter, mockDependencies as Record<string, unknown>);
 
   return Object.freeze({
-    invoke(): InferService<TProvides> {
+    invoke() {
       return adapter.factory(mockDependencies);
     },
 
     getDeps(): ResolvedDeps<TRequires> {
       return mockDependencies;
     },
-  });
+  }) as AdapterTestHarness<TProvides, TRequires, TFactoryKind>;
 }

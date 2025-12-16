@@ -27,8 +27,9 @@ import {
   UserSessionPort,
   LoggerPort,
   ConfigPort,
+  NotificationServicePort,
 } from "../src/di/ports.js";
-import { ContainerProvider } from "../src/di/hooks.js";
+import { AsyncContainerProvider } from "../src/di/hooks.js";
 import { setCurrentUserSelection } from "../src/di/adapters.js";
 import type { Message, MessageListener, Unsubscribe } from "../src/types.js";
 import { ChatRoom } from "../src/components/ChatRoom.js";
@@ -120,7 +121,9 @@ describe("User Switching", () => {
    * This test verifies that when a user switches from Alice to Bob,
    * subsequent messages are sent as Bob, not Alice.
    *
-   * BUG: Currently fails because UserSessionAdapter is hardcoded to return Alice.
+   * Uses AsyncContainerProvider to properly initialize all async adapters
+   * before React components render. The real ChatServiceAdapter runs and
+   * correctly captures the UserSession from each scope.
    */
   it("should send messages as the currently logged-in user", async () => {
     // Create an inspectable message store to verify sender names
@@ -142,20 +145,38 @@ describe("User Switching", () => {
       maxMessages: 100,
     });
 
-    // Build test graph - DO NOT override UserSessionAdapter or ChatServiceAdapter
-    // to use the real implementations and expose the bug
+    const mockNotificationService = createMockAdapter(NotificationServicePort, {
+      instanceId: 1,
+      createdAt: new Date(),
+      notify: vi.fn(),
+    });
+
+    // Build test graph - use real ChatServiceAdapter to test user switching
+    // With AsyncContainerProvider, all async adapters are initialized before render
     const testGraph = TestGraphBuilder.from(appGraph)
       .override(mockMessageStoreAdapter)
       .override(mockLogger)
       .override(mockConfig)
+      .override(mockNotificationService)
       .build();
 
     const container = createContainer(testGraph);
 
     render(
-      <ContainerProvider container={container}>
+      <AsyncContainerProvider
+        container={container}
+        loadingFallback={<div data-testid="loading">Initializing...</div>}
+      >
         <ChatRoom />
-      </ContainerProvider>
+      </AsyncContainerProvider>
+    );
+
+    // Wait for async container initialization to complete
+    await waitFor(
+      () => {
+        expect(screen.queryByTestId("loading")).not.toBeInTheDocument();
+      },
+      { timeout: 5000 }
     );
 
     // =========================================================================

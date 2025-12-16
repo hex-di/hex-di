@@ -98,6 +98,40 @@ export const AutoScopeProvider = typedHooks.AutoScopeProvider;
  */
 export const ScopeProvider = typedHooks.ScopeProvider;
 
+/**
+ * Async container provider component with compound components.
+ *
+ * Automatically initializes containers with async adapters before making
+ * them available to React components. Provides a Compound Component API
+ * for customizable loading, error, and ready states.
+ *
+ * @example
+ * ```tsx
+ * import { AsyncContainerProvider } from "./di/hooks";
+ * import { createContainer } from "@hex-di/runtime";
+ * import { appGraph } from "./di/graph";
+ *
+ * const container = createContainer(appGraph);
+ *
+ * function App() {
+ *   return (
+ *     <AsyncContainerProvider container={container}>
+ *       <AsyncContainerProvider.Loading>
+ *         <LoadingSpinner />
+ *       </AsyncContainerProvider.Loading>
+ *       <AsyncContainerProvider.Error>
+ *         {(error) => <ErrorDisplay error={error} />}
+ *       </AsyncContainerProvider.Error>
+ *       <AsyncContainerProvider.Ready>
+ *         <ChatRoom />
+ *       </AsyncContainerProvider.Ready>
+ *     </AsyncContainerProvider>
+ *   );
+ * }
+ * ```
+ */
+export const AsyncContainerProvider = typedHooks.AsyncContainerProvider;
+
 // =============================================================================
 // Hooks
 // =============================================================================

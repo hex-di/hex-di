@@ -120,7 +120,7 @@ export type DevToolsPosition =
  */
 export interface DevToolsFloatingProps {
   /** The dependency graph to visualize */
-  readonly graph: Graph<Port<unknown, string>>;
+  readonly graph: Graph<Port<unknown, string>, Port<unknown, string> | never>;
   /** Optional container for runtime inspection */
   readonly container?: Container<Port<unknown, string>>;
   /** Position of the toggle button. Default: 'bottom-right' */

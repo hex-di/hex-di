@@ -110,7 +110,41 @@ describe("DI Graph", () => {
     it("should produce expected structure with serializeGraph()", () => {
       const snapshot = serializeGraph(appGraph);
 
-      expect(snapshot).toMatchSnapshot();
+      // Use deep equality assertion - sorted by port name for deterministic ordering
+      expect(snapshot).toEqual({
+        adapters: [
+          {
+            lifetime: "scoped",
+            port: "ChatService",
+            requires: ["Logger", "MessageStore", "UserSession"],
+          },
+          {
+            lifetime: "singleton",
+            port: "Config",
+            requires: [],
+          },
+          {
+            lifetime: "singleton",
+            port: "Logger",
+            requires: [],
+          },
+          {
+            lifetime: "singleton",
+            port: "MessageStore",
+            requires: ["Logger"],
+          },
+          {
+            lifetime: "request",
+            port: "NotificationService",
+            requires: ["Config", "Logger"],
+          },
+          {
+            lifetime: "scoped",
+            port: "UserSession",
+            requires: [],
+          },
+        ],
+      });
     });
 
     it("should serialize adapter metadata correctly", () => {
@@ -157,7 +191,7 @@ describe("DI Graph", () => {
       // Type 'MissingDependencyError<typeof UserSessionPort>' is not assignable to type 'Graph<...>'
 
       // Instead, we verify that the complete graph is correctly typed
-      const completeGraphType: Graph<Port<unknown, string>> = appGraph;
+      const completeGraphType: Graph<Port<unknown, string>, Port<unknown, string> | never> = appGraph;
       expect(completeGraphType.adapters).toBeDefined();
     });
 

@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import {
+import React, {
   createContext,
   useState,
   useEffect,
@@ -19,33 +19,64 @@ import {
   type Context,
 } from "react";
 import type { Port, InferService } from "@hex-di/ports";
-import type { Container, Scope } from "@hex-di/runtime";
+import type { Container, ContainerPhase, Scope } from "@hex-di/runtime";
 import type {
   TypedReactIntegration,
   ContainerProviderProps,
   ScopeProviderProps,
   AutoScopeProviderProps,
+  AsyncContainerProviderProps,
+  AsyncContainerProviderComponent,
+  AsyncContainerLoadingProps,
+  AsyncContainerErrorProps,
+  AsyncContainerReadyProps,
+  Resolver,
 } from "./types.js";
 import { MissingProviderError } from "./errors.js";
+
+// =============================================================================
+// Async Container Types
+// =============================================================================
+
+/**
+ * Initialization status for the async container.
+ * @internal
+ */
+type AsyncContainerStatus = "loading" | "ready" | "error";
+
+/**
+ * Internal state for async container initialization.
+ * @internal
+ */
+interface AsyncContainerState<TProvides extends Port<unknown, string>> {
+  readonly status: AsyncContainerStatus;
+  readonly container: Container<TProvides, any, "initialized"> | null;
+  readonly error: Error | null;
+}
+
+/**
+ * Internal context value for async container state.
+ * @internal
+ */
+interface AsyncContainerContextValue<TProvides extends Port<unknown, string>> {
+  readonly state: AsyncContainerState<TProvides>;
+}
 
 // =============================================================================
 // Internal Context Types
 // =============================================================================
 
 /**
- * Resolver type representing either a Container or Scope.
- * @internal
- */
-type Resolver<TProvides extends Port<unknown, string>> =
-  | Container<TProvides>
-  | Scope<TProvides>;
-
-/**
  * Internal context value for the container context.
+ *
+ * Uses ContainerPhase union type to accept both uninitialized containers
+ * (from ContainerProvider) and initialized containers (from AsyncContainerProvider)
+ * without requiring type casts.
+ *
  * @internal
  */
 interface ContainerContextValue<TProvides extends Port<unknown, string>> {
-  readonly container: Container<TProvides>;
+  readonly container: Container<TProvides, Port<unknown, string>, ContainerPhase>;
 }
 
 /**
@@ -54,6 +85,10 @@ interface ContainerContextValue<TProvides extends Port<unknown, string>> {
  * Uses a getter function pattern to ensure React StrictMode compatibility.
  * Children call getResolver() at resolution time, not at render capture time,
  * ensuring they always get the current (non-disposed) scope.
+ *
+ * The Resolver type is a structural interface that both Container and Scope
+ * satisfy, avoiding the union incompatibility issues with conditional resolve
+ * signatures.
  *
  * @internal
  */
@@ -224,7 +259,8 @@ export function createTypedHooks<
     }
 
     // Use ref to track the scope - allows recreation if disposed (StrictMode)
-    const scopeRef = useRef<Scope<TProvides> | null>(null);
+    // Use Resolver<TProvides> since createScope() returns Resolver
+    const scopeRef = useRef<Resolver<TProvides> | null>(null);
 
     // Create or recreate scope if needed during initial render
     // This handles StrictMode where scope may have been disposed during unmount
@@ -265,19 +301,243 @@ export function createTypedHooks<
   }
 
   // ==========================================================================
+  // AsyncContainerProvider with Compound Components
+  // ==========================================================================
+
+  /**
+   * Context for async container initialization state.
+   */
+  const AsyncContainerContext: Context<AsyncContainerContextValue<TProvides> | null> =
+    createContext<AsyncContainerContextValue<TProvides> | null>(null);
+  AsyncContainerContext.displayName = "HexDI.AsyncContainerContext";
+
+  /**
+   * Loading compound component - renders children while initializing.
+   */
+  function Loading({ children }: AsyncContainerLoadingProps): ReactElement | null {
+    const context = useContext(AsyncContainerContext);
+    if (!context) {
+      throw new Error(
+        "AsyncContainerProvider.Loading must be used within AsyncContainerProvider"
+      );
+    }
+    return context.state.status === "loading" ? <>{children}</> : null;
+  }
+
+  /**
+   * Error compound component - renders children when initialization fails.
+   */
+  function ErrorComponent({
+    children,
+  }: AsyncContainerErrorProps): ReactElement | null {
+    const context = useContext(AsyncContainerContext);
+    if (!context) {
+      throw new Error(
+        "AsyncContainerProvider.Error must be used within AsyncContainerProvider"
+      );
+    }
+
+    if (context.state.status !== "error" || !context.state.error) {
+      return null;
+    }
+
+    if (typeof children === "function") {
+      return <>{children(context.state.error)}</>;
+    }
+    return <>{children}</>;
+  }
+
+  /**
+   * Ready compound component - renders children when container is initialized.
+   */
+  function Ready({ children }: AsyncContainerReadyProps): ReactElement | null {
+    const context = useContext(AsyncContainerContext);
+    if (!context) {
+      throw new Error(
+        "AsyncContainerProvider.Ready must be used within AsyncContainerProvider"
+      );
+    }
+
+    if (context.state.status !== "ready" || !context.state.container) {
+      return null;
+    }
+
+    // Provide both container context (for useContainer) and resolver context (for usePort)
+    const containerContextValue: ContainerContextValue<TProvides> = {
+      container: context.state.container,
+    };
+
+    const resolverContextValue: ResolverContextValue<TProvides> = {
+      getResolver: () => context.state.container!,
+    };
+
+    return (
+      <ContainerContext.Provider value={containerContextValue}>
+        <ResolverContext.Provider value={resolverContextValue}>
+          {children}
+        </ResolverContext.Provider>
+      </ContainerContext.Provider>
+    );
+  }
+
+  /**
+   * Default loading component for simple mode.
+   */
+  function DefaultLoading(): ReactElement {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "1rem",
+        }}
+      >
+        Initializing...
+      </div>
+    );
+  }
+
+  /**
+   * Default error component for simple mode.
+   */
+  function DefaultError({ error }: { error: Error }): ReactElement {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "1rem",
+          color: "red",
+        }}
+      >
+        Initialization Error: {error.message}
+      </div>
+    );
+  }
+
+  /**
+   * AsyncContainerProvider root implementation.
+   */
+  function AsyncContainerProviderRoot({
+    container,
+    children,
+    loadingFallback,
+    errorFallback,
+  }: AsyncContainerProviderProps<TProvides>): ReactElement {
+    const [state, setState] = useState<AsyncContainerState<TProvides>>({
+      status: "loading",
+      container: null,
+      error: null,
+    });
+
+    useEffect(() => {
+      let mounted = true;
+
+      async function initialize() {
+        try {
+          const initialized = await container.initialize();
+          if (mounted) {
+            setState({
+              status: "ready",
+              container: initialized,
+              error: null,
+            });
+          }
+        } catch (error) {
+          if (mounted) {
+            setState({
+              status: "error",
+              container: null,
+              error: error instanceof Error ? error : new Error(String(error)),
+            });
+          }
+        }
+      }
+
+      void initialize();
+
+      return () => {
+        mounted = false;
+      };
+    }, [container]);
+
+    const contextValue: AsyncContainerContextValue<TProvides> = { state };
+
+    // Check for compound component children
+    const childArray = React.Children.toArray(children);
+    const hasCompoundChildren = childArray.some(
+      (child) =>
+        React.isValidElement(child) &&
+        (child.type === Loading ||
+          child.type === ErrorComponent ||
+          child.type === Ready)
+    );
+
+    if (hasCompoundChildren) {
+      // Compound Component mode
+      return (
+        <AsyncContainerContext.Provider value={contextValue}>
+          {children}
+        </AsyncContainerContext.Provider>
+      );
+    }
+
+    // Simple mode - provide both container and resolver contexts when ready
+    const containerContextValue: ContainerContextValue<TProvides> = {
+      container: state.container!,
+    };
+
+    const resolverContextValue: ResolverContextValue<TProvides> = {
+      getResolver: () => state.container!,
+    };
+
+    return (
+      <AsyncContainerContext.Provider value={contextValue}>
+        {state.status === "loading" && (loadingFallback ?? <DefaultLoading />)}
+        {state.status === "error" &&
+          state.error &&
+          (errorFallback?.(state.error) ?? <DefaultError error={state.error} />)}
+        {state.status === "ready" && state.container && (
+          <ContainerContext.Provider value={containerContextValue}>
+            <ResolverContext.Provider value={resolverContextValue}>
+              {children}
+            </ResolverContext.Provider>
+          </ContainerContext.Provider>
+        )}
+      </AsyncContainerContext.Provider>
+    );
+  }
+
+  // Assemble AsyncContainerProvider with compound components
+  const AsyncContainerProvider: AsyncContainerProviderComponent<TProvides> =
+    Object.assign(AsyncContainerProviderRoot, {
+      Loading,
+      Error: ErrorComponent,
+      Ready,
+    });
+
+  // ==========================================================================
   // Hooks
   // ==========================================================================
 
   /**
    * useContainer hook implementation for this typed integration.
+   *
+   * Returns the root Container from ContainerContext, not the current resolver.
+   * This ensures that components needing the container always get the root
+   * container, even when inside scopes.
    */
-  function useContainer(): Container<TProvides> {
+  function useContainer(): Container<TProvides, Port<unknown, string>, ContainerPhase> {
     const context = useContext(ContainerContext);
 
     if (context === null) {
       throw new MissingProviderError("useContainer", "ContainerProvider");
     }
 
+    // Return the root container, not the current resolver (scope)
+    // This ensures container is always available even when scopes are disposed
     return context.container;
   }
 
@@ -293,7 +553,7 @@ export function createTypedHooks<
 
     // Call getResolver() to get CURRENT scope at resolution time
     // This ensures StrictMode remounts get the fresh scope, not a stale reference
-    return context.getResolver().resolve(port) as InferService<P>;
+    return context.getResolver().resolve(port);
   }
 
   /**
@@ -324,7 +584,7 @@ export function createTypedHooks<
    * Handles React StrictMode by checking isDisposed and recreating
    * the scope if it was disposed during the unmount phase.
    */
-  function useScope(): Scope<TProvides> {
+  function useScope(): Resolver<TProvides> {
     const context = useContext(ResolverContext);
 
     if (context === null) {
@@ -332,7 +592,7 @@ export function createTypedHooks<
     }
 
     // Use ref to create scope lazily and preserve across renders
-    const scopeRef = useRef<Scope<TProvides> | null>(null);
+    const scopeRef = useRef<Resolver<TProvides> | null>(null);
 
     // Create or recreate scope if needed (handles StrictMode)
     if (scopeRef.current === null || scopeRef.current.isDisposed) {
@@ -362,6 +622,7 @@ export function createTypedHooks<
     ContainerProvider,
     ScopeProvider,
     AutoScopeProvider,
+    AsyncContainerProvider,
     usePort,
     usePortOptional,
     useContainer,

@@ -166,7 +166,7 @@ export interface SerializeGraphOptions {
  * ```
  */
 export function serializeGraph(
-  graph: Graph<Port<unknown, string> | never>,
+  graph: Graph<Port<unknown, string> | never, Port<unknown, string> | never>,
   options?: SerializeGraphOptions
 ): GraphSnapshot {
   const preserveOrder = options?.preserveOrder ?? false;

@@ -200,7 +200,7 @@ describe("ChatServiceAdapter", () => {
     return { mockLogger, mockUserSession, mockMessageStore };
   };
 
-  it("sends message with correct sender info from UserSession", () => {
+  it("sends message with correct sender info from UserSession", async () => {
     const { mockLogger, mockUserSession, mockMessageStore } = createMockDeps();
 
     const harness = createAdapterTest(ChatServiceAdapter, {
@@ -209,7 +209,8 @@ describe("ChatServiceAdapter", () => {
       MessageStore: mockMessageStore,
     });
 
-    const chatService = harness.invoke();
+    // ChatServiceAdapter is async, so await invoke()
+    const chatService = await harness.invoke();
 
     // Send a message
     chatService.sendMessage("Hello from Bob!");
@@ -254,7 +255,7 @@ describe("NotificationServiceAdapter", () => {
     return { mockLogger, mockConfig };
   };
 
-  it("creates unique instance IDs per resolution", () => {
+  it("creates unique instance IDs per resolution", async () => {
     const deps1 = createMockDeps();
     const deps2 = createMockDeps();
 
@@ -269,9 +270,9 @@ describe("NotificationServiceAdapter", () => {
       Config: deps2.mockConfig,
     });
 
-    // Invoke factories to get two service instances
-    const notification1 = harness1.invoke();
-    const notification2 = harness2.invoke();
+    // NotificationServiceAdapter is async, so await invoke()
+    const notification1 = await harness1.invoke();
+    const notification2 = await harness2.invoke();
 
     // Verify unique instance IDs (instanceId increments globally)
     expect(notification1.instanceId).toBeDefined();
@@ -283,7 +284,7 @@ describe("NotificationServiceAdapter", () => {
     expect(notification2.createdAt).toBeInstanceOf(Date);
   });
 
-  it("uses config for notification duration when logging", () => {
+  it("uses config for notification duration when logging", async () => {
     const { mockLogger, mockConfig } = createMockDeps();
 
     const harness = createAdapterTest(NotificationServiceAdapter, {
@@ -291,7 +292,8 @@ describe("NotificationServiceAdapter", () => {
       Config: mockConfig,
     });
 
-    const notificationService = harness.invoke();
+    // NotificationServiceAdapter is async, so await invoke()
+    const notificationService = await harness.invoke();
 
     // Call notify method
     notificationService.notify("Test notification message");

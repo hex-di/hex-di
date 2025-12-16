@@ -83,8 +83,12 @@ export function usePortOptional<
   }
 
   // Attempt resolution, catch any errors and return undefined
+  // Type assertion needed because Container|Scope union has incompatible resolve signatures
+  // due to phase-dependent conditional types. The typed hooks (createTypedHooks) use the
+  // Resolver interface to avoid this issue.
   try {
-    return context.resolver.resolve(port) as InferService<P>;
+    const resolver = context.resolver as { resolve: (port: Port<unknown, string>) => unknown };
+    return resolver.resolve(port) as InferService<P>;
   } catch {
     return undefined;
   }

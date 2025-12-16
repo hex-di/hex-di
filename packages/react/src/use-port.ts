@@ -82,5 +82,9 @@ export function usePort<
 
   // Resolve from the nearest resolver (Scope or Container)
   // Let ContainerError subclasses propagate - they are programming errors or factory errors
-  return context.resolver.resolve(port) as InferService<P>;
+  // Type assertion needed because Container|Scope union has incompatible resolve signatures
+  // due to phase-dependent conditional types. The typed hooks (createTypedHooks) use the
+  // Resolver interface to avoid this issue.
+  const resolver = context.resolver as { resolve: (port: Port<unknown, string>) => unknown };
+  return resolver.resolve(port) as InferService<P>;
 }

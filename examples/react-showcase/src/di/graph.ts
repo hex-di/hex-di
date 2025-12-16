@@ -6,9 +6,9 @@
  * all dependencies are satisfied.
  *
  * Demonstrates async factory support:
- * - ConfigAdapter is async (uses provideAsync) - simulates API config loading
- * - NotificationServiceAdapter is sync but depends on async ConfigPort
- * - This works because container.initialize() resolves all async adapters first
+ * - ConfigAdapter is the only async adapter (uses provideAsync) - simulates API config loading
+ * - Async adapters are always singletons and pre-initialized with container.initialize()
+ * - All other adapters are sync and resolve immediately
  *
  * @packageDocumentation
  */
@@ -32,15 +32,16 @@ import {
  *
  * This graph contains all 6 adapters registered in dependency order:
  * 1. LoggerAdapter (singleton, sync, no dependencies)
- * 2. ConfigAdapter (singleton, ASYNC - simulates API config loading)
- * 3. MessageStoreAdapter (singleton, ASYNC - simulates localStorage with async init)
+ * 2. ConfigAdapter (singleton, ASYNC - the only async adapter)
+ * 3. MessageStoreAdapter (singleton, sync, depends on LoggerPort)
  * 4. UserSessionAdapter (scoped, sync, no dependencies)
- * 5. ChatServiceAdapter (scoped, sync, requires Logger, UserSession, MessageStore)
- * 6. NotificationServiceAdapter (request, sync, requires Logger, Config)
+ * 5. ChatServiceAdapter (scoped, sync, depends on Logger, UserSession, MessageStore)
+ * 6. NotificationServiceAdapter (request, sync, depends on Logger, Config)
  *
- * Note: NotificationServiceAdapter is a sync adapter that depends on ConfigPort (async).
- * This demonstrates HexDI's support for sync adapters depending on async ports.
- * The container must be initialized before use: `await container.initialize()`.
+ * Note: ConfigAdapter is the only async adapter. It's pre-initialized with
+ * `container.initialize()`. All other adapters resolve synchronously.
+ * NotificationServiceAdapter depends on ConfigPort but can be sync because
+ * Config is pre-initialized as a singleton before any resolutions occur.
  *
  * The graph is validated at compile-time. If any required dependencies
  * are missing, TypeScript will produce a compile error with a message
@@ -59,13 +60,13 @@ import {
 export const appGraph = GraphBuilder.create()
   // Singleton adapters
   .provide(LoggerAdapter)
-  .provideAsync(ConfigAdapter) // Async adapter - simulates API config loading
-  .provideAsync(MessageStoreAdapter) // Async adapter - simulates async storage access
+  .provideAsync(ConfigAdapter) // Async singleton - simulates API config loading
+  .provide(MessageStoreAdapter) // Sync singleton - localStorage persistence
   // Scoped adapters
   .provide(UserSessionAdapter)
-  .provide(ChatServiceAdapter)
-  // Request-scoped adapter (sync but depends on async ConfigPort)
-  .provide(NotificationServiceAdapter)
+  .provide(ChatServiceAdapter) // Sync scoped - depends on sync ports only
+  // Request-scoped adapter
+  .provide(NotificationServiceAdapter) // Sync request - Config is pre-initialized
   .build();
 
 /**

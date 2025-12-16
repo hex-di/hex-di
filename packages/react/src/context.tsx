@@ -13,7 +13,7 @@
  * @packageDocumentation
  */
 
-import { createContext, useState, useEffect, useContext, type ReactNode } from "react";
+import { createContext, useEffect, useContext, useRef, type ReactNode } from "react";
 import type { Port } from "@hex-di/ports";
 import type { Container, Scope } from "@hex-di/runtime";
 import { MissingProviderError } from "./errors.js";
@@ -38,18 +38,22 @@ declare const ContextBrand: unique symbol;
 // =============================================================================
 
 /**
- * Resolver type representing either a Container or Scope.
+ * Local resolver type representing either a Container or Scope.
  *
  * Both Container and Scope have the same `resolve` and `createScope` methods,
  * allowing them to be used interchangeably for service resolution.
+ *
+ * Note: This is a union type (not the Resolver interface from types.ts) because
+ * the global context uses Port<unknown, string> as a base type, and the Resolver
+ * interface's generic methods create contravariance issues with specific port types.
  *
  * @typeParam TProvides - Union of Port types that can be resolved
  *
  * @internal
  */
-export type Resolver<TProvides extends Port<unknown, string>> =
-  | Container<TProvides>
-  | Scope<TProvides>;
+type LocalResolver<TProvides extends Port<unknown, string>> =
+  | Container<TProvides, any, any>
+  | Scope<TProvides, any, any>;
 
 /**
  * Internal context value structure for the container context.
@@ -89,7 +93,7 @@ export interface ResolverContextValue<TProvides extends Port<unknown, string>> {
   /**
    * The current resolver - either the root container or a scope.
    */
-  readonly resolver: Resolver<TProvides>;
+  readonly resolver: LocalResolver<TProvides>;
 
   /**
    * Brand property for nominal typing.
@@ -379,24 +383,34 @@ export function AutoScopeProvider({
     throw new MissingProviderError("AutoScopeProvider", "ContainerProvider");
   }
 
-  // Create scope from current resolver
-  // useState ensures scope is created once and preserved across re-renders
-  const [scope] = useState<Scope<Port<unknown, string>>>(() =>
-    resolverContext.resolver.createScope()
-  );
+  // Use ref to track the scope - allows recreation if disposed (StrictMode)
+  // Note: useRef is used instead of useState to handle StrictMode correctly.
+  // In StrictMode, components mount/unmount/remount, but useState caches
+  // the scope while useEffect cleanup disposes it. Using useRef with
+  // isDisposed check allows recreation of disposed scopes.
+  const scopeRef = useRef<Scope<Port<unknown, string>, any, any> | null>(null);
+
+  // Create or recreate scope if needed during initial render
+  // This handles StrictMode where scope may have been disposed during unmount
+  if (scopeRef.current === null || scopeRef.current.isDisposed) {
+    scopeRef.current = resolverContext.resolver.createScope() as Scope<Port<unknown, string>, any, any>;
+  }
 
   // Dispose scope on unmount using useEffect (SSR compatible)
   useEffect(() => {
     return () => {
-      // Note: dispose is async but we don't await in cleanup
-      // This is intentional - React cleanup functions should be sync
-      void scope.dispose();
+      // Only dispose if scope exists and not already disposed
+      if (scopeRef.current !== null && !scopeRef.current.isDisposed) {
+        // Note: dispose is async but we don't await in cleanup
+        // This is intentional - React cleanup functions should be sync
+        void scopeRef.current.dispose();
+      }
     };
-  }, [scope]);
+  }, []);
 
   // Create resolver context value with the new scope
   const resolverContextValue: ResolverContextValue<Port<unknown, string>> = {
-    resolver: scope,
+    resolver: scopeRef.current,
   } as ResolverContextValue<Port<unknown, string>>;
 
   return (

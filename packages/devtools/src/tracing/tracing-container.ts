@@ -63,7 +63,10 @@ export interface TracingContainerOptions {
  * - TRACING_ACCESS: Access to tracing API for performance monitoring
  * - INTERNAL_ACCESS: Access to internal state for DevTools Inspector
  */
-export type TracingContainer<TProvides extends Port<unknown, string>> = Container<TProvides> & {
+export type TracingContainer<
+  TProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> | never = never
+> = Container<TProvides, TAsyncPorts, "uninitialized"> & {
   readonly [TRACING_ACCESS]: TracingAPI;
   readonly [INTERNAL_ACCESS]: () => ContainerInternalState;
 };
@@ -156,10 +159,13 @@ function generateTraceId(state: TracingState): string {
  * });
  * ```
  */
-export function createTracingContainer<TProvides extends Port<unknown, string>>(
-  graph: Graph<TProvides>,
+export function createTracingContainer<
+  TProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> | never = never,
+>(
+  graph: Graph<TProvides, TAsyncPorts>,
   options?: TracingContainerOptions
-): TracingContainer<TProvides> {
+): TracingContainer<TProvides, TAsyncPorts> {
   // Create or use provided collector
   const collector: TraceCollector =
     options?.collector ??
@@ -310,7 +316,7 @@ export function createTracingContainer<TProvides extends Port<unknown, string>>(
   const baseInternalAccessor = getInternalAccessor(baseContainer);
 
   // Create the tracing container by spreading base container and adding tracing
-  const tracingContainer: TracingContainer<TProvides> = {
+  const tracingContainer: TracingContainer<TProvides, TAsyncPorts> = {
     ...baseContainer,
     // Forward INTERNAL_ACCESS from base container for DevTools Inspector
     [INTERNAL_ACCESS]: baseInternalAccessor,

@@ -76,6 +76,7 @@ type ValidOverrideAdapter<
  * following the same immutability pattern as GraphBuilder.
  *
  * @typeParam TProvides - Union of Port types provided by the original graph
+ * @typeParam TAsyncPorts - Union of Port types that have async factories
  *
  * @remarks
  * - TestGraphBuilder instances are immutable - each `override()` returns a new instance
@@ -116,14 +117,17 @@ type ValidOverrideAdapter<
  * @see {@link Graph} - The graph type from @hex-di/graph
  * @see {@link InferTestGraphProvides} - Type utility to extract TProvides from TestGraphBuilder
  */
-export class TestGraphBuilder<TProvides extends Port<unknown, string>> {
+export class TestGraphBuilder<
+  TProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> | never = never,
+> {
   /**
    * Type-level brand property for nominal typing.
    * Ensures TestGraphBuilder types with different type parameters are distinct.
    *
    * @internal
    */
-  declare private readonly [__testGraphBuilderBrand]: TProvides;
+  declare private readonly [__testGraphBuilderBrand]: [TProvides, TAsyncPorts];
 
   /**
    * Runtime brand marker for TestGraphBuilder instances.
@@ -137,7 +141,7 @@ export class TestGraphBuilder<TProvides extends Port<unknown, string>> {
    *
    * @internal
    */
-  private readonly originalGraph: Graph<TProvides>;
+  private readonly originalGraph: Graph<TProvides, TAsyncPorts>;
 
   /**
    * Map of port names to override adapters.
@@ -161,7 +165,7 @@ export class TestGraphBuilder<TProvides extends Port<unknown, string>> {
    * @internal
    */
   private constructor(
-    originalGraph: Graph<TProvides>,
+    originalGraph: Graph<TProvides, TAsyncPorts>,
     overrides: ReadonlyMap<
       string,
       Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>
@@ -180,6 +184,7 @@ export class TestGraphBuilder<TProvides extends Port<unknown, string>> {
    * to be selectively replaced.
    *
    * @typeParam T - The TProvides type of the input graph
+   * @typeParam TAsync - The TAsyncPorts type of the input graph
    *
    * @param graph - The built Graph to wrap (typically a production graph)
    *
@@ -190,7 +195,10 @@ export class TestGraphBuilder<TProvides extends Port<unknown, string>> {
    * const testBuilder = TestGraphBuilder.from(productionGraph);
    * ```
    */
-  static from<T extends Port<unknown, string>>(graph: Graph<T>): TestGraphBuilder<T> {
+  static from<
+    T extends Port<unknown, string>,
+    TAsync extends Port<unknown, string> | never = never,
+  >(graph: Graph<T, TAsync>): TestGraphBuilder<T, TAsync> {
     return new TestGraphBuilder(graph, new Map());
   }
 
@@ -229,7 +237,7 @@ export class TestGraphBuilder<TProvides extends Port<unknown, string>> {
    */
   override<A extends Adapter<TProvides, Port<unknown, string> | never, Lifetime>>(
     adapter: A
-  ): TestGraphBuilder<TProvides> {
+  ): TestGraphBuilder<TProvides, TAsyncPorts> {
     // Extract port name from the adapter's provides property
     const portName = adapter.provides.__portName;
 
@@ -262,7 +270,7 @@ export class TestGraphBuilder<TProvides extends Port<unknown, string>> {
    * const container = createContainer(testGraph);
    * ```
    */
-  build(): Graph<TProvides> {
+  build(): Graph<TProvides, TAsyncPorts> {
     // Build the adapters array by applying overrides
     const adapters = this.originalGraph.adapters.map((adapter) => {
       const portName = adapter.provides.__portName;
@@ -274,7 +282,7 @@ export class TestGraphBuilder<TProvides extends Port<unknown, string>> {
     // With exactOptionalPropertyTypes, we cannot set it to undefined.
     return Object.freeze({
       adapters: Object.freeze(adapters),
-    });
+    }) as Graph<TProvides, TAsyncPorts>;
   }
 }
 
@@ -301,4 +309,26 @@ export class TestGraphBuilder<TProvides extends Port<unknown, string>> {
  * // typeof LoggerPort | typeof DatabasePort | typeof UserServicePort
  * ```
  */
-export type InferTestGraphProvides<T> = T extends TestGraphBuilder<infer TProvides> ? TProvides : never;
+export type InferTestGraphProvides<T> =
+  T extends TestGraphBuilder<infer TProvides, infer _TAsyncPorts> ? TProvides : never;
+
+/**
+ * Extracts the TAsyncPorts type parameter from a TestGraphBuilder type.
+ *
+ * This utility type is useful when you need to infer which ports have
+ * async factories in a TestGraphBuilder.
+ *
+ * @typeParam T - The TestGraphBuilder type to extract from
+ *
+ * @returns The TAsyncPorts union type, or `never` if T is not a TestGraphBuilder
+ *
+ * @example
+ * ```typescript
+ * const testBuilder = TestGraphBuilder.from(productionGraph);
+ *
+ * type AsyncPorts = InferTestGraphAsyncPorts<typeof testBuilder>;
+ * // typeof ConfigPort | typeof DatabasePort (if they have async factories)
+ * ```
+ */
+export type InferTestGraphAsyncPorts<T> =
+  T extends TestGraphBuilder<infer _TProvides, infer TAsyncPorts> ? TAsyncPorts : never;
