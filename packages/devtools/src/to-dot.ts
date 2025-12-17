@@ -9,7 +9,7 @@
 
 import type { Graph } from "@hex-di/graph";
 import type { Port } from "@hex-di/ports";
-import type { DOTOptions, ExportedGraph, ExportedNode } from "./types.js";
+import type { DOTOptions, ExportedGraph, ExportedNode } from "@hex-di/devtools-core";
 import { toJSON } from "./to-json.js";
 
 // =============================================================================
@@ -22,7 +22,7 @@ import { toJSON } from "./to-json.js";
 const LIFETIME_COLORS: Record<string, string> = {
   singleton: "#E8F5E9", // Green tint
   scoped: "#E3F2FD", // Blue tint
-  request: "#FFF3E0", // Orange tint
+  transient: "#FFF3E0", // Orange tint
 };
 
 // =============================================================================

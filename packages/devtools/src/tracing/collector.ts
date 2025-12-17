@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { TraceEntry, TraceFilter, TraceStats } from "./types.js";
+import type { TraceEntry, TraceFilter, TraceStats } from "@hex-di/devtools-core";
 
 /**
  * Callback function type for trace subscription.

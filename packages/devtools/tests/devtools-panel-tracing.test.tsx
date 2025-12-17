@@ -11,7 +11,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
 import { DevToolsPanel } from "../src/react/devtools-panel.js";
 import { TRACING_ACCESS } from "@hex-di/runtime";
-import type { TracingAPI, TraceStats } from "../src/tracing/types.js";
+import type { TracingAPI, TraceStats } from "@hex-di/devtools-core";
 
 // =============================================================================
 // Test Utilities

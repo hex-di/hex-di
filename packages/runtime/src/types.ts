@@ -66,6 +66,22 @@ export const ContainerBrand: unique symbol = Symbol("hex-di.Container");
  */
 export const ScopeBrand: unique symbol = Symbol("hex-di.Scope");
 
+/**
+ * Unique symbol used for nominal typing of ChildContainer types.
+ *
+ * This symbol is exported for use in the container implementation.
+ * It provides true nominal typing, ensuring that ChildContainer instances
+ * are distinct from Container instances and structurally similar objects.
+ *
+ * @remarks
+ * The `unique symbol` type guarantees that this brand cannot be
+ * accidentally recreated elsewhere, providing true nominal typing.
+ * This follows the same pattern as Container and Scope branding.
+ *
+ * @internal - Exported for implementation use only, not for external consumers.
+ */
+export const ChildContainerBrand: unique symbol = Symbol("hex-di.ChildContainer");
+
 // =============================================================================
 // Container Type
 // =============================================================================
@@ -216,6 +232,18 @@ export type Container<
    * @returns A new Scope instance
    */
   createScope(): Scope<TProvides, TAsyncPorts, TPhase>;
+
+  /**
+   * Creates a child container builder for hierarchical dependency injection.
+   *
+   * Child containers can:
+   * - Override parent adapters for their scope
+   * - Extend with new adapters not in parent
+   * - Configure singleton inheritance modes (shared, forked, isolated)
+   *
+   * @returns A new ChildContainerBuilder instance
+   */
+  createChild(): ChildContainerBuilder<TProvides, TAsyncPorts>;
 
   /**
    * Disposes the container and all singleton instances.
@@ -394,6 +422,393 @@ export type Scope<
    * @internal Use createInspector() for a higher-level inspection API
    */
   readonly [INTERNAL_ACCESS]: () => ScopeInternalState;
+};
+
+// =============================================================================
+// ChildContainer Type
+// =============================================================================
+
+/**
+ * A branded child container type that provides type-safe service resolution
+ * with parent delegation.
+ *
+ * The ChildContainer type enables hierarchical dependency injection where:
+ * - Child containers can override parent adapters for their scope
+ * - Child containers can extend with new adapters not in parent
+ * - Resolution delegates to parent when adapter not found in child
+ * - Singletons can be shared, forked, or isolated from parent
+ *
+ * @typeParam TProvides - Union of Port types from parent that this child can resolve
+ * @typeParam TExtends - Union of Port types added via extend() (not in parent)
+ * @typeParam TAsyncPorts - Union of Port types that have async factories
+ * @typeParam TPhase - The initialization phase of the container
+ *
+ * @remarks
+ * - Child containers maintain a reference to their parent for resolution delegation
+ * - Overridden adapters create separate instances in the child scope
+ * - Extended ports are only resolvable from the child (not parent)
+ * - Disposal cascades from parent to children (LIFO order)
+ *
+ * @see {@link Container} - Parent container type
+ * @see {@link ChildContainerBuilder} - Builder for creating child containers
+ *
+ * @example Basic usage
+ * ```typescript
+ * const container = createContainer(graph);
+ * const child = container.createChild().build();
+ *
+ * // Child can resolve parent's ports
+ * const logger = child.resolve(LoggerPort);
+ *
+ * // Child has reference to parent
+ * const parent = child.parent;
+ * ```
+ */
+export type ChildContainer<
+  TProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string> = never,
+  TAsyncPorts extends Port<unknown, string> = never,
+  TPhase extends ContainerPhase = "uninitialized",
+> = {
+  /**
+   * Resolves a service instance for the given port synchronously.
+   *
+   * Resolution order:
+   * 1. Check child's override map
+   * 2. Check child's extend map
+   * 3. Delegate to parent container
+   *
+   * @typeParam P - The specific port type being resolved
+   * @param port - The port token to resolve
+   * @returns The service instance for the given port
+   */
+  resolve: TPhase extends "initialized"
+    ? <P extends TProvides | TExtends>(port: P) => InferService<P>
+    : <P extends Exclude<TProvides | TExtends, TAsyncPorts>>(port: P) => InferService<P>;
+
+  /**
+   * Resolves a service instance for the given port asynchronously.
+   *
+   * @typeParam P - The specific port type being resolved
+   * @param port - The port token to resolve
+   * @returns A promise that resolves to the service instance
+   */
+  resolveAsync<P extends TProvides | TExtends>(port: P): Promise<InferService<P>>;
+
+  /**
+   * Creates a child scope for managing scoped service lifetimes.
+   *
+   * The returned scope uses the child container's effective adapter set.
+   *
+   * @returns A new Scope instance
+   */
+  createScope(): Scope<TProvides | TExtends, TAsyncPorts, TPhase>;
+
+  /**
+   * Creates a grandchild container builder for multi-level hierarchy.
+   *
+   * @returns A new ChildContainerBuilder with this child as parent
+   */
+  createChild(): ChildContainerBuilder<TProvides | TExtends, TAsyncPorts>;
+
+  /**
+   * Disposes the child container and all its resources.
+   *
+   * Disposal cascades to any grandchild containers first.
+   *
+   * @returns A promise that resolves when disposal is complete
+   */
+  dispose(): Promise<void>;
+
+  /**
+   * Whether the child container has been disposed.
+   */
+  readonly isDisposed: boolean;
+
+  /**
+   * Reference to the parent container.
+   * This is the container from which createChild() was called.
+   */
+  readonly parent: Container<TProvides, TAsyncPorts, TPhase> | ChildContainer<Port<unknown, string>, Port<unknown, string>, TAsyncPorts, TPhase>;
+
+  /**
+   * Brand property for nominal typing.
+   * Contains the type parameters at the type level.
+   * Value is undefined at runtime.
+   */
+  readonly [ChildContainerBrand]: { provides: TProvides; extends: TExtends };
+
+  /**
+   * Internal state accessor for DevTools inspection.
+   * Returns a frozen snapshot of the child container's internal state.
+   *
+   * @internal
+   */
+  readonly [INTERNAL_ACCESS]: () => ContainerInternalState;
+};
+
+// =============================================================================
+// Inheritance Mode Types
+// =============================================================================
+
+/**
+ * Defines how a child container inherits singleton instances from its parent.
+ *
+ * Three modes are available:
+ * - `'shared'`: Child sees parent's singleton instance (live reference, mutations visible)
+ * - `'forked'`: Child gets a snapshot copy at child creation time (immutable from parent's perspective)
+ * - `'isolated'`: Child creates its own fresh singleton instance (ignores parent entirely)
+ *
+ * @remarks
+ * - Default mode is `'shared'` for backwards compatibility and performance
+ * - `'forked'` mode snapshots the parent's instance at child creation time
+ * - `'isolated'` mode is required for async adapter overrides
+ * - Mode configuration only applies to non-overridden ports (overrides always create new instances)
+ *
+ * @example
+ * ```typescript
+ * const childContainer = container
+ *   .createChild()
+ *   .withInheritanceMode({
+ *     Logger: 'shared',    // Share parent's logger
+ *     Database: 'isolated' // Create fresh database connection
+ *   })
+ *   .build();
+ * ```
+ */
+export type InheritanceMode = "shared" | "forked" | "isolated";
+
+/**
+ * Map of port names to their inheritance modes.
+ *
+ * @typeParam TPortNames - Union of valid port name strings
+ */
+export type InheritanceModeMap<TPortNames extends string> = {
+  [K in TPortNames]?: InheritanceMode;
+};
+
+// =============================================================================
+// ChildContainerBuilder Type Utilities
+// =============================================================================
+
+import type {
+  Adapter,
+  Lifetime,
+  FactoryKind,
+  HasOverlap,
+  DuplicateProviderError,
+  OverridePortNotFoundError,
+  InferAdapterProvides,
+} from "@hex-di/graph";
+
+/**
+ * Type utility to check if a port exists in a union.
+ * @internal
+ */
+type PortExistsIn<TPort extends Port<unknown, string>, TUnion extends Port<unknown, string>> =
+  HasOverlap<TPort, TUnion>;
+
+/**
+ * The return type of `ChildContainerBuilder.override()`.
+ *
+ * Conditionally returns either a new `ChildContainerBuilder` with the override applied,
+ * or an `OverridePortNotFoundError` if the adapter's port is not in the parent.
+ *
+ * @internal
+ */
+type OverrideResult<
+  TParentProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string>,
+  A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>,
+> = PortExistsIn<InferAdapterProvides<A>, TParentProvides> extends true
+  ? ChildContainerBuilder<TParentProvides, TAsyncPorts, TExtends>
+  : OverridePortNotFoundError<InferAdapterProvides<A>>;
+
+/**
+ * The return type of `ChildContainerBuilder.extend()`.
+ *
+ * Conditionally returns either a new `ChildContainerBuilder` with the extension applied,
+ * or a `DuplicateProviderError` if the adapter's port already exists in parent or extensions.
+ *
+ * @internal
+ */
+type ExtendResult<
+  TParentProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string>,
+  A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>,
+> = PortExistsIn<InferAdapterProvides<A>, TParentProvides | TExtends> extends true
+  ? DuplicateProviderError<InferAdapterProvides<A>>
+  : ChildContainerBuilder<TParentProvides, TAsyncPorts, TExtends | InferAdapterProvides<A>>;
+
+/**
+ * Method signature for override with type-level validation.
+ * @internal
+ */
+type OverrideMethod<
+  TParentProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string>,
+> = <A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>>(
+  adapter: A
+) => OverrideResult<TParentProvides, TExtends, TAsyncPorts, A>;
+
+/**
+ * Method signature for extend with type-level validation.
+ * @internal
+ */
+type ExtendMethod<
+  TParentProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string>,
+> = <A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>>(
+  adapter: A
+) => ExtendResult<TParentProvides, TExtends, TAsyncPorts, A>;
+
+// =============================================================================
+// WithInheritanceMode Type Utilities
+// =============================================================================
+
+/**
+ * Extracts port names from a union of Port types.
+ * @internal
+ */
+type ExtractPortNames<T extends Port<unknown, string>> = T extends Port<infer _S, infer TName>
+  ? TName
+  : never;
+
+/**
+ * Valid inheritance mode configuration map.
+ * Keys are restricted to port names from TProvides.
+ * @internal
+ */
+type InheritanceModeConfig<TProvides extends Port<unknown, string>> = {
+  [K in ExtractPortNames<TProvides>]?: InheritanceMode;
+};
+
+/**
+ * Method signature for withInheritanceMode.
+ * Validates that all keys in the config are valid port names from TProvides.
+ * @internal
+ */
+type WithInheritanceModeMethod<
+  TParentProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string>,
+  TExtends extends Port<unknown, string>,
+> = <TConfig extends InheritanceModeConfig<TParentProvides>>(
+  config: TConfig
+) => ChildContainerBuilder<TParentProvides, TAsyncPorts, TExtends>;
+
+// =============================================================================
+// ChildContainerBuilder Type
+// =============================================================================
+
+/**
+ * An immutable builder for constructing child containers with overrides and extensions.
+ *
+ * ChildContainerBuilder follows the immutable fluent API pattern established by GraphBuilder.
+ * Each method returns a new builder instance, enabling composable configuration.
+ *
+ * @typeParam TParentProvides - Union of ports provided by the parent container
+ * @typeParam TAsyncPorts - Union of ports with async factories from parent
+ * @typeParam TExtends - Union of ports added via extend() (not in parent)
+ *
+ * @remarks
+ * - Builder instances are frozen and immutable
+ * - Each method returns a new builder with accumulated state
+ * - `.build()` creates a frozen ChildContainer
+ * - Override validates adapter's port exists in parent
+ * - Extend validates adapter's port does NOT exist in parent
+ *
+ * @see {@link ChildContainer} - The container type created by .build()
+ * @see {@link Container.createChild} - Entry point for creating builders
+ *
+ * @example Basic usage with override
+ * ```typescript
+ * const child = container.createChild()
+ *   .override(MockLoggerAdapter)
+ *   .build();
+ * ```
+ *
+ * @example Basic usage with extend
+ * ```typescript
+ * const child = container.createChild()
+ *   .extend(NewFeatureAdapter)
+ *   .build();
+ * ```
+ *
+ * @example Configuring inheritance modes
+ * ```typescript
+ * const child = container.createChild()
+ *   .withInheritanceMode({
+ *     Logger: 'shared',    // Share parent's instance
+ *     Database: 'isolated' // Create fresh instance
+ *   })
+ *   .build();
+ * ```
+ */
+export type ChildContainerBuilder<
+  TParentProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> = never,
+  TExtends extends Port<unknown, string> = never,
+> = {
+  /**
+   * Overrides a parent adapter with a new adapter for the child's scope.
+   *
+   * The adapter's port must exist in the parent's TProvides.
+   * Returns an error type if the port is not found in parent.
+   *
+   * @typeParam A - The adapter type being used for override
+   * @param adapter - The adapter that provides a port in the parent
+   * @returns A new builder with the override registered, or OverridePortNotFoundError
+   */
+  override: OverrideMethod<TParentProvides, TExtends, TAsyncPorts>;
+
+  /**
+   * Extends the child container with a new adapter not in the parent.
+   *
+   * The adapter's port must NOT exist in the parent's TProvides.
+   * Returns an error type if the port already exists in parent.
+   *
+   * @typeParam A - The adapter type being used for extension
+   * @param adapter - The adapter that provides a port not in parent
+   * @returns A new builder with the extension registered, or DuplicateProviderError
+   */
+  extend: ExtendMethod<TParentProvides, TExtends, TAsyncPorts>;
+
+  /**
+   * Configures per-port singleton inheritance modes.
+   *
+   * Defines how the child container inherits singleton instances from its parent:
+   * - `'shared'`: Child sees parent's singleton instance (live reference, mutations visible)
+   * - `'forked'`: Child gets a snapshot copy at creation time (immutable from parent's perspective)
+   * - `'isolated'`: Child creates its own fresh singleton instance (ignores parent entirely)
+   *
+   * The default mode is `'shared'` for all ports not explicitly configured.
+   * Mode configuration applies only to non-overridden ports (overrides always create new instances).
+   *
+   * @param config - Object mapping port names to inheritance modes
+   * @returns A new builder with the mode configuration applied
+   *
+   * @example
+   * ```typescript
+   * const child = container.createChild()
+   *   .withInheritanceMode({
+   *     Counter: 'forked',   // Snapshot parent's Counter at child creation
+   *     Database: 'isolated' // Create fresh Database in child
+   *   })
+   *   .build();
+   * ```
+   */
+  withInheritanceMode: WithInheritanceModeMethod<TParentProvides, TAsyncPorts, TExtends>;
+
+  /**
+   * Builds the child container with the current configuration.
+   *
+   * @returns A frozen ChildContainer instance
+   */
+  build(): ChildContainer<TParentProvides, TExtends, TAsyncPorts>;
 };
 
 // =============================================================================

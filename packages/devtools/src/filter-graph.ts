@@ -9,7 +9,7 @@
  */
 
 import type { Lifetime } from "@hex-di/graph";
-import type { ExportedGraph, ExportedNode, NodePredicate } from "./types.js";
+import type { ExportedGraph, ExportedNode, NodePredicate } from "@hex-di/devtools-core";
 
 // =============================================================================
 // filterGraph Implementation

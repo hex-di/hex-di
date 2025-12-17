@@ -1663,18 +1663,7 @@ export function getTraceRowStyle(
 /**
  * Format duration for display.
  *
- * @param ms - Duration in milliseconds
- * @returns Formatted duration string
+ * @deprecated Use `formatDuration` from `@hex-di/devtools-core` directly.
+ * Re-exported here for backwards compatibility.
  */
-export function formatDuration(ms: number): string {
-  if (ms < 0.1) {
-    return "<0.1ms";
-  }
-  if (ms < 10) {
-    return `${ms.toFixed(1)}ms`;
-  }
-  if (ms < 1000) {
-    return `${Math.round(ms)}ms`;
-  }
-  return `${(ms / 1000).toFixed(2)}s`;
-}
+export { formatDuration } from "@hex-di/devtools-core";

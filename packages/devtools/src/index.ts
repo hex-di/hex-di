@@ -175,7 +175,7 @@ export type {
   MermaidOptions,
   NodePredicate,
   LabelTransform,
-} from "./types.js";
+} from "@hex-di/devtools-core";
 
 // =============================================================================
 // Export Functions (Task Group 3)
@@ -414,10 +414,12 @@ export { createTracingContainer } from "./tracing/index.js";
 export type {
   TracingContainer,
   TracingContainerOptions,
+} from "./tracing/index.js";
+export type {
   TracingAPI,
   TraceEntry,
   TraceFilter,
   TraceStats,
-  TraceCollector,
   TraceRetentionPolicy,
-} from "./tracing/index.js";
+} from "@hex-di/devtools-core";
+export type { TraceCollector } from "./tracing/collector.js";

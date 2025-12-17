@@ -17,7 +17,7 @@ import {
   SummaryStatsView,
   type SummaryStatsViewProps,
 } from "../../src/react/summary-stats-view.js";
-import type { TraceEntry, TraceStats } from "../../src/tracing/types.js";
+import type { TraceEntry, TraceStats } from "@hex-di/devtools-core";
 
 // =============================================================================
 // Test Fixtures
@@ -34,8 +34,8 @@ function createMockTrace(overrides: Partial<TraceEntry> = {}): TraceEntry {
     startTime: performance.now(),
     duration: 10,
     isCacheHit: false,
-    parentTraceId: null,
-    childTraceIds: [],
+    parentId: null,
+    childIds: [],
     scopeId: null,
     order: 1,
     isPinned: false,
@@ -320,11 +320,11 @@ describe("SummaryStatsView", () => {
 
       expect(screen.getByTestId("lifetime-breakdown-singleton")).toBeDefined();
       expect(screen.getByTestId("lifetime-breakdown-scoped")).toBeDefined();
-      expect(screen.getByTestId("lifetime-breakdown-request")).toBeDefined();
+      expect(screen.getByTestId("lifetime-breakdown-transient")).toBeDefined();
     });
 
     it("displays correct counts for each lifetime", () => {
-      // Test data: 5 singleton, 2 scoped, 2 request (filtering out cache hits for fresh count)
+      // Test data: 5 singleton, 2 scoped, 2 transient (filtering out cache hits for fresh count)
       const props = createDefaultProps();
 
       render(<SummaryStatsView {...props} />);

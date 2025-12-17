@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { TraceEntry, TraceFilter } from "../../src/tracing/types.js";
+import type { TraceEntry, TraceFilter } from "@hex-di/devtools-core";
 import type { TraceCollector } from "../../src/tracing/collector.js";
 import { MemoryCollector } from "../../src/tracing/memory-collector.js";
 import { NoOpCollector } from "../../src/tracing/noop-collector.js";
@@ -29,8 +29,8 @@ function createMockTraceEntry(overrides: Partial<TraceEntry> = {}): TraceEntry {
     startTime: 1000.0,
     duration: 25.5,
     isCacheHit: false,
-    parentTraceId: null,
-    childTraceIds: [],
+    parentId: null,
+    childIds: [],
     scopeId: null,
     order: 1,
     isPinned: false,

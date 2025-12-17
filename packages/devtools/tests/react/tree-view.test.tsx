@@ -22,7 +22,7 @@ import {
   TreeView,
   type TreeViewProps,
 } from "../../src/react/tree-view.js";
-import type { TraceEntry } from "../../src/tracing/types.js";
+import type { TraceEntry } from "@hex-di/devtools-core";
 
 // =============================================================================
 // Test Fixtures
@@ -39,8 +39,8 @@ function createMockTrace(overrides: Partial<TraceEntry> = {}): TraceEntry {
     startTime: 100,
     duration: 25,
     isCacheHit: false,
-    parentTraceId: null,
-    childTraceIds: [],
+    parentId: null,
+    childIds: [],
     scopeId: "scope-1",
     order: 1,
     isPinned: false,
@@ -58,7 +58,7 @@ function createHierarchicalTraces(): readonly TraceEntry[] {
     portName: "UserService",
     duration: 50,
     order: 1,
-    childTraceIds: ["trace-2", "trace-3"],
+    childIds: ["trace-2", "trace-3"],
   });
 
   const child1 = createMockTrace({
@@ -66,8 +66,8 @@ function createHierarchicalTraces(): readonly TraceEntry[] {
     portName: "AuthService",
     duration: 20,
     order: 2,
-    parentTraceId: "trace-1",
-    childTraceIds: ["trace-4"],
+    parentId: "trace-1",
+    childIds: ["trace-4"],
   });
 
   const child2 = createMockTrace({
@@ -75,7 +75,7 @@ function createHierarchicalTraces(): readonly TraceEntry[] {
     portName: "LoggerService",
     duration: 5,
     order: 3,
-    parentTraceId: "trace-1",
+    parentId: "trace-1",
     isCacheHit: true,
     lifetime: "singleton",
   });
@@ -85,7 +85,7 @@ function createHierarchicalTraces(): readonly TraceEntry[] {
     portName: "TokenService",
     duration: 10,
     order: 4,
-    parentTraceId: "trace-2",
+    parentId: "trace-2",
     lifetime: "singleton",
   });
 
@@ -170,7 +170,7 @@ describe("TreeView", () => {
           portName: "PaymentService",
           duration: 30,
           order: 5,
-          parentTraceId: null,
+          parentId: null,
         }),
       ];
       const props = createDefaultProps({ traces });
@@ -362,7 +362,7 @@ describe("TreeView", () => {
             portName: "PaymentService",
             duration: 30,
             order: 5,
-            parentTraceId: null,
+            parentId: null,
           }),
         ],
       });
@@ -459,7 +459,7 @@ describe("TreeView", () => {
             portName: "PaymentService",
             duration: 30,
             order: 5,
-            parentTraceId: null,
+            parentId: null,
           }),
         ],
       });

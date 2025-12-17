@@ -439,7 +439,7 @@ describe("Resolution Tracing Export Integration", () => {
     expect(trace).toHaveProperty("startTime");
     expect(trace).toHaveProperty("duration");
     expect(trace).toHaveProperty("isCacheHit");
-    expect(trace).toHaveProperty("parentTraceId");
+    expect(trace).toHaveProperty("parentId");
     expect(trace).toHaveProperty("scopeId");
     expect(trace).toHaveProperty("order");
     expect(trace).toHaveProperty("isPinned");

@@ -73,6 +73,7 @@
   },
   "homepage": "https://github.com/hex-di/hex-di/tree/main/packages/devtools#readme",
   "dependencies": {
+    "@hex-di/devtools-core": "workspace:*",
     "@hex-di/ports": "workspace:*",
     "@hex-di/graph": "workspace:*",
     "@hex-di/runtime": "workspace:*",

@@ -14,7 +14,7 @@
  */
 
 import React, { useCallback, type ReactElement, type CSSProperties } from "react";
-import type { TraceEntry } from "../tracing/types.js";
+import type { TraceEntry } from "@hex-di/devtools-core";
 import {
   timelineStyles,
   getLifetimeBadgeStyle,
@@ -444,9 +444,9 @@ export function TimelineRow({
           <div style={localStyles.detailRow}>
             <span style={localStyles.detailLabel}>Dependencies:</span>
             <span style={localStyles.detailValue}>
-              {trace.childTraceIds.length === 0
+              {trace.childIds.length === 0
                 ? "None"
-                : `${trace.childTraceIds.length} service(s)`}
+                : `${trace.childIds.length} service(s)`}
             </span>
           </div>
 

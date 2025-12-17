@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import type { ExportedGraph, ExportedNode, LabelTransform } from "./types.js";
+import type { ExportedGraph, ExportedNode, LabelTransform } from "@hex-di/devtools-core";
 
 // =============================================================================
 // relabelPorts Implementation

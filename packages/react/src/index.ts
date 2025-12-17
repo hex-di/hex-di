@@ -189,7 +189,7 @@ export type { Port, InferService, InferPortName } from "@hex-di/ports";
  *
  * These types are commonly used alongside React integration types.
  */
-export type { Container, Scope } from "@hex-di/runtime";
+export type { Container, Scope, ChildContainer } from "@hex-di/runtime";
 
 /**
  * Re-export error classes from @hex-di/runtime that may propagate through hooks.

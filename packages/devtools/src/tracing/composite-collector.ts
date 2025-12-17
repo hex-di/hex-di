@@ -9,7 +9,7 @@
  */
 
 import type { TraceCollector, TraceSubscriber, Unsubscribe } from "./collector.js";
-import type { TraceEntry, TraceFilter, TraceStats } from "./types.js";
+import type { TraceEntry, TraceFilter, TraceStats } from "@hex-di/devtools-core";
 
 /**
  * Default empty stats for when there are no collectors.

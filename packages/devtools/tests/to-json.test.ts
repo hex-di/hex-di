@@ -14,7 +14,7 @@ import { describe, it, expect } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
 import { toJSON } from "../src/to-json.js";
-import type { ExportedGraph, ExportedNode, ExportedEdge } from "../src/types.js";
+import type { ExportedGraph, ExportedNode, ExportedEdge } from "@hex-di/devtools-core";
 
 // =============================================================================
 // Test Fixtures

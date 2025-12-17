@@ -114,6 +114,7 @@ describe("@hex-di/runtime exports", () => {
         "getInternalAccessor",
         "ContainerBrand",
         "ScopeBrand",
+        "ChildContainerBrand",
       ];
 
       // Verify all expected exports exist

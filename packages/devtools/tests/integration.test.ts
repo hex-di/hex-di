@@ -22,7 +22,7 @@ import {
   byLifetime,
   byPortName,
 } from "../src/index.js";
-import type { ExportedGraph, ExportedNode } from "../src/types.js";
+import type { ExportedGraph, ExportedNode } from "@hex-di/devtools-core";
 
 // =============================================================================
 // Test Fixtures
@@ -62,7 +62,7 @@ function getLifetimeIndicator(node: ExportedNode): string {
   const indicators: Record<string, string> = {
     singleton: "S",
     scoped: "C",
-    request: "R",
+    transient: "T",
   };
   return indicators[node.lifetime] ?? "?";
 }
@@ -154,12 +154,12 @@ describe("Integration: Full Pipelines", () => {
     const mermaid = toMermaid(relabeled);
 
     // Should have relabeled nodes with lifetime prefix
-    // S = singleton, C = scoped (container), R = request
+    // S = singleton, C = scoped (container), T = transient
     expect(mermaid).toContain("(S) Logger");
     expect(mermaid).toContain("(S) Config");
     expect(mermaid).toContain("(S) Database");
     expect(mermaid).toContain("(C) Cache");
-    expect(mermaid).toContain("(R) UserService");
+    expect(mermaid).toContain("(T) UserService");
 
     // Should still use original IDs for edges
     expect(mermaid).toContain("-->");
@@ -201,8 +201,8 @@ describe("Integration: Export functions accept ExportedGraph directly", () => {
   it("toDOT accepts ExportedGraph directly", () => {
     const exportedGraph: ExportedGraph = {
       nodes: [
-        { id: "A", label: "Service A", lifetime: "singleton" },
-        { id: "B", label: "Service B", lifetime: "scoped" },
+        { id: "A", label: "Service A", lifetime: "singleton", factoryKind: "sync" },
+        { id: "B", label: "Service B", lifetime: "scoped", factoryKind: "sync" },
       ],
       edges: [{ from: "B", to: "A" }],
     };
@@ -219,8 +219,8 @@ describe("Integration: Export functions accept ExportedGraph directly", () => {
   it("toMermaid accepts ExportedGraph directly", () => {
     const exportedGraph: ExportedGraph = {
       nodes: [
-        { id: "X", label: "Service X", lifetime: "singleton" },
-        { id: "Y", label: "Service Y", lifetime: "transient" },
+        { id: "X", label: "Service X", lifetime: "singleton", factoryKind: "sync" },
+        { id: "Y", label: "Service Y", lifetime: "transient", factoryKind: "sync" },
       ],
       edges: [{ from: "Y", to: "X" }],
     };
@@ -237,8 +237,8 @@ describe("Integration: Export functions accept ExportedGraph directly", () => {
   it("toDOT with ExportedGraph supports all options", () => {
     const exportedGraph: ExportedGraph = {
       nodes: [
-        { id: "A", label: "A", lifetime: "singleton" },
-        { id: "B", label: "B", lifetime: "scoped" },
+        { id: "A", label: "A", lifetime: "singleton", factoryKind: "sync" },
+        { id: "B", label: "B", lifetime: "scoped", factoryKind: "sync" },
       ],
       edges: [{ from: "B", to: "A" }],
     };
@@ -256,7 +256,7 @@ describe("Integration: Export functions accept ExportedGraph directly", () => {
   it("toMermaid with ExportedGraph supports all options", () => {
     const exportedGraph: ExportedGraph = {
       nodes: [
-        { id: "A", label: "A", lifetime: "singleton" },
+        { id: "A", label: "A", lifetime: "singleton", factoryKind: "sync" },
       ],
       edges: [],
     };

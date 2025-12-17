@@ -36,7 +36,7 @@ import type {
   MermaidOptions,
   NodePredicate,
   LabelTransform,
-} from "../src/types.js";
+} from "@hex-di/devtools-core";
 
 // Import React components
 import {
@@ -321,7 +321,7 @@ describe("relabelPorts type inference", () => {
 describe("DevToolsPanel prop types", () => {
   it("DevToolsPanelProps has graph property", () => {
     expectTypeOf<DevToolsPanelProps>().toHaveProperty("graph");
-    expectTypeOf<DevToolsPanelProps["graph"]>().toMatchTypeOf<Graph<Port<unknown, string>>>();
+    expectTypeOf<DevToolsPanelProps["graph"]>().toMatchTypeOf<Graph<Port<unknown, string>, Port<unknown, string>>>();
   });
 
   it("DevToolsPanelProps has optional container property", () => {
@@ -351,7 +351,7 @@ describe("DevToolsPanel prop types", () => {
 describe("DevToolsFloating prop types", () => {
   it("DevToolsFloatingProps has graph property", () => {
     expectTypeOf<DevToolsFloatingProps>().toHaveProperty("graph");
-    expectTypeOf<DevToolsFloatingProps["graph"]>().toMatchTypeOf<Graph<Port<unknown, string>>>();
+    expectTypeOf<DevToolsFloatingProps["graph"]>().toMatchTypeOf<Graph<Port<unknown, string>, Port<unknown, string>>>();
   });
 
   it("DevToolsFloatingProps has optional container property", () => {

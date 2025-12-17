@@ -91,3 +91,20 @@ export const INTERNAL_ACCESS = Symbol.for("hex-di/internal-access");
  * ```
  */
 export const TRACING_ACCESS = Symbol.for("hex-di/tracing-access");
+
+/**
+ * Symbol used to access adapter lookup for child container inheritance modes.
+ *
+ * This Symbol grants controlled access to the parent container's adapter map,
+ * enabling child containers to call the factory again for isolated mode.
+ *
+ * Using `Symbol.for()` ensures cross-realm consistency.
+ *
+ * @remarks
+ * - Only used internally by child container implementation
+ * - Returns the adapter for a given port, or undefined if not found
+ * - Never exposed in public API
+ *
+ * @internal
+ */
+export const ADAPTER_ACCESS = Symbol.for("hex-di/adapter-access");

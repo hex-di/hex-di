@@ -1289,6 +1289,45 @@ export type AsyncDependencyError<TAsyncPort extends Port<unknown, string>> = {
 };
 
 /**
+ * A branded error type that produces a readable compile-time error message
+ * when attempting to override a port that does not exist in the parent container.
+ *
+ * This type is used when `.override()` is called on a ChildContainerBuilder with
+ * an adapter that provides a port that is not in the parent's TProvides.
+ *
+ * @typeParam TPort - The Port type that is not found in the parent
+ *
+ * @returns A branded error type with:
+ * - `__errorBrand: 'OverridePortNotFoundError'` - For type discrimination
+ * - `__message: 'Port not found in parent: ${PortName}'` - Human-readable message
+ * - `__port: TPort` - The missing Port type for programmatic access
+ *
+ * @remarks
+ * - The error brand ensures this type cannot be confused with a valid result
+ * - The message clearly identifies which port is not found in the parent
+ * - This helps prevent configuration errors where an override targets a non-existent port
+ *
+ * @see {@link DuplicateProviderError} - Similar pattern for duplicate providers
+ * @see {@link MissingDependencyError} - Similar pattern for missing dependencies
+ *
+ * @example
+ * ```typescript
+ * type Error = OverridePortNotFoundError<typeof LoggerPort>;
+ * // {
+ * //   __errorBrand: 'OverridePortNotFoundError';
+ * //   __message: 'Port not found in parent: Logger';
+ * //   __port: typeof LoggerPort;
+ * // }
+ * ```
+ */
+export type OverridePortNotFoundError<TPort extends Port<unknown, string>> = {
+  readonly __valid: false;
+  readonly __errorBrand: "OverridePortNotFoundError";
+  readonly __message: `Port not found in parent: ${InferPortName<TPort>}`;
+  readonly __port: TPort;
+};
+
+/**
  * Extracts the subset of ports from TRequires that overlap with TAsyncPorts.
  *
  * This utility type finds which required ports are async ports, used for

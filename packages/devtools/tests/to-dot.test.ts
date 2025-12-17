@@ -195,7 +195,7 @@ describe("toDOT", () => {
     // Scoped should have blue fillcolor
     expect(result).toMatch(/"Database".*fillcolor="#E3F2FD"/);
 
-    // Request should have orange fillcolor
+    // Transient should have orange fillcolor
     expect(result).toMatch(/"UserService".*fillcolor="#FFF3E0"/);
   });
 });

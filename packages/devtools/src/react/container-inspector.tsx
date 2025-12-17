@@ -24,8 +24,8 @@ import type {
   ContainerSnapshot,
   ScopeTree,
 } from "../index.js";
-import type { ExportedGraph } from "../types.js";
-import type { TracingAPI } from "../tracing/types.js";
+import type { ExportedGraph } from "@hex-di/devtools-core";
+import type { TracingAPI } from "@hex-di/devtools-core";
 import { containerInspectorStyles } from "./styles.js";
 import { ScopeHierarchy } from "./scope-hierarchy.js";
 import { ResolvedServices, type ServiceInfo } from "./resolved-services.js";

@@ -90,13 +90,16 @@ describe("getTraceRowStyle", () => {
 // =============================================================================
 
 describe("formatDuration", () => {
-  it("formats sub-millisecond durations as '<0.1ms'", () => {
-    expect(formatDuration(0.05)).toBe("<0.1ms");
-    expect(formatDuration(0.09)).toBe("<0.1ms");
+  it("formats sub-millisecond durations in microseconds", () => {
+    expect(formatDuration(0.05)).toBe("50μs");
+    expect(formatDuration(0.09)).toBe("90μs");
+  });
+
+  it("formats durations under 1ms in microseconds", () => {
+    expect(formatDuration(0.5)).toBe("500μs");
   });
 
   it("formats small durations with one decimal place", () => {
-    expect(formatDuration(0.5)).toBe("0.5ms");
     expect(formatDuration(5.3)).toBe("5.3ms");
     expect(formatDuration(9.9)).toBe("9.9ms");
   });

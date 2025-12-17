@@ -8,7 +8,7 @@
  */
 
 import type { TraceCollector, TraceSubscriber, Unsubscribe } from "./collector.js";
-import type { TraceEntry, TraceFilter, TraceStats } from "./types.js";
+import type { TraceEntry, TraceFilter, TraceStats } from "@hex-di/devtools-core";
 
 /**
  * Singleton empty array to avoid allocations.

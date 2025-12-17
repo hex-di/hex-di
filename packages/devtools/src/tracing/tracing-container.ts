@@ -31,8 +31,8 @@ import type {
   TraceStats,
   TracingAPI,
   TraceRetentionPolicy,
-} from "./types.js";
-import { DEFAULT_RETENTION_POLICY } from "./types.js";
+} from "@hex-di/devtools-core";
+import { DEFAULT_RETENTION_POLICY } from "@hex-di/devtools-core";
 import { MemoryCollector } from "./memory-collector.js";
 
 // =============================================================================
@@ -82,11 +82,11 @@ interface ActiveTrace {
   /** Unique trace ID */
   readonly traceId: string;
   /** Parent trace ID (null for root resolutions) */
-  readonly parentTraceId: string | null;
+  readonly parentId: string | null;
   /** Start time of resolution */
   readonly startTime: number;
   /** Child trace IDs collected during resolution */
-  readonly childTraceIds: string[];
+  readonly childIds: string[];
 }
 
 /**
@@ -239,7 +239,7 @@ export function createTracingContainer<
       const traceId = generateTraceId(state);
 
       // Get parent trace ID from stack
-      const parentTraceId =
+      const parentId =
         state.traceStack.length > 0
           ? state.traceStack[state.traceStack.length - 1] ?? null
           : null;
@@ -247,9 +247,9 @@ export function createTracingContainer<
       // Create active trace entry
       const activeTrace: ActiveTrace = {
         traceId,
-        parentTraceId,
+        parentId,
         startTime: context.isCacheHit ? Date.now() : Date.now(), // Use same timing for consistency
-        childTraceIds: [],
+        childIds: [],
       };
 
       // Store for correlation in afterResolve
@@ -259,11 +259,11 @@ export function createTracingContainer<
       state.traceStack.push(traceId);
 
       // If has parent, register as child
-      if (parentTraceId !== null) {
+      if (parentId !== null) {
         // Find parent's active trace and add this as child
         for (const [, active] of state.activeTraces) {
-          if (active.traceId === parentTraceId) {
-            active.childTraceIds.push(traceId);
+          if (active.traceId === parentId) {
+            active.childIds.push(traceId);
             break;
           }
         }
@@ -297,8 +297,8 @@ export function createTracingContainer<
         startTime: activeTrace.startTime,
         duration: context.duration,
         isCacheHit: context.isCacheHit,
-        parentTraceId: activeTrace.parentTraceId,
-        childTraceIds: Object.freeze([...activeTrace.childTraceIds]),
+        parentId: activeTrace.parentId,
+        childIds: Object.freeze([...activeTrace.childIds]),
         scopeId: context.scopeId,
         order: ++state.orderCounter,
         isPinned: false,
@@ -312,8 +312,11 @@ export function createTracingContainer<
   // Create the container with hooks
   const baseContainer = createContainer(graph, { hooks });
 
-  // Get the internal accessor from base container (type-safe via helper)
-  const baseInternalAccessor = getInternalAccessor(baseContainer);
+  // Get the internal accessor from base container
+  // Type assertion needed as getInternalAccessor expects less specific Container type
+  const baseInternalAccessor = getInternalAccessor(
+    baseContainer as unknown as Container<Port<unknown, string>>
+  );
 
   // Create the tracing container by spreading base container and adding tracing
   const tracingContainer: TracingContainer<TProvides, TAsyncPorts> = {

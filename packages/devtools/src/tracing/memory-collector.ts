@@ -13,8 +13,8 @@ import type {
   TraceFilter,
   TraceStats,
   TraceRetentionPolicy,
-} from "./types.js";
-import { DEFAULT_RETENTION_POLICY } from "./types.js";
+} from "@hex-di/devtools-core";
+import { DEFAULT_RETENTION_POLICY } from "@hex-di/devtools-core";
 
 /**
  * Internal wrapper for trace entries with collection timestamp.

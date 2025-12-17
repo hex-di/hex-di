@@ -18,7 +18,7 @@ import React, {
   type CSSProperties,
   type KeyboardEvent,
 } from "react";
-import type { TraceEntry } from "../tracing/types.js";
+import type { TraceEntry } from "@hex-di/devtools-core";
 import {
   treeViewStyles,
   emptyStyles,
@@ -82,7 +82,7 @@ function buildTreeFromTraces(traces: readonly TraceEntry[]): readonly TreeNodeDa
    */
   function calculateTotalDuration(trace: TraceEntry): number {
     let total = trace.duration;
-    for (const childId of trace.childTraceIds) {
+    for (const childId of trace.childIds) {
       const child = traceMap.get(childId);
       if (child) {
         total += calculateTotalDuration(child);
@@ -96,7 +96,7 @@ function buildTreeFromTraces(traces: readonly TraceEntry[]): readonly TreeNodeDa
    */
   function buildNode(trace: TraceEntry, depth: number): TreeNodeData {
     const children: TreeNodeData[] = [];
-    for (const childId of trace.childTraceIds) {
+    for (const childId of trace.childIds) {
       const childTrace = traceMap.get(childId);
       if (childTrace) {
         children.push(buildNode(childTrace, depth + 1));
@@ -112,7 +112,7 @@ function buildTreeFromTraces(traces: readonly TraceEntry[]): readonly TreeNodeDa
   }
 
   // Find root traces (no parent)
-  const rootTraces = traces.filter((trace) => trace.parentTraceId === null);
+  const rootTraces = traces.filter((trace) => trace.parentId === null);
 
   return rootTraces.map((trace) => buildNode(trace, 0));
 }

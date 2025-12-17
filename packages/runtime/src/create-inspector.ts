@@ -166,7 +166,7 @@ export function createInspector<TProvides extends Port<unknown, string>>(
   const containerRef = container;
 
   // Get accessor once to validate container, but don't call it yet
-  const getAccessor = () => getInternalAccessor(containerRef as Container<Port<unknown, string>>);
+  const getAccessor = () => getInternalAccessor(containerRef as unknown as Container<Port<unknown, string>>);
 
   /**
    * Implementation of snapshot() method.

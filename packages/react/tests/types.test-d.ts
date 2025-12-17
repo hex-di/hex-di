@@ -182,13 +182,14 @@ describe("TypedReactIntegration type structure", () => {
 // =============================================================================
 
 describe("createTypedHooks preserves TProvides through all hooks", () => {
-  it("useContainer returns phase-agnostic Container<TProvides, Port<unknown, string>, ContainerPhase>", () => {
+  it("useContainer returns Resolver<TProvides>", () => {
     const { useContainer } = createTypedHooks<TestProvides>();
 
     type UseContainerReturn = ReturnType<typeof useContainer>;
-    // useContainer returns a phase-agnostic container that works with both
-    // ContainerProvider (uninitialized) and AsyncContainerProvider (initialized)
-    expectTypeOf<UseContainerReturn>().toEqualTypeOf<Container<TestProvides, Port<unknown, string>, ContainerPhase>>();
+    // useContainer returns a Resolver interface that works with both
+    // Container and ChildContainer, as well as with ContainerProvider
+    // (uninitialized) and AsyncContainerProvider (initialized)
+    expectTypeOf<UseContainerReturn>().toEqualTypeOf<Resolver<TestProvides>>();
   });
 
   it("useScope returns Resolver<TProvides>", () => {

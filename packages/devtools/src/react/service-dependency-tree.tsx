@@ -17,7 +17,7 @@ import React, {
   type CSSProperties,
   type KeyboardEvent,
 } from "react";
-import type { TracingAPI } from "../tracing/types.js";
+import type { TracingAPI } from "@hex-di/devtools-core";
 import type { ServiceTreeNode } from "./services-tree.js";
 import {
   getVisibleServiceIds,

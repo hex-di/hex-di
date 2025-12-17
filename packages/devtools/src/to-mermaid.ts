@@ -9,7 +9,7 @@
 
 import type { Graph } from "@hex-di/graph";
 import type { Port } from "@hex-di/ports";
-import type { ExportedGraph, MermaidOptions } from "./types.js";
+import type { ExportedGraph, MermaidOptions } from "@hex-di/devtools-core";
 import { toJSON } from "./to-json.js";
 
 // =============================================================================

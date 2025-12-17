@@ -87,13 +87,14 @@ function createMockContainer(): TestContainer {
     resolve: mockResolve,
     resolveAsync: mockResolveAsync,
     createScope: mockCreateScope,
+    createChild: vi.fn(),
     dispose: mockDispose,
     initialize: mockInitialize,
     isInitialized: false,
     isDisposed: false,
     [ContainerBrand]: { provides: TestServicePort },
     [INTERNAL_ACCESS]: () => mockInternalState,
-  };
+  } as TestContainer;
 
   return mockContainer;
 }

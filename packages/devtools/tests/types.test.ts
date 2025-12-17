@@ -2,7 +2,7 @@
  * Tests for ExportedGraph types and related type definitions.
  *
  * These tests verify:
- * 1. ExportedNode has correct shape (id, label, lifetime)
+ * 1. ExportedNode has correct shape (id, label, lifetime, factoryKind)
  * 2. ExportedEdge has correct shape (from, to)
  * 3. ExportedGraph has nodes and edges arrays
  * 4. Type inference works correctly with Graph input
@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, expectTypeOf } from "vitest";
-import type { Lifetime } from "@hex-di/graph";
+import type { Lifetime, FactoryKind } from "@hex-di/graph";
 import type {
   ExportedNode,
   ExportedEdge,
@@ -20,23 +20,25 @@ import type {
   MermaidOptions,
   NodePredicate,
   LabelTransform,
-} from "../src/types.js";
+} from "@hex-di/devtools-core";
 
 // =============================================================================
 // ExportedNode Tests
 // =============================================================================
 
 describe("ExportedNode", () => {
-  it("has correct shape with id, label, and lifetime properties", () => {
+  it("has correct shape with id, label, lifetime, and factoryKind properties", () => {
     const node: ExportedNode = {
       id: "Logger",
       label: "Logger",
       lifetime: "singleton",
+      factoryKind: "sync",
     };
 
     expect(node.id).toBe("Logger");
     expect(node.label).toBe("Logger");
     expect(node.lifetime).toBe("singleton");
+    expect(node.factoryKind).toBe("sync");
   });
 
   it("accepts all valid lifetime values", () => {
@@ -44,16 +46,19 @@ describe("ExportedNode", () => {
       id: "A",
       label: "A",
       lifetime: "singleton",
+      factoryKind: "sync",
     };
     const scopedNode: ExportedNode = {
       id: "B",
       label: "B",
       lifetime: "scoped",
+      factoryKind: "sync",
     };
     const requestNode: ExportedNode = {
       id: "C",
       label: "C",
       lifetime: "transient",
+      factoryKind: "sync",
     };
 
     expect(singletonNode.lifetime).toBe("singleton");
@@ -61,20 +66,41 @@ describe("ExportedNode", () => {
     expect(requestNode.lifetime).toBe("transient");
   });
 
+  it("accepts all valid factoryKind values", () => {
+    const syncNode: ExportedNode = {
+      id: "A",
+      label: "A",
+      lifetime: "singleton",
+      factoryKind: "sync",
+    };
+    const asyncNode: ExportedNode = {
+      id: "B",
+      label: "B",
+      lifetime: "singleton",
+      factoryKind: "async",
+    };
+
+    expect(syncNode.factoryKind).toBe("sync");
+    expect(asyncNode.factoryKind).toBe("async");
+  });
+
   it("has readonly properties that enforce immutability", () => {
     // Type-level test: ExportedNode properties should be readonly
     expectTypeOf<ExportedNode["id"]>().toEqualTypeOf<string>();
     expectTypeOf<ExportedNode["label"]>().toEqualTypeOf<string>();
     expectTypeOf<ExportedNode["lifetime"]>().toEqualTypeOf<Lifetime>();
+    expectTypeOf<ExportedNode["factoryKind"]>().toEqualTypeOf<FactoryKind>();
 
     // Verify the properties exist with correct types
     type IdType = ExportedNode["id"];
     type LabelType = ExportedNode["label"];
     type LifetimeType = ExportedNode["lifetime"];
+    type FactoryKindType = ExportedNode["factoryKind"];
 
     expectTypeOf<IdType>().toBeString();
     expectTypeOf<LabelType>().toBeString();
     expectTypeOf<LifetimeType>().toMatchTypeOf<"singleton" | "scoped" | "transient">();
+    expectTypeOf<FactoryKindType>().toMatchTypeOf<"sync" | "async">();
   });
 });
 
@@ -121,9 +147,9 @@ describe("ExportedGraph", () => {
   it("has nodes and edges arrays", () => {
     const graph: ExportedGraph = {
       nodes: [
-        { id: "Logger", label: "Logger", lifetime: "singleton" },
-        { id: "Database", label: "Database", lifetime: "singleton" },
-        { id: "UserService", label: "UserService", lifetime: "scoped" },
+        { id: "Logger", label: "Logger", lifetime: "singleton", factoryKind: "sync" },
+        { id: "Database", label: "Database", lifetime: "singleton", factoryKind: "sync" },
+        { id: "UserService", label: "UserService", lifetime: "scoped", factoryKind: "sync" },
       ],
       edges: [
         { from: "UserService", to: "Logger" },
@@ -154,8 +180,8 @@ describe("ExportedGraph", () => {
   it("supports graph with nodes but no edges (no dependencies)", () => {
     const noDepsGraph: ExportedGraph = {
       nodes: [
-        { id: "Logger", label: "Logger", lifetime: "singleton" },
-        { id: "Config", label: "Config", lifetime: "singleton" },
+        { id: "Logger", label: "Logger", lifetime: "singleton", factoryKind: "sync" },
+        { id: "Config", label: "Config", lifetime: "singleton", factoryKind: "sync" },
       ],
       edges: [],
     };
@@ -225,12 +251,14 @@ describe("NodePredicate", () => {
       id: "Logger",
       label: "Logger",
       lifetime: "singleton",
+      factoryKind: "sync",
     };
 
     const scopedNode: ExportedNode = {
       id: "UserService",
       label: "UserService",
       lifetime: "scoped",
+      factoryKind: "sync",
     };
 
     expect(predicate(singletonNode)).toBe(true);
@@ -244,12 +272,14 @@ describe("NodePredicate", () => {
       id: "UserService",
       label: "UserService",
       lifetime: "scoped",
+      factoryKind: "sync",
     };
 
     const loggerNode: ExportedNode = {
       id: "Logger",
       label: "Logger",
       lifetime: "singleton",
+      factoryKind: "sync",
     };
 
     expect(serviceFilter(serviceNode)).toBe(true);
@@ -265,6 +295,7 @@ describe("LabelTransform", () => {
       id: "Logger",
       label: "Logger",
       lifetime: "singleton",
+      factoryKind: "sync",
     };
 
     expect(transform(node)).toBe("Logger [singleton]");
@@ -278,6 +309,7 @@ describe("LabelTransform", () => {
       id: "DB",
       label: "Database",
       lifetime: "singleton",
+      factoryKind: "sync",
     };
 
     expect(detailedTransform(node)).toBe("ID: DB, Label: Database, Lifetime: singleton");

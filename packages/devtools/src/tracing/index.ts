@@ -60,14 +60,14 @@ export type {
   TraceFilter,
   TracingOptions,
   TracingAPI,
-} from "./types.js";
+} from "@hex-di/devtools-core";
 
 /**
  * Default retention policy values.
  *
  * @see {@link DEFAULT_RETENTION_POLICY} - Default values for TraceRetentionPolicy
  */
-export { DEFAULT_RETENTION_POLICY, hasTracingAccess } from "./types.js";
+export { DEFAULT_RETENTION_POLICY, hasTracingAccess } from "@hex-di/devtools-core";
 
 // =============================================================================
 // Collector Exports

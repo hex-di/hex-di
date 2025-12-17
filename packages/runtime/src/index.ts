@@ -170,11 +170,14 @@ export {
  *
  * @see {@link Container} - Root container created from a validated graph
  * @see {@link Scope} - Child scope for managing scoped service lifetimes
+ * @see {@link ChildContainer} - Child container for hierarchical DI
+ * @see {@link ChildContainerBuilder} - Builder for creating child containers
+ * @see {@link InheritanceMode} - Singleton inheritance mode for child containers
  */
-export type { Container, Scope, ContainerPhase } from "./types.js";
+export type { Container, Scope, ContainerPhase, ChildContainer, ChildContainerBuilder, InheritanceMode } from "./types.js";
 
 /**
- * Brand symbols for Container and Scope nominal typing.
+ * Brand symbols for Container, Scope, and ChildContainer nominal typing.
  *
  * These symbols are used internally for nominal typing and are exposed
  * primarily for testing purposes to create properly typed mock containers
@@ -182,8 +185,9 @@ export type { Container, Scope, ContainerPhase } from "./types.js";
  *
  * @see {@link ContainerBrand} - Unique symbol for Container nominal typing
  * @see {@link ScopeBrand} - Unique symbol for Scope nominal typing
+ * @see {@link ChildContainerBrand} - Unique symbol for ChildContainer nominal typing
  */
-export { ContainerBrand, ScopeBrand } from "./types.js";
+export { ContainerBrand, ScopeBrand, ChildContainerBrand } from "./types.js";
 
 // =============================================================================
 // Type Utility Functions

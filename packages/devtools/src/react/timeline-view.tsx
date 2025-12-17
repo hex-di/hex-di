@@ -19,7 +19,7 @@ import React, {
   type ReactElement,
   type CSSProperties,
 } from "react";
-import type { TraceEntry } from "../tracing/types.js";
+import type { TraceEntry } from "@hex-di/devtools-core";
 import { TimeRuler } from "./time-ruler.js";
 import { TimelineRow } from "./timeline-row.js";
 import {

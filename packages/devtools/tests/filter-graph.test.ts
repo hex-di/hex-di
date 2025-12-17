@@ -11,7 +11,7 @@
 
 import { describe, it, expect } from "vitest";
 import { filterGraph, byLifetime, byPortName } from "../src/filter-graph.js";
-import type { ExportedGraph, ExportedNode } from "../src/types.js";
+import type { ExportedGraph, ExportedNode } from "@hex-di/devtools-core";
 
 // =============================================================================
 // Test Fixtures
@@ -23,12 +23,12 @@ import type { ExportedGraph, ExportedNode } from "../src/types.js";
 function createTestGraph(): ExportedGraph {
   return {
     nodes: [
-      { id: "Config", label: "Config", lifetime: "singleton" },
-      { id: "Database", label: "Database", lifetime: "singleton" },
-      { id: "Logger", label: "Logger", lifetime: "singleton" },
-      { id: "UserRepository", label: "UserRepository", lifetime: "scoped" },
-      { id: "UserService", label: "UserService", lifetime: "scoped" },
-      { id: "RequestHandler", label: "RequestHandler", lifetime: "transient" },
+      { id: "Config", label: "Config", lifetime: "singleton", factoryKind: "sync" },
+      { id: "Database", label: "Database", lifetime: "singleton", factoryKind: "sync" },
+      { id: "Logger", label: "Logger", lifetime: "singleton", factoryKind: "sync" },
+      { id: "UserRepository", label: "UserRepository", lifetime: "scoped", factoryKind: "sync" },
+      { id: "UserService", label: "UserService", lifetime: "scoped", factoryKind: "sync" },
+      { id: "RequestHandler", label: "RequestHandler", lifetime: "transient", factoryKind: "sync" },
     ],
     edges: [
       { from: "Database", to: "Config" },
@@ -161,7 +161,7 @@ describe("byLifetime", () => {
 
   it("returns empty result when no nodes match lifetime", () => {
     const graph: ExportedGraph = {
-      nodes: [{ id: "Test", label: "Test", lifetime: "singleton" }],
+      nodes: [{ id: "Test", label: "Test", lifetime: "singleton", factoryKind: "sync" }],
       edges: [],
     };
     const result = filterGraph(graph, byLifetime("transient"));

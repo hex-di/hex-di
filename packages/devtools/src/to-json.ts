@@ -9,7 +9,7 @@
 
 import type { Graph } from "@hex-di/graph";
 import type { Port } from "@hex-di/ports";
-import type { ExportedGraph, ExportedNode, ExportedEdge } from "./types.js";
+import type { ExportedGraph, ExportedNode, ExportedEdge } from "@hex-di/devtools-core";
 
 // =============================================================================
 // toJSON Implementation

@@ -18,8 +18,8 @@ import React, {
   type CSSProperties,
 } from "react";
 import { tracingStyles, emptyStyles } from "./styles.js";
-import type { TraceEntry, TraceStats, TracingAPI } from "../tracing/types.js";
-import { DEFAULT_RETENTION_POLICY } from "../tracing/types.js";
+import type { TraceEntry, TraceStats, TracingAPI } from "@hex-di/devtools-core";
+import { DEFAULT_RETENTION_POLICY } from "@hex-di/devtools-core";
 import {
   TracingControlsBar,
   type TracingFilters,
@@ -244,7 +244,7 @@ function exportTraces(
         "startTime",
         "duration",
         "isCacheHit",
-        "parentTraceId",
+        "parentId",
         "scopeId",
         "order",
         "isPinned",
@@ -256,7 +256,7 @@ function exportTraces(
         t.startTime.toString(),
         t.duration.toString(),
         t.isCacheHit.toString(),
-        t.parentTraceId ?? "",
+        t.parentId ?? "",
         t.scopeId ?? "",
         t.order.toString(),
         t.isPinned.toString(),

@@ -10,7 +10,7 @@
 
 import { describe, it, expect } from "vitest";
 import { relabelPorts } from "../src/relabel-ports.js";
-import type { ExportedGraph, ExportedNode } from "../src/types.js";
+import type { ExportedGraph, ExportedNode } from "@hex-di/devtools-core";
 
 // =============================================================================
 // Test Fixtures
@@ -22,11 +22,11 @@ import type { ExportedGraph, ExportedNode } from "../src/types.js";
 function createTestGraph(): ExportedGraph {
   return {
     nodes: [
-      { id: "Config", label: "Config", lifetime: "singleton" },
-      { id: "Database", label: "Database", lifetime: "singleton" },
-      { id: "Logger", label: "Logger", lifetime: "singleton" },
-      { id: "UserService", label: "UserService", lifetime: "scoped" },
-      { id: "RequestHandler", label: "RequestHandler", lifetime: "transient" },
+      { id: "Config", label: "Config", lifetime: "singleton", factoryKind: "sync" },
+      { id: "Database", label: "Database", lifetime: "singleton", factoryKind: "sync" },
+      { id: "Logger", label: "Logger", lifetime: "singleton", factoryKind: "sync" },
+      { id: "UserService", label: "UserService", lifetime: "scoped", factoryKind: "sync" },
+      { id: "RequestHandler", label: "RequestHandler", lifetime: "transient", factoryKind: "sync" },
     ],
     edges: [
       { from: "Database", to: "Config" },
@@ -60,7 +60,7 @@ describe("relabelPorts", () => {
       "UserService [scoped]"
     );
     expect(result.nodes.find((n) => n.id === "RequestHandler")?.label).toBe(
-      "RequestHandler [request]"
+      "RequestHandler [transient]"
     );
   });
 
@@ -139,16 +139,19 @@ describe("relabelPorts transform scenarios", () => {
           id: "App.Services.Logger",
           label: "App.Services.Logger",
           lifetime: "singleton",
+          factoryKind: "sync",
         },
         {
           id: "App.Services.Database",
           label: "App.Services.Database",
           lifetime: "singleton",
+          factoryKind: "sync",
         },
         {
           id: "App.Services.UserService",
           label: "App.Services.UserService",
           lifetime: "scoped",
+          factoryKind: "sync",
         },
       ],
       edges: [

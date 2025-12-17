@@ -11,7 +11,8 @@
 import type { Port, InferService, InferPortName } from "@hex-di/ports";
 import type { Graph, Adapter, Lifetime, FactoryKind } from "@hex-di/graph";
 import { ContainerBrand, ScopeBrand } from "./types.js";
-import type { Container, Scope } from "./types.js";
+import type { Container, Scope, ChildContainerBuilder } from "./types.js";
+import { createChildContainerBuilder } from "./child-container-builder.js";
 import type {
   ContainerInternalState,
   ScopeInternalState,
@@ -21,7 +22,7 @@ import type {
 } from "./inspector-types.js";
 import { MemoMap } from "./memo-map.js";
 import { ResolutionContext } from "./resolution-context.js";
-import { INTERNAL_ACCESS } from "./inspector-symbols.js";
+import { INTERNAL_ACCESS, ADAPTER_ACCESS } from "./inspector-symbols.js";
 import {
   DisposedScopeError,
   ScopeRequiredError,
@@ -469,6 +470,12 @@ class ContainerImpl<
    * works the same regardless of phase.
    */
   private readonly childScopes: Set<ScopeImpl<TProvides, TAsyncPorts, "uninitialized" | "initialized">> = new Set();
+
+  /**
+   * Array of child containers for disposal propagation.
+   * Using array instead of Set to maintain insertion order for LIFO disposal.
+   */
+  private readonly childContainers: Array<{ dispose(): Promise<void>; isDisposed: boolean }> = [];
 
   /**
    * Optional hooks state for resolution instrumentation.
@@ -1182,6 +1189,12 @@ class ContainerImpl<
 
   /**
    * Disposes the container and all singleton instances.
+   *
+   * Disposal order:
+   * 1. Mark as disposed (prevents new resolutions)
+   * 2. Dispose all child containers in LIFO order (last created first)
+   * 3. Dispose all child scopes
+   * 4. Dispose singleton instances
    */
   async dispose(): Promise<void> {
     if (this.disposed) {
@@ -1190,7 +1203,17 @@ class ContainerImpl<
 
     this.disposed = true;
 
-    // Dispose all child scopes first
+    // Dispose all child containers first in LIFO order (last created first)
+    // Iterate in reverse order
+    for (let i = this.childContainers.length - 1; i >= 0; i--) {
+      const child = this.childContainers[i]!;
+      if (!child.isDisposed) {
+        await child.dispose();
+      }
+    }
+    this.childContainers.length = 0;
+
+    // Dispose all child scopes
     for (const child of this.childScopes) {
       await child.dispose();
     }
@@ -1250,6 +1273,45 @@ class ContainerImpl<
     };
 
     return Object.freeze(state);
+  }
+
+  /**
+   * Returns the adapter for a given port.
+   *
+   * This method is used internally by child containers to support
+   * isolated inheritance mode, where the child needs to call the
+   * parent's adapter factory to create a fresh instance.
+   *
+   * @param port - The port to get the adapter for
+   * @returns The adapter, or undefined if not found
+   * @internal
+   */
+  getAdapter(port: Port<unknown, string>): RuntimeAdapter | undefined {
+    return this.adapterMap.get(port);
+  }
+
+  /**
+   * Registers a child container for cascade disposal tracking.
+   *
+   * @param childContainer - The child container to track
+   * @internal
+   */
+  registerChildContainer(childContainer: { dispose(): Promise<void>; isDisposed: boolean }): void {
+    this.childContainers.push(childContainer);
+  }
+
+  /**
+   * Unregisters a child container from disposal tracking.
+   * Called when a child container is disposed individually.
+   *
+   * @param childContainer - The child container to unregister
+   * @internal
+   */
+  unregisterChildContainer(childContainer: { dispose(): Promise<void>; isDisposed: boolean }): void {
+    const index = this.childContainers.indexOf(childContainer);
+    if (index !== -1) {
+      this.childContainers.splice(index, 1);
+    }
   }
 }
 
@@ -1340,7 +1402,9 @@ export function createContainer<
   const impl = new ContainerImpl<TProvides, TAsyncPorts>(graph, options);
 
   // Create the container object with the public API
-  const container: Container<TProvides, TAsyncPorts, "uninitialized"> = {
+  // Note: ADAPTER_ACCESS is an internal symbol not in the public type,
+  // so we use a type assertion after creating the base object
+  const containerBase = {
     resolve: (<P extends TProvides>(port: P): InferService<P> => impl.resolve(port)) as Container<TProvides, TAsyncPorts, "uninitialized">["resolve"],
     resolveAsync: <P extends TProvides>(port: P): Promise<InferService<P>> => impl.resolveAsync(port),
     initialize: async (): Promise<Container<TProvides, TAsyncPorts, "initialized">> => {
@@ -1354,17 +1418,25 @@ export function createContainer<
       return impl.isInitialized;
     },
     createScope: (): Scope<TProvides, TAsyncPorts, "uninitialized"> => impl.createScope<"uninitialized">(),
+    createChild: (): ChildContainerBuilder<TProvides, TAsyncPorts> => createChildContainerBuilder(container),
     dispose: (): Promise<void> => impl.dispose(),
     get isDisposed(): boolean {
       return impl.isDisposed;
     },
     [INTERNAL_ACCESS]: (): ContainerInternalState => impl.getInternalState(),
+    [ADAPTER_ACCESS]: (port: Port<unknown, string>): RuntimeAdapter | undefined => impl.getAdapter(port),
+    // Internal methods for child container disposal tracking
+    registerChildContainer: (child: { dispose(): Promise<void>; isDisposed: boolean }) => impl.registerChildContainer(child),
+    unregisterChildContainer: (child: { dispose(): Promise<void>; isDisposed: boolean }) => impl.unregisterChildContainer(child),
     get [ContainerBrand](): { provides: TProvides } {
       // Phantom type property for nominal typing - value is never used at runtime.
       // The 'as never' cast is the standard pattern for phantom types.
       return undefined as never;
     },
   };
+
+  // Cast to public type (ADAPTER_ACCESS is internal, not part of public API)
+  const container = containerBase as Container<TProvides, TAsyncPorts, "uninitialized">;
 
   // Freeze and return
   return Object.freeze(container);
@@ -1382,7 +1454,8 @@ function createInitializedContainer<
 >(
   impl: ContainerImpl<TProvides, TAsyncPorts>
 ): Container<TProvides, TAsyncPorts, "initialized"> {
-  const container: Container<TProvides, TAsyncPorts, "initialized"> = {
+  // Note: ADAPTER_ACCESS is an internal symbol not in the public type
+  const containerBase = {
     resolve: <P extends TProvides>(port: P): InferService<P> => impl.resolve(port),
     resolveAsync: <P extends TProvides>(port: P): Promise<InferService<P>> => impl.resolveAsync(port),
     // initialize is 'never' on initialized container, but we still provide the method
@@ -1392,15 +1465,22 @@ function createInitializedContainer<
       return impl.isInitialized;
     },
     createScope: (): Scope<TProvides, TAsyncPorts, "initialized"> => impl.createScope<"initialized">(),
+    createChild: (): ChildContainerBuilder<TProvides, TAsyncPorts> => createChildContainerBuilder(container),
     dispose: (): Promise<void> => impl.dispose(),
     get isDisposed(): boolean {
       return impl.isDisposed;
     },
     [INTERNAL_ACCESS]: (): ContainerInternalState => impl.getInternalState(),
+    [ADAPTER_ACCESS]: (port: Port<unknown, string>): RuntimeAdapter | undefined => impl.getAdapter(port),
+    // Internal methods for child container disposal tracking
+    registerChildContainer: (child: { dispose(): Promise<void>; isDisposed: boolean }) => impl.registerChildContainer(child),
+    unregisterChildContainer: (child: { dispose(): Promise<void>; isDisposed: boolean }) => impl.unregisterChildContainer(child),
     get [ContainerBrand](): { provides: TProvides } {
       return undefined as never;
     },
   };
+
+  const container = containerBase as Container<TProvides, TAsyncPorts, "initialized">;
 
   return Object.freeze(container);
 }

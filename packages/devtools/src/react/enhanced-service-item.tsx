@@ -9,7 +9,7 @@
  */
 
 import React, { useState, type ReactElement, type CSSProperties } from "react";
-import type { TracingAPI } from "../tracing/types.js";
+import type { TracingAPI } from "@hex-di/devtools-core";
 import type { ServiceWithRelations } from "./services-tree.js";
 import { serviceItemStyles, getLifetimeBadgeStyle } from "./styles.js";
 import {

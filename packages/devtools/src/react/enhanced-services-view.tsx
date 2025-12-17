@@ -18,8 +18,8 @@ import React, {
   type CSSProperties,
 } from "react";
 import type { Lifetime } from "@hex-di/graph";
-import type { TracingAPI } from "../tracing/types.js";
-import type { ExportedGraph } from "../types.js";
+import type { TracingAPI } from "@hex-di/devtools-core";
+import type { ExportedGraph } from "@hex-di/devtools-core";
 import type { ServiceInfo } from "./resolved-services.js";
 import {
   enrichServicesWithRelations,

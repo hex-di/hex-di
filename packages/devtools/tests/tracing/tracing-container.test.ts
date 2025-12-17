@@ -18,7 +18,7 @@ import { GraphBuilder, createAdapter } from "@hex-di/graph";
 import { TRACING_ACCESS } from "@hex-di/runtime";
 import { createTracingContainer, type TracingContainer } from "../../src/tracing/tracing-container.js";
 import { MemoryCollector } from "../../src/tracing/memory-collector.js";
-import type { TracingAPI, TraceEntry } from "../../src/tracing/types.js";
+import type { TracingAPI, TraceEntry } from "@hex-di/devtools-core";
 
 // =============================================================================
 // Helper Functions
@@ -210,8 +210,8 @@ describe("trace hierarchy tracking", () => {
 
     // Single resolve should have no parent
     const trace = traces[0];
-    expect(trace?.parentTraceId).toBeNull();
-    expect(trace?.childTraceIds).toEqual([]);
+    expect(trace?.parentId).toBeNull();
+    expect(trace?.childIds).toEqual([]);
   });
 
   it("captures resolve call for scoped service with its dependencies resolved internally", () => {
@@ -251,8 +251,8 @@ describe("trace hierarchy tracking", () => {
     expect(traces).toHaveLength(2);
 
     // All traces should have no parent (they are independent top-level calls)
-    expect(traces[0]?.parentTraceId).toBeNull();
-    expect(traces[1]?.parentTraceId).toBeNull();
+    expect(traces[0]?.parentId).toBeNull();
+    expect(traces[1]?.parentId).toBeNull();
 
     // Order should be sequential
     expect(traces[0]?.order).toBeLessThan(traces[1]?.order ?? 0);

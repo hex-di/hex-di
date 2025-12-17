@@ -1,0 +1,15 @@
+task_groups:
+  - name: ChildContainerBuilder Foundation
+    claude_code_subagent: typescript-type-system-architect
+  - name: Override and Extend Operations
+    claude_code_subagent: typescript-type-system-architect
+  - name: Inheritance Mode Configuration
+    claude_code_subagent: typescript-type-system-architect
+  - name: Multi-Level Hierarchy and Disposal
+    claude_code_subagent: typescript-type-system-architect
+  - name: React Provider Nesting Support
+    claude_code_subagent: react-ports-integrator
+  - name: Type-Level Tests
+    claude_code_subagent: typescript-type-system-architect
+  - name: Test Review and Integration
+    claude_code_subagent: typescript-type-system-architect

@@ -8,7 +8,7 @@
  */
 
 import type { Lifetime } from "@hex-di/graph";
-import type { ExportedEdge } from "../types.js";
+import type { ExportedEdge } from "@hex-di/devtools-core";
 import type { ServiceInfo } from "./resolved-services.js";
 
 // =============================================================================

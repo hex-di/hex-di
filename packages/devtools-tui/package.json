@@ -1,0 +1,55 @@
+{
+  "name": "@hex-di/devtools-tui",
+  "version": "0.0.1",
+  "description": "Terminal UI for HexDI DevTools",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "hexdi-tui": "./dist/cli/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@hex-di/devtools-core": "workspace:*",
+    "@hex-di/devtools-network": "workspace:*",
+    "@hex-di/devtools-ui": "workspace:*",
+    "@hex-di/graph": "workspace:*",
+    "@hex-di/runtime": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anthropics/hex-di.git",
+    "directory": "packages/devtools-tui"
+  },
+  "keywords": [
+    "hex-di",
+    "devtools",
+    "tui",
+    "terminal"
+  ],
+  "license": "MIT"
+}

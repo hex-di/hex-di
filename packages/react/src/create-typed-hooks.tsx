@@ -19,7 +19,8 @@ import React, {
   type Context,
 } from "react";
 import type { Port, InferService } from "@hex-di/ports";
-import type { Container, ContainerPhase, Scope } from "@hex-di/runtime";
+import type { Container, ContainerPhase, Scope, ChildContainer } from "@hex-di/runtime";
+import { ChildContainerBrand } from "@hex-di/runtime";
 import type {
   TypedReactIntegration,
   ContainerProviderProps,
@@ -63,6 +64,28 @@ interface AsyncContainerContextValue<TProvides extends Port<unknown, string>> {
 }
 
 // =============================================================================
+// Container Type Detection
+// =============================================================================
+
+/**
+ * Checks if the provided container is a ChildContainer.
+ *
+ * ChildContainers have a branded property using the ChildContainerBrand symbol.
+ * This allows ContainerProvider to distinguish between root containers
+ * (which should not be nested) and child containers (which can be nested).
+ *
+ * @param container - The container to check
+ * @returns true if the container is a ChildContainer, false otherwise
+ *
+ * @internal
+ */
+function isChildContainer<TProvides extends Port<unknown, string>>(
+  container: Container<TProvides, Port<unknown, string>, ContainerPhase> | ChildContainer<TProvides, Port<unknown, string>>
+): container is ChildContainer<TProvides, Port<unknown, string>> {
+  return ChildContainerBrand in container;
+}
+
+// =============================================================================
 // Internal Context Types
 // =============================================================================
 
@@ -70,13 +93,14 @@ interface AsyncContainerContextValue<TProvides extends Port<unknown, string>> {
  * Internal context value for the container context.
  *
  * Uses ContainerPhase union type to accept both uninitialized containers
- * (from ContainerProvider) and initialized containers (from AsyncContainerProvider)
- * without requiring type casts.
+ * (from ContainerProvider) and initialized containers (from AsyncContainerProvider).
+ * Also supports ChildContainers for nested provider scenarios.
  *
  * @internal
  */
 interface ContainerContextValue<TProvides extends Port<unknown, string>> {
-  readonly container: Container<TProvides, Port<unknown, string>, ContainerPhase>;
+  readonly container: Container<TProvides, Port<unknown, string>, ContainerPhase> | ChildContainer<TProvides, Port<unknown, string>>;
+  readonly isChildContainer: boolean;
 }
 
 /**
@@ -98,6 +122,44 @@ interface ResolverContextValue<TProvides extends Port<unknown, string>> {
    * Called at resolution time to ensure freshness after StrictMode remounts.
    */
   readonly getResolver: () => Resolver<TProvides>;
+}
+
+/**
+ * Union of container types that can act as a resolver.
+ * @internal
+ */
+type ContainerLike<TProvides extends Port<unknown, string>> =
+  | Container<TProvides, Port<unknown, string>, ContainerPhase>
+  | ChildContainer<TProvides, Port<unknown, string>>
+  | Scope<TProvides, Port<unknown, string>, ContainerPhase>;
+
+/**
+ * Converts a ContainerLike to a Resolver.
+ *
+ * Container, ChildContainer, and Scope all structurally satisfy the Resolver
+ * interface, but TypeScript sees the createScope() return type as incompatible
+ * (Scope vs Resolver). This function explicitly constructs a Resolver object
+ * by wrapping the container methods.
+ *
+ * This is type-safe because:
+ * 1. Container/ChildContainer/Scope all have resolve, resolveAsync, createScope, dispose, isDisposed
+ * 2. The Resolver interface is a subset of those capabilities
+ * 3. createScope() returns something that also satisfies Resolver
+ *
+ * @internal
+ */
+function toResolver<TProvides extends Port<unknown, string>>(
+  container: ContainerLike<TProvides>
+): Resolver<TProvides> {
+  return {
+    resolve: (port) => container.resolve(port),
+    resolveAsync: (port) => container.resolveAsync(port),
+    createScope: () => toResolver(container.createScope()),
+    dispose: () => container.dispose(),
+    get isDisposed() {
+      return container.isDisposed;
+    },
+  };
 }
 
 // =============================================================================
@@ -194,9 +256,15 @@ export function createTypedHooks<
     container,
     children,
   }: ContainerProviderProps<TProvides>): ReactElement {
-    // Detect nested ContainerProvider - this is a programming error
+    // Detect nested ContainerProvider
     const existingContext = useContext(ContainerContext);
-    if (existingContext !== null) {
+
+    // Check if the new container is a child container
+    const containerIsChild = isChildContainer(container);
+
+    // If there's an existing context and the new container is NOT a child container,
+    // this is an error (cannot nest root containers)
+    if (existingContext !== null && !containerIsChild) {
       throw new MissingProviderError(
         "ContainerProvider",
         "ContainerProvider (nested providers not allowed)"
@@ -206,10 +274,11 @@ export function createTypedHooks<
     // Create context values
     const containerContextValue: ContainerContextValue<TProvides> = {
       container,
+      isChildContainer: containerIsChild,
     };
 
     const resolverContextValue: ResolverContextValue<TProvides> = {
-      getResolver: () => container,
+      getResolver: () => container as unknown as Resolver<TProvides>,
     };
 
     return (
@@ -363,12 +432,15 @@ export function createTypedHooks<
     }
 
     // Provide both container context (for useContainer) and resolver context (for usePort)
+    const initContainer = context.state.container;
+    const containerIsChild = isChildContainer(initContainer);
     const containerContextValue: ContainerContextValue<TProvides> = {
-      container: context.state.container,
+      container: initContainer,
+      isChildContainer: containerIsChild,
     };
 
     const resolverContextValue: ResolverContextValue<TProvides> = {
-      getResolver: () => context.state.container!,
+      getResolver: () => initContainer as unknown as Resolver<TProvides>,
     };
 
     return (
@@ -485,12 +557,17 @@ export function createTypedHooks<
     }
 
     // Simple mode - provide both container and resolver contexts when ready
+    const simpleContainer = state.container;
+    const simpleContainerIsChild = simpleContainer
+      ? isChildContainer(simpleContainer)
+      : false;
     const containerContextValue: ContainerContextValue<TProvides> = {
-      container: state.container!,
+      container: simpleContainer!,
+      isChildContainer: simpleContainerIsChild,
     };
 
     const resolverContextValue: ResolverContextValue<TProvides> = {
-      getResolver: () => state.container!,
+      getResolver: () => simpleContainer as unknown as Resolver<TProvides>,
     };
 
     return (
@@ -525,20 +602,20 @@ export function createTypedHooks<
   /**
    * useContainer hook implementation for this typed integration.
    *
-   * Returns the root Container from ContainerContext, not the current resolver.
-   * This ensures that components needing the container always get the root
-   * container, even when inside scopes.
+   * Returns the nearest Container or ChildContainer from ContainerContext.
+   * When nested inside a ContainerProvider with a ChildContainer, returns
+   * that child container. Uses Resolver interface for type compatibility.
    */
-  function useContainer(): Container<TProvides, Port<unknown, string>, ContainerPhase> {
+  function useContainer(): Resolver<TProvides> {
     const context = useContext(ContainerContext);
 
     if (context === null) {
       throw new MissingProviderError("useContainer", "ContainerProvider");
     }
 
-    // Return the root container, not the current resolver (scope)
-    // This ensures container is always available even when scopes are disposed
-    return context.container;
+    // Return the nearest container (may be root Container or ChildContainer)
+    // Both Container and ChildContainer satisfy the Resolver interface
+    return context.container as unknown as Resolver<TProvides>;
   }
 
   /**

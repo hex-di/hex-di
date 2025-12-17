@@ -277,6 +277,6 @@ export function getLifetimeStrokeVar(lifetime: string): string {
 export const LIFETIME_COLORS = {
   singleton: "#a6e3a1",
   scoped: "#89b4fa",
-  request: "#fab387",
+  transient: "#fab387",
   default: "#45475a",
 } as const;

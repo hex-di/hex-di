@@ -23,8 +23,8 @@ import type { Graph } from "@hex-di/graph";
 import type { Container, ContainerPhase } from "@hex-di/runtime";
 import { TRACING_ACCESS } from "@hex-di/runtime";
 import { toJSON } from "../to-json.js";
-import type { TracingAPI } from "../tracing/types.js";
-import type { ExportedGraph, ExportedNode } from "../types.js";
+import type { TracingAPI } from "@hex-di/devtools-core";
+import type { ExportedGraph, ExportedNode } from "@hex-di/devtools-core";
 import {
   panelStyles,
   sectionStyles,

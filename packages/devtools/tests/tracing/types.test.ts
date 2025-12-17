@@ -18,7 +18,7 @@ import type {
   TraceStats,
   TracingOptions,
   TraceFilter,
-} from "../../src/tracing/types.js";
+} from "@hex-di/devtools-core";
 
 // =============================================================================
 // TRACING_ACCESS Symbol Tests
@@ -53,8 +53,8 @@ describe("TraceEntry", () => {
       startTime: 1000.5,
       duration: 25.3,
       isCacheHit: false,
-      parentTraceId: null,
-      childTraceIds: [],
+      parentId: null,
+      childIds: [],
       scopeId: null,
       order: 1,
       isPinned: false,
@@ -66,8 +66,8 @@ describe("TraceEntry", () => {
     expect(entry.startTime).toBe(1000.5);
     expect(entry.duration).toBe(25.3);
     expect(entry.isCacheHit).toBe(false);
-    expect(entry.parentTraceId).toBeNull();
-    expect(entry.childTraceIds).toEqual([]);
+    expect(entry.parentId).toBeNull();
+    expect(entry.childIds).toEqual([]);
     expect(entry.scopeId).toBeNull();
     expect(entry.order).toBe(1);
     expect(entry.isPinned).toBe(false);
@@ -81,8 +81,8 @@ describe("TraceEntry", () => {
       startTime: 0,
       duration: 10,
       isCacheHit: false,
-      parentTraceId: null,
-      childTraceIds: [],
+      parentId: null,
+      childIds: [],
       scopeId: null,
       order: 1,
       isPinned: false,
@@ -95,8 +95,8 @@ describe("TraceEntry", () => {
       startTime: 10,
       duration: 20,
       isCacheHit: false,
-      parentTraceId: null,
-      childTraceIds: [],
+      parentId: null,
+      childIds: [],
       scopeId: "scope-1",
       order: 2,
       isPinned: false,
@@ -109,8 +109,8 @@ describe("TraceEntry", () => {
       startTime: 30,
       duration: 5,
       isCacheHit: false,
-      parentTraceId: null,
-      childTraceIds: [],
+      parentId: null,
+      childIds: [],
       scopeId: "scope-1",
       order: 3,
       isPinned: false,
@@ -129,8 +129,8 @@ describe("TraceEntry", () => {
       startTime: 0,
       duration: 100,
       isCacheHit: false,
-      parentTraceId: null,
-      childTraceIds: ["child-trace-1", "child-trace-2"],
+      parentId: null,
+      childIds: ["child-trace-1", "child-trace-2"],
       scopeId: "scope-1",
       order: 1,
       isPinned: false,
@@ -143,15 +143,15 @@ describe("TraceEntry", () => {
       startTime: 10,
       duration: 20,
       isCacheHit: false,
-      parentTraceId: "parent-trace",
-      childTraceIds: [],
+      parentId: "parent-trace",
+      childIds: [],
       scopeId: "scope-1",
       order: 2,
       isPinned: false,
     };
 
-    expect(parentEntry.childTraceIds).toContain("child-trace-1");
-    expect(childEntry.parentTraceId).toBe("parent-trace");
+    expect(parentEntry.childIds).toContain("child-trace-1");
+    expect(childEntry.parentId).toBe("parent-trace");
   });
 
   it("tracks cache hits correctly", () => {
@@ -162,8 +162,8 @@ describe("TraceEntry", () => {
       startTime: 100,
       duration: 0.1, // Very fast due to cache hit
       isCacheHit: true,
-      parentTraceId: null,
-      childTraceIds: [],
+      parentId: null,
+      childIds: [],
       scopeId: null,
       order: 5,
       isPinned: false,
@@ -180,8 +180,8 @@ describe("TraceEntry", () => {
     expectTypeOf<TraceEntry["startTime"]>().toEqualTypeOf<number>();
     expectTypeOf<TraceEntry["duration"]>().toEqualTypeOf<number>();
     expectTypeOf<TraceEntry["isCacheHit"]>().toEqualTypeOf<boolean>();
-    expectTypeOf<TraceEntry["parentTraceId"]>().toEqualTypeOf<string | null>();
-    expectTypeOf<TraceEntry["childTraceIds"]>().toEqualTypeOf<readonly string[]>();
+    expectTypeOf<TraceEntry["parentId"]>().toEqualTypeOf<string | null>();
+    expectTypeOf<TraceEntry["childIds"]>().toEqualTypeOf<readonly string[]>();
     expectTypeOf<TraceEntry["scopeId"]>().toEqualTypeOf<string | null>();
     expectTypeOf<TraceEntry["order"]>().toEqualTypeOf<number>();
     expectTypeOf<TraceEntry["isPinned"]>().toEqualTypeOf<boolean>();

@@ -1,21 +1,21 @@
 /**
- * useContainer hook for accessing the root DI container.
+ * useContainer hook for accessing the nearest DI container (root or child).
  *
- * This hook provides direct access to the Container instance, which is useful
- * for advanced scenarios like creating manual scopes or accessing container-level
- * operations.
+ * This hook provides direct access to the Container or ChildContainer instance,
+ * which is useful for advanced scenarios like creating manual scopes or accessing
+ * container-level operations.
  *
  * @packageDocumentation
  */
 
 import { useContext } from "react";
 import type { Port } from "@hex-di/ports";
-import type { Container } from "@hex-di/runtime";
 import { ContainerContext } from "./context.js";
 import { MissingProviderError } from "./errors.js";
+import type { Resolver } from "./types.js";
 
 /**
- * Hook that returns the root Container from the nearest ContainerProvider.
+ * Hook that returns the nearest Container or ChildContainer from the nearest ContainerProvider.
  *
  * Use this hook when you need direct access to the container for advanced
  * operations like creating manual scopes, accessing the dispose method,
@@ -23,7 +23,7 @@ import { MissingProviderError } from "./errors.js";
  *
  * @typeParam TProvides - Union of Port types that the container can resolve
  *
- * @returns The Container instance from the ContainerProvider
+ * @returns A Resolver interface for service resolution (may be Container or ChildContainer)
  *
  * @throws {MissingProviderError} If called outside a ContainerProvider.
  *   This indicates a programming error - components using useContainer
@@ -33,6 +33,10 @@ import { MissingProviderError } from "./errors.js";
  * - For service resolution, prefer `usePort` instead
  * - The returned container is the same reference across renders
  * - This is an escape hatch - most code should use `usePort`
+ * - When nested inside a ContainerProvider with a ChildContainer,
+ *   this returns the ChildContainer (nearest container in tree)
+ * - Returns Resolver<TProvides> which provides resolve, resolveAsync,
+ *   createScope, and dispose methods without conditional type complexity.
  *
  * @example Basic usage
  * ```tsx
@@ -54,12 +58,14 @@ import { MissingProviderError } from "./errors.js";
  */
 export function useContainer<
   TProvides extends Port<unknown, string> = Port<unknown, string>
->(): Container<TProvides> {
+>(): Resolver<TProvides> {
   const context = useContext(ContainerContext);
 
   if (context === null) {
     throw new MissingProviderError("useContainer", "ContainerProvider");
   }
 
-  return context.container as Container<TProvides>;
+  // Return the nearest container (may be root Container or ChildContainer)
+  // Both Container and ChildContainer satisfy the Resolver interface
+  return context.container as unknown as Resolver<TProvides>;
 }

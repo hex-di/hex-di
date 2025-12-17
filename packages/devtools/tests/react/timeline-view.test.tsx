@@ -19,7 +19,7 @@ import {
 } from "../../src/react/timeline-view.js";
 import { TimelineRow } from "../../src/react/timeline-row.js";
 import { TimeRuler } from "../../src/react/time-ruler.js";
-import type { TraceEntry } from "../../src/tracing/types.js";
+import type { TraceEntry } from "@hex-di/devtools-core";
 
 // =============================================================================
 // Test Fixtures
@@ -38,8 +38,8 @@ function createMockTrace(
     startTime: 0,
     duration: 25,
     isCacheHit: false,
-    parentTraceId: null,
-    childTraceIds: [],
+    parentId: null,
+    childIds: [],
     scopeId: null,
     order: 1,
     isPinned: false,
@@ -994,7 +994,7 @@ describe("TimelineRow", () => {
     const parentTrace = createMockTrace({
       id: "trace-1",
       portName: "ParentService",
-      childTraceIds: ["trace-2", "trace-3"],
+      childIds: ["trace-2", "trace-3"],
     });
 
     render(
@@ -1319,7 +1319,7 @@ describe("TimelineRow", () => {
     it("shows correct number of dependencies", () => {
       const trace = createMockTrace({
         id: "trace-1",
-        childTraceIds: ["child-1", "child-2", "child-3", "child-4"],
+        childIds: ["child-1", "child-2", "child-3", "child-4"],
       });
 
       render(
