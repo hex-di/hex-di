@@ -9,8 +9,11 @@
  */
 
 import { DevToolsFloating, createTracingContainer } from "@hex-di/devtools";
-import { AsyncContainerProvider } from "./di/hooks.js";
+import type { Container } from "@hex-di/runtime";
+import { AsyncContainerProvider, ContainerProvider } from "./di/hooks.js";
 import { appGraph } from "./di/graph.js";
+import type { AppPorts } from "./di/ports.js";
+import { createPluginChildContainer } from "./di/child-container.js";
 import { ChatRoom } from "./components/ChatRoom.js";
 
 // =============================================================================
@@ -28,6 +31,8 @@ import { ChatRoom } from "./components/ChatRoom.js";
  * in the DevTools panel.
  */
 const container = createTracingContainer(appGraph);
+const pluginContainer = createPluginChildContainer(container);
+const pluginContainerForProvider = pluginContainer as unknown as Container<AppPorts>;
 // =============================================================================
 // App Component
 // =============================================================================
@@ -95,14 +100,51 @@ export function App(): JSX.Element {
               </p>
             </header>
 
-            {/* Chat room content */}
-            <ChatRoom />
+            {/* Grid shows root container and child container side-by-side */}
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="rounded-xl border border-gray-200 bg-white/80 p-4 shadow-lg">
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-800">
+                    Root Container (persisted)
+                  </h2>
+                  <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                    LocalStorage-backed store
+                  </span>
+                </div>
+                <p className="mb-4 text-sm text-gray-600">
+                  This is the base container defined by the app graph. Messages
+                  are persisted via localStorage to showcase singleton behavior.
+                </p>
+                <ChatRoom />
+              </div>
+
+              <ContainerProvider container={pluginContainerForProvider}>
+                <div className="rounded-xl border border-purple-200 bg-white/80 p-4 shadow-lg">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h2 className="text-lg font-semibold text-gray-800">
+                      Child Container (plug-and-play)
+                    </h2>
+                    <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">
+                      In-memory overrides
+                    </span>
+                  </div>
+                  <p className="mb-4 text-sm text-gray-600">
+                    Built from the root via <code>createChild()</code>, this
+                    container swaps in an ephemeral MessageStore and a tagged
+                    ChatService to demonstrate feature isolation without
+                    touching the parent graph.
+                  </p>
+                  <ChatRoom />
+                </div>
+              </ContainerProvider>
+            </div>
 
             {/* Feature explanation */}
             <footer className="mt-8 text-center text-sm text-gray-500">
               <p>
-                This showcase demonstrates singleton, scoped, and request
-                lifetimes with reactive updates and DevTools integration.
+                This showcase demonstrates singleton, scoped, request, and child
+                container lifetimes with reactive updates and DevTools
+                integration.
               </p>
             </footer>
           </div>
