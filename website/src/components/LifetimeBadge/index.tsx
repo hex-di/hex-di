@@ -1,14 +1,14 @@
 import type { ReactNode } from 'react';
 import styles from './styles.module.css';
 
-export type LifetimeType = 'singleton' | 'scoped' | 'request';
+export type LifetimeType = 'singleton' | 'scoped' | 'transient';
 
 export interface LifetimeBadgeProps {
   /**
    * The lifetime scope type
    * - singleton: Teal colored badge
    * - scoped: Amber colored badge
-   * - request: Purple colored badge
+   * - transient: Purple colored badge
    */
   type: LifetimeType;
   /**
@@ -24,19 +24,19 @@ export interface LifetimeBadgeProps {
 const lifetimeLabels: Record<LifetimeType, string> = {
   singleton: 'Singleton',
   scoped: 'Scoped',
-  request: 'Request',
+  transient: 'Transient',
 };
 
 /**
  * Icon characters for each lifetime type (based on design specs)
  * - Singleton: Single circle
  * - Scoped: Nested circles
- * - Request: Multiple circles
+ * - Transient: Multiple circles
  */
 const lifetimeIcons: Record<LifetimeType, string> = {
   singleton: '\u2022', // bullet point
   scoped: '\u2299', // circled dot
-  request: '\u2234', // therefore symbol (three dots)
+  transient: '\u2234', // therefore symbol (three dots)
 };
 
 /**
@@ -45,13 +45,13 @@ const lifetimeIcons: Record<LifetimeType, string> = {
  * Colors (based on design specifications):
  * - Singleton: Teal (#00897B to #26A69A gradient)
  * - Scoped: Amber (#FF8F00 to #FFA726 gradient)
- * - Request: Purple (#7B1FA2 to #AB47BC gradient)
+ * - Transient: Purple (#7B1FA2 to #AB47BC gradient)
  *
  * @example
  * ```tsx
  * <LifetimeBadge type="singleton" />
  * <LifetimeBadge type="scoped" />
- * <LifetimeBadge type="request" lightBackground />
+ * <LifetimeBadge type="transient" lightBackground />
  * ```
  */
 export default function LifetimeBadge({

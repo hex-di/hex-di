@@ -18,7 +18,7 @@ New to HexDI? Start here:
 1. [Installation](./getting-started/installation.md) - Install packages and configure TypeScript
 2. [Core Concepts](./getting-started/core-concepts.md) - Understand ports, adapters, graphs, and containers
 3. [First Application](./getting-started/first-application.md) - Build your first DI-powered app
-4. [Lifetimes](./getting-started/lifetimes.md) - Singleton, scoped, and request lifetimes
+4. [Lifetimes](./getting-started/lifetimes.md) - Singleton, scoped, and transient lifetimes
 5. [TypeScript Integration](./getting-started/typescript-integration.md) - Type inference and utilities
 
 ### Guides

@@ -451,7 +451,7 @@ This structure separates concerns clearly:
 
 ## Next Steps
 
-- Learn about [Lifetimes](./lifetimes.md) for scoped and request services
+- Learn about [Lifetimes](./lifetimes.md) for scoped and transient services
 - Explore [Project Structure](../patterns/project-structure.md) patterns
 - Add [React Integration](../guides/react-integration.md) for React apps
 - Set up [Testing](../guides/testing-strategies.md) with mocks

@@ -28,7 +28,7 @@ function createTestGraph(): ExportedGraph {
       { id: "Logger", label: "Logger", lifetime: "singleton" },
       { id: "UserRepository", label: "UserRepository", lifetime: "scoped" },
       { id: "UserService", label: "UserService", lifetime: "scoped" },
-      { id: "RequestHandler", label: "RequestHandler", lifetime: "request" },
+      { id: "RequestHandler", label: "RequestHandler", lifetime: "transient" },
     ],
     edges: [
       { from: "Database", to: "Config" },
@@ -152,11 +152,11 @@ describe("byLifetime", () => {
 
   it("filters nodes by request lifetime", () => {
     const original = createTestGraph();
-    const result = filterGraph(original, byLifetime("request"));
+    const result = filterGraph(original, byLifetime("transient"));
 
     expect(result.nodes).toHaveLength(1);
     expect(result.nodes[0]!.id).toBe("RequestHandler");
-    expect(result.nodes[0]!.lifetime).toBe("request");
+    expect(result.nodes[0]!.lifetime).toBe("transient");
   });
 
   it("returns empty result when no nodes match lifetime", () => {
@@ -164,7 +164,7 @@ describe("byLifetime", () => {
       nodes: [{ id: "Test", label: "Test", lifetime: "singleton" }],
       edges: [],
     };
-    const result = filterGraph(graph, byLifetime("request"));
+    const result = filterGraph(graph, byLifetime("transient"));
 
     expect(result.nodes).toHaveLength(0);
   });

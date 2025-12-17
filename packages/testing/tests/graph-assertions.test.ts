@@ -64,7 +64,7 @@ const DatabaseAdapter = createAdapter({
 const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort, DatabasePort],
-  lifetime: "request",
+  lifetime: "transient",
   factory: (deps) => ({
     getUser: async (id: string) => {
       deps.Logger.log(`Fetching user ${id}`);
@@ -173,13 +173,13 @@ describe("assertLifetime", () => {
     const graph = GraphBuilder.create()
       .provide(LoggerAdapter) // singleton
       .provide(DatabaseAdapter) // scoped
-      .provide(UserServiceAdapter) // request
+      .provide(UserServiceAdapter) // transient
       .build();
 
     // All should succeed
     expect(() => assertLifetime(graph, LoggerPort, "singleton")).not.toThrow();
     expect(() => assertLifetime(graph, DatabasePort, "scoped")).not.toThrow();
-    expect(() => assertLifetime(graph, UserServicePort, "request")).not.toThrow();
+    expect(() => assertLifetime(graph, UserServicePort, "transient")).not.toThrow();
   });
 
   it("throws if lifetime mismatch", () => {
@@ -187,9 +187,9 @@ describe("assertLifetime", () => {
       .provide(LoggerAdapter) // singleton
       .build();
 
-    expect(() => assertLifetime(graph, LoggerPort, "request")).toThrow(GraphAssertionError);
-    expect(() => assertLifetime(graph, LoggerPort, "request")).toThrow(
-      /Port 'Logger' has lifetime 'singleton', expected 'request'/
+    expect(() => assertLifetime(graph, LoggerPort, "transient")).toThrow(GraphAssertionError);
+    expect(() => assertLifetime(graph, LoggerPort, "transient")).toThrow(
+      /Port 'Logger' has lifetime 'singleton', expected 'transient'/
     );
   });
 

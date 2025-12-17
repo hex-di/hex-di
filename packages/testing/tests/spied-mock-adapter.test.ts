@@ -118,7 +118,7 @@ describe("createSpiedMockAdapter", () => {
 
   test("default lifetime is request for test isolation", () => {
     const spiedAdapter = createSpiedMockAdapter(LoggerPort);
-    expect(spiedAdapter.lifetime).toBe("request");
+    expect(spiedAdapter.lifetime).toBe("transient");
   });
 
   test("works with createContainer for integration scenarios", () => {

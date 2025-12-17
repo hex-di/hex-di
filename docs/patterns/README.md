@@ -28,7 +28,7 @@ Advanced graph composition techniques:
 
 ### [Scoped Services](./scoped-services.md)
 
-Patterns for request-scoped and user-scoped services:
+Patterns for transient and user-scoped services:
 - HTTP request contexts
 - User sessions
 - Multi-tenancy

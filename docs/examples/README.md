@@ -12,7 +12,7 @@ Real-world examples and code references for HexDI.
 
 The React Showcase is a complete example application demonstrating:
 
-- All three lifetime scopes (singleton, scoped, request)
+- All three lifetime scopes (singleton, scoped, transient)
 - React integration with typed hooks
 - Automatic scope lifecycle management
 - DevTools integration

@@ -56,7 +56,7 @@ const LoggerAdapter = createAdapter({
 const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort],
-  lifetime: "request",
+  lifetime: "transient",
   factory: (deps) => ({
     getUser: (id) => {
       deps.Logger.log(`Getting user ${id}`);
@@ -259,7 +259,7 @@ describe("renderWithContainer", () => {
       const mockUserServiceAdapter = createAdapter({
         provides: UserServicePort,
         requires: [LoggerPort],
-        lifetime: "request",
+        lifetime: "transient",
         factory: (deps) => ({
           getUser: (id) => {
             deps.Logger.log(`Mock getting user ${id}`);

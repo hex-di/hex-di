@@ -81,7 +81,7 @@ describe("toJSON", () => {
     const UserServiceAdapter = createAdapter({
       provides: UserServicePort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ getUser: () => ({}) }),
     });
 
@@ -107,7 +107,7 @@ describe("toJSON", () => {
     const userServiceNode = result.nodes.find((n) => n.id === "UserService");
     expect(userServiceNode).toBeDefined();
     expect(userServiceNode?.label).toBe("UserService");
-    expect(userServiceNode?.lifetime).toBe("request");
+    expect(userServiceNode?.lifetime).toBe("transient");
   });
 
   it("edges represent dependency relationships (from dependent to required)", () => {

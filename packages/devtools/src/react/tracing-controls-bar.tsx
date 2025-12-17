@@ -380,8 +380,8 @@ function LifetimeFilterGroup({
       <FilterButton
         testId="tracing-filter-lifetime-request"
         label="Request"
-        isActive={value === "request"}
-        onClick={() => onChange("request")}
+        isActive={value === "transient"}
+        onClick={() => onChange("transient")}
         activeColor="var(--hex-devtools-request, #fab387)"
       />
     </div>

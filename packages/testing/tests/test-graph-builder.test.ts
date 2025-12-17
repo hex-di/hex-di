@@ -124,7 +124,7 @@ describe("TestGraphBuilder.override()", () => {
     const mockLoggerAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ log: vi.fn() }),
     });
 
@@ -146,7 +146,7 @@ describe("TestGraphBuilder.override()", () => {
     const mockLoggerAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ log: vi.fn() }),
     });
 
@@ -179,7 +179,7 @@ describe("TestGraphBuilder chained overrides", () => {
     const mockLoggerAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ log: mockLogFn }),
     });
 
@@ -187,7 +187,7 @@ describe("TestGraphBuilder chained overrides", () => {
     const mockDatabaseAdapter = createAdapter({
       provides: DatabasePort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ query: mockQueryFn }),
     });
 
@@ -213,7 +213,7 @@ describe("TestGraphBuilder chained overrides", () => {
     const mockLoggerAdapter1 = createAdapter({
       provides: LoggerPort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ log: mockLogFn1 }),
     });
 
@@ -221,7 +221,7 @@ describe("TestGraphBuilder chained overrides", () => {
     const mockLoggerAdapter2 = createAdapter({
       provides: LoggerPort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ log: mockLogFn2 }),
     });
 
@@ -261,7 +261,7 @@ describe("TestGraphBuilder.build()", () => {
     const mockLoggerAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ log: mockLogFn }),
     });
 
@@ -287,7 +287,7 @@ describe("TestGraphBuilder.build()", () => {
     const mockLoggerAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ log: vi.fn() }),
     });
 
@@ -355,7 +355,7 @@ describe("TestGraphBuilder immutability", () => {
     const mockLoggerAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ log: vi.fn() }),
     });
 
@@ -376,14 +376,14 @@ describe("TestGraphBuilder immutability", () => {
     const mockLoggerAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ log: vi.fn() }),
     });
 
     const mockDatabaseAdapter = createAdapter({
       provides: DatabasePort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ query: vi.fn() }),
     });
 

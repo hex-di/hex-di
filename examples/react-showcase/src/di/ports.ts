@@ -117,7 +117,7 @@ export const ChatServicePort = createPort<"ChatService", ChatService>(
  * Port for the notification service.
  *
  * Creates notifications with unique instance IDs to demonstrate
- * request lifetime. Each resolution creates a new instance with
+ * transient lifetime. Each resolution creates a new instance with
  * a fresh instance ID and timestamp.
  *
  * @example

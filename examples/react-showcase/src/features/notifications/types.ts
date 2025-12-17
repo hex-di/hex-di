@@ -8,7 +8,7 @@
  * Notification service interface.
  */
 export interface NotificationService {
-  /** Unique instance ID (for demonstrating request lifetime) */
+  /** Unique instance ID (for demonstrating transient lifetime) */
   readonly instanceId: number;
   /** When this instance was created */
   readonly createdAt: Date;

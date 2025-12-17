@@ -109,7 +109,7 @@ interface Container<TProvides extends Port<unknown, string>> {
 
 #### container.resolve(port)
 
-Resolves a singleton or request-scoped service.
+Resolves a singleton or transient service.
 
 ```typescript
 const logger = container.resolve(LoggerPort);
@@ -364,7 +364,7 @@ Maps lifetime to numeric level.
 type LifetimeLevel<L extends Lifetime> =
   L extends 'singleton' ? 3 :
   L extends 'scoped' ? 2 :
-  L extends 'request' ? 1 : never;
+  L extends 'transient' ? 1 : never;
 ```
 
 ### `CaptiveDependencyError<...>`

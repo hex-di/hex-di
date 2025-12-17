@@ -102,7 +102,7 @@ describe("DI Graph", () => {
       );
       expect(notificationDeps).toContain("Logger");
       expect(notificationDeps).toContain("Config");
-      expect(notificationAdapter?.lifetime).toBe("request");
+      expect(notificationAdapter?.lifetime).toBe("transient");
     });
   });
 
@@ -134,7 +134,7 @@ describe("DI Graph", () => {
             requires: ["Logger"],
           },
           {
-            lifetime: "request",
+            lifetime: "transient",
             port: "NotificationService",
             requires: ["Config", "Logger"],
           },

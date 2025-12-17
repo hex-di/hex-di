@@ -132,7 +132,7 @@ describe("Edge case: Large graphs", () => {
         run(): void;
       }
       const port = createPort<`Service${number}`, Service>(`Service${i}`);
-      const lifetime: Lifetime = i % 3 === 0 ? "singleton" : i % 3 === 1 ? "scoped" : "request";
+      const lifetime: Lifetime = i % 3 === 0 ? "singleton" : i % 3 === 1 ? "scoped" : "transient";
       const adapter = createAdapter({
         provides: port,
         requires: [],
@@ -222,7 +222,7 @@ describe("Edge case: Special characters in port names", () => {
     const adapter = createAdapter({
       provides: port,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ run: () => {} }),
     });
 
@@ -427,7 +427,7 @@ describe("Edge case: Edge cleanup when filtering", () => {
         createAdapter({
           provides: UserServicePort,
           requires: [LoggerPort],
-          lifetime: "request",
+          lifetime: "transient",
           factory: () => ({ getUser: () => ({}) }),
         })
       )
@@ -467,7 +467,7 @@ describe("Edge case: Edge cleanup when filtering", () => {
         createAdapter({
           provides: UserServicePort,
           requires: [LoggerPort],
-          lifetime: "request",
+          lifetime: "transient",
           factory: () => ({ getUser: () => ({}) }),
         })
       )

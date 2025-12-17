@@ -54,7 +54,7 @@ export interface ResolutionHookContext {
 
   /**
    * Lifetime of the adapter for this port.
-   * Determines caching behavior: "singleton", "scoped", or "request".
+   * Determines caching behavior: "singleton", "scoped", or "transient".
    */
   readonly lifetime: Lifetime;
 

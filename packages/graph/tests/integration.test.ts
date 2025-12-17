@@ -346,7 +346,7 @@ describe("Integration: Graph with mixed lifetime adapters", () => {
     const requestAdapter = createAdapter({
       provides: CachePort,
       requires: [LoggerPort],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ get: () => undefined, set: () => {}, invalidate: () => {} }),
     });
 
@@ -366,7 +366,7 @@ describe("Integration: Graph with mixed lifetime adapters", () => {
 
     expect(firstAdapter?.lifetime).toBe("singleton");
     expect(secondAdapter?.lifetime).toBe("scoped");
-    expect(thirdAdapter?.lifetime).toBe("request");
+    expect(thirdAdapter?.lifetime).toBe("transient");
   });
 });
 
@@ -474,7 +474,7 @@ describe("Integration: Real-world usage pattern", () => {
     const emailServiceAdapter = createAdapter({
       provides: EmailServicePort,
       requires: [ConfigPort, LoggerPort],
-      lifetime: "request",
+      lifetime: "transient",
       factory: (deps) => ({
         send: async (to, subject, _body) => {
           deps.Logger.log(`Sending email to ${to}: ${subject}`);
@@ -486,7 +486,7 @@ describe("Integration: Real-world usage pattern", () => {
     const notificationServiceAdapter = createAdapter({
       provides: NotificationServicePort,
       requires: [UserServicePort, EmailServicePort, LoggerPort],
-      lifetime: "request",
+      lifetime: "transient",
       factory: (deps) => ({
         notify: async (userId, message) => {
           deps.Logger.log(`Notifying user ${userId}`);

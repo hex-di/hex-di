@@ -87,7 +87,7 @@ const ScopedDatabaseAdapter = createAdapter({
 const RequestContextAdapter = createAdapter({
   provides: RequestContextPort,
   requires: [],
-  lifetime: "request",
+  lifetime: "transient",
   factory: () => ({ requestId: "req-123" }),
 });
 
@@ -121,7 +121,7 @@ const ScopedDependsOnSingletonAdapter = createAdapter({
 const RequestDependsOnSingletonAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort],
-  lifetime: "request",
+  lifetime: "transient",
   factory: (deps) => ({
     getUser: async (id) => {
       deps.Logger.log(`Getting user ${id}`);
@@ -146,7 +146,7 @@ describe("LifetimeLevel phantom type", () => {
   });
 
   it("request maps to level 3", () => {
-    type RequestLevel = LifetimeLevel<"request">;
+    type RequestLevel = LifetimeLevel<"transient">;
     expectTypeOf<RequestLevel>().toEqualTypeOf<3>();
   });
 });
@@ -211,7 +211,7 @@ describe("Valid captive dependency scenarios (should compile)", () => {
     const RequestDependsOnScopedAdapter = createAdapter({
       provides: UserServicePort,
       requires: [DatabasePort],
-      lifetime: "request",
+      lifetime: "transient",
       factory: (deps) => ({
         getUser: async (id) => {
           await deps.Database.query(`SELECT * FROM users WHERE id = '${id}'`);
@@ -230,7 +230,7 @@ describe("Valid captive dependency scenarios (should compile)", () => {
     const RequestDependsOnRequestAdapter = createAdapter({
       provides: UserServicePort,
       requires: [RequestContextPort],
-      lifetime: "request",
+      lifetime: "transient",
       factory: (deps) => ({
         getUser: async (id) => {
           void deps.RequestContext.requestId; // Use the dependency

@@ -231,7 +231,7 @@ function GraphView({ exportedGraph }: GraphViewProps): ReactElement {
   const graphNodes = exportedGraph.nodes.map((node) => ({
     id: node.id,
     label: node.label,
-    lifetime: node.lifetime as "singleton" | "scoped" | "request",
+    lifetime: node.lifetime as "singleton" | "scoped" | "transient",
     factoryKind: node.factoryKind as "sync" | "async",
   }));
 

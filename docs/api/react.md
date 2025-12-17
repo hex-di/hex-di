@@ -231,7 +231,7 @@ function NotificationButton() {
   const container = useContainer();
 
   const handleClick = () => {
-    // Manual resolution for request-scoped service
+    // Manual resolution for transient service
     const notification = container.resolve(NotificationPort);
     notification.send('Hello!');
   };

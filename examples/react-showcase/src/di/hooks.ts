@@ -173,7 +173,7 @@ export const usePort = typedHooks.usePort;
  *   const container = useContainer();
  *
  *   const handleClick = () => {
- *     // Each resolve creates a new instance (request lifetime)
+ *     // Each resolve creates a new instance (transient lifetime)
  *     const notification = container.resolve(NotificationServicePort);
  *     notification.notify("Button clicked!");
  *   };

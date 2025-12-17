@@ -225,7 +225,7 @@ describe("request lifetime", () => {
     const DatabaseAdapter = createAdapter({
       provides: DatabasePort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({
         query: vi.fn(),
         instanceId: generateInstanceId(),
@@ -263,7 +263,7 @@ describe("request lifetime", () => {
     const DatabaseAdapter = createAdapter({
       provides: DatabasePort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory,
     });
 
@@ -423,7 +423,7 @@ describe("mixed lifetimes in dependency chain", () => {
     const UserServiceAdapter = createAdapter({
       provides: UserServiceWithContextIdPort,
       requires: [RequestContextPort],
-      lifetime: "request",
+      lifetime: "transient",
       factory: userServiceFactory,
     });
 

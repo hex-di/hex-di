@@ -1118,7 +1118,7 @@ const LIFETIME_SCOPES = [
 });`,
   },
   {
-    type: 'request' as const,
+    type: 'transient' as const,
     title: 'Request',
     description: 'Fresh instance every time',
     useCases: [
@@ -1129,7 +1129,7 @@ const LIFETIME_SCOPES = [
     ],
     code: `const NotificationAdapter = createAdapter({
   provides: NotificationPort,
-  lifetime: 'request',  // New each time
+  lifetime: 'transient',  // New each time
   factory: () => new Notification()
 });`,
   },

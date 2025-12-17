@@ -61,14 +61,14 @@ type ConfigPortType = typeof ConfigPort;
 describe("Lifetime type", () => {
   it("is a union of singleton, scoped, and request literals", () => {
     expectTypeOf<Lifetime>().toEqualTypeOf<
-      "singleton" | "scoped" | "request"
+      "singleton" | "scoped" | "transient"
     >();
   });
 
   it("accepts valid lifetime values", () => {
     const singleton: Lifetime = "singleton";
     const scoped: Lifetime = "scoped";
-    const request: Lifetime = "request";
+    const request: Lifetime = "transient";
 
     expectTypeOf(singleton).toMatchTypeOf<Lifetime>();
     expectTypeOf(scoped).toMatchTypeOf<Lifetime>();
@@ -116,11 +116,11 @@ describe("Adapter type", () => {
   it("captures TLifetime as literal type", () => {
     type SingletonAdapter = Adapter<LoggerPortType, never, "singleton">;
     type ScopedAdapter = Adapter<LoggerPortType, never, "scoped">;
-    type RequestAdapter = Adapter<LoggerPortType, never, "request">;
+    type RequestAdapter = Adapter<LoggerPortType, never, "transient">;
 
     expectTypeOf<SingletonAdapter["lifetime"]>().toEqualTypeOf<"singleton">();
     expectTypeOf<ScopedAdapter["lifetime"]>().toEqualTypeOf<"scoped">();
-    expectTypeOf<RequestAdapter["lifetime"]>().toEqualTypeOf<"request">();
+    expectTypeOf<RequestAdapter["lifetime"]>().toEqualTypeOf<"transient">();
   });
 
   it("produces distinct types for same provides but different requires", () => {

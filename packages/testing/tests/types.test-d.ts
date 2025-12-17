@@ -94,7 +94,7 @@ const DatabaseAdapter = createAdapter({
 const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort, DatabasePort],
-  lifetime: "request",
+  lifetime: "transient",
   factory: (deps) => ({
     getUser: async (id) => {
       deps.Logger.log(`Fetching user ${id}`);
@@ -284,11 +284,11 @@ describe("createSpiedMockAdapter type inference", () => {
     expectTypeOf<SpiedConfig["debug"]>().toEqualTypeOf<boolean>();
   });
 
-  it("SpiedAdapter is an alias for Adapter with request lifetime", () => {
+  it("SpiedAdapter is an alias for Adapter with transient lifetime", () => {
     type TestSpiedAdapter = SpiedAdapter<LoggerPortType>;
-    type ExpectedType = Adapter<LoggerPortType, never, "request">;
+    type ExpectedType = Adapter<LoggerPortType, never, "transient">;
 
-    // SpiedAdapter should be exactly Adapter<P, never, "request">
+    // SpiedAdapter should be exactly Adapter<P, never, "transient">
     expectTypeOf<TestSpiedAdapter>().toEqualTypeOf<ExpectedType>();
   });
 
@@ -357,7 +357,7 @@ describe("createAdapterTest type inference", () => {
     type MockDepsType = Parameters<typeof createAdapterTest<
       UserServicePortType,
       LoggerPortType | DatabasePortType,
-      "request"
+      "transient"
     >>[1];
 
     // Should have Logger and Database properties

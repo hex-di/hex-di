@@ -99,7 +99,7 @@ const DatabaseAdapter = createAdapter({
 const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort, DatabasePort],
-  lifetime: "request",
+  lifetime: "transient",
   factory: () => ({
     getUser: async () => ({ id: "1", name: "Test" }),
   }),

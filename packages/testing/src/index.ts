@@ -138,7 +138,7 @@ export type { Container, Scope } from "@hex-di/runtime";
  * const mockLoggerAdapter = createAdapter({
  *   provides: LoggerPort,
  *   requires: [],
- *   lifetime: 'request',
+ *   lifetime: 'transient',
  *   factory: () => ({ log: vi.fn() }),
  * });
  *

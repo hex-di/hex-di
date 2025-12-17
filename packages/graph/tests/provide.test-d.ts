@@ -488,7 +488,7 @@ describe("provide() accepts any valid Adapter type", () => {
     const requestAdapter = createAdapter({
       provides: ConfigPort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ get: () => "" }),
     });
 

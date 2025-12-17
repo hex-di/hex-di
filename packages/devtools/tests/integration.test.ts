@@ -102,7 +102,7 @@ function createTestGraph() {
   const UserServiceAdapter = createAdapter({
     provides: UserServicePort,
     requires: [LoggerPort, DatabasePort, CachePort],
-    lifetime: "request",
+    lifetime: "transient",
     factory: () => ({ getUser: () => ({}) }),
   });
 
@@ -220,7 +220,7 @@ describe("Integration: Export functions accept ExportedGraph directly", () => {
     const exportedGraph: ExportedGraph = {
       nodes: [
         { id: "X", label: "Service X", lifetime: "singleton" },
-        { id: "Y", label: "Service Y", lifetime: "request" },
+        { id: "Y", label: "Service Y", lifetime: "transient" },
       ],
       edges: [{ from: "Y", to: "X" }],
     };

@@ -26,7 +26,7 @@ function createTestGraph(): ExportedGraph {
       { id: "Database", label: "Database", lifetime: "singleton" },
       { id: "Logger", label: "Logger", lifetime: "singleton" },
       { id: "UserService", label: "UserService", lifetime: "scoped" },
-      { id: "RequestHandler", label: "RequestHandler", lifetime: "request" },
+      { id: "RequestHandler", label: "RequestHandler", lifetime: "transient" },
     ],
     edges: [
       { from: "Database", to: "Config" },

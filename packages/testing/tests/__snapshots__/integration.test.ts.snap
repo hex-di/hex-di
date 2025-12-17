@@ -11,19 +11,19 @@ exports[`snapshot testing with graph modifications > serializes overridden graph
       ],
     },
     {
-      "lifetime": "request",
+      "lifetime": "transient",
       "port": "EmailService",
       "requires": [
         "Logger",
       ],
     },
     {
-      "lifetime": "request",
+      "lifetime": "transient",
       "port": "Logger",
       "requires": [],
     },
     {
-      "lifetime": "request",
+      "lifetime": "transient",
       "port": "UserRepository",
       "requires": [
         "Database",
@@ -31,7 +31,7 @@ exports[`snapshot testing with graph modifications > serializes overridden graph
       ],
     },
     {
-      "lifetime": "request",
+      "lifetime": "transient",
       "port": "UserService",
       "requires": [
         "EmailService",

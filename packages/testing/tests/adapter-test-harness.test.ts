@@ -254,7 +254,7 @@ describe("createAdapterTest error handling", () => {
     const FailingAdapter = createAdapter({
       provides: ConfigPort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => {
         throw new Error("Configuration file not found");
       },
@@ -271,7 +271,7 @@ describe("createAdapterTest error handling", () => {
     const CountingUserServiceAdapter = createAdapter({
       provides: UserServicePort,
       requires: [LoggerPort, DatabasePort],
-      lifetime: "request",
+      lifetime: "transient",
       factory: (deps) => {
         factoryCallCount++;
         // Capture the count at factory creation time

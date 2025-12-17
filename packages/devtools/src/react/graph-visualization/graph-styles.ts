@@ -264,7 +264,7 @@ export function getLifetimeStrokeVar(lifetime: string): string {
       return "var(--hex-devtools-singleton, #a6e3a1)";
     case "scoped":
       return "var(--hex-devtools-scoped, #89b4fa)";
-    case "request":
+    case "transient":
       return "var(--hex-devtools-request, #fab387)";
     default:
       return "var(--hex-devtools-border, #45475a)";

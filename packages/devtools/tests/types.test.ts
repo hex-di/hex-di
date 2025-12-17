@@ -53,12 +53,12 @@ describe("ExportedNode", () => {
     const requestNode: ExportedNode = {
       id: "C",
       label: "C",
-      lifetime: "request",
+      lifetime: "transient",
     };
 
     expect(singletonNode.lifetime).toBe("singleton");
     expect(scopedNode.lifetime).toBe("scoped");
-    expect(requestNode.lifetime).toBe("request");
+    expect(requestNode.lifetime).toBe("transient");
   });
 
   it("has readonly properties that enforce immutability", () => {
@@ -74,7 +74,7 @@ describe("ExportedNode", () => {
 
     expectTypeOf<IdType>().toBeString();
     expectTypeOf<LabelType>().toBeString();
-    expectTypeOf<LifetimeType>().toMatchTypeOf<"singleton" | "scoped" | "request">();
+    expectTypeOf<LifetimeType>().toMatchTypeOf<"singleton" | "scoped" | "transient">();
   });
 });
 

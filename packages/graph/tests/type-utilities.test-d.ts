@@ -79,7 +79,7 @@ const DatabaseAdapter = createAdapter({
 const ConfigAdapter = createAdapter({
   provides: ConfigPort,
   requires: [],
-  lifetime: "request",
+  lifetime: "transient",
   factory: () => ({ get: () => "" }),
 });
 
@@ -230,17 +230,17 @@ describe("InferAdapterLifetime<T> utility type", () => {
   it("extracts request lifetime", () => {
     type Result = InferAdapterLifetime<typeof ConfigAdapter>;
 
-    expectTypeOf<Result>().toEqualTypeOf<"request">();
+    expectTypeOf<Result>().toEqualTypeOf<"transient">();
   });
 
   it("extracts lifetime from manually typed Adapter", () => {
     type SingletonAdapter = Adapter<LoggerPortType, never, "singleton">;
     type ScopedAdapter = Adapter<LoggerPortType, never, "scoped">;
-    type RequestAdapter = Adapter<LoggerPortType, never, "request">;
+    type RequestAdapter = Adapter<LoggerPortType, never, "transient">;
 
     expectTypeOf<InferAdapterLifetime<SingletonAdapter>>().toEqualTypeOf<"singleton">();
     expectTypeOf<InferAdapterLifetime<ScopedAdapter>>().toEqualTypeOf<"scoped">();
-    expectTypeOf<InferAdapterLifetime<RequestAdapter>>().toEqualTypeOf<"request">();
+    expectTypeOf<InferAdapterLifetime<RequestAdapter>>().toEqualTypeOf<"transient">();
   });
 
   it("returns never for non-Adapter types", () => {

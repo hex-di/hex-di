@@ -113,7 +113,7 @@ const UserServiceAdapter = createAdapter({
 const EmailAdapter = createAdapter({
   provides: EmailPort,
   requires: [LoggerPort, ConfigPort],
-  lifetime: "request",
+  lifetime: "transient",
   factory: () => ({ send: async () => {} }),
 });
 

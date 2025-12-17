@@ -179,10 +179,10 @@ function ServiceFiltersComponent({
         </button>
         <button
           data-testid="service-filter-request"
-          style={getFilterButtonStyle(filters.lifetime === "request")}
-          onClick={() => handleLifetimeFilter("request")}
+          style={getFilterButtonStyle(filters.lifetime === "transient")}
+          onClick={() => handleLifetimeFilter("transient")}
           type="button"
-          aria-pressed={filters.lifetime === "request"}
+          aria-pressed={filters.lifetime === "transient"}
         >
           Request
         </button>
@@ -235,7 +235,7 @@ function ServiceItem({ service }: ServiceItemProps): ReactElement {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // For request services with call count, show transient (orange) status
-  const hasBeenCalled = service.lifetime === "request" && service.callCount !== undefined && service.callCount > 0;
+  const hasBeenCalled = service.lifetime === "transient" && service.callCount !== undefined && service.callCount > 0;
   const statusStyle = getStatusIndicatorStyle(
     service.isResolved,
     service.isScopeRequired,
@@ -284,7 +284,7 @@ function ServiceItem({ service }: ServiceItemProps): ReactElement {
           className={getLifetimeClassName(service.lifetime)}
           style={getLifetimeBadgeStyle(service.lifetime)}
         >
-          {service.lifetime === "request" && service.callCount !== undefined && service.callCount > 0
+          {service.lifetime === "transient" && service.callCount !== undefined && service.callCount > 0
             ? `${service.callCount} call${service.callCount > 1 ? "s" : ""}`
             : service.lifetime}
         </span>
@@ -300,7 +300,7 @@ function ServiceItem({ service }: ServiceItemProps): ReactElement {
             <span style={serviceItemStyles.detailValue}>
               {service.isScopeRequired
                 ? "Requires scope"
-                : service.lifetime === "request"
+                : service.lifetime === "transient"
                   ? service.callCount !== undefined && service.callCount > 0
                     ? `Transient (${service.callCount} resolution${service.callCount > 1 ? "s" : ""})`
                     : "Transient (not tracked)"
@@ -313,7 +313,7 @@ function ServiceItem({ service }: ServiceItemProps): ReactElement {
             <span style={serviceItemStyles.detailLabel}>Lifetime:</span>
             <span style={serviceItemStyles.detailValue}>{service.lifetime}</span>
           </div>
-          {service.lifetime === "request" && service.lastResolvedAt !== undefined && (
+          {service.lifetime === "transient" && service.lastResolvedAt !== undefined && (
             <div style={serviceItemStyles.detailRow}>
               <span style={serviceItemStyles.detailLabel}>Last called:</span>
               <span style={serviceItemStyles.detailValue}>
@@ -321,7 +321,7 @@ function ServiceItem({ service }: ServiceItemProps): ReactElement {
               </span>
             </div>
           )}
-          {service.lifetime === "request" && service.averageDuration !== undefined && (
+          {service.lifetime === "transient" && service.averageDuration !== undefined && (
             <div style={serviceItemStyles.detailRow}>
               <span style={serviceItemStyles.detailLabel}>Avg time:</span>
               <span style={serviceItemStyles.detailValue}>

@@ -123,7 +123,7 @@ export interface ChatService {
  * Notification service with instance tracking.
  *
  * Creates notifications with unique instance IDs to demonstrate
- * request lifetime. Each resolution creates a new instance.
+ * transient lifetime. Each resolution creates a new instance.
  */
 export interface NotificationService {
   /** Unique instance ID for this notification service */

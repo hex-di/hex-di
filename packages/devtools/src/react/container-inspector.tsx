@@ -78,7 +78,7 @@ function getRequestServiceStats(
   }
 
   const traces = tracingAPI.getTraces({ portName });
-  const requestTraces = traces.filter((t) => t.lifetime === "request");
+  const requestTraces = traces.filter((t) => t.lifetime === "transient");
 
   if (requestTraces.length === 0) {
     return undefined;
@@ -171,7 +171,7 @@ function buildServiceList(
     let lastResolvedAt: number | undefined;
     let averageDuration: number | undefined;
 
-    if (node.lifetime === "request") {
+    if (node.lifetime === "transient") {
       const stats = getRequestServiceStats(node.id, tracingAPI);
       if (stats !== undefined) {
         callCount = stats.callCount;

@@ -448,7 +448,7 @@ describe("Integration: Scope Hierarchy", () => {
     const NotificationAdapter = createAdapter({
       provides: NotificationServicePort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: requestFactory,
     });
 
@@ -556,7 +556,7 @@ describe("Integration: Scope Hierarchy", () => {
     const NotificationAdapter = createAdapter({
       provides: NotificationServicePort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: requestFactory,
     });
 
@@ -1393,7 +1393,7 @@ describe("Integration: Edge Cases and Gap Coverage", () => {
     const NotificationAdapter = createAdapter({
       provides: NotificationServicePort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => {
         factoryCalls.count++;
         return {

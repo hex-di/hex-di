@@ -60,7 +60,7 @@ export type SpiedService<T> = {
  * ```typescript
  * const spiedAdapter = createSpiedMockAdapter(LoggerPort);
  *
- * // Type is Adapter<typeof LoggerPort, never, "request">
+ * // Type is Adapter<typeof LoggerPort, never, "transient">
  * const graph = GraphBuilder.create().provide(spiedAdapter).build();
  *
  * const logger = container.resolve(LoggerPort);
@@ -69,7 +69,7 @@ export type SpiedService<T> = {
  * expect(spiedLogger.log.mock.calls).toEqual([['test']]);
  * ```
  */
-export type SpiedAdapter<P extends Port<object, string>> = Adapter<P, never, "request">;
+export type SpiedAdapter<P extends Port<object, string>> = Adapter<P, never, "transient">;
 
 // =============================================================================
 // Implementation
@@ -157,7 +157,7 @@ export function createSpiedMockAdapter<P extends Port<object, string>>(
   return createAdapter({
     provides: port,
     requires: [],
-    lifetime: "request",
+    lifetime: "transient",
     factory: () => createSpiedImplementation<InferService<P>>(defaults),
   });
 }

@@ -128,7 +128,7 @@ describe("createContainer", () => {
     const LoggerAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory,
     });
 

@@ -31,14 +31,14 @@ pnpm add @hex-di/graph
 Lifetime scope for an adapter's service instance.
 
 ```typescript
-type Lifetime = 'singleton' | 'scoped' | 'request';
+type Lifetime = 'singleton' | 'scoped' | 'transient';
 ```
 
 | Value | Description |
 |-------|-------------|
 | `'singleton'` | One instance for entire application |
 | `'scoped'` | One instance per scope |
-| `'request'` | New instance every resolution |
+| `'transient'` | New instance every resolution |
 
 ### `Adapter<TProvides, TRequires, TLifetime>`
 

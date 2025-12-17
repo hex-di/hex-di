@@ -27,7 +27,7 @@ let notificationInstanceCounter = 0;
  * Adapter for the notification service.
  *
  * Creates a new instance with a unique ID each time it is resolved.
- * This demonstrates the request lifetime where every resolution
+ * This demonstrates the transient lifetime where every resolution
  * gets a fresh instance.
  *
  * This is a sync adapter that depends on ConfigPort (async).
@@ -35,13 +35,13 @@ let notificationInstanceCounter = 0;
  * the container is used, making their instances available synchronously.
  *
  * @remarks
- * - Lifetime: request - new instance for every resolution
+ * - Lifetime: transient - new instance for every resolution
  * - Dependencies: LoggerPort, ConfigPort (async - requires container.initialize())
  */
 export const NotificationServiceAdapter = createAdapter({
   provides: NotificationServicePort,
   requires: [LoggerPort, ConfigPort],
-  lifetime: "request",
+  lifetime: "transient",
   factory: (deps): NotificationService => {
     notificationInstanceCounter += 1;
     const instanceId = notificationInstanceCounter;

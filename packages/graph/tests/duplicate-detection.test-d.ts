@@ -92,7 +92,7 @@ const UserServiceAdapter = createAdapter({
 const DuplicateLoggerAdapter = createAdapter({
   provides: LoggerPort,
   requires: [],
-  lifetime: "request",
+  lifetime: "transient",
   factory: () => ({ log: () => {} }),
 });
 

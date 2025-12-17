@@ -93,7 +93,7 @@ describe("createMockAdapter", () => {
       log: vi.fn(),
     });
 
-    expect(mockAdapter.lifetime).toBe("request");
+    expect(mockAdapter.lifetime).toBe("transient");
   });
 
   test("configurable lifetime via options", () => {
@@ -112,12 +112,12 @@ describe("createMockAdapter", () => {
     const requestMock = createMockAdapter(
       LoggerPort,
       { log: vi.fn() },
-      { lifetime: "request" }
+      { lifetime: "transient" }
     );
 
     expect(singletonMock.lifetime).toBe("singleton");
     expect(scopedMock.lifetime).toBe("scoped");
-    expect(requestMock.lifetime).toBe("request");
+    expect(requestMock.lifetime).toBe("transient");
   });
 
   test("adapter works with createContainer", () => {
@@ -155,7 +155,7 @@ describe("createMockAdapter with dependencies", () => {
     const UserServiceAdapter = createAdapter({
       provides: UserServicePort,
       requires: [LoggerPort],
-      lifetime: "request",
+      lifetime: "transient",
       factory: (deps) => ({
         getUser: async (id: string) => {
           deps.Logger.log(`Fetching user ${id}`);

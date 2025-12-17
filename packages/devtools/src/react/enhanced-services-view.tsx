@@ -224,10 +224,10 @@ function ServiceFiltersComponent({
         </button>
         <button
           data-testid="service-filter-request"
-          style={getFilterButtonStyle(filters.lifetime === "request")}
-          onClick={() => handleLifetimeFilter("request")}
+          style={getFilterButtonStyle(filters.lifetime === "transient")}
+          onClick={() => handleLifetimeFilter("transient")}
           type="button"
-          aria-pressed={filters.lifetime === "request"}
+          aria-pressed={filters.lifetime === "transient"}
         >
           Request
         </button>

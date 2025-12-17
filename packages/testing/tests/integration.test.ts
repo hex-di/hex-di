@@ -110,7 +110,7 @@ const ProductionDatabaseAdapter = createAdapter({
 const ProductionUserRepositoryAdapter = createAdapter({
   provides: UserRepositoryPort,
   requires: [DatabasePort, LoggerPort],
-  lifetime: "request",
+  lifetime: "transient",
   factory: (deps) => ({
     findById: async (id) => {
       deps.Logger.log(`Finding user by id: ${id}`);
@@ -130,7 +130,7 @@ const ProductionUserRepositoryAdapter = createAdapter({
 const ProductionEmailServiceAdapter = createAdapter({
   provides: EmailServicePort,
   requires: [LoggerPort],
-  lifetime: "request",
+  lifetime: "transient",
   factory: (deps) => ({
     send: async (to, subject, body) => {
       deps.Logger.log(`Sending email to ${to}: ${subject}`);
@@ -142,7 +142,7 @@ const ProductionEmailServiceAdapter = createAdapter({
 const ProductionUserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [UserRepositoryPort, EmailServicePort, LoggerPort],
-  lifetime: "request",
+  lifetime: "transient",
   factory: (deps) => ({
     getUser: async (id) => {
       deps.Logger.log(`Getting user ${id}`);
@@ -460,7 +460,7 @@ describe("createAdapterTest integration", () => {
     const CountingAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => {
         instanceCount++;
         const currentInstance = instanceCount;
@@ -510,11 +510,11 @@ describe("graph assertions with TestGraphBuilder", () => {
   });
 
   it("assertLifetime reflects overridden adapter lifetime", () => {
-    // Original Logger is singleton, override with request
+    // Original Logger is singleton, override with transient
     const mockLoggerAdapter = createMockAdapter(
       LoggerPort,
       { log: () => {} },
-      { lifetime: "request" }
+      { lifetime: "transient" }
     );
 
     const testGraph = TestGraphBuilder.from(productionGraph)
@@ -522,7 +522,7 @@ describe("graph assertions with TestGraphBuilder", () => {
       .build();
 
     // Lifetime should be the override's lifetime
-    expect(() => assertLifetime(testGraph, LoggerPort, "request")).not.toThrow();
+    expect(() => assertLifetime(testGraph, LoggerPort, "transient")).not.toThrow();
 
     // Original lifetime assertion should fail
     expect(() => assertLifetime(testGraph, LoggerPort, "singleton")).toThrow();
@@ -538,7 +538,7 @@ describe("snapshot testing with graph modifications", () => {
     const mockLoggerAdapter = createMockAdapter(
       LoggerPort,
       { log: () => {} },
-      { lifetime: "request" }
+      { lifetime: "transient" }
     );
 
     const testGraph = TestGraphBuilder.from(productionGraph)
@@ -549,7 +549,7 @@ describe("snapshot testing with graph modifications", () => {
 
     // Find Logger in snapshot
     const loggerSnapshot = snapshot.adapters.find((a) => a.port === "Logger");
-    expect(loggerSnapshot?.lifetime).toBe("request"); // Reflects override
+    expect(loggerSnapshot?.lifetime).toBe("transient"); // Reflects override
 
     // Can still snapshot the full structure
     expect(snapshot.adapters).toHaveLength(5);
@@ -562,7 +562,7 @@ describe("snapshot testing with graph modifications", () => {
     const mockLoggerAdapter = createMockAdapter(
       LoggerPort,
       { log: () => {} },
-      { lifetime: "request" }
+      { lifetime: "transient" }
     );
 
     const testGraph = TestGraphBuilder.from(productionGraph)
@@ -579,7 +579,7 @@ describe("snapshot testing with graph modifications", () => {
     const testLogger = testSnapshot.adapters.find((a) => a.port === "Logger");
 
     expect(prodLogger?.lifetime).toBe("singleton");
-    expect(testLogger?.lifetime).toBe("request");
+    expect(testLogger?.lifetime).toBe("transient");
 
     // Other adapters unchanged
     const prodDatabase = productionSnapshot.adapters.find((a) => a.port === "Database");

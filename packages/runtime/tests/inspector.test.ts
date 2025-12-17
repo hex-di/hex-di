@@ -279,7 +279,7 @@ describe("createInspector Factory", () => {
     const RequestAdapter = createAdapter({
       provides: UserServicePort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ getUser: vi.fn() }),
     });
 

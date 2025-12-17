@@ -300,7 +300,7 @@ function computeLifetimeStats(
   const stats: Record<Lifetime, { count: number; totalDuration: number }> = {
     singleton: { count: 0, totalDuration: 0 },
     scoped: { count: 0, totalDuration: 0 },
-    request: { count: 0, totalDuration: 0 },
+    transient: { count: 0, totalDuration: 0 },
   };
 
   for (const trace of traces) {
@@ -325,12 +325,12 @@ function computeLifetimeStats(
           ? stats.scoped.totalDuration / stats.scoped.count
           : 0,
     },
-    request: {
-      count: stats.request.count,
-      totalDuration: stats.request.totalDuration,
+    transient: {
+      count: stats.transient.count,
+      totalDuration: stats.transient.totalDuration,
       averageDuration:
-        stats.request.count > 0
-          ? stats.request.totalDuration / stats.request.count
+        stats.transient.count > 0
+          ? stats.transient.totalDuration / stats.transient.count
           : 0,
     },
   };
@@ -396,7 +396,7 @@ function getLifetimeBadgeStyle(lifetime: Lifetime): CSSProperties {
       return { ...base, ...nodeStyles.badgeSingleton };
     case "scoped":
       return { ...base, ...nodeStyles.badgeScoped };
-    case "request":
+    case "transient":
       return { ...base, ...nodeStyles.badgeRequest };
   }
 }
@@ -410,7 +410,7 @@ function getLifetimeBarColor(lifetime: Lifetime): string {
       return "var(--hex-devtools-singleton, #a6e3a1)";
     case "scoped":
       return "var(--hex-devtools-scoped, #89b4fa)";
-    case "request":
+    case "transient":
       return "var(--hex-devtools-request, #fab387)";
   }
 }
@@ -794,7 +794,7 @@ export function SummaryStatsView({
     return Math.max(
       lifetimeStats.singleton.totalDuration,
       lifetimeStats.scoped.totalDuration,
-      lifetimeStats.request.totalDuration
+      lifetimeStats.transient.totalDuration
     );
   }, [lifetimeStats]);
 
@@ -900,8 +900,8 @@ export function SummaryStatsView({
           maxTotal={maxLifetimeTotal}
         />
         <LifetimeBreakdownCard
-          lifetime="request"
-          stats={lifetimeStats.request}
+          lifetime="transient"
+          stats={lifetimeStats.transient}
           maxTotal={maxLifetimeTotal}
         />
       </div>

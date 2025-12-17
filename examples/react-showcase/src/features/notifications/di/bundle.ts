@@ -15,7 +15,7 @@ import { NotificationServiceAdapter } from "./adapters/index.js";
  * Requires: LoggerPort, ConfigPort
  *
  * This feature provides notification display functionality.
- * Each resolution gets a unique instance (request lifetime).
+ * Each resolution gets a unique instance (transient lifetime).
  *
  * @example
  * ```typescript

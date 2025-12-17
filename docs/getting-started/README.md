@@ -19,7 +19,7 @@ This section will guide you through installing and using HexDI in your TypeScrip
 1. **[Installation](./installation.md)** - Install HexDI packages and configure TypeScript
 2. **[Core Concepts](./core-concepts.md)** - Understand ports, adapters, graphs, and containers
 3. **[First Application](./first-application.md)** - Build a complete working example step-by-step
-4. **[Lifetimes](./lifetimes.md)** - Master singleton, scoped, and request service lifetimes
+4. **[Lifetimes](./lifetimes.md)** - Master singleton, scoped, and transient service lifetimes
 5. **[TypeScript Integration](./typescript-integration.md)** - Leverage type inference and utilities
 
 ## Quick Overview

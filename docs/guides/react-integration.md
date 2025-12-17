@@ -202,7 +202,7 @@ function NotificationButton() {
   const container = useContainer();
 
   const handleClick = () => {
-    // Resolve a request-scoped service
+    // Resolve a transient service
     const notification = container.resolve(NotificationPort);
     notification.send('Button clicked!');
   };

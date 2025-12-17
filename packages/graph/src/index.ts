@@ -87,7 +87,7 @@ export type FactoryKind = "sync" | "async";
  *   Created once per scope and reused within that scope.
  *   Suitable for request-specific state or database connections.
  *
- * - `'request'`: New instance for every resolution request.
+ * - `'transient'`: New instance for every resolution.
  *   Created fresh each time the service is resolved.
  *   Suitable for stateful services or when isolation is required.
  *
@@ -109,16 +109,16 @@ export type FactoryKind = "sync" | "async";
  *   factory: () => new UserContext()
  * });
  *
- * // Request - fresh logger for each resolution
+ * // Transient - fresh logger for each resolution
  * const LoggerAdapter = createAdapter({
  *   provides: LoggerPort,
  *   requires: [],
- *   lifetime: 'request',
+ *   lifetime: 'transient',
  *   factory: () => new Logger()
  * });
  * ```
  */
-export type Lifetime = "singleton" | "scoped" | "request";
+export type Lifetime = "singleton" | "scoped" | "transient";
 
 // =============================================================================
 // ResolvedDeps Helper Type
@@ -427,7 +427,7 @@ interface AdapterConfig<
  * const adapter = createAdapter({
  *   provides: UserServicePort,
  *   requires: [LoggerPort],
- *   lifetime: 'request',
+ *   lifetime: 'transient',
  *   factory: (deps) => {
  *     // TypeScript knows deps.Logger is of type Logger
  *     deps.Logger.log('Creating user service');

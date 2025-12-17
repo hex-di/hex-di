@@ -62,7 +62,7 @@ export type LifetimeLevel<L extends Lifetime> = L extends "singleton"
   ? 1
   : L extends "scoped"
     ? 2
-    : L extends "request"
+    : L extends "transient"
       ? 3
       : never;
 

@@ -1,12 +1,12 @@
 ---
 title: Scoped Services
-description: Patterns for request-scoped and user-scoped services including HTTP requests, user sessions, React scopes, and multi-tenancy.
+description: Patterns for transient and user-scoped services including HTTP requests, user sessions, React scopes, and multi-tenancy.
 sidebar_position: 3
 ---
 
 # Scoped Services
 
-This guide covers patterns for request-scoped and user-scoped services.
+This guide covers patterns for transient and user-scoped services.
 
 ## Understanding Scopes
 

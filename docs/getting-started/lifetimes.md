@@ -1,6 +1,6 @@
 ---
 title: Service Lifetimes
-description: Master singleton, scoped, and request service lifetimes in HexDI for proper instance management.
+description: Master singleton, scoped, and transient service lifetimes in HexDI for proper instance management.
 sidebar_position: 4
 sidebar_label: Lifetimes
 ---
@@ -15,7 +15,7 @@ HexDI provides three lifetime scopes that control when service instances are cre
 |----------|-------------------|----------------|----------|
 | `singleton` | Once per container | No | Shared resources, stateless services |
 | `scoped` | Once per scope | Yes | Request context, user sessions |
-| `request` | Every resolution | No | Fresh instances, isolation |
+| `transient` | Every resolution | No | Fresh instances, isolation |
 
 ## Singleton Lifetime
 
@@ -170,7 +170,7 @@ let instanceCounter = 0;
 const NotificationAdapter = createAdapter({
   provides: NotificationPort,
   requires: [],
-  lifetime: 'request',
+  lifetime: 'transient',
   factory: () => {
     instanceCounter++;
     console.log(`Notification instance #${instanceCounter} created`);
@@ -213,7 +213,7 @@ Request services can depend on any lifetime (they're the shortest-lived):
 const RequestServiceAdapter = createAdapter({
   provides: RequestServicePort,
   requires: [LoggerPort, UserSessionPort, NotificationPort],
-  lifetime: 'request',
+  lifetime: 'transient',
   factory: (deps) => ({
     // Fresh instance every time, but deps follow their own lifetimes
     // - Logger: same singleton each time
@@ -239,7 +239,7 @@ A service can only depend on services with **equal or longer** lifetimes:
 |------------------|---------------|
 | `singleton` | `singleton` only |
 | `scoped` | `singleton`, `scoped` |
-| `request` | `singleton`, `scoped`, `request` |
+| `transient` | `singleton`, `scoped`, `transient` |
 
 ### Captive Dependency Prevention
 
@@ -374,10 +374,10 @@ await container.dispose();
 Is the service stateless?
 ├─ Yes → Consider singleton
 └─ No → Does state need to persist across requests?
-         ├─ Yes → Is it per-user/per-request?
+         ├─ Yes → Is it per-user/per-resolution?
          │        ├─ Yes → Use scoped
          │        └─ No → Use singleton
-         └─ No → Use request
+         └─ No → Use transient
 ```
 
 ### Common Patterns
@@ -391,8 +391,8 @@ Is the service stateless?
 | User session | `scoped` |
 | Request context | `scoped` |
 | Database transaction | `scoped` |
-| Notification sender | `request` |
-| Request ID generator | `request` |
+| Notification sender | `transient` |
+| Request ID generator | `transient` |
 
 ## Next Steps
 

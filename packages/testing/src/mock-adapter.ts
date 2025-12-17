@@ -190,13 +190,13 @@ function createMockImplementation<T extends object>(
  */
 export function createMockAdapter<
   P extends Port<object, string>,
-  L extends Lifetime = "request",
+  L extends Lifetime = "transient",
 >(
   port: P,
   implementation: Partial<InferService<P>>,
   options?: MockAdapterOptions & { lifetime?: L }
 ): Adapter<P, never, L> {
-  const lifetime = (options?.lifetime ?? "request") as L;
+  const lifetime = (options?.lifetime ?? "transient") as L;
   const portName = port.__portName as InferPortName<P>;
 
   return createAdapter({

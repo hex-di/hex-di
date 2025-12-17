@@ -104,14 +104,14 @@ describe("createAdapter function", () => {
     const requestAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ log: () => {} }),
     });
 
     // Each adapter should preserve the literal lifetime type
     expectTypeOf(singletonAdapter.lifetime).toEqualTypeOf<"singleton">();
     expectTypeOf(scopedAdapter.lifetime).toEqualTypeOf<"scoped">();
-    expectTypeOf(requestAdapter.lifetime).toEqualTypeOf<"request">();
+    expectTypeOf(requestAdapter.lifetime).toEqualTypeOf<"transient">();
   });
 
   it("factory function receives correctly typed dependencies object", () => {
@@ -187,7 +187,7 @@ describe("createAdapter function", () => {
     const adapter = createAdapter({
       provides: UserServicePort,
       requires: [LoggerPort],
-      lifetime: "request",
+      lifetime: "transient",
       factory: (deps) => {
         expectTypeOf(deps.Logger).toEqualTypeOf<Logger>();
         return {
@@ -197,7 +197,7 @@ describe("createAdapter function", () => {
     });
 
     expectTypeOf(adapter).toMatchTypeOf<
-      Adapter<UserServicePortType, LoggerPortType, "request">
+      Adapter<UserServicePortType, LoggerPortType, "transient">
     >();
   });
 });

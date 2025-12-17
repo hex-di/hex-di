@@ -1,5 +1,5 @@
 /**
- * NotificationButton component demonstrates request lifetime.
+ * NotificationButton component demonstrates transient lifetime.
  *
  * Each click resolves a new NotificationService instance, showing
  * the instance ID and timestamp to prove fresh instances are created.
@@ -30,7 +30,7 @@ interface ToastState {
 // =============================================================================
 
 /**
- * Button that demonstrates request lifetime by creating new instances on each click.
+ * Button that demonstrates transient lifetime by creating new instances on each click.
  *
  * Features:
  * - Inline instance counter showing "Instance #X created at HH:MM:SS"
@@ -69,7 +69,7 @@ export function NotificationButton(): JSX.Element {
   }, [toast.visible]);
 
   const handleClick = (): void => {
-    // Each resolution creates a new instance (request lifetime)
+    // Each resolution creates a new instance (transient lifetime)
     const notificationService = container.resolve(NotificationServicePort);
 
     // Update instance info

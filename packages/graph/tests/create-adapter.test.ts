@@ -108,13 +108,13 @@ describe("createAdapter function", () => {
     const requestAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ log: () => {} }),
     });
 
     expect(singletonAdapter.lifetime).toBe("singleton");
     expect(scopedAdapter.lifetime).toBe("scoped");
-    expect(requestAdapter.lifetime).toBe("request");
+    expect(requestAdapter.lifetime).toBe("transient");
   });
 
   it("stores factory function correctly", () => {

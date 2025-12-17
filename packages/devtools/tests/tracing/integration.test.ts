@@ -79,7 +79,7 @@ function createTestGraph() {
   const CacheServiceAdapter = createAdapter({
     provides: CacheServicePort,
     requires: [],
-    lifetime: "request",
+    lifetime: "transient",
     factory: () => ({ get: () => null }),
   });
 
@@ -177,8 +177,8 @@ describe("Resolution Tracing Filter Integration", () => {
     expect(scopedTraces.every((t) => t.lifetime === "scoped")).toBe(true);
 
     // Filter by request
-    const requestTraces = tracingAPI.getTraces({ lifetime: "request" });
-    expect(requestTraces.every((t) => t.lifetime === "request")).toBe(true);
+    const requestTraces = tracingAPI.getTraces({ lifetime: "transient" });
+    expect(requestTraces.every((t) => t.lifetime === "transient")).toBe(true);
   });
 
   it("applies cache status filter correctly", () => {

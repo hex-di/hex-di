@@ -130,7 +130,7 @@ const UserServiceAdapter = createAdapter({
 |----------|----------|-------------|
 | `provides` | Yes | The port this adapter implements |
 | `requires` | Yes | Array of dependency ports (use `[]` for none) |
-| `lifetime` | Yes | `'singleton'`, `'scoped'`, or `'request'` |
+| `lifetime` | Yes | `'singleton'`, `'scoped'`, or `'transient'` |
 | `factory` | Yes | Function that creates the service instance |
 | `finalizer` | No | Cleanup function called on disposal |
 
@@ -302,7 +302,7 @@ await scope.dispose();
 |----------|---------------|-------|
 | `singleton` | Created once, cached | Same instance from container |
 | `scoped` | Error (requires scope) | Created once per scope |
-| `request` | Fresh each time | Fresh each time |
+| `transient` | Fresh each time | Fresh each time |
 
 ```typescript
 // Singletons are shared

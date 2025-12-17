@@ -105,7 +105,7 @@ describe("TraceEntry", () => {
     const requestEntry: TraceEntry = {
       id: "trace-3",
       portName: "C",
-      lifetime: "request",
+      lifetime: "transient",
       startTime: 30,
       duration: 5,
       isCacheHit: false,
@@ -118,7 +118,7 @@ describe("TraceEntry", () => {
 
     expect(singletonEntry.lifetime).toBe("singleton");
     expect(scopedEntry.lifetime).toBe("scoped");
-    expect(requestEntry.lifetime).toBe("request");
+    expect(requestEntry.lifetime).toBe("transient");
   });
 
   it("supports parent/child trace hierarchy", () => {

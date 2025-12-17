@@ -71,8 +71,8 @@ function createTestTraces(): readonly TraceEntry[] {
     createMockTrace({ id: "trace-6", portName: "Logger", duration: 5.2, lifetime: "singleton", isCacheHit: true }),
     createMockTrace({ id: "trace-7", portName: "ConfigPort", duration: 3.1, lifetime: "singleton", isCacheHit: true }),
     createMockTrace({ id: "trace-8", portName: "CacheService", duration: 8.5, lifetime: "singleton", isCacheHit: false }),
-    createMockTrace({ id: "trace-9", portName: "RequestLogger", duration: 2.1, lifetime: "request", isCacheHit: false }),
-    createMockTrace({ id: "trace-10", portName: "SessionManager", duration: 1.5, lifetime: "request", isCacheHit: false }),
+    createMockTrace({ id: "trace-9", portName: "RequestLogger", duration: 2.1, lifetime: "transient", isCacheHit: false }),
+    createMockTrace({ id: "trace-10", portName: "SessionManager", duration: 1.5, lifetime: "transient", isCacheHit: false }),
   ];
 }
 

@@ -16,7 +16,7 @@ exports[`serializeGraph > works with toMatchSnapshot() 1`] = `
       "requires": [],
     },
     {
-      "lifetime": "request",
+      "lifetime": "transient",
       "port": "UserService",
       "requires": [
         "Database",

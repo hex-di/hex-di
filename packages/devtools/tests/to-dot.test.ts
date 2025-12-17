@@ -174,7 +174,7 @@ describe("toDOT", () => {
     const UserServiceAdapter = createAdapter({
       provides: UserServicePort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ getUser: () => ({}) }),
     });
 

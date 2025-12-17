@@ -286,7 +286,7 @@ function DebugPage() {
 ### Graph Tab
 
 Visual representation of your dependency graph:
-- Nodes colored by lifetime (singleton=green, scoped=blue, request=pink)
+- Nodes colored by lifetime (singleton=green, scoped=blue, transient=pink)
 - Edges show dependency relationships
 - Interactive zoom and pan
 - Click nodes to see details
@@ -371,7 +371,7 @@ interface Trace {
   portName: string;
   timestamp: number;
   duration: number;
-  lifetime: 'singleton' | 'scoped' | 'request';
+  lifetime: 'singleton' | 'scoped' | 'transient';
   cached: boolean;  // Was it a cache hit?
   scopeId?: string; // If resolved from scope
   dependencies: string[];  // Ports resolved as dependencies

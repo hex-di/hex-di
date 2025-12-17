@@ -95,7 +95,7 @@ type ValidOverrideAdapter<
  * const mockLoggerAdapter = createAdapter({
  *   provides: LoggerPort,
  *   requires: [],
- *   lifetime: 'request',
+ *   lifetime: 'transient',
  *   factory: () => ({ log: vi.fn() }),
  * });
  *

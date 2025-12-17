@@ -148,7 +148,7 @@ describe("useTestContainer", () => {
     const mockLoggerAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ log: mockLogFn }),
     });
 
@@ -298,7 +298,7 @@ describe("createTestContainer", () => {
     const mockLoggerAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ log: mockLogFn }),
     });
 

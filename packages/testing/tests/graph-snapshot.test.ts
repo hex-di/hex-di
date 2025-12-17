@@ -72,7 +72,7 @@ describe("serializeGraph", () => {
     const DatabaseAdapter = createAdapter({
       provides: DatabasePort,
       requires: [],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ query: () => ({}) }),
     });
 
@@ -88,7 +88,7 @@ describe("serializeGraph", () => {
     // Check for Database adapter (comes first alphabetically)
     const databaseSnapshot = snapshot.adapters.find((a) => a.port === "Database");
     expect(databaseSnapshot).toBeDefined();
-    expect(databaseSnapshot?.lifetime).toBe("request");
+    expect(databaseSnapshot?.lifetime).toBe("transient");
 
     // Check for Logger adapter
     const loggerSnapshot = snapshot.adapters.find((a) => a.port === "Logger");
@@ -230,7 +230,7 @@ describe("serializeGraph", () => {
     const UserServiceAdapter = createAdapter({
       provides: UserServicePort,
       requires: [LoggerPort, DatabasePort],
-      lifetime: "request",
+      lifetime: "transient",
       factory: () => ({ getUser: () => ({}) }),
     });
 

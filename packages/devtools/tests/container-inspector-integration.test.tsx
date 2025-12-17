@@ -86,7 +86,7 @@ function createTestGraph() {
   const UserServiceAdapter = createAdapter({
     provides: UserServicePort,
     requires: [LoggerPort, DatabasePort],
-    lifetime: "request",
+    lifetime: "transient",
     factory: () => ({ getUser: () => ({}) }),
   });
 

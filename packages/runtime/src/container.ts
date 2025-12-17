@@ -179,7 +179,7 @@ class ScopeImpl<
    * Lifetime handling:
    * - singleton: Delegates to container's singleton memo (shared globally)
    * - scoped: Uses this scope's scopedMemo (unique to this scope)
-   * - request: Creates new instance (no caching)
+   * - transient: Creates new instance (no caching)
    *
    * @param port - The port to resolve
    * @returns The service instance
@@ -205,7 +205,7 @@ class ScopeImpl<
    * Lifetime handling:
    * - singleton: Delegates to container's singleton memo (shared globally)
    * - scoped: Uses this scope's scopedMemo (unique to this scope)
-   * - request: Creates new instance (no caching)
+   * - transient: Creates new instance (no caching)
    *
    * @param port - The port to resolve
    * @returns A promise that resolves to the service instance
@@ -664,8 +664,8 @@ class ContainerImpl<
           adapter.finalizer as ((instance: unknown) => void | Promise<void>) | undefined
         ) as InferService<P>;
 
-      case "request":
-        // Request lifetime: always create new instance
+      case "transient":
+        // Transient lifetime: always create new instance
         return this.createInstance(port, adapter, scopedMemo, scopeId) as InferService<P>;
 
       default:
@@ -687,7 +687,7 @@ class ContainerImpl<
         return this.singletonMemo.has(port);
       case "scoped":
         return scopedMemo.has(port);
-      case "request":
+      case "transient":
         return false;
       default:
         return false;
@@ -835,8 +835,8 @@ class ContainerImpl<
           });
         }
         return undefined;
-      case "request":
-        // Request lifetime never caches
+      case "transient":
+        // Transient lifetime never caches
         return undefined;
       default:
         return undefined;
@@ -1039,8 +1039,8 @@ class ContainerImpl<
       case "scoped":
         scopedMemo.getOrElseMemoize(port, () => instance, finalizer);
         break;
-      case "request":
-        // Request lifetime doesn't cache
+      case "transient":
+        // Transient lifetime doesn't cache
         break;
     }
   }
@@ -1067,7 +1067,7 @@ class ContainerImpl<
 
     // Get singleton async adapters sorted by priority (lower first, default 100)
     // Only singleton adapters can be pre-initialized at the container level.
-    // Scoped/request adapters must be initialized within their respective scopes.
+    // Scoped/transient adapters must be initialized within their respective scopes.
     const asyncAdapters: RuntimeAdapter[] = [];
     for (const adapter of this.graph.adapters) {
       if (adapter.factoryKind === "async" && adapter.lifetime === "singleton") {
@@ -1261,7 +1261,7 @@ class ContainerImpl<
  * Creates an immutable container from a validated graph.
  *
  * The container provides type-safe service resolution with:
- * - Singleton, scoped, and request lifetime management
+ * - Singleton, scoped, and transient lifetime management
  * - Circular dependency detection at resolution time
  * - LIFO disposal ordering with finalizer support
  * - Optional resolution hooks for instrumentation

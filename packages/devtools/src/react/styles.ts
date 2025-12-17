@@ -671,7 +671,7 @@ export function getLifetimeBadgeStyle(lifetime: string): CSSProperties {
       return { ...baseStyle, ...nodeStyles.badgeSingleton };
     case "scoped":
       return { ...baseStyle, ...nodeStyles.badgeScoped };
-    case "request":
+    case "transient":
       return { ...baseStyle, ...nodeStyles.badgeRequest };
     default:
       return baseStyle;
@@ -687,7 +687,7 @@ export function getLifetimeClassName(lifetime: string): string {
       return "hex-devtools-badge-singleton singleton";
     case "scoped":
       return "hex-devtools-badge-scoped scoped";
-    case "request":
+    case "transient":
       return "hex-devtools-badge-request request";
     default:
       return "hex-devtools-badge";

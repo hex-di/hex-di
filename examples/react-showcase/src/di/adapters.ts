@@ -295,7 +295,7 @@ export const ChatServiceAdapter = createAdapter({
  * Adapter for the notification service.
  *
  * Creates a new instance with a unique ID each time it is resolved.
- * This demonstrates the request lifetime where every resolution
+ * This demonstrates the transient lifetime where every resolution
  * gets a fresh instance.
  *
  * Although this adapter depends on ConfigPort (async singleton),
@@ -303,13 +303,13 @@ export const ChatServiceAdapter = createAdapter({
  * `container.initialize()` and is available synchronously afterwards.
  *
  * @remarks
- * - Lifetime: request - new instance for every resolution
+ * - Lifetime: transient - new instance for every resolution
  * - Dependencies: LoggerPort (sync), ConfigPort (pre-initialized async singleton)
  */
 export const NotificationServiceAdapter = createAdapter({
   provides: NotificationServicePort,
   requires: [LoggerPort, ConfigPort],
-  lifetime: "request",
+  lifetime: "transient",
   factory: (deps): NotificationService => {
     notificationInstanceCounter += 1;
     const instanceId = notificationInstanceCounter;
