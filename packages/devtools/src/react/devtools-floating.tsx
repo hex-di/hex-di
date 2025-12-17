@@ -24,7 +24,7 @@ import React, {
 } from "react";
 import type { Port } from "@hex-di/ports";
 import type { Graph } from "@hex-di/graph";
-import type { Container } from "@hex-di/runtime";
+import type { Container, ContainerPhase } from "@hex-di/runtime";
 import { DevToolsPanel } from "./devtools-panel.js";
 import { floatingStyles, getPositionStyles } from "./styles.js";
 
@@ -118,11 +118,15 @@ export type DevToolsPosition =
  * }
  * ```
  */
-export interface DevToolsFloatingProps {
+export interface DevToolsFloatingProps<
+  TProvides extends Port<unknown, string> = Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> | never = never,
+  TPhase extends ContainerPhase = ContainerPhase,
+> {
   /** The dependency graph to visualize */
-  readonly graph: Graph<Port<unknown, string>, Port<unknown, string> | never>;
+  readonly graph: Graph<TProvides, TAsyncPorts>;
   /** Optional container for runtime inspection */
-  readonly container?: Container<Port<unknown, string>>;
+  readonly container?: Container<TProvides, TAsyncPorts, TPhase>;
   /** Position of the toggle button. Default: 'bottom-right' */
   readonly position?: DevToolsPosition;
 }
@@ -299,11 +303,15 @@ function getResizeHandlePosition(position: DevToolsPosition): CSSProperties {
  * <DevToolsFloating graph={graph} position="top-left" />
  * ```
  */
-export function DevToolsFloating({
+export function DevToolsFloating<
+  TProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> | never = never,
+  TPhase extends ContainerPhase = ContainerPhase,
+>({
   graph,
   container,
   position = "bottom-right",
-}: DevToolsFloatingProps): ReactElement | null {
+}: DevToolsFloatingProps<TProvides, TAsyncPorts, TPhase>): ReactElement | null {
   // Production mode check - return null to ensure tree-shaking
   if (typeof process !== "undefined" && process.env?.NODE_ENV === "production") {
     return null;

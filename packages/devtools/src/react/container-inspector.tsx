@@ -17,7 +17,7 @@ import React, {
   type ReactElement,
 } from "react";
 import type { Port } from "@hex-di/ports";
-import type { Container } from "@hex-di/runtime";
+import type { Container, ContainerPhase } from "@hex-di/runtime";
 import { createInspector } from "../index.js";
 import type {
   ContainerInspector as InspectorType,
@@ -37,9 +37,13 @@ import { ResolvedServices, type ServiceInfo } from "./resolved-services.js";
 /**
  * Props for the ContainerInspector component.
  */
-export interface ContainerInspectorProps {
+export interface ContainerInspectorProps<
+  TProvides extends Port<unknown, string> = Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> | never = never,
+  TPhase extends ContainerPhase = ContainerPhase,
+> {
   /** The runtime container to inspect */
-  readonly container: Container<Port<unknown, string>>;
+  readonly container: Container<TProvides, TAsyncPorts, TPhase>;
   /** The exported dependency graph for metadata */
   readonly exportedGraph: ExportedGraph;
   /** Optional tracing API for request service stats */
@@ -246,11 +250,15 @@ function buildServiceList(
  * }
  * ```
  */
-export function ContainerInspector({
+export function ContainerInspector<
+  TProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> | never = never,
+  TPhase extends ContainerPhase = ContainerPhase,
+>({
   container,
   exportedGraph,
   tracingAPI,
-}: ContainerInspectorProps): ReactElement {
+}: ContainerInspectorProps<TProvides, TAsyncPorts, TPhase>): ReactElement {
   // Create inspector once
   const inspector = useMemo(() => createInspector(container), [container]);
 

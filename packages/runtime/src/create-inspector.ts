@@ -9,7 +9,7 @@
  */
 
 import type { Port } from "@hex-di/ports";
-import type { Container } from "./types.js";
+import type { Container, ContainerPhase } from "./types.js";
 import type {
   ContainerInspector,
   ContainerSnapshot,
@@ -159,9 +159,11 @@ function buildScopeTreeNode(
  *
  * @throws {Error} If the container doesn't expose INTERNAL_ACCESS
  */
-export function createInspector<TProvides extends Port<unknown, string>>(
-  container: Container<TProvides>
-): ContainerInspector {
+export function createInspector<
+  TProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> | never = never,
+  TPhase extends ContainerPhase = ContainerPhase,
+>(container: Container<TProvides, TAsyncPorts, TPhase>): ContainerInspector {
   // Store container reference for later access - O(1) operation
   const containerRef = container;
 

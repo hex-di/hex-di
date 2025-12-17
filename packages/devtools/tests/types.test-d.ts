@@ -14,7 +14,7 @@
 import { describe, expectTypeOf, it } from "vitest";
 import { createPort, type Port } from "@hex-di/ports";
 import { GraphBuilder, createAdapter, type Graph, type Lifetime } from "@hex-di/graph";
-import type { Container } from "@hex-di/runtime";
+import type { Container, ContainerPhase } from "@hex-di/runtime";
 import type { ReactElement } from "react";
 
 // Import devtools exports
@@ -321,12 +321,14 @@ describe("relabelPorts type inference", () => {
 describe("DevToolsPanel prop types", () => {
   it("DevToolsPanelProps has graph property", () => {
     expectTypeOf<DevToolsPanelProps>().toHaveProperty("graph");
-    expectTypeOf<DevToolsPanelProps["graph"]>().toMatchTypeOf<Graph<Port<unknown, string>, Port<unknown, string>>>();
+    expectTypeOf<DevToolsPanelProps["graph"]>().toMatchTypeOf<Graph<Port<unknown, string>, never>>();
   });
 
   it("DevToolsPanelProps has optional container property", () => {
     expectTypeOf<DevToolsPanelProps>().toHaveProperty("container");
-    expectTypeOf<DevToolsPanelProps["container"]>().toMatchTypeOf<Container<Port<unknown, string>> | undefined>();
+    expectTypeOf<DevToolsPanelProps["container"]>().toMatchTypeOf<
+      Container<Port<unknown, string>, never, ContainerPhase> | undefined
+    >();
   });
 
   it("DevToolsPanel is a function component", () => {
@@ -351,12 +353,14 @@ describe("DevToolsPanel prop types", () => {
 describe("DevToolsFloating prop types", () => {
   it("DevToolsFloatingProps has graph property", () => {
     expectTypeOf<DevToolsFloatingProps>().toHaveProperty("graph");
-    expectTypeOf<DevToolsFloatingProps["graph"]>().toMatchTypeOf<Graph<Port<unknown, string>, Port<unknown, string>>>();
+    expectTypeOf<DevToolsFloatingProps["graph"]>().toMatchTypeOf<Graph<Port<unknown, string>, never>>();
   });
 
   it("DevToolsFloatingProps has optional container property", () => {
     expectTypeOf<DevToolsFloatingProps>().toHaveProperty("container");
-    expectTypeOf<DevToolsFloatingProps["container"]>().toMatchTypeOf<Container<Port<unknown, string>> | undefined>();
+    expectTypeOf<DevToolsFloatingProps["container"]>().toMatchTypeOf<
+      Container<Port<unknown, string>, never, ContainerPhase> | undefined
+    >();
   });
 
   it("DevToolsFloatingProps has optional position property", () => {

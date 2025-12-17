@@ -102,20 +102,24 @@ export type DevToolsPanelMode = "tabs" | "sections";
  * }
  * ```
  */
-export interface DevToolsPanelProps {
+export interface DevToolsPanelProps<
+  TProvides extends Port<unknown, string> = Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> | never = never,
+  TPhase extends ContainerPhase = ContainerPhase,
+> {
   /**
    * The dependency graph to visualize.
    *
    * Accepts graphs with any async ports configuration.
    */
-  readonly graph: Graph<Port<unknown, string>, Port<unknown, string>>;
+  readonly graph: Graph<TProvides, TAsyncPorts>;
   /**
    * Optional container for runtime inspection.
    *
    * Accepts containers in any phase (initialized or uninitialized) and with
    * any async ports configuration.
    */
-  readonly container?: Container<Port<unknown, string>, Port<unknown, string>, ContainerPhase>;
+  readonly container?: Container<TProvides, TAsyncPorts, TPhase>;
   /**
    * Display mode for the panel.
    * - "tabs" (default): Modern tabbed interface
@@ -472,12 +476,16 @@ function ContainerBrowser({
  * }
  * ```
  */
-export function DevToolsPanel({
+export function DevToolsPanel<
+  TProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> | never = never,
+  TPhase extends ContainerPhase = ContainerPhase,
+>({
   graph,
   container,
   mode = "tabs",
   initialTab = "graph",
-}: DevToolsPanelProps): ReactElement {
+}: DevToolsPanelProps<TProvides, TAsyncPorts, TPhase>): ReactElement {
   // Convert graph to exported format for visualization
   const exportedGraph = useMemo(() => toJSON(graph), [graph]);
 
