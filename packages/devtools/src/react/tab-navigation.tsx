@@ -63,32 +63,38 @@ const tabNavigationStyles: {
   readonly tabActive: CSSProperties;
 } = {
   container: {
-    ...tracingStyles.viewToggleContainer,
     display: "flex",
-    borderBottom: "1px solid var(--hex-devtools-border, #45475a)",
+    alignItems: "center",
+    gap: 8,
+    border: "1px solid var(--hex-devtools-border, #45475a)",
+    borderRadius: 10,
     backgroundColor: "var(--hex-devtools-bg-secondary, #2a2a3e)",
-    margin: 0,
-    padding: 0,
+    margin: "4px 8px 0 8px",
+    padding: "6px 10px",
   },
   tab: {
-    ...tracingStyles.viewToggleTab,
-    flex: 1,
-    textAlign: "center",
-    padding: "10px 16px",
-    fontSize: "12px",
-    fontWeight: 500,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "8px 10px",
+    minHeight: 38,
+    fontSize: "13px",
+    fontWeight: 600,
     color: "var(--hex-devtools-text-muted, #a6adc8)",
-    backgroundColor: "transparent",
-    border: "none",
-    borderBottom: "2px solid transparent",
+    backgroundColor: "rgba(255, 255, 255, 0.02)",
+    border: "1px solid var(--hex-devtools-border, #45475a)",
+    borderRadius: 12,
     cursor: "pointer",
-    transition: "color 0.15s ease, border-color 0.15s ease",
+    transition: "all 0.18s ease",
     outline: "none",
+    letterSpacing: "0.05em",
+    textTransform: "uppercase",
   },
   tabActive: {
-    ...tracingStyles.viewToggleTabActive,
     color: "var(--hex-devtools-accent, #89b4fa)",
-    borderBottom: "2px solid var(--hex-devtools-accent, #89b4fa)",
+    backgroundColor: "rgba(137, 180, 250, 0.14)",
+    border: "1px solid var(--hex-devtools-accent, #89b4fa)",
+    boxShadow: "0 6px 18px rgba(137, 180, 250, 0.18)",
   },
 };
 
@@ -127,6 +133,7 @@ export function TabNavigation({
   onTabChange,
   showInspector = true,
 }: TabNavigationProps): ReactElement {
+  const [hoveredTab, setHoveredTab] = React.useState<TabId | null>(null);
   const tabRefs = useRef<Map<TabId, HTMLButtonElement | null>>(new Map());
 
   // Filter tabs based on showInspector prop
@@ -203,9 +210,18 @@ export function TabNavigation({
     >
       {visibleTabs.map((tab) => {
         const isActive = activeTab === tab.id;
+        const isHovered = hoveredTab === tab.id;
         const tabStyle: CSSProperties = {
           ...tabNavigationStyles.tab,
           ...(isActive ? tabNavigationStyles.tabActive : {}),
+          ...(isHovered && !isActive
+            ? {
+                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                borderColor: "var(--hex-devtools-border-hover, #565f89)",
+                boxShadow: "0 6px 18px rgba(86, 95, 137, 0.25)",
+                color: "var(--hex-devtools-text, #cdd6f4)",
+              }
+            : {}),
         };
 
         return (
@@ -218,6 +234,8 @@ export function TabNavigation({
             aria-controls={`tabpanel-${tab.id}`}
             tabIndex={isActive ? 0 : -1}
             style={tabStyle}
+            onMouseEnter={() => setHoveredTab(tab.id)}
+            onMouseLeave={() => setHoveredTab((prev) => (prev === tab.id ? null : prev))}
             onClick={() => onTabChange(tab.id)}
             onKeyDown={(e) => handleKeyDown(e, tab.id)}
             type="button"

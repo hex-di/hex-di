@@ -15,6 +15,12 @@
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
+    },
+    "./testing": {
+      "import": {
+        "types": "./dist/testing/index.d.ts",
+        "default": "./dist/testing/index.js"
+      }
     }
   },
   "files": [
@@ -57,7 +63,7 @@
   },
   "devDependencies": {
     "typescript": "^5.6.3",
-    "vitest": "^2.1.8"
+    "vitest": "^4.0.16"
   },
   "engines": {
     "node": ">=18.0.0"

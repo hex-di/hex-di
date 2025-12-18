@@ -33,12 +33,16 @@
     "@hex-di/devtools-network": "workspace:*",
     "@hex-di/devtools-ui": "workspace:*",
     "@hex-di/graph": "workspace:*",
-    "@hex-di/runtime": "workspace:*"
+    "@hex-di/runtime": "workspace:*",
+    "@opentui/core": "^0.1.61",
+    "@opentui/react": "^0.1.61",
+    "react": "^19.2.3"
   },
   "devDependencies": {
-    "@types/node": "^22.9.0",
+    "@types/node": "25.0.3",
+    "@types/react": "^19.1.0",
     "typescript": "^5.6.3",
-    "vitest": "^2.1.4"
+    "vitest": "^4.0.16"
   },
   "repository": {
     "type": "git",

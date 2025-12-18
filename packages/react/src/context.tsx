@@ -18,6 +18,13 @@ import type { Port } from "@hex-di/ports";
 import type { Container, Scope, ChildContainer } from "@hex-di/runtime";
 import { ChildContainerBrand } from "@hex-di/runtime";
 import { MissingProviderError } from "./errors.js";
+import {
+  toRuntimeContainerRef,
+  childContainerToRuntimeRef,
+  toRuntimeScopeRef,
+  type RuntimeContainerRef,
+  type RuntimeResolverRef,
+} from "./internal/runtime-refs.js";
 
 // =============================================================================
 // Brand Symbol for Context
@@ -43,6 +50,16 @@ declare const ContextBrand: unique symbol;
 // =============================================================================
 
 /**
+ * Union type for containers that can be provided to ContainerProvider.
+ * Includes both root Container and ChildContainer.
+ *
+ * @internal
+ */
+type AnyContainer<TProvides extends Port<unknown, string>> =
+  | Container<TProvides>
+  | ChildContainer<TProvides, Port<unknown, string>>;
+
+/**
  * Checks if the provided container is a ChildContainer.
  *
  * ChildContainers have a branded property using the ChildContainerBrand symbol.
@@ -54,9 +71,9 @@ declare const ContextBrand: unique symbol;
  *
  * @internal
  */
-function isChildContainer(
-  container: Container<Port<unknown, string>> | ChildContainer<Port<unknown, string>, Port<unknown, string>>
-): container is ChildContainer<Port<unknown, string>, Port<unknown, string>> {
+function isChildContainer<TProvides extends Port<unknown, string>>(
+  container: AnyContainer<TProvides>
+): container is ChildContainer<TProvides, Port<unknown, string>> {
   return ChildContainerBrand in container;
 }
 
@@ -67,21 +84,12 @@ function isChildContainer(
 /**
  * Local resolver type representing either a Container, ChildContainer, or Scope.
  *
- * Container, ChildContainer, and Scope all have the same `resolve` and `createScope` methods,
- * allowing them to be used interchangeably for service resolution.
- *
- * Note: This is a union type (not the Resolver interface from types.ts) because
- * the global context uses Port<unknown, string> as a base type, and the Resolver
- * interface's generic methods create contravariance issues with specific port types.
- *
- * @typeParam TProvides - Union of Port types that can be resolved
+ * We now use RuntimeResolverRef which provides bivariant method signatures,
+ * eliminating the need for type casts when storing containers in context.
  *
  * @internal
  */
-type LocalResolver<TProvides extends Port<unknown, string>> =
-  | Container<TProvides, any, any>
-  | ChildContainer<TProvides, any, any, any>
-  | Scope<TProvides, any, any>;
+type LocalResolver = RuntimeResolverRef;
 
 /**
  * Internal context value structure for the container context.
@@ -90,6 +98,9 @@ type LocalResolver<TProvides extends Port<unknown, string>> =
  * - Creating new scopes via `useScope` hook
  * - Detecting nested ContainerProvider (single container per tree, or child containers nested)
  *
+ * Uses RuntimeContainerRef which provides bivariant method signatures,
+ * eliminating the need for type casts when storing containers in context.
+ *
  * @typeParam TProvides - Union of Port types that the container can resolve
  *
  * @internal
@@ -97,9 +108,9 @@ type LocalResolver<TProvides extends Port<unknown, string>> =
 export interface ContainerContextValue<TProvides extends Port<unknown, string>> {
   /**
    * The container provided by ContainerProvider.
-   * Can be either a root Container or a ChildContainer when nested.
+   * Uses RuntimeContainerRef for bivariant storage.
    */
-  readonly container: Container<TProvides> | ChildContainer<TProvides, any, any, any>;
+  readonly container: RuntimeContainerRef;
 
   /**
    * Flag indicating whether this is a child container.
@@ -120,6 +131,9 @@ export interface ContainerContextValue<TProvides extends Port<unknown, string>> 
  * This stores the current resolver (Container or Scope), which may differ
  * from the root container when inside a ScopeProvider or AutoScopeProvider.
  *
+ * Uses RuntimeResolverRef which provides bivariant method signatures,
+ * eliminating the need for type casts when storing resolvers in context.
+ *
  * @typeParam TProvides - Union of Port types that can be resolved
  *
  * @internal
@@ -127,8 +141,9 @@ export interface ContainerContextValue<TProvides extends Port<unknown, string>> 
 export interface ResolverContextValue<TProvides extends Port<unknown, string>> {
   /**
    * The current resolver - either the root container or a scope.
+   * Uses RuntimeResolverRef for bivariant storage.
    */
-  readonly resolver: LocalResolver<TProvides>;
+  readonly resolver: LocalResolver;
 
   /**
    * Brand property for nominal typing.
@@ -143,44 +158,21 @@ export interface ResolverContextValue<TProvides extends Port<unknown, string>> {
 
 /**
  * Runtime container context value without the phantom brand.
- * Used for actually storing values in React context.
+ * Uses RuntimeContainerRef for bivariant storage.
  * @internal
  */
 interface RuntimeContainerContextValue {
-  readonly container: Container<Port<unknown, string>> | ChildContainer<Port<unknown, string>, Port<unknown, string>>;
+  readonly container: RuntimeContainerRef;
   readonly isChildContainer: boolean;
 }
 
 /**
  * Runtime resolver context value without the phantom brand.
- * Used for actually storing values in React context.
+ * Uses RuntimeResolverRef for bivariant storage.
  * @internal
  */
 interface RuntimeResolverContextValue {
-  readonly resolver: LocalResolver<Port<unknown, string>>;
-}
-
-/**
- * Extracts a base-typed container reference from a specifically-typed container.
- *
- * Container<TProvides> is NOT directly assignable to Container<Port<unknown, string>>
- * because the resolve method is contravariant in its parameter type.
- * However, at runtime they are the same object.
- *
- * This function explicitly constructs the type-widened reference by
- * extracting just the properties we need for the context.
- *
- * @internal
- */
-function toBaseContainer<TProvides extends Port<unknown, string>>(
-  container: Container<TProvides>
-): Container<Port<unknown, string>> | ChildContainer<Port<unknown, string>, Port<unknown, string>> {
-  // The container object has all methods - we just return it with widened type.
-  // This is safe because:
-  // 1. resolve(port) only accepts ports that were registered (runtime check)
-  // 2. The context is typed to accept any Port<unknown, string>
-  // 3. Consumers narrow back to their specific port types via hooks
-  return container as Container<Port<unknown, string>> | ChildContainer<Port<unknown, string>, Port<unknown, string>>;
+  readonly resolver: LocalResolver;
 }
 
 // =============================================================================
@@ -233,14 +225,15 @@ ResolverContext.displayName = "HexDI.ResolverContext";
  */
 export interface ContainerProviderProps<TProvides extends Port<unknown, string>> {
   /**
-   * The pre-created Container instance to provide to the React tree.
+   * The pre-created Container or ChildContainer instance to provide to the React tree.
    *
    * @remarks
    * The container must be created externally using `createContainer` from
-   * `@hex-di/runtime`. The Provider does not create or manage the container's
-   * lifecycle - the caller is responsible for disposal.
+   * `@hex-di/runtime`, or via `container.createChild().build()` for child containers.
+   * The Provider does not create or manage the container's lifecycle -
+   * the caller is responsible for disposal.
    */
-  readonly container: Container<TProvides>;
+  readonly container: AnyContainer<TProvides>;
 
   /**
    * React children that will have access to the container via hooks.
@@ -308,15 +301,12 @@ export interface ContainerProviderProps<TProvides extends Port<unknown, string>>
 export function ContainerProvider<TProvides extends Port<unknown, string>>({
   container,
   children,
-}: ContainerProviderProps<TProvides>): React.ReactElement {
+}: ContainerProviderProps<TProvides>): React.ReactNode {
   // Detect nested ContainerProvider
   const existingContext = useContext(ContainerContext);
 
-  // Check if the new container is a child container.
-  // Container<TProvides> is assignable to Container<Port<unknown, string>> | ChildContainer<...>
-  // when TProvides extends Port<unknown, string>, which is guaranteed by the type parameter constraint.
-  const containerAsBase = container as Container<Port<unknown, string>> | ChildContainer<Port<unknown, string>, Port<unknown, string>>;
-  const containerIsChild = isChildContainer(containerAsBase);
+  // Check if the new container is a child container using the type guard.
+  const containerIsChild = isChildContainer(container);
 
   // If there's an existing context and the new container is NOT a child container,
   // this is an error (cannot nest root containers)
@@ -327,17 +317,21 @@ export function ContainerProvider<TProvides extends Port<unknown, string>>({
     );
   }
 
-  // Create context values using the runtime types (without phantom brand).
-  // The container is already typed as Port<unknown, string> compatible via containerAsBase.
+  // Convert to bivariant runtime ref using the type guard's narrowing.
+  // No type cast needed because toRuntimeContainerRef/childContainerToRuntimeRef
+  // explicitly construct objects with bivariant methods.
+  const containerRef = containerIsChild
+    ? childContainerToRuntimeRef(container)
+    : toRuntimeContainerRef(container);
+
+  // Create context values using the bivariant runtime refs.
   const containerContextValue: RuntimeContainerContextValue = {
-    container: containerAsBase,
+    container: containerRef,
     isChildContainer: containerIsChild,
   };
 
-  // LocalResolver<Port<unknown, string>> is satisfied by Container<TProvides>
-  // because Container<TProvides> has resolve, resolveAsync, createScope, dispose, isDisposed.
   const resolverContextValue: RuntimeResolverContextValue = {
-    resolver: containerAsBase,
+    resolver: containerRef,
   };
 
   return (
@@ -412,12 +406,13 @@ export interface ScopeProviderProps<TProvides extends Port<unknown, string>> {
 export function ScopeProvider<TProvides extends Port<unknown, string>>({
   scope,
   children,
-}: ScopeProviderProps<TProvides>): React.ReactElement {
-  // Create resolver context value with the provided scope.
-  // Use RuntimeResolverContextValue which doesn't require the phantom brand.
-  // Scope<TProvides> widens to LocalResolver<Port<unknown, string>> structurally.
+}: ScopeProviderProps<TProvides>): React.ReactNode {
+  // Convert to bivariant runtime ref. No type cast needed because
+  // toRuntimeScopeRef explicitly constructs an object with bivariant methods.
+  const scopeRef = toRuntimeScopeRef(scope);
+
   const resolverContextValue: RuntimeResolverContextValue = {
-    resolver: scope as LocalResolver<Port<unknown, string>>,
+    resolver: scopeRef,
   };
 
   return (
@@ -488,7 +483,7 @@ export interface AutoScopeProviderProps {
  */
 export function AutoScopeProvider({
   children,
-}: AutoScopeProviderProps): React.ReactElement {
+}: AutoScopeProviderProps): React.ReactNode {
   // Get current resolver context - must be inside ContainerProvider
   const resolverContext = useContext(ResolverContext);
 
@@ -501,16 +496,15 @@ export function AutoScopeProvider({
   // In StrictMode, components mount/unmount/remount, but useState caches
   // the scope while useEffect cleanup disposes it. Using useRef with
   // isDisposed check allows recreation of disposed scopes.
-  // Scope<Port<unknown, string>, never, "uninitialized"> is the widest scope type.
-  const scopeRef = useRef<Scope<Port<unknown, string>, never, "uninitialized"> | null>(null);
+  // Uses RuntimeScopeRef which provides bivariant method signatures.
+  const scopeRef = useRef<RuntimeResolverRef | null>(null);
 
   // Create or recreate scope if needed during initial render
   // This handles StrictMode where scope may have been disposed during unmount
   if (scopeRef.current === null || scopeRef.current.isDisposed) {
-    // createScope() returns the same scope type as the resolver.
-    // Since resolver is LocalResolver<Port<unknown, string>>, its createScope()
-    // returns a compatible scope type.
-    scopeRef.current = resolverContext.resolver.createScope() as Scope<Port<unknown, string>, never, "uninitialized">;
+    // createScope() on RuntimeResolverRef returns RuntimeScopeRef.
+    // No type cast needed - the bivariant types flow through.
+    scopeRef.current = resolverContext.resolver.createScope();
   }
 
   // Dispose scope on unmount using useEffect (SSR compatible)
@@ -526,7 +520,6 @@ export function AutoScopeProvider({
   }, []);
 
   // Create resolver context value with the new scope.
-  // Use RuntimeResolverContextValue which doesn't require the phantom brand.
   const resolverContextValue: RuntimeResolverContextValue = {
     resolver: scopeRef.current,
   };

@@ -313,12 +313,39 @@ export function DevToolsProvider({
   }, [updateViewModels]);
 
   // Subscribe to data source changes
+  // Use debouncing to batch rapid trace notifications and prevent re-render loops.
+  // Without debouncing, each usePort() call triggers tracing → notification →
+  // state update → re-render → usePort() → loop.
   useEffect(() => {
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let pendingUpdate = false;
+
     const unsubscribe = dataSource.subscribe(() => {
-      updateViewModels();
-      dispatch(actions.dataUpdated());
+      // Mark that we have a pending update
+      pendingUpdate = true;
+
+      // If we already have a timer scheduled, let it handle the update
+      if (debounceTimer !== null) {
+        return;
+      }
+
+      // Schedule a debounced update
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null;
+        if (pendingUpdate) {
+          pendingUpdate = false;
+          updateViewModels();
+          dispatch(actions.dataUpdated());
+        }
+      }, 16); // ~1 frame at 60fps - batches rapid notifications
     });
-    return unsubscribe;
+
+    return () => {
+      unsubscribe();
+      if (debounceTimer !== null) {
+        clearTimeout(debounceTimer);
+      }
+    };
   }, [dataSource, updateViewModels]);
 
   // Action helpers

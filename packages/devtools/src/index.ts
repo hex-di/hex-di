@@ -423,3 +423,337 @@ export type {
   TraceRetentionPolicy,
 } from "@hex-di/devtools-core";
 export type { TraceCollector } from "./tracing/collector.js";
+
+// =============================================================================
+// State Management (Task Group 3.1)
+// =============================================================================
+
+/**
+ * Export state management utilities for DevTools.
+ *
+ * Framework-agnostic state management that works with React, TUI,
+ * or any other framework using the reducer pattern.
+ *
+ * @see {@link devToolsReducer} - Pure reducer function for DevTools state
+ * @see {@link initialState} - Default initial state
+ * @see {@link actions} - Action creator functions
+ */
+export { devToolsReducer, initialState, actions } from "./state/index.js";
+
+export type {
+  DevToolsState,
+  PanelState,
+  GraphState,
+  TimelineState,
+  InspectorState,
+} from "./state/index.js";
+
+export type { DevToolsAction } from "./state/index.js";
+
+export {
+  selectPanel,
+  selectGraph,
+  selectTimeline,
+  selectInspector,
+  selectActiveTabId,
+  selectIsPanelOpen,
+  selectIsFullscreen,
+  selectPanelPosition,
+  selectPanelSize,
+  selectIsDarkMode,
+  selectSelectedNodeId,
+  selectHighlightedNodeIds,
+  selectZoom,
+  selectPanOffset,
+  selectGraphDirection,
+  selectHasNodeSelection,
+  selectHasHighlight,
+  selectSelectedTraceId,
+  selectExpandedTraceIds,
+  selectTimelineFilter,
+  selectTimelineGrouping,
+  selectTimelineSortOrder,
+  selectTimelineSortDescending,
+  selectIsTracingPaused,
+  selectSlowThreshold,
+  selectHasTimelineFilter,
+  selectIsTraceExpanded,
+  selectSelectedServicePortName,
+  selectSelectedScopeId,
+  selectInspectorFilter,
+  selectShowDependencies,
+  selectShowDependents,
+  selectExpandedScopeIds,
+  selectHasServiceSelection,
+  selectHasScopeSelection,
+  selectIsScopeExpanded,
+  selectLastUpdated,
+  selectIsDevToolsActive,
+} from "./state/index.js";
+
+// =============================================================================
+// View Models (Task Group 3.1)
+// =============================================================================
+
+/**
+ * Export view models for DevTools views.
+ *
+ * Immutable data structures that represent the complete state needed to
+ * render each DevTools view. Framework-agnostic and can be consumed by
+ * React, TUI, or any other presentation layer.
+ */
+export type {
+  // Graph view model
+  NodePosition,
+  NodeDimensions,
+  GraphNodeViewModel,
+  GraphEdgeViewModel,
+  LayoutDirection,
+  GraphViewport,
+  GraphViewModel,
+  // Timeline view model
+  TraceLifetime,
+  TraceEntryViewModel,
+  TimeRange,
+  TraceGroup,
+  TimelineGrouping,
+  TimelineSortOrder,
+  TimelineViewModel,
+  // Stats view model
+  MetricViewModel,
+  LifetimeBreakdown,
+  TopServiceViewModel,
+  TimeSeriesPoint,
+  TimeSeriesData,
+  StatsViewModel,
+  // Inspector view model
+  ServiceInfoViewModel,
+  DependencyViewModel,
+  ScopeInfoViewModel,
+  InspectorTarget,
+  InspectorViewModel,
+  // Panel view model
+  TabId,
+  TabViewModel,
+  PanelPosition,
+  PanelSize,
+  PanelLayoutViewModel,
+  ConnectionStatus,
+  ConnectionViewModel,
+  PanelViewModel,
+} from "./view-models/index.js";
+
+export {
+  createEmptyGraphViewModel,
+  createEmptyTimelineViewModel,
+  createEmptyStatsViewModel,
+  createEmptyInspectorViewModel,
+  createEmptyPanelViewModel,
+} from "./view-models/index.js";
+
+// =============================================================================
+// Presenters (Task Group 3.1)
+// =============================================================================
+
+/**
+ * Export presenters for DevTools views.
+ *
+ * Framework-agnostic presentation logic that transforms data from the
+ * data source into view models ready for rendering.
+ */
+export {
+  GraphPresenter,
+  TimelinePresenter,
+  StatsPresenter,
+  InspectorPresenter,
+  PanelPresenter,
+} from "./presenters/index.js";
+
+// =============================================================================
+// Shared Headless Components (Task Group 3.2)
+// =============================================================================
+
+/**
+ * Export shared headless components for DevTools views.
+ *
+ * Platform-agnostic React components that use the usePrimitives() hook
+ * to render in both DOM and TUI environments. These components accept
+ * view models as props and emit events via callbacks.
+ *
+ * @see {@link DevToolsPanel} - Main panel with tab navigation (renamed from headless)
+ * @see {@link GraphView} - Dependency graph visualization
+ * @see {@link TimelineView} - Resolution trace timeline
+ * @see {@link StatsView} - Statistics dashboard
+ * @see {@link InspectorView} - Service/scope inspection
+ */
+export {
+  DevToolsPanel as HeadlessDevToolsPanel,
+  GraphView,
+  TimelineView,
+  StatsView,
+  InspectorView,
+} from "./components/index.js";
+
+export type {
+  DevToolsPanelProps as HeadlessDevToolsPanelProps,
+  GraphViewProps,
+  TimelineViewProps,
+  StatsViewProps,
+  InspectorViewProps,
+} from "./components/index.js";
+
+// =============================================================================
+// Primitives Infrastructure
+// =============================================================================
+
+/**
+ * Export primitives infrastructure for building DevTools UIs.
+ *
+ * @see {@link usePrimitives} - Hook to access render primitives
+ * @see {@link PrimitivesProvider} - Context provider for primitives
+ * @see {@link RenderPrimitivesPort} - Port definition for primitives
+ */
+export { usePrimitives } from "./hooks/use-primitives.js";
+export { PrimitivesProvider } from "./hooks/primitives-context.js";
+export type { PrimitivesProviderProps } from "./hooks/primitives-context.js";
+
+export { RenderPrimitivesPort } from "./ports/render-primitives.port.js";
+export type {
+  RenderPrimitives,
+  RendererType,
+  SemanticColor,
+  SpacingToken,
+  LayoutProps,
+  BoxProps,
+  TextProps,
+  ButtonProps,
+  IconProps,
+  ScrollViewProps,
+  DividerProps,
+  GraphRendererProps,
+  StyleSystem,
+  TextVariant,
+  IconName,
+  DOMOnlyProps,
+  TUIOnlyProps,
+  RendererSpecificProps,
+} from "./ports/render-primitives.port.js";
+
+// =============================================================================
+// Data Sources (Task Group 4.3)
+// =============================================================================
+
+/**
+ * Export data sources for DevTools data access.
+ *
+ * Data sources provide a unified interface for accessing graph and trace data
+ * from different sources (local container or remote WebSocket).
+ *
+ * @see {@link DataSource} - Unified data source interface
+ * @see {@link LocalDataSource} - Same-process data access
+ * @see {@link RemoteDataSource} - WebSocket-based remote data access
+ *
+ * @example LocalDataSource for browser development
+ * ```typescript
+ * import { LocalDataSource } from '@hex-di/devtools';
+ *
+ * const dataSource = new LocalDataSource(graph, container);
+ * dataSource.subscribeToGraph((graph) => {
+ *   console.log('Graph updated:', graph);
+ * });
+ * ```
+ *
+ * @example RemoteDataSource for CLI tools
+ * ```typescript
+ * import { RemoteDataSource } from '@hex-di/devtools';
+ *
+ * const dataSource = new RemoteDataSource({
+ *   url: 'ws://localhost:9229/devtools',
+ *   appId: 'my-app',
+ * });
+ *
+ * await dataSource.connect();
+ * ```
+ */
+export {
+  LocalDataSource,
+  RemoteDataSource,
+  type DataSource,
+  type DataSourceConnectionState,
+  type DataSourceEvent,
+  type DataSourceListener,
+  type RemoteDataSourceOptions,
+  type WebSocketLike,
+} from "./data-source/index.js";
+
+// =============================================================================
+// Network Layer (Task Group 4.3)
+// =============================================================================
+
+/**
+ * Export network layer utilities for DevTools communication.
+ *
+ * Provides client registry and protocol utilities for managing
+ * connections between DevTools clients and servers.
+ *
+ * @see {@link ClientRegistry} - Track connected DevTools clients
+ * @see {@link Methods} - Protocol method names
+ * @see {@link createRequest} - Create JSON-RPC requests
+ *
+ * @example Using ClientRegistry
+ * ```typescript
+ * import { ClientRegistry } from '@hex-di/devtools';
+ *
+ * const registry = new ClientRegistry<WebSocket>();
+ *
+ * registry.addListener((event, app) => {
+ *   console.log(`App ${app.appId} ${event}`);
+ * });
+ * ```
+ *
+ * @example Creating protocol messages
+ * ```typescript
+ * import { createRequest, Methods, serializeMessage } from '@hex-di/devtools';
+ *
+ * const request = createRequest(1, Methods.GET_GRAPH, { appId: 'my-app' });
+ * const json = serializeMessage(request);
+ * socket.send(json);
+ * ```
+ */
+export {
+  // Client Registry
+  ClientRegistry,
+  type RegisteredApp,
+  type AppInfo,
+  type ClientRegistryListener,
+  // Protocol utilities
+  ErrorCodes,
+  Methods,
+  createRequest,
+  createSuccessResponse,
+  createErrorResponse,
+  createNotification,
+  isRequest,
+  isNotification,
+  isResponse,
+  isErrorResponse,
+  isSuccessResponse,
+  isValidJsonRpcMessage,
+  parseJsonRpcMessage,
+  parseMessage,
+  serializeMessage,
+  deserializeMessage,
+  type JsonRpcRequest,
+  type JsonRpcSuccessResponse,
+  type JsonRpcError,
+  type JsonRpcErrorResponse,
+  type JsonRpcResponse,
+  type JsonRpcNotification,
+  type JsonRpcMessage,
+  type ErrorCode,
+  type Method,
+  type MethodMap,
+  type MethodParams,
+  type MethodResult,
+  type ParseMessageResult,
+} from "./network/index.js";

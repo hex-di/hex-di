@@ -152,12 +152,15 @@ export function createSimpleGraph(): ExportedGraph {
 
 /**
  * Creates a complex graph with multiple nodes and edges.
+ * Includes 7 nodes with 9 edges for multi-layer dependency testing.
+ * AuthService directly depends on both UserService and Logger.
  */
 export function createComplexGraph(): ExportedGraph {
   return createGraph({
     nodes: [
       createNode({ id: "Config" }),
       createNode({ id: "Logger" }),
+      createNode({ id: "Cache" }),
       createNode({ id: "Database" }),
       createNode({ id: "UserRepository", lifetime: "scoped" }),
       createNode({ id: "UserService", lifetime: "scoped" }),
@@ -167,10 +170,12 @@ export function createComplexGraph(): ExportedGraph {
       createEdge("Logger", "Config"),
       createEdge("Database", "Config"),
       createEdge("Database", "Logger"),
+      createEdge("Database", "Cache"),
       createEdge("UserRepository", "Database"),
       createEdge("UserService", "UserRepository"),
       createEdge("UserService", "Logger"),
       createEdge("AuthService", "UserService"),
+      createEdge("AuthService", "Logger"), // Direct dependency for test
     ],
   });
 }
@@ -207,4 +212,40 @@ export function createAsyncGraph(): ExportedGraph {
       createEdge("UserRepository", "Database"),
     ],
   });
+}
+
+// =============================================================================
+// Aliases for Alternative Naming
+// =============================================================================
+
+/**
+ * Alias for createComplexGraph.
+ * @see createComplexGraph
+ */
+export const createComplexTestGraph = createComplexGraph;
+
+/**
+ * Creates a test graph with 3 nodes and 2 edges.
+ * Used by presenter tests that expect Logger, Config, UserService.
+ */
+export function createTestGraph(): ExportedGraph {
+  return createGraph({
+    nodes: [
+      createNode({ id: "Config" }),
+      createNode({ id: "Logger" }),
+      createNode({ id: "UserService", lifetime: "scoped" }),
+    ],
+    edges: [
+      createEdge("Logger", "Config"),
+      createEdge("UserService", "Logger"),
+    ],
+  });
+}
+
+/**
+ * Creates an empty graph with no nodes or edges.
+ * @see createGraph
+ */
+export function createEmptyGraph(): ExportedGraph {
+  return createGraph();
 }

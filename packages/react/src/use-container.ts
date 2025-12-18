@@ -13,6 +13,7 @@ import type { Port } from "@hex-di/ports";
 import { ContainerContext } from "./context.js";
 import { MissingProviderError } from "./errors.js";
 import type { Resolver } from "./types.js";
+import { toTypedResolver } from "./internal/runtime-refs.js";
 
 /**
  * Hook that returns the nearest Container or ChildContainer from the nearest ContainerProvider.
@@ -66,6 +67,7 @@ export function useContainer<
   }
 
   // Return the nearest container (may be root Container or ChildContainer)
-  // Both Container and ChildContainer satisfy the Resolver interface
-  return context.container as unknown as Resolver<TProvides>;
+  // Both Container and ChildContainer satisfy the Resolver interface.
+  // toTypedResolver bridges RuntimeContainerRef to Resolver<TProvides>.
+  return toTypedResolver<TProvides>(context.container);
 }

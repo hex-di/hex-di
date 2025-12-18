@@ -209,6 +209,36 @@ export type {
 } from "./types.js";
 
 // =============================================================================
+// Runtime Resolver Types
+// =============================================================================
+
+/**
+ * Covariant runtime resolver interfaces for type-erased storage.
+ *
+ * These interfaces solve the variance problem when storing typed containers
+ * in React context/state. They use property function syntax for bivariance,
+ * allowing any Container<TProvides> to be stored without type assertions.
+ *
+ * @see {@link RuntimeResolver} - Base interface for type-erased storage
+ * @see {@link RuntimeContainer} - Extended interface with initialize/createChild
+ * @see {@link TypedResolver} - Typed resolver for consuming with specific ports
+ * @see {@link isRuntimeContainer} - Type guard for RuntimeContainer
+ * @see {@link assertResolverProvides} - Narrow RuntimeResolver to TypedResolver
+ */
+export type {
+  RuntimeResolver,
+  RuntimeContainer,
+  TypedResolver,
+} from "./runtime-resolver.js";
+
+export {
+  isRuntimeContainer,
+  assertResolverProvides,
+  toRuntimeResolver,
+  toRuntimeContainer,
+} from "./runtime-resolver.js";
+
+// =============================================================================
 // Container Factory
 // =============================================================================
 

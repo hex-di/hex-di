@@ -8,10 +8,12 @@
 
 import { WebSocketServer as WSServer, WebSocket } from "ws";
 import type { IncomingMessage, Server as HttpServer } from "http";
+import type { Http2SecureServer } from "http2";
 import { ClientRegistry, type AppInfo } from "./client-registry.js";
 import {
   type JsonRpcMessage,
   type JsonRpcRequest,
+  type JsonRpcResponse,
   type JsonRpcNotification,
   ErrorCodes,
   Methods,
@@ -19,6 +21,7 @@ import {
   createErrorResponse,
   createNotification,
   isRequest,
+  isResponse,
   isNotification,
   parseJsonRpcMessage,
   type RegisterAppParams,
@@ -62,6 +65,12 @@ function hasAppId(value: unknown): value is { appId: string } {
 /**
  * Options for creating the WebSocket server.
  */
+/**
+ * Union of server types that can be used with DevToolsServer.
+ * Includes both HTTP/1.x and HTTP/2 servers for Vite compatibility.
+ */
+export type AttachableServer = HttpServer | Http2SecureServer;
+
 export interface DevToolsServerOptions {
   /**
    * Port to listen on (if creating standalone server).
@@ -70,8 +79,10 @@ export interface DevToolsServerOptions {
 
   /**
    * Existing HTTP server to attach to.
+   * Accepts both HTTP/1.x (http.Server) and HTTP/2 (Http2SecureServer)
+   * for compatibility with Vite dev server.
    */
-  readonly server?: HttpServer;
+  readonly server?: AttachableServer;
 
   /**
    * Path for WebSocket connections.
@@ -123,17 +134,44 @@ export type ServerEvent =
  * });
  * ```
  */
+/**
+ * Pending request info for response correlation.
+ */
+interface PendingRequest {
+  /** The socket that made the original request */
+  readonly originSocket: WebSocket;
+  /** Timeout handle for request timeout */
+  readonly timeoutId: ReturnType<typeof setTimeout>;
+}
+
+/**
+ * Internal resolved options type for DevToolsServer.
+ * Uses union with undefined for optional server, avoiding Required<> issues.
+ */
+interface ResolvedDevToolsOptions {
+  readonly port: number;
+  readonly server: AttachableServer | undefined;
+  readonly path: string;
+  readonly verbose: boolean;
+}
+
 export class DevToolsServer {
   private wss: WSServer | null = null;
   private readonly registry = new ClientRegistry();
   private readonly listeners = new Set<ServerEventListener>();
-  private readonly options: Required<DevToolsServerOptions>;
+  private readonly options: ResolvedDevToolsOptions;
   private isRunning = false;
+
+  /** Map of request ID to pending request info for response correlation */
+  private readonly pendingRequests = new Map<string | number, PendingRequest>();
+
+  /** Timeout for forwarded requests (30 seconds) */
+  private static readonly REQUEST_TIMEOUT_MS = 30000;
 
   constructor(options: DevToolsServerOptions = {}) {
     this.options = {
       port: options.port ?? 9229,
-      server: options.server as HttpServer,
+      server: options.server,
       path: options.path ?? "/devtools",
       verbose: options.verbose ?? false,
     };
@@ -149,6 +187,12 @@ export class DevToolsServer {
   }
 
   /**
+   * Upgrade handler bound to this instance.
+   * Stored to enable proper cleanup in stop().
+   */
+  private upgradeHandler: ((request: IncomingMessage, socket: import("stream").Duplex, head: Buffer) => void) | null = null;
+
+  /**
    * Start the WebSocket server.
    */
   async start(): Promise<void> {
@@ -156,17 +200,43 @@ export class DevToolsServer {
       return;
     }
 
-    const wssOptions: { path?: string; port?: number; server?: HttpServer } = {
-      path: this.options.path,
-    };
+    let actualPort = this.options.port;
 
     if (this.options.server !== undefined) {
-      wssOptions.server = this.options.server;
+      // Attached mode: use noServer to avoid conflicts with Vite's HMR WebSocket.
+      // We manually handle 'upgrade' events and filter by path.
+      this.wss = new WSServer({ noServer: true });
+
+      // Create bound upgrade handler so we can remove it in stop()
+      this.upgradeHandler = (request, socket, head) => {
+        // Parse the request URL to check the path
+        const url = request.url ?? "";
+        const pathname = url.startsWith("/") ? url.split("?")[0] : "/";
+
+        // Only handle requests to our DevTools path
+        if (pathname === this.options.path) {
+          this.wss!.handleUpgrade(request, socket, head, (ws) => {
+            this.wss!.emit("connection", ws, request);
+          });
+        }
+        // For other paths, don't do anything - let Vite's HMR handle them
+      };
+
+      this.options.server.on("upgrade", this.upgradeHandler);
+
+      // Get actual port from attached server
+      const address = this.options.server.address();
+      if (typeof address === "object" && address !== null) {
+        actualPort = address.port;
+      }
     } else {
-      wssOptions.port = this.options.port;
+      // Standalone mode: create server on specified port
+      this.wss = new WSServer({
+        port: this.options.port,
+        path: this.options.path,
+      });
     }
 
-    this.wss = new WSServer(wssOptions);
     this.isRunning = true;
 
     this.wss.on("connection", (socket, request) => {
@@ -177,8 +247,8 @@ export class DevToolsServer {
       this.emit({ type: "error", error });
     });
 
-    this.log(`DevTools server started on port ${this.options.port}`);
-    this.emit({ type: "started", port: this.options.port });
+    this.log(`DevTools server started on port ${actualPort}`);
+    this.emit({ type: "started", port: actualPort });
   }
 
   /**
@@ -187,6 +257,12 @@ export class DevToolsServer {
   async stop(): Promise<void> {
     if (!this.isRunning || this.wss === null) {
       return;
+    }
+
+    // Remove upgrade handler from attached server if present
+    if (this.options.server !== undefined && this.upgradeHandler !== null) {
+      this.options.server.removeListener("upgrade", this.upgradeHandler);
+      this.upgradeHandler = null;
     }
 
     return new Promise((resolve, reject) => {
@@ -272,6 +348,8 @@ export class DevToolsServer {
 
     if (isRequest(message)) {
       this.handleRequest(socket, message);
+    } else if (isResponse(message)) {
+      this.handleResponse(socket, message);
     } else if (isNotification(message)) {
       this.handleNotification(socket, message);
     }
@@ -354,10 +432,53 @@ export class DevToolsServer {
       return;
     }
 
+    // Set up timeout for the request
+    const timeoutId = setTimeout(() => {
+      const pending = this.pendingRequests.get(request.id);
+      if (pending !== undefined) {
+        this.pendingRequests.delete(request.id);
+        this.sendError(
+          pending.originSocket,
+          request.id,
+          ErrorCodes.INTERNAL_ERROR,
+          "Request timeout"
+        );
+      }
+    }, DevToolsServer.REQUEST_TIMEOUT_MS);
+
+    // Track the pending request for response correlation
+    this.pendingRequests.set(request.id, {
+      originSocket: socket,
+      timeoutId,
+    });
+
     // Forward the request to the target app
     this.send(targetApp.socket, request);
+    this.log(`Forwarded request ${request.id} to app ${request.params.appId}`);
+  }
 
-    // TODO: Implement request/response correlation to forward response back
+  private handleResponse(_socket: WebSocket, response: JsonRpcResponse): void {
+    // Error responses can have null id - ignore these as we can't route them
+    if (response.id === null) {
+      this.log("Received error response with null ID, cannot route");
+      return;
+    }
+
+    // Look up the pending request to find the original client
+    const pending = this.pendingRequests.get(response.id);
+
+    if (pending === undefined) {
+      this.log(`Received response for unknown request ID: ${response.id}`);
+      return;
+    }
+
+    // Clear timeout and remove from pending
+    clearTimeout(pending.timeoutId);
+    this.pendingRequests.delete(response.id);
+
+    // Forward the response to the original client
+    this.send(pending.originSocket, response);
+    this.log(`Forwarded response ${response.id} to client`);
   }
 
   private broadcastNotification(notification: JsonRpcNotification): void {

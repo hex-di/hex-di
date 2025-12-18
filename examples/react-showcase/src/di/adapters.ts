@@ -265,7 +265,7 @@ export const UserSessionAdapter = createAdapter({
  */
 export const ChatServiceAdapter = createAdapter({
   provides: ChatServicePort,
-  requires: [LoggerPort, UserSessionPort, MessageStorePort],
+  requires: [LoggerPort, UserSessionPort, MessageStorePort, ConfigPort],
   lifetime: "scoped",
   factory: (deps): ChatService => {
     const { user } = deps.UserSession;

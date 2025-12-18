@@ -14,6 +14,10 @@ export {
   createComplexGraph,
   createLifetimeGraph,
   createAsyncGraph,
+  // Aliases
+  createComplexTestGraph,
+  createTestGraph,
+  createEmptyGraph,
   type CreateNodeOptions,
   type CreateGraphOptions,
 } from "./graph.fixtures.js";

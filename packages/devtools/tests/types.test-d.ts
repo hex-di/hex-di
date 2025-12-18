@@ -333,7 +333,13 @@ describe("DevToolsPanel prop types", () => {
 
   it("DevToolsPanel is a function component", () => {
     expectTypeOf(DevToolsPanel).toBeFunction();
-    expectTypeOf(DevToolsPanel).parameter(0).toMatchTypeOf<DevToolsPanelProps>();
+    expectTypeOf(DevToolsPanel).returns.toMatchTypeOf<ReactElement>();
+
+    // Verify props can be passed to the component (without optional properties)
+    const validProps: DevToolsPanelProps = {
+      graph: testGraph,
+    };
+    expectTypeOf(validProps).toMatchTypeOf<Parameters<typeof DevToolsPanel>[0]>();
   });
 
   it("DevToolsPanel props are readonly", () => {
@@ -374,7 +380,13 @@ describe("DevToolsFloating prop types", () => {
 
   it("DevToolsFloating is a function component", () => {
     expectTypeOf(DevToolsFloating).toBeFunction();
-    expectTypeOf(DevToolsFloating).parameter(0).toMatchTypeOf<DevToolsFloatingProps>();
+    expectTypeOf(DevToolsFloating).returns.toMatchTypeOf<ReactElement | null>();
+
+    // Verify props can be passed to the component (without optional properties)
+    const validProps: DevToolsFloatingProps = {
+      graph: testGraph,
+    };
+    expectTypeOf(validProps).toMatchTypeOf<Parameters<typeof DevToolsFloating>[0]>();
   });
 
   it("DevToolsFloating returns ReactElement or null", () => {

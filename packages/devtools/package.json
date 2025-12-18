@@ -1,7 +1,7 @@
 {
   "name": "@hex-di/devtools",
   "version": "0.1.0",
-  "description": "Graph visualization export utilities and React DevTools components for HexDI - export to JSON, DOT, Mermaid formats and visualize dependency graphs",
+  "description": "Unified DevTools for HexDI - visualization, tracing, and inspection with platform-specific entry points for browser (DOM) and terminal (TUI)",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -14,6 +14,26 @@
       "require": {
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
+      }
+    },
+    "./dom": {
+      "import": {
+        "types": "./dist/dom/index.d.ts",
+        "default": "./dist/dom/index.js"
+      },
+      "require": {
+        "types": "./dist/dom/index.d.cts",
+        "default": "./dist/dom/index.cjs"
+      }
+    },
+    "./tui": {
+      "import": {
+        "types": "./dist/tui/index.d.ts",
+        "default": "./dist/tui/index.js"
+      },
+      "require": {
+        "types": "./dist/tui/index.d.cts",
+        "default": "./dist/tui/index.cjs"
       }
     },
     "./react": {
@@ -37,6 +57,9 @@
       }
     }
   },
+  "bin": {
+    "hexdi-tui": "./dist/tui/cli/index.js"
+  },
   "files": [
     "dist",
     "src"
@@ -58,6 +81,8 @@
     "graphviz",
     "mermaid",
     "react",
+    "tui",
+    "terminal",
     "typescript",
     "type-safe"
   ],
@@ -74,20 +99,33 @@
   "homepage": "https://github.com/hex-di/hex-di/tree/main/packages/devtools#readme",
   "dependencies": {
     "@hex-di/devtools-core": "workspace:*",
-    "@hex-di/ports": "workspace:*",
+    "@hex-di/devtools-network": "workspace:*",
     "@hex-di/graph": "workspace:*",
+    "@hex-di/ports": "workspace:*",
     "@hex-di/runtime": "workspace:*",
-    "dagre": "^0.8.5",
     "d3-selection": "^3.0.0",
     "d3-transition": "^3.0.0",
-    "d3-zoom": "^3.0.0"
+    "d3-zoom": "^3.0.0",
+    "dagre": "^0.8.5"
   },
   "peerDependencies": {
-    "react": ">=18.0.0",
+    "@opentui/core": ">=0.1.0",
+    "@opentui/react": ">=0.1.0",
+    "react": ">=19.0.0",
+    "react-dom": ">=19.0.0",
     "typescript": ">=5.0"
   },
   "peerDependenciesMeta": {
     "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "@opentui/core": {
+      "optional": true
+    },
+    "@opentui/react": {
       "optional": true
     },
     "typescript": {
@@ -95,16 +133,20 @@
     }
   },
   "devDependencies": {
-    "@testing-library/react": "^14.0.0",
+    "@opentui/core": "^0.1.61",
+    "@opentui/react": "^0.1.61",
+    "@testing-library/dom": "^10.0.0",
+    "@testing-library/react": "^16.0.0",
     "@types/d3-selection": "^3.0.0",
     "@types/d3-transition": "^3.0.0",
     "@types/d3-zoom": "^3.0.0",
     "@types/dagre": "^0.7.52",
-    "@types/react": "^18.0.0",
-    "@types/react-dom": "^18.0.0",
+    "@types/node": "25.0.3",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
     "jsdom": "^24.0.0",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -29,6 +29,11 @@ async function main(): Promise<void> {
       await watchApp();
       break;
 
+    case "interactive":
+    case "i":
+      await launchInteractive();
+      break;
+
     case "help":
     case "--help":
     case "-h":
@@ -214,6 +219,49 @@ function hasNoColor(): boolean {
   return args.includes("--no-color") || process.env["NO_COLOR"] !== undefined;
 }
 
+async function launchInteractive(): Promise<void> {
+  const url = getServerUrl();
+  const appId = getAppId();
+
+  if (appId === undefined) {
+    console.error("Please specify an app ID with --app=<appId>");
+    process.exit(1);
+    return;
+  }
+
+  // Check if running in Bun (OpenTUI requires Bun for its FFI-based renderer)
+  const isBun = "Bun" in globalThis;
+  if (!isBun) {
+    console.error("Error: Interactive mode requires Bun (https://bun.sh)");
+    console.error("");
+    console.error("OpenTUI uses Bun's FFI for terminal rendering.");
+    console.error("Please run with: bun packages/devtools-tui/dist/cli/index.js interactive --app=<appId>");
+    console.error("");
+    console.error("Alternatively, use the non-interactive commands with Node.js:");
+    console.error("  hexdi-tui list");
+    console.error("  hexdi-tui graph --app=<appId>");
+    console.error("  hexdi-tui services --app=<appId>");
+    console.error("  hexdi-tui watch --app=<appId>");
+    process.exit(1);
+    return;
+  }
+
+  // Dynamic import to avoid loading OpenTUI for simple commands
+  const { createCliRenderer } = await import("@opentui/core");
+  const { createRoot } = await import("@opentui/react");
+  const { App } = await import("../tui/App.js");
+  const React = await import("react");
+
+  console.log(`Launching interactive TUI for ${appId}...`);
+  console.log(`Connecting to ${url}`);
+  console.log("");
+
+  const renderer = await createCliRenderer();
+  // React.createElement returns ReactElement which is assignable to ReactNode
+  // The Root.render() method from @opentui/react accepts ReactNode
+  createRoot(renderer).render(React.createElement(App, { url, appId }));
+}
+
 function showHelp(): void {
   console.log(`
 HexDI DevTools TUI
@@ -226,6 +274,7 @@ Commands:
   graph         Show dependency graph (requires --app)
   services      List registered services (requires --app)
   watch         Watch app in real-time (requires --app)
+  interactive   Launch interactive TUI (requires --app, Bun only) [alias: i]
   help          Show this help message
   version       Show version
 
@@ -238,7 +287,9 @@ Examples:
   hexdi-tui list
   hexdi-tui graph --app=my-app
   hexdi-tui services --app=my-app
-  hexdi-tui watch --app=my-app --url=ws://localhost:9229/devtools
+  hexdi-tui watch --app=my-app
+  hexdi-tui interactive --app=my-app --url=ws://localhost:3000/devtools
+  hexdi-tui i --app=react-showcase
 `);
 }
 

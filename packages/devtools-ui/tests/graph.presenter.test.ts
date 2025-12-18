@@ -286,7 +286,7 @@ describe("GraphPresenter", () => {
       const vm = presenter.getViewModel();
 
       expect(vm.nodes).toHaveLength(7);
-      expect(vm.edges).toHaveLength(8);
+      expect(vm.edges).toHaveLength(9);
     });
 
     it("should position dependent nodes at different levels", () => {

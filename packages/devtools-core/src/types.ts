@@ -47,6 +47,11 @@ export interface ExportedNode {
   readonly lifetime: Lifetime;
   /** Factory kind - sync or async */
   readonly factoryKind: FactoryKind;
+  /**
+   * Port name (same as id, included for clarity in certain contexts).
+   * @deprecated Use `id` instead. This field is included for backward compatibility.
+   */
+  readonly portName?: string;
 }
 
 /**

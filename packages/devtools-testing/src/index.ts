@@ -110,6 +110,10 @@ export {
   createComplexGraph,
   createLifetimeGraph,
   createAsyncGraph,
+  // Aliases
+  createComplexTestGraph,
+  createTestGraph,
+  createEmptyGraph,
   type CreateNodeOptions,
   type CreateGraphOptions,
   // Trace Fixtures

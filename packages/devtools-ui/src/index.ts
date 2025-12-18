@@ -1,6 +1,32 @@
 /**
  * @hex-di/devtools-ui - Framework-agnostic presentation logic for HexDI DevTools.
  *
+ * @deprecated This package is deprecated and will be removed in the next major version (v2.0).
+ * Please migrate to the new unified package structure:
+ *
+ * ## Migration Guide
+ *
+ * | Old Import | New Import |
+ * |------------|------------|
+ * | `@hex-di/devtools-ui` | `@hex-di/devtools` |
+ * | View models (`GraphViewModel`, etc.) | `@hex-di/devtools` |
+ * | Presenters (`GraphPresenter`, etc.) | `@hex-di/devtools` |
+ * | State (`devToolsReducer`, `actions`) | `@hex-di/devtools` |
+ * | Ports (`GraphViewPort`, etc.) | `@hex-di/devtools` (internal) |
+ *
+ * ## Example Migration
+ *
+ * Before:
+ * ```typescript
+ * import { GraphPresenter, GraphViewModel, devToolsReducer } from '@hex-di/devtools-ui';
+ * ```
+ *
+ * After:
+ * ```typescript
+ * import { GraphPresenter, devToolsReducer } from '@hex-di/devtools';
+ * import type { GraphViewModel } from '@hex-di/devtools';
+ * ```
+ *
  * This package provides the shared presentation layer for DevTools, enabling
  * both React (browser) and TUI (terminal) interfaces to share the same logic.
  *
@@ -14,51 +40,6 @@
  * - **State**: Framework-agnostic reducer-based state management
  * - **Data Source**: Abstraction for accessing graph and tracing data
  *
- * ## Key Concepts
- *
- * ### View Models
- *
- * View models are immutable data structures containing all information
- * needed to render a view. They are computed by presenters from the
- * data source and contain pre-formatted values for display.
- *
- * ```typescript
- * import { GraphPresenter, PresenterDataSourcePort } from '@hex-di/devtools-ui';
- *
- * const dataSource: PresenterDataSourceContract = ...;
- * const presenter = new GraphPresenter(dataSource);
- * const viewModel = presenter.getViewModel();
- * // viewModel contains nodes, edges, viewport, etc.
- * ```
- *
- * ### Ports
- *
- * Ports define the contract that view implementations must fulfill.
- * React adapters use D3/SVG, TUI adapters use ASCII art, but both
- * implement the same port interface.
- *
- * ```typescript
- * import { GraphViewPort, GraphViewContract } from '@hex-di/devtools-ui';
- *
- * // React implementation
- * const reactGraphView: GraphViewContract = {
- *   render(viewModel) { // Use D3 },
- *   onNodeClick(handler) { // Attach D3 click handlers },
- *   // ...
- * };
- * ```
- *
- * ### State Management
- *
- * The state module provides reducer-based state management that works
- * with React (useReducer), or any other framework using the pattern.
- *
- * ```typescript
- * import { devToolsReducer, initialState, actions } from '@hex-di/devtools-ui';
- *
- * const state = devToolsReducer(initialState, actions.setActiveTab('graph'));
- * ```
- *
  * @packageDocumentation
  */
 
@@ -66,6 +47,10 @@
 // View Models
 // =============================================================================
 
+/**
+ * @deprecated Import from `@hex-di/devtools` instead.
+ * Will be removed in v2.0.
+ */
 export type {
   // Graph
   NodePosition,
@@ -106,6 +91,10 @@ export type {
   PanelViewModel,
 } from "./view-models/index.js";
 
+/**
+ * @deprecated Import from `@hex-di/devtools` instead.
+ * Will be removed in v2.0.
+ */
 export {
   createEmptyGraphViewModel,
   createEmptyTimelineViewModel,
@@ -118,6 +107,10 @@ export {
 // Ports
 // =============================================================================
 
+/**
+ * @deprecated Internal API. Use headless components from `@hex-di/devtools` instead.
+ * Will be removed in v2.0.
+ */
 export type {
   NodeClickEvent,
   EdgeClickEvent,
@@ -134,6 +127,10 @@ export type {
   PanelView,
 } from "./ports/index.js";
 
+/**
+ * @deprecated Internal API. Use headless components from `@hex-di/devtools` instead.
+ * Will be removed in v2.0.
+ */
 export {
   GraphViewPort,
   TimelineViewPort,
@@ -146,6 +143,10 @@ export {
 // Presenters
 // =============================================================================
 
+/**
+ * @deprecated Import from `@hex-di/devtools` instead.
+ * Will be removed in v2.0.
+ */
 export {
   GraphPresenter,
   TimelinePresenter,
@@ -158,12 +159,20 @@ export {
 // Data Source
 // =============================================================================
 
+/**
+ * @deprecated Import from `@hex-di/devtools-core` instead.
+ * Will be removed in v2.0.
+ */
 export type { PresenterDataSourceContract } from "./data-source/index.js";
 
 // =============================================================================
 // State
 // =============================================================================
 
+/**
+ * @deprecated Import from `@hex-di/devtools` instead.
+ * Will be removed in v2.0.
+ */
 export type {
   DevToolsState,
   PanelState,
@@ -173,6 +182,10 @@ export type {
   DevToolsAction,
 } from "./state/index.js";
 
+/**
+ * @deprecated Import from `@hex-di/devtools` instead.
+ * Will be removed in v2.0.
+ */
 export {
   initialState,
   actions,

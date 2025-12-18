@@ -1,20 +1,17 @@
-/// <reference types="vitest" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { devToolsPlugin } from "@hex-di/devtools-network/vite";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    devToolsPlugin({ path: "/devtools", verbose: true }),
+  ],
   server: {
     port: 3000,
     open: true,
   },
   build: {
     sourcemap: true,
-  },
-  test: {
-    globals: true,
-    environment: "jsdom",
-    include: ["tests/**/*.test.{ts,tsx}"],
-    setupFiles: ["./tests/setup.ts"],
   },
 });

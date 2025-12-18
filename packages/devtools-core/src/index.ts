@@ -94,6 +94,11 @@ export {
   type PinTraceParams,
   type AppInfo,
   type ListAppsResult,
+  // Sync types
+  type SyncStateParams,
+  type SyncActionParams,
+  type SyncPreferencesParams,
+  type GetSyncStatusResult,
   // Notification types
   type DataUpdateNotification,
   type AppConnectionNotification,

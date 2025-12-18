@@ -7,8 +7,17 @@
     "declarationMap": true,
     "sourceMap": true,
     "lib": ["ES2021", "DOM"],
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "paths": {
+      "#shared/*": ["./src/shared/*"],
+      "#dom/*": ["./src/dom/*"],
+      "#tui/*": ["./src/tui/*"],
+      "#state/*": ["./src/state/*"],
+      "#components/*": ["./src/components/*"],
+      "#hooks/*": ["./src/hooks/*"],
+      "#ports/*": ["./src/ports/*"]
+    }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts"],
   "exclude": ["node_modules", "dist", "tests"]
 }

@@ -154,6 +154,84 @@ export interface PinTraceParams {
 }
 
 // =============================================================================
+// Sync Types
+// =============================================================================
+
+/**
+ * Partial state update for synchronization.
+ */
+export interface SyncStateParams {
+  readonly graph?: {
+    readonly selectedNodeId?: string | null;
+    readonly highlightedNodeIds?: readonly string[];
+    readonly zoom?: number;
+    readonly panOffset?: { readonly x: number; readonly y: number };
+  };
+  readonly timeline?: {
+    readonly filterText?: string;
+    readonly grouping?: string;
+    readonly sortOrder?: string;
+    readonly sortDescending?: boolean;
+  };
+  readonly inspector?: {
+    readonly filterText?: string;
+    readonly selectedServicePortName?: string | null;
+    readonly selectedScopeId?: string | null;
+  };
+  readonly panel?: {
+    readonly activeTabId?: string;
+    readonly isOpen?: boolean;
+  };
+  readonly timestamp: number;
+  readonly priority?: "immediate" | "debounced";
+}
+
+/**
+ * Action to be synchronized across clients.
+ */
+export interface SyncActionParams {
+  readonly action: {
+    readonly type: string;
+    readonly payload?: unknown;
+  };
+  readonly source: string;
+  readonly timestamp: number;
+}
+
+/**
+ * Preferences to be synchronized (filters, view settings).
+ */
+export interface SyncPreferencesParams {
+  readonly timeline?: {
+    readonly filterText?: string;
+    readonly grouping?: string;
+    readonly sortOrder?: string;
+    readonly showOnlyCacheHits?: boolean;
+    readonly showOnlySlow?: boolean;
+  };
+  readonly inspector?: {
+    readonly filterText?: string;
+    readonly showDependencies?: boolean;
+    readonly showDependents?: boolean;
+  };
+  readonly timestamp: number;
+}
+
+/**
+ * Request sync status from server.
+ */
+export interface GetSyncStatusResult {
+  readonly isConnected: boolean;
+  readonly clientCount: number;
+  readonly lastSyncTimestamp: number;
+  readonly connectedClients: readonly {
+    readonly id: string;
+    readonly role: "browser" | "tui";
+    readonly connectedAt: number;
+  }[];
+}
+
+// =============================================================================
 // Notification Types
 // =============================================================================
 
@@ -194,6 +272,12 @@ export const Methods = {
   // Trace control
   TRACE_CONTROL: "devtools.traceControl",
   PIN_TRACE: "devtools.pinTrace",
+
+  // Sync methods
+  SYNC_STATE: "devtools.syncState",
+  SYNC_ACTION: "devtools.syncAction",
+  SYNC_PREFERENCES: "devtools.syncPreferences",
+  GET_SYNC_STATUS: "devtools.getSyncStatus",
 
   // Notifications
   DATA_UPDATE: "devtools.dataUpdate",
@@ -295,6 +379,12 @@ export interface MethodMap {
     params: undefined;
     result: ListAppsResult;
   };
+
+  // Sync methods
+  [Methods.GET_SYNC_STATUS]: {
+    params: undefined;
+    result: GetSyncStatusResult;
+  };
 }
 
 /**
@@ -313,4 +403,7 @@ export type MethodResult<M extends keyof MethodMap> = MethodMap[M]["result"];
 export interface NotificationMap {
   [Methods.DATA_UPDATE]: DataUpdateNotification;
   [Methods.APP_CONNECTION]: AppConnectionNotification;
+  [Methods.SYNC_STATE]: SyncStateParams;
+  [Methods.SYNC_ACTION]: SyncActionParams;
+  [Methods.SYNC_PREFERENCES]: SyncPreferencesParams;
 }

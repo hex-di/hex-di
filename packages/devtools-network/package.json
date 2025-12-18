@@ -28,6 +28,14 @@
     "./middleware/fastify": {
       "types": "./dist/middleware/fastify.d.ts",
       "import": "./dist/middleware/fastify.js"
+    },
+    "./vite": {
+      "types": "./dist/vite/index.d.ts",
+      "import": "./dist/vite/index.js"
+    },
+    "./browser": {
+      "types": "./dist/browser/index.d.ts",
+      "import": "./dist/browser/index.js"
     }
   },
   "files": [
@@ -51,20 +59,25 @@
   },
   "devDependencies": {
     "@hex-di/devtools-testing": "workspace:*",
-    "@types/node": "^22.9.0",
+    "@types/node": "25.0.3",
     "@types/ws": "^8.5.13",
     "typescript": "^5.6.3",
-    "vitest": "^2.1.4"
+    "vite": "^7.3.0",
+    "vitest": "^4.0.16"
   },
   "peerDependencies": {
     "express": "^4.18.0 || ^5.0.0",
-    "fastify": "^4.0.0 || ^5.0.0"
+    "fastify": "^4.0.0 || ^5.0.0",
+    "vite": "^7.3.0"
   },
   "peerDependenciesMeta": {
     "express": {
       "optional": true
     },
     "fastify": {
+      "optional": true
+    },
+    "vite": {
       "optional": true
     }
   },

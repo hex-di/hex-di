@@ -313,10 +313,8 @@ export function createTracingContainer<
   const baseContainer = createContainer(graph, { hooks });
 
   // Get the internal accessor from base container
-  // Type assertion needed as getInternalAccessor expects less specific Container type
-  const baseInternalAccessor = getInternalAccessor(
-    baseContainer as unknown as Container<Port<unknown, string>>
-  );
+  // getInternalAccessor is now generic, so no cast needed
+  const baseInternalAccessor = getInternalAccessor(baseContainer);
 
   // Create the tracing container by spreading base container and adding tracing
   const tracingContainer: TracingContainer<TProvides, TAsyncPorts> = {

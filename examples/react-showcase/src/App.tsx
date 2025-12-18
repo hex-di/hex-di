@@ -3,13 +3,20 @@
  *
  * Sets up AsyncContainerProvider with the DI container and renders the
  * ChatRoom component. Uses compound components for loading/error states.
- * Includes DevToolsFloating for development.
+ * Includes FloatingDevTools for development - now self-contained with
+ * automatic relay connection for TUI inspection.
  *
  * @packageDocumentation
  */
 
-import { DevToolsFloating, createTracingContainer } from "@hex-di/devtools";
+// Import DevTools from the new unified package structure
+// FloatingDevTools is now self-contained - just pass graph and container
+import {
+  FloatingDevTools,
+  createTracingContainer,
+} from "@hex-di/devtools/dom";
 import type { Container } from "@hex-di/runtime";
+
 import { AsyncContainerProvider, ContainerProvider } from "./di/hooks.js";
 import { appGraph } from "./di/graph.js";
 import type { AppPorts } from "./di/ports.js";
@@ -33,6 +40,7 @@ import { ChatRoom } from "./components/ChatRoom.js";
 const container = createTracingContainer(appGraph);
 const pluginContainer = createPluginChildContainer(container);
 const pluginContainerForProvider = pluginContainer as unknown as Container<AppPorts>;
+
 // =============================================================================
 // App Component
 // =============================================================================
@@ -44,7 +52,8 @@ const pluginContainerForProvider = pluginContainer as unknown as Container<AppPo
  * - AsyncContainerProvider wraps the app and initializes async adapters
  * - Compound Components (Loading, Error, Ready) for state-based rendering
  * - ChatRoom is the main application content
- * - DevToolsFloating provides development tools in bottom-right corner
+ * - FloatingDevTools provides development tools in bottom-right corner
+ *   with automatic Vite relay connection for TUI inspection
  *
  * @example
  * ```tsx
@@ -152,9 +161,13 @@ export function App(): JSX.Element {
 
         {/* DevTools floating panel with tracing enabled */}
       </AsyncContainerProvider.Ready>
-      <DevToolsFloating
-        graph={appGraph}
-        container={container}
+
+      {/* FloatingDevTools - self-contained with automatic relay connection */}
+      <FloatingDevTools
+        graph={appGraph as never}
+        container={container as never}
+        appName="React Showcase"
+        appVersion="1.0.0"
         position="bottom-right"
       />
     </AsyncContainerProvider>

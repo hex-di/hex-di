@@ -111,7 +111,7 @@ export class MemoryCollector implements TraceCollector {
    * 1. Auto-pins slow traces (duration >= slowThresholdMs)
    * 2. Enforces maxPinnedTraces limit (drops oldest pinned)
    * 3. Enforces maxTraces limit (FIFO, drops oldest non-pinned first)
-   * 4. Notifies all subscribers synchronously
+   * 4. Notifies all subscribers synchronously (only for non-cache-hit traces)
    *
    * @param entry - The trace entry to collect
    */
@@ -133,8 +133,14 @@ export class MemoryCollector implements TraceCollector {
     // Then enforce total trace limit via FIFO (excluding pinned)
     this.enforceFIFOLimit();
 
-    // Notify subscribers with the processed entry
-    this.notifySubscribers(processedEntry);
+    // Only notify subscribers for non-cache-hit traces.
+    // Cache hits represent no actual work done, so notifying would cause
+    // unnecessary React re-renders and potential infinite loops when
+    // usePort() is called during render (which triggers tracing even for
+    // cached singletons).
+    if (!processedEntry.isCacheHit) {
+      this.notifySubscribers(processedEntry);
+    }
   }
 
   /**

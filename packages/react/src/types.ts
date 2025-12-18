@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { ReactElement, ReactNode, ComponentType } from "react";
+import type { ReactNode, ComponentType } from "react";
 import type { Port, InferService } from "@hex-di/ports";
 import type { Container, ContainerPhase, Scope } from "@hex-di/runtime";
 
@@ -229,7 +229,7 @@ export interface AsyncContainerReadyProps {
 export interface AsyncContainerProviderComponent<
   TProvides extends Port<unknown, string>
 > {
-  (props: AsyncContainerProviderProps<TProvides>): ReactElement;
+  (props: AsyncContainerProviderProps<TProvides>): ReactNode;
   Loading: ComponentType<AsyncContainerLoadingProps>;
   Error: ComponentType<AsyncContainerErrorProps>;
   Ready: ComponentType<AsyncContainerReadyProps>;
@@ -300,7 +300,7 @@ export interface TypedReactIntegration<TProvides extends Port<unknown, string>> 
    */
   readonly ContainerProvider: (
     props: ContainerProviderProps<TProvides>
-  ) => ReactElement;
+  ) => ReactNode;
 
   /**
    * Provider component that overrides the resolver context with a manual scope.
@@ -329,7 +329,7 @@ export interface TypedReactIntegration<TProvides extends Port<unknown, string>> 
    */
   readonly ScopeProvider: (
     props: ScopeProviderProps<TProvides>
-  ) => ReactElement;
+  ) => ReactNode;
 
   /**
    * Provider component that automatically manages scope lifecycle.
@@ -358,7 +358,7 @@ export interface TypedReactIntegration<TProvides extends Port<unknown, string>> 
    * }
    * ```
    */
-  readonly AutoScopeProvider: (props: AutoScopeProviderProps) => ReactElement;
+  readonly AutoScopeProvider: (props: AutoScopeProviderProps) => ReactNode;
 
   /**
    * Provider component that initializes async adapters before making

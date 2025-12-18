@@ -53,10 +53,19 @@ export type { ContainerInspector, ContainerSnapshot, SingletonEntry, ScopeTree }
  * const state = accessor(); // ContainerInternalState
  * ```
  */
+/**
+ * The minimal interface for accessing INTERNAL_ACCESS from a container.
+ * This allows getInternalAccessor to accept any Container variant without
+ * running into variance issues from the Container type's conditional methods.
+ */
+interface InternalAccessible {
+  readonly [INTERNAL_ACCESS]: () => ContainerInternalState;
+}
+
 export function getInternalAccessor(
-  container: Container<Port<unknown, string>>
+  container: InternalAccessible
 ): () => ContainerInternalState {
-  // Container type now includes [INTERNAL_ACCESS] property - no cast needed
+  // Container type includes [INTERNAL_ACCESS] property
   const accessor = container[INTERNAL_ACCESS];
   if (typeof accessor !== "function") {
     throw new Error("Container does not expose INTERNAL_ACCESS accessor");
@@ -168,7 +177,8 @@ export function createInspector<
   const containerRef = container;
 
   // Get accessor once to validate container, but don't call it yet
-  const getAccessor = () => getInternalAccessor(containerRef as unknown as Container<Port<unknown, string>>);
+  // getInternalAccessor is now generic, so no cast needed
+  const getAccessor = () => getInternalAccessor(containerRef);
 
   /**
    * Implementation of snapshot() method.

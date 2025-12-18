@@ -14,43 +14,19 @@ import React, {
   useState,
   useEffect,
   type ReactNode,
-  type ReactElement,
-  type Context,
 } from "react";
 import type { Port } from "@hex-di/ports";
-import type { Container, ChildContainer } from "@hex-di/runtime";
+import type { Container } from "@hex-di/runtime";
 import { ChildContainerBrand } from "@hex-di/runtime";
 import {
   ContainerContext,
   ResolverContext,
 } from "./context.js";
-
-// =============================================================================
-// Container Type Detection
-// =============================================================================
-
-/**
- * Base container type for runtime operations.
- * @internal
- */
-type BaseContainer = Container<Port<unknown, string>> | ChildContainer<Port<unknown, string>, Port<unknown, string>>;
-
-/**
- * Checks if the provided container is a ChildContainer.
- *
- * ChildContainers have a branded property using the ChildContainerBrand symbol.
- * This is used to properly set the isChildContainer flag in context.
- *
- * @param container - The container to check
- * @returns true if the container is a ChildContainer, false otherwise
- *
- * @internal
- */
-function isChildContainer(
-  container: BaseContainer
-): container is ChildContainer<Port<unknown, string>, Port<unknown, string>> {
-  return ChildContainerBrand in container;
-}
+import {
+  toRuntimeContainerWithInit,
+  type RuntimeContainerRef,
+  type RuntimeContainer,
+} from "./internal/runtime-refs.js";
 
 // =============================================================================
 // Runtime Context Types (without phantom brands)
@@ -58,21 +34,21 @@ function isChildContainer(
 
 /**
  * Runtime container context value that matches ContainerContext's type.
- * Uses Port<unknown, string> as the base type to avoid phantom brand issues.
+ * Uses RuntimeContainerRef for bivariant storage.
  * @internal
  */
 interface RuntimeContainerContextValue {
-  readonly container: BaseContainer;
+  readonly container: RuntimeContainerRef;
   readonly isChildContainer: boolean;
 }
 
 /**
  * Runtime resolver context value that matches ResolverContext's type.
- * Uses Container | ChildContainer | Scope as the resolver type.
+ * Uses RuntimeContainerRef for bivariant storage.
  * @internal
  */
 interface RuntimeResolverContextValue {
-  readonly resolver: Container<Port<unknown, string>> | ChildContainer<Port<unknown, string>, Port<unknown, string>>;
+  readonly resolver: RuntimeContainerRef;
 }
 
 // =============================================================================
@@ -86,11 +62,16 @@ type AsyncContainerStatus = "loading" | "ready" | "error";
 
 /**
  * Internal state for async container initialization.
+ *
+ * Uses RuntimeContainerRef for the initialized container, which is the
+ * type-erased interface from @hex-di/runtime that allows storage without
+ * complex generic propagation.
+ *
  * @internal
  */
-interface AsyncContainerState<TProvides extends Port<unknown, string>> {
+interface AsyncContainerState {
   readonly status: AsyncContainerStatus;
-  readonly container: Container<TProvides, any, "initialized"> | null;
+  readonly container: RuntimeContainerRef | null;
   readonly error: Error | null;
 }
 
@@ -98,8 +79,8 @@ interface AsyncContainerState<TProvides extends Port<unknown, string>> {
  * Internal context value for async container state.
  * @internal
  */
-interface AsyncContainerContextValue<TProvides extends Port<unknown, string>> {
-  readonly state: AsyncContainerState<TProvides>;
+interface AsyncContainerContextValue {
+  readonly state: AsyncContainerState;
 }
 
 /**
@@ -157,49 +138,11 @@ export interface AsyncContainerReadyProps {
 }
 
 // =============================================================================
-// Context Factory
-// =============================================================================
-
-/**
- * Creates isolated contexts for a typed AsyncContainerProvider instance.
- * @internal
- */
-function createAsyncContainerContexts<TProvides extends Port<unknown, string>>(): {
-  AsyncContainerContext: Context<AsyncContainerContextValue<TProvides> | null>;
-  ResolverContext: Context<ResolverContextValue<TProvides> | null>;
-} {
-  const AsyncContainerContext =
-    createContext<AsyncContainerContextValue<TProvides> | null>(null);
-  AsyncContainerContext.displayName = "HexDI.AsyncContainerContext";
-
-  const ResolverContext =
-    createContext<ResolverContextValue<TProvides> | null>(null);
-  ResolverContext.displayName = "HexDI.ResolverContext";
-
-  return { AsyncContainerContext, ResolverContext };
-}
-
-/**
- * Internal context value for the resolver context.
- * @internal
- */
-interface ResolverContextValue<TProvides extends Port<unknown, string>> {
-  readonly getResolver: () => Container<TProvides, any, "initialized">;
-}
-
-// =============================================================================
 // Global Contexts for Global Export
 // =============================================================================
 
-const GlobalAsyncContainerContext = createContext<AsyncContainerContextValue<
-  Port<unknown, string>
-> | null>(null);
+const GlobalAsyncContainerContext = createContext<AsyncContainerContextValue | null>(null);
 GlobalAsyncContainerContext.displayName = "HexDI.GlobalAsyncContainerContext";
-
-const GlobalResolverContext = createContext<ResolverContextValue<
-  Port<unknown, string>
-> | null>(null);
-GlobalResolverContext.displayName = "HexDI.GlobalResolverContext";
 
 // =============================================================================
 // Compound Components
@@ -217,7 +160,7 @@ GlobalResolverContext.displayName = "HexDI.GlobalResolverContext";
  * </AsyncContainerProvider>
  * ```
  */
-function Loading({ children }: AsyncContainerLoadingProps): ReactElement | null {
+function Loading({ children }: AsyncContainerLoadingProps): ReactNode {
   const context = useContext(GlobalAsyncContainerContext);
   if (!context) {
     throw new Error(
@@ -247,7 +190,7 @@ function Loading({ children }: AsyncContainerLoadingProps): ReactElement | null 
  */
 function ErrorComponent({
   children,
-}: AsyncContainerErrorProps): ReactElement | null {
+}: AsyncContainerErrorProps): ReactNode {
   const context = useContext(GlobalAsyncContainerContext);
   if (!context) {
     throw new Error(
@@ -278,7 +221,7 @@ function ErrorComponent({
  * </AsyncContainerProvider>
  * ```
  */
-function Ready({ children }: AsyncContainerReadyProps): ReactElement | null {
+function Ready({ children }: AsyncContainerReadyProps): ReactNode {
   const context = useContext(GlobalAsyncContainerContext);
   if (!context) {
     throw new Error(
@@ -290,37 +233,26 @@ function Ready({ children }: AsyncContainerReadyProps): ReactElement | null {
     return null;
   }
 
-  // The initialized container is typed as Container<Port<unknown, string>, never, "initialized">
-  // which is assignable to BaseContainer structurally.
-  const initializedContainer = context.state.container;
-  const containerAsBase = initializedContainer as BaseContainer;
-  const containerIsChild = isChildContainer(containerAsBase);
+  // The initialized container is already converted to RuntimeContainerRef.
+  const containerRef = context.state.container;
 
-  // Provide the initialized container through resolver context (for GlobalResolverContext)
-  const resolverContextValue: ResolverContextValue<Port<unknown, string>> = {
-    getResolver: () => initializedContainer,
-  };
-
-  // Also provide through the main ContainerContext and ResolverContext from context.tsx
+  // Provide through the main ContainerContext and ResolverContext from context.tsx
   // This ensures hooks like usePort() and useContainer() work correctly.
-  // Using the runtime context value types that don't require phantom brands.
   const mainContainerContextValue: RuntimeContainerContextValue = {
-    container: containerAsBase,
-    isChildContainer: containerIsChild,
+    container: containerRef,
+    isChildContainer: false, // Async provider always provides root containers
   };
 
   const mainResolverContextValue: RuntimeResolverContextValue = {
-    resolver: containerAsBase,
+    resolver: containerRef,
   };
 
   return (
-    <GlobalResolverContext.Provider value={resolverContextValue}>
-      <ContainerContext.Provider value={mainContainerContextValue}>
-        <ResolverContext.Provider value={mainResolverContextValue}>
-          {children}
-        </ResolverContext.Provider>
-      </ContainerContext.Provider>
-    </GlobalResolverContext.Provider>
+    <ContainerContext.Provider value={mainContainerContextValue}>
+      <ResolverContext.Provider value={mainResolverContextValue}>
+        {children}
+      </ResolverContext.Provider>
+    </ContainerContext.Provider>
   );
 }
 
@@ -332,7 +264,7 @@ function Ready({ children }: AsyncContainerReadyProps): ReactElement | null {
  * Default loading component shown when no custom loading fallback is provided.
  * @internal
  */
-function DefaultLoading(): ReactElement {
+function DefaultLoading(): ReactNode {
   return (
     <div
       style={{
@@ -351,7 +283,7 @@ function DefaultLoading(): ReactElement {
  * Default error component shown when no custom error fallback is provided.
  * @internal
  */
-function DefaultError({ error }: { error: Error }): ReactElement {
+function DefaultError({ error }: { error: Error }): ReactNode {
   return (
     <div
       style={{
@@ -390,11 +322,13 @@ function AsyncContainerProviderRoot<TProvides extends Port<unknown, string>>({
   children,
   loadingFallback,
   errorFallback,
-}: AsyncContainerProviderProps<TProvides>): ReactElement {
-  // Use the base port type for state to avoid needing casts later.
-  // TProvides extends Port<unknown, string>, so Container<TProvides, ...> is
-  // assignable to Container<Port<unknown, string>, ...> structurally.
-  const [state, setState] = useState<AsyncContainerState<Port<unknown, string>>>({
+}: AsyncContainerProviderProps<TProvides>): ReactNode {
+  // Convert container to RuntimeContainer for type-safe initialization.
+  // This uses the bivariant interface from @hex-di/runtime.
+  const runtimeContainer: RuntimeContainer = toRuntimeContainerWithInit(container);
+
+  // State stores the initialized container as RuntimeContainerRef.
+  const [state, setState] = useState<AsyncContainerState>({
     status: "loading",
     container: null,
     error: null,
@@ -405,13 +339,12 @@ function AsyncContainerProviderRoot<TProvides extends Port<unknown, string>>({
 
     async function initialize() {
       try {
-        const initialized = await container.initialize();
+        // RuntimeContainer.initialize() returns RuntimeResolver (the initialized container)
+        const initialized = await runtimeContainer.initialize();
         if (mounted) {
-          // The initialized container is Container<TProvides, ...> which widens
-          // to Container<Port<unknown, string>, ...> for storage.
           setState({
             status: "ready",
-            container: initialized as Container<Port<unknown, string>, never, "initialized">,
+            container: initialized,
             error: null,
           });
         }
@@ -432,10 +365,10 @@ function AsyncContainerProviderRoot<TProvides extends Port<unknown, string>>({
       mounted = false;
       // Note: We don't dispose here - caller owns container lifecycle
     };
-  }, [container]);
+  }, [runtimeContainer]);
 
-  // Context value uses the base port type
-  const contextValue: AsyncContainerContextValue<Port<unknown, string>> = {
+  // Context value stores the state
+  const contextValue: AsyncContainerContextValue = {
     state,
   };
 
@@ -458,25 +391,20 @@ function AsyncContainerProviderRoot<TProvides extends Port<unknown, string>>({
     );
   }
 
-  // Simple mode - use fallback props or defaults
-  const resolverContextValue: ResolverContextValue<Port<unknown, string>> = {
-    getResolver: () => state.container!,
-  };
+  // Simple mode - render based on state
+  // When ready, provide contexts for hooks
+  const mainContainerContextValue: RuntimeContainerContextValue | null = state.container
+    ? {
+        container: state.container,
+        isChildContainer: false,
+      }
+    : null;
 
-  // Determine if the initialized container is a child container for main context
-  const containerAsBase = state.container as BaseContainer | null;
-  const containerIsChild = containerAsBase ? isChildContainer(containerAsBase) : false;
-
-  // Main context values for hooks like usePort() and useContainer().
-  // Using runtime context value types that don't require phantom brands.
-  const mainContainerContextValue: RuntimeContainerContextValue = {
-    container: containerAsBase!,
-    isChildContainer: containerIsChild,
-  };
-
-  const mainResolverContextValue: RuntimeResolverContextValue = {
-    resolver: containerAsBase!,
-  };
+  const mainResolverContextValue: RuntimeResolverContextValue | null = state.container
+    ? {
+        resolver: state.container,
+      }
+    : null;
 
   return (
     <GlobalAsyncContainerContext.Provider value={contextValue}>
@@ -484,14 +412,12 @@ function AsyncContainerProviderRoot<TProvides extends Port<unknown, string>>({
       {state.status === "error" &&
         state.error &&
         (errorFallback?.(state.error) ?? <DefaultError error={state.error} />)}
-      {state.status === "ready" && state.container && (
-        <GlobalResolverContext.Provider value={resolverContextValue}>
-          <ContainerContext.Provider value={mainContainerContextValue}>
-            <ResolverContext.Provider value={mainResolverContextValue}>
-              {children}
-            </ResolverContext.Provider>
-          </ContainerContext.Provider>
-        </GlobalResolverContext.Provider>
+      {state.status === "ready" && state.container && mainContainerContextValue && mainResolverContextValue && (
+        <ContainerContext.Provider value={mainContainerContextValue}>
+          <ResolverContext.Provider value={mainResolverContextValue}>
+            {children}
+          </ResolverContext.Provider>
+        </ContainerContext.Provider>
       )}
     </GlobalAsyncContainerContext.Provider>
   );
@@ -555,7 +481,7 @@ export const AsyncContainerProvider = Object.assign(
 export type AsyncContainerProviderComponent<
   TProvides extends Port<unknown, string>
 > = {
-  (props: AsyncContainerProviderProps<TProvides>): ReactElement;
+  (props: AsyncContainerProviderProps<TProvides>): ReactNode;
   Loading: typeof Loading;
   Error: typeof ErrorComponent;
   Ready: typeof Ready;
@@ -571,7 +497,9 @@ export type AsyncContainerProviderComponent<
  * This is an advanced hook for cases where you need to react to the
  * initialization state outside of compound components.
  *
- * @returns The current initialization state
+ * @returns The current initialization state.
+ *   If you need typed access to the container, use the Ready compound
+ *   component which provides the container through context.
  * @throws If used outside AsyncContainerProvider
  *
  * @example
@@ -582,18 +510,12 @@ export type AsyncContainerProviderComponent<
  * }
  * ```
  */
-export function useAsyncContainerState<
-  TProvides extends Port<unknown, string>
->(): AsyncContainerState<TProvides> {
+export function useAsyncContainerState(): AsyncContainerState {
   const context = useContext(GlobalAsyncContainerContext);
   if (!context) {
     throw new Error(
       "useAsyncContainerState must be used within AsyncContainerProvider"
     );
   }
-  // The context stores AsyncContainerState<Port<unknown, string>>.
-  // Since TProvides extends Port<unknown, string>, the state can be
-  // returned with narrowed type. The caller is responsible for ensuring
-  // TProvides matches what was passed to AsyncContainerProvider.
-  return context.state as AsyncContainerState<TProvides>;
+  return context.state;
 }

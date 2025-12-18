@@ -14,7 +14,6 @@ import React, {
   useEffect,
   useContext,
   useRef,
-  type ReactElement,
   type ReactNode,
   type Context,
 } from "react";
@@ -125,39 +124,67 @@ interface ResolverContextValue<TProvides extends Port<unknown, string>> {
 }
 
 /**
- * Union of container types that can act as a resolver.
+ * Bivariant internal interface for container/scope method extraction.
+ *
+ * Uses property function syntax to achieve bivariance, allowing any
+ * Container, ChildContainer, or Scope to be extracted without type casts
+ * at call sites. This is the SOLE location of type boundary handling.
+ *
  * @internal
  */
-type ContainerLike<TProvides extends Port<unknown, string>> =
-  | Container<TProvides, Port<unknown, string>, ContainerPhase>
-  | ChildContainer<TProvides, Port<unknown, string>>
-  | Scope<TProvides, Port<unknown, string>, ContainerPhase>;
+interface ResolvableMethods {
+  readonly resolve: (port: Port<unknown, string>) => unknown;
+  readonly resolveAsync: (port: Port<unknown, string>) => Promise<unknown>;
+  readonly createScope: () => ResolvableMethods;
+  readonly dispose: () => Promise<void>;
+  readonly isDisposed: boolean;
+}
 
 /**
- * Converts a ContainerLike to a Resolver.
+ * Extracts methods from a container/scope, creating a ResolvableMethods object.
  *
- * Container, ChildContainer, and Scope all structurally satisfy the Resolver
- * interface, but TypeScript sees the createScope() return type as incompatible
- * (Scope vs Resolver). This function explicitly constructs a Resolver object
- * by wrapping the container methods.
+ * This is the SOLE location of type boundary handling in create-typed-hooks.
+ * The single cast is safe because Container, ChildContainer, and Scope all
+ * have these methods at runtime.
  *
- * This is type-safe because:
- * 1. Container/ChildContainer/Scope all have resolve, resolveAsync, createScope, dispose, isDisposed
- * 2. The Resolver interface is a subset of those capabilities
- * 3. createScope() returns something that also satisfies Resolver
+ * @internal
+ */
+function extractMethods(resolver: unknown): ResolvableMethods {
+  // Safety: resolver is always a Container, ChildContainer, or Scope
+  // All of these have the methods we're extracting at runtime.
+  const r = resolver as ResolvableMethods;
+  return {
+    resolve: (port) => r.resolve(port),
+    resolveAsync: (port) => r.resolveAsync(port),
+    createScope: () => extractMethods(r.createScope()),
+    dispose: () => r.dispose(),
+    get isDisposed() {
+      return r.isDisposed;
+    },
+  };
+}
+
+/**
+ * Converts a container/scope to a typed Resolver.
+ *
+ * This function bridges the bivariant ResolvableMethods (which returns unknown)
+ * to the typed Resolver<TProvides> (which returns typed results).
  *
  * @internal
  */
 function toResolver<TProvides extends Port<unknown, string>>(
-  container: ContainerLike<TProvides>
+  container: unknown
 ): Resolver<TProvides> {
+  const methods = extractMethods(container);
   return {
-    resolve: (port) => container.resolve(port),
-    resolveAsync: (port) => container.resolveAsync(port),
-    createScope: () => toResolver(container.createScope()),
-    dispose: () => container.dispose(),
+    resolve: <P extends TProvides>(port: P) =>
+      methods.resolve(port) as InferService<P>,
+    resolveAsync: <P extends TProvides>(port: P) =>
+      methods.resolveAsync(port) as Promise<InferService<P>>,
+    createScope: () => toResolver<TProvides>(methods.createScope()),
+    dispose: () => methods.dispose(),
     get isDisposed() {
-      return container.isDisposed;
+      return methods.isDisposed;
     },
   };
 }
@@ -255,7 +282,7 @@ export function createTypedHooks<
   function ContainerProvider({
     container,
     children,
-  }: ContainerProviderProps<TProvides>): ReactElement {
+  }: ContainerProviderProps<TProvides>): ReactNode {
     // Detect nested ContainerProvider
     const existingContext = useContext(ContainerContext);
 
@@ -278,7 +305,7 @@ export function createTypedHooks<
     };
 
     const resolverContextValue: ResolverContextValue<TProvides> = {
-      getResolver: () => container as unknown as Resolver<TProvides>,
+      getResolver: () => toResolver<TProvides>(container),
     };
 
     return (
@@ -296,7 +323,7 @@ export function createTypedHooks<
   function ScopeProvider({
     scope,
     children,
-  }: ScopeProviderProps<TProvides>): ReactElement {
+  }: ScopeProviderProps<TProvides>): ReactNode {
     // Create resolver context value with the provided scope
     const resolverContextValue: ResolverContextValue<TProvides> = {
       getResolver: () => scope,
@@ -319,7 +346,7 @@ export function createTypedHooks<
    */
   function AutoScopeProvider({
     children,
-  }: AutoScopeProviderProps): ReactElement {
+  }: AutoScopeProviderProps): ReactNode {
     // Get current resolver context - must be inside ContainerProvider
     const resolverContext = useContext(ResolverContext);
 
@@ -383,7 +410,7 @@ export function createTypedHooks<
   /**
    * Loading compound component - renders children while initializing.
    */
-  function Loading({ children }: AsyncContainerLoadingProps): ReactElement | null {
+  function Loading({ children }: AsyncContainerLoadingProps): ReactNode {
     const context = useContext(AsyncContainerContext);
     if (!context) {
       throw new Error(
@@ -398,7 +425,7 @@ export function createTypedHooks<
    */
   function ErrorComponent({
     children,
-  }: AsyncContainerErrorProps): ReactElement | null {
+  }: AsyncContainerErrorProps): ReactNode {
     const context = useContext(AsyncContainerContext);
     if (!context) {
       throw new Error(
@@ -419,7 +446,7 @@ export function createTypedHooks<
   /**
    * Ready compound component - renders children when container is initialized.
    */
-  function Ready({ children }: AsyncContainerReadyProps): ReactElement | null {
+  function Ready({ children }: AsyncContainerReadyProps): ReactNode {
     const context = useContext(AsyncContainerContext);
     if (!context) {
       throw new Error(
@@ -440,7 +467,7 @@ export function createTypedHooks<
     };
 
     const resolverContextValue: ResolverContextValue<TProvides> = {
-      getResolver: () => initContainer as unknown as Resolver<TProvides>,
+      getResolver: () => toResolver<TProvides>(initContainer),
     };
 
     return (
@@ -455,7 +482,7 @@ export function createTypedHooks<
   /**
    * Default loading component for simple mode.
    */
-  function DefaultLoading(): ReactElement {
+  function DefaultLoading(): ReactNode {
     return (
       <div
         style={{
@@ -473,7 +500,7 @@ export function createTypedHooks<
   /**
    * Default error component for simple mode.
    */
-  function DefaultError({ error }: { error: Error }): ReactElement {
+  function DefaultError({ error }: { error: Error }): ReactNode {
     return (
       <div
         style={{
@@ -497,7 +524,7 @@ export function createTypedHooks<
     children,
     loadingFallback,
     errorFallback,
-  }: AsyncContainerProviderProps<TProvides>): ReactElement {
+  }: AsyncContainerProviderProps<TProvides>): ReactNode {
     const [state, setState] = useState<AsyncContainerState<TProvides>>({
       status: "loading",
       container: null,
@@ -567,7 +594,7 @@ export function createTypedHooks<
     };
 
     const resolverContextValue: ResolverContextValue<TProvides> = {
-      getResolver: () => simpleContainer as unknown as Resolver<TProvides>,
+      getResolver: () => toResolver<TProvides>(simpleContainer),
     };
 
     return (
@@ -614,8 +641,9 @@ export function createTypedHooks<
     }
 
     // Return the nearest container (may be root Container or ChildContainer)
-    // Both Container and ChildContainer satisfy the Resolver interface
-    return context.container as unknown as Resolver<TProvides>;
+    // Both Container and ChildContainer satisfy the Resolver interface.
+    // toResolver bridges the container to Resolver<TProvides>.
+    return toResolver<TProvides>(context.container);
   }
 
   /**

@@ -197,16 +197,22 @@ describe("ChatServiceAdapter", () => {
       subscribe: vi.fn(() => () => {}),
     };
 
-    return { mockLogger, mockUserSession, mockMessageStore };
+    const mockConfig: Config = {
+      notificationDuration: 3000,
+      maxMessages: 100,
+    };
+
+    return { mockLogger, mockUserSession, mockMessageStore, mockConfig };
   };
 
   it("sends message with correct sender info from UserSession", async () => {
-    const { mockLogger, mockUserSession, mockMessageStore } = createMockDeps();
+    const { mockLogger, mockUserSession, mockMessageStore, mockConfig } = createMockDeps();
 
     const harness = createAdapterTest(ChatServiceAdapter, {
       Logger: mockLogger,
       UserSession: mockUserSession,
       MessageStore: mockMessageStore,
+      Config: mockConfig,
     });
 
     // ChatServiceAdapter is async, so await invoke()

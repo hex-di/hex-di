@@ -1,0 +1,29 @@
+task_groups:
+  - name: 1.1 Package Scaffolding
+    claude_code_subagent: implementer
+  - name: 1.2 Move Core Types and Transforms
+    claude_code_subagent: implementer
+  - name: 2.1 RenderPrimitivesPort Contract
+    claude_code_subagent: implementer
+  - name: 2.2 usePrimitives Hook
+    claude_code_subagent: implementer
+  - name: 2.3 DOM Primitives Implementation
+    claude_code_subagent: implementer
+  - name: 2.4 TUI Primitives Implementation
+    claude_code_subagent: implementer
+  - name: 3.1 Migrate State and View Models
+    claude_code_subagent: implementer
+  - name: 3.2 Create Shared Headless Components
+    claude_code_subagent: implementer
+  - name: 3.3 Platform Graph Renderers
+    claude_code_subagent: implementer
+  - name: 4.1 DOM Entry Point
+    claude_code_subagent: implementer
+  - name: 4.2 TUI Entry Point
+    claude_code_subagent: implementer
+  - name: 4.3 Network Layer Integration
+    claude_code_subagent: implementer
+  - name: 5.1 Integration Testing
+    claude_code_subagent: implementer
+  - name: 5.2 Deprecation and Migration Support
+    claude_code_subagent: implementer
