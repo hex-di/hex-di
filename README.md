@@ -71,6 +71,9 @@ yarn add @hex-di/ports @hex-di/graph @hex-di/runtime
 # React integration
 pnpm add @hex-di/react
 
+# Hono integration
+pnpm add @hex-di/hono
+
 # DevTools for visualization
 pnpm add @hex-di/devtools
 
@@ -83,6 +86,7 @@ pnpm add -D @hex-di/testing
 ```bash
 pnpm add @hex-di/ports @hex-di/graph @hex-di/runtime @hex-di/react @hex-di/devtools
 pnpm add -D @hex-di/testing
+pnpm add @hex-di/hono
 ```
 
 ## Packages Overview
@@ -93,6 +97,7 @@ pnpm add -D @hex-di/testing
 | [`@hex-di/graph`](./packages/graph) | GraphBuilder with compile-time dependency validation | Yes |
 | [`@hex-di/runtime`](./packages/runtime) | Container creation and service resolution | Yes |
 | [`@hex-di/react`](./packages/react) | React hooks and providers | No |
+| [`@hex-di/hono`](./packages/hono) | Hono middleware, helpers, and Env utilities | No |
 | [`@hex-di/devtools`](./packages/devtools) | Graph visualization and tracing | No |
 | [`@hex-di/testing`](./packages/testing) | Mocking, overrides, and test utilities | No |
 
