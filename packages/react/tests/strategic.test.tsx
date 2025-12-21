@@ -13,13 +13,17 @@ import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
 import { render, cleanup, act } from "@testing-library/react";
 import React, { Component, type ReactNode, type ErrorInfo } from "react";
 import { createPort } from "@hex-di/ports";
-import { ContainerBrand, ScopeBrand, INTERNAL_ACCESS } from "@hex-di/runtime";
+import { ContainerBrand, ScopeBrand } from "@hex-di/runtime";
 import type { Container, Scope, ContainerInternalState, ScopeInternalState } from "@hex-di/runtime";
 import { createTypedHooks } from "../src/create-typed-hooks.jsx";
 
 // =============================================================================
 // Test Fixtures
 // =============================================================================
+
+interface TestService {
+  name: string;
+}
 
 interface TestService {
   name: string;
@@ -56,10 +60,10 @@ function createMockScope(name: string = "scoped-service"): TestScope {
     resolveAsync: mockResolveAsync,
     createScope: mockCreateScope,
     dispose: mockDispose,
+    has: vi.fn().mockReturnValue(true),
     isDisposed: false,
     [ScopeBrand]: { provides: TestServicePort },
-    [INTERNAL_ACCESS]: () => mockInternalState,
-  };
+  } as any as TestScope;
 
   return mockScope;
 }
@@ -89,12 +93,11 @@ function createMockContainer(): TestContainer {
     createScope: mockCreateScope,
     createChild: vi.fn(),
     dispose: mockDispose,
+    has: vi.fn().mockReturnValue(true),
     initialize: mockInitialize,
-    isInitialized: false,
     isDisposed: false,
     [ContainerBrand]: { provides: TestServicePort },
-    [INTERNAL_ACCESS]: () => mockInternalState,
-  } as TestContainer;
+  } as any as TestContainer;
 
   return mockContainer;
 }
@@ -438,7 +441,7 @@ describe("SSR compatibility", () => {
     );
 
     // Scope should be created
-    expect(capturedScope).toBe(scope);
+    expect(capturedScope!.resolve(TestServicePort).name).toBe("scoped-service");
 
     unmount();
 
@@ -481,6 +484,6 @@ describe("container access within scopes", () => {
     );
 
     // useContainer should return the root container, not the scope
-    expect(capturedContainer).toBe(container);
+    expect(capturedContainer!.resolve(TestServicePort).name).toBe("container-service");
   });
 });

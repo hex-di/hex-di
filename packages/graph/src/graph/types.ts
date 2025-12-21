@@ -1,6 +1,7 @@
 
 import type { Port } from "@hex-di/ports";
 import type { Adapter, Lifetime, FactoryKind } from "../adapter";
+import type { GraphBuilder } from "./builder";
 
 /**
  * The validated dependency graph returned by `GraphBuilder.build()`.
@@ -10,15 +11,10 @@ import type { Adapter, Lifetime, FactoryKind } from "../adapter";
  * can be used by `@hex-di/runtime` to create a container.
  */
 export type Graph<
-  TProvides extends Port<unknown, string> | never,
-  TAsyncPorts extends Port<unknown, string> | never = never,
+  TProvides = never,
+  TAsyncPorts = never,
 > = {
-  readonly adapters: readonly Adapter<
-    Port<unknown, string>,
-    Port<unknown, string> | never,
-    Lifetime,
-    FactoryKind
-  >[];
+  readonly adapters: readonly Adapter<any, any, any, any>[];
   /**
    * Phantom type property for compile-time type tracking.
    */
@@ -28,3 +24,4 @@ export type Graph<
    */
   readonly __asyncPorts?: TAsyncPorts;
 };
+

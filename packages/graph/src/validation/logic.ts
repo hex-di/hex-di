@@ -12,8 +12,8 @@ import type { Port } from "@hex-di/ports";
  * @internal
  */
 export type UnsatisfiedDependencies<
-  TProvides extends Port<unknown, string> | never,
-  TRequires extends Port<unknown, string> | never,
+  TProvides,
+  TRequires,
 > = Exclude<TRequires, TProvides>;
 
 /**
@@ -27,8 +27,8 @@ export type UnsatisfiedDependencies<
  * @internal
  */
 export type IsSatisfied<
-  TProvides extends Port<unknown, string> | never,
-  TRequires extends Port<unknown, string> | never,
+  TProvides,
+  TRequires,
 > = [UnsatisfiedDependencies<TProvides, TRequires>] extends [never] ? true : false;
 
 /**
@@ -42,8 +42,8 @@ export type IsSatisfied<
  * @internal
  */
 export type OverlappingPorts<
-  A extends Port<unknown, string> | never,
-  B extends Port<unknown, string> | never,
+  A,
+  B,
 > = Extract<A, B>;
 
 /**
@@ -57,8 +57,8 @@ export type OverlappingPorts<
  * @internal
  */
 export type HasOverlap<
-  A extends Port<unknown, string> | never,
-  B extends Port<unknown, string> | never,
+  A,
+  B,
 > = [OverlappingPorts<A, B>] extends [never] ? false : true;
 
 /**
@@ -75,8 +75,8 @@ export type HasOverlap<
  * @internal
  */
 export type AsyncDependencies<
-  TRequires extends Port<unknown, string> | never,
-  TAsyncPorts extends Port<unknown, string> | never,
+  TRequires,
+  TAsyncPorts,
 > = Extract<TRequires, TAsyncPorts>;
 
 /**
@@ -90,6 +90,6 @@ export type AsyncDependencies<
  * @internal
  */
 export type HasAsyncDependency<
-  TRequires extends Port<unknown, string> | never,
-  TAsyncPorts extends Port<unknown, string> | never,
+  TRequires,
+  TAsyncPorts,
 > = [AsyncDependencies<TRequires, TAsyncPorts>] extends [never] ? false : true;

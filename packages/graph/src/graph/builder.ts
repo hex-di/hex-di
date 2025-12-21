@@ -20,10 +20,10 @@ const GRAPH_BUILDER_BRAND = Symbol("GraphBuilder");
  * @internal
  */
 type ProvideResult<
-  TProvides extends Port<unknown, string> | never,
-  TRequires extends Port<unknown, string> | never,
-  TAsyncPorts extends Port<unknown, string> | never,
-  A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>,
+  TProvides,
+  TRequires,
+  TAsyncPorts,
+  A extends Adapter<any, any, any, any>,
 > = HasOverlap<InferAdapterProvides<A>, TProvides> extends true
   ? DuplicateProviderError<OverlappingPorts<InferAdapterProvides<A>, TProvides>>
   : GraphBuilder<
@@ -38,10 +38,10 @@ type ProvideResult<
  * @internal
  */
 type ProvideAsyncResult<
-  TProvides extends Port<unknown, string> | never,
-  TRequires extends Port<unknown, string> | never,
-  TAsyncPorts extends Port<unknown, string> | never,
-  A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, "singleton", "async">,
+  TProvides,
+  TRequires,
+  TAsyncPorts,
+  A extends Adapter<any, any, any, "async">,
 > = HasOverlap<InferAdapterProvides<A>, TProvides> extends true
   ? DuplicateProviderError<OverlappingPorts<InferAdapterProvides<A>, TProvides>>
   : GraphBuilder<
@@ -56,7 +56,7 @@ type ProvideAsyncResult<
  *
  * @internal
  */
-type BatchHasOverlap<NewPorts extends Port<unknown, string>, ExistingPorts extends Port<unknown, string> | never> =
+type BatchHasOverlap<NewPorts, ExistingPorts> =
   HasOverlap<NewPorts, ExistingPorts>;
 
 /**
@@ -65,10 +65,10 @@ type BatchHasOverlap<NewPorts extends Port<unknown, string>, ExistingPorts exten
  * @internal
  */
 type ProvideManyResult<
-  TProvides extends Port<unknown, string> | never,
-  TRequires extends Port<unknown, string> | never,
-  TAsyncPorts extends Port<unknown, string> | never,
-  A extends readonly Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>[],
+  TProvides,
+  TRequires,
+  TAsyncPorts,
+  A extends readonly Adapter<any, any, any, any>[],
 > = BatchHasOverlap<InferManyProvides<A>, TProvides> extends true
   ? DuplicateProviderError<OverlappingPorts<InferManyProvides<A>, TProvides>>
   : GraphBuilder<
@@ -83,12 +83,12 @@ type ProvideManyResult<
  * @internal
  */
 type MergeResult<
-  TProvides extends Port<unknown, string> | never,
-  TRequires extends Port<unknown, string> | never,
-  TAsyncPorts extends Port<unknown, string> | never,
-  OProvides extends Port<unknown, string> | never,
-  ORequires extends Port<unknown, string> | never,
-  OAsyncPorts extends Port<unknown, string> | never,
+  TProvides,
+  TRequires,
+  TAsyncPorts,
+  OProvides,
+  ORequires,
+  OAsyncPorts,
 > = HasOverlap<OProvides, TProvides> extends true
   ? DuplicateProviderError<OverlappingPorts<OProvides, TProvides>>
   : GraphBuilder<
@@ -101,9 +101,9 @@ type MergeResult<
  * An immutable builder for constructing dependency graphs with compile-time validation.
  */
 export class GraphBuilder<
-  TProvides extends Port<unknown, string> | never = never,
-  TRequires extends Port<unknown, string> | never = never,
-  TAsyncPorts extends Port<unknown, string> | never = never,
+  TProvides = never,
+  TRequires = never,
+  TAsyncPorts = never,
 > {
   /**
    * Type-level brand property for nominal typing.
@@ -155,7 +155,7 @@ export class GraphBuilder<
    * Registers an adapter with the graph.
    */
   provide<
-    A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>,
+    A extends Adapter<any, any, any, any>,
   >(adapter: A): ProvideResult<TProvides, TRequires, TAsyncPorts, A> {
     return new GraphBuilder([...this.adapters, adapter]) as ProvideResult<
       TProvides,
@@ -169,7 +169,7 @@ export class GraphBuilder<
    * Registers an async adapter with the graph.
    */
   provideAsync<
-    A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, "singleton", "async">,
+    A extends Adapter<any, any, any, "async">,
   >(adapter: A): ProvideAsyncResult<TProvides, TRequires, TAsyncPorts, A> {
     return new GraphBuilder([...this.adapters, adapter]) as ProvideAsyncResult<
       TProvides,
@@ -183,7 +183,7 @@ export class GraphBuilder<
    * Registers multiple adapters with the graph in a batch.
    */
   provideMany<
-    const A extends readonly Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>[],
+    const A extends readonly Adapter<any, any, any, any>[],
   >(adapters: A): ProvideManyResult<TProvides, TRequires, TAsyncPorts, A> {
     return new GraphBuilder([...this.adapters, ...adapters]) as ProvideManyResult<
       TProvides,
@@ -197,9 +197,9 @@ export class GraphBuilder<
    * Merges another GraphBuilder into this one.
    */
   merge<
-    OProvides extends Port<unknown, string> | never,
-    ORequires extends Port<unknown, string> | never,
-    OAsyncPorts extends Port<unknown, string> | never,
+    OProvides,
+    ORequires,
+    OAsyncPorts,
   >(
     other: GraphBuilder<OProvides, ORequires, OAsyncPorts>
   ): MergeResult<TProvides, TRequires, TAsyncPorts, OProvides, ORequires, OAsyncPorts> {

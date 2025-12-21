@@ -35,7 +35,7 @@ export type Lifetime = "singleton" | "scoped" | "transient";
 /**
  * Maps a union of Port types to an object type for dependency injection.
  */
-export type ResolvedDeps<TRequires extends Port<unknown, string> | never> = [TRequires] extends [never]
+export type ResolvedDeps<TRequires> = [TRequires] extends [never]
   ? Record<string, unknown>
   : {
       [P in TRequires as InferPortName<P>]: InferService<P>;
@@ -49,13 +49,13 @@ export type ResolvedDeps<TRequires extends Port<unknown, string> | never> = [TRe
  * A branded adapter type that captures the complete contract for a service implementation.
  */
 export type Adapter<
-  TProvides extends Port<unknown, string>,
-  TRequires extends Port<unknown, string> | never,
+  TProvides,
+  TRequires,
   TLifetime extends Lifetime,
   TFactoryKind extends FactoryKind = "sync",
-  TRequiresTuple extends readonly Port<unknown, string>[] = [TRequires] extends [never]
+  TRequiresTuple extends readonly any[] = [TRequires] extends [never]
     ? readonly []
-    : readonly Port<unknown, string>[],
+    : readonly any[],
 > = {
   /**
    * Brand property for nominal typing.

@@ -183,6 +183,7 @@ export function toTypedResolver<TProvides extends Port<unknown, string>>(
 interface ResolverLike {
   resolve(port: Port<unknown, string>): unknown;
   resolveAsync(port: Port<unknown, string>): Promise<unknown>;
+  has(port: Port<unknown, string>): boolean;
   createScope(): ResolverLike;
   dispose(): Promise<void>;
   readonly isDisposed: boolean;

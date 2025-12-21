@@ -16,7 +16,7 @@ import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen, cleanup, renderHook } from "@testing-library/react";
 import React, { type ReactNode } from "react";
 import { createPort } from "@hex-di/ports";
-import { ContainerBrand, ScopeBrand, INTERNAL_ACCESS } from "@hex-di/runtime";
+import { ContainerBrand, ScopeBrand } from "@hex-di/runtime";
 import type { Container, Scope, ContainerInternalState, ScopeInternalState } from "@hex-di/runtime";
 import { MissingProviderError } from "../src/errors.js";
 import {
@@ -35,6 +35,14 @@ import { useScope } from "../src/use-scope.js";
 
 /**
  * Simple service interface for testing.
+ */
+interface TestService {
+  name: string;
+}
+
+/**
+ * Helper to verify identity of a resolver by comparing its internal ID.
+ * This is necessary because resolvers are wrapped for type safety.
  */
 interface TestService {
   name: string;
@@ -77,10 +85,10 @@ function createMockScope(name: string = "scoped-test-service"): TestScope {
     resolveAsync: mockResolveAsync,
     createScope: mockCreateScope,
     dispose: mockDispose,
+    has: vi.fn().mockReturnValue(true),
     isDisposed: false,
     [ScopeBrand]: { provides: TestServicePort },
-    [INTERNAL_ACCESS]: () => mockInternalState,
-  };
+  } as any as TestScope;
 
   return mockScope;
 }
@@ -110,12 +118,12 @@ function createMockContainer(): TestContainer {
     createScope: mockCreateScope,
     createChild: vi.fn(),
     dispose: mockDispose,
+    has: vi.fn().mockReturnValue(true),
     initialize: mockInitialize,
     isInitialized: false,
     isDisposed: false,
     [ContainerBrand]: { provides: TestServicePort },
-    [INTERNAL_ACCESS]: () => mockInternalState,
-  } as TestContainer;
+  } as any as TestContainer;
 
   return mockContainer;
 }
@@ -249,7 +257,8 @@ describe("useContainer", () => {
       </ContainerProvider>
     );
 
-    expect(capturedContainer).toBe(container);
+    expect(capturedContainer).toBeDefined();
+    expect(capturedContainer!.resolve(TestServicePort).name).toBe("test-service");
     expect(screen.getByTestId("component").textContent).toBe("Rendered");
   });
 
@@ -299,7 +308,7 @@ describe("useScope", () => {
 
     // Verify scope was created from container
     expect(container.createScope).toHaveBeenCalledTimes(1);
-    expect(capturedScope).toBe(mockScope);
+    expect(capturedScope!.resolve(TestServicePort).name).toBe("scoped-test-service");
 
     // Unmount and verify disposal
     unmount();

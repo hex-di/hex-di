@@ -468,7 +468,7 @@ function createTypedResolverWrapper<TProvides extends Port<unknown, string>>(
     return resolver.resolveAsync(port);
   }
 
-  return {
+  const result: TypedResolver<TProvides> = {
     resolve,
     resolveAsync,
     createScope: () => createTypedResolverWrapper<TProvides>(resolver.createScope()),
@@ -478,6 +478,8 @@ function createTypedResolverWrapper<TProvides extends Port<unknown, string>>(
       return resolver.isDisposed;
     },
   };
+
+  return result;
 }
 
 // =============================================================================

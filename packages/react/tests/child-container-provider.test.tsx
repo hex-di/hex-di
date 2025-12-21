@@ -98,6 +98,7 @@ function createMockScope(name: string = "scoped-test-service"): TestScope {
     resolveAsync: mockResolveAsync,
     createScope: mockCreateScope,
     dispose: mockDispose,
+    has: vi.fn().mockReturnValue(true),
     isDisposed: false,
     [ScopeBrand]: { provides: TestServicePort },
     [INTERNAL_ACCESS]: () => mockInternalState,
@@ -136,6 +137,7 @@ function createMockContainer(): TestContainer {
     createScope: mockCreateScope,
     createChild: mockCreateChild,
     dispose: mockDispose,
+    has: vi.fn().mockReturnValue(true),
     initialize: mockInitialize,
     isInitialized: false,
     isDisposed: false,
@@ -190,6 +192,7 @@ function createMockChildContainer(
     createScope: mockCreateScope,
     createChild: mockCreateChild,
     dispose: mockDispose,
+    has: vi.fn().mockReturnValue(true),
     isDisposed: false,
     parent: parentContainer,
     [ChildContainerBrand]: {
@@ -219,6 +222,7 @@ function createMockUninitializedContainer(): Container<
     createScope: vi.fn().mockReturnValue(mockScope),
     createChild: vi.fn(),
     dispose: vi.fn().mockResolvedValue(undefined),
+    has: vi.fn().mockReturnValue(true),
     isInitialized: true,
     isDisposed: false,
     [ContainerBrand]: { provides: TestServicePort },
@@ -256,6 +260,7 @@ function createMockUninitializedContainer(): Container<
     createScope: vi.fn().mockReturnValue(mockScope),
     createChild: vi.fn(),
     dispose: vi.fn().mockResolvedValue(undefined),
+    has: vi.fn().mockReturnValue(true),
     initialize: mockInitialize,
     isInitialized: false,
     isDisposed: false,
@@ -295,6 +300,7 @@ function createMockUninitializedChildContainer(
     createScope: vi.fn().mockReturnValue(mockScope),
     createChild: vi.fn(),
     dispose: vi.fn().mockResolvedValue(undefined),
+    has: vi.fn().mockReturnValue(true),
     isDisposed: false,
     parent: parentContainer,
     [ChildContainerBrand]: {
@@ -341,6 +347,7 @@ function createMockUninitializedChildContainer(
     createScope: vi.fn().mockReturnValue(mockScope),
     createChild: vi.fn(),
     dispose: vi.fn().mockResolvedValue(undefined),
+    has: vi.fn().mockReturnValue(true),
     initialize: mockInitialize,
     isDisposed: false,
     parent: parentContainer,
@@ -437,7 +444,8 @@ describe("useContainer() with nested providers", () => {
       </ContainerProvider>
     );
 
-    expect(capturedContainer).toBe(childContainer);
+    expect(capturedContainer).toBeDefined();
+    expect((capturedContainer as any).resolve(TestServicePort).name).toBe("child-service");
     expect(screen.getByTestId("component").textContent).toBe("Rendered");
   });
 
@@ -457,7 +465,8 @@ describe("useContainer() with nested providers", () => {
       </ContainerProvider>
     );
 
-    expect(capturedContainer).toBe(parentContainer);
+    expect(capturedContainer).toBeDefined();
+    expect((capturedContainer as any).resolve(TestServicePort).name).toBe("parent-service");
   });
 });
 

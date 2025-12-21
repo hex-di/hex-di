@@ -8,9 +8,14 @@ import type { Adapter, Lifetime, FactoryKind } from "./types";
  * @typeParam A - The Adapter type
  * @internal
  */
-export type InferAdapterProvides<
-  A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>,
-> = A extends Adapter<infer P, any, any, any> ? P : never;
+export type InferAdapterProvides<A> = A extends Adapter<
+  infer P,
+  any,
+  any,
+  any
+>
+  ? P
+  : never;
 
 /**
  * Helper to extract the Required port types from an Adapter.
@@ -18,9 +23,14 @@ export type InferAdapterProvides<
  * @typeParam A - The Adapter type
  * @internal
  */
-export type InferAdapterRequires<
-  A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>,
-> = A extends Adapter<any, infer R, any, any> ? R : never;
+export type InferAdapterRequires<A> = A extends Adapter<
+  any,
+  infer R,
+  any,
+  any
+>
+  ? R
+  : never;
 
 /**
  * Extracts the union of provided ports from an array of adapters.
@@ -28,9 +38,7 @@ export type InferAdapterRequires<
  * @typeParam A - Tuple of adapters
  * @internal
  */
-export type InferManyProvides<
-  A extends readonly Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>[],
-> = A extends readonly (infer Element)[]
+export type InferManyProvides<A> = A extends readonly (infer Element)[]
   ? Element extends Adapter<infer P, any, any, any>
     ? P
     : never
@@ -42,9 +50,7 @@ export type InferManyProvides<
  * @typeParam A - Tuple of adapters
  * @internal
  */
-export type InferManyRequires<
-  A extends readonly Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>[],
-> = A extends readonly (infer Element)[]
+export type InferManyRequires<A> = A extends readonly (infer Element)[]
   ? Element extends Adapter<any, infer R, any, any>
     ? R
     : never
@@ -57,10 +63,23 @@ export type InferManyRequires<
  * @typeParam A - Tuple of adapters
  * @internal
  */
-export type InferManyAsyncPorts<
-  A extends readonly Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>[],
-> = A extends readonly (infer Element)[]
+export type InferManyAsyncPorts<A> = A extends readonly (infer Element)[]
   ? Element extends Adapter<infer P, any, any, "async">
     ? P
     : never
+  : never;
+
+/**
+ * Helper to extract the Lifetime level from an Adapter.
+ *
+ * @typeParam A - The Adapter type
+ * @internal
+ */
+export type InferAdapterLifetime<A> = A extends Adapter<
+  any,
+  any,
+  infer L,
+  any
+>
+  ? L
   : never;

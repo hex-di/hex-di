@@ -8,8 +8,8 @@ import type { Port, InferPortName } from "@hex-di/ports";
  *
  * @internal
  */
-export type ExtractPortNames<TPorts extends Port<unknown, string> | never> = [TPorts] extends [never]
-  ? "none"
+export type ExtractPortNames<TPorts> = [TPorts] extends [never]
+  ? never
   : TPorts extends Port<unknown, infer Name>
     ? Name
     : never;
@@ -22,7 +22,7 @@ export type ExtractPortNames<TPorts extends Port<unknown, string> | never> = [TP
  *
  * @internal
  */
-export type MissingDependencyError<MissingPorts extends Port<unknown, string>> = [MissingPorts] extends [
+export type MissingDependencyError<MissingPorts> = [MissingPorts] extends [
   never,
 ]
   ? never
@@ -39,7 +39,7 @@ export type MissingDependencyError<MissingPorts extends Port<unknown, string>> =
  *
  * @typeParam DuplicatePort - The Port type that has a duplicate provider
  */
-export type DuplicateProviderError<DuplicatePort extends Port<unknown, string>> = {
+export type DuplicateProviderError<DuplicatePort> = {
   readonly __valid: false;
   readonly __errorBrand: "DuplicateProviderError";
   readonly __message: `Duplicate provider for: ${InferPortName<DuplicatePort>}`;
@@ -52,7 +52,7 @@ export type DuplicateProviderError<DuplicatePort extends Port<unknown, string>> 
  *
  * @typeParam TAsyncPort - The async Port type that is being depended upon
  */
-export type AsyncDependencyError<TAsyncPort extends Port<unknown, string>> = {
+export type AsyncDependencyError<TAsyncPort> = {
   readonly __valid: false;
   readonly __errorBrand: "AsyncDependencyError";
   readonly __message: `Sync adapter cannot depend on async port: ${InferPortName<TAsyncPort>}`;
@@ -65,7 +65,7 @@ export type AsyncDependencyError<TAsyncPort extends Port<unknown, string>> = {
  *
  * @typeParam TPort - The Port type that is not found in the parent
  */
-export type OverridePortNotFoundError<TPort extends Port<unknown, string>> = {
+export type OverridePortNotFoundError<TPort> = {
   readonly __valid: false;
   readonly __errorBrand: "OverridePortNotFoundError";
   readonly __message: `Port not found in parent: ${InferPortName<TPort>}`;

@@ -209,7 +209,6 @@ export type {
 export type {
   LifetimeLevel,
   CaptiveDependencyError,
-  InferAdapterLifetime,
   ValidateCaptiveDependency,
   ValidateAllDependencies,
 } from "./captive-dependency.js";
