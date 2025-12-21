@@ -13,6 +13,13 @@ import { MemoMap } from "../src/memo-map.js";
 // Test Fixtures
 // =============================================================================
 
+function assertAggregateError(error: unknown): AggregateError {
+  if (!(error instanceof AggregateError)) {
+    throw error;
+  }
+  return error;
+}
+
 interface Logger {
   log(message: string): void;
 }
@@ -199,8 +206,7 @@ describe("MemoMap.dispose", () => {
       await memoMap.dispose();
       expect.fail("Expected dispose to throw");
     } catch (error) {
-      expect(error).toBeInstanceOf(AggregateError);
-      const aggregateError = error as AggregateError;
+      const aggregateError = assertAggregateError(error);
       expect(aggregateError.errors).toHaveLength(2);
       expect(aggregateError.errors[0]).toBeInstanceOf(Error);
       expect(aggregateError.errors[1]).toBeInstanceOf(Error);

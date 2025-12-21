@@ -12,6 +12,18 @@ import { createContainer } from "../src/container.js";
 import { INTERNAL_ACCESS } from "../src/inspector-symbols.js";
 import type { ContainerInternalState, ScopeInternalState } from "../src/inspector-types.js";
 
+function isRecord(value: unknown): value is Record<PropertyKey, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isContainerAccessor(value: unknown): value is () => ContainerInternalState {
+  return typeof value === "function";
+}
+
+function isScopeAccessor(value: unknown): value is () => ScopeInternalState {
+  return typeof value === "function";
+}
+
 /**
  * Helper to safely access the internal state accessor from a container or scope.
  * This handles the type narrowing for Symbol-indexed properties.
@@ -19,19 +31,25 @@ import type { ContainerInternalState, ScopeInternalState } from "../src/inspecto
 function getContainerAccessor(
   container: unknown
 ): () => ContainerInternalState {
-  const accessor = (container as Record<symbol, unknown>)[INTERNAL_ACCESS];
-  if (typeof accessor !== "function") {
+  if (!isRecord(container)) {
     throw new Error("INTERNAL_ACCESS accessor not found");
   }
-  return accessor as () => ContainerInternalState;
+  const accessor = container[INTERNAL_ACCESS];
+  if (!isContainerAccessor(accessor)) {
+    throw new Error("INTERNAL_ACCESS accessor not found");
+  }
+  return accessor;
 }
 
 function getScopeAccessor(scope: unknown): () => ScopeInternalState {
-  const accessor = (scope as Record<symbol, unknown>)[INTERNAL_ACCESS];
-  if (typeof accessor !== "function") {
+  if (!isRecord(scope)) {
     throw new Error("INTERNAL_ACCESS accessor not found");
   }
-  return accessor as () => ScopeInternalState;
+  const accessor = scope[INTERNAL_ACCESS];
+  if (!isScopeAccessor(accessor)) {
+    throw new Error("INTERNAL_ACCESS accessor not found");
+  }
+  return accessor;
 }
 
 // =============================================================================

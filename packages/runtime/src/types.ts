@@ -11,8 +11,8 @@
  */
 
 import type { Port, InferService } from "@hex-di/ports";
-import { INTERNAL_ACCESS } from "./inspector-symbols.js";
-import type { ContainerInternalState, ScopeInternalState } from "./inspector-types.js";
+import { INTERNAL_ACCESS } from "./inspector/symbols.js";
+import type { ContainerInternalState, ScopeInternalState } from "./inspector/types.js";
 
 // =============================================================================
 // Container Phase Type
@@ -177,9 +177,11 @@ export type Container<
    * @throws {FactoryError} If the adapter's factory function throws
    * @throws {AsyncInitializationRequiredError} If resolving an async port before initialization
    */
-  resolve: TPhase extends "initialized"
-    ? <P extends TProvides>(port: P) => InferService<P>
-    : <P extends Exclude<TProvides, TAsyncPorts>>(port: P) => InferService<P>;
+  resolve<P extends TPhase extends "initialized"
+    ? TProvides
+    : Exclude<TProvides, TAsyncPorts>>(
+    port: P
+  ): InferService<P>;
 
   /**
    * Resolves a service instance for the given port asynchronously.
@@ -262,6 +264,14 @@ export type Container<
    * This property can be used to check if the container is still usable.
    */
   readonly isDisposed: boolean;
+
+  /**
+   * Checks if the container can resolve the given port.
+   *
+   * @param port - The port token to check
+   * @returns true if the port is provided by this container or its parent
+   */
+  has(port: Port<unknown, string>): boolean;
 
   /**
    * Brand property for nominal typing.
@@ -358,9 +368,11 @@ export type Scope<
    * @throws {FactoryError} If the adapter's factory function throws
    * @throws {AsyncInitializationRequiredError} If resolving an async port before initialization
    */
-  resolve: TPhase extends "initialized"
-    ? <P extends TProvides>(port: P) => InferService<P>
-    : <P extends Exclude<TProvides, TAsyncPorts>>(port: P) => InferService<P>;
+  resolve<P extends TPhase extends "initialized"
+    ? TProvides
+    : Exclude<TProvides, TAsyncPorts>>(
+    port: P
+  ): InferService<P>;
 
   /**
    * Resolves a service instance for the given port asynchronously.
@@ -407,6 +419,14 @@ export type Scope<
    * especially in React StrictMode where scopes may be disposed and recreated.
    */
   readonly isDisposed: boolean;
+
+  /**
+   * Checks if the scope can resolve the given port.
+   *
+   * @param port - The port token to check
+   * @returns true if the port is provided by this scope or its container
+   */
+  has(port: Port<unknown, string>): boolean;
 
   /**
    * Brand property for nominal typing.
@@ -482,9 +502,11 @@ export type ChildContainer<
    * @param port - The port token to resolve
    * @returns The service instance for the given port
    */
-  resolve: TPhase extends "initialized"
-    ? <P extends TProvides | TExtends>(port: P) => InferService<P>
-    : <P extends Exclude<TProvides | TExtends, TAsyncPorts>>(port: P) => InferService<P>;
+  resolve<P extends TPhase extends "initialized"
+    ? TProvides | TExtends
+    : Exclude<TProvides | TExtends, TAsyncPorts>>(
+    port: P
+  ): InferService<P>;
 
   /**
    * Resolves a service instance for the given port asynchronously.
@@ -524,6 +546,14 @@ export type ChildContainer<
    * Whether the child container has been disposed.
    */
   readonly isDisposed: boolean;
+
+  /**
+   * Checks if the child container can resolve the given port.
+   *
+   * @param port - The port token to check
+   * @returns true if the port is provided by this child container or its parent
+   */
+  has(port: Port<unknown, string>): boolean;
 
   /**
    * Reference to the parent container.
@@ -616,7 +646,7 @@ type PortExistsIn<TPort extends Port<unknown, string>, TUnion extends Port<unkno
  *
  * @internal
  */
-type OverrideResult<
+export type OverrideResult<
   TParentProvides extends Port<unknown, string>,
   TExtends extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
@@ -633,7 +663,7 @@ type OverrideResult<
  *
  * @internal
  */
-type ExtendResult<
+export type ExtendResult<
   TParentProvides extends Port<unknown, string>,
   TExtends extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
@@ -683,7 +713,7 @@ type ExtractPortNames<T extends Port<unknown, string>> = T extends Port<infer _S
  * Keys are restricted to port names from TProvides.
  * @internal
  */
-type InheritanceModeConfig<TProvides extends Port<unknown, string>> = {
+export type InheritanceModeConfig<TProvides extends Port<unknown, string>> = {
   [K in ExtractPortNames<TProvides>]?: InheritanceMode;
 };
 

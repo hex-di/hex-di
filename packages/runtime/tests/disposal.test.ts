@@ -57,6 +57,24 @@ const RequestContextPort = createPort<"RequestContext", RequestContext>("Request
 const SessionStorePort = createPort<"SessionStore", SessionStore>("SessionStore");
 const UserServicePort = createPort<"UserService", UserService>("UserService");
 
+function assertDisposedScopeError(error: unknown): DisposedScopeError {
+  if (!(error instanceof DisposedScopeError)) {
+    throw error;
+  }
+  return error;
+}
+
+function assertAggregateError(error: unknown): AggregateError {
+  if (!(error instanceof AggregateError)) {
+    throw error;
+  }
+  return error;
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 // =============================================================================
 // LIFO Disposal Order Tests
 // =============================================================================
@@ -210,8 +228,8 @@ describe("Disposal state tracking", () => {
     try {
       container.resolve(LoggerPort);
     } catch (error) {
-      expect(error).toBeInstanceOf(DisposedScopeError);
-      expect((error as DisposedScopeError).portName).toBe("Logger");
+      const disposedError = assertDisposedScopeError(error);
+      expect(disposedError.portName).toBe("Logger");
     }
   });
 
@@ -238,8 +256,8 @@ describe("Disposal state tracking", () => {
       scope.resolve(RequestContextPort);
       expect.fail("Expected DisposedScopeError");
     } catch (error) {
-      expect(error).toBeInstanceOf(DisposedScopeError);
-      expect((error as DisposedScopeError).portName).toBe("RequestContext");
+      const disposedError = assertDisposedScopeError(error);
+      expect(disposedError.portName).toBe("RequestContext");
     }
   });
 });
@@ -497,12 +515,11 @@ describe("Finalizer error handling", () => {
       await container.dispose();
       expect.fail("Expected AggregateError");
     } catch (error) {
-      expect(error).toBeInstanceOf(AggregateError);
-      const aggregateError = error as AggregateError;
+      const aggregateError = assertAggregateError(error);
       expect(aggregateError.errors).toHaveLength(2);
 
       // Verify error messages
-      const errorMessages = aggregateError.errors.map((e) => (e as Error).message);
+      const errorMessages = aggregateError.errors.map(getErrorMessage);
       expect(errorMessages).toContain("Database finalizer failed");
       expect(errorMessages).toContain("Logger finalizer failed");
     }
@@ -621,10 +638,9 @@ describe("Async finalizer support", () => {
       await container.dispose();
       expect.fail("Expected AggregateError");
     } catch (error) {
-      expect(error).toBeInstanceOf(AggregateError);
-      const aggregateError = error as AggregateError;
+      const aggregateError = assertAggregateError(error);
       expect(aggregateError.errors).toHaveLength(1);
-      expect((aggregateError.errors[0] as Error).message).toBe("Async logger cleanup failed");
+      expect(getErrorMessage(aggregateError.errors[0])).toBe("Async logger cleanup failed");
     }
   });
 });

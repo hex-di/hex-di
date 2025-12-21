@@ -17,6 +17,8 @@ import * as RuntimeExports from "../src/index.js";
 // =============================================================================
 
 describe("@hex-di/runtime exports", () => {
+  const runtimeExports: Record<string, unknown> = { ...RuntimeExports };
+
   describe("createContainer function", () => {
     it("should export createContainer as a function", () => {
       expect(typeof RuntimeExports.createContainer).toBe("function");
@@ -76,23 +78,19 @@ describe("@hex-di/runtime exports", () => {
 
   describe("Internal classes should NOT be exported", () => {
     it("should NOT export MemoMap", () => {
-      expect((RuntimeExports as Record<string, unknown>)["MemoMap"]).toBeUndefined();
+      expect(runtimeExports["MemoMap"]).toBeUndefined();
     });
 
     it("should NOT export ResolutionContext", () => {
-      expect(
-        (RuntimeExports as Record<string, unknown>)["ResolutionContext"]
-      ).toBeUndefined();
+      expect(runtimeExports["ResolutionContext"]).toBeUndefined();
     });
 
     it("should NOT export ContainerImpl", () => {
-      expect(
-        (RuntimeExports as Record<string, unknown>)["ContainerImpl"]
-      ).toBeUndefined();
+      expect(runtimeExports["ContainerImpl"]).toBeUndefined();
     });
 
     it("should NOT export ScopeImpl", () => {
-      expect((RuntimeExports as Record<string, unknown>)["ScopeImpl"]).toBeUndefined();
+      expect(runtimeExports["ScopeImpl"]).toBeUndefined();
     });
   });
 
@@ -125,7 +123,7 @@ describe("@hex-di/runtime exports", () => {
       // Verify all expected exports exist
       for (const exportName of expectedRuntimeExports) {
         expect(
-          RuntimeExports[exportName as keyof typeof RuntimeExports],
+          runtimeExports[exportName],
           `Expected export '${exportName}' to exist`
         ).toBeDefined();
       }

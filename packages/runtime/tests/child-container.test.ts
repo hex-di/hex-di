@@ -16,6 +16,7 @@ import { describe, test, expect, vi } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
 import { createContainer } from "../src/container.js";
+import { toRuntimeResolver } from "../src/adapters/react-resolver.js";
 
 // =============================================================================
 // Test Fixtures
@@ -416,7 +417,7 @@ describe("ChildContainer.extend()", () => {
     expect(() => {
       // This would throw at runtime because parent doesn't have ConfigPort adapter
       // TypeScript would prevent this at compile time with proper types
-      (container as unknown as { resolve: (p: unknown) => unknown }).resolve(ConfigPort);
+      toRuntimeResolver(container).resolve(ConfigPort);
     }).toThrow();
   });
 

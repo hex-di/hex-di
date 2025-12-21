@@ -128,7 +128,6 @@ export type {
   Lifetime,
   InferAdapterProvides,
   InferAdapterRequires,
-  InferAdapterLifetime,
   ResolvedDeps,
 } from "@hex-di/graph";
 
@@ -136,21 +135,10 @@ export type {
 // Error Hierarchy
 // =============================================================================
 
-/**
- * Error classes for container-related failures.
- *
- * All errors extend {@link ContainerError} which provides:
- * - `code`: Stable string constant for programmatic handling
- * - `isProgrammingError`: Boolean indicating if error is a programming mistake
- *
- * @see {@link ContainerError} - Abstract base class for all container errors
- * @see {@link CircularDependencyError} - Thrown when circular dependency detected
- * @see {@link FactoryError} - Thrown when adapter factory throws
- * @see {@link DisposedScopeError} - Thrown when resolving from disposed scope
- * @see {@link ScopeRequiredError} - Thrown when resolving scoped port from container
- * @see {@link AsyncFactoryError} - Thrown when async factory throws
- * @see {@link AsyncInitializationRequiredError} - Thrown when resolving async port before init
- */
+// =============================================================================
+// Error Hierarchy
+// =============================================================================
+
 export {
   ContainerError,
   CircularDependencyError,
@@ -159,48 +147,20 @@ export {
   ScopeRequiredError,
   AsyncFactoryError,
   AsyncInitializationRequiredError,
-} from "./errors.js";
+} from "./common/errors.js";
 
 // =============================================================================
 // Container and Scope Types
 // =============================================================================
 
-/**
- * Container and Scope branded types for type-safe service resolution.
- *
- * @see {@link Container} - Root container created from a validated graph
- * @see {@link Scope} - Child scope for managing scoped service lifetimes
- * @see {@link ChildContainer} - Child container for hierarchical DI
- * @see {@link ChildContainerBuilder} - Builder for creating child containers
- * @see {@link InheritanceMode} - Singleton inheritance mode for child containers
- */
 export type { Container, Scope, ContainerPhase, ChildContainer, ChildContainerBuilder, InheritanceMode } from "./types.js";
 
-/**
- * Brand symbols for Container, Scope, and ChildContainer nominal typing.
- *
- * These symbols are used internally for nominal typing and are exposed
- * primarily for testing purposes to create properly typed mock containers
- * and scopes.
- *
- * @see {@link ContainerBrand} - Unique symbol for Container nominal typing
- * @see {@link ScopeBrand} - Unique symbol for Scope nominal typing
- * @see {@link ChildContainerBrand} - Unique symbol for ChildContainer nominal typing
- */
 export { ContainerBrand, ScopeBrand, ChildContainerBrand } from "./types.js";
 
 // =============================================================================
 // Type Utility Functions
 // =============================================================================
 
-/**
- * Type utilities for working with Container and Scope types.
- *
- * @see {@link InferContainerProvides} - Extract TProvides from Container type
- * @see {@link InferScopeProvides} - Extract TProvides from Scope type
- * @see {@link IsResolvable} - Check if port is resolvable from container/scope
- * @see {@link ServiceFromContainer} - Extract service type for port from container
- */
 export type {
   InferContainerProvides,
   InferScopeProvides,
@@ -212,85 +172,44 @@ export type {
 // Runtime Resolver Types
 // =============================================================================
 
-/**
- * Covariant runtime resolver interfaces for type-erased storage.
- *
- * These interfaces solve the variance problem when storing typed containers
- * in React context/state. They use property function syntax for bivariance,
- * allowing any Container<TProvides> to be stored without type assertions.
- *
- * @see {@link RuntimeResolver} - Base interface for type-erased storage
- * @see {@link RuntimeContainer} - Extended interface with initialize/createChild
- * @see {@link TypedResolver} - Typed resolver for consuming with specific ports
- * @see {@link isRuntimeContainer} - Type guard for RuntimeContainer
- * @see {@link assertResolverProvides} - Narrow RuntimeResolver to TypedResolver
- */
 export type {
   RuntimeResolver,
   RuntimeContainer,
   TypedResolver,
-} from "./runtime-resolver.js";
+} from "./adapters/react-resolver.js";
 
 export {
   isRuntimeContainer,
   assertResolverProvides,
   toRuntimeResolver,
   toRuntimeContainer,
-} from "./runtime-resolver.js";
+} from "./adapters/react-resolver.js";
 
 // =============================================================================
 // Container Factory
 // =============================================================================
 
-/**
- * Factory function for creating containers from validated graphs.
- *
- * @see {@link createContainer} - Create an immutable container from a Graph
- */
-export { createContainer } from "./container.js";
+export { createContainer } from "./container/factory.js";
 
 // =============================================================================
 // Resolution Hooks
 // =============================================================================
 
-/**
- * Resolution hooks for instrumentation and tracing.
- *
- * Hooks are called during service resolution and enable instrumentation
- * like tracing without modifying core resolution logic. When hooks are
- * not provided, there is zero overhead.
- *
- * @see {@link ResolutionHooks} - Hook configuration object
- * @see {@link ResolutionHookContext} - Context passed to beforeResolve
- * @see {@link ResolutionResultContext} - Context passed to afterResolve
- * @see {@link ContainerOptions} - Options for createContainer with hooks
- */
 export type {
   ResolutionHooks,
   ResolutionHookContext,
   ResolutionResultContext,
   ContainerOptions,
-} from "./resolution-hooks.js";
+} from "./resolution/hooks.js";
 
 // =============================================================================
 // Captive Dependency Prevention Types
 // =============================================================================
 
-/**
- * Type utilities for compile-time captive dependency prevention.
- *
- * Captive dependency is a DI anti-pattern where a longer-lived service
- * (e.g., singleton) depends on a shorter-lived service (e.g., scoped).
- * These types enable compile-time detection with zero runtime cost.
- *
- * @see {@link LifetimeLevel} - Maps lifetime to numeric level for comparison
- * @see {@link CaptiveDependencyError} - Error type for captive dependency violations
- * @see {@link ValidateCaptiveDependency} - Validate single dependency relationship
- * @see {@link ValidateAllDependencies} - Validate all dependencies of an adapter
- */
 export type {
   LifetimeLevel,
   CaptiveDependencyError,
+  InferAdapterLifetime,
   ValidateCaptiveDependency,
   ValidateAllDependencies,
 } from "./captive-dependency.js";
@@ -299,29 +218,8 @@ export type {
 // Container State Inspection
 // =============================================================================
 
-/**
- * Symbol-based access protocol for container state inspection.
- *
- * The INTERNAL_ACCESS Symbol grants controlled read-only access to container
- * and scope internal state. This enables DevTools to inspect runtime behavior
- * without exposing mutable implementation details.
- *
- * @see {@link INTERNAL_ACCESS} - Symbol for accessing internal state
- * @see {@link TRACING_ACCESS} - Symbol for accessing tracing capabilities
- * @see {@link ContainerInternalState} - Container internal state snapshot type
- * @see {@link ScopeInternalState} - Scope internal state snapshot type
- * @see {@link MemoMapSnapshot} - MemoMap snapshot type for instance inspection
- * @see {@link InternalAccessor} - Accessor function type
- */
-export { INTERNAL_ACCESS, TRACING_ACCESS } from "./inspector-symbols.js";
+export { INTERNAL_ACCESS, TRACING_ACCESS } from "./inspector/symbols.js";
 
-/**
- * Type definitions for container state inspection snapshots.
- *
- * These types define the structure of frozen snapshots returned by the
- * INTERNAL_ACCESS Symbol accessor. All properties are readonly to reinforce
- * the immutable nature of inspection data.
- */
 export type {
   ContainerInternalState,
   ScopeInternalState,
@@ -334,19 +232,6 @@ export type {
   ContainerSnapshot,
   SingletonEntry,
   ScopeTree,
-} from "./inspector-types.js";
+} from "./inspector/types.js";
 
-/**
- * Factory function for creating container inspectors.
- *
- * The inspector provides runtime state inspection capabilities for DevTools
- * and debugging purposes. It returns serializable, frozen snapshots of
- * container state without exposing mutable internals.
- *
- * @see {@link createInspector} - Create an inspector for a container
- * @see {@link getInternalAccessor} - Get the internal accessor from a container
- * @see {@link ContainerInspector} - Interface returned by createInspector
- * @see {@link ContainerSnapshot} - Snapshot structure returned by inspector.snapshot()
- * @see {@link ScopeTree} - Hierarchical scope tree structure
- */
-export { createInspector, getInternalAccessor } from "./create-inspector.js";
+export { createInspector, getInternalAccessor } from "./inspector/creation.js";

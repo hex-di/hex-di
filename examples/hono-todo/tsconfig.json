@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "lib": ["ES2021", "DOM"],
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "@hex-di/hono": ["../../packages/hono/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "../../packages/hono/src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

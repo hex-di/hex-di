@@ -16,6 +16,13 @@ import { describe, test, expect } from "vitest";
 import { ResolutionContext } from "../src/resolution-context.js";
 import { CircularDependencyError } from "../src/errors.js";
 
+function assertCircularDependencyError(error: unknown): CircularDependencyError {
+  if (!(error instanceof CircularDependencyError)) {
+    throw error;
+  }
+  return error;
+}
+
 // =============================================================================
 // Initial State Tests
 // =============================================================================
@@ -69,8 +76,7 @@ describe("ResolutionContext.enter and path tracking", () => {
       context.enter("UserService");
       expect.fail("Expected CircularDependencyError to be thrown");
     } catch (error) {
-      expect(error).toBeInstanceOf(CircularDependencyError);
-      const circularError = error as CircularDependencyError;
+      const circularError = assertCircularDependencyError(error);
 
       // Chain should show: UserService -> AuthService -> SessionService -> UserService
       expect(circularError.dependencyChain).toEqual([

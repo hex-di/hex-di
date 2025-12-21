@@ -49,7 +49,7 @@ interface Config {
  * Database service interface - typically a singleton connection pool.
  */
 interface Database {
-  query<T>(sql: string, params?: unknown[]): Promise<T>;
+  query<T>(sql: string, params?: unknown[]): Promise<T[]>;
   execute(sql: string, params?: unknown[]): Promise<void>;
 }
 
@@ -125,6 +125,34 @@ const UserServicePort = createPort<"UserService", UserService>("UserService");
 const RequestContextPort = createPort<"RequestContext", RequestContext>("RequestContext");
 const AuthServicePort = createPort<"AuthService", AuthService>("AuthService");
 const NotificationServicePort = createPort<"NotificationService", NotificationService>("NotificationService");
+
+function assertCircularDependencyError(error: unknown): CircularDependencyError {
+  if (!(error instanceof CircularDependencyError)) {
+    throw error;
+  }
+  return error;
+}
+
+function assertFactoryError(error: unknown): FactoryError {
+  if (!(error instanceof FactoryError)) {
+    throw error;
+  }
+  return error;
+}
+
+function assertDisposedScopeError(error: unknown): DisposedScopeError {
+  if (!(error instanceof DisposedScopeError)) {
+    throw error;
+  }
+  return error;
+}
+
+function assertScopeRequiredError(error: unknown): ScopeRequiredError {
+  if (!(error instanceof ScopeRequiredError)) {
+    throw error;
+  }
+  return error;
+}
 
 // =============================================================================
 // Test Group 13.1: Basic Container Workflow
@@ -256,7 +284,8 @@ describe("Integration: Dependency Chain Resolution", () => {
       factory: (deps) => ({
         query: vi.fn().mockImplementation(async <T>(sql: string) => {
           deps.Logger.log(`Executing query: ${sql}`);
-          return [] as T;
+          const rows: T[] = [];
+          return rows;
         }),
         execute: vi.fn().mockImplementation(async (sql: string) => {
           deps.Logger.log(`Executing: ${sql}`);
@@ -334,9 +363,11 @@ describe("Integration: Dependency Chain Resolution", () => {
 
     // Logger received Config
     const loggerDeps = receivedDeps[0];
-    expect(loggerDeps).toBeDefined();
+    if (loggerDeps === undefined) {
+      throw new Error("Expected logger dependencies to be recorded.");
+    }
     expect(loggerDeps).toHaveProperty("Config");
-    expect(typeof (loggerDeps as Record<string, unknown>)["Config"]).toBe("object");
+    expect(typeof loggerDeps["Config"]).toBe("object");
 
     // Database received both Logger and Config
     expect(receivedDeps[1]).toHaveProperty("Logger");
@@ -895,8 +926,7 @@ describe("Integration: Error Scenarios", () => {
     try {
       container.resolve(ServiceAPort);
     } catch (error) {
-      expect(error).toBeInstanceOf(CircularDependencyError);
-      const circularError = error as CircularDependencyError;
+      const circularError = assertCircularDependencyError(error);
       expect(circularError.code).toBe("CIRCULAR_DEPENDENCY");
       expect(circularError.isProgrammingError).toBe(true);
       expect(circularError.dependencyChain).toContain("ServiceA");
@@ -924,8 +954,7 @@ describe("Integration: Error Scenarios", () => {
     try {
       container.resolve(DatabasePort);
     } catch (error) {
-      expect(error).toBeInstanceOf(FactoryError);
-      const wrappedError = error as FactoryError;
+      const wrappedError = assertFactoryError(error);
       expect(wrappedError.code).toBe("FACTORY_FAILED");
       expect(wrappedError.isProgrammingError).toBe(false);
       expect(wrappedError.portName).toBe("Database");
@@ -967,8 +996,7 @@ describe("Integration: Error Scenarios", () => {
     try {
       scope.resolve(RequestContextPort);
     } catch (error) {
-      expect(error).toBeInstanceOf(DisposedScopeError);
-      const disposedError = error as DisposedScopeError;
+      const disposedError = assertDisposedScopeError(error);
       expect(disposedError.code).toBe("DISPOSED_SCOPE");
       expect(disposedError.isProgrammingError).toBe(true);
       expect(disposedError.portName).toBe("RequestContext");
@@ -995,8 +1023,7 @@ describe("Integration: Error Scenarios", () => {
     try {
       container.resolve(RequestContextPort);
     } catch (error) {
-      expect(error).toBeInstanceOf(ScopeRequiredError);
-      const scopeError = error as ScopeRequiredError;
+      const scopeError = assertScopeRequiredError(error);
       expect(scopeError.code).toBe("SCOPE_REQUIRED");
       expect(scopeError.isProgrammingError).toBe(true);
       expect(scopeError.portName).toBe("RequestContext");
@@ -1119,8 +1146,12 @@ describe("Integration: Type Safety End-to-End", () => {
         // deps.Logger is correctly typed as Logger
         deps.Logger.log("Cache initializing");
         const store = new Map<string, unknown>();
+        function get<T>(key: string): T | undefined;
+        function get(key: string): unknown {
+          return store.get(key);
+        }
         return {
-          get: <T>(key: string): T | undefined => store.get(key) as T | undefined,
+          get,
           set: <T>(key: string, value: T, _ttl?: number): void => {
             deps.Logger.log(`Cache set: ${key}`);
             store.set(key, value);
@@ -1461,7 +1492,7 @@ describe("Integration: Edge Cases and Gap Coverage", () => {
     try {
       container.resolve(ServiceAPort);
     } catch (error) {
-      const circularError = error as CircularDependencyError;
+      const circularError = assertCircularDependencyError(error);
       // Chain should include all three services plus the closing loop
       expect(circularError.dependencyChain.length).toBeGreaterThanOrEqual(4);
       expect(circularError.dependencyChain).toContain("ServiceA");

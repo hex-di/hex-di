@@ -22,7 +22,11 @@
  */
 
 import type { Port, InferPortName } from "@hex-di/ports";
-import type { Adapter, Lifetime, InferAdapterLifetime, InferAdapterProvides } from "@hex-di/graph";
+import type { Adapter, Lifetime, FactoryKind, InferAdapterProvides } from "@hex-di/graph";
+
+export type InferAdapterLifetime<
+  A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>,
+> = A extends Adapter<any, any, infer L, any> ? L : never;
 
 // =============================================================================
 // LifetimeLevel Phantom Type

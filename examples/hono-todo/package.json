@@ -1,0 +1,31 @@
+{
+  "name": "@hex-di/hono-todo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Example Hono + HexDI todo API with per-request scopes and auth",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "start": "NODE_ENV=production tsx src/server.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hex-di/ports": "workspace:*",
+    "@hex-di/graph": "workspace:*",
+    "@hex-di/runtime": "workspace:*",
+    "@hex-di/hono": "workspace:*",
+    "@hono/node-server": "^1.19.7",
+    "@hono/zod-openapi": "^0.18.4",
+    "@scalar/hono-api-reference": "^0.5.165",
+    "hono": "^4.11.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -10,6 +10,7 @@ import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
 import { createContainer } from "../src/container.js";
 import { DisposedScopeError, ScopeRequiredError } from "../src/errors.js";
+import { toRuntimeResolver } from "../src/adapters/react-resolver.js";
 
 // =============================================================================
 // Test Fixtures
@@ -100,8 +101,8 @@ describe("createContainer", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
     const container = createContainer(graph);
 
-    // @ts-expect-error Testing runtime error handling - TypeScript correctly prevents this
-    expect(() => container.resolve(DatabasePort)).toThrow();
+    const untyped = toRuntimeResolver(container);
+    expect(() => untyped.resolve(DatabasePort)).toThrow();
   });
 
   test("singleton instances are cached across resolves", () => {
