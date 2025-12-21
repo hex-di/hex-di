@@ -274,12 +274,12 @@ export function assertPortProvided<P extends Port<unknown, string>>(
  *
  * @param graph - The dependency graph to check
  * @param port - The port whose adapter lifetime to validate
- * @param expectedLifetime - The expected lifetime value ('singleton', 'scoped', or 'request')
+ * @param expectedLifetime - The expected lifetime value ('singleton', 'scoped', or 'transient')
  *
  * @throws {@link GraphAssertionError} If the port is not in the graph or if the
  *   lifetime does not match the expected value.
  *   - If port missing: `"Port 'Logger' is not provided in graph"`
- *   - If lifetime mismatch: `"Port 'Logger' has lifetime 'request', expected 'singleton'"`
+ *   - If lifetime mismatch: `"Port 'Logger' has lifetime 'transient', expected 'singleton'"`
  *
  * @example
  * ```typescript
@@ -294,7 +294,7 @@ export function assertPortProvided<P extends Port<unknown, string>>(
  *
  *     assertLifetime(graph, LoggerPort, 'singleton'); // Passes
  *     assertLifetime(graph, DatabasePort, 'scoped'); // Passes
- *     assertLifetime(graph, LoggerPort, 'request'); // Throws
+ *     assertLifetime(graph, LoggerPort, 'transient'); // Throws
  *   });
  * });
  * ```

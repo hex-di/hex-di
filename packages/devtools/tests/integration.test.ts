@@ -171,7 +171,7 @@ describe("Integration: Full Pipelines", () => {
   it("supports chained transforms: filter then relabel then export", () => {
     const graph = createTestGraph();
 
-    // Chain: filter to scoped/request -> relabel -> export to Mermaid
+    // Chain: filter to scoped/transient -> relabel -> export to Mermaid
     const exported = toJSON(graph);
     const nonSingletons = filterGraph(
       exported,

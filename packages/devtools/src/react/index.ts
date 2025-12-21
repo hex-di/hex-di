@@ -55,7 +55,7 @@
  * ## Features
  *
  * - **Graph Visualization**: Visual representation of dependency graph
- *   with nodes colored by lifetime (singleton, scoped, request).
+ *   with nodes colored by lifetime (singleton, scoped, transient).
  *
  * - **Container Inspection**: Browse registered ports, view adapter
  *   configurations, and inspect dependency relationships.
@@ -438,7 +438,7 @@ export type { SummaryStatsViewProps } from "./summary-stats-view.js";
  * - Hover highlighting of connected dependencies
  * - Click selection with focus
  * - Tooltips showing node details
- * - Lifetime-based color coding (singleton=green, scoped=blue, request=orange)
+ * - Lifetime-based color coding (singleton=green, scoped=blue, transient=orange)
  *
  * @see {@link DependencyGraphProps} - Component props interface
  *

@@ -5,7 +5,7 @@
  * - Overview cards (Total Resolutions, Avg Time, Cache Hit Rate, Slow Count)
  * - Duration distribution bar chart
  * - Slowest services list (top 5)
- * - Lifetime breakdown (Singleton/Scoped/Request)
+ * - Lifetime breakdown (Singleton/Scoped/Transient)
  * - Cache efficiency visualization
  * - Export functionality
  *
@@ -729,7 +729,7 @@ function EmptyState(): ReactElement {
  * - Overview cards grid (Total Resolutions, Avg Time, Cache Hit Rate, Slow Count)
  * - Duration distribution bar chart with 5 buckets
  * - Slowest services list (top 5) with clickable rows
- * - Lifetime breakdown (Singleton/Scoped/Request)
+ * - Lifetime breakdown (Singleton/Scoped/Transient)
  * - Cache efficiency visualization with stacked bar
  * - Export functionality (JSON, CSV, Clipboard)
  *

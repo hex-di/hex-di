@@ -64,7 +64,7 @@ import type { ExportedGraph, ExportedNode, LabelTransform } from "@hex-di/devtoo
  *   const indicator = {
  *     singleton: '[S]',
  *     scoped: '[C]',
- *     request: '[R]'
+ *     transient: '[T]'
  *   }[node.lifetime];
  *   return `${indicator} ${node.label}`;
  * });

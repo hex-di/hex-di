@@ -547,7 +547,7 @@ describe("Integration: Scope Hierarchy", () => {
     expect(scopedFactory).toHaveBeenCalledTimes(3);
   });
 
-  test("request lifetime creates fresh instances in all scopes", () => {
+  test("transient lifetime creates fresh instances in all scopes", () => {
     const requestFactory = vi.fn(() => ({
       sendEmail: vi.fn().mockResolvedValue(undefined),
       sendPush: vi.fn().mockResolvedValue(undefined),
@@ -1387,7 +1387,7 @@ describe("Integration: Edge Cases and Gap Coverage", () => {
     expect(() => childScope.resolve(RequestContextPort)).toThrow(DisposedScopeError);
   });
 
-  test("request lifetime creates fresh instances on every resolve", () => {
+  test("transient lifetime creates fresh instances on every resolve", () => {
     const factoryCalls = { count: 0 };
 
     const NotificationAdapter = createAdapter({

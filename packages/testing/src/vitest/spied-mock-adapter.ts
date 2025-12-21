@@ -94,7 +94,7 @@ export type SpiedAdapter<P extends Port<object, string>> = Adapter<P, never, "tr
  * @returns A frozen SpiedAdapter where all service methods are vi.fn() spies
  *
  * @remarks
- * - Default lifetime is `'request'` for test isolation (fresh instance per resolution)
+ * - Default lifetime is `'transient'` for test isolation (fresh instance per resolution)
  * - All methods are spies regardless of whether defaults are provided
  * - The adapter is frozen for immutability
  * - Unlike createMockAdapter, this does NOT throw on missing methods -

@@ -109,7 +109,7 @@ describe("byLifetime", () => {
     expect(filtered.nodes.map((n) => n.id)).toContain("UserRepository");
   });
 
-  it("creates predicate that matches request lifetime", () => {
+  it("creates predicate that matches transient lifetime", () => {
     const graph = createTestGraph();
     const filtered = filterGraph(graph, byLifetime("transient"));
 

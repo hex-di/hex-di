@@ -326,9 +326,9 @@ function App() {
 }
 ```
 
-## Working with Request Services
+## Working with Transient Services
 
-Request services create fresh instances each resolution:
+Transient services create fresh instances each resolution:
 
 ```typescript
 function NotificationDemo() {

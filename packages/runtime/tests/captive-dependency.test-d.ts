@@ -2,27 +2,27 @@
  * Type-level tests for captive dependency prevention.
  *
  * Captive dependency is a DI anti-pattern where a longer-lived service
- * (e.g., singleton) depends on a shorter-lived service (e.g., scoped/request).
+ * (e.g., singleton) depends on a shorter-lived service (e.g., scoped/transient).
  * This causes the shorter-lived service to be "captured" and held beyond
  * its intended lifetime.
  *
  * Lifetime hierarchy (lower level = longer lived):
  * - Singleton (1): lives for entire application lifetime
  * - Scoped (2): lives for duration of a scope
- * - Request (3): created fresh for each resolution
+ * - Transient (3): created fresh for each resolution
  *
  * Valid dependency directions:
  * - Singleton -> Singleton (same level)
  * - Scoped -> Singleton (longer-lived dependency - OK)
  * - Scoped -> Scoped (same level)
- * - Request -> Singleton (longer-lived dependency - OK)
- * - Request -> Scoped (longer-lived dependency - OK)
- * - Request -> Request (same level)
+ * - Transient -> Singleton (longer-lived dependency - OK)
+ * - Transient -> Scoped (longer-lived dependency - OK)
+ * - Transient -> Transient (same level)
  *
  * Invalid (captive) dependencies:
  * - Singleton -> Scoped (shorter-lived dependency - CAPTIVE!)
- * - Singleton -> Request (shorter-lived dependency - CAPTIVE!)
- * - Scoped -> Request (shorter-lived dependency - CAPTIVE!)
+ * - Singleton -> Transient (shorter-lived dependency - CAPTIVE!)
+ * - Scoped -> Transient (shorter-lived dependency - CAPTIVE!)
  */
 
 import { describe, expectTypeOf, it } from "vitest";
@@ -83,7 +83,7 @@ const ScopedDatabaseAdapter = createAdapter({
   factory: () => ({ query: async () => ({}) }),
 });
 
-// Request adapter with no dependencies
+// Transient adapter with no dependencies
 const RequestContextAdapter = createAdapter({
   provides: RequestContextPort,
   requires: [],
@@ -117,7 +117,7 @@ const ScopedDependsOnSingletonAdapter = createAdapter({
   }),
 });
 
-// Request adapter depending on any lifetime (VALID - request can depend on anything)
+// Transient adapter depending on any lifetime (VALID - transient can depend on anything)
 const RequestDependsOnSingletonAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort],
@@ -145,9 +145,9 @@ describe("LifetimeLevel phantom type", () => {
     expectTypeOf<ScopedLevel>().toEqualTypeOf<2>();
   });
 
-  it("request maps to level 3", () => {
-    type RequestLevel = LifetimeLevel<"transient">;
-    expectTypeOf<RequestLevel>().toEqualTypeOf<3>();
+  it("transient maps to level 3", () => {
+    type TransientLevel = LifetimeLevel<"transient">;
+    expectTypeOf<TransientLevel>().toEqualTypeOf<3>();
   });
 });
 
@@ -199,15 +199,15 @@ describe("Valid captive dependency scenarios (should compile)", () => {
     expectTypeOf<Result>().toEqualTypeOf<typeof ScopedDependsOnScopedAdapter>();
   });
 
-  it("request depending on any lifetime compiles", () => {
-    // Request depending on singleton
+  it("transient depending on any lifetime compiles", () => {
+    // Transient depending on singleton
     type ResultSingleton = ValidateCaptiveDependency<
       typeof RequestDependsOnSingletonAdapter,
       typeof SingletonLoggerAdapter
     >;
     expectTypeOf<ResultSingleton>().toEqualTypeOf<typeof RequestDependsOnSingletonAdapter>();
 
-    // Request depending on scoped
+    // Transient depending on scoped
     const RequestDependsOnScopedAdapter = createAdapter({
       provides: UserServicePort,
       requires: [DatabasePort],
@@ -226,7 +226,7 @@ describe("Valid captive dependency scenarios (should compile)", () => {
     >;
     expectTypeOf<ResultScoped>().toEqualTypeOf<typeof RequestDependsOnScopedAdapter>();
 
-    // Request depending on request
+    // Transient depending on transient
     const RequestDependsOnRequestAdapter = createAdapter({
       provides: UserServicePort,
       requires: [RequestContextPort],
@@ -275,8 +275,8 @@ describe("Invalid captive dependency scenarios (should produce error types)", ()
     expectTypeOf<Result>().toMatchTypeOf<CaptiveDependencyError<string>>();
   });
 
-  it("singleton depending on request produces error type", () => {
-    // Singleton trying to depend on request - CAPTIVE!
+  it("singleton depending on transient produces error type", () => {
+    // Singleton trying to depend on transient - CAPTIVE!
     const SingletonDependsOnRequestAdapter = createAdapter({
       provides: UserServicePort,
       requires: [RequestContextPort],
@@ -298,8 +298,8 @@ describe("Invalid captive dependency scenarios (should produce error types)", ()
     expectTypeOf<Result>().toMatchTypeOf<CaptiveDependencyError<string>>();
   });
 
-  it("scoped depending on request produces error type", () => {
-    // Scoped trying to depend on request - CAPTIVE!
+  it("scoped depending on transient produces error type", () => {
+    // Scoped trying to depend on transient - CAPTIVE!
     const ScopedDependsOnRequestAdapter = createAdapter({
       provides: UserServicePort,
       requires: [RequestContextPort],

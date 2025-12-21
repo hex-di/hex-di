@@ -50,6 +50,8 @@ const COLORS = {
   // Lifetime colors
   singleton: "\x1b[32m", // green
   scoped: "\x1b[34m", // blue
+  transient: "\x1b[33m", // yellow
+  // Back-compat alias (older docs used "request" for transient)
   request: "\x1b[33m", // yellow
   // Other
   arrow: "\x1b[36m", // cyan
@@ -141,21 +143,21 @@ export function renderAsciiGraph(
   lines.push("─".repeat(Math.min(maxWidth, 40)));
   const singletonCount = graph.nodes.filter((n) => n.lifetime === "singleton").length;
   const scopedCount = graph.nodes.filter((n) => n.lifetime === "scoped").length;
-  const requestCount = graph.nodes.filter((n) => n.lifetime === "transient").length;
+  const transientCount = graph.nodes.filter((n) => n.lifetime === "transient").length;
 
   if (useColors) {
     lines.push(
       `${COLORS.dim}Nodes: ${graph.nodes.length}${COLORS.reset} | ` +
         `${COLORS.singleton}●${COLORS.reset} Singleton: ${singletonCount} | ` +
         `${COLORS.scoped}●${COLORS.reset} Scoped: ${scopedCount} | ` +
-        `${COLORS.request}●${COLORS.reset} Request: ${requestCount}`
+        `${COLORS.transient}●${COLORS.reset} Transient: ${transientCount}`
     );
   } else {
     lines.push(
       `Nodes: ${graph.nodes.length} | ` +
         `Singleton: ${singletonCount} | ` +
         `Scoped: ${scopedCount} | ` +
-        `Request: ${requestCount}`
+        `Transient: ${transientCount}`
     );
   }
 
@@ -228,7 +230,7 @@ export function renderNodeList(
 
   // Sort by lifetime then by name
   const sorted = [...graph.nodes].sort((a, b) => {
-    const lifetimeOrder = { singleton: 0, scoped: 1, request: 2 };
+    const lifetimeOrder = { singleton: 0, scoped: 1, transient: 2 };
     const aOrder = lifetimeOrder[a.lifetime as keyof typeof lifetimeOrder] ?? 3;
     const bOrder = lifetimeOrder[b.lifetime as keyof typeof lifetimeOrder] ?? 3;
     if (aOrder !== bOrder) return aOrder - bOrder;

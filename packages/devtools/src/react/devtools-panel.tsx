@@ -428,7 +428,7 @@ function ContainerBrowser({
  * Nodes are visually differentiated by lifetime:
  * - **Singleton**: Green badge
  * - **Scoped**: Blue badge
- * - **Request**: Orange badge
+ * - **Transient**: Orange badge
  *
  * @param props - The component props
  * @returns A React element containing the DevTools panel

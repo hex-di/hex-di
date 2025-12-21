@@ -227,7 +227,7 @@ describe("InferAdapterLifetime<T> utility type", () => {
     expectTypeOf<Result>().toEqualTypeOf<"scoped">();
   });
 
-  it("extracts request lifetime", () => {
+  it("extracts transient lifetime", () => {
     type Result = InferAdapterLifetime<typeof ConfigAdapter>;
 
     expectTypeOf<Result>().toEqualTypeOf<"transient">();
@@ -236,11 +236,11 @@ describe("InferAdapterLifetime<T> utility type", () => {
   it("extracts lifetime from manually typed Adapter", () => {
     type SingletonAdapter = Adapter<LoggerPortType, never, "singleton">;
     type ScopedAdapter = Adapter<LoggerPortType, never, "scoped">;
-    type RequestAdapter = Adapter<LoggerPortType, never, "transient">;
+    type TransientAdapter = Adapter<LoggerPortType, never, "transient">;
 
     expectTypeOf<InferAdapterLifetime<SingletonAdapter>>().toEqualTypeOf<"singleton">();
     expectTypeOf<InferAdapterLifetime<ScopedAdapter>>().toEqualTypeOf<"scoped">();
-    expectTypeOf<InferAdapterLifetime<RequestAdapter>>().toEqualTypeOf<"transient">();
+    expectTypeOf<InferAdapterLifetime<TransientAdapter>>().toEqualTypeOf<"transient">();
   });
 
   it("returns never for non-Adapter types", () => {

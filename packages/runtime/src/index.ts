@@ -10,7 +10,7 @@
  * - **Type-Safe Resolution**: Resolve services with compile-time validation that
  *   the port exists in the container and correct return type inference.
  *
- * - **Lifetime Management**: Three lifetime scopes (singleton, scoped, request)
+ * - **Lifetime Management**: Three lifetime scopes (singleton, scoped, transient)
  *   with proper instance caching and isolation.
  *
  * - **Scope Hierarchy**: Create child scopes for request-scoped services with

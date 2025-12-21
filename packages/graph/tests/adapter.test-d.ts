@@ -4,7 +4,7 @@
  * These tests verify:
  * 1. Adapter type captures TProvides as single Port type
  * 2. Adapter type captures TRequires as Port union (or never)
- * 3. Adapter type captures TLifetime as literal ('singleton' | 'scoped' | 'request')
+ * 3. Adapter type captures TLifetime as literal ('singleton' | 'scoped' | 'transient')
  * 4. Two adapters with same provides but different requires are distinct types
  * 5. Adapter brand symbol is not accessible at value level
  * 6. Adapter with never requires has no dependencies
@@ -59,7 +59,7 @@ type ConfigPortType = typeof ConfigPort;
 // =============================================================================
 
 describe("Lifetime type", () => {
-  it("is a union of singleton, scoped, and request literals", () => {
+  it("is a union of singleton, scoped, and transient literals", () => {
     expectTypeOf<Lifetime>().toEqualTypeOf<
       "singleton" | "scoped" | "transient"
     >();
@@ -68,11 +68,11 @@ describe("Lifetime type", () => {
   it("accepts valid lifetime values", () => {
     const singleton: Lifetime = "singleton";
     const scoped: Lifetime = "scoped";
-    const request: Lifetime = "transient";
+    const transient: Lifetime = "transient";
 
     expectTypeOf(singleton).toMatchTypeOf<Lifetime>();
     expectTypeOf(scoped).toMatchTypeOf<Lifetime>();
-    expectTypeOf(request).toMatchTypeOf<Lifetime>();
+    expectTypeOf(transient).toMatchTypeOf<Lifetime>();
   });
 
   it("rejects invalid lifetime values", () => {

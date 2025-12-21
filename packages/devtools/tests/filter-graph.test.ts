@@ -150,7 +150,7 @@ describe("byLifetime", () => {
     expect(result.nodes.every((n) => n.lifetime === "scoped")).toBe(true);
   });
 
-  it("filters nodes by request lifetime", () => {
+  it("filters nodes by transient lifetime", () => {
     const original = createTestGraph();
     const result = filterGraph(original, byLifetime("transient"));
 

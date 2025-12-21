@@ -100,7 +100,7 @@ const dot = toDOT(appGraph, {
   colors: {
     singleton: '#90EE90',  // Light green
     scoped: '#87CEEB',     // Light blue
-    request: '#FFB6C1'     // Light pink
+    transient: '#FFB6C1'   // Light pink
   }
 });
 ```
@@ -129,7 +129,7 @@ graph TD
 
   classDef singleton fill:#90EE90
   classDef scoped fill:#87CEEB
-  classDef request fill:#FFB6C1
+  classDef transient fill:#FFB6C1
 
   class Logger,Database singleton
   class UserService scoped

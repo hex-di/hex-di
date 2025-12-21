@@ -84,7 +84,7 @@ interface DOTOptions {
   colors?: {
     singleton?: string;
     scoped?: string;
-    request?: string;
+    transient?: string;
   };
 }
 ```
@@ -100,7 +100,7 @@ const dot = toDOT(appGraph, {
   colors: {
     singleton: '#90EE90',
     scoped: '#87CEEB',
-    request: '#FFB6C1'
+    transient: '#FFB6C1'
   }
 });
 

@@ -163,7 +163,7 @@ scope.resolve(LoggerPort) === container.resolve(LoggerPort); // true
 // Scoped - unique per scope
 const session = scope.resolve(UserSessionPort);
 
-// Request - fresh each time
+// Transient - fresh each time
 scope.resolve(NotificationPort) !== scope.resolve(NotificationPort); // true
 ```
 

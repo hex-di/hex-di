@@ -88,7 +88,7 @@ describe("createMockAdapter", () => {
     expect(mockDb.query).toBeDefined();
   });
 
-  test("default lifetime is 'request' for test isolation", () => {
+  test("default lifetime is 'transient' for test isolation", () => {
     const mockAdapter = createMockAdapter(LoggerPort, {
       log: vi.fn(),
     });
@@ -109,7 +109,7 @@ describe("createMockAdapter", () => {
       { lifetime: "scoped" }
     );
 
-    const requestMock = createMockAdapter(
+    const transientMock = createMockAdapter(
       LoggerPort,
       { log: vi.fn() },
       { lifetime: "transient" }
@@ -117,7 +117,7 @@ describe("createMockAdapter", () => {
 
     expect(singletonMock.lifetime).toBe("singleton");
     expect(scopedMock.lifetime).toBe("scoped");
-    expect(requestMock.lifetime).toBe("transient");
+    expect(transientMock.lifetime).toBe("transient");
   });
 
   test("adapter works with createContainer", () => {

@@ -19,11 +19,11 @@ import { createAdapter, type Adapter, type Lifetime } from "@hex-di/graph";
  * Options for configuring mock adapter behavior.
  *
  * @property lifetime - The lifetime scope for the mock adapter.
- *   Defaults to 'request' for test isolation (fresh instance per resolution).
+ *   Defaults to 'transient' for test isolation (fresh instance per resolution).
  *
  * @example
  * ```typescript
- * // Default: request lifetime
+ * // Default: transient lifetime
  * const mock1 = createMockAdapter(LoggerPort, { log: vi.fn() });
  *
  * // Singleton: same instance across all resolutions
@@ -35,12 +35,12 @@ import { createAdapter, type Adapter, type Lifetime } from "@hex-di/graph";
  */
 export interface MockAdapterOptions {
   /**
-   * The lifetime scope for the mock adapter.
-   *
-   * - `'request'` (default): Fresh instance for every resolution. Best for test isolation.
-   * - `'singleton'`: One instance shared across all resolutions in the container.
-   * - `'scoped'`: One instance per scope.
-   */
+ * The lifetime scope for the mock adapter.
+ *
+ * - `'transient'` (default): Fresh instance for every resolution. Best for test isolation.
+ * - `'singleton'`: One instance shared across all resolutions in the container.
+ * - `'scoped'`: One instance per scope.
+ */
   lifetime?: Lifetime;
 }
 
@@ -127,13 +127,13 @@ function createMockImplementation<T extends object>(
  * @param implementation - A partial implementation of the service interface.
  *   Only the methods needed for the test need to be provided.
  * @param options - Optional configuration for the mock adapter
- * @param options.lifetime - Lifetime scope for the adapter. Defaults to 'request'
+ * @param options.lifetime - Lifetime scope for the adapter. Defaults to 'transient'
  *   for test isolation.
  *
  * @returns A frozen Adapter object that can be used with GraphBuilder or TestGraphBuilder
  *
  * @remarks
- * - Default lifetime is `'request'` which provides test isolation by creating
+ * - Default lifetime is `'transient'` which provides test isolation by creating
  *   a fresh instance for each resolution.
  * - Missing methods are handled via Proxy and throw descriptive errors like:
  *   `"Method 'methodName' not implemented on mock for port 'PortName'"`

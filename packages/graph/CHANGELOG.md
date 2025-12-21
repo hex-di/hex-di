@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Adapter Type** - Branded type `Adapter<TProvides, TRequires, TLifetime>` for service implementations
   - `TProvides` - The Port this adapter satisfies (single port)
   - `TRequires` - Union of Ports this adapter depends on (or `never` for no dependencies)
-  - `TLifetime` - Lifetime scope literal (`'singleton'` | `'scoped'` | `'request'`)
+  - `TLifetime` - Lifetime scope literal (`'singleton'` | `'scoped'` | `'transient'`)
   - Internal brand symbol ensures nominal typing
   - Zero runtime overhead - brand exists only at type level
 
@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Lifetime Type** - Union type for service lifetime scopes
   - `'singleton'` - One instance for entire application
   - `'scoped'` - One instance per scope (e.g., request)
-  - `'request'` - New instance every resolution
+  - `'transient'` - New instance every resolution
 
 - **GraphBuilder Class** - Immutable builder for dependency graph construction
   - `GraphBuilder.create()` - Creates empty builder with `TProvides = never, TRequires = never`

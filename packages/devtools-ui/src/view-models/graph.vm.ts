@@ -38,7 +38,7 @@ export interface GraphNodeViewModel {
   readonly id: string;
   /** Display label for the node */
   readonly label: string;
-  /** Service lifetime (singleton, scoped, request) */
+  /** Service lifetime (singleton, scoped, transient) */
   readonly lifetime: Lifetime;
   /** Factory type (sync or async) */
   readonly factoryKind: "sync" | "async";

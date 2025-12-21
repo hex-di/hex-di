@@ -151,16 +151,16 @@ const ChatServiceAdapter = createAdapter({
 });
 ```
 
-## Request Lifetime
+## Transient Lifetime
 
-Request services create a fresh instance every time they're resolved.
+Transient services create a fresh instance every time they're resolved.
 
-### When to Use Request
+### When to Use Transient
 
 - Services needing unique identifiers
 - Stateful services where state shouldn't be shared
 - When isolation between calls is important
-- Transient operations
+- One-off operations
 
 ### Example
 
@@ -205,9 +205,9 @@ const notif4 = scope.resolve(NotificationPort);
 console.log(notif3 === notif4); // false
 ```
 
-### Request Dependencies
+### Transient Dependencies
 
-Request services can depend on any lifetime (they're the shortest-lived):
+Transient services can depend on any lifetime (they're the shortest-lived):
 
 ```typescript
 const RequestServiceAdapter = createAdapter({
@@ -228,7 +228,7 @@ const RequestServiceAdapter = createAdapter({
 Lifetimes have a hierarchy based on how long instances live:
 
 ```
-singleton (longest) > scoped > request (shortest)
+singleton (longest) > scoped > transient (shortest)
 ```
 
 ### Dependency Rules
@@ -341,7 +341,7 @@ This ensures dependencies are available during cleanup.
 
 When a scope is disposed:
 1. Scoped service finalizers are called (LIFO)
-2. Request services don't have finalizers (too many instances)
+2. Transient services don't have finalizers (too many instances)
 3. Singletons are NOT disposed (they belong to the container)
 
 ```typescript

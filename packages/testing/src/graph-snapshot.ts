@@ -115,7 +115,7 @@ export interface SerializeGraphOptions {
  *
  * **What's included:**
  * - Adapter port names (from `adapter.provides.__portName`)
- * - Adapter lifetimes (`singleton`, `scoped`, `request`)
+ * - Adapter lifetimes (`singleton`, `scoped`, `transient`)
  * - Dependency relationships (array of required port names)
  *
  * **What's excluded:**

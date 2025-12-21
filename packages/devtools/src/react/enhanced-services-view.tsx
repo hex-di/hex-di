@@ -229,7 +229,7 @@ function ServiceFiltersComponent({
           type="button"
           aria-pressed={filters.lifetime === "transient"}
         >
-          Request
+          Transient
         </button>
       </div>
 
@@ -310,7 +310,7 @@ function ViewModeSelector({
  *
  * Features:
  * - Search input with 300ms debounce
- * - Lifetime filters (All/Singleton/Scoped/Request)
+ * - Lifetime filters (All/Singleton/Scoped/Transient)
  * - Status filters (Resolved/Pending)
  * - View mode toggle (List/Tree)
  * - List view: Flat list with enhanced service items

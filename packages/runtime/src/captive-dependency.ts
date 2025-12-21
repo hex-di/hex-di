@@ -2,7 +2,7 @@
  * Captive Dependency Prevention Types for @hex-di/runtime.
  *
  * Captive dependency is a DI anti-pattern where a longer-lived service
- * (e.g., singleton) depends on a shorter-lived service (e.g., scoped/request).
+ * (e.g., singleton) depends on a shorter-lived service (e.g., scoped/transient).
  * This causes the shorter-lived service to be "captured" and held beyond
  * its intended lifetime, leading to stale data and memory leaks.
  *
@@ -12,7 +12,7 @@
  * Lifetime hierarchy (lower level = longer lived):
  * - Singleton (1): lives for entire application lifetime
  * - Scoped (2): lives for duration of a scope
- * - Request (3): created fresh for each resolution
+ * - Transient (3): created fresh for each resolution
  *
  * Rule: An adapter can only depend on adapters with the same or LOWER
  * (longer-lived) lifetime level. Depending on HIGHER (shorter-lived)
@@ -34,12 +34,12 @@ import type { Adapter, Lifetime, InferAdapterLifetime, InferAdapterProvides } fr
  * The numeric levels represent the lifetime hierarchy:
  * - Singleton = 1 (longest lived)
  * - Scoped = 2 (medium lived)
- * - Request = 3 (shortest lived)
+ * - Transient = 3 (shortest lived)
  *
  * Lower numbers indicate longer lifetimes. An adapter can only depend on
  * adapters with the same or lower (longer-lived) level.
  *
- * @typeParam L - The Lifetime literal type ('singleton' | 'scoped' | 'request')
+ * @typeParam L - The Lifetime literal type ('singleton' | 'scoped' | 'transient')
  *
  * @returns The numeric level: 1, 2, or 3
  *
@@ -55,7 +55,7 @@ import type { Adapter, Lifetime, InferAdapterLifetime, InferAdapterProvides } fr
  * ```typescript
  * type SingletonLevel = LifetimeLevel<'singleton'>; // 1
  * type ScopedLevel = LifetimeLevel<'scoped'>;       // 2
- * type RequestLevel = LifetimeLevel<'request'>;    // 3
+ * type TransientLevel = LifetimeLevel<'transient'>; // 3
  * ```
  */
 export type LifetimeLevel<L extends Lifetime> = L extends "singleton"
@@ -130,7 +130,7 @@ type LifetimeName<Level extends number> = Level extends 1
   : Level extends 2
     ? "Scoped"
     : Level extends 3
-      ? "Request"
+      ? "Transient"
       : "Unknown";
 
 // =============================================================================
@@ -188,12 +188,12 @@ export type CaptiveDependencyError<TMessage extends string> = {
  * - Singleton depending on Singleton (level 1 <= 1)
  * - Scoped depending on Singleton (level 2 > 1, dependency has lower level - OK)
  * - Scoped depending on Scoped (level 2 <= 2)
- * - Request depending on anything (level 3 >= all, dependency has lower/equal level - OK)
+ * - Transient depending on anything (level 3 >= all, dependency has lower/equal level - OK)
  *
  * **Invalid scenarios (returns CaptiveDependencyError):**
  * - Singleton depending on Scoped (level 1 < 2, dependency has higher level - CAPTIVE!)
- * - Singleton depending on Request (level 1 < 3, dependency has higher level - CAPTIVE!)
- * - Scoped depending on Request (level 2 < 3, dependency has higher level - CAPTIVE!)
+ * - Singleton depending on Transient (level 1 < 3, dependency has higher level - CAPTIVE!)
+ * - Scoped depending on Transient (level 2 < 3, dependency has higher level - CAPTIVE!)
  *
  * @typeParam TAdapter - The adapter type that has the dependency
  * @typeParam TRequiredAdapter - The adapter type being depended upon

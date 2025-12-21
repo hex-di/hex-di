@@ -8,7 +8,7 @@ HexDI is a modern dependency injection framework designed for TypeScript applica
 
 - **Compile-Time Validation** - Missing dependencies cause TypeScript errors, not runtime crashes
 - **Type-Safe Resolution** - Full type inference, no explicit type annotations needed
-- **Three Lifetime Scopes** - Singleton, scoped, and request lifetimes with proper isolation
+- **Three Lifetime Scopes** - Singleton, scoped, and transient lifetimes with proper isolation
 - **Immutable Builder Pattern** - Effect-TS inspired composition that enables graph branching
 - **React Integration** - Typed hooks and providers with automatic scope lifecycle
 - **DevTools** - Visualize dependency graphs and trace service resolution
@@ -177,7 +177,7 @@ await container.dispose();
 |----------|-------------------|----------|
 | `singleton` | Once per container | Stateless services, shared resources |
 | `scoped` | Once per scope | Request context, user sessions |
-| `request` | Every resolution | Fresh instances, isolation |
+| `transient` | Every resolution | Fresh instances, isolation |
 
 ```typescript
 // Singleton - shared across entire app
@@ -196,11 +196,11 @@ const UserSessionAdapter = createAdapter({
   factory: () => ({ userId: getCurrentUserId() })
 });
 
-// Request - new instance every time
+// Transient - new instance every time
 const NotificationAdapter = createAdapter({
   provides: NotificationPort,
   requires: [],
-  lifetime: 'request',
+  lifetime: 'transient',
   factory: () => ({ id: generateId(), createdAt: new Date() })
 });
 ```
@@ -386,7 +386,7 @@ try {
 
 See the [React Showcase](./examples/react-showcase) for a complete example demonstrating:
 
-- All three lifetime scopes (singleton, scoped, request)
+- All three lifetime scopes (singleton, scoped, transient)
 - React integration with typed hooks
 - Automatic scope lifecycle management
 - DevTools integration

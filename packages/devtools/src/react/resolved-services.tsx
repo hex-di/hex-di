@@ -184,7 +184,7 @@ function ServiceFiltersComponent({
           type="button"
           aria-pressed={filters.lifetime === "transient"}
         >
-          Request
+          Transient
         </button>
       </div>
 
@@ -234,7 +234,7 @@ interface ServiceItemProps {
 function ServiceItem({ service }: ServiceItemProps): ReactElement {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // For request services with call count, show transient (orange) status
+  // For transient services with call count, show transient (orange) status
   const hasBeenCalled = service.lifetime === "transient" && service.callCount !== undefined && service.callCount > 0;
   const statusStyle = getStatusIndicatorStyle(
     service.isResolved,
@@ -368,7 +368,7 @@ function ServiceItem({ service }: ServiceItemProps): ReactElement {
  *
  * Features:
  * - Search input with 300ms debounce
- * - Lifetime filters (All/Singleton/Scoped/Request)
+ * - Lifetime filters (All/Singleton/Scoped/Transient)
  * - Status filters (Resolved/Pending)
  * - Expandable service items with details
  * - Visual status indicators (filled/empty circles)

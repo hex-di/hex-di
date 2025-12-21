@@ -107,7 +107,7 @@ An adapter is a typed declaration that connects a service implementation to a po
 const MyAdapter = createAdapter({
   provides: MyPort,           // Single port this adapter implements
   requires: [DepA, DepB],     // Array of port dependencies
-  lifetime: 'singleton',      // 'singleton' | 'scoped' | 'request'
+  lifetime: 'singleton',      // 'singleton' | 'scoped' | 'transient'
   factory: (deps) => {        // Receives typed dependencies object
     return new MyServiceImpl(deps.DepA, deps.DepB);
   }
@@ -132,7 +132,7 @@ Each `.provide()` call returns a **new** builder instance. The original is uncha
 |----------|-------------|----------|
 | `'singleton'` | One instance for entire application | Shared resources, connection pools |
 | `'scoped'` | One instance per scope (e.g., request) | Request-specific state, transactions |
-| `'request'` | New instance every resolution | Stateful services, isolation needed |
+| `'transient'` | New instance every resolution | Stateful services, isolation needed |
 
 ### Compile-Time Validation
 
@@ -226,7 +226,7 @@ Creates a typed adapter with dependency metadata.
 |----------|------|-------------|
 | `provides` | `Port<T, string>` | The port this adapter implements |
 | `requires` | `readonly Port[]` | Array of port dependencies (empty array for none) |
-| `lifetime` | `Lifetime` | Service lifetime: `'singleton'`, `'scoped'`, or `'request'` |
+| `lifetime` | `Lifetime` | Service lifetime: `'singleton'`, `'scoped'`, or `'transient'` |
 | `factory` | `(deps) => T` | Factory function receiving resolved dependencies |
 
 #### Returns
@@ -304,7 +304,7 @@ type MyGraph = Graph<typeof LoggerPort | typeof DatabasePort>;
 Union type of lifetime options.
 
 ```typescript
-type Lifetime = 'singleton' | 'scoped' | 'request';
+type Lifetime = 'singleton' | 'scoped' | 'transient';
 ```
 
 #### `ResolvedDeps<TRequires>`

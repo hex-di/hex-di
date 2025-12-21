@@ -116,7 +116,7 @@ describe("createSpiedMockAdapter", () => {
     expect(impl.error.mock.calls).toEqual([]);
   });
 
-  test("default lifetime is request for test isolation", () => {
+  test("default lifetime is transient for test isolation", () => {
     const spiedAdapter = createSpiedMockAdapter(LoggerPort);
     expect(spiedAdapter.lifetime).toBe("transient");
   });

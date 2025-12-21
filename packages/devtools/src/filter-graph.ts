@@ -90,7 +90,7 @@ export function filterGraph(
  * Returns a NodePredicate function that returns true for nodes matching
  * the specified lifetime value.
  *
- * @param lifetime - The lifetime to filter by ('singleton', 'scoped', or 'request')
+ * @param lifetime - The lifetime to filter by ('singleton', 'scoped', or 'transient')
  * @returns A NodePredicate function for use with filterGraph
  *
  * @example Filter to singleton services only
@@ -101,9 +101,9 @@ export function filterGraph(
  * const mermaid = toMermaid(singletons);
  * ```
  *
- * @example Filter to request-scoped services
+ * @example Filter to transient services
  * ```typescript
- * const requestScoped = filterGraph(exported, byLifetime('request'));
+ * const transients = filterGraph(exported, byLifetime('transient'));
  * ```
  */
 export function byLifetime(lifetime: Lifetime): NodePredicate {

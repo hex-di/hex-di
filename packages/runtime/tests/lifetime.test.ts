@@ -217,10 +217,10 @@ describe("scoped lifetime", () => {
 });
 
 // =============================================================================
-// Request Lifetime Tests
+// Transient Lifetime Tests
 // =============================================================================
 
-describe("request lifetime", () => {
+describe("transient lifetime", () => {
   test("new instance is returned on every resolve call", () => {
     const DatabaseAdapter = createAdapter({
       provides: DatabasePort,
@@ -254,7 +254,7 @@ describe("request lifetime", () => {
     expect(scopeDb1.instanceId).not.toBe(scopeDb2.instanceId);
   });
 
-  test("factory is called every time for request lifetime", () => {
+  test("factory is called every time for transient lifetime", () => {
     const factory = vi.fn(() => ({
       query: vi.fn(),
       instanceId: generateInstanceId(),
@@ -439,7 +439,7 @@ describe("mixed lifetimes in dependency chain", () => {
     const userService1 = scope.resolve(UserServiceWithContextIdPort);
     const userService2 = scope.resolve(UserServiceWithContextIdPort);
 
-    // Each user service is a new instance (request lifetime)
+    // Each user service is a new instance (transient lifetime)
     expect(userService1).not.toBe(userService2);
 
     // But both should reference the same scoped request context

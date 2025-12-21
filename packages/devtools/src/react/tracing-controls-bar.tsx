@@ -379,7 +379,7 @@ function LifetimeFilterGroup({
       />
       <FilterButton
         testId="tracing-filter-lifetime-request"
-        label="Request"
+        label="Transient"
         isActive={value === "transient"}
         onClick={() => onChange("transient")}
         activeColor="var(--hex-devtools-request, #fab387)"
@@ -750,7 +750,7 @@ function ActiveFiltersBar({
  *
  * Features:
  * - Search input with 300ms debounce
- * - Lifetime filter buttons (All/Singleton/Scoped/Request)
+ * - Lifetime filter buttons (All/Singleton/Scoped/Transient)
  * - Status filter buttons (All/Fresh/Cached)
  * - Performance filter (All/Slow Only)
  * - Sort dropdown (Chronological, Slowest First, etc.)

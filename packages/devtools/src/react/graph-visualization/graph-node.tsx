@@ -37,7 +37,7 @@ export interface GraphNodeProps {
  * Renders a single node in the dependency graph.
  *
  * The node is displayed as a rounded rectangle with:
- * - Border color based on lifetime (singleton=green, scoped=blue, request=orange)
+ * - Border color based on lifetime (singleton=green, scoped=blue, transient=orange)
  * - Label centered in the node
  * - Hover/selected/dimmed visual states
  */

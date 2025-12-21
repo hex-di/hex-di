@@ -178,7 +178,7 @@ export type ResolvedDeps<TRequires extends Port<unknown, string> | never> =
  *
  * @typeParam TProvides - The Port this adapter provides/implements (single port, not union)
  * @typeParam TRequires - Union of Ports this adapter depends on, or `never` for zero dependencies
- * @typeParam TLifetime - The lifetime scope literal type ('singleton' | 'scoped' | 'request')
+ * @typeParam TLifetime - The lifetime scope literal type ('singleton' | 'scoped' | 'transient')
  * @typeParam TFactoryKind - Whether the factory is 'sync' or 'async'
  *
  * @remarks
@@ -362,7 +362,7 @@ interface AdapterConfig<
  * @param config - Configuration object with provides, requires, lifetime, and factory
  * @param config.provides - The port token this adapter implements
  * @param config.requires - Array of port tokens this adapter depends on (use `[]` for no dependencies)
- * @param config.lifetime - Lifetime scope: `'singleton'`, `'scoped'`, or `'request'`
+ * @param config.lifetime - Lifetime scope: `'singleton'`, `'scoped'`, or `'transient'`
  * @param config.factory - Function that receives resolved dependencies and returns the service instance
  *
  * @returns A frozen Adapter object with the inferred type parameters
@@ -435,7 +435,7 @@ interface AdapterConfig<
  *   }
  * });
  *
- * // typeof adapter is Adapter<typeof UserServicePort, typeof LoggerPort, 'request'>
+ * // typeof adapter is Adapter<typeof UserServicePort, typeof LoggerPort, 'transient'>
  * ```
  */
 export function createAdapter<
@@ -475,7 +475,7 @@ export function createAdapter<
  * Async adapters are always singletons because:
  * - They're pre-initialized with `container.initialize()`
  * - After initialization, they're cached and resolve synchronously
- * - Scoped/request lifetimes need synchronous resolution for React hooks
+ * - Scoped/transient lifetimes need synchronous resolution for React hooks
  *
  * @typeParam TProvides - The Port this adapter provides
  * @typeParam TRequires - Tuple of Ports this adapter depends on
@@ -528,7 +528,7 @@ interface AsyncAdapterConfig<
  * This constraint exists because:
  * - Async adapters are pre-initialized with `container.initialize()`
  * - After initialization, they're cached and resolve synchronously
- * - Scoped/request lifetimes require synchronous resolution for React hooks
+ * - Scoped/transient lifetimes require synchronous resolution for React hooks
  *
  * Use this function for services that require async initialization, such as:
  * - Database connections that need to be established

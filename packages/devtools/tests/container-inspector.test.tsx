@@ -7,7 +7,7 @@
  * 3. Scope selection updates ResolvedServices context
  * 4. ResolvedServices displays services with status indicators
  * 5. Search input filters services with 300ms debounce
- * 6. Lifetime filter toggles (All/Singleton/Scoped/Request)
+ * 6. Lifetime filter toggles (All/Singleton/Scoped/Transient)
  * 7. Status filter toggles (Resolved/Pending)
  * 8. Auto-refresh toggle controls polling behavior
  */
@@ -259,7 +259,7 @@ describe("ContainerInspector", () => {
     vi.useFakeTimers();
   });
 
-  it("lifetime filter toggles work (All/Singleton/Scoped/Request)", () => {
+  it("lifetime filter toggles work (All/Singleton/Scoped/Transient)", () => {
     const graph = createTestGraph();
     const container = createContainer(graph);
 
@@ -287,7 +287,7 @@ describe("ContainerInspector", () => {
     // Logger and Database are singletons
     expect(screen.queryByTestId("service-item-Logger")).not.toBeNull();
     expect(screen.queryByTestId("service-item-Database")).not.toBeNull();
-    // UserService is request, RequestContext is scoped - should be hidden
+    // UserService is transient, RequestContext is scoped - should be hidden
     expect(screen.queryByTestId("service-item-UserService")).toBeNull();
     expect(screen.queryByTestId("service-item-RequestContext")).toBeNull();
 
