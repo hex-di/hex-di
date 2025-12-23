@@ -16,6 +16,15 @@ import type {
   IsSatisfied,
   HasOverlap,
   OverlappingPorts,
+  CircularDependencyError,
+  WouldCreateCycle,
+  AddEdge,
+  AdapterProvidesName,
+  AdapterRequiresNames,
+  BuildCyclePath,
+  MergeDependencyMaps,
+  AddManyEdges,
+  WouldAnyCreateCycle,
 } from "../validation";
 import type { Graph } from "./types";
 
@@ -30,21 +39,39 @@ declare const __graphBuilderBrand: unique symbol;
 const GRAPH_BUILDER_BRAND = Symbol("GraphBuilder");
 
 /**
- * The return type of `GraphBuilder.provide()` with duplicate detection.
+ * The return type of `GraphBuilder.provide()` with duplicate and cycle detection.
  *
  * @internal
  */
-type ProvideResult<TProvides, TRequires, TAsyncPorts, A extends Adapter<any, any, any, any>> =
+type ProvideResult<
+  TProvides,
+  TRequires,
+  TAsyncPorts,
+  TDepGraph,
+  A extends Adapter<any, any, any, any>,
+> =
+  // First check for duplicate providers
   HasOverlap<InferAdapterProvides<A>, TProvides> extends true
     ? DuplicateProviderError<OverlappingPorts<InferAdapterProvides<A>, TProvides>>
-    : GraphBuilder<
-        TProvides | InferAdapterProvides<A>,
-        TRequires | InferAdapterRequires<A>,
-        TAsyncPorts
-      >;
+    : // Then check for circular dependencies
+      WouldCreateCycle<TDepGraph, AdapterProvidesName<A>, AdapterRequiresNames<A>> extends true
+      ? CircularDependencyError<
+          BuildCyclePath<
+            AddEdge<TDepGraph, AdapterProvidesName<A>, AdapterRequiresNames<A>>,
+            AdapterProvidesName<A>,
+            AdapterRequiresNames<A>
+          >
+        >
+      : // Success: return new builder with updated types
+        GraphBuilder<
+          TProvides | InferAdapterProvides<A>,
+          TRequires | InferAdapterRequires<A>,
+          TAsyncPorts,
+          AddEdge<TDepGraph, AdapterProvidesName<A>, AdapterRequiresNames<A>>
+        >;
 
 /**
- * The return type of `GraphBuilder.provideAsync()` with duplicate detection.
+ * The return type of `GraphBuilder.provideAsync()` with duplicate and cycle detection.
  *
  * @internal
  */
@@ -52,15 +79,28 @@ type ProvideAsyncResult<
   TProvides,
   TRequires,
   TAsyncPorts,
+  TDepGraph,
   A extends Adapter<any, any, any, "async">,
 > =
+  // First check for duplicate providers
   HasOverlap<InferAdapterProvides<A>, TProvides> extends true
     ? DuplicateProviderError<OverlappingPorts<InferAdapterProvides<A>, TProvides>>
-    : GraphBuilder<
-        TProvides | InferAdapterProvides<A>,
-        TRequires | InferAdapterRequires<A>,
-        TAsyncPorts | InferAdapterProvides<A>
-      >;
+    : // Then check for circular dependencies
+      WouldCreateCycle<TDepGraph, AdapterProvidesName<A>, AdapterRequiresNames<A>> extends true
+      ? CircularDependencyError<
+          BuildCyclePath<
+            AddEdge<TDepGraph, AdapterProvidesName<A>, AdapterRequiresNames<A>>,
+            AdapterProvidesName<A>,
+            AdapterRequiresNames<A>
+          >
+        >
+      : // Success: return new builder with updated types
+        GraphBuilder<
+          TProvides | InferAdapterProvides<A>,
+          TRequires | InferAdapterRequires<A>,
+          TAsyncPorts | InferAdapterProvides<A>,
+          AddEdge<TDepGraph, AdapterProvidesName<A>, AdapterRequiresNames<A>>
+        >;
 
 /**
  * Checks if a union of new ports overlaps with existing keys.
@@ -71,7 +111,7 @@ type ProvideAsyncResult<
 type BatchHasOverlap<NewPorts, ExistingPorts> = HasOverlap<NewPorts, ExistingPorts>;
 
 /**
- * The return type of `GraphBuilder.provideMany()` with duplicate detection.
+ * The return type of `GraphBuilder.provideMany()` with duplicate and cycle detection.
  *
  * @internal
  */
@@ -79,35 +119,70 @@ type ProvideManyResult<
   TProvides,
   TRequires,
   TAsyncPorts,
+  TDepGraph,
   A extends readonly Adapter<any, any, any, any>[],
 > =
+  // First check for duplicate providers
   BatchHasOverlap<InferManyProvides<A>, TProvides> extends true
     ? DuplicateProviderError<OverlappingPorts<InferManyProvides<A>, TProvides>>
-    : GraphBuilder<
-        TProvides | InferManyProvides<A>,
-        TRequires | InferManyRequires<A>,
-        TAsyncPorts | InferManyAsyncPorts<A>
-      >;
+    : // Then check for circular dependencies in the batch
+      WouldAnyCreateCycle<TDepGraph, A> extends CircularDependencyError<infer Path>
+      ? CircularDependencyError<Path>
+      : // Success: return new builder with updated types
+        GraphBuilder<
+          TProvides | InferManyProvides<A>,
+          TRequires | InferManyRequires<A>,
+          TAsyncPorts | InferManyAsyncPorts<A>,
+          AddManyEdges<TDepGraph, A>
+        >;
 
 /**
  * The return type of `GraphBuilder.merge()` with duplicate detection.
  *
+ * Note: Cycle detection for merge is complex because it requires checking
+ * cross-graph cycles. Currently only checks duplicates; runtime will catch
+ * any cycles that span merged graphs.
+ *
  * @internal
  */
-type MergeResult<TProvides, TRequires, TAsyncPorts, OProvides, ORequires, OAsyncPorts> =
+type MergeResult<
+  TProvides,
+  TRequires,
+  TAsyncPorts,
+  TDepGraph,
+  OProvides,
+  ORequires,
+  OAsyncPorts,
+  ODepGraph,
+> =
   HasOverlap<OProvides, TProvides> extends true
     ? DuplicateProviderError<OverlappingPorts<OProvides, TProvides>>
-    : GraphBuilder<TProvides | OProvides, TRequires | ORequires, TAsyncPorts | OAsyncPorts>;
+    : GraphBuilder<
+        TProvides | OProvides,
+        TRequires | ORequires,
+        TAsyncPorts | OAsyncPorts,
+        MergeDependencyMaps<TDepGraph, ODepGraph>
+      >;
 
 /**
  * An immutable builder for constructing dependency graphs with compile-time validation.
+ *
+ * @typeParam TProvides - Union of all port types provided by adapters in this graph
+ * @typeParam TRequires - Union of all port types required by adapters in this graph
+ * @typeParam TAsyncPorts - Union of all async port types in this graph
+ * @typeParam TDepGraph - Type-level dependency map tracking edge relationships for cycle detection
  */
-export class GraphBuilder<TProvides = never, TRequires = never, TAsyncPorts = never> {
+export class GraphBuilder<
+  TProvides = never,
+  TRequires = never,
+  TAsyncPorts = never,
+  TDepGraph = {},
+> {
   /**
    * Type-level brand property for nominal typing.
    * @internal
    */
-  declare private readonly [__graphBuilderBrand]: [TProvides, TRequires, TAsyncPorts];
+  declare private readonly [__graphBuilderBrand]: [TProvides, TRequires, TAsyncPorts, TDepGraph];
 
   /**
    * Runtime brand marker for GraphBuilder instances.
@@ -132,6 +207,13 @@ export class GraphBuilder<TProvides = never, TRequires = never, TAsyncPorts = ne
    * @internal
    */
   declare readonly __asyncPorts: TAsyncPorts;
+
+  /**
+   * Phantom type property for compile-time dependency graph (edge map).
+   * Used for circular dependency detection.
+   * @internal
+   */
+  declare readonly __depGraph: TDepGraph;
 
   /**
    * The readonly array of registered adapters.
@@ -163,65 +245,86 @@ export class GraphBuilder<TProvides = never, TRequires = never, TAsyncPorts = ne
   /**
    * Creates a new empty GraphBuilder.
    */
-  static create(): GraphBuilder<never, never, never> {
+  static create(): GraphBuilder<never, never, never, {}> {
     return new GraphBuilder([]);
   }
 
   /**
    * Registers an adapter with the graph.
+   * Performs compile-time duplicate and circular dependency detection.
    */
   provide<A extends Adapter<any, any, any, any>>(
     adapter: A
-  ): ProvideResult<TProvides, TRequires, TAsyncPorts, A> {
+  ): ProvideResult<TProvides, TRequires, TAsyncPorts, TDepGraph, A> {
     return new GraphBuilder([...this.adapters, adapter]) as ProvideResult<
       TProvides,
       TRequires,
       TAsyncPorts,
+      TDepGraph,
       A
     >;
   }
 
   /**
    * Registers an async adapter with the graph.
+   * Performs compile-time duplicate and circular dependency detection.
    */
   provideAsync<A extends Adapter<any, any, any, "async">>(
     adapter: A
-  ): ProvideAsyncResult<TProvides, TRequires, TAsyncPorts, A> {
+  ): ProvideAsyncResult<TProvides, TRequires, TAsyncPorts, TDepGraph, A> {
     return new GraphBuilder([...this.adapters, adapter]) as ProvideAsyncResult<
       TProvides,
       TRequires,
       TAsyncPorts,
+      TDepGraph,
       A
     >;
   }
 
   /**
    * Registers multiple adapters with the graph in a batch.
+   * Performs compile-time duplicate and circular dependency detection.
    */
   provideMany<const A extends readonly Adapter<any, any, any, any>[]>(
     adapters: A
-  ): ProvideManyResult<TProvides, TRequires, TAsyncPorts, A> {
+  ): ProvideManyResult<TProvides, TRequires, TAsyncPorts, TDepGraph, A> {
     return new GraphBuilder([...this.adapters, ...adapters]) as ProvideManyResult<
       TProvides,
       TRequires,
       TAsyncPorts,
+      TDepGraph,
       A
     >;
   }
 
   /**
    * Merges another GraphBuilder into this one.
+   * Performs compile-time duplicate detection.
+   *
+   * Note: Cross-graph cycle detection is limited; runtime will catch any
+   * cycles that span merged graphs.
    */
-  merge<OProvides, ORequires, OAsyncPorts>(
-    other: GraphBuilder<OProvides, ORequires, OAsyncPorts>
-  ): MergeResult<TProvides, TRequires, TAsyncPorts, OProvides, ORequires, OAsyncPorts> {
+  merge<OProvides, ORequires, OAsyncPorts, ODepGraph>(
+    other: GraphBuilder<OProvides, ORequires, OAsyncPorts, ODepGraph>
+  ): MergeResult<
+    TProvides,
+    TRequires,
+    TAsyncPorts,
+    TDepGraph,
+    OProvides,
+    ORequires,
+    OAsyncPorts,
+    ODepGraph
+  > {
     return new GraphBuilder([...this.adapters, ...other.adapters]) as MergeResult<
       TProvides,
       TRequires,
       TAsyncPorts,
+      TDepGraph,
       OProvides,
       ORequires,
-      OAsyncPorts
+      OAsyncPorts,
+      ODepGraph
     >;
   }
 

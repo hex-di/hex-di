@@ -817,9 +817,9 @@ describe("Integration: Complex generic type inference", () => {
 // =============================================================================
 
 describe("Integration: Self-referential adapter (edge case)", () => {
-  it("adapter requiring itself produces compile-time error when building", () => {
+  it("adapter requiring itself is detected as compile-time cycle error", () => {
     // This is a degenerate case - an adapter that requires its own port
-    // The graph should detect this as an unsatisfied dependency
+    // With compile-time cycle detection, this is now caught at provide() time
 
     const selfReferentialAdapter = createAdapter({
       provides: LoggerPort,
@@ -831,32 +831,19 @@ describe("Integration: Self-referential adapter (edge case)", () => {
       },
     });
 
-    const builder = GraphBuilder.create().provide(selfReferentialAdapter);
+    // When providing, the result is a CircularDependencyError
+    const builder = GraphBuilder.create();
+    type ProvideResult = ReturnType<typeof builder.provide<typeof selfReferentialAdapter>>;
 
-    // The builder should show Logger as both provided AND required
-    type Provides = InferGraphProvides<typeof builder>;
-    type Requires = InferGraphRequires<typeof builder>;
-
-    expectTypeOf<Provides>().toEqualTypeOf<typeof LoggerPort>();
-    expectTypeOf<Requires>().toEqualTypeOf<typeof LoggerPort>();
-
-    // But the graph should still build because Logger IS provided
-    // (even though at runtime this would be circular)
-    type Unsatisfied = UnsatisfiedDependencies<Provides, Requires>;
-    expectTypeOf<Unsatisfied>().toBeNever();
-
-    // The build succeeds at type level (circular detection is out of scope per spec)
-    type BuildResult = ReturnType<typeof builder.build>;
-    type IsValidGraph = BuildResult extends Graph<typeof LoggerPort> ? true : false;
-    expectTypeOf<IsValidGraph>().toEqualTypeOf<true>();
-
-    // At runtime, the adapter is added
-    const graph = builder.build();
-    expect(graph.adapters.length).toBe(1);
+    // The cycle is detected at compile time
+    type IsCycleError = ProvideResult extends { __errorBrand: "CircularDependencyError" }
+      ? true
+      : false;
+    expectTypeOf<IsCycleError>().toEqualTypeOf<true>();
   });
 
-  it("two adapters with circular dependency also pass type check", () => {
-    // A requires B, B requires A - both provided
+  it("two adapters with circular dependency are detected at compile-time", () => {
+    // A requires B, B requires A - this is a cycle
     interface ServiceA {
       a(): void;
     }
@@ -881,21 +868,17 @@ describe("Integration: Self-referential adapter (edge case)", () => {
       factory: deps => ({ b: () => deps.A.a() }),
     });
 
-    const builder = GraphBuilder.create().provide(adapterA).provide(adapterB);
+    // Adding A is fine (B doesn't exist yet, so no cycle detected at this point)
+    const builderWithA = GraphBuilder.create().provide(adapterA);
+    type BuilderWithAType = typeof builderWithA;
+    type IsBuilderAfterA = BuilderWithAType extends { provide: Function } ? true : false;
+    expectTypeOf<IsBuilderAfterA>().toEqualTypeOf<true>();
 
-    // Both A and B are provided and required
-    type Provides = InferGraphProvides<typeof builder>;
-    type Requires = InferGraphRequires<typeof builder>;
-
-    expectTypeOf<Provides>().toEqualTypeOf<typeof PortA | typeof PortB>();
-    expectTypeOf<Requires>().toEqualTypeOf<typeof PortA | typeof PortB>();
-
-    // All dependencies are satisfied (A is provided, B is provided)
-    type Unsatisfied = UnsatisfiedDependencies<Provides, Requires>;
-    expectTypeOf<Unsatisfied>().toBeNever();
-
-    // Build succeeds at compile time
-    const graph = builder.build();
-    expect(graph.adapters.length).toBe(2);
+    // Adding B creates the cycle: A->B->A
+    type ProvideResultB = ReturnType<typeof builderWithA.provide<typeof adapterB>>;
+    type IsCycleError = ProvideResultB extends { __errorBrand: "CircularDependencyError" }
+      ? true
+      : false;
+    expectTypeOf<IsCycleError>().toEqualTypeOf<true>();
   });
 });
