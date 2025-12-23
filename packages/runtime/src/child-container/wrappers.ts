@@ -1,12 +1,7 @@
 import type { Port, InferService } from "@hex-di/ports";
 import type { ChildContainer, Scope } from "../types.js";
 import { ChildContainerBrand, ScopeBrand } from "../types.js";
-import type { 
-  AdapterAccessor, 
-  ChildContainerRegistry, 
-  ParentContainerLike,
-  InternalResolveAccess
-} from "./internal-types.js";
+import type { ParentContainerLike, InternalContainerMethods } from "./internal-types.js";
 import { INTERNAL_ACCESS, ADAPTER_ACCESS } from "../inspector/symbols.js";
 import { ScopeImpl } from "../scope/impl.js";
 import type { ChildContainerImpl } from "./impl.js"; // Forward reference, type-only
@@ -19,7 +14,7 @@ import { unreachable } from "../common/unreachable.js";
  */
 export function hasInternalMethods(
   value: unknown
-): value is AdapterAccessor & ChildContainerRegistry & InternalResolveAccess<Port<unknown, string>> {
+): value is InternalContainerMethods<Port<unknown, string>> {
   if (!isRecord(value)) {
     return false;
   }
@@ -33,7 +28,9 @@ export function hasInternalMethods(
     "resolveInternal" in value &&
     typeof value["resolveInternal"] === "function" &&
     "resolveAsyncInternal" in value &&
-    typeof value["resolveAsyncInternal"] === "function"
+    typeof value["resolveAsyncInternal"] === "function" &&
+    "hasAdapter" in value &&
+    typeof value["hasAdapter"] === "function"
   );
 }
 
@@ -41,9 +38,7 @@ function isChildContainerParent<
   TProvides extends Port<unknown, string>,
   TExtends extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
->(
-  value: unknown
-): value is ChildContainer<TProvides, TExtends, TAsyncPorts>["parent"] {
+>(value: unknown): value is ChildContainer<TProvides, TExtends, TAsyncPorts>["parent"] {
   if (!isRecord(value)) {
     return false;
   }
@@ -76,7 +71,7 @@ export function asParentContainerLike<
   if (!hasInternalMethods(wrapper)) {
     throw new Error(
       "Invalid ChildContainer wrapper: missing internal methods. " +
-      "This indicates a bug in createChildContainerWrapper."
+        "This indicates a bug in createChildContainerWrapper."
     );
   }
   return {
@@ -89,6 +84,7 @@ export function asParentContainerLike<
     unregisterChildContainer: wrapper.unregisterChildContainer,
     originalParent: wrapper,
     has: (port: Port<unknown, string>): boolean => wrapper.has(port),
+    hasAdapter: (port: Port<unknown, string>): boolean => wrapper.hasAdapter(port),
   };
 }
 
@@ -103,13 +99,9 @@ export function createChildContainerWrapper<
   impl: ChildContainerImpl<TProvides, TExtends, TAsyncPorts>
 ): ChildContainer<TProvides, TExtends, TAsyncPorts> {
   type ChildContainerInternals = ChildContainer<TProvides, TExtends, TAsyncPorts> &
-    AdapterAccessor &
-    ChildContainerRegistry &
-    InternalResolveAccess<TProvides | TExtends>;
+    InternalContainerMethods<TProvides | TExtends>;
 
-  function resolve<
-    P extends Exclude<TProvides | TExtends, TAsyncPorts>
-  >(port: P): InferService<P> {
+  function resolve<P extends Exclude<TProvides | TExtends, TAsyncPorts>>(port: P): InferService<P> {
     return impl.resolve(port);
   }
 
@@ -121,7 +113,8 @@ export function createChildContainerWrapper<
       impl.resolve(port),
     resolveAsyncInternal: <P extends TProvides | TExtends>(port: P): Promise<InferService<P>> =>
       impl.resolveAsync(port),
-    has: (port) => impl.has(port),
+    has: port => impl.has(port),
+    hasAdapter: port => impl.hasAdapter(port),
     createScope: () => impl.createScope(),
     createChild: () => impl.createChild(),
     dispose: () => impl.dispose(),
@@ -136,9 +129,9 @@ export function createChildContainerWrapper<
       return parent;
     },
     [INTERNAL_ACCESS]: () => impl.getInternalState(),
-    [ADAPTER_ACCESS]: (port) => impl.getAdapter(port),
-    registerChildContainer: (child) => impl.registerChildContainer(child),
-    unregisterChildContainer: (child) => impl.unregisterChildContainer(child),
+    [ADAPTER_ACCESS]: port => impl.getAdapter(port),
+    registerChildContainer: child => impl.registerChildContainer(child),
+    unregisterChildContainer: child => impl.unregisterChildContainer(child),
     get [ChildContainerBrand]() {
       return unreachable<{ provides: TProvides; extends: TExtends }>(
         "ChildContainer brand is type-only"
@@ -158,26 +151,22 @@ export function createScopeWrapper<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string> = never,
   TPhase extends "uninitialized" | "initialized" = "uninitialized",
->(
-  impl: ScopeImpl<TProvides, TAsyncPorts, TPhase>
-): Scope<TProvides, TAsyncPorts, TPhase> {
+>(impl: ScopeImpl<TProvides, TAsyncPorts, TPhase>): Scope<TProvides, TAsyncPorts, TPhase> {
   function resolve<
-    P extends TPhase extends "initialized"
-      ? TProvides
-      : Exclude<TProvides, TAsyncPorts>
+    P extends TPhase extends "initialized" ? TProvides : Exclude<TProvides, TAsyncPorts>,
   >(port: P): InferService<P> {
     return impl.resolve(port);
   }
 
   const scope: Scope<TProvides, TAsyncPorts, TPhase> = {
     resolve,
-    resolveAsync: (port) => impl.resolveAsync(port),
+    resolveAsync: port => impl.resolveAsync(port),
     createScope: () => impl.createScope(),
     dispose: () => impl.dispose(),
     get isDisposed() {
       return impl.isDisposed;
     },
-    has: (port) => impl.has(port),
+    has: port => impl.has(port),
     [INTERNAL_ACCESS]: () => impl.getInternalState(),
     get [ScopeBrand]() {
       return unreachable<{ provides: TProvides }>("Scope brand is type-only");

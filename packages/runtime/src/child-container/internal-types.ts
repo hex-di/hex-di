@@ -56,8 +56,19 @@ export interface InternalResolveAccess<TProvides extends Port<unknown, string>> 
   resolveAsyncInternal: <P extends TProvides>(port: P) => Promise<InferService<P>>;
 }
 
-export interface ContainerWithInternals<TProvides extends Port<unknown, string>>
+/**
+ * Internal methods shared by Container and ChildContainer wrappers.
+ * Used for child container creation, inspection, and disposal tracking.
+ * @internal
+ */
+export interface InternalContainerMethods<TProvides extends Port<unknown, string>>
   extends AdapterAccessor, ChildContainerRegistry, InternalResolveAccess<TProvides> {
+  hasAdapter(port: Port<unknown, string>): boolean;
+}
+
+export interface ContainerWithInternals<
+  TProvides extends Port<unknown, string>,
+> extends InternalContainerMethods<TProvides> {
   resolve(port: TProvides): unknown;
   resolveAsync(port: TProvides): Promise<unknown>;
   has(port: Port<unknown, string>): boolean;
@@ -94,6 +105,7 @@ export interface ParentContainerLike<
   // Narrowed via type guard at getParent() return.
   originalParent: unknown;
   has(port: Port<unknown, string>): boolean;
+  hasAdapter(port: Port<unknown, string>): boolean;
 }
 
 /**

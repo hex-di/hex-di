@@ -27,42 +27,37 @@ export function createContainer<
   options?: ContainerOptions
 ): Container<TProvides, TAsyncPorts, "uninitialized"> {
   const impl = new ContainerImpl<TProvides, TAsyncPorts>(graph, options);
-  
+
   // Create wrapper
   return createUninitializedContainerWrapper(impl);
 }
 
 import { createChildContainerBuilderFromLike } from "../child-container/impl.js";
-import type { ParentContainerLike, InternalResolveAccess } from "../child-container/internal-types.js";
+import type {
+  ParentContainerLike,
+  InternalContainerMethods,
+} from "../child-container/internal-types.js";
 
 type ContainerInternals<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
   TPhase extends "uninitialized" | "initialized",
-> = Container<TProvides, TAsyncPorts, TPhase> &
-  InternalResolveAccess<TProvides> & {
-  [ADAPTER_ACCESS]: (port: Port<unknown, string>) => ReturnType<ContainerImpl<TProvides, TAsyncPorts>["getAdapter"]>;
-  registerChildContainer: (child: { dispose(): Promise<void>; isDisposed: boolean }) => void;
-  unregisterChildContainer: (child: { dispose(): Promise<void>; isDisposed: boolean }) => void;
-};
+> = Container<TProvides, TAsyncPorts, TPhase> & InternalContainerMethods<TProvides>;
 
 function createUninitializedContainerWrapper<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string> = never,
->(
-  impl: ContainerImpl<TProvides, TAsyncPorts>
-): Container<TProvides, TAsyncPorts, "uninitialized"> {
+>(impl: ContainerImpl<TProvides, TAsyncPorts>): Container<TProvides, TAsyncPorts, "uninitialized"> {
   let initializedContainer: Container<TProvides, TAsyncPorts, "initialized"> | null = null;
 
-  function resolve<
-    P extends Exclude<TProvides, TAsyncPorts>
-  >(port: P): InferService<P> {
+  function resolve<P extends Exclude<TProvides, TAsyncPorts>>(port: P): InferService<P> {
     return impl.resolve(port);
   }
 
   const container: ContainerInternals<TProvides, TAsyncPorts, "uninitialized"> = {
     resolve,
-    resolveAsync: <P extends TProvides>(port: P): Promise<InferService<P>> => impl.resolveAsync(port),
+    resolveAsync: <P extends TProvides>(port: P): Promise<InferService<P>> =>
+      impl.resolveAsync(port),
     resolveInternal: <P extends TProvides>(port: P): InferService<P> => impl.resolve(port),
     resolveAsyncInternal: <P extends TProvides>(port: P): Promise<InferService<P>> =>
       impl.resolveAsync(port),
@@ -78,10 +73,11 @@ function createUninitializedContainerWrapper<
       const parentLike: ParentContainerLike<TProvides, TAsyncPorts> = {
         resolveInternal: <P extends TProvides>(port: P) => impl.resolve(port),
         resolveAsyncInternal: <P extends TProvides>(port: P) => impl.resolveAsync(port),
-        has: (port) => impl.has(port),
-        [ADAPTER_ACCESS]: (port) => impl.getAdapter(port),
-        registerChildContainer: (child) => impl.registerChildContainer(child),
-        unregisterChildContainer: (child) => impl.unregisterChildContainer(child),
+        has: port => impl.has(port),
+        hasAdapter: port => impl.hasAdapter(port),
+        [ADAPTER_ACCESS]: port => impl.getAdapter(port),
+        registerChildContainer: child => impl.registerChildContainer(child),
+        unregisterChildContainer: child => impl.unregisterChildContainer(child),
         originalParent: container,
       };
       return createChildContainerBuilderFromLike(parentLike);
@@ -94,10 +90,11 @@ function createUninitializedContainerWrapper<
       return impl.isDisposed;
     },
     has: (port): port is TProvides => impl.has(port),
+    hasAdapter: port => impl.hasAdapter(port),
     [INTERNAL_ACCESS]: () => impl.getInternalState(),
-    [ADAPTER_ACCESS]: (port) => impl.getAdapter(port),
-    registerChildContainer: (child) => impl.registerChildContainer(child),
-    unregisterChildContainer: (child) => impl.unregisterChildContainer(child),
+    [ADAPTER_ACCESS]: port => impl.getAdapter(port),
+    registerChildContainer: child => impl.registerChildContainer(child),
+    unregisterChildContainer: child => impl.unregisterChildContainer(child),
     get [ContainerBrand]() {
       return unreachable<{ provides: TProvides }>("Container brand is type-only");
     },
@@ -110,16 +107,15 @@ function createUninitializedContainerWrapper<
 function createInitializedContainerWrapper<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string> = never,
->(
-  impl: ContainerImpl<TProvides, TAsyncPorts>
-): Container<TProvides, TAsyncPorts, "initialized"> {
+>(impl: ContainerImpl<TProvides, TAsyncPorts>): Container<TProvides, TAsyncPorts, "initialized"> {
   function resolve<P extends TProvides>(port: P): InferService<P> {
     return impl.resolve(port);
   }
 
   const container: ContainerInternals<TProvides, TAsyncPorts, "initialized"> = {
     resolve,
-    resolveAsync: <P extends TProvides>(port: P): Promise<InferService<P>> => impl.resolveAsync(port),
+    resolveAsync: <P extends TProvides>(port: P): Promise<InferService<P>> =>
+      impl.resolveAsync(port),
     resolveInternal: <P extends TProvides>(port: P): InferService<P> => impl.resolve(port),
     resolveAsyncInternal: <P extends TProvides>(port: P): Promise<InferService<P>> =>
       impl.resolveAsync(port),
@@ -131,10 +127,11 @@ function createInitializedContainerWrapper<
       const parentLike: ParentContainerLike<TProvides, TAsyncPorts> = {
         resolveInternal: <P extends TProvides>(port: P) => impl.resolve(port),
         resolveAsyncInternal: <P extends TProvides>(port: P) => impl.resolveAsync(port),
-        has: (port) => impl.has(port),
-        [ADAPTER_ACCESS]: (port) => impl.getAdapter(port),
-        registerChildContainer: (child) => impl.registerChildContainer(child),
-        unregisterChildContainer: (child) => impl.unregisterChildContainer(child),
+        has: port => impl.has(port),
+        hasAdapter: port => impl.hasAdapter(port),
+        [ADAPTER_ACCESS]: port => impl.getAdapter(port),
+        registerChildContainer: child => impl.registerChildContainer(child),
+        unregisterChildContainer: child => impl.unregisterChildContainer(child),
         originalParent: container,
       };
       return createChildContainerBuilderFromLike(parentLike);
@@ -147,10 +144,11 @@ function createInitializedContainerWrapper<
       return impl.isDisposed;
     },
     has: (port): port is TProvides => impl.has(port),
+    hasAdapter: port => impl.hasAdapter(port),
     [INTERNAL_ACCESS]: () => impl.getInternalState(),
-    [ADAPTER_ACCESS]: (port) => impl.getAdapter(port),
-    registerChildContainer: (child) => impl.registerChildContainer(child),
-    unregisterChildContainer: (child) => impl.unregisterChildContainer(child),
+    [ADAPTER_ACCESS]: port => impl.getAdapter(port),
+    registerChildContainer: child => impl.registerChildContainer(child),
+    unregisterChildContainer: child => impl.unregisterChildContainer(child),
     get [ContainerBrand]() {
       return unreachable<{ provides: TProvides }>("Container brand is type-only");
     },
@@ -168,10 +166,10 @@ function createRootScope<
   TAsyncPorts extends Port<unknown, string>,
   TPhase extends "uninitialized" | "initialized",
 >(containerImpl: ContainerImpl<TProvides, TAsyncPorts>): Scope<TProvides, TAsyncPorts, TPhase> {
-    const scopeImpl = new ScopeImpl<TProvides, TAsyncPorts, TPhase>(
-      containerImpl,
-      containerImpl.getSingletonMemo()
-    );
-    containerImpl.registerChildScope(scopeImpl);
-    return createScopeWrapper(scopeImpl);
+  const scopeImpl = new ScopeImpl<TProvides, TAsyncPorts, TPhase>(
+    containerImpl,
+    containerImpl.getSingletonMemo()
+  );
+  containerImpl.registerChildScope(scopeImpl);
+  return createScopeWrapper(scopeImpl);
 }
