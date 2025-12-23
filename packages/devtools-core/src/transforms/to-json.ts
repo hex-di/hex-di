@@ -80,13 +80,11 @@ import type { ExportedGraph, ExportedNode, ExportedEdge } from "../types.js";
  * const singletons = filterGraph(toJSON(appGraph), byLifetime('singleton'));
  * ```
  */
-export function toJSON(
-  graph: Graph<Port<unknown, string>, Port<unknown, string>>
-): ExportedGraph {
+export function toJSON(graph: Graph<Port<unknown, string>, Port<unknown, string>>): ExportedGraph {
   const adapters = graph.adapters;
 
   // Extract nodes from adapters
-  const nodes: ExportedNode[] = adapters.map((adapter) => ({
+  const nodes: ExportedNode[] = adapters.map(adapter => ({
     id: adapter.provides.__portName,
     label: adapter.provides.__portName,
     portName: adapter.provides.__portName,
@@ -98,7 +96,7 @@ export function toJSON(
   const edges: ExportedEdge[] = [];
   for (const adapter of adapters) {
     const fromPortName = adapter.provides.__portName;
-    for (const required of adapter.requires) {
+    for (const required of adapter.requires as readonly Port<unknown, string>[]) {
       edges.push({
         from: fromPortName,
         to: required.__portName,
