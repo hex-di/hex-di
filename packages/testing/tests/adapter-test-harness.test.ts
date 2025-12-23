@@ -277,11 +277,11 @@ describe("createAdapterTest error handling", () => {
         // Capture the count at factory creation time
         const instanceId = factoryCallCount;
         return {
-          getUser: async (id: string) => {
+          getUser: (id: string) => {
             deps.Logger.log(`Instance ${instanceId}: Fetching user ${id}`);
-            return { id, name: `User from instance ${instanceId}` };
+            return Promise.resolve({ id, name: `User from instance ${instanceId}` });
           },
-          createUser: async (name: string) => ({ id: `id-${instanceId}`, name }),
+          createUser: (name: string) => Promise.resolve({ id: `id-${instanceId}`, name }),
         };
       },
     });

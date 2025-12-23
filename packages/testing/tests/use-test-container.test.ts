@@ -173,9 +173,13 @@ describe("useTestContainer", () => {
       lifetime: "singleton",
       factory: () => ({
         query: vi.fn().mockResolvedValue({ rows: [] }),
-        close: async () => {
-          await new Promise(resolve => setTimeout(resolve, 5));
-          closeCallCount++;
+        close: () => {
+          return new Promise<void>(resolve => {
+            setTimeout(() => {
+              closeCallCount++;
+              resolve();
+            }, 5);
+          });
         },
       }),
       finalizer: async db => {
@@ -319,14 +323,11 @@ describe("createTestContainer", () => {
 
 describe("useTestContainer isolation across suites", () => {
   describe("suite A", () => {
-    let factoryCallCount = 0;
-
     const CounterAdapter = createAdapter({
       provides: CounterPort,
       requires: [],
       lifetime: "singleton",
       factory: () => {
-        factoryCallCount++;
         let value = 0;
         return {
           increment: () => ++value,
@@ -335,10 +336,9 @@ describe("useTestContainer isolation across suites", () => {
       },
     });
 
-    const testContext = useTestContainer(() => {
-      factoryCallCount = 0; // Reset for tracking
-      return GraphBuilder.create().provide(CounterAdapter).build();
-    });
+    const testContext = useTestContainer(() =>
+      GraphBuilder.create().provide(CounterAdapter).build()
+    );
 
     it("test A1 increments counter", () => {
       const counter = testContext.scope.resolve(CounterPort);

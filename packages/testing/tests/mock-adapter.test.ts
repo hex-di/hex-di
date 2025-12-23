@@ -153,13 +153,13 @@ describe("createMockAdapter with dependencies", () => {
       requires: [LoggerPort],
       lifetime: "transient",
       factory: deps => ({
-        getUser: async (id: string) => {
+        getUser: (id: string) => {
           deps.Logger.log(`Fetching user ${id}`);
-          return { id, name: "Test User" };
+          return Promise.resolve({ id, name: "Test User" });
         },
-        createUser: async (name: string) => {
+        createUser: (name: string) => {
           deps.Logger.log(`Creating user ${name}`);
-          return { id: "new-id", name };
+          return Promise.resolve({ id: "new-id", name });
         },
       }),
     });

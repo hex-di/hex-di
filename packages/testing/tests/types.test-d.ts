@@ -11,20 +11,14 @@
  * 7. renderWithContainer result types
  */
 
-import { describe, expectTypeOf, it } from "vitest";
-import { createPort, type Port, type InferService } from "@hex-di/ports";
-import {
-  GraphBuilder,
-  createAdapter,
-  type Graph,
-  type Adapter,
-  type Lifetime,
-} from "@hex-di/graph";
+import { describe, expectTypeOf, it, expect } from "vitest";
+import { createPort } from "@hex-di/ports";
+import { GraphBuilder, createAdapter, type Adapter, type Lifetime } from "@hex-di/graph";
 import type { MockedFunction } from "vitest";
 
 // Import testing utilities
 import { TestGraphBuilder, type InferTestGraphProvides } from "../src/test-graph-builder.js";
-import { createMockAdapter, type MockAdapterOptions } from "../src/mock-adapter.js";
+import { createMockAdapter } from "../src/mock-adapter.js";
 import { createAdapterTest, type AdapterTestHarness } from "../src/adapter-test-harness.js";
 import {
   assertGraphComplete,
@@ -77,7 +71,9 @@ const ConfigPort = createPort<"Config", Config>("Config");
 type LoggerPortType = typeof LoggerPort;
 type DatabasePortType = typeof DatabasePort;
 type UserServicePortType = typeof UserServicePort;
-type ConfigPortType = typeof ConfigPort;
+
+// Verify ConfigPort is usable (previously was unused)
+expect(ConfigPort).toBeDefined();
 
 // =============================================================================
 // Test Adapters
@@ -99,9 +95,9 @@ const DatabaseAdapter = createAdapter({
   requires: [],
   lifetime: "scoped",
   factory: () => ({
-    query: async () => ({}),
-    connect: async () => {},
-    disconnect: async () => {},
+    query: () => Promise.resolve({}),
+    connect: () => Promise.resolve(),
+    disconnect: () => Promise.resolve(),
   }),
 });
 
@@ -110,13 +106,13 @@ const UserServiceAdapter = createAdapter({
   requires: [LoggerPort, DatabasePort],
   lifetime: "transient",
   factory: deps => ({
-    getUser: async id => {
+    getUser: id => {
       deps.Logger.log(`Fetching user ${id}`);
-      return { id, name: "Test" };
+      return Promise.resolve({ id, name: "Test" });
     },
-    createUser: async name => {
+    createUser: name => {
       deps.Logger.log(`Creating user ${name}`);
-      return { id: "new", name };
+      return Promise.resolve({ id: "new", name });
     },
   }),
 });
@@ -130,6 +126,7 @@ describe("TestGraphBuilder type inference", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
 
     const testBuilder = TestGraphBuilder.from(graph);
+    expect(testBuilder).toBeDefined();
 
     // InferTestGraphProvides should extract the same type as the input graph
     type InferredProvides = InferTestGraphProvides<typeof testBuilder>;
@@ -144,12 +141,12 @@ describe("TestGraphBuilder type inference", () => {
 
     const mockLoggerAdapter = createMockAdapter(LoggerPort, { log: () => {} });
 
-    const withOverride = TestGraphBuilder.from(graph).override(mockLoggerAdapter);
+    const testBuilder = TestGraphBuilder.from(graph);
+    const withOverride = testBuilder.override(mockLoggerAdapter);
+    expect(withOverride).toBeDefined();
 
     type BeforeOverride = InferTestGraphProvides<typeof testBuilder>;
     type AfterOverride = InferTestGraphProvides<typeof withOverride>;
-
-    const testBuilder = TestGraphBuilder.from(graph);
 
     // TProvides should be the same before and after override
     expectTypeOf<BeforeOverride>().toEqualTypeOf<AfterOverride>();
@@ -159,6 +156,7 @@ describe("TestGraphBuilder type inference", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
 
     const testGraph = TestGraphBuilder.from(graph).build();
+    expect(testGraph).toBeDefined();
 
     // The built graph should have the same type as the original
     expectTypeOf<typeof testGraph>().toEqualTypeOf<typeof graph>();
@@ -168,6 +166,7 @@ describe("TestGraphBuilder type inference", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     const testBuilder = TestGraphBuilder.from(graph);
+    expect(testBuilder).toBeDefined();
 
     // This should compile - LoggerPort is in the graph
     const mockLoggerAdapter = createMockAdapter(LoggerPort, { log: () => {} });
@@ -203,6 +202,7 @@ describe("createMockAdapter type inference", () => {
       log: () => {},
       // warn and error are optional
     });
+    expect(mockAdapter).toBeDefined();
 
     expectTypeOf(mockAdapter).toMatchTypeOf<Adapter<LoggerPortType, never, Lifetime>>();
   });
@@ -211,6 +211,7 @@ describe("createMockAdapter type inference", () => {
     const mockAdapter = createMockAdapter(LoggerPort, {
       log: () => {},
     });
+    expect(mockAdapter).toBeDefined();
 
     // Factory should return the full Logger type
     type FactoryReturn = ReturnType<typeof mockAdapter.factory>;
@@ -231,6 +232,8 @@ describe("createMockAdapter type inference", () => {
     // where options includes lifetime
     const adapter1 = createMockAdapter(LoggerPort, { log: () => {} });
     const adapter2 = createMockAdapter(LoggerPort, { log: () => {} }, { lifetime: "singleton" });
+    expect(adapter1).toBeDefined();
+    expect(adapter2).toBeDefined();
 
     // Both should compile and return Adapter
     expectTypeOf(adapter1).toMatchTypeOf<Adapter<LoggerPortType, never, Lifetime>>();
@@ -239,6 +242,7 @@ describe("createMockAdapter type inference", () => {
 
   it("returned adapter has correct structure", () => {
     const mockAdapter = createMockAdapter(LoggerPort, { log: () => {} });
+    expect(mockAdapter).toBeDefined();
 
     // Check provides property
     expectTypeOf(mockAdapter.provides).toEqualTypeOf<LoggerPortType>();
@@ -259,6 +263,7 @@ describe("createMockAdapter type inference", () => {
       timeout: 5000,
       // debug is optional
     });
+    expect(mockAdapter).toBeDefined();
 
     type FactoryReturn = ReturnType<typeof mockAdapter.factory>;
     expectTypeOf<FactoryReturn>().toEqualTypeOf<Config>();
@@ -298,6 +303,7 @@ describe("createSpiedMockAdapter type inference", () => {
 
   it("createSpiedMockAdapter returns SpiedAdapter type", () => {
     const spiedAdapter = createSpiedMockAdapter(LoggerPort);
+    expect(spiedAdapter).toBeDefined();
 
     expectTypeOf(spiedAdapter).toMatchTypeOf<SpiedAdapter<LoggerPortType>>();
   });
@@ -305,6 +311,7 @@ describe("createSpiedMockAdapter type inference", () => {
   it("factory return type is the service type at compile time", () => {
     const spiedAdapter = createSpiedMockAdapter(LoggerPort);
     const impl = spiedAdapter.factory({});
+    expect(impl).toBeDefined();
 
     // At compile time, the return type is Logger (not SpiedService<Logger>)
     // At runtime, all methods are vi.fn() spies
@@ -319,6 +326,7 @@ describe("createSpiedMockAdapter type inference", () => {
       },
       // warn and error are optional
     });
+    expect(spiedAdapter).toBeDefined();
 
     expectTypeOf(spiedAdapter).toMatchTypeOf<SpiedAdapter<LoggerPortType>>();
   });
@@ -382,15 +390,16 @@ describe("createAdapterTest type inference", () => {
     };
 
     const mockDatabase: Database = {
-      query: async () => ({}),
-      connect: async () => {},
-      disconnect: async () => {},
+      query: () => Promise.resolve({}),
+      connect: () => Promise.resolve(),
+      disconnect: () => Promise.resolve(),
     };
 
     const harness = createAdapterTest(UserServiceAdapter, {
       Logger: mockLogger,
       Database: mockDatabase,
     });
+    expect(harness).toBeDefined();
 
     // invoke() should return UserService
     type InvokeReturn = ReturnType<typeof harness.invoke>;
@@ -405,15 +414,16 @@ describe("createAdapterTest type inference", () => {
     };
 
     const mockDatabase: Database = {
-      query: async () => ({}),
-      connect: async () => {},
-      disconnect: async () => {},
+      query: () => Promise.resolve({}),
+      connect: () => Promise.resolve(),
+      disconnect: () => Promise.resolve(),
     };
 
     const harness = createAdapterTest(UserServiceAdapter, {
       Logger: mockLogger,
       Database: mockDatabase,
     });
+    expect(harness).toBeDefined();
 
     // getDeps() should return object with Logger and Database
     const deps = harness.getDeps();
@@ -424,6 +434,7 @@ describe("createAdapterTest type inference", () => {
 
   it("works with adapters that have no dependencies", () => {
     const harness = createAdapterTest(LoggerAdapter, {});
+    expect(harness).toBeDefined();
 
     // getDeps() should return empty object type
     type GetDepsReturn = ReturnType<typeof harness.getDeps>;
@@ -440,15 +451,16 @@ describe("createAdapterTest type inference", () => {
     };
 
     const mockDatabase: Database = {
-      query: async () => ({}),
-      connect: async () => {},
-      disconnect: async () => {},
+      query: () => Promise.resolve({}),
+      connect: () => Promise.resolve(),
+      disconnect: () => Promise.resolve(),
     };
 
     const harness = createAdapterTest(UserServiceAdapter, {
       Logger: mockLogger,
       Database: mockDatabase,
     });
+    expect(harness).toBeDefined();
 
     // AdapterTestHarness methods should be readonly (enforced at runtime by freeze)
     expectTypeOf(harness.invoke).toBeFunction();
@@ -509,6 +521,7 @@ describe("serializeGraph type safety", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     const snapshot = serializeGraph(graph);
+    expect(snapshot).toBeDefined();
 
     expectTypeOf(snapshot).toMatchTypeOf<GraphSnapshot>();
   });
@@ -552,6 +565,7 @@ describe("type inference flow integration", () => {
     const testGraph = TestGraphBuilder.from(graph)
       .override(createMockAdapter(LoggerPort, { log: () => {} }))
       .build();
+    expect(testGraph).toBeDefined();
 
     // testGraph should have same type as original graph
     expectTypeOf<typeof testGraph>().toEqualTypeOf<typeof graph>();
@@ -566,6 +580,7 @@ describe("type inference flow integration", () => {
     // This should compile without error
     const testBuilder = TestGraphBuilder.from(graph);
     const withOverride = testBuilder.override(mockAdapter);
+    expect(withOverride).toBeDefined();
 
     expectTypeOf<typeof withOverride>().toMatchTypeOf<TestGraphBuilder<LoggerPortType>>();
   });
@@ -578,9 +593,9 @@ describe("type inference flow integration", () => {
     };
 
     const mockDatabase: Database = {
-      query: async () => ({}),
-      connect: async () => {},
-      disconnect: async () => {},
+      query: () => Promise.resolve({}),
+      connect: () => Promise.resolve(),
+      disconnect: () => Promise.resolve(),
     };
 
     const harness = createAdapterTest(UserServiceAdapter, {
@@ -591,6 +606,8 @@ describe("type inference flow integration", () => {
     // Full type inference chain
     const service = harness.invoke();
     const deps = harness.getDeps();
+    expect(service).toBeDefined();
+    expect(deps).toBeDefined();
 
     expectTypeOf(service).toEqualTypeOf<UserService>();
     expectTypeOf(deps.Logger).toEqualTypeOf<Logger>();
@@ -599,10 +616,11 @@ describe("type inference flow integration", () => {
 
   it("SpiedAdapter -> factory returns service type at compile time", () => {
     const spiedAdapter = createSpiedMockAdapter(DatabasePort, {
-      query: async (sql: string) => [{ sql }],
+      query: (sql: string) => Promise.resolve([{ sql }]),
     });
 
     const impl = spiedAdapter.factory({});
+    expect(impl).toBeDefined();
 
     // At compile time, the type is Database
     // At runtime, all methods are vi.fn() spies

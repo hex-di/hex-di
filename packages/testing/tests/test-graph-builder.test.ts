@@ -12,7 +12,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter, type Graph } from "@hex-di/graph";
+import { GraphBuilder, createAdapter } from "@hex-di/graph";
 import { TestGraphBuilder } from "../src/test-graph-builder.js";
 
 // =============================================================================
@@ -54,17 +54,17 @@ const ProductionDatabaseAdapter = createAdapter({
   provides: DatabasePort,
   requires: [],
   lifetime: "singleton",
-  factory: () => ({ query: async (sql) => ({ sql, result: "production" }) }),
+  factory: () => ({ query: sql => Promise.resolve({ sql, result: "production" }) }),
 });
 
 const ProductionUserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort, DatabasePort],
   lifetime: "scoped",
-  factory: (deps) => ({
-    getUser: async (id) => {
+  factory: deps => ({
+    getUser: id => {
       deps.Logger.log(`Fetching user ${id}`);
-      return { id, name: "Production User" };
+      return Promise.resolve({ id, name: "Production User" });
     },
   }),
 });
@@ -75,9 +75,7 @@ const ProductionUserServiceAdapter = createAdapter({
 
 describe("TestGraphBuilder.from()", () => {
   it("accepts a built Graph and returns a frozen TestGraphBuilder", () => {
-    const graph = GraphBuilder.create()
-      .provide(ProductionLoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(ProductionLoggerAdapter).build();
 
     const testBuilder = TestGraphBuilder.from(graph);
 
@@ -98,9 +96,7 @@ describe("TestGraphBuilder.from()", () => {
   });
 
   it("creates distinct instances on each call", () => {
-    const graph = GraphBuilder.create()
-      .provide(ProductionLoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(ProductionLoggerAdapter).build();
 
     const testBuilder1 = TestGraphBuilder.from(graph);
     const testBuilder2 = TestGraphBuilder.from(graph);
@@ -115,9 +111,7 @@ describe("TestGraphBuilder.from()", () => {
 
 describe("TestGraphBuilder.override()", () => {
   it("returns new immutable builder instance", () => {
-    const graph = GraphBuilder.create()
-      .provide(ProductionLoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(ProductionLoggerAdapter).build();
 
     const testBuilder = TestGraphBuilder.from(graph);
 
@@ -183,7 +177,7 @@ describe("TestGraphBuilder chained overrides", () => {
       factory: () => ({ log: mockLogFn }),
     });
 
-    const mockQueryFn = vi.fn(async () => ({ result: "mock" }));
+    const mockQueryFn = vi.fn(() => Promise.resolve({ result: "mock" }));
     const mockDatabaseAdapter = createAdapter({
       provides: DatabasePort,
       requires: [],
@@ -205,9 +199,7 @@ describe("TestGraphBuilder chained overrides", () => {
   });
 
   it("last override for same port wins", () => {
-    const graph = GraphBuilder.create()
-      .provide(ProductionLoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(ProductionLoggerAdapter).build();
 
     const mockLogFn1 = vi.fn();
     const mockLoggerAdapter1 = createAdapter({
@@ -242,9 +234,7 @@ describe("TestGraphBuilder chained overrides", () => {
 
 describe("TestGraphBuilder.build()", () => {
   it("returns frozen Graph object", () => {
-    const graph = GraphBuilder.create()
-      .provide(ProductionLoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(ProductionLoggerAdapter).build();
 
     const testGraph = TestGraphBuilder.from(graph).build();
 
@@ -265,9 +255,7 @@ describe("TestGraphBuilder.build()", () => {
       factory: () => ({ log: mockLogFn }),
     });
 
-    const testGraph = TestGraphBuilder.from(graph)
-      .override(mockLoggerAdapter)
-      .build();
+    const testGraph = TestGraphBuilder.from(graph).override(mockLoggerAdapter).build();
 
     // Mock adapter should replace production adapter
     expect(testGraph.adapters).toContain(mockLoggerAdapter);
@@ -291,20 +279,16 @@ describe("TestGraphBuilder.build()", () => {
       factory: () => ({ log: vi.fn() }),
     });
 
-    const testGraph = TestGraphBuilder.from(graph)
-      .override(mockLoggerAdapter)
-      .build();
+    const testGraph = TestGraphBuilder.from(graph).override(mockLoggerAdapter).build();
 
     // UserService and Database should be preserved
     expect(testGraph.adapters).toContain(ProductionDatabaseAdapter);
     expect(testGraph.adapters).toContain(ProductionUserServiceAdapter);
   });
 
-  it("returns Graph usable with createContainer", async () => {
+  it("returns Graph usable with createContainer", () => {
     // This is an integration verification - the graph structure should be compatible
-    const graph = GraphBuilder.create()
-      .provide(ProductionLoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(ProductionLoggerAdapter).build();
 
     const testGraph = TestGraphBuilder.from(graph).build();
 
@@ -318,9 +302,7 @@ describe("TestGraphBuilder.build()", () => {
   });
 
   it("can call build() multiple times on same builder", () => {
-    const graph = GraphBuilder.create()
-      .provide(ProductionLoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(ProductionLoggerAdapter).build();
 
     const testBuilder = TestGraphBuilder.from(graph);
 
@@ -338,9 +320,7 @@ describe("TestGraphBuilder.build()", () => {
 
 describe("TestGraphBuilder immutability", () => {
   it("builder instance is frozen after creation", () => {
-    const graph = GraphBuilder.create()
-      .provide(ProductionLoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(ProductionLoggerAdapter).build();
 
     const testBuilder = TestGraphBuilder.from(graph);
 
@@ -348,9 +328,7 @@ describe("TestGraphBuilder immutability", () => {
   });
 
   it("builder instance is frozen after override", () => {
-    const graph = GraphBuilder.create()
-      .provide(ProductionLoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(ProductionLoggerAdapter).build();
 
     const mockLoggerAdapter = createAdapter({
       provides: LoggerPort,
@@ -359,8 +337,7 @@ describe("TestGraphBuilder immutability", () => {
       factory: () => ({ log: vi.fn() }),
     });
 
-    const testBuilder = TestGraphBuilder.from(graph)
-      .override(mockLoggerAdapter);
+    const testBuilder = TestGraphBuilder.from(graph).override(mockLoggerAdapter);
 
     expect(Object.isFrozen(testBuilder)).toBe(true);
   });
@@ -388,9 +365,7 @@ describe("TestGraphBuilder immutability", () => {
     });
 
     // Chain operations
-    const modified = original
-      .override(mockLoggerAdapter)
-      .override(mockDatabaseAdapter);
+    const modified = original.override(mockLoggerAdapter).override(mockDatabaseAdapter);
 
     // Original should still produce graph with production adapters
     const originalGraph = original.build();

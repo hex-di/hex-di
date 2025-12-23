@@ -57,7 +57,7 @@ const DatabaseAdapter = createAdapter({
   requires: [],
   lifetime: "scoped",
   factory: () => ({
-    query: async () => ({}),
+    query: () => Promise.resolve({}),
   }),
 });
 
@@ -65,10 +65,10 @@ const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort, DatabasePort],
   lifetime: "transient",
-  factory: (deps) => ({
-    getUser: async (id: string) => {
+  factory: deps => ({
+    getUser: (id: string) => {
       deps.Logger.log(`Fetching user ${id}`);
-      return { id, name: "Test User" };
+      return Promise.resolve({ id, name: "Test User" });
     },
   }),
 });
@@ -142,9 +142,7 @@ describe("assertGraphComplete", () => {
 
 describe("assertPortProvided", () => {
   it("throws if port not in graph", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     expect(() => assertPortProvided(graph, DatabasePort)).toThrow(GraphAssertionError);
     expect(() => assertPortProvided(graph, DatabasePort)).toThrow(
@@ -153,10 +151,7 @@ describe("assertPortProvided", () => {
   });
 
   it("succeeds if port provided", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
 
     // Should not throw
     expect(() => assertPortProvided(graph, LoggerPort)).not.toThrow();
@@ -194,9 +189,7 @@ describe("assertLifetime", () => {
   });
 
   it("throws if port not in graph", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     expect(() => assertLifetime(graph, DatabasePort, "scoped")).toThrow(GraphAssertionError);
     expect(() => assertLifetime(graph, DatabasePort, "scoped")).toThrow(

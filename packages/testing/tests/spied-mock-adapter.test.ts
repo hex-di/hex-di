@@ -5,15 +5,11 @@
  * with all methods wrapped as vi.fn() for spy tracking.
  */
 
-import { describe, test, expect, vi, beforeEach } from "vitest";
+import { describe, test, expect, vi } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "@hex-di/runtime";
-import {
-  createSpiedMockAdapter,
-  type SpiedAdapter,
-  type SpiedService,
-} from "../src/vitest/spied-mock-adapter.js";
+import { createSpiedMockAdapter, type SpiedService } from "../src/vitest/spied-mock-adapter.js";
 
 // =============================================================================
 // Test Fixtures
@@ -159,9 +155,9 @@ describe("SpiedAdapter type", () => {
 
   test("async methods work correctly with spies", async () => {
     const spiedAdapter = createSpiedMockAdapter(DatabasePort, {
-      query: async (sql: string) => [{ id: 1, sql }],
-      connect: async () => {},
-      disconnect: async () => {},
+      query: (sql: string) => Promise.resolve([{ id: 1, sql }]),
+      connect: () => Promise.resolve(),
+      disconnect: () => Promise.resolve(),
     });
 
     // Use SpiedService type for spy access

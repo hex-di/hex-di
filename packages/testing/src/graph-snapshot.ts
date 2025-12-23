@@ -172,12 +172,14 @@ export function serializeGraph(
   const preserveOrder = options?.preserveOrder ?? false;
 
   // Map adapters to serializable format
-  const adapterSnapshots: AdapterSnapshot[] = graph.adapters.map((adapter) => {
+  const adapterSnapshots: AdapterSnapshot[] = graph.adapters.map(adapter => {
     // Extract port name from the provides property
     const portName = adapter.provides.__portName;
 
     // Extract required port names and sort them alphabetically
-    const requires = adapter.requires.map((port) => port.__portName).sort();
+    // Type assertion needed because `requires` is typed as `readonly Port[]`
+    // which is a branded type with __portName
+    const requires = adapter.requires.map((port: Port<unknown, string>) => port.__portName).sort();
 
     return {
       port: portName,

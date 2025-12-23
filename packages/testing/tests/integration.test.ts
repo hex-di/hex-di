@@ -9,10 +9,9 @@
  * 5. Snapshot testing with graph overrides
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
-import { createContainer } from "@hex-di/runtime";
 
 // Import all testing utilities
 import { TestGraphBuilder } from "../src/test-graph-builder.js";
@@ -24,10 +23,7 @@ import {
   assertLifetime,
 } from "../src/graph-assertions.js";
 import { serializeGraph } from "../src/graph-snapshot.js";
-import {
-  createSpiedMockAdapter,
-  type SpiedService,
-} from "../src/vitest/spied-mock-adapter.js";
+import { createSpiedMockAdapter, type SpiedService } from "../src/vitest/spied-mock-adapter.js";
 import { createTestContainer, useTestContainer } from "../src/vitest/use-test-container.js";
 
 // =============================================================================
@@ -80,9 +76,9 @@ const ProductionLoggerAdapter = createAdapter({
   requires: [],
   lifetime: "singleton",
   factory: () => ({
-    log: (message) => console.log(`[LOG] ${message}`),
-    warn: (message) => console.warn(`[WARN] ${message}`),
-    error: (message) => console.error(`[ERROR] ${message}`),
+    log: message => console.log(`[LOG] ${message}`),
+    warn: message => console.warn(`[WARN] ${message}`),
+    error: message => console.error(`[ERROR] ${message}`),
   }),
 });
 
@@ -90,19 +86,21 @@ const ProductionDatabaseAdapter = createAdapter({
   provides: DatabasePort,
   requires: [LoggerPort],
   lifetime: "singleton",
-  factory: (deps) => ({
-    query: async <T>(sql: string): Promise<T[]> => {
+  factory: deps => ({
+    query: <T>(sql: string): Promise<T[]> => {
       deps.Logger.log(`Executing query: ${sql}`);
-      return []; // Production would actually query
+      return Promise.resolve([]); // Production would actually query
     },
-    connect: async () => {
+    connect: () => {
       deps.Logger.log("Connecting to database");
+      return Promise.resolve();
     },
-    disconnect: async () => {
+    disconnect: () => {
       deps.Logger.log("Disconnecting from database");
+      return Promise.resolve();
     },
   }),
-  finalizer: async (db) => {
+  finalizer: async db => {
     await db.disconnect();
   },
 });
@@ -111,17 +109,21 @@ const ProductionUserRepositoryAdapter = createAdapter({
   provides: UserRepositoryPort,
   requires: [DatabasePort, LoggerPort],
   lifetime: "transient",
-  factory: (deps) => ({
-    findById: async (id) => {
+  factory: deps => ({
+    findById: async id => {
       deps.Logger.log(`Finding user by id: ${id}`);
-      const results = await deps.Database.query(
-        `SELECT * FROM users WHERE id = '${id}'`
-      ) as { id: string; name: string; email: string }[];
+      const results = (await deps.Database.query(`SELECT * FROM users WHERE id = '${id}'`)) as {
+        id: string;
+        name: string;
+        email: string;
+      }[];
       return results[0] ?? null;
     },
-    save: async (user) => {
+    save: async user => {
       deps.Logger.log(`Saving user: ${user.name}`);
-      await deps.Database.query(`INSERT INTO users (name, email) VALUES ('${user.name}', '${user.email}')`);
+      await deps.Database.query(
+        `INSERT INTO users (name, email) VALUES ('${user.name}', '${user.email}')`
+      );
       return { id: "new-id", ...user };
     },
   }),
@@ -131,10 +133,11 @@ const ProductionEmailServiceAdapter = createAdapter({
   provides: EmailServicePort,
   requires: [LoggerPort],
   lifetime: "transient",
-  factory: (deps) => ({
-    send: async (to, subject, body) => {
+  factory: deps => ({
+    send: (to, subject) => {
       deps.Logger.log(`Sending email to ${to}: ${subject}`);
       // Production would actually send email
+      return Promise.resolve();
     },
   }),
 });
@@ -143,8 +146,8 @@ const ProductionUserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [UserRepositoryPort, EmailServicePort, LoggerPort],
   lifetime: "transient",
-  factory: (deps) => ({
-    getUser: async (id) => {
+  factory: deps => ({
+    getUser: async id => {
       deps.Logger.log(`Getting user ${id}`);
       const user = await deps.UserRepository.findById(id);
       if (!user) {
@@ -184,7 +187,9 @@ describe("TestGraphBuilder -> createTestContainer -> resolve workflow", () => {
   it("overrides production adapters and resolves services correctly", async () => {
     // Create singleton mocks so we can track calls across resolutions
     const logFn = vi.fn();
-    const findByIdFn = vi.fn().mockResolvedValue({ id: "123", name: "Test User", email: "test@example.com" });
+    const findByIdFn = vi
+      .fn()
+      .mockResolvedValue({ id: "123", name: "Test User", email: "test@example.com" });
 
     const mockLoggerAdapter = createAdapter({
       provides: LoggerPort,
@@ -197,7 +202,11 @@ describe("TestGraphBuilder -> createTestContainer -> resolve workflow", () => {
       provides: DatabasePort,
       requires: [],
       lifetime: "singleton",
-      factory: () => ({ query: vi.fn().mockResolvedValue([]), connect: vi.fn(), disconnect: vi.fn() }),
+      factory: () => ({
+        query: vi.fn().mockResolvedValue([]),
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      }),
     });
 
     const mockUserRepositoryAdapter = createAdapter({
@@ -206,7 +215,9 @@ describe("TestGraphBuilder -> createTestContainer -> resolve workflow", () => {
       lifetime: "singleton",
       factory: () => ({
         findById: findByIdFn,
-        save: vi.fn().mockResolvedValue({ id: "generated-id", name: "Test", email: "test@example.com" }),
+        save: vi
+          .fn()
+          .mockResolvedValue({ id: "generated-id", name: "Test", email: "test@example.com" }),
       }),
     });
 
@@ -252,7 +263,9 @@ describe("TestGraphBuilder -> createTestContainer -> resolve workflow", () => {
     // Create singleton mocks with captured spy functions
     const logFn = vi.fn();
     const sendEmailFn = vi.fn();
-    const saveFn = vi.fn().mockResolvedValue({ id: "new-user-id", name: "Alice", email: "alice@example.com" });
+    const saveFn = vi
+      .fn()
+      .mockResolvedValue({ id: "new-user-id", name: "Alice", email: "alice@example.com" });
 
     const mockLoggerAdapter = createAdapter({
       provides: LoggerPort,
@@ -265,7 +278,11 @@ describe("TestGraphBuilder -> createTestContainer -> resolve workflow", () => {
       provides: DatabasePort,
       requires: [],
       lifetime: "singleton",
-      factory: () => ({ query: vi.fn().mockResolvedValue([]), connect: vi.fn(), disconnect: vi.fn() }),
+      factory: () => ({
+        query: vi.fn().mockResolvedValue([]),
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      }),
     });
 
     const mockUserRepositoryAdapter = createAdapter({
@@ -332,9 +349,9 @@ describe("createMockAdapter + createSpiedMockAdapter workflow", () => {
 
     // Use createSpiedMockAdapter for full tracking
     const spiedDatabaseMock = createSpiedMockAdapter(DatabasePort, {
-      query: async () => [{ id: "1", name: "Found" }],
-      connect: async () => {},
-      disconnect: async () => {},
+      query: () => Promise.resolve([{ id: "1", name: "Found" }]),
+      connect: () => Promise.resolve(),
+      disconnect: () => Promise.resolve(),
     });
 
     const testGraph = TestGraphBuilder.from(productionGraph)
@@ -375,13 +392,13 @@ describe("createMockAdapter + createSpiedMockAdapter workflow", () => {
     });
 
     const simpleDbMock = createMockAdapter(DatabasePort, {
-      query: async () => [],
-      connect: async () => {},
-      disconnect: async () => {},
+      query: () => Promise.resolve([]),
+      connect: () => Promise.resolve(),
+      disconnect: () => Promise.resolve(),
     });
 
     const simpleEmailMock = createMockAdapter(EmailServicePort, {
-      send: async () => {},
+      send: () => Promise.resolve(),
     });
 
     const testGraph = TestGraphBuilder.from(productionGraph)
@@ -454,7 +471,7 @@ describe("createAdapterTest integration", () => {
     expect(harness.getDeps().UserRepository.findById).toHaveBeenCalledWith("123");
   });
 
-  it("creates fresh service instance on each invoke()", async () => {
+  it("creates fresh service instance on each invoke()", () => {
     let instanceCount = 0;
 
     const CountingAdapter = createAdapter({
@@ -499,9 +516,7 @@ describe("graph assertions with TestGraphBuilder", () => {
   it("assertPortProvided works on test graphs with overrides", () => {
     const mockLoggerAdapter = createMockAdapter(LoggerPort, { log: () => {} });
 
-    const testGraph = TestGraphBuilder.from(productionGraph)
-      .override(mockLoggerAdapter)
-      .build();
+    const testGraph = TestGraphBuilder.from(productionGraph).override(mockLoggerAdapter).build();
 
     // All ports should still be provided
     expect(() => assertPortProvided(testGraph, LoggerPort)).not.toThrow();
@@ -517,9 +532,7 @@ describe("graph assertions with TestGraphBuilder", () => {
       { lifetime: "transient" }
     );
 
-    const testGraph = TestGraphBuilder.from(productionGraph)
-      .override(mockLoggerAdapter)
-      .build();
+    const testGraph = TestGraphBuilder.from(productionGraph).override(mockLoggerAdapter).build();
 
     // Lifetime should be the override's lifetime
     expect(() => assertLifetime(testGraph, LoggerPort, "transient")).not.toThrow();
@@ -541,14 +554,12 @@ describe("snapshot testing with graph modifications", () => {
       { lifetime: "transient" }
     );
 
-    const testGraph = TestGraphBuilder.from(productionGraph)
-      .override(mockLoggerAdapter)
-      .build();
+    const testGraph = TestGraphBuilder.from(productionGraph).override(mockLoggerAdapter).build();
 
     const snapshot = serializeGraph(testGraph);
 
     // Find Logger in snapshot
-    const loggerSnapshot = snapshot.adapters.find((a) => a.port === "Logger");
+    const loggerSnapshot = snapshot.adapters.find(a => a.port === "Logger");
     expect(loggerSnapshot?.lifetime).toBe("transient"); // Reflects override
 
     // Can still snapshot the full structure
@@ -565,9 +576,7 @@ describe("snapshot testing with graph modifications", () => {
       { lifetime: "transient" }
     );
 
-    const testGraph = TestGraphBuilder.from(productionGraph)
-      .override(mockLoggerAdapter)
-      .build();
+    const testGraph = TestGraphBuilder.from(productionGraph).override(mockLoggerAdapter).build();
 
     const testSnapshot = serializeGraph(testGraph);
 
@@ -575,15 +584,15 @@ describe("snapshot testing with graph modifications", () => {
     expect(testSnapshot.adapters).toHaveLength(productionSnapshot.adapters.length);
 
     // Logger lifetime differs
-    const prodLogger = productionSnapshot.adapters.find((a) => a.port === "Logger");
-    const testLogger = testSnapshot.adapters.find((a) => a.port === "Logger");
+    const prodLogger = productionSnapshot.adapters.find(a => a.port === "Logger");
+    const testLogger = testSnapshot.adapters.find(a => a.port === "Logger");
 
     expect(prodLogger?.lifetime).toBe("singleton");
     expect(testLogger?.lifetime).toBe("transient");
 
     // Other adapters unchanged
-    const prodDatabase = productionSnapshot.adapters.find((a) => a.port === "Database");
-    const testDatabase = testSnapshot.adapters.find((a) => a.port === "Database");
+    const prodDatabase = productionSnapshot.adapters.find(a => a.port === "Database");
+    const testDatabase = testSnapshot.adapters.find(a => a.port === "Database");
 
     expect(prodDatabase).toEqual(testDatabase);
   });
@@ -600,8 +609,9 @@ describe("useTestContainer workflow integration", () => {
       const mockLogger = createSpiedMockAdapter(LoggerPort);
       const mockDatabase = createSpiedMockAdapter(DatabasePort);
       const mockUserRepository = createSpiedMockAdapter(UserRepositoryPort, {
-        findById: async () => ({ id: "hook-test", name: "Hook User", email: "hook@test.com" }),
-        save: async (user) => ({ id: "hook-id", ...user }),
+        findById: () =>
+          Promise.resolve({ id: "hook-test", name: "Hook User", email: "hook@test.com" }),
+        save: user => Promise.resolve({ id: "hook-id", ...user }),
       });
       const mockEmailService = createSpiedMockAdapter(EmailServicePort);
 

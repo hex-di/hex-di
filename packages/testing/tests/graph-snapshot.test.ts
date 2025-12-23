@@ -8,8 +8,7 @@
 import { describe, test, expect } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
-import { serializeGraph } from "../src/graph-snapshot.js";
-import type { GraphSnapshot, AdapterSnapshot } from "../src/graph-snapshot.js";
+import { serializeGraph, type GraphSnapshot, type AdapterSnapshot } from "../src/graph-snapshot.js";
 
 // =============================================================================
 // Test Fixtures
@@ -76,22 +75,19 @@ describe("serializeGraph", () => {
       factory: () => ({ query: () => ({}) }),
     });
 
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
 
     const snapshot = serializeGraph(graph);
 
     expect(snapshot.adapters).toHaveLength(2);
 
     // Check for Database adapter (comes first alphabetically)
-    const databaseSnapshot = snapshot.adapters.find((a) => a.port === "Database");
+    const databaseSnapshot = snapshot.adapters.find(a => a.port === "Database");
     expect(databaseSnapshot).toBeDefined();
     expect(databaseSnapshot?.lifetime).toBe("transient");
 
     // Check for Logger adapter
-    const loggerSnapshot = snapshot.adapters.find((a) => a.port === "Logger");
+    const loggerSnapshot = snapshot.adapters.find(a => a.port === "Logger");
     expect(loggerSnapshot).toBeDefined();
     expect(loggerSnapshot?.lifetime).toBe("singleton");
   });
@@ -127,15 +123,15 @@ describe("serializeGraph", () => {
     const snapshot = serializeGraph(graph);
 
     // Check Logger has no dependencies
-    const loggerSnapshot = snapshot.adapters.find((a) => a.port === "Logger");
+    const loggerSnapshot = snapshot.adapters.find(a => a.port === "Logger");
     expect(loggerSnapshot?.requires).toEqual([]);
 
     // Check Database depends on Logger
-    const databaseSnapshot = snapshot.adapters.find((a) => a.port === "Database");
+    const databaseSnapshot = snapshot.adapters.find(a => a.port === "Database");
     expect(databaseSnapshot?.requires).toEqual(["Logger"]);
 
     // Check UserService depends on both (sorted alphabetically)
-    const userServiceSnapshot = snapshot.adapters.find((a) => a.port === "UserService");
+    const userServiceSnapshot = snapshot.adapters.find(a => a.port === "UserService");
     expect(userServiceSnapshot?.requires).toEqual(["Database", "Logger"]);
   });
 
@@ -205,11 +201,7 @@ describe("serializeGraph", () => {
     expect(snapshot1).toEqual(snapshot2);
 
     // Order should be alphabetical by port name
-    expect(snapshot1.adapters.map((a) => a.port)).toEqual([
-      "Config",
-      "Database",
-      "Logger",
-    ]);
+    expect(snapshot1.adapters.map(a => a.port)).toEqual(["Config", "Database", "Logger"]);
   });
 
   test("works with toMatchSnapshot()", () => {
@@ -306,18 +298,20 @@ describe("serializeGraph edge cases", () => {
 
     // Without preserveOrder, should be alphabetical
     const sortedSnapshot = serializeGraph(graph);
-    expect(sortedSnapshot.adapters.map((a) => a.port)).toEqual([
-      "Config",
-      "Database",
-      "Logger",
-    ]);
+    expect(sortedSnapshot.adapters.map(a => a.port)).toEqual(["Config", "Database", "Logger"]);
 
     // With preserveOrder, should maintain registration order
     const preservedSnapshot = serializeGraph(graph, { preserveOrder: true });
-    expect(preservedSnapshot.adapters.map((a) => a.port)).toEqual([
-      "Logger",
-      "Config",
-      "Database",
-    ]);
+    expect(preservedSnapshot.adapters.map(a => a.port)).toEqual(["Logger", "Config", "Database"]);
   });
+});
+
+// Verify AdapterSnapshot type is exported and usable
+test("AdapterSnapshot type is properly exported", () => {
+  const adapterSnapshot: AdapterSnapshot = {
+    port: "Test",
+    lifetime: "singleton",
+    requires: [],
+  };
+  expect(adapterSnapshot).toBeDefined();
 });
