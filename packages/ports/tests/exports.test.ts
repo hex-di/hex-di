@@ -9,12 +9,7 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import {
-  createPort,
-  InferPortName,
-  InferService,
-  type Port,
-} from "../src/index.js";
+import { createPort, InferPortName, InferService, type Port } from "../src/index.js";
 
 // Sample service interface for testing
 interface TestService {
@@ -34,10 +29,7 @@ describe("Public API exports", () => {
 
   it("Port type is exported and usable for type annotations", () => {
     // Port type should be usable in type annotations
-    const port: Port<TestService, "TypedPort"> = createPort<
-      "TypedPort",
-      TestService
-    >("TypedPort");
+    const port: Port<TestService, "TypedPort"> = createPort<"TypedPort", TestService>("TypedPort");
 
     // Verify the type annotation works correctly
     expectTypeOf(port).toMatchTypeOf<Port<TestService, "TypedPort">>();
@@ -47,6 +39,7 @@ describe("Public API exports", () => {
   it("utility types InferService and InferPortName are exported and functional", () => {
     // Create a port to test utility types against
     const port = createPort<"UtilityTest", TestService>("UtilityTest");
+    expect(port).toBeDefined();
     type PortType = typeof port;
 
     // InferService should extract the service type

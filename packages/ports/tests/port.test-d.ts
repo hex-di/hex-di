@@ -9,20 +9,11 @@
  * 5. Brand symbol is not accessible at value level
  */
 
-import { describe, expectTypeOf, it } from "vitest";
-import {
-  createPort,
-  InferPortName,
-  InferService,
-  Port,
-} from "../src/index.js";
+import { describe, expect, expectTypeOf, it } from "vitest";
+import { createPort, InferPortName, InferService, Port } from "../src/index.js";
 
 // Sample service interfaces for testing
 interface Logger {
-  log(message: string): void;
-}
-
-interface AnotherLogger {
   log(message: string): void;
 }
 
@@ -136,6 +127,7 @@ describe("createPort function", () => {
   it("preserves name as literal type via const type parameter", () => {
     // The const modifier on TName ensures literal preservation
     const port = createPort<"LiteralName", Logger>("LiteralName");
+    expect(port).toBeDefined();
 
     type PortNameType = (typeof port)["__portName"];
     expectTypeOf<PortNameType>().toEqualTypeOf<"LiteralName">();
@@ -151,6 +143,7 @@ describe("createPort function", () => {
   it("enables value-type duality pattern", () => {
     // Create port as value
     const LoggerPort = createPort<"Logger", Logger>("Logger");
+    expect(LoggerPort).toBeDefined();
 
     // Use typeof for type annotations
     type LoggerPortType = typeof LoggerPort;
@@ -236,6 +229,7 @@ describe("InferPortName utility type", () => {
 describe("Utility types work together", () => {
   it("can reconstruct Port type from inferred components", () => {
     const originalPort = createPort<"ReconstructTest", Logger>("ReconstructTest");
+    expect(originalPort).toBeDefined();
     type OriginalPortType = typeof originalPort;
 
     // Extract both components
