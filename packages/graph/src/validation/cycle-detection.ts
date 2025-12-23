@@ -13,7 +13,7 @@
  * @packageDocumentation
  */
 
-import type { Port, InferPortName } from "@hex-di/ports";
+import type { Port } from "@hex-di/ports";
 
 // =============================================================================
 // Adapter Name Extraction

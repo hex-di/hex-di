@@ -5,7 +5,6 @@ import type {
   FactoryKind,
   InferAdapterProvides,
   InferAdapterRequires,
-  InferAdapterLifetime,
   InferManyProvides,
   InferManyRequires,
   InferManyAsyncPorts,
@@ -260,6 +259,20 @@ type MergeResult<
       >;
 
 /**
+ * Type representing an empty dependency graph map.
+ * Used as the initial state for compile-time cycle detection.
+ * @internal
+ */
+type EmptyDependencyGraph = Record<string, never>;
+
+/**
+ * Type representing an empty lifetime map.
+ * Used as the initial state for compile-time captive dependency detection.
+ * @internal
+ */
+type EmptyLifetimeMap = Record<string, never>;
+
+/**
  * An immutable builder for constructing dependency graphs with compile-time validation.
  *
  * @typeParam TProvides - Union of all port types provided by adapters in this graph
@@ -272,8 +285,8 @@ export class GraphBuilder<
   TProvides = never,
   TRequires = never,
   TAsyncPorts = never,
-  TDepGraph = {},
-  TLifetimeMap = {},
+  TDepGraph = EmptyDependencyGraph,
+  TLifetimeMap = EmptyLifetimeMap,
 > {
   /**
    * Type-level brand property for nominal typing.
@@ -355,7 +368,7 @@ export class GraphBuilder<
   /**
    * Creates a new empty GraphBuilder.
    */
-  static create(): GraphBuilder<never, never, never, {}, {}> {
+  static create(): GraphBuilder<never, never, never, EmptyDependencyGraph, EmptyLifetimeMap> {
     return new GraphBuilder([]);
   }
 

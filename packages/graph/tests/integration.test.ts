@@ -871,7 +871,9 @@ describe("Integration: Self-referential adapter (edge case)", () => {
     // Adding A is fine (B doesn't exist yet, so no cycle detected at this point)
     const builderWithA = GraphBuilder.create().provide(adapterA);
     type BuilderWithAType = typeof builderWithA;
-    type IsBuilderAfterA = BuilderWithAType extends { provide: Function } ? true : false;
+    type IsBuilderAfterA = BuilderWithAType extends { provide: (...args: never[]) => unknown }
+      ? true
+      : false;
     expectTypeOf<IsBuilderAfterA>().toEqualTypeOf<true>();
 
     // Adding B creates the cycle: A->B->A
