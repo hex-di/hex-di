@@ -313,7 +313,7 @@ export class ChildContainerImpl<
 
   private isProvidedByParent(port: Port<unknown, string>): port is TProvides {
     const portToken = this.toPortToken(port);
-    return !this.extensions.has(portToken) && this.parentContainer.has(portToken);
+    return !this.extensions.has(portToken) && this.parentContainer.hasAdapter(portToken);
   }
 
   private isProvidedPort(port: Port<unknown, string>): port is TProvides | TExtends {
@@ -321,7 +321,7 @@ export class ChildContainerImpl<
     return (
       this.overrides.has(portToken) ||
       this.extensions.has(portToken) ||
-      this.parentContainer.has(portToken)
+      this.parentContainer.hasAdapter(portToken)
     );
   }
 
@@ -911,6 +911,7 @@ export function createChildContainerBuilder<
     resolveInternal: parentContainer.resolveInternal,
     resolveAsyncInternal: parentContainer.resolveAsyncInternal,
     has: parentContainer.has,
+    hasAdapter: parentContainer.hasAdapter,
     [ADAPTER_ACCESS]: parentContainer[ADAPTER_ACCESS],
     registerChildContainer: parentContainer.registerChildContainer,
     unregisterChildContainer: parentContainer.unregisterChildContainer,

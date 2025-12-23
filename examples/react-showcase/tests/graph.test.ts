@@ -41,7 +41,7 @@ describe("DI Graph", () => {
       const adapters = appGraph.adapters;
 
       // Verify all expected adapters are present
-      const adapterPorts = adapters.map((a) => a.provides.__portName);
+      const adapterPorts = adapters.map(a => a.provides.__portName);
       expect(adapterPorts).toContain("Config");
       expect(adapterPorts).toContain("Logger");
       expect(adapterPorts).toContain("MessageStore");
@@ -62,7 +62,7 @@ describe("DI Graph", () => {
 
       // Find adapters by port name
       const findAdapter = (portName: string) =>
-        adapters.find((a) => a.provides.__portName === portName);
+        adapters.find(a => a.provides.__portName === portName);
 
       // ConfigAdapter should have no dependencies
       const configAdapter = findAdapter("Config");
@@ -85,21 +85,20 @@ describe("DI Graph", () => {
       expect(userSessionAdapter?.requires).toHaveLength(0);
       expect(userSessionAdapter?.lifetime).toBe("scoped");
 
-      // ChatServiceAdapter should require Logger, UserSession, MessageStore
+      // ChatServiceAdapter should require Logger, UserSession, MessageStore, Config
       const chatServiceAdapter = findAdapter("ChatService");
-      expect(chatServiceAdapter?.requires).toHaveLength(3);
-      const chatDeps = chatServiceAdapter?.requires.map((r) => r.__portName);
+      expect(chatServiceAdapter?.requires).toHaveLength(4);
+      const chatDeps = chatServiceAdapter?.requires.map(r => r.__portName);
       expect(chatDeps).toContain("Logger");
       expect(chatDeps).toContain("UserSession");
       expect(chatDeps).toContain("MessageStore");
+      expect(chatDeps).toContain("Config");
       expect(chatServiceAdapter?.lifetime).toBe("scoped");
 
       // NotificationServiceAdapter should require Logger and Config
       const notificationAdapter = findAdapter("NotificationService");
       expect(notificationAdapter?.requires).toHaveLength(2);
-      const notificationDeps = notificationAdapter?.requires.map(
-        (r) => r.__portName
-      );
+      const notificationDeps = notificationAdapter?.requires.map(r => r.__portName);
       expect(notificationDeps).toContain("Logger");
       expect(notificationDeps).toContain("Config");
       expect(notificationAdapter?.lifetime).toBe("transient");
@@ -116,7 +115,7 @@ describe("DI Graph", () => {
           {
             lifetime: "scoped",
             port: "ChatService",
-            requires: ["Logger", "MessageStore", "UserSession"],
+            requires: ["Config", "Logger", "MessageStore", "UserSession"],
           },
           {
             lifetime: "singleton",
@@ -153,8 +152,7 @@ describe("DI Graph", () => {
       expect(snapshot.adapters).toHaveLength(6);
 
       // Verify structure of serialized adapters
-      const findAdapter = (portName: string) =>
-        snapshot.adapters.find((a) => a.port === portName);
+      const findAdapter = (portName: string) => snapshot.adapters.find(a => a.port === portName);
 
       const configSnapshot = findAdapter("Config");
       expect(configSnapshot).toEqual({
@@ -191,7 +189,10 @@ describe("DI Graph", () => {
       // Type 'MissingDependencyError<typeof UserSessionPort>' is not assignable to type 'Graph<...>'
 
       // Instead, we verify that the complete graph is correctly typed
-      const completeGraphType: Graph<Port<unknown, string>, Port<unknown, string> | never> = appGraph;
+      const completeGraphType: Graph<
+        Port<unknown, string>,
+        Port<unknown, string> | never
+      > = appGraph;
       expect(completeGraphType.adapters).toBeDefined();
     });
 
@@ -211,9 +212,7 @@ describe("DI Graph", () => {
       expect(incompleteBuilder.adapters).toHaveLength(5);
 
       // Verify the adapters that were added
-      const adapterNames = incompleteBuilder.adapters.map(
-        (a) => a.provides.__portName
-      );
+      const adapterNames = incompleteBuilder.adapters.map(a => a.provides.__portName);
       expect(adapterNames).not.toContain("UserSession");
       expect(adapterNames).toContain("ChatService");
     });

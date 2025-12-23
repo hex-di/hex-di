@@ -53,10 +53,7 @@ export {
   deserializeMessage,
 } from "./protocol.js";
 
-// Synchronization Infrastructure
-export { StateBroadcaster, type BroadcastFn, type StateBroadcasterConfig } from "./state-broadcaster.js";
-export { StateReceiver, type StateReceiverConfig, type ConflictResolution } from "./state-receiver.js";
-export { ActionSync, type ActionSyncConfig, type ActionHistoryEntry } from "./action-sync.js";
+// Connection Management
 export {
   ConnectionManager,
   type ConnectionManagerConfig,

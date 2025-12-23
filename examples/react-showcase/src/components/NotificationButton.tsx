@@ -50,7 +50,7 @@ interface ToastState {
  * }
  * ```
  */
-export function NotificationButton(): JSX.Element {
+export function NotificationButton() {
   const container = useContainer();
   const [instance, setInstance] = useState<NotificationInstance | null>(null);
   const [toast, setToast] = useState<ToastState>({ visible: false, message: "" });

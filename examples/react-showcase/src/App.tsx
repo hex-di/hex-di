@@ -3,18 +3,13 @@
  *
  * Sets up AsyncContainerProvider with the DI container and renders the
  * ChatRoom component. Uses compound components for loading/error states.
- * Includes FloatingDevTools for development - now self-contained with
- * automatic relay connection for TUI inspection.
+ * Includes DevToolsFloating for development (local-only, no network).
  *
  * @packageDocumentation
  */
 
-// Import DevTools from the new unified package structure
-// FloatingDevTools is now self-contained - just pass graph and container
-import {
-  FloatingDevTools,
-  createTracingContainer,
-} from "@hex-di/devtools/dom";
+// Import DevTools - simple local-only floating panel
+import { DevToolsFloating, createTracingContainer } from "@hex-di/devtools";
 import type { Container } from "@hex-di/runtime";
 
 import { AsyncContainerProvider, ContainerProvider } from "./di/hooks.js";
@@ -68,7 +63,7 @@ const pluginContainerForProvider = pluginContainer as unknown as Container<AppPo
  * );
  * ```
  */
-export function App(): JSX.Element {
+export function App() {
   return (
     <AsyncContainerProvider container={container}>
       {/* Loading state - shown during async adapter initialization */}
@@ -83,7 +78,7 @@ export function App(): JSX.Element {
 
       {/* Error state - shown if initialization fails */}
       <AsyncContainerProvider.Error>
-        {(error) => (
+        {error => (
           <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-red-50 to-pink-100">
             <div className="bg-white border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow-lg max-w-md">
               <h2 className="font-bold text-lg mb-2">Initialization Error</h2>
@@ -100,12 +95,9 @@ export function App(): JSX.Element {
           <div className="container mx-auto px-4">
             {/* App title */}
             <header className="mb-8 text-center">
-              <h1 className="text-3xl font-bold text-gray-800">
-                HexDI React Showcase
-              </h1>
+              <h1 className="text-3xl font-bold text-gray-800">HexDI React Showcase</h1>
               <p className="mt-2 text-gray-600">
-                Real-Time Chat Dashboard demonstrating dependency injection
-                patterns
+                Real-Time Chat Dashboard demonstrating dependency injection patterns
               </p>
             </header>
 
@@ -121,8 +113,8 @@ export function App(): JSX.Element {
                   </span>
                 </div>
                 <p className="mb-4 text-sm text-gray-600">
-                  This is the base container defined by the app graph. Messages
-                  are persisted via localStorage to showcase singleton behavior.
+                  This is the base container defined by the app graph. Messages are persisted via
+                  localStorage to showcase singleton behavior.
                 </p>
                 <ChatRoom />
               </div>
@@ -138,10 +130,9 @@ export function App(): JSX.Element {
                     </span>
                   </div>
                   <p className="mb-4 text-sm text-gray-600">
-                    Built from the root via <code>createChild()</code>, this
-                    container swaps in an ephemeral MessageStore and a tagged
-                    ChatService to demonstrate feature isolation without
-                    touching the parent graph.
+                    Built from the root via <code>createChild()</code>, this container swaps in an
+                    ephemeral MessageStore and a tagged ChatService to demonstrate feature isolation
+                    without touching the parent graph.
                   </p>
                   <ChatRoom />
                 </div>
@@ -151,9 +142,8 @@ export function App(): JSX.Element {
             {/* Feature explanation */}
             <footer className="mt-8 text-center text-sm text-gray-500">
               <p>
-                This showcase demonstrates singleton, scoped, request, and child
-                container lifetimes with reactive updates and DevTools
-                integration.
+                This showcase demonstrates singleton, scoped, request, and child container lifetimes
+                with reactive updates and DevTools integration.
               </p>
             </footer>
           </div>
@@ -162,14 +152,8 @@ export function App(): JSX.Element {
         {/* DevTools floating panel with tracing enabled */}
       </AsyncContainerProvider.Ready>
 
-      {/* FloatingDevTools - self-contained with automatic relay connection */}
-      <FloatingDevTools
-        graph={appGraph as never}
-        container={container as never}
-        appName="React Showcase"
-        appVersion="1.0.0"
-        position="bottom-right"
-      />
+      {/* DevToolsFloating - simple local-only panel */}
+      <DevToolsFloating graph={appGraph} container={container} position="bottom-right" />
     </AsyncContainerProvider>
   );
 }

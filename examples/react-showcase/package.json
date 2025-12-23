@@ -24,8 +24,6 @@
     "@hex-di/testing": "workspace:*",
     "@hex-di/devtools": "workspace:*",
     "@hex-di/devtools-core": "workspace:*",
-    "@hex-di/devtools-react": "workspace:*",
-    "@hex-di/devtools-adapters": "workspace:*",
     "@hex-di/devtools-network": "workspace:*",
     "@testing-library/dom": "^10.0.0",
     "@testing-library/react": "^16.0.0",

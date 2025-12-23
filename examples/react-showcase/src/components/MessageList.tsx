@@ -36,16 +36,14 @@ import type { Message } from "../types.js";
  * }
  * ```
  */
-export function MessageList(): JSX.Element {
+export function MessageList() {
   const store = usePort(MessageStorePort);
-  const [messages, setMessages] = useState<readonly Message[]>(() =>
-    store.getMessages()
-  );
+  const [messages, setMessages] = useState<readonly Message[]>(() => store.getMessages());
 
   // Subscribe to message updates
   useEffect(() => {
     // Subscribe for future updates
-    const unsubscribe = store.subscribe((newMessages) => {
+    const unsubscribe = store.subscribe(newMessages => {
       setMessages(newMessages);
     });
 
@@ -63,7 +61,7 @@ export function MessageList(): JSX.Element {
 
   return (
     <div className="flex flex-col gap-3 p-4 overflow-y-auto scrollbar-thin">
-      {messages.map((message) => (
+      {messages.map(message => (
         <MessageBubble key={message.id} message={message} />
       ))}
     </div>
@@ -83,7 +81,7 @@ interface MessageBubbleProps {
  *
  * The bubble includes the sender's name, message content, and timestamp.
  */
-function MessageBubble({ message }: MessageBubbleProps): JSX.Element {
+function MessageBubble({ message }: MessageBubbleProps) {
   const formattedTime = message.timestamp.toLocaleTimeString(undefined, {
     hour: "2-digit",
     minute: "2-digit",
@@ -92,9 +90,7 @@ function MessageBubble({ message }: MessageBubbleProps): JSX.Element {
   return (
     <div className="flex flex-col gap-1">
       {/* Sender name */}
-      <span className="text-xs font-medium text-gray-600">
-        {message.senderName}
-      </span>
+      <span className="text-xs font-medium text-gray-600">{message.senderName}</span>
       {/* Message bubble */}
       <div className="max-w-xs rounded-lg bg-blue-100 px-4 py-2 text-gray-800">
         <p className="break-words">{message.content}</p>

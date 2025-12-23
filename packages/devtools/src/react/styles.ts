@@ -697,11 +697,7 @@ export function getLifetimeClassName(lifetime: string): string {
 /**
  * Position type for floating DevTools.
  */
-export type FloatingPosition =
-  | "bottom-right"
-  | "bottom-left"
-  | "top-right"
-  | "top-left";
+export type FloatingPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";
 
 // =============================================================================
 // Container Inspector Styles (Task Group 4)
@@ -1441,7 +1437,7 @@ export const summaryStyles: SummaryStyleDef = {
   },
   cardWarning: {
     backgroundColor: "var(--hex-devtools-slow-bg)",
-    borderColor: "var(--hex-devtools-slow, #f38ba8)",
+    border: "1px solid var(--hex-devtools-slow, #f38ba8)",
   },
   sectionHeader: {
     fontSize: "12px",
@@ -1532,7 +1528,8 @@ export const controlsStyles: ControlsStyleDef = {
     height: "4px",
     borderRadius: "2px",
     appearance: "none",
-    background: "linear-gradient(to right, var(--hex-devtools-fast), var(--hex-devtools-medium), var(--hex-devtools-slow))",
+    background:
+      "linear-gradient(to right, var(--hex-devtools-fast), var(--hex-devtools-medium), var(--hex-devtools-slow))",
     cursor: "pointer",
   },
   thresholdTrack: {

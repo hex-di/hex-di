@@ -46,7 +46,7 @@ type UserType = "alice" | "bob";
  * }
  * ```
  */
-export function ChatRoom(): JSX.Element {
+export function ChatRoom() {
   // Track current user for scope key - changing this recreates the scope
   const [currentUser, setCurrentUser] = useState<UserType>("alice");
 

@@ -217,7 +217,7 @@ export function TabNavigation({
           ...(isHovered && !isActive
             ? {
                 backgroundColor: "rgba(255, 255, 255, 0.05)",
-                borderColor: "var(--hex-devtools-border-hover, #565f89)",
+                border: "1px solid var(--hex-devtools-border-hover, #565f89)",
                 boxShadow: "0 6px 18px rgba(86, 95, 137, 0.25)",
                 color: "var(--hex-devtools-text, #cdd6f4)",
               }

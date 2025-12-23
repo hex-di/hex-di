@@ -34,7 +34,7 @@ import { UserSessionPort } from "../di/ports.js";
  * }
  * ```
  */
-export function UserInfo(): JSX.Element {
+export function UserInfo() {
   const session = usePort(UserSessionPort);
   const { user } = session;
 

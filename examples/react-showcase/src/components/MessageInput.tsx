@@ -35,7 +35,7 @@ import { ChatServicePort } from "../di/ports.js";
  * }
  * ```
  */
-export function MessageInput(): JSX.Element {
+export function MessageInput() {
   const chatService = usePort(ChatServicePort);
   const [message, setMessage] = useState("");
 

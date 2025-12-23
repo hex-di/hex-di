@@ -19,7 +19,12 @@ import type {
   ContainerSnapshot,
 } from "@hex-di/devtools-core";
 import { toJSON } from "../to-json.js";
-import type { DataSource, DataSourceConnectionState, DataSourceEvent, DataSourceListener } from "./data-source.js";
+import type {
+  DataSource,
+  DataSourceConnectionState,
+  DataSourceEvent,
+  DataSourceListener,
+} from "./data-source.js";
 
 // =============================================================================
 // Tracing API Type (matching runtime's TracingAPI)
@@ -100,7 +105,11 @@ interface RuntimeTracingAPI {
 export class LocalDataSource implements DataSource, PresenterDataSourceContract {
   private readonly exportedGraph: ExportedGraph;
   private readonly tracingAPI: RuntimeTracingAPI | null;
-  private readonly containerRef: Container<Port<unknown, string>, Port<unknown, string>, ContainerPhase> | null;
+  private readonly containerRef: Container<
+    Port<unknown, string>,
+    Port<unknown, string>,
+    ContainerPhase
+  > | null;
   private readonly subscribers = new Set<() => void>();
   private readonly graphSubscribers = new Set<(graph: ExportedGraph) => void>();
   private readonly tracesSubscribers = new Set<(traces: readonly TraceEntry[]) => void>();
@@ -359,17 +368,21 @@ export class LocalDataSource implements DataSource, PresenterDataSourceContract 
   // ===========================================================================
 
   private notifySubscribers(): void {
-    for (const callback of this.subscribers) {
-      callback();
-    }
+    queueMicrotask(() => {
+      for (const callback of this.subscribers) {
+        callback();
+      }
+    });
   }
 
   private notifyTracesSubscribers(): void {
-    const traces = this.getTraces();
-    for (const callback of this.tracesSubscribers) {
-      callback(traces);
-    }
-    this.emit({ type: "traces_update", traces });
+    queueMicrotask(() => {
+      const traces = this.getTraces();
+      for (const callback of this.tracesSubscribers) {
+        callback(traces);
+      }
+      this.emit({ type: "traces_update", traces });
+    });
   }
 
   private emit(event: DataSourceEvent): void {

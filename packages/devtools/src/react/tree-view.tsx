@@ -209,7 +209,7 @@ const localStyles: {
   },
   timeModeToggleActive: {
     backgroundColor: "var(--hex-devtools-accent, #89b4fa)",
-    borderColor: "var(--hex-devtools-accent, #89b4fa)",
+    border: "1px solid var(--hex-devtools-accent, #89b4fa)",
     color: "#1e1e2e",
   },
   nodeRow: {

@@ -1,7 +1,7 @@
 {
   "name": "@hex-di/devtools",
   "version": "0.1.0",
-  "description": "Unified DevTools for HexDI - visualization, tracing, and inspection with platform-specific entry points for browser (DOM) and terminal (TUI)",
+  "description": "DevTools for HexDI - graph visualization, tracing, and browser-based inspection",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -14,26 +14,6 @@
       "require": {
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
-      }
-    },
-    "./dom": {
-      "import": {
-        "types": "./dist/dom/index.d.ts",
-        "default": "./dist/dom/index.js"
-      },
-      "require": {
-        "types": "./dist/dom/index.d.cts",
-        "default": "./dist/dom/index.cjs"
-      }
-    },
-    "./tui": {
-      "import": {
-        "types": "./dist/tui/index.d.ts",
-        "default": "./dist/tui/index.js"
-      },
-      "require": {
-        "types": "./dist/tui/index.d.cts",
-        "default": "./dist/tui/index.cjs"
       }
     },
     "./react": {
@@ -57,9 +37,6 @@
       }
     }
   },
-  "bin": {
-    "hexdi-tui": "./dist/tui/cli/index.js"
-  },
   "files": [
     "dist",
     "src"
@@ -82,8 +59,6 @@
     "graphviz",
     "mermaid",
     "react",
-    "tui",
-    "terminal",
     "typescript",
     "type-safe"
   ],
@@ -110,8 +85,6 @@
     "dagre": "^0.8.5"
   },
   "peerDependencies": {
-    "@opentui/core": ">=0.1.0",
-    "@opentui/react": ">=0.1.0",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0",
     "typescript": ">=5.0"
@@ -123,19 +96,11 @@
     "react-dom": {
       "optional": true
     },
-    "@opentui/core": {
-      "optional": true
-    },
-    "@opentui/react": {
-      "optional": true
-    },
     "typescript": {
       "optional": true
     }
   },
   "devDependencies": {
-    "@opentui/core": "^0.1.61",
-    "@opentui/react": "^0.1.61",
     "@testing-library/dom": "^10.0.0",
     "@testing-library/react": "^16.0.0",
     "@types/d3-selection": "^3.0.0",
