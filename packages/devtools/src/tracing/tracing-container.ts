@@ -9,7 +9,7 @@
  * @packageDocumentation
  */
 
-import type { Port, InferService } from "@hex-di/ports";
+import type { Port } from "@hex-di/ports";
 import type { Graph } from "@hex-di/graph";
 import {
   createContainer,
@@ -17,7 +17,6 @@ import {
   INTERNAL_ACCESS,
   getInternalAccessor,
   type Container,
-  type Scope,
   type Lifetime,
   type ResolutionHooks,
   type ResolutionHookContext,
@@ -65,7 +64,7 @@ export interface TracingContainerOptions {
  */
 export type TracingContainer<
   TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> | never = never
+  TAsyncPorts extends Port<unknown, string> | never = never,
 > = Container<TProvides, TAsyncPorts, "uninitialized"> & {
   readonly [TRACING_ACCESS]: TracingAPI;
   readonly [INTERNAL_ACCESS]: () => ContainerInternalState;
@@ -241,7 +240,7 @@ export function createTracingContainer<
       // Get parent trace ID from stack
       const parentId =
         state.traceStack.length > 0
-          ? state.traceStack[state.traceStack.length - 1] ?? null
+          ? (state.traceStack[state.traceStack.length - 1] ?? null)
           : null;
 
       // Create active trace entry
@@ -316,13 +315,27 @@ export function createTracingContainer<
   // getInternalAccessor is now generic, so no cast needed
   const baseInternalAccessor = getInternalAccessor(baseContainer);
 
-  // Create the tracing container by spreading base container and adding tracing
-  const tracingContainer: TracingContainer<TProvides, TAsyncPorts> = {
-    ...baseContainer,
-    // Forward INTERNAL_ACCESS from base container for DevTools Inspector
-    [INTERNAL_ACCESS]: baseInternalAccessor,
-    [TRACING_ACCESS]: tracingAPI,
-  };
+  // Clone base container descriptors to avoid invoking type-only brand getters.
+  const baseDescriptors = Object.getOwnPropertyDescriptors(baseContainer);
+  const tracingContainer = Object.defineProperties(
+    {},
+    {
+      ...baseDescriptors,
+      // Forward INTERNAL_ACCESS from base container for DevTools Inspector
+      [INTERNAL_ACCESS]: {
+        value: baseInternalAccessor,
+        writable: false,
+        enumerable: true,
+        configurable: false,
+      },
+      [TRACING_ACCESS]: {
+        value: tracingAPI,
+        writable: false,
+        enumerable: true,
+        configurable: false,
+      },
+    }
+  ) as TracingContainer<TProvides, TAsyncPorts>;
 
   return Object.freeze(tracingContainer);
 }

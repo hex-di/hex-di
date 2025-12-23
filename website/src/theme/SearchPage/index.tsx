@@ -1,13 +1,10 @@
-import React from 'react';
-import Layout from '@theme/Layout';
-import Translate from '@docusaurus/Translate';
+import React from "react";
+import Layout from "@theme/Layout";
+import Translate from "@docusaurus/Translate";
 
-export default function SearchPage(): JSX.Element {
+export default function SearchPage(): React.ReactElement {
   return (
-    <Layout
-      title="Search"
-      description="Search the HexDI documentation"
-    >
+    <Layout title="Search" description="Search the HexDI documentation">
       <main className="container margin-vert--lg">
         <h1>
           <Translate id="theme.SearchPage.title">Search</Translate>

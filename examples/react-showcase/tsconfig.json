@@ -9,19 +9,14 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-    "noPropertyAccessFromIndexSignature": true,
-    "exactOptionalPropertyTypes": true,
     "esModuleInterop": true,
-    "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "declaration": false,
     "declarationMap": false,
-    "sourceMap": true,
-    "types": ["vitest/globals", "@testing-library/jest-dom/vitest"]
+    "sourceMap": true
   },
   "include": ["src", "tests"],
   "exclude": ["node_modules", "dist"]

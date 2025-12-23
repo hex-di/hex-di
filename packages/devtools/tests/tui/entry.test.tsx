@@ -77,7 +77,7 @@ describe("TUI Entry Point", () => {
       // The element is a provider wrapping a box
       expect(element).toBeDefined();
       // Get the inner content (the box)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const innerBox = (element?.props as any)?.children;
       // Should have border for TUI chrome (box is inside provider)
       expect(innerBox?.props?.border).toBe(true);
@@ -277,7 +277,7 @@ describe("TUI Entry Point", () => {
       // Verify provider is set up - it's a PrimitivesProvider
       expect(element).toBeDefined();
       // The TUIDevToolsProvider internally uses PrimitivesProvider with TUIPrimitives
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       expect((element?.props as any)?.primitives?.rendererType).toBe("tui");
     });
   });

@@ -123,9 +123,7 @@ export interface FlameGraphViewModelInput {
  * @param input - The input data for creating the view model
  * @returns An immutable FlameGraphViewModel
  */
-export function createFlameGraphViewModel(
-  input: FlameGraphViewModelInput
-): FlameGraphViewModel {
+export function createFlameGraphViewModel(input: FlameGraphViewModelInput): FlameGraphViewModel {
   const { frames, selectedFrameId, zoomRange } = input;
 
   if (frames.length === 0) {
@@ -136,8 +134,8 @@ export function createFlameGraphViewModel(
   const maxDepth = frames.reduce((max, frame) => Math.max(max, frame.depth), 0) + 1;
 
   // Calculate total duration from root frames
-  const rootFrames = frames.filter((f) => f.parentId === null);
-  const totalDuration = rootFrames.reduce(
+  const rootFrames = frames.filter(f => f.parentId === null);
+  const _totalDuration = rootFrames.reduce(
     (max, f) => Math.max(max, f.startPercent * 100 + f.widthPercent * 100),
     0
   );
@@ -148,7 +146,7 @@ export function createFlameGraphViewModel(
 
   // Freeze all frames
   const frozenFrames = Object.freeze(
-    frames.map((frame) =>
+    frames.map(frame =>
       Object.freeze({
         ...frame,
         childIds: Object.freeze([...frame.childIds]),

@@ -66,9 +66,9 @@ describe("Async Factory Resolution", () => {
         provides: DatabasePort,
         requires: [ConfigPort],
 
-        factory: async (deps) => {
+        factory: async deps => {
           // Simulate async connection
-          await new Promise((resolve) => setTimeout(resolve, 10));
+          await new Promise(resolve => setTimeout(resolve, 10));
           return {
             query: async (sql: string) => `Result for: ${sql}`,
             close: async () => {},
@@ -122,7 +122,7 @@ describe("Async Factory Resolution", () => {
 
         factory: async () => {
           factoryCallCount++;
-          await new Promise((resolve) => setTimeout(resolve, 5));
+          await new Promise(resolve => setTimeout(resolve, 5));
           return {
             query: async (sql: string) => `Result: ${sql}`,
             close: async () => {},
@@ -157,7 +157,7 @@ describe("Async Factory Resolution", () => {
         factory: async () => {
           factoryCallCount++;
           // Add some delay to simulate real async work
-          await new Promise<void>((resolve) => setTimeout(resolve, 50));
+          await new Promise<void>(resolve => setTimeout(resolve, 50));
           return {
             query: async (sql: string) => `Result: ${sql}`,
             close: async () => {},
@@ -215,9 +215,9 @@ describe("Async Factory Resolution", () => {
         provides: DatabasePort,
         requires: [ConfigPort, LoggerPort],
 
-        factory: async (deps) => {
+        factory: async deps => {
           resolutionOrder.push("Database-start");
-          await new Promise((resolve) => setTimeout(resolve, 10));
+          await new Promise(resolve => setTimeout(resolve, 10));
           resolutionOrder.push("Database-end");
           return {
             query: async (sql: string) => `Result: ${sql}`,
@@ -266,7 +266,7 @@ describe("Container initialization", () => {
         requires: [],
 
         factory: async () => {
-          await new Promise((resolve) => setTimeout(resolve, 5));
+          await new Promise(resolve => setTimeout(resolve, 5));
           dbInitialized = true;
           return {
             query: async (sql: string) => `Result: ${sql}`,
@@ -280,7 +280,7 @@ describe("Container initialization", () => {
         requires: [],
 
         factory: async () => {
-          await new Promise((resolve) => setTimeout(resolve, 5));
+          await new Promise(resolve => setTimeout(resolve, 5));
           cacheInitialized = true;
           return {
             get: async (key: string) => null,
@@ -318,7 +318,7 @@ describe("Container initialization", () => {
         initPriority: 1, // Lower = earlier
         factory: async () => {
           initOrder.push("Database");
-          await new Promise((resolve) => setTimeout(resolve, 5));
+          await new Promise(resolve => setTimeout(resolve, 5));
           return {
             query: async (sql: string) => `Result: ${sql}`,
             close: async () => {},
@@ -333,7 +333,7 @@ describe("Container initialization", () => {
         initPriority: 2, // Higher = later
         factory: async () => {
           initOrder.push("Cache");
-          await new Promise((resolve) => setTimeout(resolve, 5));
+          await new Promise(resolve => setTimeout(resolve, 5));
           return {
             get: async (key: string) => null,
             set: async (key: string, value: string) => {},
@@ -349,8 +349,8 @@ describe("Container initialization", () => {
       const container = createContainer(graph);
       await container.initialize();
 
-      // Database should be initialized before Cache (ordered by registration, but now sorting alphabetically)
-      expect(initOrder).toEqual(["Cache", "Database"]);
+      // Initialization should respect initPriority (lower numbers resolve first)
+      expect(initOrder).toEqual(["Database", "Cache"]);
 
       await container.dispose();
     });
@@ -361,7 +361,7 @@ describe("Container initialization", () => {
         requires: [],
 
         factory: async () => {
-          await new Promise((resolve) => setTimeout(resolve, 5));
+          await new Promise(resolve => setTimeout(resolve, 5));
           return {
             query: async (sql: string) => `Result: ${sql}`,
             close: async () => {},
@@ -426,7 +426,7 @@ describe("Async error handling", () => {
         requires: [],
 
         factory: async () => {
-          await new Promise((resolve) => setTimeout(resolve, 5));
+          await new Promise(resolve => setTimeout(resolve, 5));
           throw new Error("Connection failed");
         },
       });
@@ -448,7 +448,9 @@ describe("Async error handling", () => {
           expect(error.code).toBe("ASYNC_FACTORY_FAILED");
           expect(error.isProgrammingError).toBe(false);
           expect(error.cause).toBeInstanceOf(Error);
-          expect(error.message).toContain("Async factory for port 'Database' failed: Connection failed");
+          expect(error.message).toContain(
+            "Async factory for port 'Database' failed: Connection failed"
+          );
         }
       }
 
@@ -469,7 +471,9 @@ describe("Async error handling", () => {
 
       const container = createContainer(graph);
 
-      await expect(container.initialize()).rejects.toThrow("Async factory for port 'Database' failed: Init failed");
+      await expect(container.initialize()).rejects.toThrow(
+        "Async factory for port 'Database' failed: Init failed"
+      );
 
       await container.dispose();
     });
@@ -519,9 +523,7 @@ describe("Async error handling", () => {
       const container = createContainer(graph);
       await container.dispose();
 
-      await expect(container.resolveAsync(DatabasePort)).rejects.toThrow(
-        DisposedScopeError
-      );
+      await expect(container.resolveAsync(DatabasePort)).rejects.toThrow(DisposedScopeError);
     });
   });
 });
@@ -608,7 +610,7 @@ describe("Async adapter finalizers", () => {
         query: async (sql: string) => `Result: ${sql}`,
         close: async () => {},
       }),
-      finalizer: async (db) => {
+      finalizer: async db => {
         closeCalled();
         await db.close();
       },
@@ -637,7 +639,7 @@ describe("Resolution hooks for async adapters", () => {
       provides: DatabasePort,
       requires: [],
       factory: async () => {
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        await new Promise(resolve => setTimeout(resolve, 10));
         return {
           query: async (sql: string) => `Result: ${sql}`,
           close: async () => {},
@@ -649,10 +651,10 @@ describe("Resolution hooks for async adapters", () => {
 
     const container = createContainer(graph, {
       hooks: {
-        beforeResolve: (ctx) => {
+        beforeResolve: ctx => {
           beforeResolveCalls.push(ctx.portName);
         },
-        afterResolve: (ctx) => {
+        afterResolve: ctx => {
           afterResolveCalls.push({
             portName: ctx.portName,
             duration: ctx.duration,
@@ -665,9 +667,9 @@ describe("Resolution hooks for async adapters", () => {
     await container.resolveAsync(DatabasePort);
 
     expect(beforeResolveCalls).toContain("Database");
-    expect(afterResolveCalls.find((c) => c.portName === "Database")).toBeDefined();
+    expect(afterResolveCalls.find(c => c.portName === "Database")).toBeDefined();
 
-    const dbResolve = afterResolveCalls.find((c) => c.portName === "Database")!;
+    const dbResolve = afterResolveCalls.find(c => c.portName === "Database")!;
     expect(dbResolve.duration).toBeGreaterThanOrEqual(5);
     expect(dbResolve.error).toBeNull();
 
@@ -690,7 +692,7 @@ describe("Resolution hooks for async adapters", () => {
 
     const container = createContainer(graph, {
       hooks: {
-        beforeResolve: (ctx) => {
+        beforeResolve: ctx => {
           hookCalls.push({ portName: ctx.portName, isCacheHit: ctx.isCacheHit });
         },
       },
@@ -734,7 +736,7 @@ describe("Resolution hooks for async adapters", () => {
 
     const container = createContainer(graph, {
       hooks: {
-        beforeResolve: (ctx) => {
+        beforeResolve: ctx => {
           hookCalls.push({
             portName: ctx.portName,
             parentPort: ctx.parentPort?.__portName ?? null,
@@ -747,8 +749,8 @@ describe("Resolution hooks for async adapters", () => {
     await container.resolveAsync(DatabasePort);
 
     // Database is resolved first (depth 0), then Config as dependency (depth 1)
-    const dbCall = hookCalls.find((c) => c.portName === "Database");
-    const configCall = hookCalls.find((c) => c.portName === "Config");
+    const dbCall = hookCalls.find(c => c.portName === "Database");
+    const configCall = hookCalls.find(c => c.portName === "Config");
 
     expect(dbCall).toBeDefined();
     expect(dbCall!.depth).toBe(0);
@@ -776,7 +778,7 @@ describe("Resolution hooks for async adapters", () => {
 
     const container = createContainer(graph, {
       hooks: {
-        afterResolve: (ctx) => {
+        afterResolve: ctx => {
           afterResolveCalls.push({
             portName: ctx.portName,
             error: ctx.error,
@@ -787,11 +789,13 @@ describe("Resolution hooks for async adapters", () => {
 
     await expect(container.resolveAsync(DatabasePort)).rejects.toThrow();
 
-    const dbResolve = afterResolveCalls.find((c) => c.portName === "Database");
+    const dbResolve = afterResolveCalls.find(c => c.portName === "Database");
     expect(dbResolve).toBeDefined();
     expect(dbResolve!.error).not.toBeNull();
     // Match correctly wrapped error from container
-    expect(dbResolve!.error!.message).toContain("Async factory for port 'Database' failed: Connection failed");
+    expect(dbResolve!.error!.message).toContain(
+      "Async factory for port 'Database' failed: Connection failed"
+    );
 
     await container.dispose();
   });
@@ -804,7 +808,7 @@ describe("Resolution hooks for async adapters", () => {
       provides: DatabasePort,
       requires: [],
       factory: async () => {
-        await new Promise((resolve) => setTimeout(resolve, 20));
+        await new Promise(resolve => setTimeout(resolve, 20));
         return {
           query: async (sql: string) => `Result: ${sql}`,
           close: async () => {},

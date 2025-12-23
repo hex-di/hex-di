@@ -101,32 +101,25 @@ export interface UseGraphResult {
 export function useGraph(): UseGraphResult {
   const context = useDevToolsContext();
 
-  const result = useMemo((): UseGraphResult => ({
-    viewModel: context.viewModels.graph,
-    isLoading: context.viewModels.graph === null,
-    selectedNodeId: context.state.graph.selectedNodeId,
-    highlightedNodeIds: context.state.graph.highlightedNodeIds,
-    zoom: context.state.graph.zoom,
-    direction: context.state.graph.direction,
-    selectNode: context.selectNode,
-    highlightNodes: context.highlightNodes,
-    setZoom: context.setZoom,
-    setDirection: context.setGraphDirection,
-    clearSelection: () => {
-      context.selectNode(null);
-      context.highlightNodes([]);
-    },
-  }), [
-    context.viewModels.graph,
-    context.state.graph.selectedNodeId,
-    context.state.graph.highlightedNodeIds,
-    context.state.graph.zoom,
-    context.state.graph.direction,
-    context.selectNode,
-    context.highlightNodes,
-    context.setZoom,
-    context.setGraphDirection,
-  ]);
+  const result = useMemo(
+    (): UseGraphResult => ({
+      viewModel: context.viewModels.graph,
+      isLoading: context.viewModels.graph === null,
+      selectedNodeId: context.state.graph.selectedNodeId,
+      highlightedNodeIds: context.state.graph.highlightedNodeIds,
+      zoom: context.state.graph.zoom,
+      direction: context.state.graph.direction,
+      selectNode: context.selectNode,
+      highlightNodes: context.highlightNodes,
+      setZoom: context.setZoom,
+      setDirection: context.setGraphDirection,
+      clearSelection: () => {
+        context.selectNode(null);
+        context.highlightNodes([]);
+      },
+    }),
+    [context]
+  );
 
   return result;
 }

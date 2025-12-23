@@ -111,37 +111,27 @@ export interface UseInspectorResult {
 export function useInspector(): UseInspectorResult {
   const context = useDevToolsContext();
 
-  const result = useMemo((): UseInspectorResult => ({
-    viewModel: context.viewModels.inspector,
-    hasContainer: context.dataSource?.hasContainer() ?? false,
-    selectedServicePortName: context.state.inspector.selectedServicePortName,
-    selectedScopeId: context.state.inspector.selectedScopeId,
-    filter: context.state.inspector.filterText,
-    showDependencies: context.state.inspector.showDependencies,
-    showDependents: context.state.inspector.showDependents,
-    expandedScopeIds: context.state.inspector.expandedScopeIds,
-    selectService: context.selectService,
-    selectScope: context.selectScope,
-    toggleScopeExpansion: context.toggleScopeExpansion,
-    setFilter: context.setInspectorFilter,
-    clearSelection: () => {
-      context.selectService(null);
-      context.selectScope(null);
-    },
-  }), [
-    context.viewModels.inspector,
-    context.dataSource,
-    context.state.inspector.selectedServicePortName,
-    context.state.inspector.selectedScopeId,
-    context.state.inspector.filterText,
-    context.state.inspector.showDependencies,
-    context.state.inspector.showDependents,
-    context.state.inspector.expandedScopeIds,
-    context.selectService,
-    context.selectScope,
-    context.toggleScopeExpansion,
-    context.setInspectorFilter,
-  ]);
+  const result = useMemo(
+    (): UseInspectorResult => ({
+      viewModel: context.viewModels.inspector,
+      hasContainer: context.dataSource?.hasContainer() ?? false,
+      selectedServicePortName: context.state.inspector.selectedServicePortName,
+      selectedScopeId: context.state.inspector.selectedScopeId,
+      filter: context.state.inspector.filterText,
+      showDependencies: context.state.inspector.showDependencies,
+      showDependents: context.state.inspector.showDependents,
+      expandedScopeIds: context.state.inspector.expandedScopeIds,
+      selectService: context.selectService,
+      selectScope: context.selectScope,
+      toggleScopeExpansion: context.toggleScopeExpansion,
+      setFilter: context.setInspectorFilter,
+      clearSelection: () => {
+        context.selectService(null);
+        context.selectScope(null);
+      },
+    }),
+    [context]
+  );
 
   return result;
 }

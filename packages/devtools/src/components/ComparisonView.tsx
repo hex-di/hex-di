@@ -75,7 +75,7 @@ export function ComparisonView({
   onServiceSelect,
   isEnabled = true,
 }: ComparisonViewProps): React.ReactElement {
-  const { Box, Text, Button, DiffView, ScrollView, Divider } = usePrimitives();
+  const { Box, Text, DiffView, ScrollView, Divider } = usePrimitives();
 
   const [leftId, setLeftId] = useState<string | null>(null);
   const [rightId, setRightId] = useState<string | null>(null);
@@ -132,18 +132,9 @@ export function ComparisonView({
   }
 
   return (
-    <Box
-      flexDirection="column"
-      height="100%"
-      data-testid="comparison-view"
-    >
+    <Box flexDirection="column" height="100%" data-testid="comparison-view">
       {/* Snapshot Selectors */}
-      <Box
-        flexDirection="row"
-        gap="md"
-        padding="md"
-        alignItems="center"
-      >
+      <Box flexDirection="row" gap="md" padding="md" alignItems="center">
         {/* Left Snapshot Selector */}
         <Box flexDirection="column" flexGrow={1} gap="xs">
           <Text variant="label" color="muted">
@@ -211,13 +202,13 @@ function SnapshotSelector({
   onSelect,
   label,
 }: SnapshotSelectorProps): React.ReactElement {
-  const { Box, Text, Button } = usePrimitives();
+  const { Box, Button } = usePrimitives();
   const [isOpen, setIsOpen] = useState(false);
 
-  const selectedSnapshot = snapshots.find((s) => s.id === selectedId);
+  const selectedSnapshot = snapshots.find(s => s.id === selectedId);
 
   const handleToggle = useCallback(() => {
-    setIsOpen((prev) => !prev);
+    setIsOpen(prev => !prev);
   }, []);
 
   const handleSelect = useCallback(
@@ -246,24 +237,14 @@ function SnapshotSelector({
 
       {/* Dropdown List */}
       {isOpen && (
-        <Box
-          flexDirection="column"
-          gap="xs"
-          padding="xs"
-          data-testid="snapshot-selector-dropdown"
-        >
+        <Box flexDirection="column" gap="xs" padding="xs" data-testid="snapshot-selector-dropdown">
           {selectedId && (
             <>
-              <Button
-                label="Clear selection"
-                onClick={handleClear}
-                variant="ghost"
-                size="sm"
-              />
+              <Button label="Clear selection" onClick={handleClear} variant="ghost" size="sm" />
               <Box height={1} />
             </>
           )}
-          {snapshots.map((snapshot) => (
+          {snapshots.map(snapshot => (
             <Button
               key={snapshot.id}
               label={`${snapshot.label} (${snapshot.serviceCount} services)`}

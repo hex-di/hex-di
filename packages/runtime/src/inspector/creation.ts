@@ -19,12 +19,8 @@ import type {
   ContainerSnapshot,
   ScopeTree,
   SingletonEntry,
-  InternalAccessor,
-  HasInternalAccess,
-  MemoMapSnapshot,
   MemoEntrySnapshot,
 } from "./types.js";
-import { DisposedScopeError } from "../common/errors.js";
 import { isRecord } from "../common/type-guards.js";
 
 // =============================================================================
@@ -66,9 +62,7 @@ interface InternalAccessible {
   readonly [INTERNAL_ACCESS]: () => ContainerInternalState;
 }
 
-export function getInternalAccessor(
-  container: InternalAccessible
-): () => ContainerInternalState {
+export function getInternalAccessor(container: InternalAccessible): () => ContainerInternalState {
   // Container type includes [INTERNAL_ACCESS] property
   const accessor = container[INTERNAL_ACCESS];
   if (typeof accessor !== "function") {
@@ -111,10 +105,7 @@ function deepFreeze<T>(obj: T): T {
  * @returns A frozen ScopeTree node
  * @internal
  */
-function buildScopeTreeNode(
-  scopeState: ScopeInternalState,
-  totalCount: number
-): ScopeTree {
+function buildScopeTreeNode(scopeState: ScopeInternalState, totalCount: number): ScopeTree {
   const children: ScopeTree[] = [];
 
   for (const childState of scopeState.childScopes) {

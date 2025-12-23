@@ -42,7 +42,9 @@ const TEST_GRAPH_BUILDER_BRAND = Symbol("TestGraphBuilder");
  *
  * @internal
  */
-type AdapterPortName<A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>> =
+type _AdapterPortName<
+  A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>,
+> =
   A extends Adapter<infer P, infer _R, infer _L>
     ? P extends Port<unknown, string>
       ? InferPortName<P>
@@ -54,14 +56,10 @@ type AdapterPortName<A extends Adapter<Port<unknown, string>, Port<unknown, stri
  *
  * @internal
  */
-type ValidOverrideAdapter<
+type _ValidOverrideAdapter<
   TProvides extends Port<unknown, string>,
   A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>,
-> = A extends Adapter<infer P, infer _R, infer _L>
-  ? P extends TProvides
-    ? A
-    : never
-  : never;
+> = A extends Adapter<infer P, infer _R, infer _L> ? (P extends TProvides ? A : never) : never;
 
 // =============================================================================
 // TestGraphBuilder Class
@@ -272,7 +270,7 @@ export class TestGraphBuilder<
    */
   build(): Graph<TProvides, TAsyncPorts> {
     // Build the adapters array by applying overrides
-    const adapters = this.originalGraph.adapters.map((adapter) => {
+    const adapters = this.originalGraph.adapters.map(adapter => {
       const portName = adapter.provides.__portName;
       const override = this.overrides.get(portName);
       return override ?? adapter;

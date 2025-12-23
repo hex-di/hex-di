@@ -40,7 +40,7 @@ describe("TUI Primitives", () => {
       // Verify element structure
       expect(element).toBeDefined();
       expect(element?.type).toBe("box");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       expect((element?.props as any).flexDirection).toBe("column");
     });
 
@@ -55,9 +55,9 @@ describe("TUI Primitives", () => {
 
       // Note: focusable is NOT passed through because OpenTUI's Renderable.focusable
       // is a getter-only property (no setter) - it's controlled internally by the class.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       expect((element?.props as any).title).toBe("Test Title");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       expect((element?.props as any).titleAlignment).toBe("center");
     });
   });
@@ -98,7 +98,7 @@ describe("TUI Primitives", () => {
       });
 
       // The span inside should have fg prop set to ANSI code
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const spanChild = (element?.props as any).children;
       expect(spanChild?.props?.fg).toBe(primaryColor);
     });
@@ -118,7 +118,7 @@ describe("TUI Primitives", () => {
 
       expect(element).toBeDefined();
       expect(element?.type).toBe("box");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       expect((element?.props as any).border).toBe(true);
       // Note: focusable is NOT passed through because OpenTUI's Renderable.focusable
       // is a getter-only property (no setter) - it's controlled internally by the class.
@@ -155,7 +155,7 @@ describe("TUI Primitives", () => {
       expect(typeName).toBe("TUIText");
 
       // Get the inner text content
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const textContent = (graphIcon?.props as any).children?.props?.children;
       expect(textContent).toBe("[G]");
     });
@@ -167,11 +167,10 @@ describe("TUI Primitives", () => {
       const chevronDown = Icon({ name: "chevron-down" });
       const close = Icon({ name: "close" });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((chevronRight?.props as any).children?.props?.children).toBe(">");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       expect((chevronDown?.props as any).children?.props?.children).toBe("v");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       expect((close?.props as any).children?.props?.children).toBe("[x]");
     });
   });
@@ -203,7 +202,7 @@ describe("TUI Primitives", () => {
 
       expect(button).toBeDefined();
       expect(button?.type).toBe("box");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       expect((button?.props as any).border).toBe(true);
     });
 

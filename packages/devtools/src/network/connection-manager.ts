@@ -168,7 +168,7 @@ export class ConnectionManager {
           resolve();
         };
 
-        this.socket.onclose = (event) => {
+        this.socket.onclose = event => {
           this.clearConnectionTimer();
           const reason = event.reason || "Connection closed";
           this.lastDisconnectReason = reason;
@@ -181,7 +181,7 @@ export class ConnectionManager {
           this.handleDisconnect();
         };
 
-        this.socket.onerror = (event) => {
+        this.socket.onerror = () => {
           this.clearConnectionTimer();
           const error = new Error("WebSocket error");
           this.handleError(error);
@@ -190,7 +190,7 @@ export class ConnectionManager {
           }
         };
 
-        this.socket.onmessage = (event) => {
+        this.socket.onmessage = event => {
           this.emit({
             type: "message",
             data: event.data.toString(),
@@ -357,7 +357,7 @@ export class ConnectionManager {
 
     this.reconnectTimer = setTimeout(() => {
       this.log(`Reconnection attempt ${this.reconnectAttempts}`);
-      this.connect().catch((error) => {
+      this.connect().catch(error => {
         this.log(`Reconnection failed: ${error.message}`);
         // Will schedule next attempt via handleDisconnect
       });

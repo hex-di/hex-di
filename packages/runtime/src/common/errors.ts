@@ -121,8 +121,8 @@ export abstract class ContainerError extends Error {
  * ```
  */
 export class CircularDependencyError extends ContainerError {
-  readonly code: "CIRCULAR_DEPENDENCY" = "CIRCULAR_DEPENDENCY";
-  readonly isProgrammingError: true = true;
+  readonly code = "CIRCULAR_DEPENDENCY" as const;
+  readonly isProgrammingError = true as const;
 
   /**
    * The chain of dependencies that form the cycle.
@@ -173,8 +173,8 @@ export class CircularDependencyError extends ContainerError {
  * ```
  */
 export class FactoryError extends ContainerError {
-  readonly code: "FACTORY_FAILED" = "FACTORY_FAILED";
-  readonly isProgrammingError: false = false;
+  readonly code = "FACTORY_FAILED" as const;
+  readonly isProgrammingError = false as const;
 
   /**
    * The name of the port whose factory failed.
@@ -227,8 +227,8 @@ export class FactoryError extends ContainerError {
  * ```
  */
 export class DisposedScopeError extends ContainerError {
-  readonly code: "DISPOSED_SCOPE" = "DISPOSED_SCOPE";
-  readonly isProgrammingError: true = true;
+  readonly code = "DISPOSED_SCOPE" as const;
+  readonly isProgrammingError = true as const;
 
   /**
    * The name of the port that was attempted to be resolved.
@@ -278,8 +278,8 @@ export class DisposedScopeError extends ContainerError {
  * ```
  */
 export class ScopeRequiredError extends ContainerError {
-  readonly code: "SCOPE_REQUIRED" = "SCOPE_REQUIRED";
-  readonly isProgrammingError: true = true;
+  readonly code = "SCOPE_REQUIRED" as const;
+  readonly isProgrammingError = true as const;
 
   /**
    * The name of the scoped port that was attempted to be resolved.
@@ -330,8 +330,8 @@ export class ScopeRequiredError extends ContainerError {
  * ```
  */
 export class AsyncFactoryError extends ContainerError {
-  readonly code: "ASYNC_FACTORY_FAILED" = "ASYNC_FACTORY_FAILED";
-  readonly isProgrammingError: false = false;
+  readonly code = "ASYNC_FACTORY_FAILED" as const;
+  readonly isProgrammingError = false as const;
 
   /**
    * The name of the port whose async factory failed.
@@ -392,8 +392,8 @@ export class AsyncFactoryError extends ContainerError {
  * ```
  */
 export class AsyncInitializationRequiredError extends ContainerError {
-  readonly code: "ASYNC_INIT_REQUIRED" = "ASYNC_INIT_REQUIRED";
-  readonly isProgrammingError: true = true;
+  readonly code = "ASYNC_INIT_REQUIRED" as const;
+  readonly isProgrammingError = true as const;
 
   /**
    * The name of the async port that was attempted to be resolved synchronously.

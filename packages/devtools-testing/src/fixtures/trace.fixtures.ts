@@ -7,11 +7,7 @@
  * @packageDocumentation
  */
 
-import type {
-  TraceEntry,
-  TraceStats,
-  Lifetime,
-} from "@hex-di/devtools-core";
+import type { TraceEntry, TraceStats } from "@hex-di/devtools-core";
 
 // =============================================================================
 // Trace Entry Factory
@@ -167,9 +163,7 @@ export interface CreateTraceStatsOptions {
  * @param options - Stats creation options
  * @returns A TraceStats object
  */
-export function createTraceStats(
-  options: CreateTraceStatsOptions = {}
-): TraceStats {
+export function createTraceStats(options: CreateTraceStatsOptions = {}): TraceStats {
   return {
     totalResolutions: options.totalResolutions ?? 0,
     averageDuration: options.averageDuration ?? 0,
@@ -304,10 +298,7 @@ export function createCacheHitTraces(baseTime?: number): readonly TraceEntry[] {
  * @param slowThreshold - Duration threshold for "slow" (default: 100ms)
  * @returns Array of TraceEntry with slow resolutions
  */
-export function createSlowTraces(
-  baseTime?: number,
-  slowThreshold = 100
-): readonly TraceEntry[] {
+export function createSlowTraces(baseTime?: number, slowThreshold = 100): readonly TraceEntry[] {
   const now = baseTime ?? Date.now();
 
   return [
@@ -347,20 +338,18 @@ export function createSlowTraces(
  * @param traces - Optional trace entries to calculate stats from
  * @returns TraceStats calculated from traces
  */
-export function createStatsFromTraces(
-  traces: readonly TraceEntry[]
-): TraceStats {
+export function createStatsFromTraces(traces: readonly TraceEntry[]): TraceStats {
   if (traces.length === 0) {
     return createTraceStats();
   }
 
-  const durations = traces.map((t) => t.duration);
-  const cacheHits = traces.filter((t) => t.isCacheHit).length;
+  const durations = traces.map(t => t.duration);
+  const cacheHits = traces.filter(t => t.isCacheHit).length;
   const totalDuration = durations.reduce((sum, d) => sum + d, 0);
   const averageDuration = totalDuration / traces.length;
-  const slowCount = traces.filter((t) => t.duration > 100).length;
+  const slowCount = traces.filter(t => t.duration > 100).length;
 
-  const startTimes = traces.map((t) => t.startTime);
+  const startTimes = traces.map(t => t.startTime);
   const sessionStart = Math.min(...startTimes);
 
   return createTraceStats({
@@ -442,14 +431,14 @@ export function createTraceHierarchy(
   readonly children: readonly TraceEntry[];
   readonly all: readonly TraceEntry[];
 } {
-  const childIds = childOptions.map((opt) => opt.id);
+  const childIds = childOptions.map(opt => opt.id);
 
   const parent = createTraceEntry({
     ...parentOptions,
     childIds: childIds,
   });
 
-  const children = childOptions.map((opt) =>
+  const children = childOptions.map(opt =>
     createTraceEntry({
       ...opt,
       parentId: parent.id,

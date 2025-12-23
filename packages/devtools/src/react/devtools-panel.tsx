@@ -12,27 +12,15 @@
  * @packageDocumentation
  */
 
-import React, {
-  useState,
-  useMemo,
-  useCallback,
-  type ReactElement,
-} from "react";
+import React, { useState, useMemo, useCallback, type ReactElement } from "react";
 import type { Port } from "@hex-di/ports";
 import type { Graph } from "@hex-di/graph";
 import type { Container, ContainerPhase } from "@hex-di/runtime";
 import { TRACING_ACCESS } from "@hex-di/runtime";
 import { toJSON } from "../to-json.js";
 import type { TracingAPI } from "@hex-di/devtools-core";
-import type { ExportedGraph, ExportedNode } from "@hex-di/devtools-core";
-import {
-  panelStyles,
-  sectionStyles,
-  adapterStyles,
-  emptyStyles,
-  getLifetimeBadgeStyle,
-  getLifetimeClassName,
-} from "./styles.js";
+import type { ExportedGraph } from "@hex-di/devtools-core";
+import { panelStyles, sectionStyles, emptyStyles } from "./styles.js";
 import { ContainerInspector } from "./container-inspector.js";
 import { TabNavigation, type TabId } from "./tab-navigation.js";
 import { ResolutionTracingSection } from "./resolution-tracing-section.js";
@@ -161,7 +149,7 @@ function CollapsibleSection({
         data-testid={`${testIdPrefix}-header`}
         style={sectionStyles.header}
         onClick={() => setIsExpanded(!isExpanded)}
-        onKeyDown={(e) => {
+        onKeyDown={e => {
           if (e.key === "Enter" || e.key === " ") {
             setIsExpanded(!isExpanded);
           }
@@ -181,37 +169,11 @@ function CollapsibleSection({
         </span>
       </div>
       {isExpanded && (
-        <div
-          data-testid={`${testIdPrefix}-content`}
-          style={sectionStyles.content}
-        >
+        <div data-testid={`${testIdPrefix}-content`} style={sectionStyles.content}>
           {children}
         </div>
       )}
     </div>
-  );
-}
-
-/**
- * Lifetime badge component with visual differentiation.
- */
-interface LifetimeBadgeProps {
-  readonly lifetime: string;
-  readonly portName: string;
-}
-
-function LifetimeBadge({
-  lifetime,
-  portName,
-}: LifetimeBadgeProps): ReactElement {
-  return (
-    <span
-      data-testid={`lifetime-badge-${portName}`}
-      className={getLifetimeClassName(lifetime)}
-      style={getLifetimeBadgeStyle(lifetime)}
-    >
-      {lifetime}
-    </span>
   );
 }
 
@@ -224,15 +186,11 @@ interface GraphViewProps {
 
 function GraphView({ exportedGraph }: GraphViewProps): ReactElement {
   if (exportedGraph.nodes.length === 0) {
-    return (
-      <div style={emptyStyles.container}>
-        No adapters registered in this graph.
-      </div>
-    );
+    return <div style={emptyStyles.container}>No adapters registered in this graph.</div>;
   }
 
   // Transform nodes to include lifetime and factoryKind for DependencyGraph
-  const graphNodes = exportedGraph.nodes.map((node) => ({
+  const graphNodes = exportedGraph.nodes.map(node => ({
     id: node.id,
     label: node.label,
     lifetime: node.lifetime as "singleton" | "scoped" | "transient",
@@ -259,79 +217,6 @@ function GraphView({ exportedGraph }: GraphViewProps): ReactElement {
 }
 
 /**
- * Adapter detail item in container browser.
- */
-interface AdapterItemProps {
-  readonly node: ExportedNode;
-  readonly dependencies: readonly string[];
-}
-
-function AdapterItem({ node, dependencies }: AdapterItemProps): ReactElement {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  return (
-    <div data-testid={`adapter-${node.id}`} style={adapterStyles.container}>
-      <div
-        style={{
-          ...adapterStyles.header,
-          ...(isExpanded ? adapterStyles.headerExpanded : {}),
-        }}
-        onClick={() => setIsExpanded(!isExpanded)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            setIsExpanded(!isExpanded);
-          }
-        }}
-        role="button"
-        tabIndex={0}
-        aria-expanded={isExpanded}
-      >
-        <span style={adapterStyles.portName}>{node.id}</span>
-        <LifetimeBadge
-          lifetime={node.lifetime}
-          portName={`detail-${node.id}`}
-        />
-      </div>
-      {isExpanded && (
-        <div style={adapterStyles.details}>
-          <div style={adapterStyles.detailRow}>
-            <span style={adapterStyles.detailLabel}>Lifetime:</span>
-            <span style={adapterStyles.detailValue}>{node.lifetime}</span>
-          </div>
-          <div style={adapterStyles.detailRow}>
-            <span style={adapterStyles.detailLabel}>Dependencies:</span>
-            <span
-              data-testid={`dependency-list-${node.id}`}
-              style={adapterStyles.detailValue}
-            >
-              {dependencies.length === 0 ? (
-                "None"
-              ) : (
-                <ul style={adapterStyles.dependencyList}>
-                  {dependencies.map((dep) => (
-                    <li
-                      key={dep}
-                      data-testid={`dependency-${node.id}-${dep}`}
-                      style={adapterStyles.dependencyItem}
-                    >
-                      {dep}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </span>
-          </div>
-          <div style={adapterStyles.detailRow}>
-            <span style={adapterStyles.detailLabel}>Dep Count:</span>
-            <span style={adapterStyles.detailValue}>{dependencies.length}</span>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
  * Build ServiceInfo list from exported graph (without container).
  *
  * Creates basic service info with dependencies but without resolution
@@ -349,7 +234,7 @@ function buildServicesFromGraph(exportedGraph: ExportedGraph): readonly ServiceI
     }
   }
 
-  return exportedGraph.nodes.map((node) => ({
+  return exportedGraph.nodes.map(node => ({
     portName: node.id,
     lifetime: node.lifetime,
     factoryKind: node.factoryKind,
@@ -359,52 +244,6 @@ function buildServicesFromGraph(exportedGraph: ExportedGraph): readonly ServiceI
     resolutionOrder: undefined,
     dependencies: dependencyMap.get(node.id) ?? [],
   }));
-}
-
-/**
- * Container browser section showing adapter details.
- */
-interface ContainerBrowserProps {
-  readonly exportedGraph: ExportedGraph;
-}
-
-function ContainerBrowser({
-  exportedGraph,
-}: ContainerBrowserProps): ReactElement {
-  // Build a map of node id -> dependencies
-  const dependencyMap = useMemo(() => {
-    const map = new Map<string, string[]>();
-    for (const node of exportedGraph.nodes) {
-      map.set(node.id, []);
-    }
-    for (const edge of exportedGraph.edges) {
-      const deps = map.get(edge.from);
-      if (deps) {
-        deps.push(edge.to);
-      }
-    }
-    return map;
-  }, [exportedGraph]);
-
-  if (exportedGraph.nodes.length === 0) {
-    return (
-      <div style={emptyStyles.container}>
-        No adapters registered in this graph.
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      {exportedGraph.nodes.map((node) => (
-        <AdapterItem
-          key={node.id}
-          node={node}
-          dependencies={dependencyMap.get(node.id) ?? []}
-        />
-      ))}
-    </div>
-  );
 }
 
 // =============================================================================
@@ -512,10 +351,7 @@ export function DevToolsPanel<
   }, [container]);
 
   // Build services list from graph for enhanced services view
-  const services = useMemo(
-    () => buildServicesFromGraph(exportedGraph),
-    [exportedGraph]
-  );
+  const services = useMemo(() => buildServicesFromGraph(exportedGraph), [exportedGraph]);
 
   // Render sections mode (legacy layout)
   if (mode === "sections") {
@@ -524,20 +360,12 @@ export function DevToolsPanel<
         <div style={panelStyles.header}>HexDI DevTools</div>
 
         {/* Graph View Section */}
-        <CollapsibleSection
-          title="Graph View"
-          testIdPrefix="graph-view"
-          defaultExpanded={true}
-        >
+        <CollapsibleSection title="Graph View" testIdPrefix="graph-view" defaultExpanded={true}>
           <GraphView exportedGraph={exportedGraph} />
         </CollapsibleSection>
 
         {/* Services Section */}
-        <CollapsibleSection
-          title="Services"
-          testIdPrefix="services"
-          defaultExpanded={false}
-        >
+        <CollapsibleSection title="Services" testIdPrefix="services" defaultExpanded={false}>
           <EnhancedServicesView
             services={services}
             exportedGraph={exportedGraph}
@@ -566,9 +394,7 @@ export function DevToolsPanel<
           testIdPrefix="resolution-tracing"
           defaultExpanded={false}
         >
-          <ResolutionTracingSection
-            {...(tracingAPI !== undefined ? { tracingAPI } : {})}
-          />
+          <ResolutionTracingSection {...(tracingAPI !== undefined ? { tracingAPI } : {})} />
         </CollapsibleSection>
       </div>
     );
@@ -640,9 +466,7 @@ export function DevToolsPanel<
               minHeight: 0,
             }}
           >
-            <ResolutionTracingSection
-              {...(tracingAPI !== undefined ? { tracingAPI } : {})}
-            />
+            <ResolutionTracingSection {...(tracingAPI !== undefined ? { tracingAPI } : {})} />
           </div>
         )}
 

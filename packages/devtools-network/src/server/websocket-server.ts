@@ -19,7 +19,6 @@ import {
   Methods,
   createSuccessResponse,
   createErrorResponse,
-  createNotification,
   isRequest,
   isResponse,
   isNotification,
@@ -190,7 +189,9 @@ export class DevToolsServer {
    * Upgrade handler bound to this instance.
    * Stored to enable proper cleanup in stop().
    */
-  private upgradeHandler: ((request: IncomingMessage, socket: import("stream").Duplex, head: Buffer) => void) | null = null;
+  private upgradeHandler:
+    | ((request: IncomingMessage, socket: import("stream").Duplex, head: Buffer) => void)
+    | null = null;
 
   /**
    * Start the WebSocket server.
@@ -205,7 +206,8 @@ export class DevToolsServer {
     if (this.options.server !== undefined) {
       // Attached mode: use noServer to avoid conflicts with Vite's HMR WebSocket.
       // We manually handle 'upgrade' events and filter by path.
-      this.wss = new WSServer({ noServer: true });
+      const wss = new WSServer({ noServer: true });
+      this.wss = wss;
 
       // Create bound upgrade handler so we can remove it in stop()
       this.upgradeHandler = (request, socket, head) => {
@@ -215,8 +217,8 @@ export class DevToolsServer {
 
         // Only handle requests to our DevTools path
         if (pathname === this.options.path) {
-          this.wss!.handleUpgrade(request, socket, head, (ws) => {
-            this.wss!.emit("connection", ws, request);
+          wss.handleUpgrade(request, socket, head, ws => {
+            wss.emit("connection", ws, request);
           });
         }
         // For other paths, don't do anything - let Vite's HMR handle them
@@ -243,7 +245,7 @@ export class DevToolsServer {
       this.handleConnection(socket, request);
     });
 
-    this.wss.on("error", (error) => {
+    this.wss.on("error", error => {
       this.emit({ type: "error", error });
     });
 
@@ -265,8 +267,9 @@ export class DevToolsServer {
       this.upgradeHandler = null;
     }
 
+    const wss = this.wss;
     return new Promise((resolve, reject) => {
-      this.wss!.close((err) => {
+      wss.close(err => {
         if (err) {
           reject(err);
           return;
@@ -323,7 +326,7 @@ export class DevToolsServer {
   private handleConnection(socket: WebSocket, _request: IncomingMessage): void {
     this.log("New connection established");
 
-    socket.on("message", (data) => {
+    socket.on("message", data => {
       this.handleMessage(socket, data.toString());
     });
 
@@ -332,7 +335,7 @@ export class DevToolsServer {
       this.registry.unregisterBySocket(socket);
     });
 
-    socket.on("error", (error) => {
+    socket.on("error", error => {
       this.log(`Connection error: ${error.message}`);
       this.emit({ type: "error", error });
     });
@@ -483,7 +486,7 @@ export class DevToolsServer {
 
   private broadcastNotification(notification: JsonRpcNotification): void {
     const message = JSON.stringify(notification);
-    this.wss?.clients.forEach((client) => {
+    this.wss?.clients.forEach(client => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(message);
       }

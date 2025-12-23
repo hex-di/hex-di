@@ -1,7 +1,22 @@
-
-import type { Port, InferPortName } from "@hex-di/ports";
-import type { Adapter, Lifetime, FactoryKind, InferAdapterProvides, InferAdapterRequires, InferManyProvides, InferManyRequires, InferManyAsyncPorts } from "../adapter";
-import type { DuplicateProviderError, MissingDependencyError, UnsatisfiedDependencies, IsSatisfied, HasOverlap, OverlappingPorts } from "../validation";
+import type { Port } from "@hex-di/ports";
+import type {
+  Adapter,
+  Lifetime,
+  FactoryKind,
+  InferAdapterProvides,
+  InferAdapterRequires,
+  InferManyProvides,
+  InferManyRequires,
+  InferManyAsyncPorts,
+} from "../adapter";
+import type {
+  DuplicateProviderError,
+  MissingDependencyError,
+  UnsatisfiedDependencies,
+  IsSatisfied,
+  HasOverlap,
+  OverlappingPorts,
+} from "../validation";
 import type { Graph } from "./types";
 
 /**
@@ -19,18 +34,14 @@ const GRAPH_BUILDER_BRAND = Symbol("GraphBuilder");
  *
  * @internal
  */
-type ProvideResult<
-  TProvides,
-  TRequires,
-  TAsyncPorts,
-  A extends Adapter<any, any, any, any>,
-> = HasOverlap<InferAdapterProvides<A>, TProvides> extends true
-  ? DuplicateProviderError<OverlappingPorts<InferAdapterProvides<A>, TProvides>>
-  : GraphBuilder<
-      TProvides | InferAdapterProvides<A>,
-      TRequires | InferAdapterRequires<A>,
-      TAsyncPorts
-    >;
+type ProvideResult<TProvides, TRequires, TAsyncPorts, A extends Adapter<any, any, any, any>> =
+  HasOverlap<InferAdapterProvides<A>, TProvides> extends true
+    ? DuplicateProviderError<OverlappingPorts<InferAdapterProvides<A>, TProvides>>
+    : GraphBuilder<
+        TProvides | InferAdapterProvides<A>,
+        TRequires | InferAdapterRequires<A>,
+        TAsyncPorts
+      >;
 
 /**
  * The return type of `GraphBuilder.provideAsync()` with duplicate detection.
@@ -42,13 +53,14 @@ type ProvideAsyncResult<
   TRequires,
   TAsyncPorts,
   A extends Adapter<any, any, any, "async">,
-> = HasOverlap<InferAdapterProvides<A>, TProvides> extends true
-  ? DuplicateProviderError<OverlappingPorts<InferAdapterProvides<A>, TProvides>>
-  : GraphBuilder<
-      TProvides | InferAdapterProvides<A>,
-      TRequires | InferAdapterRequires<A>,
-      TAsyncPorts | InferAdapterProvides<A>
-    >;
+> =
+  HasOverlap<InferAdapterProvides<A>, TProvides> extends true
+    ? DuplicateProviderError<OverlappingPorts<InferAdapterProvides<A>, TProvides>>
+    : GraphBuilder<
+        TProvides | InferAdapterProvides<A>,
+        TRequires | InferAdapterRequires<A>,
+        TAsyncPorts | InferAdapterProvides<A>
+      >;
 
 /**
  * Checks if a union of new ports overlaps with existing keys.
@@ -56,8 +68,7 @@ type ProvideAsyncResult<
  *
  * @internal
  */
-type BatchHasOverlap<NewPorts, ExistingPorts> =
-  HasOverlap<NewPorts, ExistingPorts>;
+type BatchHasOverlap<NewPorts, ExistingPorts> = HasOverlap<NewPorts, ExistingPorts>;
 
 /**
  * The return type of `GraphBuilder.provideMany()` with duplicate detection.
@@ -69,42 +80,29 @@ type ProvideManyResult<
   TRequires,
   TAsyncPorts,
   A extends readonly Adapter<any, any, any, any>[],
-> = BatchHasOverlap<InferManyProvides<A>, TProvides> extends true
-  ? DuplicateProviderError<OverlappingPorts<InferManyProvides<A>, TProvides>>
-  : GraphBuilder<
-      TProvides | InferManyProvides<A>,
-      TRequires | InferManyRequires<A>,
-      TAsyncPorts | InferManyAsyncPorts<A>
-    >;
+> =
+  BatchHasOverlap<InferManyProvides<A>, TProvides> extends true
+    ? DuplicateProviderError<OverlappingPorts<InferManyProvides<A>, TProvides>>
+    : GraphBuilder<
+        TProvides | InferManyProvides<A>,
+        TRequires | InferManyRequires<A>,
+        TAsyncPorts | InferManyAsyncPorts<A>
+      >;
 
 /**
  * The return type of `GraphBuilder.merge()` with duplicate detection.
  *
  * @internal
  */
-type MergeResult<
-  TProvides,
-  TRequires,
-  TAsyncPorts,
-  OProvides,
-  ORequires,
-  OAsyncPorts,
-> = HasOverlap<OProvides, TProvides> extends true
-  ? DuplicateProviderError<OverlappingPorts<OProvides, TProvides>>
-  : GraphBuilder<
-      TProvides | OProvides,
-      TRequires | ORequires,
-      TAsyncPorts | OAsyncPorts
-    >;
+type MergeResult<TProvides, TRequires, TAsyncPorts, OProvides, ORequires, OAsyncPorts> =
+  HasOverlap<OProvides, TProvides> extends true
+    ? DuplicateProviderError<OverlappingPorts<OProvides, TProvides>>
+    : GraphBuilder<TProvides | OProvides, TRequires | ORequires, TAsyncPorts | OAsyncPorts>;
 
 /**
  * An immutable builder for constructing dependency graphs with compile-time validation.
  */
-export class GraphBuilder<
-  TProvides = never,
-  TRequires = never,
-  TAsyncPorts = never,
-> {
+export class GraphBuilder<TProvides = never, TRequires = never, TAsyncPorts = never> {
   /**
    * Type-level brand property for nominal typing.
    * @internal
@@ -116,6 +114,24 @@ export class GraphBuilder<
    * @internal
    */
   private readonly [GRAPH_BUILDER_BRAND] = true as const;
+
+  /**
+   * Phantom type property for compile-time type tracking of provided ports.
+   * @internal
+   */
+  declare readonly __provides: TProvides;
+
+  /**
+   * Phantom type property for compile-time type tracking of required ports.
+   * @internal
+   */
+  declare readonly __requires: TRequires;
+
+  /**
+   * Phantom type property for compile-time type tracking of async ports.
+   * @internal
+   */
+  declare readonly __asyncPorts: TAsyncPorts;
 
   /**
    * The readonly array of registered adapters.
@@ -154,9 +170,9 @@ export class GraphBuilder<
   /**
    * Registers an adapter with the graph.
    */
-  provide<
-    A extends Adapter<any, any, any, any>,
-  >(adapter: A): ProvideResult<TProvides, TRequires, TAsyncPorts, A> {
+  provide<A extends Adapter<any, any, any, any>>(
+    adapter: A
+  ): ProvideResult<TProvides, TRequires, TAsyncPorts, A> {
     return new GraphBuilder([...this.adapters, adapter]) as ProvideResult<
       TProvides,
       TRequires,
@@ -168,9 +184,9 @@ export class GraphBuilder<
   /**
    * Registers an async adapter with the graph.
    */
-  provideAsync<
-    A extends Adapter<any, any, any, "async">,
-  >(adapter: A): ProvideAsyncResult<TProvides, TRequires, TAsyncPorts, A> {
+  provideAsync<A extends Adapter<any, any, any, "async">>(
+    adapter: A
+  ): ProvideAsyncResult<TProvides, TRequires, TAsyncPorts, A> {
     return new GraphBuilder([...this.adapters, adapter]) as ProvideAsyncResult<
       TProvides,
       TRequires,
@@ -182,9 +198,9 @@ export class GraphBuilder<
   /**
    * Registers multiple adapters with the graph in a batch.
    */
-  provideMany<
-    const A extends readonly Adapter<any, any, any, any>[],
-  >(adapters: A): ProvideManyResult<TProvides, TRequires, TAsyncPorts, A> {
+  provideMany<const A extends readonly Adapter<any, any, any, any>[]>(
+    adapters: A
+  ): ProvideManyResult<TProvides, TRequires, TAsyncPorts, A> {
     return new GraphBuilder([...this.adapters, ...adapters]) as ProvideManyResult<
       TProvides,
       TRequires,
@@ -196,11 +212,7 @@ export class GraphBuilder<
   /**
    * Merges another GraphBuilder into this one.
    */
-  merge<
-    OProvides,
-    ORequires,
-    OAsyncPorts,
-  >(
+  merge<OProvides, ORequires, OAsyncPorts>(
     other: GraphBuilder<OProvides, ORequires, OAsyncPorts>
   ): MergeResult<TProvides, TRequires, TAsyncPorts, OProvides, ORequires, OAsyncPorts> {
     return new GraphBuilder([...this.adapters, ...other.adapters]) as MergeResult<
@@ -221,8 +233,10 @@ export class GraphBuilder<
       ? []
       : [error: MissingDependencyError<UnsatisfiedDependencies<TProvides, TRequires>>]
   ): Graph<TProvides, TAsyncPorts> {
+    // Phantom type properties (__provides, __asyncPorts) exist only at compile-time.
+    // The runtime object only needs the adapters array.
     return Object.freeze({
       adapters: this.adapters,
-    });
+    }) as Graph<TProvides, TAsyncPorts>;
   }
 }

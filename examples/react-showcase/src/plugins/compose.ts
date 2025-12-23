@@ -4,8 +4,80 @@
  * @packageDocumentation
  */
 
-import { GraphBuilder } from "@hex-di/graph";
+import type { Port } from "@hex-di/ports";
+import { GraphBuilder, type Adapter, type Lifetime, type FactoryKind } from "@hex-di/graph";
 import type { FeatureBundle, Plugin } from "./types.js";
+
+// =============================================================================
+// Type Aliases
+// =============================================================================
+
+/**
+ * Generic adapter type used for runtime composition.
+ */
+type RuntimeAdapter = Adapter<
+  Port<unknown, string>,
+  Port<unknown, string> | never,
+  Lifetime,
+  FactoryKind
+>;
+
+// =============================================================================
+// Internal Helpers
+// =============================================================================
+
+/**
+ * Type guard to check if a result is a GraphBuilder.
+ *
+ * The DuplicateProviderError type is compile-time only - at runtime,
+ * provideMany always returns a GraphBuilder. This guard satisfies
+ * TypeScript while performing runtime composition.
+ */
+function isGraphBuilder<P, R, A>(value: unknown): value is GraphBuilder<P, R, A> {
+  return value !== null && typeof value === "object" && "adapters" in value && "provide" in value;
+}
+
+/**
+ * Ensures the result is a GraphBuilder, throwing if not.
+ *
+ * For runtime composition, this validates the builder chain.
+ */
+function assertGraphBuilder<P, R, A>(value: unknown, operation: string): GraphBuilder<P, R, A> {
+  if (!isGraphBuilder<P, R, A>(value)) {
+    throw new Error(`${operation} did not return a valid GraphBuilder`);
+  }
+  return value;
+}
+
+/**
+ * Collects all adapters from features and plugins into categorized arrays.
+ */
+function collectAdapters(
+  features: readonly FeatureBundle[],
+  plugins: readonly Plugin[] = []
+): { sync: RuntimeAdapter[]; async: RuntimeAdapter[] } {
+  const sync: RuntimeAdapter[] = [];
+  const async: RuntimeAdapter[] = [];
+
+  // Collect from features
+  for (const feature of features) {
+    sync.push(...feature.adapters);
+    async.push(...feature.asyncAdapters);
+  }
+
+  // Collect from plugins
+  for (const plugin of plugins) {
+    for (const adapter of plugin.adapters) {
+      if (adapter.factoryKind === "async") {
+        async.push(adapter);
+      } else {
+        sync.push(adapter);
+      }
+    }
+  }
+
+  return { sync, async };
+}
 
 // =============================================================================
 // Composition Helpers
@@ -15,7 +87,7 @@ import type { FeatureBundle, Plugin } from "./types.js";
  * Registers a feature bundle's adapters with a GraphBuilder.
  *
  * This function adds all sync and async adapters from the feature
- * to the graph builder, maintaining proper registration order.
+ * to the graph builder using batch registration for type safety.
  *
  * @param builder - The GraphBuilder to extend
  * @param feature - The feature bundle to register
@@ -29,26 +101,16 @@ import type { FeatureBundle, Plugin } from "./types.js";
  * ).build();
  * ```
  */
-export function withFeature<
-  TBuilder extends GraphBuilder<any, any, any>,
->(
-  builder: TBuilder,
-  feature: FeatureBundle
-): GraphBuilder<any, any, any> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let result: any = builder;
-
-  // Register sync adapters
-  for (const adapter of feature.adapters) {
-    result = result.provide(adapter);
-  }
-
-  // Register async adapters
-  for (const asyncAdapter of feature.asyncAdapters) {
-    result = result.provideAsync(asyncAdapter);
-  }
-
-  return result as GraphBuilder<any, any, any>;
+export function withFeature(builder: GraphBuilder, feature: FeatureBundle): GraphBuilder {
+  // Use provideMany for batch registration with runtime validation
+  const withSync = assertGraphBuilder(
+    builder.provideMany(feature.adapters),
+    `withFeature(${feature.name}).sync`
+  );
+  return assertGraphBuilder(
+    withSync.provideMany(feature.asyncAdapters),
+    `withFeature(${feature.name}).async`
+  );
 }
 
 /**
@@ -69,24 +131,23 @@ export function withFeature<
  * ).build();
  * ```
  */
-export function installPlugin<
-  TBuilder extends GraphBuilder<any, any, any>,
->(
-  builder: TBuilder,
-  plugin: Plugin
-): GraphBuilder<any, any, any> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let result: any = builder;
+export function installPlugin(builder: GraphBuilder, plugin: Plugin): GraphBuilder {
+  const sync: RuntimeAdapter[] = [];
+  const async: RuntimeAdapter[] = [];
 
   for (const adapter of plugin.adapters) {
     if (adapter.factoryKind === "async") {
-      result = result.provideAsync(adapter);
+      async.push(adapter);
     } else {
-      result = result.provide(adapter);
+      sync.push(adapter);
     }
   }
 
-  return result as GraphBuilder<any, any, any>;
+  const withSync = assertGraphBuilder(
+    builder.provideMany(sync),
+    `installPlugin(${plugin.id}).sync`
+  );
+  return assertGraphBuilder(withSync.provideMany(async), `installPlugin(${plugin.id}).async`);
 }
 
 /**
@@ -108,14 +169,13 @@ export function installPlugin<
  * ```
  */
 export function composeFeatures(features: readonly FeatureBundle[]) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let builder: any = GraphBuilder.create();
-
-  for (const feature of features) {
-    builder = withFeature(builder, feature);
-  }
-
-  return builder.build();
+  const { sync, async } = collectAdapters(features);
+  const withSync = assertGraphBuilder(
+    GraphBuilder.create().provideMany(sync),
+    "composeFeatures.sync"
+  );
+  const withAsync = assertGraphBuilder(withSync.provideMany(async), "composeFeatures.async");
+  return withAsync.build();
 }
 
 /**
@@ -137,18 +197,14 @@ export function composeFeaturesWithPlugins(
   features: readonly FeatureBundle[],
   plugins: readonly Plugin[] = []
 ) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let builder: any = GraphBuilder.create();
-
-  // Add all features
-  for (const feature of features) {
-    builder = withFeature(builder, feature);
-  }
-
-  // Install all plugins
-  for (const plugin of plugins) {
-    builder = installPlugin(builder, plugin);
-  }
-
-  return builder.build();
+  const { sync, async } = collectAdapters(features, plugins);
+  const withSync = assertGraphBuilder(
+    GraphBuilder.create().provideMany(sync),
+    "composeFeaturesWithPlugins.sync"
+  );
+  const withAsync = assertGraphBuilder(
+    withSync.provideMany(async),
+    "composeFeaturesWithPlugins.async"
+  );
+  return withAsync.build();
 }

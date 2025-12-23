@@ -128,6 +128,7 @@ export type {
   Lifetime,
   InferAdapterProvides,
   InferAdapterRequires,
+  InferAdapterLifetime,
   ResolvedDeps,
 } from "@hex-di/graph";
 
@@ -153,7 +154,14 @@ export {
 // Container and Scope Types
 // =============================================================================
 
-export type { Container, Scope, ContainerPhase, ChildContainer, ChildContainerBuilder, InheritanceMode } from "./types.js";
+export type {
+  Container,
+  Scope,
+  ContainerPhase,
+  ChildContainer,
+  ChildContainerBuilder,
+  InheritanceMode,
+} from "./types.js";
 
 export { ContainerBrand, ScopeBrand, ChildContainerBrand } from "./types.js";
 
@@ -167,6 +175,23 @@ export type {
   IsResolvable,
   ServiceFromContainer,
 } from "./types.js";
+
+// =============================================================================
+// Type Utilities for Context Variables
+// =============================================================================
+
+export type { ContextVariableKey } from "./types/branded-types.js";
+export { createContextVariableKey } from "./types/branded-types.js";
+
+export type { TypeSafeContext } from "./types/helpers.js";
+export {
+  getContextVariable,
+  setContextVariable,
+  getContextVariableOrDefault,
+  portComparator,
+} from "./types/helpers.js";
+
+export { isPort, isPortNamed } from "./types/type-guards.js";
 
 // =============================================================================
 // Runtime Resolver Types

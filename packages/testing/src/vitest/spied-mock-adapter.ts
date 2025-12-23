@@ -9,8 +9,8 @@
  */
 
 import { vi, type MockedFunction } from "vitest";
-import type { Port, InferService, InferPortName } from "@hex-di/ports";
-import { createAdapter, type Adapter, type Lifetime } from "@hex-di/graph";
+import type { Port, InferService } from "@hex-di/ports";
+import { createAdapter, type Adapter } from "@hex-di/graph";
 
 // =============================================================================
 // Types
@@ -174,9 +174,7 @@ export function createSpiedMockAdapter<P extends Port<object, string>>(
  *
  * @internal
  */
-function createSpiedImplementation<T extends object>(
-  defaults?: Partial<T>
-): T {
+function createSpiedImplementation<T extends object>(defaults?: Partial<T>): T {
   // Cache created spies to return the same spy for the same property
   const spyCache = new Map<string | symbol, MockedFunction<(...args: unknown[]) => unknown>>();
 
@@ -196,9 +194,10 @@ function createSpiedImplementation<T extends object>(
       const defaultImpl = defaults?.[prop as keyof typeof defaults];
 
       // Create a new spy, optionally with the default implementation
-      const spy = typeof defaultImpl === "function"
-        ? vi.fn(defaultImpl as (...args: unknown[]) => unknown)
-        : vi.fn();
+      const spy =
+        typeof defaultImpl === "function"
+          ? vi.fn(defaultImpl as (...args: unknown[]) => unknown)
+          : vi.fn();
 
       // Cache and return the spy
       spyCache.set(prop, spy);

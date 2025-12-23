@@ -22,12 +22,7 @@ import React, {
 import type { TraceEntry } from "@hex-di/devtools-core";
 import { TimeRuler } from "./time-ruler.js";
 import { TimelineRow } from "./timeline-row.js";
-import {
-  timelineStyles,
-  formatDuration,
-  emptyStyles,
-  containerInspectorStyles,
-} from "./styles.js";
+import { timelineStyles, formatDuration, emptyStyles, containerInspectorStyles } from "./styles.js";
 
 // =============================================================================
 // Types
@@ -78,7 +73,7 @@ const ZOOM_CONFIG = {
 /**
  * Zoom control buttons configuration.
  */
-const ZOOM_BUTTONS: readonly ZoomButton[] = [
+const _ZOOM_BUTTONS: readonly ZoomButton[] = [
   { id: "zoom-in", label: "+", ariaLabel: "Zoom in", action: "zoomIn" },
   { id: "zoom-out", label: "-", ariaLabel: "Zoom out", action: "zoomOut" },
   { id: "fit-all", label: "Fit All", ariaLabel: "Fit all traces", action: "fitAll" },
@@ -227,7 +222,7 @@ function calculateTotalDuration(traces: readonly TraceEntry[]): number {
  */
 function calculateStats(
   traces: readonly TraceEntry[],
-  threshold: number
+  _threshold: number
 ): {
   totalTime: number;
   cacheHitRate: number;
@@ -469,7 +464,7 @@ export function TimelineView({
 
   // Handlers
   const handleToggleExpand = useCallback((traceId: string) => {
-    setExpandedTraceId((current) => (current === traceId ? null : traceId));
+    setExpandedTraceId(current => (current === traceId ? null : traceId));
   }, []);
 
   const handleFitAll = useCallback(() => {
@@ -478,7 +473,7 @@ export function TimelineView({
 
   const handleFocusSlow = useCallback(() => {
     // Find the first slow trace and adjust zoom to focus on it
-    const slowTrace = traces.find((t) => t.duration >= threshold && !t.isCacheHit);
+    const slowTrace = traces.find(t => t.duration >= threshold && !t.isCacheHit);
     if (slowTrace) {
       // Set zoom to show the slow trace prominently
       setZoom(2);
@@ -508,9 +503,7 @@ export function TimelineView({
     <div data-testid="timeline-view" style={localStyles.container}>
       {/* Header with zoom controls */}
       <div style={localStyles.header}>
-        <span style={{ fontSize: "12px", fontWeight: 600 }}>
-          Timeline ({traces.length} traces)
-        </span>
+        <span style={{ fontSize: "12px", fontWeight: 600 }}>Timeline ({traces.length} traces)</span>
         <ZoomControls
           zoom={zoom}
           onZoomChange={setZoom}
@@ -523,15 +516,11 @@ export function TimelineView({
       <div style={localStyles.timelineContainer}>
         <div style={{ width: scaledWidth, minWidth: "100%" }}>
           {/* Time ruler */}
-          <TimeRuler
-            totalDuration={totalDuration}
-            threshold={threshold}
-            zoom={zoom}
-          />
+          <TimeRuler totalDuration={totalDuration} threshold={threshold} zoom={zoom} />
 
           {/* Timeline rows */}
           <div data-testid="timeline-rows" style={localStyles.rowsContainer}>
-            {traces.map((trace) => (
+            {traces.map(trace => (
               <TimelineRow
                 key={trace.id}
                 trace={trace}

@@ -218,9 +218,7 @@ export class DevToolsHostClient {
     }
 
     if (this.handlers === null) {
-      throw new Error(
-        "No handlers registered. Call registerHandlers() before connect()."
-      );
+      throw new Error("No handlers registered. Call registerHandlers() before connect().");
     }
 
     this.shouldReconnect = this.options.autoReconnect;
@@ -237,7 +235,7 @@ export class DevToolsHostClient {
         resolve();
       };
 
-      this.ws.onmessage = (event) => {
+      this.ws.onmessage = event => {
         this.handleMessage(String(event.data));
       };
 
@@ -250,7 +248,7 @@ export class DevToolsHostClient {
         this.handleReconnect();
       };
 
-      this.ws.onerror = (event) => {
+      this.ws.onerror = _event => {
         const error = new Error("WebSocket connection error");
         this.log(`Connection error: ${error.message}`);
         this.emit({ type: "error", error });

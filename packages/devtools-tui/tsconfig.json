@@ -7,8 +7,7 @@
     "declarationMap": true,
     "jsx": "react-jsx",
     "jsxImportSource": "@opentui/react",
-    "lib": ["ESNext", "DOM"],
-    "skipLibCheck": true
+    "lib": ["ESNext", "DOM"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

@@ -10,11 +10,7 @@
 
 import React from "react";
 import type { TimelineScrubberProps } from "../ports/render-primitives.port.js";
-import {
-  TUIText,
-  TUISpan,
-  TUIStrong,
-} from "./opentui-elements.js";
+import { TUIText, TUISpan, TUIStrong } from "./opentui-elements.js";
 import { TUIStyleSystem } from "./primitives.js";
 
 /**
@@ -33,7 +29,6 @@ function formatTime(timestamp: number): string {
 export function TimelineScrubber({
   snapshots,
   currentIndex,
-  onNavigate,
   onCapture,
 }: TimelineScrubberProps): React.ReactElement {
   if (snapshots.length === 0) {
@@ -60,7 +55,9 @@ export function TimelineScrubber({
       {/* Navigation Controls */}
       <box flexDirection="row" gap={2}>
         <TUIText>
-          <TUISpan fg={canGoBack ? TUIStyleSystem.getColor("primary") : TUIStyleSystem.getColor("muted")}>
+          <TUISpan
+            fg={canGoBack ? TUIStyleSystem.getColor("primary") : TUIStyleSystem.getColor("muted")}
+          >
             {canGoBack ? "[←] Prev" : "[ ] Prev"}
           </TUISpan>
         </TUIText>
@@ -70,7 +67,11 @@ export function TimelineScrubber({
           </TUISpan>
         </TUIText>
         <TUIText>
-          <TUISpan fg={canGoForward ? TUIStyleSystem.getColor("primary") : TUIStyleSystem.getColor("muted")}>
+          <TUISpan
+            fg={
+              canGoForward ? TUIStyleSystem.getColor("primary") : TUIStyleSystem.getColor("muted")
+            }
+          >
             {canGoForward ? "[→] Next" : "[ ] Next"}
           </TUISpan>
         </TUIText>
@@ -86,7 +87,9 @@ export function TimelineScrubber({
         {snapshots.map((snapshot, index) => {
           const isCurrent = index === currentIndex;
           const marker = isCurrent ? "●" : "○";
-          const fgColor = isCurrent ? TUIStyleSystem.getColor("primary") : TUIStyleSystem.getColor("muted");
+          const fgColor = isCurrent
+            ? TUIStyleSystem.getColor("primary")
+            : TUIStyleSystem.getColor("muted");
 
           return (
             <TUIText key={snapshot.id}>

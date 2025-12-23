@@ -49,7 +49,7 @@ class BrowserWebSocketService implements WebSocketService {
         resolve();
       };
 
-      this.ws.onmessage = (event) => {
+      this.ws.onmessage = event => {
         handlers.onMessage(String(event.data));
       };
 
@@ -59,7 +59,7 @@ class BrowserWebSocketService implements WebSocketService {
         handlers.onClose();
       };
 
-      this.ws.onerror = (event) => {
+      this.ws.onerror = _event => {
         const err = new Error("WebSocket error");
         handlers.onError(err);
         if (this.currentState === "connecting") {

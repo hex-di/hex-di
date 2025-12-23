@@ -9,15 +9,8 @@
  * @module
  */
 
-import type { Port, InferService, InferPortName } from "@hex-di/ports";
-import type {
-  Adapter,
-  Lifetime,
-  FactoryKind,
-  ResolvedDeps,
-  InferAdapterProvides,
-  InferAdapterRequires,
-} from "@hex-di/graph";
+import type { Port, InferService } from "@hex-di/ports";
+import type { Adapter, Lifetime, FactoryKind, ResolvedDeps } from "@hex-di/graph";
 
 // =============================================================================
 // Types

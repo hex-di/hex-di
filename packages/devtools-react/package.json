@@ -25,6 +25,7 @@
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.build.json --watch",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest watch",
     "test:types": "vitest typecheck --run",

@@ -7,7 +7,12 @@
  * @packageDocumentation
  */
 
-import type { ExportedGraph, ExportedNode, ExportedEdge, PresenterDataSourceContract } from "@hex-di/devtools-core";
+import type {
+  ExportedGraph,
+  ExportedNode,
+  ExportedEdge,
+  PresenterDataSourceContract,
+} from "@hex-di/devtools-core";
 import type {
   GraphViewModel,
   GraphNodeViewModel,
@@ -132,7 +137,7 @@ export class GraphPresenter {
    */
   private calculateLayout(graph: ExportedGraph): Map<string, NodePosition> {
     const positions = new Map<string, NodePosition>();
-    const nodes = graph.nodes;
+    const _nodes = graph.nodes; // retained for potential debugging
 
     // Build dependency levels
     const levels = this.calculateDependencyLevels(graph);
@@ -145,11 +150,12 @@ export class GraphPresenter {
     });
 
     // Position nodes by level
-    const maxLevel = Math.max(...levels.values(), 0);
+    const _maxLevel = Math.max(...levels.values(), 0); // retained for future layout calculations
 
     levelGroups.forEach((nodeIds, level) => {
       const y = level * (DEFAULT_NODE_HEIGHT + NODE_SPACING_Y);
-      const totalWidth = nodeIds.length * DEFAULT_NODE_WIDTH + (nodeIds.length - 1) * NODE_SPACING_X;
+      const totalWidth =
+        nodeIds.length * DEFAULT_NODE_WIDTH + (nodeIds.length - 1) * NODE_SPACING_X;
       const startX = -totalWidth / 2;
 
       nodeIds.forEach((nodeId, index) => {
@@ -178,15 +184,21 @@ export class GraphPresenter {
     // Find roots (nodes with no dependents)
     const roots = graph.nodes
       .map(n => n.id)
-      .filter(id => !dependents.has(id) || dependents.get(id)!.size === 0);
+      .filter(id => {
+        const deps = dependents.get(id);
+        return deps === undefined || deps.size === 0;
+      });
 
     // BFS to assign levels
     const queue = roots.map(id => ({ id, level: 0 }));
 
     while (queue.length > 0) {
-      const { id, level } = queue.shift()!;
+      const item = queue.shift();
+      if (item === undefined) break;
+      const { id, level } = item;
 
-      if (levels.has(id) && levels.get(id)! >= level) {
+      const existingLevel = levels.get(id);
+      if (existingLevel !== undefined && existingLevel >= level) {
         continue;
       }
 
@@ -242,8 +254,7 @@ export class GraphPresenter {
   private transformEdges(edges: readonly ExportedEdge[]): GraphEdgeViewModel[] {
     return edges.map(edge => {
       const isHighlighted =
-        this.highlightedNodeIds.has(edge.from) &&
-        this.highlightedNodeIds.has(edge.to);
+        this.highlightedNodeIds.has(edge.from) && this.highlightedNodeIds.has(edge.to);
 
       return Object.freeze({
         id: `${edge.from}->${edge.to}`,

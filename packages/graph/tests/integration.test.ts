@@ -85,7 +85,9 @@ const CachePort = createPort<"Cache", Cache>("Cache");
 const UserRepositoryPort = createPort<"UserRepository", UserRepository>("UserRepository");
 const UserServicePort = createPort<"UserService", UserService>("UserService");
 const EmailServicePort = createPort<"EmailService", EmailService>("EmailService");
-const NotificationServicePort = createPort<"NotificationService", NotificationService>("NotificationService");
+const NotificationServicePort = createPort<"NotificationService", NotificationService>(
+  "NotificationService"
+);
 
 // =============================================================================
 // Test 1: Complete Workflow - Create Ports, Adapters, Graph, Build
@@ -109,16 +111,13 @@ describe("Integration: Complete workflow", () => {
       requires: [],
       lifetime: "singleton",
       factory: () => ({
-        get: (key) => `value-${key}`,
-        getNumber: (key) => parseInt(key, 10) || 0,
+        get: key => `value-${key}`,
+        getNumber: key => parseInt(key, 10) || 0,
       }),
     });
 
     // Step 2: Build graph
-    const graph = GraphBuilder.create()
-      .provide(loggerAdapter)
-      .provide(configAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(loggerAdapter).provide(configAdapter).build();
 
     // Step 3: Verify graph structure
     expect(graph.adapters.length).toBe(2);
@@ -128,9 +127,7 @@ describe("Integration: Complete workflow", () => {
 
     // Step 4: Verify types
     type GraphType = typeof graph;
-    expectTypeOf<GraphType>().toMatchTypeOf<
-      Graph<typeof LoggerPort | typeof ConfigPort>
-    >();
+    expectTypeOf<GraphType>().toMatchTypeOf<Graph<typeof LoggerPort | typeof ConfigPort>>();
   });
 
   it("verifies complete type flow from port to graph", () => {
@@ -151,7 +148,7 @@ describe("Integration: Complete workflow", () => {
 
     const graph = builder.build();
     // Use conditional type inference since __provides is optional (phantom type)
-    type GraphProvides = (typeof graph) extends { __provides?: infer P } ? P : never;
+    type GraphProvides = typeof graph extends { __provides: infer P } ? P : never;
     expectTypeOf<GraphProvides>().toEqualTypeOf<typeof LoggerPort>();
   });
 });
@@ -178,7 +175,7 @@ describe("Integration: Multi-layer dependency chain", () => {
       provides: CachePort,
       requires: [ConfigPort],
       lifetime: "singleton",
-      factory: (deps) => {
+      factory: deps => {
         // Verify deps has Config
         const _config = deps.Config;
         return {
@@ -194,7 +191,7 @@ describe("Integration: Multi-layer dependency chain", () => {
       provides: DatabasePort,
       requires: [CachePort],
       lifetime: "singleton",
-      factory: (deps) => {
+      factory: deps => {
         // Verify deps has Cache
         const _cache = deps.Cache;
         return {
@@ -240,15 +237,11 @@ describe("Integration: Multi-layer dependency chain", () => {
     });
 
     // Build without Cache - should require error argument
-    const builder = GraphBuilder.create()
-      .provide(configAdapter)
-      .provide(databaseAdapter);
+    const builder = GraphBuilder.create().provide(configAdapter).provide(databaseAdapter);
 
     type BuildParams = Parameters<typeof builder.build>;
     type ErrorArg = BuildParams[0];
-    type IsMissingError = ErrorArg extends MissingDependencyError<typeof CachePort>
-      ? true
-      : false;
+    type IsMissingError = ErrorArg extends MissingDependencyError<typeof CachePort> ? true : false;
     expectTypeOf<IsMissingError>().toEqualTypeOf<true>();
   });
 });
@@ -264,14 +257,14 @@ describe("Integration: Adapter with multiple dependencies", () => {
       provides: UserServicePort,
       requires: [LoggerPort, DatabasePort, CachePort],
       lifetime: "scoped",
-      factory: (deps) => {
+      factory: deps => {
         // Verify all deps are accessible with correct types
         const _logger: Logger = deps.Logger;
         const _database: Database = deps.Database;
         const _cache: Cache = deps.Cache;
 
         return {
-          getUser: async (id) => {
+          getUser: async id => {
             deps.Logger.log(`Getting user ${id}`);
             const cached = deps.Cache.get<{ id: string; name: string; email: string }>(id);
             if (cached) return cached;
@@ -283,7 +276,10 @@ describe("Integration: Adapter with multiple dependencies", () => {
           },
           createUser: async (name, email) => {
             deps.Logger.log(`Creating user ${name}`);
-            await deps.Database.execute("INSERT INTO users (name, email) VALUES (?, ?)", [name, email]);
+            await deps.Database.execute("INSERT INTO users (name, email) VALUES (?, ?)", [
+              name,
+              email,
+            ]);
             return { id: "new-id" };
           },
         };
@@ -298,24 +294,30 @@ describe("Integration: Adapter with multiple dependencies", () => {
 
     // Build complete graph
     const graph = GraphBuilder.create()
-      .provide(createAdapter({
-        provides: LoggerPort,
-        requires: [],
-        lifetime: "singleton",
-        factory: () => ({ log: () => {}, error: () => {} }),
-      }))
-      .provide(createAdapter({
-        provides: DatabasePort,
-        requires: [],
-        lifetime: "singleton",
-        factory: () => ({ query: async () => [], execute: async () => {} }),
-      }))
-      .provide(createAdapter({
-        provides: CachePort,
-        requires: [],
-        lifetime: "singleton",
-        factory: () => ({ get: () => undefined, set: () => {}, invalidate: () => {} }),
-      }))
+      .provide(
+        createAdapter({
+          provides: LoggerPort,
+          requires: [],
+          lifetime: "singleton",
+          factory: () => ({ log: () => {}, error: () => {} }),
+        })
+      )
+      .provide(
+        createAdapter({
+          provides: DatabasePort,
+          requires: [],
+          lifetime: "singleton",
+          factory: () => ({ query: async () => [], execute: async () => {} }),
+        })
+      )
+      .provide(
+        createAdapter({
+          provides: CachePort,
+          requires: [],
+          lifetime: "singleton",
+          factory: () => ({ get: () => undefined, set: () => {}, invalidate: () => {} }),
+        })
+      )
       .provide(userServiceAdapter)
       .build();
 
@@ -382,7 +384,7 @@ describe("Integration: Real-world usage pattern", () => {
       requires: [],
       lifetime: "singleton",
       factory: () => ({
-        log: (_msg) => {
+        log: _msg => {
           // In real app: console.log(`[LOG] ${msg}`)
         },
         error: (_msg, _err) => {
@@ -396,8 +398,8 @@ describe("Integration: Real-world usage pattern", () => {
       requires: [],
       lifetime: "singleton",
       factory: () => ({
-        get: (_key) => "config-value",
-        getNumber: (_key) => 0,
+        get: _key => "config-value",
+        getNumber: _key => 0,
       }),
     });
 
@@ -406,12 +408,12 @@ describe("Integration: Real-world usage pattern", () => {
       provides: DatabasePort,
       requires: [LoggerPort, ConfigPort],
       lifetime: "singleton",
-      factory: (deps) => ({
-        query: async (sql) => {
+      factory: deps => ({
+        query: async sql => {
           deps.Logger.log(`Query: ${sql}`);
           return [];
         },
-        execute: async (sql) => {
+        execute: async sql => {
           deps.Logger.log(`Execute: ${sql}`);
         },
       }),
@@ -433,8 +435,8 @@ describe("Integration: Real-world usage pattern", () => {
       provides: UserRepositoryPort,
       requires: [DatabasePort, CachePort, LoggerPort],
       lifetime: "scoped",
-      factory: (deps) => ({
-        findById: async (id) => {
+      factory: deps => ({
+        findById: async id => {
           const cached = deps.Cache.get<{ id: string; name: string; email: string }>(`user:${id}`);
           if (cached) return cached;
           const [user] = await deps.Database.query<{ id: string; name: string; email: string }>(
@@ -444,11 +446,11 @@ describe("Integration: Real-world usage pattern", () => {
           if (user) deps.Cache.set(`user:${id}`, user, 3600);
           return user || null;
         },
-        save: async (user) => {
-          await deps.Database.execute(
-            "INSERT INTO users (name, email) VALUES (?, ?)",
-            [user.name, user.email]
-          );
+        save: async user => {
+          await deps.Database.execute("INSERT INTO users (name, email) VALUES (?, ?)", [
+            user.name,
+            user.email,
+          ]);
           return { id: "generated-id" };
         },
       }),
@@ -459,8 +461,8 @@ describe("Integration: Real-world usage pattern", () => {
       provides: UserServicePort,
       requires: [UserRepositoryPort, LoggerPort],
       lifetime: "scoped",
-      factory: (deps) => ({
-        getUser: async (id) => {
+      factory: deps => ({
+        getUser: async id => {
           deps.Logger.log(`UserService.getUser(${id})`);
           return deps.UserRepository.findById(id);
         },
@@ -475,7 +477,7 @@ describe("Integration: Real-world usage pattern", () => {
       provides: EmailServicePort,
       requires: [ConfigPort, LoggerPort],
       lifetime: "transient",
-      factory: (deps) => ({
+      factory: deps => ({
         send: async (to, subject, _body) => {
           deps.Logger.log(`Sending email to ${to}: ${subject}`);
           // Would use deps.Config to get SMTP settings
@@ -487,7 +489,7 @@ describe("Integration: Real-world usage pattern", () => {
       provides: NotificationServicePort,
       requires: [UserServicePort, EmailServicePort, LoggerPort],
       lifetime: "transient",
-      factory: (deps) => ({
+      factory: deps => ({
         notify: async (userId, message) => {
           deps.Logger.log(`Notifying user ${userId}`);
           const user = await deps.UserService.getUser(userId);
@@ -515,7 +517,7 @@ describe("Integration: Real-world usage pattern", () => {
     expect(Object.isFrozen(graph)).toBe(true);
 
     // Verify type correctness - use conditional inference since __provides is optional
-    type ProvidedPorts = (typeof graph) extends { __provides?: infer P } ? P : never;
+    type ProvidedPorts = typeof graph extends { __provides: infer P } ? P : never;
     expectTypeOf<ProvidedPorts>().toEqualTypeOf<
       | typeof LoggerPort
       | typeof ConfigPort
@@ -547,20 +549,20 @@ describe("Integration: Error recovery", () => {
 
     // Step 1: Incomplete graph - only Logger provided
     const incompleteBuilder = GraphBuilder.create()
-      .provide(createAdapter({
-        provides: LoggerPort,
-        requires: [],
-        lifetime: "singleton",
-        factory: () => ({ log: () => {}, error: () => {} }),
-      }))
+      .provide(
+        createAdapter({
+          provides: LoggerPort,
+          requires: [],
+          lifetime: "singleton",
+          factory: () => ({ log: () => {}, error: () => {} }),
+        })
+      )
       .provide(userServiceAdapter);
 
     // Verify build requires error argument when incomplete
     type IncompleteParams = Parameters<typeof incompleteBuilder.build>;
     type ErrorArg = IncompleteParams[0];
-    type IsError = ErrorArg extends MissingDependencyError<typeof DatabasePort>
-      ? true
-      : false;
+    type IsError = ErrorArg extends MissingDependencyError<typeof DatabasePort> ? true : false;
     expectTypeOf<IsError>().toEqualTypeOf<true>();
 
     // Step 2: Add the missing Database adapter
@@ -600,7 +602,7 @@ describe("Integration: Factory dependency object shape", () => {
       provides: UserServicePort,
       requires: [LoggerPort, DatabasePort, CachePort],
       lifetime: "scoped",
-      factory: (deps) => {
+      factory: deps => {
         // Capture deps for verification
         capturedDeps = deps;
 
@@ -637,7 +639,7 @@ describe("Integration: Factory dependency object shape", () => {
       provides: LoggerPort,
       requires: [],
       lifetime: "singleton",
-      factory: (deps) => {
+      factory: deps => {
         // deps should be Record<string, unknown> for compatibility with other adapters
         expectTypeOf(deps).toEqualTypeOf<Record<string, unknown>>();
         return { log: () => {}, error: () => {} };
@@ -678,14 +680,20 @@ describe("Integration: @hex-di/ports compatibility", () => {
     const graph = GraphBuilder.create().provide(adapter).build();
 
     // Verify the graph correctly types the provides - use conditional inference
-    type GraphProvides = (typeof graph) extends { __provides?: infer P } ? P : never;
+    type GraphProvides = typeof graph extends { __provides: infer P } ? P : never;
     expectTypeOf<GraphProvides>().toEqualTypeOf<typeof CustomPort>();
   });
 
   it("multiple ports with different service types work correctly", () => {
-    interface ServiceA { methodA(): string; }
-    interface ServiceB { methodB(): number; }
-    interface ServiceC { methodC(a: ServiceA, b: ServiceB): boolean; }
+    interface ServiceA {
+      methodA(): string;
+    }
+    interface ServiceB {
+      methodB(): number;
+    }
+    interface ServiceC {
+      methodC(a: ServiceA, b: ServiceB): boolean;
+    }
 
     const PortA = createPort<"ServiceA", ServiceA>("ServiceA");
     const PortB = createPort<"ServiceB", ServiceB>("ServiceB");
@@ -709,7 +717,7 @@ describe("Integration: @hex-di/ports compatibility", () => {
       provides: PortC,
       requires: [PortA, PortB],
       lifetime: "scoped",
-      factory: (deps) => ({
+      factory: deps => ({
         methodC: (_a, _b) => deps.ServiceA.methodA() === "a" && deps.ServiceB.methodB() === 42,
       }),
     });
@@ -723,10 +731,8 @@ describe("Integration: @hex-di/ports compatibility", () => {
     expect(graph.adapters.length).toBe(3);
 
     // Use conditional inference since __provides is optional
-    type GraphProvides = (typeof graph) extends { __provides?: infer P } ? P : never;
-    expectTypeOf<GraphProvides>().toEqualTypeOf<
-      typeof PortA | typeof PortB | typeof PortC
-    >();
+    type GraphProvides = typeof graph extends { __provides: infer P } ? P : never;
+    expectTypeOf<GraphProvides>().toEqualTypeOf<typeof PortA | typeof PortB | typeof PortC>();
   });
 });
 
@@ -742,7 +748,10 @@ describe("Integration: Complex generic type inference", () => {
       save(entity: T): Promise<void>;
     }
 
-    interface User { id: string; name: string; }
+    interface User {
+      id: string;
+      name: string;
+    }
 
     const UserRepoPort = createPort<"UserRepo", Repository<User>>("UserRepo");
 
@@ -750,12 +759,12 @@ describe("Integration: Complex generic type inference", () => {
       provides: UserRepoPort,
       requires: [DatabasePort],
       lifetime: "scoped",
-      factory: (deps) => ({
-        findById: async (id) => {
+      factory: deps => ({
+        findById: async id => {
           const [user] = await deps.Database.query<User>("SELECT * FROM users WHERE id = ?", [id]);
           return user || null;
         },
-        save: async (user) => {
+        save: async user => {
           await deps.Database.execute("INSERT INTO users VALUES (?)", [user]);
         },
       }),
@@ -767,17 +776,19 @@ describe("Integration: Complex generic type inference", () => {
 
     // Build graph with database dependency
     const graph = GraphBuilder.create()
-      .provide(createAdapter({
-        provides: DatabasePort,
-        requires: [],
-        lifetime: "singleton",
-        factory: () => ({ query: async () => [], execute: async () => {} }),
-      }))
+      .provide(
+        createAdapter({
+          provides: DatabasePort,
+          requires: [],
+          lifetime: "singleton",
+          factory: () => ({ query: async () => [], execute: async () => {} }),
+        })
+      )
       .provide(userRepoAdapter)
       .build();
 
     // Use conditional inference since __provides is optional
-    type GraphProvides = (typeof graph) extends { __provides?: infer P } ? P : never;
+    type GraphProvides = typeof graph extends { __provides: infer P } ? P : never;
     expectTypeOf<GraphProvides>().toEqualTypeOf<typeof DatabasePort | typeof UserRepoPort>();
   });
 
@@ -814,7 +825,7 @@ describe("Integration: Self-referential adapter (edge case)", () => {
       provides: LoggerPort,
       requires: [LoggerPort], // Requires itself!
       lifetime: "singleton",
-      factory: (deps) => {
+      factory: deps => {
         // This would be recursive - Logger requires Logger
         return deps.Logger; // Just return the dependency
       },
@@ -846,8 +857,12 @@ describe("Integration: Self-referential adapter (edge case)", () => {
 
   it("two adapters with circular dependency also pass type check", () => {
     // A requires B, B requires A - both provided
-    interface ServiceA { a(): void; }
-    interface ServiceB { b(): void; }
+    interface ServiceA {
+      a(): void;
+    }
+    interface ServiceB {
+      b(): void;
+    }
 
     const PortA = createPort<"A", ServiceA>("A");
     const PortB = createPort<"B", ServiceB>("B");
@@ -856,14 +871,14 @@ describe("Integration: Self-referential adapter (edge case)", () => {
       provides: PortA,
       requires: [PortB],
       lifetime: "singleton",
-      factory: (deps) => ({ a: () => deps.B.b() }),
+      factory: deps => ({ a: () => deps.B.b() }),
     });
 
     const adapterB = createAdapter({
       provides: PortB,
       requires: [PortA],
       lifetime: "singleton",
-      factory: (deps) => ({ b: () => deps.A.a() }),
+      factory: deps => ({ b: () => deps.A.a() }),
     });
 
     const builder = GraphBuilder.create().provide(adapterA).provide(adapterB);

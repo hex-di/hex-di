@@ -18,12 +18,7 @@ import type {
   MethodResult,
   MethodMap,
 } from "@hex-di/devtools-core";
-import {
-  Methods,
-  createRequest,
-  isResponse,
-  isErrorResponse,
-} from "@hex-di/devtools-core";
+import { Methods, createRequest, isResponse, isErrorResponse } from "@hex-di/devtools-core";
 import type { WebSocketService } from "./ports/websocket.port.js";
 
 // =============================================================================
@@ -167,7 +162,7 @@ export class DevToolsClient {
         this.isConnected = true;
         this.emit({ type: "connected" });
       },
-      onMessage: (data) => {
+      onMessage: data => {
         this.handleMessage(data);
       },
       onClose: () => {
@@ -175,7 +170,7 @@ export class DevToolsClient {
         this.emit({ type: "disconnected" });
         this.handleReconnect();
       },
-      onError: (error) => {
+      onError: error => {
         this.emit({ type: "error", error });
       },
     });
@@ -317,10 +312,11 @@ export class DevToolsClient {
 
     const id = ++this.requestIdCounter;
     const request = createRequest(id, method, params);
+    const socket = this.webSocket;
 
     return new Promise((resolve, reject) => {
       this.pendingRequests.set(id, { resolve: resolve as (result: unknown) => void, reject });
-      this.webSocket!.send(JSON.stringify(request));
+      socket.send(JSON.stringify(request));
 
       // Timeout
       setTimeout(() => {

@@ -19,10 +19,10 @@ describe("Browser/TUI Synchronization", () => {
   describe("State Broadcasting", () => {
     it("should broadcast state changes to all connected clients", () => {
       const broadcasts: SyncStateParams[] = [];
-      const broadcaster = new StateBroadcaster(
-        (params) => broadcasts.push(params),
-        { debounceDelayMs: 300, verbose: false }
-      );
+      const broadcaster = new StateBroadcaster(params => broadcasts.push(params), {
+        debounceDelayMs: 300,
+        verbose: false,
+      });
 
       const state = {
         ...initialState,
@@ -41,10 +41,10 @@ describe("Browser/TUI Synchronization", () => {
 
     it("should debounce rapid filter changes", async () => {
       const broadcasts: SyncStateParams[] = [];
-      const broadcaster = new StateBroadcaster(
-        (params) => broadcasts.push(params),
-        { debounceDelayMs: 100, verbose: false }
-      );
+      const broadcaster = new StateBroadcaster(params => broadcasts.push(params), {
+        debounceDelayMs: 100,
+        verbose: false,
+      });
 
       // Rapid filter changes
       for (let i = 0; i < 5; i++) {
@@ -62,7 +62,7 @@ describe("Browser/TUI Synchronization", () => {
       expect(broadcasts).toHaveLength(0);
 
       // Wait for debounce
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      await new Promise(resolve => setTimeout(resolve, 150));
 
       // Should have broadcast once with the last filter
       expect(broadcasts).toHaveLength(1);
@@ -76,8 +76,8 @@ describe("Browser/TUI Synchronization", () => {
       const dispatched: DevToolsAction[] = [];
 
       const actionSync = new ActionSync(
-        (params) => sentActions.push(params),
-        (action) => dispatched.push(action),
+        params => sentActions.push(params),
+        action => dispatched.push(action),
         { clientId: "tui-1", maxHistorySize: 100, enableReplay: true, verbose: false }
       );
 
@@ -99,8 +99,8 @@ describe("Browser/TUI Synchronization", () => {
       const dispatched: DevToolsAction[] = [];
 
       const actionSync = new ActionSync(
-        (params) => sentActions.push(params),
-        (action) => dispatched.push(action),
+        params => sentActions.push(params),
+        action => dispatched.push(action),
         { clientId: "browser-1", maxHistorySize: 100, enableReplay: true, verbose: false }
       );
 
@@ -117,7 +117,7 @@ describe("Browser/TUI Synchronization", () => {
 
       // Should dispatch the action and store remote action info
       expect(dispatched.length).toBeGreaterThanOrEqual(1);
-      expect(dispatched.find((a) => a.type === "SELECT_NODE")).toBeDefined();
+      expect(dispatched.find(a => a.type === "SELECT_NODE")).toBeDefined();
     });
 
     it("should prevent action loops by ignoring self-actions", () => {
@@ -125,8 +125,8 @@ describe("Browser/TUI Synchronization", () => {
       const dispatched: DevToolsAction[] = [];
 
       const actionSync = new ActionSync(
-        (params) => sentActions.push(params),
-        (action) => dispatched.push(action),
+        params => sentActions.push(params),
+        action => dispatched.push(action),
         { clientId: "tui-1", maxHistorySize: 100, enableReplay: true, verbose: false }
       );
 
@@ -149,10 +149,10 @@ describe("Browser/TUI Synchronization", () => {
   describe("Selection State Sync", () => {
     it("should immediately broadcast selection changes", () => {
       const broadcasts: SyncStateParams[] = [];
-      const broadcaster = new StateBroadcaster(
-        (params) => broadcasts.push(params),
-        { debounceDelayMs: 300, verbose: false }
-      );
+      const broadcaster = new StateBroadcaster(params => broadcasts.push(params), {
+        debounceDelayMs: 300,
+        verbose: false,
+      });
 
       const state = {
         ...initialState,
@@ -171,10 +171,11 @@ describe("Browser/TUI Synchronization", () => {
 
     it("should receive and apply selection changes", () => {
       const dispatched: DevToolsAction[] = [];
-      const receiver = new StateReceiver(
-        (action) => dispatched.push(action),
-        { autoApply: true, defaultResolution: "remote-wins", verbose: false }
-      );
+      const receiver = new StateReceiver(action => dispatched.push(action), {
+        autoApply: true,
+        defaultResolution: "remote-wins",
+        verbose: false,
+      });
 
       const syncParams: SyncStateParams = {
         graph: {
@@ -184,12 +185,12 @@ describe("Browser/TUI Synchronization", () => {
         priority: "immediate",
       };
 
-      receiver.receive(syncParams, initialState);
+      receiver.receive(syncParams);
 
-      expect(dispatched.find((a) => a.type === "SELECT_NODE")).toBeDefined();
+      expect(dispatched.find(a => a.type === "SELECT_NODE")).toBeDefined();
       expect(
         dispatched.find(
-          (a) => a.type === "SELECT_NODE" && "payload" in a && a.payload === "remote-node"
+          a => a.type === "SELECT_NODE" && "payload" in a && a.payload === "remote-node"
         )
       ).toBeDefined();
     });
@@ -198,10 +199,10 @@ describe("Browser/TUI Synchronization", () => {
   describe("Filter Preference Sync", () => {
     it("should debounce and sync filter changes", async () => {
       const broadcasts: SyncStateParams[] = [];
-      const broadcaster = new StateBroadcaster(
-        (params) => broadcasts.push(params),
-        { debounceDelayMs: 100, verbose: false }
-      );
+      const broadcaster = new StateBroadcaster(params => broadcasts.push(params), {
+        debounceDelayMs: 100,
+        verbose: false,
+      });
 
       // Rapid filter changes
       for (let i = 0; i < 5; i++) {
@@ -219,7 +220,7 @@ describe("Browser/TUI Synchronization", () => {
       expect(broadcasts).toHaveLength(0);
 
       // Wait for debounce
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      await new Promise(resolve => setTimeout(resolve, 150));
 
       // Should have broadcast once
       expect(broadcasts).toHaveLength(1);
@@ -278,7 +279,7 @@ describe("Browser/TUI Synchronization", () => {
         webSocketFactory: mockFactory,
       });
 
-      manager.on((event) => events.push(event));
+      manager.on(event => events.push(event));
 
       // Connect should change state
       manager.connect();

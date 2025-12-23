@@ -79,13 +79,13 @@ import type { ExportedGraph, ExportedNode, ExportedEdge } from "@hex-di/devtools
  * const singletons = filterGraph(toJSON(appGraph), byLifetime('singleton'));
  * ```
  */
-export function toJSON(
-  graph: Graph<Port<unknown, string>, Port<unknown, string>>
+export function toJSON<TAsyncPorts = never>(
+  graph: Graph<Port<unknown, string>, TAsyncPorts>
 ): ExportedGraph {
   const adapters = graph.adapters;
 
   // Extract nodes from adapters
-  const nodes: ExportedNode[] = adapters.map((adapter) => ({
+  const nodes: ExportedNode[] = adapters.map(adapter => ({
     id: adapter.provides.__portName,
     label: adapter.provides.__portName,
     lifetime: adapter.lifetime,

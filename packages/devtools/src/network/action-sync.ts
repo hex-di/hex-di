@@ -9,6 +9,17 @@
 
 import type { DevToolsAction } from "../state/actions.js";
 import type { SyncActionParams } from "@hex-di/devtools-core";
+import type { TabId } from "../view-models/index.js";
+
+// =============================================================================
+// Type Guards
+// =============================================================================
+
+const VALID_TAB_IDS: readonly TabId[] = ["graph", "services", "tracing", "inspector"];
+
+function isTabId(value: unknown): value is TabId {
+  return typeof value === "string" && VALID_TAB_IDS.includes(value as TabId);
+}
 
 // =============================================================================
 // Types
@@ -88,11 +99,7 @@ export class ActionSync {
   private readonly history: ActionHistoryEntry[] = [];
   private lastActionTimestamp = 0;
 
-  constructor(
-    sendFn: SendActionFn,
-    dispatchFn: DispatchFn,
-    config: ActionSyncConfig
-  ) {
+  constructor(sendFn: SendActionFn, dispatchFn: DispatchFn, config: ActionSyncConfig) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.sendFn = sendFn;
     this.dispatchFn = dispatchFn;
@@ -160,7 +167,7 @@ export class ActionSync {
     }
 
     const actionsToReplay = this.history.filter(
-      (entry) => entry.timestamp > fromTimestamp && entry.params.source === this.config.clientId
+      entry => entry.timestamp > fromTimestamp && entry.params.source === this.config.clientId
     );
 
     this.log(`Replaying ${actionsToReplay.length} actions`);
@@ -246,10 +253,14 @@ export class ActionSync {
         break;
 
       case "SET_ACTIVE_TAB":
-        this.dispatchFn({
-          type: "SET_ACTIVE_TAB",
-          payload: action.payload as any,
-        });
+        if (isTabId(action.payload)) {
+          this.dispatchFn({
+            type: "SET_ACTIVE_TAB",
+            payload: action.payload,
+          });
+        } else {
+          this.log(`Invalid tab ID: ${action.payload}`);
+        }
         break;
 
       case "TOGGLE_PANEL":

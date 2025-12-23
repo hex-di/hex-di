@@ -9,7 +9,7 @@
 
 import React, { useCallback, useRef, type ReactElement, type KeyboardEvent } from "react";
 import type { CSSProperties } from "react";
-import { tracingStyles } from "./styles.js";
+import { tracingStyles as _tracingStyles } from "./styles.js";
 
 // =============================================================================
 // Types
@@ -139,14 +139,14 @@ export function TabNavigation({
   // Filter tabs based on showInspector prop
   const visibleTabs = showInspector
     ? TAB_CONFIGS
-    : TAB_CONFIGS.filter((tab) => tab.id !== "inspector");
+    : TAB_CONFIGS.filter(tab => tab.id !== "inspector");
 
   /**
    * Handle keyboard navigation between tabs.
    */
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLButtonElement>, currentTabId: TabId) => {
-      const currentIndex = visibleTabs.findIndex((tab) => tab.id === currentTabId);
+      const currentIndex = visibleTabs.findIndex(tab => tab.id === currentTabId);
       let nextIndex: number | null = null;
 
       switch (event.key) {
@@ -208,7 +208,7 @@ export function TabNavigation({
       aria-label="DevTools panels"
       style={tabNavigationStyles.container}
     >
-      {visibleTabs.map((tab) => {
+      {visibleTabs.map(tab => {
         const isActive = activeTab === tab.id;
         const isHovered = hoveredTab === tab.id;
         const tabStyle: CSSProperties = {
@@ -235,9 +235,9 @@ export function TabNavigation({
             tabIndex={isActive ? 0 : -1}
             style={tabStyle}
             onMouseEnter={() => setHoveredTab(tab.id)}
-            onMouseLeave={() => setHoveredTab((prev) => (prev === tab.id ? null : prev))}
+            onMouseLeave={() => setHoveredTab(prev => (prev === tab.id ? null : prev))}
             onClick={() => onTabChange(tab.id)}
-            onKeyDown={(e) => handleKeyDown(e, tab.id)}
+            onKeyDown={e => handleKeyDown(e, tab.id)}
             type="button"
           >
             {tab.label}

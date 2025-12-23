@@ -4,7 +4,7 @@
  * @packageDocumentation
  */
 
-import type { ExportedGraph, ExportedNode, ExportedEdge } from "@hex-di/devtools-core";
+import type { ExportedGraph, ExportedNode } from "@hex-di/devtools-core";
 
 // =============================================================================
 // Types
@@ -74,21 +74,11 @@ const COLORS = {
  * console.log(renderAsciiGraph(graph));
  * ```
  */
-export function renderAsciiGraph(
-  graph: ExportedGraph,
-  options: AsciiGraphOptions = {}
-): string {
-  const {
-    showLifetime = true,
-    showFactoryKind = false,
-    maxWidth = 80,
-    useColors = true,
-  } = options;
+export function renderAsciiGraph(graph: ExportedGraph, options: AsciiGraphOptions = {}): string {
+  const { showLifetime = true, showFactoryKind = false, maxWidth = 80, useColors = true } = options;
 
   if (graph.nodes.length === 0) {
-    return useColors
-      ? `${COLORS.dim}(empty graph)${COLORS.reset}`
-      : "(empty graph)";
+    return useColors ? `${COLORS.dim}(empty graph)${COLORS.reset}` : "(empty graph)";
   }
 
   const lines: string[] = [];
@@ -115,7 +105,7 @@ export function renderAsciiGraph(
   for (const edge of graph.edges) {
     hasDependent.add(edge.to);
   }
-  const rootNodes = graph.nodes.filter((n) => !hasDependent.has(n.id));
+  const rootNodes = graph.nodes.filter(n => !hasDependent.has(n.id));
 
   // Render tree from each root
   const visited = new Set<string>();
@@ -141,9 +131,9 @@ export function renderAsciiGraph(
   // Stats footer
   lines.push("");
   lines.push("─".repeat(Math.min(maxWidth, 40)));
-  const singletonCount = graph.nodes.filter((n) => n.lifetime === "singleton").length;
-  const scopedCount = graph.nodes.filter((n) => n.lifetime === "scoped").length;
-  const transientCount = graph.nodes.filter((n) => n.lifetime === "transient").length;
+  const singletonCount = graph.nodes.filter(n => n.lifetime === "singleton").length;
+  const scopedCount = graph.nodes.filter(n => n.lifetime === "scoped").length;
+  const transientCount = graph.nodes.filter(n => n.lifetime === "transient").length;
 
   if (useColors) {
     lines.push(
@@ -186,8 +176,7 @@ function renderNode(
   visited.add(node.id);
 
   const indent = depth > 0 ? "  ".repeat(depth - 1) + "├─ " : "";
-  const lifetimeColor =
-    COLORS[node.lifetime as keyof typeof COLORS] ?? COLORS.reset;
+  const lifetimeColor = COLORS[node.lifetime as keyof typeof COLORS] ?? COLORS.reset;
   const lifetimeBadge = options.showLifetime
     ? options.useColors
       ? ` ${lifetimeColor}[${node.lifetime}]${COLORS.reset}`
@@ -204,7 +193,7 @@ function renderNode(
 
   const nodeDeps = deps.get(node.id) ?? [];
   for (const depId of nodeDeps) {
-    const depNode = graph.nodes.find((n) => n.id === depId);
+    const depNode = graph.nodes.find(n => n.id === depId);
     if (depNode) {
       renderNode(depNode, deps, graph, depth + 1, visited, lines, options);
     }
@@ -238,8 +227,7 @@ export function renderNodeList(
   });
 
   for (const node of sorted) {
-    const lifetimeColor =
-      COLORS[node.lifetime as keyof typeof COLORS] ?? COLORS.reset;
+    const lifetimeColor = COLORS[node.lifetime as keyof typeof COLORS] ?? COLORS.reset;
     const badge = useColors
       ? `${lifetimeColor}●${COLORS.reset}`
       : `[${node.lifetime.charAt(0).toUpperCase()}]`;

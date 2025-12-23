@@ -6,7 +6,7 @@
  * @packageDocumentation
  */
 
-import type { ResolvedConfig, OverlayConfig } from './types.js';
+import type { ResolvedConfig, OverlayConfig } from "./types.js";
 
 // =============================================================================
 // Constants
@@ -15,12 +15,12 @@ import type { ResolvedConfig, OverlayConfig } from './types.js';
 /**
  * Virtual module ID for the DevTools client.
  */
-export const VIRTUAL_MODULE_ID = 'virtual:hex-di-devtools-client';
+export const VIRTUAL_MODULE_ID = "virtual:hex-di-devtools-client";
 
 /**
  * Resolved virtual module ID (with null byte prefix).
  */
-export const RESOLVED_VIRTUAL_MODULE_ID = '\0' + VIRTUAL_MODULE_ID;
+export const RESOLVED_VIRTUAL_MODULE_ID = "\0" + VIRTUAL_MODULE_ID;
 
 // =============================================================================
 // Module Generation
@@ -40,10 +40,14 @@ export function generateClientModule(config: ResolvedConfig, relayUrl: string): 
 // HexDI DevTools Client - Auto-generated
 // Do not edit manually
 
-const DEVTOOLS_CONFIG = ${JSON.stringify({
-  relayUrl,
-  overlay: overlayConfig,
-}, null, 2)};
+const DEVTOOLS_CONFIG = ${JSON.stringify(
+    {
+      relayUrl,
+      overlay: overlayConfig,
+    },
+    null,
+    2
+  )};
 
 // Initialize DevTools connection
 async function initDevTools() {
@@ -96,7 +100,7 @@ export { initDevTools };
  * @param overlayConfig - Overlay configuration
  * @returns HTML script tag
  */
-export function generateHtmlSnippet(overlayConfig: Required<OverlayConfig>): string {
+export function generateHtmlSnippet(_overlayConfig: Required<OverlayConfig>): string {
   return `
 <!-- HexDI DevTools -->
 <script type="module">
@@ -120,8 +124,5 @@ export function transformHtml(html: string, config: ResolvedConfig): string {
   const snippet = generateHtmlSnippet(config.overlay);
 
   // Insert before closing </body> tag
-  return html.replace(
-    '</body>',
-    `${snippet}</body>`
-  );
+  return html.replace("</body>", `${snippet}</body>`);
 }

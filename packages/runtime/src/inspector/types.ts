@@ -10,7 +10,6 @@
 
 import type { Port } from "@hex-di/ports";
 import type { Lifetime } from "@hex-di/graph";
-import type { MemoMap, EntryMetadata } from "../common/memo-map.js";
 
 // =============================================================================
 // Container Internal State

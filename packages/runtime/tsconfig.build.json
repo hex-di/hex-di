@@ -6,7 +6,8 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "lib": ["ES2021"]
+    "lib": ["ES2021"],
+    "types": []
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist", "tests"]

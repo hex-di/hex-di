@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useState } from "react";
-import type { TimelineScrubberProps, SnapshotSummary } from "../ports/render-primitives.port.js";
+import type { TimelineScrubberProps } from "../ports/render-primitives.port.js";
 
 /**
  * Format timestamp for display.
@@ -120,7 +120,8 @@ export function TimelineScrubber({
               border: "1px solid var(--hex-devtools-border)",
               borderRadius: "4px",
               backgroundColor: "var(--hex-devtools-background)",
-              color: currentIndex === 0 ? "var(--hex-devtools-muted)" : "var(--hex-devtools-foreground)",
+              color:
+                currentIndex === 0 ? "var(--hex-devtools-muted)" : "var(--hex-devtools-foreground)",
               cursor: currentIndex === 0 ? "not-allowed" : "pointer",
             }}
           >
@@ -138,7 +139,10 @@ export function TimelineScrubber({
               border: "1px solid var(--hex-devtools-border)",
               borderRadius: "4px",
               backgroundColor: "var(--hex-devtools-background)",
-              color: currentIndex === snapshots.length - 1 ? "var(--hex-devtools-muted)" : "var(--hex-devtools-foreground)",
+              color:
+                currentIndex === snapshots.length - 1
+                  ? "var(--hex-devtools-muted)"
+                  : "var(--hex-devtools-foreground)",
               cursor: currentIndex === snapshots.length - 1 ? "not-allowed" : "pointer",
             }}
           >
@@ -224,17 +228,21 @@ export function TimelineScrubber({
       </div>
 
       {/* Current Snapshot Info */}
-      {snapshots[currentIndex] && (
-        <div
-          style={{
-            fontSize: "11px",
-            color: "var(--hex-devtools-muted)",
-            textAlign: "center",
-          }}
-        >
-          {snapshots[currentIndex]?.label} - {formatTime(snapshots[currentIndex]!.timestamp)}
-        </div>
-      )}
+      {(() => {
+        const currentSnapshot = snapshots[currentIndex];
+        if (currentSnapshot === undefined) return null;
+        return (
+          <div
+            style={{
+              fontSize: "11px",
+              color: "var(--hex-devtools-muted)",
+              textAlign: "center",
+            }}
+          >
+            {currentSnapshot.label} - {formatTime(currentSnapshot.timestamp)}
+          </div>
+        );
+      })()}
     </div>
   );
 }

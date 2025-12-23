@@ -17,9 +17,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Port } from "@hex-di/ports";
-import type { Graph } from "@hex-di/graph";
-import type { Container, ContainerPhase } from "@hex-di/runtime";
 import {
   type DevToolsState,
   type DevToolsAction,
@@ -498,11 +495,7 @@ export function DevToolsProvider({
     ]
   );
 
-  return (
-    <DevToolsContext.Provider value={contextValue}>
-      {children}
-    </DevToolsContext.Provider>
-  );
+  return <DevToolsContext.Provider value={contextValue}>{children}</DevToolsContext.Provider>;
 }
 
 // =============================================================================

@@ -4,13 +4,7 @@
  * @packageDocumentation
  */
 
-import React, {
-  type ReactElement,
-  useRef,
-  useEffect,
-  useCallback,
-  useState,
-} from "react";
+import React, { type ReactElement, useRef, useEffect, useCallback, useState } from "react";
 import { select } from "d3-selection";
 import { zoom, zoomIdentity, type ZoomBehavior } from "d3-zoom";
 import "d3-transition";
@@ -111,41 +105,9 @@ export function GraphRenderer({
     translateY: 0,
   });
 
-  const zoomBehaviorRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(
-    null
-  );
+  const zoomBehaviorRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
 
-  // Initialize D3 zoom behavior
-  useEffect(() => {
-    if (!svgRef.current || !gRef.current) return;
-
-    // Check if D3 zoom can be safely initialized (not in JSDOM/test environment)
-    if (!canInitializeZoom(svgRef.current)) {
-      // In test environments, skip zoom initialization
-      return;
-    }
-
-    const svg = select(svgRef.current);
-
-    const zoomBehavior = zoom<SVGSVGElement, unknown>()
-      .scaleExtent([minZoom, maxZoom])
-      .on("zoom", (event) => {
-        const { x, y, k } = event.transform;
-        setTransform({ scale: k, translateX: x, translateY: y });
-      });
-
-    svg.call(zoomBehavior);
-    zoomBehaviorRef.current = zoomBehavior;
-
-    // Fit graph to view on initial render
-    fitToView();
-
-    return () => {
-      svg.on(".zoom", null);
-    };
-  }, [minZoom, maxZoom]);
-
-  // Fit the graph to the container
+  // Fit the graph to the container (defined before useEffects that use it)
   const fitToView = useCallback(() => {
     if (!svgRef.current || !containerRef.current || !zoomBehaviorRef.current) {
       return;
@@ -164,10 +126,8 @@ export function GraphRenderer({
     const scale = Math.min(scaleX, scaleY, 1); // Don't zoom in past 100%
 
     // Calculate translation to center
-    const translateX =
-      (containerRect.width - layout.width * scale) / 2;
-    const translateY =
-      (containerRect.height - layout.height * scale) / 2;
+    const translateX = (containerRect.width - layout.width * scale) / 2;
+    const translateY = (containerRect.height - layout.height * scale) / 2;
 
     // Apply transform
     const svg = select(svgRef.current);
@@ -179,6 +139,36 @@ export function GraphRenderer({
         zoomIdentity.translate(translateX, translateY).scale(scale)
       );
   }, [layout.width, layout.height]);
+
+  // Initialize D3 zoom behavior
+  useEffect(() => {
+    if (!svgRef.current || !gRef.current) return;
+
+    // Check if D3 zoom can be safely initialized (not in JSDOM/test environment)
+    if (!canInitializeZoom(svgRef.current)) {
+      // In test environments, skip zoom initialization
+      return;
+    }
+
+    const svg = select(svgRef.current);
+
+    const zoomBehavior = zoom<SVGSVGElement, unknown>()
+      .scaleExtent([minZoom, maxZoom])
+      .on("zoom", event => {
+        const { x, y, k } = event.transform;
+        setTransform({ scale: k, translateX: x, translateY: y });
+      });
+
+    svg.call(zoomBehavior);
+    zoomBehaviorRef.current = zoomBehavior;
+
+    // Fit graph to view on initial render
+    fitToView();
+
+    return () => {
+      svg.on(".zoom", null);
+    };
+  }, [minZoom, maxZoom, fitToView]);
 
   // Fit graph to view when layout changes
   useEffect(() => {
@@ -208,10 +198,7 @@ export function GraphRenderer({
     const svg = select(svgRef.current);
     const newScale = Math.min(transform.scale + ZOOM_STEP, maxZoom);
 
-    svg
-      .transition()
-      .duration(150)
-      .call(zoomBehaviorRef.current.scaleTo, newScale);
+    svg.transition().duration(150).call(zoomBehaviorRef.current.scaleTo, newScale);
   }, [transform.scale, maxZoom]);
 
   // Zoom out handler
@@ -221,10 +208,7 @@ export function GraphRenderer({
     const svg = select(svgRef.current);
     const newScale = Math.max(transform.scale - ZOOM_STEP, minZoom);
 
-    svg
-      .transition()
-      .duration(150)
-      .call(zoomBehaviorRef.current.scaleTo, newScale);
+    svg.transition().duration(150).call(zoomBehaviorRef.current.scaleTo, newScale);
   }, [transform.scale, minZoom]);
 
   // Reset zoom to 100%
@@ -268,7 +252,7 @@ export function GraphRenderer({
           transform={`translate(${transform.translateX}, ${transform.translateY}) scale(${transform.scale})`}
         >
           {/* Render edges first (below nodes) */}
-          {layout.edges.map((edge) => {
+          {layout.edges.map(edge => {
             const edgeKey = createEdgeKey(edge.from, edge.to);
             const isHighlighted = highlightedEdgeKeys.has(edgeKey);
             const isDimmed = hasHighlight && !isHighlighted;
@@ -286,7 +270,7 @@ export function GraphRenderer({
           })}
 
           {/* Render nodes */}
-          {layout.nodes.map((node) => {
+          {layout.nodes.map(node => {
             const isHovered = hoveredNodeId === node.id;
             const isSelected = selectedNodeId === node.id;
             const isDimmed = hasHighlight && !highlightedNodeIds.has(node.id);

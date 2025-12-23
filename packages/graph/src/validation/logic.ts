@@ -1,6 +1,3 @@
-
-import type { Port } from "@hex-di/ports";
-
 /**
  * Calculates the set of missing dependencies by subtracting provided ports from required ports.
  *
@@ -11,10 +8,7 @@ import type { Port } from "@hex-di/ports";
  *
  * @internal
  */
-export type UnsatisfiedDependencies<
-  TProvides,
-  TRequires,
-> = Exclude<TRequires, TProvides>;
+export type UnsatisfiedDependencies<TProvides, TRequires> = Exclude<TRequires, TProvides>;
 
 /**
  * Checks if all required dependencies are satisfied by the provided ports.
@@ -26,10 +20,11 @@ export type UnsatisfiedDependencies<
  *
  * @internal
  */
-export type IsSatisfied<
-  TProvides,
-  TRequires,
-> = [UnsatisfiedDependencies<TProvides, TRequires>] extends [never] ? true : false;
+export type IsSatisfied<TProvides, TRequires> = [
+  UnsatisfiedDependencies<TProvides, TRequires>,
+] extends [never]
+  ? true
+  : false;
 
 /**
  * Finds the intersection (overlap) between two unions of Port types.
@@ -41,10 +36,7 @@ export type IsSatisfied<
  *
  * @internal
  */
-export type OverlappingPorts<
-  A,
-  B,
-> = Extract<A, B>;
+export type OverlappingPorts<A, B> = Extract<A, B>;
 
 /**
  * Checks if two unions of Port types have any overlap.
@@ -56,10 +48,7 @@ export type OverlappingPorts<
  *
  * @internal
  */
-export type HasOverlap<
-  A,
-  B,
-> = [OverlappingPorts<A, B>] extends [never] ? false : true;
+export type HasOverlap<A, B> = [OverlappingPorts<A, B>] extends [never] ? false : true;
 
 /**
  * Extracts the subset of ports from TRequires that overlap with TAsyncPorts.
@@ -74,10 +63,7 @@ export type HasOverlap<
  *
  * @internal
  */
-export type AsyncDependencies<
-  TRequires,
-  TAsyncPorts,
-> = Extract<TRequires, TAsyncPorts>;
+export type AsyncDependencies<TRequires, TAsyncPorts> = Extract<TRequires, TAsyncPorts>;
 
 /**
  * Checks if an adapter requires any async ports.
@@ -89,7 +75,25 @@ export type AsyncDependencies<
  *
  * @internal
  */
-export type HasAsyncDependency<
-  TRequires,
-  TAsyncPorts,
-> = [AsyncDependencies<TRequires, TAsyncPorts>] extends [never] ? false : true;
+export type HasAsyncDependency<TRequires, TAsyncPorts> = [
+  AsyncDependencies<TRequires, TAsyncPorts>,
+] extends [never]
+  ? false
+  : true;
+
+/**
+ * Conditional type that evaluates to a valid graph representation when dependencies
+ * are satisfied, or an error type with missing dependency information when not.
+ *
+ * @typeParam TProvides - Union of provided Port types
+ * @typeParam TRequires - Union of required Port types
+ *
+ * @returns A valid graph type if satisfied, or error type with `__missing` property
+ */
+export type ValidGraph<TProvides, TRequires> =
+  IsSatisfied<TProvides, TRequires> extends true
+    ? { readonly __valid: true; readonly __provides: TProvides }
+    : {
+        readonly __valid: false;
+        readonly __missing: UnsatisfiedDependencies<TProvides, TRequires>;
+      };

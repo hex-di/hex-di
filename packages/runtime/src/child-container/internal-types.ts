@@ -5,7 +5,6 @@ import { ADAPTER_ACCESS } from "../inspector/symbols.js";
 
 import type { InheritanceMode } from "../types.js";
 
-
 /**
  * Internal type for inheritance mode map.
  * Maps port names to their inheritance modes.
@@ -86,8 +85,9 @@ export interface DisposableChild {
  */
 export interface ParentContainerLike<
   TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
-> extends AdapterAccessor, ChildContainerRegistry, InternalResolveAccess<TProvides> {
+  _TAsyncPorts extends Port<unknown, string>,
+>
+  extends AdapterAccessor, ChildContainerRegistry, InternalResolveAccess<TProvides> {
   // Reference to the original container/wrapper for the `parent` property.
   // This is the object users see when accessing child.parent.
   // Type-erased due to Container/ChildContainer contravariant method signatures.
@@ -102,8 +102,16 @@ export interface ParentContainerLike<
  * @internal
  */
 export interface ScopeContainerAccess<TProvides extends Port<unknown, string>> {
-  resolveInternal<P extends TProvides>(port: P, scopedMemo: MemoMap, scopeId?: string | null): InferService<P>;
-  resolveAsyncInternal<P extends TProvides>(port: P, scopedMemo: MemoMap, scopeId?: string | null): Promise<InferService<P>>;
+  resolveInternal<P extends TProvides>(
+    port: P,
+    scopedMemo: MemoMap,
+    scopeId?: string | null
+  ): InferService<P>;
+  resolveAsyncInternal<P extends TProvides>(
+    port: P,
+    scopedMemo: MemoMap,
+    scopeId?: string | null
+  ): Promise<InferService<P>>;
   getSingletonMemo(): MemoMap;
   has(port: Port<unknown, string>): boolean;
   hasAdapter(port: Port<unknown, string>): boolean;

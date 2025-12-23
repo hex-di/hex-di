@@ -28,7 +28,6 @@ import type {
   FlameGraphViewModel,
 } from "../view-models/index.js";
 import { getLifetimeColor, getLifetimeIcon } from "../shared/lifetime-colors.js";
-import type { SemanticColor } from "../ports/render-primitives.port.js";
 
 // =============================================================================
 // Props Interface
@@ -71,28 +70,6 @@ export interface TimelineViewProps {
 }
 
 // =============================================================================
-// Duration Color Helper
-// =============================================================================
-
-/**
- * Get duration color based on threshold.
- *
- * Color coding:
- * - Green (success): < threshold / 2
- * - Yellow (warning): < threshold
- * - Red (error): >= threshold
- */
-function getDurationColor(durationMs: number, slowThresholdMs: number): SemanticColor {
-  if (durationMs < slowThresholdMs / 2) {
-    return "success";
-  }
-  if (durationMs < slowThresholdMs) {
-    return "warning";
-  }
-  return "error";
-}
-
-// =============================================================================
 // Trace Entry Component
 // =============================================================================
 
@@ -114,7 +91,6 @@ function TraceEntry({
   onUnpin,
 }: TraceEntryProps): React.ReactElement {
   const { Box, Text, Icon, PerformanceBadge } = usePrimitives();
-  const durationColor = getDurationColor(entry.durationMs, slowThresholdMs);
 
   return (
     <Box
@@ -138,9 +114,7 @@ function TraceEntry({
       )}
 
       {/* Indentation based on depth */}
-      {entry.depth > 0 && (
-        <Box width={entry.depth * 16} />
-      )}
+      {entry.depth > 0 && <Box width={entry.depth * 16} />}
 
       {/* Visual connector for hierarchy */}
       {entry.depth > 0 && (
@@ -177,10 +151,7 @@ function TraceEntry({
 
       {/* Pinned indicator */}
       {entry.isPinned && (
-        <Box
-          {...(onUnpin ? { onClick: onUnpin } : {})}
-          data-testid={`unpin-${entry.id}`}
-        >
+        <Box {...(onUnpin ? { onClick: onUnpin } : {})} data-testid={`unpin-${entry.id}`}>
           <Text variant="caption" color="accent">
             pinned
           </Text>
@@ -197,11 +168,7 @@ function TraceEntry({
       )}
 
       {/* Duration badge with color coding */}
-      <PerformanceBadge
-        durationMs={entry.durationMs}
-        thresholdMs={slowThresholdMs}
-        size="sm"
-      />
+      <PerformanceBadge durationMs={entry.durationMs} thresholdMs={slowThresholdMs} size="sm" />
 
       {/* Timestamp */}
       <Text variant="caption" color="muted">
@@ -245,14 +212,13 @@ function Controls({
   const { Box, Text, Button } = usePrimitives();
   const [showThresholdInput, setShowThresholdInput] = useState(false);
 
-  const groupingOptions: TimelineGrouping[] = ["none", "port", "scope", "lifetime"];
-
   const handleGroupingClick = useCallback(() => {
     if (!onGroupingChange) return;
+    const groupingOptions: TimelineGrouping[] = ["none", "port", "scope", "lifetime"];
     const currentIndex = groupingOptions.indexOf(grouping);
     const nextIndex = (currentIndex + 1) % groupingOptions.length;
     // nextIndex is guaranteed to be within bounds due to modulo operation
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
     onGroupingChange(groupingOptions[nextIndex]!);
   }, [grouping, onGroupingChange]);
 
@@ -267,11 +233,7 @@ function Controls({
         {/* Grouping dropdown */}
         {onGroupingChange && (
           <Box onClick={handleGroupingClick}>
-            <Button
-              label={`Group: ${grouping}`}
-              variant="ghost"
-              size="sm"
-            />
+            <Button label={`Group: ${grouping}`} variant="ghost" size="sm" />
           </Box>
         )}
 
@@ -300,11 +262,7 @@ function Controls({
         {/* Clear traces button */}
         {onClearTraces && (
           <Box onClick={onClearTraces}>
-            <Button
-              label="Clear"
-              variant="ghost"
-              size="sm"
-            />
+            <Button label="Clear" variant="ghost" size="sm" />
           </Box>
         )}
       </Box>
@@ -466,12 +424,7 @@ export function TimelineView({
       <Divider orientation="horizontal" color="border" />
 
       {/* Header with stats */}
-      <Box
-        flexDirection="row"
-        justifyContent="space-between"
-        alignItems="center"
-        padding="sm"
-      >
+      <Box flexDirection="row" justifyContent="space-between" alignItems="center" padding="sm">
         <Text variant="subheading" color="foreground">
           Timeline
         </Text>
@@ -493,7 +446,7 @@ export function TimelineView({
       {viewModel.groups.length > 0 ? (
         <ScrollView vertical maxHeight={400}>
           <Box flexDirection="column">
-            {viewModel.groups.map((group) => (
+            {viewModel.groups.map(group => (
               <Box key={group.id} flexDirection="column">
                 {/* Group header */}
                 <Box
@@ -527,7 +480,7 @@ export function TimelineView({
                 </Box>
 
                 {/* Group entries */}
-                {group.entries.map((entry) => (
+                {group.entries.map(entry => (
                   <TraceEntry
                     key={entry.id}
                     entry={entry}
@@ -548,7 +501,7 @@ export function TimelineView({
         /* Flat view */
         <ScrollView vertical maxHeight={400}>
           <Box flexDirection="column">
-            {viewModel.entries.map((entry) => (
+            {viewModel.entries.map(entry => (
               <TraceEntry
                 key={entry.id}
                 entry={entry}

@@ -7,14 +7,7 @@
  * @packageDocumentation
  */
 
-import React, {
-  type ReactElement,
-  useRef,
-  useEffect,
-  useCallback,
-  useState,
-  useMemo,
-} from "react";
+import React, { type ReactElement, useRef, useEffect, useCallback, useState, useMemo } from "react";
 import * as d3Zoom from "d3-zoom";
 import * as d3Selection from "d3-selection";
 import type {
@@ -51,9 +44,9 @@ const HIGHLIGHTED_MARKER_ID = "hex-arrow-marker-highlighted";
 function getLifetimeStrokeColor(lifetime: string): string {
   switch (lifetime) {
     case "singleton":
-      return "var(--hex-devtools-singleton, #73daca)";  // Teal
+      return "var(--hex-devtools-singleton, #73daca)"; // Teal
     case "scoped":
-      return "var(--hex-devtools-scoped, #7aa2f7)";    // Blue
+      return "var(--hex-devtools-scoped, #7aa2f7)"; // Blue
     case "transient":
       return "var(--hex-devtools-transient, #ff9e64)"; // Orange
     default:
@@ -96,10 +89,7 @@ function ArrowMarkerDefs(): ReactElement {
         markerHeight="6"
         orient="auto-start-reverse"
       >
-        <path
-          d="M 0 0 L 10 5 L 0 10 z"
-          fill="var(--hex-devtools-border, #3b4261)"
-        />
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--hex-devtools-border, #3b4261)" />
       </marker>
       <marker
         id={HIGHLIGHTED_MARKER_ID}
@@ -110,10 +100,7 @@ function ArrowMarkerDefs(): ReactElement {
         markerHeight="6"
         orient="auto-start-reverse"
       >
-        <path
-          d="M 0 0 L 10 5 L 0 10 z"
-          fill="var(--hex-devtools-primary, #7aa2f7)"
-        />
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--hex-devtools-primary, #7aa2f7)" />
       </marker>
     </defs>
   );
@@ -262,13 +249,10 @@ interface GraphEdgeComponentProps {
   readonly nodes: readonly GraphNodeViewModelMinimal[];
 }
 
-function GraphEdgeComponent({
-  edge,
-  nodes,
-}: GraphEdgeComponentProps): ReactElement | null {
+function GraphEdgeComponent({ edge, nodes }: GraphEdgeComponentProps): ReactElement | null {
   // Find source and target nodes
-  const fromNode = nodes.find((n) => n.id === edge.from);
-  const toNode = nodes.find((n) => n.id === edge.to);
+  const fromNode = nodes.find(n => n.id === edge.from);
+  const toNode = nodes.find(n => n.id === edge.to);
 
   if (!fromNode || !toNode) {
     return null;
@@ -289,9 +273,7 @@ function GraphEdgeComponent({
     : "var(--hex-devtools-border, #3b4261)";
   const strokeWidth = edge.isHighlighted ? 2.5 : 1.5;
   const opacity = edge.isDimmed ? 0.15 : 0.8;
-  const marker = edge.isHighlighted
-    ? `url(#${HIGHLIGHTED_MARKER_ID})`
-    : `url(#${MARKER_ID})`;
+  const marker = edge.isHighlighted ? `url(#${HIGHLIGHTED_MARKER_ID})` : `url(#${MARKER_ID})`;
 
   return (
     <path
@@ -385,13 +367,13 @@ function ZoomControls({
         disabled={!canZoomOut}
         style={canZoomOut ? buttonStyle : disabledStyle}
         title="Zoom Out"
-        onMouseEnter={(e) => {
+        onMouseEnter={e => {
           if (canZoomOut) {
             e.currentTarget.style.backgroundColor = "var(--hex-devtools-bg-hover, #363b54)";
             e.currentTarget.style.borderColor = "var(--hex-devtools-border-hover, #565f89)";
           }
         }}
-        onMouseLeave={(e) => {
+        onMouseLeave={e => {
           e.currentTarget.style.backgroundColor = "var(--hex-devtools-bg-secondary, #24283b)";
           e.currentTarget.style.borderColor = "var(--hex-devtools-border, #3b4261)";
         }}
@@ -415,29 +397,36 @@ function ZoomControls({
         disabled={!canZoomIn}
         style={canZoomIn ? buttonStyle : disabledStyle}
         title="Zoom In"
-        onMouseEnter={(e) => {
+        onMouseEnter={e => {
           if (canZoomIn) {
             e.currentTarget.style.backgroundColor = "var(--hex-devtools-bg-hover, #363b54)";
             e.currentTarget.style.borderColor = "var(--hex-devtools-border-hover, #565f89)";
           }
         }}
-        onMouseLeave={(e) => {
+        onMouseLeave={e => {
           e.currentTarget.style.backgroundColor = "var(--hex-devtools-bg-secondary, #24283b)";
           e.currentTarget.style.borderColor = "var(--hex-devtools-border, #3b4261)";
         }}
       >
         +
       </button>
-      <div style={{ width: 1, height: 22, backgroundColor: "var(--hex-devtools-border, #3b4261)", margin: "0 4px" }} />
+      <div
+        style={{
+          width: 1,
+          height: 22,
+          backgroundColor: "var(--hex-devtools-border, #3b4261)",
+          margin: "0 4px",
+        }}
+      />
       <button
         onClick={onFitToView}
         style={buttonStyle}
         title="Fit to View"
-        onMouseEnter={(e) => {
+        onMouseEnter={e => {
           e.currentTarget.style.backgroundColor = "var(--hex-devtools-bg-hover, #363b54)";
           e.currentTarget.style.borderColor = "var(--hex-devtools-border-hover, #565f89)";
         }}
-        onMouseLeave={(e) => {
+        onMouseLeave={e => {
           e.currentTarget.style.backgroundColor = "var(--hex-devtools-bg-secondary, #24283b)";
           e.currentTarget.style.borderColor = "var(--hex-devtools-border, #3b4261)";
         }}
@@ -448,11 +437,11 @@ function ZoomControls({
         onClick={onResetZoom}
         style={buttonStyle}
         title="Reset to 100%"
-        onMouseEnter={(e) => {
+        onMouseEnter={e => {
           e.currentTarget.style.backgroundColor = "var(--hex-devtools-bg-hover, #363b54)";
           e.currentTarget.style.borderColor = "var(--hex-devtools-border-hover, #565f89)";
         }}
-        onMouseLeave={(e) => {
+        onMouseLeave={e => {
           e.currentTarget.style.backgroundColor = "var(--hex-devtools-bg-secondary, #24283b)";
           e.currentTarget.style.borderColor = "var(--hex-devtools-border, #3b4261)";
         }}
@@ -506,7 +495,7 @@ export function DOMGraphRenderer({
   const connectedNodes = useMemo(() => {
     if (!hoveredNodeId) return new Set<string>();
     const connected = new Set<string>([hoveredNodeId]);
-    viewModel.edges.forEach((edge) => {
+    viewModel.edges.forEach(edge => {
       if (edge.from === hoveredNodeId) connected.add(edge.to);
       if (edge.to === hoveredNodeId) connected.add(edge.from);
     });
@@ -517,7 +506,7 @@ export function DOMGraphRenderer({
   const connectedEdges = useMemo(() => {
     if (!hoveredNodeId) return new Set<string>();
     const connected = new Set<string>();
-    viewModel.edges.forEach((edge) => {
+    viewModel.edges.forEach(edge => {
       if (edge.from === hoveredNodeId || edge.to === hoveredNodeId) {
         connected.add(edge.id);
       }
@@ -528,7 +517,7 @@ export function DOMGraphRenderer({
   // Get hovered node details for tooltip
   const hoveredNode = useMemo(() => {
     if (!hoveredNodeId) return null;
-    return viewModel.nodes.find((n) => n.id === hoveredNodeId) ?? null;
+    return viewModel.nodes.find(n => n.id === hoveredNodeId) ?? null;
   }, [hoveredNodeId, viewModel.nodes]);
 
   // Count dependencies and dependents for tooltip
@@ -536,7 +525,7 @@ export function DOMGraphRenderer({
     if (!hoveredNodeId) return { dependencies: 0, dependents: 0 };
     let dependencies = 0;
     let dependents = 0;
-    viewModel.edges.forEach((edge) => {
+    viewModel.edges.forEach(edge => {
       if (edge.from === hoveredNodeId) dependencies++;
       if (edge.to === hoveredNodeId) dependents++;
     });
@@ -545,7 +534,8 @@ export function DOMGraphRenderer({
 
   // D3 zoom instance (memoized to prevent recreation)
   const zoomBehavior = useMemo(() => {
-    return d3Zoom.zoom<SVGSVGElement, unknown>()
+    return d3Zoom
+      .zoom<SVGSVGElement, unknown>()
       .scaleExtent([MIN_ZOOM, MAX_ZOOM])
       .on("start", () => setIsDragging(true))
       .on("end", () => setIsDragging(false))
@@ -623,23 +613,6 @@ export function DOMGraphRenderer({
     [onNodeSelect]
   );
 
-  // Handle node hover with tooltip position
-  const handleNodeMouseEnter = useCallback(
-    (nodeId: string, event: React.MouseEvent) => {
-      setHoveredNodeId(nodeId);
-      setTooltipPos({ x: event.clientX, y: event.clientY });
-      onNodeHover?.(nodeId);
-    },
-    [onNodeHover]
-  );
-
-  const handleNodeMouseMove = useCallback(
-    (event: React.MouseEvent) => {
-      setTooltipPos({ x: event.clientX, y: event.clientY });
-    },
-    []
-  );
-
   const handleNodeMouseLeave = useCallback(() => {
     setHoveredNodeId(null);
     setTooltipPos(null);
@@ -650,13 +623,19 @@ export function DOMGraphRenderer({
   const handleZoomIn = useCallback(() => {
     if (!svgRef.current) return;
     const svg = d3Selection.select(svgRef.current);
-    svg.transition().duration(150).call(zoomBehavior.scaleBy, 1 + ZOOM_STEP);
+    svg
+      .transition()
+      .duration(150)
+      .call(zoomBehavior.scaleBy, 1 + ZOOM_STEP);
   }, [zoomBehavior]);
 
   const handleZoomOut = useCallback(() => {
     if (!svgRef.current) return;
     const svg = d3Selection.select(svgRef.current);
-    svg.transition().duration(150).call(zoomBehavior.scaleBy, 1 - ZOOM_STEP);
+    svg
+      .transition()
+      .duration(150)
+      .call(zoomBehavior.scaleBy, 1 - ZOOM_STEP);
   }, [zoomBehavior]);
 
   const handleFitToView = useCallback(() => {
@@ -685,7 +664,7 @@ export function DOMGraphRenderer({
       .scale(1);
 
     svg.transition().duration(300).call(zoomBehavior.transform, newTransform);
-  }, [zoomBehavior, viewModel.viewport]);
+  }, [zoomBehavior, viewModel]);
 
   // Container styles
   const containerStyle: React.CSSProperties = {
@@ -707,7 +686,7 @@ export function DOMGraphRenderer({
 
   // Enhance nodes with hover highlighting state
   const enhancedNodes = useMemo(() => {
-    return viewModel.nodes.map((node) => ({
+    return viewModel.nodes.map(node => ({
       ...node,
       isHighlighted: hoveredNodeId !== null && connectedNodes.has(node.id),
       isDimmed: hoveredNodeId !== null && !connectedNodes.has(node.id),
@@ -716,7 +695,7 @@ export function DOMGraphRenderer({
 
   // Enhance edges with hover highlighting state
   const enhancedEdges = useMemo(() => {
-    return viewModel.edges.map((edge) => ({
+    return viewModel.edges.map(edge => ({
       ...edge,
       isHighlighted: connectedEdges.has(edge.id),
       isDimmed: hoveredNodeId !== null && !connectedEdges.has(edge.id),
@@ -733,27 +712,25 @@ export function DOMGraphRenderer({
           transform={`translate(${transform.translateX}, ${transform.translateY}) scale(${transform.scale})`}
         >
           {/* Render edges first (below nodes) */}
-          {enhancedEdges.map((edge) => (
-            <GraphEdgeComponent
-              key={edge.id}
-              edge={edge}
-              nodes={enhancedNodes}
-            />
+          {enhancedEdges.map(edge => (
+            <GraphEdgeComponent key={edge.id} edge={edge} nodes={enhancedNodes} />
           ))}
 
           {/* Render nodes */}
-          {enhancedNodes.map((node) => (
+          {enhancedNodes.map(node => (
             <GraphNodeComponent
               key={node.id}
               node={node}
               onClick={handleNodeClick}
-              onMouseEnter={(nodeId) => {
+              onMouseEnter={nodeId => {
                 // Create a synthetic event for initial position
                 const rect = containerRef.current?.getBoundingClientRect();
-                const nodeData = viewModel.nodes.find((n) => n.id === nodeId);
+                const nodeData = viewModel.nodes.find(n => n.id === nodeId);
                 if (rect && nodeData) {
-                  const screenX = rect.left + transform.translateX + nodeData.position.x * transform.scale;
-                  const screenY = rect.top + transform.translateY + nodeData.position.y * transform.scale;
+                  const screenX =
+                    rect.left + transform.translateX + nodeData.position.x * transform.scale;
+                  const screenY =
+                    rect.top + transform.translateY + nodeData.position.y * transform.scale;
                   setHoveredNodeId(nodeId);
                   setTooltipPos({ x: screenX, y: screenY });
                   onNodeHover?.(nodeId);
@@ -795,9 +772,7 @@ export function DOMGraphRenderer({
             minWidth: 160,
           }}
         >
-          <div style={{ fontWeight: 600, marginBottom: 10, fontSize: 14 }}>
-            {hoveredNode.label}
-          </div>
+          <div style={{ fontWeight: 600, marginBottom: 10, fontSize: 14 }}>{hoveredNode.label}</div>
           <div
             style={{
               display: "flex",
@@ -819,16 +794,22 @@ export function DOMGraphRenderer({
                 backgroundColor: getLifetimeStrokeColor(hoveredNode.lifetime),
               }}
             />
-            <span style={{ textTransform: "capitalize", fontWeight: 500 }}>{hoveredNode.lifetime}</span>
+            <span style={{ textTransform: "capitalize", fontWeight: 500 }}>
+              {hoveredNode.lifetime}
+            </span>
           </div>
           <div style={{ color: "var(--hex-devtools-text-muted, #7982a9)", marginTop: 10 }}>
             <div style={{ marginBottom: 6, display: "flex", justifyContent: "space-between" }}>
               <span>Dependencies:</span>
-              <strong style={{ color: "var(--hex-devtools-text, #c0caf5)" }}>{hoveredNodeStats.dependencies}</strong>
+              <strong style={{ color: "var(--hex-devtools-text, #c0caf5)" }}>
+                {hoveredNodeStats.dependencies}
+              </strong>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span>Dependents:</span>
-              <strong style={{ color: "var(--hex-devtools-text, #c0caf5)" }}>{hoveredNodeStats.dependents}</strong>
+              <strong style={{ color: "var(--hex-devtools-text, #c0caf5)" }}>
+                {hoveredNodeStats.dependents}
+              </strong>
             </div>
           </div>
         </div>

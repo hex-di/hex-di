@@ -14,7 +14,12 @@ import {
   ListPromptsRequestSchema,
   GetPromptRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import type { ExportedGraph, TraceEntry, TraceStats, ContainerSnapshot } from "@hex-di/devtools-core";
+import type {
+  ExportedGraph,
+  TraceEntry,
+  TraceStats,
+  ContainerSnapshot,
+} from "@hex-di/devtools-core";
 
 import { graphResource, getGraphResourceContent } from "../resources/graph.js";
 import { tracesResource, getTracesResourceContent } from "../resources/traces.js";
@@ -304,7 +309,7 @@ export class HexDIMcpServer {
     }));
 
     // Read resource
-    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+    this.server.setRequestHandler(ReadResourceRequestSchema, async request => {
       const uri = request.params.uri;
 
       let text: string;
@@ -352,7 +357,7 @@ export class HexDIMcpServer {
     }));
 
     // Call tool
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    this.server.setRequestHandler(CallToolRequestSchema, async request => {
       const { name, arguments: args } = request.params;
 
       let result: string;
@@ -361,7 +366,10 @@ export class HexDIMcpServer {
           result = await executeQueryServices(this.getData, args ?? {});
           break;
         case "find_dependency_chain":
-          result = await executeFindDependencyChain(this.getData, args as { from: string; to: string });
+          result = await executeFindDependencyChain(
+            this.getData,
+            args as { from: string; to: string }
+          );
           break;
         case "detect_circular_deps":
           result = await executeDetectCircularDeps(this.getData, args ?? {});
@@ -401,7 +409,7 @@ export class HexDIMcpServer {
     }));
 
     // Get prompt
-    this.server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+    this.server.setRequestHandler(GetPromptRequestSchema, async request => {
       const { name, arguments: args } = request.params;
 
       let messages: Array<{ role: "user"; content: { type: "text"; text: string } }>;
@@ -429,11 +437,12 @@ export class HexDIMcpServer {
   private createDataGetter(): { dataGetter: DataGetter; disposable: DisposableDataGetter | null } {
     if (this.options.dataProvider !== null) {
       // Use local data provider (no disposal needed)
+      const provider = this.options.dataProvider;
       const dataGetter: DataGetter = {
-        getGraph: () => this.options.dataProvider!.getGraph(),
-        getTraces: () => this.options.dataProvider!.getTraces(),
-        getStats: () => this.options.dataProvider!.getStats(),
-        getSnapshot: () => this.options.dataProvider!.getSnapshot(),
+        getGraph: () => provider.getGraph(),
+        getTraces: () => provider.getTraces(),
+        getStats: () => provider.getStats(),
+        getSnapshot: () => provider.getSnapshot(),
       };
       return { dataGetter, disposable: null };
     }

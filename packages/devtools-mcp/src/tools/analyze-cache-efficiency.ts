@@ -11,7 +11,8 @@ import type { DataGetter } from "../server/mcp-server.js";
  */
 export const analyzeCacheEfficiencyTool = {
   name: "analyze_cache_efficiency",
-  description: "Analyze the cache efficiency of service resolutions. Shows hit rates, misses, and optimization suggestions.",
+  description:
+    "Analyze the cache efficiency of service resolutions. Shows hit rates, misses, and optimization suggestions.",
   inputSchema: {
     type: "object" as const,
     properties: {
@@ -50,18 +51,14 @@ export async function executeAnalyzeCacheEfficiency(
   getData: DataGetter,
   params: AnalyzeCacheEfficiencyParams
 ): Promise<string> {
-  const [traces, stats] = await Promise.all([
-    getData.getTraces(),
-    getData.getStats(),
-  ]);
+  const [traces, stats] = await Promise.all([getData.getTraces(), getData.getStats()]);
 
   let filtered = [...traces];
 
   // Filter by service name if specified
   if (params.serviceName !== undefined) {
-    filtered = filtered.filter((trace) =>
-      trace.portName.toLowerCase().includes(params.serviceName!.toLowerCase())
-    );
+    const searchName = params.serviceName.toLowerCase();
+    filtered = filtered.filter(trace => trace.portName.toLowerCase().includes(searchName));
   }
 
   // Group by service
@@ -107,7 +104,7 @@ export async function executeAnalyzeCacheEfficiency(
 
   // Find transient services with many resolutions
   const frequentTransients = services.filter(
-    (s) => s.lifetime === "transient" && s.totalResolutions > 5
+    s => s.lifetime === "transient" && s.totalResolutions > 5
   );
   if (frequentTransients.length > 0) {
     suggestions.push(
@@ -117,7 +114,7 @@ export async function executeAnalyzeCacheEfficiency(
 
   // Find services with low hit rates that are singletons
   const lowHitSingletons = services.filter(
-    (s) => s.lifetime === "singleton" && s.hitRate < 0.9 && s.totalResolutions > 1
+    s => s.lifetime === "singleton" && s.hitRate < 0.9 && s.totalResolutions > 1
   );
   if (lowHitSingletons.length > 0) {
     suggestions.push(
@@ -131,9 +128,9 @@ export async function executeAnalyzeCacheEfficiency(
 
   if (groupByLifetime) {
     groupedResults = {
-      singleton: services.filter((s) => s.lifetime === "singleton"),
-      scoped: services.filter((s) => s.lifetime === "scoped"),
-      transient: services.filter((s) => s.lifetime === "transient"),
+      singleton: services.filter(s => s.lifetime === "singleton"),
+      scoped: services.filter(s => s.lifetime === "scoped"),
+      transient: services.filter(s => s.lifetime === "transient"),
     };
   } else {
     groupedResults = services;

@@ -7,6 +7,12 @@
     "lib": ["ES2021", "DOM"],
     "jsx": "react-jsx"
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "tests/**/*.tsx"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "tests/**/*.ts",
+    "tests/**/*.tsx",
+    "tests/**/*.test-d.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }

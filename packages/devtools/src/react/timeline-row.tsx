@@ -20,7 +20,6 @@ import {
   getLifetimeBadgeStyle,
   getLifetimeClassName,
   formatDuration,
-  getPerformanceBarStyle,
   getTraceRowStyle,
 } from "./styles.js";
 
@@ -172,11 +171,7 @@ const localStyles: {
  * @param isCacheHit - Whether this is a cache hit
  * @returns Bar color category
  */
-function getBarColor(
-  duration: number,
-  threshold: number,
-  isCacheHit: boolean
-): BarColor {
+function getBarColor(duration: number, threshold: number, isCacheHit: boolean): BarColor {
   if (isCacheHit) {
     return "cached";
   }
@@ -260,10 +255,8 @@ export function TimelineRow({
   onViewInTree,
 }: TimelineRowProps): ReactElement {
   // Calculate bar position and width as percentages
-  const barLeft =
-    totalDuration > 0 ? (trace.startTime / totalDuration) * 100 : 0;
-  const barWidth =
-    totalDuration > 0 ? (trace.duration / totalDuration) * 100 : 0;
+  const barLeft = totalDuration > 0 ? (trace.startTime / totalDuration) * 100 : 0;
+  const barWidth = totalDuration > 0 ? (trace.duration / totalDuration) * 100 : 0;
 
   // Determine colors and styles
   const barColor = getBarColor(trace.duration, threshold, trace.isCacheHit);
@@ -351,9 +344,7 @@ export function TimelineRow({
         </div>
 
         {/* Duration label */}
-        <span style={localStyles.durationLabel}>
-          {formatDuration(trace.duration)}
-        </span>
+        <span style={localStyles.durationLabel}>{formatDuration(trace.duration)}</span>
 
         {/* Lifetime badge */}
         <span
@@ -403,15 +394,10 @@ export function TimelineRow({
 
       {/* Expanded details panel */}
       {isExpanded && (
-        <div
-          data-testid={`timeline-details-${trace.id}`}
-          style={localStyles.detailsPanel}
-        >
+        <div data-testid={`timeline-details-${trace.id}`} style={localStyles.detailsPanel}>
           <div style={localStyles.detailRow}>
             <span style={localStyles.detailLabel}>Start Time:</span>
-            <span style={localStyles.detailValue}>
-              {formatTimestamp(trace.startTime)}
-            </span>
+            <span style={localStyles.detailValue}>{formatTimestamp(trace.startTime)}</span>
           </div>
           <div style={localStyles.detailRow}>
             <span style={localStyles.detailLabel}>End Time:</span>
@@ -421,9 +407,7 @@ export function TimelineRow({
           </div>
           <div style={localStyles.detailRow}>
             <span style={localStyles.detailLabel}>Duration:</span>
-            <span style={localStyles.detailValue}>
-              {formatDuration(trace.duration)}
-            </span>
+            <span style={localStyles.detailValue}>{formatDuration(trace.duration)}</span>
           </div>
           <div style={localStyles.detailRow}>
             <span style={localStyles.detailLabel}>Lifetime:</span>
@@ -437,16 +421,12 @@ export function TimelineRow({
           </div>
           <div style={localStyles.detailRow}>
             <span style={localStyles.detailLabel}>Scope:</span>
-            <span style={localStyles.detailValue}>
-              {trace.scopeId ?? "root"}
-            </span>
+            <span style={localStyles.detailValue}>{trace.scopeId ?? "root"}</span>
           </div>
           <div style={localStyles.detailRow}>
             <span style={localStyles.detailLabel}>Dependencies:</span>
             <span style={localStyles.detailValue}>
-              {trace.childIds.length === 0
-                ? "None"
-                : `${trace.childIds.length} service(s)`}
+              {trace.childIds.length === 0 ? "None" : `${trace.childIds.length} service(s)`}
             </span>
           </div>
 

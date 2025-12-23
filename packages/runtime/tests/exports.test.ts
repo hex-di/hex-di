@@ -118,6 +118,14 @@ describe("@hex-di/runtime exports", () => {
         "toRuntimeContainer",
         "isRuntimeContainer",
         "assertResolverProvides",
+        // Type utilities for context variables and ports
+        "createContextVariableKey",
+        "getContextVariable",
+        "setContextVariable",
+        "getContextVariableOrDefault",
+        "isPort",
+        "isPortNamed",
+        "portComparator",
       ];
 
       // Verify all expected exports exist

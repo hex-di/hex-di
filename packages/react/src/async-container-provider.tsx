@@ -8,20 +8,10 @@
  * @packageDocumentation
  */
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  type ReactNode,
-} from "react";
+import React, { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import type { Port } from "@hex-di/ports";
 import type { Container } from "@hex-di/runtime";
-import { ChildContainerBrand } from "@hex-di/runtime";
-import {
-  ContainerContext,
-  ResolverContext,
-} from "./context.js";
+import { ContainerContext, ResolverContext } from "./context.js";
 import {
   toRuntimeContainerWithInit,
   type RuntimeContainerRef,
@@ -88,14 +78,12 @@ interface AsyncContainerContextValue {
  *
  * @typeParam TProvides - Union of Port types that the container can resolve
  */
-export interface AsyncContainerProviderProps<
-  TProvides extends Port<unknown, string>
-> {
+export interface AsyncContainerProviderProps<TProvides extends Port<unknown, string>> {
   /**
    * The uninitialized Container instance to initialize and provide.
    * Must be created with createContainer() and NOT yet initialized.
    */
-  readonly container: Container<TProvides, any, "uninitialized">;
+  readonly container: Container<TProvides, Port<unknown, string>, "uninitialized">;
 
   /**
    * React children - can be compound components or regular children.
@@ -163,9 +151,7 @@ GlobalAsyncContainerContext.displayName = "HexDI.GlobalAsyncContainerContext";
 function Loading({ children }: AsyncContainerLoadingProps): ReactNode {
   const context = useContext(GlobalAsyncContainerContext);
   if (!context) {
-    throw new Error(
-      "AsyncContainerProvider.Loading must be used within AsyncContainerProvider"
-    );
+    throw new Error("AsyncContainerProvider.Loading must be used within AsyncContainerProvider");
   }
   return context.state.status === "loading" ? <>{children}</> : null;
 }
@@ -188,14 +174,10 @@ function Loading({ children }: AsyncContainerLoadingProps): ReactNode {
  * </AsyncContainerProvider.Error>
  * ```
  */
-function ErrorComponent({
-  children,
-}: AsyncContainerErrorProps): ReactNode {
+function ErrorComponent({ children }: AsyncContainerErrorProps): ReactNode {
   const context = useContext(GlobalAsyncContainerContext);
   if (!context) {
-    throw new Error(
-      "AsyncContainerProvider.Error must be used within AsyncContainerProvider"
-    );
+    throw new Error("AsyncContainerProvider.Error must be used within AsyncContainerProvider");
   }
 
   if (context.state.status !== "error" || !context.state.error) {
@@ -224,9 +206,7 @@ function ErrorComponent({
 function Ready({ children }: AsyncContainerReadyProps): ReactNode {
   const context = useContext(GlobalAsyncContainerContext);
   if (!context) {
-    throw new Error(
-      "AsyncContainerProvider.Ready must be used within AsyncContainerProvider"
-    );
+    throw new Error("AsyncContainerProvider.Ready must be used within AsyncContainerProvider");
   }
 
   if (context.state.status !== "ready" || !context.state.container) {
@@ -375,11 +355,9 @@ function AsyncContainerProviderRoot<TProvides extends Port<unknown, string>>({
   // Check for compound component children
   const childArray = React.Children.toArray(children);
   const hasCompoundChildren = childArray.some(
-    (child) =>
+    child =>
       React.isValidElement(child) &&
-      (child.type === Loading ||
-        child.type === ErrorComponent ||
-        child.type === Ready)
+      (child.type === Loading || child.type === ErrorComponent || child.type === Ready)
   );
 
   if (hasCompoundChildren) {
@@ -412,13 +390,16 @@ function AsyncContainerProviderRoot<TProvides extends Port<unknown, string>>({
       {state.status === "error" &&
         state.error &&
         (errorFallback?.(state.error) ?? <DefaultError error={state.error} />)}
-      {state.status === "ready" && state.container && mainContainerContextValue && mainResolverContextValue && (
-        <ContainerContext.Provider value={mainContainerContextValue}>
-          <ResolverContext.Provider value={mainResolverContextValue}>
-            {children}
-          </ResolverContext.Provider>
-        </ContainerContext.Provider>
-      )}
+      {state.status === "ready" &&
+        state.container &&
+        mainContainerContextValue &&
+        mainResolverContextValue && (
+          <ContainerContext.Provider value={mainContainerContextValue}>
+            <ResolverContext.Provider value={mainResolverContextValue}>
+              {children}
+            </ResolverContext.Provider>
+          </ContainerContext.Provider>
+        )}
     </GlobalAsyncContainerContext.Provider>
   );
 }
@@ -466,21 +447,16 @@ function AsyncContainerProviderRoot<TProvides extends Port<unknown, string>>({
  * </AsyncContainerProvider>
  * ```
  */
-export const AsyncContainerProvider = Object.assign(
-  AsyncContainerProviderRoot,
-  {
-    Loading,
-    Error: ErrorComponent,
-    Ready,
-  }
-);
+export const AsyncContainerProvider = Object.assign(AsyncContainerProviderRoot, {
+  Loading,
+  Error: ErrorComponent,
+  Ready,
+});
 
 /**
  * Type for the AsyncContainerProvider component with compound components.
  */
-export type AsyncContainerProviderComponent<
-  TProvides extends Port<unknown, string>
-> = {
+export type AsyncContainerProviderComponent<TProvides extends Port<unknown, string>> = {
   (props: AsyncContainerProviderProps<TProvides>): ReactNode;
   Loading: typeof Loading;
   Error: typeof ErrorComponent;
@@ -513,9 +489,7 @@ export type AsyncContainerProviderComponent<
 export function useAsyncContainerState(): AsyncContainerState {
   const context = useContext(GlobalAsyncContainerContext);
   if (!context) {
-    throw new Error(
-      "useAsyncContainerState must be used within AsyncContainerProvider"
-    );
+    throw new Error("useAsyncContainerState must be used within AsyncContainerProvider");
   }
   return context.state;
 }

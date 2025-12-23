@@ -1,6 +1,7 @@
 import type { Port } from "@hex-di/ports";
 import type { Container, ContainerPhase } from "@hex-di/runtime";
 import type { MiddlewareHandler } from "hono";
+import { setContextVariable, createContextVariableKey } from "@hex-di/runtime";
 import { DEFAULT_CONTAINER_KEY, DEFAULT_SCOPE_KEY } from "./constants.js";
 import type { HexHonoEnv } from "./types.js";
 
@@ -44,16 +45,19 @@ export function createScopeMiddleware<
 ): MiddlewareHandler<HexHonoEnv<TProvides, TAsyncPorts, TPhase, ScopeKey, ContainerKey>> {
   const scopeKey = (options.scopeKey ?? DEFAULT_SCOPE_KEY) as ScopeKey;
   const containerKey = (options.containerKey ?? DEFAULT_CONTAINER_KEY) as ContainerKey;
-  type Variables = HexHonoEnv<TProvides, TAsyncPorts, TPhase, ScopeKey, ContainerKey>["Variables"];
 
-  const middleware: MiddlewareHandler<HexHonoEnv<TProvides, TAsyncPorts, TPhase, ScopeKey, ContainerKey>> = async (
-    context,
-    next
-  ) => {
+  const middleware: MiddlewareHandler<
+    HexHonoEnv<TProvides, TAsyncPorts, TPhase, ScopeKey, ContainerKey>
+  > = async (context, next) => {
     const scope = container.createScope();
-    const set = (context as unknown as { set: (key: string, value: unknown) => void }).set.bind(context);
-    set(containerKey, container);
-    set(scopeKey, scope);
+
+    // Create branded keys for type-safe context access
+    const scopeKey_branded = createContextVariableKey<typeof scope>(scopeKey);
+    const containerKey_branded = createContextVariableKey<typeof container>(containerKey);
+
+    // Use type-safe setters instead of unsafe casts
+    setContextVariable(context, containerKey_branded, container);
+    setContextVariable(context, scopeKey_branded, scope);
 
     let handlerError: unknown;
     let disposeError: unknown;

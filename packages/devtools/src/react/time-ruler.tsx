@@ -8,7 +8,7 @@
  */
 
 import React, { useMemo, type ReactElement, type CSSProperties } from "react";
-import { timelineStyles, formatDuration } from "./styles.js";
+import { timelineStyles } from "./styles.js";
 
 // =============================================================================
 // Types
@@ -211,10 +211,10 @@ function generateTicks(
 export function TimeRuler({
   totalDuration,
   threshold,
-  zoom = 1,
+  zoom: _zoom = 1,
 }: TimeRulerProps): ReactElement {
   // Calculate tick configuration and positions
-  const { tickConfig, ticks } = useMemo(() => {
+  const { tickConfig: _tickConfig, ticks } = useMemo(() => {
     const config = calculateTickConfig(totalDuration);
     const tickPositions = generateTicks(totalDuration, config);
     return { tickConfig: config, ticks: tickPositions };
@@ -247,7 +247,7 @@ export function TimeRuler({
   return (
     <div data-testid="time-ruler" style={localStyles.container}>
       {/* Major ticks with labels */}
-      {ticks.major.map((time) => (
+      {ticks.major.map(time => (
         <React.Fragment key={`major-${time}`}>
           <div
             data-testid={`ruler-tick-major-${time}`}
@@ -269,7 +269,7 @@ export function TimeRuler({
       ))}
 
       {/* Minor ticks */}
-      {ticks.minor.map((time) => (
+      {ticks.minor.map(time => (
         <div
           key={`minor-${time}`}
           data-testid={`ruler-tick-minor-${time}`}

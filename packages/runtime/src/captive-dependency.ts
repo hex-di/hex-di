@@ -22,8 +22,7 @@
  */
 
 import type { Port, InferPortName } from "@hex-di/ports";
-import type { Adapter, Lifetime, FactoryKind, InferAdapterProvides, InferAdapterLifetime } from "@hex-di/graph";
-
+import type { Adapter, Lifetime, InferAdapterProvides, InferAdapterLifetime } from "@hex-di/graph";
 
 // =============================================================================
 // LifetimeLevel Phantom Type
@@ -108,10 +107,10 @@ type IsGreaterThan<A extends number, B extends number> = A extends 1
  *
  * @internal
  */
-type IsCaptive<
-  DependentLevel extends number,
-  DependencyLevel extends number,
-> = IsGreaterThan<DependencyLevel, DependentLevel>;
+type IsCaptive<DependentLevel extends number, DependencyLevel extends number> = IsGreaterThan<
+  DependencyLevel,
+  DependentLevel
+>;
 
 // =============================================================================
 // Lifetime Name Extraction for Error Messages
@@ -232,14 +231,13 @@ export type CaptiveDependencyError<TMessage extends string> = {
 export type ValidateCaptiveDependency<
   TAdapter extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>,
   TRequiredAdapter extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>,
-> = IsCaptive<
-  LifetimeLevel<InferAdapterLifetime<TAdapter>>,
-  LifetimeLevel<InferAdapterLifetime<TRequiredAdapter>>
-> extends true
-  ? CaptiveDependencyError<
-      `${LifetimeName<LifetimeLevel<InferAdapterLifetime<TAdapter>>>} '${InferPortName<InferAdapterProvides<TAdapter>>}' cannot depend on ${LifetimeName<LifetimeLevel<InferAdapterLifetime<TRequiredAdapter>>>} '${InferPortName<InferAdapterProvides<TRequiredAdapter>>}'`
-    >
-  : TAdapter;
+> =
+  IsCaptive<
+    LifetimeLevel<InferAdapterLifetime<TAdapter>>,
+    LifetimeLevel<InferAdapterLifetime<TRequiredAdapter>>
+  > extends true
+    ? CaptiveDependencyError<`${LifetimeName<LifetimeLevel<InferAdapterLifetime<TAdapter>>>} '${InferPortName<InferAdapterProvides<TAdapter>>}' cannot depend on ${LifetimeName<LifetimeLevel<InferAdapterLifetime<TRequiredAdapter>>>} '${InferPortName<InferAdapterProvides<TRequiredAdapter>>}'`>
+    : TAdapter;
 
 // =============================================================================
 // Batch Validation Type
@@ -268,10 +266,18 @@ export type ValidateCaptiveDependency<
  */
 export type ValidateAllDependencies<
   TAdapter extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>,
-  TAdapters extends readonly Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>[],
+  TAdapters extends readonly Adapter<
+    Port<unknown, string>,
+    Port<unknown, string> | never,
+    Lifetime
+  >[],
 > = TAdapters extends readonly [
   infer First extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>,
-  ...infer Rest extends readonly Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>[],
+  ...infer Rest extends readonly Adapter<
+    Port<unknown, string>,
+    Port<unknown, string> | never,
+    Lifetime
+  >[],
 ]
   ? ValidateCaptiveDependency<TAdapter, First> extends TAdapter
     ? ValidateAllDependencies<TAdapter, Rest>

@@ -9,7 +9,6 @@
  */
 
 import { useEffect, useRef, useCallback } from "react";
-import type { ContainerSnapshot } from "@hex-di/devtools-core";
 import type { PresenterDataSourceContract } from "@hex-di/devtools-core";
 import { TimeTravelPresenter } from "../presenters/time-travel.presenter.js";
 
@@ -97,12 +96,7 @@ export function useSnapshotCapture(
   dataSource: PresenterDataSourceContract,
   options: SnapshotCaptureOptions = {}
 ): SnapshotCaptureResult {
-  const {
-    enabled = true,
-    captureIntervalMs = 1000,
-    maxSnapshots = 100,
-    labelGenerator,
-  } = options;
+  const { enabled = true, captureIntervalMs = 1000, maxSnapshots = 100, labelGenerator } = options;
 
   // Create presenter instance (stable across renders)
   const presenterRef = useRef<TimeTravelPresenter | null>(null);

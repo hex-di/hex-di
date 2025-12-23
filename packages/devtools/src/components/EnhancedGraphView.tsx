@@ -13,16 +13,14 @@
  * @packageDocumentation
  */
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo } from "react";
 import { usePrimitives } from "../hooks/use-primitives.js";
 import type {
   ExtendedGraphViewModel,
-  GraphNodeViewModel,
   ContainerGrouping,
   CaptiveWarning,
 } from "../view-models/graph.vm.js";
 import type { ContainerNode, ContainerPhase } from "../view-models/container-hierarchy.vm.js";
-import type { Lifetime } from "@hex-di/devtools-core";
 
 // =============================================================================
 // Types
@@ -94,22 +92,6 @@ export const defaultFilterState: GraphFilterState = Object.freeze({
 // =============================================================================
 
 /**
- * Get color for lifetime badge.
- */
-function getLifetimeColor(lifetime: Lifetime): "success" | "warning" | "error" | "muted" {
-  switch (lifetime) {
-    case "singleton":
-      return "success";
-    case "scoped":
-      return "warning";
-    case "transient":
-      return "error";
-    default:
-      return "muted";
-  }
-}
-
-/**
  * Get severity color for captive warnings.
  */
 function getCaptiveSeverityColor(severity: "warning" | "error"): "warning" | "error" {
@@ -155,13 +137,6 @@ function FilterToolbar({
   onFilterChange,
 }: FilterToolbarProps): React.ReactElement {
   const { Box, Text, Button, Icon } = usePrimitives();
-
-  const handleNameChange = useCallback(
-    (value: string) => {
-      onFilterChange({ ...filterState, namePattern: value });
-    },
-    [filterState, onFilterChange]
-  );
 
   const handleLifetimeChange = useCallback(
     (lifetime: LifetimeFilter) => {
@@ -311,7 +286,7 @@ function FilterToolbar({
               variant={filterState.selectedContainerId === null ? "primary" : "ghost"}
               onClick={() => handleContainerChange(null)}
             />
-            {containers.slice(0, 3).map((container) => (
+            {containers.slice(0, 3).map(container => (
               <Button
                 key={container.id}
                 label={container.name.slice(0, 8)}
@@ -362,13 +337,8 @@ function ContainerOverlay({ groupings }: ContainerOverlayProps): React.ReactElem
   }
 
   return (
-    <Box
-      flexDirection="column"
-      gap="xs"
-      padding="xs"
-      data-testid="container-overlay"
-    >
-      {groupings.map((group) => (
+    <Box flexDirection="column" gap="xs" padding="xs" data-testid="container-overlay">
+      {groupings.map(group => (
         <Box
           key={group.containerId}
           flexDirection="row"
@@ -379,7 +349,11 @@ function ContainerOverlay({ groupings }: ContainerOverlayProps): React.ReactElem
           data-is-root={group.isRoot}
         >
           {/* Container label */}
-          <Text variant="caption" color={group.isRoot ? "primary" : "secondary"} bold={group.isRoot}>
+          <Text
+            variant="caption"
+            color={group.isRoot ? "primary" : "secondary"}
+            bold={group.isRoot}
+          >
             {group.containerName}
           </Text>
 
@@ -422,7 +396,7 @@ function CaptiveWarningOverlay({
       return warnings;
     }
     return warnings.filter(
-      (w) => w.sourcePortName === selectedNodeId || w.captivePortName === selectedNodeId
+      w => w.sourcePortName === selectedNodeId || w.captivePortName === selectedNodeId
     );
   }, [warnings, selectedNodeId]);
 
@@ -431,12 +405,7 @@ function CaptiveWarningOverlay({
   }
 
   return (
-    <Box
-      flexDirection="column"
-      gap="xs"
-      padding="sm"
-      data-testid="captive-warning-overlay"
-    >
+    <Box flexDirection="column" gap="xs" padding="sm" data-testid="captive-warning-overlay">
       <Box flexDirection="row" alignItems="center" gap="xs">
         <Icon name="services" size="sm" color="warning" />
         <Text variant="caption" color="warning" bold>
@@ -585,9 +554,6 @@ export function EnhancedGraphView({
   onNodeSelect,
   onNodeHover,
   onFilterChange,
-  onContainerSelect,
-  onZoomChange,
-  onPanChange,
 }: EnhancedGraphViewProps): React.ReactElement {
   const { Box, Text, Icon, GraphRenderer, Divider } = usePrimitives();
 
@@ -599,46 +565,46 @@ export function EnhancedGraphView({
     // Filter by name pattern
     if (filterState.namePattern) {
       const pattern = new RegExp(filterState.namePattern, "i");
-      nodes = nodes.filter((n) => pattern.test(n.label));
+      nodes = nodes.filter(n => pattern.test(n.label));
     }
 
     // Filter by lifetime
     if (filterState.lifetimeFilter !== "all") {
-      nodes = nodes.filter((n) => n.lifetime === filterState.lifetimeFilter);
+      nodes = nodes.filter(n => n.lifetime === filterState.lifetimeFilter);
     }
 
     // Filter by factory kind
     if (filterState.factoryFilter !== "all") {
-      nodes = nodes.filter((n) => n.factoryKind === filterState.factoryFilter);
+      nodes = nodes.filter(n => n.factoryKind === filterState.factoryFilter);
     }
 
     // Filter by captive issues
     if (filterState.showOnlyCaptive && viewModel.captiveWarnings.length > 0) {
       const captiveNodeIds = new Set<string>();
-      viewModel.captiveWarnings.forEach((w) => {
+      viewModel.captiveWarnings.forEach(w => {
         captiveNodeIds.add(w.sourcePortName);
         captiveNodeIds.add(w.captivePortName);
       });
-      nodes = nodes.filter((n) => captiveNodeIds.has(n.id));
+      nodes = nodes.filter(n => captiveNodeIds.has(n.id));
     }
 
     // Filter by selected container
     if (filterState.selectedContainerId !== null) {
       const containerGroup = viewModel.containerGroupings.find(
-        (g) => g.containerId === filterState.selectedContainerId
+        g => g.containerId === filterState.selectedContainerId
       );
       if (containerGroup) {
         const containerNodeIds = new Set(containerGroup.nodeIds);
-        nodes = nodes.filter((n) => containerNodeIds.has(n.id));
+        nodes = nodes.filter(n => containerNodeIds.has(n.id));
       }
     }
 
     // Build filtered node IDs for edge filtering
-    const filteredNodeIds = new Set(nodes.map((n) => n.id));
+    const filteredNodeIds = new Set(nodes.map(n => n.id));
 
     // Filter edges to only include those between filtered nodes
     const edges = viewModel.edges.filter(
-      (e) => filteredNodeIds.has(e.from) && filteredNodeIds.has(e.to)
+      e => filteredNodeIds.has(e.from) && filteredNodeIds.has(e.to)
     );
 
     // Return filtered view model (create a new object with filtered nodes)
@@ -654,7 +620,7 @@ export function EnhancedGraphView({
 
   // Check for async factories in the graph
   const hasAsyncFactories = useMemo(
-    () => viewModel.nodes.some((n) => n.factoryKind === "async"),
+    () => viewModel.nodes.some(n => n.factoryKind === "async"),
     [viewModel.nodes]
   );
 

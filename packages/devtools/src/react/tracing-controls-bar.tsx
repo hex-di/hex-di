@@ -350,10 +350,7 @@ interface LifetimeFilterGroupProps {
 /**
  * Lifetime filter button group.
  */
-function LifetimeFilterGroup({
-  value,
-  onChange,
-}: LifetimeFilterGroupProps): ReactElement {
+function LifetimeFilterGroup({ value, onChange }: LifetimeFilterGroupProps): ReactElement {
   return (
     <div style={controlsStyles.filterGroup}>
       <span style={localStyles.filterLabel}>Lifetime:</span>
@@ -400,10 +397,7 @@ interface StatusFilterGroupProps {
 /**
  * Cache status filter button group.
  */
-function StatusFilterGroup({
-  value,
-  onChange,
-}: StatusFilterGroupProps): ReactElement {
+function StatusFilterGroup({ value, onChange }: StatusFilterGroupProps): ReactElement {
   return (
     <div style={controlsStyles.filterGroup}>
       <span style={localStyles.filterLabel}>Status:</span>
@@ -442,10 +436,7 @@ interface PerformanceFilterGroupProps {
 /**
  * Performance filter button group (All / Slow Only).
  */
-function PerformanceFilterGroup({
-  slowOnly,
-  onChange,
-}: PerformanceFilterGroupProps): ReactElement {
+function PerformanceFilterGroup({ slowOnly, onChange }: PerformanceFilterGroupProps): ReactElement {
   return (
     <div style={controlsStyles.filterGroup}>
       <span style={localStyles.filterLabel}>Performance:</span>
@@ -496,7 +487,7 @@ function SortDropdown({ value, onChange }: SortDropdownProps): ReactElement {
         style={controlsStyles.sortDropdown}
         aria-label="Sort traces"
       >
-        {SORT_OPTIONS.map((option) => (
+        {SORT_OPTIONS.map(option => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>
@@ -518,10 +509,7 @@ interface ThresholdSliderProps {
 /**
  * Threshold slider with value label.
  */
-function ThresholdSlider({
-  value,
-  onChange,
-}: ThresholdSliderProps): ReactElement {
+function ThresholdSlider({ value, onChange }: ThresholdSliderProps): ReactElement {
   const handleChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
       onChange(parseInt(e.target.value, 10));
@@ -570,13 +558,9 @@ function RecordingIndicator({
   totalDuration,
   onPauseToggle,
 }: RecordingIndicatorProps): ReactElement {
-  const dotStyle = isRecording
-    ? controlsStyles.recordingDot
-    : localStyles.recordingDotPaused;
+  const dotStyle = isRecording ? controlsStyles.recordingDot : localStyles.recordingDotPaused;
 
-  const textStyle = isRecording
-    ? localStyles.recordingText
-    : localStyles.recordingTextPaused;
+  const textStyle = isRecording ? localStyles.recordingText : localStyles.recordingTextPaused;
 
   const pauseButtonStyle: CSSProperties = {
     ...localStyles.pauseButton,
@@ -585,10 +569,7 @@ function RecordingIndicator({
 
   return (
     <div style={controlsStyles.statusBar}>
-      <div
-        data-testid="tracing-recording-indicator"
-        style={controlsStyles.recordingIndicator}
-      >
+      <div data-testid="tracing-recording-indicator" style={controlsStyles.recordingIndicator}>
         <span style={dotStyle} aria-hidden="true" />
         <span style={textStyle}>{isRecording ? "Recording" : "Paused"}</span>
       </div>
@@ -664,8 +645,17 @@ function ActiveFiltersBar({
   threshold,
   onFiltersChange,
 }: ActiveFiltersBarProps): ReactElement | null {
-  const tags: Array<{ testId: string; label: string; onRemove: () => void }> =
-    [];
+  // Hook must be called before any early returns
+  const handleClearAll = useCallback(() => {
+    onFiltersChange({
+      searchQuery: "",
+      lifetime: null,
+      status: null,
+      slowOnly: false,
+    });
+  }, [onFiltersChange]);
+
+  const tags: Array<{ testId: string; label: string; onRemove: () => void }> = [];
 
   // Search query tag
   if (filters.searchQuery.length > 0) {
@@ -708,25 +698,11 @@ function ActiveFiltersBar({
     return null;
   }
 
-  const handleClearAll = useCallback(() => {
-    onFiltersChange({
-      searchQuery: "",
-      lifetime: null,
-      status: null,
-      slowOnly: false,
-    });
-  }, [onFiltersChange]);
-
   return (
     <div data-testid="tracing-active-filters" style={controlsStyles.activeFiltersBar}>
       <span style={localStyles.filterLabel}>Active:</span>
-      {tags.map((tag) => (
-        <FilterTag
-          key={tag.testId}
-          testId={tag.testId}
-          label={tag.label}
-          onRemove={tag.onRemove}
-        />
+      {tags.map(tag => (
+        <FilterTag key={tag.testId} testId={tag.testId} label={tag.label} onRemove={tag.onRemove} />
       ))}
       <button
         data-testid="tracing-clear-filters"
@@ -843,10 +819,7 @@ export function TracingControlsBar({
     <div data-testid="tracing-controls-bar" style={controlsStyles.container}>
       {/* Row 1: Search and Actions */}
       <div style={controlsStyles.row}>
-        <SearchInput
-          value={filters.searchQuery}
-          onChange={handleSearchChange}
-        />
+        <SearchInput value={filters.searchQuery} onChange={handleSearchChange} />
         <button
           data-testid="tracing-clear-all"
           style={containerInspectorStyles.refreshButton}
@@ -869,21 +842,12 @@ export function TracingControlsBar({
 
       {/* Row 2: Filters */}
       <div style={controlsStyles.row}>
-        <LifetimeFilterGroup
-          value={filters.lifetime}
-          onChange={handleLifetimeChange}
-        />
+        <LifetimeFilterGroup value={filters.lifetime} onChange={handleLifetimeChange} />
       </div>
 
       <div style={{ ...controlsStyles.row, ...localStyles.statusFiltersRow }}>
-        <StatusFilterGroup
-          value={filters.status}
-          onChange={handleStatusChange}
-        />
-        <PerformanceFilterGroup
-          slowOnly={filters.slowOnly}
-          onChange={handleSlowOnlyChange}
-        />
+        <StatusFilterGroup value={filters.status} onChange={handleStatusChange} />
+        <PerformanceFilterGroup slowOnly={filters.slowOnly} onChange={handleSlowOnlyChange} />
       </div>
 
       {/* Row 3: Sort and Threshold */}
@@ -901,11 +865,7 @@ export function TracingControlsBar({
       />
 
       {/* Active Filters Bar */}
-      <ActiveFiltersBar
-        filters={filters}
-        threshold={threshold}
-        onFiltersChange={onFiltersChange}
-      />
+      <ActiveFiltersBar filters={filters} threshold={threshold} onFiltersChange={onFiltersChange} />
     </div>
   );
 }

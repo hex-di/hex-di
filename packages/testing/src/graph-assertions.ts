@@ -8,15 +8,15 @@
  * @packageDocumentation
  */
 
-import type { Port, InferPortName } from "@hex-di/ports";
+import type { Port } from "@hex-di/ports";
 import type { Graph, Adapter, Lifetime, FactoryKind } from "@hex-di/graph";
 
-// Type augmentation for V8-specific Error.captureStackTrace
-declare global {
-  interface ErrorConstructor {
-    captureStackTrace(targetObject: object, constructorOpt?: Function): void;
-  }
-}
+// V8-specific Error.captureStackTrace type
+// We use a type alias to type the V8-specific static method without conflicts
+type V8ErrorConstructor = typeof Error & {
+  captureStackTrace?(targetObject: object, constructorOpt?: unknown): void;
+};
+const ErrorWithCapture = Error as V8ErrorConstructor;
 
 // =============================================================================
 // GraphAssertionError Class
@@ -77,9 +77,7 @@ export class GraphAssertionError extends Error {
 
     // Capture stack trace excluding this constructor for cleaner traces
     // Note: captureStackTrace is V8-specific (Node.js, Chrome)
-    if (typeof Error.captureStackTrace === "function") {
-      Error.captureStackTrace(this, new.target);
-    }
+    ErrorWithCapture.captureStackTrace?.(this, GraphAssertionError);
   }
 
   /**
@@ -119,9 +117,11 @@ function getPortName(port: Port<unknown, string>): string {
 function findAdapterForPort(
   graph: Graph<Port<unknown, string>, Port<unknown, string> | never>,
   port: Port<unknown, string>
-): Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind> | undefined {
+):
+  | Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>
+  | undefined {
   const portName = getPortName(port);
-  return graph.adapters.find((adapter) => getPortName(adapter.provides) === portName);
+  return graph.adapters.find(adapter => getPortName(adapter.provides) === portName);
 }
 
 /**
@@ -132,7 +132,9 @@ function findAdapterForPort(
  *
  * @internal
  */
-function getProvidedPortNames(graph: Graph<Port<unknown, string>, Port<unknown, string> | never>): Set<string> {
+function getProvidedPortNames(
+  graph: Graph<Port<unknown, string>, Port<unknown, string> | never>
+): Set<string> {
   const provided = new Set<string>();
   for (const adapter of graph.adapters) {
     provided.add(getPortName(adapter.provides));
@@ -148,7 +150,9 @@ function getProvidedPortNames(graph: Graph<Port<unknown, string>, Port<unknown, 
  *
  * @internal
  */
-function getRequiredPortNames(graph: Graph<Port<unknown, string>, Port<unknown, string> | never>): Set<string> {
+function getRequiredPortNames(
+  graph: Graph<Port<unknown, string>, Port<unknown, string> | never>
+): Set<string> {
   const required = new Set<string>();
   for (const adapter of graph.adapters) {
     for (const requiredPort of adapter.requires) {
@@ -197,7 +201,9 @@ function getRequiredPortNames(graph: Graph<Port<unknown, string>, Port<unknown, 
  * });
  * ```
  */
-export function assertGraphComplete(graph: Graph<Port<unknown, string>, Port<unknown, string> | never>): void {
+export function assertGraphComplete(
+  graph: Graph<Port<unknown, string>, Port<unknown, string> | never>
+): void {
   const providedPorts = getProvidedPortNames(graph);
   const requiredPorts = getRequiredPortNames(graph);
 
@@ -256,10 +262,7 @@ export function assertPortProvided<P extends Port<unknown, string>>(
   const adapter = findAdapterForPort(graph, port);
 
   if (!adapter) {
-    throw new GraphAssertionError(
-      `Port '${portName}' is not provided in graph`,
-      [portName]
-    );
+    throw new GraphAssertionError(`Port '${portName}' is not provided in graph`, [portName]);
   }
 }
 
@@ -308,10 +311,7 @@ export function assertLifetime<P extends Port<unknown, string>>(
   const adapter = findAdapterForPort(graph, port);
 
   if (!adapter) {
-    throw new GraphAssertionError(
-      `Port '${portName}' is not provided in graph`,
-      [portName]
-    );
+    throw new GraphAssertionError(`Port '${portName}' is not provided in graph`, [portName]);
   }
 
   if (adapter.lifetime !== expectedLifetime) {

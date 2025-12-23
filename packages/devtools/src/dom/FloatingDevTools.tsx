@@ -242,7 +242,20 @@ function getDevToolsUrl(): string {
  * }
  * ```
  */
-export function FloatingDevTools({
+export function FloatingDevTools(props: FloatingDevToolsProps): ReactElement | null {
+  // Production mode check - must be before any hooks
+  if (typeof process !== "undefined" && process.env?.NODE_ENV === "production") {
+    return null;
+  }
+
+  return <FloatingDevToolsInner {...props} />;
+}
+
+/**
+ * Inner component containing all hooks and logic.
+ * Separated to avoid conditional hook calls in production check.
+ */
+function FloatingDevToolsInner({
   graph,
   container,
   appName = "Unknown",
@@ -254,19 +267,11 @@ export function FloatingDevTools({
   onClose,
   onSizeChange,
   persistKey = "hex-devtools",
-}: FloatingDevToolsProps): ReactElement | null {
-  // Production mode check
-  if (typeof process !== "undefined" && process.env?.NODE_ENV === "production") {
-    return null;
-  }
-
+}: FloatingDevToolsProps): ReactElement {
   // ============================================
   // 1. Data Source & Presenters
   // ============================================
-  const dataSource = useMemo(
-    () => new LocalDataSource(graph as never, container as never),
-    [graph, container]
-  );
+  const dataSource = useMemo(() => new LocalDataSource(graph, container), [graph, container]);
 
   const panelPresenter = useMemo(() => {
     const p = new PanelPresenter(dataSource);
@@ -274,25 +279,13 @@ export function FloatingDevTools({
     return p;
   }, [dataSource, appName, appVersion]);
 
-  const graphPresenter = useMemo(
-    () => new GraphPresenter(dataSource),
-    [dataSource]
-  );
+  const graphPresenter = useMemo(() => new GraphPresenter(dataSource), [dataSource]);
 
-  const servicesPresenter = useMemo(
-    () => new ServicesPresenter(dataSource),
-    [dataSource]
-  );
+  const servicesPresenter = useMemo(() => new ServicesPresenter(dataSource), [dataSource]);
 
-  const timelinePresenter = useMemo(
-    () => new TimelinePresenter(dataSource),
-    [dataSource]
-  );
+  const timelinePresenter = useMemo(() => new TimelinePresenter(dataSource), [dataSource]);
 
-  const inspectorPresenter = useMemo(
-    () => new InspectorPresenter(dataSource),
-    [dataSource]
-  );
+  const inspectorPresenter = useMemo(() => new InspectorPresenter(dataSource), [dataSource]);
 
   // ============================================
   // 2. View Model State
@@ -315,29 +308,50 @@ export function FloatingDevTools({
       setInspectorVM(inspectorPresenter.getViewModel());
     });
     return unsubscribe;
-  }, [dataSource, panelPresenter, graphPresenter, servicesPresenter, timelinePresenter, inspectorPresenter]);
+  }, [
+    dataSource,
+    panelPresenter,
+    graphPresenter,
+    servicesPresenter,
+    timelinePresenter,
+    inspectorPresenter,
+  ]);
 
   // ============================================
   // 3. Relay Connection (DevToolsHostClient)
   // ============================================
-  const tracingApi = container !== undefined ? (container as { [TRACING_ACCESS]?: {
-    getTraces: () => readonly TraceEntry[];
-    getStats: () => TraceStats;
-    pause: () => void;
-    resume: () => void;
-    clear: () => void;
-    pin: (id: string) => void;
-    unpin: (id: string) => void;
-  } })[TRACING_ACCESS] : undefined;
+  const tracingApi =
+    container !== undefined
+      ? (
+          container as {
+            [TRACING_ACCESS]?: {
+              getTraces: () => readonly TraceEntry[];
+              getStats: () => TraceStats;
+              pause: () => void;
+              resume: () => void;
+              clear: () => void;
+              pin: (id: string) => void;
+              unpin: (id: string) => void;
+            };
+          }
+        )[TRACING_ACCESS]
+      : undefined;
 
-  const defaultStats: TraceStats = {
-    totalResolutions: 0,
-    averageDuration: 0,
-    cacheHitRate: 0,
-    slowCount: 0,
-    sessionStart: Date.now(),
-    totalDuration: 0,
-  };
+  // Capture session start time using useState with lazy initializer
+  // This is the React-approved way to run impure functions once during initial render
+  const [sessionStart] = useState(() => Date.now());
+
+  const defaultStats: TraceStats = useMemo(
+    () => ({
+      totalResolutions: 0,
+      averageDuration: 0,
+      cacheHitRate: 0,
+      slowCount: 0,
+      sessionStart,
+      totalDuration: 0,
+    }),
+    [sessionStart]
+  );
 
   useEffect(() => {
     const url = relayUrl ?? getDevToolsUrl();
@@ -351,12 +365,18 @@ export function FloatingDevTools({
 
     // Register handlers to provide data to TUI clients
     hostClient.registerHandlers({
-      getGraph: () => toJSON(graph as never),
+      getGraph: () => toJSON(graph),
       getTraces: () => tracingApi?.getTraces() ?? [],
       getStats: () => tracingApi?.getStats() ?? defaultStats,
-      pauseTracing: () => { tracingApi?.pause(); },
-      resumeTracing: () => { tracingApi?.resume(); },
-      clearTraces: () => { tracingApi?.clear(); },
+      pauseTracing: () => {
+        tracingApi?.pause();
+      },
+      resumeTracing: () => {
+        tracingApi?.resume();
+      },
+      clearTraces: () => {
+        tracingApi?.clear();
+      },
       pinTrace: (traceId: string, pin: boolean) => {
         if (pin) {
           tracingApi?.pin(traceId);
@@ -367,7 +387,7 @@ export function FloatingDevTools({
     });
 
     // Track connection status using single event listener
-    hostClient.on((event) => {
+    hostClient.on(event => {
       if (event.type === "connected") {
         setConnectionStatus("connected");
       } else if (event.type === "disconnected") {
@@ -378,24 +398,20 @@ export function FloatingDevTools({
     });
 
     // Connect to relay (fire and forget, will auto-reconnect)
-    hostClient.connect().catch((err) => {
+    hostClient.connect().catch(err => {
       console.warn("[FloatingDevTools] Failed to connect to relay:", err.message);
     });
 
     return () => {
       hostClient.disconnect();
     };
-  }, [graph, appName, appVersion, relayUrl, tracingApi]);
+  }, [graph, appName, appVersion, relayUrl, tracingApi, defaultStats]);
 
   // ============================================
   // 4. Panel State (localStorage persistence)
   // ============================================
-  const [isOpen, setIsOpen] = useState(() =>
-    getStoredBoolean(`${persistKey}-open`, false)
-  );
-  const [size, setSize] = useState(() =>
-    getStoredSize(`${persistKey}-size`)
-  );
+  const [isOpen, setIsOpen] = useState(() => getStoredBoolean(`${persistKey}-open`, false));
+  const [size, setSize] = useState(() => getStoredSize(`${persistKey}-size`));
   const [isFullscreen, setIsFullscreen] = useState(() =>
     getStoredBoolean(`${persistKey}-fullscreen`, false)
   );
@@ -416,6 +432,10 @@ export function FloatingDevTools({
   const isResizing = useRef(false);
   const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0 });
 
+  // Refs for resize handlers (enables self-referential cleanup)
+  const handleResizeMoveRef = useRef<(e: MouseEvent | TouchEvent) => void>(() => {});
+  const handleResizeEndRef = useRef<() => void>(() => {});
+
   // Persist state changes
   useEffect(() => {
     setStoredBoolean(`${persistKey}-open`, isOpen);
@@ -434,7 +454,7 @@ export function FloatingDevTools({
   // 5. Event Handlers
   // ============================================
   const handleToggle = useCallback(() => {
-    setIsOpen((prev) => !prev);
+    setIsOpen(prev => !prev);
   }, []);
 
   const handleClose = useCallback(() => {
@@ -443,32 +463,44 @@ export function FloatingDevTools({
   }, [onClose]);
 
   const handleFullscreen = useCallback(() => {
-    setIsFullscreen((prev) => !prev);
+    setIsFullscreen(prev => !prev);
     onToggleFullscreen?.();
   }, [onToggleFullscreen]);
 
-  const handleTabChange = useCallback((tabId: TabId) => {
-    setActiveTabId(tabId);
-    panelPresenter.setActiveTab(tabId);
-    setPanelVM(panelPresenter.getViewModel());
-  }, [panelPresenter]);
+  const handleTabChange = useCallback(
+    (tabId: TabId) => {
+      setActiveTabId(tabId);
+      panelPresenter.setActiveTab(tabId);
+      setPanelVM(panelPresenter.getViewModel());
+    },
+    [panelPresenter]
+  );
 
   // Services tab callbacks
-  const handleServiceSelect = useCallback((portName: string) => {
-    inspectorPresenter.selectService(portName);
-    setInspectorVM(inspectorPresenter.getViewModel());
-    handleTabChange("inspector");
-  }, [inspectorPresenter, handleTabChange]);
+  const handleServiceSelect = useCallback(
+    (portName: string) => {
+      inspectorPresenter.selectService(portName);
+      setInspectorVM(inspectorPresenter.getViewModel());
+      handleTabChange("inspector");
+    },
+    [inspectorPresenter, handleTabChange]
+  );
 
-  const handleServicesSort = useCallback((column: ServicesSortColumn) => {
-    servicesPresenter.setSort(column);
-    setServicesVM(servicesPresenter.getViewModel());
-  }, [servicesPresenter]);
+  const handleServicesSort = useCallback(
+    (column: ServicesSortColumn) => {
+      servicesPresenter.setSort(column);
+      setServicesVM(servicesPresenter.getViewModel());
+    },
+    [servicesPresenter]
+  );
 
-  const handleServicesFilter = useCallback((text: string) => {
-    servicesPresenter.setFilterText(text);
-    setServicesVM(servicesPresenter.getViewModel());
-  }, [servicesPresenter]);
+  const handleServicesFilter = useCallback(
+    (text: string) => {
+      servicesPresenter.setFilterText(text);
+      setServicesVM(servicesPresenter.getViewModel());
+    },
+    [servicesPresenter]
+  );
 
   // Timeline tab callbacks
   const handlePauseToggle = useCallback(() => {
@@ -488,29 +520,13 @@ export function FloatingDevTools({
     setTimelineVM(timelinePresenter.getViewModel());
   }, [tracingApi, timelinePresenter]);
 
-  // Resize handlers
-  const handleResizeStart = useCallback(
-    (e: React.MouseEvent | React.TouchEvent) => {
-      e.preventDefault();
-      isResizing.current = true;
-      const clientX = "touches" in e ? e.touches[0]?.clientX ?? 0 : e.clientX;
-      const clientY = "touches" in e ? e.touches[0]?.clientY ?? 0 : e.clientY;
-      resizeStart.current = { x: clientX, y: clientY, width: size.width, height: size.height };
-
-      document.addEventListener("mousemove", handleResizeMove);
-      document.addEventListener("mouseup", handleResizeEnd);
-      document.addEventListener("touchmove", handleResizeMove);
-      document.addEventListener("touchend", handleResizeEnd);
-    },
-    [size]
-  );
-
+  // Resize handlers - using refs for self-referential cleanup
   const handleResizeMove = useCallback(
     (e: MouseEvent | TouchEvent) => {
       if (!isResizing.current) return;
 
-      const clientX = "touches" in e ? e.touches[0]?.clientX ?? 0 : e.clientX;
-      const clientY = "touches" in e ? e.touches[0]?.clientY ?? 0 : e.clientY;
+      const clientX = "touches" in e ? (e.touches[0]?.clientX ?? 0) : e.clientX;
+      const clientY = "touches" in e ? (e.touches[0]?.clientY ?? 0) : e.clientY;
       const deltaX = clientX - resizeStart.current.x;
       const deltaY = clientY - resizeStart.current.y;
 
@@ -540,23 +556,47 @@ export function FloatingDevTools({
     [position, onSizeChange]
   );
 
+  // Keep refs in sync with latest handlers
+  handleResizeMoveRef.current = handleResizeMove;
+
   const handleResizeEnd = useCallback(() => {
     isResizing.current = false;
-    document.removeEventListener("mousemove", handleResizeMove);
-    document.removeEventListener("mouseup", handleResizeEnd);
-    document.removeEventListener("touchmove", handleResizeMove);
-    document.removeEventListener("touchend", handleResizeEnd);
-  }, [handleResizeMove]);
+    // Use refs to access handlers for cleanup (avoids self-reference issue)
+    document.removeEventListener("mousemove", handleResizeMoveRef.current);
+    document.removeEventListener("mouseup", handleResizeEndRef.current);
+    document.removeEventListener("touchmove", handleResizeMoveRef.current);
+    document.removeEventListener("touchend", handleResizeEndRef.current);
+  }, []);
 
-  // Cleanup on unmount
+  // Keep ref in sync with latest handler
+  handleResizeEndRef.current = handleResizeEnd;
+
+  const handleResizeStart = useCallback(
+    (e: React.MouseEvent | React.TouchEvent) => {
+      e.preventDefault();
+      isResizing.current = true;
+      const clientX = "touches" in e ? (e.touches[0]?.clientX ?? 0) : e.clientX;
+      const clientY = "touches" in e ? (e.touches[0]?.clientY ?? 0) : e.clientY;
+      resizeStart.current = { x: clientX, y: clientY, width: size.width, height: size.height };
+
+      // Use refs to add handlers (will be the same references used for cleanup)
+      document.addEventListener("mousemove", handleResizeMoveRef.current);
+      document.addEventListener("mouseup", handleResizeEndRef.current);
+      document.addEventListener("touchmove", handleResizeMoveRef.current);
+      document.addEventListener("touchend", handleResizeEndRef.current);
+    },
+    [size]
+  );
+
+  // Cleanup on unmount (uses refs to ensure consistent handler references)
   useEffect(() => {
     return () => {
-      document.removeEventListener("mousemove", handleResizeMove);
-      document.removeEventListener("mouseup", handleResizeEnd);
-      document.removeEventListener("touchmove", handleResizeMove);
-      document.removeEventListener("touchend", handleResizeEnd);
+      document.removeEventListener("mousemove", handleResizeMoveRef.current);
+      document.removeEventListener("mouseup", handleResizeEndRef.current);
+      document.removeEventListener("touchmove", handleResizeMoveRef.current);
+      document.removeEventListener("touchend", handleResizeEndRef.current);
     };
-  }, [handleResizeMove, handleResizeEnd]);
+  }, []);
 
   // ============================================
   // 6. Tab Content Routing
@@ -567,7 +607,7 @@ export function FloatingDevTools({
         return (
           <GraphView
             viewModel={graphVM}
-            onNodeSelect={(nodeId) => {
+            onNodeSelect={nodeId => {
               if (nodeId !== null) {
                 graphPresenter.selectNode(nodeId);
                 setGraphVM(graphPresenter.getViewModel());
@@ -596,7 +636,7 @@ export function FloatingDevTools({
         return (
           <InspectorView
             viewModel={inspectorVM}
-            onDependencySelect={(portName) => {
+            onDependencySelect={portName => {
               handleServiceSelect(portName);
             }}
           />
@@ -609,14 +649,17 @@ export function FloatingDevTools({
   // ============================================
   // 7. Build View Model with Connection Status
   // ============================================
-  const viewModelWithConnection = useMemo(() => ({
-    ...panelVM,
-    activeTabId,
-    connection: {
-      ...panelVM.connection,
-      status: connectionStatus,
-    },
-  }), [panelVM, activeTabId, connectionStatus]);
+  const viewModelWithConnection = useMemo(
+    () => ({
+      ...panelVM,
+      activeTabId,
+      connection: {
+        ...panelVM.connection,
+        status: connectionStatus,
+      },
+    }),
+    [panelVM, activeTabId, connectionStatus]
+  );
 
   // ============================================
   // 8. Styles
@@ -700,7 +743,8 @@ export function FloatingDevTools({
     justifyContent: "center",
     fontSize: "20px",
     fontWeight: 400,
-    transition: "var(--hex-devtools-transition-color, color 0.15s ease, background-color 0.15s ease)",
+    transition:
+      "var(--hex-devtools-transition-color, color 0.15s ease, background-color 0.15s ease)",
   };
 
   const resizeHandleStyle: CSSProperties = {

@@ -46,7 +46,7 @@ export interface OpenTUIBoxProps {
 
 // React 19 compatible JSX namespace augmentation
 declare module "react" {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
+   
   namespace JSX {
     interface IntrinsicElements {
       // OpenTUI-specific element (doesn't conflict with React's built-in elements)

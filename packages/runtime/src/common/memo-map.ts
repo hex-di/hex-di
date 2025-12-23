@@ -92,10 +92,7 @@ export class MemoMap {
    * Cache storing port -> instance mappings.
    * Uses port reference as key for O(1) lookup.
    */
-  private readonly cache: Map<
-    Port<unknown, string>,
-    CacheEntry<Port<unknown, string>>
-  > = new Map();
+  private readonly cache: Map<Port<unknown, string>, CacheEntry<Port<unknown, string>>> = new Map();
 
   /**
    * Tracks creation order for LIFO disposal.
@@ -274,6 +271,26 @@ export class MemoMap {
   }
 
   /**
+   * Returns a cached instance if it exists, without creating a new one.
+   * Checks both this cache and the parent chain.
+   *
+   * @param port - The port to look up
+   * @returns The cached instance or undefined if not present
+   */
+  getIfPresent<P extends Port<unknown, string>>(port: P): InferService<P> | undefined {
+    const cached = this.cache.get(port);
+    if (cached !== undefined && isEntryForPort(cached, port)) {
+      return cached.instance;
+    }
+
+    if (this.parent !== undefined) {
+      return this.parent.getIfPresent(port);
+    }
+
+    return undefined;
+  }
+
+  /**
    * Iterates all cached entries in this MemoMap with their metadata.
    *
    * Yields entries in creation order (not including parent entries).
@@ -374,10 +391,7 @@ export class MemoMap {
 
     // Throw aggregated errors if any
     if (errors.length > 0) {
-      throw new AggregateError(
-        errors,
-        `${errors.length} finalizer(s) failed during disposal`
-      );
+      throw new AggregateError(errors, `${errors.length} finalizer(s) failed during disposal`);
     }
   }
 

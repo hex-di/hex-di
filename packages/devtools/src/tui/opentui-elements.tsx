@@ -32,7 +32,6 @@ interface OpenTUIColorProps {
  * This allows React.createElement to accept these element types without casts.
  */
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace JSX {
     interface IntrinsicElements {
       /** OpenTUI text element with color support */

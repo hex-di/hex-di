@@ -69,18 +69,18 @@ export const ANSI_COLORS = {
 // =============================================================================
 
 const BOX_CHARS = {
-  horizontal: "\u2500",       // -
-  vertical: "\u2502",         // |
-  cornerTopLeft: "\u250C",    // +
-  cornerTopRight: "\u2510",   // +
+  horizontal: "\u2500", // -
+  vertical: "\u2502", // |
+  cornerTopLeft: "\u250C", // +
+  cornerTopRight: "\u2510", // +
   cornerBottomLeft: "\u2514", // L
-  cornerBottomRight: "\u2518",// J
-  teeRight: "\u251C",         // |-
-  teeLeft: "\u2524",          // -|
-  teeDown: "\u252C",          // T
-  teeUp: "\u2534",            // _|_
-  cross: "\u253C",            // +
-  arrow: "\u2192",            // ->
+  cornerBottomRight: "\u2518", // J
+  teeRight: "\u251C", // |-
+  teeLeft: "\u2524", // -|
+  teeDown: "\u252C", // T
+  teeUp: "\u2534", // _|_
+  cross: "\u253C", // +
+  arrow: "\u2192", // ->
 } as const;
 
 // =============================================================================
@@ -183,25 +183,47 @@ function TUIBox(props: BoxProps<"tui">): React.ReactElement {
     flexShrink,
     width,
     height,
-    focusable,
     title,
     titleAlignment,
   } = props;
 
   // Note: OpenTUI's Renderable.focusable is a getter-only property (no setter),
   // so we cannot pass focusable as a prop - it's controlled internally by the class.
-  // The 'focusable' prop from BoxProps is intentionally not passed to avoid
-  // "Attempted to assign to readonly property" errors.
+  // The 'focusable' prop from BoxProps is intentionally not destructured or passed.
   return (
     <box
       flexDirection={flexDirection}
       justifyContent={justifyContent}
       alignItems={alignItems}
       gap={gap !== undefined ? SPACING_MAP[gap] : undefined}
-      paddingLeft={paddingX !== undefined ? SPACING_MAP[paddingX] : padding !== undefined ? SPACING_MAP[padding] : undefined}
-      paddingRight={paddingX !== undefined ? SPACING_MAP[paddingX] : padding !== undefined ? SPACING_MAP[padding] : undefined}
-      paddingTop={paddingY !== undefined ? SPACING_MAP[paddingY] : padding !== undefined ? SPACING_MAP[padding] : undefined}
-      paddingBottom={paddingY !== undefined ? SPACING_MAP[paddingY] : padding !== undefined ? SPACING_MAP[padding] : undefined}
+      paddingLeft={
+        paddingX !== undefined
+          ? SPACING_MAP[paddingX]
+          : padding !== undefined
+            ? SPACING_MAP[padding]
+            : undefined
+      }
+      paddingRight={
+        paddingX !== undefined
+          ? SPACING_MAP[paddingX]
+          : padding !== undefined
+            ? SPACING_MAP[padding]
+            : undefined
+      }
+      paddingTop={
+        paddingY !== undefined
+          ? SPACING_MAP[paddingY]
+          : padding !== undefined
+            ? SPACING_MAP[padding]
+            : undefined
+      }
+      paddingBottom={
+        paddingY !== undefined
+          ? SPACING_MAP[paddingY]
+          : padding !== undefined
+            ? SPACING_MAP[padding]
+            : undefined
+      }
       flexGrow={flexGrow}
       flexShrink={flexShrink}
       width={width}
@@ -240,12 +262,7 @@ function TUIButton(props: ButtonProps<"tui">): React.ReactElement {
   const { label, disabled } = props;
 
   return (
-    <box
-      border
-      borderStyle="single"
-      paddingLeft={1}
-      paddingRight={1}
-    >
+    <box border borderStyle="single" paddingLeft={1} paddingRight={1}>
       <OTUIText>
         <OTUISpan fg={disabled === true ? TUIStyleSystem.getColor("muted") : undefined}>
           {label}
@@ -263,7 +280,11 @@ function TUIIcon(props: IconProps): React.ReactElement {
   const ascii = ICON_MAP[name] ?? "[ ]";
   const fgColor = color !== undefined ? TUIStyleSystem.getColor(color) : undefined;
 
-  return <OTUIText><OTUISpan fg={fgColor}>{ascii}</OTUISpan></OTUIText>;
+  return (
+    <OTUIText>
+      <OTUISpan fg={fgColor}>{ascii}</OTUISpan>
+    </OTUIText>
+  );
 }
 
 /**
@@ -289,14 +310,13 @@ function TUIScrollView(props: ScrollViewProps): React.ReactElement {
  */
 function TUIDivider(props: DividerProps): React.ReactElement {
   const { orientation = "horizontal", color } = props;
-  const fgColor = color !== undefined ? TUIStyleSystem.getColor(color) : TUIStyleSystem.getColor("border");
+  const fgColor =
+    color !== undefined ? TUIStyleSystem.getColor(color) : TUIStyleSystem.getColor("border");
   const char = orientation === "horizontal" ? BOX_CHARS.horizontal : BOX_CHARS.vertical;
 
   return (
     <OTUIText>
-      <OTUISpan fg={fgColor}>
-        {orientation === "horizontal" ? char.repeat(40) : char}
-      </OTUISpan>
+      <OTUISpan fg={fgColor}>{orientation === "horizontal" ? char.repeat(40) : char}</OTUISpan>
     </OTUIText>
   );
 }
@@ -341,7 +361,7 @@ function renderFlameBar(widthPercent: number, maxWidth: number): string {
  * handle keyboard navigation events.
  */
 function TUIFlameGraph(props: FlameGraphProps): React.ReactElement {
-  const { viewModel, onFrameSelect, thresholdMs = 100 } = props;
+  const { viewModel, thresholdMs = 100 } = props;
 
   // Default max bar width (characters)
   const maxBarWidth = 50;
@@ -351,9 +371,7 @@ function TUIFlameGraph(props: FlameGraphProps): React.ReactElement {
     return (
       <box flexDirection="column" paddingTop={1} paddingBottom={1}>
         <OTUIText>
-          <OTUISpan fg={TUIStyleSystem.getColor("muted")}>
-            (no flame graph data)
-          </OTUISpan>
+          <OTUISpan fg={TUIStyleSystem.getColor("muted")}>(no flame graph data)</OTUISpan>
         </OTUIText>
       </box>
     );
@@ -379,7 +397,8 @@ function TUIFlameGraph(props: FlameGraphProps): React.ReactElement {
           {OTUIStrong({ children: "Flame Graph" })}
         </OTUISpan>
         <OTUISpan fg={TUIStyleSystem.getColor("muted")}>
-          {" "}({viewModel.frameCount} frames, {viewModel.totalDuration.toFixed(2)}ms total)
+          {" "}
+          ({viewModel.frameCount} frames, {viewModel.totalDuration.toFixed(2)}ms total)
         </OTUISpan>
       </OTUIText>
 
@@ -391,11 +410,11 @@ function TUIFlameGraph(props: FlameGraphProps): React.ReactElement {
       </OTUIText>
 
       {/* Render each depth level */}
-      {sortedDepths.map((depth) => {
+      {sortedDepths.map(depth => {
         const frames = framesByDepth.get(depth) ?? [];
         return (
           <box key={`depth-${depth}`} flexDirection="column">
-            {frames.map((frame) => {
+            {frames.map(frame => {
               const isSelected = frame.id === viewModel.selectedFrameId;
               const durationColor = getDurationColor(frame.cumulativeTime, thresholdMs);
               const bar = renderFlameBar(frame.widthPercent, maxBarWidth);
@@ -417,7 +436,8 @@ function TUIFlameGraph(props: FlameGraphProps): React.ReactElement {
                     {frame.label}
                   </OTUISpan>
                   <OTUISpan fg={TUIStyleSystem.getColor("muted")}>
-                    {" "}({frame.cumulativeTime.toFixed(1)}ms, self: {frame.selfTime.toFixed(1)}ms)
+                    {" "}
+                    ({frame.cumulativeTime.toFixed(1)}ms, self: {frame.selfTime.toFixed(1)}ms)
                   </OTUISpan>
                 </OTUIText>
               );
@@ -456,22 +476,18 @@ function TUIFlameGraph(props: FlameGraphProps): React.ReactElement {
  * The component shows hints for available keyboard shortcuts.
  */
 function TUITimelineScrubber(props: TimelineScrubberProps): React.ReactElement {
-  const { snapshots, currentIndex, onNavigate, onCapture } = props;
+  const { snapshots, currentIndex, onCapture } = props;
 
   // Handle empty timeline
   if (snapshots.length === 0) {
     return (
       <box flexDirection="row" gap={1}>
         <OTUIText>
-          <OTUISpan fg={TUIStyleSystem.getColor("muted")}>
-            (no snapshots)
-          </OTUISpan>
+          <OTUISpan fg={TUIStyleSystem.getColor("muted")}>(no snapshots)</OTUISpan>
         </OTUIText>
         {onCapture !== undefined && (
           <OTUIText>
-            <OTUISpan fg={TUIStyleSystem.getColor("primary")}>
-              [c] capture
-            </OTUISpan>
+            <OTUISpan fg={TUIStyleSystem.getColor("primary")}>[c] capture</OTUISpan>
           </OTUIText>
         )}
       </box>
@@ -540,9 +556,7 @@ function TUITimelineScrubber(props: TimelineScrubberProps): React.ReactElement {
         </OTUIText>
         {onCapture !== undefined && (
           <OTUIText>
-            <OTUISpan fg={TUIStyleSystem.getColor("muted")}>
-              | [c] capture
-            </OTUISpan>
+            <OTUISpan fg={TUIStyleSystem.getColor("muted")}>| [c] capture</OTUISpan>
           </OTUIText>
         )}
       </box>
@@ -567,13 +581,7 @@ function TUITimelineScrubber(props: TimelineScrubberProps): React.ReactElement {
  * Supports filtering by addition/removal/change type via props.
  */
 function TUIDiffView(props: DiffViewProps): React.ReactElement {
-  const {
-    viewModel,
-    onServiceSelect,
-    showAdditions = true,
-    showRemovals = true,
-    showChanges = true,
-  } = props;
+  const { viewModel, showAdditions = true, showRemovals = true, showChanges = true } = props;
 
   // Handle empty comparison
   if (viewModel.isEmpty || !viewModel.hasData) {
@@ -645,7 +653,8 @@ function TUIDiffView(props: DiffViewProps): React.ReactElement {
           {viewModel.addedServices.map((serviceName: string) => (
             <OTUIText key={`add-${serviceName}`}>
               <OTUISpan fg={TUIStyleSystem.getColor("success")}>
-                {"  + "}{serviceName}
+                {"  + "}
+                {serviceName}
               </OTUISpan>
             </OTUIText>
           ))}
@@ -663,7 +672,8 @@ function TUIDiffView(props: DiffViewProps): React.ReactElement {
           {viewModel.removedServices.map((serviceName: string) => (
             <OTUIText key={`rem-${serviceName}`}>
               <OTUISpan fg={TUIStyleSystem.getColor("error")}>
-                {"  - "}{serviceName}
+                {"  - "}
+                {serviceName}
               </OTUISpan>
             </OTUIText>
           ))}
@@ -681,10 +691,13 @@ function TUIDiffView(props: DiffViewProps): React.ReactElement {
           {viewModel.changedServices.map((diff: ServiceDiff) => (
             <OTUIText key={`chg-${diff.portName}`}>
               <OTUISpan fg={TUIStyleSystem.getColor("warning")}>
-                {"  ~ "}{diff.portName}
+                {"  ~ "}
+                {diff.portName}
               </OTUISpan>
               <OTUISpan fg={TUIStyleSystem.getColor("muted")}>
-                {" "}({diff.changeType}: {String(diff.leftValue)} {BOX_CHARS.arrow} {String(diff.rightValue)})
+                {" "}
+                ({diff.changeType}: {String(diff.leftValue)} {BOX_CHARS.arrow}{" "}
+                {String(diff.rightValue)})
               </OTUISpan>
             </OTUIText>
           ))}
@@ -694,9 +707,7 @@ function TUIDiffView(props: DiffViewProps): React.ReactElement {
       {/* No changes message */}
       {!viewModel.hasChanges && (
         <OTUIText>
-          <OTUISpan fg={TUIStyleSystem.getColor("muted")}>
-            (no differences found)
-          </OTUISpan>
+          <OTUISpan fg={TUIStyleSystem.getColor("muted")}>(no differences found)</OTUISpan>
         </OTUIText>
       )}
     </box>
@@ -739,21 +750,14 @@ function getPhaseColor(phase: string | undefined): SemanticColor {
  * The component provides visual hierarchy using Unicode box-drawing chars.
  */
 function TUIContainerTree(props: ContainerTreeProps): React.ReactElement {
-  const {
-    viewModel,
-    onContainerSelect,
-    expandedIds,
-    onToggleExpand,
-  } = props;
+  const { viewModel, expandedIds } = props;
 
   // Handle empty tree
   if (viewModel.isEmpty || viewModel.containers.length === 0) {
     return (
       <box flexDirection="column" paddingTop={1}>
         <OTUIText>
-          <OTUISpan fg={TUIStyleSystem.getColor("muted")}>
-            (no containers)
-          </OTUISpan>
+          <OTUISpan fg={TUIStyleSystem.getColor("muted")}>(no containers)</OTUISpan>
         </OTUIText>
       </box>
     );
@@ -779,11 +783,9 @@ function TUIContainerTree(props: ContainerTreeProps): React.ReactElement {
   }
 
   // Determine if a container is last among its siblings
-  function isLastSibling(container: ContainerNode, index: number): boolean {
-    const siblings = viewModel.containers.filter(
-      (c) => c.parentId === container.parentId
-    );
-    const siblingIndex = siblings.findIndex((c) => c.id === container.id);
+  function isLastSibling(container: ContainerNode): boolean {
+    const siblings = viewModel.containers.filter(c => c.parentId === container.parentId);
+    const siblingIndex = siblings.findIndex(c => c.id === container.id);
     return siblingIndex === siblings.length - 1;
   }
 
@@ -795,7 +797,8 @@ function TUIContainerTree(props: ContainerTreeProps): React.ReactElement {
           {OTUIStrong({ children: "Container Hierarchy" })}
         </OTUISpan>
         <OTUISpan fg={TUIStyleSystem.getColor("muted")}>
-          {" "}({viewModel.containerCount} containers)
+          {" "}
+          ({viewModel.containerCount} containers)
         </OTUISpan>
       </OTUIText>
 
@@ -807,33 +810,37 @@ function TUIContainerTree(props: ContainerTreeProps): React.ReactElement {
       </OTUIText>
 
       {/* Tree nodes */}
-      {viewModel.containers.map((container: ContainerNode, index: number) => {
+      {viewModel.containers.map((container: ContainerNode) => {
         const isExpanded = expandedIds.includes(container.id);
         const hasChildren = container.childIds.length > 0;
         const phaseColor = getPhaseColor(container.phase);
         const isActive = container.id === viewModel.activeContainerId;
-        const isLast = isLastSibling(container, index);
+        const isLast = isLastSibling(container);
         const prefix = buildTreePrefix(container, isLast);
 
         // Expand/collapse indicator
-        const expandIndicator = hasChildren
-          ? (isExpanded ? "[-]" : "[+]")
-          : "   ";
+        const expandIndicator = hasChildren ? (isExpanded ? "[-]" : "[+]") : "   ";
 
         return (
           <OTUIText key={container.id}>
             {/* Tree structure prefix */}
-            <OTUISpan fg={TUIStyleSystem.getColor("border")}>
-              {prefix}
-            </OTUISpan>
+            <OTUISpan fg={TUIStyleSystem.getColor("border")}>{prefix}</OTUISpan>
 
             {/* Expand/collapse indicator */}
-            <OTUISpan fg={hasChildren ? TUIStyleSystem.getColor("primary") : TUIStyleSystem.getColor("muted")}>
+            <OTUISpan
+              fg={
+                hasChildren ? TUIStyleSystem.getColor("primary") : TUIStyleSystem.getColor("muted")
+              }
+            >
               {expandIndicator}
             </OTUISpan>
 
             {/* Container name */}
-            <OTUISpan fg={isActive ? TUIStyleSystem.getColor("accent") : TUIStyleSystem.getColor("foreground")}>
+            <OTUISpan
+              fg={
+                isActive ? TUIStyleSystem.getColor("accent") : TUIStyleSystem.getColor("foreground")
+              }
+            >
               {isActive ? " > " : "   "}
               {container.name}
             </OTUISpan>

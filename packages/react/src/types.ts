@@ -9,7 +9,7 @@
 
 import type { ReactNode, ComponentType } from "react";
 import type { Port, InferService } from "@hex-di/ports";
-import type { Container, ContainerPhase, Scope } from "@hex-di/runtime";
+import type { Container, Scope } from "@hex-di/runtime";
 
 // =============================================================================
 // Resolver Type
@@ -172,14 +172,12 @@ export interface AutoScopeProviderProps {
  *
  * @typeParam TProvides - Union of Port types that the container can resolve
  */
-export interface AsyncContainerProviderProps<
-  TProvides extends Port<unknown, string>
-> {
+export interface AsyncContainerProviderProps<TProvides extends Port<unknown, string>> {
   /**
    * The uninitialized Container instance to initialize and provide.
    * Must be created with createContainer() and NOT yet initialized.
    */
-  readonly container: Container<TProvides, any, "uninitialized">;
+  readonly container: Container<TProvides, Port<unknown, string>, "uninitialized">;
 
   /**
    * React children - can be compound components or regular children.
@@ -226,9 +224,7 @@ export interface AsyncContainerReadyProps {
  *
  * @typeParam TProvides - Union of Port types that the container can resolve
  */
-export interface AsyncContainerProviderComponent<
-  TProvides extends Port<unknown, string>
-> {
+export interface AsyncContainerProviderComponent<TProvides extends Port<unknown, string>> {
   (props: AsyncContainerProviderProps<TProvides>): ReactNode;
   Loading: ComponentType<AsyncContainerLoadingProps>;
   Error: ComponentType<AsyncContainerErrorProps>;
@@ -298,9 +294,7 @@ export interface TypedReactIntegration<TProvides extends Port<unknown, string>> 
    * }
    * ```
    */
-  readonly ContainerProvider: (
-    props: ContainerProviderProps<TProvides>
-  ) => ReactNode;
+  readonly ContainerProvider: (props: ContainerProviderProps<TProvides>) => ReactNode;
 
   /**
    * Provider component that overrides the resolver context with a manual scope.
@@ -327,9 +321,7 @@ export interface TypedReactIntegration<TProvides extends Port<unknown, string>> 
    * }
    * ```
    */
-  readonly ScopeProvider: (
-    props: ScopeProviderProps<TProvides>
-  ) => ReactNode;
+  readonly ScopeProvider: (props: ScopeProviderProps<TProvides>) => ReactNode;
 
   /**
    * Provider component that automatically manages scope lifecycle.
@@ -448,9 +440,7 @@ export interface TypedReactIntegration<TProvides extends Port<unknown, string>> 
    * }
    * ```
    */
-  readonly usePortOptional: <P extends TProvides>(
-    port: P
-  ) => InferService<P> | undefined;
+  readonly usePortOptional: <P extends TProvides>(port: P) => InferService<P> | undefined;
 
   // ===========================================================================
   // Container/Scope Access Hooks

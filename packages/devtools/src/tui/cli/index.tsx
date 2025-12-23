@@ -186,20 +186,10 @@ interface TuiAppProps {
  * Uses raw OpenTUI elements to avoid React 19 prop freezing issues.
  */
 function MinimalTuiApp({ url, appId }: TuiAppProps): React.ReactElement {
-  const handleExit = React.useCallback(() => {
-    process.exit(0);
-  }, []);
-
   // Use minimal OpenTUI elements directly
   // Note: OpenTUI has compatibility issues with React 19's prop freezing
   return (
-    <box
-      flexDirection="column"
-      width="100%"
-      height="100%"
-      border={true}
-      borderStyle="rounded"
-    >
+    <box flexDirection="column" width="100%" height="100%" border={true} borderStyle="rounded">
       <box flexDirection="row" paddingLeft={1} paddingRight={1}>
         <text>HexDI DevTools - {appId}</text>
       </box>
@@ -258,25 +248,25 @@ function TuiApp({ url, appId }: TuiAppProps): React.ReactElement {
     };
   });
   const [graphViewModel, setGraphViewModel] = React.useState<GraphViewModelMinimal | null>(null);
-  const [useMinimal, setUseMinimal] = React.useState(false);
+  const [useMinimal] = React.useState(false);
   const clientRef = React.useRef<DevToolsClient | null>(null);
 
   // Update connection status helper
-  const updateConnectionStatus = React.useCallback((
-    status: ConnectionStatus,
-    errorMessage: string | null = null
-  ) => {
-    setViewModel((prev) => ({
-      ...prev,
-      connection: {
-        ...prev.connection,
-        status,
-        serverUrl: url,
-        errorMessage,
-        lastPing: status === "connected" ? new Date().toISOString() : prev.connection.lastPing,
-      },
-    }));
-  }, [url]);
+  const updateConnectionStatus = React.useCallback(
+    (status: ConnectionStatus, errorMessage: string | null = null) => {
+      setViewModel(prev => ({
+        ...prev,
+        connection: {
+          ...prev.connection,
+          status,
+          serverUrl: url,
+          errorMessage,
+          lastPing: status === "connected" ? new Date().toISOString() : prev.connection.lastPing,
+        },
+      }));
+    },
+    [url]
+  );
 
   // Fetch graph data from server
   const fetchGraphData = React.useCallback(async (client: DevToolsClient, targetAppId: string) => {
@@ -294,7 +284,7 @@ function TuiApp({ url, appId }: TuiAppProps): React.ReactElement {
           if (firstApp !== undefined) {
             resolvedAppId = firstApp.appId;
             // Update app name in view model
-            setViewModel((prev) => ({
+            setViewModel(prev => ({
               ...prev,
               appName: firstApp.appName || firstApp.appId,
             }));
@@ -383,7 +373,7 @@ function TuiApp({ url, appId }: TuiAppProps): React.ReactElement {
   }, [url, appId, updateConnectionStatus, fetchGraphData]);
 
   const handleTabChange = React.useCallback((tabId: TabId) => {
-    setViewModel((prev) => ({
+    setViewModel(prev => ({
       ...prev,
       activeTabId: tabId,
     }));
@@ -415,7 +405,7 @@ function TuiApp({ url, appId }: TuiAppProps): React.ReactElement {
       }
       // 'n' for next tab
       else if (key === "n" || key === "N") {
-        setViewModel((prev) => {
+        setViewModel(prev => {
           const currentIndex = tabOrder.indexOf(prev.activeTabId);
           const nextIndex = (currentIndex + 1) % tabOrder.length;
           const nextTabId = tabOrder[nextIndex];
@@ -423,7 +413,7 @@ function TuiApp({ url, appId }: TuiAppProps): React.ReactElement {
           return {
             ...prev,
             activeTabId: nextTabId,
-            tabs: prev.tabs.map((tab) => ({
+            tabs: prev.tabs.map(tab => ({
               ...tab,
               isActive: tab.id === nextTabId,
             })),
@@ -432,7 +422,7 @@ function TuiApp({ url, appId }: TuiAppProps): React.ReactElement {
       }
       // 'p' for previous tab
       else if (key === "p" || key === "P") {
-        setViewModel((prev) => {
+        setViewModel(prev => {
           const currentIndex = tabOrder.indexOf(prev.activeTabId);
           const prevIndex = (currentIndex - 1 + tabOrder.length) % tabOrder.length;
           const prevTabId = tabOrder[prevIndex];
@@ -440,7 +430,7 @@ function TuiApp({ url, appId }: TuiAppProps): React.ReactElement {
           return {
             ...prev,
             activeTabId: prevTabId,
-            tabs: prev.tabs.map((tab) => ({
+            tabs: prev.tabs.map(tab => ({
               ...tab,
               isActive: tab.id === prevTabId,
             })),
@@ -616,7 +606,11 @@ export async function main(): Promise<void> {
     console.error(`  URL: ${args.url}`);
     console.error(`  App ID: ${appId}`);
 
-    if (error instanceof Error && !errorMessage.includes("bun:") && !errorMessage.includes("readonly")) {
+    if (
+      error instanceof Error &&
+      !errorMessage.includes("bun:") &&
+      !errorMessage.includes("readonly")
+    ) {
       console.error("");
       console.error("Error details:", error.message);
     }
@@ -657,7 +651,7 @@ function checkIsMainModule(): boolean {
 const isMainModule = checkIsMainModule();
 
 if (isMainModule) {
-  main().catch((error) => {
+  main().catch(error => {
     console.error("Fatal error:", error);
     process.exit(1);
   });

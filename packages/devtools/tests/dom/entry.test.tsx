@@ -62,7 +62,7 @@ function createMockGraph(): unknown {
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
   return {
-    getItem: vi.fn((key: string) => store[key] ?? null),
+    getItem: vi.fn((key: string): string | null => store[key] ?? null),
     setItem: vi.fn((key: string, value: string) => {
       store[key] = value;
     }),
@@ -131,9 +131,7 @@ describe("DOM Entry Point", () => {
   it("FloatingDevTools renders in corner position", () => {
     const graph = createMockGraph();
 
-    render(
-      <FloatingDevTools graph={graph as never} position="bottom-right" />
-    );
+    render(<FloatingDevTools graph={graph as never} position="bottom-right" />);
 
     // Should render the container
     const container = screen.getByTestId("floating-devtools-container");
@@ -163,9 +161,7 @@ describe("DOM Entry Point", () => {
     for (const { position, top, bottom, left, right } of positions) {
       cleanup();
 
-      render(
-        <FloatingDevTools graph={graph as never} position={position} />
-      );
+      render(<FloatingDevTools graph={graph as never} position={position} />);
 
       const container = screen.getByTestId("floating-devtools-container");
       const style = container.getAttribute("style") ?? "";
@@ -184,7 +180,7 @@ describe("DOM Entry Point", () => {
     const graph = createMockGraph();
 
     // Pre-set localStorage to have panel open
-    localStorageMock.getItem.mockImplementation((key: string) => {
+    localStorageMock.getItem.mockImplementation((key: string): string | null => {
       if (key === "hex-devtools-open") return "true";
       return null;
     });
@@ -211,7 +207,7 @@ describe("DOM Entry Point", () => {
     const onToggleFullscreen = vi.fn();
 
     // Pre-set localStorage to have panel open
-    localStorageMock.getItem.mockImplementation((key: string) => {
+    localStorageMock.getItem.mockImplementation((key: string): string | null => {
       if (key === "hex-devtools-open") return "true";
       return null;
     });
@@ -237,11 +233,11 @@ describe("DOM Entry Point", () => {
   // ---------------------------------------------------------------------------
   it("Production mode hides panel", () => {
     // Save original NODE_ENV
-    const originalEnv = process.env['NODE_ENV'];
+    const originalEnv = process.env["NODE_ENV"];
 
     try {
       // Set production mode
-      process.env['NODE_ENV'] = "production";
+      process.env["NODE_ENV"] = "production";
 
       const graph = createMockGraph();
 
@@ -253,7 +249,7 @@ describe("DOM Entry Point", () => {
       expect(container.firstChild).toBeNull();
     } finally {
       // Restore NODE_ENV
-      process.env['NODE_ENV'] = originalEnv;
+      process.env["NODE_ENV"] = originalEnv;
     }
   });
 
@@ -282,10 +278,7 @@ describe("DOM Entry Point", () => {
     expect(onOpenChange).toHaveBeenCalledWith(true);
 
     // Should persist to localStorage
-    expect(localStorageMock.setItem).toHaveBeenCalledWith(
-      "hex-devtools-test-open",
-      "true"
-    );
+    expect(localStorageMock.setItem).toHaveBeenCalledWith("hex-devtools-test-open", "true");
   });
 
   // ---------------------------------------------------------------------------

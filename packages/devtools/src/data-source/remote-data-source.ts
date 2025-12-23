@@ -23,7 +23,12 @@ import {
   type JsonRpcMessage,
   type JsonRpcSuccessResponse,
 } from "@hex-di/devtools-core";
-import type { DataSource, DataSourceConnectionState, DataSourceEvent, DataSourceListener } from "./data-source.js";
+import type {
+  DataSource,
+  DataSourceConnectionState,
+  DataSourceEvent,
+  DataSourceListener,
+} from "./data-source.js";
 
 // =============================================================================
 // Types
@@ -401,7 +406,7 @@ export class RemoteDataSource implements DataSource, PresenterDataSourceContract
     if (this.currentAppId !== null && this.isConnected) {
       void this.sendRequest(Methods.PIN_TRACE, { appId: this.currentAppId, traceId, pin: true });
       // Update local cache
-      this.cachedTraces = this.cachedTraces.map((trace) =>
+      this.cachedTraces = this.cachedTraces.map(trace =>
         trace.id === traceId ? { ...trace, isPinned: true } : trace
       );
       this.notifySubscribers();
@@ -413,7 +418,7 @@ export class RemoteDataSource implements DataSource, PresenterDataSourceContract
     if (this.currentAppId !== null && this.isConnected) {
       void this.sendRequest(Methods.PIN_TRACE, { appId: this.currentAppId, traceId, pin: false });
       // Update local cache
-      this.cachedTraces = this.cachedTraces.map((trace) =>
+      this.cachedTraces = this.cachedTraces.map(trace =>
         trace.id === traceId ? { ...trace, isPinned: false } : trace
       );
       this.notifySubscribers();
@@ -443,13 +448,18 @@ export class RemoteDataSource implements DataSource, PresenterDataSourceContract
     try {
       const [graphResult, tracesResult, statsResult, snapshotResult] = await Promise.all([
         this.sendRequest<{ graph: ExportedGraph }>(Methods.GET_GRAPH, { appId: this.currentAppId }),
-        this.sendRequest<{ traces: readonly TraceEntry[] }>(Methods.GET_TRACES, { appId: this.currentAppId }),
+        this.sendRequest<{ traces: readonly TraceEntry[] }>(Methods.GET_TRACES, {
+          appId: this.currentAppId,
+        }),
         this.sendRequest<{ stats: TraceStats }>(Methods.GET_STATS, { appId: this.currentAppId }),
-        this.sendRequest<{ snapshot: ContainerSnapshot | null }>(Methods.GET_CONTAINER_SNAPSHOT, { appId: this.currentAppId }),
+        this.sendRequest<{ snapshot: ContainerSnapshot | null }>(Methods.GET_CONTAINER_SNAPSHOT, {
+          appId: this.currentAppId,
+        }),
       ]);
 
       const graphChanged = JSON.stringify(this.cachedGraph) !== JSON.stringify(graphResult.graph);
-      const tracesChanged = JSON.stringify(this.cachedTraces) !== JSON.stringify(tracesResult.traces);
+      const tracesChanged =
+        JSON.stringify(this.cachedTraces) !== JSON.stringify(tracesResult.traces);
 
       this.cachedGraph = graphResult.graph;
       this.cachedTraces = tracesResult.traces;
@@ -489,10 +499,9 @@ export class RemoteDataSource implements DataSource, PresenterDataSourceContract
   private async initializeData(): Promise<void> {
     // If no appId was specified, get the first available app
     if (this.currentAppId === null) {
-      const result = await this.sendRequest<{ apps: readonly { appId: string; appName: string }[] }>(
-        Methods.LIST_APPS,
-        undefined
-      );
+      const result = await this.sendRequest<{
+        apps: readonly { appId: string; appName: string }[];
+      }>(Methods.LIST_APPS, undefined);
       const firstApp = result.apps[0];
       if (firstApp === undefined) {
         throw new Error("No apps connected to DevTools server");
@@ -511,10 +520,11 @@ export class RemoteDataSource implements DataSource, PresenterDataSourceContract
 
     const id = ++this.requestIdCounter;
     const request = createRequest(id, method, params);
+    const socket = this.socket;
 
     return new Promise<T>((resolve, reject) => {
       this.pendingRequests.set(id, { resolve: resolve as (result: unknown) => void, reject });
-      this.socket!.send(JSON.stringify(request));
+      socket.send(JSON.stringify(request));
 
       // Timeout
       setTimeout(() => {

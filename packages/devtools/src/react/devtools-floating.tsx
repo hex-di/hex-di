@@ -69,11 +69,7 @@ type ResizeEdge = "top" | "bottom" | "left" | "right" | "corner";
 /**
  * Position options for the floating DevTools.
  */
-export type DevToolsPosition =
-  | "bottom-right"
-  | "bottom-left"
-  | "top-right"
-  | "top-left";
+export type DevToolsPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";
 
 /**
  * Props for the DevToolsFloating component.
@@ -307,16 +303,28 @@ export function DevToolsFloating<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string> | never = never,
   TPhase extends ContainerPhase = ContainerPhase,
->({
-  graph,
-  container,
-  position = "bottom-right",
-}: DevToolsFloatingProps<TProvides, TAsyncPorts, TPhase>): ReactElement | null {
-  // Production mode check - return null to ensure tree-shaking
+>(props: DevToolsFloatingProps<TProvides, TAsyncPorts, TPhase>): ReactElement | null {
+  // Production mode check - must be before any hooks
   if (typeof process !== "undefined" && process.env?.NODE_ENV === "production") {
     return null;
   }
 
+  return <DevToolsFloatingInner {...props} />;
+}
+
+/**
+ * Inner component containing all hooks and logic.
+ * Separated to avoid conditional hook calls in production check.
+ */
+function DevToolsFloatingInner<
+  TProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> | never = never,
+  TPhase extends ContainerPhase = ContainerPhase,
+>({
+  graph,
+  container,
+  position = "bottom-right",
+}: DevToolsFloatingProps<TProvides, TAsyncPorts, TPhase>): ReactElement {
   // State for open/closed panel
   const [isOpen, setIsOpen] = useState(() => getStoredState());
 
@@ -331,6 +339,10 @@ export function DevToolsFloating<
   const resizeStartPos = useRef({ x: 0, y: 0 });
   const resizeStartSize = useRef({ width: 0, height: 0 });
   const activeEdge = useRef<ResizeEdge>("corner");
+
+  // Refs for resize handlers (enables self-referential cleanup)
+  const handleResizeMoveRef = useRef<(e: MouseEvent | TouchEvent) => void>(() => {});
+  const handleResizeEndRef = useRef<() => void>(() => {});
 
   // Persist state changes to localStorage
   useEffect(() => {
@@ -347,7 +359,7 @@ export function DevToolsFloating<
 
   // Toggle handler
   const handleToggle = () => {
-    setIsOpen((prev) => !prev);
+    setIsOpen(prev => !prev);
   };
 
   // Close handler
@@ -363,37 +375,16 @@ export function DevToolsFloating<
 
   // Fullscreen toggle handler
   const handleFullscreenToggle = () => {
-    setIsFullscreen((prev) => !prev);
+    setIsFullscreen(prev => !prev);
   };
 
-  // Resize handlers
-  const handleResizeStart = useCallback(
-    (e: React.MouseEvent | React.TouchEvent, edge: ResizeEdge = "corner") => {
-      e.preventDefault();
-      isResizing.current = true;
-      activeEdge.current = edge;
-
-      const clientX = "touches" in e ? e.touches[0]?.clientX ?? 0 : e.clientX;
-      const clientY = "touches" in e ? e.touches[0]?.clientY ?? 0 : e.clientY;
-
-      resizeStartPos.current = { x: clientX, y: clientY };
-      resizeStartSize.current = { width: size.width, height: size.height };
-
-      // Add global event listeners
-      document.addEventListener("mousemove", handleResizeMove);
-      document.addEventListener("mouseup", handleResizeEnd);
-      document.addEventListener("touchmove", handleResizeMove);
-      document.addEventListener("touchend", handleResizeEnd);
-    },
-    [size.width, size.height]
-  );
-
+  // Resize handlers - order matters for dependencies
   const handleResizeMove = useCallback(
     (e: MouseEvent | TouchEvent) => {
       if (!isResizing.current) return;
 
-      const clientX = "touches" in e ? e.touches[0]?.clientX ?? 0 : e.clientX;
-      const clientY = "touches" in e ? e.touches[0]?.clientY ?? 0 : e.clientY;
+      const clientX = "touches" in e ? (e.touches[0]?.clientX ?? 0) : e.clientX;
+      const clientY = "touches" in e ? (e.touches[0]?.clientY ?? 0) : e.clientY;
 
       const deltaX = clientX - resizeStartPos.current.x;
       const deltaY = clientY - resizeStartPos.current.y;
@@ -409,14 +400,16 @@ export function DevToolsFloating<
         // Determine direction based on edge and panel position
         if (edge === "left") {
           // Left edge: grows left for right-anchored, grows right for left-anchored
-          newWidth = position === "bottom-right" || position === "top-right"
-            ? resizeStartSize.current.width - deltaX
-            : resizeStartSize.current.width + deltaX;
+          newWidth =
+            position === "bottom-right" || position === "top-right"
+              ? resizeStartSize.current.width - deltaX
+              : resizeStartSize.current.width + deltaX;
         } else if (edge === "right") {
           // Right edge: grows right for left-anchored, grows left for right-anchored
-          newWidth = position === "bottom-left" || position === "top-left"
-            ? resizeStartSize.current.width + deltaX
-            : resizeStartSize.current.width - deltaX;
+          newWidth =
+            position === "bottom-left" || position === "top-left"
+              ? resizeStartSize.current.width + deltaX
+              : resizeStartSize.current.width - deltaX;
         } else {
           // Corner: use original corner logic
           switch (position) {
@@ -441,14 +434,16 @@ export function DevToolsFloating<
         // Determine direction based on edge and panel position
         if (edge === "top") {
           // Top edge: grows up for bottom-anchored, grows down for top-anchored
-          newHeight = position === "bottom-right" || position === "bottom-left"
-            ? resizeStartSize.current.height - deltaY
-            : resizeStartSize.current.height + deltaY;
+          newHeight =
+            position === "bottom-right" || position === "bottom-left"
+              ? resizeStartSize.current.height - deltaY
+              : resizeStartSize.current.height + deltaY;
         } else if (edge === "bottom") {
           // Bottom edge: grows down for top-anchored, grows up for bottom-anchored
-          newHeight = position === "top-right" || position === "top-left"
-            ? resizeStartSize.current.height + deltaY
-            : resizeStartSize.current.height - deltaY;
+          newHeight =
+            position === "top-right" || position === "top-left"
+              ? resizeStartSize.current.height + deltaY
+              : resizeStartSize.current.height - deltaY;
         } else {
           // Corner: use original corner logic
           switch (position) {
@@ -477,23 +472,51 @@ export function DevToolsFloating<
     [position]
   );
 
+  // Keep refs in sync with latest handlers
+  handleResizeMoveRef.current = handleResizeMove;
+
   const handleResizeEnd = useCallback(() => {
     isResizing.current = false;
-    document.removeEventListener("mousemove", handleResizeMove);
-    document.removeEventListener("mouseup", handleResizeEnd);
-    document.removeEventListener("touchmove", handleResizeMove);
-    document.removeEventListener("touchend", handleResizeEnd);
-  }, [handleResizeMove]);
+    // Use refs to access handlers for cleanup (avoids self-reference issue)
+    document.removeEventListener("mousemove", handleResizeMoveRef.current);
+    document.removeEventListener("mouseup", handleResizeEndRef.current);
+    document.removeEventListener("touchmove", handleResizeMoveRef.current);
+    document.removeEventListener("touchend", handleResizeEndRef.current);
+  }, []);
 
-  // Cleanup on unmount
+  // Keep ref in sync with latest handler
+  handleResizeEndRef.current = handleResizeEnd;
+
+  const handleResizeStart = useCallback(
+    (e: React.MouseEvent | React.TouchEvent, edge: ResizeEdge = "corner") => {
+      e.preventDefault();
+      isResizing.current = true;
+      activeEdge.current = edge;
+
+      const clientX = "touches" in e ? (e.touches[0]?.clientX ?? 0) : e.clientX;
+      const clientY = "touches" in e ? (e.touches[0]?.clientY ?? 0) : e.clientY;
+
+      resizeStartPos.current = { x: clientX, y: clientY };
+      resizeStartSize.current = { width: size.width, height: size.height };
+
+      // Use refs to add handlers (will be the same references used for cleanup)
+      document.addEventListener("mousemove", handleResizeMoveRef.current);
+      document.addEventListener("mouseup", handleResizeEndRef.current);
+      document.addEventListener("touchmove", handleResizeMoveRef.current);
+      document.addEventListener("touchend", handleResizeEndRef.current);
+    },
+    [size.width, size.height]
+  );
+
+  // Cleanup on unmount (uses refs to ensure consistent handler references)
   useEffect(() => {
     return () => {
-      document.removeEventListener("mousemove", handleResizeMove);
-      document.removeEventListener("mouseup", handleResizeEnd);
-      document.removeEventListener("touchmove", handleResizeMove);
-      document.removeEventListener("touchend", handleResizeEnd);
+      document.removeEventListener("mousemove", handleResizeMoveRef.current);
+      document.removeEventListener("mouseup", handleResizeEndRef.current);
+      document.removeEventListener("touchmove", handleResizeMoveRef.current);
+      document.removeEventListener("touchend", handleResizeEndRef.current);
     };
-  }, [handleResizeMove, handleResizeEnd]);
+  }, []);
 
   // Get position-specific styles
   const positionStyles = getPositionStyles(position);
@@ -581,37 +604,37 @@ export function DevToolsFloating<
               <div
                 data-testid="devtools-resize-edge-top"
                 style={floatingStyles.resizeEdgeTop}
-                onMouseDown={(e) => handleResizeStart(e, "top")}
-                onTouchStart={(e) => handleResizeStart(e, "top")}
+                onMouseDown={e => handleResizeStart(e, "top")}
+                onTouchStart={e => handleResizeStart(e, "top")}
                 aria-label="Resize panel vertically"
               />
               <div
                 data-testid="devtools-resize-edge-bottom"
                 style={floatingStyles.resizeEdgeBottom}
-                onMouseDown={(e) => handleResizeStart(e, "bottom")}
-                onTouchStart={(e) => handleResizeStart(e, "bottom")}
+                onMouseDown={e => handleResizeStart(e, "bottom")}
+                onTouchStart={e => handleResizeStart(e, "bottom")}
                 aria-label="Resize panel vertically"
               />
               <div
                 data-testid="devtools-resize-edge-left"
                 style={floatingStyles.resizeEdgeLeft}
-                onMouseDown={(e) => handleResizeStart(e, "left")}
-                onTouchStart={(e) => handleResizeStart(e, "left")}
+                onMouseDown={e => handleResizeStart(e, "left")}
+                onTouchStart={e => handleResizeStart(e, "left")}
                 aria-label="Resize panel horizontally"
               />
               <div
                 data-testid="devtools-resize-edge-right"
                 style={floatingStyles.resizeEdgeRight}
-                onMouseDown={(e) => handleResizeStart(e, "right")}
-                onTouchStart={(e) => handleResizeStart(e, "right")}
+                onMouseDown={e => handleResizeStart(e, "right")}
+                onTouchStart={e => handleResizeStart(e, "right")}
                 aria-label="Resize panel horizontally"
               />
               {/* Corner resize handle */}
               <div
                 data-testid="devtools-resize-handle"
                 style={resizeHandleStyle}
-                onMouseDown={(e) => handleResizeStart(e, "corner")}
-                onTouchStart={(e) => handleResizeStart(e, "corner")}
+                onMouseDown={e => handleResizeStart(e, "corner")}
+                onTouchStart={e => handleResizeStart(e, "corner")}
                 aria-label="Resize panel"
               >
                 <svg

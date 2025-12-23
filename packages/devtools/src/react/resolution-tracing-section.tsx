@@ -19,7 +19,6 @@ import React, {
 } from "react";
 import { tracingStyles, emptyStyles } from "./styles.js";
 import type { TraceEntry, TraceStats, TracingAPI } from "@hex-di/devtools-core";
-import { DEFAULT_RETENTION_POLICY } from "@hex-di/devtools-core";
 import {
   TracingControlsBar,
   type TracingFilters,
@@ -138,7 +137,7 @@ function filterTraces(
   filters: TracingFilters,
   threshold: number
 ): readonly TraceEntry[] {
-  return traces.filter((trace) => {
+  return traces.filter(trace => {
     // Search query filter (case-insensitive partial match)
     if (
       filters.searchQuery.length > 0 &&
@@ -172,10 +171,7 @@ function filterTraces(
 /**
  * Sorts traces based on the current sort option.
  */
-function sortTraces(
-  traces: readonly TraceEntry[],
-  sort: TracingSortOption
-): readonly TraceEntry[] {
+function sortTraces(traces: readonly TraceEntry[], sort: TracingSortOption): readonly TraceEntry[] {
   const sorted = [...traces];
 
   switch (sort) {
@@ -249,7 +245,7 @@ function exportTraces(
         "order",
         "isPinned",
       ];
-      const rows = traces.map((t) => [
+      const rows = traces.map(t => [
         t.id,
         t.portName,
         t.lifetime,
@@ -261,9 +257,7 @@ function exportTraces(
         t.order.toString(),
         t.isPinned.toString(),
       ]);
-      const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join(
-        "\n"
-      );
+      const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
       const blob = new Blob([csv], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -314,10 +308,7 @@ interface ViewToggleTabsProps {
 /**
  * View toggle tabs for switching between Timeline, Tree, and Summary views.
  */
-function ViewToggleTabs({
-  activeView,
-  onViewChange,
-}: ViewToggleTabsProps): ReactElement {
+function ViewToggleTabs({ activeView, onViewChange }: ViewToggleTabsProps): ReactElement {
   return (
     <div
       data-testid="tracing-view-tabs"
@@ -325,7 +316,7 @@ function ViewToggleTabs({
       aria-label="Tracing views"
       style={viewToggleStyles.container}
     >
-      {VIEW_TAB_CONFIGS.map((tab) => {
+      {VIEW_TAB_CONFIGS.map(tab => {
         const isActive = activeView === tab.id;
         const tabStyle: CSSProperties = {
           ...viewToggleStyles.tab,
@@ -362,9 +353,7 @@ function ViewToggleTabs({
 function EmptyState(): ReactElement {
   return (
     <div data-testid="tracing-empty-state" style={emptyStyles.container}>
-      <div style={{ fontWeight: 500, marginBottom: "8px" }}>
-        No resolution traces recorded.
-      </div>
+      <div style={{ fontWeight: 500, marginBottom: "8px" }}>No resolution traces recorded.</div>
       <div
         style={{
           fontSize: "12px",
@@ -373,8 +362,8 @@ function EmptyState(): ReactElement {
           margin: "0 auto",
         }}
       >
-        Traces are captured when services are resolved from a tracing-enabled
-        container. Use createTracingContainer() to enable tracing.
+        Traces are captured when services are resolved from a tracing-enabled container. Use
+        createTracingContainer() to enable tracing.
       </div>
     </div>
   );
@@ -529,17 +518,14 @@ export function ResolutionTracingSection({
     [processedTraces, stats]
   );
 
-  const handleNavigateToTrace = useCallback(
-    (traceId: string) => {
-      // Switch to timeline view and potentially highlight the trace
-      // For now, just switch to timeline view
-      setActiveView("timeline");
-      // In the future, this could set a selectedTraceId state
-      // to highlight the trace in the timeline
-      void traceId;
-    },
-    []
-  );
+  const handleNavigateToTrace = useCallback((traceId: string) => {
+    // Switch to timeline view and potentially highlight the trace
+    // For now, just switch to timeline view
+    setActiveView("timeline");
+    // In the future, this could set a selectedTraceId state
+    // to highlight the trace in the timeline
+    void traceId;
+  }, []);
 
   // TimelineView handlers
   const handleTogglePin = useCallback(
@@ -548,7 +534,7 @@ export function ResolutionTracingSection({
         return;
       }
       // Find the trace to check its current pin status
-      const trace = traces.find((t) => t.id === traceId);
+      const trace = traces.find(t => t.id === traceId);
       if (trace === undefined) {
         return;
       }
@@ -646,10 +632,7 @@ export function ResolutionTracingSection({
   };
 
   return (
-    <div
-      data-testid="resolution-tracing-section"
-      style={tracingStyles.container}
-    >
+    <div data-testid="resolution-tracing-section" style={tracingStyles.container}>
       {/* Controls Bar - only show when tracingAPI is connected or we have traces */}
       {(tracingAPI !== undefined || hasTraces) && (
         <TracingControlsBar

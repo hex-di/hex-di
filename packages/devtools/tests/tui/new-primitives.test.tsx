@@ -78,9 +78,7 @@ function createTestFlameGraphViewModel(
   };
 }
 
-function createTestSnapshotSummary(
-  overrides: Partial<SnapshotSummary> = {}
-): SnapshotSummary {
+function createTestSnapshotSummary(overrides: Partial<SnapshotSummary> = {}): SnapshotSummary {
   return {
     id: "snapshot-1",
     label: "Snapshot 1",
@@ -210,7 +208,7 @@ describe("TUI New Primitives (Task Group 6)", () => {
       expect(element?.type).toBe("box");
 
       // Verify the element renders frame data
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const props = element?.props as any;
       expect(props.flexDirection).toBe("column");
 
@@ -298,7 +296,7 @@ describe("TUI New Primitives (Task Group 6)", () => {
       // - Timeline bar (row)
       // - Current snapshot info (row)
       // - Navigation hints (row)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const props = element?.props as any;
       expect(props.flexDirection).toBe("column");
     });
@@ -337,7 +335,7 @@ describe("TUI New Primitives (Task Group 6)", () => {
 
       // Verify color codes are valid ANSI
       expect(styleSystem.getColor("success")).toMatch(/^\x1b\[\d+m$/); // Green for additions
-      expect(styleSystem.getColor("error")).toMatch(/^\x1b\[\d+m$/);   // Red for removals
+      expect(styleSystem.getColor("error")).toMatch(/^\x1b\[\d+m$/); // Red for removals
       expect(styleSystem.getColor("warning")).toMatch(/^\x1b\[\d+m$/); // Yellow for changes
     });
 
@@ -358,7 +356,7 @@ describe("TUI New Primitives (Task Group 6)", () => {
 
       // The component should display summary info
       // (3 added, 1 removed, 2 changed)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const props = element?.props as any;
       expect(props.flexDirection).toBe("column");
     });
@@ -400,7 +398,6 @@ describe("TUI New Primitives (Task Group 6)", () => {
       expect(element).toBeDefined();
       expect(element?.type).toBe("box");
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const props = element?.props as any;
       expect(props.flexDirection).toBe("column");
     });

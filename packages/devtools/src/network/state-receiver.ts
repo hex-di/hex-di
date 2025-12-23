@@ -9,9 +9,29 @@
  * @packageDocumentation
  */
 
-import type { DevToolsState } from "../state/devtools.state.js";
 import type { DevToolsAction } from "../state/actions.js";
 import type { SyncStateParams } from "@hex-di/devtools-core";
+import type { TabId, TimelineGrouping, TimelineSortOrder } from "../view-models/index.js";
+
+// =============================================================================
+// Type Guards
+// =============================================================================
+
+const VALID_TAB_IDS: readonly TabId[] = ["graph", "services", "tracing", "inspector"];
+const VALID_GROUPINGS: readonly TimelineGrouping[] = ["none", "port", "scope", "lifetime"];
+const VALID_SORT_ORDERS: readonly TimelineSortOrder[] = ["time", "duration", "name"];
+
+function isTabId(value: unknown): value is TabId {
+  return typeof value === "string" && VALID_TAB_IDS.includes(value as TabId);
+}
+
+function isTimelineGrouping(value: unknown): value is TimelineGrouping {
+  return typeof value === "string" && VALID_GROUPINGS.includes(value as TimelineGrouping);
+}
+
+function isTimelineSortOrder(value: unknown): value is TimelineSortOrder {
+  return typeof value === "string" && VALID_SORT_ORDERS.includes(value as TimelineSortOrder);
+}
 
 // =============================================================================
 // Types
@@ -66,7 +86,7 @@ const DEFAULT_CONFIG: StateReceiverConfig = {
  * );
  *
  * // Receive sync update
- * receiver.receive(syncParams, localState);
+ * receiver.receive(syncParams);
  * ```
  */
 export class StateReceiver {
@@ -84,9 +104,8 @@ export class StateReceiver {
    * Receive and process a state update from a remote client.
    *
    * @param params - The sync state parameters
-   * @param localState - The current local state
    */
-  receive(params: SyncStateParams, localState: DevToolsState): void {
+  receive(params: SyncStateParams): void {
     this.log("Received state update", params);
 
     // Ignore outdated updates
@@ -101,7 +120,7 @@ export class StateReceiver {
     this.lastReceivedTimestamp = params.timestamp;
 
     if (this.config.autoApply) {
-      this.applyUpdate(params, localState);
+      this.applyUpdate(params);
     } else {
       this.pendingUpdates.push(params);
       this.log(`Queued update (${this.pendingUpdates.length} pending)`);
@@ -112,27 +131,26 @@ export class StateReceiver {
    * Apply a state update to the local state.
    *
    * @param params - The sync state parameters
-   * @param localState - The current local state
    */
-  applyUpdate(params: SyncStateParams, localState: DevToolsState): void {
+  applyUpdate(params: SyncStateParams): void {
     // Apply graph updates
     if (params.graph !== undefined) {
-      this.applyGraphUpdate(params.graph, localState);
+      this.applyGraphUpdate(params.graph);
     }
 
     // Apply timeline updates
     if (params.timeline !== undefined) {
-      this.applyTimelineUpdate(params.timeline, localState);
+      this.applyTimelineUpdate(params.timeline);
     }
 
     // Apply inspector updates
     if (params.inspector !== undefined) {
-      this.applyInspectorUpdate(params.inspector, localState);
+      this.applyInspectorUpdate(params.inspector);
     }
 
     // Apply panel updates
     if (params.panel !== undefined) {
-      this.applyPanelUpdate(params.panel, localState);
+      this.applyPanelUpdate(params.panel);
     }
 
     // Update sync state
@@ -150,15 +168,13 @@ export class StateReceiver {
 
   /**
    * Apply all pending updates.
-   *
-   * @param localState - The current local state
    */
-  applyPendingUpdates(localState: DevToolsState): void {
+  applyPendingUpdates(): void {
     const updates = [...this.pendingUpdates];
     this.pendingUpdates = [];
 
     for (const update of updates) {
-      this.applyUpdate(update, localState);
+      this.applyUpdate(update);
     }
 
     this.log(`Applied ${updates.length} pending updates`);
@@ -191,10 +207,7 @@ export class StateReceiver {
   // Private Methods
   // ===========================================================================
 
-  private applyGraphUpdate(
-    graphUpdate: NonNullable<SyncStateParams["graph"]>,
-    localState: DevToolsState
-  ): void {
+  private applyGraphUpdate(graphUpdate: NonNullable<SyncStateParams["graph"]>): void {
     if (graphUpdate.selectedNodeId !== undefined) {
       this.dispatchFn({
         type: "SELECT_NODE",
@@ -226,10 +239,7 @@ export class StateReceiver {
     }
   }
 
-  private applyTimelineUpdate(
-    timelineUpdate: NonNullable<SyncStateParams["timeline"]>,
-    localState: DevToolsState
-  ): void {
+  private applyTimelineUpdate(timelineUpdate: NonNullable<SyncStateParams["timeline"]>): void {
     if (timelineUpdate.filterText !== undefined) {
       this.dispatchFn({
         type: "SET_TIMELINE_FILTER",
@@ -237,31 +247,29 @@ export class StateReceiver {
       });
     }
 
-    if (timelineUpdate.grouping !== undefined) {
+    if (timelineUpdate.grouping !== undefined && isTimelineGrouping(timelineUpdate.grouping)) {
       this.dispatchFn({
         type: "SET_TIMELINE_GROUPING",
-        payload: timelineUpdate.grouping as any,
+        payload: timelineUpdate.grouping,
       });
     }
 
     if (
       timelineUpdate.sortOrder !== undefined &&
-      timelineUpdate.sortDescending !== undefined
+      timelineUpdate.sortDescending !== undefined &&
+      isTimelineSortOrder(timelineUpdate.sortOrder)
     ) {
       this.dispatchFn({
         type: "SET_TIMELINE_SORT",
         payload: {
-          order: timelineUpdate.sortOrder as any,
+          order: timelineUpdate.sortOrder,
           descending: timelineUpdate.sortDescending,
         },
       });
     }
   }
 
-  private applyInspectorUpdate(
-    inspectorUpdate: NonNullable<SyncStateParams["inspector"]>,
-    localState: DevToolsState
-  ): void {
+  private applyInspectorUpdate(inspectorUpdate: NonNullable<SyncStateParams["inspector"]>): void {
     if (inspectorUpdate.filterText !== undefined) {
       this.dispatchFn({
         type: "SET_INSPECTOR_FILTER",
@@ -284,14 +292,11 @@ export class StateReceiver {
     }
   }
 
-  private applyPanelUpdate(
-    panelUpdate: NonNullable<SyncStateParams["panel"]>,
-    localState: DevToolsState
-  ): void {
-    if (panelUpdate.activeTabId !== undefined) {
+  private applyPanelUpdate(panelUpdate: NonNullable<SyncStateParams["panel"]>): void {
+    if (panelUpdate.activeTabId !== undefined && isTabId(panelUpdate.activeTabId)) {
       this.dispatchFn({
         type: "SET_ACTIVE_TAB",
-        payload: panelUpdate.activeTabId as any,
+        payload: panelUpdate.activeTabId,
       });
     }
 

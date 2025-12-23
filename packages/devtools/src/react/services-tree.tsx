@@ -7,7 +7,6 @@
  * @packageDocumentation
  */
 
-import type { Lifetime } from "@hex-di/graph";
 import type { ExportedEdge } from "@hex-di/devtools-core";
 import type { ServiceInfo } from "./resolved-services.js";
 
@@ -119,7 +118,7 @@ export function enrichServicesWithRelations(
   const dependentsMap = buildDependentsMap(edges);
   const dependenciesMap = buildDependenciesMap(edges);
 
-  return services.map((service) => ({
+  return services.map(service => ({
     ...service,
     dependsOn: dependenciesMap.get(service.portName) ?? [],
     dependents: dependentsMap.get(service.portName) ?? [],
@@ -195,9 +194,7 @@ export function buildDependencyTree(
     }
 
     // Sort children alphabetically
-    children.sort((a, b) =>
-      a.service.portName.localeCompare(b.service.portName)
-    );
+    children.sort((a, b) => a.service.portName.localeCompare(b.service.portName));
 
     return {
       service,
@@ -207,9 +204,7 @@ export function buildDependencyTree(
   }
 
   // Find root nodes: services with no dependencies
-  const rootServices = enrichedServices.filter(
-    (service) => service.dependsOn.length === 0
-  );
+  const rootServices = enrichedServices.filter(service => service.dependsOn.length === 0);
 
   // Build tree starting from roots
   const rootNodes: ServiceTreeNode[] = [];
@@ -231,9 +226,7 @@ export function buildDependencyTree(
   }
 
   // Sort root nodes alphabetically
-  rootNodes.sort((a, b) =>
-    a.service.portName.localeCompare(b.service.portName)
-  );
+  rootNodes.sort((a, b) => a.service.portName.localeCompare(b.service.portName));
 
   return rootNodes;
 }
@@ -254,10 +247,7 @@ export function getVisibleServiceIds(
   function traverse(nodeList: readonly ServiceTreeNode[]): void {
     for (const node of nodeList) {
       result.push(node.service.portName);
-      if (
-        expandedIds.has(node.service.portName) &&
-        node.children.length > 0
-      ) {
+      if (expandedIds.has(node.service.portName) && node.children.length > 0) {
         traverse(node.children);
       }
     }
@@ -273,9 +263,7 @@ export function getVisibleServiceIds(
  * @param nodes - The tree nodes
  * @returns Array of port names that have children
  */
-export function getAllExpandableIds(
-  nodes: readonly ServiceTreeNode[]
-): readonly string[] {
+export function getAllExpandableIds(nodes: readonly ServiceTreeNode[]): readonly string[] {
   const result: string[] = [];
 
   function traverse(nodeList: readonly ServiceTreeNode[]): void {
@@ -302,10 +290,7 @@ export function findParentServiceId(
   targetId: string,
   nodes: readonly ServiceTreeNode[]
 ): string | null {
-  function search(
-    nodeList: readonly ServiceTreeNode[],
-    parentId: string | null
-  ): string | null {
+  function search(nodeList: readonly ServiceTreeNode[], parentId: string | null): string | null {
     for (const node of nodeList) {
       if (node.service.portName === targetId) {
         return parentId;

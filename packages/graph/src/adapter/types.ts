@@ -1,5 +1,4 @@
-
-import type { Port, InferService, InferPortName } from "@hex-di/ports";
+import type { InferService, InferPortName } from "@hex-di/ports";
 
 // =============================================================================
 // Brand Symbols

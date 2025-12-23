@@ -19,6 +19,7 @@
     "dev": "tsc -p tsconfig.build.json --watch",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
+    "lint": "eslint .",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "test:types": "vitest typecheck"

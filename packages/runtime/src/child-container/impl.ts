@@ -1,22 +1,38 @@
 import type { Port, InferService } from "@hex-di/ports";
 import type { Adapter, Lifetime, FactoryKind, InferAdapterProvides } from "@hex-di/graph";
-import type { ChildContainer, ChildContainerBuilder, Container, Scope, ContainerPhase, InheritanceMode, OverrideResult, ExtendResult, InheritanceModeConfig } from "../types.js";
+import type {
+  ChildContainer,
+  ChildContainerBuilder,
+  Container,
+  Scope,
+  ContainerPhase,
+  InheritanceMode,
+  OverrideResult,
+  ExtendResult,
+  InheritanceModeConfig,
+} from "../types.js";
 import type { ContainerInternalState } from "../inspector/types.js";
-import { INTERNAL_ACCESS, ADAPTER_ACCESS } from "../inspector/symbols.js";
+import { ADAPTER_ACCESS } from "../inspector/symbols.js";
 import { MemoMap } from "../common/memo-map.js";
 import { isRecord } from "../common/type-guards.js";
 import { ResolutionContext } from "../resolution/context.js";
-import { DisposedScopeError, ScopeRequiredError, FactoryError, AsyncFactoryError, AsyncInitializationRequiredError } from "../common/errors.js";
-import type { 
-  RuntimeAdapter, 
+import {
+  DisposedScopeError,
+  ScopeRequiredError,
+  FactoryError,
+  AsyncFactoryError,
+  AsyncInitializationRequiredError,
+} from "../common/errors.js";
+import type {
+  RuntimeAdapter,
   ParentContainerLike,
   ScopeContainerAccess,
 } from "./internal-types.js";
-import { 
-  createChildContainerWrapper, 
-  createScopeWrapper, 
-  asParentContainerLike, 
-  hasInternalMethods 
+import {
+  createChildContainerWrapper,
+  createScopeWrapper,
+  asParentContainerLike,
+  hasInternalMethods,
 } from "./wrappers.js";
 import { ScopeImpl } from "../scope/impl.js";
 
@@ -69,16 +85,13 @@ function isAdapterProvidedByParent<
   TParentProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
   A extends RuntimeAdapter,
->(
-  parent: ParentContainerLike<TParentProvides, TAsyncPorts>,
-  adapter: A
-): boolean {
+>(parent: ParentContainerLike<TParentProvides, TAsyncPorts>, adapter: A): boolean {
   return parent[ADAPTER_ACCESS](adapter.provides) !== undefined;
 }
 
 function isAdapterProvidedByParentOrExtensions<
   TParentProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
+  _TExtends extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
   A extends RuntimeAdapter,
 >(
@@ -86,10 +99,7 @@ function isAdapterProvidedByParentOrExtensions<
   extensions: ReadonlyMap<Port<unknown, string>, RuntimeAdapter>,
   adapter: A
 ): boolean {
-  return (
-    parent[ADAPTER_ACCESS](adapter.provides) !== undefined ||
-    extensions.has(adapter.provides)
-  );
+  return parent[ADAPTER_ACCESS](adapter.provides) !== undefined || extensions.has(adapter.provides);
 }
 
 function isInheritanceMode(value: unknown): value is InheritanceMode {
@@ -132,18 +142,10 @@ class ChildContainerBuilderImpl<
   >(
     parentContainer: ParentContainerLike<TParentProvides, TAsyncPorts>
   ): ChildContainerBuilder<TParentProvides, TAsyncPorts, never> {
-    return new ChildContainerBuilderImpl(
-      parentContainer,
-      new Map(),
-      new Map(),
-      new Map()
-    );
+    return new ChildContainerBuilderImpl(parentContainer, new Map(), new Map(), new Map());
   }
 
-  override<
-    P extends Port<unknown, string>,
-    A extends RuntimeAdapterFor<P>
-  >(
+  override<P extends Port<unknown, string>, A extends RuntimeAdapterFor<P>>(
     adapter: A
   ): OverrideResult<TParentProvides, TExtends, TAsyncPorts, A> {
     if (!isAdapterProvidedByParent(this.parentContainer, adapter)) {
@@ -159,10 +161,7 @@ class ChildContainerBuilderImpl<
     );
   }
 
-  extend<
-    P extends Port<unknown, string>,
-    A extends RuntimeAdapterFor<P>
-  >(
+  extend<P extends Port<unknown, string>, A extends RuntimeAdapterFor<P>>(
     adapter: A
   ): ExtendResult<TParentProvides, TExtends, TAsyncPorts, A> {
     if (isAdapterProvidedByParentOrExtensions(this.parentContainer, this.extensions, adapter)) {
@@ -170,12 +169,7 @@ class ChildContainerBuilderImpl<
         TParentProvides,
         TAsyncPorts,
         TExtends | InferAdapterProvides<A>
-      >(
-        this.parentContainer,
-        this.overrides,
-        this.extensions,
-        this.inheritanceModes
-      );
+      >(this.parentContainer, this.overrides, this.extensions, this.inheritanceModes);
     }
     const newExtensions = new Map(this.extensions);
     newExtensions.set(adapter.provides, adapter);
@@ -183,12 +177,7 @@ class ChildContainerBuilderImpl<
       TParentProvides,
       TAsyncPorts,
       TExtends | InferAdapterProvides<A>
-    >(
-      this.parentContainer,
-      this.overrides,
-      newExtensions,
-      this.inheritanceModes
-    );
+    >(this.parentContainer, this.overrides, newExtensions, this.inheritanceModes);
   }
 
   withInheritanceMode<TConfig extends InheritanceModeConfig<TParentProvides>>(
@@ -272,7 +261,10 @@ export class ChildContainerImpl<
     this.childContainers.push(childContainer);
   }
 
-  unregisterChildContainer(childContainer: { dispose(): Promise<void>; isDisposed: boolean }): void {
+  unregisterChildContainer(childContainer: {
+    dispose(): Promise<void>;
+    isDisposed: boolean;
+  }): void {
     const index = this.childContainers.indexOf(childContainer);
     if (index !== -1) {
       this.childContainers.splice(index, 1);
@@ -294,7 +286,7 @@ export class ChildContainerImpl<
     }
   }
 
-  private resolveFromParentForForking(portName: string): unknown {
+  private resolveFromParentForForking(_portName: string): unknown {
     return undefined; // Defer to first access
   }
 
@@ -374,9 +366,7 @@ export class ChildContainerImpl<
     return this.resolveWithInheritanceMode(port);
   }
 
-  private resolveWithInheritanceMode<P extends TProvides | TExtends>(
-    port: P
-  ): InferService<P> {
+  private resolveWithInheritanceMode<P extends TProvides | TExtends>(port: P): InferService<P> {
     const portToken = this.toPortToken(port);
     const portName = this.getPortName(port);
     const mode = this.inheritanceModes.get(portName) ?? "shared";
@@ -453,13 +443,9 @@ export class ChildContainerImpl<
     }
   }
 
-  resolveAsync<P extends TProvides | TExtends>(
-    port: P
-  ): Promise<InferService<P>>;
+  resolveAsync<P extends TProvides | TExtends>(port: P): Promise<InferService<P>>;
   resolveAsync(port: Port<unknown, string>): Promise<unknown>;
-  async resolveAsync(
-    port: Port<unknown, string>
-  ): Promise<unknown> {
+  async resolveAsync(port: Port<unknown, string>): Promise<unknown> {
     const portToken = this.toPortToken(port);
     const portName = this.getPortName(port);
 
@@ -492,7 +478,7 @@ export class ChildContainerImpl<
 
     throw new Error(`Port ${portName} not found in child or parent container.`);
   }
-  
+
   resolveAsyncInternal<P extends TProvides | TExtends>(
     port: P,
     scopedMemo: MemoMap,
@@ -506,7 +492,7 @@ export class ChildContainerImpl<
   async resolveAsyncInternal(
     port: Port<unknown, string>,
     scopedMemo: MemoMap,
-    scopeId?: string | null
+    _scopeId?: string | null
   ): Promise<unknown> {
     const portToken = this.toPortToken(port);
     const overrideAdapter = this.overrides.get(portToken);
@@ -652,9 +638,7 @@ export class ChildContainerImpl<
     return deps;
   }
 
-  private async resolveDependencyPortAsync(
-    port: Port<unknown, string>
-  ): Promise<unknown> {
+  private async resolveDependencyPortAsync(port: Port<unknown, string>): Promise<unknown> {
     if (this.isProvidedPort(port)) {
       return this.resolveAsync(port);
     }
@@ -662,11 +646,7 @@ export class ChildContainerImpl<
   }
 
   createScope(): Scope<TProvides | TExtends, TAsyncPorts, "uninitialized"> {
-    const scope = new ScopeImpl<TProvides | TExtends, TAsyncPorts>(
-      this,
-      this.singletonMemo,
-      null
-    );
+    const scope = new ScopeImpl<TProvides | TExtends, TAsyncPorts>(this, this.singletonMemo, null);
     this.childScopes.add(scope);
     return createScopeWrapper(scope);
   }
@@ -719,13 +699,13 @@ export class ChildContainerImpl<
 
   getInternalState(): ContainerInternalState {
     if (this.disposed) throw new DisposedScopeError("child-container");
-    
+
     // Simplified snapshot (omitting full implementation for brevity as it's large and mostly boilerplate)
     const snapshot: ContainerInternalState = {
-        disposed: this.disposed,
-        singletonMemo: { size: 0, entries: [] }, // TODO: full snapshot
-        childScopes: [],
-        adapterMap: new Map(),
+      disposed: this.disposed,
+      singletonMemo: { size: 0, entries: [] }, // TODO: full snapshot
+      childScopes: [],
+      adapterMap: new Map(),
     };
     return Object.freeze(snapshot);
   }
@@ -743,7 +723,7 @@ export class ChildContainerImpl<
   resolveInternal(
     port: Port<unknown, string>,
     scopedMemo: MemoMap,
-    scopeId?: string | null
+    _scopeId?: string | null
   ): unknown {
     const portToken = this.toPortToken(port);
     const overrideAdapter = this.overrides.get(portToken);
@@ -811,17 +791,20 @@ export class ChildContainerImpl<
     assertSyncAdapter(adapter, portName);
     this.resolutionContext.enter(portName);
     try {
-        const deps: Record<string, unknown> = {};
-        for (const requiredPort of adapter.requires) {
-            deps[requiredPort.__portName] = this.resolveDependencyPortInternal(requiredPort, scopedMemo);
-        }
-        try {
-            return adapter.factory(deps);
-        } catch (error) {
-            throw new FactoryError(portName, error);
-        }
+      const deps: Record<string, unknown> = {};
+      for (const requiredPort of adapter.requires) {
+        deps[requiredPort.__portName] = this.resolveDependencyPortInternal(
+          requiredPort,
+          scopedMemo
+        );
+      }
+      try {
+        return adapter.factory(deps);
+      } catch (error) {
+        throw new FactoryError(portName, error);
+      }
     } finally {
-        this.resolutionContext.exit(portName);
+      this.resolutionContext.exit(portName);
     }
   }
 
@@ -877,10 +860,7 @@ export class ChildContainerImpl<
     try {
       const deps: Record<string, unknown> = {};
       for (const requiredPort of adapter.requires) {
-        deps[requiredPort.__portName] = await this.resolveAsyncInternal(
-          requiredPort,
-          scopedMemo
-        );
+        deps[requiredPort.__portName] = await this.resolveAsyncInternal(requiredPort, scopedMemo);
       }
       try {
         return await adapter.factory(deps);
@@ -924,7 +904,7 @@ export function createChildContainerBuilder<
   if (!hasInternalMethods(parentContainer)) {
     throw new Error(
       "Invalid Container: missing internal methods. " +
-      "This indicates a bug in createContainer or container implementation."
+        "This indicates a bug in createContainer or container implementation."
     );
   }
   const parentLike: ParentContainerLike<TParentProvides, TAsyncPorts> = {

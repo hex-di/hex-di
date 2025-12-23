@@ -6,16 +6,16 @@
  * @packageDocumentation
  */
 
-import type { Plugin, ViteDevServer, ResolvedConfig as ViteResolvedConfig } from 'vite';
-import type { HexDIDevToolsOptions, ResolvedConfig } from './types.js';
-import { RelayServer, createRelayServer, resolveRelayConfig } from './auto-relay.js';
-import { createDevToolsMiddleware, createCorsMiddleware } from './middleware.js';
+import type { Plugin, ViteDevServer, ResolvedConfig as ViteResolvedConfig } from "vite";
+import type { HexDIDevToolsOptions, ResolvedConfig } from "./types.js";
+import { RelayServer, createRelayServer, resolveRelayConfig } from "./auto-relay.js";
+import { createDevToolsMiddleware, createCorsMiddleware } from "./middleware.js";
 import {
   VIRTUAL_MODULE_ID,
   RESOLVED_VIRTUAL_MODULE_ID,
   generateClientModule,
   transformHtml,
-} from './virtual-module.js';
+} from "./virtual-module.js";
 
 // =============================================================================
 // Default Configuration
@@ -25,12 +25,12 @@ const DEFAULT_OPTIONS: HexDIDevToolsOptions = {
   relay: {
     enabled: true,
     port: 47100,
-    host: '127.0.0.1',
+    host: "127.0.0.1",
   },
   overlay: {
     enabled: true,
-    position: 'bottom-right',
-    hotkey: 'ctrl+shift+d',
+    position: "bottom-right",
+    hotkey: "ctrl+shift+d",
     defaultOpen: false,
   },
   autoInject: true,
@@ -53,13 +53,14 @@ function resolveOptions(options: HexDIDevToolsOptions): ResolvedConfig {
     relay: resolveRelayConfig(options.relay),
     overlay: {
       enabled: options.overlay?.enabled ?? DEFAULT_OPTIONS.overlay?.enabled ?? true,
-      position: options.overlay?.position ?? DEFAULT_OPTIONS.overlay?.position ?? 'bottom-right',
-      hotkey: options.overlay?.hotkey ?? DEFAULT_OPTIONS.overlay?.hotkey ?? 'ctrl+shift+d',
+      position: options.overlay?.position ?? DEFAULT_OPTIONS.overlay?.position ?? "bottom-right",
+      hotkey: options.overlay?.hotkey ?? DEFAULT_OPTIONS.overlay?.hotkey ?? "ctrl+shift+d",
       defaultOpen: options.overlay?.defaultOpen ?? DEFAULT_OPTIONS.overlay?.defaultOpen ?? false,
     },
     autoInject: options.autoInject ?? DEFAULT_OPTIONS.autoInject ?? true,
     open: options.open ?? DEFAULT_OPTIONS.open ?? false,
-    includeInProduction: options.includeInProduction ?? DEFAULT_OPTIONS.includeInProduction ?? false,
+    includeInProduction:
+      options.includeInProduction ?? DEFAULT_OPTIONS.includeInProduction ?? false,
   };
 }
 
@@ -104,18 +105,18 @@ function resolveOptions(options: HexDIDevToolsOptions): ResolvedConfig {
 export function hexDIDevTools(options: HexDIDevToolsOptions = {}): Plugin {
   const config = resolveOptions(options);
   let relayServer: RelayServer | null = null;
-  let viteConfig: ViteResolvedConfig;
+  let _viteConfig: ViteResolvedConfig;
   let isDev = false;
 
   return {
-    name: 'hex-di-devtools',
+    name: "hex-di-devtools",
 
     /**
      * Store Vite config for later use.
      */
     configResolved(resolved) {
-      viteConfig = resolved;
-      isDev = resolved.command === 'serve';
+      _viteConfig = resolved;
+      isDev = resolved.command === "serve";
     },
 
     /**
@@ -131,7 +132,7 @@ export function hexDIDevTools(options: HexDIDevToolsOptions = {}): Plugin {
       if (config.relay.enabled) {
         relayServer = createRelayServer(config.relay);
         relayServer.start().catch((err: Error) => {
-          console.error('[HexDI DevTools] Failed to start relay server:', err.message);
+          console.error("[HexDI DevTools] Failed to start relay server:", err.message);
         });
       }
 
@@ -143,9 +144,7 @@ export function hexDIDevTools(options: HexDIDevToolsOptions = {}): Plugin {
       server.middlewares.use(createDevToolsMiddleware(config, relayUrl));
 
       // Log startup info
-      const relayInfo = relayServer
-        ? `Relay: ${relayServer.getUrl()}`
-        : 'Relay: disabled';
+      const relayInfo = relayServer ? `Relay: ${relayServer.getUrl()}` : "Relay: disabled";
       console.log(`[HexDI DevTools] Plugin initialized | ${relayInfo}`);
     },
 
@@ -166,7 +165,7 @@ export function hexDIDevTools(options: HexDIDevToolsOptions = {}): Plugin {
       if (id === RESOLVED_VIRTUAL_MODULE_ID) {
         // Skip in production if not enabled
         if (!isDev && !config.includeInProduction) {
-          return '// HexDI DevTools disabled in production';
+          return "// HexDI DevTools disabled in production";
         }
 
         const relayUrl = relayServer?.getUrl() ?? `ws://127.0.0.1:${config.relay.port}`;
@@ -193,7 +192,7 @@ export function hexDIDevTools(options: HexDIDevToolsOptions = {}): Plugin {
     buildEnd() {
       if (relayServer) {
         relayServer.stop().catch((err: Error) => {
-          console.error('[HexDI DevTools] Error stopping relay server:', err.message);
+          console.error("[HexDI DevTools] Error stopping relay server:", err.message);
         });
         relayServer = null;
       }

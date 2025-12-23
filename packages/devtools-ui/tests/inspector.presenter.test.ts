@@ -17,13 +17,13 @@ import {
 } from "@hex-di/devtools-testing";
 import type {
   PresenterDataSourceContract,
-  ContainerSnapshotData,
-  ScopeData,
+  ContainerSnapshot,
+  ScopeInfo,
 } from "@hex-di/devtools-core";
 import { InspectorPresenter } from "../src/presenters/inspector.presenter.js";
 
 // Helper to create test scope data
-function createScopeData(overrides: Partial<ScopeData> & { id: string }): ScopeData {
+function createScopeInfo(overrides: Partial<ScopeInfo> & { id: string }): ScopeInfo {
   return {
     id: overrides.id,
     parentId: overrides.parentId ?? null,
@@ -35,16 +35,11 @@ function createScopeData(overrides: Partial<ScopeData> & { id: string }): ScopeD
 }
 
 // Helper to create test snapshot
-function createSnapshot(scopes: readonly ScopeData[]): ContainerSnapshotData {
+function createSnapshot(scopes: readonly ScopeInfo[]): ContainerSnapshot {
   return {
     scopes,
-    rootScopeId: scopes[0]?.id ?? "root",
-    timestamp: Date.now(),
-    activeScopeCount: scopes.filter((s) => s.isActive).length,
-    resolvedServiceCount: scopes.reduce(
-      (sum, s) => sum + s.resolvedPorts.length,
-      0
-    ),
+    singletons: [],
+    phase: "ready",
   };
 }
 
@@ -55,13 +50,13 @@ describe("InspectorPresenter", () => {
 
   beforeEach(() => {
     const traces = createTestTraces(baseTime);
-    const scopes: readonly ScopeData[] = [
-      createScopeData({
+    const scopes: readonly ScopeInfo[] = [
+      createScopeInfo({
         id: "root",
         childIds: ["scope-1"],
         resolvedPorts: ["Logger", "Config"],
       }),
-      createScopeData({
+      createScopeInfo({
         id: "scope-1",
         parentId: "root",
         resolvedPorts: ["UserService"],
@@ -211,7 +206,7 @@ describe("InspectorPresenter", () => {
       const vm = presenter.getViewModel();
 
       // UserService directly depends on UserRepository, AuthService, Logger, Config
-      const userRepo = vm.dependencies.find((d) => d.portName === "UserRepository");
+      const userRepo = vm.dependencies.find(d => d.portName === "UserRepository");
       expect(userRepo!.isDirect).toBe(true);
       expect(userRepo!.depth).toBe(0);
     });
@@ -221,7 +216,7 @@ describe("InspectorPresenter", () => {
       const vm = presenter.getViewModel();
 
       // UserService -> UserRepository -> Database
-      const database = vm.dependencies.find((d) => d.portName === "Database");
+      const database = vm.dependencies.find(d => d.portName === "Database");
       expect(database).toBeDefined();
       expect(database!.isDirect).toBe(false);
       expect(database!.depth).toBeGreaterThan(0);
@@ -231,7 +226,7 @@ describe("InspectorPresenter", () => {
       presenter.selectService("UserService");
       const vm = presenter.getViewModel();
 
-      const logger = vm.dependencies.find((d) => d.portName === "Logger");
+      const logger = vm.dependencies.find(d => d.portName === "Logger");
       expect(logger!.lifetime).toBe("singleton");
     });
   });
@@ -253,9 +248,7 @@ describe("InspectorPresenter", () => {
       const vm = presenter.getViewModel();
 
       // AuthService and UserService directly depend on Logger
-      const authService = vm.dependents.find(
-        (d) => d.portName === "AuthService"
-      );
+      const authService = vm.dependents.find(d => d.portName === "AuthService");
       expect(authService!.isDirect).toBe(true);
     });
 
@@ -264,9 +257,7 @@ describe("InspectorPresenter", () => {
       const vm = presenter.getViewModel();
 
       // UserService -> UserRepository -> Database
-      const userService = vm.dependents.find(
-        (d) => d.portName === "UserService"
-      );
+      const userService = vm.dependents.find(d => d.portName === "UserService");
       expect(userService).toBeDefined();
       expect(userService!.isDirect).toBe(false);
     });
@@ -306,9 +297,7 @@ describe("InspectorPresenter", () => {
       const vm = presenter.getViewModel();
 
       expect(vm.scopeServices.length).toBeGreaterThan(0);
-      const userService = vm.scopeServices.find(
-        (s) => s.portName === "UserService"
-      );
+      const userService = vm.scopeServices.find(s => s.portName === "UserService");
       expect(userService).toBeDefined();
     });
 
@@ -345,7 +334,7 @@ describe("InspectorPresenter", () => {
     it("should include scope metadata in tree", () => {
       const vm = presenter.getViewModel();
 
-      const rootScope = vm.scopeTree.find((s) => s.id === "root");
+      const rootScope = vm.scopeTree.find(s => s.id === "root");
       expect(rootScope).toBeDefined();
       expect(rootScope!.childIds).toContain("scope-1");
       expect(rootScope!.resolvedCount).toBe(2);
@@ -354,8 +343,8 @@ describe("InspectorPresenter", () => {
     it("should calculate scope depth", () => {
       const vm = presenter.getViewModel();
 
-      const rootScope = vm.scopeTree.find((s) => s.id === "root");
-      const childScope = vm.scopeTree.find((s) => s.id === "scope-1");
+      const rootScope = vm.scopeTree.find(s => s.id === "root");
+      const childScope = vm.scopeTree.find(s => s.id === "scope-1");
 
       expect(rootScope!.depth).toBe(0);
       expect(childScope!.depth).toBe(1);
@@ -371,7 +360,7 @@ describe("InspectorPresenter", () => {
       presenter.toggleScopeExpand("root");
       const vm = presenter.getViewModel();
 
-      const rootScope = vm.scopeTree.find((s) => s.id === "root");
+      const rootScope = vm.scopeTree.find(s => s.id === "root");
       expect(rootScope!.isExpanded).toBe(true);
     });
 
@@ -380,7 +369,7 @@ describe("InspectorPresenter", () => {
       presenter.toggleScopeExpand("root");
       const vm = presenter.getViewModel();
 
-      const rootScope = vm.scopeTree.find((s) => s.id === "root");
+      const rootScope = vm.scopeTree.find(s => s.id === "root");
       expect(rootScope!.isExpanded).toBe(false);
     });
   });
@@ -493,22 +482,22 @@ describe("InspectorPresenter", () => {
 
   describe("deep scope hierarchy", () => {
     beforeEach(() => {
-      const deepScopes: readonly ScopeData[] = [
-        createScopeData({
+      const deepScopes: readonly ScopeInfo[] = [
+        createScopeInfo({
           id: "root",
           childIds: ["level1"],
         }),
-        createScopeData({
+        createScopeInfo({
           id: "level1",
           parentId: "root",
           childIds: ["level2"],
         }),
-        createScopeData({
+        createScopeInfo({
           id: "level2",
           parentId: "level1",
           childIds: ["level3"],
         }),
-        createScopeData({
+        createScopeInfo({
           id: "level3",
           parentId: "level2",
         }),
@@ -519,7 +508,7 @@ describe("InspectorPresenter", () => {
     it("should calculate correct depth for nested scopes", () => {
       const vm = presenter.getViewModel();
 
-      const level3 = vm.scopeTree.find((s) => s.id === "level3");
+      const level3 = vm.scopeTree.find(s => s.id === "level3");
       expect(level3!.depth).toBe(3);
     });
   });

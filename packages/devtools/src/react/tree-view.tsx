@@ -19,12 +19,7 @@ import React, {
   type KeyboardEvent,
 } from "react";
 import type { TraceEntry } from "@hex-di/devtools-core";
-import {
-  treeViewStyles,
-  emptyStyles,
-  formatDuration,
-  getLifetimeBadgeStyle,
-} from "./styles.js";
+import { treeViewStyles, emptyStyles, formatDuration, getLifetimeBadgeStyle } from "./styles.js";
 
 // =============================================================================
 // Types
@@ -112,18 +107,15 @@ function buildTreeFromTraces(traces: readonly TraceEntry[]): readonly TreeNodeDa
   }
 
   // Find root traces (no parent)
-  const rootTraces = traces.filter((trace) => trace.parentId === null);
+  const rootTraces = traces.filter(trace => trace.parentId === null);
 
-  return rootTraces.map((trace) => buildNode(trace, 0));
+  return rootTraces.map(trace => buildNode(trace, 0));
 }
 
 /**
  * Get all visible node IDs in tree order for keyboard navigation.
  */
-function getVisibleNodeIds(
-  nodes: readonly TreeNodeData[],
-  expandedIds: Set<string>
-): string[] {
+function getVisibleNodeIds(nodes: readonly TreeNodeData[], expandedIds: Set<string>): string[] {
   const result: string[] = [];
 
   function traverse(nodeList: readonly TreeNodeData[]): void {
@@ -142,20 +134,14 @@ function getVisibleNodeIds(
 /**
  * Find parent trace ID for a given trace.
  */
-function findParentId(
-  traceId: string,
-  nodes: readonly TreeNodeData[]
-): string | null {
-  function search(
-    nodeList: readonly TreeNodeData[],
-    parentId: string | null
-  ): string | null {
+function findParentId(traceId: string, nodes: readonly TreeNodeData[]): string | null {
+  function search(nodeList: readonly TreeNodeData[], parentId: string | null): string | null {
     for (const node of nodeList) {
       if (node.trace.id === traceId) {
         return parentId;
       }
       const found = search(node.children, node.trace.id);
-      if (found !== null || node.children.some((c) => c.trace.id === traceId)) {
+      if (found !== null || node.children.some(c => c.trace.id === traceId)) {
         return found ?? node.trace.id;
       }
     }
@@ -348,8 +334,7 @@ function TreeNode({
   const isCached = trace.isCacheHit;
   const isFocused = focusedId === trace.id;
 
-  const displayDuration =
-    timeDisplayMode === "self" ? trace.duration : totalDuration;
+  const displayDuration = timeDisplayMode === "self" ? trace.duration : totalDuration;
 
   // Node container style based on state
   const nodeContainerStyle: CSSProperties = {
@@ -361,9 +346,7 @@ function TreeNode({
   // Node row style
   const nodeRowStyle: CSSProperties = {
     ...localStyles.nodeRow,
-    ...(isFocused
-      ? { backgroundColor: "var(--hex-devtools-bg-secondary, #2a2a3e)" }
-      : {}),
+    ...(isFocused ? { backgroundColor: "var(--hex-devtools-bg-secondary, #2a2a3e)" } : {}),
   };
 
   // Duration style
@@ -425,10 +408,7 @@ function TreeNode({
         <span style={localStyles.portName}>{trace.portName}</span>
 
         {/* Duration */}
-        <span
-          data-testid={`tree-node-duration-${trace.id}`}
-          style={durationStyle}
-        >
+        <span data-testid={`tree-node-duration-${trace.id}`} style={durationStyle}>
           {formatDuration(displayDuration)}
         </span>
 
@@ -468,7 +448,7 @@ function TreeNode({
           style={localStyles.childrenContainer}
           role="group"
         >
-          {children.map((child) => (
+          {children.map(child => (
             <TreeNode
               key={child.trace.id}
               node={child}
@@ -537,15 +517,11 @@ function TreeViewHeader({
 
       <span style={localStyles.headerSpacer} />
 
-      <span style={{ fontSize: "10px", color: "var(--hex-devtools-text-muted)" }}>
-        Show:
-      </span>
+      <span style={{ fontSize: "10px", color: "var(--hex-devtools-text-muted)" }}>Show:</span>
       <button
         data-testid="tree-time-mode-toggle"
         style={selfButtonStyle}
-        onClick={() =>
-          onTimeDisplayModeChange(timeDisplayMode === "self" ? "total" : "self")
-        }
+        onClick={() => onTimeDisplayModeChange(timeDisplayMode === "self" ? "total" : "self")}
         type="button"
         aria-pressed={timeDisplayMode === "self"}
       >
@@ -605,7 +581,6 @@ export function TreeView({
   threshold,
   timeDisplayMode,
   onTraceSelect,
-  onViewInTimeline,
   onTimeDisplayModeChange,
 }: TreeViewProps): ReactElement {
   // Build tree structure from flat traces
@@ -645,7 +620,7 @@ export function TreeView({
 
   // Toggle node expand/collapse
   const handleToggle = useCallback((id: string) => {
-    setExpandedIds((prev) => {
+    setExpandedIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
@@ -718,9 +693,7 @@ export function TreeView({
             if (nextId !== undefined) {
               setFocusedId(nextId);
               // Focus the element
-              const element = document.querySelector(
-                `[data-testid="tree-node-content-${nextId}"]`
-              );
+              const element = document.querySelector(`[data-testid="tree-node-content-${nextId}"]`);
               if (element instanceof HTMLElement) {
                 element.focus();
               }
@@ -735,9 +708,7 @@ export function TreeView({
             const prevId = visibleNodeIds[currentIndex - 1];
             if (prevId !== undefined) {
               setFocusedId(prevId);
-              const element = document.querySelector(
-                `[data-testid="tree-node-content-${prevId}"]`
-              );
+              const element = document.querySelector(`[data-testid="tree-node-content-${prevId}"]`);
               if (element instanceof HTMLElement) {
                 element.focus();
               }
@@ -816,9 +787,7 @@ export function TreeView({
             const homeId = visibleNodeIds[0];
             if (homeId !== undefined) {
               setFocusedId(homeId);
-              const element = document.querySelector(
-                `[data-testid="tree-node-content-${homeId}"]`
-              );
+              const element = document.querySelector(`[data-testid="tree-node-content-${homeId}"]`);
               if (element instanceof HTMLElement) {
                 element.focus();
               }
@@ -833,9 +802,7 @@ export function TreeView({
             const lastId = visibleNodeIds[visibleNodeIds.length - 1];
             if (lastId !== undefined) {
               setFocusedId(lastId);
-              const element = document.querySelector(
-                `[data-testid="tree-node-content-${lastId}"]`
-              );
+              const element = document.querySelector(`[data-testid="tree-node-content-${lastId}"]`);
               if (element instanceof HTMLElement) {
                 element.focus();
               }
@@ -848,14 +815,7 @@ export function TreeView({
           break;
       }
     },
-    [
-      focusedId,
-      visibleNodeIds,
-      expandedIds,
-      allNodeIds,
-      handleToggle,
-      treeNodes,
-    ]
+    [focusedId, visibleNodeIds, expandedIds, allNodeIds, handleToggle, treeNodes]
   );
 
   // Empty state
@@ -863,12 +823,10 @@ export function TreeView({
     return (
       <div data-testid="tree-view" style={treeViewStyles.container}>
         <div data-testid="tree-view-empty" style={localStyles.emptyState}>
-          <div style={{ fontWeight: 500, marginBottom: "8px" }}>
-            No dependency chains recorded.
-          </div>
+          <div style={{ fontWeight: 500, marginBottom: "8px" }}>No dependency chains recorded.</div>
           <div style={{ fontSize: "12px", maxWidth: "280px", margin: "0 auto" }}>
-            Resolution chains show when services with dependencies are resolved.
-            The tree displays the order of resolution.
+            Resolution chains show when services with dependencies are resolved. The tree displays
+            the order of resolution.
           </div>
         </div>
       </div>
@@ -893,7 +851,7 @@ export function TreeView({
       />
 
       {/* Tree Nodes */}
-      {treeNodes.map((node) => (
+      {treeNodes.map(node => (
         <TreeNode
           key={node.trace.id}
           node={node}
@@ -917,10 +875,10 @@ export function TreeView({
           color: "var(--hex-devtools-text-muted, #a6adc8)",
         }}
       >
-        {treeNodes.length} root resolution{treeNodes.length !== 1 ? "s" : ""} |{" "}
-        {traces.length} total trace{traces.length !== 1 ? "s" : ""} |{" "}
-        {traces.filter((t) => t.isCacheHit).length} cache hit
-        {traces.filter((t) => t.isCacheHit).length !== 1 ? "s" : ""}
+        {treeNodes.length} root resolution{treeNodes.length !== 1 ? "s" : ""} | {traces.length}{" "}
+        total trace{traces.length !== 1 ? "s" : ""} | {traces.filter(t => t.isCacheHit).length}{" "}
+        cache hit
+        {traces.filter(t => t.isCacheHit).length !== 1 ? "s" : ""}
       </div>
     </div>
   );

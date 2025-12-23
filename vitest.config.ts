@@ -1,10 +1,8 @@
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  cacheDir: ".vite-temp",
   test: {
     include: ["packages/**/*.test.ts"],
-    typecheck: {
-      include: ["packages/**/*.test-d.ts"],
-    },
   },
 });

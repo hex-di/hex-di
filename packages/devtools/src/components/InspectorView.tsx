@@ -96,7 +96,9 @@ interface AsyncFactoryStatusSectionProps {
   readonly service: ServiceInfoViewModel;
 }
 
-function AsyncFactoryStatusSection({ service }: AsyncFactoryStatusSectionProps): React.ReactElement | null {
+function AsyncFactoryStatusSection({
+  service,
+}: AsyncFactoryStatusSectionProps): React.ReactElement | null {
   const { Box, Text, Icon } = usePrimitives();
 
   if (service.factoryKind !== "async") {
@@ -121,7 +123,9 @@ function AsyncFactoryStatusSection({ service }: AsyncFactoryStatusSectionProps):
         </Box>
         {service.asyncResolutionTime !== null && service.asyncResolutionTime !== undefined && (
           <Box flexDirection="row" alignItems="center" gap="xs">
-            <Text variant="caption" color="muted">Resolution time:</Text>
+            <Text variant="caption" color="muted">
+              Resolution time:
+            </Text>
             <Text variant="body" color="foreground">
               {service.asyncResolutionTime.toFixed(2)}ms
             </Text>
@@ -141,7 +145,10 @@ interface CaptiveChainSectionProps {
   readonly onDependencySelect?: ((portName: string) => void) | undefined;
 }
 
-function CaptiveChainSection({ service, onDependencySelect }: CaptiveChainSectionProps): React.ReactElement | null {
+function CaptiveChainSection({
+  service,
+  onDependencySelect,
+}: CaptiveChainSectionProps): React.ReactElement | null {
   const { Box, Text, Icon } = usePrimitives();
 
   const captiveChain = service.captiveChain ?? [];
@@ -158,17 +165,18 @@ function CaptiveChainSection({ service, onDependencySelect }: CaptiveChainSectio
         </Text>
       </Box>
       <Text variant="caption" color="muted">
-        This {service.lifetime} service depends on shorter-lived services, which may cause memory leaks.
+        This {service.lifetime} service depends on shorter-lived services, which may cause memory
+        leaks.
       </Text>
       <Box flexDirection="column" gap="xs">
         <Box flexDirection="row" alignItems="center" gap="xs">
-          <Text variant="code" color="foreground">{service.portName}</Text>
-          {captiveChain.map((portName, index) => (
+          <Text variant="code" color="foreground">
+            {service.portName}
+          </Text>
+          {captiveChain.map(portName => (
             <React.Fragment key={portName}>
               <Icon name="arrow-right" size="sm" color="warning" />
-              <Box
-                {...(onDependencySelect ? { onClick: () => onDependencySelect(portName) } : {})}
-              >
+              <Box {...(onDependencySelect ? { onClick: () => onDependencySelect(portName) } : {})}>
                 <Text variant="code" color="warning">
                   {portName}
                 </Text>
@@ -201,31 +209,35 @@ function ServiceInfoSection({ service }: ServiceInfoSectionProps): React.ReactEl
     <Box flexDirection="column" gap="sm">
       {/* Service header */}
       <Box flexDirection="row" alignItems="center" gap="sm">
-        <Icon
-          name={getLifetimeIcon(service.lifetime)}
-          size="md"
-          color={lifetimeColor}
-        />
+        <Icon name={getLifetimeIcon(service.lifetime)} size="md" color={lifetimeColor} />
         <Text variant="heading" color="foreground">
           {service.portName}
         </Text>
-        {service.factoryKind === "async" && (
-          <Icon name="async" size="sm" color="accent" />
-        )}
+        {service.factoryKind === "async" && <Icon name="async" size="sm" color="accent" />}
       </Box>
 
       {/* Service metadata */}
       <Box flexDirection="row" gap="lg">
         <Box flexDirection="column" gap="xs">
-          <Text variant="caption" color="muted">Lifetime</Text>
-          <Text variant="body" color={lifetimeColor}>{service.lifetime}</Text>
+          <Text variant="caption" color="muted">
+            Lifetime
+          </Text>
+          <Text variant="body" color={lifetimeColor}>
+            {service.lifetime}
+          </Text>
         </Box>
         <Box flexDirection="column" gap="xs">
-          <Text variant="caption" color="muted">Factory</Text>
-          <Text variant="body" color="foreground">{service.factoryKind}</Text>
+          <Text variant="caption" color="muted">
+            Factory
+          </Text>
+          <Text variant="body" color="foreground">
+            {service.factoryKind}
+          </Text>
         </Box>
         <Box flexDirection="column" gap="xs">
-          <Text variant="caption" color="muted">Resolved</Text>
+          <Text variant="caption" color="muted">
+            Resolved
+          </Text>
           <Text variant="body" color={service.isResolved ? "success" : "muted"}>
             {service.isResolved ? "Yes" : "No"}
           </Text>
@@ -237,27 +249,47 @@ function ServiceInfoSection({ service }: ServiceInfoSectionProps): React.ReactEl
       {/* Performance stats */}
       <Box flexDirection="row" gap="lg">
         <Box flexDirection="column" gap="xs">
-          <Text variant="caption" color="muted">Resolutions</Text>
-          <Text variant="body" color="foreground">{service.resolutionCount}</Text>
+          <Text variant="caption" color="muted">
+            Resolutions
+          </Text>
+          <Text variant="body" color="foreground">
+            {service.resolutionCount}
+          </Text>
         </Box>
         <Box flexDirection="column" gap="xs">
-          <Text variant="caption" color="muted">Avg Duration</Text>
-          <Text variant="body" color="foreground">{service.avgDurationFormatted}</Text>
+          <Text variant="caption" color="muted">
+            Avg Duration
+          </Text>
+          <Text variant="body" color="foreground">
+            {service.avgDurationFormatted}
+          </Text>
         </Box>
         <Box flexDirection="column" gap="xs">
-          <Text variant="caption" color="muted">Cache Hits</Text>
-          <Text variant="body" color="foreground">{service.cacheHitCount}</Text>
+          <Text variant="caption" color="muted">
+            Cache Hits
+          </Text>
+          <Text variant="body" color="foreground">
+            {service.cacheHitCount}
+          </Text>
         </Box>
         <Box flexDirection="column" gap="xs">
-          <Text variant="caption" color="muted">Cache Rate</Text>
-          <Text variant="body" color="foreground">{(service.cacheHitRate * 100).toFixed(1)}%</Text>
+          <Text variant="caption" color="muted">
+            Cache Rate
+          </Text>
+          <Text variant="body" color="foreground">
+            {(service.cacheHitRate * 100).toFixed(1)}%
+          </Text>
         </Box>
       </Box>
 
       {service.lastResolved && (
         <Box flexDirection="row" gap="sm">
-          <Text variant="caption" color="muted">Last resolved:</Text>
-          <Text variant="caption" color="foreground">{service.lastResolved}</Text>
+          <Text variant="caption" color="muted">
+            Last resolved:
+          </Text>
+          <Text variant="caption" color="foreground">
+            {service.lastResolved}
+          </Text>
         </Box>
       )}
     </Box>
@@ -282,13 +314,7 @@ function ScopeTreeItem({ scope, onSelect, onToggle }: ScopeTreeItemProps): React
   };
 
   return (
-    <Box
-      flexDirection="row"
-      alignItems="center"
-      padding="xs"
-      gap="xs"
-      style={indentStyle}
-    >
+    <Box flexDirection="row" alignItems="center" padding="xs" gap="xs" style={indentStyle}>
       {scope.childIds.length > 0 && (
         <Box {...(onToggle ? { onClick: onToggle } : {})}>
           <Icon
@@ -298,9 +324,7 @@ function ScopeTreeItem({ scope, onSelect, onToggle }: ScopeTreeItemProps): React
           />
         </Box>
       )}
-      {scope.childIds.length === 0 && (
-        <Box style={{ width: "16px" }} />
-      )}
+      {scope.childIds.length === 0 && <Box style={{ width: "16px" }} />}
       <Box
         flexDirection="row"
         alignItems="center"
@@ -312,10 +336,7 @@ function ScopeTreeItem({ scope, onSelect, onToggle }: ScopeTreeItemProps): React
           size="sm"
           color={scope.isSelected ? "accent" : scope.isActive ? "success" : "muted"}
         />
-        <Text
-          variant="code"
-          color={scope.isSelected ? "accent" : "foreground"}
-        >
+        <Text variant="code" color={scope.isSelected ? "accent" : "foreground"}>
           {scope.name}
         </Text>
         <Text variant="caption" color="muted">
@@ -341,7 +362,11 @@ interface ScopeHierarchySectionProps {
   readonly onScopeToggle?: ((scopeId: string) => void) | undefined;
 }
 
-function ScopeHierarchySection({ scopeTree, onScopeSelect, onScopeToggle }: ScopeHierarchySectionProps): React.ReactElement {
+function ScopeHierarchySection({
+  scopeTree,
+  onScopeSelect,
+  onScopeToggle,
+}: ScopeHierarchySectionProps): React.ReactElement {
   const { Box, Text, Icon } = usePrimitives();
 
   if (scopeTree.length === 0) {
@@ -407,7 +432,11 @@ interface ScopeDetailSectionProps {
   readonly onServiceSelect?: ((portName: string) => void) | undefined;
 }
 
-function ScopeDetailSection({ scope, scopeServices, onServiceSelect }: ScopeDetailSectionProps): React.ReactElement {
+function ScopeDetailSection({
+  scope,
+  scopeServices,
+  onServiceSelect,
+}: ScopeDetailSectionProps): React.ReactElement {
   const { Box, Text, Icon, Divider } = usePrimitives();
 
   return (
@@ -423,44 +452,68 @@ function ScopeDetailSection({ scope, scopeServices, onServiceSelect }: ScopeDeta
           {scope.name}
         </Text>
         {!scope.isActive && (
-          <Text variant="caption" color="error">(disposed)</Text>
+          <Text variant="caption" color="error">
+            (disposed)
+          </Text>
         )}
       </Box>
 
       {/* Scope metadata */}
       <Box flexDirection="row" gap="lg">
         <Box flexDirection="column" gap="xs">
-          <Text variant="caption" color="muted">Status</Text>
+          <Text variant="caption" color="muted">
+            Status
+          </Text>
           <Text variant="body" color={scope.isActive ? "success" : "error"}>
             {scope.isActive ? "Active" : "Disposed"}
           </Text>
         </Box>
         <Box flexDirection="column" gap="xs">
-          <Text variant="caption" color="muted">Services</Text>
-          <Text variant="body" color="foreground">{scope.resolvedCount}</Text>
+          <Text variant="caption" color="muted">
+            Services
+          </Text>
+          <Text variant="body" color="foreground">
+            {scope.resolvedCount}
+          </Text>
         </Box>
         <Box flexDirection="column" gap="xs">
-          <Text variant="caption" color="muted">Depth</Text>
-          <Text variant="body" color="foreground">{scope.depth}</Text>
+          <Text variant="caption" color="muted">
+            Depth
+          </Text>
+          <Text variant="body" color="foreground">
+            {scope.depth}
+          </Text>
         </Box>
       </Box>
 
       <Box flexDirection="row" gap="sm">
-        <Text variant="caption" color="muted">Created:</Text>
-        <Text variant="caption" color="foreground">{scope.createdAt}</Text>
+        <Text variant="caption" color="muted">
+          Created:
+        </Text>
+        <Text variant="caption" color="foreground">
+          {scope.createdAt}
+        </Text>
       </Box>
 
       {scope.parentId && (
         <Box flexDirection="row" gap="sm">
-          <Text variant="caption" color="muted">Parent:</Text>
-          <Text variant="caption" color="foreground">{scope.parentId}</Text>
+          <Text variant="caption" color="muted">
+            Parent:
+          </Text>
+          <Text variant="caption" color="foreground">
+            {scope.parentId}
+          </Text>
         </Box>
       )}
 
       {scope.childIds.length > 0 && (
         <Box flexDirection="row" gap="sm">
-          <Text variant="caption" color="muted">Children:</Text>
-          <Text variant="caption" color="foreground">{scope.childIds.join(", ")}</Text>
+          <Text variant="caption" color="muted">
+            Children:
+          </Text>
+          <Text variant="caption" color="foreground">
+            {scope.childIds.join(", ")}
+          </Text>
         </Box>
       )}
 
@@ -617,7 +670,7 @@ export function InspectorView({
                     No dependencies
                   </Text>
                 ) : (
-                  viewModel.dependencies.map((dep) => (
+                  viewModel.dependencies.map(dep => (
                     <DependencyItem
                       key={dep.portName}
                       dependency={dep}
@@ -656,7 +709,7 @@ export function InspectorView({
                     No dependents
                   </Text>
                 ) : (
-                  viewModel.dependents.map((dep) => (
+                  viewModel.dependents.map(dep => (
                     <DependencyItem
                       key={dep.portName}
                       dependency={dep}

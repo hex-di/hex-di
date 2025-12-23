@@ -59,26 +59,20 @@ export class InspectorPresenter {
       ? this.getServiceInfo(this.selectedServicePortName)
       : null;
 
-    const dependencies = service
-      ? this.getDependencies(this.selectedServicePortName!)
-      : [];
+    const dependencies = service ? this.getDependencies(this.selectedServicePortName!) : [];
 
-    const dependents = service
-      ? this.getDependents(this.selectedServicePortName!)
-      : [];
+    const dependents = service ? this.getDependents(this.selectedServicePortName!) : [];
 
     const snapshot = this.dataSource.getContainerSnapshot();
-    const scope = this.selectedScopeId && snapshot
-      ? this.getScopeInfo(this.selectedScopeId, snapshot.scopes)
-      : null;
+    const scope =
+      this.selectedScopeId && snapshot
+        ? this.getScopeInfo(this.selectedScopeId, snapshot.scopes)
+        : null;
 
-    const scopeServices = scope && snapshot
-      ? this.getScopeServices(this.selectedScopeId!, snapshot.scopes)
-      : [];
+    const scopeServices =
+      scope && snapshot ? this.getScopeServices(this.selectedScopeId!, snapshot.scopes) : [];
 
-    const scopeTree = snapshot
-      ? this.buildScopeTree(snapshot.scopes)
-      : [];
+    const scopeTree = snapshot ? this.buildScopeTree(snapshot.scopes) : [];
 
     return Object.freeze({
       target: this.target,
@@ -277,11 +271,14 @@ export class InspectorPresenter {
     // Transitive dependencies (BFS)
     const queue = [...direct].map(id => ({ id, depth: 1 }));
     while (queue.length > 0) {
-      const { id, depth } = queue.shift()!;
+      const item = queue.shift();
+      if (item === undefined) break;
+      const { id, depth } = item;
       graph.edges
         .filter(e => e.from === id)
         .forEach(e => {
-          if (!all.has(e.to) || all.get(e.to)! > depth) {
+          const existingDepth = all.get(e.to);
+          if (existingDepth === undefined || existingDepth > depth) {
             all.set(e.to, depth);
             queue.push({ id: e.to, depth: depth + 1 });
           }
@@ -318,11 +315,14 @@ export class InspectorPresenter {
     // Transitive dependents (BFS)
     const queue = [...direct].map(id => ({ id, depth: 1 }));
     while (queue.length > 0) {
-      const { id, depth } = queue.shift()!;
+      const item = queue.shift();
+      if (item === undefined) break;
+      const { id, depth } = item;
       graph.edges
         .filter(e => e.to === id)
         .forEach(e => {
-          if (!all.has(e.from) || all.get(e.from)! > depth) {
+          const existingDepth = all.get(e.from);
+          if (existingDepth === undefined || existingDepth > depth) {
             all.set(e.from, depth);
             queue.push({ id: e.from, depth: depth + 1 });
           }
@@ -403,9 +403,11 @@ export class InspectorPresenter {
     let depth = 0;
     let current = scopes.find(s => s.id === scopeId);
 
-    while (current?.parentId) {
+    // Use != null to check both null and undefined (root scopes have no parent)
+    while (current != null && current.parentId != null) {
       depth++;
-      current = scopes.find(s => s.id === current!.parentId);
+      const parentId = current.parentId;
+      current = scopes.find(s => s.id === parentId);
     }
 
     return depth;

@@ -10,11 +10,7 @@
 
 import React from "react";
 import type { DiffViewProps } from "../ports/render-primitives.port.js";
-import {
-  TUIText,
-  TUISpan,
-  TUIStrong,
-} from "./opentui-elements.js";
+import { TUIText, TUISpan, TUIStrong } from "./opentui-elements.js";
 import { TUIStyleSystem } from "./primitives.js";
 
 /**
@@ -24,7 +20,6 @@ import { TUIStyleSystem } from "./primitives.js";
  */
 export function DiffView({
   viewModel,
-  onServiceSelect,
   showAdditions = true,
   showRemovals = true,
   showChanges = true,
@@ -34,9 +29,7 @@ export function DiffView({
       <box paddingTop={2} paddingBottom={2} paddingLeft={2} paddingRight={2}>
         <TUIText>
           <TUISpan fg={TUIStyleSystem.getColor("muted")}>
-            {!viewModel.isActive
-              ? "Select two snapshots to compare"
-              : "No data to compare"}
+            {!viewModel.isActive ? "Select two snapshots to compare" : "No data to compare"}
           </TUISpan>
         </TUIText>
       </box>
@@ -58,18 +51,26 @@ export function DiffView({
       {/* Summary Header */}
       <box flexDirection="row" gap={2} paddingBottom={1}>
         <box flexDirection="column">
-          <TUIText><TUIStrong>{viewModel.leftSnapshot.label}</TUIStrong></TUIText>
           <TUIText>
-            <TUISpan fg={TUIStyleSystem.getColor("muted")}>{viewModel.leftSnapshot.serviceCount} services</TUISpan>
+            <TUIStrong>{viewModel.leftSnapshot.label}</TUIStrong>
+          </TUIText>
+          <TUIText>
+            <TUISpan fg={TUIStyleSystem.getColor("muted")}>
+              {viewModel.leftSnapshot.serviceCount} services
+            </TUISpan>
           </TUIText>
         </box>
         <TUIText>
           <TUISpan fg={TUIStyleSystem.getColor("muted")}>→</TUISpan>
         </TUIText>
         <box flexDirection="column">
-          <TUIText><TUIStrong>{viewModel.rightSnapshot.label}</TUIStrong></TUIText>
           <TUIText>
-            <TUISpan fg={TUIStyleSystem.getColor("muted")}>{viewModel.rightSnapshot.serviceCount} services</TUISpan>
+            <TUIStrong>{viewModel.rightSnapshot.label}</TUIStrong>
+          </TUIText>
+          <TUIText>
+            <TUISpan fg={TUIStyleSystem.getColor("muted")}>
+              {viewModel.rightSnapshot.serviceCount} services
+            </TUISpan>
           </TUIText>
         </box>
       </box>
@@ -82,7 +83,7 @@ export function DiffView({
               <TUIStrong>✓ Added ({viewModel.addedServices.length})</TUIStrong>
             </TUISpan>
           </TUIText>
-          {viewModel.addedServices.map((portName) => (
+          {viewModel.addedServices.map(portName => (
             <TUIText key={portName}>
               <TUISpan fg={TUIStyleSystem.getColor("success")}>+ {portName}</TUISpan>
             </TUIText>
@@ -98,7 +99,7 @@ export function DiffView({
               <TUIStrong>✗ Removed ({viewModel.removedServices.length})</TUIStrong>
             </TUISpan>
           </TUIText>
-          {viewModel.removedServices.map((portName) => (
+          {viewModel.removedServices.map(portName => (
             <TUIText key={portName}>
               <TUISpan fg={TUIStyleSystem.getColor("error")}>- {portName}</TUISpan>
             </TUIText>
@@ -114,7 +115,7 @@ export function DiffView({
               <TUIStrong>~ Changed ({viewModel.changedServices.length})</TUIStrong>
             </TUISpan>
           </TUIText>
-          {viewModel.changedServices.map((diff) => (
+          {viewModel.changedServices.map(diff => (
             <box key={diff.portName} flexDirection="column">
               <TUIText>
                 <TUISpan fg={TUIStyleSystem.getColor("warning")}>~ {diff.portName}</TUISpan>

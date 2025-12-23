@@ -14,7 +14,6 @@ import type {
   PanelSize,
   PanelPosition,
 } from "../view-models/index.js";
-import { createEmptyPanelViewModel } from "../view-models/index.js";
 
 // =============================================================================
 // Constants

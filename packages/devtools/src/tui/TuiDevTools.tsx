@@ -108,7 +108,6 @@ export function TuiDevTools({
   url,
   onTabChange,
   onExit,
-  onNavigate,
   children,
 }: TuiDevToolsProps): React.ReactElement {
   // Handle undefined callbacks for DevToolsPanel
@@ -143,21 +142,12 @@ export function TuiDevTools({
         </box>
 
         {/* Main DevTools Panel */}
-        <DevToolsPanel
-          viewModel={viewModel}
-          onTabChange={handleTabChange}
-          onClose={handleClose}
-        >
+        <DevToolsPanel viewModel={viewModel} onTabChange={handleTabChange} onClose={handleClose}>
           {children}
         </DevToolsPanel>
 
         {/* Footer with keyboard shortcuts */}
-        <box
-          flexDirection="row"
-          justifyContent="center"
-          paddingTop={0}
-          paddingBottom={0}
-        >
+        <box flexDirection="row" justifyContent="center" paddingTop={0} paddingBottom={0}>
           <TUIText>
             <TUISpan fg={TUIPrimitives.styleSystem.getColor("muted")}>
               [1-4] Select tab | [N]ext [P]rev tab | [Q] Quit

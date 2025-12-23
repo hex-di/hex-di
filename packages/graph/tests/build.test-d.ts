@@ -103,7 +103,7 @@ const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort, DatabasePort],
   lifetime: "scoped",
-  factory: () => ({ getUser: async (id) => ({ id, name: "test" }) }),
+  factory: () => ({ getUser: async id => ({ id, name: "test" }) }),
 });
 
 // =============================================================================
@@ -131,11 +131,10 @@ describe("build() callable when all deps satisfied", () => {
 
     // Should return Graph with all ports
     type BuildResult = typeof graph;
-    type IsGraph = BuildResult extends Graph<
-      LoggerPortType | DatabasePortType | UserServicePortType
-    >
-      ? true
-      : false;
+    type IsGraph =
+      BuildResult extends Graph<LoggerPortType | DatabasePortType | UserServicePortType>
+        ? true
+        : false;
     expectTypeOf<IsGraph>().toEqualTypeOf<true>();
   });
 
@@ -194,9 +193,7 @@ describe("build() blocked with type error when deps missing", () => {
 
     // The required argument should be the MissingDependencyError
     type ArgType = BuildParams[0];
-    type IsError = ArgType extends MissingDependencyError<ConfigPortType>
-      ? true
-      : false;
+    type IsError = ArgType extends MissingDependencyError<ConfigPortType> ? true : false;
     expectTypeOf<IsError>().toEqualTypeOf<true>();
   });
 
@@ -207,27 +204,20 @@ describe("build() blocked with type error when deps missing", () => {
     type ArgType = BuildParams[0];
 
     // Should require MissingDependencyError with both missing ports
-    type IsError = ArgType extends MissingDependencyError<
-      LoggerPortType | DatabasePortType
-    >
-      ? true
-      : false;
+    type IsError =
+      ArgType extends MissingDependencyError<LoggerPortType | DatabasePortType> ? true : false;
     expectTypeOf<IsError>().toEqualTypeOf<true>();
   });
 
   it("requires error argument when some but not all deps provided", () => {
-    const builder = GraphBuilder.create()
-      .provide(UserServiceAdapter)
-      .provide(LoggerAdapter);
+    const builder = GraphBuilder.create().provide(UserServiceAdapter).provide(LoggerAdapter);
     // Database is still missing
 
     type BuildParams = Parameters<typeof builder.build>;
     type ArgType = BuildParams[0];
 
     // Should require error with just Database missing
-    type IsError = ArgType extends MissingDependencyError<DatabasePortType>
-      ? true
-      : false;
+    type IsError = ArgType extends MissingDependencyError<DatabasePortType> ? true : false;
     expectTypeOf<IsError>().toEqualTypeOf<true>();
   });
 
@@ -279,9 +269,7 @@ describe("error message shows missing port names", () => {
     type Message = ArgType extends { __message: infer M } ? M : never;
 
     // Verify the message starts with the expected prefix
-    type HasPrefix = Message extends `Missing dependencies: ${string}`
-      ? true
-      : false;
+    type HasPrefix = Message extends `Missing dependencies: ${string}` ? true : false;
     expectTypeOf<HasPrefix>().toEqualTypeOf<true>();
   });
 
@@ -292,9 +280,7 @@ describe("error message shows missing port names", () => {
     type ArgType = BuildParams[0];
     type MissingPorts = ArgType extends { __missing: infer M } ? M : never;
 
-    expectTypeOf<MissingPorts>().toEqualTypeOf<
-      LoggerPortType | DatabasePortType
-    >();
+    expectTypeOf<MissingPorts>().toEqualTypeOf<LoggerPortType | DatabasePortType>();
   });
 });
 
@@ -331,9 +317,7 @@ describe("empty graph (no adapters) builds successfully", () => {
     type BuildResult = typeof graph;
 
     // Should have adapters property
-    type HasAdapters = BuildResult extends { adapters: readonly unknown[] }
-      ? true
-      : false;
+    type HasAdapters = BuildResult extends { adapters: readonly unknown[] } ? true : false;
     expectTypeOf<HasAdapters>().toEqualTypeOf<true>();
   });
 
@@ -343,8 +327,8 @@ describe("empty graph (no adapters) builds successfully", () => {
 
     type BuildResult = typeof graph;
 
-    // Should have __provides property (even if never) - optional because phantom types have no runtime value
-    type ProvidesType = BuildResult extends { __provides?: infer P } ? P : unknown;
+    // Should have __provides property (even if never) - phantom types are used for compile-time tracking
+    type ProvidesType = BuildResult extends { __provides: infer P } ? P : unknown;
     expectTypeOf<ProvidesType>().toBeNever();
   });
 });
@@ -355,9 +339,7 @@ describe("empty graph (no adapters) builds successfully", () => {
 
 describe("build() returns Graph with correct type information", () => {
   it("Graph has TProvides matching provided ports", () => {
-    const builder = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapter);
+    const builder = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter);
 
     const graph = builder.build();
 
@@ -376,7 +358,7 @@ describe("build() returns Graph with correct type information", () => {
     const graph = builder.build();
 
     // Use conditional type inference since __provides is optional (phantom type)
-    type ProvidesType = (typeof graph) extends { __provides?: infer P } ? P : never;
+    type ProvidesType = typeof graph extends { __provides: infer P } ? P : never;
 
     expectTypeOf<ProvidesType>().toEqualTypeOf<
       LoggerPortType | DatabasePortType | UserServicePortType
@@ -405,15 +387,11 @@ describe("build() returns Graph with correct type information", () => {
     type ValidResult = ReturnType<typeof validBuilder.build>;
 
     // Valid result should have adapters (Graph has adapters)
-    type HasAdapters = ValidResult extends { adapters: readonly unknown[] }
-      ? true
-      : false;
+    type HasAdapters = ValidResult extends { adapters: readonly unknown[] } ? true : false;
     expectTypeOf<HasAdapters>().toEqualTypeOf<true>();
 
     // Valid result should NOT have error brand
-    type ValidHasErrorBrand = ValidResult extends { __errorBrand: string }
-      ? true
-      : false;
+    type ValidHasErrorBrand = ValidResult extends { __errorBrand: string } ? true : false;
     expectTypeOf<ValidHasErrorBrand>().toEqualTypeOf<false>();
 
     // Invalid builder requires error argument - check parameter has error brand
@@ -450,7 +428,7 @@ describe("built graph is immutable (type-level readonly)", () => {
 
     // Use conditional type inference to extract the phantom type parameter
     // Direct property access returns T | undefined since __provides is optional
-    type Provides = TestGraph extends { __provides?: infer P } ? P : never;
+    type Provides = TestGraph extends { __provides: infer P } ? P : never;
     expectTypeOf<Provides>().toEqualTypeOf<LoggerPortType | DatabasePortType>();
   });
 
@@ -474,23 +452,21 @@ describe("built graph is immutable (type-level readonly)", () => {
 
 describe("built graph contains all registered adapters", () => {
   it("graph adapters array has correct element type", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
 
     type AdaptersType = (typeof graph)["adapters"];
     type ElementType = AdaptersType[number];
 
     // Element type should be compatible with Adapter
-    type IsAdapter = ElementType extends Adapter<
-      Port<unknown, string>,
-      Port<unknown, string> | never,
-      Lifetime,
-      FactoryKind
-    >
-      ? true
-      : false;
+    type IsAdapter =
+      ElementType extends Adapter<
+        Port<unknown, string>,
+        Port<unknown, string> | never,
+        Lifetime,
+        FactoryKind
+      >
+        ? true
+        : false;
     expectTypeOf<IsAdapter>().toEqualTypeOf<true>();
   });
 
@@ -504,15 +480,11 @@ describe("built graph contains all registered adapters", () => {
       .build();
 
     // Use conditional type inference since __provides is optional (phantom type)
-    type ProvidesType = (typeof graph) extends { __provides?: infer P } ? P : never;
+    type ProvidesType = typeof graph extends { __provides: infer P } ? P : never;
 
     // All 5 ports should be tracked
     expectTypeOf<ProvidesType>().toEqualTypeOf<
-      | LoggerPortType
-      | DatabasePortType
-      | ConfigPortType
-      | CachePortType
-      | UserServicePortType
+      LoggerPortType | DatabasePortType | ConfigPortType | CachePortType | UserServicePortType
     >();
   });
 });
@@ -530,12 +502,8 @@ describe("error appears at .build() call site", () => {
     type ErrorArg = BuildParams[0];
 
     // Error should have all diagnostic properties
-    type HasErrorBrand = ErrorArg extends { __errorBrand: string }
-      ? true
-      : false;
-    type HasMessage = ErrorArg extends { __message: string }
-      ? true
-      : false;
+    type HasErrorBrand = ErrorArg extends { __errorBrand: string } ? true : false;
+    type HasMessage = ErrorArg extends { __message: string } ? true : false;
     type HasMissing = ErrorArg extends {
       __missing: Port<unknown, string>;
     }

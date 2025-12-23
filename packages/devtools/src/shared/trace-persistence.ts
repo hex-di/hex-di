@@ -168,30 +168,32 @@ export class TUITracePersistence implements TracePersistenceContract {
   }
 
   save(traces: readonly TraceEntry[]): void {
-    if (!this.isAvailable()) {
+    const fs = this.fs;
+    if (fs === null || fs === undefined) {
       return;
     }
 
     try {
       const tracesToSave = traces.slice(-this.maxTraces);
       const serialized = JSON.stringify(tracesToSave, null, 2);
-      this.fs!.writeFileSync(this.filePath, serialized);
+      fs.writeFileSync(this.filePath, serialized);
     } catch (error) {
       console.warn("[HexDI DevTools] Failed to persist traces to file:", error);
     }
   }
 
   load(): TraceEntry[] {
-    if (!this.isAvailable()) {
+    const fs = this.fs;
+    if (fs === null || fs === undefined) {
       return [];
     }
 
     try {
-      if (!this.fs!.existsSync(this.filePath)) {
+      if (!fs.existsSync(this.filePath)) {
         return [];
       }
 
-      const content = this.fs!.readFileSync(this.filePath, "utf-8");
+      const content = fs.readFileSync(this.filePath, "utf-8");
       const parsed = JSON.parse(content);
 
       if (!Array.isArray(parsed)) {
@@ -206,13 +208,14 @@ export class TUITracePersistence implements TracePersistenceContract {
   }
 
   clear(): void {
-    if (!this.isAvailable()) {
+    const fs = this.fs;
+    if (fs === null || fs === undefined) {
       return;
     }
 
     try {
-      if (this.fs!.existsSync(this.filePath)) {
-        this.fs!.unlinkSync(this.filePath);
+      if (fs.existsSync(this.filePath)) {
+        fs.unlinkSync(this.filePath);
       }
     } catch (error) {
       console.warn("[HexDI DevTools] Failed to clear trace file:", error);
@@ -317,17 +320,19 @@ function isValidTraceEntry(entry: unknown): entry is TraceEntry {
   const e = entry as Record<string, unknown>;
 
   return (
-    typeof e['id'] === "string" &&
-    typeof e['portName'] === "string" &&
-    (e['lifetime'] === "singleton" || e['lifetime'] === "scoped" || e['lifetime'] === "transient") &&
-    typeof e['startTime'] === "number" &&
-    typeof e['duration'] === "number" &&
-    typeof e['isCacheHit'] === "boolean" &&
-    (e['parentId'] === null || typeof e['parentId'] === "string") &&
-    Array.isArray(e['childIds']) &&
-    (e['scopeId'] === null || typeof e['scopeId'] === "string") &&
-    typeof e['order'] === "number" &&
-    typeof e['isPinned'] === "boolean"
+    typeof e["id"] === "string" &&
+    typeof e["portName"] === "string" &&
+    (e["lifetime"] === "singleton" ||
+      e["lifetime"] === "scoped" ||
+      e["lifetime"] === "transient") &&
+    typeof e["startTime"] === "number" &&
+    typeof e["duration"] === "number" &&
+    typeof e["isCacheHit"] === "boolean" &&
+    (e["parentId"] === null || typeof e["parentId"] === "string") &&
+    Array.isArray(e["childIds"]) &&
+    (e["scopeId"] === null || typeof e["scopeId"] === "string") &&
+    typeof e["order"] === "number" &&
+    typeof e["isPinned"] === "boolean"
   );
 }
 
@@ -338,9 +343,10 @@ function isValidTraceEntry(entry: unknown): entry is TraceEntry {
 /**
  * Creates a trace persistence service for the browser environment.
  */
-export function createBrowserTracePersistence(
-  options?: { storageKey?: string; maxTraces?: number }
-): TracePersistenceService {
+export function createBrowserTracePersistence(options?: {
+  storageKey?: string;
+  maxTraces?: number;
+}): TracePersistenceService {
   return new TracePersistenceService(new BrowserTracePersistence(options));
 }
 

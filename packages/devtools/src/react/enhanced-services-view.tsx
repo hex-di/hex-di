@@ -21,11 +21,7 @@ import type { Lifetime } from "@hex-di/graph";
 import type { TracingAPI } from "@hex-di/devtools-core";
 import type { ExportedGraph } from "@hex-di/devtools-core";
 import type { ServiceInfo } from "./resolved-services.js";
-import {
-  enrichServicesWithRelations,
-  buildDependencyTree,
-  type ServiceWithRelations,
-} from "./services-tree.js";
+import { enrichServicesWithRelations, buildDependencyTree } from "./services-tree.js";
 import { EnhancedServiceItem } from "./enhanced-service-item.js";
 import { ServiceDependencyTree } from "./service-dependency-tree.js";
 import { serviceListStyles } from "./styles.js";
@@ -107,8 +103,7 @@ const viewStyles: {
     borderRadius: "4px",
     color: "var(--hex-devtools-text-muted, #a6adc8)",
     cursor: "pointer",
-    transition:
-      "background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease",
+    transition: "background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease",
   },
   viewModeButtonActive: {
     backgroundColor: "var(--hex-devtools-accent, #89b4fa)",
@@ -138,11 +133,7 @@ interface ServiceSearchProps {
   readonly onClear: () => void;
 }
 
-function ServiceSearch({
-  value,
-  onChange,
-  onClear,
-}: ServiceSearchProps): ReactElement {
+function ServiceSearch({ value, onChange, onClear }: ServiceSearchProps): ReactElement {
   return (
     <div style={serviceListStyles.searchContainer}>
       <input
@@ -150,7 +141,7 @@ function ServiceSearch({
         type="text"
         placeholder="Search services..."
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={e => onChange(e.target.value)}
         style={serviceListStyles.searchInput}
         aria-label="Search services"
       />
@@ -238,9 +229,7 @@ function ServiceFiltersComponent({
         <button
           data-testid="service-filter-resolved"
           style={getFilterButtonStyle(filters.resolved === true)}
-          onClick={() =>
-            handleResolvedFilter(filters.resolved === true ? null : true)
-          }
+          onClick={() => handleResolvedFilter(filters.resolved === true ? null : true)}
           type="button"
           aria-pressed={filters.resolved === true}
         >
@@ -249,9 +238,7 @@ function ServiceFiltersComponent({
         <button
           data-testid="service-filter-pending"
           style={getFilterButtonStyle(filters.resolved === false)}
-          onClick={() =>
-            handleResolvedFilter(filters.resolved === false ? null : false)
-          }
+          onClick={() => handleResolvedFilter(filters.resolved === false ? null : false)}
           type="button"
           aria-pressed={filters.resolved === false}
         >
@@ -267,10 +254,7 @@ interface ViewModeSelectorProps {
   readonly onViewModeChange: (mode: ServicesViewMode) => void;
 }
 
-function ViewModeSelector({
-  viewMode,
-  onViewModeChange,
-}: ViewModeSelectorProps): ReactElement {
+function ViewModeSelector({ viewMode, onViewModeChange }: ViewModeSelectorProps): ReactElement {
   const getButtonStyle = (mode: ServicesViewMode): CSSProperties => ({
     ...viewStyles.viewModeButton,
     ...(viewMode === mode ? viewStyles.viewModeButtonActive : {}),
@@ -378,7 +362,7 @@ export function EnhancedServicesView({
 
   // Filter services based on search and filters
   const filteredServices = useMemo(() => {
-    return enrichedServices.filter((service) => {
+    return enrichedServices.filter(service => {
       // Search filter (case-insensitive partial match)
       if (debouncedQuery.length > 0) {
         const query = debouncedQuery.toLowerCase();
@@ -394,8 +378,7 @@ export function EnhancedServicesView({
 
       // Resolution status filter
       if (filters.resolved !== null) {
-        const isEffectivelyResolved =
-          service.isResolved && !service.isScopeRequired;
+        const isEffectivelyResolved = service.isResolved && !service.isScopeRequired;
         if (filters.resolved !== isEffectivelyResolved) {
           return false;
         }
@@ -408,7 +391,7 @@ export function EnhancedServicesView({
   // Build tree from filtered services
   const treeNodes = useMemo(() => {
     // Convert back to ServiceInfo for tree building
-    const serviceInfos: ServiceInfo[] = filteredServices.map((s) => ({
+    const serviceInfos: ServiceInfo[] = filteredServices.map(s => ({
       portName: s.portName,
       lifetime: s.lifetime,
       isResolved: s.isResolved,
@@ -419,10 +402,9 @@ export function EnhancedServicesView({
     }));
 
     // Filter edges to only include filtered services
-    const filteredPortNames = new Set(filteredServices.map((s) => s.portName));
+    const filteredPortNames = new Set(filteredServices.map(s => s.portName));
     const filteredEdges = exportedGraph.edges.filter(
-      (edge) =>
-        filteredPortNames.has(edge.from) && filteredPortNames.has(edge.to)
+      edge => filteredPortNames.has(edge.from) && filteredPortNames.has(edge.to)
     );
 
     return buildDependencyTree(serviceInfos, filteredEdges);
@@ -435,23 +417,16 @@ export function EnhancedServicesView({
   }, []);
 
   // Handle dependency click in list view
-  const handleDependencyClick = useCallback(
-    (portName: string) => {
-      // Set search to the dependency name
-      setSearchQuery(portName);
-      setDebouncedQuery(portName);
-    },
-    []
-  );
+  const handleDependencyClick = useCallback((portName: string) => {
+    // Set search to the dependency name
+    setSearchQuery(portName);
+    setDebouncedQuery(portName);
+  }, []);
 
   return (
     <div data-testid="enhanced-services-view" style={viewStyles.container}>
       {/* Search */}
-      <ServiceSearch
-        value={searchQuery}
-        onChange={setSearchQuery}
-        onClear={handleClearSearch}
-      />
+      <ServiceSearch value={searchQuery} onChange={setSearchQuery} onClear={handleClearSearch} />
 
       {/* Filters */}
       <ServiceFiltersComponent filters={filters} onFiltersChange={setFilters} />
@@ -468,7 +443,7 @@ export function EnhancedServicesView({
         </div>
       ) : viewMode === "list" ? (
         <div style={viewStyles.listContainer}>
-          {filteredServices.map((service) => (
+          {filteredServices.map(service => (
             <EnhancedServiceItem
               key={service.portName}
               service={service}

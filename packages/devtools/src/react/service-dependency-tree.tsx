@@ -19,11 +19,7 @@ import React, {
 } from "react";
 import type { TracingAPI } from "@hex-di/devtools-core";
 import type { ServiceTreeNode } from "./services-tree.js";
-import {
-  getVisibleServiceIds,
-  getAllExpandableIds,
-  findParentServiceId,
-} from "./services-tree.js";
+import { getVisibleServiceIds, getAllExpandableIds, findParentServiceId } from "./services-tree.js";
 import { getLifetimeBadgeStyle } from "./styles.js";
 import { useServicePerformance } from "./service-performance.js";
 
@@ -199,7 +195,7 @@ function TreeNodeComponent({
   onSelect,
   onFocus,
 }: TreeNodeComponentProps): ReactElement {
-  const { service, children, depth } = node;
+  const { service, children } = node;
   const hasChildren = children.length > 0;
   const isExpanded = expandedIds.has(service.portName);
   const isFocused = focusedId === service.portName;
@@ -235,7 +231,7 @@ function TreeNodeComponent({
 
     const avg = performance.averageDuration;
     let bgColor = "var(--hex-devtools-resolved, #a6e3a1)";
-    let textColor = "#1e1e2e";
+    const textColor = "#1e1e2e";
 
     if (avg >= 50) {
       bgColor = "var(--hex-devtools-slow, #f38ba8)";
@@ -258,10 +254,7 @@ function TreeNodeComponent({
   };
 
   return (
-    <div
-      data-testid={`tree-node-${service.portName}`}
-      style={treeStyles.nodeContainer}
-    >
+    <div data-testid={`tree-node-${service.portName}`} style={treeStyles.nodeContainer}>
       {/* Node Content Row */}
       <div
         data-testid={`tree-node-content-${service.portName}`}
@@ -313,9 +306,7 @@ function TreeNodeComponent({
         )}
 
         {/* Lifetime Badge */}
-        <span style={getLifetimeBadgeStyle(service.lifetime)}>
-          {service.lifetime}
-        </span>
+        <span style={getLifetimeBadgeStyle(service.lifetime)}>{service.lifetime}</span>
       </div>
 
       {/* Children Container */}
@@ -325,7 +316,7 @@ function TreeNodeComponent({
           style={treeStyles.childrenContainer}
           role="group"
         >
-          {children.map((child) => (
+          {children.map(child => (
             <TreeNodeComponent
               key={child.service.portName}
               node={child}
@@ -428,18 +419,14 @@ export function ServiceDependencyTree({
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   // Focused node ID for keyboard navigation
-  const firstNodeId =
-    treeNodes.length > 0 ? treeNodes[0]?.service.portName : null;
+  const firstNodeId = treeNodes.length > 0 ? treeNodes[0]?.service.portName : null;
   const [focusedId, setFocusedId] = useState<string | null>(firstNodeId ?? null);
 
   // Ref to the tree container for keyboard event handling
   const treeContainerRef = useRef<HTMLDivElement>(null);
 
   // Get all expandable node IDs
-  const allExpandableIds = useMemo(
-    () => getAllExpandableIds(treeNodes),
-    [treeNodes]
-  );
+  const allExpandableIds = useMemo(() => getAllExpandableIds(treeNodes), [treeNodes]);
 
   // Get visible node IDs for keyboard navigation
   const visibleNodeIds = useMemo(
@@ -462,7 +449,7 @@ export function ServiceDependencyTree({
 
   // Toggle node expand/collapse
   const handleToggle = useCallback((id: string) => {
-    setExpandedIds((prev) => {
+    setExpandedIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
@@ -518,9 +505,7 @@ export function ServiceDependencyTree({
       }
 
       const focusElement = (id: string): void => {
-        const element = document.querySelector(
-          `[data-testid="tree-node-content-${id}"]`
-        );
+        const element = document.querySelector(`[data-testid="tree-node-content-${id}"]`);
         if (element instanceof HTMLElement) {
           element.focus();
         }
@@ -629,14 +614,7 @@ export function ServiceDependencyTree({
           break;
       }
     },
-    [
-      focusedId,
-      visibleNodeIds,
-      expandedIds,
-      allExpandableIds,
-      handleToggle,
-      treeNodes,
-    ]
+    [focusedId, visibleNodeIds, expandedIds, allExpandableIds, handleToggle, treeNodes]
   );
 
   // Empty state
@@ -644,9 +622,7 @@ export function ServiceDependencyTree({
     return (
       <div data-testid="service-dependency-tree" style={treeStyles.container}>
         <div data-testid="tree-empty" style={treeStyles.emptyState}>
-          <div style={{ fontWeight: 500, marginBottom: "8px" }}>
-            No services to display.
-          </div>
+          <div style={{ fontWeight: 500, marginBottom: "8px" }}>No services to display.</div>
           <div style={{ fontSize: "12px", maxWidth: "280px", margin: "0 auto" }}>
             Services will appear here once registered in the graph.
           </div>
@@ -673,7 +649,7 @@ export function ServiceDependencyTree({
       />
 
       {/* Tree Nodes */}
-      {treeNodes.map((node) => (
+      {treeNodes.map(node => (
         <TreeNodeComponent
           key={node.service.portName}
           node={node}
@@ -688,8 +664,8 @@ export function ServiceDependencyTree({
 
       {/* Footer Summary */}
       <div style={treeStyles.footer}>
-        {treeNodes.length} root service{treeNodes.length !== 1 ? "s" : ""} |{" "}
-        {totalCount} total service{totalCount !== 1 ? "s" : ""}
+        {treeNodes.length} root service{treeNodes.length !== 1 ? "s" : ""} | {totalCount} total
+        service{totalCount !== 1 ? "s" : ""}
       </div>
     </div>
   );
