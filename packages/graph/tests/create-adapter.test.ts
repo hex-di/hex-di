@@ -70,7 +70,7 @@ describe("createAdapter function", () => {
       requires: [LoggerPort, DatabasePort],
       lifetime: "scoped",
       factory: () => ({
-        getUser: async (id) => ({ id, name: "test" }),
+        getUser: id => Promise.resolve({ id, name: "test" }),
       }),
     });
 
@@ -118,7 +118,7 @@ describe("createAdapter function", () => {
   });
 
   it("stores factory function correctly", () => {
-    const loggerImpl = { log: (_msg: string) => {} };
+    const loggerImpl = { log: () => {} };
     const factory = () => loggerImpl;
 
     const adapter = createAdapter({
@@ -135,7 +135,7 @@ describe("createAdapter function", () => {
 
   it("factory receives dependencies object", () => {
     const mockLogger: Logger = { log: () => {} };
-    const mockDatabase: Database = { query: async () => ({}) };
+    const mockDatabase: Database = { query: () => Promise.resolve({}) };
 
     let receivedDeps: unknown;
 
@@ -143,10 +143,10 @@ describe("createAdapter function", () => {
       provides: UserServicePort,
       requires: [LoggerPort, DatabasePort],
       lifetime: "scoped",
-      factory: (deps) => {
+      factory: deps => {
         receivedDeps = deps;
         return {
-          getUser: async (id) => ({ id, name: "test" }),
+          getUser: id => Promise.resolve({ id, name: "test" }),
         };
       },
     });

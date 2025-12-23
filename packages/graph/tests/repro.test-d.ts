@@ -1,5 +1,4 @@
-
-import { expectTypeOf, it } from "vitest";
+import { expect, expectTypeOf, it } from "vitest";
 import { createPort, type Port } from "@hex-di/ports";
 import { createAdapter, type InferAdapterProvides, type Adapter } from "../src/index.js";
 
@@ -15,15 +14,18 @@ const LoggerAdapter = createAdapter({
 });
 
 it("minimal port check", () => {
+  expect(LoggerPort).toBeDefined();
   expectTypeOf<LoggerPortType>().toEqualTypeOf<Port<Logger, "Logger">>();
 });
 
 it("adapter provides check", () => {
+  expect(LoggerAdapter).toBeDefined();
   type Provided = InferAdapterProvides<typeof LoggerAdapter>;
   expectTypeOf<Provided>().toEqualTypeOf<LoggerPortType>();
 });
 
 it("adapter type check", () => {
-   type A = typeof LoggerAdapter;
-   expectTypeOf<A>().toMatchTypeOf<Adapter<LoggerPortType, never, "singleton", "sync">>();
+  expect(LoggerAdapter).toBeDefined();
+  type A = typeof LoggerAdapter;
+  expectTypeOf<A>().toMatchTypeOf<Adapter<LoggerPortType, never, "singleton", "sync">>();
 });

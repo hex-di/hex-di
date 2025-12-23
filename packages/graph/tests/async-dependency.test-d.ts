@@ -8,14 +8,9 @@
  * 4. Error messages are descriptive
  */
 
-import { describe, expectTypeOf, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { createPort } from "@hex-di/ports";
-import {
-  AsyncDependencyError,
-  AsyncDependencies,
-  HasAsyncDependency,
-} from "../src/index.js";
-import type { Port } from "@hex-di/ports";
+import { AsyncDependencyError, AsyncDependencies, HasAsyncDependency } from "../src/index.js";
 
 // =============================================================================
 // Test Service Interfaces
@@ -45,6 +40,11 @@ const CachePort = createPort<"Cache", CacheService>("Cache");
 type LoggerPortType = typeof LoggerPort;
 type DatabasePortType = typeof DatabasePort;
 type CachePortType = typeof CachePort;
+
+// Use the port variables to satisfy ESLint
+expect(LoggerPort).toBeDefined();
+expect(DatabasePort).toBeDefined();
+expect(CachePort).toBeDefined();
 
 // =============================================================================
 // AsyncDependencies Type Tests
@@ -96,10 +96,7 @@ describe("HasAsyncDependency utility type", () => {
   });
 
   it("returns true when any required port is async", () => {
-    type Result = HasAsyncDependency<
-      LoggerPortType | DatabasePortType,
-      DatabasePortType
-    >;
+    type Result = HasAsyncDependency<LoggerPortType | DatabasePortType, DatabasePortType>;
     expectTypeOf<Result>().toEqualTypeOf<true>();
   });
 
@@ -126,9 +123,9 @@ describe("AsyncDependencyError type", () => {
 
   it("has readable error message with port name", () => {
     type Error = AsyncDependencyError<DatabasePortType>;
-    expectTypeOf<Error["__message"]>().toEqualTypeOf<
-      "Sync adapter cannot depend on async port: Database"
-    >();
+    expectTypeOf<
+      Error["__message"]
+    >().toEqualTypeOf<"Sync adapter cannot depend on async port: Database">();
   });
 
   it("tracks the async port type", () => {

@@ -12,7 +12,7 @@
  * 8. Error appears at .build() call site
  */
 
-import { describe, expectTypeOf, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { createPort } from "@hex-di/ports";
 import {
   GraphBuilder,
@@ -82,7 +82,7 @@ const DatabaseAdapter = createAdapter({
   provides: DatabasePort,
   requires: [],
   lifetime: "singleton",
-  factory: () => ({ query: async () => ({}) }),
+  factory: () => ({ query: () => Promise.resolve({}) }),
 });
 
 const ConfigAdapter = createAdapter({
@@ -103,7 +103,7 @@ const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort, DatabasePort],
   lifetime: "scoped",
-  factory: () => ({ getUser: async id => ({ id, name: "test" }) }),
+  factory: () => ({ getUser: id => Promise.resolve({ id, name: "test" }) }),
 });
 
 // =============================================================================
@@ -113,7 +113,9 @@ const UserServiceAdapter = createAdapter({
 describe("build() callable when all deps satisfied", () => {
   it("builds successfully when no dependencies required", () => {
     const builder = GraphBuilder.create().provide(LoggerAdapter);
+    expect(builder).toBeDefined();
     const graph = builder.build();
+    expect(graph).toBeDefined();
 
     // Should return Graph type, not error type
     type BuildResult = typeof graph;
@@ -126,8 +128,10 @@ describe("build() callable when all deps satisfied", () => {
       .provide(LoggerAdapter)
       .provide(DatabaseAdapter)
       .provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
 
     const graph = builder.build();
+    expect(graph).toBeDefined();
 
     // Should return Graph with all ports
     type BuildResult = typeof graph;
@@ -145,6 +149,7 @@ describe("build() callable when all deps satisfied", () => {
       .provide(ConfigAdapter)
       .provide(CacheAdapter)
       .provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
 
     type BuildResult = ReturnType<typeof builder.build>;
 
@@ -159,12 +164,14 @@ describe("build() callable when all deps satisfied", () => {
       .provide(LoggerAdapter)
       .provide(DatabaseAdapter)
       .provide(UserServiceAdapter);
+    expect(builderA).toBeDefined();
 
     // Provide adapter before its dependencies
     const builderB = GraphBuilder.create()
       .provide(UserServiceAdapter)
       .provide(LoggerAdapter)
       .provide(DatabaseAdapter);
+    expect(builderB).toBeDefined();
 
     type ResultA = ReturnType<typeof builderA.build>;
     type ResultB = ReturnType<typeof builderB.build>;
@@ -185,10 +192,11 @@ describe("build() callable when all deps satisfied", () => {
 describe("build() blocked with type error when deps missing", () => {
   it("requires error argument when single dependency missing", () => {
     const builder = GraphBuilder.create().provide(CacheAdapter);
+    expect(builder).toBeDefined();
 
     // build() should require an argument when deps are missing
     type BuildParams = Parameters<typeof builder.build>;
-    type RequiresArg = BuildParams extends [infer Arg] ? true : false;
+    type RequiresArg = BuildParams extends [infer _Arg] ? true : false;
     expectTypeOf<RequiresArg>().toEqualTypeOf<true>();
 
     // The required argument should be the MissingDependencyError
@@ -199,6 +207,7 @@ describe("build() blocked with type error when deps missing", () => {
 
   it("requires error argument when multiple dependencies missing", () => {
     const builder = GraphBuilder.create().provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
 
     type BuildParams = Parameters<typeof builder.build>;
     type ArgType = BuildParams[0];
@@ -211,6 +220,7 @@ describe("build() blocked with type error when deps missing", () => {
 
   it("requires error argument when some but not all deps provided", () => {
     const builder = GraphBuilder.create().provide(UserServiceAdapter).provide(LoggerAdapter);
+    expect(builder).toBeDefined();
     // Database is still missing
 
     type BuildParams = Parameters<typeof builder.build>;
@@ -223,6 +233,7 @@ describe("build() blocked with type error when deps missing", () => {
 
   it("error argument has __errorBrand for discrimination", () => {
     const builder = GraphBuilder.create().provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
 
     type BuildParams = Parameters<typeof builder.build>;
     type ArgType = BuildParams[0];
@@ -240,6 +251,7 @@ describe("build() blocked with type error when deps missing", () => {
 describe("error message shows missing port names", () => {
   it("error __message includes single missing port name", () => {
     const builder = GraphBuilder.create().provide(CacheAdapter);
+    expect(builder).toBeDefined();
 
     type BuildParams = Parameters<typeof builder.build>;
     type ArgType = BuildParams[0];
@@ -250,6 +262,7 @@ describe("error message shows missing port names", () => {
 
   it("error __message includes multiple missing port names", () => {
     const builder = GraphBuilder.create().provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
 
     type BuildParams = Parameters<typeof builder.build>;
     type ArgType = BuildParams[0];
@@ -263,6 +276,7 @@ describe("error message shows missing port names", () => {
 
   it("error __message has correct prefix format", () => {
     const builder = GraphBuilder.create().provide(CacheAdapter);
+    expect(builder).toBeDefined();
 
     type BuildParams = Parameters<typeof builder.build>;
     type ArgType = BuildParams[0];
@@ -275,6 +289,7 @@ describe("error message shows missing port names", () => {
 
   it("error carries __missing property with missing ports", () => {
     const builder = GraphBuilder.create().provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
 
     type BuildParams = Parameters<typeof builder.build>;
     type ArgType = BuildParams[0];
@@ -291,7 +306,9 @@ describe("error message shows missing port names", () => {
 describe("empty graph (no adapters) builds successfully", () => {
   it("empty builder builds to Graph<never>", () => {
     const builder = GraphBuilder.create();
+    expect(builder).toBeDefined();
     const graph = builder.build();
+    expect(graph).toBeDefined();
 
     type BuildResult = typeof graph;
 
@@ -302,6 +319,7 @@ describe("empty graph (no adapters) builds successfully", () => {
 
   it("empty graph is not an error type", () => {
     const builder = GraphBuilder.create();
+    expect(builder).toBeDefined();
 
     type BuildResult = ReturnType<typeof builder.build>;
 
@@ -312,7 +330,9 @@ describe("empty graph (no adapters) builds successfully", () => {
 
   it("empty graph has adapters property", () => {
     const builder = GraphBuilder.create();
+    expect(builder).toBeDefined();
     const graph = builder.build();
+    expect(graph).toBeDefined();
 
     type BuildResult = typeof graph;
 
@@ -323,7 +343,9 @@ describe("empty graph (no adapters) builds successfully", () => {
 
   it("empty graph has __provides tracking type", () => {
     const builder = GraphBuilder.create();
+    expect(builder).toBeDefined();
     const graph = builder.build();
+    expect(graph).toBeDefined();
 
     type BuildResult = typeof graph;
 
@@ -340,8 +362,10 @@ describe("empty graph (no adapters) builds successfully", () => {
 describe("build() returns Graph with correct type information", () => {
   it("Graph has TProvides matching provided ports", () => {
     const builder = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter);
+    expect(builder).toBeDefined();
 
     const graph = builder.build();
+    expect(graph).toBeDefined();
 
     type BuildResult = typeof graph;
     type Provides = BuildResult extends Graph<infer P> ? P : never;
@@ -354,8 +378,10 @@ describe("build() returns Graph with correct type information", () => {
       .provide(LoggerAdapter)
       .provide(DatabaseAdapter)
       .provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
 
     const graph = builder.build();
+    expect(graph).toBeDefined();
 
     // Use conditional type inference since __provides is optional (phantom type)
     type ProvidesType = typeof graph extends { __provides: infer P } ? P : never;
@@ -367,7 +393,9 @@ describe("build() returns Graph with correct type information", () => {
 
   it("Graph adapters array is readonly", () => {
     const builder = GraphBuilder.create().provide(LoggerAdapter);
+    expect(builder).toBeDefined();
     const graph = builder.build();
+    expect(graph).toBeDefined();
 
     type AdaptersType = (typeof graph)["adapters"];
 
@@ -381,8 +409,10 @@ describe("build() returns Graph with correct type information", () => {
       .provide(LoggerAdapter)
       .provide(DatabaseAdapter)
       .provide(UserServiceAdapter);
+    expect(validBuilder).toBeDefined();
 
     const invalidBuilder = GraphBuilder.create().provide(UserServiceAdapter);
+    expect(invalidBuilder).toBeDefined();
 
     type ValidResult = ReturnType<typeof validBuilder.build>;
 
@@ -438,6 +468,7 @@ describe("built graph is immutable (type-level readonly)", () => {
       .provide(DatabaseAdapter)
       .provide(UserServiceAdapter)
       .build();
+    expect(graph).toBeDefined();
 
     // Adapters should be readonly
     type AdaptersType = (typeof graph)["adapters"];
@@ -453,6 +484,7 @@ describe("built graph is immutable (type-level readonly)", () => {
 describe("built graph contains all registered adapters", () => {
   it("graph adapters array has correct element type", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
+    expect(graph).toBeDefined();
 
     type AdaptersType = (typeof graph)["adapters"];
     type ElementType = AdaptersType[number];
@@ -478,6 +510,7 @@ describe("built graph contains all registered adapters", () => {
       .provide(CacheAdapter)
       .provide(UserServiceAdapter)
       .build();
+    expect(graph).toBeDefined();
 
     // Use conditional type inference since __provides is optional (phantom type)
     type ProvidesType = typeof graph extends { __provides: infer P } ? P : never;
@@ -496,6 +529,7 @@ describe("built graph contains all registered adapters", () => {
 describe("error appears at .build() call site", () => {
   it("build() parameter type shows error information when deps missing", () => {
     const incompleteBuilder = GraphBuilder.create().provide(UserServiceAdapter);
+    expect(incompleteBuilder).toBeDefined();
 
     // The error information is in the required parameter of build()
     type BuildParams = Parameters<typeof incompleteBuilder.build>;
@@ -517,6 +551,7 @@ describe("error appears at .build() call site", () => {
 
   it("builder type before build() does not show error", () => {
     const builder = GraphBuilder.create().provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
 
     // Builder itself should still be a valid GraphBuilder
     type BuilderType = typeof builder;
@@ -535,6 +570,7 @@ describe("error appears at .build() call site", () => {
     // without providing the required dependencies
 
     const builder = GraphBuilder.create().provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
 
     // The build method is still a function
     expectTypeOf(builder.build).toBeFunction();

@@ -12,15 +12,9 @@
  * 8. GraphBuilder has method signatures for provide() and build()
  */
 
-import { describe, expectTypeOf, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { createPort, Port } from "@hex-di/ports";
-import {
-  GraphBuilder,
-  Adapter,
-  InferGraphProvides,
-  InferGraphRequires,
-  createAdapter,
-} from "../src/index.js";
+import { GraphBuilder, Adapter, InferGraphProvides, InferGraphRequires } from "../src/index.js";
 
 // =============================================================================
 // Test Service Interfaces
@@ -45,6 +39,9 @@ interface UserService {
 const LoggerPort = createPort<"Logger", Logger>("Logger");
 const DatabasePort = createPort<"Database", Database>("Database");
 const UserServicePort = createPort<"UserService", UserService>("UserService");
+expect(LoggerPort).toBeDefined();
+expect(DatabasePort).toBeDefined();
+expect(UserServicePort).toBeDefined();
 
 type LoggerPortType = typeof LoggerPort;
 type DatabasePortType = typeof DatabasePort;
@@ -57,6 +54,7 @@ type UserServicePortType = typeof UserServicePort;
 describe("GraphBuilder.create()", () => {
   it("returns builder with TProvides = never", () => {
     const builder = GraphBuilder.create();
+    expect(builder).toBeDefined();
 
     // The initial builder should have TProvides = never
     type BuilderType = typeof builder;
@@ -67,6 +65,7 @@ describe("GraphBuilder.create()", () => {
 
   it("returns builder with TRequires = never", () => {
     const builder = GraphBuilder.create();
+    expect(builder).toBeDefined();
 
     // The initial builder should have TRequires = never
     type BuilderType = typeof builder;
@@ -77,6 +76,7 @@ describe("GraphBuilder.create()", () => {
 
   it("returns correctly typed GraphBuilder<never, never>", () => {
     const builder = GraphBuilder.create();
+    expect(builder).toBeDefined();
 
     // Should match GraphBuilder<never, never>
     expectTypeOf(builder).toMatchTypeOf<GraphBuilder<never, never>>();
@@ -94,6 +94,7 @@ describe("GraphBuilder type structure", () => {
 
     // The returned instance should have expected methods
     const builder = GraphBuilder.create();
+    expect(builder).toBeDefined();
     expectTypeOf(builder).toHaveProperty("provide");
     expectTypeOf(builder).toHaveProperty("build");
   });
@@ -111,22 +112,18 @@ describe("GraphBuilder type structure", () => {
   });
 
   it("supports union types for TProvides and TRequires", () => {
-    type BuilderWithUnions = GraphBuilder<
-      LoggerPortType | DatabasePortType,
-      UserServicePortType
-    >;
+    type BuilderWithUnions = GraphBuilder<LoggerPortType | DatabasePortType, UserServicePortType>;
 
     type ExtractedProvides = InferGraphProvides<BuilderWithUnions>;
     type ExtractedRequires = InferGraphRequires<BuilderWithUnions>;
 
-    expectTypeOf<ExtractedProvides>().toEqualTypeOf<
-      LoggerPortType | DatabasePortType
-    >();
+    expectTypeOf<ExtractedProvides>().toEqualTypeOf<LoggerPortType | DatabasePortType>();
     expectTypeOf<ExtractedRequires>().toEqualTypeOf<UserServicePortType>();
   });
 
   it("has provide method signature", () => {
     const builder = GraphBuilder.create();
+    expect(builder).toBeDefined();
 
     // provide should accept an adapter and return a new builder
     expectTypeOf(builder.provide).toBeFunction();
@@ -134,6 +131,7 @@ describe("GraphBuilder type structure", () => {
 
   it("has build method signature", () => {
     const builder = GraphBuilder.create();
+    expect(builder).toBeDefined();
 
     // build should be a function
     expectTypeOf(builder.build).toBeFunction();
@@ -147,11 +145,10 @@ describe("GraphBuilder type structure", () => {
 describe("GraphBuilder immutability", () => {
   it("instances are frozen (readonly adapters)", () => {
     // The adapters property should be readonly
-    type BuilderType = GraphBuilder<never, never>;
-
     // We verify this by checking that the adapters array is readonly
     // This is enforced at the type level by the class definition
     const builder = GraphBuilder.create();
+    expect(builder).toBeDefined();
 
     // The builder instance exists and is properly typed
     expectTypeOf(builder).toMatchTypeOf<GraphBuilder<never, never>>();
@@ -161,13 +158,16 @@ describe("GraphBuilder immutability", () => {
     // GraphBuilder should use branded/readonly types
     // A mutable object should not be assignable to GraphBuilder
     type FakeBuilder = {
-      provide: (adapter: Adapter<any, any, any>) => any;
-      build: () => any;
+      provide: (
+        adapter: Adapter<Port<unknown, string>, Port<unknown, string>, "singleton">
+      ) => unknown;
+      build: () => unknown;
     };
 
     // FakeBuilder should not match GraphBuilder due to internal structure
     // This ensures GraphBuilder has additional internal structure/branding
     const builder = GraphBuilder.create();
+    expect(builder).toBeDefined();
     expectTypeOf(builder).not.toEqualTypeOf<FakeBuilder>();
   });
 });
@@ -181,6 +181,7 @@ describe("GraphBuilder internal adapter registry", () => {
     // The builder should have an internal adapters property
     // We verify this exists at type level
     const builder = GraphBuilder.create();
+    expect(builder).toBeDefined();
 
     // Builder should have adapters property (can be internal/readonly)
     expectTypeOf(builder).toHaveProperty("adapters");
@@ -188,16 +189,16 @@ describe("GraphBuilder internal adapter registry", () => {
 
   it("adapters array is readonly", () => {
     const builder = GraphBuilder.create();
+    expect(builder).toBeDefined();
 
     // Adapters should be a readonly array
     type AdaptersType = (typeof builder)["adapters"];
-    expectTypeOf<AdaptersType>().toMatchTypeOf<
-      readonly Adapter<any, any, any, any>[]
-    >();
+    expectTypeOf<AdaptersType>().toMatchTypeOf<readonly Adapter<any, any, any, any>[]>();
   });
 
   it("initial builder has empty adapters array type", () => {
     const builder = GraphBuilder.create();
+    expect(builder).toBeDefined();
 
     // Empty builder should have empty adapters array
     type AdaptersType = (typeof builder)["adapters"];
@@ -222,10 +223,7 @@ describe("InferGraphProvides utility type", () => {
   });
 
   it("extracts union TProvides from GraphBuilder", () => {
-    type Builder = GraphBuilder<
-      LoggerPortType | DatabasePortType,
-      UserServicePortType
-    >;
+    type Builder = GraphBuilder<LoggerPortType | DatabasePortType, UserServicePortType>;
     type Provides = InferGraphProvides<Builder>;
 
     expectTypeOf<Provides>().toEqualTypeOf<LoggerPortType | DatabasePortType>();
@@ -262,15 +260,10 @@ describe("InferGraphRequires utility type", () => {
   });
 
   it("extracts union TRequires from GraphBuilder", () => {
-    type Builder = GraphBuilder<
-      LoggerPortType,
-      DatabasePortType | UserServicePortType
-    >;
+    type Builder = GraphBuilder<LoggerPortType, DatabasePortType | UserServicePortType>;
     type Requires = InferGraphRequires<Builder>;
 
-    expectTypeOf<Requires>().toEqualTypeOf<
-      DatabasePortType | UserServicePortType
-    >();
+    expectTypeOf<Requires>().toEqualTypeOf<DatabasePortType | UserServicePortType>();
   });
 
   it("returns never for GraphBuilder<..., never>", () => {

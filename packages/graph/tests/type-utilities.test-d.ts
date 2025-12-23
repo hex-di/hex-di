@@ -10,7 +10,7 @@
  * 6. Utilities return never for invalid input types
  */
 
-import { describe, expectTypeOf, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { createPort } from "@hex-di/ports";
 import {
   Adapter,
@@ -73,7 +73,7 @@ const DatabaseAdapter = createAdapter({
   provides: DatabasePort,
   requires: [],
   lifetime: "scoped",
-  factory: () => ({ query: async () => ({}) }),
+  factory: () => ({ query: () => Promise.resolve({}) }),
 });
 
 const ConfigAdapter = createAdapter({
@@ -87,7 +87,7 @@ const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort, DatabasePort],
   lifetime: "scoped",
-  factory: () => ({ getUser: async (id) => ({ id, name: "test" }) }),
+  factory: () => ({ getUser: id => Promise.resolve({ id, name: "test" }) }),
 });
 
 // =============================================================================
@@ -96,12 +96,14 @@ const UserServiceAdapter = createAdapter({
 
 describe("InferAdapterProvides<T> utility type", () => {
   it("extracts provided port from adapter with no dependencies", () => {
+    expect(LoggerAdapter).toBeDefined();
     type Result = InferAdapterProvides<typeof LoggerAdapter>;
 
     expectTypeOf<Result>().toEqualTypeOf<LoggerPortType>();
   });
 
   it("extracts provided port from adapter with dependencies", () => {
+    expect(UserServiceAdapter).toBeDefined();
     type Result = InferAdapterProvides<typeof UserServiceAdapter>;
 
     expectTypeOf<Result>().toEqualTypeOf<UserServicePortType>();
@@ -153,23 +155,21 @@ describe("InferAdapterProvides<T> utility type", () => {
 
 describe("InferAdapterRequires<T> utility type", () => {
   it("extracts required ports union from adapter with dependencies", () => {
+    expect(UserServiceAdapter).toBeDefined();
     type Result = InferAdapterRequires<typeof UserServiceAdapter>;
 
     expectTypeOf<Result>().toEqualTypeOf<LoggerPortType | DatabasePortType>();
   });
 
   it("extracts never from adapter with no dependencies", () => {
+    expect(LoggerAdapter).toBeDefined();
     type Result = InferAdapterRequires<typeof LoggerAdapter>;
 
     expectTypeOf<Result>().toBeNever();
   });
 
   it("extracts required port from manually typed Adapter", () => {
-    type ManualAdapter = Adapter<
-      UserServicePortType,
-      LoggerPortType | DatabasePortType,
-      "scoped"
-    >;
+    type ManualAdapter = Adapter<UserServicePortType, LoggerPortType | DatabasePortType, "scoped">;
     type Result = InferAdapterRequires<ManualAdapter>;
 
     expectTypeOf<Result>().toEqualTypeOf<LoggerPortType | DatabasePortType>();
@@ -182,6 +182,7 @@ describe("InferAdapterRequires<T> utility type", () => {
       lifetime: "singleton",
       factory: () => ({ get: () => "" }),
     });
+    expect(SingleDepAdapter).toBeDefined();
 
     type Result = InferAdapterRequires<typeof SingleDepAdapter>;
     expectTypeOf<Result>().toEqualTypeOf<LoggerPortType>();
@@ -216,18 +217,21 @@ describe("InferAdapterRequires<T> utility type", () => {
 
 describe("InferAdapterLifetime<T> utility type", () => {
   it("extracts singleton lifetime", () => {
+    expect(LoggerAdapter).toBeDefined();
     type Result = InferAdapterLifetime<typeof LoggerAdapter>;
 
     expectTypeOf<Result>().toEqualTypeOf<"singleton">();
   });
 
   it("extracts scoped lifetime", () => {
+    expect(DatabaseAdapter).toBeDefined();
     type Result = InferAdapterLifetime<typeof DatabaseAdapter>;
 
     expectTypeOf<Result>().toEqualTypeOf<"scoped">();
   });
 
   it("extracts transient lifetime", () => {
+    expect(ConfigAdapter).toBeDefined();
     type Result = InferAdapterLifetime<typeof ConfigAdapter>;
 
     expectTypeOf<Result>().toEqualTypeOf<"transient">();
@@ -271,6 +275,7 @@ describe("InferAdapterLifetime<T> utility type", () => {
 describe("InferGraphProvides<T> utility type", () => {
   it("extracts provided ports from builder with single adapter", () => {
     const builder = GraphBuilder.create().provide(LoggerAdapter);
+    expect(builder).toBeDefined();
     type Result = InferGraphProvides<typeof builder>;
 
     expectTypeOf<Result>().toEqualTypeOf<LoggerPortType>();
@@ -281,25 +286,22 @@ describe("InferGraphProvides<T> utility type", () => {
       .provide(LoggerAdapter)
       .provide(DatabaseAdapter)
       .provide(ConfigAdapter);
+    expect(builder).toBeDefined();
     type Result = InferGraphProvides<typeof builder>;
 
-    expectTypeOf<Result>().toEqualTypeOf<
-      LoggerPortType | DatabasePortType | ConfigPortType
-    >();
+    expectTypeOf<Result>().toEqualTypeOf<LoggerPortType | DatabasePortType | ConfigPortType>();
   });
 
   it("extracts never from empty builder", () => {
     const builder = GraphBuilder.create();
+    expect(builder).toBeDefined();
     type Result = InferGraphProvides<typeof builder>;
 
     expectTypeOf<Result>().toBeNever();
   });
 
   it("extracts from manually typed GraphBuilder", () => {
-    type ManualBuilder = GraphBuilder<
-      LoggerPortType | DatabasePortType,
-      ConfigPortType
-    >;
+    type ManualBuilder = GraphBuilder<LoggerPortType | DatabasePortType, ConfigPortType>;
     type Result = InferGraphProvides<ManualBuilder>;
 
     expectTypeOf<Result>().toEqualTypeOf<LoggerPortType | DatabasePortType>();
@@ -333,6 +335,7 @@ describe("InferGraphProvides<T> utility type", () => {
 describe("InferGraphRequires<T> utility type", () => {
   it("extracts required ports from builder with adapter that has dependencies", () => {
     const builder = GraphBuilder.create().provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
     type Result = InferGraphRequires<typeof builder>;
 
     expectTypeOf<Result>().toEqualTypeOf<LoggerPortType | DatabasePortType>();
@@ -345,10 +348,12 @@ describe("InferGraphRequires<T> utility type", () => {
       lifetime: "singleton",
       factory: () => ({ get: () => "" }),
     });
+    expect(SingleDepAdapter).toBeDefined();
 
     const builder = GraphBuilder.create()
       .provide(UserServiceAdapter) // requires Logger, Database
       .provide(SingleDepAdapter); // requires Logger
+    expect(builder).toBeDefined();
     type Result = InferGraphRequires<typeof builder>;
 
     // Union of all requires: Logger | Database | Logger = Logger | Database
@@ -356,9 +361,8 @@ describe("InferGraphRequires<T> utility type", () => {
   });
 
   it("extracts never from builder with only no-dependency adapters", () => {
-    const builder = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapter);
+    const builder = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter);
+    expect(builder).toBeDefined();
     type Result = InferGraphRequires<typeof builder>;
 
     expectTypeOf<Result>().toBeNever();
@@ -366,16 +370,14 @@ describe("InferGraphRequires<T> utility type", () => {
 
   it("extracts never from empty builder", () => {
     const builder = GraphBuilder.create();
+    expect(builder).toBeDefined();
     type Result = InferGraphRequires<typeof builder>;
 
     expectTypeOf<Result>().toBeNever();
   });
 
   it("extracts from manually typed GraphBuilder", () => {
-    type ManualBuilder = GraphBuilder<
-      LoggerPortType,
-      DatabasePortType | ConfigPortType
-    >;
+    type ManualBuilder = GraphBuilder<LoggerPortType, DatabasePortType | ConfigPortType>;
     type Result = InferGraphRequires<ManualBuilder>;
 
     expectTypeOf<Result>().toEqualTypeOf<DatabasePortType | ConfigPortType>();
@@ -412,8 +414,9 @@ describe("utility type composition", () => {
       provides: UserServicePort,
       requires: [LoggerPort, DatabasePort],
       lifetime: "scoped",
-      factory: () => ({ getUser: async (id) => ({ id, name: "test" }) }),
+      factory: () => ({ getUser: id => Promise.resolve({ id, name: "test" }) }),
     });
+    expect(adapter).toBeDefined();
 
     type Provides = InferAdapterProvides<typeof adapter>;
     type Requires = InferAdapterRequires<typeof adapter>;
@@ -429,6 +432,7 @@ describe("utility type composition", () => {
       .provide(LoggerAdapter)
       .provide(DatabaseAdapter)
       .provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
 
     type Provides = InferGraphProvides<typeof builder>;
     type Requires = InferGraphRequires<typeof builder>;
@@ -447,6 +451,7 @@ describe("utility type composition", () => {
     type AdapterRequires = InferAdapterRequires<typeof UserServiceAdapter>;
 
     const builder = GraphBuilder.create().provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
 
     type BuilderProvides = InferGraphProvides<typeof builder>;
     type BuilderRequires = InferGraphRequires<typeof builder>;

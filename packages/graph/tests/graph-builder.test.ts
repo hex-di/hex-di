@@ -52,14 +52,14 @@ const DatabaseAdapter = createAdapter({
   provides: DatabasePort,
   requires: [],
   lifetime: "singleton",
-  factory: () => ({ query: async () => ({}) }),
+  factory: () => ({ query: () => Promise.resolve({}) }),
 });
 
 const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort, DatabasePort],
   lifetime: "scoped",
-  factory: () => ({ getUser: async (id) => ({ id, name: "test" }) }),
+  factory: () => ({ getUser: id => Promise.resolve({ id, name: "test" }) }),
 });
 
 // =============================================================================
@@ -146,9 +146,7 @@ describe("GraphBuilder.provide()", () => {
   });
 
   it("accumulates multiple adapters", () => {
-    const builder = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapter);
+    const builder = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter);
 
     expect(builder.adapters).toContain(LoggerAdapter);
     expect(builder.adapters).toContain(DatabaseAdapter);
@@ -182,18 +180,13 @@ describe("GraphBuilder.provide()", () => {
 
 describe("GraphBuilder.build()", () => {
   it("returns frozen graph object", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     expect(Object.isFrozen(graph)).toBe(true);
   });
 
   it("graph contains all registered adapters", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
 
     expect(graph.adapters).toContain(LoggerAdapter);
     expect(graph.adapters).toContain(DatabaseAdapter);

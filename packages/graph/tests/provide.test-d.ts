@@ -12,7 +12,7 @@
  * 8. provide() accepts any valid Adapter type
  */
 
-import { describe, expectTypeOf, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { createPort } from "@hex-di/ports";
 import {
   GraphBuilder,
@@ -79,7 +79,7 @@ const DatabaseAdapter = createAdapter({
   provides: DatabasePort,
   requires: [],
   lifetime: "singleton",
-  factory: () => ({ query: async () => ({}) }),
+  factory: () => ({ query: () => Promise.resolve({}) }),
 });
 
 const ConfigAdapter = createAdapter({
@@ -100,7 +100,7 @@ const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort, DatabasePort],
   lifetime: "scoped",
-  factory: () => ({ getUser: async (id) => ({ id, name: "test" }) }),
+  factory: () => ({ getUser: id => Promise.resolve({ id, name: "test" }) }),
 });
 
 // =============================================================================
@@ -110,7 +110,9 @@ const UserServiceAdapter = createAdapter({
 describe("provide() returns NEW builder instance", () => {
   it("returns a GraphBuilder with specific port type", () => {
     const original = GraphBuilder.create();
+    expect(original).toBeDefined();
     const withAdapter = original.provide(LoggerAdapter);
+    expect(withAdapter).toBeDefined();
 
     // Result should be a GraphBuilder with the specific port type
     expectTypeOf(withAdapter).toMatchTypeOf<GraphBuilder<LoggerPortType, never>>();
@@ -118,7 +120,9 @@ describe("provide() returns NEW builder instance", () => {
 
   it("returns a new builder, not the same type", () => {
     const original = GraphBuilder.create();
+    expect(original).toBeDefined();
     const withAdapter = original.provide(LoggerAdapter);
+    expect(withAdapter).toBeDefined();
 
     // Types should be different due to different TProvides
     type OriginalType = typeof original;
@@ -130,6 +134,7 @@ describe("provide() returns NEW builder instance", () => {
 
   it("preserves GraphBuilder class structure", () => {
     const builder = GraphBuilder.create().provide(LoggerAdapter);
+    expect(builder).toBeDefined();
 
     // Should still have provide and build methods
     expectTypeOf(builder).toHaveProperty("provide");
@@ -145,15 +150,15 @@ describe("provide() returns NEW builder instance", () => {
 describe("TProvides accumulates with union", () => {
   it("single adapter provides single port", () => {
     const builder = GraphBuilder.create().provide(LoggerAdapter);
+    expect(builder).toBeDefined();
 
     type Provides = InferGraphProvides<typeof builder>;
     expectTypeOf<Provides>().toEqualTypeOf<LoggerPortType>();
   });
 
   it("two adapters provide union of ports", () => {
-    const builder = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapter);
+    const builder = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter);
+    expect(builder).toBeDefined();
 
     type Provides = InferGraphProvides<typeof builder>;
     expectTypeOf<Provides>().toEqualTypeOf<LoggerPortType | DatabasePortType>();
@@ -164,11 +169,10 @@ describe("TProvides accumulates with union", () => {
       .provide(LoggerAdapter)
       .provide(DatabaseAdapter)
       .provide(ConfigAdapter);
+    expect(builder).toBeDefined();
 
     type Provides = InferGraphProvides<typeof builder>;
-    expectTypeOf<Provides>().toEqualTypeOf<
-      LoggerPortType | DatabasePortType | ConfigPortType
-    >();
+    expectTypeOf<Provides>().toEqualTypeOf<LoggerPortType | DatabasePortType | ConfigPortType>();
   });
 
   it("accumulation works regardless of adapter order", () => {
@@ -181,6 +185,8 @@ describe("TProvides accumulates with union", () => {
       .provide(ConfigAdapter)
       .provide(DatabaseAdapter)
       .provide(LoggerAdapter);
+    expect(builderABC).toBeDefined();
+    expect(builderCBA).toBeDefined();
 
     type ProvidesABC = InferGraphProvides<typeof builderABC>;
     type ProvidesCBA = InferGraphProvides<typeof builderCBA>;
@@ -197,6 +203,7 @@ describe("TProvides accumulates with union", () => {
 describe("TRequires accumulates with union", () => {
   it("adapter with no requires contributes never", () => {
     const builder = GraphBuilder.create().provide(LoggerAdapter);
+    expect(builder).toBeDefined();
 
     type Requires = InferGraphRequires<typeof builder>;
     expectTypeOf<Requires>().toBeNever();
@@ -204,6 +211,7 @@ describe("TRequires accumulates with union", () => {
 
   it("adapter with single require contributes that port", () => {
     const builder = GraphBuilder.create().provide(CacheAdapter);
+    expect(builder).toBeDefined();
 
     type Requires = InferGraphRequires<typeof builder>;
     expectTypeOf<Requires>().toEqualTypeOf<ConfigPortType>();
@@ -211,6 +219,7 @@ describe("TRequires accumulates with union", () => {
 
   it("adapter with multiple requires contributes union", () => {
     const builder = GraphBuilder.create().provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
 
     type Requires = InferGraphRequires<typeof builder>;
     expectTypeOf<Requires>().toEqualTypeOf<LoggerPortType | DatabasePortType>();
@@ -220,11 +229,10 @@ describe("TRequires accumulates with union", () => {
     const builder = GraphBuilder.create()
       .provide(UserServiceAdapter) // requires Logger, Database
       .provide(CacheAdapter); // requires Config
+    expect(builder).toBeDefined();
 
     type Requires = InferGraphRequires<typeof builder>;
-    expectTypeOf<Requires>().toEqualTypeOf<
-      LoggerPortType | DatabasePortType | ConfigPortType
-    >();
+    expectTypeOf<Requires>().toEqualTypeOf<LoggerPortType | DatabasePortType | ConfigPortType>();
   });
 });
 
@@ -238,6 +246,10 @@ describe("multiple provide() calls correctly accumulate types", () => {
     const step1 = step0.provide(LoggerAdapter);
     const step2 = step1.provide(DatabaseAdapter);
     const step3 = step2.provide(ConfigAdapter);
+    expect(step0).toBeDefined();
+    expect(step1).toBeDefined();
+    expect(step2).toBeDefined();
+    expect(step3).toBeDefined();
 
     type P0 = InferGraphProvides<typeof step0>;
     type P1 = InferGraphProvides<typeof step1>;
@@ -247,9 +259,7 @@ describe("multiple provide() calls correctly accumulate types", () => {
     expectTypeOf<P0>().toBeNever();
     expectTypeOf<P1>().toEqualTypeOf<LoggerPortType>();
     expectTypeOf<P2>().toEqualTypeOf<LoggerPortType | DatabasePortType>();
-    expectTypeOf<P3>().toEqualTypeOf<
-      LoggerPortType | DatabasePortType | ConfigPortType
-    >();
+    expectTypeOf<P3>().toEqualTypeOf<LoggerPortType | DatabasePortType | ConfigPortType>();
   });
 
   it("builds up requires progressively", () => {
@@ -257,6 +267,10 @@ describe("multiple provide() calls correctly accumulate types", () => {
     const step1 = step0.provide(LoggerAdapter); // no requires
     const step2 = step1.provide(CacheAdapter); // requires Config
     const step3 = step2.provide(UserServiceAdapter); // requires Logger, Database
+    expect(step0).toBeDefined();
+    expect(step1).toBeDefined();
+    expect(step2).toBeDefined();
+    expect(step3).toBeDefined();
 
     type R0 = InferGraphRequires<typeof step0>;
     type R1 = InferGraphRequires<typeof step1>;
@@ -266,9 +280,7 @@ describe("multiple provide() calls correctly accumulate types", () => {
     expectTypeOf<R0>().toBeNever();
     expectTypeOf<R1>().toBeNever();
     expectTypeOf<R2>().toEqualTypeOf<ConfigPortType>();
-    expectTypeOf<R3>().toEqualTypeOf<
-      ConfigPortType | LoggerPortType | DatabasePortType
-    >();
+    expectTypeOf<R3>().toEqualTypeOf<ConfigPortType | LoggerPortType | DatabasePortType>();
   });
 
   it("handles complex multi-adapter chain", () => {
@@ -278,23 +290,18 @@ describe("multiple provide() calls correctly accumulate types", () => {
       .provide(ConfigAdapter)
       .provide(CacheAdapter)
       .provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
 
     type Provides = InferGraphProvides<typeof builder>;
     type Requires = InferGraphRequires<typeof builder>;
 
     // All ports should be provided
     expectTypeOf<Provides>().toEqualTypeOf<
-      | LoggerPortType
-      | DatabasePortType
-      | ConfigPortType
-      | CachePortType
-      | UserServicePortType
+      LoggerPortType | DatabasePortType | ConfigPortType | CachePortType | UserServicePortType
     >();
 
     // All requirements should be accumulated
-    expectTypeOf<Requires>().toEqualTypeOf<
-      ConfigPortType | LoggerPortType | DatabasePortType
-    >();
+    expectTypeOf<Requires>().toEqualTypeOf<ConfigPortType | LoggerPortType | DatabasePortType>();
   });
 });
 
@@ -305,7 +312,9 @@ describe("multiple provide() calls correctly accumulate types", () => {
 describe("builder is immutable - original unchanged after provide()", () => {
   it("original builder type unchanged after provide()", () => {
     const original = GraphBuilder.create();
-    const _withLogger = original.provide(LoggerAdapter);
+    const withLogger = original.provide(LoggerAdapter);
+    expect(original).toBeDefined();
+    expect(withLogger).toBeDefined();
 
     // Original should still have never for both type params
     type OriginalProvides = InferGraphProvides<typeof original>;
@@ -318,7 +327,10 @@ describe("builder is immutable - original unchanged after provide()", () => {
   it("intermediate builders remain unchanged", () => {
     const builder1 = GraphBuilder.create();
     const builder2 = builder1.provide(LoggerAdapter);
-    const _builder3 = builder2.provide(DatabaseAdapter);
+    const builder3 = builder2.provide(DatabaseAdapter);
+    expect(builder1).toBeDefined();
+    expect(builder2).toBeDefined();
+    expect(builder3).toBeDefined();
 
     // builder1 should still be empty
     type B1Provides = InferGraphProvides<typeof builder1>;
@@ -333,6 +345,9 @@ describe("builder is immutable - original unchanged after provide()", () => {
     const base = GraphBuilder.create().provide(LoggerAdapter);
     const branchA = base.provide(DatabaseAdapter);
     const branchB = base.provide(ConfigAdapter);
+    expect(base).toBeDefined();
+    expect(branchA).toBeDefined();
+    expect(branchB).toBeDefined();
 
     type BaseProvides = InferGraphProvides<typeof base>;
     type BranchAProvides = InferGraphProvides<typeof branchA>;
@@ -354,6 +369,7 @@ describe("builder is immutable - original unchanged after provide()", () => {
 describe("adapter with never requires doesn't add to TRequires", () => {
   it("single adapter with no deps keeps TRequires as never", () => {
     const builder = GraphBuilder.create().provide(LoggerAdapter);
+    expect(builder).toBeDefined();
 
     type Requires = InferGraphRequires<typeof builder>;
     expectTypeOf<Requires>().toBeNever();
@@ -364,6 +380,7 @@ describe("adapter with never requires doesn't add to TRequires", () => {
       .provide(LoggerAdapter)
       .provide(DatabaseAdapter)
       .provide(ConfigAdapter);
+    expect(builder).toBeDefined();
 
     type Requires = InferGraphRequires<typeof builder>;
     expectTypeOf<Requires>().toBeNever();
@@ -374,6 +391,7 @@ describe("adapter with never requires doesn't add to TRequires", () => {
     const builder = GraphBuilder.create()
       .provide(LoggerAdapter) // TRequires = never
       .provide(CacheAdapter); // TRequires = never | Config = Config
+    expect(builder).toBeDefined();
 
     type Requires = InferGraphRequires<typeof builder>;
     expectTypeOf<Requires>().toEqualTypeOf<ConfigPortType>();
@@ -395,6 +413,7 @@ describe("chained provide() calls work fluently", () => {
       .provide(LoggerAdapter)
       .provide(DatabaseAdapter)
       .provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
 
     // Should compile and have correct types
     type Provides = InferGraphProvides<typeof builder>;
@@ -405,9 +424,8 @@ describe("chained provide() calls work fluently", () => {
 
   it("each chain step returns correct builder type", () => {
     // Type of each step should be specific
-    const builder = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapter);
+    const builder = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter);
+    expect(builder).toBeDefined();
 
     type BuilderType = typeof builder;
 
@@ -425,6 +443,7 @@ describe("chained provide() calls work fluently", () => {
       .provide(ConfigAdapter)
       .provide(CacheAdapter)
       .provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
 
     // All 5 adapters should be tracked
     type Provides = InferGraphProvides<typeof builder>;
@@ -452,18 +471,21 @@ describe("chained provide() calls work fluently", () => {
 describe("provide() accepts any valid Adapter type", () => {
   it("accepts adapter with no dependencies", () => {
     const builder = GraphBuilder.create().provide(LoggerAdapter);
+    expect(builder).toBeDefined();
 
     expectTypeOf(builder).toMatchTypeOf<GraphBuilder<LoggerPortType, never>>();
   });
 
   it("accepts adapter with single dependency", () => {
     const builder = GraphBuilder.create().provide(CacheAdapter);
+    expect(builder).toBeDefined();
 
     expectTypeOf(builder).toMatchTypeOf<GraphBuilder<CachePortType, ConfigPortType>>();
   });
 
   it("accepts adapter with multiple dependencies", () => {
     const builder = GraphBuilder.create().provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
 
     expectTypeOf(builder).toMatchTypeOf<
       GraphBuilder<UserServicePortType, LoggerPortType | DatabasePortType>
@@ -482,7 +504,7 @@ describe("provide() accepts any valid Adapter type", () => {
       provides: DatabasePort,
       requires: [],
       lifetime: "scoped",
-      factory: () => ({ query: async () => ({}) }),
+      factory: () => ({ query: () => Promise.resolve({}) }),
     });
 
     const requestAdapter = createAdapter({
@@ -496,11 +518,10 @@ describe("provide() accepts any valid Adapter type", () => {
       .provide(singletonAdapter)
       .provide(scopedAdapter)
       .provide(requestAdapter);
+    expect(builder).toBeDefined();
 
     type Provides = InferGraphProvides<typeof builder>;
-    expectTypeOf<Provides>().toEqualTypeOf<
-      LoggerPortType | DatabasePortType | ConfigPortType
-    >();
+    expectTypeOf<Provides>().toEqualTypeOf<LoggerPortType | DatabasePortType | ConfigPortType>();
   });
 
   it("accepts inline adapter definitions", () => {
@@ -512,6 +533,7 @@ describe("provide() accepts any valid Adapter type", () => {
         factory: () => ({ log: () => {} }),
       })
     );
+    expect(builder).toBeDefined();
 
     type Provides = InferGraphProvides<typeof builder>;
     expectTypeOf<Provides>().toEqualTypeOf<LoggerPortType>();
@@ -525,6 +547,7 @@ describe("provide() accepts any valid Adapter type", () => {
       lifetime: "singleton",
       factory: () => ({ log: () => {} }),
     });
+    expect(adapter).toBeDefined();
 
     type AdapterType = typeof adapter;
     type ExpectedProvides = InferAdapterProvides<AdapterType>;
@@ -534,6 +557,7 @@ describe("provide() accepts any valid Adapter type", () => {
     expectTypeOf<ExpectedRequires>().toBeNever();
 
     const builder = GraphBuilder.create().provide(adapter);
+    expect(builder).toBeDefined();
     type BuilderProvides = InferGraphProvides<typeof builder>;
     type BuilderRequires = InferGraphRequires<typeof builder>;
 

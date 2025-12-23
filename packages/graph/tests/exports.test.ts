@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createPort, type Port } from "@hex-di/ports";
+import { createPort } from "@hex-di/ports";
 import {
   // Function exports
   createAdapter,
@@ -87,6 +87,7 @@ describe("Public API exports", () => {
         lifetime: "singleton",
         factory: () => ({ log: () => {} }),
       });
+      expect(adapter).toBeDefined();
 
       // Verify Adapter type works correctly
       expectTypeOf(adapter).toMatchTypeOf<Adapter<typeof LoggerPort, never, "singleton">>();
@@ -98,6 +99,7 @@ describe("Public API exports", () => {
 
       // Verify Graph type works correctly
       const graph = GraphBuilder.create().provide(adapter).build();
+      expect(graph).toBeDefined();
       expectTypeOf(graph).toMatchTypeOf<Graph<typeof LoggerPort>>();
     });
 
@@ -114,11 +116,13 @@ describe("Public API exports", () => {
         provides: DatabasePort,
         requires: [LoggerPort],
         lifetime: "scoped",
-        factory: (deps) => {
+        factory: deps => {
           deps.Logger.log("Creating database");
-          return { query: async () => ({}) };
+          return { query: () => Promise.resolve({}) };
         },
       });
+      expect(loggerAdapter).toBeDefined();
+      expect(dbAdapter).toBeDefined();
 
       // InferAdapterProvides
       type ProvidedByLogger = InferAdapterProvides<typeof loggerAdapter>;
@@ -138,6 +142,7 @@ describe("Public API exports", () => {
 
       // InferGraphProvides and InferGraphRequires
       const builder = GraphBuilder.create().provide(dbAdapter);
+      expect(builder).toBeDefined();
       type GraphProvides = InferGraphProvides<typeof builder>;
       type GraphRequires = InferGraphRequires<typeof builder>;
 

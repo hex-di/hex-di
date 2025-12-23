@@ -10,7 +10,7 @@
  * 6. HasOverlap type predicate works correctly
  */
 
-import { describe, expectTypeOf, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { createPort } from "@hex-di/ports";
 import {
   GraphBuilder,
@@ -78,14 +78,14 @@ const DatabaseAdapter = createAdapter({
   provides: DatabasePort,
   requires: [],
   lifetime: "singleton",
-  factory: () => ({ query: async () => ({}) }),
+  factory: () => ({ query: () => Promise.resolve({}) }),
 });
 
 const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort, DatabasePort],
   lifetime: "scoped",
-  factory: () => ({ getUser: async (id) => ({ id, name: "test" }) }),
+  factory: () => ({ getUser: id => Promise.resolve({ id, name: "test" }) }),
 });
 
 // Duplicate adapter for LoggerPort (same port as LoggerAdapter)
@@ -120,10 +120,7 @@ describe("HasOverlap type predicate", () => {
   });
 
   it("returns false when unions have no overlap", () => {
-    type NoOverlap = HasOverlap<
-      LoggerPortType | DatabasePortType,
-      UserServicePortType
-    >;
+    type NoOverlap = HasOverlap<LoggerPortType | DatabasePortType, UserServicePortType>;
     expectTypeOf<NoOverlap>().toEqualTypeOf<false>();
   });
 
@@ -145,7 +142,9 @@ describe("HasOverlap type predicate", () => {
 describe("duplicate provider detection", () => {
   it("providing same port twice produces error type", () => {
     const builder = GraphBuilder.create().provide(LoggerAdapter);
+    expect(builder).toBeDefined();
     const duplicateBuilder = builder.provide(DuplicateLoggerAdapter);
+    expect(duplicateBuilder).toBeDefined();
 
     // The result should be a DuplicateProviderError type
     type Result = typeof duplicateBuilder;
@@ -163,9 +162,8 @@ describe("duplicate provider detection", () => {
   it("different ports with same interface are allowed", () => {
     // LoggerPort and AnotherLoggerPort have the same interface but different names
     // They should NOT trigger duplicate detection
-    const builder = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(AnotherLoggerAdapter);
+    const builder = GraphBuilder.create().provide(LoggerAdapter).provide(AnotherLoggerAdapter);
+    expect(builder).toBeDefined();
 
     // Should be a valid GraphBuilder, not an error
     type Result = typeof builder;
@@ -178,6 +176,7 @@ describe("duplicate provider detection", () => {
   it("first provide() succeeds, second triggers error", () => {
     // First provide() returns a valid GraphBuilder
     const firstBuilder = GraphBuilder.create().provide(LoggerAdapter);
+    expect(firstBuilder).toBeDefined();
     type FirstBuilderType = typeof firstBuilder;
 
     // Verify first builder is a valid GraphBuilder with Logger provided
@@ -185,6 +184,7 @@ describe("duplicate provider detection", () => {
 
     // Second provide() with duplicate should return error type
     const secondBuilder = firstBuilder.provide(DuplicateLoggerAdapter);
+    expect(secondBuilder).toBeDefined();
     type SecondBuilderType = typeof secondBuilder;
 
     // The result should be a DuplicateProviderError
@@ -197,9 +197,11 @@ describe("duplicate provider detection", () => {
       .provide(LoggerAdapter)
       .provide(DatabaseAdapter)
       .provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
 
     // Adding a duplicate Logger at the end should trigger error
     const withDuplicate = builder.provide(DuplicateLoggerAdapter);
+    expect(withDuplicate).toBeDefined();
     type Result = typeof withDuplicate;
 
     // Should be an error type
@@ -212,6 +214,7 @@ describe("duplicate provider detection", () => {
       .provide(LoggerAdapter)
       .provide(DatabaseAdapter)
       .provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
 
     // Should be a valid GraphBuilder
     type Result = typeof builder;

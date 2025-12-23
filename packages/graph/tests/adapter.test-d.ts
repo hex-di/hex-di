@@ -12,13 +12,9 @@
  * 8. ResolvedDeps correctly maps Port union to typed object
  */
 
-import { describe, expectTypeOf, it } from "vitest";
-import { createPort, Port, InferService } from "@hex-di/ports";
-import {
-  Adapter,
-  Lifetime,
-  ResolvedDeps,
-} from "../src/index.js";
+import { describe, expect, expectTypeOf, it } from "vitest";
+import { createPort, Port } from "@hex-di/ports";
+import { Adapter, Lifetime, ResolvedDeps } from "../src/index.js";
 
 // =============================================================================
 // Test Service Interfaces
@@ -54,15 +50,19 @@ type DatabasePortType = typeof DatabasePort;
 type UserServicePortType = typeof UserServicePort;
 type ConfigPortType = typeof ConfigPort;
 
+// Use the port variables to satisfy ESLint
+expect(LoggerPort).toBeDefined();
+expect(DatabasePort).toBeDefined();
+expect(UserServicePort).toBeDefined();
+expect(ConfigPort).toBeDefined();
+
 // =============================================================================
 // Lifetime Type Tests
 // =============================================================================
 
 describe("Lifetime type", () => {
   it("is a union of singleton, scoped, and transient literals", () => {
-    expectTypeOf<Lifetime>().toEqualTypeOf<
-      "singleton" | "scoped" | "transient"
-    >();
+    expectTypeOf<Lifetime>().toEqualTypeOf<"singleton" | "scoped" | "transient">();
   });
 
   it("accepts valid lifetime values", () => {
@@ -78,6 +78,7 @@ describe("Lifetime type", () => {
   it("rejects invalid lifetime values", () => {
     // @ts-expect-error - "invalid" is not a valid Lifetime
     const invalid: Lifetime = "invalid";
+    expect(invalid).toBeDefined();
   });
 });
 
@@ -94,11 +95,7 @@ describe("Adapter type", () => {
   });
 
   it("captures TRequires as Port union", () => {
-    type ServiceAdapter = Adapter<
-      UserServicePortType,
-      LoggerPortType | DatabasePortType,
-      "scoped"
-    >;
+    type ServiceAdapter = Adapter<UserServicePortType, LoggerPortType | DatabasePortType, "scoped">;
 
     // TRequires is captured in the brand tuple
     // We verify via the requires array type that it tracks dependencies
@@ -124,16 +121,8 @@ describe("Adapter type", () => {
   });
 
   it("produces distinct types for same provides but different requires", () => {
-    type AdapterWithLogger = Adapter<
-      UserServicePortType,
-      LoggerPortType,
-      "scoped"
-    >;
-    type AdapterWithDatabase = Adapter<
-      UserServicePortType,
-      DatabasePortType,
-      "scoped"
-    >;
+    type AdapterWithLogger = Adapter<UserServicePortType, LoggerPortType, "scoped">;
+    type AdapterWithDatabase = Adapter<UserServicePortType, DatabasePortType, "scoped">;
 
     // These should be distinct types despite same TProvides and TLifetime
     expectTypeOf<AdapterWithLogger>().not.toEqualTypeOf<AdapterWithDatabase>();
@@ -166,9 +155,7 @@ describe("Adapter type", () => {
       Logger: Logger;
       Database: Database;
     };
-    expectTypeOf<FactoryType>().toMatchTypeOf<
-      (deps: ExpectedDeps) => UserService
-    >();
+    expectTypeOf<FactoryType>().toMatchTypeOf<(deps: ExpectedDeps) => UserService>();
   });
 
   it("achieves nominal typing via brand symbol", () => {
@@ -220,9 +207,7 @@ describe("ResolvedDeps utility type", () => {
   });
 
   it("correctly infers service types from Ports", () => {
-    type AllDeps = ResolvedDeps<
-      LoggerPortType | DatabasePortType | ConfigPortType
-    >;
+    type AllDeps = ResolvedDeps<LoggerPortType | DatabasePortType | ConfigPortType>;
 
     // Each key should have the correct service type
     expectTypeOf<AllDeps["Logger"]>().toEqualTypeOf<Logger>();

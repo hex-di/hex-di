@@ -11,9 +11,9 @@
  * 7. Factory return type must match `InferService<TProvides>`
  */
 
-import { describe, expectTypeOf, it } from "vitest";
-import { createPort, Port, InferService } from "@hex-di/ports";
-import { Adapter, createAdapter, ResolvedDeps } from "../src/index.js";
+import { describe, expect, expectTypeOf, it } from "vitest";
+import { createPort, Port } from "@hex-di/ports";
+import { Adapter, createAdapter } from "../src/index.js";
 
 // =============================================================================
 // Test Service Interfaces
@@ -31,10 +31,6 @@ interface UserService {
   getUser(id: string): Promise<{ id: string; name: string }>;
 }
 
-interface ConfigService {
-  get(key: string): string;
-}
-
 // =============================================================================
 // Test Port Tokens
 // =============================================================================
@@ -42,12 +38,10 @@ interface ConfigService {
 const LoggerPort = createPort<"Logger", Logger>("Logger");
 const DatabasePort = createPort<"Database", Database>("Database");
 const UserServicePort = createPort<"UserService", UserService>("UserService");
-const ConfigPort = createPort<"Config", ConfigService>("Config");
 
 type LoggerPortType = typeof LoggerPort;
 type DatabasePortType = typeof DatabasePort;
 type UserServicePortType = typeof UserServicePort;
-type ConfigPortType = typeof ConfigPort;
 
 // =============================================================================
 // createAdapter Type Tests
@@ -61,6 +55,7 @@ describe("createAdapter function", () => {
       lifetime: "singleton",
       factory: () => ({ log: () => {} }),
     });
+    expect(adapter).toBeDefined();
 
     // Verify the adapter provides the correct port
     expectTypeOf(adapter.provides).toEqualTypeOf<LoggerPortType>();
@@ -72,10 +67,11 @@ describe("createAdapter function", () => {
       provides: UserServicePort,
       requires: [LoggerPort, DatabasePort],
       lifetime: "scoped",
-      factory: (deps) => ({
-        getUser: async (id) => ({ id, name: "test" }),
+      factory: () => ({
+        getUser: id => Promise.resolve({ id, name: "test" }),
       }),
     });
+    expect(adapter).toBeDefined();
 
     // The requires property should be a readonly array containing the ports
     expectTypeOf(adapter.requires).toMatchTypeOf<readonly Port<unknown, string>[]>();
@@ -107,6 +103,9 @@ describe("createAdapter function", () => {
       lifetime: "transient",
       factory: () => ({ log: () => {} }),
     });
+    expect(singletonAdapter).toBeDefined();
+    expect(scopedAdapter).toBeDefined();
+    expect(requestAdapter).toBeDefined();
 
     // Each adapter should preserve the literal lifetime type
     expectTypeOf(singletonAdapter.lifetime).toEqualTypeOf<"singleton">();
@@ -116,20 +115,21 @@ describe("createAdapter function", () => {
 
   it("factory function receives correctly typed dependencies object", () => {
     // With dependencies
-    createAdapter({
+    const adapter = createAdapter({
       provides: UserServicePort,
       requires: [LoggerPort, DatabasePort],
       lifetime: "scoped",
-      factory: (deps) => {
+      factory: deps => {
         // deps should have Logger and Database properties
         expectTypeOf(deps.Logger).toEqualTypeOf<Logger>();
         expectTypeOf(deps.Database).toEqualTypeOf<Database>();
 
         return {
-          getUser: async (id) => ({ id, name: "test" }),
+          getUser: id => Promise.resolve({ id, name: "test" }),
         };
       },
     });
+    expect(adapter).toBeDefined();
   });
 
   it("empty requires array results in never for TRequires", () => {
@@ -137,12 +137,13 @@ describe("createAdapter function", () => {
       provides: LoggerPort,
       requires: [],
       lifetime: "singleton",
-      factory: (deps) => {
+      factory: deps => {
         // deps should be Record<string, unknown> for compatibility with other adapters
         expectTypeOf(deps).toEqualTypeOf<Record<string, unknown>>();
         return { log: () => {} };
       },
     });
+    expect(adapter).toBeDefined();
 
     // The requires property should be an empty readonly array
     expectTypeOf(adapter.requires).toEqualTypeOf<readonly []>();
@@ -154,13 +155,14 @@ describe("createAdapter function", () => {
       provides: UserServicePort,
       requires: [LoggerPort, DatabasePort],
       lifetime: "scoped",
-      factory: (deps) => ({
-        getUser: async (id) => {
+      factory: deps => ({
+        getUser: id => {
           deps.Logger.log(`Getting user ${id}`);
-          return { id, name: "test" };
+          return Promise.resolve({ id, name: "test" });
         },
       }),
     });
+    expect(adapter).toBeDefined();
 
     // Type should be fully inferred
     type AdapterType = typeof adapter;
@@ -175,8 +177,9 @@ describe("createAdapter function", () => {
       provides: LoggerPort,
       requires: [],
       lifetime: "singleton",
-      factory: () => ({ log: (_msg: string) => {} }),
+      factory: () => ({ log: () => {} }),
     });
+    expect(validAdapter).toBeDefined();
 
     // The factory return type should match the service type
     type FactoryReturnType = ReturnType<typeof validAdapter.factory>;
@@ -188,13 +191,14 @@ describe("createAdapter function", () => {
       provides: UserServicePort,
       requires: [LoggerPort],
       lifetime: "transient",
-      factory: (deps) => {
+      factory: deps => {
         expectTypeOf(deps.Logger).toEqualTypeOf<Logger>();
         return {
-          getUser: async (id) => ({ id, name: "test" }),
+          getUser: id => Promise.resolve({ id, name: "test" }),
         };
       },
     });
+    expect(adapter).toBeDefined();
 
     expectTypeOf(adapter).toMatchTypeOf<
       Adapter<UserServicePortType, LoggerPortType, "transient">

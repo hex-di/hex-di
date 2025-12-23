@@ -10,7 +10,7 @@
  * 6. The detection works with GraphBuilder.provide()
  */
 
-import { describe, expectTypeOf, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { createPort } from "@hex-di/ports";
 import {
   GraphBuilder,
@@ -86,6 +86,7 @@ describe("AdapterProvidesName and AdapterRequiresNames utilities", () => {
       lifetime: "singleton",
       factory: () => ({ doA: () => {} }),
     });
+    expect(adapter).toBeDefined();
 
     type Name = AdapterProvidesName<typeof adapter>;
     expectTypeOf<Name>().toEqualTypeOf<"A">();
@@ -98,6 +99,7 @@ describe("AdapterProvidesName and AdapterRequiresNames utilities", () => {
       lifetime: "singleton",
       factory: () => ({ doA: () => {} }),
     });
+    expect(adapter).toBeDefined();
 
     type Names = AdapterRequiresNames<typeof adapter>;
     expectTypeOf<Names>().toEqualTypeOf<"B">();
@@ -110,6 +112,7 @@ describe("AdapterProvidesName and AdapterRequiresNames utilities", () => {
       lifetime: "singleton",
       factory: () => ({ doA: () => {} }),
     });
+    expect(adapter).toBeDefined();
 
     type Names = AdapterRequiresNames<typeof adapter>;
     expectTypeOf<Names>().toEqualTypeOf<"B" | "C">();
@@ -122,6 +125,7 @@ describe("AdapterProvidesName and AdapterRequiresNames utilities", () => {
       lifetime: "singleton",
       factory: () => ({ doA: () => {} }),
     });
+    expect(adapter).toBeDefined();
 
     type Names = AdapterRequiresNames<typeof adapter>;
     expectTypeOf<Names>().toBeNever();
@@ -231,9 +235,11 @@ describe("simple A -> B -> A cycles are detected", () => {
       lifetime: "singleton",
       factory: () => ({ doB: () => {} }),
     });
+    expect(AdapterB).toBeDefined();
 
     // Adding A first, then B should detect cycle
     const builder = GraphBuilder.create().provide(AdapterA);
+    expect(builder).toBeDefined();
     type ResultType = ReturnType<typeof builder.provide<typeof AdapterB>>;
 
     expectTypeOf<IsCycleError<ResultType>>().toEqualTypeOf<true>();
@@ -255,9 +261,11 @@ describe("simple A -> B -> A cycles are detected", () => {
       lifetime: "singleton",
       factory: () => ({ doA: () => {} }),
     });
+    expect(AdapterA).toBeDefined();
 
     // Adding B first, then A should also detect cycle
     const builder = GraphBuilder.create().provide(AdapterB);
+    expect(builder).toBeDefined();
     type ResultType = ReturnType<typeof builder.provide<typeof AdapterA>>;
 
     expectTypeOf<IsCycleError<ResultType>>().toEqualTypeOf<true>();
@@ -293,8 +301,10 @@ describe("longer A -> B -> C -> A cycles are detected", () => {
       lifetime: "singleton",
       factory: () => ({ doC: () => {} }),
     });
+    expect(AdapterC).toBeDefined();
 
     const builder = GraphBuilder.create().provide(AdapterA).provide(AdapterB);
+    expect(builder).toBeDefined();
 
     type ResultType = ReturnType<typeof builder.provide<typeof AdapterC>>;
     expectTypeOf<IsCycleError<ResultType>>().toEqualTypeOf<true>();
@@ -332,8 +342,10 @@ describe("longer A -> B -> C -> A cycles are detected", () => {
       lifetime: "singleton",
       factory: () => ({ doD: () => {} }),
     });
+    expect(AdapterD).toBeDefined();
 
     const builder = GraphBuilder.create().provide(AdapterA).provide(AdapterB).provide(AdapterC);
+    expect(builder).toBeDefined();
 
     type ResultType = ReturnType<typeof builder.provide<typeof AdapterD>>;
     expectTypeOf<IsCycleError<ResultType>>().toEqualTypeOf<true>();
@@ -371,6 +383,7 @@ describe("non-cyclic dependency chains pass validation", () => {
     });
 
     const builder = GraphBuilder.create().provide(AdapterA).provide(AdapterB).provide(AdapterC);
+    expect(builder).toBeDefined();
 
     // Should not be a cycle error
     expectTypeOf<IsCycleError<typeof builder>>().toEqualTypeOf<false>();
@@ -414,6 +427,7 @@ describe("non-cyclic dependency chains pass validation", () => {
       .provide(AdapterB)
       .provide(AdapterC)
       .provide(AdapterD);
+    expect(builder).toBeDefined();
 
     expectTypeOf<IsCycleError<typeof builder>>().toEqualTypeOf<false>();
   });
@@ -456,6 +470,7 @@ describe("non-cyclic dependency chains pass validation", () => {
       .provide(AdapterB)
       .provide(AdapterC)
       .provide(AdapterD);
+    expect(builder).toBeDefined();
 
     expectTypeOf<IsCycleError<typeof builder>>().toEqualTypeOf<false>();
   });
@@ -474,8 +489,10 @@ describe("self-referential dependencies are detected", () => {
       lifetime: "singleton",
       factory: () => ({ doA: () => {} }),
     });
+    expect(AdapterA).toBeDefined();
 
     const builder = GraphBuilder.create();
+    expect(builder).toBeDefined();
     type ResultType = ReturnType<typeof builder.provide<typeof AdapterA>>;
     expectTypeOf<IsCycleError<ResultType>>().toEqualTypeOf<true>();
   });
@@ -511,7 +528,7 @@ describe("cycle detection works with realistic service adapters", () => {
       provides: UserServicePort,
       requires: [DatabasePort],
       lifetime: "singleton",
-      factory: () => ({ getUser: async () => ({ id: "1", name: "Test" }) }),
+      factory: () => ({ getUser: () => Promise.resolve({ id: "1", name: "Test" }) }),
     });
 
     // Database depends on UserService (bad design - creates cycle)
@@ -519,10 +536,12 @@ describe("cycle detection works with realistic service adapters", () => {
       provides: DatabasePort,
       requires: [UserServicePort],
       lifetime: "singleton",
-      factory: () => ({ query: async () => ({}) }),
+      factory: () => ({ query: () => Promise.resolve({}) }),
     });
+    expect(DatabaseAdapter).toBeDefined();
 
     const builder = GraphBuilder.create().provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
     type ResultType = ReturnType<typeof builder.provide<typeof DatabaseAdapter>>;
 
     expectTypeOf<IsCycleError<ResultType>>().toEqualTypeOf<true>();
@@ -542,7 +561,7 @@ describe("cycle detection works with realistic service adapters", () => {
       provides: DatabasePort,
       requires: [LoggerPort],
       lifetime: "singleton",
-      factory: () => ({ query: async () => ({}) }),
+      factory: () => ({ query: () => Promise.resolve({}) }),
     });
 
     // UserService (application - depends on Logger and Database)
@@ -550,13 +569,14 @@ describe("cycle detection works with realistic service adapters", () => {
       provides: UserServicePort,
       requires: [LoggerPort, DatabasePort],
       lifetime: "singleton",
-      factory: () => ({ getUser: async () => ({ id: "1", name: "Test" }) }),
+      factory: () => ({ getUser: () => Promise.resolve({ id: "1", name: "Test" }) }),
     });
 
     const builder = GraphBuilder.create()
       .provide(LoggerAdapter)
       .provide(DatabaseAdapter)
       .provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
 
     expectTypeOf<IsCycleError<typeof builder>>().toEqualTypeOf<false>();
   });

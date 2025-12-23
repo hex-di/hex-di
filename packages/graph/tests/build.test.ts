@@ -64,7 +64,7 @@ const DatabaseAdapter = createAdapter({
   provides: DatabasePort,
   requires: [],
   lifetime: "singleton",
-  factory: () => ({ query: async () => ({}) }),
+  factory: () => ({ query: () => Promise.resolve({}) }),
 });
 
 const ConfigAdapter = createAdapter({
@@ -85,7 +85,7 @@ const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort, DatabasePort],
   lifetime: "scoped",
-  factory: () => ({ getUser: async (id) => ({ id, name: "test" }) }),
+  factory: () => ({ getUser: id => Promise.resolve({ id, name: "test" }) }),
 });
 
 // =============================================================================
@@ -94,27 +94,20 @@ const UserServiceAdapter = createAdapter({
 
 describe("build() returns frozen graph object", () => {
   it("returns a frozen object", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     expect(Object.isFrozen(graph)).toBe(true);
   });
 
   it("graph adapters property is frozen", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
 
     // The adapters array should be frozen
     expect(Object.isFrozen(graph.adapters)).toBe(true);
   });
 
   it("cannot modify graph adapters array", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     expect(() => {
       // @ts-expect-error Testing runtime immutability - TypeScript correctly marks as readonly
@@ -129,9 +122,7 @@ describe("build() returns frozen graph object", () => {
 
 describe("built graph contains all registered adapters", () => {
   it("graph contains single adapter", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     expect(graph.adapters).toContain(LoggerAdapter);
     expect(graph.adapters.length).toBe(1);
@@ -234,9 +225,7 @@ describe("graph adapters match builder adapters", () => {
 
 describe("multiple build() calls on same builder work", () => {
   it("can call build() multiple times", () => {
-    const builder = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapter);
+    const builder = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter);
 
     const graph1 = builder.build();
     const graph2 = builder.build();
@@ -246,8 +235,7 @@ describe("multiple build() calls on same builder work", () => {
   });
 
   it("build() returns distinct graph objects", () => {
-    const builder = GraphBuilder.create()
-      .provide(LoggerAdapter);
+    const builder = GraphBuilder.create().provide(LoggerAdapter);
 
     const graph1 = builder.build();
     const graph2 = builder.build();
@@ -262,9 +250,7 @@ describe("multiple build() calls on same builder work", () => {
   });
 
   it("builder remains unchanged after multiple build() calls", () => {
-    const builder = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapter);
+    const builder = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter);
 
     const originalAdapterCount = builder.adapters.length;
 
@@ -282,9 +268,7 @@ describe("multiple build() calls on same builder work", () => {
 
 describe("graph is immutable at runtime", () => {
   it("cannot add properties to graph", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     expect(() => {
       // @ts-expect-error Testing runtime immutability - adding new property should throw
@@ -293,9 +277,7 @@ describe("graph is immutable at runtime", () => {
   });
 
   it("cannot modify existing graph properties", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     expect(() => {
       // @ts-expect-error Testing runtime immutability - TypeScript correctly marks as readonly
@@ -304,10 +286,7 @@ describe("graph is immutable at runtime", () => {
   });
 
   it("graph adapters array is truly frozen", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
 
     // Cannot push
     expect(() => {

@@ -12,7 +12,7 @@
  * 8. Utility types handle edge cases correctly
  */
 
-import { describe, expectTypeOf, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { createPort } from "@hex-di/ports";
 import {
   GraphBuilder,
@@ -86,7 +86,7 @@ const DatabaseAdapter = createAdapter({
   provides: DatabasePort,
   requires: [],
   lifetime: "singleton",
-  factory: () => ({ query: async () => ({}) }),
+  factory: () => ({ query: () => Promise.resolve({}) }),
 });
 
 const ConfigAdapter = createAdapter({
@@ -107,14 +107,14 @@ const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort, DatabasePort],
   lifetime: "scoped",
-  factory: () => ({ getUser: async (id) => ({ id, name: "test" }) }),
+  factory: () => ({ getUser: id => Promise.resolve({ id, name: "test" }) }),
 });
 
 const EmailAdapter = createAdapter({
   provides: EmailPort,
   requires: [LoggerPort, ConfigPort],
   lifetime: "transient",
-  factory: () => ({ send: async () => {} }),
+  factory: () => ({ send: () => Promise.resolve() }),
 });
 
 // =============================================================================
@@ -146,9 +146,7 @@ describe("Exclude<TRequires, TProvides> computes unsatisfied dependencies", () =
     type Unsatisfied = UnsatisfiedDependencies<Provided, Required>;
 
     // Both DatabasePort and ConfigPort are missing
-    expectTypeOf<Unsatisfied>().toEqualTypeOf<
-      DatabasePortType | ConfigPortType
-    >();
+    expectTypeOf<Unsatisfied>().toEqualTypeOf<DatabasePortType | ConfigPortType>();
   });
 });
 
@@ -205,16 +203,10 @@ describe("when deps missing, Exclude<...> is the missing Port union", () => {
 
   it("shows multiple missing ports as union", () => {
     type Provided = LoggerPortType;
-    type Required =
-      | LoggerPortType
-      | DatabasePortType
-      | ConfigPortType
-      | CachePortType;
+    type Required = LoggerPortType | DatabasePortType | ConfigPortType | CachePortType;
     type Unsatisfied = UnsatisfiedDependencies<Provided, Required>;
 
-    expectTypeOf<Unsatisfied>().toEqualTypeOf<
-      DatabasePortType | ConfigPortType | CachePortType
-    >();
+    expectTypeOf<Unsatisfied>().toEqualTypeOf<DatabasePortType | ConfigPortType | CachePortType>();
   });
 
   it("IsSatisfied returns false when deps missing", () => {
@@ -244,19 +236,14 @@ describe("partial satisfaction correctly shows remaining ports", () => {
 
     // Step 0: Nothing provided
     type Step0 = UnsatisfiedDependencies<never, Required>;
-    expectTypeOf<Step0>().toEqualTypeOf<
-      LoggerPortType | DatabasePortType | ConfigPortType
-    >();
+    expectTypeOf<Step0>().toEqualTypeOf<LoggerPortType | DatabasePortType | ConfigPortType>();
 
     // Step 1: Logger provided
     type Step1 = UnsatisfiedDependencies<LoggerPortType, Required>;
     expectTypeOf<Step1>().toEqualTypeOf<DatabasePortType | ConfigPortType>();
 
     // Step 2: Logger + Database provided
-    type Step2 = UnsatisfiedDependencies<
-      LoggerPortType | DatabasePortType,
-      Required
-    >;
+    type Step2 = UnsatisfiedDependencies<LoggerPortType | DatabasePortType, Required>;
     expectTypeOf<Step2>().toEqualTypeOf<ConfigPortType>();
 
     // Step 3: All provided
@@ -270,6 +257,7 @@ describe("partial satisfaction correctly shows remaining ports", () => {
   it("works with real graph builder types", () => {
     // Build graph step by step
     const step1 = GraphBuilder.create().provide(UserServiceAdapter);
+    expect(step1).toBeDefined();
     type R1 = InferGraphRequires<typeof step1>;
     type P1 = InferGraphProvides<typeof step1>;
     type U1 = UnsatisfiedDependencies<P1, R1>;
@@ -279,6 +267,7 @@ describe("partial satisfaction correctly shows remaining ports", () => {
 
     // Add Logger
     const step2 = step1.provide(LoggerAdapter);
+    expect(step2).toBeDefined();
     type R2 = InferGraphRequires<typeof step2>;
     type P2 = InferGraphProvides<typeof step2>;
     type U2 = UnsatisfiedDependencies<P2, R2>;
@@ -288,6 +277,7 @@ describe("partial satisfaction correctly shows remaining ports", () => {
 
     // Add Database
     const step3 = step2.provide(DatabaseAdapter);
+    expect(step3).toBeDefined();
     type R3 = InferGraphRequires<typeof step3>;
     type P3 = InferGraphProvides<typeof step3>;
     type U3 = UnsatisfiedDependencies<P3, R3>;
@@ -315,10 +305,7 @@ describe("`never` requires always results in `never` unsatisfied", () => {
   it("IsSatisfied with never requirements returns true", () => {
     type Satisfied1 = IsSatisfied<never, never>;
     type Satisfied2 = IsSatisfied<LoggerPortType, never>;
-    type Satisfied3 = IsSatisfied<
-      LoggerPortType | DatabasePortType | ConfigPortType,
-      never
-    >;
+    type Satisfied3 = IsSatisfied<LoggerPortType | DatabasePortType | ConfigPortType, never>;
 
     expectTypeOf<Satisfied1>().toEqualTypeOf<true>();
     expectTypeOf<Satisfied2>().toEqualTypeOf<true>();
@@ -330,6 +317,7 @@ describe("`never` requires always results in `never` unsatisfied", () => {
       .provide(LoggerAdapter)
       .provide(DatabaseAdapter)
       .provide(ConfigAdapter);
+    expect(builder).toBeDefined();
 
     type Provided = InferGraphProvides<typeof builder>;
     type Required = InferGraphRequires<typeof builder>;
@@ -361,6 +349,9 @@ describe("order of provide() calls doesn't affect validation result", () => {
       .provide(DatabaseAdapter)
       .provide(UserServiceAdapter)
       .provide(LoggerAdapter);
+    expect(orderABC).toBeDefined();
+    expect(orderCAB).toBeDefined();
+    expect(orderBCA).toBeDefined();
 
     // All should have same unsatisfied deps
     type U_ABC = UnsatisfiedDependencies<
@@ -383,13 +374,11 @@ describe("order of provide() calls doesn't affect validation result", () => {
   });
 
   it("incomplete graph same result regardless of order", () => {
-    const order1 = GraphBuilder.create()
-      .provide(UserServiceAdapter)
-      .provide(LoggerAdapter);
+    const order1 = GraphBuilder.create().provide(UserServiceAdapter).provide(LoggerAdapter);
 
-    const order2 = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(UserServiceAdapter);
+    const order2 = GraphBuilder.create().provide(LoggerAdapter).provide(UserServiceAdapter);
+    expect(order1).toBeDefined();
+    expect(order2).toBeDefined();
 
     type U1 = UnsatisfiedDependencies<
       InferGraphProvides<typeof order1>,
@@ -416,6 +405,8 @@ describe("order of provide() calls doesn't affect validation result", () => {
       .provide(UserServiceAdapter)
       .provide(DatabaseAdapter)
       .provide(LoggerAdapter);
+    expect(completeA).toBeDefined();
+    expect(completeB).toBeDefined();
 
     type SatA = IsSatisfied<
       InferGraphProvides<typeof completeA>,
@@ -452,6 +443,7 @@ describe("validation works with complex multi-adapter graphs", () => {
       .provide(CacheAdapter)
       .provide(UserServiceAdapter)
       .provide(EmailAdapter);
+    expect(completeGraph).toBeDefined();
 
     type Provided = InferGraphProvides<typeof completeGraph>;
     type Required = InferGraphRequires<typeof completeGraph>;
@@ -479,6 +471,7 @@ describe("validation works with complex multi-adapter graphs", () => {
       .provide(CacheAdapter) // requires Config
       .provide(UserServiceAdapter) // requires Logger, Database
       .provide(EmailAdapter); // requires Logger, Config
+    expect(incompleteGraph).toBeDefined();
 
     type Provided = InferGraphProvides<typeof incompleteGraph>;
     type Required = InferGraphRequires<typeof incompleteGraph>;
@@ -486,9 +479,7 @@ describe("validation works with complex multi-adapter graphs", () => {
 
     // Logger is provided
     // Config and Database are missing
-    expectTypeOf<Unsatisfied>().toEqualTypeOf<
-      ConfigPortType | DatabasePortType
-    >();
+    expectTypeOf<Unsatisfied>().toEqualTypeOf<ConfigPortType | DatabasePortType>();
   });
 
   it("IsSatisfied correctly evaluates complex graph", () => {
@@ -504,6 +495,8 @@ describe("validation works with complex multi-adapter graphs", () => {
       .provide(LoggerAdapter)
       .provide(CacheAdapter)
       .provide(UserServiceAdapter);
+    expect(completeGraph).toBeDefined();
+    expect(incompleteGraph).toBeDefined();
 
     type SatComplete = IsSatisfied<
       InferGraphProvides<typeof completeGraph>,
@@ -547,21 +540,14 @@ describe("validation works with complex multi-adapter graphs", () => {
 describe("validation utility types handle edge cases", () => {
   it("handles single port in provides and requires", () => {
     type Unsatisfied1 = UnsatisfiedDependencies<LoggerPortType, LoggerPortType>;
-    type Unsatisfied2 = UnsatisfiedDependencies<
-      LoggerPortType,
-      DatabasePortType
-    >;
+    type Unsatisfied2 = UnsatisfiedDependencies<LoggerPortType, DatabasePortType>;
 
     expectTypeOf<Unsatisfied1>().toBeNever();
     expectTypeOf<Unsatisfied2>().toEqualTypeOf<DatabasePortType>();
   });
 
   it("handles superset provides (more than needed)", () => {
-    type Provided =
-      | LoggerPortType
-      | DatabasePortType
-      | ConfigPortType
-      | CachePortType;
+    type Provided = LoggerPortType | DatabasePortType | ConfigPortType | CachePortType;
     type Required = LoggerPortType;
     type Unsatisfied = UnsatisfiedDependencies<Provided, Required>;
 

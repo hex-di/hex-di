@@ -3,12 +3,12 @@
  *
  * These tests verify:
  * 1. Valid lifetime dependencies pass validation
- * 2. Captive dependencies (singleton → scoped/transient, scoped → transient) are detected
+ * 2. Captive dependencies (singleton -> scoped/transient, scoped -> transient) are detected
  * 3. Error messages contain correct lifetime and port names
  * 4. Detection works with provide(), provideMany(), and merge()
  */
 
-import { describe, expectTypeOf, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { createPort } from "@hex-di/ports";
 import {
   GraphBuilder,
@@ -225,10 +225,11 @@ describe("GraphBuilder.provide() captive dependency detection", () => {
         provides: UserServicePort,
         requires: [LoggerPort],
         lifetime: "singleton",
-        factory: () => ({ getUser: async id => ({ id, name: "Test" }) }),
+        factory: () => ({ getUser: id => Promise.resolve({ id, name: "Test" }) }),
       });
 
       const builder = GraphBuilder.create().provide(LoggerAdapter).provide(UserServiceAdapter);
+      expect(builder).toBeDefined();
 
       expectTypeOf<IsCaptiveError<typeof builder>>().toEqualTypeOf<false>();
     });
@@ -245,10 +246,11 @@ describe("GraphBuilder.provide() captive dependency detection", () => {
         provides: UserServicePort,
         requires: [LoggerPort],
         lifetime: "scoped",
-        factory: () => ({ getUser: async id => ({ id, name: "Test" }) }),
+        factory: () => ({ getUser: id => Promise.resolve({ id, name: "Test" }) }),
       });
 
       const builder = GraphBuilder.create().provide(LoggerAdapter).provide(UserServiceAdapter);
+      expect(builder).toBeDefined();
 
       expectTypeOf<IsCaptiveError<typeof builder>>().toEqualTypeOf<false>();
     });
@@ -258,17 +260,18 @@ describe("GraphBuilder.provide() captive dependency detection", () => {
         provides: DatabasePort,
         requires: [],
         lifetime: "scoped",
-        factory: () => ({ query: async () => ({}) }),
+        factory: () => ({ query: () => Promise.resolve({}) }),
       });
 
       const UserServiceAdapter = createAdapter({
         provides: UserServicePort,
         requires: [DatabasePort],
         lifetime: "scoped",
-        factory: () => ({ getUser: async id => ({ id, name: "Test" }) }),
+        factory: () => ({ getUser: id => Promise.resolve({ id, name: "Test" }) }),
       });
 
       const builder = GraphBuilder.create().provide(DatabaseAdapter).provide(UserServiceAdapter);
+      expect(builder).toBeDefined();
 
       expectTypeOf<IsCaptiveError<typeof builder>>().toEqualTypeOf<false>();
     });
@@ -285,7 +288,7 @@ describe("GraphBuilder.provide() captive dependency detection", () => {
         provides: DatabasePort,
         requires: [],
         lifetime: "scoped",
-        factory: () => ({ query: async () => ({}) }),
+        factory: () => ({ query: () => Promise.resolve({}) }),
       });
 
       const RequestContextAdapter = createAdapter({
@@ -300,7 +303,7 @@ describe("GraphBuilder.provide() captive dependency detection", () => {
         provides: UserServicePort,
         requires: [LoggerPort, DatabasePort, RequestContextPort],
         lifetime: "transient",
-        factory: () => ({ getUser: async id => ({ id, name: "Test" }) }),
+        factory: () => ({ getUser: id => Promise.resolve({ id, name: "Test" }) }),
       });
 
       const builder = GraphBuilder.create()
@@ -308,6 +311,7 @@ describe("GraphBuilder.provide() captive dependency detection", () => {
         .provide(DatabaseAdapter)
         .provide(RequestContextAdapter)
         .provide(UserServiceAdapter);
+      expect(builder).toBeDefined();
 
       expectTypeOf<IsCaptiveError<typeof builder>>().toEqualTypeOf<false>();
     });
@@ -319,17 +323,19 @@ describe("GraphBuilder.provide() captive dependency detection", () => {
         provides: DatabasePort,
         requires: [],
         lifetime: "scoped",
-        factory: () => ({ query: async () => ({}) }),
+        factory: () => ({ query: () => Promise.resolve({}) }),
       });
 
       const UserServiceAdapter = createAdapter({
         provides: UserServicePort,
         requires: [DatabasePort],
         lifetime: "singleton", // Singleton capturing scoped!
-        factory: () => ({ getUser: async id => ({ id, name: "Test" }) }),
+        factory: () => ({ getUser: id => Promise.resolve({ id, name: "Test" }) }),
       });
+      expect(UserServiceAdapter).toBeDefined();
 
       const builder = GraphBuilder.create().provide(DatabaseAdapter);
+      expect(builder).toBeDefined();
       type Result = ReturnType<typeof builder.provide<typeof UserServiceAdapter>>;
 
       expectTypeOf<IsCaptiveError<Result>>().toEqualTypeOf<true>();
@@ -347,10 +353,12 @@ describe("GraphBuilder.provide() captive dependency detection", () => {
         provides: UserServicePort,
         requires: [RequestContextPort],
         lifetime: "singleton", // Singleton capturing transient!
-        factory: () => ({ getUser: async id => ({ id, name: "Test" }) }),
+        factory: () => ({ getUser: id => Promise.resolve({ id, name: "Test" }) }),
       });
+      expect(UserServiceAdapter).toBeDefined();
 
       const builder = GraphBuilder.create().provide(RequestContextAdapter);
+      expect(builder).toBeDefined();
       type Result = ReturnType<typeof builder.provide<typeof UserServiceAdapter>>;
 
       expectTypeOf<IsCaptiveError<Result>>().toEqualTypeOf<true>();
@@ -368,10 +376,12 @@ describe("GraphBuilder.provide() captive dependency detection", () => {
         provides: UserServicePort,
         requires: [RequestContextPort],
         lifetime: "scoped", // Scoped capturing transient!
-        factory: () => ({ getUser: async id => ({ id, name: "Test" }) }),
+        factory: () => ({ getUser: id => Promise.resolve({ id, name: "Test" }) }),
       });
+      expect(UserServiceAdapter).toBeDefined();
 
       const builder = GraphBuilder.create().provide(RequestContextAdapter);
+      expect(builder).toBeDefined();
       type Result = ReturnType<typeof builder.provide<typeof UserServiceAdapter>>;
 
       expectTypeOf<IsCaptiveError<Result>>().toEqualTypeOf<true>();
@@ -416,7 +426,7 @@ describe("complex lifetime scenarios", () => {
       provides: DatabasePort,
       requires: [LoggerPort],
       lifetime: "singleton",
-      factory: () => ({ query: async () => ({}) }),
+      factory: () => ({ query: () => Promise.resolve({}) }),
     });
 
     const CacheAdapter = createAdapter({
@@ -430,7 +440,7 @@ describe("complex lifetime scenarios", () => {
       provides: UserServicePort,
       requires: [DatabasePort, CachePort],
       lifetime: "singleton",
-      factory: () => ({ getUser: async id => ({ id, name: "Test" }) }),
+      factory: () => ({ getUser: id => Promise.resolve({ id, name: "Test" }) }),
     });
 
     const builder = GraphBuilder.create()
@@ -438,6 +448,7 @@ describe("complex lifetime scenarios", () => {
       .provide(DatabaseAdapter)
       .provide(CacheAdapter)
       .provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
 
     expectTypeOf<IsCaptiveError<typeof builder>>().toEqualTypeOf<false>();
   });
@@ -456,7 +467,7 @@ describe("complex lifetime scenarios", () => {
       provides: DatabasePort,
       requires: [LoggerPort],
       lifetime: "scoped",
-      factory: () => ({ query: async () => ({}) }),
+      factory: () => ({ query: () => Promise.resolve({}) }),
     });
 
     // Service layer - scoped (depends on scoped and singleton - OK)
@@ -464,13 +475,14 @@ describe("complex lifetime scenarios", () => {
       provides: UserServicePort,
       requires: [DatabasePort, LoggerPort],
       lifetime: "scoped",
-      factory: () => ({ getUser: async id => ({ id, name: "Test" }) }),
+      factory: () => ({ getUser: id => Promise.resolve({ id, name: "Test" }) }),
     });
 
     const builder = GraphBuilder.create()
       .provide(LoggerAdapter)
       .provide(DatabaseAdapter)
       .provide(UserServiceAdapter);
+    expect(builder).toBeDefined();
 
     expectTypeOf<IsCaptiveError<typeof builder>>().toEqualTypeOf<false>();
   });
