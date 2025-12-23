@@ -45,6 +45,21 @@ export const baseConfig = tseslint.config(
       // Antfu rules
       "antfu/no-top-level-await": "off",
       "antfu/if-newline": "off",
+
+      // Promise/async safety
+      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/no-misused-promises": "error",
+      "@typescript-eslint/await-thenable": "error",
+      "@typescript-eslint/require-await": "warn",
+
+      // Type safety (prevent any leakage) - start as warn to assess impact
+      "@typescript-eslint/no-unsafe-assignment": "warn",
+      "@typescript-eslint/no-unsafe-call": "warn",
+      "@typescript-eslint/no-unsafe-member-access": "warn",
+      "@typescript-eslint/no-unsafe-return": "warn",
+
+      // Console protection
+      "no-console": ["warn", { allow: ["warn", "error"] }],
     },
   },
 
@@ -61,11 +76,27 @@ export const testConfig = tseslint.config({
     "**/__tests__/**/*.{ts,tsx}",
   ],
   rules: {
+    // Relaxed for mocking flexibility
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/no-non-null-assertion": "off",
-    "@typescript-eslint/no-unused-vars": "off",
     "@typescript-eslint/no-empty-object-type": "off",
-    "prefer-const": "off",
+
+    // Keep some safety in tests
+    "@typescript-eslint/no-unused-vars": "warn",
+    "prefer-const": "warn",
+
+    // Async rules still active - tests should handle promises correctly
+    "@typescript-eslint/no-floating-promises": "error",
+    "@typescript-eslint/no-misused-promises": "error",
+
+    // Relax unsafe rules for test mocking
+    "@typescript-eslint/no-unsafe-assignment": "off",
+    "@typescript-eslint/no-unsafe-call": "off",
+    "@typescript-eslint/no-unsafe-member-access": "off",
+    "@typescript-eslint/no-unsafe-return": "off",
+
+    // Allow console in tests
+    "no-console": "off",
   },
 });
 

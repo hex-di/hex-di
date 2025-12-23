@@ -27,8 +27,8 @@ export default tseslint.config(
       "react/react-in-jsx-scope": "off",
       // DevTools package has complex patterns - relax some rules
       "react/prop-types": "off",
-      "react-hooks/rules-of-hooks": "warn",
-      "react-hooks/exhaustive-deps": "warn",
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "error",
       "react-hooks/preserve-manual-memoization": "off",
       "react-hooks/refs": "off",
       "react-hooks/globals": "off",

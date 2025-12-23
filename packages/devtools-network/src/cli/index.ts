@@ -37,7 +37,7 @@ async function main(): Promise<void> {
 }
 
 async function startServer(): Promise<void> {
-  const portArg = args.find((arg) => arg.startsWith("--port="));
+  const portArg = args.find(arg => arg.startsWith("--port="));
   const portValue = portArg?.split("=")[1];
   const port = portValue !== undefined ? parseInt(portValue, 10) : 9229;
 
@@ -47,7 +47,7 @@ async function startServer(): Promise<void> {
 
   const server = new DevToolsServer({ port, verbose });
 
-  server.on((event) => {
+  server.on(event => {
     switch (event.type) {
       case "started":
         console.log(`DevTools server running on ws://localhost:${event.port}/devtools`);
@@ -67,15 +67,13 @@ async function startServer(): Promise<void> {
   await server.start();
 
   // Handle graceful shutdown
-  process.on("SIGINT", async () => {
+  process.on("SIGINT", () => {
     console.log("\nShutting down...");
-    await server.stop();
-    process.exit(0);
+    void server.stop().then(() => process.exit(0));
   });
 
-  process.on("SIGTERM", async () => {
-    await server.stop();
-    process.exit(0);
+  process.on("SIGTERM", () => {
+    void server.stop().then(() => process.exit(0));
   });
 }
 
@@ -106,7 +104,7 @@ function showVersion(): void {
   console.log("@hex-di/devtools-network v0.1.0");
 }
 
-main().catch((err) => {
+main().catch(err => {
   console.error("Fatal error:", err);
   process.exit(1);
 });

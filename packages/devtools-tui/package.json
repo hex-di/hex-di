@@ -24,7 +24,7 @@
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.build.json --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint .",
+    "lint": "eslint . --cache",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest watch",
     "clean": "rm -rf dist"

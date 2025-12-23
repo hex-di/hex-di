@@ -18,7 +18,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "clean": "rm -rf dist",
-    "lint": "eslint .",
+    "lint": "eslint . --cache",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [

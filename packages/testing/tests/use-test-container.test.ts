@@ -62,7 +62,7 @@ const DatabaseAdapter = createAdapter({
     query: vi.fn().mockResolvedValue({ rows: [] }),
     close: vi.fn().mockResolvedValue(undefined),
   }),
-  finalizer: async (db) => {
+  finalizer: async db => {
     await db.close();
   },
 });
@@ -73,11 +73,7 @@ const DatabaseAdapter = createAdapter({
 
 describe("useTestContainer", () => {
   describe("creates fresh container per test", () => {
-    const graphFactory = vi.fn(() =>
-      GraphBuilder.create()
-        .provide(LoggerAdapter)
-        .build()
-    );
+    const graphFactory = vi.fn(() => GraphBuilder.create().provide(LoggerAdapter).build());
 
     // Note: Do NOT destructure here - access properties inside test cases
     const testContext = useTestContainer(graphFactory);
@@ -110,9 +106,7 @@ describe("useTestContainer", () => {
 
   describe("returns container and scope", () => {
     const testContext = useTestContainer(() =>
-      GraphBuilder.create()
-        .provide(LoggerAdapter)
-        .build()
+      GraphBuilder.create().provide(LoggerAdapter).build()
     );
 
     it("container has resolve method", () => {
@@ -153,9 +147,7 @@ describe("useTestContainer", () => {
     });
 
     const testContext = useTestContainer(() =>
-      TestGraphBuilder.from(productionGraph)
-        .override(mockLoggerAdapter)
-        .build()
+      TestGraphBuilder.from(productionGraph).override(mockLoggerAdapter).build()
     );
 
     it("resolves overridden mock adapter", () => {
@@ -182,20 +174,18 @@ describe("useTestContainer", () => {
       factory: () => ({
         query: vi.fn().mockResolvedValue({ rows: [] }),
         close: async () => {
-          await new Promise((resolve) => setTimeout(resolve, 5));
+          await new Promise(resolve => setTimeout(resolve, 5));
           closeCallCount++;
         },
       }),
-      finalizer: async (db) => {
+      finalizer: async db => {
         await db.close();
       },
     });
 
     const testContext = useTestContainer(() => {
       closeCallCount = 0; // Reset for each test
-      return GraphBuilder.create()
-        .provide(asyncCloseAdapter)
-        .build();
+      return GraphBuilder.create().provide(asyncCloseAdapter).build();
     });
 
     it("test can resolve and use service", async () => {
@@ -221,10 +211,8 @@ describe("useTestContainer", () => {
 // =============================================================================
 
 describe("createTestContainer", () => {
-  it("creates container and scope from graph", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .build();
+  it("creates container and scope from graph", async () => {
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     const { container, scope, dispose } = createTestContainer(graph);
 
@@ -232,13 +220,11 @@ describe("createTestContainer", () => {
     expect(scope).toBeDefined();
     expect(typeof dispose).toBe("function");
 
-    dispose();
+    await dispose();
   });
 
   it("scope can resolve services from graph", async () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     const { scope, dispose } = createTestContainer(graph);
 
@@ -262,9 +248,7 @@ describe("createTestContainer", () => {
       },
     });
 
-    const graph = GraphBuilder.create()
-      .provide(adapterWithFinalizer)
-      .build();
+    const graph = GraphBuilder.create().provide(adapterWithFinalizer).build();
 
     const { scope, dispose } = createTestContainer(graph);
 
@@ -278,9 +262,7 @@ describe("createTestContainer", () => {
   });
 
   it("dispose returns a Promise", async () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     const { dispose } = createTestContainer(graph);
 
@@ -290,9 +272,7 @@ describe("createTestContainer", () => {
   });
 
   it("works with TestGraphBuilder graphs", async () => {
-    const productionGraph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .build();
+    const productionGraph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     const mockLogFn = vi.fn();
     const mockLoggerAdapter = createAdapter({
@@ -302,9 +282,7 @@ describe("createTestContainer", () => {
       factory: () => ({ log: mockLogFn }),
     });
 
-    const testGraph = TestGraphBuilder.from(productionGraph)
-      .override(mockLoggerAdapter)
-      .build();
+    const testGraph = TestGraphBuilder.from(productionGraph).override(mockLoggerAdapter).build();
 
     const { scope, dispose } = createTestContainer(testGraph);
 
@@ -317,9 +295,7 @@ describe("createTestContainer", () => {
   });
 
   it("container and scope are separate instances", async () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     const { container, scope, dispose } = createTestContainer(graph);
 
@@ -361,9 +337,7 @@ describe("useTestContainer isolation across suites", () => {
 
     const testContext = useTestContainer(() => {
       factoryCallCount = 0; // Reset for tracking
-      return GraphBuilder.create()
-        .provide(CounterAdapter)
-        .build();
+      return GraphBuilder.create().provide(CounterAdapter).build();
     });
 
     it("test A1 increments counter", () => {
@@ -395,9 +369,7 @@ describe("useTestContainer isolation across suites", () => {
     });
 
     const testContext = useTestContainer(() =>
-      GraphBuilder.create()
-        .provide(CounterAdapter)
-        .build()
+      GraphBuilder.create().provide(CounterAdapter).build()
     );
 
     it("test B1 gets its own counter", () => {

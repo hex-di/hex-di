@@ -6,7 +6,12 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { createMockWebSocket, type MockWebSocketActions } from "@hex-di/devtools-testing";
-import { Methods, createSuccessResponse, createErrorResponse, ErrorCodes } from "@hex-di/devtools-core";
+import {
+  Methods,
+  createSuccessResponse,
+  createErrorResponse,
+  ErrorCodes,
+} from "@hex-di/devtools-core";
 import { DevToolsClient, type ClientEventListener } from "../src/client/client.js";
 import type { WebSocketService } from "../src/client/ports/websocket.port.js";
 
@@ -56,9 +61,7 @@ describe("DevToolsClient", () => {
     it("should throw error when no WebSocket service provided", async () => {
       const clientWithoutWs = new DevToolsClient();
 
-      await expect(clientWithoutWs.connect()).rejects.toThrow(
-        "No WebSocket service provided"
-      );
+      await expect(clientWithoutWs.connect()).rejects.toThrow("No WebSocket service provided");
     });
 
     it("should not reconnect if already connected", async () => {
@@ -519,7 +522,7 @@ describe("DevToolsClient", () => {
       const connectCount = mockWebSocket.getConnectCallCount();
 
       // Wait a bit
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      await new Promise(resolve => setTimeout(resolve, 150));
 
       // Should not have reconnected
       expect(mockWebSocket.getConnectCallCount()).toBe(connectCount);
@@ -534,7 +537,7 @@ describe("DevToolsClient", () => {
     it("should use default URL", () => {
       const defaultClient = new DevToolsClient({ webSocket: mockWebSocket });
 
-      defaultClient.connect();
+      void defaultClient.connect();
 
       expect(mockWebSocket.getConnectedUrl()).toBe("ws://localhost:9229/devtools");
     });

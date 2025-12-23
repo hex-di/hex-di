@@ -36,5 +36,12 @@ export default tseslint.config(
       },
     },
   },
+  // CLI files can use console
+  {
+    files: ["**/cli/**/*.ts"],
+    rules: {
+      "no-console": "off",
+    },
+  },
   ...testConfig
 );

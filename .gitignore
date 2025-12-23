@@ -29,5 +29,8 @@ coverage/
 .env.local
 .env.*.local
 
+# ESLint
+.eslintcache
+
 # Agent OS
 .agent-os/

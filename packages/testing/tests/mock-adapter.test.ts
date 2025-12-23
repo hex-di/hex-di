@@ -103,11 +103,7 @@ describe("createMockAdapter", () => {
       { lifetime: "singleton" }
     );
 
-    const scopedMock = createMockAdapter(
-      LoggerPort,
-      { log: vi.fn() },
-      { lifetime: "scoped" }
-    );
+    const scopedMock = createMockAdapter(LoggerPort, { log: vi.fn() }, { lifetime: "scoped" });
 
     const transientMock = createMockAdapter(
       LoggerPort,
@@ -156,7 +152,7 @@ describe("createMockAdapter with dependencies", () => {
       provides: UserServicePort,
       requires: [LoggerPort],
       lifetime: "transient",
-      factory: (deps) => ({
+      factory: deps => ({
         getUser: async (id: string) => {
           deps.Logger.log(`Fetching user ${id}`);
           return { id, name: "Test User" };
@@ -176,7 +172,7 @@ describe("createMockAdapter with dependencies", () => {
     const container = createContainer(graph);
     const userService = container.resolve(UserServicePort);
 
-    userService.getUser("123");
+    void userService.getUser("123");
 
     expect(logFn).toHaveBeenCalledWith("Fetching user 123");
   });

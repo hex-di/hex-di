@@ -49,7 +49,7 @@ const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort, DatabasePort],
   lifetime: "scoped",
-  factory: (deps) => ({
+  factory: deps => ({
     getUser: async (id: string) => {
       deps.Logger.log(`Fetching user ${id}`);
       const result = await deps.Database.query(`SELECT * FROM users WHERE id = '${id}'`);
@@ -164,7 +164,7 @@ describe("createAdapterTest", () => {
 
     // Use service and verify spy on getDeps() reference works
     const service = harness.invoke();
-    service.getUser("456");
+    void service.getUser("456");
 
     expect(deps.Logger.log).toHaveBeenCalledWith("Fetching user 456");
   });
@@ -272,7 +272,7 @@ describe("createAdapterTest error handling", () => {
       provides: UserServicePort,
       requires: [LoggerPort, DatabasePort],
       lifetime: "transient",
-      factory: (deps) => {
+      factory: deps => {
         factoryCallCount++;
         // Capture the count at factory creation time
         const instanceId = factoryCallCount;
