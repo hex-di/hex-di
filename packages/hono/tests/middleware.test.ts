@@ -47,7 +47,7 @@ function buildContainer(disposalLog: string[]) {
     requires: [],
     lifetime: "scoped",
     factory: () => ({ disposed: false }),
-    finalizer: (resource) => {
+    finalizer: resource => {
       resource.disposed = true;
       disposalLog.push("disposed");
     },
@@ -56,7 +56,7 @@ function buildContainer(disposalLog: string[]) {
   const asyncValueAdapter = createAsyncAdapter({
     provides: AsyncValuePort,
     requires: [],
-    factory: async () => ({ value: "async-value" }),
+    factory: () => Promise.resolve({ value: "async-value" }),
   });
 
   const graph = GraphBuilder.create()
@@ -124,7 +124,10 @@ describe("@hex-di/hono", () => {
     type CustomEnv = HexHonoEnv<AppPorts, never, "uninitialized", "scope", "container">;
     const app = new Hono<CustomEnv>();
 
-    app.use("*", createScopeMiddleware(container, { scopeKey: "scope", containerKey: "container" }));
+    app.use(
+      "*",
+      createScopeMiddleware(container, { scopeKey: "scope", containerKey: "container" })
+    );
 
     app.get("/", (context: Context<CustomEnv>) => {
       const scope = getScope(context, "scope");
