@@ -200,7 +200,7 @@ describe("Type exports (compile-time verification)", () => {
 
   it("should export CaptiveDependencyError type", () => {
     // Type-level verification
-    type _CaptiveDependencyError = RuntimeExports.CaptiveDependencyError<"test">;
+    type _CaptiveDependencyError = RuntimeExports.CaptiveDependencyError<"A", "B", "C", "D">;
     expect(true).toBe(true);
   });
 

@@ -124,7 +124,9 @@ const UserRepositoryPort = createPort<"UserRepository", UserRepository>("UserRep
 const UserServicePort = createPort<"UserService", UserService>("UserService");
 const RequestContextPort = createPort<"RequestContext", RequestContext>("RequestContext");
 const AuthServicePort = createPort<"AuthService", AuthService>("AuthService");
-const NotificationServicePort = createPort<"NotificationService", NotificationService>("NotificationService");
+const NotificationServicePort = createPort<"NotificationService", NotificationService>(
+  "NotificationService"
+);
 
 function assertCircularDependencyError(error: unknown): CircularDependencyError {
   if (!(error instanceof CircularDependencyError)) {
@@ -183,10 +185,7 @@ describe("Integration: Basic Container Workflow", () => {
     });
 
     // Step 3: Build graph
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(ConfigAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(ConfigAdapter).build();
 
     // Step 4: Create container
     const container = createContainer(graph);
@@ -267,7 +266,7 @@ describe("Integration: Dependency Chain Resolution", () => {
       provides: LoggerPort,
       requires: [ConfigPort],
       lifetime: "singleton",
-      factory: (deps) => {
+      factory: deps => {
         const logLevel = deps.Config.get("logLevel");
         return {
           log: vi.fn().mockImplementation((msg: string) => `[${logLevel}] ${msg}`),
@@ -281,7 +280,7 @@ describe("Integration: Dependency Chain Resolution", () => {
       provides: DatabasePort,
       requires: [LoggerPort],
       lifetime: "singleton",
-      factory: (deps) => ({
+      factory: deps => ({
         query: vi.fn().mockImplementation(async <T>(sql: string) => {
           deps.Logger.log(`Executing query: ${sql}`);
           const rows: T[] = [];
@@ -330,7 +329,7 @@ describe("Integration: Dependency Chain Resolution", () => {
       provides: LoggerPort,
       requires: [ConfigPort],
       lifetime: "singleton",
-      factory: (deps) => {
+      factory: deps => {
         receivedDeps.push({ ...deps });
         return { log: vi.fn(), error: vi.fn() };
       },
@@ -340,7 +339,7 @@ describe("Integration: Dependency Chain Resolution", () => {
       provides: DatabasePort,
       requires: [LoggerPort, ConfigPort],
       lifetime: "singleton",
-      factory: (deps) => {
+      factory: deps => {
         receivedDeps.push({ ...deps });
         return {
           query: vi.fn().mockResolvedValue([]),
@@ -605,7 +604,13 @@ describe("Integration: Scope Hierarchy", () => {
     const scope2Notif = scope2.resolve(NotificationServicePort);
 
     // All instances should be different
-    const allInstances = [containerNotif1, containerNotif2, scope1Notif1, scope1Notif2, scope2Notif];
+    const allInstances = [
+      containerNotif1,
+      containerNotif2,
+      scope1Notif1,
+      scope1Notif2,
+      scope2Notif,
+    ];
     for (let i = 0; i < allInstances.length; i++) {
       for (let j = i + 1; j < allInstances.length; j++) {
         expect(allInstances[i]).not.toBe(allInstances[j]);
@@ -632,7 +637,7 @@ describe("Integration: Scope Hierarchy", () => {
       provides: RequestContextPort,
       requires: [LoggerPort],
       lifetime: "scoped",
-      factory: (deps) => {
+      factory: deps => {
         const requestId = Math.random().toString(36).slice(2);
         deps.Logger.log(`Creating request context: ${requestId}`);
         return {
@@ -679,7 +684,9 @@ describe("Integration: Disposal Workflow", () => {
       requires: [],
       lifetime: "singleton",
       factory: () => ({ get: () => "test", getOrThrow: () => "test" }),
-      finalizer: () => { callOrder.push("Config disposed"); },
+      finalizer: () => {
+        callOrder.push("Config disposed");
+      },
     });
 
     const LoggerAdapter = createAdapter({
@@ -687,7 +694,9 @@ describe("Integration: Disposal Workflow", () => {
       requires: [ConfigPort],
       lifetime: "singleton",
       factory: () => ({ log: vi.fn(), error: vi.fn() }),
-      finalizer: () => { callOrder.push("Logger disposed"); },
+      finalizer: () => {
+        callOrder.push("Logger disposed");
+      },
     });
 
     const DatabaseAdapter = createAdapter({
@@ -698,7 +707,9 @@ describe("Integration: Disposal Workflow", () => {
         query: vi.fn().mockResolvedValue([]),
         execute: vi.fn().mockResolvedValue(undefined),
       }),
-      finalizer: () => { callOrder.push("Database disposed"); },
+      finalizer: () => {
+        callOrder.push("Database disposed");
+      },
     });
 
     const graph = GraphBuilder.create()
@@ -719,11 +730,7 @@ describe("Integration: Disposal Workflow", () => {
     // LIFO order: last created (Database) should be disposed first
     // Creation order: Config -> Logger -> Database
     // Disposal order: Database -> Logger -> Config
-    expect(callOrder).toEqual([
-      "Database disposed",
-      "Logger disposed",
-      "Config disposed",
-    ]);
+    expect(callOrder).toEqual(["Database disposed", "Logger disposed", "Config disposed"]);
   });
 
   test("scope disposal disposes child scopes before parent", async () => {
@@ -738,7 +745,9 @@ describe("Integration: Disposal Workflow", () => {
         userId: null,
         timestamp: Date.now(),
       }),
-      finalizer: (instance) => { callOrder.push(`Scope ${instance.requestId} disposed`); },
+      finalizer: instance => {
+        callOrder.push(`Scope ${instance.requestId} disposed`);
+      },
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
@@ -773,7 +782,7 @@ describe("Integration: Disposal Workflow", () => {
       lifetime: "singleton",
       factory: () => ({ log: vi.fn(), error: vi.fn() }),
       finalizer: async () => {
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await new Promise(resolve => setTimeout(resolve, 50));
         callOrder.push("Logger finalized");
       },
     });
@@ -784,15 +793,12 @@ describe("Integration: Disposal Workflow", () => {
       lifetime: "singleton",
       factory: () => ({ get: () => "test", getOrThrow: () => "test" }),
       finalizer: async () => {
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await new Promise(resolve => setTimeout(resolve, 50));
         callOrder.push("Config finalized");
       },
     });
 
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(ConfigAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(ConfigAdapter).build();
 
     const container = createContainer(graph);
 
@@ -817,7 +823,9 @@ describe("Integration: Disposal Workflow", () => {
       requires: [],
       lifetime: "singleton",
       factory: () => ({ log: vi.fn(), error: vi.fn() }),
-      finalizer: () => { finalizerCalls.count++; },
+      finalizer: () => {
+        finalizerCalls.count++;
+      },
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
@@ -840,7 +848,9 @@ describe("Integration: Disposal Workflow", () => {
       requires: [],
       lifetime: "singleton",
       factory: () => ({ log: vi.fn(), error: vi.fn() }),
-      finalizer: () => { callOrder.push("Singleton Logger disposed"); },
+      finalizer: () => {
+        callOrder.push("Singleton Logger disposed");
+      },
     });
 
     const RequestContextAdapter = createAdapter({
@@ -852,7 +862,9 @@ describe("Integration: Disposal Workflow", () => {
         userId: null,
         timestamp: Date.now(),
       }),
-      finalizer: () => { callOrder.push("Scoped RequestContext disposed"); },
+      finalizer: () => {
+        callOrder.push("Scoped RequestContext disposed");
+      },
     });
 
     const graph = GraphBuilder.create()
@@ -874,10 +886,7 @@ describe("Integration: Disposal Workflow", () => {
     await container.dispose();
 
     // Scoped should be disposed before singleton
-    expect(callOrder).toEqual([
-      "Scoped RequestContext disposed",
-      "Singleton Logger disposed",
-    ]);
+    expect(callOrder).toEqual(["Scoped RequestContext disposed", "Singleton Logger disposed"]);
   });
 });
 
@@ -914,10 +923,11 @@ describe("Integration: Error Scenarios", () => {
       factory: () => ({ name: "B" }),
     });
 
-    const graph = GraphBuilder.create()
-      .provide(ServiceAAdapter)
-      .provide(ServiceBAdapter)
-      .build();
+    // Intentionally creating circular dependency to test runtime detection
+    // Using 'as any' to bypass compile-time cycle detection
+    const graph = (
+      GraphBuilder.create().provide(ServiceAAdapter).provide(ServiceBAdapter) as any
+    ).build();
 
     const container = createContainer(graph);
 
@@ -1047,10 +1057,7 @@ describe("Integration: Error Scenarios", () => {
       factory: () => ({ log: vi.fn(), error: vi.fn() }),
     });
 
-    const graph = GraphBuilder.create()
-      .provide(ConfigAdapter)
-      .provide(LoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(ConfigAdapter).provide(LoggerAdapter).build();
 
     const container = createContainer(graph);
 
@@ -1082,10 +1089,7 @@ describe("Integration: Error Scenarios", () => {
       },
     });
 
-    const graph = GraphBuilder.create()
-      .provide(ConfigAdapter)
-      .provide(LoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(ConfigAdapter).provide(LoggerAdapter).build();
 
     const container = createContainer(graph);
 
@@ -1126,7 +1130,7 @@ describe("Integration: Type Safety End-to-End", () => {
       provides: LoggerPort,
       requires: [ConfigPort],
       lifetime: "singleton",
-      factory: (deps) => {
+      factory: deps => {
         // deps.Config is correctly typed as Config
         const level = deps.Config.get("logLevel");
         // Log level is used to verify dependency injection works
@@ -1142,7 +1146,7 @@ describe("Integration: Type Safety End-to-End", () => {
       provides: CachePort,
       requires: [LoggerPort],
       lifetime: "singleton",
-      factory: (deps) => {
+      factory: deps => {
         // deps.Logger is correctly typed as Logger
         deps.Logger.log("Cache initializing");
         const store = new Map<string, unknown>();
@@ -1168,7 +1172,7 @@ describe("Integration: Type Safety End-to-End", () => {
       provides: UserRepositoryPort,
       requires: [CachePort, LoggerPort],
       lifetime: "singleton",
-      factory: (deps) => {
+      factory: deps => {
         // Both deps.Cache and deps.Logger are correctly typed
         return {
           findById: async (id: string): Promise<User | null> => {
@@ -1200,7 +1204,7 @@ describe("Integration: Type Safety End-to-End", () => {
       provides: UserServicePort,
       requires: [UserRepositoryPort, LoggerPort, RequestContextPort],
       lifetime: "scoped",
-      factory: (deps) => {
+      factory: deps => {
         // All three dependencies are correctly typed
         return {
           getUser: async (id: string): Promise<User | null> => {
@@ -1304,7 +1308,7 @@ describe("Integration: Type Safety End-to-End", () => {
       provides: LoggerPort,
       requires: [ConfigPort],
       lifetime: "singleton",
-      factory: (deps) => {
+      factory: deps => {
         // TypeScript knows deps has a Config property of type Config
         // This would fail to compile if types were wrong:
         const configValue: string | undefined = deps.Config.get("test");
@@ -1319,10 +1323,7 @@ describe("Integration: Type Safety End-to-End", () => {
       },
     });
 
-    const graph = GraphBuilder.create()
-      .provide(ConfigAdapter)
-      .provide(LoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(ConfigAdapter).provide(LoggerAdapter).build();
 
     const container = createContainer(graph);
     const logger = container.resolve(LoggerPort);
@@ -1349,10 +1350,7 @@ describe("Integration: Type Safety End-to-End", () => {
       }),
     });
 
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(ConfigAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(ConfigAdapter).build();
 
     const container = createContainer(graph);
     const scope = container.createScope();
@@ -1450,9 +1448,15 @@ describe("Integration: Edge Cases and Gap Coverage", () => {
   });
 
   test("longer circular dependency chain is detected (A->B->C->A)", () => {
-    interface ServiceA { name: string; }
-    interface ServiceB { name: string; }
-    interface ServiceC { name: string; }
+    interface ServiceA {
+      name: string;
+    }
+    interface ServiceB {
+      name: string;
+    }
+    interface ServiceC {
+      name: string;
+    }
 
     const ServiceAPort = createPort<"ServiceA", ServiceA>("ServiceA");
     const ServiceBPort = createPort<"ServiceB", ServiceB>("ServiceB");
@@ -1479,11 +1483,14 @@ describe("Integration: Edge Cases and Gap Coverage", () => {
       factory: () => ({ name: "C" }),
     });
 
-    const graph = GraphBuilder.create()
-      .provide(ServiceAAdapter)
-      .provide(ServiceBAdapter)
-      .provide(ServiceCAdapter)
-      .build();
+    // Intentionally creating circular dependency to test runtime detection
+    // Using 'as any' to bypass compile-time cycle detection
+    const graph = (
+      GraphBuilder.create()
+        .provide(ServiceAAdapter)
+        .provide(ServiceBAdapter)
+        .provide(ServiceCAdapter) as any
+    ).build();
 
     const container = createContainer(graph);
 
@@ -1521,10 +1528,7 @@ describe("Integration: Edge Cases and Gap Coverage", () => {
       }),
     });
 
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(ConfigAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(ConfigAdapter).build();
 
     const container = createContainer(graph);
 
@@ -1575,7 +1579,7 @@ describe("Integration: Edge Cases and Gap Coverage", () => {
         userId: null,
         timestamp: Date.now(),
       }),
-      finalizer: (instance) => {
+      finalizer: instance => {
         callOrder.push(instance.requestId);
       },
     });

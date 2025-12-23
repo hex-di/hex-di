@@ -18,56 +18,35 @@
  * (longer-lived) lifetime level. Depending on HIGHER (shorter-lived)
  * adapters creates a captive dependency.
  *
+ * Note: Core captive dependency detection is now integrated into GraphBuilder
+ * via TLifetimeMap type parameter. These types are provided for direct
+ * adapter-to-adapter validation use cases.
+ *
  * @packageDocumentation
  */
 
 import type { Port, InferPortName } from "@hex-di/ports";
 import type { Adapter, Lifetime, InferAdapterProvides, InferAdapterLifetime } from "@hex-di/graph";
 
-// =============================================================================
-// LifetimeLevel Phantom Type
-// =============================================================================
+// Re-export core types from @hex-di/graph for convenience
+export type {
+  LifetimeLevel,
+  LifetimeName,
+  IsCaptiveDependency,
+  AddLifetime,
+  GetLifetimeLevel,
+  FindAnyCaptiveDependency,
+  MergeLifetimeMaps,
+  AddManyLifetimes,
+  WouldAnyBeCaptive,
+  CaptiveDependencyError,
+} from "@hex-di/graph";
 
-/**
- * Maps a Lifetime string literal to its numeric level for comparison.
- *
- * The numeric levels represent the lifetime hierarchy:
- * - Singleton = 1 (longest lived)
- * - Scoped = 2 (medium lived)
- * - Transient = 3 (shortest lived)
- *
- * Lower numbers indicate longer lifetimes. An adapter can only depend on
- * adapters with the same or lower (longer-lived) level.
- *
- * @typeParam L - The Lifetime literal type ('singleton' | 'scoped' | 'transient')
- *
- * @returns The numeric level: 1, 2, or 3
- *
- * @remarks
- * This type exists purely at the compile-time level. The numeric values
- * are phantom types and do not exist at runtime. They enable type-level
- * comparison of lifetimes for captive dependency validation.
- *
- * @see {@link Lifetime} - The lifetime string literal type from @hex-di/graph
- * @see {@link ValidateCaptiveDependency} - Uses this type for validation
- *
- * @example
- * ```typescript
- * type SingletonLevel = LifetimeLevel<'singleton'>; // 1
- * type ScopedLevel = LifetimeLevel<'scoped'>;       // 2
- * type TransientLevel = LifetimeLevel<'transient'>; // 3
- * ```
- */
-export type LifetimeLevel<L extends Lifetime> = L extends "singleton"
-  ? 1
-  : L extends "scoped"
-    ? 2
-    : L extends "transient"
-      ? 3
-      : never;
+// Import LifetimeLevel for use in this module
+import type { LifetimeLevel as GraphLifetimeLevel } from "@hex-di/graph";
 
 // =============================================================================
-// Type-Level Comparison Utilities
+// Type-Level Comparison Utilities (kept for backward compatibility)
 // =============================================================================
 
 /**
@@ -113,7 +92,7 @@ type IsCaptive<DependentLevel extends number, DependencyLevel extends number> = 
 >;
 
 // =============================================================================
-// Lifetime Name Extraction for Error Messages
+// Lifetime Name Extraction for Error Messages (kept for backward compatibility)
 // =============================================================================
 
 /**
@@ -125,7 +104,7 @@ type IsCaptive<DependentLevel extends number, DependencyLevel extends number> = 
  *
  * @internal
  */
-type LifetimeName<Level extends number> = Level extends 1
+type LocalLifetimeName<Level extends number> = Level extends 1
   ? "Singleton"
   : Level extends 2
     ? "Scoped"
@@ -134,7 +113,7 @@ type LifetimeName<Level extends number> = Level extends 1
       : "Unknown";
 
 // =============================================================================
-// CaptiveDependencyError Type
+// CaptiveDependencyError Type (adapter-based version)
 // =============================================================================
 
 /**
@@ -162,20 +141,20 @@ type LifetimeName<Level extends number> = Level extends 1
  *
  * @example
  * ```typescript
- * type Error = CaptiveDependencyError<"Singleton 'UserService' cannot depend on Scoped 'Database'">;
+ * type Error = CaptiveDependencyErrorLegacy<"Singleton 'UserService' cannot depend on Scoped 'Database'">;
  * // {
  * //   __errorBrand: 'CaptiveDependencyError';
  * //   __message: "Singleton 'UserService' cannot depend on Scoped 'Database'";
  * // }
  * ```
  */
-export type CaptiveDependencyError<TMessage extends string> = {
+export type CaptiveDependencyErrorLegacy<TMessage extends string> = {
   readonly __errorBrand: "CaptiveDependencyError";
   readonly __message: TMessage;
 };
 
 // =============================================================================
-// ValidateCaptiveDependency Type
+// ValidateCaptiveDependency Type (adapter-based validation)
 // =============================================================================
 
 /**
@@ -190,7 +169,7 @@ export type CaptiveDependencyError<TMessage extends string> = {
  * - Scoped depending on Scoped (level 2 <= 2)
  * - Transient depending on anything (level 3 >= all, dependency has lower/equal level - OK)
  *
- * **Invalid scenarios (returns CaptiveDependencyError):**
+ * **Invalid scenarios (returns CaptiveDependencyErrorLegacy):**
  * - Singleton depending on Scoped (level 1 < 2, dependency has higher level - CAPTIVE!)
  * - Singleton depending on Transient (level 1 < 3, dependency has higher level - CAPTIVE!)
  * - Scoped depending on Transient (level 2 < 3, dependency has higher level - CAPTIVE!)
@@ -200,15 +179,16 @@ export type CaptiveDependencyError<TMessage extends string> = {
  *
  * @returns
  * - `TAdapter` if the dependency is valid (no captive dependency)
- * - `CaptiveDependencyError<...>` if the dependency creates a captive dependency
+ * - `CaptiveDependencyErrorLegacy<...>` if the dependency creates a captive dependency
  *
  * @remarks
  * - All validation is performed at compile-time with zero runtime cost
  * - Error messages include the adapter names and their lifetime scopes
- * - This type is designed to be used in graph construction validation
+ * - This type is useful for direct adapter-to-adapter validation
+ * - For graph-level validation, use GraphBuilder which automatically checks captive dependencies
  *
- * @see {@link LifetimeLevel} - Maps lifetime strings to numeric levels
- * @see {@link CaptiveDependencyError} - The error type returned on violation
+ * @see {@link GraphLifetimeLevel} - Maps lifetime strings to numeric levels
+ * @see {@link CaptiveDependencyErrorLegacy} - The error type returned on violation
  *
  * @example Valid dependency - singleton on singleton
  * ```typescript
@@ -225,7 +205,7 @@ export type CaptiveDependencyError<TMessage extends string> = {
  *   typeof UserServiceSingletonAdapter, // singleton
  *   typeof DatabaseScopedAdapter         // scoped
  * >;
- * // Result = CaptiveDependencyError<"Singleton 'UserService' cannot depend on Scoped 'Database'">
+ * // Result = CaptiveDependencyErrorLegacy<"Singleton 'UserService' cannot depend on Scoped 'Database'">
  * ```
  */
 export type ValidateCaptiveDependency<
@@ -233,14 +213,14 @@ export type ValidateCaptiveDependency<
   TRequiredAdapter extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>,
 > =
   IsCaptive<
-    LifetimeLevel<InferAdapterLifetime<TAdapter>>,
-    LifetimeLevel<InferAdapterLifetime<TRequiredAdapter>>
+    GraphLifetimeLevel<InferAdapterLifetime<TAdapter>>,
+    GraphLifetimeLevel<InferAdapterLifetime<TRequiredAdapter>>
   > extends true
-    ? CaptiveDependencyError<`${LifetimeName<LifetimeLevel<InferAdapterLifetime<TAdapter>>>} '${InferPortName<InferAdapterProvides<TAdapter>>}' cannot depend on ${LifetimeName<LifetimeLevel<InferAdapterLifetime<TRequiredAdapter>>>} '${InferPortName<InferAdapterProvides<TRequiredAdapter>>}'`>
+    ? CaptiveDependencyErrorLegacy<`${LocalLifetimeName<GraphLifetimeLevel<InferAdapterLifetime<TAdapter>>>} '${InferPortName<InferAdapterProvides<TAdapter>>}' cannot depend on ${LocalLifetimeName<GraphLifetimeLevel<InferAdapterLifetime<TRequiredAdapter>>>} '${InferPortName<InferAdapterProvides<TRequiredAdapter>>}'`>
     : TAdapter;
 
 // =============================================================================
-// Batch Validation Type
+// Batch Validation Type (adapter-based)
 // =============================================================================
 
 /**
@@ -248,19 +228,18 @@ export type ValidateCaptiveDependency<
  *
  * This type is designed to be used when an adapter has multiple dependencies.
  * It returns the adapter if ALL dependencies are valid, or the first
- * CaptiveDependencyError encountered.
+ * CaptiveDependencyErrorLegacy encountered.
  *
  * @typeParam TAdapter - The adapter type to validate
  * @typeParam TAdapters - A union or tuple of all adapters that provide the dependencies
  *
  * @returns
  * - `TAdapter` if all dependencies are valid
- * - `CaptiveDependencyError<...>` if any dependency creates a captive dependency
+ * - `CaptiveDependencyErrorLegacy<...>` if any dependency creates a captive dependency
  *
  * @remarks
- * This type is intended for integration with the Graph validation system.
- * The actual implementation may vary based on how the graph stores adapter
- * information.
+ * This type is useful for direct adapter-to-adapter validation.
+ * For graph-level validation, use GraphBuilder which automatically checks captive dependencies.
  *
  * @see {@link ValidateCaptiveDependency} - Single dependency validation
  */
@@ -283,68 +262,3 @@ export type ValidateAllDependencies<
     ? ValidateAllDependencies<TAdapter, Rest>
     : ValidateCaptiveDependency<TAdapter, First>
   : TAdapter;
-
-// =============================================================================
-// Integration Documentation
-// =============================================================================
-
-/**
- * ## Integration with @hex-di/graph
- *
- * Captive dependency validation should ideally occur during graph construction
- * in the `GraphBuilder.provide()` method. This provides immediate feedback
- * when an invalid dependency is added.
- *
- * ### Option 1: Validation in @hex-di/graph (Recommended)
- *
- * The `GraphBuilder.provide()` method could be enhanced to check captive
- * dependencies. When a new adapter is added, validate its dependencies
- * against existing adapters in the graph:
- *
- * ```typescript
- * // In @hex-di/graph GraphBuilder
- * provide<A extends Adapter<...>>(adapter: A): ProvideResult<...> {
- *   // Existing duplicate check...
- *
- *   // NEW: Captive dependency check
- *   type CaptiveCheck = ValidateCaptiveDependenciesInGraph<A, ExistingAdapters>;
- *   // Return error type if captive dependency detected
- * }
- * ```
- *
- * ### Option 2: Validation in @hex-di/runtime
- *
- * Alternatively, captive dependency validation can be performed when
- * creating a container from a graph. This is less ideal as the error
- * appears later in the workflow:
- *
- * ```typescript
- * // In @hex-di/runtime createContainer
- * createContainer<TProvides>(graph: Graph<TProvides>): ValidatedContainer<TProvides> {
- *   // Validate all adapter dependencies...
- * }
- * ```
- *
- * ### Current Implementation Status
- *
- * This module provides the foundational types for captive dependency detection:
- * - `LifetimeLevel<L>` - Maps lifetime strings to numeric levels
- * - `ValidateCaptiveDependency<A, B>` - Validates a single dependency relationship
- * - `CaptiveDependencyError<M>` - Branded error type with descriptive message
- * - `ValidateAllDependencies<A, As>` - Validates multiple dependencies
- *
- * Integration with GraphBuilder requires modifications to @hex-di/graph.
- * The types are exported from @hex-di/runtime for use in either package.
- *
- * ### Limitation Note
- *
- * Full integration requires knowing WHICH adapter provides each required port.
- * The current Graph/GraphBuilder tracks ports but the adapter lookup for
- * lifetime checking requires additional type-level machinery or runtime support.
- *
- * A practical integration approach:
- * 1. Export these types from @hex-di/runtime
- * 2. @hex-di/graph can import and use them in GraphBuilder.provide()
- * 3. The provide() method would need to track adapters (not just ports) to
- *    enable lifetime comparison
- */

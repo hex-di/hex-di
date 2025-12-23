@@ -232,8 +232,19 @@ export type {
 // =============================================================================
 
 export type {
+  // Re-exported from @hex-di/graph
   LifetimeLevel,
+  LifetimeName,
+  IsCaptiveDependency,
+  AddLifetime,
+  GetLifetimeLevel,
+  FindAnyCaptiveDependency,
+  MergeLifetimeMaps,
+  AddManyLifetimes,
+  WouldAnyBeCaptive,
   CaptiveDependencyError,
+  // Runtime-specific adapter-based validation types
+  CaptiveDependencyErrorLegacy,
   ValidateCaptiveDependency,
   ValidateAllDependencies,
 } from "./captive-dependency.js";
