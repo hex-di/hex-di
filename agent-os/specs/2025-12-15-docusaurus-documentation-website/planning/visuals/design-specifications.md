@@ -172,68 +172,69 @@ Danger (Critical Warnings)
 
 ```css
 /* Primary Font - Sans Serif */
---font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
-                'Roboto', 'Helvetica Neue', Arial, sans-serif;
+--font-primary:
+  "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial,
+  sans-serif;
 
 /* Code Font - Monospace */
---font-code: 'Fira Code', 'JetBrains Mono', 'SF Mono', 'Monaco',
-             'Inconsolata', 'Roboto Mono', Courier, monospace;
+--font-code:
+  "Fira Code", "JetBrains Mono", "SF Mono", "Monaco", "Inconsolata", "Roboto Mono", Courier,
+  monospace;
 
 /* Headings Font - Geometric Sans */
---font-headings: 'Manrope', 'Inter', -apple-system, BlinkMacSystemFont,
-                 'Segoe UI', sans-serif;
+--font-headings: "Manrope", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 ```
 
 ### Type Scale
 
 ```css
 /* Display */
---text-display: 3.75rem;    /* 60px - Hero headlines */
+--text-display: 3.75rem; /* 60px - Hero headlines */
 --text-display-line: 1.1;
 --text-display-weight: 800;
 
 /* Heading 1 */
---text-h1: 2.5rem;          /* 40px - Page titles */
+--text-h1: 2.5rem; /* 40px - Page titles */
 --text-h1-line: 1.2;
 --text-h1-weight: 700;
 
 /* Heading 2 */
---text-h2: 2rem;            /* 32px - Major sections */
+--text-h2: 2rem; /* 32px - Major sections */
 --text-h2-line: 1.3;
 --text-h2-weight: 700;
 
 /* Heading 3 */
---text-h3: 1.5rem;          /* 24px - Subsections */
+--text-h3: 1.5rem; /* 24px - Subsections */
 --text-h3-line: 1.4;
 --text-h3-weight: 600;
 
 /* Heading 4 */
---text-h4: 1.25rem;         /* 20px - Minor sections */
+--text-h4: 1.25rem; /* 20px - Minor sections */
 --text-h4-line: 1.5;
 --text-h4-weight: 600;
 
 /* Heading 5 */
---text-h5: 1.125rem;        /* 18px - Small sections */
+--text-h5: 1.125rem; /* 18px - Small sections */
 --text-h5-line: 1.5;
 --text-h5-weight: 600;
 
 /* Body Large */
---text-body-lg: 1.125rem;   /* 18px - Lead paragraphs */
+--text-body-lg: 1.125rem; /* 18px - Lead paragraphs */
 --text-body-lg-line: 1.7;
 --text-body-lg-weight: 400;
 
 /* Body */
---text-body: 1rem;          /* 16px - Default text */
+--text-body: 1rem; /* 16px - Default text */
 --text-body-line: 1.7;
 --text-body-weight: 400;
 
 /* Body Small */
---text-body-sm: 0.875rem;   /* 14px - Secondary text */
+--text-body-sm: 0.875rem; /* 14px - Secondary text */
 --text-body-sm-line: 1.6;
 --text-body-sm-weight: 400;
 
 /* Code */
---text-code: 0.875rem;      /* 14px - Inline code */
+--text-code: 0.875rem; /* 14px - Inline code */
 --text-code-line: 1.6;
 --text-code-weight: 400;
 
@@ -243,7 +244,7 @@ Danger (Critical Warnings)
 --text-code-block-weight: 400;
 
 /* Caption */
---text-caption: 0.75rem;    /* 12px - Captions, labels */
+--text-caption: 0.75rem; /* 12px - Captions, labels */
 --text-caption-line: 1.5;
 --text-caption-weight: 500;
 ```
@@ -251,12 +252,12 @@ Danger (Critical Warnings)
 ### Font Weight System
 
 ```css
---weight-light: 300;        /* Rarely used */
---weight-regular: 400;      /* Body text */
---weight-medium: 500;       /* Subtle emphasis */
---weight-semibold: 600;     /* Headings h3-h5 */
---weight-bold: 700;         /* Headings h1-h2 */
---weight-extrabold: 800;    /* Display text */
+--weight-light: 300; /* Rarely used */
+--weight-regular: 400; /* Body text */
+--weight-medium: 500; /* Subtle emphasis */
+--weight-semibold: 600; /* Headings h3-h5 */
+--weight-bold: 700; /* Headings h1-h2 */
+--weight-extrabold: 800; /* Display text */
 ```
 
 ### Typography Usage Guidelines
@@ -361,7 +362,7 @@ Danger (Critical Warnings)
 │  │ }                                                                   │    │
 │  │                                                                     │    │
 │  │ // 2. Create a port (contract + runtime token)                     │    │
-│  │ const LoggerPort = createPort<'Logger', Logger>('Logger');         │    │
+│  │ const LoggerPort = createPort<Logger>('Logger');         │    │
 │  │                                                                     │    │
 │  │ // 3. Create an adapter (implementation)                           │    │
 │  │ const LoggerAdapter = createAdapter({                              │    │
@@ -552,7 +553,7 @@ Danger (Critical Warnings)
 
 ### Documentation Page Wireframe
 
-```
+````
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                              NAVIGATION BAR                                 │
 │  ┌──────────┬─────────────────────────────────────────┬─────────────────┐  │
@@ -628,7 +629,7 @@ Danger (Critical Warnings)
 │               │  └────────────────┴───────────────────┘   │              │
 │               │                                            │              │
 └───────────────┴────────────────────────────────────────────┴──────────────┘
-```
+````
 
 **Sidebar Navigation Details:**
 
@@ -721,7 +722,7 @@ Danger (Critical Warnings)
 
 ### API Reference Wireframe
 
-```
+````
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                              NAVIGATION BAR                                 │
 │  ┌──────────┬─────────────────────────────────────────┬─────────────────┐  │
@@ -863,7 +864,7 @@ Danger (Critical Warnings)
 │               │  - [Lifetime Scopes](../guides/lifetim...│              │
 │               │                                            │              │
 └───────────────┴────────────────────────────────────────────┴──────────────┘
-```
+````
 
 ---
 
@@ -872,6 +873,7 @@ Danger (Critical Warnings)
 ### 1. Navigation Bar
 
 **Desktop Layout:**
+
 ```
 ┌────────────────────────────────────────────────────────────────────┐
 │ Height: 64px                                                       │
@@ -887,6 +889,7 @@ Danger (Critical Warnings)
 ```
 
 **Specifications:**
+
 - **Height:** 64px
 - **Background:** White (light) / #161B22 (dark)
 - **Border:** 1px solid #E1E4E8 (light) / #30363D (dark)
@@ -896,11 +899,13 @@ Danger (Critical Warnings)
 - **Padding:** 0 24px
 
 **Logo:**
+
 - Size: 40x40px
 - Format: SVG
 - Colors: Primary 600 + Accent gradient
 
 **Navigation Links:**
+
 - Font: Manrope Medium, 16px
 - Color: #24292E (light) / #C9D1D9 (dark)
 - Hover: Primary 600 with underline
@@ -908,6 +913,7 @@ Danger (Critical Warnings)
 - Spacing: 24px between items
 
 **Action Buttons:**
+
 - GitHub icon: 24x24px
 - Search icon: 24x24px with kbd shortcut hint
 - Color: Text Secondary
@@ -925,7 +931,7 @@ Danger (Critical Warnings)
 ├──────────────────────────────────────────────────────────────┤
 │  1 │ import { createPort } from '@hex-di/ports';            │
 │  2 │                                                         │
-│  3 │ const LoggerPort = createPort<'Logger', Logger>(       │
+│  3 │ const LoggerPort = createPort<Logger>(       │
 │  4 │   'Logger'                                              │
 │  5 │ );                                                      │
 │    │                                                         │
@@ -933,6 +939,7 @@ Danger (Critical Warnings)
 ```
 
 **Specifications:**
+
 - **Background:** #F6F8FA (light) / #161B22 (dark)
 - **Border:** 1px solid #E1E4E8 (light) / #30363D (dark)
 - **Border radius:** 8px
@@ -942,12 +949,14 @@ Danger (Critical Warnings)
 - **Tab size:** 2 spaces
 
 **Header Bar:**
+
 - Height: 40px
 - Background: #F1F3F5 (light) / #21262D (dark)
 - Font: Inter Medium, 13px
 - Display: filename + language + copy button
 
 **Line Numbers:**
+
 - Width: 40px
 - Font: Fira Code, 13px
 - Color: #6A737D (muted)
@@ -956,18 +965,19 @@ Danger (Critical Warnings)
 - User-select: none
 
 **Syntax Highlighting (TypeScript):**
+
 ```css
---syntax-keyword: #D73A49 (light) / #FF7B72 (dark)        /* import, const, function */
---syntax-string: #032F62 (light) / #A5D6FF (dark)         /* 'strings' */
---syntax-function: #6F42C1 (light) / #D2A8FF (dark)       /* functionName() */
---syntax-variable: #24292E (light) / #C9D1D9 (dark)       /* variables */
---syntax-type: #005CC5 (light) / #79C0FF (dark)           /* TypeName */
---syntax-comment: #6A737D (light) / #8B949E (dark)        /* // comments */
---syntax-operator: #D73A49 (light) / #FF7B72 (dark)       /* =, <, > */
---syntax-punctuation: #24292E (light) / #C9D1D9 (dark)    /* {}, [], () */
+--syntax-keyword: #d73a49 (light) / #ff7b72 (dark) /* import, const, function */
+  --syntax-string: #032f62 (light) / #a5d6ff (dark) /* 'strings' */ --syntax-function: #6f42c1
+  (light) / #d2a8ff (dark) /* functionName() */ --syntax-variable: #24292e (light) / #c9d1d9 (dark)
+  /* variables */ --syntax-type: #005cc5 (light) / #79c0ff (dark) /* TypeName */
+  --syntax-comment: #6a737d (light) / #8b949e (dark) /* // comments */ --syntax-operator: #d73a49
+  (light) / #ff7b72 (dark) /* =, <, > */ --syntax-punctuation: #24292e (light) / #c9d1d9 (dark)
+  /* {}, [], () */;
 ```
 
 **Copy Button:**
+
 - Size: 32x32px
 - Background: Transparent
 - Hover: #E1E4E8 (light) / #30363D (dark)
@@ -980,6 +990,7 @@ Danger (Critical Warnings)
 ### 3. Callout Boxes
 
 **Info Callout:**
+
 ```
 ┌────────────────────────────────────────────────────────┐
 │ [i] INFO                                               │
@@ -992,30 +1003,35 @@ Danger (Critical Warnings)
 **Specifications:**
 
 **Info (Blue):**
+
 - Background: #E7F5FF (light) / rgba(2, 136, 209, 0.1) (dark)
 - Border-left: 4px solid #0288D1
 - Icon color: #0288D1
 - Text color: #01579B (light) / #90CAF9 (dark)
 
 **Tip (Teal):**
+
 - Background: #E0F2F1 (light) / rgba(0, 137, 123, 0.1) (dark)
 - Border-left: 4px solid #00897B
 - Icon color: #00897B
 - Text color: #004D40 (light) / #80CBC4 (dark)
 
 **Warning (Orange):**
+
 - Background: #FFF3E0 (light) / rgba(245, 124, 0, 0.1) (dark)
 - Border-left: 4px solid #F57C00
 - Icon color: #F57C00
 - Text color: #E65100 (light) / #FFCC80 (dark)
 
 **Danger (Red):**
+
 - Background: #FFEBEE (light) / rgba(211, 47, 47, 0.1) (dark)
 - Border-left: 4px solid #D32F2F
 - Icon color: #D32F2F
 - Text color: #B71C1C (light) / #EF9A9A (dark)
 
 **General Callout Specs:**
+
 - Border radius: 6px
 - Padding: 16px 16px 16px 48px
 - Font: Inter Regular, 15px
@@ -1028,6 +1044,7 @@ Danger (Critical Warnings)
 ### 4. Feature Cards
 
 **Feature Card Layout:**
+
 ```
 ┌─────────────────────────────┐
 │         [Icon]              │
@@ -1042,6 +1059,7 @@ Danger (Critical Warnings)
 ```
 
 **Specifications:**
+
 - **Width:** Flexible (grid: 3 columns on desktop)
 - **Background:** #FFFFFF (light) / #161B22 (dark)
 - **Border:** 1px solid #E1E4E8 (light) / #30363D (dark)
@@ -1052,6 +1070,7 @@ Danger (Critical Warnings)
 - **Transition:** all 0.2s ease
 
 **Icon:**
+
 - Size: 48x48px
 - Background: Gradient (Primary 600 to Primary 400)
 - Border radius: 12px
@@ -1059,17 +1078,20 @@ Danger (Critical Warnings)
 - Margin bottom: 16px
 
 **Title:**
+
 - Font: Manrope SemiBold, 20px
 - Color: Text Primary
 - Margin: 0 0 12px 0
 
 **Description:**
+
 - Font: Inter Regular, 15px
 - Color: Text Secondary
 - Line height: 1.6
 - Margin: 0
 
 **Grid Layout:**
+
 ```css
 .feature-grid {
   display: grid;
@@ -1084,6 +1106,7 @@ Danger (Critical Warnings)
 ### 5. Package Cards
 
 **Package Card Layout:**
+
 ```
 ┌──────────────────────────────────────┐
 │  @hex-di/graph                       │
@@ -1101,6 +1124,7 @@ Danger (Critical Warnings)
 ```
 
 **Specifications:**
+
 - **Background:** Gradient from Primary 50 to Primary 100
 - **Border:** 2px solid Primary 300
 - **Border radius:** 16px
@@ -1109,11 +1133,13 @@ Danger (Critical Warnings)
 - **Transition:** all 0.3s ease
 
 **Package Name:**
+
 - Font: Fira Code Medium, 18px
 - Color: Primary 700
 - Margin: 0 0 8px 0
 
 **Badge:**
+
 - Background: Primary 600 (Core) / TS 500 (Optional)
 - Color: White
 - Padding: 4px 12px
@@ -1123,18 +1149,21 @@ Danger (Critical Warnings)
 - Margin: 0 0 16px 0
 
 **Description:**
+
 - Font: Inter Regular, 15px
 - Color: Text Primary
 - Line height: 1.6
 - Margin: 0 0 16px 0
 
 **Feature List:**
+
 - Font: Inter Regular, 14px
 - Color: Text Secondary
 - List style: Custom checkmark
 - Margin: 16px 0
 
 **Link Button:**
+
 - Font: Inter Medium, 15px
 - Color: Primary 600
 - Arrow: →
@@ -1152,6 +1181,7 @@ Danger (Critical Warnings)
 ```
 
 **General Specs:**
+
 - **Display:** inline-flex
 - **Align items:** center
 - **Padding:** 6px 12px
@@ -1161,21 +1191,25 @@ Danger (Critical Warnings)
 - **Text transform:** uppercase
 
 **Singleton Badge:**
+
 - Background: linear-gradient(135deg, #00897B, #26A69A)
 - Color: White
 - Icon: Single circle (•)
 
 **Scoped Badge:**
+
 - Background: linear-gradient(135deg, #FF8F00, #FFA726)
 - Color: White
 - Icon: Nested circles (⊙)
 
 **Request Badge:**
+
 - Background: linear-gradient(135deg, #7B1FA2, #AB47BC)
 - Color: White
 - Icon: Multiple circles (∴)
 
 **Light Background Variant:**
+
 - Singleton: Background #B2DFDB, Color #004D40
 - Scoped: Background #FFECB3, Color #E65100
 - Request: Background #E1BEE7, Color #4A148C
@@ -1185,6 +1219,7 @@ Danger (Critical Warnings)
 ### 7. Search Component
 
 **Search Bar (Desktop):**
+
 ```
 ┌──────────────────────────────────────┐
 │ [🔍] Search documentation...    ⌘K   │
@@ -1192,6 +1227,7 @@ Danger (Critical Warnings)
 ```
 
 **Specifications:**
+
 - **Width:** 280px
 - **Height:** 40px
 - **Background:** #F6F8FA (light) / #21262D (dark)
@@ -1201,11 +1237,13 @@ Danger (Critical Warnings)
 - **Font:** Inter Regular, 14px
 
 **Icon:**
+
 - Size: 18x18px
 - Position: 12px from left
 - Color: Text Tertiary
 
 **Keyboard Shortcut:**
+
 - Font: Inter Medium, 12px
 - Background: #E1E4E8 (light) / #30363D (dark)
 - Border: 1px solid #D1D5DA (light) / #484F58 (dark)
@@ -1214,11 +1252,13 @@ Danger (Critical Warnings)
 - Position: Absolute right 8px
 
 **Focus State:**
+
 - Border: 1px solid Primary 500
 - Box shadow: 0 0 0 3px rgba(94, 53, 177, 0.1)
 - Outline: none
 
 **Search Modal:**
+
 - Max width: 640px
 - Background: White (light) / #161B22 (dark)
 - Border radius: 12px
@@ -1231,6 +1271,7 @@ Danger (Critical Warnings)
 ### 8. Sidebar Navigation
 
 **Specifications:**
+
 - **Width:** 280px (fixed)
 - **Background:** #FFFFFF (light) / #0D1117 (dark)
 - **Border-right:** 1px solid #E1E4E8 (light) / #30363D (dark)
@@ -1240,6 +1281,7 @@ Danger (Critical Warnings)
 - **Overflow-y:** auto
 
 **Section Header:**
+
 - Font: Manrope SemiBold, 13px
 - Color: Text Tertiary
 - Text transform: uppercase
@@ -1247,6 +1289,7 @@ Danger (Critical Warnings)
 - Margin: 24px 0 8px 0
 
 **Navigation Item:**
+
 - Font: Inter Medium, 14px
 - Color: Text Secondary
 - Padding: 8px 12px
@@ -1255,16 +1298,19 @@ Danger (Critical Warnings)
 - Cursor: pointer
 
 **Navigation Item States:**
+
 - **Hover:** Background #F6F8FA (light) / #21262D (dark)
 - **Active:** Background Primary 50, Color Primary 600, Bold
 - **Expanded:** Chevron rotated 90deg
 
 **Nested Items:**
+
 - Padding-left: +16px per level
 - Font size: 13px (nested level 1)
 - Border-left: 1px solid #E1E4E8 (visual hierarchy)
 
 **Chevron Icon:**
+
 - Size: 16x16px
 - Color: Text Tertiary
 - Transition: transform 0.2s ease
@@ -1275,6 +1321,7 @@ Danger (Critical Warnings)
 ### 9. Table of Contents (Right Sidebar)
 
 **Specifications:**
+
 - **Width:** 280px (fixed)
 - **Background:** Transparent
 - **Padding:** 24px 16px
@@ -1284,12 +1331,14 @@ Danger (Critical Warnings)
 - **Overflow-y:** auto
 
 **Header:**
+
 - Font: Manrope SemiBold, 13px
 - Color: Text Tertiary
 - Text transform: uppercase
 - Margin: 0 0 16px 0
 
 **TOC Link:**
+
 - Font: Inter Regular, 13px
 - Color: Text Secondary
 - Padding: 6px 0 6px 12px
@@ -1298,6 +1347,7 @@ Danger (Critical Warnings)
 - Line height: 1.5
 
 **TOC Link States:**
+
 - **Hover:** Color Text Primary
 - **Active:**
   - Border-left: 2px solid Primary 600
@@ -1305,10 +1355,12 @@ Danger (Critical Warnings)
   - Font weight: Medium
 
 **Nested TOC Items:**
+
 - Padding-left: +12px per level
 - Font size: 12px for level 2+
 
 **Scroll Spy:**
+
 - Active section highlighted automatically
 - Smooth scroll on click
 - Offset for fixed header
@@ -1318,6 +1370,7 @@ Danger (Critical Warnings)
 ### 10. Buttons
 
 **Primary Button:**
+
 ```
 ┌─────────────────────┐
 │  Get Started        │
@@ -1325,6 +1378,7 @@ Danger (Critical Warnings)
 ```
 
 **Specifications:**
+
 - **Background:** Primary 600
 - **Color:** White
 - **Padding:** 12px 24px
@@ -1336,12 +1390,14 @@ Danger (Critical Warnings)
 - **Cursor:** pointer
 
 **States:**
+
 - **Hover:** Background Primary 500, Shadow 0 4px 8px rgba(69, 39, 160, 0.3)
 - **Active:** Transform scale(0.98)
 - **Focus:** Outline 2px solid Primary 300, Outline offset 2px
 - **Disabled:** Background Primary 200, Color Primary 100, Cursor not-allowed
 
 **Secondary Button:**
+
 - **Background:** Transparent
 - **Color:** Primary 600
 - **Border:** 2px solid Primary 600
@@ -1349,16 +1405,19 @@ Danger (Critical Warnings)
 - **Active:** Background Primary 100
 
 **Ghost Button:**
+
 - **Background:** Transparent
 - **Color:** Text Primary
 - **Border:** 1px solid Border
 - **Hover:** Background Surface Hover
 
 **Small Button:**
+
 - Padding: 8px 16px
 - Font size: 14px
 
 **Large Button:**
+
 - Padding: 16px 32px
 - Font size: 18px
 
@@ -1371,6 +1430,7 @@ Home > Getting Started > Introduction
 ```
 
 **Specifications:**
+
 - **Font:** Inter Regular, 14px
 - **Color:** Text Secondary
 - **Margin:** 0 0 24px 0
@@ -1379,17 +1439,20 @@ Home > Getting Started > Introduction
 - **Gap:** 8px
 
 **Link:**
+
 - Color: Text Secondary
 - Hover: Color Primary 600, Underline
 - Transition: color 0.15s ease
 
 **Separator:**
+
 - Character: >
 - Color: Text Tertiary
 - Font size: 12px
 - Margin: 0 4px
 
 **Current Page:**
+
 - Color: Text Primary
 - Font weight: Medium
 - Not a link
@@ -1406,11 +1469,13 @@ Home > Getting Started > Introduction
 ```
 
 **Specifications:**
+
 - **Display:** Grid (2 columns)
 - **Gap:** 16px
 - **Margin:** 48px 0 0 0
 
 **Navigation Card:**
+
 - **Background:** #F6F8FA (light) / #161B22 (dark)
 - **Border:** 1px solid #E1E4E8 (light) / #30363D (dark)
 - **Border radius:** 8px
@@ -1419,19 +1484,23 @@ Home > Getting Started > Introduction
 - **Cursor:** pointer
 
 **States:**
+
 - **Hover:** Border Primary 600, Background Primary 50 (light) / rgba(94, 53, 177, 0.1) (dark)
 - **Active:** Transform translateY(1px)
 
 **Label (Previous/Next):**
+
 - Font: Inter Medium, 13px
 - Color: Text Tertiary
 - Margin: 0 0 4px 0
 
 **Page Title:**
+
 - Font: Inter SemiBold, 16px
 - Color: Text Primary
 
 **Arrow:**
+
 - Size: 16x16px
 - Color: Primary 600
 - Vertical align: middle
@@ -1573,16 +1642,19 @@ Home > Getting Started > Introduction
 ### Animation Patterns
 
 **1. Hover Effects:**
+
 ```css
 /* Cards */
-transition: transform 0.2s ease-out,
-            box-shadow 0.2s ease-out;
+transition:
+  transform 0.2s ease-out,
+  box-shadow 0.2s ease-out;
 transform: translateY(-2px);
-box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 
 /* Buttons */
-transition: background 0.15s ease-out,
-            transform 0.1s ease-out;
+transition:
+  background 0.15s ease-out,
+  transform 0.1s ease-out;
 transform: scale(0.98); /* on active */
 
 /* Links */
@@ -1590,6 +1662,7 @@ transition: color 0.15s ease-out;
 ```
 
 **2. Focus Indicators:**
+
 ```css
 outline: 2px solid var(--primary-600);
 outline-offset: 2px;
@@ -1597,13 +1670,18 @@ transition: outline-offset 0.1s ease-out;
 ```
 
 **3. Page Transitions:**
+
 ```css
 /* Fade in */
 animation: fadeIn 0.3s ease-out;
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Slide up */
@@ -1622,24 +1700,25 @@ animation: slideUp 0.3s ease-out;
 ```
 
 **4. Loading States:**
+
 ```css
 /* Skeleton loader */
-background: linear-gradient(
-  90deg,
-  #f0f0f0 0%,
-  #e0e0e0 50%,
-  #f0f0f0 100%
-);
+background: linear-gradient(90deg, #f0f0f0 0%, #e0e0e0 50%, #f0f0f0 100%);
 background-size: 200% 100%;
 animation: shimmer 1.5s infinite;
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 ```
 
 **5. Reduced Motion:**
+
 ```css
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -1680,6 +1759,7 @@ animation: shimmer 1.5s infinite;
 ### Toggle Implementation
 
 **Toggle Button:**
+
 ```
 ┌─────────┐
 │ ☀️ ┃ 🌙 │  (Sun active in light, Moon active in dark)
@@ -1687,6 +1767,7 @@ animation: shimmer 1.5s infinite;
 ```
 
 **Specifications:**
+
 - Width: 60px
 - Height: 32px
 - Border radius: 16px
@@ -1696,6 +1777,7 @@ animation: shimmer 1.5s infinite;
 - Position in navbar: Right side, before GitHub icon
 
 **Persistence:**
+
 - Save preference to localStorage
 - Respect system preference on first visit
 - Smooth transition between modes
@@ -1751,11 +1833,13 @@ animation: shimmer 1.5s infinite;
 ```
 
 **Container Widths:**
+
 - Max content width: 1600px
 - Main content: Max 900px (60-75 chars per line)
 - Homepage sections: Max 1200px
 
 **Spacing System:**
+
 ```css
 --space-xs: 4px;
 --space-sm: 8px;
@@ -1787,6 +1871,7 @@ Geometric, modern, technical
 **Logo Specifications:**
 
 **Full Logo (Horizontal):**
+
 ```
 ┌─────────────────────────────────┐
 │  [Hexagon Icon]  HexDI          │
@@ -1794,6 +1879,7 @@ Geometric, modern, technical
 ```
 
 **Icon Only (Square):**
+
 - Size: 40x40px (nav), 80x80px (hero), 200x200px (og:image)
 - Shape: Regular hexagon
 - Colors:
@@ -1802,6 +1888,7 @@ Geometric, modern, technical
 - Style: Flat design with subtle shadow
 
 **Wordmark:**
+
 - Font: Manrope ExtraBold
 - Size: 24px (nav), 48px (hero)
 - Color: Primary 700
@@ -1809,6 +1896,7 @@ Geometric, modern, technical
 - "Hex" in Primary 700, "DI" in TS Blue (optional variant)
 
 **Favicon:**
+
 - 16x16, 32x32, 180x180, 192x192, 512x512
 - SVG version for modern browsers
 - Simple hexagon shape
@@ -1823,17 +1911,19 @@ Geometric, modern, technical
 **Icon Library:** Lucide Icons (consistent, modern, clean)
 
 **Icon Sizes:**
+
 ```css
---icon-xs: 16px;   /* Inline with text */
---icon-sm: 20px;   /* Buttons, small UI */
---icon-md: 24px;   /* Navigation, features */
---icon-lg: 32px;   /* Feature highlights */
---icon-xl: 48px;   /* Hero sections */
+--icon-xs: 16px; /* Inline with text */
+--icon-sm: 20px; /* Buttons, small UI */
+--icon-md: 24px; /* Navigation, features */
+--icon-lg: 32px; /* Feature highlights */
+--icon-xl: 48px; /* Hero sections */
 ```
 
 **Icon Usage:**
 
 **Feature Icons:**
+
 - Check (Compile-time validation)
 - Zap (Zero runtime overhead)
 - Layers (Type-safe resolution)
@@ -1842,6 +1932,7 @@ Geometric, modern, technical
 - Hexagon (Three lifetime scopes)
 
 **Navigation Icons:**
+
 - ChevronRight (Sidebar expansion)
 - ChevronDown (Dropdowns)
 - Search (Search functionality)
@@ -1849,6 +1940,7 @@ Geometric, modern, technical
 - X (Close modals)
 
 **Action Icons:**
+
 - Copy (Copy code)
 - Check (Copied confirmation)
 - ExternalLink (External links)
@@ -1856,6 +1948,7 @@ Geometric, modern, technical
 - Sun/Moon (Dark mode toggle)
 
 **Status Icons:**
+
 - Info (Info callouts)
 - AlertTriangle (Warning callouts)
 - AlertCircle (Error callouts)
@@ -1899,36 +1992,39 @@ Geometric, modern, technical
 ### Docusaurus Configuration
 
 **1. Theme Configuration:**
+
 ```js
 // docusaurus.config.js
 module.exports = {
   themeConfig: {
     colorMode: {
-      defaultMode: 'light',
+      defaultMode: "light",
       disableSwitch: false,
       respectPrefersColorScheme: true,
     },
     navbar: {
       logo: {
-        alt: 'HexDI Logo',
-        src: 'img/logo.svg',
-        srcDark: 'img/logo-dark.svg',
+        alt: "HexDI Logo",
+        src: "img/logo.svg",
+        srcDark: "img/logo-dark.svg",
       },
       items: [
-        { to: '/docs/intro', label: 'Docs', position: 'left' },
-        { to: '/api', label: 'API', position: 'left' },
-        { to: '/examples', label: 'Examples', position: 'left' },
-        { to: '/blog', label: 'Blog', position: 'left' },
+        { to: "/docs/intro", label: "Docs", position: "left" },
+        { to: "/api", label: "API", position: "left" },
+        { to: "/examples", label: "Examples", position: "left" },
+        { to: "/blog", label: "Blog", position: "left" },
         {
-          href: 'https://github.com/your-org/hex-di',
-          position: 'right',
-          className: 'header-github-link',
+          href: "https://github.com/your-org/hex-di",
+          position: "right",
+          className: "header-github-link",
         },
       ],
     },
     footer: {
-      style: 'dark',
-      links: [ /* footer links */ ],
+      style: "dark",
+      links: [
+        /* footer links */
+      ],
       copyright: `© ${new Date().getFullYear()} HexDI Contributors. Built with Docusaurus.`,
     },
   },
@@ -1936,22 +2032,23 @@ module.exports = {
 ```
 
 **2. Custom CSS:**
+
 ```css
 /* src/css/custom.css */
 :root {
   /* Color palette */
-  --ifm-color-primary: #5E35B1;
-  --ifm-color-primary-dark: #4527A0;
-  --ifm-color-primary-darker: #2D1B4E;
-  --ifm-color-primary-darkest: #1A0B2E;
-  --ifm-color-primary-light: #7E57C2;
-  --ifm-color-primary-lighter: #9575CD;
-  --ifm-color-primary-lightest: #B39DDB;
+  --ifm-color-primary: #5e35b1;
+  --ifm-color-primary-dark: #4527a0;
+  --ifm-color-primary-darker: #2d1b4e;
+  --ifm-color-primary-darkest: #1a0b2e;
+  --ifm-color-primary-light: #7e57c2;
+  --ifm-color-primary-lighter: #9575cd;
+  --ifm-color-primary-lightest: #b39ddb;
 
   /* Fonts */
-  --ifm-font-family-base: 'Inter', system-ui, -apple-system, sans-serif;
-  --ifm-font-family-monospace: 'Fira Code', 'Monaco', monospace;
-  --ifm-heading-font-family: 'Manrope', var(--ifm-font-family-base);
+  --ifm-font-family-base: "Inter", system-ui, -apple-system, sans-serif;
+  --ifm-font-family-monospace: "Fira Code", "Monaco", monospace;
+  --ifm-heading-font-family: "Manrope", var(--ifm-font-family-base);
 
   /* Typography scale */
   --ifm-font-size-base: 16px;
@@ -1970,28 +2067,30 @@ module.exports = {
 ```
 
 **3. Syntax Highlighting Theme:**
+
 - Use Prism theme: Dracula (dark) / GitHub (light)
 - Customize colors to match brand palette
 - Enable line numbers
 - Enable copy button plugin
 
 **4. Plugins:**
+
 ```js
 plugins: [
-  '@docusaurus/plugin-content-docs',
-  '@docusaurus/plugin-content-blog',
-  '@docusaurus/plugin-sitemap',
-  'docusaurus-plugin-sass', // If using SCSS
-]
+  "@docusaurus/plugin-content-docs",
+  "@docusaurus/plugin-content-blog",
+  "@docusaurus/plugin-sitemap",
+  "docusaurus-plugin-sass", // If using SCSS
+];
 ```
 
 ---
 
 ## Version History
 
-| Version | Date       | Changes                          |
-|---------|------------|----------------------------------|
-| 1.0     | 2025-12-15 | Initial design specifications    |
+| Version | Date       | Changes                       |
+| ------- | ---------- | ----------------------------- |
+| 1.0     | 2025-12-15 | Initial design specifications |
 
 ---
 
@@ -2202,12 +2301,19 @@ Replace or enhance the existing hero section with a large, interactive hexagonal
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.85; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.85;
+  }
 }
 
 @keyframes dash {
-  to { stroke-dashoffset: -1000; }
+  to {
+    stroke-dashoffset: -1000;
+  }
 }
 ```
 
@@ -2384,8 +2490,12 @@ Hexagon-based loading animation:
 }
 
 @keyframes rotate-hexagon {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 ```
 
@@ -2436,6 +2546,7 @@ Subtle hexagon grid pattern for hero sections:
 **6. Port/Adapter Iconography:**
 
 **Ports (Interface Icons):**
+
 - Visual: Plug/socket icons
 - Style: Outlined, 24x24px
 - Color: TypeScript Blue
@@ -2450,6 +2561,7 @@ Subtle hexagon grid pattern for hero sections:
 ```
 
 **Adapters (Connector Icons):**
+
 - Visual: Connector/bridge icons
 - Style: Filled, 24x24px
 - Color: Varies by lifetime scope
@@ -2473,10 +2585,10 @@ Subtle hexagon grid pattern for hero sections:
 
 ```javascript
 // Show port descriptions on vertex hover
-const vertices = document.querySelectorAll('.hexagon-vertex');
+const vertices = document.querySelectorAll(".hexagon-vertex");
 
 vertices.forEach(vertex => {
-  vertex.addEventListener('mouseenter', (e) => {
+  vertex.addEventListener("mouseenter", e => {
     const portName = e.target.dataset.port;
     showTooltip(portName, getPortDescription(portName));
   });
@@ -2492,7 +2604,7 @@ vertices.forEach(vertex => {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px 16px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   max-width: 200px;
   z-index: 1000;
 }
@@ -2516,16 +2628,16 @@ vertices.forEach(vertex => {
 
 ```javascript
 // Click handler for adapter cards
-document.querySelectorAll('.adapter-card').forEach(card => {
-  card.addEventListener('click', (e) => {
+document.querySelectorAll(".adapter-card").forEach(card => {
+  card.addEventListener("click", e => {
     const adapter = e.currentTarget;
-    adapter.classList.toggle('expanded');
+    adapter.classList.toggle("expanded");
 
     // Animate expansion
-    const details = adapter.querySelector('.adapter-details');
-    details.style.maxHeight = adapter.classList.contains('expanded')
+    const details = adapter.querySelector(".adapter-details");
+    details.style.maxHeight = adapter.classList.contains("expanded")
       ? `${details.scrollHeight}px`
-      : '0';
+      : "0";
   });
 });
 ```
@@ -2540,7 +2652,7 @@ document.querySelectorAll('.adapter-card').forEach(card => {
 
 .adapter-card.expanded {
   transform: scale(1.02);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   z-index: 10;
 }
 
@@ -2608,6 +2720,7 @@ Visual representation of dependency injection flow:
 Map existing color palette to hexagonal architecture concepts:
 
 **1. Inside/Core (Purple - Primary 600):**
+
 - **Represents:** Business logic, domain entities, use cases
 - **Usage:**
   - Core hexagon fill
@@ -2622,6 +2735,7 @@ Map existing color palette to hexagonal architecture concepts:
   ```
 
 **2. Ports (Blue - TypeScript Blue 500):**
+
 - **Represents:** Interfaces, contracts, port definitions
 - **Usage:**
   - Port circle borders
@@ -2630,10 +2744,11 @@ Map existing color palette to hexagonal architecture concepts:
 - **Example:**
   ```typescript
   // Port definition (Blue)
-  const UserServicePort = createPort<'UserService', UserService>('UserService');
+  const UserServicePort = createPort<UserService>("UserService");
   ```
 
 **3. Driving Adapters (Green - Success Green 500):**
+
 - **Represents:** UI, CLI, Controllers, Tests (initiators)
 - **Usage:**
   - Left-side adapter cards
@@ -2644,11 +2759,12 @@ Map existing color palette to hexagonal architecture concepts:
   // Driving adapter (Green)
   const UserController = createAdapter({
     provides: ControllerPort,
-    requires: [UserServicePort]
+    requires: [UserServicePort],
   });
   ```
 
 **4. Driven Adapters (Orange - Warning Orange 500):**
+
 - **Represents:** Database, APIs, Logger, External services (called by core)
 - **Usage:**
   - Right-side adapter cards
@@ -2659,7 +2775,7 @@ Map existing color palette to hexagonal architecture concepts:
   // Driven adapter (Orange)
   const DatabaseAdapter = createAdapter({
     provides: DatabasePort,
-    requires: []
+    requires: [],
   });
   ```
 
@@ -2726,22 +2842,17 @@ Every documentation page includes a small hexagon showing where the current conc
 <div class="context-hexagon">
   <svg viewBox="0 0 200 200" class="mini-hex">
     <!-- Core hexagon -->
-    <polygon points="100,20 170,60 170,140 100,180 30,140 30,60"
-             class="hex-core" />
+    <polygon points="100,20 170,60 170,140 100,180 30,140 30,60" class="hex-core" />
 
     <!-- Port indicator (highlighted if current page is about ports) -->
-    <circle cx="100" cy="20" r="10"
-            class="hex-port active" />
+    <circle cx="100" cy="20" r="10" class="hex-port active" />
 
     <!-- Label -->
-    <text x="100" y="105" text-anchor="middle" class="hex-label">
-      Ports
-    </text>
+    <text x="100" y="105" text-anchor="middle" class="hex-label">Ports</text>
   </svg>
 
   <p class="context-label">
-    You're learning about <strong>Ports</strong> -
-    the contract layer between core and adapters
+    You're learning about <strong>Ports</strong> - the contract layer between core and adapters
   </p>
 </div>
 ```
@@ -2786,8 +2897,13 @@ Every documentation page includes a small hexagon showing where the current conc
 }
 
 @keyframes pulse-port {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }
 
 .context-label {
@@ -2996,24 +3112,28 @@ Small badge showing architectural layer:
 ### Implementation Priority
 
 **Phase 1: Essential Hexagon Elements**
+
 - [ ] Update logo to hexagon-based design
 - [ ] Add hexagon icon backgrounds to feature cards
 - [ ] Implement color-coding by architectural layer in code examples
 - [ ] Add context hexagon component to documentation pages
 
 **Phase 2: Interactive Hero**
+
 - [ ] Build animated hexagon diagram for homepage hero
 - [ ] Implement hover interactions on ports
 - [ ] Add data flow animations
 - [ ] Make diagram responsive
 
 **Phase 3: Visual Polish**
+
 - [ ] Add hexagon section dividers
 - [ ] Implement hexagon loading spinner
 - [ ] Add subtle hexagon background patterns
 - [ ] Create port/adapter icon set
 
 **Phase 4: Advanced Features**
+
 - [ ] Build architecture breadcrumb component
 - [ ] Add expandable adapter detail cards
 - [ ] Implement concept location badges
@@ -3061,21 +3181,21 @@ Small badge showing architectural layer:
 
 ### Version History
 
-| Version | Date       | Changes                                    |
-|---------|------------|--------------------------------------------|
+| Version | Date       | Changes                                      |
+| ------- | ---------- | -------------------------------------------- |
 | 1.1     | 2025-12-15 | Added Hexagonal Architecture visual addendum |
 
 ---
 
 **End of Addendum**
 
-*This addendum extends the design specifications with hexagonal architecture visual inspiration. The hexagon motif should be applied thoughtfully throughout the website to reinforce HexDI's architectural principles while maintaining clean, modern aesthetics and excellent user experience.*
+_This addendum extends the design specifications with hexagonal architecture visual inspiration. The hexagon motif should be applied thoughtfully throughout the website to reinforce HexDI's architectural principles while maintaining clean, modern aesthetics and excellent user experience._
 
 ---
 
 **End of Design Specifications**
 
-*This document provides comprehensive visual design specifications for the HexDI documentation website. All measurements, colors, and specifications should be used as guidelines and can be adjusted during implementation to achieve optimal visual harmony and user experience.*
+_This document provides comprehensive visual design specifications for the HexDI documentation website. All measurements, colors, and specifications should be used as guidelines and can be adjusted during implementation to achieve optimal visual harmony and user experience._
 
 ---
 
@@ -3086,16 +3206,19 @@ HexDI's explicit, type-safe architecture naturally makes code more comprehensibl
 ### 1. Key Messaging Pillars
 
 **Primary Headlines (Broader Focus):**
+
 - "Type-Safe Dependency Injection for Modern TypeScript"
 - "Explicit Contracts. Compile-Time Safety. Zero Runtime Surprises."
 - "Hexagonal Architecture for TypeScript Applications"
 
 **AI-Friendly as Supporting Benefit:**
+
 - Position AI-friendliness as a natural consequence of good architecture
 - Use as a secondary tagline: "So clear, even AI understands it"
 - Frame as validation of code quality: "If AI can understand it, your team definitely can"
 
 **Value Propositions (Balanced):**
+
 1. **Explicit Contracts** - No hidden dependencies, no magic. Clear for humans, comprehensible for AI agents.
 2. **Compile-Time Validation** - Catch errors before runtime. TypeScript's type system ensures correctness.
 3. **Self-Documenting Types** - Branded types and type-level programming create code that documents itself.
@@ -3106,23 +3229,27 @@ HexDI's explicit, type-safe architecture naturally makes code more comprehensibl
 ### 2. Visual Elements for AI-Friendliness
 
 **AI Agent Iconography (Subtle Use):**
+
 - Use sparingly, as one feature among many
 - Robot/AI assistant icon for AI-specific callouts only
 - Avoid overuse that makes it seem like an "AI-only" library
 
 **"AI-Friendly" Badge (Optional):**
+
 ```
 ┌─────────────────────────┐
 │ 🤖 AI-FRIENDLY          │
 │ Clear for humans & AI   │
 └─────────────────────────┘
 ```
+
 - Use only in dedicated AI section or blog posts
 - Badge color: Gradient purple to blue
 - Icon: Robot face or AI symbol
 
 **Comparison Diagrams (Focus on Clarity):**
 Show before/after comparisons emphasizing developer experience:
+
 - Traditional DI: Implicit dependencies (confusing to everyone)
 - HexDI: Explicit contracts (clear to everyone, including AI)
 
@@ -3157,6 +3284,7 @@ AFTER (HexDI):
 ### 3. Homepage Section: "Built for Clarity" (Not Just AI)
 
 **Section Layout:**
+
 ```
 ┌────────────────────────────────────────────────────────────────────┐
 │                                                                     │
@@ -3197,16 +3325,17 @@ AFTER (HexDI):
 ### 4. Testimonial/Quote Section (Balanced)
 
 **Potential Quotes (mixed benefits):**
+
 ```
-"HexDI made our codebase so much clearer. Our team onboards faster, 
+"HexDI made our codebase so much clearer. Our team onboards faster,
 and even AI tools understand the architecture."
 — Engineering lead
 
-"Finally, dependency injection that TypeScript can actually validate. 
+"Finally, dependency injection that TypeScript can actually validate.
 The compile-time errors save us hours."
 — Senior developer
 
-"The hexagonal architecture pattern just makes sense with HexDI. 
+"The hexagonal architecture pattern just makes sense with HexDI.
 Clear boundaries, testable code, no magic."
 — Full-stack developer
 ```
@@ -3214,11 +3343,13 @@ Clear boundaries, testable code, no magic."
 ### 5. llms.txt Integration (Optional Feature Section)
 
 **Feature on documentation (as a bonus, not primary feature):**
+
 - Include in "Developer Experience" or "Tooling" section
 - Position as evidence of clarity, not the main feature
 - Show how AI agents use this for better comprehension
 
 **Visual:**
+
 ```
 ┌────────────────────────────────────────┐
 │  📄 AI-Friendly Documentation          │
@@ -3258,20 +3389,21 @@ Clear for developers. Clear for AI. Clear for everyone.
 
 ### 7. Color Associations for Key Concepts
 
-| Concept | Color | Hex Code | Usage |
-|---------|-------|----------|-------|
-| Explicit | Green | #22C55E | Clarity labels, checkmarks |
-| Implicit (anti-pattern) | Red | #EF4444 | Warnings about hidden deps |
-| Compile-time | Purple | #8B5CF6 | Type validation indicators |
-| Runtime | Orange | #F97316 | Runtime resolution |
-| Ports | Blue | #3B82F6 | Port/contract visuals |
-| Adapters | Teal | #14B8A6 | Adapter implementation |
-| AI/Tooling (secondary) | Electric Blue | #00D4FF | AI-specific callouts only |
+| Concept                 | Color         | Hex Code | Usage                      |
+| ----------------------- | ------------- | -------- | -------------------------- |
+| Explicit                | Green         | #22C55E  | Clarity labels, checkmarks |
+| Implicit (anti-pattern) | Red           | #EF4444  | Warnings about hidden deps |
+| Compile-time            | Purple        | #8B5CF6  | Type validation indicators |
+| Runtime                 | Orange        | #F97316  | Runtime resolution         |
+| Ports                   | Blue          | #3B82F6  | Port/contract visuals      |
+| Adapters                | Teal          | #14B8A6  | Adapter implementation     |
+| AI/Tooling (secondary)  | Electric Blue | #00D4FF  | AI-specific callouts only  |
 
 ### 8. Interactive Demo Ideas
 
 **"Clarity Test":**
 Show side-by-side:
+
 - Left: Traditional DI code snippet
 - Right: HexDI equivalent
 - Below: Highlight the explicit vs implicit parts
@@ -3279,6 +3411,7 @@ Show side-by-side:
 
 **"Try It Yourself":**
 Provide copy-paste code snippets:
+
 1. "See how explicit the contracts are"
 2. "Try breaking the type safety—TypeScript catches it"
 3. "Ask your AI assistant what it does—watch it explain perfectly"
@@ -3286,6 +3419,7 @@ Provide copy-paste code snippets:
 ### 9. Documentation Callout Boxes
 
 **New callout type: CLARITY-TIP**
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │ 💡 CLARITY TIP                                          │
@@ -3301,6 +3435,7 @@ Provide copy-paste code snippets:
 - Icon: Lightbulb or clarity symbol
 
 **Optional: AI-specific tips (use sparingly)**
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │ 🤖 AI BONUS                                             │
@@ -3314,6 +3449,7 @@ Provide copy-paste code snippets:
 ### 10. Footer Note (Subtle Mention)
 
 Add to footer (among other features):
+
 ```
 ┌────────────────────────────────────────────────────────┐
 │  Type-Safe • Hexagonal Architecture • DevTools         │
@@ -3328,6 +3464,7 @@ For users specifically interested in AI aspects, create a dedicated page or blog
 **"HexDI and AI Coding Assistants"**
 
 This page can go deeper into:
+
 - How explicit contracts help AI understand code
 - Examples of AI-generated HexDI code
 - llms.txt integration
@@ -3338,19 +3475,17 @@ Keep this separate from the main marketing to avoid over-emphasizing AI.
 ### 12. Messaging Hierarchy
 
 **Primary messaging (80% of content):**
+
 1. Type-safe dependency injection
 2. Compile-time validation
 3. Hexagonal architecture pattern
 4. Explicit contracts
 5. Observable architecture
 
-**Secondary messaging (20% of content):**
-6. Developer experience
-7. DevTools
-8. Performance
-9. AI-friendly as a bonus
+**Secondary messaging (20% of content):** 6. Developer experience 7. DevTools 8. Performance 9. AI-friendly as a bonus
 
 **Avoid:**
+
 - Making AI-friendliness the hero feature
 - Implying it's primarily for AI-assisted development
 - Overusing AI iconography or terminology
@@ -3359,4 +3494,4 @@ Keep this separate from the main marketing to avoid over-emphasizing AI.
 
 **End of AI-Friendly Design Language Addendum**
 
-*This addendum extends the design specifications with AI-friendly messaging and visual elements. These concepts should be integrated thoughtfully as part of HexDI's broader value proposition—positioning AI-friendliness as a natural consequence of clean architecture and explicit contracts, not as the primary selling point.*
+_This addendum extends the design specifications with AI-friendly messaging and visual elements. These concepts should be integrated thoughtfully as part of HexDI's broader value proposition—positioning AI-friendliness as a natural consequence of clean architecture and explicit contracts, not as the primary selling point._
