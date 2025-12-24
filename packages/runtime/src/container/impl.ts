@@ -4,7 +4,6 @@
  */
 
 import type { Port, InferService } from "@hex-di/ports";
-import type { Lifetime } from "@hex-di/graph";
 import { MemoMap } from "../common/memo-map.js";
 import { ResolutionContext } from "../resolution/context.js";
 import { ScopeImpl } from "../scope/impl.js";
@@ -14,9 +13,8 @@ import {
   FactoryError,
   AsyncFactoryError,
   AsyncInitializationRequiredError,
-  ContainerError,
 } from "../common/errors.js";
-import type { ContainerInternalState, ScopeInternalState } from "../inspector/types.js";
+import type { ContainerInternalState } from "../inspector/types.js";
 import type { InheritanceMode } from "../types.js";
 import type {
   RuntimeAdapter,
@@ -28,10 +26,11 @@ import type {
   ContainerConfig,
 } from "./internal-types.js";
 import { isAdapterForPort, assertSyncAdapter } from "./internal-types.js";
-import { HooksRunner, checkCacheHit } from "./hooks-runner.js";
+import { HooksRunner } from "./hooks-runner.js";
 import { LifecycleManager } from "./lifecycle-manager.js";
 import { InheritanceResolver } from "./inheritance-resolver.js";
 import { ResolutionEngine } from "./resolution-engine.js";
+import { AsyncResolutionEngine } from "./async-resolution-engine.js";
 import { isDisposableChild, createMemoMapSnapshot } from "./helpers.js";
 import { ADAPTER_ACCESS } from "../inspector/symbols.js";
 
@@ -73,10 +72,7 @@ export class ContainerImpl<
   private initializationPromise: Promise<void> | null = null;
   private readonly hooksRunner: HooksRunner | null;
   private readonly resolutionEngine: ResolutionEngine;
-  private readonly pendingResolutions: Map<
-    Port<unknown, string>,
-    Map<string | null, Promise<unknown>>
-  >;
+  private readonly asyncResolutionEngine: AsyncResolutionEngine;
 
   // Child-only state
   private readonly parentContainer: ParentContainerLike<TProvides, TAsyncPorts> | null;
@@ -92,7 +88,6 @@ export class ContainerImpl<
     this.adapterMap = new Map();
     this.asyncPorts = new Set();
     this.asyncAdapters = [];
-    this.pendingResolutions = new Map();
     this.localPorts = new Set();
 
     if (config.kind === "root") {
@@ -110,12 +105,19 @@ export class ContainerImpl<
       this.initializeFromParent(config);
     }
 
-    // Initialize resolution engine with dependency resolver callback
+    // Initialize resolution engines with dependency resolver callbacks
     this.resolutionEngine = new ResolutionEngine(
       this.singletonMemo,
       this.resolutionContext,
       this.hooksRunner,
       (port, scopedMemo, scopeId) => this.resolveInternal(port, scopedMemo, scopeId)
+    );
+
+    this.asyncResolutionEngine = new AsyncResolutionEngine(
+      this.singletonMemo,
+      this.resolutionContext,
+      this.hooksRunner,
+      (port, scopedMemo, scopeId) => this.resolveAsyncInternal(port, scopedMemo, scopeId)
     );
   }
 
@@ -482,152 +484,13 @@ export class ContainerImpl<
     return this.resolveAsyncWithAdapter(port, adapter, scopedMemo, scopeId);
   }
 
-  private async resolveAsyncWithAdapter<P extends Port<unknown, string>>(
+  private resolveAsyncWithAdapter<P extends Port<unknown, string>>(
     port: P,
     adapter: RuntimeAdapterFor<P>,
     scopedMemo: MemoMap,
     scopeId: string | null
   ): Promise<InferService<P>> {
-    if (this.hooksRunner === null) {
-      return this.resolveAsyncWithAdapterCore(port, adapter, scopedMemo, scopeId);
-    }
-
-    const isCacheHit = checkCacheHit(port, adapter.lifetime, this.singletonMemo, scopedMemo);
-    if (isCacheHit) {
-      // For cache hits, run hooks around the cached resolution
-      return this.hooksRunner.runAsync(port, adapter, scopeId, true, () =>
-        this.resolveAsyncWithAdapterCore(port, adapter, scopedMemo, scopeId)
-      );
-    }
-
-    // For non-cache hits, hooks are handled in createPendingResolutionPromise
-    return this.resolveAsyncWithAdapterCore(port, adapter, scopedMemo, scopeId);
-  }
-
-  private resolveAsyncWithAdapterCore<P extends Port<unknown, string>>(
-    port: P,
-    adapter: RuntimeAdapterFor<P>,
-    scopedMemo: MemoMap,
-    scopeId: string | null
-  ): Promise<InferService<P>>;
-  private resolveAsyncWithAdapterCore(
-    port: Port<unknown, string>,
-    adapter: RuntimeAdapter,
-    scopedMemo: MemoMap,
-    scopeId: string | null
-  ): Promise<unknown>;
-  private resolveAsyncWithAdapterCore(
-    port: Port<unknown, string>,
-    adapter: RuntimeAdapter,
-    scopedMemo: MemoMap,
-    scopeId: string | null
-  ): Promise<unknown> {
-    const memo = this.getMemoForLifetime(adapter.lifetime, scopedMemo);
-    const cached = memo?.getIfPresent(port);
-    if (cached !== undefined) {
-      return Promise.resolve(cached);
-    }
-
-    let scopePending = this.pendingResolutions.get(port);
-    if (scopePending === undefined) {
-      scopePending = new Map();
-      this.pendingResolutions.set(port, scopePending);
-    }
-
-    const pending = scopePending.get(scopeId);
-    if (pending !== undefined) {
-      return pending;
-    }
-
-    const promise = this.createPendingResolutionPromise(port, adapter, scopedMemo, scopeId, memo);
-    scopePending.set(scopeId, promise);
-    return promise;
-  }
-
-  private getMemoForLifetime(lifetime: Lifetime, scopedMemo: MemoMap): MemoMap | null {
-    switch (lifetime) {
-      case "singleton":
-        return this.singletonMemo;
-      case "scoped":
-        return scopedMemo;
-      default:
-        return null;
-    }
-  }
-
-  private createPendingResolutionPromise<P extends Port<unknown, string>>(
-    port: P,
-    adapter: RuntimeAdapterFor<P>,
-    scopedMemo: MemoMap,
-    scopeId: string | null,
-    memo: MemoMap | null
-  ): Promise<InferService<P>> {
-    const resolution = () => this.executeAsyncResolution(port, adapter, scopedMemo, scopeId, memo);
-
-    // Wrap with hooks if enabled (isCacheHit=false for new resolutions)
-    const promise =
-      this.hooksRunner !== null
-        ? this.hooksRunner.runAsync(port, adapter, scopeId, false, resolution)
-        : resolution();
-
-    promise.catch(() => {});
-    const cleanupPromise = promise.finally(() => this.cleanupPending(port, scopeId));
-    cleanupPromise.catch(() => {});
-    return promise;
-  }
-
-  private executeAsyncResolution<P extends Port<unknown, string>>(
-    port: P,
-    adapter: RuntimeAdapterFor<P>,
-    scopedMemo: MemoMap,
-    scopeId: string | null,
-    memo: MemoMap | null
-  ): Promise<InferService<P>> {
-    const factory = () => this.createInstanceAsync(port, adapter, scopedMemo, scopeId);
-    if (memo !== null) {
-      return memo.getOrElseMemoizeAsync(port, factory, adapter.finalizer);
-    }
-    return factory();
-  }
-
-  private cleanupPending(port: Port<unknown, string>, scopeId: string | null): void {
-    const currentPending = this.pendingResolutions.get(port);
-    if (currentPending) {
-      currentPending.delete(scopeId);
-      if (currentPending.size === 0) {
-        this.pendingResolutions.delete(port);
-      }
-    }
-  }
-
-  private async createInstanceAsync<P extends Port<unknown, string>>(
-    port: P,
-    adapter: RuntimeAdapterFor<P>,
-    scopedMemo: MemoMap,
-    scopeId: string | null
-  ): Promise<InferService<P>> {
-    const portName = port.__portName;
-    this.resolutionContext.enter(portName);
-
-    try {
-      const deps: Record<string, unknown> = {};
-      for (const requiredPort of adapter.requires) {
-        deps[requiredPort.__portName] = await this.resolveAsyncInternal(
-          requiredPort,
-          scopedMemo,
-          scopeId
-        );
-      }
-      const instance = await adapter.factory(deps);
-      return instance;
-    } catch (e) {
-      if (e instanceof ContainerError) {
-        throw e;
-      }
-      throw new AsyncFactoryError(portName, e);
-    } finally {
-      this.resolutionContext.exit(portName);
-    }
+    return this.asyncResolutionEngine.resolve(port, adapter, scopedMemo, scopeId);
   }
 
   // =============================================================================
