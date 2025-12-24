@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from "vitest";
 import { createPort } from "@hex-di/ports";
-import { createAdapter } from "../src/index.js";
+import { createAdapter, createAsyncAdapter } from "../src/index.js";
 
 // =============================================================================
 // Test Service Interfaces
@@ -161,5 +161,83 @@ describe("createAdapter function", () => {
       Logger: mockLogger,
       Database: mockDatabase,
     });
+  });
+});
+
+// =============================================================================
+// createAsyncAdapter Unit Tests
+// =============================================================================
+
+describe("createAsyncAdapter function", () => {
+  it("returns a frozen/immutable object", () => {
+    const adapter = createAsyncAdapter({
+      provides: LoggerPort,
+      requires: [],
+      factory: async () => ({ log: () => {} }),
+    });
+
+    expect(Object.isFrozen(adapter)).toBe(true);
+  });
+
+  it("defaults initPriority to 100", () => {
+    const adapter = createAsyncAdapter({
+      provides: LoggerPort,
+      requires: [],
+      factory: async () => ({ log: () => {} }),
+    });
+
+    expect(adapter.initPriority).toBe(100);
+  });
+
+  it("accepts valid initPriority values", () => {
+    const lowPriority = createAsyncAdapter({
+      provides: LoggerPort,
+      requires: [],
+      factory: async () => ({ log: () => {} }),
+      initPriority: 0,
+    });
+
+    const highPriority = createAsyncAdapter({
+      provides: LoggerPort,
+      requires: [],
+      factory: async () => ({ log: () => {} }),
+      initPriority: 1000,
+    });
+
+    expect(lowPriority.initPriority).toBe(0);
+    expect(highPriority.initPriority).toBe(1000);
+  });
+
+  it("throws RangeError for negative initPriority", () => {
+    expect(() =>
+      createAsyncAdapter({
+        provides: LoggerPort,
+        requires: [],
+        factory: async () => ({ log: () => {} }),
+        initPriority: -1,
+      })
+    ).toThrow(RangeError);
+  });
+
+  it("throws RangeError for initPriority above maximum", () => {
+    expect(() =>
+      createAsyncAdapter({
+        provides: LoggerPort,
+        requires: [],
+        factory: async () => ({ log: () => {} }),
+        initPriority: 1001,
+      })
+    ).toThrow(RangeError);
+  });
+
+  it("error message includes the invalid priority value", () => {
+    expect(() =>
+      createAsyncAdapter({
+        provides: LoggerPort,
+        requires: [],
+        factory: async () => ({ log: () => {} }),
+        initPriority: 9999,
+      })
+    ).toThrow(/9999/);
   });
 });

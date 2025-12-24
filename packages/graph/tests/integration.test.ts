@@ -848,7 +848,7 @@ describe("Integration: Self-referential adapter (edge case)", () => {
     type ProvideResult = ReturnType<typeof builder.provide<typeof selfReferentialAdapter>>;
 
     // The cycle is detected at compile time
-    type IsCycleError = ProvideResult extends { __errorBrand: "CircularDependencyError" }
+    type IsCycleError = ProvideResult extends `ERROR: Circular dependency: ${string}`
       ? true
       : false;
     expectTypeOf<IsCycleError>().toEqualTypeOf<true>();
@@ -893,7 +893,7 @@ describe("Integration: Self-referential adapter (edge case)", () => {
 
     // Adding B creates the cycle: A->B->A
     type ProvideResultB = ReturnType<typeof builderWithA.provide<typeof adapterB>>;
-    type IsCycleError = ProvideResultB extends { __errorBrand: "CircularDependencyError" }
+    type IsCycleError = ProvideResultB extends `ERROR: Circular dependency: ${string}`
       ? true
       : false;
     expectTypeOf<IsCycleError>().toEqualTypeOf<true>();

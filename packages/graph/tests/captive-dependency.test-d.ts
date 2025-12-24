@@ -16,6 +16,7 @@ import {
   LifetimeLevel,
   LifetimeName,
   CaptiveDependencyError,
+  CaptiveErrorMessage,
   AddLifetime,
   GetLifetimeLevel,
   FindAnyCaptiveDependency,
@@ -61,8 +62,7 @@ const CachePort = createPort<"Cache", Cache>("Cache");
 // Test Helper Type
 // =============================================================================
 
-type IsCaptiveError<T> =
-  T extends CaptiveDependencyError<string, string, string, string> ? true : false;
+type IsCaptiveError<T> = T extends `ERROR: Captive dependency: ${string}` ? true : false;
 
 // =============================================================================
 // LifetimeLevel Type Tests
@@ -393,15 +393,22 @@ describe("GraphBuilder.provide() captive dependency detection", () => {
 // CaptiveDependencyError Type Tests
 // =============================================================================
 
-describe("CaptiveDependencyError type", () => {
-  it("has correct structure", () => {
+describe("CaptiveDependencyError and CaptiveErrorMessage types", () => {
+  it("CaptiveErrorMessage returns template literal with all details", () => {
+    // Template literal error message directly shows the lifetime conflict
+    type ErrorMessage = CaptiveErrorMessage<"UserService", "Singleton", "Database", "Scoped">;
+    expectTypeOf<ErrorMessage>().toEqualTypeOf<"ERROR: Captive dependency: Singleton 'UserService' cannot depend on Scoped 'Database'">();
+  });
+
+  it("CaptiveDependencyError branded type has correct structure", () => {
+    // The branded object type is still available for advanced usage
     type Error = CaptiveDependencyError<"UserService", "Singleton", "Database", "Scoped">;
 
     expectTypeOf<Error["__valid"]>().toEqualTypeOf<false>();
     expectTypeOf<Error["__errorBrand"]>().toEqualTypeOf<"CaptiveDependencyError">();
   });
 
-  it("error message contains all details", () => {
+  it("CaptiveDependencyError message contains all details", () => {
     type Error = CaptiveDependencyError<"UserService", "Singleton", "Database", "Scoped">;
 
     type Message = Error["__message"];

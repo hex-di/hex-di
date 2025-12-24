@@ -17,6 +17,44 @@ type V8ErrorConstructor = typeof Error & {
 };
 
 // =============================================================================
+// Error Message Extraction
+// =============================================================================
+
+/**
+ * Checks if a value is an object with a string `message` property.
+ * Used to detect error-like objects that don't extend Error.
+ */
+function hasMessageProperty(value: unknown): value is { message: string } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "message" in value &&
+    typeof (value as { message: unknown }).message === "string"
+  );
+}
+
+/**
+ * Extracts a human-readable error message from an unknown thrown value.
+ *
+ * Handles:
+ * 1. Standard Error instances → uses error.message
+ * 2. Objects with `message` property → uses the message property
+ * 3. Other values → converts to string
+ *
+ * This properly handles custom error objects that have a `message` property
+ * but don't extend Error (e.g., from external libraries or serialized errors).
+ */
+function extractErrorMessage(cause: unknown): string {
+  if (cause instanceof Error) {
+    return cause.message;
+  }
+  if (hasMessageProperty(cause)) {
+    return cause.message;
+  }
+  return String(cause);
+}
+
+// =============================================================================
 // ContainerError Abstract Base Class
 // =============================================================================
 
@@ -194,7 +232,7 @@ export class FactoryError extends ContainerError {
    * @param cause - The original exception thrown by the factory
    */
   constructor(portName: string, cause: unknown) {
-    const causeMessage = cause instanceof Error ? cause.message : String(cause);
+    const causeMessage = extractErrorMessage(cause);
     super(`Factory for port '${portName}' threw: ${causeMessage}`);
 
     this.portName = portName;
@@ -351,7 +389,7 @@ export class AsyncFactoryError extends ContainerError {
    * @param cause - The original exception thrown by the factory
    */
   constructor(portName: string, cause: unknown) {
-    const causeMessage = cause instanceof Error ? cause.message : String(cause);
+    const causeMessage = extractErrorMessage(cause);
     super(`Async factory for port '${portName}' failed: ${causeMessage}`);
 
     this.portName = portName;

@@ -1,3 +1,59 @@
+/**
+ * GraphBuilder - Immutable Fluent Builder with Compile-Time Validation.
+ *
+ * This module implements the core GraphBuilder class which accumulates adapters
+ * and performs compile-time validation using advanced TypeScript patterns.
+ *
+ * ## Design Pattern: Type-State Machine
+ *
+ * GraphBuilder uses phantom type parameters to track state at the type level:
+ * - `TProvides`: Union of all ports that have adapters
+ * - `TRequires`: Union of all ports that are required by adapters
+ * - `TAsyncPorts`: Union of ports with async factories
+ * - `TDepGraph`: Type-level adjacency map for cycle detection
+ * - `TLifetimeMap`: Type-level port→lifetime map for captive detection
+ *
+ * These type parameters change with each `.provide()` call, enabling
+ * compile-time validation while the runtime implementation is trivial.
+ *
+ * ## Validation Order in ProvideResult
+ *
+ * When `.provide(adapter)` is called, validations run in this order:
+ *
+ * 1. **Duplicate Detection** (fastest, fail early)
+ *    - `HasOverlap<NewPort, ExistingPorts>` → DuplicateErrorMessage
+ *
+ * 2. **Circular Dependency Detection**
+ *    - `WouldCreateCycle<DepGraph, Provides, Requires>` → CircularErrorMessage
+ *    - Uses DFS at type level (see cycle-detection.ts)
+ *
+ * 3. **Captive Dependency Detection**
+ *    - `FindAnyCaptiveDependency<LifetimeMap, Level, Requires>` → CaptiveErrorMessage
+ *    - Checks lifetime hierarchy (see captive-dependency.ts)
+ *
+ * 4. **Success**: Return new `GraphBuilder<...>` with updated type parameters
+ *
+ * ## Why Nested Conditionals (Not Unions)?
+ *
+ * We use nested `... extends true ? Error : (next check)` because:
+ * - Each check must complete before the next runs
+ * - Union return types would accept EITHER branch
+ * - Nested structure preserves validation order
+ *
+ * ## Error Types: Template Literals
+ *
+ * Return types on failure are template literal strings like:
+ * `"ERROR: Circular dependency: A -> B -> A"`
+ *
+ * This makes errors immediately visible in IDE tooltips without
+ * expanding complex type structures.
+ *
+ * @see ./validation/cycle-detection.ts - DFS algorithm for cycles
+ * @see ./validation/captive-dependency.ts - Lifetime hierarchy checks
+ * @see ./validation/errors.ts - Template literal error types
+ * @packageDocumentation
+ */
+
 import type { Port } from "@hex-di/ports";
 import type {
   Adapter,
@@ -10,11 +66,8 @@ import type {
   InferManyAsyncPorts,
 } from "../adapter";
 import type {
-  BuildErrorMessage,
-  DuplicateProviderError,
   ExtractPortNames,
   UnsatisfiedDependencies,
-  IsSatisfied,
   HasOverlap,
   OverlappingPorts,
   CircularDependencyError,
@@ -26,6 +79,8 @@ import type {
   MergeDependencyMaps,
   AddManyEdges,
   WouldAnyCreateCycle,
+  DetectCycleInMergedGraph,
+  FirstCycleError,
   LifetimeLevel,
   AddLifetime,
   GetLifetimeLevel,
@@ -35,6 +90,11 @@ import type {
   MergeLifetimeMaps,
   AddManyLifetimes,
   WouldAnyBeCaptive,
+  DetectCaptiveInMergedGraph,
+  FirstCaptiveError,
+  DuplicateErrorMessage,
+  CircularErrorMessage,
+  CaptiveErrorMessage,
 } from "../validation";
 
 import type { Graph } from "./types";
@@ -71,6 +131,47 @@ type IsNever<T> = [T] extends [never] ? true : false;
 /**
  * The return type of `GraphBuilder.provide()` with duplicate, cycle, and captive dependency detection.
  *
+ * This is the heart of HexDI's compile-time validation. It implements a validation
+ * pipeline as a nested conditional type:
+ *
+ * ```
+ * Input: Adapter A
+ *    │
+ *    ▼
+ * ┌─────────────────────────────────────┐
+ * │ 1. Duplicate Check                   │
+ * │    HasOverlap<A.provides, TProvides> │
+ * └─────────────┬───────────────────────┘
+ *               │ false
+ *               ▼
+ * ┌─────────────────────────────────────┐
+ * │ 2. Cycle Check                       │
+ * │    WouldCreateCycle<DepGraph, ...>   │
+ * └─────────────┬───────────────────────┘
+ *               │ false
+ *               ▼
+ * ┌─────────────────────────────────────┐
+ * │ 3. Captive Check                     │
+ * │    FindAnyCaptiveDependency<...>     │
+ * └─────────────┬───────────────────────┘
+ *               │ never (no captive found)
+ *               ▼
+ * ┌─────────────────────────────────────┐
+ * │ 4. Success!                          │
+ * │    GraphBuilder<updated types>       │
+ * └─────────────────────────────────────┘
+ * ```
+ *
+ * If ANY check fails, the return type becomes an error template literal
+ * like `"ERROR: Circular dependency: A -> B -> A"`.
+ *
+ * @typeParam TProvides - Current union of provided ports
+ * @typeParam TRequires - Current union of required ports
+ * @typeParam TAsyncPorts - Current union of async ports
+ * @typeParam TDepGraph - Current type-level dependency graph
+ * @typeParam TLifetimeMap - Current type-level lifetime map
+ * @typeParam A - The adapter being added
+ *
  * @internal
  */
 type ProvideResult<
@@ -81,26 +182,42 @@ type ProvideResult<
   TLifetimeMap,
   A extends Adapter<any, any, any, any>,
 > =
-  // First check for duplicate providers
+  // ═══════════════════════════════════════════════════════════════════════════
+  // STEP 1: Duplicate Detection (fastest check, fail early)
+  // ═══════════════════════════════════════════════════════════════════════════
   HasOverlap<InferAdapterProvides<A>, TProvides> extends true
-    ? DuplicateProviderError<OverlappingPorts<InferAdapterProvides<A>, TProvides>>
-    : // Then check for circular dependencies
+    ? DuplicateErrorMessage<OverlappingPorts<InferAdapterProvides<A>, TProvides>>
+    : // ═══════════════════════════════════════════════════════════════════════════
+      // STEP 2: Circular Dependency Detection
+      // Check if the new adapter's "provides" is reachable from its "requires"
+      // through the existing graph. If yes, adding this adapter creates a cycle.
+      // ═══════════════════════════════════════════════════════════════════════════
       WouldCreateCycle<TDepGraph, AdapterProvidesName<A>, AdapterRequiresNames<A>> extends true
-      ? CircularDependencyError<
+      ? CircularErrorMessage<
           BuildCyclePath<
             AddEdge<TDepGraph, AdapterProvidesName<A>, AdapterRequiresNames<A>>,
             AdapterProvidesName<A>,
             AdapterRequiresNames<A>
           >
         >
-      : // Then check for captive dependencies
+      : // ═══════════════════════════════════════════════════════════════════════════
+        // STEP 3: Captive Dependency Detection
+        // Check if any required port has a shorter lifetime than this adapter.
+        // If yes, this adapter would "capture" that shorter-lived dependency.
+        // ═══════════════════════════════════════════════════════════════════════════
         FindAnyCaptiveDependency<
             TLifetimeMap,
             LifetimeLevel<DirectAdapterLifetime<A>>,
             AdapterRequiresNames<A>
           > extends infer CaptivePort
         ? IsNever<CaptivePort> extends true
-          ? // Success: return new builder with updated types
+          ? // ═══════════════════════════════════════════════════════════════════════
+            // STEP 4: Success! Return new GraphBuilder with updated phantom types
+            // - TProvides grows by the new port
+            // - TRequires grows by the new requirements
+            // - TDepGraph adds the new edge
+            // - TLifetimeMap adds the new port's lifetime
+            // ═══════════════════════════════════════════════════════════════════════
             GraphBuilder<
               TProvides | InferAdapterProvides<A>,
               TRequires | InferAdapterRequires<A>,
@@ -109,13 +226,13 @@ type ProvideResult<
               AddLifetime<TLifetimeMap, AdapterProvidesName<A>, DirectAdapterLifetime<A>>
             >
           : CaptivePort extends string
-            ? CaptiveDependencyError<
+            ? CaptiveErrorMessage<
                 AdapterProvidesName<A>,
                 LifetimeName<LifetimeLevel<DirectAdapterLifetime<A>>>,
                 CaptivePort,
                 LifetimeName<GetLifetimeLevel<TLifetimeMap, CaptivePort>>
               >
-            : // Fallback (shouldn't happen)
+            : // Fallback (shouldn't happen - defensive typing)
               GraphBuilder<
                 TProvides | InferAdapterProvides<A>,
                 TRequires | InferAdapterRequires<A>,
@@ -142,10 +259,10 @@ type ProvideAsyncResult<
 > =
   // First check for duplicate providers
   HasOverlap<InferAdapterProvides<A>, TProvides> extends true
-    ? DuplicateProviderError<OverlappingPorts<InferAdapterProvides<A>, TProvides>>
+    ? DuplicateErrorMessage<OverlappingPorts<InferAdapterProvides<A>, TProvides>>
     : // Then check for circular dependencies
       WouldCreateCycle<TDepGraph, AdapterProvidesName<A>, AdapterRequiresNames<A>> extends true
-      ? CircularDependencyError<
+      ? CircularErrorMessage<
           BuildCyclePath<
             AddEdge<TDepGraph, AdapterProvidesName<A>, AdapterRequiresNames<A>>,
             AdapterProvidesName<A>,
@@ -168,7 +285,7 @@ type ProvideAsyncResult<
               AddLifetime<TLifetimeMap, AdapterProvidesName<A>, "singleton">
             >
           : CaptivePort extends string
-            ? CaptiveDependencyError<
+            ? CaptiveErrorMessage<
                 AdapterProvidesName<A>,
                 "Singleton",
                 CaptivePort,
@@ -207,10 +324,10 @@ type ProvideManyResult<
 > =
   // First check for duplicate providers
   BatchHasOverlap<InferManyProvides<A>, TProvides> extends true
-    ? DuplicateProviderError<OverlappingPorts<InferManyProvides<A>, TProvides>>
+    ? DuplicateErrorMessage<OverlappingPorts<InferManyProvides<A>, TProvides>>
     : // Then check for circular dependencies in the batch
       WouldAnyCreateCycle<TDepGraph, A> extends CircularDependencyError<infer Path>
-      ? CircularDependencyError<Path>
+      ? CircularErrorMessage<Path>
       : // Then check for captive dependencies in the batch
         WouldAnyBeCaptive<TLifetimeMap, A> extends CaptiveDependencyError<
             infer DN,
@@ -218,7 +335,7 @@ type ProvideManyResult<
             infer CP,
             infer CL
           >
-        ? CaptiveDependencyError<DN, DL, CP, CL>
+        ? CaptiveErrorMessage<DN, DL, CP, CL>
         : // Success: return new builder with updated types
           GraphBuilder<
             TProvides | InferManyProvides<A>,
@@ -229,11 +346,18 @@ type ProvideManyResult<
           >;
 
 /**
- * The return type of `GraphBuilder.merge()` with duplicate detection.
+ * Helper type to check if a type is never.
+ * @internal
+ */
+type MergeIsNever<T> = [T] extends [never] ? true : false;
+
+/**
+ * The return type of `GraphBuilder.merge()` with duplicate, cycle, and captive dependency detection.
  *
- * Note: Cycle and captive dependency detection for merge is complex because it
- * requires checking cross-graph relationships. Currently only checks duplicates;
- * runtime will catch any issues that span merged graphs.
+ * Performs three validations in order:
+ * 1. Duplicate detection - checks if any port is provided by both graphs
+ * 2. Cycle detection - checks if merging creates any circular dependencies
+ * 3. Captive dependency detection - checks if merging creates any lifetime violations
  *
  * @internal
  */
@@ -249,38 +373,156 @@ type MergeResult<
   ODepGraph,
   OLifetimeMap,
 > =
+  // Step 1: Check for duplicate ports
   HasOverlap<OProvides, TProvides> extends true
-    ? DuplicateProviderError<OverlappingPorts<OProvides, TProvides>>
-    : GraphBuilder<
-        TProvides | OProvides,
-        TRequires | ORequires,
-        TAsyncPorts | OAsyncPorts,
-        MergeDependencyMaps<TDepGraph, ODepGraph>,
-        MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
-      >;
+    ? DuplicateErrorMessage<OverlappingPorts<OProvides, TProvides>>
+    : // Step 2: Check for cycles in merged graph
+      DetectCycleInMergedGraph<MergeDependencyMaps<TDepGraph, ODepGraph>> extends infer CycleError
+      ? MergeIsNever<CycleError> extends false
+        ? CycleError extends CircularDependencyError<infer Path>
+          ? CircularErrorMessage<Path>
+          : // Step 3: Check for captive dependencies in merged graph
+            DetectCaptiveInMergedGraph<
+                MergeDependencyMaps<TDepGraph, ODepGraph>,
+                MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
+              > extends infer CaptiveError
+            ? MergeIsNever<CaptiveError> extends false
+              ? CaptiveError extends CaptiveDependencyError<infer DN, infer DL, infer CP, infer CL>
+                ? CaptiveErrorMessage<DN, DL, CP, CL>
+                : // All checks passed - return merged builder
+                  GraphBuilder<
+                    TProvides | OProvides,
+                    TRequires | ORequires,
+                    TAsyncPorts | OAsyncPorts,
+                    MergeDependencyMaps<TDepGraph, ODepGraph>,
+                    MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
+                  >
+              : // No captive errors - return merged builder
+                GraphBuilder<
+                  TProvides | OProvides,
+                  TRequires | ORequires,
+                  TAsyncPorts | OAsyncPorts,
+                  MergeDependencyMaps<TDepGraph, ODepGraph>,
+                  MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
+                >
+            : // Shouldn't happen - fallback
+              GraphBuilder<
+                TProvides | OProvides,
+                TRequires | ORequires,
+                TAsyncPorts | OAsyncPorts,
+                MergeDependencyMaps<TDepGraph, ODepGraph>,
+                MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
+              >
+        : // Step 3: Check for captive dependencies in merged graph (no cycles found)
+          DetectCaptiveInMergedGraph<
+              MergeDependencyMaps<TDepGraph, ODepGraph>,
+              MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
+            > extends infer CaptiveError
+          ? MergeIsNever<CaptiveError> extends false
+            ? CaptiveError extends CaptiveDependencyError<infer DN, infer DL, infer CP, infer CL>
+              ? CaptiveErrorMessage<DN, DL, CP, CL>
+              : // All checks passed - return merged builder
+                GraphBuilder<
+                  TProvides | OProvides,
+                  TRequires | ORequires,
+                  TAsyncPorts | OAsyncPorts,
+                  MergeDependencyMaps<TDepGraph, ODepGraph>,
+                  MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
+                >
+            : // No captive errors - return merged builder
+              GraphBuilder<
+                TProvides | OProvides,
+                TRequires | ORequires,
+                TAsyncPorts | OAsyncPorts,
+                MergeDependencyMaps<TDepGraph, ODepGraph>,
+                MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
+              >
+          : // Shouldn't happen - fallback
+            GraphBuilder<
+              TProvides | OProvides,
+              TRequires | ORequires,
+              TAsyncPorts | OAsyncPorts,
+              MergeDependencyMaps<TDepGraph, ODepGraph>,
+              MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
+            >
+      : // Shouldn't happen - fallback
+        GraphBuilder<
+          TProvides | OProvides,
+          TRequires | ORequires,
+          TAsyncPorts | OAsyncPorts,
+          MergeDependencyMaps<TDepGraph, ODepGraph>,
+          MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
+        >;
 
 /**
  * Type representing an empty dependency graph map.
  * Used as the initial state for compile-time cycle detection.
+ *
+ * IMPORTANT: Must be `{}` not `Record<string, never>`.
+ * Using `Record<string, never>` causes index signature pollution when
+ * intersected with specific properties. For example:
+ * `Record<string, never> & { A: "B" }` makes `["A"]` return `never & "B"` = `never`.
+ *
  * @internal
  */
-type EmptyDependencyGraph = Record<string, never>;
+type EmptyDependencyGraph = {};
 
 /**
  * Type representing an empty lifetime map.
  * Used as the initial state for compile-time captive dependency detection.
+ *
+ * IMPORTANT: Must be `{}` not `Record<string, never>`.
+ * See EmptyDependencyGraph for explanation.
+ *
  * @internal
  */
-type EmptyLifetimeMap = Record<string, never>;
+type EmptyLifetimeMap = {};
 
 /**
  * An immutable builder for constructing dependency graphs with compile-time validation.
  *
+ * GraphBuilder implements the **Type-State Pattern** - a technique where an object's
+ * type changes with each method call, encoding the object's state in its type.
+ *
+ * ## Phantom Type Parameters
+ *
+ * The type parameters below exist only at the type level (compile time).
+ * They have no runtime representation - the actual GraphBuilder class is
+ * just a wrapper around a readonly array of adapters.
+ *
+ * ```typescript
+ * // Type-level state is rich:
+ * GraphBuilder<
+ *   LoggerPort | DatabasePort,  // TProvides: what we have
+ *   CachePort,                  // TRequires: what we still need
+ *   never,                      // TAsyncPorts: none
+ *   { Logger: never, Database: "Logger" },  // TDepGraph
+ *   { Logger: 1, Database: 2 }              // TLifetimeMap
+ * >
+ *
+ * // Runtime state is simple:
+ * { adapters: [LoggerAdapter, DatabaseAdapter] }
+ * ```
+ *
+ * ## Immutability
+ *
+ * Each `.provide()` call returns a NEW GraphBuilder instance with updated
+ * type parameters. The original instance is not modified. This enables
+ * "branching" - creating specialized graphs from a common base.
+ *
  * @typeParam TProvides - Union of all port types provided by adapters in this graph
  * @typeParam TRequires - Union of all port types required by adapters in this graph
  * @typeParam TAsyncPorts - Union of all async port types in this graph
- * @typeParam TDepGraph - Type-level dependency map tracking edge relationships for cycle detection
- * @typeParam TLifetimeMap - Type-level lifetime map tracking adapter lifetimes by port name for captive dependency detection
+ * @typeParam TDepGraph - Type-level dependency map `{ PortName: RequiredPortNames }`
+ * @typeParam TLifetimeMap - Type-level lifetime map `{ PortName: 1 | 2 | 3 }`
+ *
+ * @example Creating a graph
+ * ```typescript
+ * const graph = GraphBuilder.create()
+ *   .provide(LoggerAdapter)    // Type changes to include Logger
+ *   .provide(DatabaseAdapter)  // Type changes to include Database
+ *   .build();                  // Validates all requirements met
+ * ```
  */
 export class GraphBuilder<
   TProvides = never,
@@ -291,6 +533,11 @@ export class GraphBuilder<
 > {
   /**
    * Type-level brand property for nominal typing.
+   *
+   * The `unique symbol` key ensures this type cannot be confused with
+   * structurally similar objects. The tuple value carries all phantom
+   * type parameters for type inference.
+   *
    * @internal
    */
   declare private readonly [__graphBuilderBrand]: [
@@ -307,34 +554,80 @@ export class GraphBuilder<
    */
   private readonly [GRAPH_BUILDER_BRAND] = true as const;
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PHANTOM TYPE PROPERTIES
+  // ═══════════════════════════════════════════════════════════════════════════
+  //
+  // These properties are declared with `declare` which means they exist ONLY
+  // at the type level - there is no runtime code generated for them.
+  //
+  // WHY PHANTOM TYPES?
+  //
+  // They enable TypeScript to infer the current state of the builder from
+  // method return types, without any runtime overhead. When you hover over
+  // a builder in your IDE, you can see exactly what ports are provided,
+  // required, etc.
+  //
+
   /**
-   * Phantom type property for compile-time type tracking of provided ports.
+   * Phantom type property tracking provided ports.
+   *
+   * As adapters are added, this grows: `never` → `LoggerPort` → `LoggerPort | DatabasePort`
+   *
    * @internal
    */
   declare readonly __provides: TProvides;
 
   /**
-   * Phantom type property for compile-time type tracking of required ports.
+   * Phantom type property tracking required ports.
+   *
+   * As adapters are added, this accumulates all their dependencies.
+   * On `.build()`, we check that `TRequires ⊆ TProvides`.
+   *
    * @internal
    */
   declare readonly __requires: TRequires;
 
   /**
-   * Phantom type property for compile-time type tracking of async ports.
+   * Phantom type property tracking async ports.
+   *
+   * Ports with async factories require special handling at runtime
+   * (must call `container.initialize()` before sync resolution).
+   *
    * @internal
    */
   declare readonly __asyncPorts: TAsyncPorts;
 
   /**
-   * Phantom type property for compile-time dependency graph (edge map).
-   * Used for circular dependency detection.
+   * Phantom type property for compile-time dependency graph.
+   *
+   * Structure: `{ [PortName]: RequiredPortNames }`
+   * - Used for circular dependency detection via DFS at type level
+   * - Each entry maps a port to its direct dependencies
+   *
+   * @example
+   * ```typescript
+   * // If Database depends on Logger:
+   * { Logger: never, Database: "Logger" }
+   * ```
+   *
    * @internal
    */
   declare readonly __depGraph: TDepGraph;
 
   /**
    * Phantom type property for compile-time lifetime map.
-   * Used for captive dependency detection.
+   *
+   * Structure: `{ [PortName]: 1 | 2 | 3 }`
+   * - 1 = Singleton, 2 = Scoped, 3 = Transient
+   * - Used for captive dependency detection
+   *
+   * @example
+   * ```typescript
+   * // Logger is singleton, Database is scoped:
+   * { Logger: 1, Database: 2 }
+   * ```
+   *
    * @internal
    */
   declare readonly __lifetimeMap: TLifetimeMap;
@@ -426,10 +719,11 @@ export class GraphBuilder<
 
   /**
    * Merges another GraphBuilder into this one.
-   * Performs compile-time duplicate detection.
    *
-   * Note: Cross-graph cycle and captive dependency detection is limited;
-   * runtime will catch any issues that span merged graphs.
+   * Performs compile-time validation for:
+   * 1. Duplicate ports - fails if any port is provided by both graphs
+   * 2. Circular dependencies - detects cycles that form when graphs are combined
+   * 3. Captive dependencies - detects lifetime violations in the merged graph
    */
   merge<OProvides, ORequires, OAsyncPorts, ODepGraph, OLifetimeMap>(
     other: GraphBuilder<OProvides, ORequires, OAsyncPorts, ODepGraph, OLifetimeMap>

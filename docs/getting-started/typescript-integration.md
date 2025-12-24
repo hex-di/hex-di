@@ -17,16 +17,16 @@ HexDI requires no explicit type annotations in most cases. TypeScript infers eve
 const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort, DatabasePort],
-  lifetime: 'scoped',
-  factory: (deps) => {
+  lifetime: "scoped",
+  factory: deps => {
     // TypeScript knows: deps = { Logger: Logger; Database: Database }
-    deps.Logger.log('Creating user service');
+    deps.Logger.log("Creating user service");
     return {
-      getUser: async (id) => {
-        return deps.Database.query('SELECT * FROM users WHERE id = ?', [id]);
-      }
+      getUser: async id => {
+        return deps.Database.query("SELECT * FROM users WHERE id = ?", [id]);
+      },
     };
-  }
+  },
 });
 ```
 
@@ -37,7 +37,7 @@ const UserServiceAdapter = createAdapter({
 `createPort<'Name', Service>('Name')` captures both the name and service type:
 
 ```typescript
-const LoggerPort = createPort<'Logger', Logger>('Logger');
+const LoggerPort = createPort<"Logger", Logger>("Logger");
 
 // TypeScript sees:
 // LoggerPort: Port<Logger, 'Logger'>
@@ -51,10 +51,12 @@ The name becomes a literal type, not just `string`.
 
 ```typescript
 const adapter = createAdapter({
-  provides: LoggerPort,           // infers TProvides
-  requires: [DatabasePort],       // infers TRequires as tuple
-  lifetime: 'singleton',          // infers literal 'singleton'
-  factory: (deps) => ({ /* ... */ })
+  provides: LoggerPort, // infers TProvides
+  requires: [DatabasePort], // infers TRequires as tuple
+  lifetime: "singleton", // infers literal 'singleton'
+  factory: deps => ({
+    /* ... */
+  }),
 });
 
 // TypeScript sees:
@@ -101,9 +103,9 @@ HexDI exports utilities for extracting type information.
 ### Port Utilities
 
 ```typescript
-import { InferService, InferPortName } from '@hex-di/ports';
+import { InferService, InferPortName } from "@hex-di/ports";
 
-const LoggerPort = createPort<'Logger', Logger>('Logger');
+const LoggerPort = createPort<"Logger", Logger>("Logger");
 
 // Extract service type from port
 type LoggerServiceType = InferService<typeof LoggerPort>;
@@ -117,11 +119,7 @@ type LoggerPortName = InferPortName<typeof LoggerPort>;
 ### Adapter Utilities
 
 ```typescript
-import {
-  InferAdapterProvides,
-  InferAdapterRequires,
-  InferAdapterLifetime
-} from '@hex-di/graph';
+import { InferAdapterProvides, InferAdapterRequires, InferAdapterLifetime } from "@hex-di/graph";
 
 // Extract what adapter provides
 type Provides = InferAdapterProvides<typeof UserServiceAdapter>;
@@ -139,11 +137,9 @@ type Life = InferAdapterLifetime<typeof UserServiceAdapter>;
 ### GraphBuilder Utilities
 
 ```typescript
-import { InferGraphProvides, InferGraphRequires } from '@hex-di/graph';
+import { InferGraphProvides, InferGraphRequires } from "@hex-di/graph";
 
-const builder = GraphBuilder.create()
-  .provide(LoggerAdapter)
-  .provide(UserServiceAdapter);
+const builder = GraphBuilder.create().provide(LoggerAdapter).provide(UserServiceAdapter);
 
 // What ports are provided
 type Provided = InferGraphProvides<typeof builder>;
@@ -157,11 +153,7 @@ type Required = InferGraphRequires<typeof builder>;
 ### Container Utilities
 
 ```typescript
-import {
-  InferContainerProvides,
-  ServiceFromContainer,
-  IsResolvable
-} from '@hex-di/runtime';
+import { InferContainerProvides, ServiceFromContainer, IsResolvable } from "@hex-di/runtime";
 
 // Extract what container can provide
 type Provides = InferContainerProvides<typeof container>;
@@ -184,15 +176,12 @@ Define a union type of all ports in your application:
 
 ```typescript
 // In ports.ts
-export const LoggerPort = createPort<'Logger', Logger>('Logger');
-export const DatabasePort = createPort<'Database', Database>('Database');
-export const UserServicePort = createPort<'UserService', UserService>('UserService');
+export const LoggerPort = createPort<"Logger", Logger>("Logger");
+export const DatabasePort = createPort<"Database", Database>("Database");
+export const UserServicePort = createPort<"UserService", UserService>("UserService");
 
 // Union of all ports
-export type AppPorts =
-  | typeof LoggerPort
-  | typeof DatabasePort
-  | typeof UserServicePort;
+export type AppPorts = typeof LoggerPort | typeof DatabasePort | typeof UserServicePort;
 ```
 
 ### Type-Safe React Hooks
@@ -200,15 +189,15 @@ export type AppPorts =
 Use the AppPorts type with React:
 
 ```typescript
-import { createTypedHooks } from '@hex-di/react';
-import type { AppPorts } from './ports';
+import { createTypedHooks } from "@hex-di/react";
+import type { AppPorts } from "./ports";
 
 // Hooks are now typed to only accept AppPorts
 const { usePort, ContainerProvider } = createTypedHooks<AppPorts>();
 
 // In components
 function MyComponent() {
-  const logger = usePort(LoggerPort);    // Works - LoggerPort is in AppPorts
+  const logger = usePort(LoggerPort); // Works - LoggerPort is in AppPorts
   // const unknown = usePort(UnknownPort); // Error - not in AppPorts
 }
 ```
@@ -226,6 +215,7 @@ const graph = GraphBuilder.create()
 ```
 
 Error message:
+
 ```
 Argument of type '[]' is not assignable to parameter of type
 '[error: MissingDependencyError<typeof LoggerPort | typeof DatabasePort>]'.
@@ -236,12 +226,11 @@ The error shows exactly which ports are missing.
 ### Duplicate Provider Error
 
 ```typescript
-const graph = GraphBuilder.create()
-  .provide(LoggerAdapter)
-  .provide(AnotherLoggerAdapter); // same port!
+const graph = GraphBuilder.create().provide(LoggerAdapter).provide(AnotherLoggerAdapter); // same port!
 ```
 
 Error message:
+
 ```
 Type 'DuplicateProviderError<typeof LoggerPort>' is not assignable to type
 'GraphBuilder<...>'.
@@ -254,6 +243,7 @@ container.resolve(UnregisteredPort);
 ```
 
 Error message:
+
 ```
 Argument of type 'Port<Unknown, "Unknown">' is not assignable to
 parameter of type 'typeof LoggerPort | typeof DatabasePort | ...'.
@@ -281,7 +271,7 @@ type MyDeps = ResolvedDeps<typeof LoggerPort | typeof DatabasePort>;
 ### Dependency Validation Types
 
 ```typescript
-import { UnsatisfiedDependencies, IsSatisfied } from '@hex-di/graph';
+import { UnsatisfiedDependencies, IsSatisfied } from "@hex-di/graph";
 
 type Provided = typeof LoggerPort;
 type Required = typeof LoggerPort | typeof DatabasePort;
@@ -300,7 +290,7 @@ type Satisfied = IsSatisfied<Provided, Required>;
 ### Extracting Port Type from Graph
 
 ```typescript
-import type { Graph } from '@hex-di/graph';
+import type { Graph } from "@hex-di/graph";
 
 // Extract TProvides from a graph
 type AppPorts = typeof appGraph extends Graph<infer P> ? P : never;
@@ -311,10 +301,7 @@ type AppPorts = typeof appGraph extends Graph<infer P> ? P : never;
 Create type-safe lookup functions:
 
 ```typescript
-function getService<P extends AppPorts>(
-  container: Container<AppPorts>,
-  port: P
-): InferService<P> {
+function getService<P extends AppPorts>(container: Container<AppPorts>, port: P): InferService<P> {
   return container.resolve(port);
 }
 
@@ -325,10 +312,10 @@ const logger = getService(container, LoggerPort);
 ### Conditional Types for Lifetime
 
 ```typescript
-type IsSingleton<A> = InferAdapterLifetime<A> extends 'singleton' ? true : false;
+type IsSingleton<A> = InferAdapterLifetime<A> extends "singleton" ? true : false;
 
-type Test1 = IsSingleton<typeof LoggerAdapter>;  // true
-type Test2 = IsSingleton<typeof UserAdapter>;    // false (scoped)
+type Test1 = IsSingleton<typeof LoggerAdapter>; // true
+type Test2 = IsSingleton<typeof UserAdapter>; // false (scoped)
 ```
 
 ## Best Practices
@@ -342,12 +329,12 @@ Avoid explicit type annotations when possible:
 const adapter = createAdapter({
   provides: LoggerPort,
   requires: [],
-  lifetime: 'singleton',
-  factory: () => ({ log: console.log })
+  lifetime: "singleton",
+  factory: () => ({ log: console.log }),
 });
 
 // Unnecessary - explicit type
-const adapter: Adapter<typeof LoggerPort, never, 'singleton'> = createAdapter({
+const adapter: Adapter<typeof LoggerPort, never, "singleton"> = createAdapter({
   // ...
 });
 ```
@@ -358,10 +345,14 @@ When you need to reference a port's type:
 
 ```typescript
 // Good
-function logWithPort(port: typeof LoggerPort) { /* ... */ }
+function logWithPort(port: typeof LoggerPort) {
+  /* ... */
+}
 
 // Also good - using AppPorts union
-function resolveAny(port: AppPorts) { /* ... */ }
+function resolveAny(port: AppPorts) {
+  /* ... */
+}
 ```
 
 ### 3. Export AppPorts Type
@@ -370,10 +361,7 @@ Always export a union type of all ports:
 
 ```typescript
 // ports.ts
-export type AppPorts =
-  | typeof LoggerPort
-  | typeof DatabasePort
-  | typeof UserServicePort;
+export type AppPorts = typeof LoggerPort | typeof DatabasePort | typeof UserServicePort;
 ```
 
 ### 4. Use const for Literal Types
@@ -382,7 +370,7 @@ The `const` modifier preserves literal types:
 
 ```typescript
 // createPort uses const internally
-const LoggerPort = createPort<'Logger', Logger>('Logger');
+const LoggerPort = createPort<"Logger", Logger>("Logger");
 // Name is literal 'Logger', not string
 ```
 
@@ -433,6 +421,12 @@ The `.build()` method expects an error argument when dependencies are missing:
 .build() // Shows: Expected 1 argument, got 0
 // The argument type shows what's missing
 ```
+
+## Advanced Topics
+
+For a deep dive into HexDI's type-level programming techniques:
+
+- **[Type-Level Programming Patterns](../advanced/type-level-programming.md)** - Understand the advanced TypeScript patterns used for compile-time validation
 
 ## Next Steps
 

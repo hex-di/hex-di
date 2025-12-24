@@ -128,7 +128,10 @@ export class ContainerImpl<
       adapterIndex++;
     }
 
-    // Sort async adapters by priority
+    // Sort async adapters by priority with stable ordering:
+    // 1. Lower priority values are initialized first
+    // 2. When priorities are equal, original insertion order is preserved
+    // This ensures deterministic initialization order, even after merge operations
     asyncEntries.sort((a, b) => {
       const priorityA = a.adapter.initPriority ?? 100;
       const priorityB = b.adapter.initPriority ?? 100;
@@ -206,8 +209,24 @@ export class ContainerImpl<
     }
 
     this.initializationPromise = (async () => {
-      for (const adapter of this.asyncAdapters) {
-        await this.resolveAsyncInternal(adapter.provides, this.singletonMemo, null);
+      const totalAdapters = this.asyncAdapters.length;
+      for (let i = 0; i < totalAdapters; i++) {
+        const adapter = this.asyncAdapters[i];
+        try {
+          await this.resolveAsyncInternal(adapter.provides, this.singletonMemo, null);
+        } catch (error) {
+          // Enhance error with initialization context if not already an AsyncFactoryError
+          if (error instanceof AsyncFactoryError) {
+            throw error;
+          }
+          // Add initialization context to the error message
+          const portName = adapter.provides.__portName;
+          const contextMessage =
+            error instanceof Error
+              ? `${error.message} (initialization step ${i + 1}/${totalAdapters})`
+              : String(error);
+          throw new AsyncFactoryError(portName, new Error(contextMessage));
+        }
       }
       this.initialized = true;
     })();

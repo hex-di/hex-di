@@ -22,8 +22,8 @@ yarn add @hex-di/graph @hex-di/ports
 ## Quick Start
 
 ```typescript
-import { createPort } from '@hex-di/ports';
-import { createAdapter, GraphBuilder } from '@hex-di/graph';
+import { createPort } from "@hex-di/ports";
+import { createAdapter, GraphBuilder } from "@hex-di/graph";
 
 // Define service interfaces
 interface Logger {
@@ -39,47 +39,49 @@ interface UserService {
 }
 
 // Create port tokens
-const LoggerPort = createPort<'Logger', Logger>('Logger');
-const DatabasePort = createPort<'Database', Database>('Database');
-const UserServicePort = createPort<'UserService', UserService>('UserService');
+const LoggerPort = createPort<"Logger", Logger>("Logger");
+const DatabasePort = createPort<"Database", Database>("Database");
+const UserServicePort = createPort<"UserService", UserService>("UserService");
 
 // Create adapters
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,
   requires: [],
-  lifetime: 'singleton',
+  lifetime: "singleton",
   factory: () => ({
-    log: (msg) => console.log(msg)
-  })
+    log: msg => console.log(msg),
+  }),
 });
 
 const DatabaseAdapter = createAdapter({
   provides: DatabasePort,
   requires: [LoggerPort],
-  lifetime: 'singleton',
-  factory: (deps) => {
+  lifetime: "singleton",
+  factory: deps => {
     // deps is typed as { Logger: Logger }
-    deps.Logger.log('Initializing database...');
+    deps.Logger.log("Initializing database...");
     return {
-      query: async (sql) => { /* ... */ }
+      query: async sql => {
+        /* ... */
+      },
     };
-  }
+  },
 });
 
 const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort, DatabasePort],
-  lifetime: 'scoped',
-  factory: (deps) => {
+  lifetime: "scoped",
+  factory: deps => {
     // deps is typed as { Logger: Logger; Database: Database }
     return {
-      getUser: async (id) => {
+      getUser: async id => {
         deps.Logger.log(`Fetching user ${id}`);
         const result = await deps.Database.query(`SELECT * FROM users WHERE id = '${id}'`);
         return result as { id: string; name: string };
-      }
+      },
     };
-  }
+  },
 });
 
 // Build the dependency graph
@@ -105,12 +107,13 @@ An adapter is a typed declaration that connects a service implementation to a po
 
 ```typescript
 const MyAdapter = createAdapter({
-  provides: MyPort,           // Single port this adapter implements
-  requires: [DepA, DepB],     // Array of port dependencies
-  lifetime: 'singleton',      // 'singleton' | 'scoped' | 'transient'
-  factory: (deps) => {        // Receives typed dependencies object
+  provides: MyPort, // Single port this adapter implements
+  requires: [DepA, DepB], // Array of port dependencies
+  lifetime: "singleton", // 'singleton' | 'scoped' | 'transient'
+  factory: deps => {
+    // Receives typed dependencies object
     return new MyServiceImpl(deps.DepA, deps.DepB);
-  }
+  },
 });
 ```
 
@@ -119,20 +122,20 @@ const MyAdapter = createAdapter({
 The `GraphBuilder` is an immutable builder that accumulates adapters and tracks dependencies at the type level:
 
 ```typescript
-const builder1 = GraphBuilder.create();                    // GraphBuilder<never, never>
-const builder2 = builder1.provide(LoggerAdapter);          // GraphBuilder<LoggerPort, never>
-const builder3 = builder2.provide(UserServiceAdapter);     // GraphBuilder<LoggerPort | UserServicePort, LoggerPort | DatabasePort>
+const builder1 = GraphBuilder.create(); // GraphBuilder<never, never>
+const builder2 = builder1.provide(LoggerAdapter); // GraphBuilder<LoggerPort, never>
+const builder3 = builder2.provide(UserServiceAdapter); // GraphBuilder<LoggerPort | UserServicePort, LoggerPort | DatabasePort>
 ```
 
 Each `.provide()` call returns a **new** builder instance. The original is unchanged.
 
 ### Lifetime Scopes
 
-| Lifetime | Description | Use Case |
-|----------|-------------|----------|
-| `'singleton'` | One instance for entire application | Shared resources, connection pools |
-| `'scoped'` | One instance per scope (e.g., request) | Request-specific state, transactions |
-| `'transient'` | New instance every resolution | Stateful services, isolation needed |
+| Lifetime      | Description                            | Use Case                             |
+| ------------- | -------------------------------------- | ------------------------------------ |
+| `'singleton'` | One instance for entire application    | Shared resources, connection pools   |
+| `'scoped'`    | One instance per scope (e.g., request) | Request-specific state, transactions |
+| `'transient'` | New instance every resolution          | Stateful services, isolation needed  |
 
 ### Compile-Time Validation
 
@@ -142,13 +145,13 @@ The graph validates dependencies at compile time. When you call `.build()`, Type
 // This compiles - all dependencies satisfied
 const valid = GraphBuilder.create()
   .provide(LoggerAdapter)
-  .provide(UserServiceAdapter)  // requires Logger - satisfied
+  .provide(UserServiceAdapter) // requires Logger - satisfied
   .build();
 
 // This produces a compile error - Database is missing
 const invalid = GraphBuilder.create()
-  .provide(UserServiceAdapter)  // requires Logger AND Database
-  .provide(LoggerAdapter)       // provides Logger, but Database missing
+  .provide(UserServiceAdapter) // requires Logger AND Database
+  .provide(LoggerAdapter) // provides Logger, but Database missing
   .build();
 // Error: Type 'MissingDependencyError<typeof DatabasePort>' is not assignable...
 // __message: "Missing dependencies: Database"
@@ -167,24 +170,24 @@ const UserServiceAdapter = createAdapter({
   // ...
 });
 
-const graph = GraphBuilder.create()
-  .provide(UserServiceAdapter)
-  .build();  // Error!
+const graph = GraphBuilder.create().provide(UserServiceAdapter).build(); // Error!
 ```
 
 **Error message in IDE:**
+
 ```
 Type 'MissingDependencyError<...>' is not assignable to type 'Graph<...>'
   __message: "Missing dependencies: Logger" | "Missing dependencies: Database"
 ```
 
 **Fix:** Add the missing adapters:
+
 ```typescript
 const graph = GraphBuilder.create()
   .provide(LoggerAdapter)
   .provide(DatabaseAdapter)
   .provide(UserServiceAdapter)
-  .build();  // OK!
+  .build(); // OK!
 ```
 
 ### Duplicate Providers
@@ -198,17 +201,18 @@ const ConsoleLoggerAdapter = createAdapter({
 });
 
 const FileLoggerAdapter = createAdapter({
-  provides: LoggerPort,  // Same port!
+  provides: LoggerPort, // Same port!
   // ...
 });
 
 const graph = GraphBuilder.create()
   .provide(ConsoleLoggerAdapter)
-  .provide(FileLoggerAdapter)  // Error!
+  .provide(FileLoggerAdapter) // Error!
   .build();
 ```
 
 **Error message in IDE:**
+
 ```
 Type 'DuplicateProviderError<...>' is not assignable...
   __message: "Duplicate provider for: Logger"
@@ -222,12 +226,12 @@ Creates a typed adapter with dependency metadata.
 
 #### Config Properties
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `provides` | `Port<T, string>` | The port this adapter implements |
-| `requires` | `readonly Port[]` | Array of port dependencies (empty array for none) |
-| `lifetime` | `Lifetime` | Service lifetime: `'singleton'`, `'scoped'`, or `'transient'` |
-| `factory` | `(deps) => T` | Factory function receiving resolved dependencies |
+| Property   | Type              | Description                                                   |
+| ---------- | ----------------- | ------------------------------------------------------------- |
+| `provides` | `Port<T, string>` | The port this adapter implements                              |
+| `requires` | `readonly Port[]` | Array of port dependencies (empty array for none)             |
+| `lifetime` | `Lifetime`        | Service lifetime: `'singleton'`, `'scoped'`, or `'transient'` |
+| `factory`  | `(deps) => T`     | Factory function receiving resolved dependencies              |
 
 #### Returns
 
@@ -236,16 +240,16 @@ Creates a typed adapter with dependency metadata.
 #### Example
 
 ```typescript
-import { createAdapter } from '@hex-di/graph';
+import { createAdapter } from "@hex-di/graph";
 
 const CacheAdapter = createAdapter({
   provides: CachePort,
   requires: [ConfigPort],
-  lifetime: 'singleton',
-  factory: (deps) => {
-    const ttl = deps.Config.get('cache.ttl');
+  lifetime: "singleton",
+  factory: deps => {
+    const ttl = deps.Config.get("cache.ttl");
     return new RedisCache({ ttl });
-  }
+  },
 });
 ```
 
@@ -263,8 +267,8 @@ Registers an adapter with the graph, returning a new builder.
 
 #### Parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter | Type      | Description             |
+| --------- | --------- | ----------------------- |
 | `adapter` | `Adapter` | The adapter to register |
 
 #### Returns
@@ -288,7 +292,7 @@ Validates and builds the dependency graph.
 The branded adapter type capturing the full contract.
 
 ```typescript
-type MyAdapter = Adapter<typeof LoggerPort, never, 'singleton'>;
+type MyAdapter = Adapter<typeof LoggerPort, never, "singleton">;
 ```
 
 #### `Graph<TProvides>`
@@ -304,7 +308,7 @@ type MyGraph = Graph<typeof LoggerPort | typeof DatabasePort>;
 Union type of lifetime options.
 
 ```typescript
-type Lifetime = 'singleton' | 'scoped' | 'transient';
+type Lifetime = "singleton" | "scoped" | "transient";
 ```
 
 #### `ResolvedDeps<TRequires>`
@@ -366,10 +370,7 @@ type Required = InferGraphRequires<typeof builder>;
 Computes missing dependencies via union subtraction.
 
 ```typescript
-type Missing = UnsatisfiedDependencies<
-  typeof LoggerPort,
-  typeof LoggerPort | typeof DatabasePort
->;
+type Missing = UnsatisfiedDependencies<typeof LoggerPort, typeof LoggerPort | typeof DatabasePort>;
 // typeof DatabasePort
 ```
 
@@ -378,10 +379,7 @@ type Missing = UnsatisfiedDependencies<
 Boolean type predicate for dependency satisfaction.
 
 ```typescript
-type Satisfied = IsSatisfied<
-  typeof LoggerPort | typeof DatabasePort,
-  typeof LoggerPort
->;
+type Satisfied = IsSatisfied<typeof LoggerPort | typeof DatabasePort, typeof LoggerPort>;
 // true
 ```
 
@@ -458,7 +456,7 @@ Adapters use a branded type pattern for nominal typing:
 declare const __adapterBrand: unique symbol;
 
 type Adapter<P, R, L> = {
-  [__adapterBrand]: [P, R, L];  // Brand carries type params
+  [__adapterBrand]: [P, R, L]; // Brand carries type params
   // ... other properties
 };
 ```
@@ -474,6 +472,19 @@ This package is part of the HexDI ecosystem:
 - **@hex-di/runtime** - Container implementation that consumes graphs
 - **@hex-di/react** - React bindings for dependency injection
 - **@hex-di/testing** - Testing utilities and mock helpers
+
+## For Maintainers
+
+If you're modifying the type-level validation system, see:
+
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Internal architecture documentation with algorithm explanations
+- **[Type-Level Programming Guide](../../docs/advanced/type-level-programming.md)** - Patterns used in the validation system
+
+Key source files:
+
+- `src/validation/cycle-detection.ts` - DFS algorithm for circular dependency detection
+- `src/validation/captive-dependency.ts` - Lifetime hierarchy enforcement
+- `src/graph/builder.ts` - GraphBuilder with ProvideResult validation chains
 
 ## License
 

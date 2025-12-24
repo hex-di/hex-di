@@ -16,6 +16,7 @@ import {
   GraphBuilder,
   createAdapter,
   CircularDependencyError,
+  CircularErrorMessage,
   WouldCreateCycle,
   IsReachable,
   AddEdge,
@@ -72,7 +73,7 @@ const UserServicePort = createPort<"UserService", UserService>("UserService");
 // Helper Types for Testing
 // =============================================================================
 
-type IsCycleError<T> = T extends CircularDependencyError<string> ? true : false;
+type IsCycleError<T> = T extends `ERROR: Circular dependency: ${string}` ? true : false;
 
 // =============================================================================
 // Type Utility Tests
@@ -503,10 +504,16 @@ describe("self-referential dependencies are detected", () => {
 // =============================================================================
 
 describe("error messages show cycle path", () => {
-  it("CircularDependencyError contains cycle path", () => {
+  it("CircularErrorMessage returns template literal with cycle path", () => {
+    // Template literal error message directly shows the cycle path
+    type ErrorMessage = CircularErrorMessage<"A -> B -> A">;
+    expectTypeOf<ErrorMessage>().toEqualTypeOf<"ERROR: Circular dependency: A -> B -> A">();
+  });
+
+  it("CircularDependencyError branded type contains cycle path", () => {
+    // The branded object type is still available for advanced usage
     type Error = CircularDependencyError<"A -> B -> A">;
 
-    // Should have the expected structure
     type ErrorBrand = Error["__errorBrand"];
     type Message = Error["__message"];
     type Path = Error["__cyclePath"];
@@ -579,5 +586,126 @@ describe("cycle detection works with realistic service adapters", () => {
     expect(builder).toBeDefined();
 
     expectTypeOf<IsCycleError<typeof builder>>().toEqualTypeOf<false>();
+  });
+});
+
+// =============================================================================
+// Merge Cross-Graph Cycle Detection Tests
+// =============================================================================
+
+describe("merge detects cross-graph circular dependencies", () => {
+  it("detects cycle that spans two merged graphs (A->B in graph1, B->A in graph2)", () => {
+    // Graph 1: A depends on B
+    const AdapterA = createAdapter({
+      provides: PortA,
+      requires: [PortB],
+      lifetime: "singleton",
+      factory: () => ({ doA: () => {} }),
+    });
+
+    // Graph 2: B depends on A (creates cycle when merged)
+    const AdapterB = createAdapter({
+      provides: PortB,
+      requires: [PortA],
+      lifetime: "singleton",
+      factory: () => ({ doB: () => {} }),
+    });
+
+    const graph1 = GraphBuilder.create().provide(AdapterA);
+    const graph2 = GraphBuilder.create().provide(AdapterB);
+
+    expect(graph1).toBeDefined();
+    expect(graph2).toBeDefined();
+
+    // When merging, should detect the cross-graph cycle
+    const merged = graph1.merge(graph2);
+    expectTypeOf<IsCycleError<typeof merged>>().toEqualTypeOf<true>();
+  });
+
+  it("detects longer cycle through merged graphs (A->B in graph1, B->C->A in graph2)", () => {
+    // Graph 1: A depends on B
+    const AdapterA = createAdapter({
+      provides: PortA,
+      requires: [PortB],
+      lifetime: "singleton",
+      factory: () => ({ doA: () => {} }),
+    });
+
+    // Graph 2: B depends on C, C depends on A (creates cycle A->B->C->A when merged)
+    const AdapterB = createAdapter({
+      provides: PortB,
+      requires: [PortC],
+      lifetime: "singleton",
+      factory: () => ({ doB: () => {} }),
+    });
+
+    const AdapterC = createAdapter({
+      provides: PortC,
+      requires: [PortA],
+      lifetime: "singleton",
+      factory: () => ({ doC: () => {} }),
+    });
+
+    const graph1 = GraphBuilder.create().provide(AdapterA);
+    const graph2 = GraphBuilder.create().provide(AdapterB).provide(AdapterC);
+
+    expect(graph1).toBeDefined();
+    expect(graph2).toBeDefined();
+
+    // When merging, should detect the cross-graph cycle
+    const merged = graph1.merge(graph2);
+    expectTypeOf<IsCycleError<typeof merged>>().toEqualTypeOf<true>();
+  });
+
+  it("allows merge of independent graphs without cycles", () => {
+    // Graph 1: A (no deps)
+    const AdapterA = createAdapter({
+      provides: PortA,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ doA: () => {} }),
+    });
+
+    // Graph 2: B (no deps)
+    const AdapterB = createAdapter({
+      provides: PortB,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ doB: () => {} }),
+    });
+
+    const graph1 = GraphBuilder.create().provide(AdapterA);
+    const graph2 = GraphBuilder.create().provide(AdapterB);
+
+    const merged = graph1.merge(graph2);
+    expect(merged).toBeDefined();
+
+    expectTypeOf<IsCycleError<typeof merged>>().toEqualTypeOf<false>();
+  });
+
+  it("allows merge when graphs have compatible linear dependencies", () => {
+    // Graph 1: A (no deps)
+    const AdapterA = createAdapter({
+      provides: PortA,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ doA: () => {} }),
+    });
+
+    // Graph 2: B depends on A (compatible, not a cycle)
+    const AdapterB = createAdapter({
+      provides: PortB,
+      requires: [PortA],
+      lifetime: "singleton",
+      factory: () => ({ doB: () => {} }),
+    });
+
+    const graph1 = GraphBuilder.create().provide(AdapterA);
+    const graph2 = GraphBuilder.create().provide(AdapterB);
+
+    const merged = graph1.merge(graph2);
+    expect(merged).toBeDefined();
+
+    expectTypeOf<IsCycleError<typeof merged>>().toEqualTypeOf<false>();
   });
 });

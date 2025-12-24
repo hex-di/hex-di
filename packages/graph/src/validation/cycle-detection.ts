@@ -5,11 +5,33 @@
  * at compile time. A circular dependency occurs when a chain of adapters forms
  * a cycle (e.g., A -> B -> C -> A).
  *
+ * ## Algorithm Overview
+ *
  * The detection works by:
  * 1. Tracking a type-level dependency map as adapters are added
- * 2. Checking if adding a new adapter would create a cycle
+ * 2. When a new adapter is added, checking if its "provides" port is reachable
+ *    from its "requires" ports through the existing graph (that would form a cycle)
  * 3. Producing readable error messages showing the cycle path
  *
+ * ## Key Type-Level Programming Techniques
+ *
+ * - **Distributive Conditional Types**: Used to iterate over union types
+ *   (e.g., checking each required port)
+ * - **Depth-Limited Recursion**: TypeScript has recursion limits (~50-100),
+ *   so we track depth using tuple length and bail out if too deep
+ * - **Type-Level Set (Union Types)**: The "visited" set is a union type
+ *   that grows with each recursive call
+ * - **Phantom Type Parameters**: TDepGraph tracks graph structure without
+ *   runtime representation
+ *
+ * ## Performance Considerations
+ *
+ * - MaxDepth=30 is a conservative limit; most real graphs are <15 levels deep
+ * - If depth is exceeded, we assume no cycle (runtime will catch it)
+ * - Union size grows linearly with graph size, keeping type computation tractable
+ *
+ * @see ./captive-dependency.ts - Similar algorithm for lifetime validation
+ * @see ../graph/builder.ts - Uses these types in ProvideResult
  * @packageDocumentation
  */
 
@@ -85,12 +107,17 @@ export type AddEdge<TMap, TProvides extends string, TRequires extends string> = 
 /**
  * Gets the direct dependencies of a port from the dependency map.
  *
+ * Uses indexed access (`TMap[TPort]`) rather than `extends Record<TPort, infer Deps>`
+ * because the Record pattern doesn't work correctly with intersection types
+ * from merged graphs (e.g., `{ A: never } & { B: "A" }`).
+ *
  * @typeParam TMap - The dependency map
  * @typeParam TPort - The port name to look up
  * @returns Union of required port names, or never if not found
  */
-export type GetDirectDeps<TMap, TPort extends string> =
-  TMap extends Record<TPort, infer Deps> ? Deps : never;
+export type GetDirectDeps<TMap, TPort extends string> = TPort extends keyof TMap
+  ? TMap[TPort]
+  : never;
 
 /**
  * Checks if a type is never.
@@ -101,54 +128,150 @@ type IsNever<T> = [T] extends [never] ? true : false;
 // =============================================================================
 // Depth-Limited Recursion Utilities
 // =============================================================================
+//
+// WHY DEPTH LIMITING?
+//
+// TypeScript's type system has a recursion limit (typically 50-100 levels).
+// Exceeding it produces "Type instantiation is excessively deep and possibly
+// infinite" (TS2589). We proactively limit depth to avoid this.
+//
+// WHY TUPLE LENGTH?
+//
+// TypeScript's type system cannot perform arithmetic. We simulate a counter
+// using tuple length (Peano-style):
+//   - Start: []          (length = 0)
+//   - After 1 call: [x]  (length = 1)
+//   - After 2 calls: [x, x] (length = 2)
+//
+// This is a common pattern in advanced TypeScript (e.g., Effect-TS, ts-toolbelt).
+//
+// ALTERNATIVES CONSIDERED:
+//
+// - Tail-call optimization: Not available in TypeScript type system
+// - Iterative approach: Not possible at type level
+// - Higher limit: Risks TS2589 errors on complex graphs
+// - No limit: Would fail unpredictably on deep graphs
+//
 
 /**
  * Maximum recursion depth for type-level graph traversal.
- * TypeScript typically allows 50-100 levels of recursion.
- * We use 30 as a safe limit that handles most real-world cycles.
+ *
+ * @remarks
+ * **Why 30?**
+ * - TypeScript's limit varies (50-100) based on complexity of types involved
+ * - 30 provides a safe margin while supporting most real-world dependency graphs
+ * - Real applications rarely have dependency chains deeper than 15 levels
+ * - If exceeded, we return `false` (assumes no cycle), and runtime catches it
+ *
+ * **Trade-off:**
+ * - Lower values = safer but might miss deep cycles (caught at runtime)
+ * - Higher values = catches more cycles but risks TS2589 on complex types
+ *
+ * **Important Limitation:**
+ * Cycles at depth 31 or deeper will NOT be detected at compile time.
+ * These cycles will silently pass type validation but will be caught at runtime
+ * when the container attempts to resolve the cyclic dependency. If you have
+ * dependency chains deeper than 30 levels, consider restructuring your graph
+ * or be aware that cycle detection relies on runtime checks for those paths.
  */
 type MaxDepth = 30;
 
 /**
  * Depth counter using tuple length.
- * Each recursive call adds an element to track depth.
+ *
+ * This is a type-level Peano number: the length of the tuple represents
+ * the current recursion depth. We use `unknown` as the element type since
+ * the actual values don't matter - only the tuple's length.
  */
 type Depth = readonly unknown[];
 
 /**
- * Increments the depth counter by adding an element to the tuple.
+ * Increments the depth counter by spreading the existing tuple and adding an element.
+ *
+ * @example
+ * ```typescript
+ * type D0 = [];                    // length = 0
+ * type D1 = IncrementDepth<D0>;    // [unknown], length = 1
+ * type D2 = IncrementDepth<D1>;    // [unknown, unknown], length = 2
+ * ```
  */
 type IncrementDepth<D extends Depth> = [...D, unknown];
 
 /**
  * Checks if the maximum recursion depth has been exceeded.
+ *
+ * Uses TypeScript's tuple `length` property which returns a literal number type.
  */
 type DepthExceeded<D extends Depth> = D["length"] extends MaxDepth ? true : false;
 
 // =============================================================================
 // Reachability Check (Core Cycle Detection)
 // =============================================================================
+//
+// ALGORITHM: Type-Level Depth-First Search (DFS)
+//
+// This is a classic graph reachability algorithm, implemented entirely at
+// the type level. Given a graph and a starting node, we check if a target
+// node is reachable by following edges.
+//
+// STEP-BY-STEP:
+//
+// 1. Check if depth exceeded → return false (bail out)
+// 2. Check if TFrom is never → return false (no nodes to check)
+// 3. For EACH port in TFrom (via distributive conditional):
+//    a. If already visited → skip (prevents infinite loops)
+//    b. If equals TTarget → return true (found it!)
+//    c. Otherwise → recurse with dependencies of this port
+// 4. The union of all recursive results is the final answer
+//    (true if ANY path reaches target)
+//
+// HOW DISTRIBUTIVE CONDITIONALS ENABLE "FOR EACH":
+//
+// When TFrom is a union like "A" | "B", the conditional `TFrom extends string`
+// distributes over the union, evaluating the branch for EACH member:
+//
+//   IsReachable<Map, "A" | "B", Target>
+//   = IsReachable<Map, "A", Target> | IsReachable<Map, "B", Target>
+//
+// This is TypeScript's built-in mechanism for iteration at the type level.
+//
+// THE VISITED SET (Type-Level Set Using Union Types):
+//
+// `TVisited` is a union type that grows with each recursive call:
+//   - Start: never (empty set)
+//   - After visiting "A": "A"
+//   - After visiting "A" and "B": "A" | "B"
+//
+// The check `TFrom extends TVisited` uses union subtype checking
+// to determine if the current node was already visited.
+//
 
 /**
  * Checks if a target port is reachable from a source port in the dependency map.
  *
  * This is the core algorithm for cycle detection. It performs a depth-limited
- * graph traversal, checking if we can reach the target port by following
+ * graph traversal (DFS), checking if we can reach the target port by following
  * dependency edges.
  *
- * @typeParam TMap - The dependency graph map
- * @typeParam TFrom - Starting port name (or union of names)
- * @typeParam TTarget - Target port name we're looking for
- * @typeParam TVisited - Set of already visited ports (prevents infinite loops)
- * @typeParam TDepth - Current recursion depth counter
+ * @typeParam TMap - The dependency graph map (Record<PortName, RequiredPortNames>)
+ * @typeParam TFrom - Starting port name (or union of names to check from)
+ * @typeParam TTarget - Target port name we're searching for
+ * @typeParam TVisited - Type-level Set of already visited ports (union type)
+ * @typeParam TDepth - Current recursion depth (tuple whose length = depth)
  *
- * @returns `true` if target is reachable, `false` otherwise
+ * @returns `true` if target is reachable from any starting port, `false` otherwise
  *
  * @remarks
- * - Returns `false` if depth limit is exceeded (assumes no cycle)
- * - Returns `false` if current port was already visited
- * - Returns `true` if current port equals target
- * - Otherwise recursively checks all dependencies
+ * **Algorithm behavior:**
+ * - Returns `false` if depth limit exceeded (assumes no cycle; runtime catches it)
+ * - Returns `false` if no more nodes to check (TFrom is never)
+ * - Returns `false` if current port was already visited (prevents infinite loops)
+ * - Returns `true` if current port equals target (success!)
+ * - Otherwise, recursively checks all dependencies of current port
+ *
+ * **Distributive behavior:**
+ * When TFrom is a union, the type distributes over each member. The final
+ * result is `true` if ANY path reaches the target.
  */
 export type IsReachable<
   TMap,
@@ -157,21 +280,22 @@ export type IsReachable<
   TVisited extends string = never,
   TDepth extends Depth = [],
 > =
-  // Check depth limit first
+  // Step 1: Check depth limit first (prevent TS2589)
   DepthExceeded<TDepth> extends true
     ? false // Assume no cycle if depth exceeded (runtime will catch it)
-    : // Handle never case explicitly (no more nodes to check)
+    : // Step 2: Handle never case explicitly (no more nodes to check)
       IsNever<TFrom> extends true
       ? false
-      : // Distribute over union - check each port in TFrom
+      : // Step 3: Distribute over union - check each port in TFrom
+        // This is where the "for each" magic happens!
         TFrom extends string
-        ? // Skip if already visited (prevents infinite loops)
+        ? // Step 3a: Skip if already visited (type-level Set membership check)
           TFrom extends TVisited
           ? false
-          : // Found the target - cycle detected!
+          : // Step 3b: Found the target - cycle detected!
             TFrom extends TTarget
             ? true
-            : // Get dependencies of current port
+            : // Step 3c: Recurse with dependencies of current port
               IsReachable_CheckDeps<TMap, TFrom, TTarget, TVisited, TDepth>
         : false;
 
@@ -251,7 +375,9 @@ export type FindCyclePath<
   TDepth extends Depth = [],
 > =
   DepthExceeded<TDepth> extends true
-    ? "... (cycle too deep to display)"
+    ? TPath extends ""
+      ? `${TFrom} -> ... (cycle too deep to display, depth ${MaxDepth}+)`
+      : `${TPath} -> ${TFrom} -> ... (cycle too deep to display, depth ${MaxDepth}+)`
     : TFrom extends TVisited
       ? never
       : TFrom extends TTarget
@@ -374,3 +500,68 @@ export type WouldAnyCreateCycle<
         Rest
       >
   : false;
+
+// =============================================================================
+// Merged Graph Cycle Detection
+// =============================================================================
+
+/**
+ * Helper to iterate over each key and check for cycles.
+ * Uses distributive conditional to check each key individually.
+ * @internal
+ */
+type CheckEachKeyForCycle<TMap, TKey extends string> = TKey extends string
+  ? CheckPortForCycle<TMap, TKey>
+  : never;
+
+/**
+ * Detects cycles in a merged dependency graph.
+ *
+ * When two graphs are merged, cycles can form that didn't exist in either
+ * graph individually. For example:
+ * - Graph A: A -> B
+ * - Graph B: B -> A
+ * - Merged: A -> B -> A (cycle!)
+ *
+ * This type iterates through all ports in the merged graph and checks if
+ * any port is reachable from its own dependencies.
+ *
+ * @typeParam TMap - The merged dependency map
+ *
+ * @returns CircularDependencyError if a cycle exists, or never if no cycles
+ */
+export type DetectCycleInMergedGraph<TMap> = CheckEachKeyForCycle<
+  TMap,
+  Extract<keyof TMap, string>
+>;
+
+/**
+ * Checks if a specific port creates a cycle in the dependency graph.
+ *
+ * @typeParam TMap - The dependency map
+ * @typeParam TPort - The port name to check
+ *
+ * @returns CircularDependencyError if this port creates a cycle, or never otherwise
+ * @internal
+ */
+type CheckPortForCycle<TMap, TPort extends string> =
+  GetDirectDeps<TMap, TPort> extends infer Deps
+    ? IsNever<Deps> extends true
+      ? never // No dependencies, no cycle possible
+      : Deps extends string
+        ? IsReachable<TMap, Deps, TPort> extends true
+          ? CircularDependencyError<BuildCyclePath<TMap, TPort, Deps>>
+          : never
+        : never
+    : never;
+
+/**
+ * Extracts the first error from a union of errors.
+ * Used to consolidate multiple potential cycle errors into one.
+ * @internal
+ */
+export type FirstCycleError<T> = [T] extends [never]
+  ? never
+  : T extends CircularDependencyError<infer Path>
+    ? CircularDependencyError<Path>
+    : never;

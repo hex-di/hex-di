@@ -1,8 +1,9 @@
 /**
- * User Switching Tests - TDD test to verify messages are sent as the logged-in user.
+ * User Switching Tests - Verifies messages are sent as the logged-in user.
  *
- * This test exposes the bug where UserSessionAdapter is hardcoded to return Alice,
- * causing messages to always be sent as Alice even when logged in as Bob.
+ * Tests the user switching mechanism where clicking "Login as Bob" triggers
+ * scope recreation via AutoScopeProvider key change, causing UserSessionAdapter
+ * to read the updated module state and create the correct user session.
  *
  * @packageDocumentation
  */
@@ -53,7 +54,7 @@ function createInspectableMessageStore() {
       addMessage: vi.fn((msg: Message) => {
         messages.push(msg);
         const frozen = Object.freeze([...messages]) as readonly Message[];
-        listeners.forEach((listener) => listener(frozen));
+        listeners.forEach(listener => listener(frozen));
       }),
       subscribe: vi.fn((listener: MessageListener): Unsubscribe => {
         listeners.add(listener);
@@ -128,10 +129,7 @@ describe("User Switching", () => {
   it("should send messages as the currently logged-in user", async () => {
     // Create an inspectable message store to verify sender names
     const mockMessageStore = createInspectableMessageStore();
-    const mockMessageStoreAdapter = createMockAdapter(
-      MessageStorePort,
-      mockMessageStore.store
-    );
+    const mockMessageStoreAdapter = createMockAdapter(MessageStorePort, mockMessageStore.store);
 
     // Use silent logger for tests
     const mockLogger = createMockAdapter(LoggerPort, {
@@ -226,7 +224,6 @@ describe("User Switching", () => {
 
     // =========================================================================
     // ASSERTION: Second message should be from Bob
-    // This will FAIL with the bug - message is sent as Alice instead
     // =========================================================================
     expect(mockMessageStore.messages).toHaveLength(2);
     const secondMessage = mockMessageStore.messages[1];

@@ -82,12 +82,10 @@ describe("assertGraphComplete", () => {
     // UserService requires Logger and Database, but only Logger is provided
     // At runtime, .build() returns a graph-like object even for incomplete graphs.
     // We use asGraph() to tell TypeScript this is intentional for testing.
+    // Note: build() returns an error string type when dependencies are missing.
+    // asGraph() accepts it for testing runtime behavior.
     const incompleteGraph = asGraph(
-      GraphBuilder.create()
-        .provide(LoggerAdapter)
-        .provide(UserServiceAdapter)
-        // @ts-expect-error Testing runtime behavior with incomplete graph - TypeScript correctly requires error arg
-        .build()
+      GraphBuilder.create().provide(LoggerAdapter).provide(UserServiceAdapter).build()
     );
 
     expect(() => assertGraphComplete(incompleteGraph)).toThrow(GraphAssertionError);
@@ -117,12 +115,9 @@ describe("assertGraphComplete", () => {
   it("lists all missing dependencies in error message", () => {
     // UserService requires Logger and Database, neither is provided
     // At runtime, .build() returns a graph-like object even for incomplete graphs.
-    const incompleteGraph = asGraph(
-      GraphBuilder.create()
-        .provide(UserServiceAdapter)
-        // @ts-expect-error Testing runtime behavior with incomplete graph - TypeScript correctly requires error arg
-        .build()
-    );
+    // Note: build() returns an error string type when dependencies are missing.
+    // asGraph() accepts it for testing runtime behavior.
+    const incompleteGraph = asGraph(GraphBuilder.create().provide(UserServiceAdapter).build());
 
     try {
       assertGraphComplete(incompleteGraph);

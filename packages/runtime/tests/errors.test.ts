@@ -17,6 +17,7 @@ import {
   FactoryError,
   DisposedScopeError,
   ScopeRequiredError,
+  AsyncFactoryError,
 } from "../src/index.js";
 
 // =============================================================================
@@ -104,6 +105,75 @@ describe("FactoryError", () => {
     expect(error.cause).toBe(cause);
     expect(error.message).toContain("TestPort");
   });
+
+  it("handles custom error objects with message property", () => {
+    // Custom error object that doesn't extend Error but has message property
+    const customError = { message: "Custom error message", code: "CUSTOM_ERROR" };
+    const error = new FactoryError("CustomPort", customError);
+
+    expect(error.cause).toBe(customError);
+    expect(error.message).toContain("CustomPort");
+    expect(error.message).toContain("Custom error message");
+  });
+
+  it("handles objects without message property", () => {
+    const objectCause = { code: 123, details: "some details" };
+    const error = new FactoryError("ObjectPort", objectCause);
+
+    expect(error.cause).toBe(objectCause);
+    expect(error.message).toContain("ObjectPort");
+    // Should use String(cause) for objects without message
+    expect(error.message).toContain("[object Object]");
+  });
+});
+
+// =============================================================================
+// AsyncFactoryError Tests
+// =============================================================================
+
+describe("AsyncFactoryError", () => {
+  it("has correct code and isProgrammingError", () => {
+    const cause = new Error("Async connection failed");
+    const error = new AsyncFactoryError("AsyncDatabasePort", cause);
+
+    expect(error.code).toBe("ASYNC_FACTORY_FAILED");
+    expect(error.isProgrammingError).toBe(false);
+  });
+
+  it("stores port name and original cause", () => {
+    const cause = new Error("Async timeout");
+    const error = new AsyncFactoryError("AsyncLoggerPort", cause);
+
+    expect(error.portName).toBe("AsyncLoggerPort");
+    expect(error.cause).toBe(cause);
+  });
+
+  it("includes port name and original error message in message", () => {
+    const cause = new Error("Failed to initialize async");
+    const error = new AsyncFactoryError("AsyncConfigPort", cause);
+
+    expect(error.message).toContain("AsyncConfigPort");
+    expect(error.message).toContain("Failed to initialize async");
+  });
+
+  it("handles custom error objects with message property", () => {
+    // Custom error object that doesn't extend Error but has message property
+    const customError = { message: "Async custom error message", code: "ASYNC_CUSTOM" };
+    const error = new AsyncFactoryError("AsyncCustomPort", customError);
+
+    expect(error.cause).toBe(customError);
+    expect(error.message).toContain("AsyncCustomPort");
+    expect(error.message).toContain("Async custom error message");
+  });
+
+  it("handles non-Error cause", () => {
+    const cause = "async string error";
+    const error = new AsyncFactoryError("AsyncTestPort", cause);
+
+    expect(error.cause).toBe(cause);
+    expect(error.message).toContain("AsyncTestPort");
+    expect(error.message).toContain("async string error");
+  });
 });
 
 // =============================================================================
@@ -166,11 +236,13 @@ describe("Error inheritance hierarchy", () => {
   it("all error classes extend ContainerError", () => {
     const circularError = new CircularDependencyError(["A", "B"]);
     const factoryError = new FactoryError("Port", new Error());
+    const asyncFactoryError = new AsyncFactoryError("Port", new Error());
     const disposedError = new DisposedScopeError("Port");
     const scopeRequiredError = new ScopeRequiredError("Port");
 
     expect(circularError).toBeInstanceOf(ContainerError);
     expect(factoryError).toBeInstanceOf(ContainerError);
+    expect(asyncFactoryError).toBeInstanceOf(ContainerError);
     expect(disposedError).toBeInstanceOf(ContainerError);
     expect(scopeRequiredError).toBeInstanceOf(ContainerError);
   });
@@ -178,11 +250,13 @@ describe("Error inheritance hierarchy", () => {
   it("all error classes extend Error", () => {
     const circularError = new CircularDependencyError(["A", "B"]);
     const factoryError = new FactoryError("Port", new Error());
+    const asyncFactoryError = new AsyncFactoryError("Port", new Error());
     const disposedError = new DisposedScopeError("Port");
     const scopeRequiredError = new ScopeRequiredError("Port");
 
     expect(circularError).toBeInstanceOf(Error);
     expect(factoryError).toBeInstanceOf(Error);
+    expect(asyncFactoryError).toBeInstanceOf(Error);
     expect(disposedError).toBeInstanceOf(Error);
     expect(scopeRequiredError).toBeInstanceOf(Error);
   });
@@ -190,11 +264,13 @@ describe("Error inheritance hierarchy", () => {
   it("each error class has correct name getter", () => {
     const circularError = new CircularDependencyError(["A", "B"]);
     const factoryError = new FactoryError("Port", new Error());
+    const asyncFactoryError = new AsyncFactoryError("Port", new Error());
     const disposedError = new DisposedScopeError("Port");
     const scopeRequiredError = new ScopeRequiredError("Port");
 
     expect(circularError.name).toBe("CircularDependencyError");
     expect(factoryError.name).toBe("FactoryError");
+    expect(asyncFactoryError.name).toBe("AsyncFactoryError");
     expect(disposedError.name).toBe("DisposedScopeError");
     expect(scopeRequiredError.name).toBe("ScopeRequiredError");
   });

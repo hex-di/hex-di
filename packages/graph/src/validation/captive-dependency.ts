@@ -6,18 +6,41 @@
  * This causes the shorter-lived service to be "captured" and held beyond
  * its intended lifetime, leading to stale data and memory leaks.
  *
- * These types provide compile-time validation to prevent captive dependencies
- * with zero runtime cost. All validation is performed at the type level.
+ * ## The Problem
  *
- * Lifetime hierarchy (lower level = longer lived):
- * - Singleton (1): lives for entire application lifetime
- * - Scoped (2): lives for duration of a scope
- * - Transient (3): created fresh for each resolution
+ * ```
+ * Singleton A ──depends on──► Scoped B
+ *     │                           │
+ *     │                           └── Should be recreated per scope
+ *     └── Lives forever, holds reference to single B instance
  *
- * Rule: An adapter can only depend on adapters with the same or LOWER
- * (longer-lived) lifetime level. Depending on HIGHER (shorter-lived)
- * adapters creates a captive dependency.
+ * Result: B becomes effectively singleton, stale across scopes!
+ * ```
  *
+ * ## Lifetime Hierarchy
+ *
+ * We assign numeric levels where LOWER = LONGER LIVED:
+ *
+ * ```
+ * Level 1: Singleton  ───────────────────────────────────► (longest)
+ * Level 2: Scoped     ─────────────►
+ * Level 3: Transient  ───►                                  (shortest)
+ * ```
+ *
+ * **The Rule:** An adapter's level must be ≥ all its dependencies' levels.
+ * - Singleton (1) can depend on: Singleton (1) only
+ * - Scoped (2) can depend on: Singleton (1), Scoped (2)
+ * - Transient (3) can depend on: Singleton (1), Scoped (2), Transient (3)
+ *
+ * ## Why Pattern Matching Instead of Arithmetic?
+ *
+ * TypeScript's type system cannot perform arithmetic operations like
+ * `A > B`. We work around this by explicit pattern matching on the
+ * three possible values (1, 2, 3). This is efficient because there
+ * are only 9 possible comparisons.
+ *
+ * @see ./cycle-detection.ts - Similar validation for circular dependencies
+ * @see ../graph/builder.ts - Uses these types in ProvideResult
  * @packageDocumentation
  */
 
@@ -106,6 +129,33 @@ export type GetLifetimeLevel<TMap, TPortName extends string> = TPortName extends
 // =============================================================================
 // Type-Level Comparison Utilities
 // =============================================================================
+//
+// WHY PATTERN MATCHING INSTEAD OF ARITHMETIC?
+//
+// TypeScript's type system is not Turing-complete for arithmetic. There's
+// no way to write `A > B` for arbitrary numbers. We have three approaches:
+//
+// 1. TUPLE LENGTH COMPARISON (Complex):
+//    Build tuples of length A and B, then check if one extends the other.
+//    Overkill for 3 values.
+//
+// 2. LOOKUP TABLES (Verbose):
+//    ```
+//    type GreaterThan = {
+//      1: { 1: false, 2: false, 3: false },
+//      2: { 1: true,  2: false, 3: false },
+//      3: { 1: true,  2: true,  3: false },
+//    }
+//    ```
+//    Cleaner but requires nested indexing.
+//
+// 3. PATTERN MATCHING (Used here):
+//    Explicit conditionals for each case. Clear and efficient for 3 values.
+//
+// We chose pattern matching because:
+// - Only 3 possible values means 9 total comparisons
+// - Code is self-documenting with inline comments
+// - No abstraction overhead
 
 /**
  * Checks if a type is never.
@@ -125,17 +175,33 @@ type IsNever<T> = [T] extends [never] ? true : false;
  *
  * @returns `true` if A > B, `false` otherwise
  *
+ * @remarks
+ * **Why explicit pattern matching?**
+ *
+ * TypeScript cannot perform arithmetic at the type level. We enumerate
+ * all possible cases explicitly. For 3 lifetime levels, this is efficient
+ * and clear. The comparison table:
+ *
+ * ```
+ *     | 1     2     3    (B)
+ * ----+-------------------
+ *  1  | F     F     F     ← Singleton never > anything
+ *  2  | T     F     F     ← Scoped > Singleton only
+ *  3  | T     T     F     ← Transient > Singleton, Scoped
+ * (A) |
+ * ```
+ *
  * @internal
  */
 type IsGreaterThan<A extends number, B extends number> = A extends 1
-  ? false // 1 is never greater than anything (lowest)
+  ? false // 1 is never greater than anything (Singleton = longest lived)
   : A extends 2
     ? B extends 1
-      ? true // 2 > 1
+      ? true // 2 > 1: Scoped > Singleton
       : false // 2 <= 2, 2 <= 3
     : A extends 3
       ? B extends 1 | 2
-        ? true // 3 > 1, 3 > 2
+        ? true // 3 > 1, 3 > 2: Transient > Singleton, Transient > Scoped
         : false // 3 <= 3
       : false;
 
@@ -233,7 +299,16 @@ type FindCaptiveDependency<
 > =
   GetLifetimeLevel<TLifetimeMap, TRequiredPortName> extends infer DepLevel
     ? IsNever<DepLevel> extends true
-      ? never // Port not in map yet (forward reference) - no error
+      ? // Port not in lifetime map yet - this is a "forward reference".
+        // Forward references occur when an adapter requires a port that hasn't
+        // been registered yet. At compile time, we can't validate the lifetime
+        // because we don't know what it will be. This is NOT an error because:
+        // 1. If the dependency is never provided, build() will catch it
+        // 2. If the dependency is provided later with valid lifetime, no problem
+        // 3. If the dependency is provided later with invalid lifetime (captive),
+        //    the validation will occur when THAT adapter is added
+        // This allows registering adapters in any order without false positives.
+        never
       : DepLevel extends number
         ? IsCaptiveDependency<TDependentLevel, DepLevel> extends true
           ? TRequiredPortName // Found a captive dependency!
@@ -355,3 +430,92 @@ type AdapterRequiresNamesForLifetime<A> = A extends { requires: readonly (infer 
       : never
     : never
   : never;
+
+// =============================================================================
+// Merged Graph Captive Dependency Detection
+// =============================================================================
+
+/**
+ * Helper to get direct dependencies from a dependency map.
+ * @internal
+ */
+type GetDirectDepsForCaptive<TMap, TPort extends string> =
+  TMap extends Record<TPort, infer Deps> ? Deps : never;
+
+/**
+ * Helper to iterate over each key and check for captive dependencies.
+ * Uses distributive conditional to check each key individually.
+ * @internal
+ */
+type CheckEachKeyForCaptive<TDepGraph, TLifetimeMap, TKey extends string> = TKey extends string
+  ? CheckPortForCaptive<TDepGraph, TLifetimeMap, TKey>
+  : never;
+
+/**
+ * Detects captive dependencies in a merged graph.
+ *
+ * When two graphs are merged, captive dependencies can form that didn't exist
+ * in either graph individually. For example:
+ * - Graph A: Singleton A (no deps)
+ * - Graph B: Singleton B depends on Scoped C
+ * - If graph A depends on B later (through merge composition), captive deps
+ *   might emerge that weren't validated.
+ *
+ * This type iterates through all ports in the merged graph and checks for
+ * captive dependencies using the merged lifetime map and dependency graph.
+ *
+ * @typeParam TDepGraph - The merged dependency map
+ * @typeParam TLifetimeMap - The merged lifetime map
+ *
+ * @returns CaptiveDependencyError if a captive dep exists, or never if none
+ */
+export type DetectCaptiveInMergedGraph<TDepGraph, TLifetimeMap> = CheckEachKeyForCaptive<
+  TDepGraph,
+  TLifetimeMap,
+  Extract<keyof TLifetimeMap, string>
+>;
+
+/**
+ * Checks if a specific port has a captive dependency in the merged graph.
+ *
+ * @typeParam TDepGraph - The merged dependency map
+ * @typeParam TLifetimeMap - The merged lifetime map
+ * @typeParam TPort - The port name to check
+ *
+ * @returns CaptiveDependencyError if this port has a captive dep, or never otherwise
+ * @internal
+ */
+type CheckPortForCaptive<TDepGraph, TLifetimeMap, TPort extends string> =
+  GetLifetimeLevel<TLifetimeMap, TPort> extends infer Level
+    ? Level extends number
+      ? GetDirectDepsForCaptive<TDepGraph, TPort> extends infer Deps
+        ? IsNever<Deps> extends true
+          ? never // No dependencies, no captive possible
+          : Deps extends string
+            ? FindAnyCaptiveDependency<TLifetimeMap, Level, Deps> extends infer Captive
+              ? IsNever<Captive> extends true
+                ? never
+                : Captive extends string
+                  ? CaptiveDependencyError<
+                      TPort,
+                      LifetimeName<Level>,
+                      Captive,
+                      LifetimeName<GetLifetimeLevel<TLifetimeMap, Captive>>
+                    >
+                  : never
+              : never
+            : never
+        : never
+      : never
+    : never;
+
+/**
+ * Extracts the first captive error from a union of errors.
+ * Used to consolidate multiple potential captive errors into one.
+ * @internal
+ */
+export type FirstCaptiveError<T> = [T] extends [never]
+  ? never
+  : T extends CaptiveDependencyError<infer DN, infer DL, infer CP, infer CL>
+    ? CaptiveDependencyError<DN, DL, CP, CL>
+    : never;

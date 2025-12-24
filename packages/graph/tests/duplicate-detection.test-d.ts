@@ -16,6 +16,7 @@ import {
   GraphBuilder,
   createAdapter,
   DuplicateProviderError,
+  DuplicateErrorMessage,
   HasOverlap,
   InferGraphProvides,
 } from "../src/index.js";
@@ -146,17 +147,20 @@ describe("duplicate provider detection", () => {
     const duplicateBuilder = builder.provide(DuplicateLoggerAdapter);
     expect(duplicateBuilder).toBeDefined();
 
-    // The result should be a DuplicateProviderError type
+    // The result should be a template literal error message
     type Result = typeof duplicateBuilder;
-    expectTypeOf<Result>().toMatchTypeOf<DuplicateProviderError<LoggerPortType>>();
+    expectTypeOf<Result>().toEqualTypeOf<"ERROR: Duplicate adapter for Logger. Already provided.">();
   });
 
   it("error message includes duplicated port name", () => {
-    type ErrorType = DuplicateProviderError<LoggerPortType>;
+    // Template literal error message directly shows the port name
+    type ErrorMessage = DuplicateErrorMessage<LoggerPortType>;
+    expectTypeOf<ErrorMessage>().toEqualTypeOf<"ERROR: Duplicate adapter for Logger. Already provided.">();
 
-    // Verify the error message structure
-    expectTypeOf<ErrorType["__message"]>().toEqualTypeOf<"Duplicate provider for: Logger">();
-    expectTypeOf<ErrorType["__errorBrand"]>().toEqualTypeOf<"DuplicateProviderError">();
+    // The branded object type is still available for advanced usage
+    type BrandedErrorType = DuplicateProviderError<LoggerPortType>;
+    expectTypeOf<BrandedErrorType["__message"]>().toEqualTypeOf<"Duplicate provider for: Logger">();
+    expectTypeOf<BrandedErrorType["__errorBrand"]>().toEqualTypeOf<"DuplicateProviderError">();
   });
 
   it("different ports with same interface are allowed", () => {
@@ -182,13 +186,13 @@ describe("duplicate provider detection", () => {
     // Verify first builder is a valid GraphBuilder with Logger provided
     expectTypeOf<InferGraphProvides<FirstBuilderType>>().toEqualTypeOf<LoggerPortType>();
 
-    // Second provide() with duplicate should return error type
+    // Second provide() with duplicate should return error template literal
     const secondBuilder = firstBuilder.provide(DuplicateLoggerAdapter);
     expect(secondBuilder).toBeDefined();
     type SecondBuilderType = typeof secondBuilder;
 
-    // The result should be a DuplicateProviderError
-    expectTypeOf<SecondBuilderType>().toMatchTypeOf<DuplicateProviderError<LoggerPortType>>();
+    // The result should be a template literal error message
+    expectTypeOf<SecondBuilderType>().toEqualTypeOf<"ERROR: Duplicate adapter for Logger. Already provided.">();
   });
 
   it("detection works across multiple provide() chains", () => {
@@ -204,8 +208,8 @@ describe("duplicate provider detection", () => {
     expect(withDuplicate).toBeDefined();
     type Result = typeof withDuplicate;
 
-    // Should be an error type
-    expectTypeOf<Result>().toMatchTypeOf<DuplicateProviderError<LoggerPortType>>();
+    // Should be a template literal error message
+    expectTypeOf<Result>().toEqualTypeOf<"ERROR: Duplicate adapter for Logger. Already provided.">();
   });
 
   it("non-overlapping ports are allowed in any order", () => {
