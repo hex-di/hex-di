@@ -5,7 +5,6 @@
 
 import type { Port, InferService } from "@hex-di/ports";
 import type { Lifetime } from "@hex-di/graph";
-import type { ResolutionHookContext } from "../resolution/hooks.js";
 import { MemoMap } from "../common/memo-map.js";
 import { ResolutionContext } from "../resolution/context.js";
 import { ScopeImpl } from "../scope/impl.js";
@@ -22,8 +21,6 @@ import type { InheritanceMode } from "../types.js";
 import type {
   RuntimeAdapter,
   RuntimeAdapterFor,
-  ParentStackEntry,
-  HooksState,
   ForkedEntry,
   DisposableChild,
   ParentContainerLike,
@@ -32,6 +29,7 @@ import type {
   ContainerConfig,
 } from "./internal-types.js";
 import { isAdapterForPort, assertSyncAdapter, isForkedEntryForPort } from "./internal-types.js";
+import { HooksRunner, checkCacheHit } from "./hooks-runner.js";
 import { isDisposableChild, createMemoMapSnapshot } from "./helpers.js";
 import { ADAPTER_ACCESS } from "../inspector/symbols.js";
 
@@ -75,7 +73,7 @@ export class ContainerImpl<
   private readonly asyncAdapters: RuntimeAdapter[];
   private initialized: boolean = false;
   private initializationPromise: Promise<void> | null = null;
-  private readonly hooksState: HooksState | undefined;
+  private readonly hooksRunner: HooksRunner | null;
   private readonly pendingResolutions: Map<
     Port<unknown, string>,
     Map<string | null, Promise<unknown>>
@@ -102,19 +100,19 @@ export class ContainerImpl<
       this.isRoot = true;
       this.parentContainer = null;
       this.inheritanceModes = new Map();
-      this.hooksState = this.initializeFromGraph(config);
+      this.hooksRunner = this.initializeFromGraph(config);
     } else {
       this.isRoot = false;
       this.parentContainer = config.parent;
       this.inheritanceModes = config.inheritanceModes;
-      this.hooksState = undefined;
+      this.hooksRunner = null;
       this.initializeFromParent(config);
     }
   }
 
   private initializeFromGraph(
     config: RootContainerConfig<TProvides, TAsyncPorts>
-  ): HooksState | undefined {
+  ): HooksRunner | null {
     const { graph, options } = config;
     const asyncEntries: Array<{ adapter: RuntimeAdapter; index: number }> = [];
     let adapterIndex = 0;
@@ -140,14 +138,11 @@ export class ContainerImpl<
     });
     this.asyncAdapters.push(...asyncEntries.map(entry => entry.adapter));
 
-    // Initialize hooks if provided
+    // Create HooksRunner if hooks are provided
     if (options?.hooks?.beforeResolve !== undefined || options?.hooks?.afterResolve !== undefined) {
-      return {
-        hooks: options.hooks,
-        parentStack: [],
-      };
+      return new HooksRunner(options.hooks);
     }
-    return undefined;
+    return null;
   }
 
   private initializeFromParent(config: ChildContainerConfig<TProvides, TAsyncPorts>): void {
@@ -437,30 +432,14 @@ export class ContainerImpl<
     scopedMemo: MemoMap,
     scopeId: string | null
   ): InferService<P> {
-    if (this.hooksState === undefined) {
+    if (this.hooksRunner === null) {
       return this.resolveWithAdapterCore(port, adapter, scopedMemo, scopeId);
     }
 
-    const { hooks, parentStack } = this.hooksState;
-    const isCacheHit = this.checkCacheHit(port, adapter, scopedMemo);
-    const context = this.createResolutionContext(port, adapter, scopeId, isCacheHit, parentStack);
-
-    if (hooks.beforeResolve !== undefined) {
-      hooks.beforeResolve(context);
-    }
-
-    const startTime = Date.now();
-    parentStack.push({ port, startTime });
-
-    let error: Error | null = null;
-    try {
-      return this.resolveWithAdapterCore(port, adapter, scopedMemo, scopeId);
-    } catch (e) {
-      error = e instanceof Error ? e : new Error(String(e));
-      throw e;
-    } finally {
-      this.emitAfterResolve(context, startTime, error, parentStack);
-    }
+    const isCacheHit = checkCacheHit(port, adapter.lifetime, this.singletonMemo, scopedMemo);
+    return this.hooksRunner.runSync(port, adapter, scopeId, isCacheHit, () =>
+      this.resolveWithAdapterCore(port, adapter, scopedMemo, scopeId)
+    );
   }
 
   private resolveWithAdapterCore<P extends Port<unknown, string>>(
@@ -519,60 +498,6 @@ export class ContainerImpl<
       }
     } finally {
       this.resolutionContext.exit(portName);
-    }
-  }
-
-  private createResolutionContext(
-    port: Port<unknown, string>,
-    adapter: RuntimeAdapter,
-    scopeId: string | null,
-    isCacheHit: boolean,
-    parentStack: readonly { port: Port<unknown, string>; startTime: number }[]
-  ): ResolutionHookContext {
-    const parentEntry = parentStack.length > 0 ? parentStack[parentStack.length - 1] : null;
-
-    return {
-      port,
-      portName: port.__portName,
-      lifetime: adapter.lifetime,
-      scopeId,
-      parentPort: parentEntry?.port ?? null,
-      isCacheHit,
-      depth: parentStack.length,
-    };
-  }
-
-  private emitAfterResolve(
-    context: ResolutionHookContext,
-    startTime: number,
-    error: Error | null,
-    parentStack: ParentStackEntry[]
-  ): void {
-    parentStack.pop();
-    const duration = Date.now() - startTime;
-    if (this.hooksState?.hooks.afterResolve !== undefined) {
-      this.hooksState.hooks.afterResolve({
-        ...context,
-        duration,
-        error,
-      });
-    }
-  }
-
-  private checkCacheHit(
-    port: Port<unknown, string>,
-    adapter: RuntimeAdapter,
-    scopedMemo: MemoMap
-  ): boolean {
-    switch (adapter.lifetime) {
-      case "singleton":
-        return this.singletonMemo.has(port);
-      case "scoped":
-        return scopedMemo.has(port);
-      case "transient":
-        return false;
-      default:
-        return false;
     }
   }
 
@@ -642,22 +567,19 @@ export class ContainerImpl<
     scopedMemo: MemoMap,
     scopeId: string | null
   ): Promise<InferService<P>> {
-    if (this.hooksState === undefined) {
+    if (this.hooksRunner === null) {
       return this.resolveAsyncWithAdapterCore(port, adapter, scopedMemo, scopeId);
     }
 
-    const isCacheHit = this.checkCacheHit(port, adapter, scopedMemo);
+    const isCacheHit = checkCacheHit(port, adapter.lifetime, this.singletonMemo, scopedMemo);
     if (isCacheHit) {
-      return this.runAsyncHooks(
-        port,
-        adapter,
-        scopeId,
-        true,
-        () => this.resolveAsyncWithAdapterCore(port, adapter, scopedMemo, scopeId),
-        this.hooksState
+      // For cache hits, run hooks around the cached resolution
+      return this.hooksRunner.runAsync(port, adapter, scopeId, true, () =>
+        this.resolveAsyncWithAdapterCore(port, adapter, scopedMemo, scopeId)
       );
     }
 
+    // For non-cache hits, hooks are handled in createPendingResolutionPromise
     return this.resolveAsyncWithAdapterCore(port, adapter, scopedMemo, scopeId);
   }
 
@@ -720,13 +642,13 @@ export class ContainerImpl<
     memo: MemoMap | null
   ): Promise<InferService<P>> {
     const resolution = () => this.executeAsyncResolution(port, adapter, scopedMemo, scopeId, memo);
-    const hooksState = this.hooksState;
-    const runner =
-      hooksState !== undefined
-        ? () => this.runAsyncHooks(port, adapter, scopeId, false, resolution, hooksState)
-        : resolution;
 
-    const promise = runner();
+    // Wrap with hooks if enabled (isCacheHit=false for new resolutions)
+    const promise =
+      this.hooksRunner !== null
+        ? this.hooksRunner.runAsync(port, adapter, scopeId, false, resolution)
+        : resolution();
+
     promise.catch(() => {});
     const cleanupPromise = promise.finally(() => this.cleanupPending(port, scopeId));
     cleanupPromise.catch(() => {});
@@ -745,35 +667,6 @@ export class ContainerImpl<
       return memo.getOrElseMemoizeAsync(port, factory, adapter.finalizer);
     }
     return factory();
-  }
-
-  private runAsyncHooks<P extends Port<unknown, string>>(
-    port: P,
-    adapter: RuntimeAdapterFor<P>,
-    scopeId: string | null,
-    isCacheHit: boolean,
-    callback: () => Promise<InferService<P>>,
-    hooksState: HooksState
-  ): Promise<InferService<P>> {
-    const { hooks, parentStack } = hooksState;
-    const context = this.createResolutionContext(port, adapter, scopeId, isCacheHit, parentStack);
-
-    if (hooks.beforeResolve !== undefined) {
-      hooks.beforeResolve(context);
-    }
-
-    const startTime = Date.now();
-    parentStack.push({ port, startTime });
-
-    let error: Error | null = null;
-    return callback()
-      .catch(err => {
-        error = err instanceof Error ? err : new Error(String(err));
-        throw err;
-      })
-      .finally(() => {
-        this.emitAfterResolve(context, startTime, error, parentStack);
-      });
   }
 
   private cleanupPending(port: Port<unknown, string>, scopeId: string | null): void {
