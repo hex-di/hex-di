@@ -17,6 +17,7 @@ import {
   createAdapter,
   ExtractPortNames,
   MissingDependencyError,
+  BuildErrorMessage,
   DuplicateProviderError,
   Graph,
 } from "../src/index.js";
@@ -171,6 +172,35 @@ describe("MissingDependencyError template literal type", () => {
 });
 
 // =============================================================================
+// BuildErrorMessage Tests
+// =============================================================================
+
+describe("BuildErrorMessage template literal type", () => {
+  it("produces readable template literal for single missing port", () => {
+    type ErrorMsg = BuildErrorMessage<LoggerPortType>;
+    expectTypeOf<ErrorMsg>().toEqualTypeOf<"Cannot build: Missing adapters for Logger">();
+  });
+
+  it("produces union of template literals for multiple missing ports", () => {
+    type ErrorMsg = BuildErrorMessage<LoggerPortType | DatabasePortType>;
+    expectTypeOf<ErrorMsg>().toEqualTypeOf<
+      "Cannot build: Missing adapters for Logger" | "Cannot build: Missing adapters for Database"
+    >();
+  });
+
+  it("error message has 'Cannot build: Missing adapters for' prefix", () => {
+    type ErrorMsg = BuildErrorMessage<ConfigPortType>;
+    type HasPrefix = ErrorMsg extends `Cannot build: Missing adapters for ${string}` ? true : false;
+    expectTypeOf<HasPrefix>().toEqualTypeOf<true>();
+  });
+
+  it("returns never for never input", () => {
+    type ErrorMsg = BuildErrorMessage<never>;
+    expectTypeOf<ErrorMsg>().toBeNever();
+  });
+});
+
+// =============================================================================
 // DuplicateProviderError Tests
 // =============================================================================
 
@@ -221,8 +251,8 @@ describe("build() returns error type when unsatisfied", () => {
 
     type BuildResult = ReturnType<typeof builder.build>;
 
-    // Should NOT be an error type
-    type IsError = BuildResult extends { __errorBrand: string } ? true : false;
+    // Should NOT be an error string
+    type IsError = BuildResult extends string ? true : false;
     expectTypeOf<IsError>().toEqualTypeOf<false>();
 
     // Should be a valid Graph with adapters
@@ -230,30 +260,27 @@ describe("build() returns error type when unsatisfied", () => {
     expectTypeOf<HasAdapters>().toEqualTypeOf<true>();
   });
 
-  it("build() on unsatisfied graph requires MissingDependencyError argument", () => {
+  it("build() on unsatisfied graph returns error string", () => {
     const builder = GraphBuilder.create().provide(UserServiceAdapter);
     expect(builder).toBeDefined();
 
-    type BuildParams = Parameters<typeof builder.build>;
-    type ErrorArg = BuildParams[0];
+    type BuildResult = ReturnType<typeof builder.build>;
 
-    // Should require an error type with brand
-    type IsError = ErrorArg extends { __errorBrand: "MissingDependencyError" } ? true : false;
-    expectTypeOf<IsError>().toEqualTypeOf<true>();
+    // Should be a template literal string with "ERROR: Missing adapters for" prefix
+    type IsTemplateLiteral = BuildResult extends `ERROR: Missing adapters for ${string}`
+      ? true
+      : false;
+    expectTypeOf<IsTemplateLiteral>().toEqualTypeOf<true>();
   });
 
   it("error message at build() is readable and actionable", () => {
     const builder = GraphBuilder.create().provide(UserServiceAdapter);
     expect(builder).toBeDefined();
 
-    type BuildParams = Parameters<typeof builder.build>;
-    type ErrorArg = BuildParams[0];
+    type BuildResult = ReturnType<typeof builder.build>;
 
-    // Should have the message property with missing deps
-    type Message = ErrorArg extends { __message: infer M } ? M : never;
-
-    // Message should contain "Missing dependencies:" prefix
-    type HasPrefix = Message extends `Missing dependencies: ${string}` ? true : false;
+    // Message should contain "ERROR: Missing adapters for" prefix
+    type HasPrefix = BuildResult extends `ERROR: Missing adapters for ${string}` ? true : false;
     expectTypeOf<HasPrefix>().toEqualTypeOf<true>();
   });
 
@@ -261,13 +288,12 @@ describe("build() returns error type when unsatisfied", () => {
     const builder = GraphBuilder.create().provide(UserServiceAdapter);
     expect(builder).toBeDefined();
 
-    type BuildParams = Parameters<typeof builder.build>;
-    type ErrorArg = BuildParams[0];
-    type Message = ErrorArg extends { __message: infer M } ? M : never;
+    type BuildResult = ReturnType<typeof builder.build>;
 
-    // Message should be a union of "Missing dependencies: Logger" | "Missing dependencies: Database"
-    expectTypeOf<Message>().toEqualTypeOf<
-      "Missing dependencies: Logger" | "Missing dependencies: Database"
+    // Message should be a union of template literals for each missing port
+    expectTypeOf<BuildResult>().toEqualTypeOf<
+      | "ERROR: Missing adapters for Logger. Call .provide() first."
+      | "ERROR: Missing adapters for Database. Call .provide() first."
     >();
   });
 

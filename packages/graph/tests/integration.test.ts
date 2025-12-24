@@ -26,7 +26,6 @@ import {
   InferGraphProvides,
   InferGraphRequires,
   UnsatisfiedDependencies,
-  MissingDependencyError,
   InferAdapterProvides,
   InferAdapterRequires,
 } from "../src/index.js";
@@ -235,14 +234,13 @@ describe("Integration: Multi-layer dependency chain", () => {
       }),
     });
 
-    // Build without Cache - should require error argument
+    // Build without Cache - should return error string
     const builder = GraphBuilder.create().provide(configAdapter).provide(databaseAdapter);
     expect(builder).toBeDefined();
 
-    type BuildParams = Parameters<typeof builder.build>;
-    type ErrorArg = BuildParams[0];
-    type IsMissingError = ErrorArg extends MissingDependencyError<typeof CachePort> ? true : false;
-    expectTypeOf<IsMissingError>().toEqualTypeOf<true>();
+    type BuildResult = ReturnType<typeof builder.build>;
+    // Error should be a template literal with the missing port name
+    expectTypeOf<BuildResult>().toEqualTypeOf<"ERROR: Missing adapters for Cache. Call .provide() first.">();
   });
 });
 
@@ -563,11 +561,10 @@ describe("Integration: Error recovery", () => {
       .provide(userServiceAdapter);
     expect(incompleteBuilder).toBeDefined();
 
-    // Verify build requires error argument when incomplete
-    type IncompleteParams = Parameters<typeof incompleteBuilder.build>;
-    type ErrorArg = IncompleteParams[0];
-    type IsError = ErrorArg extends MissingDependencyError<typeof DatabasePort> ? true : false;
-    expectTypeOf<IsError>().toEqualTypeOf<true>();
+    // Verify build returns error string when incomplete
+    type IncompleteResult = ReturnType<typeof incompleteBuilder.build>;
+    // Error should be a template literal with the missing port name
+    expectTypeOf<IncompleteResult>().toEqualTypeOf<"ERROR: Missing adapters for Database. Call .provide() first.">();
 
     // Step 2: Add the missing Database adapter
     const completeBuilder = incompleteBuilder.provide(

@@ -1,4 +1,3 @@
-
 import type { Port, InferPortName } from "@hex-di/ports";
 
 /**
@@ -22,9 +21,7 @@ export type ExtractPortNames<TPorts> = [TPorts] extends [never]
  *
  * @internal
  */
-export type MissingDependencyError<MissingPorts> = [MissingPorts] extends [
-  never,
-]
+export type MissingDependencyError<MissingPorts> = [MissingPorts] extends [never]
   ? never
   : {
       readonly __valid: false;
@@ -32,6 +29,20 @@ export type MissingDependencyError<MissingPorts> = [MissingPorts] extends [
       readonly __message: `Missing dependencies: ${ExtractPortNames<MissingPorts>}`;
       readonly __missing: MissingPorts;
     };
+
+/**
+ * Creates a readable compile-time error message for missing dependencies.
+ * Used as the parameter type in build() when dependencies are unsatisfied.
+ *
+ * This produces clearer TypeScript errors like:
+ * "Argument of type '[]' is not assignable to parameter of type
+ *  '[MISSING_DEPENDENCIES: "Cannot build: Missing adapters for Logger"]'"
+ *
+ * @typeParam MissingPorts - Union of Port types that are required but not provided
+ */
+export type BuildErrorMessage<MissingPorts> = [MissingPorts] extends [never]
+  ? never
+  : `Cannot build: Missing adapters for ${ExtractPortNames<MissingPorts>}`;
 
 /**
  * A branded error type that produces a readable compile-time error message

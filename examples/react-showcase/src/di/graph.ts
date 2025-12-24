@@ -59,7 +59,7 @@ import {
  */
 export const appGraph = GraphBuilder.create()
   // Singleton adapters
-  .provide(LoggerAdapter)
+
   .provideAsync(ConfigAdapter) // Async singleton - simulates API config loading
   .provide(MessageStoreAdapter) // Sync singleton - localStorage persistence
   // Scoped adapters

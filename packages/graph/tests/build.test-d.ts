@@ -18,7 +18,6 @@ import {
   GraphBuilder,
   createAdapter,
   Graph,
-  MissingDependencyError,
   InferGraphProvides,
   Lifetime,
   Adapter,
@@ -189,58 +188,51 @@ describe("build() callable when all deps satisfied", () => {
 // build() Blocked With Type Error When Deps Missing Tests
 // =============================================================================
 
-describe("build() blocked with type error when deps missing", () => {
-  it("requires error argument when single dependency missing", () => {
+describe("build() returns error type when deps missing", () => {
+  it("returns error string when single dependency missing", () => {
     const builder = GraphBuilder.create().provide(CacheAdapter);
     expect(builder).toBeDefined();
 
-    // build() should require an argument when deps are missing
-    type BuildParams = Parameters<typeof builder.build>;
-    type RequiresArg = BuildParams extends [infer _Arg] ? true : false;
-    expectTypeOf<RequiresArg>().toEqualTypeOf<true>();
+    // build() returns an error string when deps are missing
+    type BuildResult = ReturnType<typeof builder.build>;
 
-    // The required argument should be the MissingDependencyError
-    type ArgType = BuildParams[0];
-    type IsError = ArgType extends MissingDependencyError<ConfigPortType> ? true : false;
-    expectTypeOf<IsError>().toEqualTypeOf<true>();
+    // The return type should be an error template literal
+    expectTypeOf<BuildResult>().toEqualTypeOf<"ERROR: Missing adapters for Config. Call .provide() first.">();
   });
 
-  it("requires error argument when multiple dependencies missing", () => {
+  it("returns error string when multiple dependencies missing", () => {
     const builder = GraphBuilder.create().provide(UserServiceAdapter);
     expect(builder).toBeDefined();
 
-    type BuildParams = Parameters<typeof builder.build>;
-    type ArgType = BuildParams[0];
+    type BuildResult = ReturnType<typeof builder.build>;
 
-    // Should require MissingDependencyError with both missing ports
-    type IsError =
-      ArgType extends MissingDependencyError<LoggerPortType | DatabasePortType> ? true : false;
-    expectTypeOf<IsError>().toEqualTypeOf<true>();
+    // Should return error string for each missing port (as a union)
+    expectTypeOf<BuildResult>().toEqualTypeOf<
+      | "ERROR: Missing adapters for Logger. Call .provide() first."
+      | "ERROR: Missing adapters for Database. Call .provide() first."
+    >();
   });
 
-  it("requires error argument when some but not all deps provided", () => {
+  it("returns error string when some but not all deps provided", () => {
     const builder = GraphBuilder.create().provide(UserServiceAdapter).provide(LoggerAdapter);
     expect(builder).toBeDefined();
     // Database is still missing
 
-    type BuildParams = Parameters<typeof builder.build>;
-    type ArgType = BuildParams[0];
+    type BuildResult = ReturnType<typeof builder.build>;
 
-    // Should require error with just Database missing
-    type IsError = ArgType extends MissingDependencyError<DatabasePortType> ? true : false;
-    expectTypeOf<IsError>().toEqualTypeOf<true>();
+    // Should return error with just Database missing
+    expectTypeOf<BuildResult>().toEqualTypeOf<"ERROR: Missing adapters for Database. Call .provide() first.">();
   });
 
-  it("error argument has __errorBrand for discrimination", () => {
+  it("error message is a readable template literal", () => {
     const builder = GraphBuilder.create().provide(UserServiceAdapter);
     expect(builder).toBeDefined();
 
-    type BuildParams = Parameters<typeof builder.build>;
-    type ArgType = BuildParams[0];
+    type BuildResult = ReturnType<typeof builder.build>;
 
-    // Should have the MissingDependencyError brand
-    type Brand = ArgType extends { __errorBrand: infer B } ? B : never;
-    expectTypeOf<Brand>().toEqualTypeOf<"MissingDependencyError">();
+    // Should be a template literal with "ERROR: Missing adapters for" prefix
+    type HasPrefix = BuildResult extends `ERROR: Missing adapters for ${string}` ? true : false;
+    expectTypeOf<HasPrefix>().toEqualTypeOf<true>();
   });
 });
 
@@ -248,54 +240,51 @@ describe("build() blocked with type error when deps missing", () => {
 // Error Message Shows Missing Port Names Tests
 // =============================================================================
 
-describe("error message shows missing port names", () => {
-  it("error __message includes single missing port name", () => {
+describe("error return type shows missing port names", () => {
+  it("error message includes single missing port name", () => {
     const builder = GraphBuilder.create().provide(CacheAdapter);
     expect(builder).toBeDefined();
 
-    type BuildParams = Parameters<typeof builder.build>;
-    type ArgType = BuildParams[0];
-    type Message = ArgType extends { __message: infer M } ? M : never;
+    type BuildResult = ReturnType<typeof builder.build>;
 
-    expectTypeOf<Message>().toEqualTypeOf<"Missing dependencies: Config">();
+    // The return type IS the error message (a template literal string)
+    expectTypeOf<BuildResult>().toEqualTypeOf<"ERROR: Missing adapters for Config. Call .provide() first.">();
   });
 
-  it("error __message includes multiple missing port names", () => {
+  it("error message includes multiple missing port names", () => {
     const builder = GraphBuilder.create().provide(UserServiceAdapter);
     expect(builder).toBeDefined();
 
-    type BuildParams = Parameters<typeof builder.build>;
-    type ArgType = BuildParams[0];
-    type Message = ArgType extends { __message: infer M } ? M : never;
+    type BuildResult = ReturnType<typeof builder.build>;
 
     // Should be a union of error messages for each missing port
-    expectTypeOf<Message>().toEqualTypeOf<
-      "Missing dependencies: Logger" | "Missing dependencies: Database"
+    expectTypeOf<BuildResult>().toEqualTypeOf<
+      | "ERROR: Missing adapters for Logger. Call .provide() first."
+      | "ERROR: Missing adapters for Database. Call .provide() first."
     >();
   });
 
-  it("error __message has correct prefix format", () => {
+  it("error message has correct prefix format", () => {
     const builder = GraphBuilder.create().provide(CacheAdapter);
     expect(builder).toBeDefined();
 
-    type BuildParams = Parameters<typeof builder.build>;
-    type ArgType = BuildParams[0];
-    type Message = ArgType extends { __message: infer M } ? M : never;
+    type BuildResult = ReturnType<typeof builder.build>;
 
     // Verify the message starts with the expected prefix
-    type HasPrefix = Message extends `Missing dependencies: ${string}` ? true : false;
+    type HasPrefix = BuildResult extends `ERROR: Missing adapters for ${string}` ? true : false;
     expectTypeOf<HasPrefix>().toEqualTypeOf<true>();
   });
 
-  it("error carries __missing property with missing ports", () => {
-    const builder = GraphBuilder.create().provide(UserServiceAdapter);
+  it("error message directly shows the missing port name", () => {
+    const builder = GraphBuilder.create().provide(UserServiceAdapter).provide(LoggerAdapter);
     expect(builder).toBeDefined();
+    // Only Database is missing
 
-    type BuildParams = Parameters<typeof builder.build>;
-    type ArgType = BuildParams[0];
-    type MissingPorts = ArgType extends { __missing: infer M } ? M : never;
+    type BuildResult = ReturnType<typeof builder.build>;
 
-    expectTypeOf<MissingPorts>().toEqualTypeOf<LoggerPortType | DatabasePortType>();
+    // The message should contain "Database" since that's the only missing port
+    type ContainsDatabase = BuildResult extends `${string}Database${string}` ? true : false;
+    expectTypeOf<ContainsDatabase>().toEqualTypeOf<true>();
   });
 });
 
@@ -420,16 +409,16 @@ describe("build() returns Graph with correct type information", () => {
     type HasAdapters = ValidResult extends { adapters: readonly unknown[] } ? true : false;
     expectTypeOf<HasAdapters>().toEqualTypeOf<true>();
 
-    // Valid result should NOT have error brand
-    type ValidHasErrorBrand = ValidResult extends { __errorBrand: string } ? true : false;
-    expectTypeOf<ValidHasErrorBrand>().toEqualTypeOf<false>();
+    // Valid result should NOT be a string literal
+    type ValidIsString = ValidResult extends string ? true : false;
+    expectTypeOf<ValidIsString>().toEqualTypeOf<false>();
 
-    // Invalid builder requires error argument - check parameter has error brand
-    type InvalidParams = Parameters<typeof invalidBuilder.build>;
-    type InvalidParamHasErrorBrand = InvalidParams[0] extends { __errorBrand: string }
+    // Invalid builder returns error string - check return type is a template literal
+    type InvalidResult = ReturnType<typeof invalidBuilder.build>;
+    type IsTemplateLiteral = InvalidResult extends `ERROR: Missing adapters for ${string}`
       ? true
       : false;
-    expectTypeOf<InvalidParamHasErrorBrand>().toEqualTypeOf<true>();
+    expectTypeOf<IsTemplateLiteral>().toEqualTypeOf<true>();
   });
 });
 
@@ -526,27 +515,25 @@ describe("built graph contains all registered adapters", () => {
 // Error Appears At .build() Call Site Tests
 // =============================================================================
 
-describe("error appears at .build() call site", () => {
-  it("build() parameter type shows error information when deps missing", () => {
+describe("error appears when using build() result", () => {
+  it("build() return type shows error information when deps missing", () => {
     const incompleteBuilder = GraphBuilder.create().provide(UserServiceAdapter);
     expect(incompleteBuilder).toBeDefined();
 
-    // The error information is in the required parameter of build()
-    type BuildParams = Parameters<typeof incompleteBuilder.build>;
-    type ErrorArg = BuildParams[0];
+    // The error information is in the return type of build()
+    type BuildResult = ReturnType<typeof incompleteBuilder.build>;
 
-    // Error should have all diagnostic properties
-    type HasErrorBrand = ErrorArg extends { __errorBrand: string } ? true : false;
-    type HasMessage = ErrorArg extends { __message: string } ? true : false;
-    type HasMissing = ErrorArg extends {
-      __missing: Port<unknown, string>;
-    }
+    // Error should be a template literal string with the missing port names
+    type IsTemplateLiteral = BuildResult extends `ERROR: Missing adapters for ${string}`
       ? true
       : false;
+    expectTypeOf<IsTemplateLiteral>().toEqualTypeOf<true>();
 
-    expectTypeOf<HasErrorBrand>().toEqualTypeOf<true>();
-    expectTypeOf<HasMessage>().toEqualTypeOf<true>();
-    expectTypeOf<HasMissing>().toEqualTypeOf<true>();
+    // Error is a union of template literals - one for each missing port
+    expectTypeOf<BuildResult>().toEqualTypeOf<
+      | "ERROR: Missing adapters for Logger. Call .provide() first."
+      | "ERROR: Missing adapters for Database. Call .provide() first."
+    >();
   });
 
   it("builder type before build() does not show error", () => {
@@ -565,9 +552,9 @@ describe("error appears at .build() call site", () => {
     expectTypeOf<Provides>().toEqualTypeOf<UserServicePortType>();
   });
 
-  it("error is contained in parameter type, causing compile error on call", () => {
-    // This tests that the error appears when you TRY to call build()
-    // without providing the required dependencies
+  it("error is in return type, causing compile error when assigned to Graph", () => {
+    // This tests that the error appears when you TRY to use the build() result
+    // as a Graph without providing the required dependencies
 
     const builder = GraphBuilder.create().provide(UserServiceAdapter);
     expect(builder).toBeDefined();
@@ -575,11 +562,11 @@ describe("error appears at .build() call site", () => {
     // The build method is still a function
     expectTypeOf(builder.build).toBeFunction();
 
-    // But it requires an error argument - check parameter has error brand
-    type BuildParams = Parameters<typeof builder.build>;
-    type HasErrorBrand = BuildParams[0] extends { __errorBrand: "MissingDependencyError" }
+    // Return type is error message, not Graph
+    type BuildResult = ReturnType<typeof builder.build>;
+    type IsErrorMessage = BuildResult extends `ERROR: Missing adapters for ${string}`
       ? true
       : false;
-    expectTypeOf<HasErrorBrand>().toEqualTypeOf<true>();
+    expectTypeOf<IsErrorMessage>().toEqualTypeOf<true>();
   });
 });

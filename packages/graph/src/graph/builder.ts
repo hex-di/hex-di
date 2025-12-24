@@ -10,8 +10,9 @@ import type {
   InferManyAsyncPorts,
 } from "../adapter";
 import type {
+  BuildErrorMessage,
   DuplicateProviderError,
-  MissingDependencyError,
+  ExtractPortNames,
   UnsatisfiedDependencies,
   IsSatisfied,
   HasOverlap,
@@ -460,16 +461,32 @@ export class GraphBuilder<
 
   /**
    * Builds the dependency graph after validating all dependencies are satisfied.
+   *
+   * @remarks
+   * If dependencies are missing, the return type becomes a template literal error
+   * message instead of a Graph. This produces clear compile-time errors when you
+   * try to use the result.
+   *
+   * @example
+   * ```typescript
+   * // When Logger is missing, return type is:
+   * // "ERROR: Missing adapters for Logger. Call .provide() first."
+   * //
+   * // Trying to use this result produces:
+   * // Type '"ERROR: Missing adapters for Logger..."' is not assignable to type 'Graph<...>'
+   * ```
    */
-  build(
-    ..._: IsSatisfied<TProvides, TRequires> extends true
-      ? []
-      : [error: MissingDependencyError<UnsatisfiedDependencies<TProvides, TRequires>>]
-  ): Graph<TProvides, TAsyncPorts> {
+  build(): [UnsatisfiedDependencies<TProvides, TRequires>] extends [never]
+    ? Graph<TProvides, TAsyncPorts>
+    : `ERROR: Missing adapters for ${ExtractPortNames<UnsatisfiedDependencies<TProvides, TRequires>>}. Call .provide() first.` {
     // Phantom type properties (__provides, __asyncPorts) exist only at compile-time.
     // The runtime object only needs the adapters array.
+    // The conditional return type is only for compile-time validation.
+    // At runtime, this always returns a Graph (even if incomplete - that's a type-level error).
     return Object.freeze({
       adapters: this.adapters,
-    }) as Graph<TProvides, TAsyncPorts>;
+    }) as [UnsatisfiedDependencies<TProvides, TRequires>] extends [never]
+      ? Graph<TProvides, TAsyncPorts>
+      : `ERROR: Missing adapters for ${ExtractPortNames<UnsatisfiedDependencies<TProvides, TRequires>>}. Call .provide() first.`;
   }
 }
