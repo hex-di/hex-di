@@ -30,6 +30,7 @@ import type {
 } from "./internal-types.js";
 import { isAdapterForPort, assertSyncAdapter, isForkedEntryForPort } from "./internal-types.js";
 import { HooksRunner, checkCacheHit } from "./hooks-runner.js";
+import { LifecycleManager } from "./lifecycle-manager.js";
 import { isDisposableChild, createMemoMapSnapshot } from "./helpers.js";
 import { ADAPTER_ACCESS } from "../inspector/symbols.js";
 
@@ -61,11 +62,7 @@ export class ContainerImpl<
   private readonly adapterMap: Map<Port<unknown, string>, RuntimeAdapter>;
   private readonly singletonMemo: MemoMap;
   private readonly resolutionContext: ResolutionContext;
-  private disposed: boolean = false;
-  private readonly childScopes: Set<
-    ScopeImpl<TProvides | TExtends, TAsyncPorts, "uninitialized" | "initialized">
-  > = new Set();
-  private readonly childContainers: Array<DisposableChild> = [];
+  private readonly lifecycleManager: LifecycleManager;
 
   // Root-only state
   private readonly isRoot: boolean;
@@ -89,6 +86,7 @@ export class ContainerImpl<
   constructor(config: ContainerConfig<TProvides, TAsyncPorts>) {
     this.singletonMemo = new MemoMap();
     this.resolutionContext = new ResolutionContext();
+    this.lifecycleManager = new LifecycleManager();
     this.adapterMap = new Map();
     this.asyncPorts = new Set();
     this.asyncAdapters = [];
@@ -180,7 +178,7 @@ export class ContainerImpl<
   // =============================================================================
 
   get isDisposed(): boolean {
-    return this.disposed;
+    return this.lifecycleManager.isDisposed;
   }
 
   get isInitialized(): boolean {
@@ -192,7 +190,7 @@ export class ContainerImpl<
       throw new Error("Child containers cannot be initialized - they inherit state from parent");
     }
 
-    if (this.disposed) {
+    if (this.lifecycleManager.isDisposed) {
       throw new DisposedScopeError("container");
     }
     if (this.initialized) {
@@ -234,14 +232,11 @@ export class ContainerImpl<
   }
 
   registerChildContainer(child: DisposableChild): void {
-    this.childContainers.push(child);
+    this.lifecycleManager.registerChildContainer(child);
   }
 
   unregisterChildContainer(child: DisposableChild): void {
-    const idx = this.childContainers.indexOf(child);
-    if (idx !== -1) {
-      this.childContainers.splice(idx, 1);
-    }
+    this.lifecycleManager.unregisterChildContainer(child);
   }
 
   hasAdapter(port: Port<unknown, string>): boolean {
@@ -279,7 +274,7 @@ export class ContainerImpl<
   resolve<P extends TProvides | TExtends>(port: P): InferService<P> {
     const portName = port.__portName;
 
-    if (this.disposed) {
+    if (this.lifecycleManager.isDisposed) {
       throw new DisposedScopeError(portName);
     }
 
@@ -507,7 +502,7 @@ export class ContainerImpl<
 
   async resolveAsync<P extends TProvides | TExtends>(port: P): Promise<InferService<P>> {
     const portName = port.__portName;
-    if (this.disposed) {
+    if (this.lifecycleManager.isDisposed) {
       throw new DisposedScopeError(portName);
     }
 
@@ -716,7 +711,7 @@ export class ContainerImpl<
   registerChildScope(
     scope: ScopeImpl<TProvides | TExtends, TAsyncPorts, "uninitialized" | "initialized">
   ): void {
-    this.childScopes.add(scope);
+    this.lifecycleManager.registerChildScope(scope);
   }
 
   getSingletonMemo(): MemoMap {
@@ -728,38 +723,16 @@ export class ContainerImpl<
   // =============================================================================
 
   async dispose(): Promise<void> {
-    if (this.disposed) {
-      return;
-    }
-    this.disposed = true;
-
-    // Dispose child containers in LIFO order
-    for (let i = this.childContainers.length - 1; i >= 0; i--) {
-      const child = this.childContainers[i];
-      if (child) {
-        await child.dispose();
-      }
-    }
-    this.childContainers.length = 0;
-
-    // Dispose child scopes
-    for (const scope of this.childScopes) {
-      await scope.dispose();
-    }
-    this.childScopes.clear();
-
-    // Dispose singleton memo
-    await this.singletonMemo.dispose();
-
-    // Unregister from parent if child container
-    if (
+    // Build parent unregister callback if applicable
+    const parentUnregister =
       !this.isRoot &&
       this.parentContainer !== null &&
       this.wrapper !== null &&
       isDisposableChild(this.wrapper)
-    ) {
-      this.parentContainer.unregisterChildContainer(this.wrapper);
-    }
+        ? () => this.parentContainer!.unregisterChildContainer(this.wrapper as DisposableChild)
+        : undefined;
+
+    await this.lifecycleManager.dispose(this.singletonMemo, parentUnregister);
   }
 
   // =============================================================================
@@ -767,22 +740,22 @@ export class ContainerImpl<
   // =============================================================================
 
   getInternalState(): ContainerInternalState {
-    if (this.disposed) {
+    if (this.lifecycleManager.isDisposed) {
       throw new DisposedScopeError(this.isRoot ? "container" : "child-container");
     }
 
-    const childScopeSnapshots = Array.from(this.childScopes)
-      .map(scope => {
-        try {
-          return scope.getInternalState();
-        } catch {
-          return null;
-        }
-      })
-      .filter((s): s is ScopeInternalState => s !== null);
+    const childScopeSnapshots = this.lifecycleManager.getChildScopeSnapshots(scope => {
+      // Cast needed because LifecycleManager stores generic Disposable
+      const typedScope = scope as ScopeImpl<
+        TProvides | TExtends,
+        TAsyncPorts,
+        "uninitialized" | "initialized"
+      >;
+      return typedScope.getInternalState();
+    });
 
     const snapshot: ContainerInternalState = {
-      disposed: this.disposed,
+      disposed: this.lifecycleManager.isDisposed,
       singletonMemo: createMemoMapSnapshot(this.singletonMemo),
       childScopes: Object.freeze(childScopeSnapshots),
       adapterMap: this.createAdapterMapSnapshot(),
