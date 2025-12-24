@@ -197,6 +197,8 @@ export class InheritanceResolver<
    * @returns The resolved service from parent
    */
   resolveSharedInternal<P extends TProvides>(port: P): InferService<P> {
+    // SAFETY: Parent container is guaranteed to provide this port (checked by adapter registry).
+    // Cast needed because resolveInternal returns more general type than InferService<P>.
     return this.parentContainer.resolveInternal(port) as InferService<P>;
   }
 
@@ -208,6 +210,8 @@ export class InheritanceResolver<
    * Resolves using shared mode - delegates directly to parent.
    */
   private resolveShared<P extends TProvides>(port: P): InferService<P> {
+    // SAFETY: Parent container is guaranteed to provide this port (validated by mode check).
+    // Cast needed because resolveInternal returns more general type than InferService<P>.
     return this.parentContainer.resolveInternal(port) as InferService<P>;
   }
 
@@ -221,8 +225,12 @@ export class InheritanceResolver<
     }
 
     const parentInstance = this.parentContainer.resolveInternal(port);
+    // SAFETY: shallowClone preserves the structure of parentInstance which is InferService<P>.
+    // Cast needed because shallowClone returns unknown (generic utility function).
     const forkedInstance = shallowClone(parentInstance) as InferService<P>;
     const entry: ForkedEntry<P> = { port, instance: forkedInstance };
+    // SAFETY: Widening ForkedEntry<P> to ForkedEntry<Port<unknown, string>> for storage in Map.
+    // Sound because the Map is keyed by portName and we validate port identity on retrieval.
     this.forkedInstances.set(portName, entry as ForkedEntry<Port<unknown, string>>);
     return forkedInstance;
   }
@@ -242,6 +250,8 @@ export class InheritanceResolver<
     if (adapter === undefined) {
       // Fallback: clone parent instance when no adapter is available
       const parentInstance = this.parentContainer.resolveInternal(port);
+      // SAFETY: shallowClone preserves the structure of parentInstance which is InferService<P>.
+      // Cast needed because shallowClone returns unknown (generic utility function).
       return shallowClone(parentInstance) as InferService<P>;
     }
 

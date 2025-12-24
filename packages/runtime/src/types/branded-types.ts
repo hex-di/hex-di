@@ -87,10 +87,16 @@ const contextVariableKeyCache = new Map<string, ContextVariableKey<unknown>>();
 export function createContextVariableKey<T>(key: string): ContextVariableKey<T> {
   const cached = contextVariableKeyCache.get(key);
   if (cached !== undefined) {
+    // SAFETY: Context variable cache stores ContextVariableKey<unknown> but returns
+    // ContextVariableKey<T>. Sound because the key string is the identity - same key
+    // always returns same instance, and T is a phantom type parameter that exists only
+    // at the type level. Caller discipline ensures consistent T for each key string.
     return cached as ContextVariableKey<T>;
   }
 
   const created = new ContextVariableKeyImpl<T>(key);
+  // SAFETY: Widening ContextVariableKey<T> to ContextVariableKey<unknown> for cache storage.
+  // Sound because T is a phantom type - the runtime representation is identical regardless of T.
   contextVariableKeyCache.set(key, created as ContextVariableKey<unknown>);
   return created;
 }

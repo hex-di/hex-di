@@ -103,6 +103,11 @@ export class ChildContainerImpl<
       throw new Error(`Port ${port.__portName} not found - no parent container.`);
     }
 
+    // SAFETY: Port type widening needed for variance - parent provides TExtends ports,
+    // but resolveWithCallback expects TProvides. Cast is sound because:
+    // 1. InheritanceResolver validates port membership before resolution
+    // 2. Parent container is guaranteed to provide this port (checked by adapter registry)
+    // 3. The return type InferService<P> correctly preserves the specific port's service type
     return this.inheritanceResolver.resolveWithCallback(
       port as unknown as TProvides,
       (p, adapter) => this.createIsolatedWithAdapter(p, adapter)

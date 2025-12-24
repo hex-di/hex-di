@@ -45,6 +45,7 @@
  */
 
 import type { Lifetime } from "../adapter/types.js";
+import type { IsNever } from "../common";
 
 // =============================================================================
 // LifetimeLevel Phantom Type
@@ -156,12 +157,6 @@ export type GetLifetimeLevel<TMap, TPortName extends string> = TPortName extends
 // - Only 3 possible values means 9 total comparisons
 // - Code is self-documenting with inline comments
 // - No abstraction overhead
-
-/**
- * Checks if a type is never.
- * Uses the fact that [T] extends [never] is true only when T is never.
- */
-type IsNever<T> = [T] extends [never] ? true : false;
 
 /**
  * Type-level "greater than" comparison for lifetime levels.

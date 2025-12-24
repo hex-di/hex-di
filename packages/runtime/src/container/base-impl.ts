@@ -331,6 +331,9 @@ export abstract class BaseContainerImpl<
     }
 
     const childScopeSnapshots = this.lifecycleManager.getChildScopeSnapshots(scope => {
+      // SAFETY: Scope type widening for iteration. Child scopes stored in Set<> have
+      // narrower type parameters but need wider type for generic iteration callback.
+      // Sound because ScopeImpl's getInternalState() doesn't depend on type parameters.
       const typedScope = scope as ScopeImpl<
         TProvides | TExtends,
         TAsyncPorts,

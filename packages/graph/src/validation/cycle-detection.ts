@@ -36,6 +36,7 @@
  */
 
 import type { Port } from "@hex-di/ports";
+import type { IsNever } from "../common";
 
 // =============================================================================
 // Adapter Name Extraction
@@ -118,12 +119,6 @@ export type AddEdge<TMap, TProvides extends string, TRequires extends string> = 
 export type GetDirectDeps<TMap, TPort extends string> = TPort extends keyof TMap
   ? TMap[TPort]
   : never;
-
-/**
- * Checks if a type is never.
- * Uses the fact that [T] extends [never] is true only when T is never.
- */
-type IsNever<T> = [T] extends [never] ? true : false;
 
 // =============================================================================
 // Depth-Limited Recursion Utilities

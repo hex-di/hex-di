@@ -10,7 +10,7 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createPort, InferPortName, InferService, Port } from "../src/index.js";
+import { createPort, InferPortName, InferService, NotAPortError, Port } from "../src/index.js";
 
 // Sample service interfaces for testing
 interface Logger {
@@ -186,15 +186,15 @@ describe("InferService utility type", () => {
     expectTypeOf<ExtractedService>().toEqualTypeOf<CustomService>();
   });
 
-  it("produces never for non-Port types", () => {
-    // Non-Port types should result in never
+  it("produces NotAPortError for non-Port types", () => {
+    // Non-Port types should result in descriptive error type
     type FromString = InferService<string>;
     type FromNumber = InferService<number>;
     type FromObject = InferService<{ foo: string }>;
 
-    expectTypeOf<FromString>().toBeNever();
-    expectTypeOf<FromNumber>().toBeNever();
-    expectTypeOf<FromObject>().toBeNever();
+    expectTypeOf<FromString>().toMatchTypeOf<NotAPortError<string>>();
+    expectTypeOf<FromNumber>().toMatchTypeOf<NotAPortError<number>>();
+    expectTypeOf<FromObject>().toMatchTypeOf<NotAPortError<{ foo: string }>>();
   });
 });
 
@@ -214,15 +214,15 @@ describe("InferPortName utility type", () => {
     expectTypeOf<ExtractedName>().toEqualTypeOf<"MyCustomPortName">();
   });
 
-  it("produces never for non-Port types", () => {
-    // Non-Port types should result in never
+  it("produces NotAPortError for non-Port types", () => {
+    // Non-Port types should result in descriptive error type
     type FromString = InferPortName<string>;
     type FromNumber = InferPortName<number>;
     type FromObject = InferPortName<{ __portName: "fake" }>;
 
-    expectTypeOf<FromString>().toBeNever();
-    expectTypeOf<FromNumber>().toBeNever();
-    expectTypeOf<FromObject>().toBeNever();
+    expectTypeOf<FromString>().toMatchTypeOf<NotAPortError<string>>();
+    expectTypeOf<FromNumber>().toMatchTypeOf<NotAPortError<number>>();
+    expectTypeOf<FromObject>().toMatchTypeOf<NotAPortError<{ __portName: "fake" }>>();
   });
 });
 

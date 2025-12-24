@@ -95,6 +95,7 @@ import type {
 } from "../validation";
 
 import type { Graph } from "./types";
+import type { IsNever } from "../common";
 
 /**
  * Extracts the lifetime directly from an adapter using property access.
@@ -118,12 +119,6 @@ declare const __graphBuilderBrand: unique symbol;
  * Runtime symbol used as a property key for GraphBuilder branding.
  */
 const GRAPH_BUILDER_BRAND = Symbol("GraphBuilder");
-
-/**
- * Helper type to check if a type is never.
- * @internal
- */
-type IsNever<T> = [T] extends [never] ? true : false;
 
 /**
  * The return type of `GraphBuilder.provide()` with duplicate, cycle, and captive dependency detection.

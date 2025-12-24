@@ -88,6 +88,76 @@ export type Port<T, TName extends string = string> = {
 };
 
 // =============================================================================
+// Error Types for Type Utilities
+// =============================================================================
+
+/**
+ * Error type returned when type inference utilities receive a non-Port type.
+ *
+ * This branded error provides actionable guidance in IDE tooltips when users
+ * accidentally pass incorrect types to InferService or InferPortName.
+ *
+ * @typeParam T - The type that was passed (preserved for debugging)
+ *
+ * @remarks
+ * Instead of returning opaque `never`, this error type provides:
+ * - Clear error message explaining what was expected
+ * - The actual type that was received (for debugging)
+ * - A hint about common mistakes (e.g., forgetting `typeof`)
+ *
+ * @example IDE tooltip when misused
+ * ```typescript
+ * type Result = InferService<string>;
+ * // Hovering shows:
+ * // {
+ * //   __errorBrand: "NotAPortError";
+ * //   __message: "Expected a Port type created with createPort() or port()";
+ * //   __received: string;
+ * //   __hint: "Use InferService<typeof YourPort>, not InferService<YourPort>";
+ * // }
+ * ```
+ */
+export type NotAPortError<T> = {
+  readonly __errorBrand: "NotAPortError";
+  readonly __message: "Expected a Port type created with createPort() or port()";
+  readonly __received: T;
+  readonly __hint: "Use InferService<typeof YourPort>, not InferService<YourPort>";
+};
+
+// =============================================================================
+// Internal Port Creation Helper
+// =============================================================================
+
+/**
+ * Creates a Port value with phantom type parameters.
+ *
+ * ## SAFETY DOCUMENTATION
+ *
+ * The Port type has a branded property `[__brand]: [T, TName]` that exists ONLY
+ * at the type level for nominal typing. At runtime, only `__portName` exists.
+ *
+ * This is safe because:
+ * 1. **Brand is never accessed**: The `__brand` symbol is used exclusively for
+ *    compile-time type discrimination. No runtime code reads this property.
+ *
+ * 2. **Immutability guaranteed**: `Object.freeze()` prevents any mutation,
+ *    ensuring the runtime object cannot be modified to invalidate type assumptions.
+ *
+ * 3. **Single creation point**: This is the ONLY location where Port values are
+ *    created, ensuring all ports have consistent structure.
+ *
+ * 4. **Phantom type pattern**: This follows the well-established phantom type
+ *    pattern where type parameters carry compile-time information without
+ *    runtime representation. See: https://wiki.haskell.org/Phantom_type
+ *
+ * @internal - Not part of public API. Use createPort() or port() instead.
+ */
+function unsafeCreatePort<TService, TName extends string>(name: TName): Port<TService, TName> {
+  // @ts-expect-error - Intentional phantom type gap: __brand exists only at type level for nominal typing
+  return Object.freeze({ __portName: name });
+}
+
+// =============================================================================
 // createPort Function
 // =============================================================================
 
@@ -148,9 +218,7 @@ export type Port<T, TName extends string = string> = {
 export function createPort<const TName extends string, TService>(
   name: TName
 ): Port<TService, TName> {
-  return Object.freeze({
-    __portName: name,
-  }) as Port<TService, TName>;
+  return unsafeCreatePort<TService, TName>(name);
 }
 
 // =============================================================================
@@ -205,9 +273,7 @@ export function createPort<const TName extends string, TService>(
  */
 export function port<TService>() {
   return <const TName extends string>(name: TName): Port<TService, TName> => {
-    return Object.freeze({
-      __portName: name,
-    }) as Port<TService, TName>;
+    return unsafeCreatePort<TService, TName>(name);
   };
 }
 
@@ -220,16 +286,17 @@ export function port<TService>() {
  *
  * This utility type uses conditional type inference to extract the phantom
  * type parameter `T` from a `Port<T, TName>`. If the provided type is not
- * a valid Port, it returns `never`.
+ * a valid Port, it returns a descriptive `NotAPortError` type.
  *
  * @typeParam P - The Port type to extract the service from
- * @returns The service interface type `T`, or `never` if P is not a Port
+ * @returns The service interface type `T`, or `NotAPortError<P>` if P is not a Port
  *
  * @see {@link Port} - The port type this utility extracts from
  * @see {@link InferPortName} - Companion utility to extract the port name
  * @see {@link createPort} - Factory function to create port tokens
+ * @see {@link NotAPortError} - The error type returned for invalid inputs
  *
- * @example
+ * @example Successful extraction
  * ```typescript
  * interface Logger {
  *   log(message: string): void;
@@ -238,28 +305,33 @@ export function port<TService>() {
  * const LoggerPort = createPort<'Logger', Logger>('Logger');
  * type LoggerService = InferService<typeof LoggerPort>;
  * // LoggerService = Logger
+ * ```
  *
+ * @example Error case (descriptive error type)
+ * ```typescript
  * type Invalid = InferService<string>;
- * // Invalid = never
+ * // Invalid = NotAPortError<string>
+ * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * ```
  */
-export type InferService<P> = P extends Port<infer T, infer _TName> ? T : never;
+export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPortError<P>;
 
 /**
  * Extracts the port name literal type from a Port type.
  *
  * This utility type uses conditional type inference to extract the name
  * type parameter `TName` from a `Port<T, TName>`. If the provided type is not
- * a valid Port, it returns `never`.
+ * a valid Port, it returns a descriptive `NotAPortError` type.
  *
  * @typeParam P - The Port type to extract the name from
- * @returns The port name literal type `TName`, or `never` if P is not a Port
+ * @returns The port name literal type `TName`, or `NotAPortError<P>` if P is not a Port
  *
  * @see {@link Port} - The port type this utility extracts from
  * @see {@link InferService} - Companion utility to extract the service type
  * @see {@link createPort} - Factory function to create port tokens
+ * @see {@link NotAPortError} - The error type returned for invalid inputs
  *
- * @example
+ * @example Successful extraction
  * ```typescript
  * interface Logger {
  *   log(message: string): void;
@@ -268,9 +340,13 @@ export type InferService<P> = P extends Port<infer T, infer _TName> ? T : never;
  * const LoggerPort = createPort<'Logger', Logger>('Logger');
  * type PortName = InferPortName<typeof LoggerPort>;
  * // PortName = 'Logger'
+ * ```
  *
+ * @example Error case (descriptive error type)
+ * ```typescript
  * type Invalid = InferPortName<number>;
- * // Invalid = never
+ * // Invalid = NotAPortError<number>
+ * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * ```
  */
-export type InferPortName<P> = P extends Port<infer _T, infer TName> ? TName : never;
+export type InferPortName<P> = P extends Port<infer _T, infer TName> ? TName : NotAPortError<P>;
