@@ -15,6 +15,7 @@ import type { Port, InferService } from "@hex-di/ports";
 import type { InheritanceMode } from "../types.js";
 import type { ForkedEntry, ParentContainerLike } from "./internal-types.js";
 import { isForkedEntryForPort } from "./internal-types.js";
+import { shallowClone } from "./helpers.js";
 
 // =============================================================================
 // Types
@@ -155,22 +156,9 @@ export class InheritanceResolver<
     }
 
     const parentInstance = this.parentContainer.resolveInternal(port);
-    const forkedInstance = this.shallowClone(parentInstance) as InferService<P>;
+    const forkedInstance = shallowClone(parentInstance) as InferService<P>;
     const entry: ForkedEntry<P> = { port, instance: forkedInstance };
     this.forkedInstances.set(portName, entry as ForkedEntry<Port<unknown, string>>);
     return forkedInstance;
-  }
-
-  /**
-   * Creates a shallow clone of an object, preserving its prototype.
-   */
-  private shallowClone<T>(obj: T): T {
-    if (obj === null || typeof obj !== "object") {
-      return obj;
-    }
-    const prototype: object | null = Reflect.getPrototypeOf(obj);
-    const shell: Record<PropertyKey, never> = {};
-    Reflect.setPrototypeOf(shell, prototype);
-    return Object.assign(shell, obj);
   }
 }

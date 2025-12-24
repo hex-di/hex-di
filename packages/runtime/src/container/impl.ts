@@ -31,7 +31,7 @@ import { InheritanceResolver } from "./inheritance-resolver.js";
 import { ResolutionEngine } from "./resolution-engine.js";
 import { AsyncResolutionEngine } from "./async-resolution-engine.js";
 import { AsyncInitializer } from "./async-initializer.js";
-import { isDisposableChild, createMemoMapSnapshot } from "./helpers.js";
+import { isDisposableChild, createMemoMapSnapshot, shallowClone } from "./helpers.js";
 import { ADAPTER_ACCESS } from "../inspector/symbols.js";
 
 // Re-export types needed by other modules
@@ -295,7 +295,7 @@ export class ContainerImpl<
     if (adapter === undefined) {
       // Fallback: clone parent instance
       const parentInstance = this.parentContainer.resolveInternal(port as unknown as TProvides);
-      return this.shallowClone(parentInstance) as InferService<P>;
+      return shallowClone(parentInstance) as InferService<P>;
     }
 
     if (!isAdapterForPort(adapter, port)) {
@@ -324,16 +324,6 @@ export class ContainerImpl<
       },
       undefined
     );
-  }
-
-  private shallowClone<T>(obj: T): T {
-    if (obj === null || typeof obj !== "object") {
-      return obj;
-    }
-    const prototype: object | null = Reflect.getPrototypeOf(obj);
-    const shell: Record<PropertyKey, never> = {};
-    Reflect.setPrototypeOf(shell, prototype);
-    return Object.assign(shell, obj);
   }
 
   resolveInternal<P extends TProvides | TExtends>(

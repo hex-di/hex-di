@@ -51,6 +51,30 @@ export function isAdapterProvidedByParentOrExtensions<
 }
 
 // =============================================================================
+// Object Utilities
+// =============================================================================
+
+/**
+ * Creates a shallow clone of an object, preserving its prototype.
+ *
+ * Used for:
+ * - Forked inheritance mode (cloning parent instances)
+ * - Isolated mode fallback (when no adapter is available)
+ *
+ * @param obj - The object to clone
+ * @returns A shallow clone with the same prototype
+ */
+export function shallowClone<T>(obj: T): T {
+  if (obj === null || typeof obj !== "object") {
+    return obj;
+  }
+  const prototype: object | null = Reflect.getPrototypeOf(obj);
+  const shell: Record<PropertyKey, never> = {};
+  Reflect.setPrototypeOf(shell, prototype);
+  return Object.assign(shell, obj);
+}
+
+// =============================================================================
 // Snapshot Creation
 // =============================================================================
 
