@@ -64,8 +64,8 @@ export interface TracingContainerOptions {
  */
 export type TracingContainer<
   TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> | never = never,
-> = Container<TProvides, TAsyncPorts, "uninitialized"> & {
+  TAsyncPorts extends Port<unknown, string> = never,
+> = Container<TProvides, never, TAsyncPorts, "uninitialized"> & {
   readonly [TRACING_ACCESS]: TracingAPI;
   readonly [INTERNAL_ACCESS]: () => ContainerInternalState;
 };

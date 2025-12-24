@@ -116,13 +116,14 @@ export type DevToolsPosition = "bottom-right" | "bottom-left" | "top-right" | "t
  */
 export interface DevToolsFloatingProps<
   TProvides extends Port<unknown, string> = Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> | never = never,
+  TExtends extends Port<unknown, string> = never,
+  TAsyncPorts extends Port<unknown, string> = never,
   TPhase extends ContainerPhase = ContainerPhase,
 > {
   /** The dependency graph to visualize */
   readonly graph: Graph<TProvides, TAsyncPorts>;
   /** Optional container for runtime inspection */
-  readonly container?: Container<TProvides, TAsyncPorts, TPhase>;
+  readonly container?: Container<TProvides, TExtends, TAsyncPorts, TPhase>;
   /** Position of the toggle button. Default: 'bottom-right' */
   readonly position?: DevToolsPosition;
 }
@@ -301,9 +302,10 @@ function getResizeHandlePosition(position: DevToolsPosition): CSSProperties {
  */
 export function DevToolsFloating<
   TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> | never = never,
+  TExtends extends Port<unknown, string> = never,
+  TAsyncPorts extends Port<unknown, string> = never,
   TPhase extends ContainerPhase = ContainerPhase,
->(props: DevToolsFloatingProps<TProvides, TAsyncPorts, TPhase>): ReactElement | null {
+>(props: DevToolsFloatingProps<TProvides, TExtends, TAsyncPorts, TPhase>): ReactElement | null {
   // Production mode check - must be before any hooks
   if (typeof process !== "undefined" && process.env?.NODE_ENV === "production") {
     return null;
@@ -318,13 +320,14 @@ export function DevToolsFloating<
  */
 function DevToolsFloatingInner<
   TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> | never = never,
+  TExtends extends Port<unknown, string> = never,
+  TAsyncPorts extends Port<unknown, string> = never,
   TPhase extends ContainerPhase = ContainerPhase,
 >({
   graph,
   container,
   position = "bottom-right",
-}: DevToolsFloatingProps<TProvides, TAsyncPorts, TPhase>): ReactElement {
+}: DevToolsFloatingProps<TProvides, TExtends, TAsyncPorts, TPhase>): ReactElement {
   // State for open/closed panel
   const [isOpen, setIsOpen] = useState(() => getStoredState());
 

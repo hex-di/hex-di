@@ -1,0 +1,213 @@
+/**
+ * Container wrapper functions for creating public API objects.
+ * @packageDocumentation
+ */
+
+import type { Port, InferService } from "@hex-di/ports";
+import type { Container, Scope } from "../types.js";
+import { ContainerBrand } from "../types.js";
+import { ADAPTER_ACCESS, INTERNAL_ACCESS } from "../inspector/symbols.js";
+import { unreachable } from "../common/unreachable.js";
+import { isRecord } from "../common/type-guards.js";
+import { ScopeImpl, createScopeWrapper } from "../scope/impl.js";
+import type { ContainerImpl } from "./impl.js";
+import type {
+  DisposableChild,
+  ParentContainerLike,
+  InternalContainerMethods,
+} from "./internal-types.js";
+import { ContainerBuilderImpl } from "./builder.js";
+
+// =============================================================================
+// Type Guards
+// =============================================================================
+
+/**
+ * Type guard to check if a value has internal container methods.
+ * @internal
+ */
+export function hasInternalMethods(
+  value: unknown
+): value is InternalContainerMethods<Port<unknown, string>> {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return (
+    ADAPTER_ACCESS in value &&
+    typeof value[ADAPTER_ACCESS] === "function" &&
+    "registerChildContainer" in value &&
+    typeof value["registerChildContainer"] === "function" &&
+    "unregisterChildContainer" in value &&
+    typeof value["unregisterChildContainer"] === "function" &&
+    "resolveInternal" in value &&
+    typeof value["resolveInternal"] === "function" &&
+    "resolveAsyncInternal" in value &&
+    typeof value["resolveAsyncInternal"] === "function" &&
+    "hasAdapter" in value &&
+    typeof value["hasAdapter"] === "function" &&
+    "has" in value &&
+    typeof value["has"] === "function"
+  );
+}
+
+function isContainerParent<
+  TProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string>,
+>(value: unknown): value is Container<TProvides, TExtends, TAsyncPorts>["parent"] {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return (
+    "resolve" in value &&
+    typeof value["resolve"] === "function" &&
+    "resolveAsync" in value &&
+    typeof value["resolveAsync"] === "function" &&
+    "createScope" in value &&
+    typeof value["createScope"] === "function" &&
+    "dispose" in value &&
+    typeof value["dispose"] === "function" &&
+    "has" in value &&
+    typeof value["has"] === "function" &&
+    "isDisposed" in value
+  );
+}
+
+// =============================================================================
+// Parent Container Extraction
+// =============================================================================
+
+/**
+ * Extracts a ParentContainerLike from a Container wrapper.
+ * @internal
+ */
+export function asParentContainerLike<
+  TProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string>,
+>(
+  wrapper: Container<TProvides, TExtends, TAsyncPorts>
+): ParentContainerLike<TProvides | TExtends, TAsyncPorts> {
+  if (!hasInternalMethods(wrapper)) {
+    throw new Error(
+      "Invalid Container wrapper: missing internal methods. " +
+        "This indicates a bug in createChildContainerWrapper."
+    );
+  }
+  return {
+    resolveInternal: <P extends TProvides | TExtends>(port: P): InferService<P> =>
+      wrapper.resolveInternal(port),
+    resolveAsyncInternal: <P extends TProvides | TExtends>(port: P): Promise<InferService<P>> =>
+      wrapper.resolveAsyncInternal(port),
+    [ADAPTER_ACCESS]: wrapper[ADAPTER_ACCESS],
+    registerChildContainer: wrapper.registerChildContainer,
+    unregisterChildContainer: wrapper.unregisterChildContainer,
+    originalParent: wrapper,
+    has: (port: Port<unknown, string>): boolean => wrapper.has(port),
+    hasAdapter: (port: Port<unknown, string>): boolean => wrapper.hasAdapter(port),
+  };
+}
+
+// =============================================================================
+// Child Container Wrapper
+// =============================================================================
+
+/**
+ * Creates a frozen Container wrapper for child containers.
+ * @internal
+ */
+export function createChildContainerWrapper<
+  TProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string> = never,
+  TAsyncPorts extends Port<unknown, string> = never,
+>(
+  impl: ContainerImpl<TProvides, TExtends, TAsyncPorts>
+): Container<TProvides, TExtends, TAsyncPorts> {
+  type ChildContainerInternals = Container<TProvides, TExtends, TAsyncPorts> &
+    InternalContainerMethods<TProvides | TExtends>;
+
+  function resolve<P extends Exclude<TProvides | TExtends, TAsyncPorts>>(port: P): InferService<P> {
+    return impl.resolve(port);
+  }
+
+  const childContainer: ChildContainerInternals = {
+    resolve,
+    resolveAsync: <P extends TProvides | TExtends>(port: P): Promise<InferService<P>> =>
+      impl.resolveAsync(port),
+    resolveInternal: <P extends TProvides | TExtends>(port: P): InferService<P> =>
+      impl.resolve(port),
+    resolveAsyncInternal: <P extends TProvides | TExtends>(port: P): Promise<InferService<P>> =>
+      impl.resolveAsync(port),
+    has: (port: Port<unknown, string>): boolean => impl.has(port),
+    hasAdapter: (port: Port<unknown, string>): boolean => impl.hasAdapter(port),
+    createScope: () => createChildContainerScope(impl),
+    createChild: () => {
+      const parentLike: ParentContainerLike<TProvides | TExtends, TAsyncPorts> = {
+        resolveInternal: <P extends TProvides | TExtends>(port: P) => impl.resolve(port),
+        resolveAsyncInternal: <P extends TProvides | TExtends>(port: P) => impl.resolveAsync(port),
+        has: port => impl.has(port),
+        hasAdapter: port => impl.hasAdapter(port),
+        [ADAPTER_ACCESS]: port => impl.getAdapter(port),
+        registerChildContainer: child => impl.registerChildContainer(child),
+        unregisterChildContainer: child => impl.unregisterChildContainer(child),
+        originalParent: childContainer,
+      };
+      return ContainerBuilderImpl.create(parentLike);
+    },
+    dispose: () => impl.dispose(),
+    get isDisposed() {
+      return impl.isDisposed;
+    },
+    get isInitialized() {
+      // Child containers inherit initialization state from parent
+      return true;
+    },
+    // Child containers don't have initialize - this should return never
+    get initialize(): never {
+      return unreachable("Child containers cannot be initialized - they inherit state from parent");
+    },
+    get parent() {
+      const parent = impl.getParent();
+      if (!isContainerParent<TProvides, TExtends, TAsyncPorts>(parent)) {
+        throw new Error("Invalid container parent reference.");
+      }
+      return parent;
+    },
+    [INTERNAL_ACCESS]: () => impl.getInternalState(),
+    [ADAPTER_ACCESS]: (port: Port<unknown, string>) => impl.getAdapter(port),
+    registerChildContainer: (child: DisposableChild) => impl.registerChildContainer(child),
+    unregisterChildContainer: (child: DisposableChild) => impl.unregisterChildContainer(child),
+    get [ContainerBrand]() {
+      return unreachable<{ provides: TProvides; extends: TExtends }>(
+        "Container brand is type-only"
+      );
+    },
+  };
+
+  impl.setWrapper(childContainer);
+  Object.freeze(childContainer);
+  return childContainer;
+}
+
+// =============================================================================
+// Scope Creation
+// =============================================================================
+
+/**
+ * Creates a scope from a unified container implementation.
+ * @internal
+ */
+export function createChildContainerScope<
+  TProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string>,
+>(
+  impl: ContainerImpl<TProvides, TExtends, TAsyncPorts>
+): Scope<TProvides | TExtends, TAsyncPorts, "initialized"> {
+  const scopeImpl = new ScopeImpl<TProvides | TExtends, TAsyncPorts, "initialized">(
+    impl,
+    impl.getSingletonMemo()
+  );
+  impl.registerChildScope(scopeImpl);
+  return createScopeWrapper(scopeImpl);
+}

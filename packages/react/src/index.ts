@@ -122,11 +122,7 @@ export type {
  * @see {@link ScopeProvider} - Manual scope management
  * @see {@link AutoScopeProvider} - Automatic scope lifecycle
  */
-export {
-  ContainerProvider,
-  ScopeProvider,
-  AutoScopeProvider,
-} from "./context.js";
+export { ContainerProvider, ScopeProvider, AutoScopeProvider } from "./context.js";
 
 /**
  * Global AsyncContainerProvider component for async container initialization.
@@ -137,10 +133,7 @@ export {
  *
  * @see {@link AsyncContainerProvider} - Provider component documentation
  */
-export {
-  AsyncContainerProvider,
-  useAsyncContainerState,
-} from "./async-container-provider.js";
+export { AsyncContainerProvider, useAsyncContainerState } from "./async-container-provider.js";
 
 // =============================================================================
 // Global Hooks
@@ -189,7 +182,7 @@ export type { Port, InferService, InferPortName } from "@hex-di/ports";
  *
  * These types are commonly used alongside React integration types.
  */
-export type { Container, Scope, ChildContainer } from "@hex-di/runtime";
+export type { Container, Scope } from "@hex-di/runtime";
 
 /**
  * Re-export error classes from @hex-di/runtime that may propagate through hooks.

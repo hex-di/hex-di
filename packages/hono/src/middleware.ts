@@ -35,19 +35,20 @@ export interface ScopeMiddlewareOptions<
  */
 export function createScopeMiddleware<
   TProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string> = never,
   TAsyncPorts extends Port<unknown, string> = never,
   TPhase extends ContainerPhase = "uninitialized",
   ScopeKey extends string = typeof DEFAULT_SCOPE_KEY,
   ContainerKey extends string = typeof DEFAULT_CONTAINER_KEY,
 >(
-  container: Container<TProvides, TAsyncPorts, TPhase>,
+  container: Container<TProvides, TExtends, TAsyncPorts, TPhase>,
   options: ScopeMiddlewareOptions<ScopeKey, ContainerKey> = {}
-): MiddlewareHandler<HexHonoEnv<TProvides, TAsyncPorts, TPhase, ScopeKey, ContainerKey>> {
+): MiddlewareHandler<HexHonoEnv<TProvides, TExtends, TAsyncPorts, TPhase, ScopeKey, ContainerKey>> {
   const scopeKey = (options.scopeKey ?? DEFAULT_SCOPE_KEY) as ScopeKey;
   const containerKey = (options.containerKey ?? DEFAULT_CONTAINER_KEY) as ContainerKey;
 
   const middleware: MiddlewareHandler<
-    HexHonoEnv<TProvides, TAsyncPorts, TPhase, ScopeKey, ContainerKey>
+    HexHonoEnv<TProvides, TExtends, TAsyncPorts, TPhase, ScopeKey, ContainerKey>
   > = async (context, next) => {
     const scope = container.createScope();
 

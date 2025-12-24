@@ -158,12 +158,14 @@ export type {
   Container,
   Scope,
   ContainerPhase,
-  ChildContainer,
-  ChildContainerBuilder,
+  ContainerBuilder,
   InheritanceMode,
+  InferContainerEffectiveProvides,
+  IsRootContainer,
+  IsChildContainer,
 } from "./types.js";
 
-export { ContainerBrand, ScopeBrand, ChildContainerBrand } from "./types.js";
+export { ContainerBrand, ScopeBrand } from "./types.js";
 
 // =============================================================================
 // Type Utility Functions

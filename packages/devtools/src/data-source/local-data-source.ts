@@ -108,6 +108,7 @@ export class LocalDataSource implements DataSource, PresenterDataSourceContract 
   private readonly containerRef: Container<
     Port<unknown, string>,
     Port<unknown, string>,
+    Port<unknown, string>,
     ContainerPhase
   > | null;
   private readonly subscribers = new Set<() => void>();
@@ -125,7 +126,12 @@ export class LocalDataSource implements DataSource, PresenterDataSourceContract 
    */
   constructor(
     graph: Graph<Port<unknown, string>>,
-    container?: Container<Port<unknown, string>, Port<unknown, string>, ContainerPhase>
+    container?: Container<
+      Port<unknown, string>,
+      Port<unknown, string>,
+      Port<unknown, string>,
+      ContainerPhase
+    >
   ) {
     this.exportedGraph = toJSON(graph);
     this.containerRef = container ?? null;

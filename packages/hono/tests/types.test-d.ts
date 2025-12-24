@@ -19,7 +19,14 @@ type CustomEnv = WithHexDi<{ Variables: { requestId: string } }, typeof LoggerPo
 type Variables = CustomEnv["Variables"];
 expectTypeOf<Variables["requestId"]>().toEqualTypeOf<string>();
 
-type CustomKeysEnv = HexHonoEnv<typeof LoggerPort, never, "uninitialized", "scope", "container">;
+type CustomKeysEnv = HexHonoEnv<
+  typeof LoggerPort,
+  never,
+  never,
+  "uninitialized",
+  "scope",
+  "container"
+>;
 declare const customContext: Context<CustomKeysEnv>;
 expectTypeOf(resolvePort(customContext, LoggerPort, "scope")).toEqualTypeOf<Logger>();
 

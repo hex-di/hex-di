@@ -66,101 +66,68 @@ export const ContainerBrand: unique symbol = Symbol("hex-di.Container");
  */
 export const ScopeBrand: unique symbol = Symbol("hex-di.Scope");
 
-/**
- * Unique symbol used for nominal typing of ChildContainer types.
- *
- * This symbol is exported for use in the container implementation.
- * It provides true nominal typing, ensuring that ChildContainer instances
- * are distinct from Container instances and structurally similar objects.
- *
- * @remarks
- * The `unique symbol` type guarantees that this brand cannot be
- * accidentally recreated elsewhere, providing true nominal typing.
- * This follows the same pattern as Container and Scope branding.
- *
- * @internal - Exported for implementation use only, not for external consumers.
- */
-export const ChildContainerBrand: unique symbol = Symbol("hex-di.ChildContainer");
-
 // =============================================================================
-// Container Type
+// Container Type (Unified: Root + Child)
 // =============================================================================
 
 /**
  * A branded container type that provides type-safe service resolution.
  *
- * The Container type uses TypeScript's structural typing with a branded property
- * to achieve nominal typing. This ensures that:
- * - Containers cannot be confused with structurally similar objects
- * - Different TProvides type parameters produce incompatible types
- * - Only valid ports (in TProvides) can be resolved
+ * The Container type is unified to represent both root containers (created from a Graph)
+ * and child containers (created via `.createChild().build()`). The `TExtends` type parameter
+ * distinguishes between them:
+ * - Root containers: `TExtends = never` (has `initialize()`, no `parent`)
+ * - Child containers: `TExtends` is a port union (has `parent`, no `initialize()`)
  *
- * @typeParam TProvides - Union of Port types that this container can resolve.
- *   The resolve method is constrained to only accept ports in this union.
+ * @typeParam TProvides - Union of Port types from graph (root) or parent (child).
+ * @typeParam TExtends - Union of Port types added via `.extend()`. `never` for root containers.
  * @typeParam TAsyncPorts - Union of Port types that have async factories.
- *   These ports require async initialization before sync resolution.
  * @typeParam TPhase - The initialization phase of the container.
- *   Controls whether sync resolve can access async ports.
  *
  * @remarks
- * - The brand property carries the TProvides type for nominal typing
+ * - The brand property carries the TProvides and TExtends types for nominal typing
  * - The resolve method is generic to preserve the specific port type being resolved
+ * - Resolution works on `TProvides | TExtends` (effective provides)
  * - Before initialization, sync resolve is limited to non-async ports
  * - After initialization, all ports can be resolved synchronously
- * - createScope returns a Scope with the same type parameters
- * - dispose returns a Promise to support async cleanup of resources
+ * - Child containers inherit initialization state from their parent
  *
- * @see {@link Scope} - Child scope type with identical API but separate brand
- * @see {@link createContainer} - Factory function to create container instances
+ * @see {@link Scope} - Child scope type with identical resolution API but separate brand
+ * @see {@link createContainer} - Factory function to create root container instances
+ * @see {@link ContainerBuilder} - Builder for creating child containers
  *
- * @example Basic usage
+ * @example Root container usage
  * ```typescript
- * // Container type is parameterized by the ports it can resolve
- * type AppContainer = Container<typeof LoggerPort | typeof DatabasePort>;
- *
- * // The resolve method is type-safe
- * declare const container: AppContainer;
- * const logger = container.resolve(LoggerPort);  // Logger
- * const db = container.resolve(DatabasePort);    // Database
- *
- * // TypeScript error: UserServicePort is not in TProvides
- * // container.resolve(UserServicePort);
- * ```
- *
- * @example Async factory initialization
- * ```typescript
+ * // Root container type has TExtends = never
  * const container = createContainer(graph);
+ * // Type: Container<LoggerPort | DatabasePort, never, AsyncPorts>
  *
- * // Before initialization, only sync ports can be resolved synchronously
- * const logger = container.resolve(LoggerPort);  // OK - sync adapter
- * // container.resolve(DatabasePort);            // Error - async port
- *
- * // Async ports can always be resolved asynchronously
- * const db = await container.resolveAsync(DatabasePort);  // OK
- *
- * // After initialization, all ports can be resolved synchronously
- * const initialized = await container.initialize();
- * const db2 = initialized.resolve(DatabasePort);  // OK
+ * const logger = container.resolve(LoggerPort);
+ * await container.initialize(); // Only root containers have initialize()
  * ```
  *
- * @example Creating scopes
+ * @example Child container usage
  * ```typescript
- * const scope = container.createScope();
- * // scope has type Scope<typeof LoggerPort | typeof DatabasePort>
+ * const child = container.createChild()
+ *   .override(MockLoggerAdapter)
+ *   .extend(NewFeatureAdapter)
+ *   .build();
+ * // Type: Container<LoggerPort | DatabasePort, NewFeaturePort>
  *
- * const logger = scope.resolve(LoggerPort);  // Still type-safe
- * await scope.dispose();  // Clean up scope resources
+ * child.parent; // Access parent container
+ * // child.initialize() - Not available on child containers
  * ```
  */
 export type Container<
   TProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string> = never,
   TAsyncPorts extends Port<unknown, string> = never,
   TPhase extends ContainerPhase = "uninitialized",
 > = {
   /**
    * Resolves a service instance for the given port synchronously.
    *
-   * The port must be in the TProvides union, enforced at compile time.
+   * The port must be in `TProvides | TExtends` union, enforced at compile time.
    * The return type is inferred from the port's phantom service type.
    *
    * **Phase-dependent behavior:**
@@ -177,19 +144,21 @@ export type Container<
    * @throws {FactoryError} If the adapter's factory function throws
    * @throws {AsyncInitializationRequiredError} If resolving an async port before initialization
    */
-  resolve<P extends TPhase extends "initialized"
-    ? TProvides
-    : Exclude<TProvides, TAsyncPorts>>(
+  resolve<
+    P extends TPhase extends "initialized"
+      ? TProvides | TExtends
+      : Exclude<TProvides | TExtends, TAsyncPorts>,
+  >(
     port: P
   ): InferService<P>;
 
   /**
    * Resolves a service instance for the given port asynchronously.
    *
-   * The port must be in the TProvides union, enforced at compile time.
+   * The port must be in `TProvides | TExtends` union, enforced at compile time.
    * This method can resolve any port regardless of whether it has an async factory.
    *
-   * @typeParam P - The specific port type being resolved (must extend TProvides)
+   * @typeParam P - The specific port type being resolved
    * @param port - The port token to resolve
    * @returns A promise that resolves to the service instance
    *
@@ -198,30 +167,35 @@ export type Container<
    * @throws {CircularDependencyError} If a circular dependency is detected
    * @throws {AsyncFactoryError} If the async factory function throws
    */
-  resolveAsync<P extends TProvides>(port: P): Promise<InferService<P>>;
+  resolveAsync<P extends TProvides | TExtends>(port: P): Promise<InferService<P>>;
 
   /**
    * Initializes all async ports in priority order.
    *
+   * **Only available on root containers** (when `TExtends extends never`).
+   * Child containers inherit initialization state from their parent.
+   *
    * This method resolves all ports with async factories, caching the results.
    * After initialization, sync resolve works for all ports including async ones.
-   *
-   * Only available on uninitialized containers. Returns an initialized container
-   * where sync resolve is unrestricted.
    *
    * @returns A promise that resolves to an initialized container
    *
    * @throws {DisposedScopeError} If the container has been disposed
    * @throws {AsyncFactoryError} If any async factory throws
    */
-  initialize: TPhase extends "uninitialized"
-    ? () => Promise<Container<TProvides, TAsyncPorts, "initialized">>
+  // NOTE: Using [T] extends [never] to prevent distribution over the never type.
+  // Plain `T extends never` returns never when T=never due to conditional type distribution.
+  initialize: [TExtends] extends [never]
+    ? TPhase extends "uninitialized"
+      ? () => Promise<Container<TProvides, never, TAsyncPorts, "initialized">>
+      : never
     : never;
 
   /**
    * Whether the container has been initialized.
    *
    * After initialization, all ports can be resolved synchronously.
+   * Child containers inherit this state from their root ancestor.
    */
   readonly isInitialized: boolean;
 
@@ -229,11 +203,11 @@ export type Container<
    * Creates a child scope for managing scoped service lifetimes.
    *
    * Scoped services are created once per scope and shared within that scope.
-   * The returned scope has the same type parameters as the container.
+   * The returned scope has the effective provides (`TProvides | TExtends`).
    *
    * @returns A new Scope instance
    */
-  createScope(): Scope<TProvides, TAsyncPorts, TPhase>;
+  createScope(): Scope<TProvides | TExtends, TAsyncPorts, TPhase>;
 
   /**
    * Creates a child container builder for hierarchical dependency injection.
@@ -243,15 +217,16 @@ export type Container<
    * - Extend with new adapters not in parent
    * - Configure singleton inheritance modes (shared, forked, isolated)
    *
-   * @returns A new ChildContainerBuilder instance
+   * @returns A new ContainerBuilder instance
    */
-  createChild(): ChildContainerBuilder<TProvides, TAsyncPorts>;
+  createChild(): ContainerBuilder<TProvides | TExtends, TAsyncPorts>;
 
   /**
    * Disposes the container and all singleton instances.
    *
    * After disposal, the container cannot be used to resolve services.
    * Finalizers are called in LIFO order (last created first disposed).
+   * Child containers and scopes are disposed first.
    *
    * @returns A promise that resolves when disposal is complete
    */
@@ -274,11 +249,22 @@ export type Container<
   has(port: Port<unknown, string>): boolean;
 
   /**
+   * Reference to the parent container.
+   *
+   * **Only available on child containers** (when `TExtends` is not `never`).
+   * Root containers do not have a parent.
+   */
+  // NOTE: Using [T] extends [never] to prevent distribution over the never type.
+  readonly parent: [TExtends] extends [never]
+    ? never
+    : Container<TProvides, Port<unknown, string>, TAsyncPorts, TPhase>;
+
+  /**
    * Brand property for nominal typing.
-   * Contains the TProvides type parameter at the type level.
+   * Contains the TProvides and TExtends type parameters at the type level.
    * Value is undefined at runtime.
    */
-  readonly [ContainerBrand]: { provides: TProvides };
+  readonly [ContainerBrand]: { provides: TProvides; extends: TExtends };
 
   /**
    * Internal state accessor for DevTools inspection.
@@ -368,9 +354,7 @@ export type Scope<
    * @throws {FactoryError} If the adapter's factory function throws
    * @throws {AsyncInitializationRequiredError} If resolving an async port before initialization
    */
-  resolve<P extends TPhase extends "initialized"
-    ? TProvides
-    : Exclude<TProvides, TAsyncPorts>>(
+  resolve<P extends TPhase extends "initialized" ? TProvides : Exclude<TProvides, TAsyncPorts>>(
     port: P
   ): InferService<P>;
 
@@ -445,139 +429,6 @@ export type Scope<
 };
 
 // =============================================================================
-// ChildContainer Type
-// =============================================================================
-
-/**
- * A branded child container type that provides type-safe service resolution
- * with parent delegation.
- *
- * The ChildContainer type enables hierarchical dependency injection where:
- * - Child containers can override parent adapters for their scope
- * - Child containers can extend with new adapters not in parent
- * - Resolution delegates to parent when adapter not found in child
- * - Singletons can be shared, forked, or isolated from parent
- *
- * @typeParam TProvides - Union of Port types from parent that this child can resolve
- * @typeParam TExtends - Union of Port types added via extend() (not in parent)
- * @typeParam TAsyncPorts - Union of Port types that have async factories
- * @typeParam TPhase - The initialization phase of the container
- *
- * @remarks
- * - Child containers maintain a reference to their parent for resolution delegation
- * - Overridden adapters create separate instances in the child scope
- * - Extended ports are only resolvable from the child (not parent)
- * - Disposal cascades from parent to children (LIFO order)
- *
- * @see {@link Container} - Parent container type
- * @see {@link ChildContainerBuilder} - Builder for creating child containers
- *
- * @example Basic usage
- * ```typescript
- * const container = createContainer(graph);
- * const child = container.createChild().build();
- *
- * // Child can resolve parent's ports
- * const logger = child.resolve(LoggerPort);
- *
- * // Child has reference to parent
- * const parent = child.parent;
- * ```
- */
-export type ChildContainer<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
-  TPhase extends ContainerPhase = "uninitialized",
-> = {
-  /**
-   * Resolves a service instance for the given port synchronously.
-   *
-   * Resolution order:
-   * 1. Check child's override map
-   * 2. Check child's extend map
-   * 3. Delegate to parent container
-   *
-   * @typeParam P - The specific port type being resolved
-   * @param port - The port token to resolve
-   * @returns The service instance for the given port
-   */
-  resolve<P extends TPhase extends "initialized"
-    ? TProvides | TExtends
-    : Exclude<TProvides | TExtends, TAsyncPorts>>(
-    port: P
-  ): InferService<P>;
-
-  /**
-   * Resolves a service instance for the given port asynchronously.
-   *
-   * @typeParam P - The specific port type being resolved
-   * @param port - The port token to resolve
-   * @returns A promise that resolves to the service instance
-   */
-  resolveAsync<P extends TProvides | TExtends>(port: P): Promise<InferService<P>>;
-
-  /**
-   * Creates a child scope for managing scoped service lifetimes.
-   *
-   * The returned scope uses the child container's effective adapter set.
-   *
-   * @returns A new Scope instance
-   */
-  createScope(): Scope<TProvides | TExtends, TAsyncPorts, TPhase>;
-
-  /**
-   * Creates a grandchild container builder for multi-level hierarchy.
-   *
-   * @returns A new ChildContainerBuilder with this child as parent
-   */
-  createChild(): ChildContainerBuilder<TProvides | TExtends, TAsyncPorts>;
-
-  /**
-   * Disposes the child container and all its resources.
-   *
-   * Disposal cascades to any grandchild containers first.
-   *
-   * @returns A promise that resolves when disposal is complete
-   */
-  dispose(): Promise<void>;
-
-  /**
-   * Whether the child container has been disposed.
-   */
-  readonly isDisposed: boolean;
-
-  /**
-   * Checks if the child container can resolve the given port.
-   *
-   * @param port - The port token to check
-   * @returns true if the port is provided by this child container or its parent
-   */
-  has(port: Port<unknown, string>): boolean;
-
-  /**
-   * Reference to the parent container.
-   * This is the container from which createChild() was called.
-   */
-  readonly parent: Container<TProvides, TAsyncPorts, TPhase> | ChildContainer<Port<unknown, string>, Port<unknown, string>, TAsyncPorts, TPhase>;
-
-  /**
-   * Brand property for nominal typing.
-   * Contains the type parameters at the type level.
-   * Value is undefined at runtime.
-   */
-  readonly [ChildContainerBrand]: { provides: TProvides; extends: TExtends };
-
-  /**
-   * Internal state accessor for DevTools inspection.
-   * Returns a frozen snapshot of the child container's internal state.
-   *
-   * @internal
-   */
-  readonly [INTERNAL_ACCESS]: () => ContainerInternalState;
-};
-
-// =============================================================================
 // Inheritance Mode Types
 // =============================================================================
 
@@ -618,7 +469,7 @@ export type InheritanceModeMap<TPortNames extends string> = {
 };
 
 // =============================================================================
-// ChildContainerBuilder Type Utilities
+// ContainerBuilder Type Utilities
 // =============================================================================
 
 import type {
@@ -635,13 +486,15 @@ import type {
  * Type utility to check if a port exists in a union.
  * @internal
  */
-type PortExistsIn<TPort extends Port<unknown, string>, TUnion extends Port<unknown, string>> =
-  HasOverlap<TPort, TUnion>;
+type PortExistsIn<
+  TPort extends Port<unknown, string>,
+  TUnion extends Port<unknown, string>,
+> = HasOverlap<TPort, TUnion>;
 
 /**
- * The return type of `ChildContainerBuilder.override()`.
+ * The return type of `ContainerBuilder.override()`.
  *
- * Conditionally returns either a new `ChildContainerBuilder` with the override applied,
+ * Conditionally returns either a new `ContainerBuilder` with the override applied,
  * or an `OverridePortNotFoundError` if the adapter's port is not in the parent.
  *
  * @internal
@@ -651,14 +504,15 @@ export type OverrideResult<
   TExtends extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
   A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>,
-> = PortExistsIn<InferAdapterProvides<A>, TParentProvides> extends true
-  ? ChildContainerBuilder<TParentProvides, TAsyncPorts, TExtends>
-  : OverridePortNotFoundError<InferAdapterProvides<A>>;
+> =
+  PortExistsIn<InferAdapterProvides<A>, TParentProvides> extends true
+    ? ContainerBuilder<TParentProvides, TAsyncPorts, TExtends>
+    : OverridePortNotFoundError<InferAdapterProvides<A>>;
 
 /**
- * The return type of `ChildContainerBuilder.extend()`.
+ * The return type of `ContainerBuilder.extend()`.
  *
- * Conditionally returns either a new `ChildContainerBuilder` with the extension applied,
+ * Conditionally returns either a new `ContainerBuilder` with the extension applied,
  * or a `DuplicateProviderError` if the adapter's port already exists in parent or extensions.
  *
  * @internal
@@ -668,9 +522,10 @@ export type ExtendResult<
   TExtends extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
   A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>,
-> = PortExistsIn<InferAdapterProvides<A>, TParentProvides | TExtends> extends true
-  ? DuplicateProviderError<InferAdapterProvides<A>>
-  : ChildContainerBuilder<TParentProvides, TAsyncPorts, TExtends | InferAdapterProvides<A>>;
+> =
+  PortExistsIn<InferAdapterProvides<A>, TParentProvides | TExtends> extends true
+    ? DuplicateProviderError<InferAdapterProvides<A>>
+    : ContainerBuilder<TParentProvides, TAsyncPorts, TExtends | InferAdapterProvides<A>>;
 
 /**
  * Method signature for override with type-level validation.
@@ -680,7 +535,9 @@ type OverrideMethod<
   TParentProvides extends Port<unknown, string>,
   TExtends extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
-> = <A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>>(
+> = <
+  A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>,
+>(
   adapter: A
 ) => OverrideResult<TParentProvides, TExtends, TAsyncPorts, A>;
 
@@ -692,7 +549,9 @@ type ExtendMethod<
   TParentProvides extends Port<unknown, string>,
   TExtends extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
-> = <A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>>(
+> = <
+  A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>,
+>(
   adapter: A
 ) => ExtendResult<TParentProvides, TExtends, TAsyncPorts, A>;
 
@@ -704,9 +563,8 @@ type ExtendMethod<
  * Extracts port names from a union of Port types.
  * @internal
  */
-type ExtractPortNames<T extends Port<unknown, string>> = T extends Port<infer _S, infer TName>
-  ? TName
-  : never;
+type ExtractPortNames<T extends Port<unknown, string>> =
+  T extends Port<infer _S, infer TName> ? TName : never;
 
 /**
  * Valid inheritance mode configuration map.
@@ -728,16 +586,16 @@ type WithInheritanceModeMethod<
   TExtends extends Port<unknown, string>,
 > = <TConfig extends InheritanceModeConfig<TParentProvides>>(
   config: TConfig
-) => ChildContainerBuilder<TParentProvides, TAsyncPorts, TExtends>;
+) => ContainerBuilder<TParentProvides, TAsyncPorts, TExtends>;
 
 // =============================================================================
-// ChildContainerBuilder Type
+// ContainerBuilder Type
 // =============================================================================
 
 /**
  * An immutable builder for constructing child containers with overrides and extensions.
  *
- * ChildContainerBuilder follows the immutable fluent API pattern established by GraphBuilder.
+ * ContainerBuilder follows the immutable fluent API pattern established by GraphBuilder.
  * Each method returns a new builder instance, enabling composable configuration.
  *
  * @typeParam TParentProvides - Union of ports provided by the parent container
@@ -747,11 +605,11 @@ type WithInheritanceModeMethod<
  * @remarks
  * - Builder instances are frozen and immutable
  * - Each method returns a new builder with accumulated state
- * - `.build()` creates a frozen ChildContainer
+ * - `.build()` creates a frozen Container
  * - Override validates adapter's port exists in parent
  * - Extend validates adapter's port does NOT exist in parent
  *
- * @see {@link ChildContainer} - The container type created by .build()
+ * @see {@link Container} - The container type created by .build()
  * @see {@link Container.createChild} - Entry point for creating builders
  *
  * @example Basic usage with override
@@ -778,7 +636,7 @@ type WithInheritanceModeMethod<
  *   .build();
  * ```
  */
-export type ChildContainerBuilder<
+export type ContainerBuilder<
   TParentProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string> = never,
   TExtends extends Port<unknown, string> = never,
@@ -836,9 +694,9 @@ export type ChildContainerBuilder<
   /**
    * Builds the child container with the current configuration.
    *
-   * @returns A frozen ChildContainer instance
+   * @returns A frozen Container instance with TExtends ports
    */
-  build(): ChildContainer<TParentProvides, TExtends, TAsyncPorts>;
+  build(): Container<TParentProvides, TExtends, TAsyncPorts>;
 };
 
 // =============================================================================
@@ -871,14 +729,26 @@ export type ChildContainerBuilder<
  * // typeof LoggerPort | typeof DatabasePort
  * ```
  *
- * @example Non-container type returns never
+ * @example Child container includes extends
  * ```typescript
- * type NotContainer = { foo: string };
- * type Provides = InferContainerProvides<NotContainer>;
- * // never
+ * type ChildContainer = Container<ParentPorts, ExtendPorts>;
+ * type Provides = InferContainerProvides<ChildContainer>;
+ * // ParentPorts (TProvides only, use InferContainerEffectiveProvides for full)
  * ```
  */
-export type InferContainerProvides<T> = T extends Container<infer P> ? P : never;
+export type InferContainerProvides<T> =
+  T extends Container<infer P, infer _E, infer _A, infer _Ph> ? P : never;
+
+/**
+ * Extracts the effective provides (TProvides | TExtends) from a Container type.
+ *
+ * For root containers, this is the same as TProvides.
+ * For child containers, this includes both inherited and extended ports.
+ *
+ * @typeParam T - The Container type to extract from
+ */
+export type InferContainerEffectiveProvides<T> =
+  T extends Container<infer P, infer E, infer _A, infer _Ph> ? P | E : never;
 
 /**
  * Extracts the TProvides type parameter from a Scope type.
@@ -918,19 +788,19 @@ export type InferScopeProvides<T> = T extends Scope<infer P> ? P : never;
 /**
  * Type predicate that returns `true` if a port is resolvable from a container or scope.
  *
- * Checks whether TPort extends the TProvides of the given container or scope type.
+ * Checks whether TPort extends the effective provides of the given container or scope type.
  * Works with both Container and Scope types.
  *
  * @typeParam TContainer - A Container or Scope type to check against
  * @typeParam TPort - The port type to check for resolvability
  *
- * @returns `true` if TPort is in TContainer's TProvides, `false` otherwise
+ * @returns `true` if TPort is in TContainer's effective provides, `false` otherwise
  *
  * @remarks
- * This utility uses a union of InferContainerProvides and InferScopeProvides
- * to work with both Container and Scope types seamlessly.
+ * For Container types, this checks against `TProvides | TExtends`.
+ * For Scope types, this checks against `TProvides`.
  *
- * @see {@link InferContainerProvides} - Extracts TProvides from Container
+ * @see {@link InferContainerEffectiveProvides} - Extracts TProvides | TExtends from Container
  * @see {@link InferScopeProvides} - Extracts TProvides from Scope
  * @see {@link ServiceFromContainer} - Extracts service type if resolvable
  *
@@ -953,16 +823,17 @@ export type InferScopeProvides<T> = T extends Scope<infer P> ? P : never;
  * // true
  * ```
  */
-export type IsResolvable<TContainer, TPort extends Port<unknown, string>> =
-  TPort extends (InferContainerProvides<TContainer> | InferScopeProvides<TContainer>)
-    ? true
-    : false;
+export type IsResolvable<TContainer, TPort extends Port<unknown, string>> = TPort extends
+  | InferContainerEffectiveProvides<TContainer>
+  | InferScopeProvides<TContainer>
+  ? true
+  : false;
 
 /**
  * Extracts the service type for a given port from a container or scope.
  *
  * Returns the service type (via InferService) if the port is resolvable,
- * or `never` if the port is not in the container's or scope's TProvides.
+ * or `never` if the port is not in the container's or scope's effective provides.
  *
  * @typeParam TContainer - A Container or Scope type to extract from
  * @typeParam TPort - The port type to get the service type for
@@ -973,9 +844,9 @@ export type IsResolvable<TContainer, TPort extends Port<unknown, string>> =
  * This utility combines IsResolvable and InferService to provide a safe way
  * to extract service types. It works with both Container and Scope types.
  *
- * @see {@link IsResolvable} - Checks if port is in TProvides
+ * @see {@link IsResolvable} - Checks if port is in effective provides
  * @see {@link InferService} - Extracts service type from port
- * @see {@link InferContainerProvides} - Extracts TProvides from Container
+ * @see {@link InferContainerEffectiveProvides} - Extracts TProvides | TExtends from Container
  * @see {@link InferScopeProvides} - Extracts TProvides from Scope
  *
  * @example Resolvable port returns service type
@@ -995,14 +866,40 @@ export type IsResolvable<TContainer, TPort extends Port<unknown, string>> =
  * // never
  * ```
  *
- * @example Works with Scope types
+ * @example Works with child containers
  * ```typescript
- * type MyScope = Scope<typeof LoggerPort>;
- * type LoggerService = ServiceFromContainer<MyScope, typeof LoggerPort>;
- * // Logger
+ * type ChildContainer = Container<ParentPorts, ExtendPorts>;
+ * type ExtendService = ServiceFromContainer<ChildContainer, typeof ExtendPort>;
+ * // ExtendService type
  * ```
  */
 export type ServiceFromContainer<TContainer, TPort extends Port<unknown, string>> =
-  IsResolvable<TContainer, TPort> extends true
-    ? InferService<TPort>
-    : never;
+  IsResolvable<TContainer, TPort> extends true ? InferService<TPort> : never;
+
+/**
+ * Checks if a container is a root container (TExtends = never).
+ *
+ * @typeParam T - The Container type to check
+ * @returns `true` if root container, `false` if child container
+ */
+// NOTE: Using [E] extends [never] to prevent distribution over the never type.
+export type IsRootContainer<T> =
+  T extends Container<infer _P, infer E, infer _A, infer _Ph>
+    ? [E] extends [never]
+      ? true
+      : false
+    : false;
+
+/**
+ * Checks if a container is a child container (TExtends is not never).
+ *
+ * @typeParam T - The Container type to check
+ * @returns `true` if child container, `false` if root container
+ */
+// NOTE: Using [E] extends [never] to prevent distribution over the never type.
+export type IsChildContainer<T> =
+  T extends Container<infer _P, infer E, infer _A, infer _Ph>
+    ? [E] extends [never]
+      ? false
+      : true
+    : false;

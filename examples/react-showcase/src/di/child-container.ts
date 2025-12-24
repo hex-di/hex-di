@@ -10,7 +10,7 @@
  * touching the root container.
  */
 
-import type { ChildContainer, Container, ContainerPhase } from "@hex-di/runtime";
+import type { Container, ContainerPhase } from "@hex-di/runtime";
 import { createAdapter } from "@hex-di/graph";
 import type { Message, MessageListener, MessageStore, ChatService } from "../types.js";
 import {
@@ -44,7 +44,7 @@ const PluginMessageStoreAdapter = createAdapter({
 
     const notify = (): void => {
       const snapshot = Object.freeze([...messages]) as readonly Message[];
-      listeners.forEach((listener) => listener(snapshot));
+      listeners.forEach(listener => listener(snapshot));
     };
 
     deps.Logger.log("[Plugin] Ephemeral MessageStore initialized");
@@ -103,8 +103,8 @@ const PluginChatServiceAdapter = createAdapter({
  * @param parent - The root/tracing container created from the app graph
  */
 export function createPluginChildContainer(
-  parent: Container<AppPorts, AppAsyncPorts, ContainerPhase>
-): ChildContainer<AppPorts, never, AppAsyncPorts> {
+  parent: Container<AppPorts, never, AppAsyncPorts, ContainerPhase>
+): Container<AppPorts, never, AppAsyncPorts, ContainerPhase> {
   return parent
     .createChild()
     .override(PluginMessageStoreAdapter)

@@ -7,44 +7,44 @@
     ],
     [
       ":packages/devtools-network/tests/client.test.ts",
-      { "duration": 469.649084, "failed": false }
+      { "duration": 472.43225000000007, "failed": false }
     ],
     [
       ":packages/testing/tests/integration.test.ts",
-      { "duration": 13.479500000000002, "failed": false }
+      { "duration": 14.287750000000017, "failed": false }
     ],
-    [
-      ":packages/runtime/tests/child-container.test.ts",
-      { "duration": 9.826333000000005, "failed": false }
-    ],
+    [":packages/runtime/tests/child-container.test.ts", { "duration": 11.64125, "failed": false }],
     [
       ":packages/devtools/tests/view-models/view-models.test.ts",
       { "duration": 8.791749999999993, "failed": false }
     ],
     [
       ":packages/graph/tests/integration.test.ts",
-      { "duration": 7.833790999999991, "failed": false }
+      { "duration": 5.4987079999999935, "failed": false }
     ],
     [
       ":packages/devtools-network/tests/server.test.ts",
-      { "duration": 7.671792000000011, "failed": false }
+      { "duration": 8.054249999999996, "failed": false }
     ],
     [
       ":packages/runtime/tests/integration.test.ts",
-      { "duration": 111.23654099999999, "failed": false }
+      { "duration": 113.68316600000003, "failed": false }
     ],
     [
       ":packages/runtime/tests/async-resolution.test.ts",
-      { "duration": 157.25687499999998, "failed": false }
+      { "duration": 161.855417, "failed": false }
     ],
     [
       ":packages/devtools/tests/tracing/integration.test.ts",
-      { "duration": 11.808459, "failed": false }
+      { "duration": 9.550583000000017, "failed": false }
     ],
-    [":packages/runtime/tests/disposal.test.ts", { "duration": 289.565958, "failed": false }],
+    [
+      ":packages/runtime/tests/disposal.test.ts",
+      { "duration": 295.88449999999995, "failed": false }
+    ],
     [
       ":packages/devtools/tests/network/network-layer.test.ts",
-      { "duration": 41.29083299999991, "failed": false }
+      { "duration": 43.22700000000009, "failed": false }
     ],
     [
       ":packages/devtools/tests/advanced-features.test.ts",
@@ -60,15 +60,15 @@
     ],
     [
       ":packages/devtools/tests/tracing/tracing-container.test.ts",
-      { "duration": 11.689082999999982, "failed": false }
+      { "duration": 8.145958000000007, "failed": false }
     ],
     [
       ":packages/devtools/tests/tracing/collector.test.ts",
-      { "duration": 7.250917000000001, "failed": false }
+      { "duration": 6.328958, "failed": false }
     ],
     [
       ":packages/runtime/tests/lifetime.test.ts",
-      { "duration": 6.571042000000006, "failed": false }
+      { "duration": 10.020917000000026, "failed": false }
     ],
     [
       ":packages/devtools-ui/tests/timeline.presenter.test.ts",
@@ -76,15 +76,15 @@
     ],
     [
       ":packages/devtools/tests/edge-cases.test.ts",
-      { "duration": 14.941417000000001, "failed": false }
+      { "duration": 15.790957999999932, "failed": false }
     ],
     [
       ":packages/runtime/tests/inspector.test.ts",
-      { "duration": 7.419207999999998, "failed": false }
+      { "duration": 5.465457999999984, "failed": false }
     ],
     [
       ":packages/devtools/tests/integration.test.ts",
-      { "duration": 12.98008299999998, "failed": false }
+      { "duration": 11.821041000000037, "failed": false }
     ],
     [
       ":packages/devtools-ui/tests/stats.presenter.test.ts",
@@ -92,24 +92,24 @@
     ],
     [
       ":packages/testing/tests/test-graph-builder.test.ts",
-      { "duration": 4.711708999999985, "failed": false }
+      { "duration": 6.7505840000000035, "failed": false }
     ],
     [
       ":packages/devtools/tests/state/state-migration.test.ts",
       { "duration": 18.906292000000008, "failed": false }
     ],
-    [":packages/runtime/tests/scope.test.ts", { "duration": 5.374917000000011, "failed": false }],
+    [":packages/runtime/tests/scope.test.ts", { "duration": 7.012416999999999, "failed": false }],
     [
       ":packages/runtime/tests/memo-map.test.ts",
-      { "duration": 5.795125000000013, "failed": false }
+      { "duration": 5.608582999999996, "failed": false }
     ],
     [
       ":packages/devtools/tests/tracing/eviction.test.ts",
-      { "duration": 5.955749999999995, "failed": false }
+      { "duration": 5.643500000000003, "failed": false }
     ],
     [
       ":packages/testing/tests/use-test-container.test.ts",
-      { "duration": 16.90745799999999, "failed": false }
+      { "duration": 20.957707999999997, "failed": false }
     ],
     [
       ":packages/devtools/tests/sync/browser-tui-sync.test.ts",
@@ -117,7 +117,7 @@
     ],
     [
       ":packages/devtools/tests/tracing/types.test.ts",
-      { "duration": 4.737332999999978, "failed": false }
+      { "duration": 4.384957999999983, "failed": false }
     ],
     [
       ":packages/devtools-ui/tests/graph.presenter.test.ts",
@@ -125,93 +125,90 @@
     ],
     [
       ":packages/devtools-network/tests/mock-websocket.test.ts",
-      { "duration": 14.941249999999997, "failed": false }
+      { "duration": 17.724625000000003, "failed": false }
     ],
-    [":packages/graph/tests/build.test.ts", { "duration": 5.807208000000003, "failed": false }],
-    [":packages/devtools/tests/types.test.ts", { "duration": 4.141833000000005, "failed": false }],
+    [":packages/graph/tests/build.test.ts", { "duration": 4.38508299999998, "failed": false }],
+    [":packages/devtools/tests/types.test.ts", { "duration": 4.0282920000000075, "failed": false }],
     [
       ":packages/devtools-core/tests/core-consolidation.test.ts",
-      { "duration": 15.690750000000008, "failed": false }
+      { "duration": 20.316542, "failed": false }
     ],
     [
       ":packages/testing/tests/adapter-test-harness.test.ts",
-      { "duration": 3.9425839999999965, "failed": false }
+      { "duration": 6.3543750000000045, "failed": false }
     ],
-    [":packages/testing/tests/graph-snapshot.test.ts", { "duration": 10.402625, "failed": false }],
+    [
+      ":packages/testing/tests/graph-snapshot.test.ts",
+      { "duration": 10.82929200000001, "failed": false }
+    ],
     [
       ":packages/runtime/tests/port-resolution-type-safety.test.ts",
-      { "duration": 13.444624999999988, "failed": false }
+      { "duration": 12.486333000000002, "failed": false }
     ],
     [
       ":packages/graph/tests/graph-builder.test.ts",
-      { "duration": 4.599165999999997, "failed": false }
+      { "duration": 4.5326670000000036, "failed": false }
     ],
-    [":packages/runtime/tests/exports.test.ts", { "duration": 4.174167000000011, "failed": false }],
+    [":packages/runtime/tests/exports.test.ts", { "duration": 7.420791000000008, "failed": false }],
     [
       ":packages/runtime/tests/type-utilities.test.ts",
-      { "duration": 4.582250000000002, "failed": false }
+      { "duration": 3.3275410000000107, "failed": false }
     ],
     [
       ":packages/ports/tests/integration.test.ts",
-      { "duration": 2.6793750000000074, "failed": false }
+      { "duration": 2.5421659999999946, "failed": false }
     ],
     [
       ":packages/hono/tests/context-type-preservation.test.ts",
-      { "duration": 19.015459000000007, "failed": false }
+      { "duration": 15.290333000000032, "failed": false }
     ],
     [
       ":packages/testing/tests/graph-assertions.test.ts",
-      { "duration": 5.858333999999985, "failed": false }
+      { "duration": 3.835707999999997, "failed": false }
     ],
     [
       ":packages/testing/tests/spied-mock-adapter.test.ts",
-      { "duration": 5.612667000000016, "failed": false }
+      { "duration": 5.738749999999982, "failed": false }
     ],
     [
       ":packages/devtools/tests/filter-graph.test.ts",
-      { "duration": 4.149000000000001, "failed": false }
+      { "duration": 5.072999999999993, "failed": false }
     ],
     [
       ":packages/devtools/tests/to-json.test.ts",
-      { "duration": 14.351667000000006, "failed": false }
+      { "duration": 11.729083000000003, "failed": false }
     ],
     [
       ":packages/devtools/tests/relabel-ports.test.ts",
-      { "duration": 4.633415999999997, "failed": false }
+      { "duration": 3.3465419999999995, "failed": false }
     ],
     [
       ":packages/runtime/tests/container.test.ts",
-      { "duration": 8.957999999999998, "failed": false }
+      { "duration": 5.07674999999999, "failed": false }
     ],
-    [":packages/runtime/tests/errors.test.ts", { "duration": 3.460624999999993, "failed": false }],
+    [":packages/runtime/tests/errors.test.ts", { "duration": 4.0731250000000045, "failed": false }],
     [
       ":packages/devtools-core/tests/transforms.test.ts",
-      { "duration": 10.050749999999994, "failed": false }
+      { "duration": 10.204499999999996, "failed": false }
     ],
-    [
-      ":packages/devtools/tests/to-dot.test.ts",
-      { "duration": 11.530208000000016, "failed": false }
-    ],
+    [":packages/devtools/tests/to-dot.test.ts", { "duration": 9.793707999999995, "failed": false }],
     [
       ":packages/runtime/tests/internal-access.test.ts",
-      { "duration": 3.725208000000009, "failed": false }
+      { "duration": 6.237374999999986, "failed": false }
     ],
     [
       ":packages/testing/tests/mock-adapter.test.ts",
-      { "duration": 5.722667000000001, "failed": false }
+      { "duration": 5.2848749999999995, "failed": false }
     ],
     [
       ":packages/devtools-core/tests/filters.test.ts",
-      { "duration": 4.718167000000008, "failed": false }
+      { "duration": 4.388249999999999, "failed": false }
     ],
-    [
-      ":packages/devtools/tests/to-mermaid.test.ts",
-      { "duration": 10.250084000000001, "failed": false }
-    ],
-    [":packages/graph/tests/exports.test.ts", { "duration": 1.847166999999999, "failed": false }],
+    [":packages/devtools/tests/to-mermaid.test.ts", { "duration": 11.203125, "failed": false }],
+    [":packages/graph/tests/exports.test.ts", { "duration": 2.1856670000000094, "failed": false }],
     [
       ":packages/devtools/tests/tracing-styles.test.ts",
-      { "duration": 3.503582999999992, "failed": false }
+      { "duration": 3.1261249999999876, "failed": false }
     ],
     [
       ":packages/devtools/tests/unified-package-scaffolding.test.ts",
@@ -219,25 +216,25 @@
     ],
     [
       ":packages/hono/tests/middleware.test.ts",
-      { "duration": 18.581208999999944, "failed": false }
+      { "duration": 17.537374999999997, "failed": false }
     ],
     [
       ":packages/graph/tests/create-adapter.test.ts",
-      { "duration": 2.06029199999999, "failed": false }
+      { "duration": 2.1959579999999903, "failed": false }
     ],
     [
       ":packages/runtime/tests/resolution-context.test.ts",
-      { "duration": 3.1057909999999964, "failed": false }
+      { "duration": 4.0810419999999965, "failed": false }
     ],
     [
       ":packages/runtime/src/verify-runtime-safety.test.ts",
-      { "duration": 1.702791999999988, "failed": false }
+      { "duration": 1.762749999999997, "failed": false }
     ],
     [
       ":packages/ports/tests/createPort.test.ts",
-      { "duration": 3.020541999999992, "failed": false }
+      { "duration": 2.3304580000000072, "failed": false }
     ],
-    [":packages/ports/tests/exports.test.ts", { "duration": 1.2900419999999997, "failed": false }],
-    [":packages/react/tests/errors.test.ts", { "duration": 1.4774170000000026, "failed": false }]
+    [":packages/ports/tests/exports.test.ts", { "duration": 1.2665000000000006, "failed": false }],
+    [":packages/react/tests/errors.test.ts", { "duration": 1.4276250000000061, "failed": false }]
   ]
 }

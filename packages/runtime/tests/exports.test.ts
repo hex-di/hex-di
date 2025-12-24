@@ -112,7 +112,6 @@ describe("@hex-di/runtime exports", () => {
         "getInternalAccessor",
         "ContainerBrand",
         "ScopeBrand",
-        "ChildContainerBrand",
         // RuntimeResolver utilities (type-safe container access without casts)
         "toRuntimeResolver",
         "toRuntimeContainer",

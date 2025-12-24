@@ -121,7 +121,7 @@ describe("@hex-di/hono", () => {
   it("supports custom context keys for scope and container access", async () => {
     const disposalLog: string[] = [];
     const container = buildContainer(disposalLog);
-    type CustomEnv = HexHonoEnv<AppPorts, never, "uninitialized", "scope", "container">;
+    type CustomEnv = HexHonoEnv<AppPorts, never, never, "uninitialized", "scope", "container">;
     const app = new Hono<CustomEnv>();
 
     app.use(

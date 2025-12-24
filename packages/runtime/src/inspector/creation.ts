@@ -165,9 +165,10 @@ function buildScopeTreeNode(scopeState: ScopeInternalState, totalCount: number):
  */
 export function createInspector<
   TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> | never = never,
+  TExtends extends Port<unknown, string> = never,
+  TAsyncPorts extends Port<unknown, string> = never,
   TPhase extends ContainerPhase = ContainerPhase,
->(container: Container<TProvides, TAsyncPorts, TPhase>): ContainerInspector {
+>(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): ContainerInspector {
   // Store container reference for later access - O(1) operation
   const containerRef = container;
 

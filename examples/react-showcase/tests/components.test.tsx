@@ -51,7 +51,7 @@ import { ChatRoom } from "../src/components/ChatRoom.js";
  */
 interface RenderWithAppContainerResult {
   readonly container: HTMLElement;
-  readonly diContainer: Container<AppPorts, AppAsyncPorts>;
+  readonly diContainer: Container<AppPorts, never, AppAsyncPorts, "uninitialized">;
 }
 
 /**
@@ -91,7 +91,7 @@ function createMockMessageStore() {
       getMessages: vi.fn(() => [...messages] as readonly Message[]),
       addMessage: vi.fn((msg: Message) => {
         messages.push(msg);
-        listeners.forEach((listener) => listener([...messages]));
+        listeners.forEach(listener => listener([...messages]));
       }),
       subscribe: vi.fn((listener: MessageListener): Unsubscribe => {
         listeners.add(listener);
@@ -116,9 +116,7 @@ function createTestGraph() {
     maxMessages: 100,
   });
 
-  return TestGraphBuilder.from(appGraph)
-    .override(mockLogger)
-    .override(mockConfig);
+  return TestGraphBuilder.from(appGraph).override(mockLogger).override(mockConfig);
 }
 
 // =============================================================================
@@ -128,10 +126,7 @@ function createTestGraph() {
 describe("ChatRoom", () => {
   it("renders with AutoScopeProvider and displays user switch buttons", () => {
     const mockMessageStore = createMockMessageStore();
-    const mockMessageStoreAdapter = createMockAdapter(
-      MessageStorePort,
-      mockMessageStore.store
-    );
+    const mockMessageStoreAdapter = createMockAdapter(MessageStorePort, mockMessageStore.store);
 
     const mockUserSession = createMockAdapter(UserSessionPort, {
       user: { id: "test-user", name: "Test User", avatar: "T" },
@@ -167,10 +162,7 @@ describe("ChatRoom", () => {
 
   it("recreates scope when user switch button is clicked", async () => {
     const mockMessageStore = createMockMessageStore();
-    const mockMessageStoreAdapter = createMockAdapter(
-      MessageStorePort,
-      mockMessageStore.store
-    );
+    const mockMessageStoreAdapter = createMockAdapter(MessageStorePort, mockMessageStore.store);
 
     // The UserSession adapter always returns Alice - in a real app,
     // this would be configured per-scope. For this test, we verify
@@ -241,14 +233,9 @@ describe("MessageList", () => {
 
     const mockMessageStore = createMockMessageStore();
     mockMessageStore.messages.push(...testMessages);
-    const mockMessageStoreAdapter = createMockAdapter(
-      MessageStorePort,
-      mockMessageStore.store
-    );
+    const mockMessageStoreAdapter = createMockAdapter(MessageStorePort, mockMessageStore.store);
 
-    const testGraph = createTestGraph()
-      .override(mockMessageStoreAdapter)
-      .build();
+    const testGraph = createTestGraph().override(mockMessageStoreAdapter).build();
 
     renderWithAppContainer(<MessageList />, testGraph);
 
@@ -261,20 +248,13 @@ describe("MessageList", () => {
 
   it("shows empty state when no messages", () => {
     const mockMessageStore = createMockMessageStore();
-    const mockMessageStoreAdapter = createMockAdapter(
-      MessageStorePort,
-      mockMessageStore.store
-    );
+    const mockMessageStoreAdapter = createMockAdapter(MessageStorePort, mockMessageStore.store);
 
-    const testGraph = createTestGraph()
-      .override(mockMessageStoreAdapter)
-      .build();
+    const testGraph = createTestGraph().override(mockMessageStoreAdapter).build();
 
     renderWithAppContainer(<MessageList />, testGraph);
 
-    expect(
-      screen.getByText("No messages yet. Start the conversation!")
-    ).toBeInTheDocument();
+    expect(screen.getByText("No messages yet. Start the conversation!")).toBeInTheDocument();
   });
 });
 
@@ -342,9 +322,7 @@ describe("NotificationButton", () => {
       notify: vi.fn(),
     });
 
-    const testGraph = createTestGraph()
-      .override(mockNotificationService)
-      .build();
+    const testGraph = createTestGraph().override(mockNotificationService).build();
 
     renderWithAppContainer(<NotificationButton />, testGraph);
 
@@ -370,9 +348,7 @@ describe("NotificationButton", () => {
       notify: mockNotify,
     });
 
-    const testGraph = createTestGraph()
-      .override(mockNotificationService)
-      .build();
+    const testGraph = createTestGraph().override(mockNotificationService).build();
 
     renderWithAppContainer(<NotificationButton />, testGraph);
 
@@ -397,10 +373,7 @@ describe("NotificationButton", () => {
 describe("Integration", () => {
   it("send message flow works end-to-end", async () => {
     const mockMessageStore = createMockMessageStore();
-    const mockMessageStoreAdapter = createMockAdapter(
-      MessageStorePort,
-      mockMessageStore.store
-    );
+    const mockMessageStoreAdapter = createMockAdapter(MessageStorePort, mockMessageStore.store);
 
     const mockUserSession = createMockAdapter(UserSessionPort, {
       user: { id: "alice-001", name: "Alice", avatar: "A" },
@@ -436,9 +409,7 @@ describe("Integration", () => {
     renderWithAppContainer(<ChatRoom />, testGraph);
 
     // Initially no messages
-    expect(
-      screen.getByText("No messages yet. Start the conversation!")
-    ).toBeInTheDocument();
+    expect(screen.getByText("No messages yet. Start the conversation!")).toBeInTheDocument();
 
     // Type and send a message
     const input = screen.getByPlaceholderText(/type a message/i);
@@ -453,8 +424,6 @@ describe("Integration", () => {
     });
 
     // Empty state should be gone
-    expect(
-      screen.queryByText("No messages yet. Start the conversation!")
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("No messages yet. Start the conversation!")).not.toBeInTheDocument();
   });
 });

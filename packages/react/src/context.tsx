@@ -14,13 +14,12 @@
  */
 
 import { createContext, useEffect, useContext, useRef, type ReactNode } from "react";
-import type { Port } from "@hex-di/ports";
-import type { Container, Scope, ChildContainer } from "@hex-di/runtime";
-import { ChildContainerBrand } from "@hex-di/runtime";
+import type { Port, InferService } from "@hex-di/ports";
+import type { Container, Scope, ContainerPhase } from "@hex-di/runtime";
+import { ContainerBrand } from "@hex-di/runtime";
 import { MissingProviderError } from "./errors.js";
 import {
   toRuntimeContainerRef,
-  childContainerToRuntimeRef,
   toRuntimeScopeRef,
   type RuntimeContainerRef,
   type RuntimeResolverRef,
@@ -50,31 +49,50 @@ declare const ContextBrand: unique symbol;
 // =============================================================================
 
 /**
- * Union type for containers that can be provided to ContainerProvider.
- * Includes both root Container and ChildContainer.
+ * Structural type representing what ContainerProvider needs from a container.
+ *
+ * With the unified Container type, root and child containers have different
+ * conditional properties (initialize, parent). This structural type includes
+ * only the common properties that both container types share, allowing
+ * ContainerProvider to accept either.
  *
  * @internal
  */
-type AnyContainer<TProvides extends Port<unknown, string>> =
-  | Container<TProvides>
-  | ChildContainer<TProvides, Port<unknown, string>>;
+type AnyContainer<TProvides extends Port<unknown, string>> = {
+  resolve<P extends TProvides>(port: P): InferService<P>;
+  resolveAsync<P extends TProvides>(port: P): Promise<InferService<P>>;
+  createScope(): Scope<TProvides, Port<unknown, string>, ContainerPhase>;
+  dispose(): Promise<void>;
+  has(port: Port<unknown, string>): boolean;
+  readonly isDisposed: boolean;
+  readonly isInitialized: boolean;
+  // parent property is accessed via try/catch for child detection
+  // not included here to avoid type conflicts between root (never) and child (Container)
+  readonly parent?: unknown;
+};
 
 /**
- * Checks if the provided container is a ChildContainer.
+ * Checks if the provided container is a child container.
  *
- * ChildContainers have a branded property using the ChildContainerBrand symbol.
- * This allows ContainerProvider to distinguish between root containers
- * (which should not be nested) and child containers (which can be nested).
+ * With the unified Container type, child containers are distinguished by
+ * having a `parent` property that doesn't throw. Root containers' `parent`
+ * property throws when accessed.
  *
  * @param container - The container to check
- * @returns true if the container is a ChildContainer, false otherwise
+ * @returns true if the container is a child container, false otherwise
  *
  * @internal
  */
 function isChildContainer<TProvides extends Port<unknown, string>>(
   container: AnyContainer<TProvides>
-): container is ChildContainer<TProvides, Port<unknown, string>> {
-  return ChildContainerBrand in container;
+): boolean {
+  try {
+    // Accessing parent on root container throws, on child container returns parent
+    const _parent = container.parent;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // =============================================================================
@@ -225,7 +243,7 @@ ResolverContext.displayName = "HexDI.ResolverContext";
  */
 export interface ContainerProviderProps<TProvides extends Port<unknown, string>> {
   /**
-   * The pre-created Container or ChildContainer instance to provide to the React tree.
+   * The pre-created Container instance to provide to the React tree.
    *
    * @remarks
    * The container must be created externally using `createContainer` from
@@ -317,12 +335,10 @@ export function ContainerProvider<TProvides extends Port<unknown, string>>({
     );
   }
 
-  // Convert to bivariant runtime ref using the type guard's narrowing.
-  // No type cast needed because toRuntimeContainerRef/childContainerToRuntimeRef
-  // explicitly construct objects with bivariant methods.
-  const containerRef = containerIsChild
-    ? childContainerToRuntimeRef(container)
-    : toRuntimeContainerRef(container);
+  // Convert to bivariant runtime ref.
+  // No type cast needed because toRuntimeContainerRef explicitly constructs
+  // an object with bivariant methods. Works for both root and child containers.
+  const containerRef = toRuntimeContainerRef(container);
 
   // Create context values using the bivariant runtime refs.
   const containerContextValue: RuntimeContainerContextValue = {
@@ -336,9 +352,7 @@ export function ContainerProvider<TProvides extends Port<unknown, string>>({
 
   return (
     <ContainerContext.Provider value={containerContextValue}>
-      <ResolverContext.Provider value={resolverContextValue}>
-        {children}
-      </ResolverContext.Provider>
+      <ResolverContext.Provider value={resolverContextValue}>{children}</ResolverContext.Provider>
     </ContainerContext.Provider>
   );
 }
@@ -416,9 +430,7 @@ export function ScopeProvider<TProvides extends Port<unknown, string>>({
   };
 
   return (
-    <ResolverContext.Provider value={resolverContextValue}>
-      {children}
-    </ResolverContext.Provider>
+    <ResolverContext.Provider value={resolverContextValue}>{children}</ResolverContext.Provider>
   );
 }
 
@@ -481,9 +493,7 @@ export interface AutoScopeProviderProps {
  * }
  * ```
  */
-export function AutoScopeProvider({
-  children,
-}: AutoScopeProviderProps): React.ReactNode {
+export function AutoScopeProvider({ children }: AutoScopeProviderProps): React.ReactNode {
   // Get current resolver context - must be inside ContainerProvider
   const resolverContext = useContext(ResolverContext);
 
@@ -525,8 +535,6 @@ export function AutoScopeProvider({
   };
 
   return (
-    <ResolverContext.Provider value={resolverContextValue}>
-      {children}
-    </ResolverContext.Provider>
+    <ResolverContext.Provider value={resolverContextValue}>{children}</ResolverContext.Provider>
   );
 }

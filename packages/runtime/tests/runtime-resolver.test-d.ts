@@ -11,7 +11,7 @@
 
 import { describe, it, expectTypeOf } from "vitest";
 import { createPort } from "@hex-di/ports";
-import type { Container, Scope, ChildContainer } from "../src/types.js";
+import type { Container, Scope } from "../src/types.js";
 import type {
   RuntimeResolver,
   RuntimeContainer,
@@ -48,7 +48,7 @@ type TestPorts = typeof LoggerPort | typeof DatabasePort;
 describe("toRuntimeResolver accepts Container", () => {
   it("accepts uninitialized container", () => {
     // Use a function parameter to create the typed value for testing
-    function test(container: Container<TestPorts, typeof DatabasePort, "uninitialized">) {
+    function test(container: Container<TestPorts, never, typeof DatabasePort, "uninitialized">) {
       // toRuntimeResolver should accept this container without cast
       const resolver = toRuntimeResolver(container);
       expectTypeOf(resolver).toEqualTypeOf<RuntimeResolver>();
@@ -58,7 +58,7 @@ describe("toRuntimeResolver accepts Container", () => {
   });
 
   it("accepts initialized container", () => {
-    function test(container: Container<TestPorts, typeof DatabasePort, "initialized">) {
+    function test(container: Container<TestPorts, never, typeof DatabasePort, "initialized">) {
       const resolver = toRuntimeResolver(container);
       expectTypeOf(resolver).toEqualTypeOf<RuntimeResolver>();
     }
@@ -66,7 +66,7 @@ describe("toRuntimeResolver accepts Container", () => {
   });
 
   it("accepts container with single port", () => {
-    function test(container: Container<typeof LoggerPort, never, "initialized">) {
+    function test(container: Container<typeof LoggerPort, never, never, "initialized">) {
       const resolver = toRuntimeResolver(container);
       expectTypeOf(resolver).toEqualTypeOf<RuntimeResolver>();
     }
@@ -97,13 +97,13 @@ describe("toRuntimeResolver accepts Scope", () => {
 });
 
 // =============================================================================
-// toRuntimeResolver Accepts ChildContainer
+// toRuntimeResolver Accepts Child Container
 // =============================================================================
 
-describe("toRuntimeResolver accepts ChildContainer", () => {
-  it("accepts child container", () => {
+describe("toRuntimeResolver accepts child container", () => {
+  it("accepts child container (Container with TExtends)", () => {
     function test(
-      child: ChildContainer<
+      child: Container<
         TestPorts,
         typeof LoggerPort, // extends
         typeof DatabasePort, // async
@@ -123,7 +123,7 @@ describe("toRuntimeResolver accepts ChildContainer", () => {
 
 describe("toRuntimeContainer preserves container methods", () => {
   it("returns RuntimeContainer with initialize", () => {
-    function test(container: Container<TestPorts, typeof DatabasePort, "uninitialized">) {
+    function test(container: Container<TestPorts, never, typeof DatabasePort, "uninitialized">) {
       const runtimeContainer = toRuntimeContainer(container);
       expectTypeOf(runtimeContainer).toEqualTypeOf<RuntimeContainer>();
 
@@ -134,7 +134,7 @@ describe("toRuntimeContainer preserves container methods", () => {
   });
 
   it("initialize returns RuntimeResolver", () => {
-    function test(container: Container<TestPorts, typeof DatabasePort, "uninitialized">) {
+    function test(container: Container<TestPorts, never, typeof DatabasePort, "uninitialized">) {
       const runtimeContainer = toRuntimeContainer(container);
 
       // The return type is Promise<RuntimeResolver>
@@ -208,7 +208,7 @@ describe("isRuntimeContainer type guard", () => {
 
 describe("complete type-safe flow", () => {
   it("demonstrates the full pattern without casts", () => {
-    function test(container: Container<TestPorts, typeof DatabasePort, "initialized">) {
+    function test(container: Container<TestPorts, never, typeof DatabasePort, "initialized">) {
       // 1. Convert to RuntimeResolver for storage (NO CAST)
       const resolver: RuntimeResolver = toRuntimeResolver(container);
 
@@ -232,7 +232,9 @@ describe("complete type-safe flow", () => {
   });
 
   it("demonstrates initialization flow", () => {
-    function test(uninitialized: Container<TestPorts, typeof DatabasePort, "uninitialized">) {
+    function test(
+      uninitialized: Container<TestPorts, never, typeof DatabasePort, "uninitialized">
+    ) {
       // 1. Convert to RuntimeContainer (NO CAST)
       const runtimeContainer = toRuntimeContainer(uninitialized);
       expectTypeOf(runtimeContainer).toEqualTypeOf<RuntimeContainer>();
@@ -255,7 +257,7 @@ describe("complete type-safe flow", () => {
 
 describe("edge cases", () => {
   it("works with never as TAsyncPorts", () => {
-    function test(container: Container<typeof LoggerPort, never, "initialized">) {
+    function test(container: Container<typeof LoggerPort, never, never, "initialized">) {
       const resolver = toRuntimeResolver(container);
       expectTypeOf(resolver).toEqualTypeOf<RuntimeResolver>();
     }

@@ -34,7 +34,12 @@ import { ChatRoom } from "./components/ChatRoom.js";
  */
 const container = createTracingContainer(appGraph);
 const pluginContainer = createPluginChildContainer(container);
-const pluginContainerForProvider = pluginContainer as unknown as Container<AppPorts>;
+const pluginContainerForProvider = pluginContainer as unknown as Container<
+  AppPorts,
+  never,
+  never,
+  "uninitialized"
+>;
 
 // =============================================================================
 // App Component

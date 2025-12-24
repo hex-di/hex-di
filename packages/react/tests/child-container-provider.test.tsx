@@ -16,14 +16,8 @@ import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import React from "react";
 import { createPort } from "@hex-di/ports";
-import { ContainerBrand, ScopeBrand, ChildContainerBrand, INTERNAL_ACCESS } from "@hex-di/runtime";
-import type {
-  Container,
-  Scope,
-  ChildContainer,
-  ContainerInternalState,
-  ScopeInternalState,
-} from "@hex-di/runtime";
+import { ContainerBrand, ScopeBrand, INTERNAL_ACCESS } from "@hex-di/runtime";
+import type { Container, Scope, ContainerInternalState, ScopeInternalState } from "@hex-di/runtime";
 import { MissingProviderError } from "../src/errors.js";
 import { ContainerProvider, AutoScopeProvider } from "../src/context.js";
 import { AsyncContainerProvider } from "../src/async-container-provider.js";
@@ -56,9 +50,17 @@ const ExtendedServicePort = createPort<"ExtendedService", ExtendedService>("Exte
 
 /**
  * Type aliases for test containers.
+ * With unified Container type:
+ * - Root container: Container<TProvides, never, ...>
+ * - Child container: Container<TProvides, TExtends, ...> where TExtends is the extended ports
  */
-type TestContainer = Container<typeof TestServicePort>;
-type TestChildContainer = ChildContainer<typeof TestServicePort, typeof ExtendedServicePort>;
+type TestContainer = Container<typeof TestServicePort, never, never, "uninitialized">;
+type TestChildContainer = Container<
+  typeof TestServicePort,
+  typeof ExtendedServicePort,
+  never,
+  "uninitialized"
+>;
 type TestScope = Scope<typeof TestServicePort>;
 
 /**
@@ -123,7 +125,10 @@ function createMockContainer(): TestContainer {
     initialize: mockInitialize,
     isInitialized: false,
     isDisposed: false,
-    [ContainerBrand]: { provides: TestServicePort },
+    get parent(): never {
+      throw new Error("Root containers do not have a parent");
+    },
+    [ContainerBrand]: { provides: TestServicePort, extends: undefined as never },
     [INTERNAL_ACCESS]: () => mockInternalState,
   } as TestContainer;
 
@@ -174,9 +179,12 @@ function createMockChildContainer(
     createChild: mockCreateChild,
     dispose: mockDispose,
     has: vi.fn().mockReturnValue(true),
+    isInitialized: true,
     isDisposed: false,
     parent: parentContainer,
-    [ChildContainerBrand]: {
+    // Child containers do not have initialize method
+    initialize: undefined as never,
+    [ContainerBrand]: {
       provides: TestServicePort,
       extends: ExtendedServicePort,
     },
@@ -188,15 +196,13 @@ function createMockChildContainer(
 
 /**
  * Creates a mock uninitialized child container that needs async initialization.
+ * Note: With unified Container type, child containers don't have initialize().
+ * This mock is for testing async patterns with child containers.
  */
 function createMockUninitializedChildContainer(
   parentContainer: TestContainer
-): ChildContainer<
-  typeof TestServicePort,
-  typeof ExtendedServicePort,
-  typeof ExtendedServicePort
-> & {
-  initialize: () => Promise<ChildContainer<typeof TestServicePort, typeof ExtendedServicePort>>;
+): TestChildContainer & {
+  initialize: () => Promise<TestChildContainer>;
 } {
   const mockScope = createMockScope("async-child-service");
   let initialized = false;
@@ -216,9 +222,11 @@ function createMockUninitializedChildContainer(
     createChild: vi.fn(),
     dispose: vi.fn().mockResolvedValue(undefined),
     has: vi.fn().mockReturnValue(true),
+    isInitialized: true,
     isDisposed: false,
     parent: parentContainer,
-    [ChildContainerBrand]: {
+    initialize: undefined as never,
+    [ContainerBrand]: {
       provides: TestServicePort,
       extends: ExtendedServicePort,
     },
@@ -264,19 +272,16 @@ function createMockUninitializedChildContainer(
     dispose: vi.fn().mockResolvedValue(undefined),
     has: vi.fn().mockReturnValue(true),
     initialize: mockInitialize,
+    isInitialized: false,
     isDisposed: false,
     parent: parentContainer,
-    [ChildContainerBrand]: {
+    [ContainerBrand]: {
       provides: TestServicePort,
       extends: ExtendedServicePort,
     },
     [INTERNAL_ACCESS]: () => mockInternalState,
-  } as unknown as ChildContainer<
-    typeof TestServicePort,
-    typeof ExtendedServicePort,
-    typeof ExtendedServicePort
-  > & {
-    initialize: () => Promise<ChildContainer<typeof TestServicePort, typeof ExtendedServicePort>>;
+  } as unknown as TestChildContainer & {
+    initialize: () => Promise<TestChildContainer>;
   };
 }
 
@@ -477,9 +482,11 @@ describe("AsyncContainerProvider with nested child containers", () => {
       <ContainerProvider container={parentContainer}>
         <AsyncContainerProvider
           container={
+            // Cast to root container type since AsyncContainerProvider requires initialize()
             asyncChildContainer as unknown as Container<
               typeof TestServicePort,
-              typeof ExtendedServicePort,
+              never,
+              never,
               "uninitialized"
             >
           }
@@ -524,9 +531,11 @@ describe("Compound components with nested providers", () => {
       <ContainerProvider container={parentContainer}>
         <AsyncContainerProvider
           container={
+            // Cast to root container type since AsyncContainerProvider requires initialize()
             asyncChildContainer as unknown as Container<
               typeof TestServicePort,
-              typeof ExtendedServicePort,
+              never,
+              never,
               "uninitialized"
             >
           }

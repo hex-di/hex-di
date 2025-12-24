@@ -1,5 +1,5 @@
 /**
- * Type-level tests for ChildContainerBuilder override and extend operations.
+ * Type-level tests for ContainerBuilder override and extend operations.
  *
  * These tests verify compile-time validation for:
  * 1. Override of valid port (in parent) compiles successfully
@@ -24,12 +24,7 @@ import {
   OverridePortNotFoundError,
 } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
-import type {
-  ChildContainerBuilder,
-  ChildContainer,
-  Container,
-  InheritanceMode,
-} from "../src/types.js";
+import type { ContainerBuilder, Container, InheritanceMode } from "../src/types.js";
 
 // =============================================================================
 // Test Service Interfaces
@@ -105,8 +100,8 @@ const CacheAdapter = createAdapter({
 // Override Type Tests
 // =============================================================================
 
-describe("ChildContainerBuilder.override type validation", () => {
-  it("override of valid port (in parent) returns ChildContainerBuilder", () => {
+describe("ContainerBuilder.override type validation", () => {
+  it("override of valid port (in parent) returns ContainerBuilder", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
     const container = createContainer(graph);
 
@@ -114,7 +109,7 @@ describe("ChildContainerBuilder.override type validation", () => {
     const overrideResult = builder.override(AlternativeLoggerAdapter);
     expect(overrideResult).toBeDefined();
 
-    // Result should be a ChildContainerBuilder (not an error type)
+    // Result should be a ContainerBuilder (not an error type)
     expectTypeOf(overrideResult).toHaveProperty("build");
     expectTypeOf(overrideResult).toHaveProperty("override");
     expectTypeOf(overrideResult).toHaveProperty("extend");
@@ -167,7 +162,7 @@ describe("ChildContainerBuilder.override type validation", () => {
       .override(AlternativeLoggerAdapter)
       .override(AlternativeDatabaseAdapter);
 
-    // Result should still be a valid ChildContainerBuilder
+    // Result should still be a valid ContainerBuilder
     expectTypeOf(builder).toHaveProperty("build");
   });
 });
@@ -176,8 +171,8 @@ describe("ChildContainerBuilder.override type validation", () => {
 // Extend Type Tests
 // =============================================================================
 
-describe("ChildContainerBuilder.extend type validation", () => {
-  it("extend of new port (not in parent) returns ChildContainerBuilder", () => {
+describe("ContainerBuilder.extend type validation", () => {
+  it("extend of new port (not in parent) returns ContainerBuilder", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
     const container = createContainer(graph);
 
@@ -186,7 +181,7 @@ describe("ChildContainerBuilder.extend type validation", () => {
     const extendResult = builder.extend(ConfigAdapter);
     expect(extendResult).toBeDefined();
 
-    // Result should be a ChildContainerBuilder with extended types
+    // Result should be a ContainerBuilder with extended types
     expectTypeOf(extendResult).toHaveProperty("build");
     expectTypeOf(extendResult).toHaveProperty("override");
     expectTypeOf(extendResult).toHaveProperty("extend");
@@ -301,10 +296,10 @@ describe("ChildContainer resolution types", () => {
 });
 
 // =============================================================================
-// Task Group 6.1: ChildContainerBuilder API Type Tests
+// Task Group 6.1: ContainerBuilder API Type Tests
 // =============================================================================
 
-describe("ChildContainerBuilder API types (6.1)", () => {
+describe("ContainerBuilder API types (6.1)", () => {
   it("createChild() returns correctly typed builder", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
     const container = createContainer(graph);
@@ -312,7 +307,7 @@ describe("ChildContainerBuilder API types (6.1)", () => {
     const builder = container.createChild();
 
     // Builder should have the correct type with parent's TProvides
-    expectTypeOf(builder).toMatchTypeOf<ChildContainerBuilder<LoggerPortType, never>>();
+    expectTypeOf(builder).toMatchTypeOf<ContainerBuilder<LoggerPortType, never>>();
     expectTypeOf(builder).toHaveProperty("override");
     expectTypeOf(builder).toHaveProperty("extend");
     expectTypeOf(builder).toHaveProperty("withInheritanceMode");
@@ -476,9 +471,9 @@ describe("Extend validation types (6.3)", () => {
     // but we can verify the parent type does not include ConfigPort
 
     type ParentProvides =
-      typeof container extends Container<infer P, infer _A, infer _Ph> ? P : never;
+      typeof container extends Container<infer P, infer _E, infer _A, infer _Ph> ? P : never;
     type ChildProvides =
-      typeof childContainer extends ChildContainer<infer P, infer E, infer _A, infer _Ph>
+      typeof childContainer extends Container<infer P, infer E, infer _A, infer _Ph>
         ? P | E
         : never;
 

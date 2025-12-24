@@ -97,7 +97,10 @@ function createMockContainer(): TestContainer {
     initialize: mockInitialize,
     isDisposed: false,
     isInitialized: true,
-    [ContainerBrand]: { provides: TestServicePort },
+    get parent(): never {
+      throw new Error("Root containers do not have a parent");
+    },
+    [ContainerBrand]: { provides: TestServicePort, extends: undefined as never },
     [INTERNAL_ACCESS]: (() => ({})) as () => unknown,
   } as TestContainer;
 

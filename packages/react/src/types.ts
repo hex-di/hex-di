@@ -108,7 +108,7 @@ export interface Resolver<TProvides extends Port<unknown, string>> {
  * ```
  */
 export type ToResolver<T> =
-  T extends Container<infer P, infer _TAsync, infer _TPhase>
+  T extends Container<infer P, infer _TExtends, infer _TAsync, infer _TPhase>
     ? Resolver<P>
     : T extends Scope<infer P, infer _TAsync, infer _TPhase>
       ? Resolver<P>
@@ -171,13 +171,19 @@ export interface AutoScopeProviderProps {
  * Props for the AsyncContainerProvider component.
  *
  * @typeParam TProvides - Union of Port types that the container can resolve
+ * @typeParam TAsyncPorts - Union of Port types that require async initialization
  */
-export interface AsyncContainerProviderProps<TProvides extends Port<unknown, string>> {
+export interface AsyncContainerProviderProps<
+  TProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> = Port<unknown, string>,
+> {
   /**
    * The uninitialized Container instance to initialize and provide.
    * Must be created with createContainer() and NOT yet initialized.
+   * Uses root container type (TExtends = never) since only root containers
+   * have the initialize() method.
    */
-  readonly container: Container<TProvides, Port<unknown, string>, "uninitialized">;
+  readonly container: Container<TProvides, never, TAsyncPorts, "uninitialized">;
 
   /**
    * React children - can be compound components or regular children.
@@ -223,9 +229,13 @@ export interface AsyncContainerReadyProps {
  * Type for the AsyncContainerProvider component with compound components.
  *
  * @typeParam TProvides - Union of Port types that the container can resolve
+ * @typeParam TAsyncPorts - Union of Port types that require async initialization
  */
-export interface AsyncContainerProviderComponent<TProvides extends Port<unknown, string>> {
-  (props: AsyncContainerProviderProps<TProvides>): ReactNode;
+export interface AsyncContainerProviderComponent<
+  TProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> = Port<unknown, string>,
+> {
+  (props: AsyncContainerProviderProps<TProvides, TAsyncPorts>): ReactNode;
   Loading: ComponentType<AsyncContainerLoadingProps>;
   Error: ComponentType<AsyncContainerErrorProps>;
   Ready: ComponentType<AsyncContainerReadyProps>;

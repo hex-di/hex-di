@@ -304,7 +304,10 @@ describe("createTestContainer", () => {
     const { container, scope, dispose } = createTestContainer(graph);
 
     // Container and scope should be different objects
-    expect(container).not.toBe(scope);
+    // Using Object.is with unknown cast to avoid:
+    // 1. vitest's property iteration which accesses the `parent` getter that throws
+    // 2. TypeScript's strict type checking which knows Container and Scope don't overlap
+    expect(Object.is(container as unknown, scope as unknown)).toBe(false);
 
     // Both should be able to resolve
     const loggerFromContainer = container.resolve(LoggerPort);

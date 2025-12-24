@@ -82,8 +82,10 @@ export interface AsyncContainerProviderProps<TProvides extends Port<unknown, str
   /**
    * The uninitialized Container instance to initialize and provide.
    * Must be created with createContainer() and NOT yet initialized.
+   * Uses root container type (TExtends = never) since only root containers
+   * have the initialize() method.
    */
-  readonly container: Container<TProvides, Port<unknown, string>, "uninitialized">;
+  readonly container: Container<TProvides, never, Port<unknown, string>, "uninitialized">;
 
   /**
    * React children - can be compound components or regular children.

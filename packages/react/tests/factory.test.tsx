@@ -109,7 +109,10 @@ function createMockContainer(): TestContainer {
     initialize: mockInitialize,
     isInitialized: false,
     isDisposed: false,
-    [ContainerBrand]: { provides: LoggerPort },
+    get parent(): never {
+      throw new Error("Root containers do not have a parent");
+    },
+    [ContainerBrand]: { provides: LoggerPort, extends: undefined as never },
     [INTERNAL_ACCESS]: () => mockInternalState,
   } as TestContainer;
 

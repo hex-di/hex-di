@@ -8,14 +8,7 @@
  * @packageDocumentation
  */
 
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useCallback,
-  useRef,
-  type ReactElement,
-} from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef, type ReactElement } from "react";
 import type { Port } from "@hex-di/ports";
 import type { Container, ContainerPhase } from "@hex-di/runtime";
 import { createInspector } from "../index.js";
@@ -39,11 +32,12 @@ import { ResolvedServices, type ServiceInfo } from "./resolved-services.js";
  */
 export interface ContainerInspectorProps<
   TProvides extends Port<unknown, string> = Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> | never = never,
+  TExtends extends Port<unknown, string> = never,
+  TAsyncPorts extends Port<unknown, string> = never,
   TPhase extends ContainerPhase = ContainerPhase,
 > {
   /** The runtime container to inspect */
-  readonly container: Container<TProvides, TAsyncPorts, TPhase>;
+  readonly container: Container<TProvides, TExtends, TAsyncPorts, TPhase>;
   /** The exported dependency graph for metadata */
   readonly exportedGraph: ExportedGraph;
   /** Optional tracing API for request service stats */
@@ -82,14 +76,14 @@ function getRequestServiceStats(
   }
 
   const traces = tracingAPI.getTraces({ portName });
-  const requestTraces = traces.filter((t) => t.lifetime === "transient");
+  const requestTraces = traces.filter(t => t.lifetime === "transient");
 
   if (requestTraces.length === 0) {
     return undefined;
   }
 
   const totalDuration = requestTraces.reduce((sum, t) => sum + t.duration, 0);
-  const lastResolvedAt = Math.max(...requestTraces.map((t) => t.startTime));
+  const lastResolvedAt = Math.max(...requestTraces.map(t => t.startTime));
 
   return {
     callCount: requestTraces.length,
@@ -252,13 +246,14 @@ function buildServiceList(
  */
 export function ContainerInspector<
   TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> | never = never,
+  TExtends extends Port<unknown, string> = never,
+  TAsyncPorts extends Port<unknown, string> = never,
   TPhase extends ContainerPhase = ContainerPhase,
 >({
   container,
   exportedGraph,
   tracingAPI,
-}: ContainerInspectorProps<TProvides, TAsyncPorts, TPhase>): ReactElement {
+}: ContainerInspectorProps<TProvides, TExtends, TAsyncPorts, TPhase>): ReactElement {
   // Create inspector once
   const inspector = useMemo(() => createInspector(container), [container]);
 
@@ -319,16 +314,14 @@ export function ContainerInspector<
 
   // Handle auto-refresh toggle
   const handleAutoRefreshToggle = useCallback(() => {
-    setAutoRefresh((prev) => !prev);
+    setAutoRefresh(prev => !prev);
   }, []);
 
   // Error state
   if (error !== null) {
     return (
       <div style={containerInspectorStyles.container}>
-        <div style={{ color: "#f38ba8", padding: "16px" }}>
-          Error: {error}
-        </div>
+        <div style={{ color: "#f38ba8", padding: "16px" }}>Error: {error}</div>
       </div>
     );
   }
@@ -337,9 +330,7 @@ export function ContainerInspector<
   if (snapshot === null || scopeTree === null) {
     return (
       <div style={containerInspectorStyles.container}>
-        <div style={{ color: "var(--hex-devtools-text-muted)", padding: "16px" }}>
-          Loading...
-        </div>
+        <div style={{ color: "var(--hex-devtools-text-muted)", padding: "16px" }}>Loading...</div>
       </div>
     );
   }

@@ -7,6 +7,7 @@ import { DEFAULT_CONTAINER_KEY, DEFAULT_SCOPE_KEY } from "./constants.js";
  * Variables added to the Hono Context by the HexDI middleware.
  *
  * @typeParam TProvides - Ports available in the container/scope
+ * @typeParam TExtends - Ports inherited from parent container
  * @typeParam TAsyncPorts - Ports with async factories (phantom type)
  * @typeParam TPhase - Container initialization phase
  * @typeParam ScopeKey - Context key used to store the scope
@@ -14,12 +15,13 @@ import { DEFAULT_CONTAINER_KEY, DEFAULT_SCOPE_KEY } from "./constants.js";
  */
 export type HexHonoVariables<
   TProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string> = never,
   TAsyncPorts extends Port<unknown, string> = never,
   TPhase extends ContainerPhase = "uninitialized",
   ScopeKey extends string = typeof DEFAULT_SCOPE_KEY,
   ContainerKey extends string = typeof DEFAULT_CONTAINER_KEY,
-> = Record<ContainerKey, Container<TProvides, TAsyncPorts, TPhase>> &
-  Record<ScopeKey, Scope<TProvides, TAsyncPorts, TPhase>>;
+> = Record<ContainerKey, Container<TProvides, TExtends, TAsyncPorts, TPhase>> &
+  Record<ScopeKey, Scope<TProvides | TExtends, TAsyncPorts, TPhase>>;
 
 /**
  * Minimal Env shape augmented with HexDI variables.
@@ -29,6 +31,7 @@ export type HexHonoVariables<
  */
 export type HexHonoEnv<
   TProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string> = never,
   TAsyncPorts extends Port<unknown, string> = never,
   TPhase extends ContainerPhase = "uninitialized",
   ScopeKey extends string = typeof DEFAULT_SCOPE_KEY,
@@ -36,7 +39,7 @@ export type HexHonoEnv<
   TBindings extends Bindings = Bindings,
 > = {
   Bindings?: TBindings;
-  Variables: HexHonoVariables<TProvides, TAsyncPorts, TPhase, ScopeKey, ContainerKey>;
+  Variables: HexHonoVariables<TProvides, TExtends, TAsyncPorts, TPhase, ScopeKey, ContainerKey>;
 };
 
 /**
@@ -48,11 +51,12 @@ export type HexHonoEnv<
 export type WithHexDi<
   E extends Env,
   TProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string> = never,
   TAsyncPorts extends Port<unknown, string> = never,
   TPhase extends ContainerPhase = "uninitialized",
   ScopeKey extends string = typeof DEFAULT_SCOPE_KEY,
   ContainerKey extends string = typeof DEFAULT_CONTAINER_KEY,
 > = Omit<E, "Variables"> & {
   Variables: (E["Variables"] extends object ? E["Variables"] : Variables) &
-    HexHonoVariables<TProvides, TAsyncPorts, TPhase, ScopeKey, ContainerKey>;
+    HexHonoVariables<TProvides, TExtends, TAsyncPorts, TPhase, ScopeKey, ContainerKey>;
 };

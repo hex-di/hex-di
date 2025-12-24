@@ -81,33 +81,18 @@ export type { TypedResolver };
 // =============================================================================
 
 /**
- * Converts any Container (with any TAsyncPorts, TPhase) to RuntimeContainerRef.
+ * Converts any Container (root or child) to RuntimeContainerRef.
  *
  * This function delegates to @hex-di/runtime's toRuntimeResolver, which
- * handles the type boundary safely.
+ * handles the type boundary safely. Works for both root containers
+ * (TExtends = never) and child containers (TExtends = Port types).
  *
  * @param container - The container to convert (any Container type)
  * @returns A RuntimeContainerRef that wraps the container's methods
  *
  * @internal
  */
-export function toRuntimeContainerRef<T extends ResolverLike>(
-  container: T
-): RuntimeContainerRef {
-  return toRuntimeResolver(container);
-}
-
-/**
- * Converts a typed ChildContainer to a RuntimeContainerRef for context storage.
- *
- * @param container - The typed child container to convert
- * @returns A RuntimeContainerRef that wraps the container's methods
- *
- * @internal
- */
-export function childContainerToRuntimeRef<T extends ResolverLike>(
-  container: T
-): RuntimeContainerRef {
+export function toRuntimeContainerRef<T extends ResolverLike>(container: T): RuntimeContainerRef {
   return toRuntimeResolver(container);
 }
 
@@ -122,9 +107,7 @@ export function childContainerToRuntimeRef<T extends ResolverLike>(
  *
  * @internal
  */
-export function toRuntimeScopeRef<T extends ResolverLike>(
-  scope: T
-): RuntimeScopeRef {
+export function toRuntimeScopeRef<T extends ResolverLike>(scope: T): RuntimeScopeRef {
   return toRuntimeResolver(scope);
 }
 

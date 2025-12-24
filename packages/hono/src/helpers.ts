@@ -37,14 +37,19 @@ export function getScope<
  */
 export function getContainer<
   TProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string> = never,
   TAsyncPorts extends Port<unknown, string> = never,
   TPhase extends ContainerPhase = "uninitialized",
   _ScopeKey extends string = typeof DEFAULT_SCOPE_KEY,
   ContainerKey extends string = typeof DEFAULT_CONTAINER_KEY,
   E extends GenericEnv = GenericEnv,
->(context: Context<E>, containerKey?: ContainerKey): Container<TProvides, TAsyncPorts, TPhase> {
+>(
+  context: Context<E>,
+  containerKey?: ContainerKey
+): Container<TProvides, TExtends, TAsyncPorts, TPhase> {
   const key = (containerKey ?? DEFAULT_CONTAINER_KEY) as ContainerKey;
-  const brandedKey = createContextVariableKey<Container<TProvides, TAsyncPorts, TPhase>>(key);
+  const brandedKey =
+    createContextVariableKey<Container<TProvides, TExtends, TAsyncPorts, TPhase>>(key);
   const container = getContextVariable(context, brandedKey);
 
   if (container === undefined) {

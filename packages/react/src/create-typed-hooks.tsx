@@ -18,8 +18,8 @@ import React, {
   type Context,
 } from "react";
 import type { Port, InferService } from "@hex-di/ports";
-import type { Container, ContainerPhase, ChildContainer } from "@hex-di/runtime";
-import { ChildContainerBrand } from "@hex-di/runtime";
+import type { Container, ContainerPhase } from "@hex-di/runtime";
+import { ContainerBrand } from "@hex-di/runtime";
 import type {
   TypedReactIntegration,
   ContainerProviderProps,
@@ -46,11 +46,12 @@ type AsyncContainerStatus = "loading" | "ready" | "error";
 
 /**
  * Internal state for async container initialization.
+ * Uses ContainerLike to accept both root and child containers.
  * @internal
  */
 interface AsyncContainerState<TProvides extends Port<unknown, string>> {
   readonly status: AsyncContainerStatus;
-  readonly container: Container<TProvides, Port<unknown, string>, "initialized"> | null;
+  readonly container: ContainerLike<TProvides> | null;
   readonly error: Error | null;
 }
 
@@ -67,23 +68,49 @@ interface AsyncContainerContextValue<TProvides extends Port<unknown, string>> {
 // =============================================================================
 
 /**
- * Checks if the provided container is a ChildContainer.
+ * Structural type representing what ContainerProvider needs from a container.
  *
- * ChildContainers have a branded property using the ChildContainerBrand symbol.
- * This allows ContainerProvider to distinguish between root containers
- * (which should not be nested) and child containers (which can be nested).
+ * With the unified Container type, root and child containers have different
+ * conditional properties (initialize, parent). This structural type includes
+ * only the common properties that both container types share, allowing
+ * ContainerProvider to accept either.
+ *
+ * @internal
+ */
+interface ContainerLike<TProvides extends Port<unknown, string>> {
+  resolve<P extends TProvides>(port: P): InferService<P>;
+  resolveAsync<P extends TProvides>(port: P): Promise<InferService<P>>;
+  createScope(): Resolver<TProvides>;
+  dispose(): Promise<void>;
+  has(port: Port<unknown, string>): boolean;
+  readonly isDisposed: boolean;
+  readonly isInitialized: boolean;
+  // parent property is accessed via try/catch for child detection
+  readonly parent?: unknown;
+}
+
+/**
+ * Checks if the provided container is a child container.
+ *
+ * With unified Container type, child containers are distinguished by
+ * having a `parent` property that doesn't throw. Root containers' `parent`
+ * property throws when accessed.
  *
  * @param container - The container to check
- * @returns true if the container is a ChildContainer, false otherwise
+ * @returns true if the container is a child container, false otherwise
  *
  * @internal
  */
 function isChildContainer<TProvides extends Port<unknown, string>>(
-  container:
-    | Container<TProvides, Port<unknown, string>, ContainerPhase>
-    | ChildContainer<TProvides, Port<unknown, string>>
-): container is ChildContainer<TProvides, Port<unknown, string>> {
-  return ChildContainerBrand in container;
+  container: ContainerLike<TProvides>
+): boolean {
+  // With unified Container type, check if parent access throws
+  try {
+    const _parent = container.parent;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // =============================================================================
@@ -93,16 +120,14 @@ function isChildContainer<TProvides extends Port<unknown, string>>(
 /**
  * Internal context value for the container context.
  *
- * Uses ContainerPhase union type to accept both uninitialized containers
- * (from ContainerProvider) and initialized containers (from AsyncContainerProvider).
- * Also supports ChildContainers for nested provider scenarios.
+ * Uses ContainerLike structural type to accept both root and child containers.
+ * Also supports uninitialized containers (from ContainerProvider) and
+ * initialized containers (from AsyncContainerProvider).
  *
  * @internal
  */
 interface ContainerContextValue<TProvides extends Port<unknown, string>> {
-  readonly container:
-    | Container<TProvides, Port<unknown, string>, ContainerPhase>
-    | ChildContainer<TProvides, Port<unknown, string>>;
+  readonly container: ContainerLike<TProvides>;
   readonly isChildContainer: boolean;
 }
 
@@ -289,8 +314,16 @@ export function createTypedHooks<
     // Detect nested ContainerProvider
     const existingContext = useContext(ContainerContext);
 
-    // Check if the new container is a child container
-    const containerIsChild = isChildContainer(container);
+    // Check if the new container is a child container.
+    // With unified Container type, child containers are distinguished by
+    // having a `parent` property that doesn't throw.
+    let containerIsChild = false;
+    try {
+      const _parent = (container as { parent?: unknown }).parent;
+      containerIsChild = true;
+    } catch {
+      containerIsChild = false;
+    }
 
     // If there's an existing context and the new container is NOT a child container,
     // this is an error (cannot nest root containers)
