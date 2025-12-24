@@ -11,7 +11,6 @@ import {
   DisposedScopeError,
   ScopeRequiredError,
   FactoryError,
-  AsyncFactoryError,
   AsyncInitializationRequiredError,
 } from "../common/errors.js";
 import type { ContainerInternalState } from "../inspector/types.js";
@@ -31,6 +30,7 @@ import { LifecycleManager } from "./lifecycle-manager.js";
 import { InheritanceResolver } from "./inheritance-resolver.js";
 import { ResolutionEngine } from "./resolution-engine.js";
 import { AsyncResolutionEngine } from "./async-resolution-engine.js";
+import { AsyncInitializer } from "./async-initializer.js";
 import { isDisposableChild, createMemoMapSnapshot } from "./helpers.js";
 import { ADAPTER_ACCESS } from "../inspector/symbols.js";
 
@@ -66,10 +66,7 @@ export class ContainerImpl<
 
   // Root-only state
   private readonly isRoot: boolean;
-  private readonly asyncPorts: Set<Port<unknown, string>>;
-  private readonly asyncAdapters: RuntimeAdapter[];
-  private initialized: boolean = false;
-  private initializationPromise: Promise<void> | null = null;
+  private readonly asyncInitializer: AsyncInitializer;
   private readonly hooksRunner: HooksRunner | null;
   private readonly resolutionEngine: ResolutionEngine;
   private readonly asyncResolutionEngine: AsyncResolutionEngine;
@@ -86,8 +83,7 @@ export class ContainerImpl<
     this.resolutionContext = new ResolutionContext();
     this.lifecycleManager = new LifecycleManager();
     this.adapterMap = new Map();
-    this.asyncPorts = new Set();
-    this.asyncAdapters = [];
+    this.asyncInitializer = new AsyncInitializer();
     this.localPorts = new Set();
 
     if (config.kind === "root") {
@@ -125,29 +121,18 @@ export class ContainerImpl<
     config: RootContainerConfig<TProvides, TAsyncPorts>
   ): HooksRunner | null {
     const { graph, options } = config;
-    const asyncEntries: Array<{ adapter: RuntimeAdapter; index: number }> = [];
     let adapterIndex = 0;
 
     for (const adapter of graph.adapters) {
       this.adapterMap.set(adapter.provides, adapter);
       if (adapter.factoryKind === "async") {
-        this.asyncPorts.add(adapter.provides);
-        asyncEntries.push({ adapter, index: adapterIndex });
+        this.asyncInitializer.registerAdapter(adapter, adapterIndex);
       }
       adapterIndex++;
     }
 
-    // Sort async adapters by priority with stable ordering:
-    // 1. Lower priority values are initialized first
-    // 2. When priorities are equal, original insertion order is preserved
-    // This ensures deterministic initialization order, even after merge operations
-    asyncEntries.sort((a, b) => {
-      const priorityA = a.adapter.initPriority ?? 100;
-      const priorityB = b.adapter.initPriority ?? 100;
-      const delta = priorityA - priorityB;
-      return delta !== 0 ? delta : a.index - b.index;
-    });
-    this.asyncAdapters.push(...asyncEntries.map(entry => entry.adapter));
+    // Finalize adapter registration (sorts by priority)
+    this.asyncInitializer.finalizeRegistration();
 
     // Create HooksRunner if hooks are provided
     if (options?.hooks?.beforeResolve !== undefined || options?.hooks?.afterResolve !== undefined) {
@@ -172,7 +157,7 @@ export class ContainerImpl<
     }
 
     // Child containers are considered initialized (inherit from parent)
-    this.initialized = true;
+    this.asyncInitializer.markInitialized();
   }
 
   setWrapper(wrapper: unknown): void {
@@ -195,7 +180,7 @@ export class ContainerImpl<
   }
 
   get isInitialized(): boolean {
-    return this.initialized;
+    return this.asyncInitializer.isInitialized;
   }
 
   async initialize(): Promise<void> {
@@ -206,42 +191,10 @@ export class ContainerImpl<
     if (this.lifecycleManager.isDisposed) {
       throw new DisposedScopeError("container");
     }
-    if (this.initialized) {
-      return;
-    }
-    if (this.initializationPromise !== null) {
-      await this.initializationPromise;
-      return;
-    }
 
-    this.initializationPromise = (async () => {
-      const totalAdapters = this.asyncAdapters.length;
-      for (let i = 0; i < totalAdapters; i++) {
-        const adapter = this.asyncAdapters[i];
-        try {
-          await this.resolveAsyncInternal(adapter.provides, this.singletonMemo, null);
-        } catch (error) {
-          // Enhance error with initialization context if not already an AsyncFactoryError
-          if (error instanceof AsyncFactoryError) {
-            throw error;
-          }
-          // Add initialization context to the error message
-          const portName = adapter.provides.__portName;
-          const contextMessage =
-            error instanceof Error
-              ? `${error.message} (initialization step ${i + 1}/${totalAdapters})`
-              : String(error);
-          throw new AsyncFactoryError(portName, new Error(contextMessage));
-        }
-      }
-      this.initialized = true;
-    })();
-
-    try {
-      await this.initializationPromise;
-    } finally {
-      this.initializationPromise = null;
-    }
+    await this.asyncInitializer.initialize(port =>
+      this.resolveAsyncInternal(port, this.singletonMemo, null)
+    );
   }
 
   registerChildContainer(child: DisposableChild): void {
@@ -302,7 +255,7 @@ export class ContainerImpl<
         throw new ScopeRequiredError(portName);
       }
 
-      if (!this.initialized && this.asyncPorts.has(port)) {
+      if (!this.asyncInitializer.isInitialized && this.asyncInitializer.hasAsyncPort(port)) {
         throw new AsyncInitializationRequiredError(portName);
       }
 
