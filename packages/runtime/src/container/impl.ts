@@ -31,6 +31,7 @@ import { isAdapterForPort, assertSyncAdapter } from "./internal-types.js";
 import { HooksRunner, checkCacheHit } from "./hooks-runner.js";
 import { LifecycleManager } from "./lifecycle-manager.js";
 import { InheritanceResolver } from "./inheritance-resolver.js";
+import { ResolutionEngine } from "./resolution-engine.js";
 import { isDisposableChild, createMemoMapSnapshot } from "./helpers.js";
 import { ADAPTER_ACCESS } from "../inspector/symbols.js";
 
@@ -71,6 +72,7 @@ export class ContainerImpl<
   private initialized: boolean = false;
   private initializationPromise: Promise<void> | null = null;
   private readonly hooksRunner: HooksRunner | null;
+  private readonly resolutionEngine: ResolutionEngine;
   private readonly pendingResolutions: Map<
     Port<unknown, string>,
     Map<string | null, Promise<unknown>>
@@ -107,6 +109,14 @@ export class ContainerImpl<
       this.hooksRunner = null;
       this.initializeFromParent(config);
     }
+
+    // Initialize resolution engine with dependency resolver callback
+    this.resolutionEngine = new ResolutionEngine(
+      this.singletonMemo,
+      this.resolutionContext,
+      this.hooksRunner,
+      (port, scopedMemo, scopeId) => this.resolveInternal(port, scopedMemo, scopeId)
+    );
   }
 
   private initializeFromGraph(
@@ -409,73 +419,7 @@ export class ContainerImpl<
     scopedMemo: MemoMap,
     scopeId: string | null
   ): InferService<P> {
-    if (this.hooksRunner === null) {
-      return this.resolveWithAdapterCore(port, adapter, scopedMemo, scopeId);
-    }
-
-    const isCacheHit = checkCacheHit(port, adapter.lifetime, this.singletonMemo, scopedMemo);
-    return this.hooksRunner.runSync(port, adapter, scopeId, isCacheHit, () =>
-      this.resolveWithAdapterCore(port, adapter, scopedMemo, scopeId)
-    );
-  }
-
-  private resolveWithAdapterCore<P extends Port<unknown, string>>(
-    port: P,
-    adapter: RuntimeAdapterFor<P>,
-    scopedMemo: MemoMap,
-    scopeId: string | null
-  ): InferService<P> {
-    switch (adapter.lifetime) {
-      case "singleton":
-        return this.singletonMemo.getOrElseMemoize(
-          port,
-          () => this.createInstance(port, adapter, scopedMemo, scopeId),
-          adapter.finalizer
-        );
-
-      case "scoped":
-        return scopedMemo.getOrElseMemoize(
-          port,
-          () => this.createInstance(port, adapter, scopedMemo, scopeId),
-          adapter.finalizer
-        );
-
-      case "transient":
-        return this.createInstance(port, adapter, scopedMemo, scopeId);
-
-      default:
-        throw new Error(`Unknown lifetime: ${adapter.lifetime}`);
-    }
-  }
-
-  private createInstance<P extends Port<unknown, string>>(
-    port: P,
-    adapter: RuntimeAdapterFor<P>,
-    scopedMemo: MemoMap,
-    scopeId: string | null
-  ): InferService<P> {
-    const portName = port.__portName;
-
-    this.resolutionContext.enter(portName);
-
-    try {
-      assertSyncAdapter(adapter, portName);
-
-      try {
-        const deps: Record<string, unknown> = {};
-        for (const requiredPort of adapter.requires) {
-          deps[requiredPort.__portName] = this.resolveInternal(requiredPort, scopedMemo, scopeId);
-        }
-        return adapter.factory(deps);
-      } catch (e) {
-        if (e instanceof ContainerError) {
-          throw e;
-        }
-        throw new FactoryError(portName, e);
-      }
-    } finally {
-      this.resolutionContext.exit(portName);
-    }
+    return this.resolutionEngine.resolve(port, adapter, scopedMemo, scopeId);
   }
 
   // =============================================================================
