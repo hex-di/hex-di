@@ -1,0 +1,366 @@
+/**
+ * Base container implementation with shared logic.
+ *
+ * @packageDocumentation
+ * @internal
+ */
+
+import type { Port, InferService } from "@hex-di/ports";
+import { MemoMap } from "../common/memo-map.js";
+import { ResolutionContext } from "../resolution/context.js";
+import { ScopeImpl } from "../scope/impl.js";
+import {
+  DisposedScopeError,
+  ScopeRequiredError,
+  AsyncInitializationRequiredError,
+} from "../common/errors.js";
+import type { ContainerInternalState } from "../inspector/types.js";
+import type { RuntimeAdapter, RuntimeAdapterFor, DisposableChild } from "./internal-types.js";
+import { isAdapterForPort } from "./internal-types.js";
+import { HooksRunner } from "./hooks-runner.js";
+import { LifecycleManager } from "./lifecycle-manager.js";
+import { ResolutionEngine } from "./resolution-engine.js";
+import { AsyncResolutionEngine } from "./async-resolution-engine.js";
+import { AsyncInitializer } from "./async-initializer.js";
+import { AdapterRegistry } from "./adapter-registry.js";
+import { isDisposableChild, createMemoMapSnapshot } from "./helpers.js";
+
+/**
+ * Abstract base class for container implementations.
+ *
+ * Provides shared functionality for both root and child containers:
+ * - Resolution delegation (via ResolutionEngine, AsyncResolutionEngine)
+ * - Lifecycle management (disposal, child registration)
+ * - DevTools state access
+ *
+ * @internal
+ */
+export abstract class BaseContainerImpl<
+  TProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string> = never,
+  TAsyncPorts extends Port<unknown, string> = never,
+> {
+  // Core state
+  protected readonly adapterRegistry: AdapterRegistry<TProvides, TAsyncPorts>;
+  protected readonly singletonMemo: MemoMap;
+  protected readonly resolutionContext: ResolutionContext;
+  protected readonly lifecycleManager: LifecycleManager;
+  protected readonly asyncInitializer: AsyncInitializer;
+  protected readonly resolutionEngine: ResolutionEngine;
+  protected readonly asyncResolutionEngine: AsyncResolutionEngine;
+  protected readonly hooksRunner: HooksRunner | null;
+  protected wrapper: unknown = null;
+
+  /**
+   * Whether this is a root container (true) or child container (false).
+   */
+  protected abstract readonly isRoot: boolean;
+
+  protected constructor(
+    adapterRegistry: AdapterRegistry<TProvides, TAsyncPorts>,
+    hooksRunner: HooksRunner | null
+  ) {
+    this.adapterRegistry = adapterRegistry;
+    this.singletonMemo = new MemoMap();
+    this.resolutionContext = new ResolutionContext();
+    this.lifecycleManager = new LifecycleManager();
+    this.asyncInitializer = new AsyncInitializer();
+    this.hooksRunner = hooksRunner;
+
+    // Initialize resolution engines with dependency resolver callbacks
+    this.resolutionEngine = new ResolutionEngine(
+      this.singletonMemo,
+      this.resolutionContext,
+      this.hooksRunner,
+      (port, scopedMemo, scopeId) => this.resolveInternal(port, scopedMemo, scopeId)
+    );
+
+    this.asyncResolutionEngine = new AsyncResolutionEngine(
+      this.singletonMemo,
+      this.resolutionContext,
+      this.hooksRunner,
+      (port, scopedMemo, scopeId) => this.resolveAsyncInternal(port, scopedMemo, scopeId)
+    );
+  }
+
+  // ===========================================================================
+  // Abstract Methods (implemented by Root/Child)
+  // ===========================================================================
+
+  /**
+   * Called when setting the wrapper to handle parent registration.
+   */
+  protected abstract onWrapperSet(wrapper: unknown): void;
+
+  /**
+   * Resolves a port that should use inheritance (child containers only).
+   * Root containers should throw.
+   */
+  protected abstract resolveWithInheritance<P extends TProvides | TExtends>(
+    port: P
+  ): InferService<P>;
+
+  /**
+   * Gets the original parent container (for getParent()).
+   */
+  abstract getParent(): unknown;
+
+  /**
+   * Initializes async adapters (root containers only).
+   * Child containers should throw.
+   */
+  abstract initialize(): Promise<void>;
+
+  /**
+   * Handles unregistration from parent during disposal.
+   */
+  protected abstract getParentUnregisterCallback(): (() => void) | undefined;
+
+  /**
+   * Resolves internal for child containers when port not found locally.
+   */
+  protected abstract resolveInternalFallback(
+    port: Port<unknown, string>,
+    portName: string
+  ): unknown;
+
+  /**
+   * Resolves async internal for child containers when port not found locally.
+   */
+  protected abstract resolveAsyncInternalFallback(port: Port<unknown, string>): Promise<unknown>;
+
+  // ===========================================================================
+  // Public API
+  // ===========================================================================
+
+  setWrapper(wrapper: unknown): void {
+    this.wrapper = wrapper;
+    this.onWrapperSet(wrapper);
+  }
+
+  getWrapper(): unknown {
+    return this.wrapper;
+  }
+
+  get isDisposed(): boolean {
+    return this.lifecycleManager.isDisposed;
+  }
+
+  get isInitialized(): boolean {
+    return this.asyncInitializer.isInitialized;
+  }
+
+  registerChildContainer(child: DisposableChild): void {
+    this.lifecycleManager.registerChildContainer(child);
+  }
+
+  unregisterChildContainer(child: DisposableChild): void {
+    this.lifecycleManager.unregisterChildContainer(child);
+  }
+
+  hasAdapter(port: Port<unknown, string>): boolean {
+    return this.adapterRegistry.has(port);
+  }
+
+  getAdapter(port: Port<unknown, string>): RuntimeAdapter | undefined {
+    return this.adapterRegistry.get(port);
+  }
+
+  has(port: Port<unknown, string>): boolean {
+    const adapter = this.getAdapter(port);
+    if (adapter === undefined) return false;
+    if (adapter.lifetime === "scoped") return false;
+    return true;
+  }
+
+  // ===========================================================================
+  // Resolution
+  // ===========================================================================
+
+  resolve<P extends TProvides | TExtends>(port: P): InferService<P> {
+    const portName = port.__portName;
+
+    if (this.lifecycleManager.isDisposed) {
+      throw new DisposedScopeError(portName);
+    }
+
+    // Check if should resolve locally
+    if (this.adapterRegistry.shouldResolveLocally(port, this.isRoot)) {
+      const adapter = this.adapterRegistry.getLocal(port);
+      if (adapter === undefined || !isAdapterForPort(adapter, port)) {
+        throw new Error(`No adapter registered for port '${portName}'`);
+      }
+
+      if (adapter.lifetime === "scoped") {
+        throw new ScopeRequiredError(portName);
+      }
+
+      if (!this.asyncInitializer.isInitialized && this.asyncInitializer.hasAsyncPort(port)) {
+        throw new AsyncInitializationRequiredError(portName);
+      }
+
+      return this.resolveWithAdapter(port, adapter, this.singletonMemo, null);
+    }
+
+    // Delegate to inheritance handling (child) or throw (root)
+    return this.resolveWithInheritance(port);
+  }
+
+  resolveInternal<P extends TProvides | TExtends>(
+    port: P,
+    scopedMemo: MemoMap,
+    scopeId?: string | null
+  ): InferService<P>;
+  resolveInternal(
+    port: Port<unknown, string>,
+    scopedMemo: MemoMap,
+    scopeId?: string | null
+  ): unknown;
+  resolveInternal(
+    port: Port<unknown, string>,
+    scopedMemo: MemoMap,
+    scopeId: string | null = null
+  ): unknown {
+    const portName = port.__portName;
+    const adapter = this.getAdapter(port);
+
+    if (adapter === undefined || !isAdapterForPort(adapter, port)) {
+      return this.resolveInternalFallback(port, portName);
+    }
+
+    return this.resolveWithAdapter(port, adapter, scopedMemo, scopeId);
+  }
+
+  protected resolveWithAdapter<P extends Port<unknown, string>>(
+    port: P,
+    adapter: RuntimeAdapterFor<P>,
+    scopedMemo: MemoMap,
+    scopeId: string | null
+  ): InferService<P> {
+    return this.resolutionEngine.resolve(port, adapter, scopedMemo, scopeId);
+  }
+
+  // ===========================================================================
+  // Async Resolution
+  // ===========================================================================
+
+  async resolveAsync<P extends TProvides | TExtends>(port: P): Promise<InferService<P>> {
+    const portName = port.__portName;
+    if (this.lifecycleManager.isDisposed) {
+      throw new DisposedScopeError(portName);
+    }
+
+    // Check if should resolve locally
+    if (this.adapterRegistry.shouldResolveLocally(port, this.isRoot)) {
+      const adapter = this.adapterRegistry.getLocal(port);
+      if (adapter === undefined || !isAdapterForPort(adapter, port)) {
+        throw new Error(`No adapter registered for port '${portName}'`);
+      }
+      if (adapter.lifetime === "scoped") {
+        throw new ScopeRequiredError(portName);
+      }
+      return this.resolveAsyncWithAdapter(port, adapter, this.singletonMemo, null);
+    }
+
+    // Delegate to async fallback
+    return this.resolveAsyncInternalFallback(port) as Promise<InferService<P>>;
+  }
+
+  resolveAsyncInternal<P extends TProvides | TExtends>(
+    port: P,
+    scopedMemo: MemoMap,
+    scopeId?: string | null
+  ): Promise<InferService<P>>;
+  resolveAsyncInternal(
+    port: Port<unknown, string>,
+    scopedMemo: MemoMap,
+    scopeId?: string | null
+  ): Promise<unknown>;
+  async resolveAsyncInternal(
+    port: Port<unknown, string>,
+    scopedMemo: MemoMap,
+    scopeId: string | null = null
+  ): Promise<unknown> {
+    const adapter = this.getAdapter(port);
+
+    if (adapter === undefined || !isAdapterForPort(adapter, port)) {
+      return this.resolveAsyncInternalFallback(port);
+    }
+
+    return this.resolveAsyncWithAdapter(port, adapter, scopedMemo, scopeId);
+  }
+
+  protected resolveAsyncWithAdapter<P extends Port<unknown, string>>(
+    port: P,
+    adapter: RuntimeAdapterFor<P>,
+    scopedMemo: MemoMap,
+    scopeId: string | null
+  ): Promise<InferService<P>> {
+    return this.asyncResolutionEngine.resolve(port, adapter, scopedMemo, scopeId);
+  }
+
+  // ===========================================================================
+  // Scope Management
+  // ===========================================================================
+
+  registerChildScope(
+    scope: ScopeImpl<TProvides | TExtends, TAsyncPorts, "uninitialized" | "initialized">
+  ): void {
+    this.lifecycleManager.registerChildScope(scope);
+  }
+
+  getSingletonMemo(): MemoMap {
+    return this.singletonMemo;
+  }
+
+  // ===========================================================================
+  // Disposal
+  // ===========================================================================
+
+  async dispose(): Promise<void> {
+    await this.lifecycleManager.dispose(this.singletonMemo, this.getParentUnregisterCallback());
+  }
+
+  // ===========================================================================
+  // Internal State (for DevTools)
+  // ===========================================================================
+
+  getInternalState(): ContainerInternalState {
+    if (this.lifecycleManager.isDisposed) {
+      throw new DisposedScopeError(this.isRoot ? "container" : "child-container");
+    }
+
+    const childScopeSnapshots = this.lifecycleManager.getChildScopeSnapshots(scope => {
+      const typedScope = scope as ScopeImpl<
+        TProvides | TExtends,
+        TAsyncPorts,
+        "uninitialized" | "initialized"
+      >;
+      return typedScope.getInternalState();
+    });
+
+    const snapshot: ContainerInternalState = {
+      disposed: this.lifecycleManager.isDisposed,
+      singletonMemo: createMemoMapSnapshot(this.singletonMemo),
+      childScopes: Object.freeze(childScopeSnapshots),
+      adapterMap: this.createAdapterMapSnapshot(),
+    };
+    return Object.freeze(snapshot);
+  }
+
+  private createAdapterMapSnapshot(): ReadonlyMap<
+    Port<unknown, string>,
+    import("../inspector/types.js").AdapterInfo
+  > {
+    const map = new Map<Port<unknown, string>, import("../inspector/types.js").AdapterInfo>();
+    for (const [port, adapter] of this.adapterRegistry.entries()) {
+      map.set(port, {
+        portName: port.__portName,
+        lifetime: adapter.lifetime,
+        dependencyCount: 0,
+        dependencyNames: [],
+      });
+    }
+    return map;
+  }
+}
