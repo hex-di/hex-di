@@ -14,7 +14,7 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
-import { createContainer } from "../src/container.js";
+import { createContainer } from "../src/container/factory.js";
 
 // =============================================================================
 // Test Fixtures
@@ -61,8 +61,6 @@ interface AuditServiceWithLoggerId extends AuditService {
 const LoggerPort = createPort<"Logger", Logger>("Logger");
 const DatabasePort = createPort<"Database", Database>("Database");
 const RequestContextPort = createPort<"RequestContext", RequestContext>("RequestContext");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
-const AuditServicePort = createPort<"AuditService", AuditService>("AuditService");
 
 // Helper to generate unique instance IDs
 let instanceCounter = 0;
@@ -297,13 +295,17 @@ describe("mixed lifetimes in dependency chain", () => {
     }));
 
     // Create port for extended type that includes loggerId for testing
-    const UserServiceWithLoggerIdPort = createPort<"UserService", UserServiceWithLoggerId>("UserService");
+    const UserServiceWithLoggerIdPort = createPort<"UserService", UserServiceWithLoggerId>(
+      "UserService"
+    );
 
-    const userServiceFactory = vi.fn((deps: { Logger: Logger }): UserServiceWithLoggerId => ({
-      getUser: vi.fn(),
-      instanceId: generateInstanceId(),
-      loggerId: deps.Logger.instanceId,
-    }));
+    const userServiceFactory = vi.fn(
+      (deps: { Logger: Logger }): UserServiceWithLoggerId => ({
+        getUser: vi.fn(),
+        instanceId: generateInstanceId(),
+        loggerId: deps.Logger.instanceId,
+      })
+    );
 
     const LoggerAdapter = createAdapter({
       provides: LoggerPort,
@@ -319,10 +321,7 @@ describe("mixed lifetimes in dependency chain", () => {
       factory: userServiceFactory,
     });
 
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(UserServiceAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(UserServiceAdapter).build();
 
     const container = createContainer(graph);
     const scope = container.createScope();
@@ -350,13 +349,17 @@ describe("mixed lifetimes in dependency chain", () => {
     }));
 
     // Create port for extended type that includes loggerId for testing
-    const AuditServiceWithLoggerIdPort = createPort<"AuditService", AuditServiceWithLoggerId>("AuditService");
+    const AuditServiceWithLoggerIdPort = createPort<"AuditService", AuditServiceWithLoggerId>(
+      "AuditService"
+    );
 
-    const auditFactory = vi.fn((deps: { Logger: Logger }): AuditServiceWithLoggerId => ({
-      audit: vi.fn(),
-      instanceId: generateInstanceId(),
-      loggerId: deps.Logger.instanceId,
-    }));
+    const auditFactory = vi.fn(
+      (deps: { Logger: Logger }): AuditServiceWithLoggerId => ({
+        audit: vi.fn(),
+        instanceId: generateInstanceId(),
+        loggerId: deps.Logger.instanceId,
+      })
+    );
 
     const LoggerAdapter = createAdapter({
       provides: LoggerPort,
@@ -372,10 +375,7 @@ describe("mixed lifetimes in dependency chain", () => {
       factory: auditFactory,
     });
 
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(AuditServiceAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(AuditServiceAdapter).build();
 
     const container = createContainer(graph);
     const scope1 = container.createScope();
@@ -405,13 +405,17 @@ describe("mixed lifetimes in dependency chain", () => {
     }));
 
     // Create port for extended type that includes contextId for testing
-    const UserServiceWithContextIdPort = createPort<"UserService", UserServiceWithContextId>("UserService");
+    const UserServiceWithContextIdPort = createPort<"UserService", UserServiceWithContextId>(
+      "UserService"
+    );
 
-    const userServiceFactory = vi.fn((deps: { RequestContext: RequestContext }): UserServiceWithContextId => ({
-      getUser: vi.fn(),
-      instanceId: generateInstanceId(),
-      contextId: deps.RequestContext.instanceId,
-    }));
+    const userServiceFactory = vi.fn(
+      (deps: { RequestContext: RequestContext }): UserServiceWithContextId => ({
+        getUser: vi.fn(),
+        instanceId: generateInstanceId(),
+        contextId: deps.RequestContext.instanceId,
+      })
+    );
 
     const RequestContextAdapter = createAdapter({
       provides: RequestContextPort,

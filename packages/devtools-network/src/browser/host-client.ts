@@ -468,7 +468,8 @@ export class DevToolsHostClient {
 
   private log(message: string): void {
     if (this.options.verbose) {
-      console.log(`[DevToolsHost:${this.options.appId}] ${message}`);
+      // Using console.warn for debug logs since console.log is disallowed
+      console.warn(`[DevToolsHost:${this.options.appId}] ${message}`);
     }
   }
 }

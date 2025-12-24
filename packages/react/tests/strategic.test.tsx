@@ -9,12 +9,12 @@
  * 5. Multiple nested AutoScopeProvider disposal order
  */
 
-import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
-import { render, cleanup, act } from "@testing-library/react";
+import { describe, expect, it, vi, afterEach } from "vitest";
+import { render, cleanup } from "@testing-library/react";
 import React, { Component, type ReactNode, type ErrorInfo } from "react";
 import { createPort } from "@hex-di/ports";
-import { ContainerBrand, ScopeBrand } from "@hex-di/runtime";
-import type { Container, Scope, ContainerInternalState, ScopeInternalState } from "@hex-di/runtime";
+import { ContainerBrand, ScopeBrand, INTERNAL_ACCESS } from "@hex-di/runtime";
+import type { Container, Scope } from "@hex-di/runtime";
 import { createTypedHooks } from "../src/create-typed-hooks.jsx";
 
 // =============================================================================
@@ -34,6 +34,11 @@ type TestProvides = typeof TestServicePort;
 type TestContainer = Container<TestProvides>;
 type TestScope = Scope<TestProvides>;
 
+interface MockScopeOptions {
+  name?: string;
+  onDispose?: () => void;
+}
+
 /**
  * Creates a mock scope for testing that satisfies the full Scope interface.
  *
@@ -42,18 +47,17 @@ type TestScope = Scope<TestProvides>;
  * type assertions, we must satisfy the complete interface including the
  * brand symbols and internal access methods.
  */
-function createMockScope(name: string = "scoped-service"): TestScope {
+function createMockScope(options: MockScopeOptions | string = "scoped-service"): TestScope {
+  const name = typeof options === "string" ? options : (options.name ?? "scoped-service");
+  const onDispose = typeof options === "string" ? undefined : options.onDispose;
+
   const mockResolve = vi.fn().mockReturnValue({ name });
   const mockCreateScope = vi.fn().mockImplementation(() => createMockScope(`nested-${name}`));
-  const mockDispose = vi.fn().mockResolvedValue(undefined);
+  const mockDispose = vi.fn().mockImplementation(() => {
+    onDispose?.();
+    return Promise.resolve();
+  });
   const mockResolveAsync = vi.fn().mockResolvedValue({ name });
-
-  const mockInternalState: ScopeInternalState = {
-    id: `mock-scope-${name}`,
-    disposed: false,
-    scopedMemo: { size: 0, entries: [] },
-    childScopes: [],
-  };
 
   const mockScope: TestScope = {
     resolve: mockResolve,
@@ -63,7 +67,8 @@ function createMockScope(name: string = "scoped-service"): TestScope {
     has: vi.fn().mockReturnValue(true),
     isDisposed: false,
     [ScopeBrand]: { provides: TestServicePort },
-  } as any as TestScope;
+    [INTERNAL_ACCESS]: (() => ({})) as () => unknown,
+  } as TestScope;
 
   return mockScope;
 }
@@ -78,14 +83,9 @@ function createMockContainer(): TestContainer {
   const mockResolveAsync = vi.fn().mockResolvedValue({ name: "container-service" });
   const mockCreateScope = vi.fn().mockReturnValue(mockScope);
   const mockDispose = vi.fn().mockResolvedValue(undefined);
-  const mockInitialize = vi.fn().mockImplementation(async function(this: TestContainer) { return this; });
-
-  const mockInternalState: ContainerInternalState = {
-    disposed: false,
-    singletonMemo: { size: 0, entries: [] },
-    childScopes: [],
-    adapterMap: new Map(),
-  };
+  const mockInitialize = vi.fn().mockImplementation(function (this: TestContainer) {
+    return Promise.resolve(this);
+  });
 
   const mockContainer: TestContainer = {
     resolve: mockResolve,
@@ -96,8 +96,10 @@ function createMockContainer(): TestContainer {
     has: vi.fn().mockReturnValue(true),
     initialize: mockInitialize,
     isDisposed: false,
+    isInitialized: true,
     [ContainerBrand]: { provides: TestServicePort },
-  } as any as TestContainer;
+    [INTERNAL_ACCESS]: (() => ({})) as () => unknown,
+  } as TestContainer;
 
   return mockContainer;
 }
@@ -110,10 +112,13 @@ interface ErrorBoundaryState {
 }
 
 class ErrorBoundary extends Component<
-  { children: ReactNode; onError?: (error: Error) => void },
+  { children: ReactNode; onError?: (error: Error, componentStack?: string) => void },
   ErrorBoundaryState
 > {
-  constructor(props: { children: ReactNode; onError?: (error: Error) => void }) {
+  constructor(props: {
+    children: ReactNode;
+    onError?: (error: Error, componentStack?: string) => void;
+  }) {
     super(props);
     this.state = { error: null };
   }
@@ -123,7 +128,9 @@ class ErrorBoundary extends Component<
   }
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    this.props.onError?.(error);
+    // Pass both error and errorInfo.componentStack for debugging
+    // Convert null to undefined for type compatibility
+    this.props.onError?.(error, errorInfo.componentStack ?? undefined);
   }
 
   override render(): ReactNode {
@@ -166,7 +173,11 @@ describe("error propagation", () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     render(
-      <ErrorBoundary onError={(e) => { capturedError = e; }}>
+      <ErrorBoundary
+        onError={e => {
+          capturedError = e;
+        }}
+      >
         <ContainerProvider container={container}>
           <FailingComponent />
         </ContainerProvider>
@@ -202,7 +213,11 @@ describe("error propagation", () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     render(
-      <ErrorBoundary onError={(e) => { capturedError = e; }}>
+      <ErrorBoundary
+        onError={e => {
+          capturedError = e;
+        }}
+      >
         <ContainerProvider container={container}>
           <FailingComponent />
         </ContainerProvider>
@@ -307,20 +322,19 @@ describe("AutoScopeProvider disposal behavior", () => {
   it("nested AutoScopeProviders dispose in correct order (LIFO)", async () => {
     const { ContainerProvider, AutoScopeProvider, usePort } = createTypedHooks<TestProvides>();
 
-    const container = createMockContainer();
-    const outerScope = createMockScope("outer");
-    const innerScope = createMockScope("inner");
-
     // Track disposal order
     const disposalOrder: string[] = [];
 
-    (outerScope.dispose as ReturnType<typeof vi.fn>).mockImplementation(async () => {
-      disposalOrder.push("outer");
+    const outerScope = createMockScope({
+      name: "outer",
+      onDispose: () => disposalOrder.push("outer"),
     });
-    (innerScope.dispose as ReturnType<typeof vi.fn>).mockImplementation(async () => {
-      disposalOrder.push("inner");
+    const innerScope = createMockScope({
+      name: "inner",
+      onDispose: () => disposalOrder.push("inner"),
     });
 
+    const container = createMockContainer();
     (container.createScope as ReturnType<typeof vi.fn>).mockReturnValue(outerScope);
     (outerScope.createScope as ReturnType<typeof vi.fn>).mockReturnValue(innerScope);
 

@@ -5,7 +5,11 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { DevToolsServer, type ServerEvent, type ServerEventListener } from "../src/server/websocket-server.js";
+import {
+  DevToolsServer,
+  type ServerEvent,
+  type ServerEventListener,
+} from "../src/server/websocket-server.js";
 import { Methods, createRequest, createNotification, ErrorCodes } from "@hex-di/devtools-core";
 import { EventEmitter } from "node:events";
 
@@ -79,13 +83,10 @@ class FakeAttachableServer extends EventEmitter {
 }
 
 // Helper to wait for a condition
-async function waitFor(
-  condition: () => boolean,
-  timeout = 2000
-): Promise<void> {
+async function waitFor(condition: () => boolean, timeout = 2000): Promise<void> {
   const start = Date.now();
   while (!condition() && Date.now() - start < timeout) {
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await new Promise(resolve => setTimeout(resolve, 10));
   }
 }
 
@@ -100,7 +101,7 @@ function waitForEvent<T extends ServerEvent["type"]>(
       reject(new Error(`Timeout waiting for event: ${eventType}`));
     }, timeout);
 
-    const listener: ServerEventListener = (event) => {
+    const listener: ServerEventListener = event => {
       if (event.type === eventType) {
         clearTimeout(timeoutId);
         server.off(listener);
@@ -136,29 +137,32 @@ describe("DevToolsServer", () => {
   // ===========================================================================
 
   describe("start/stop", () => {
-    it("should start the server", async () => {
-      await server.start();
+    it("should start the server", () => {
+      server.start();
 
       expect(server.running).toBe(true);
     });
 
-    it("should emit started event", async () => {
-      const eventPromise = waitForEvent(server, "started");
-      await server.start();
-      const event = await eventPromise;
+    it("should emit started event", () => {
+      const listener = vi.fn<ServerEventListener>();
+      server.on(listener);
 
-      expect(event.port).toBe(testPort);
+      server.start();
+
+      expect(listener).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "started", port: testPort })
+      );
     });
 
     it("should stop the server", async () => {
-      await server.start();
+      server.start();
       await server.stop();
 
       expect(server.running).toBe(false);
     });
 
     it("should emit stopped event", async () => {
-      await server.start();
+      server.start();
 
       const eventPromise = waitForEvent(server, "stopped");
       await server.stop();
@@ -167,9 +171,9 @@ describe("DevToolsServer", () => {
       expect(event.type).toBe("stopped");
     });
 
-    it("should not throw when starting already running server", async () => {
-      await server.start();
-      await expect(server.start()).resolves.toBeUndefined();
+    it("should not throw when starting already running server", () => {
+      server.start();
+      expect(() => server.start()).not.toThrow();
     });
 
     it("should not throw when stopping already stopped server", async () => {
@@ -182,32 +186,32 @@ describe("DevToolsServer", () => {
   // ===========================================================================
 
   describe("event listeners", () => {
-    it("should add event listener", async () => {
+    it("should add event listener", () => {
       const listener = vi.fn<ServerEventListener>();
       server.on(listener);
 
-      await server.start();
+      server.start();
 
       expect(listener).toHaveBeenCalled();
     });
 
-    it("should remove event listener", async () => {
+    it("should remove event listener", () => {
       const listener = vi.fn<ServerEventListener>();
       server.on(listener);
       server.off(listener);
 
-      await server.start();
+      server.start();
 
       expect(listener).not.toHaveBeenCalled();
     });
 
-    it("should not throw if listener throws", async () => {
+    it("should not throw if listener throws", () => {
       const badListener = vi.fn<ServerEventListener>(() => {
         throw new Error("Listener error");
       });
       server.on(badListener);
 
-      await expect(server.start()).resolves.toBeUndefined();
+      expect(() => server.start()).not.toThrow();
     });
   });
 
@@ -216,7 +220,7 @@ describe("DevToolsServer", () => {
   // ===========================================================================
 
   describe("client connections", () => {
-    it("should accept WebSocket connections", async () => {
+    it("should accept WebSocket connections", () => {
       const { client, server: serverSocket } = createSocketPair();
       attachToServer(server, serverSocket);
 
@@ -347,7 +351,7 @@ describe("DevToolsServer", () => {
   describe("message handling", () => {
     let client: InMemoryWebSocket;
 
-    beforeEach(async () => {
+    beforeEach(() => {
       const pair = createSocketPair();
       client = pair.client;
       attachToServer(server, pair.server);
@@ -360,8 +364,8 @@ describe("DevToolsServer", () => {
     });
 
     it("should respond to REGISTER_APP request", async () => {
-      const responsePromise = new Promise<string>((resolve) => {
-        client.on("message", (data) => {
+      const responsePromise = new Promise<string>(resolve => {
+        client.on("message", data => {
           resolve(String(data));
         });
       });
@@ -389,8 +393,8 @@ describe("DevToolsServer", () => {
       await waitFor(() => server.connectedApps > 0);
 
       // Now list apps
-      const responsePromise = new Promise<string>((resolve) => {
-        client.on("message", (data) => {
+      const responsePromise = new Promise<string>(resolve => {
+        client.on("message", data => {
           const msg = JSON.parse(String(data));
           if (msg.id === 2) {
             resolve(String(data));
@@ -408,8 +412,8 @@ describe("DevToolsServer", () => {
     });
 
     it("should return error for invalid JSON", async () => {
-      const responsePromise = new Promise<string>((resolve) => {
-        client.on("message", (data) => {
+      const responsePromise = new Promise<string>(resolve => {
+        client.on("message", data => {
           resolve(String(data));
         });
       });
@@ -423,8 +427,8 @@ describe("DevToolsServer", () => {
     });
 
     it("should return error for unknown method", async () => {
-      const responsePromise = new Promise<string>((resolve) => {
-        client.on("message", (data) => {
+      const responsePromise = new Promise<string>(resolve => {
+        client.on("message", data => {
           resolve(String(data));
         });
       });
@@ -439,8 +443,8 @@ describe("DevToolsServer", () => {
     });
 
     it("should return error for REGISTER_APP with invalid params", async () => {
-      const responsePromise = new Promise<string>((resolve) => {
-        client.on("message", (data) => {
+      const responsePromise = new Promise<string>(resolve => {
+        client.on("message", data => {
           resolve(String(data));
         });
       });
@@ -457,8 +461,8 @@ describe("DevToolsServer", () => {
     });
 
     it("should return error for data requests without appId", async () => {
-      const responsePromise = new Promise<string>((resolve) => {
-        client.on("message", (data) => {
+      const responsePromise = new Promise<string>(resolve => {
+        client.on("message", data => {
           resolve(String(data));
         });
       });
@@ -473,8 +477,8 @@ describe("DevToolsServer", () => {
     });
 
     it("should return error for data requests with non-existent app", async () => {
-      const responsePromise = new Promise<string>((resolve) => {
-        client.on("message", (data) => {
+      const responsePromise = new Promise<string>(resolve => {
+        client.on("message", data => {
           resolve(String(data));
         });
       });
@@ -499,7 +503,7 @@ describe("DevToolsServer", () => {
     let server1: InMemoryWebSocket;
     let server2: InMemoryWebSocket;
 
-    beforeEach(async () => {
+    beforeEach(() => {
       const pair1 = createSocketPair();
       const pair2 = createSocketPair();
       client1 = pair1.client;
@@ -522,7 +526,7 @@ describe("DevToolsServer", () => {
     it("should broadcast DATA_UPDATE notification to all clients", async () => {
       const receivedMessages: string[] = [];
 
-      client2.on("message", (data) => {
+      client2.on("message", data => {
         receivedMessages.push(String(data));
       });
 
@@ -563,7 +567,7 @@ describe("DevToolsServer", () => {
 
   describe("registry cleanup", () => {
     it("should clear registry when stopped", async () => {
-      await server.start();
+      server.start();
 
       const { client, server: serverSocket } = createSocketPair();
       attachToServer(server, serverSocket);

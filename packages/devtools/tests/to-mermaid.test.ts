@@ -38,7 +38,6 @@ interface Config {
 const LoggerPort = createPort<"Logger", Logger>("Logger");
 const DatabasePort = createPort<"Database", Database>("Database");
 const UserServicePort = createPort<"UserService", UserService>("UserService");
-const ConfigPort = createPort<"Config", Config>("Config");
 
 // =============================================================================
 // toMermaid Basic Tests
@@ -76,7 +75,7 @@ describe("toMermaid", () => {
     expect(result).toMatch(/^graph TD/);
   });
 
-  it("node labels formatted as PortName[\"PortName (lifetime)\"]", () => {
+  it('node labels formatted as PortName["PortName (lifetime)"]', () => {
     const LoggerAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
@@ -91,10 +90,7 @@ describe("toMermaid", () => {
       factory: () => ({ query: () => ({}) }),
     });
 
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
 
     const result = toMermaid(graph);
 
@@ -118,10 +114,7 @@ describe("toMermaid", () => {
       factory: () => ({ getUser: () => ({}) }),
     });
 
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(UserServiceAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(UserServiceAdapter).build();
 
     const result = toMermaid(graph);
 

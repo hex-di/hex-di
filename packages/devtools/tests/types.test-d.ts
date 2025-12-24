@@ -39,10 +39,7 @@ import type {
 } from "@hex-di/devtools-core";
 
 // Import React components
-import {
-  DevToolsPanel,
-  DevToolsFloating,
-} from "../src/react/index.js";
+import { DevToolsPanel, DevToolsFloating } from "../src/react/index.js";
 
 import type {
   DevToolsPanelProps,
@@ -92,7 +89,7 @@ const DatabaseAdapter = createAdapter({
   requires: [LoggerPort],
   lifetime: "singleton",
   factory: () => ({
-    query: async () => ({}),
+    query: () => Promise.resolve({}),
   }),
 });
 
@@ -101,7 +98,7 @@ const UserServiceAdapter = createAdapter({
   requires: [LoggerPort, DatabasePort],
   lifetime: "transient",
   factory: () => ({
-    getUser: async () => ({ id: "1", name: "Test" }),
+    getUser: () => Promise.resolve({ id: "1", name: "Test" }),
   }),
 });
 
@@ -242,7 +239,7 @@ describe("filterGraph type inference", () => {
 
   it("accepts NodePredicate as second parameter", () => {
     const exported = toJSON(testGraph);
-    const predicate: NodePredicate = (node) => node.lifetime === "singleton";
+    const predicate: NodePredicate = node => node.lifetime === "singleton";
 
     const result = filterGraph(exported, predicate);
     expectTypeOf(result).toMatchTypeOf<ExportedGraph>();
@@ -284,14 +281,14 @@ describe("filterGraph type inference", () => {
 describe("relabelPorts type inference", () => {
   it("returns ExportedGraph type", () => {
     const exported = toJSON(testGraph);
-    const result = relabelPorts(exported, (node) => node.label);
+    const result = relabelPorts(exported, node => node.label);
 
     expectTypeOf(result).toMatchTypeOf<ExportedGraph>();
   });
 
   it("accepts LabelTransform as second parameter", () => {
     const exported = toJSON(testGraph);
-    const transform: LabelTransform = (node) => `${node.label} (${node.lifetime})`;
+    const transform: LabelTransform = node => `${node.label} (${node.lifetime})`;
 
     const result = relabelPorts(exported, transform);
     expectTypeOf(result).toMatchTypeOf<ExportedGraph>();
@@ -305,7 +302,7 @@ describe("relabelPorts type inference", () => {
     const exported = toJSON(testGraph);
 
     // Should compile - transform can access id, label, and lifetime
-    relabelPorts(exported, (node) => {
+    relabelPorts(exported, node => {
       const id: string = node.id;
       const label: string = node.label;
       const lifetime: Lifetime = node.lifetime;
@@ -321,7 +318,9 @@ describe("relabelPorts type inference", () => {
 describe("DevToolsPanel prop types", () => {
   it("DevToolsPanelProps has graph property", () => {
     expectTypeOf<DevToolsPanelProps>().toHaveProperty("graph");
-    expectTypeOf<DevToolsPanelProps["graph"]>().toMatchTypeOf<Graph<Port<unknown, string>, never>>();
+    expectTypeOf<DevToolsPanelProps["graph"]>().toMatchTypeOf<
+      Graph<Port<unknown, string>, never>
+    >();
   });
 
   it("DevToolsPanelProps has optional container property", () => {
@@ -359,7 +358,9 @@ describe("DevToolsPanel prop types", () => {
 describe("DevToolsFloating prop types", () => {
   it("DevToolsFloatingProps has graph property", () => {
     expectTypeOf<DevToolsFloatingProps>().toHaveProperty("graph");
-    expectTypeOf<DevToolsFloatingProps["graph"]>().toMatchTypeOf<Graph<Port<unknown, string>, never>>();
+    expectTypeOf<DevToolsFloatingProps["graph"]>().toMatchTypeOf<
+      Graph<Port<unknown, string>, never>
+    >();
   });
 
   it("DevToolsFloatingProps has optional container property", () => {
@@ -375,7 +376,9 @@ describe("DevToolsFloating prop types", () => {
   });
 
   it("DevToolsPosition has all corner values", () => {
-    expectTypeOf<DevToolsPosition>().toEqualTypeOf<"bottom-right" | "bottom-left" | "top-right" | "top-left">();
+    expectTypeOf<DevToolsPosition>().toEqualTypeOf<
+      "bottom-right" | "bottom-left" | "top-right" | "top-left"
+    >();
   });
 
   it("DevToolsFloating is a function component", () => {
@@ -411,14 +414,14 @@ describe("type integration flow", () => {
   it("filterGraph output can be passed to relabelPorts", () => {
     const exported = toJSON(testGraph);
     const filtered = filterGraph(exported, byLifetime("singleton"));
-    const relabeled = relabelPorts(filtered, (n) => n.label.toUpperCase());
+    const relabeled = relabelPorts(filtered, n => n.label.toUpperCase());
 
     expectTypeOf(relabeled).toMatchTypeOf<ExportedGraph>();
   });
 
   it("relabelPorts output can be passed to toDOT", () => {
     const exported = toJSON(testGraph);
-    const relabeled = relabelPorts(exported, (n) => n.label.toUpperCase());
+    const relabeled = relabelPorts(exported, n => n.label.toUpperCase());
     const dot = toDOT(relabeled);
 
     expectTypeOf(dot).toBeString();
@@ -426,7 +429,7 @@ describe("type integration flow", () => {
 
   it("relabelPorts output can be passed to toMermaid", () => {
     const exported = toJSON(testGraph);
-    const relabeled = relabelPorts(exported, (n) => n.label.toUpperCase());
+    const relabeled = relabelPorts(exported, n => n.label.toUpperCase());
     const mermaid = toMermaid(relabeled);
 
     expectTypeOf(mermaid).toBeString();
@@ -440,7 +443,7 @@ describe("type integration flow", () => {
     const step2 = filterGraph(step1, byLifetime("singleton"));
     expectTypeOf(step2).toMatchTypeOf<ExportedGraph>();
 
-    const step3 = relabelPorts(step2, (n) => `[${n.lifetime}] ${n.label}`);
+    const step3 = relabelPorts(step2, n => `[${n.lifetime}] ${n.label}`);
     expectTypeOf(step3).toMatchTypeOf<ExportedGraph>();
 
     const step4 = toDOT(step3, { direction: "LR", preset: "styled" });

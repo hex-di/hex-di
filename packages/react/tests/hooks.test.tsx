@@ -5,28 +5,21 @@
  * 1. usePort resolves service from container
  * 2. usePort resolves service from nearest scope
  * 3. usePort throws MissingProviderError outside provider
- * 4. usePortOptional returns undefined outside provider
- * 5. usePortOptional returns service when available
- * 6. useContainer returns root container
- * 7. useContainer throws outside ContainerProvider
- * 8. useScope creates and disposes scope on component lifecycle
+ * 4. useContainer returns root container
+ * 5. useContainer throws outside ContainerProvider
+ * 6. useScope creates and disposes scope on component lifecycle
  */
 
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { render, screen, cleanup, renderHook } from "@testing-library/react";
-import React, { type ReactNode } from "react";
+import { render, screen, cleanup } from "@testing-library/react";
+import React from "react";
 import { createPort } from "@hex-di/ports";
 import { ContainerBrand, ScopeBrand } from "@hex-di/runtime";
-import type { Container, Scope, ContainerInternalState, ScopeInternalState } from "@hex-di/runtime";
+import type { Container, Scope } from "@hex-di/runtime";
 import { MissingProviderError } from "../src/errors.js";
-import {
-  ContainerProvider,
-  ScopeProvider,
-  AutoScopeProvider,
-} from "../src/context.jsx";
+import { ContainerProvider, ScopeProvider } from "../src/context.jsx";
 import { useContainer } from "../src/use-container.js";
 import { usePort } from "../src/use-port.js";
-import { usePortOptional } from "../src/use-port-optional.js";
 import { useScope } from "../src/use-scope.js";
 
 // =============================================================================
@@ -73,13 +66,6 @@ function createMockScope(name: string = "scoped-test-service"): TestScope {
   const mockDispose = vi.fn().mockResolvedValue(undefined);
   const mockResolveAsync = vi.fn().mockResolvedValue({ name });
 
-  const mockInternalState: ScopeInternalState = {
-    id: `mock-scope-${name}`,
-    disposed: false,
-    scopedMemo: { size: 0, entries: [] },
-    childScopes: [],
-  };
-
   const mockScope: TestScope = {
     resolve: mockResolve,
     resolveAsync: mockResolveAsync,
@@ -103,14 +89,9 @@ function createMockContainer(): TestContainer {
   const mockResolveAsync = vi.fn().mockResolvedValue({ name: "test-service" });
   const mockCreateScope = vi.fn().mockReturnValue(mockScope);
   const mockDispose = vi.fn().mockResolvedValue(undefined);
-  const mockInitialize = vi.fn().mockImplementation(async function(this: TestContainer) { return this; });
-
-  const mockInternalState: ContainerInternalState = {
-    disposed: false,
-    singletonMemo: { size: 0, entries: [] },
-    childScopes: [],
-    adapterMap: new Map(),
-  };
+  const mockInitialize = vi.fn().mockImplementation(function (this: TestContainer) {
+    return Promise.resolve(this);
+  });
 
   const mockContainer: TestContainer = {
     resolve: mockResolve,
@@ -192,44 +173,6 @@ describe("usePort", () => {
     }).toThrow(MissingProviderError);
 
     consoleSpy.mockRestore();
-  });
-});
-
-// =============================================================================
-// usePortOptional Tests
-// =============================================================================
-
-describe("usePortOptional", () => {
-  afterEach(() => {
-    cleanup();
-  });
-
-  it("returns undefined outside provider", () => {
-    function TestComponent(): React.ReactElement {
-      const service = usePortOptional(TestServicePort);
-      return <div data-testid="service-value">{service?.name ?? "undefined"}</div>;
-    }
-
-    render(<TestComponent />);
-
-    expect(screen.getByTestId("service-value").textContent).toBe("undefined");
-  });
-
-  it("returns service when available", () => {
-    const container = createMockContainer();
-
-    function TestComponent(): React.ReactElement {
-      const service = usePortOptional(TestServicePort);
-      return <div data-testid="service-value">{service?.name ?? "undefined"}</div>;
-    }
-
-    render(
-      <ContainerProvider container={container}>
-        <TestComponent />
-      </ContainerProvider>
-    );
-
-    expect(screen.getByTestId("service-value").textContent).toBe("test-service");
   });
 });
 

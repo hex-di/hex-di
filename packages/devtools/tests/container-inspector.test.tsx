@@ -13,14 +13,7 @@
  */
 
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
-import {
-  render,
-  screen,
-  cleanup,
-  fireEvent,
-  waitFor,
-  act,
-} from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, waitFor, act } from "@testing-library/react";
 import React from "react";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
@@ -50,9 +43,7 @@ interface RequestContext {
 const LoggerPort = createPort<"Logger", Logger>("Logger");
 const DatabasePort = createPort<"Database", Database>("Database");
 const UserServicePort = createPort<"UserService", UserService>("UserService");
-const RequestContextPort = createPort<"RequestContext", RequestContext>(
-  "RequestContext"
-);
+const RequestContextPort = createPort<"RequestContext", RequestContext>("RequestContext");
 
 /**
  * Creates a test graph with various lifetimes and dependencies.
@@ -133,8 +124,8 @@ describe("ContainerInspector", () => {
     const graph = createTestGraph();
     const container = createContainer(graph);
 
-    // Create a child scope
-    const scope = container.createScope();
+    // Create a child scope (side-effect: adds scope to container's tree for testing)
+    container.createScope();
 
     render(<DevToolsPanel graph={graph} container={container} mode="sections" />);
 
@@ -335,7 +326,7 @@ describe("ContainerInspector", () => {
     expect(screen.queryByTestId("service-item-Database")).not.toBeNull();
   });
 
-  it("auto-refresh toggle controls polling behavior", async () => {
+  it("auto-refresh toggle controls polling behavior", () => {
     const graph = createTestGraph();
     const container = createContainer(graph);
 

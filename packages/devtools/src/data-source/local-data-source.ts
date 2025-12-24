@@ -185,12 +185,13 @@ export class LocalDataSource implements DataSource, PresenterDataSourceContract 
   /**
    * Connect to the data source (no-op for local).
    */
-  async connect(): Promise<void> {
+  connect(): Promise<void> {
     this.connectionState = "connected";
     this.emit({ type: "connected" });
     // Emit initial data
     this.emit({ type: "graph_update", graph: this.exportedGraph });
     this.emit({ type: "traces_update", traces: this.getTraces() });
+    return Promise.resolve();
   }
 
   /**

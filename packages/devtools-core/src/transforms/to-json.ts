@@ -96,7 +96,7 @@ export function toJSON(graph: Graph<Port<unknown, string>, Port<unknown, string>
   const edges: ExportedEdge[] = [];
   for (const adapter of adapters) {
     const fromPortName = adapter.provides.__portName;
-    for (const required of adapter.requires as readonly Port<unknown, string>[]) {
+    for (const required of adapter.requires) {
       edges.push({
         from: fromPortName,
         to: required.__portName,

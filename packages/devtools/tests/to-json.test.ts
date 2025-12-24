@@ -14,7 +14,6 @@ import { describe, it, expect } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
 import { toJSON } from "../src/to-json.js";
-import type { ExportedGraph, ExportedNode, ExportedEdge } from "@hex-di/devtools-core";
 
 // =============================================================================
 // Test Fixtures
@@ -94,17 +93,17 @@ describe("toJSON", () => {
     const result = toJSON(graph);
 
     // Find each node and verify its properties
-    const loggerNode = result.nodes.find((n) => n.id === "Logger");
+    const loggerNode = result.nodes.find(n => n.id === "Logger");
     expect(loggerNode).toBeDefined();
     expect(loggerNode?.label).toBe("Logger");
     expect(loggerNode?.lifetime).toBe("singleton");
 
-    const databaseNode = result.nodes.find((n) => n.id === "Database");
+    const databaseNode = result.nodes.find(n => n.id === "Database");
     expect(databaseNode).toBeDefined();
     expect(databaseNode?.label).toBe("Database");
     expect(databaseNode?.lifetime).toBe("scoped");
 
-    const userServiceNode = result.nodes.find((n) => n.id === "UserService");
+    const userServiceNode = result.nodes.find(n => n.id === "UserService");
     expect(userServiceNode).toBeDefined();
     expect(userServiceNode?.label).toBe("UserService");
     expect(userServiceNode?.lifetime).toBe("transient");
@@ -198,11 +197,7 @@ describe("toJSON", () => {
     expect(result1).toEqual(result2);
 
     // Nodes should be sorted alphabetically by id
-    expect(result1.nodes.map((n) => n.id)).toEqual([
-      "Config",
-      "Database",
-      "Logger",
-    ]);
+    expect(result1.nodes.map(n => n.id)).toEqual(["Config", "Database", "Logger"]);
 
     // Edges should be sorted by from, then by to
     const edges = result1.edges;
@@ -247,10 +242,7 @@ describe("toJSON edge cases", () => {
       factory: () => ({ get: () => "" }),
     });
 
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(ConfigAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(ConfigAdapter).build();
 
     const result = toJSON(graph);
 

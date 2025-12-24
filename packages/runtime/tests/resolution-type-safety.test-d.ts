@@ -12,7 +12,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort, Port, InferService } from "@hex-di/ports";
+import { createPort, InferService } from "@hex-di/ports";
 import type { Container, Scope } from "../src/index.js";
 
 // =============================================================================
@@ -192,13 +192,14 @@ describe("resolve return type matches InferService<P>", () => {
 
     // The resolve method should return the service type inferred from the port
     // We verify this by checking the return type when we know the parameter type
-    type ResolveMethod = TestContainer["resolve"];
+    expectTypeOf<TestContainer["resolve"]>().toBeFunction();
 
     // When we instantiate the generic with LoggerPortType, the return should be Logger
     type LoggerResult = ReturnType<typeof resolveLogger>;
     function resolveLogger(container: TestContainer) {
       return container.resolve(LoggerPort);
     }
+    void resolveLogger;
     expectTypeOf<LoggerResult>().toEqualTypeOf<Logger>();
 
     // When we instantiate the generic with DatabasePortType, the return should be Database
@@ -206,6 +207,7 @@ describe("resolve return type matches InferService<P>", () => {
     function resolveDatabase(container: TestContainer) {
       return container.resolve(DatabasePort);
     }
+    void resolveDatabase;
     expectTypeOf<DatabaseResult>().toEqualTypeOf<Database>();
   });
 
@@ -216,12 +218,14 @@ describe("resolve return type matches InferService<P>", () => {
     function resolveScopeLogger(scope: TestScope) {
       return scope.resolve(LoggerPort);
     }
+    void resolveScopeLogger;
     expectTypeOf<LoggerResult>().toEqualTypeOf<Logger>();
 
     type DatabaseResult = ReturnType<typeof resolveScopeDatabase>;
     function resolveScopeDatabase(scope: TestScope) {
       return scope.resolve(DatabasePort);
     }
+    void resolveScopeDatabase;
     expectTypeOf<DatabaseResult>().toEqualTypeOf<Database>();
   });
 });
@@ -257,6 +261,7 @@ describe("resolve works with Port union TProvides", () => {
 
       return { logger, database, userService, config, cache, auth, metrics, eventBus };
     }
+    void resolveAll;
 
     type Results = ReturnType<typeof resolveAll>;
 
@@ -287,6 +292,7 @@ describe("resolve works with Port union TProvides", () => {
 
       return { logger, database, userService, config };
     }
+    void resolveAll;
 
     type Results = ReturnType<typeof resolveAll>;
 
@@ -325,10 +331,12 @@ describe("Scope.resolve has same type safety as Container.resolve", () => {
     function resolveFromContainer(container: TestContainer) {
       return container.resolve(LoggerPort);
     }
+    void resolveFromContainer;
 
     function resolveFromScope(scope: TestScope) {
       return scope.resolve(LoggerPort);
     }
+    void resolveFromScope;
 
     // Both should return Logger
     type ContainerResult = ReturnType<typeof resolveFromContainer>;
@@ -374,6 +382,7 @@ describe("type inference works without explicit annotations", () => {
       // Return them so we can verify the inferred types
       return { logger, database };
     }
+    void useContainer;
 
     type Results = ReturnType<typeof useContainer>;
 
@@ -391,6 +400,7 @@ describe("type inference works without explicit annotations", () => {
 
       return { logger, userService };
     }
+    void useScope;
 
     type Results = ReturnType<typeof useScope>;
 
@@ -412,6 +422,7 @@ describe("type inference works without explicit annotations", () => {
 
       return { scopeLogger, nestedLogger };
     }
+    void useNestedScopes;
 
     type Results = ReturnType<typeof useNestedScopes>;
 
@@ -453,9 +464,11 @@ describe("complex TProvides scenarios", () => {
     function testContainer(container: TestContainer) {
       return container.resolve(MetricsServicePort);
     }
+    void testContainer;
     function testScope(scope: TestScope) {
       return scope.resolve(MetricsServicePort);
     }
+    void testScope;
 
     expectTypeOf<ReturnType<typeof testContainer>>().toEqualTypeOf<MetricsService>();
     expectTypeOf<ReturnType<typeof testScope>>().toEqualTypeOf<MetricsService>();
@@ -490,6 +503,7 @@ describe("complex TProvides scenarios", () => {
     function resolveComplex(container: TestContainer) {
       return container.resolve(ComplexServicePort);
     }
+    void resolveComplex;
 
     type Result = ReturnType<typeof resolveComplex>;
 
@@ -521,7 +535,9 @@ describe("complex TProvides scenarios", () => {
 
     // Create ports for specific repository types
     const UserRepositoryPort = createPort<"UserRepository", Repository<User>>("UserRepository");
-    const ProductRepositoryPort = createPort<"ProductRepository", Repository<Product>>("ProductRepository");
+    const ProductRepositoryPort = createPort<"ProductRepository", Repository<Product>>(
+      "ProductRepository"
+    );
 
     type UserRepositoryPortType = typeof UserRepositoryPort;
     type ProductRepositoryPortType = typeof ProductRepositoryPort;
@@ -533,6 +549,7 @@ describe("complex TProvides scenarios", () => {
       const productRepo = container.resolve(ProductRepositoryPort);
       return { userRepo, productRepo };
     }
+    void resolveRepos;
 
     type Results = ReturnType<typeof resolveRepos>;
 
@@ -564,6 +581,7 @@ describe("complex TProvides scenarios", () => {
 
       return { scope1Logger, scope2Logger, scope3Logger };
     }
+    void useNestedScopes;
 
     type Results = ReturnType<typeof useNestedScopes>;
 

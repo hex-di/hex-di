@@ -9,9 +9,8 @@
 import { describe, test, expect, vi } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
-import { createContainer } from "../src/container.js";
-import { createInspector } from "../src/create-inspector.js";
-import type { ContainerInspector, ContainerSnapshot, ScopeTree } from "../src/create-inspector.js";
+import { createContainer } from "../src/container/factory.js";
+import { createInspector } from "../src/inspector/creation.js";
 
 // =============================================================================
 // Test Fixtures
@@ -80,10 +79,7 @@ describe("createInspector Factory", () => {
       factory: () => ({ query: vi.fn() }),
     });
 
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
     const container = createContainer(graph);
 
     // Resolve one service to populate singleton memo
@@ -225,8 +221,9 @@ describe("createInspector Factory", () => {
     const scope2 = container.createScope();
     const nestedScope = scope1.createScope();
 
-    // Resolve in each scope
+    // Resolve in each scope to use scope2 as well
     scope1.resolve(RequestContextPort);
+    scope2.resolve(RequestContextPort);
     nestedScope.resolve(RequestContextPort);
 
     const inspector = createInspector(container);

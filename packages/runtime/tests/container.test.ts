@@ -8,8 +8,8 @@
 import { describe, test, expect, vi } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
-import { createContainer } from "../src/container.js";
-import { DisposedScopeError, ScopeRequiredError } from "../src/errors.js";
+import { createContainer } from "../src/container/factory.js";
+import { DisposedScopeError, ScopeRequiredError } from "../src/common/errors.js";
 import { toRuntimeResolver } from "../src/adapters/react-resolver.js";
 
 // =============================================================================
@@ -213,7 +213,7 @@ describe("createContainer with dependencies", () => {
       provides: UserServicePort,
       requires: [LoggerPort],
       lifetime: "singleton",
-      factory: (deps) => ({
+      factory: deps => ({
         getUser: (id: string) => {
           deps.Logger.log(`Getting user ${id}`);
           return { id, name: "Test User" };
@@ -221,10 +221,7 @@ describe("createContainer with dependencies", () => {
       }),
     });
 
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(UserServiceAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(UserServiceAdapter).build();
 
     const container = createContainer(graph);
     const userService = container.resolve(UserServicePort);

@@ -196,7 +196,7 @@ export class DevToolsServer {
   /**
    * Start the WebSocket server.
    */
-  async start(): Promise<void> {
+  start(): void {
     if (this.isRunning) {
       return;
     }
@@ -520,7 +520,8 @@ export class DevToolsServer {
 
   private log(message: string): void {
     if (this.options.verbose) {
-      console.log(`[DevToolsServer] ${message}`);
+      // Using console.warn for debug logs since console.log is disallowed
+      console.warn(`[DevToolsServer] ${message}`);
     }
   }
 }

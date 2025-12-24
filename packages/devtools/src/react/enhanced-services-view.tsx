@@ -413,7 +413,8 @@ export function EnhancedServicesView({
   // Handle service selection (e.g., scroll to in list view)
   const handleServiceSelect = useCallback((portName: string) => {
     // Could scroll to service in list view, or highlight it
-    console.log("Selected service:", portName);
+    // Currently unused but kept for future implementation
+    void portName;
   }, []);
 
   // Handle dependency click in list view

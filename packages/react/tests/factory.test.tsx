@@ -13,7 +13,7 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import React from "react";
-import { createPort, type Port, type InferService } from "@hex-di/ports";
+import { createPort } from "@hex-di/ports";
 import { ContainerBrand, ScopeBrand, INTERNAL_ACCESS } from "@hex-di/runtime";
 import type { Container, Scope, ContainerInternalState, ScopeInternalState } from "@hex-di/runtime";
 import { createTypedHooks } from "../src/create-typed-hooks.jsx";
@@ -88,7 +88,9 @@ function createMockContainer(): TestContainer {
   const mockResolveAsync = vi.fn().mockResolvedValue({ log: vi.fn(), name: "container-logger" });
   const mockCreateScope = vi.fn().mockReturnValue(mockScope);
   const mockDispose = vi.fn().mockResolvedValue(undefined);
-  const mockInitialize = vi.fn().mockImplementation(async function(this: TestContainer) { return this; });
+  const mockInitialize = vi.fn().mockImplementation(function (this: TestContainer) {
+    return Promise.resolve(this);
+  });
 
   const mockInternalState: ContainerInternalState = {
     disposed: false,

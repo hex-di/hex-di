@@ -11,14 +11,17 @@
  * 7. Cache hit detection
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { createPort } from "@hex-di/ports";
 import type { Port } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
 import { TRACING_ACCESS } from "@hex-di/runtime";
-import { createTracingContainer, type TracingContainer } from "../../src/tracing/tracing-container.js";
+import {
+  createTracingContainer,
+  type TracingContainer,
+} from "../../src/tracing/tracing-container.js";
 import { MemoryCollector } from "../../src/tracing/memory-collector.js";
-import type { TracingAPI, TraceEntry } from "@hex-di/devtools-core";
+import type { TracingAPI } from "@hex-di/devtools-core";
 
 // =============================================================================
 // Helper Functions
@@ -76,7 +79,7 @@ const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort, DatabasePort],
   lifetime: "scoped",
-  factory: (deps) => ({
+  factory: deps => ({
     getUser: (id: string) => {
       deps.Logger.log(`Getting user ${id}`);
       return { id, name: "Test User" };
@@ -233,7 +236,7 @@ describe("trace hierarchy tracking", () => {
     // (Dependencies like Logger and Database are resolved internally by the container)
     expect(traces.length).toBeGreaterThanOrEqual(1);
 
-    const userServiceTrace = traces.find((t) => t.portName === "UserService");
+    const userServiceTrace = traces.find(t => t.portName === "UserService");
     expect(userServiceTrace).toBeDefined();
     expect(userServiceTrace?.lifetime).toBe("scoped");
   });
@@ -404,7 +407,7 @@ describe("scope integration", () => {
     scope.resolve(UserServicePort);
 
     const traces = tracingAPI.getTraces();
-    const userServiceTrace = traces.find((t) => t.portName === "UserService");
+    const userServiceTrace = traces.find(t => t.portName === "UserService");
 
     expect(userServiceTrace).toBeDefined();
     expect(userServiceTrace?.scopeId).not.toBeNull();
@@ -427,7 +430,7 @@ describe("scope integration", () => {
     expect(traces.length).toBeGreaterThan(0);
 
     // Should have UserService trace with scope ID
-    const userServiceTrace = traces.find((t) => t.portName === "UserService");
+    const userServiceTrace = traces.find(t => t.portName === "UserService");
     expect(userServiceTrace).toBeDefined();
   });
 });

@@ -10,7 +10,7 @@
  * - Scope async resolution
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter, createAsyncAdapter } from "@hex-di/graph";
 import {
@@ -66,12 +66,12 @@ describe("Async Factory Resolution", () => {
         provides: DatabasePort,
         requires: [ConfigPort],
 
-        factory: async deps => {
+        factory: async () => {
           // Simulate async connection
           await new Promise(resolve => setTimeout(resolve, 10));
           return {
-            query: async (sql: string) => `Result for: ${sql}`,
-            close: async () => {},
+            query: (sql: string) => Promise.resolve(`Result for: ${sql}`),
+            close: () => Promise.resolve(),
           };
         },
       });
@@ -124,8 +124,8 @@ describe("Async Factory Resolution", () => {
           factoryCallCount++;
           await new Promise(resolve => setTimeout(resolve, 5));
           return {
-            query: async (sql: string) => `Result: ${sql}`,
-            close: async () => {},
+            query: (sql: string) => Promise.resolve(`Result: ${sql}`),
+            close: () => Promise.resolve(),
           };
         },
       });
@@ -159,8 +159,8 @@ describe("Async Factory Resolution", () => {
           // Add some delay to simulate real async work
           await new Promise<void>(resolve => setTimeout(resolve, 50));
           return {
-            query: async (sql: string) => `Result: ${sql}`,
-            close: async () => {},
+            query: (sql: string) => Promise.resolve(`Result: ${sql}`),
+            close: () => Promise.resolve(),
           };
         },
       });
@@ -215,13 +215,13 @@ describe("Async Factory Resolution", () => {
         provides: DatabasePort,
         requires: [ConfigPort, LoggerPort],
 
-        factory: async deps => {
+        factory: async () => {
           resolutionOrder.push("Database-start");
           await new Promise(resolve => setTimeout(resolve, 10));
           resolutionOrder.push("Database-end");
           return {
-            query: async (sql: string) => `Result: ${sql}`,
-            close: async () => {},
+            query: (sql: string) => Promise.resolve(`Result: ${sql}`),
+            close: () => Promise.resolve(),
           };
         },
       });
@@ -269,8 +269,8 @@ describe("Container initialization", () => {
           await new Promise(resolve => setTimeout(resolve, 5));
           dbInitialized = true;
           return {
-            query: async (sql: string) => `Result: ${sql}`,
-            close: async () => {},
+            query: (sql: string) => Promise.resolve(`Result: ${sql}`),
+            close: () => Promise.resolve(),
           };
         },
       });
@@ -283,8 +283,8 @@ describe("Container initialization", () => {
           await new Promise(resolve => setTimeout(resolve, 5));
           cacheInitialized = true;
           return {
-            get: async (key: string) => null,
-            set: async (key: string, value: string) => {},
+            get: () => Promise.resolve(null),
+            set: () => Promise.resolve(),
           };
         },
       });
@@ -320,8 +320,8 @@ describe("Container initialization", () => {
           initOrder.push("Database");
           await new Promise(resolve => setTimeout(resolve, 5));
           return {
-            query: async (sql: string) => `Result: ${sql}`,
-            close: async () => {},
+            query: (sql: string) => Promise.resolve(`Result: ${sql}`),
+            close: () => Promise.resolve(),
           };
         },
       });
@@ -335,8 +335,8 @@ describe("Container initialization", () => {
           initOrder.push("Cache");
           await new Promise(resolve => setTimeout(resolve, 5));
           return {
-            get: async (key: string) => null,
-            set: async (key: string, value: string) => {},
+            get: () => Promise.resolve(null),
+            set: () => Promise.resolve(),
           };
         },
       });
@@ -363,8 +363,8 @@ describe("Container initialization", () => {
         factory: async () => {
           await new Promise(resolve => setTimeout(resolve, 5));
           return {
-            query: async (sql: string) => `Result: ${sql}`,
-            close: async () => {},
+            query: (sql: string) => Promise.resolve(`Result: ${sql}`),
+            close: () => Promise.resolve(),
           };
         },
       });
@@ -389,12 +389,12 @@ describe("Container initialization", () => {
         provides: DatabasePort,
         requires: [],
 
-        factory: async () => {
+        factory: () => {
           factoryCallCount++;
-          return {
-            query: async (sql: string) => `Result: ${sql}`,
-            close: async () => {},
-          };
+          return Promise.resolve({
+            query: (sql: string) => Promise.resolve(`Result: ${sql}`),
+            close: () => Promise.resolve(),
+          });
         },
       });
 
@@ -462,8 +462,8 @@ describe("Async error handling", () => {
         provides: DatabasePort,
         requires: [],
 
-        factory: async () => {
-          throw new Error("Init failed");
+        factory: () => {
+          return Promise.reject(new Error("Init failed"));
         },
       });
 
@@ -485,10 +485,11 @@ describe("Async error handling", () => {
         provides: DatabasePort,
         requires: [],
 
-        factory: async () => ({
-          query: async (sql: string) => `Result: ${sql}`,
-          close: async () => {},
-        }),
+        factory: () =>
+          Promise.resolve({
+            query: (sql: string) => Promise.resolve(`Result: ${sql}`),
+            close: () => Promise.resolve(),
+          }),
       });
 
       const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
@@ -512,10 +513,11 @@ describe("Async error handling", () => {
         provides: DatabasePort,
         requires: [],
 
-        factory: async () => ({
-          query: async (sql: string) => `Result: ${sql}`,
-          close: async () => {},
-        }),
+        factory: () =>
+          Promise.resolve({
+            query: (sql: string) => Promise.resolve(`Result: ${sql}`),
+            close: () => Promise.resolve(),
+          }),
       });
 
       const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
@@ -538,10 +540,11 @@ describe("Scope async resolution", () => {
       provides: DatabasePort,
       requires: [],
 
-      factory: async () => ({
-        query: async (sql: string) => `Result: ${sql}`,
-        close: async () => {},
-      }),
+      factory: () =>
+        Promise.resolve({
+          query: (sql: string) => Promise.resolve(`Result: ${sql}`),
+          close: () => Promise.resolve(),
+        }),
     });
 
     const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
@@ -567,12 +570,12 @@ describe("Scope async resolution", () => {
       provides: DatabasePort,
       requires: [],
 
-      factory: async () => {
+      factory: () => {
         factoryCallCount++;
-        return {
-          query: async (sql: string) => `Result: ${sql}`,
-          close: async () => {},
-        };
+        return Promise.resolve({
+          query: (sql: string) => Promise.resolve(`Result: ${sql}`),
+          close: () => Promise.resolve(),
+        });
       },
     });
 
@@ -606,10 +609,11 @@ describe("Async adapter finalizers", () => {
       provides: DatabasePort,
       requires: [],
 
-      factory: async () => ({
-        query: async (sql: string) => `Result: ${sql}`,
-        close: async () => {},
-      }),
+      factory: () =>
+        Promise.resolve({
+          query: (sql: string) => Promise.resolve(`Result: ${sql}`),
+          close: () => Promise.resolve(),
+        }),
       finalizer: async db => {
         closeCalled();
         await db.close();
@@ -641,8 +645,8 @@ describe("Resolution hooks for async adapters", () => {
       factory: async () => {
         await new Promise(resolve => setTimeout(resolve, 10));
         return {
-          query: async (sql: string) => `Result: ${sql}`,
-          close: async () => {},
+          query: (sql: string) => Promise.resolve(`Result: ${sql}`),
+          close: () => Promise.resolve(),
         };
       },
     });
@@ -682,10 +686,11 @@ describe("Resolution hooks for async adapters", () => {
     const DatabaseAdapter = createAsyncAdapter({
       provides: DatabasePort,
       requires: [],
-      factory: async () => ({
-        query: async (sql: string) => `Result: ${sql}`,
-        close: async () => {},
-      }),
+      factory: () =>
+        Promise.resolve({
+          query: (sql: string) => Promise.resolve(`Result: ${sql}`),
+          close: () => Promise.resolve(),
+        }),
     });
 
     const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
@@ -723,10 +728,11 @@ describe("Resolution hooks for async adapters", () => {
     const DatabaseAdapter = createAsyncAdapter({
       provides: DatabasePort,
       requires: [ConfigPort],
-      factory: async () => ({
-        query: async (sql: string) => `Result: ${sql}`,
-        close: async () => {},
-      }),
+      factory: () =>
+        Promise.resolve({
+          query: (sql: string) => Promise.resolve(`Result: ${sql}`),
+          close: () => Promise.resolve(),
+        }),
     });
 
     const graph = GraphBuilder.create()
@@ -769,8 +775,8 @@ describe("Resolution hooks for async adapters", () => {
     const DatabaseAdapter = createAsyncAdapter({
       provides: DatabasePort,
       requires: [],
-      factory: async () => {
-        throw new Error("Connection failed");
+      factory: () => {
+        return Promise.reject(new Error("Connection failed"));
       },
     });
 
@@ -810,8 +816,8 @@ describe("Resolution hooks for async adapters", () => {
       factory: async () => {
         await new Promise(resolve => setTimeout(resolve, 20));
         return {
-          query: async (sql: string) => `Result: ${sql}`,
-          close: async () => {},
+          query: (sql: string) => Promise.resolve(`Result: ${sql}`),
+          close: () => Promise.resolve(),
         };
       },
     });

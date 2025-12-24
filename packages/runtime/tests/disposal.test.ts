@@ -19,8 +19,8 @@ declare function setTimeout(callback: (...args: unknown[]) => void, ms?: number)
 import { describe, test, expect, vi } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
-import { createContainer } from "../src/container.js";
-import { DisposedScopeError } from "../src/errors.js";
+import { createContainer } from "../src/container/factory.js";
+import { DisposedScopeError } from "../src/common/errors.js";
 
 // =============================================================================
 // Test Fixtures
@@ -46,16 +46,18 @@ interface SessionStore {
   sessionId: string;
 }
 
-interface UserService {
-  getUser(id: string): unknown;
-}
-
 const LoggerPort = createPort<"Logger", Logger>("Logger");
 const DatabasePort = createPort<"Database", Database>("Database");
 const CachePort = createPort<"Cache", Cache>("Cache");
 const RequestContextPort = createPort<"RequestContext", RequestContext>("RequestContext");
 const SessionStorePort = createPort<"SessionStore", SessionStore>("SessionStore");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
+
+// Use ports to suppress unused variable warnings
+expect(LoggerPort).toBeDefined();
+expect(DatabasePort).toBeDefined();
+expect(CachePort).toBeDefined();
+expect(RequestContextPort).toBeDefined();
+expect(SessionStorePort).toBeDefined();
 
 function assertDisposedScopeError(error: unknown): DisposedScopeError {
   if (!(error instanceof DisposedScopeError)) {
@@ -88,7 +90,9 @@ describe("Disposal LIFO ordering", () => {
       requires: [],
       lifetime: "singleton",
       factory: () => ({ log: vi.fn() }),
-      finalizer: () => { disposalOrder.push("Logger"); },
+      finalizer: () => {
+        disposalOrder.push("Logger");
+      },
     });
 
     const DatabaseAdapter = createAdapter({
@@ -96,7 +100,9 @@ describe("Disposal LIFO ordering", () => {
       requires: [],
       lifetime: "singleton",
       factory: () => ({ query: vi.fn() }),
-      finalizer: () => { disposalOrder.push("Database"); },
+      finalizer: () => {
+        disposalOrder.push("Database");
+      },
     });
 
     const CacheAdapter = createAdapter({
@@ -104,7 +110,9 @@ describe("Disposal LIFO ordering", () => {
       requires: [],
       lifetime: "singleton",
       factory: () => ({ get: vi.fn() }),
-      finalizer: () => { disposalOrder.push("Cache"); },
+      finalizer: () => {
+        disposalOrder.push("Cache");
+      },
     });
 
     const graph = GraphBuilder.create()
@@ -134,7 +142,9 @@ describe("Disposal LIFO ordering", () => {
       requires: [],
       lifetime: "scoped",
       factory: () => ({ requestId: "1" }),
-      finalizer: () => { disposalOrder.push("RequestContext"); },
+      finalizer: () => {
+        disposalOrder.push("RequestContext");
+      },
     });
 
     const SessionAdapter = createAdapter({
@@ -142,7 +152,9 @@ describe("Disposal LIFO ordering", () => {
       requires: [],
       lifetime: "scoped",
       factory: () => ({ sessionId: "1" }),
-      finalizer: () => { disposalOrder.push("SessionStore"); },
+      finalizer: () => {
+        disposalOrder.push("SessionStore");
+      },
     });
 
     const graph = GraphBuilder.create()
@@ -275,7 +287,9 @@ describe("Child scope cascade disposal", () => {
       requires: [],
       lifetime: "scoped",
       factory: () => ({ requestId: "parent" }),
-      finalizer: () => { callOrder.push("parent-scoped"); },
+      finalizer: () => {
+        callOrder.push("parent-scoped");
+      },
     });
 
     const SessionAdapter = createAdapter({
@@ -283,7 +297,9 @@ describe("Child scope cascade disposal", () => {
       requires: [],
       lifetime: "scoped",
       factory: () => ({ sessionId: "child" }),
-      finalizer: () => { callOrder.push("child-scoped"); },
+      finalizer: () => {
+        callOrder.push("child-scoped");
+      },
     });
 
     const graph = GraphBuilder.create()
@@ -315,7 +331,9 @@ describe("Child scope cascade disposal", () => {
       requires: [],
       lifetime: "singleton",
       factory: () => ({ log: vi.fn() }),
-      finalizer: () => { callOrder.push("singleton"); },
+      finalizer: () => {
+        callOrder.push("singleton");
+      },
     });
 
     const RequestContextAdapter = createAdapter({
@@ -323,7 +341,9 @@ describe("Child scope cascade disposal", () => {
       requires: [],
       lifetime: "scoped",
       factory: () => ({ requestId: "scope1" }),
-      finalizer: () => { callOrder.push("scope1"); },
+      finalizer: () => {
+        callOrder.push("scope1");
+      },
     });
 
     const SessionAdapter = createAdapter({
@@ -331,7 +351,9 @@ describe("Child scope cascade disposal", () => {
       requires: [],
       lifetime: "scoped",
       factory: () => ({ sessionId: "scope2" }),
-      finalizer: () => { callOrder.push("scope2"); },
+      finalizer: () => {
+        callOrder.push("scope2");
+      },
     });
 
     const graph = GraphBuilder.create()
@@ -364,31 +386,16 @@ describe("Child scope cascade disposal", () => {
   test("deeply nested scope hierarchy disposes correctly", async () => {
     const callOrder: string[] = [];
 
-    const RequestContextAdapter = createAdapter({
-      provides: RequestContextPort,
-      requires: [],
-      lifetime: "scoped",
-      factory: () => ({ requestId: "any" }),
-      finalizer: (instance) => { callOrder.push(instance.requestId); },
-    });
-
-    const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph);
-
-    // Create nested scopes
-    const scope1 = container.createScope();
-    const scope2 = scope1.createScope();
-    const scope3 = scope2.createScope();
-
-    // Resolve in each scope with unique IDs
-    // Using the same adapter but tracking via manual ID
+    // Use counter to track scope creation order
     let counter = 0;
     const RequestContextAdapterWithId = createAdapter({
       provides: RequestContextPort,
       requires: [],
       lifetime: "scoped",
       factory: () => ({ requestId: `scope${++counter}` }),
-      finalizer: (instance) => { callOrder.push(instance.requestId); },
+      finalizer: instance => {
+        callOrder.push(instance.requestId);
+      },
     });
 
     const graphWithId = GraphBuilder.create().provide(RequestContextAdapterWithId).build();
@@ -540,7 +547,7 @@ describe("Async finalizer support", () => {
       lifetime: "singleton",
       factory: () => ({ log: vi.fn() }),
       finalizer: async () => {
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await new Promise(resolve => setTimeout(resolve, 50));
         disposalOrder.push("Logger");
       },
     });
@@ -551,15 +558,12 @@ describe("Async finalizer support", () => {
       lifetime: "singleton",
       factory: () => ({ query: vi.fn() }),
       finalizer: async () => {
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        await new Promise(resolve => setTimeout(resolve, 10));
         disposalOrder.push("Database");
       },
     });
 
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
 
     const container = createContainer(graph);
 
@@ -582,7 +586,7 @@ describe("Async finalizer support", () => {
       factory: () => ({ log: vi.fn() }),
       finalizer: async () => {
         // Logger has a LONGER delay but should complete SECOND because LIFO
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 100));
         disposalOrder.push("Logger");
       },
     });
@@ -594,15 +598,12 @@ describe("Async finalizer support", () => {
       factory: () => ({ query: vi.fn() }),
       finalizer: async () => {
         // Database has a SHORTER delay but should complete FIRST because LIFO
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        await new Promise(resolve => setTimeout(resolve, 10));
         disposalOrder.push("Database");
       },
     });
 
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
 
     const container = createContainer(graph);
 
@@ -624,7 +625,7 @@ describe("Async finalizer support", () => {
       lifetime: "singleton",
       factory: () => ({ log: vi.fn() }),
       finalizer: async () => {
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        await new Promise(resolve => setTimeout(resolve, 10));
         throw new Error("Async logger cleanup failed");
       },
     });
@@ -730,7 +731,7 @@ describe("Idempotent disposal", () => {
       lifetime: "singleton",
       factory: () => ({ log: vi.fn() }),
       finalizer: async () => {
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 100));
       },
     });
 

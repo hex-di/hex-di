@@ -14,7 +14,6 @@ import { createPort } from "@hex-di/ports";
 import { createAdapter, createAsyncAdapter, GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/index.js";
 import { portComparator } from "../src/types/helpers.js";
-import type { Port } from "@hex-di/ports";
 
 // =============================================================================
 // Test Fixtures
@@ -98,7 +97,7 @@ describe("Port Resolution Type Safety", () => {
       requires: [],
       lifetime: "singleton",
       factory: () => ({
-        log: (message: string) => {
+        log: () => {
           resolutionOrder.push("Logger");
         },
       }),
@@ -107,24 +106,24 @@ describe("Port Resolution Type Safety", () => {
     const DatabaseAdapter = createAsyncAdapter({
       provides: DatabasePort,
       requires: [],
-      factory: async () => {
+      factory: () => {
         resolutionOrder.push("Database");
-        return {
-          query: async (sql: string) => null,
-          close: async () => {},
-        };
+        return Promise.resolve({
+          query: () => Promise.resolve(null),
+          close: () => Promise.resolve(),
+        });
       },
     });
 
     const CacheAdapter = createAsyncAdapter({
       provides: CachePort,
       requires: [],
-      factory: async () => {
+      factory: () => {
         resolutionOrder.push("Cache");
-        return {
-          get: async (key: string) => null,
-          set: async (key: string, value: string) => {},
-        };
+        return Promise.resolve({
+          get: () => Promise.resolve(null),
+          set: () => Promise.resolve(),
+        });
       },
     });
 
@@ -162,17 +161,18 @@ describe("Port Resolution Type Safety", () => {
       requires: [],
       lifetime: "singleton",
       factory: () => ({
-        log: (message: string) => {},
+        log: () => {},
       }),
     });
 
     const DatabaseAdapter = createAsyncAdapter({
       provides: DatabasePort,
       requires: [],
-      factory: async () => ({
-        query: async (sql: string) => null,
-        close: async () => {},
-      }),
+      factory: () =>
+        Promise.resolve({
+          query: () => Promise.resolve(null),
+          close: () => Promise.resolve(),
+        }),
     });
 
     const graph = GraphBuilder.create()
@@ -195,13 +195,13 @@ describe("Port Resolution Type Safety", () => {
     expect(typeof database.close).toBe("function");
   });
 
-  test("maintains type information for resolved ports", async () => {
+  test("maintains type information for resolved ports", () => {
     const LoggerAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
       lifetime: "singleton",
       factory: () => ({
-        log: (message: string) => {
+        log: () => {
           // Logger implementation
         },
       }),
@@ -224,19 +224,21 @@ describe("Port Resolution Type Safety", () => {
     const DatabaseAdapter = createAsyncAdapter({
       provides: DatabasePort,
       requires: [],
-      factory: async () => ({
-        query: async (sql: string) => ({ rows: [] }),
-        close: async () => {},
-      }),
+      factory: () =>
+        Promise.resolve({
+          query: () => Promise.resolve({ rows: [] }),
+          close: () => Promise.resolve(),
+        }),
     });
 
     const CacheAdapter = createAsyncAdapter({
       provides: CachePort,
       requires: [],
-      factory: async () => ({
-        get: async (key: string) => null,
-        set: async (key: string, value: string) => {},
-      }),
+      factory: () =>
+        Promise.resolve({
+          get: () => Promise.resolve(null),
+          set: () => Promise.resolve(),
+        }),
     });
 
     const graph = GraphBuilder.create()
@@ -272,24 +274,24 @@ describe("Port Resolution Type Safety", () => {
       const DatabaseAdapter = createAsyncAdapter({
         provides: DatabasePort,
         requires: [],
-        factory: async () => {
+        factory: () => {
           resolutionOrder.push("Database");
-          return {
-            query: async (sql: string) => null,
-            close: async () => {},
-          };
+          return Promise.resolve({
+            query: () => Promise.resolve(null),
+            close: () => Promise.resolve(),
+          });
         },
       });
 
       const CacheAdapter = createAsyncAdapter({
         provides: CachePort,
         requires: [],
-        factory: async () => {
+        factory: () => {
           resolutionOrder.push("Cache");
-          return {
-            get: async (key: string) => null,
-            set: async (key: string, value: string) => {},
-          };
+          return Promise.resolve({
+            get: () => Promise.resolve(null),
+            set: () => Promise.resolve(),
+          });
         },
       });
 

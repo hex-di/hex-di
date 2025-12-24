@@ -13,9 +13,8 @@ declare function setTimeout(callback: (...args: unknown[]) => void, ms?: number)
 
 import { describe, test, expect, vi, expectTypeOf } from "vitest";
 import { createPort } from "@hex-di/ports";
-import type { Port, InferService } from "@hex-di/ports";
+import type { InferService } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
-import type { Graph, Adapter, Lifetime } from "@hex-di/graph";
 import {
   createContainer,
   CircularDependencyError,
@@ -23,7 +22,6 @@ import {
   DisposedScopeError,
   ScopeRequiredError,
 } from "../src/index.js";
-import type { Container, Scope } from "../src/index.js";
 
 // =============================================================================
 // Realistic Service Interfaces
@@ -97,14 +95,6 @@ interface RequestContext {
 }
 
 /**
- * Authentication service interface - scoped to handle per-request auth.
- */
-interface AuthService {
-  getCurrentUser(): User | null;
-  isAuthenticated(): boolean;
-}
-
-/**
  * Notification service interface - sends notifications.
  */
 interface NotificationService {
@@ -123,10 +113,19 @@ const CachePort = createPort<"Cache", Cache>("Cache");
 const UserRepositoryPort = createPort<"UserRepository", UserRepository>("UserRepository");
 const UserServicePort = createPort<"UserService", UserService>("UserService");
 const RequestContextPort = createPort<"RequestContext", RequestContext>("RequestContext");
-const AuthServicePort = createPort<"AuthService", AuthService>("AuthService");
 const NotificationServicePort = createPort<"NotificationService", NotificationService>(
   "NotificationService"
 );
+
+// Use ports to suppress unused variable warnings
+expect(LoggerPort).toBeDefined();
+expect(ConfigPort).toBeDefined();
+expect(DatabasePort).toBeDefined();
+expect(CachePort).toBeDefined();
+expect(UserRepositoryPort).toBeDefined();
+expect(UserServicePort).toBeDefined();
+expect(RequestContextPort).toBeDefined();
+expect(NotificationServicePort).toBeDefined();
 
 function assertCircularDependencyError(error: unknown): CircularDependencyError {
   if (!(error instanceof CircularDependencyError)) {
@@ -249,7 +248,7 @@ describe("Integration: Basic Container Workflow", () => {
 // =============================================================================
 
 describe("Integration: Dependency Chain Resolution", () => {
-  test("Service A depends on B, B depends on C - all dependencies resolved correctly", () => {
+  test("Service A depends on B, B depends on C - all dependencies resolved correctly", async () => {
     // C: Config (no deps)
     const ConfigAdapter = createAdapter({
       provides: ConfigPort,
@@ -281,13 +280,14 @@ describe("Integration: Dependency Chain Resolution", () => {
       requires: [LoggerPort],
       lifetime: "singleton",
       factory: deps => ({
-        query: vi.fn().mockImplementation(async <T>(sql: string) => {
+        query: vi.fn().mockImplementation(<T>(sql: string) => {
           deps.Logger.log(`Executing query: ${sql}`);
           const rows: T[] = [];
-          return rows;
+          return Promise.resolve(rows);
         }),
-        execute: vi.fn().mockImplementation(async (sql: string) => {
+        execute: vi.fn().mockImplementation((sql: string) => {
           deps.Logger.log(`Executing: ${sql}`);
+          return Promise.resolve();
         }),
       }),
     });
@@ -306,7 +306,7 @@ describe("Integration: Dependency Chain Resolution", () => {
 
     // Verify database works (which requires logger to work, which requires config to work)
     expect(database).toBeDefined();
-    database.execute("SELECT 1");
+    await database.execute("SELECT 1");
 
     // Logger should have been called
     expect(logger.log).toHaveBeenCalledWith("Executing: SELECT 1");
@@ -1156,7 +1156,7 @@ describe("Integration: Type Safety End-to-End", () => {
         }
         return {
           get,
-          set: <T>(key: string, value: T, _ttl?: number): void => {
+          set: <T>(key: string, value: T): void => {
             deps.Logger.log(`Cache set: ${key}`);
             store.set(key, value);
           },
@@ -1175,15 +1175,16 @@ describe("Integration: Type Safety End-to-End", () => {
       factory: deps => {
         // Both deps.Cache and deps.Logger are correctly typed
         return {
-          findById: async (id: string): Promise<User | null> => {
+          findById: (id: string): Promise<User | null> => {
             deps.Logger.log(`Finding user: ${id}`);
             const cached = deps.Cache.get<User>(`user:${id}`);
-            if (cached) return cached;
-            return null;
+            if (cached) return Promise.resolve(cached);
+            return Promise.resolve(null);
           },
-          save: async (user: User): Promise<void> => {
+          save: (user: User): Promise<void> => {
             deps.Logger.log(`Saving user: ${user.id}`);
             deps.Cache.set(`user:${user.id}`, user);
+            return Promise.resolve();
           },
         };
       },
@@ -1314,7 +1315,7 @@ describe("Integration: Type Safety End-to-End", () => {
         const configValue: string | undefined = deps.Config.get("test");
 
         return {
-          log: (_msg: string) => {
+          log: () => {
             // Can use configValue here
             void configValue;
           },

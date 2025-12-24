@@ -38,7 +38,6 @@ interface Config {
 const LoggerPort = createPort<"Logger", Logger>("Logger");
 const DatabasePort = createPort<"Database", Database>("Database");
 const UserServicePort = createPort<"UserService", UserService>("UserService");
-const ConfigPort = createPort<"Config", Config>("Config");
 
 // =============================================================================
 // toDOT Basic Tests
@@ -93,10 +92,7 @@ describe("toDOT", () => {
       factory: () => ({ query: () => ({}) }),
     });
 
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
 
     const result = toDOT(graph);
 
@@ -217,7 +213,7 @@ describe("toDOT edge cases", () => {
 
   it("escapes special characters in port names", () => {
     // Create a port with special characters that need escaping in DOT
-    const SpecialPort = createPort<"Special\"Port", Config>("Special\"Port");
+    const SpecialPort = createPort<'Special"Port', Config>('Special"Port');
 
     const SpecialAdapter = createAdapter({
       provides: SpecialPort,

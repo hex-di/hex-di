@@ -52,9 +52,9 @@ export type Adapter<
   TRequires,
   TLifetime extends Lifetime,
   TFactoryKind extends FactoryKind = "sync",
-  TRequiresTuple extends readonly any[] = [TRequires] extends [never]
+  TRequiresTuple extends readonly unknown[] = [TRequires] extends [never]
     ? readonly []
-    : readonly any[],
+    : readonly TRequires[],
 > = {
   /**
    * Brand property for nominal typing.

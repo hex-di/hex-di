@@ -14,7 +14,6 @@ import type {
 import type { ContainerInternalState } from "../inspector/types.js";
 import { ADAPTER_ACCESS } from "../inspector/symbols.js";
 import { MemoMap } from "../common/memo-map.js";
-import { isRecord } from "../common/type-guards.js";
 import { ResolutionContext } from "../resolution/context.js";
 import {
   DisposedScopeError,
@@ -290,13 +289,23 @@ export class ChildContainerImpl<
     return undefined; // Defer to first access
   }
 
+  /**
+   * Creates a shallow clone of a service instance.
+   *
+   * This implementation uses the Reflect API which has proper TypeScript types:
+   * - Reflect.getPrototypeOf(target: object): object | null
+   * - Reflect.setPrototypeOf(target: object, proto: object | null): boolean
+   *
+   * This avoids the `any` return types of Object.create and Object.getPrototypeOf.
+   */
   private shallowClone<T>(obj: T): T {
-    if (!isRecord(obj)) {
+    if (obj === null || typeof obj !== "object") {
       return obj;
     }
-    const clone = Object.create(Object.getPrototypeOf(obj));
-    Object.assign(clone, obj);
-    return clone;
+    const prototype: object | null = Reflect.getPrototypeOf(obj);
+    const shell: Record<PropertyKey, never> = {};
+    Reflect.setPrototypeOf(shell, prototype);
+    return Object.assign(shell, obj);
   }
 
   private getPortName(port: Port<unknown, string>): string {

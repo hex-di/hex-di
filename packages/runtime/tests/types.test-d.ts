@@ -10,7 +10,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort, Port, InferService } from "@hex-di/ports";
+import { createPort, InferService } from "@hex-di/ports";
 import type { Container, Scope } from "../src/index.js";
 
 // =============================================================================
@@ -36,6 +36,9 @@ interface UserService {
 const LoggerPort = createPort<"Logger", Logger>("Logger");
 const DatabasePort = createPort<"Database", Database>("Database");
 const UserServicePort = createPort<"UserService", UserService>("UserService");
+void LoggerPort;
+void DatabasePort;
+void UserServicePort;
 
 type LoggerPortType = typeof LoggerPort;
 type DatabasePortType = typeof DatabasePort;

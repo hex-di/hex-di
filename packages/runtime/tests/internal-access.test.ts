@@ -8,9 +8,9 @@
 import { describe, test, expect, vi } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
-import { createContainer } from "../src/container.js";
-import { INTERNAL_ACCESS } from "../src/inspector-symbols.js";
-import type { ContainerInternalState, ScopeInternalState } from "../src/inspector-types.js";
+import { createContainer } from "../src/container/factory.js";
+import { INTERNAL_ACCESS } from "../src/inspector/symbols.js";
+import type { ContainerInternalState, ScopeInternalState } from "../src/inspector/types.js";
 
 function isRecord(value: unknown): value is Record<PropertyKey, unknown> {
   return typeof value === "object" && value !== null;
@@ -28,9 +28,7 @@ function isScopeAccessor(value: unknown): value is () => ScopeInternalState {
  * Helper to safely access the internal state accessor from a container or scope.
  * This handles the type narrowing for Symbol-indexed properties.
  */
-function getContainerAccessor(
-  container: unknown
-): () => ContainerInternalState {
+function getContainerAccessor(container: unknown): () => ContainerInternalState {
   if (!isRecord(container)) {
     throw new Error("INTERNAL_ACCESS accessor not found");
   }
@@ -60,16 +58,11 @@ interface Logger {
   log(message: string): void;
 }
 
-interface Database {
-  query(sql: string): unknown;
-}
-
 interface RequestContext {
   requestId: string;
 }
 
 const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
 const RequestContextPort = createPort<"RequestContext", RequestContext>("RequestContext");
 
 // =============================================================================

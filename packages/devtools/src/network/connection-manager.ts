@@ -193,7 +193,7 @@ export class ConnectionManager {
         this.socket.onmessage = event => {
           this.emit({
             type: "message",
-            data: event.data.toString(),
+            data: String(event.data),
             timestamp: Date.now(),
           });
         };
@@ -357,8 +357,9 @@ export class ConnectionManager {
 
     this.reconnectTimer = setTimeout(() => {
       this.log(`Reconnection attempt ${this.reconnectAttempts}`);
-      this.connect().catch(error => {
-        this.log(`Reconnection failed: ${error.message}`);
+      this.connect().catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        this.log(`Reconnection failed: ${message}`);
         // Will schedule next attempt via handleDisconnect
       });
     }, delay);
@@ -391,7 +392,7 @@ export class ConnectionManager {
 
   private log(message: string): void {
     if (this.config.verbose) {
-      console.log(`[ConnectionManager] ${message}`);
+      console.warn(`[ConnectionManager] ${message}`);
     }
   }
 }

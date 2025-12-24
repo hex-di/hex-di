@@ -6,7 +6,7 @@
 
 import React, { type ReactElement, useRef, useEffect, useCallback, useState } from "react";
 import { select } from "d3-selection";
-import { zoom, zoomIdentity, type ZoomBehavior } from "d3-zoom";
+import { zoom, zoomIdentity, type ZoomBehavior, type D3ZoomEvent } from "d3-zoom";
 import "d3-transition";
 import type { LayoutResult, TransformState } from "./types.js";
 import { graphContainerStyles } from "./graph-styles.js";
@@ -154,7 +154,7 @@ export function GraphRenderer({
 
     const zoomBehavior = zoom<SVGSVGElement, unknown>()
       .scaleExtent([minZoom, maxZoom])
-      .on("zoom", event => {
+      .on("zoom", (event: D3ZoomEvent<SVGSVGElement, unknown>) => {
         const { x, y, k } = event.transform;
         setTransform({ scale: k, translateX: x, translateY: y });
       });

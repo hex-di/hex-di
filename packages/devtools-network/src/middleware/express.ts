@@ -48,9 +48,11 @@ export function attachDevTools(
   });
 
   // Start immediately since we're attaching to existing server
-  server.start().catch((err) => {
+  try {
+    server.start();
+  } catch (err) {
     console.error("[DevTools] Failed to start:", err);
-  });
+  }
 
   return server;
 }

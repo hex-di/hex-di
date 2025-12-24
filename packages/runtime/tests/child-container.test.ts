@@ -15,7 +15,7 @@
 import { describe, test, expect, vi } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
-import { createContainer } from "../src/container.js";
+import { createContainer } from "../src/container/factory.js";
 import { toRuntimeResolver } from "../src/adapters/react-resolver.js";
 
 // =============================================================================
@@ -73,7 +73,7 @@ describe("ChildContainerBuilder", () => {
     const container = createContainer(graph);
 
     const builder1 = container.createChild();
-    const builder2 = builder1.build;
+    expect(builder1).toBeDefined();
 
     // The builder itself should be frozen
     expect(Object.isFrozen(builder1)).toBe(true);
@@ -145,10 +145,7 @@ describe("ChildContainer", () => {
       factory: dbFactory,
     });
 
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
     const container = createContainer(graph);
 
     // Create child container
@@ -435,7 +432,7 @@ describe("ChildContainer.extend()", () => {
       provides: ConfigPort,
       requires: [LoggerPort],
       lifetime: "singleton",
-      factory: (deps) => {
+      factory: deps => {
         deps.Logger.log("ConfigAdapter initialized");
         return { getValue: () => "config-value" };
       },
@@ -737,10 +734,7 @@ describe("Inheritance Modes", () => {
         factory: () => ({ data: "initial" }),
       });
 
-      const graph = GraphBuilder.create()
-        .provide(CounterAdapter)
-        .provide(StateAdapter)
-        .build();
+      const graph = GraphBuilder.create().provide(CounterAdapter).provide(StateAdapter).build();
       const container = createContainer(graph);
 
       // Set up parent state
@@ -998,7 +992,9 @@ describe("Multi-Level Hierarchy and Disposal", () => {
         requires: [],
         lifetime: "singleton",
         factory: () => ({ log: vi.fn() }),
-        finalizer: () => { disposalOrder.push("child1"); },
+        finalizer: () => {
+          disposalOrder.push("child1");
+        },
       });
 
       const Child2Adapter = createAdapter({
@@ -1006,7 +1002,9 @@ describe("Multi-Level Hierarchy and Disposal", () => {
         requires: [],
         lifetime: "singleton",
         factory: () => ({ log: vi.fn() }),
-        finalizer: () => { disposalOrder.push("child2"); },
+        finalizer: () => {
+          disposalOrder.push("child2");
+        },
       });
 
       const Child3Adapter = createAdapter({
@@ -1014,7 +1012,9 @@ describe("Multi-Level Hierarchy and Disposal", () => {
         requires: [],
         lifetime: "singleton",
         factory: () => ({ log: vi.fn() }),
-        finalizer: () => { disposalOrder.push("child3"); },
+        finalizer: () => {
+          disposalOrder.push("child3");
+        },
       });
 
       const graph = GraphBuilder.create().provide(LoggerAdapter).build();
@@ -1073,7 +1073,9 @@ describe("Multi-Level Hierarchy and Disposal", () => {
         requires: [],
         lifetime: "singleton",
         factory: () => ({ log: vi.fn() }),
-        finalizer: () => { disposalOrder.push("root"); },
+        finalizer: () => {
+          disposalOrder.push("root");
+        },
       });
 
       const ChildAdapter = createAdapter({
@@ -1081,7 +1083,9 @@ describe("Multi-Level Hierarchy and Disposal", () => {
         requires: [],
         lifetime: "singleton",
         factory: () => ({ log: vi.fn() }),
-        finalizer: () => { disposalOrder.push("child"); },
+        finalizer: () => {
+          disposalOrder.push("child");
+        },
       });
 
       const GrandchildAdapter = createAdapter({
@@ -1089,7 +1093,9 @@ describe("Multi-Level Hierarchy and Disposal", () => {
         requires: [],
         lifetime: "singleton",
         factory: () => ({ log: vi.fn() }),
-        finalizer: () => { disposalOrder.push("grandchild"); },
+        finalizer: () => {
+          disposalOrder.push("grandchild");
+        },
       });
 
       const graph = GraphBuilder.create().provide(RootAdapter).build();
@@ -1243,7 +1249,9 @@ describe("Child Container Integration Tests", () => {
       requires: [],
       lifetime: "singleton",
       factory: () => ({ log: childLogFn }),
-      finalizer: () => { childLogFn("child finalized"); },
+      finalizer: () => {
+        childLogFn("child finalized");
+      },
     });
 
     const ConfigAdapter = createAdapter({
@@ -1327,7 +1335,9 @@ describe("Child Container Integration Tests", () => {
       lifetime: "singleton",
       factory: () => ({
         value: 0,
-        increment() { this.value++; },
+        increment() {
+          this.value++;
+        },
       }),
     });
 
@@ -1394,10 +1404,7 @@ describe("Child Container Integration Tests", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
     const container = createContainer(graph);
 
-    const childContainer = container
-      .createChild()
-      .override(TransientLoggerAdapter)
-      .build();
+    const childContainer = container.createChild().override(TransientLoggerAdapter).build();
 
     // Each resolve should create a new instance
     const logger1 = childContainer.resolve(LoggerPort);
@@ -1433,7 +1440,7 @@ describe("Child Container Integration Tests", () => {
       provides: ConfigPort,
       requires: [LoggerPort],
       lifetime: "singleton",
-      factory: (deps) => {
+      factory: deps => {
         deps.Logger.log("Config initialized");
         return { getValue: () => "config-value" };
       },
@@ -1470,7 +1477,9 @@ describe("Child Container Integration Tests", () => {
       lifetime: "singleton",
       factory: () => ({
         value: 0,
-        increment() { this.value++; },
+        increment() {
+          this.value++;
+        },
       }),
     });
 
@@ -1478,15 +1487,9 @@ describe("Child Container Integration Tests", () => {
     const container = createContainer(graph);
 
     // Create two sibling child containers with isolated mode
-    const child1 = container
-      .createChild()
-      .withInheritanceMode({ Counter: "isolated" })
-      .build();
+    const child1 = container.createChild().withInheritanceMode({ Counter: "isolated" }).build();
 
-    const child2 = container
-      .createChild()
-      .withInheritanceMode({ Counter: "isolated" })
-      .build();
+    const child2 = container.createChild().withInheritanceMode({ Counter: "isolated" }).build();
 
     // Get counters from each
     const counter1 = child1.resolve(CounterPort);

@@ -13,8 +13,8 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort, type Port, type InferService } from "@hex-di/ports";
-import type { Container, ContainerPhase, Scope } from "@hex-di/runtime";
+import { createPort, type InferService } from "@hex-di/ports";
+import type { Container } from "@hex-di/runtime";
 import { createTypedHooks } from "../src/create-typed-hooks.jsx";
 import type {
   TypedReactIntegration,
@@ -47,6 +47,9 @@ interface UserService {
 const LoggerPort = createPort<"Logger", Logger>("Logger");
 const DatabasePort = createPort<"Database", Database>("Database");
 const UserServicePort = createPort<"UserService", UserService>("UserService");
+void LoggerPort;
+void DatabasePort;
+void UserServicePort;
 
 type LoggerPortType = typeof LoggerPort;
 type DatabasePortType = typeof DatabasePort;
@@ -62,6 +65,7 @@ type TestProvides = LoggerPortType | DatabasePortType;
 describe("usePort type constraints", () => {
   it("returns correct InferService type for port", () => {
     const { usePort } = createTypedHooks<TestProvides>();
+    void usePort;
 
     // Return type should be InferService<P> which is Logger for LoggerPort
     type UsePortReturn = ReturnType<typeof usePort<LoggerPortType>>;
@@ -96,6 +100,7 @@ describe("usePort type constraints", () => {
 describe("usePortOptional type constraints", () => {
   it("returns InferService<P> | undefined", () => {
     const { usePortOptional } = createTypedHooks<TestProvides>();
+    void usePortOptional;
 
     // Return type should be Logger | undefined for LoggerPort
     type UsePortOptionalReturn = ReturnType<typeof usePortOptional<LoggerPortType>>;
@@ -131,6 +136,7 @@ describe("InferService correctly extracts service type", () => {
 
   it("extracts correct type from usePort return", () => {
     const { usePort } = createTypedHooks<TestProvides>();
+    void usePort;
 
     // The return type should match InferService
     type UsePortReturn = ReturnType<typeof usePort<LoggerPortType>>;
@@ -184,6 +190,7 @@ describe("TypedReactIntegration type structure", () => {
 describe("createTypedHooks preserves TProvides through all hooks", () => {
   it("useContainer returns Resolver<TProvides>", () => {
     const { useContainer } = createTypedHooks<TestProvides>();
+    void useContainer;
 
     type UseContainerReturn = ReturnType<typeof useContainer>;
     // useContainer returns a Resolver interface that works with both
@@ -194,6 +201,7 @@ describe("createTypedHooks preserves TProvides through all hooks", () => {
 
   it("useScope returns Resolver<TProvides>", () => {
     const { useScope } = createTypedHooks<TestProvides>();
+    void useScope;
 
     type UseScopeReturn = ReturnType<typeof useScope>;
     expectTypeOf<UseScopeReturn>().toEqualTypeOf<Resolver<TestProvides>>();
@@ -246,6 +254,7 @@ describe("Container and Scope type parameters flow correctly", () => {
 describe("invalid port error cases", () => {
   it("usePort rejects port not in TProvides at type level", () => {
     const { usePort } = createTypedHooks<LoggerPortType>();
+    void usePort;
 
     // UserServicePort is NOT in LoggerPortType (which is our TProvides)
     // This verifies the generic constraint P extends TProvides
@@ -260,6 +269,7 @@ describe("invalid port error cases", () => {
 
   it("usePortOptional rejects port not in TProvides at type level", () => {
     const { usePortOptional } = createTypedHooks<LoggerPortType>();
+    void usePortOptional;
 
     // The parameter type should be constrained to TProvides
     type ParamType = Parameters<typeof usePortOptional>[0];

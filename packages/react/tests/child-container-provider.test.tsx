@@ -13,15 +13,10 @@
  */
 
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { render, screen, cleanup, waitFor, act } from "@testing-library/react";
-import React, { useEffect, useState } from "react";
+import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import React from "react";
 import { createPort } from "@hex-di/ports";
-import {
-  ContainerBrand,
-  ScopeBrand,
-  ChildContainerBrand,
-  INTERNAL_ACCESS,
-} from "@hex-di/runtime";
+import { ContainerBrand, ScopeBrand, ChildContainerBrand, INTERNAL_ACCESS } from "@hex-di/runtime";
 import type {
   Container,
   Scope,
@@ -30,11 +25,7 @@ import type {
   ScopeInternalState,
 } from "@hex-di/runtime";
 import { MissingProviderError } from "../src/errors.js";
-import {
-  ContainerProvider,
-  ScopeProvider,
-  AutoScopeProvider,
-} from "../src/context.js";
+import { ContainerProvider, AutoScopeProvider } from "../src/context.js";
 import { AsyncContainerProvider } from "../src/async-container-provider.js";
 import { useContainer } from "../src/use-container.js";
 import { usePort } from "../src/use-port.js";
@@ -61,18 +52,13 @@ const TestServicePort = createPort<"TestService", TestService>("TestService");
 interface ExtendedService {
   feature: string;
 }
-const ExtendedServicePort = createPort<"ExtendedService", ExtendedService>(
-  "ExtendedService"
-);
+const ExtendedServicePort = createPort<"ExtendedService", ExtendedService>("ExtendedService");
 
 /**
  * Type aliases for test containers.
  */
 type TestContainer = Container<typeof TestServicePort>;
-type TestChildContainer = ChildContainer<
-  typeof TestServicePort,
-  typeof ExtendedServicePort
->;
+type TestChildContainer = ChildContainer<typeof TestServicePort, typeof ExtendedServicePort>;
 type TestScope = Scope<typeof TestServicePort>;
 
 /**
@@ -80,9 +66,7 @@ type TestScope = Scope<typeof TestServicePort>;
  */
 function createMockScope(name: string = "scoped-test-service"): TestScope {
   const mockResolve = vi.fn().mockReturnValue({ name });
-  const mockCreateScope = vi
-    .fn()
-    .mockImplementation(() => createMockScope(`nested-${name}`));
+  const mockCreateScope = vi.fn().mockImplementation(() => createMockScope(`nested-${name}`));
   const mockDispose = vi.fn().mockResolvedValue(undefined);
   const mockResolveAsync = vi.fn().mockResolvedValue({ name });
 
@@ -117,10 +101,8 @@ function createMockContainer(): TestContainer {
   const mockResolveAsync = vi.fn().mockResolvedValue({ name: "parent-service" });
   const mockCreateScope = vi.fn().mockReturnValue(mockScope);
   const mockDispose = vi.fn().mockResolvedValue(undefined);
-  const mockInitialize = vi.fn().mockImplementation(async function (
-    this: TestContainer
-  ) {
-    return this;
+  const mockInitialize = vi.fn().mockImplementation(function (this: TestContainer) {
+    return Promise.resolve(this);
   });
   const mockCreateChild = vi.fn();
 
@@ -159,11 +141,10 @@ function createMockChildContainer(
     extendedFeature?: string;
   } = {}
 ): TestChildContainer {
-  const { serviceName = "child-service", extendedFeature = "child-feature" } =
-    options;
+  const { serviceName = "child-service", extendedFeature = "child-feature" } = options;
   const mockScope = createMockScope(serviceName);
 
-  const mockResolve = vi.fn().mockImplementation((port) => {
+  const mockResolve = vi.fn().mockImplementation(port => {
     if (port === TestServicePort) {
       return { name: serviceName };
     }
@@ -172,8 +153,8 @@ function createMockChildContainer(
     }
     throw new Error(`Unknown port: ${port.__portName}`);
   });
-  const mockResolveAsync = vi.fn().mockImplementation(async (port) => {
-    return mockResolve(port);
+  const mockResolveAsync = vi.fn().mockImplementation(port => {
+    return Promise.resolve(mockResolve(port));
   });
   const mockCreateScope = vi.fn().mockReturnValue(mockScope);
   const mockDispose = vi.fn().mockResolvedValue(undefined);
@@ -206,74 +187,6 @@ function createMockChildContainer(
 }
 
 /**
- * Creates a mock uninitialized container that needs async initialization.
- */
-function createMockUninitializedContainer(): Container<
-  typeof TestServicePort,
-  typeof TestServicePort,
-  "uninitialized"
-> {
-  const mockScope = createMockScope();
-  let initialized = false;
-
-  const initializedContainer = {
-    resolve: vi.fn().mockReturnValue({ name: "initialized-service" }),
-    resolveAsync: vi.fn().mockResolvedValue({ name: "initialized-service" }),
-    createScope: vi.fn().mockReturnValue(mockScope),
-    createChild: vi.fn(),
-    dispose: vi.fn().mockResolvedValue(undefined),
-    has: vi.fn().mockReturnValue(true),
-    isInitialized: true,
-    isDisposed: false,
-    [ContainerBrand]: { provides: TestServicePort },
-    [INTERNAL_ACCESS]: () => ({
-      disposed: false,
-      singletonMemo: { size: 0, entries: [] },
-      childScopes: [],
-      adapterMap: new Map(),
-    }),
-  };
-
-  const mockResolve = vi.fn().mockImplementation(() => {
-    if (!initialized) {
-      throw new Error("Container not initialized");
-    }
-    return { name: "initialized-service" };
-  });
-
-  const mockInitialize = vi.fn().mockImplementation(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    initialized = true;
-    return initializedContainer;
-  });
-
-  const mockInternalState: ContainerInternalState = {
-    disposed: false,
-    singletonMemo: { size: 0, entries: [] },
-    childScopes: [],
-    adapterMap: new Map(),
-  };
-
-  return {
-    resolve: mockResolve,
-    resolveAsync: vi.fn().mockResolvedValue({ name: "test-service" }),
-    createScope: vi.fn().mockReturnValue(mockScope),
-    createChild: vi.fn(),
-    dispose: vi.fn().mockResolvedValue(undefined),
-    has: vi.fn().mockReturnValue(true),
-    initialize: mockInitialize,
-    isInitialized: false,
-    isDisposed: false,
-    [ContainerBrand]: { provides: TestServicePort },
-    [INTERNAL_ACCESS]: () => mockInternalState,
-  } as unknown as Container<
-    typeof TestServicePort,
-    typeof TestServicePort,
-    "uninitialized"
-  >;
-}
-
-/**
  * Creates a mock uninitialized child container that needs async initialization.
  */
 function createMockUninitializedChildContainer(
@@ -282,12 +195,14 @@ function createMockUninitializedChildContainer(
   typeof TestServicePort,
   typeof ExtendedServicePort,
   typeof ExtendedServicePort
-> & { initialize: () => Promise<ChildContainer<typeof TestServicePort, typeof ExtendedServicePort>> } {
+> & {
+  initialize: () => Promise<ChildContainer<typeof TestServicePort, typeof ExtendedServicePort>>;
+} {
   const mockScope = createMockScope("async-child-service");
   let initialized = false;
 
   const initializedChildContainer = {
-    resolve: vi.fn().mockImplementation((port) => {
+    resolve: vi.fn().mockImplementation(port => {
       if (port === TestServicePort) {
         return { name: "async-child-service" };
       }
@@ -315,7 +230,7 @@ function createMockUninitializedChildContainer(
     }),
   };
 
-  const mockResolve = vi.fn().mockImplementation((port) => {
+  const mockResolve = vi.fn().mockImplementation(port => {
     if (!initialized) {
       throw new Error("Child container not initialized");
     }
@@ -329,7 +244,7 @@ function createMockUninitializedChildContainer(
   });
 
   const mockInitialize = vi.fn().mockImplementation(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await new Promise(resolve => setTimeout(resolve, 50));
     initialized = true;
     return initializedChildContainer;
   });
@@ -360,7 +275,9 @@ function createMockUninitializedChildContainer(
     typeof TestServicePort,
     typeof ExtendedServicePort,
     typeof ExtendedServicePort
-  > & { initialize: () => Promise<ChildContainer<typeof TestServicePort, typeof ExtendedServicePort>> };
+  > & {
+    initialize: () => Promise<ChildContainer<typeof TestServicePort, typeof ExtendedServicePort>>;
+  };
 }
 
 // =============================================================================
@@ -383,7 +300,9 @@ describe("ContainerProvider nesting with child containers", () => {
 
     render(
       <ContainerProvider container={parentContainer}>
-        <ContainerProvider container={childContainer as unknown as Container<typeof TestServicePort>}>
+        <ContainerProvider
+          container={childContainer as unknown as Container<typeof TestServicePort>}
+        >
           <TestComponent />
         </ContainerProvider>
       </ContainerProvider>
@@ -438,7 +357,9 @@ describe("useContainer() with nested providers", () => {
 
     render(
       <ContainerProvider container={parentContainer}>
-        <ContainerProvider container={childContainer as unknown as Container<typeof TestServicePort>}>
+        <ContainerProvider
+          container={childContainer as unknown as Container<typeof TestServicePort>}
+        >
           <TestComponent />
         </ContainerProvider>
       </ContainerProvider>
@@ -492,15 +413,15 @@ describe("usePort() with nested child containers", () => {
 
     render(
       <ContainerProvider container={parentContainer}>
-        <ContainerProvider container={childContainer as unknown as Container<typeof TestServicePort>}>
+        <ContainerProvider
+          container={childContainer as unknown as Container<typeof TestServicePort>}
+        >
           <TestComponent />
         </ContainerProvider>
       </ContainerProvider>
     );
 
-    expect(screen.getByTestId("service-name").textContent).toBe(
-      "overridden-child-service"
-    );
+    expect(screen.getByTestId("service-name").textContent).toBe("overridden-child-service");
     expect(childContainer.resolve).toHaveBeenCalledWith(TestServicePort);
   });
 
@@ -521,18 +442,16 @@ describe("usePort() with nested child containers", () => {
     render(
       <ContainerProvider container={parentContainer}>
         <ParentConsumer />
-        <ContainerProvider container={childContainer as unknown as Container<typeof TestServicePort>}>
+        <ContainerProvider
+          container={childContainer as unknown as Container<typeof TestServicePort>}
+        >
           <ChildConsumer />
         </ContainerProvider>
       </ContainerProvider>
     );
 
-    expect(screen.getByTestId("parent-service").textContent).toBe(
-      "parent-service"
-    );
-    expect(screen.getByTestId("child-service").textContent).toBe(
-      "child-service"
-    );
+    expect(screen.getByTestId("parent-service").textContent).toBe("parent-service");
+    expect(screen.getByTestId("child-service").textContent).toBe("child-service");
   });
 });
 
@@ -557,7 +476,13 @@ describe("AsyncContainerProvider with nested child containers", () => {
     render(
       <ContainerProvider container={parentContainer}>
         <AsyncContainerProvider
-          container={asyncChildContainer as unknown as Container<typeof TestServicePort, typeof ExtendedServicePort, "uninitialized">}
+          container={
+            asyncChildContainer as unknown as Container<
+              typeof TestServicePort,
+              typeof ExtendedServicePort,
+              "uninitialized"
+            >
+          }
           loadingFallback={<div data-testid="loading">Loading...</div>}
         >
           <TestComponent />
@@ -570,9 +495,7 @@ describe("AsyncContainerProvider with nested child containers", () => {
 
     // Wait for initialization
     await waitFor(() => {
-      expect(screen.getByTestId("service-name").textContent).toBe(
-        "async-child-service"
-      );
+      expect(screen.getByTestId("service-name").textContent).toBe("async-child-service");
     });
 
     expect(asyncChildContainer.initialize).toHaveBeenCalled();
@@ -600,7 +523,13 @@ describe("Compound components with nested providers", () => {
     render(
       <ContainerProvider container={parentContainer}>
         <AsyncContainerProvider
-          container={asyncChildContainer as unknown as Container<typeof TestServicePort, typeof ExtendedServicePort, "uninitialized">}
+          container={
+            asyncChildContainer as unknown as Container<
+              typeof TestServicePort,
+              typeof ExtendedServicePort,
+              "uninitialized"
+            >
+          }
         >
           <AsyncContainerProvider.Loading>
             <div data-testid="compound-loading">Loading with compound...</div>
@@ -609,22 +538,18 @@ describe("Compound components with nested providers", () => {
             <TestComponent />
           </AsyncContainerProvider.Ready>
           <AsyncContainerProvider.Error>
-            {(error) => <div data-testid="compound-error">{error.message}</div>}
+            {error => <div data-testid="compound-error">{error.message}</div>}
           </AsyncContainerProvider.Error>
         </AsyncContainerProvider>
       </ContainerProvider>
     );
 
     // Initially should show compound loading
-    expect(screen.getByTestId("compound-loading").textContent).toBe(
-      "Loading with compound..."
-    );
+    expect(screen.getByTestId("compound-loading").textContent).toBe("Loading with compound...");
 
     // Wait for initialization and ready state
     await waitFor(() => {
-      expect(screen.getByTestId("service-name").textContent).toBe(
-        "async-child-service"
-      );
+      expect(screen.getByTestId("service-name").textContent).toBe("async-child-service");
     });
   });
 });
@@ -638,7 +563,7 @@ describe("Disposal on unmount for nested providers", () => {
     cleanup();
   });
 
-  it("nested provider does not dispose parent on unmount", async () => {
+  it("nested provider does not dispose parent on unmount", () => {
     const parentContainer = createMockContainer();
     const childContainer = createMockChildContainer(parentContainer);
 
@@ -655,7 +580,9 @@ describe("Disposal on unmount for nested providers", () => {
         <ContainerProvider container={parentContainer}>
           <ParentContent />
           {showChild && (
-            <ContainerProvider container={childContainer as unknown as Container<typeof TestServicePort>}>
+            <ContainerProvider
+              container={childContainer as unknown as Container<typeof TestServicePort>}
+            >
               <TestComponent />
             </ContainerProvider>
           )}
@@ -693,9 +620,7 @@ describe("Scoped ports with child container's scopes", () => {
     const parentContainer = createMockContainer();
     const childContainer = createMockChildContainer(parentContainer);
     const childScope = createMockScope("scoped-from-child");
-    (childContainer.createScope as ReturnType<typeof vi.fn>).mockReturnValue(
-      childScope
-    );
+    (childContainer.createScope as ReturnType<typeof vi.fn>).mockReturnValue(childScope);
 
     function ScopedComponent(): React.ReactElement {
       const service = usePort(TestServicePort);
@@ -704,7 +629,9 @@ describe("Scoped ports with child container's scopes", () => {
 
     const { unmount } = render(
       <ContainerProvider container={parentContainer}>
-        <ContainerProvider container={childContainer as unknown as Container<typeof TestServicePort>}>
+        <ContainerProvider
+          container={childContainer as unknown as Container<typeof TestServicePort>}
+        >
           <AutoScopeProvider>
             <ScopedComponent />
           </AutoScopeProvider>
@@ -718,9 +645,7 @@ describe("Scoped ports with child container's scopes", () => {
     expect(parentContainer.createScope).not.toHaveBeenCalled();
 
     // Should resolve from child's scope
-    expect(screen.getByTestId("scoped-service").textContent).toBe(
-      "scoped-from-child"
-    );
+    expect(screen.getByTestId("scoped-service").textContent).toBe("scoped-from-child");
 
     // Unmount and verify scope disposal
     unmount();
@@ -759,8 +684,12 @@ describe("Multiple levels of nested providers", () => {
 
     render(
       <ContainerProvider container={parentContainer}>
-        <ContainerProvider container={childContainer as unknown as Container<typeof TestServicePort>}>
-          <ContainerProvider container={grandchildContainer as unknown as Container<typeof TestServicePort>}>
+        <ContainerProvider
+          container={childContainer as unknown as Container<typeof TestServicePort>}
+        >
+          <ContainerProvider
+            container={grandchildContainer as unknown as Container<typeof TestServicePort>}
+          >
             <TestComponent />
           </ContainerProvider>
         </ContainerProvider>
@@ -768,9 +697,7 @@ describe("Multiple levels of nested providers", () => {
     );
 
     // Should resolve from grandchild (deepest nested)
-    expect(screen.getByTestId("service-name").textContent).toBe(
-      "grandchild-service"
-    );
+    expect(screen.getByTestId("service-name").textContent).toBe("grandchild-service");
     expect(grandchildContainer.resolve).toHaveBeenCalledWith(TestServicePort);
     expect(childContainer.resolve).not.toHaveBeenCalled();
     expect(parentContainer.resolve).not.toHaveBeenCalled();

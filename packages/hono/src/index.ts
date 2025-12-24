@@ -30,6 +30,12 @@ export type { ScopeMiddlewareOptions } from "./middleware.js";
 export { getScope, getContainer, resolvePort, resolvePortAsync } from "./helpers.js";
 
 // =============================================================================
+// Errors
+// =============================================================================
+
+export { MissingScopeError, MissingContainerError } from "./errors.js";
+
+// =============================================================================
 // Types
 // =============================================================================
 

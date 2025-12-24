@@ -13,10 +13,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import React from "react";
-import {
-  TimelineView,
-  type TimelineViewProps,
-} from "../../src/react/timeline-view.js";
+import { TimelineView, type TimelineViewProps } from "../../src/react/timeline-view.js";
 import { TimelineRow } from "../../src/react/timeline-row.js";
 import { TimeRuler } from "../../src/react/time-ruler.js";
 import type { TraceEntry } from "@hex-di/devtools-core";
@@ -28,9 +25,7 @@ import type { TraceEntry } from "@hex-di/devtools-core";
 /**
  * Create a mock trace entry for testing.
  */
-function createMockTrace(
-  overrides: Partial<TraceEntry> = {}
-): TraceEntry {
+function createMockTrace(overrides: Partial<TraceEntry> = {}): TraceEntry {
   return {
     id: "trace-1",
     portName: "TestService",
@@ -151,9 +146,7 @@ describe("TimelineView", () => {
     });
 
     it("displays duration label", () => {
-      const traces: TraceEntry[] = [
-        createMockTrace({ id: "trace-1", duration: 5.6 }),
-      ];
+      const traces: TraceEntry[] = [createMockTrace({ id: "trace-1", duration: 5.6 })];
 
       render(<TimelineView {...defaultProps} traces={traces} />);
 
@@ -222,9 +215,7 @@ describe("TimelineView", () => {
     });
 
     it("shows cache indicator for cache hits", () => {
-      const traces: TraceEntry[] = [
-        createMockTrace({ id: "trace-1", isCacheHit: true }),
-      ];
+      const traces: TraceEntry[] = [createMockTrace({ id: "trace-1", isCacheHit: true })];
 
       render(<TimelineView {...defaultProps} traces={traces} />);
 
@@ -291,9 +282,7 @@ describe("TimelineView", () => {
       const onViewInTree = vi.fn();
       const traces: TraceEntry[] = [createMockTrace({ id: "trace-1" })];
 
-      render(
-        <TimelineView {...defaultProps} traces={traces} onViewInTree={onViewInTree} />
-      );
+      render(<TimelineView {...defaultProps} traces={traces} onViewInTree={onViewInTree} />);
 
       // Expand by clicking the row content
       const rowContainer = screen.getByTestId("timeline-row-trace-1");
@@ -313,26 +302,18 @@ describe("TimelineView", () => {
   // ---------------------------------------------------------------------------
   describe("threshold marker", () => {
     it("renders threshold marker line", () => {
-      const traces: TraceEntry[] = [
-        createMockTrace({ id: "trace-1", duration: 10 }),
-      ];
+      const traces: TraceEntry[] = [createMockTrace({ id: "trace-1", duration: 10 })];
 
-      render(
-        <TimelineView {...defaultProps} traces={traces} threshold={50} totalDuration={100} />
-      );
+      render(<TimelineView {...defaultProps} traces={traces} threshold={50} totalDuration={100} />);
 
       const marker = screen.getByTestId("threshold-marker");
       expect(marker).toBeDefined();
     });
 
     it("positions threshold marker at correct percentage", () => {
-      const traces: TraceEntry[] = [
-        createMockTrace({ id: "trace-1", duration: 10 }),
-      ];
+      const traces: TraceEntry[] = [createMockTrace({ id: "trace-1", duration: 10 })];
 
-      render(
-        <TimelineView {...defaultProps} traces={traces} threshold={25} totalDuration={100} />
-      );
+      render(<TimelineView {...defaultProps} traces={traces} threshold={25} totalDuration={100} />);
 
       const marker = screen.getByTestId("threshold-marker");
       // 25/100 = 25%
@@ -345,9 +326,7 @@ describe("TimelineView", () => {
   // ---------------------------------------------------------------------------
   describe("pinned trace indicator", () => {
     it("shows pin icon for pinned traces", () => {
-      const traces: TraceEntry[] = [
-        createMockTrace({ id: "trace-1", isPinned: true }),
-      ];
+      const traces: TraceEntry[] = [createMockTrace({ id: "trace-1", isPinned: true })];
 
       render(<TimelineView {...defaultProps} traces={traces} />);
 
@@ -355,9 +334,7 @@ describe("TimelineView", () => {
     });
 
     it("does not show pin icon for unpinned traces", () => {
-      const traces: TraceEntry[] = [
-        createMockTrace({ id: "trace-1", isPinned: false }),
-      ];
+      const traces: TraceEntry[] = [createMockTrace({ id: "trace-1", isPinned: false })];
 
       render(<TimelineView {...defaultProps} traces={traces} />);
 
@@ -366,13 +343,9 @@ describe("TimelineView", () => {
 
     it("calls onTogglePin when pin icon is clicked", () => {
       const onTogglePin = vi.fn();
-      const traces: TraceEntry[] = [
-        createMockTrace({ id: "trace-1", isPinned: true }),
-      ];
+      const traces: TraceEntry[] = [createMockTrace({ id: "trace-1", isPinned: true })];
 
-      render(
-        <TimelineView {...defaultProps} traces={traces} onTogglePin={onTogglePin} />
-      );
+      render(<TimelineView {...defaultProps} traces={traces} onTogglePin={onTogglePin} />);
 
       fireEvent.click(screen.getByTestId("pin-indicator-trace-1"));
       expect(onTogglePin).toHaveBeenCalledWith("trace-1");
@@ -617,9 +590,7 @@ describe("TimelineView", () => {
     });
 
     it("formats duration using formatDuration", () => {
-      const traces: TraceEntry[] = [
-        createMockTrace({ id: "trace-1", duration: 1500 }),
-      ];
+      const traces: TraceEntry[] = [createMockTrace({ id: "trace-1", duration: 1500 })];
 
       render(<TimelineView {...defaultProps} traces={traces} />);
 
@@ -751,13 +722,9 @@ describe("TimelineView", () => {
 
     it("pin toggle works on collapsed rows", () => {
       const onTogglePin = vi.fn();
-      const traces: TraceEntry[] = [
-        createMockTrace({ id: "trace-1", isPinned: true }),
-      ];
+      const traces: TraceEntry[] = [createMockTrace({ id: "trace-1", isPinned: true })];
 
-      render(
-        <TimelineView {...defaultProps} traces={traces} onTogglePin={onTogglePin} />
-      );
+      render(<TimelineView {...defaultProps} traces={traces} onTogglePin={onTogglePin} />);
 
       // Row is not expanded, but pin indicator should still work
       fireEvent.click(screen.getByTestId("pin-indicator-trace-1"));
@@ -1166,7 +1133,7 @@ describe("TimelineRow", () => {
       expect(button.textContent).toContain("Copy");
     });
 
-    it("Copy JSON button calls clipboard writeText", async () => {
+    it("Copy JSON button calls clipboard writeText", () => {
       const trace = createMockTrace({ id: "trace-1", portName: "TestService" });
       const writeTextMock = vi.fn().mockResolvedValue(undefined);
       Object.assign(navigator, {

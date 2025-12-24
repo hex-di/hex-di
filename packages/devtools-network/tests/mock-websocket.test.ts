@@ -49,7 +49,7 @@ describe("MockWebSocket", () => {
       server = pair.server;
     });
 
-    it("should send string data to peer", async () => {
+    it("should send string data to peer", () => {
       const receivedMessages: string[] = [];
 
       server.onmessage = event => {
@@ -62,7 +62,7 @@ describe("MockWebSocket", () => {
       expect(receivedMessages[0]).toBe("Hello, Server!");
     });
 
-    it("should send ArrayBuffer data to peer", async () => {
+    it("should send ArrayBuffer data to peer", () => {
       const receivedMessages: string[] = [];
 
       server.onmessage = event => {

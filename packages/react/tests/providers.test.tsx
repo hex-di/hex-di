@@ -10,9 +10,9 @@
  * 6. AutoScopeProvider outside ContainerProvider throws MissingProviderError
  */
 
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
-import React, { useContext, useEffect } from "react";
+import React, { useContext } from "react";
 import { createPort } from "@hex-di/ports";
 import { ContainerBrand, ScopeBrand, INTERNAL_ACCESS } from "@hex-di/runtime";
 import type { Container, Scope, ContainerInternalState, ScopeInternalState } from "@hex-di/runtime";
@@ -92,7 +92,9 @@ function createMockContainer(): TestContainer {
   const mockResolveAsync = vi.fn().mockResolvedValue({ name: "test-service" });
   const mockCreateScope = vi.fn().mockReturnValue(mockScope);
   const mockDispose = vi.fn().mockResolvedValue(undefined);
-  const mockInitialize = vi.fn().mockImplementation(async function(this: TestContainer) { return this; });
+  const mockInitialize = vi.fn().mockImplementation(function (this: TestContainer) {
+    return Promise.resolve(this);
+  });
 
   const mockInternalState: ContainerInternalState = {
     disposed: false,
@@ -136,20 +138,6 @@ function ContainerConsumer(): React.ReactElement {
 function ResolverConsumer(): React.ReactElement {
   const context = useContext(ResolverContext);
   return <div data-testid="resolver-value">{context ? "has-resolver" : "no-resolver"}</div>;
-}
-
-/**
- * Component that tracks mount/unmount for lifecycle testing.
- */
-function LifecycleTracker({ onMount, onUnmount }: { onMount: () => void; onUnmount: () => void }): React.ReactElement {
-  useEffect(() => {
-    onMount();
-    return () => {
-      onUnmount();
-    };
-  }, [onMount, onUnmount]);
-
-  return <div data-testid="lifecycle-tracker">mounted</div>;
 }
 
 // =============================================================================

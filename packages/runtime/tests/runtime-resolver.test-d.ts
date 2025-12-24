@@ -16,13 +16,13 @@ import type {
   RuntimeResolver,
   RuntimeContainer,
   TypedResolver,
-} from "../src/runtime-resolver.js";
+} from "../src/adapters/react-resolver.js";
 import {
   isRuntimeContainer,
   assertResolverProvides,
   toRuntimeResolver,
   toRuntimeContainer,
-} from "../src/runtime-resolver.js";
+} from "../src/adapters/react-resolver.js";
 
 // =============================================================================
 // Test Fixtures
@@ -102,12 +102,14 @@ describe("toRuntimeResolver accepts Scope", () => {
 
 describe("toRuntimeResolver accepts ChildContainer", () => {
   it("accepts child container", () => {
-    function test(child: ChildContainer<
-      TestPorts,
-      typeof LoggerPort, // extends
-      typeof DatabasePort, // async
-      "initialized"
-    >) {
+    function test(
+      child: ChildContainer<
+        TestPorts,
+        typeof LoggerPort, // extends
+        typeof DatabasePort, // async
+        "initialized"
+      >
+    ) {
       const resolver = toRuntimeResolver(child);
       expectTypeOf(resolver).toEqualTypeOf<RuntimeResolver>();
     }
@@ -239,10 +241,9 @@ describe("complete type-safe flow", () => {
       const initialized = runtimeContainer.initialize();
       expectTypeOf(initialized).toEqualTypeOf<Promise<RuntimeResolver>>();
 
-      // 3. Store the result
+      // 3. Store the result - RuntimeResolver is assignable to StateType (RuntimeResolver | null)
       type StateType = RuntimeResolver | null;
-      // initialized resolves to RuntimeResolver, which is assignable to StateType
-      expectTypeOf<Awaited<typeof initialized>>().toMatchTypeOf<RuntimeResolver>();
+      expectTypeOf<Awaited<typeof initialized>>().toMatchTypeOf<StateType>();
     }
     void test;
   });
@@ -264,10 +265,14 @@ describe("edge cases", () => {
   it("RuntimeResolver methods have correct types", () => {
     function test(resolver: RuntimeResolver) {
       // resolve accepts any Port
-      expectTypeOf(resolver.resolve).toEqualTypeOf<(port: import("@hex-di/ports").Port<unknown, string>) => unknown>();
+      expectTypeOf(resolver.resolve).toEqualTypeOf<
+        (port: import("@hex-di/ports").Port<unknown, string>) => unknown
+      >();
 
       // resolveAsync accepts any Port
-      expectTypeOf(resolver.resolveAsync).toEqualTypeOf<(port: import("@hex-di/ports").Port<unknown, string>) => Promise<unknown>>();
+      expectTypeOf(resolver.resolveAsync).toEqualTypeOf<
+        (port: import("@hex-di/ports").Port<unknown, string>) => Promise<unknown>
+      >();
 
       // createScope returns RuntimeResolver
       expectTypeOf(resolver.createScope).toEqualTypeOf<() => RuntimeResolver>();

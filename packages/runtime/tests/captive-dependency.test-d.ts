@@ -25,9 +25,9 @@
  * - Scoped -> Transient (shorter-lived dependency - CAPTIVE!)
  */
 
-import { describe, expectTypeOf, it } from "vitest";
+import { describe, expectTypeOf, it, expect } from "vitest";
 import { createPort } from "@hex-di/ports";
-import { createAdapter, type Lifetime } from "@hex-di/graph";
+import { createAdapter } from "@hex-di/graph";
 import type {
   LifetimeLevel,
   ValidateCaptiveDependency,
@@ -63,6 +63,12 @@ const DatabasePort = createPort<"Database", Database>("Database");
 const UserServicePort = createPort<"UserService", UserService>("UserService");
 const RequestContextPort = createPort<"RequestContext", RequestContext>("RequestContext");
 
+// Use ports to suppress unused variable warnings
+expect(LoggerPort).toBeDefined();
+expect(DatabasePort).toBeDefined();
+expect(UserServicePort).toBeDefined();
+expect(RequestContextPort).toBeDefined();
+
 // =============================================================================
 // Test Adapters with Various Lifetimes
 // =============================================================================
@@ -74,14 +80,16 @@ const SingletonLoggerAdapter = createAdapter({
   lifetime: "singleton",
   factory: () => ({ log: () => {} }),
 });
+expect(SingletonLoggerAdapter).toBeDefined();
 
 // Scoped adapter with no dependencies
 const ScopedDatabaseAdapter = createAdapter({
   provides: DatabasePort,
   requires: [],
   lifetime: "scoped",
-  factory: () => ({ query: async () => ({}) }),
+  factory: () => ({ query: () => Promise.resolve({}) }),
 });
+expect(ScopedDatabaseAdapter).toBeDefined();
 
 // Transient adapter with no dependencies
 const RequestContextAdapter = createAdapter({
@@ -90,6 +98,7 @@ const RequestContextAdapter = createAdapter({
   lifetime: "transient",
   factory: () => ({ requestId: "req-123" }),
 });
+expect(RequestContextAdapter).toBeDefined();
 
 // Singleton adapter depending on singleton (VALID)
 const SingletonDependsOnSingletonAdapter = createAdapter({
@@ -97,12 +106,13 @@ const SingletonDependsOnSingletonAdapter = createAdapter({
   requires: [LoggerPort],
   lifetime: "singleton",
   factory: deps => ({
-    getUser: async id => {
+    getUser: (id: string) => {
       deps.Logger.log(`Getting user ${id}`);
-      return { id, name: "Test" };
+      return Promise.resolve({ id, name: "Test" });
     },
   }),
 });
+expect(SingletonDependsOnSingletonAdapter).toBeDefined();
 
 // Scoped adapter depending on singleton (VALID)
 const ScopedDependsOnSingletonAdapter = createAdapter({
@@ -110,12 +120,13 @@ const ScopedDependsOnSingletonAdapter = createAdapter({
   requires: [LoggerPort],
   lifetime: "scoped",
   factory: deps => ({
-    getUser: async id => {
+    getUser: (id: string) => {
       deps.Logger.log(`Getting user ${id}`);
-      return { id, name: "Test" };
+      return Promise.resolve({ id, name: "Test" });
     },
   }),
 });
+expect(ScopedDependsOnSingletonAdapter).toBeDefined();
 
 // Transient adapter depending on any lifetime (VALID - transient can depend on anything)
 const RequestDependsOnSingletonAdapter = createAdapter({
@@ -123,12 +134,13 @@ const RequestDependsOnSingletonAdapter = createAdapter({
   requires: [LoggerPort],
   lifetime: "transient",
   factory: deps => ({
-    getUser: async id => {
+    getUser: (id: string) => {
       deps.Logger.log(`Getting user ${id}`);
-      return { id, name: "Test" };
+      return Promise.resolve({ id, name: "Test" });
     },
   }),
 });
+expect(RequestDependsOnSingletonAdapter).toBeDefined();
 
 // =============================================================================
 // LifetimeLevel Type Tests
@@ -183,12 +195,13 @@ describe("Valid captive dependency scenarios (should compile)", () => {
       requires: [DatabasePort],
       lifetime: "scoped",
       factory: deps => ({
-        getUser: async id => {
+        getUser: async (id: string) => {
           await deps.Database.query(`SELECT * FROM users WHERE id = '${id}'`);
           return { id, name: "Test" };
         },
       }),
     });
+    expect(ScopedDependsOnScopedAdapter).toBeDefined();
 
     type Result = ValidateCaptiveDependency<
       typeof ScopedDependsOnScopedAdapter,
@@ -213,12 +226,13 @@ describe("Valid captive dependency scenarios (should compile)", () => {
       requires: [DatabasePort],
       lifetime: "transient",
       factory: deps => ({
-        getUser: async id => {
+        getUser: async (id: string) => {
           await deps.Database.query(`SELECT * FROM users WHERE id = '${id}'`);
           return { id, name: "Test" };
         },
       }),
     });
+    expect(RequestDependsOnScopedAdapter).toBeDefined();
 
     type ResultScoped = ValidateCaptiveDependency<
       typeof RequestDependsOnScopedAdapter,
@@ -232,12 +246,13 @@ describe("Valid captive dependency scenarios (should compile)", () => {
       requires: [RequestContextPort],
       lifetime: "transient",
       factory: deps => ({
-        getUser: async id => {
+        getUser: (id: string) => {
           void deps.RequestContext.requestId; // Use the dependency
-          return { id, name: "Test" };
+          return Promise.resolve({ id, name: "Test" });
         },
       }),
     });
+    expect(RequestDependsOnRequestAdapter).toBeDefined();
 
     type ResultRequest = ValidateCaptiveDependency<
       typeof RequestDependsOnRequestAdapter,
@@ -259,12 +274,13 @@ describe("Invalid captive dependency scenarios (should produce error types)", ()
       requires: [DatabasePort],
       lifetime: "singleton",
       factory: deps => ({
-        getUser: async id => {
+        getUser: async (id: string) => {
           await deps.Database.query(`SELECT * FROM users WHERE id = '${id}'`);
           return { id, name: "Test" };
         },
       }),
     });
+    expect(SingletonDependsOnScopedAdapter).toBeDefined();
 
     type Result = ValidateCaptiveDependency<
       typeof SingletonDependsOnScopedAdapter,
@@ -282,12 +298,13 @@ describe("Invalid captive dependency scenarios (should produce error types)", ()
       requires: [RequestContextPort],
       lifetime: "singleton",
       factory: deps => ({
-        getUser: async id => {
+        getUser: (id: string) => {
           void deps.RequestContext.requestId; // Use the dependency
-          return { id, name: "Test" };
+          return Promise.resolve({ id, name: "Test" });
         },
       }),
     });
+    expect(SingletonDependsOnRequestAdapter).toBeDefined();
 
     type Result = ValidateCaptiveDependency<
       typeof SingletonDependsOnRequestAdapter,
@@ -305,12 +322,13 @@ describe("Invalid captive dependency scenarios (should produce error types)", ()
       requires: [RequestContextPort],
       lifetime: "scoped",
       factory: deps => ({
-        getUser: async id => {
+        getUser: (id: string) => {
           void deps.RequestContext.requestId; // Use the dependency
-          return { id, name: "Test" };
+          return Promise.resolve({ id, name: "Test" });
         },
       }),
     });
+    expect(ScopedDependsOnRequestAdapter).toBeDefined();
 
     type Result = ValidateCaptiveDependency<
       typeof ScopedDependsOnRequestAdapter,

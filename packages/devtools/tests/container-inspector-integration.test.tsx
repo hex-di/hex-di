@@ -17,14 +17,7 @@
  */
 
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
-import {
-  render,
-  screen,
-  cleanup,
-  fireEvent,
-  waitFor,
-  act,
-} from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import React from "react";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
@@ -58,12 +51,8 @@ interface CacheService {
 const LoggerPort = createPort<"Logger", Logger>("Logger");
 const DatabasePort = createPort<"Database", Database>("Database");
 const UserServicePort = createPort<"UserService", UserService>("UserService");
-const RequestContextPort = createPort<"RequestContext", RequestContext>(
-  "RequestContext"
-);
-const CacheServicePort = createPort<"CacheService", CacheService>(
-  "CacheService"
-);
+const RequestContextPort = createPort<"RequestContext", RequestContext>("RequestContext");
+const CacheServicePort = createPort<"CacheService", CacheService>("CacheService");
 
 /**
  * Creates a test graph with various lifetimes and dependencies.
@@ -170,8 +159,8 @@ describe("Container State Inspection Integration", () => {
     const graph = createTestGraph();
     const container = createContainer(graph);
 
-    // Create initial scope
-    const scope1 = container.createScope();
+    // Create initial scope (side-effect: adds scope to container's tree)
+    container.createScope();
 
     render(<DevToolsPanel graph={graph} container={container} mode="sections" />);
 
@@ -319,7 +308,8 @@ describe("Container State Inspection Integration", () => {
 
     // Create scopes with nested structure
     const scope1 = container.createScope();
-    const scope2 = container.createScope();
+    // Create second top-level scope (side-effect: adds to container's tree)
+    container.createScope();
     const nestedScope = scope1.createScope();
 
     // Resolve in scopes

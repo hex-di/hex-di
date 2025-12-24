@@ -483,7 +483,7 @@ export class RemoteDataSource implements DataSource, PresenterDataSourceContract
   /**
    * Dispose the data source and clean up resources.
    */
-  async dispose(): Promise<void> {
+  dispose(): void {
     this.disconnect();
     this.listeners.clear();
     this.subscribers.clear();

@@ -94,30 +94,36 @@ export function devToolsPlugin(options: DevToolsPluginOptions = {}): Plugin {
           verbose,
         });
 
-        // Start the server
-        devToolsServer.start().then(() => {
+        // Start the server (synchronous - setup only, no actual network binding)
+        try {
+          devToolsServer.start();
+
           const address = server.httpServer?.address();
           const port = typeof address === "object" && address !== null ? address.port : 3000;
 
           if (verbose) {
-            console.log(`[hex-di-devtools] DevTools relay server started at ws://localhost:${port}${path}`);
+            console.warn(
+              `[hex-di-devtools] DevTools relay server started at ws://localhost:${port}${path}`
+            );
           }
-        }).catch((err) => {
+        } catch (err) {
           console.error("[hex-di-devtools] Failed to start DevTools server:", err);
-        });
+        }
 
         // Attach server instance for external access
         (server as ViteDevServerWithDevTools).devToolsServer = devToolsServer;
 
         // Log connection events
-        devToolsServer.on((event) => {
+        devToolsServer.on(event => {
           if (verbose) {
             switch (event.type) {
               case "connection":
-                console.log(`[hex-di-devtools] App connected: ${event.appName} (${event.appId})`);
+                console.warn(`[hex-di-devtools] App connected: ${event.appName} (${event.appId})`);
                 break;
               case "disconnection":
-                console.log(`[hex-di-devtools] App disconnected: ${event.appName} (${event.appId})`);
+                console.warn(
+                  `[hex-di-devtools] App disconnected: ${event.appName} (${event.appId})`
+                );
                 break;
               case "error":
                 console.error(`[hex-di-devtools] Error:`, event.error);

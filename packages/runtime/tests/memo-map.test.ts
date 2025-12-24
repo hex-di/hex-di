@@ -7,7 +7,7 @@
 
 import { describe, test, expect, vi } from "vitest";
 import { createPort } from "@hex-di/ports";
-import { MemoMap } from "../src/memo-map.js";
+import { MemoMap } from "../src/common/memo-map.js";
 
 // =============================================================================
 // Test Fixtures
@@ -73,15 +73,27 @@ describe("MemoMap.getOrElseMemoize", () => {
     const database: Database = { query: vi.fn() };
     const cache: Cache = { get: vi.fn() };
 
-    memoMap.getOrElseMemoize(LoggerPort, () => logger, () => {
-      disposalOrder.push("Logger");
-    });
-    memoMap.getOrElseMemoize(DatabasePort, () => database, () => {
-      disposalOrder.push("Database");
-    });
-    memoMap.getOrElseMemoize(CachePort, () => cache, () => {
-      disposalOrder.push("Cache");
-    });
+    memoMap.getOrElseMemoize(
+      LoggerPort,
+      () => logger,
+      () => {
+        disposalOrder.push("Logger");
+      }
+    );
+    memoMap.getOrElseMemoize(
+      DatabasePort,
+      () => database,
+      () => {
+        disposalOrder.push("Database");
+      }
+    );
+    memoMap.getOrElseMemoize(
+      CachePort,
+      () => cache,
+      () => {
+        disposalOrder.push("Cache");
+      }
+    );
 
     await memoMap.dispose();
 
@@ -141,12 +153,20 @@ describe("MemoMap.dispose", () => {
     const logger: Logger = { log: vi.fn() };
     const database: Database = { query: vi.fn() };
 
-    memoMap.getOrElseMemoize(LoggerPort, () => logger, () => {
-      disposalOrder.push("Logger");
-    });
-    memoMap.getOrElseMemoize(DatabasePort, () => database, () => {
-      disposalOrder.push("Database");
-    });
+    memoMap.getOrElseMemoize(
+      LoggerPort,
+      () => logger,
+      () => {
+        disposalOrder.push("Logger");
+      }
+    );
+    memoMap.getOrElseMemoize(
+      DatabasePort,
+      () => database,
+      () => {
+        disposalOrder.push("Database");
+      }
+    );
 
     await memoMap.dispose();
 
@@ -161,18 +181,30 @@ describe("MemoMap.dispose", () => {
     const database: Database = { query: vi.fn() };
     const cache: Cache = { get: vi.fn() };
 
-    memoMap.getOrElseMemoize(LoggerPort, () => logger, () => {
-      disposalOrder.push("Logger");
-      throw new Error("Logger finalizer failed");
-    });
-    memoMap.getOrElseMemoize(DatabasePort, () => database, () => {
-      disposalOrder.push("Database");
-      throw new Error("Database finalizer failed");
-    });
-    memoMap.getOrElseMemoize(CachePort, () => cache, () => {
-      disposalOrder.push("Cache");
-      // This one succeeds
-    });
+    memoMap.getOrElseMemoize(
+      LoggerPort,
+      () => logger,
+      () => {
+        disposalOrder.push("Logger");
+        throw new Error("Logger finalizer failed");
+      }
+    );
+    memoMap.getOrElseMemoize(
+      DatabasePort,
+      () => database,
+      () => {
+        disposalOrder.push("Database");
+        throw new Error("Database finalizer failed");
+      }
+    );
+    memoMap.getOrElseMemoize(
+      CachePort,
+      () => cache,
+      () => {
+        disposalOrder.push("Cache");
+        // This one succeeds
+      }
+    );
 
     // Dispose should throw AggregateError
     let thrownError: unknown;
@@ -195,12 +227,20 @@ describe("MemoMap.dispose", () => {
     const logger: Logger = { log: vi.fn() };
     const database: Database = { query: vi.fn() };
 
-    memoMap.getOrElseMemoize(LoggerPort, () => logger, () => {
-      throw new Error("Logger finalizer failed");
-    });
-    memoMap.getOrElseMemoize(DatabasePort, () => database, () => {
-      throw new Error("Database finalizer failed");
-    });
+    memoMap.getOrElseMemoize(
+      LoggerPort,
+      () => logger,
+      () => {
+        throw new Error("Logger finalizer failed");
+      }
+    );
+    memoMap.getOrElseMemoize(
+      DatabasePort,
+      () => database,
+      () => {
+        throw new Error("Database finalizer failed");
+      }
+    );
 
     try {
       await memoMap.dispose();

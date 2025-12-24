@@ -14,8 +14,8 @@
 import { describe, test, expect, vi } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
-import { createContainer } from "../src/container.js";
-import { DisposedScopeError } from "../src/errors.js";
+import { createContainer } from "../src/container/factory.js";
+import { DisposedScopeError } from "../src/common/errors.js";
 
 // =============================================================================
 // Test Fixtures
@@ -23,10 +23,6 @@ import { DisposedScopeError } from "../src/errors.js";
 
 interface Logger {
   log(message: string): void;
-}
-
-interface Database {
-  query(sql: string): unknown;
 }
 
 interface RequestContext {
@@ -38,7 +34,6 @@ interface SessionStore {
 }
 
 const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
 const RequestContextPort = createPort<"RequestContext", RequestContext>("RequestContext");
 const SessionStorePort = createPort<"SessionStore", SessionStore>("SessionStore");
 
@@ -368,7 +363,9 @@ describe("Scope disposal", () => {
       requires: [],
       lifetime: "scoped",
       factory: () => ({ requestId: "parent" }),
-      finalizer: () => { callOrder.push("parent"); },
+      finalizer: () => {
+        callOrder.push("parent");
+      },
     });
 
     const SessionAdapter = createAdapter({
@@ -376,7 +373,9 @@ describe("Scope disposal", () => {
       requires: [],
       lifetime: "scoped",
       factory: () => ({ sessionId: "child" }),
-      finalizer: () => { callOrder.push("child"); },
+      finalizer: () => {
+        callOrder.push("child");
+      },
     });
 
     const graph = GraphBuilder.create()
