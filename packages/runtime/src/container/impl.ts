@@ -31,8 +31,8 @@ import { InheritanceResolver } from "./inheritance-resolver.js";
 import { ResolutionEngine } from "./resolution-engine.js";
 import { AsyncResolutionEngine } from "./async-resolution-engine.js";
 import { AsyncInitializer } from "./async-initializer.js";
+import { AdapterRegistry } from "./adapter-registry.js";
 import { isDisposableChild, createMemoMapSnapshot } from "./helpers.js";
-import { ADAPTER_ACCESS } from "../inspector/symbols.js";
 
 // Re-export types needed by other modules
 export type {
@@ -59,7 +59,7 @@ export class ContainerImpl<
   TAsyncPorts extends Port<unknown, string> = never,
 > {
   // Core state (all containers)
-  private readonly adapterMap: Map<Port<unknown, string>, RuntimeAdapter>;
+  private readonly adapterRegistry: AdapterRegistry<TProvides, TAsyncPorts>;
   private readonly singletonMemo: MemoMap;
   private readonly resolutionContext: ResolutionContext;
   private readonly lifecycleManager: LifecycleManager;
@@ -75,28 +75,27 @@ export class ContainerImpl<
   private readonly parentContainer: ParentContainerLike<TProvides, TAsyncPorts> | null;
   private readonly inheritanceModes: ReadonlyMap<string, InheritanceMode>;
   private readonly inheritanceResolver: InheritanceResolver<TProvides, TAsyncPorts> | null;
-  private readonly localPorts: Set<Port<unknown, string>>;
   private wrapper: unknown = null;
 
   constructor(config: ContainerConfig<TProvides, TAsyncPorts>) {
     this.singletonMemo = new MemoMap();
     this.resolutionContext = new ResolutionContext();
     this.lifecycleManager = new LifecycleManager();
-    this.adapterMap = new Map();
     this.asyncInitializer = new AsyncInitializer();
-    this.localPorts = new Set();
 
     if (config.kind === "root") {
       this.isRoot = true;
       this.parentContainer = null;
       this.inheritanceModes = new Map();
       this.inheritanceResolver = null;
+      this.adapterRegistry = new AdapterRegistry(null);
       this.hooksRunner = this.initializeFromGraph(config);
     } else {
       this.isRoot = false;
       this.parentContainer = config.parent;
       this.inheritanceModes = config.inheritanceModes;
       this.inheritanceResolver = new InheritanceResolver(config.parent, config.inheritanceModes);
+      this.adapterRegistry = new AdapterRegistry(config.parent);
       this.hooksRunner = null;
       this.initializeFromParent(config);
     }
@@ -124,7 +123,8 @@ export class ContainerImpl<
     let adapterIndex = 0;
 
     for (const adapter of graph.adapters) {
-      this.adapterMap.set(adapter.provides, adapter);
+      // Root containers don't use "local" tracking - all adapters are root-level
+      this.adapterRegistry.register(adapter.provides, adapter, false);
       if (adapter.factoryKind === "async") {
         this.asyncInitializer.registerAdapter(adapter, adapterIndex);
       }
@@ -144,16 +144,14 @@ export class ContainerImpl<
   private initializeFromParent(config: ChildContainerConfig<TProvides, TAsyncPorts>): void {
     const { overrides, extensions } = config;
 
-    // Add overrides
+    // Add overrides (marked as local)
     for (const [port, adapter] of overrides) {
-      this.adapterMap.set(port, adapter);
-      this.localPorts.add(port);
+      this.adapterRegistry.register(port, adapter, true);
     }
 
-    // Add extensions
+    // Add extensions (marked as local)
     for (const [port, adapter] of extensions) {
-      this.adapterMap.set(port, adapter);
-      this.localPorts.add(port);
+      this.adapterRegistry.register(port, adapter, true);
     }
 
     // Child containers are considered initialized (inherit from parent)
@@ -206,20 +204,11 @@ export class ContainerImpl<
   }
 
   hasAdapter(port: Port<unknown, string>): boolean {
-    if (this.adapterMap.has(port)) return true;
-    if (this.parentContainer !== null) {
-      return this.parentContainer[ADAPTER_ACCESS](port) !== undefined;
-    }
-    return false;
+    return this.adapterRegistry.has(port);
   }
 
   getAdapter(port: Port<unknown, string>): RuntimeAdapter | undefined {
-    const local = this.adapterMap.get(port);
-    if (local !== undefined) return local;
-    if (this.parentContainer !== null) {
-      return this.parentContainer[ADAPTER_ACCESS](port);
-    }
-    return undefined;
+    return this.adapterRegistry.get(port);
   }
 
   has(port: Port<unknown, string>): boolean {
@@ -244,9 +233,9 @@ export class ContainerImpl<
       throw new DisposedScopeError(portName);
     }
 
-    // Check local adapters (overrides + extensions for child, all for root)
-    if (this.localPorts.has(port) || (this.isRoot && this.adapterMap.has(port))) {
-      const adapter = this.adapterMap.get(port);
+    // Check if should resolve locally (overrides + extensions for child, all for root)
+    if (this.adapterRegistry.shouldResolveLocally(port, this.isRoot)) {
+      const adapter = this.adapterRegistry.getLocal(port);
       if (adapter === undefined || !isAdapterForPort(adapter, port)) {
         throw new Error(`No adapter registered for port '${portName}'`);
       }
@@ -331,7 +320,7 @@ export class ContainerImpl<
 
     if (adapter === undefined || !isAdapterForPort(adapter, port)) {
       // For child containers, delegate to parent if not local and mode is shared
-      if (this.inheritanceResolver !== null && !this.localPorts.has(port)) {
+      if (this.inheritanceResolver !== null && !this.adapterRegistry.isLocal(port)) {
         const mode = this.inheritanceResolver.getMode(portName);
         if (mode === "shared") {
           return this.inheritanceResolver.resolveSharedInternal(port as TProvides);
@@ -362,9 +351,9 @@ export class ContainerImpl<
       throw new DisposedScopeError(portName);
     }
 
-    // Check local adapters
-    if (this.localPorts.has(port) || (this.isRoot && this.adapterMap.has(port))) {
-      const adapter = this.adapterMap.get(port);
+    // Check if should resolve locally
+    if (this.adapterRegistry.shouldResolveLocally(port, this.isRoot)) {
+      const adapter = this.adapterRegistry.getLocal(port);
       if (adapter === undefined || !isAdapterForPort(adapter, port)) {
         throw new Error(`No adapter registered for port '${portName}'`);
       }
@@ -403,7 +392,7 @@ export class ContainerImpl<
     const adapter = this.getAdapter(port);
 
     if (adapter === undefined || !isAdapterForPort(adapter, port)) {
-      if (!this.isRoot && this.parentContainer !== null && !this.localPorts.has(port)) {
+      if (!this.isRoot && this.parentContainer !== null && !this.adapterRegistry.isLocal(port)) {
         return this.parentContainer.resolveAsyncInternal(port as TProvides);
       }
       throw new Error(`No adapter registered for port '${portName}'`);
@@ -485,7 +474,7 @@ export class ContainerImpl<
     import("../inspector/types.js").AdapterInfo
   > {
     const map = new Map<Port<unknown, string>, import("../inspector/types.js").AdapterInfo>();
-    for (const [port, adapter] of this.adapterMap) {
+    for (const [port, adapter] of this.adapterRegistry.entries()) {
       map.set(port, {
         portName: port.__portName,
         lifetime: adapter.lifetime,
