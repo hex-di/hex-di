@@ -31,7 +31,7 @@ import { InheritanceResolver } from "./inheritance-resolver.js";
 import { ResolutionEngine } from "./resolution-engine.js";
 import { AsyncResolutionEngine } from "./async-resolution-engine.js";
 import { AsyncInitializer } from "./async-initializer.js";
-import { isDisposableChild, createMemoMapSnapshot, shallowClone } from "./helpers.js";
+import { isDisposableChild, createMemoMapSnapshot } from "./helpers.js";
 import { ADAPTER_ACCESS } from "../inspector/symbols.js";
 
 // Re-export types needed by other modules
@@ -271,36 +271,21 @@ export class ContainerImpl<
   }
 
   private resolveWithInheritanceMode<P extends TProvides | TExtends>(port: P): InferService<P> {
-    if (this.inheritanceResolver === null || this.parentContainer === null) {
+    if (this.inheritanceResolver === null) {
       throw new Error(`Port ${port.__portName} not found - no parent container.`);
     }
 
-    const result = this.inheritanceResolver.tryResolve(port as unknown as TProvides);
-    if (result.resolved) {
-      return result.value as InferService<P>;
-    }
-
-    // Handle isolated mode in container (requires full type context)
-    return this.createIsolatedInstance(port);
+    return this.inheritanceResolver.resolveWithCallback(
+      port as unknown as TProvides,
+      (p, adapter) => this.createIsolatedWithAdapter(p, adapter)
+    ) as InferService<P>;
   }
 
-  private createIsolatedInstance<P extends TProvides | TExtends>(port: P): InferService<P> {
+  private createIsolatedWithAdapter<P extends TProvides>(
+    port: P,
+    adapter: RuntimeAdapterFor<P>
+  ): InferService<P> {
     const portName = port.__portName;
-
-    if (this.parentContainer === null) {
-      throw new Error(`Cannot create isolated instance for ${portName} - no parent container.`);
-    }
-
-    const adapter = this.parentContainer[ADAPTER_ACCESS](port);
-    if (adapter === undefined) {
-      // Fallback: clone parent instance
-      const parentInstance = this.parentContainer.resolveInternal(port as unknown as TProvides);
-      return shallowClone(parentInstance) as InferService<P>;
-    }
-
-    if (!isAdapterForPort(adapter, port)) {
-      throw new Error(`Adapter mismatch for port ${portName}.`);
-    }
 
     assertSyncAdapter(adapter, portName);
 

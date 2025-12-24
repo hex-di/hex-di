@@ -13,9 +13,10 @@
 
 import type { Port, InferService } from "@hex-di/ports";
 import type { InheritanceMode } from "../types.js";
-import type { ForkedEntry, ParentContainerLike } from "./internal-types.js";
-import { isForkedEntryForPort } from "./internal-types.js";
+import type { ForkedEntry, ParentContainerLike, RuntimeAdapterFor } from "./internal-types.js";
+import { isForkedEntryForPort, isAdapterForPort } from "./internal-types.js";
 import { shallowClone } from "./helpers.js";
+import { ADAPTER_ACCESS } from "../inspector/symbols.js";
 
 // =============================================================================
 // Types
@@ -29,6 +30,27 @@ import { shallowClone } from "./helpers.js";
 export type InheritanceResult<T> =
   | { readonly resolved: true; readonly value: T }
   | { readonly resolved: false; readonly mode: "isolated" };
+
+/**
+ * Callback for creating isolated instances when an adapter is available.
+ *
+ * Called by InheritanceResolver when:
+ * - Port is in isolated mode
+ * - Parent has an adapter for the port
+ *
+ * The callback is responsible for:
+ * - Resolving dependencies using the child container's resolution
+ * - Creating the instance with the adapter's factory
+ * - Memoization (typically in singleton memo)
+ *
+ * @internal
+ */
+export type IsolatedInstanceCreator<TProvides extends Port<unknown, string>> = <
+  P extends TProvides,
+>(
+  port: P,
+  adapter: RuntimeAdapterFor<P>
+) => InferService<P>;
 
 // =============================================================================
 // InheritanceResolver Class
@@ -98,6 +120,7 @@ export class InheritanceResolver<
    *
    * @param port - The port to resolve
    * @returns Resolution result with value for shared/forked, or mode indicator for isolated
+   * @deprecated Use resolveWithCallback for consistent callback pattern
    */
   tryResolve<P extends TProvides>(port: P): InheritanceResult<InferService<P>> {
     const portName = port.__portName;
@@ -118,6 +141,48 @@ export class InheritanceResolver<
 
       case "isolated":
         return { resolved: false, mode: "isolated" };
+
+      default:
+        throw new Error(`Unknown inheritance mode: ${mode}`);
+    }
+  }
+
+  /**
+   * Resolves a port using the appropriate inheritance mode with callback for isolated mode.
+   *
+   * This method encapsulates all inheritance resolution:
+   * - **shared**: Returns parent's singleton instance directly
+   * - **forked**: Returns cached shallow clone of parent's instance
+   * - **isolated**: Creates new instance using callback (or clones parent as fallback)
+   *
+   * @example
+   * ```typescript
+   * const service = resolver.resolveWithCallback(port, (p, adapter) => {
+   *   // Create isolated instance with adapter
+   *   return createInstanceWithDeps(p, adapter);
+   * });
+   * ```
+   *
+   * @param port - The port to resolve
+   * @param createIsolated - Callback to create instance when adapter is available
+   * @returns The resolved service instance with full type inference
+   */
+  resolveWithCallback<P extends TProvides>(
+    port: P,
+    createIsolated: IsolatedInstanceCreator<TProvides>
+  ): InferService<P> {
+    const portName = port.__portName;
+    const mode = this.getMode(portName);
+
+    switch (mode) {
+      case "shared":
+        return this.resolveShared(port);
+
+      case "forked":
+        return this.resolveForked(port, portName);
+
+      case "isolated":
+        return this.resolveIsolated(port, createIsolated);
 
       default:
         throw new Error(`Unknown inheritance mode: ${mode}`);
@@ -160,5 +225,30 @@ export class InheritanceResolver<
     const entry: ForkedEntry<P> = { port, instance: forkedInstance };
     this.forkedInstances.set(portName, entry as ForkedEntry<Port<unknown, string>>);
     return forkedInstance;
+  }
+
+  /**
+   * Resolves using isolated mode - new instance with child's dependency resolution.
+   *
+   * If parent has an adapter for the port, uses the callback to create the instance.
+   * Otherwise, falls back to shallow cloning the parent's instance.
+   */
+  private resolveIsolated<P extends TProvides>(
+    port: P,
+    createIsolated: IsolatedInstanceCreator<TProvides>
+  ): InferService<P> {
+    const adapter = this.parentContainer[ADAPTER_ACCESS](port);
+
+    if (adapter === undefined) {
+      // Fallback: clone parent instance when no adapter is available
+      const parentInstance = this.parentContainer.resolveInternal(port);
+      return shallowClone(parentInstance) as InferService<P>;
+    }
+
+    if (!isAdapterForPort(adapter, port)) {
+      throw new Error(`Adapter mismatch for port ${port.__portName}.`);
+    }
+
+    return createIsolated(port, adapter);
   }
 }
