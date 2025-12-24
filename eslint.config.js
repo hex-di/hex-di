@@ -97,6 +97,19 @@ export const testConfig = tseslint.config({
 
     // Allow console in tests
     "no-console": "off",
+
+    // Type-level test files use variables only for `typeof` extraction
+    // and async factories without await for type inference
+    "@typescript-eslint/require-await": "off",
+  },
+});
+
+/** @type {import("typescript-eslint").ConfigArray} */
+export const typeLevelTestConfig = tseslint.config({
+  files: ["**/*.test-d.{ts,tsx}"],
+  rules: {
+    // Variables in type tests are often only used with typeof
+    "@typescript-eslint/no-unused-vars": "off",
   },
 });
 

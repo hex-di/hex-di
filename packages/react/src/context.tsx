@@ -15,8 +15,7 @@
 
 import { createContext, useEffect, useContext, useRef, type ReactNode } from "react";
 import type { Port, InferService } from "@hex-di/ports";
-import type { Container, Scope, ContainerPhase } from "@hex-di/runtime";
-import { ContainerBrand } from "@hex-di/runtime";
+import type { Scope, ContainerPhase } from "@hex-di/runtime";
 import { MissingProviderError } from "./errors.js";
 import {
   toRuntimeContainerRef,

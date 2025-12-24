@@ -519,3 +519,52 @@ export type FirstCaptiveError<T> = [T] extends [never]
   : T extends CaptiveDependencyError<infer DN, infer DL, infer CP, infer CL>
     ? CaptiveDependencyError<DN, DL, CP, CL>
     : never;
+
+// =============================================================================
+// Lifetime Inconsistency Detection for Merge
+// =============================================================================
+
+/**
+ * Helper to check each key for lifetime inconsistency.
+ * Uses distributive conditional to check each key individually.
+ * @internal
+ */
+type CheckEachKeyForInconsistency<TMapA, TMapB, TKey extends string> = TKey extends string
+  ? GetLifetimeLevel<TMapA, TKey> extends infer LevelA
+    ? GetLifetimeLevel<TMapB, TKey> extends infer LevelB
+      ? IsNever<LevelA> extends true
+        ? never // Port not in Map A
+        : IsNever<LevelB> extends true
+          ? never // Port not in Map B
+          : LevelA extends LevelB
+            ? never // Same lifetime, no inconsistency
+            : TKey // Different lifetimes, return port name
+      : never
+    : never
+  : never;
+
+/**
+ * Finds ports that exist in both lifetime maps with different lifetime levels.
+ *
+ * This detects when the same port is provided with different lifetimes
+ * across two graphs being merged (e.g., singleton in Graph A, scoped in Graph B).
+ *
+ * @typeParam TMapA - First lifetime map
+ * @typeParam TMapB - Second lifetime map
+ *
+ * @returns The first inconsistent port name, or never if all consistent
+ */
+export type FindLifetimeInconsistency<TMapA, TMapB> = CheckEachKeyForInconsistency<
+  TMapA,
+  TMapB,
+  Extract<keyof TMapA & keyof TMapB, string>
+>;
+
+/**
+ * Gets lifetime information for both maps for error reporting.
+ * @internal
+ */
+export type GetInconsistentLifetimes<TMapA, TMapB, TPort extends string> = {
+  levelA: GetLifetimeLevel<TMapA, TPort>;
+  levelB: GetLifetimeLevel<TMapB, TPort>;
+};

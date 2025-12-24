@@ -201,3 +201,27 @@ export type CaptiveErrorMessage<
   TCaptivePortName extends string,
   TCaptiveLifetime extends string,
 > = `ERROR: Captive dependency: ${TDependentLifetime} '${TDependentName}' cannot depend on ${TCaptiveLifetime} '${TCaptivePortName}'`;
+
+/**
+ * Template literal error message for lifetime inconsistency during merge.
+ *
+ * @typeParam TPortName - Name of the port with inconsistent lifetimes
+ * @typeParam TLifetimeA - Lifetime in the first graph (e.g., "Singleton")
+ * @typeParam TLifetimeB - Lifetime in the second graph (e.g., "Scoped")
+ *
+ * @remarks
+ * This error occurs when merging two graphs that both provide the same port
+ * but with different lifetimes. For example, Graph A provides Logger as a
+ * Singleton, but Graph B provides Logger as Scoped.
+ *
+ * @example
+ * When merging graphs with conflicting lifetimes:
+ * ```
+ * "ERROR: Lifetime inconsistency for 'Logger': Graph A provides Singleton, Graph B provides Scoped"
+ * ```
+ */
+export type LifetimeInconsistencyErrorMessage<
+  TPortName extends string,
+  TLifetimeA extends string,
+  TLifetimeB extends string,
+> = `ERROR: Lifetime inconsistency for '${TPortName}': Graph A provides ${TLifetimeA}, Graph B provides ${TLifetimeB}`;

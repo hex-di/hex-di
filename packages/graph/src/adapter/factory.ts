@@ -23,7 +23,7 @@ interface AdapterConfig<
 export function createAdapter<
   TProvides extends Port<unknown, string>,
   const TRequires extends readonly Port<unknown, string>[],
-  TLifetime extends Lifetime,
+  const TLifetime extends Lifetime,
 >(
   config: AdapterConfig<TProvides, TRequires, TLifetime>
 ): Adapter<TProvides, TupleToUnion<TRequires>, TLifetime, "sync", TRequires> {

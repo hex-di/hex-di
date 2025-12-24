@@ -158,3 +158,141 @@ export type ValidGraph<TProvides, TRequires> =
         readonly __valid: false;
         readonly __missing: UnsatisfiedDependencies<TProvides, TRequires>;
       };
+
+// =============================================================================
+// Merge Intent Detection (Opt-in Utilities)
+// =============================================================================
+//
+// These types help detect when merging two graphs accidentally satisfies
+// dependencies that were intentionally left unsatisfied. This is useful for
+// detecting unintentional coupling between independently-developed modules.
+//
+// **Why "Intent Detection"?**
+//
+// When developing modular systems, graphs often have unsatisfied dependencies
+// intentionally - the expectation is that the consumer will provide them.
+// If merging two graphs accidentally satisfies dependencies that weren't
+// meant to be satisfied, this can indicate:
+// - Unintentional coupling between modules
+// - Unexpected implicit dependencies
+// - Design decisions that should be made explicit
+//
+// **Usage**: These are opt-in utilities for type tests, NOT blocking errors.
+//
+
+/**
+ * Finds dependencies in Graph A that would be newly satisfied by Graph B.
+ *
+ * "Newly satisfied" means: required by A, NOT provided by A, but provided by B.
+ * These are dependencies that were intentionally left unsatisfied in A, but
+ * accidentally become satisfied when merged with B.
+ *
+ * @typeParam AProvides - Ports provided by Graph A
+ * @typeParam ARequires - Ports required by Graph A
+ * @typeParam BProvides - Ports provided by Graph B
+ *
+ * @returns Union of port types that become satisfied after merge
+ *
+ * @example
+ * ```typescript
+ * // Graph A: UserService requires Logger but doesn't provide it
+ * // Graph B: Provides Logger
+ * type Satisfied = NewlySatisfiedDependencies<
+ *   UserServicePort,    // A provides
+ *   LoggerPort,         // A requires
+ *   LoggerPort          // B provides
+ * >;
+ * // Result: LoggerPort - this dependency becomes satisfied!
+ * ```
+ */
+export type NewlySatisfiedDependencies<AProvides, ARequires, BProvides> = Extract<
+  Exclude<ARequires, AProvides>,
+  BProvides
+>;
+
+/**
+ * Detects all dependencies that become satisfied when merging two graphs.
+ *
+ * This type utility checks both directions:
+ * - Dependencies in A that B would satisfy
+ * - Dependencies in B that A would satisfy
+ *
+ * **When to use**: In type tests to validate that merge doesn't create
+ * unintentional coupling. A return type of `never` means the merge is "clean"
+ * with no implicit dependency satisfaction.
+ *
+ * @typeParam AProvides - Ports provided by Graph A
+ * @typeParam ARequires - Ports required by Graph A
+ * @typeParam BProvides - Ports provided by Graph B
+ * @typeParam BRequires - Ports required by Graph B
+ *
+ * @returns Union of port types that become satisfied, or `never` if clean
+ *
+ * @example
+ * ```typescript
+ * // In your type tests:
+ * type Satisfied = MergeSatisfiesDependencies<
+ *   typeof graphA.__provides, typeof graphA.__requires,
+ *   typeof graphB.__provides, typeof graphB.__requires
+ * >;
+ * expectTypeOf<Satisfied>().toBeNever(); // Fails if implicit coupling
+ * ```
+ */
+export type MergeSatisfiesDependencies<AProvides, ARequires, BProvides, BRequires> =
+  | NewlySatisfiedDependencies<AProvides, ARequires, BProvides>
+  | NewlySatisfiedDependencies<BProvides, BRequires, AProvides>;
+
+// =============================================================================
+// Orphan Port Detection (Opt-in Utility)
+// =============================================================================
+//
+// An "orphan port" is a port that is provided but never required by any adapter.
+// This can indicate:
+// - Dead code (adapters that are never used)
+// - Configuration errors (forgetting to wire up a dependency)
+// - Over-provisioning (providing more than needed)
+//
+// **Usage**: Opt-in utility for type tests, NOT a blocking error.
+// In many real applications, some ports are entry points (e.g., HTTP controllers)
+// that are intentionally not required by other adapters.
+//
+
+/**
+ * Finds ports that are provided but never required by any adapter.
+ *
+ * An "orphan port" exists in the graph but has no dependents. This might
+ * indicate unused code or missing wiring. However, entry point services
+ * (like HTTP controllers or CLI handlers) are legitimately orphans.
+ *
+ * @typeParam TProvides - Union of all provided ports
+ * @typeParam TRequires - Union of all required ports
+ *
+ * @returns Union of ports that are provided but not required, or `never` if none
+ *
+ * @example
+ * ```typescript
+ * // LoggerPort is provided but nothing requires it
+ * type Orphans = OrphanPorts<LoggerPort | UserServicePort, DatabasePort>;
+ * // Result: LoggerPort (UserServicePort might require Database, but Logger is orphaned)
+ *
+ * // In your type tests:
+ * type GraphOrphans = OrphanPorts<
+ *   typeof graph.__provides,
+ *   typeof graph.__requires
+ * >;
+ * // Use with expectTypeOf to check for unexpected orphans
+ * ```
+ *
+ * @remarks
+ * **When is this useful?**
+ *
+ * 1. Library/package development: Ensure all provided services are actually used
+ * 2. Refactoring: Detect services that became orphaned after removing dependents
+ * 3. Documentation: Understand which services are entry points vs. internal
+ *
+ * **When NOT to use:**
+ *
+ * - Entry point graphs (HTTP servers, CLI apps) intentionally have orphan ports
+ * - Some architectures have "optional" adapters that may or may not be used
+ */
+export type OrphanPorts<TProvides, TRequires> = Exclude<TProvides, TRequires>;

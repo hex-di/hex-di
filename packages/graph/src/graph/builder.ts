@@ -80,7 +80,6 @@ import type {
   AddManyEdges,
   WouldAnyCreateCycle,
   DetectCycleInMergedGraph,
-  FirstCycleError,
   LifetimeLevel,
   AddLifetime,
   GetLifetimeLevel,
@@ -91,10 +90,11 @@ import type {
   AddManyLifetimes,
   WouldAnyBeCaptive,
   DetectCaptiveInMergedGraph,
-  FirstCaptiveError,
+  FindLifetimeInconsistency,
   DuplicateErrorMessage,
   CircularErrorMessage,
   CaptiveErrorMessage,
+  LifetimeInconsistencyErrorMessage,
 } from "../validation";
 
 import type { Graph } from "./types";
@@ -352,16 +352,81 @@ type ProvideManyResult<
 type MergeIsNever<T> = [T] extends [never] ? true : false;
 
 /**
- * The return type of `GraphBuilder.merge()` with duplicate, cycle, and captive dependency detection.
+ * The return type of `GraphBuilder.merge()` with validation.
  *
- * Performs three validations in order:
- * 1. Duplicate detection - checks if any port is provided by both graphs
- * 2. Cycle detection - checks if merging creates any circular dependencies
- * 3. Captive dependency detection - checks if merging creates any lifetime violations
+ * Performs four validations in order:
+ * 1. Lifetime consistency - checks if same port has different lifetimes across graphs
+ * 2. Duplicate detection - checks if any port is provided by both graphs
+ * 3. Cycle detection - checks if merging creates any circular dependencies
+ * 4. Captive dependency detection - checks if merging creates any lifetime violations
  *
  * @internal
  */
 type MergeResult<
+  TProvides,
+  TRequires,
+  TAsyncPorts,
+  TDepGraph,
+  TLifetimeMap,
+  OProvides,
+  ORequires,
+  OAsyncPorts,
+  ODepGraph,
+  OLifetimeMap,
+> =
+  // Step 0: Check for lifetime inconsistency (same port, different lifetimes)
+  // This provides a more specific error than generic duplicate detection
+  FindLifetimeInconsistency<TLifetimeMap, OLifetimeMap> extends infer Inconsistent
+    ? MergeIsNever<Inconsistent> extends false
+      ? Inconsistent extends string
+        ? LifetimeInconsistencyErrorMessage<
+            Inconsistent,
+            LifetimeName<GetLifetimeLevel<TLifetimeMap, Inconsistent>>,
+            LifetimeName<GetLifetimeLevel<OLifetimeMap, Inconsistent>>
+          >
+        : MergeResultAfterLifetimeCheck<
+            TProvides,
+            TRequires,
+            TAsyncPorts,
+            TDepGraph,
+            TLifetimeMap,
+            OProvides,
+            ORequires,
+            OAsyncPorts,
+            ODepGraph,
+            OLifetimeMap
+          >
+      : MergeResultAfterLifetimeCheck<
+          TProvides,
+          TRequires,
+          TAsyncPorts,
+          TDepGraph,
+          TLifetimeMap,
+          OProvides,
+          ORequires,
+          OAsyncPorts,
+          ODepGraph,
+          OLifetimeMap
+        >
+    : MergeResultAfterLifetimeCheck<
+        TProvides,
+        TRequires,
+        TAsyncPorts,
+        TDepGraph,
+        TLifetimeMap,
+        OProvides,
+        ORequires,
+        OAsyncPorts,
+        ODepGraph,
+        OLifetimeMap
+      >;
+
+/**
+ * Helper type for merge validation after lifetime consistency check.
+ * Checks duplicates, cycles, and captive dependencies.
+ * @internal
+ */
+type MergeResultAfterLifetimeCheck<
   TProvides,
   TRequires,
   TAsyncPorts,
@@ -381,78 +446,92 @@ type MergeResult<
       ? MergeIsNever<CycleError> extends false
         ? CycleError extends CircularDependencyError<infer Path>
           ? CircularErrorMessage<Path>
-          : // Step 3: Check for captive dependencies in merged graph
-            DetectCaptiveInMergedGraph<
-                MergeDependencyMaps<TDepGraph, ODepGraph>,
-                MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
-              > extends infer CaptiveError
-            ? MergeIsNever<CaptiveError> extends false
-              ? CaptiveError extends CaptiveDependencyError<infer DN, infer DL, infer CP, infer CL>
-                ? CaptiveErrorMessage<DN, DL, CP, CL>
-                : // All checks passed - return merged builder
-                  GraphBuilder<
-                    TProvides | OProvides,
-                    TRequires | ORequires,
-                    TAsyncPorts | OAsyncPorts,
-                    MergeDependencyMaps<TDepGraph, ODepGraph>,
-                    MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
-                  >
-              : // No captive errors - return merged builder
-                GraphBuilder<
-                  TProvides | OProvides,
-                  TRequires | ORequires,
-                  TAsyncPorts | OAsyncPorts,
-                  MergeDependencyMaps<TDepGraph, ODepGraph>,
-                  MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
-                >
-            : // Shouldn't happen - fallback
-              GraphBuilder<
-                TProvides | OProvides,
-                TRequires | ORequires,
-                TAsyncPorts | OAsyncPorts,
-                MergeDependencyMaps<TDepGraph, ODepGraph>,
-                MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
-              >
-        : // Step 3: Check for captive dependencies in merged graph (no cycles found)
-          DetectCaptiveInMergedGraph<
-              MergeDependencyMaps<TDepGraph, ODepGraph>,
-              MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
-            > extends infer CaptiveError
-          ? MergeIsNever<CaptiveError> extends false
-            ? CaptiveError extends CaptiveDependencyError<infer DN, infer DL, infer CP, infer CL>
-              ? CaptiveErrorMessage<DN, DL, CP, CL>
-              : // All checks passed - return merged builder
-                GraphBuilder<
-                  TProvides | OProvides,
-                  TRequires | ORequires,
-                  TAsyncPorts | OAsyncPorts,
-                  MergeDependencyMaps<TDepGraph, ODepGraph>,
-                  MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
-                >
-            : // No captive errors - return merged builder
-              GraphBuilder<
-                TProvides | OProvides,
-                TRequires | ORequires,
-                TAsyncPorts | OAsyncPorts,
-                MergeDependencyMaps<TDepGraph, ODepGraph>,
-                MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
-              >
-          : // Shouldn't happen - fallback
-            GraphBuilder<
-              TProvides | OProvides,
-              TRequires | ORequires,
-              TAsyncPorts | OAsyncPorts,
-              MergeDependencyMaps<TDepGraph, ODepGraph>,
-              MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
+          : MergeResultAfterCycleCheck<
+              TProvides,
+              TRequires,
+              TAsyncPorts,
+              TDepGraph,
+              TLifetimeMap,
+              OProvides,
+              ORequires,
+              OAsyncPorts,
+              ODepGraph,
+              OLifetimeMap
             >
-      : // Shouldn't happen - fallback
+        : MergeResultAfterCycleCheck<
+            TProvides,
+            TRequires,
+            TAsyncPorts,
+            TDepGraph,
+            TLifetimeMap,
+            OProvides,
+            ORequires,
+            OAsyncPorts,
+            ODepGraph,
+            OLifetimeMap
+          >
+      : MergeResultAfterCycleCheck<
+          TProvides,
+          TRequires,
+          TAsyncPorts,
+          TDepGraph,
+          TLifetimeMap,
+          OProvides,
+          ORequires,
+          OAsyncPorts,
+          ODepGraph,
+          OLifetimeMap
+        >;
+
+/**
+ * Helper type for merge validation after cycle check.
+ * Checks captive dependencies and returns merged builder on success.
+ * @internal
+ */
+type MergeResultAfterCycleCheck<
+  TProvides,
+  TRequires,
+  TAsyncPorts,
+  TDepGraph,
+  TLifetimeMap,
+  OProvides,
+  ORequires,
+  OAsyncPorts,
+  ODepGraph,
+  OLifetimeMap,
+> =
+  // Step 3: Check for captive dependencies in merged graph
+  DetectCaptiveInMergedGraph<
+    MergeDependencyMaps<TDepGraph, ODepGraph>,
+    MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
+  > extends infer CaptiveError
+    ? MergeIsNever<CaptiveError> extends false
+      ? CaptiveError extends CaptiveDependencyError<infer DN, infer DL, infer CP, infer CL>
+        ? CaptiveErrorMessage<DN, DL, CP, CL>
+        : // All checks passed - return merged builder
+          GraphBuilder<
+            TProvides | OProvides,
+            TRequires | ORequires,
+            TAsyncPorts | OAsyncPorts,
+            MergeDependencyMaps<TDepGraph, ODepGraph>,
+            MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
+          >
+      : // No captive errors - return merged builder
         GraphBuilder<
           TProvides | OProvides,
           TRequires | ORequires,
           TAsyncPorts | OAsyncPorts,
           MergeDependencyMaps<TDepGraph, ODepGraph>,
           MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
-        >;
+        >
+    : // Shouldn't happen - fallback
+      GraphBuilder<
+        TProvides | OProvides,
+        TRequires | ORequires,
+        TAsyncPorts | OAsyncPorts,
+        MergeDependencyMaps<TDepGraph, ODepGraph>,
+        MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
+      >;
 
 /**
  * Type representing an empty dependency graph map.

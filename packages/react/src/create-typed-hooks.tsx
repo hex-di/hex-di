@@ -18,8 +18,6 @@ import React, {
   type Context,
 } from "react";
 import type { Port, InferService } from "@hex-di/ports";
-import type { Container, ContainerPhase } from "@hex-di/runtime";
-import { ContainerBrand } from "@hex-di/runtime";
 import type {
   TypedReactIntegration,
   ContainerProviderProps,

@@ -1,6 +1,6 @@
 // @ts-check
 import tseslint from "typescript-eslint";
-import { baseConfig, testConfig } from "../../eslint.config.js";
+import { baseConfig, testConfig, typeLevelTestConfig } from "../../eslint.config.js";
 
 export default tseslint.config(
   {
@@ -21,7 +21,12 @@ export default tseslint.config(
     files: ["**/types.ts", "**/inference.ts", "**/builder.ts"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
+      // builder.ts uses {} for EmptyDependencyGraph and EmptyLifetimeMap
+      // because Record<string, never> causes index signature pollution
+      // when intersected with specific properties
+      "@typescript-eslint/no-empty-object-type": "off",
     },
   },
-  ...testConfig
+  ...testConfig,
+  ...typeLevelTestConfig
 );
