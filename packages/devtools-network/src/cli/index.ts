@@ -10,11 +10,11 @@ import { DevToolsServer } from "../server/websocket-server.js";
 const args = process.argv.slice(2);
 const command = args[0];
 
-async function main(): Promise<void> {
+function main(): void {
   switch (command) {
     case "start":
     case undefined:
-      await startServer();
+      startServer();
       break;
 
     case "help":
@@ -36,7 +36,7 @@ async function main(): Promise<void> {
   }
 }
 
-async function startServer(): Promise<void> {
+function startServer(): void {
   const portArg = args.find(arg => arg.startsWith("--port="));
   const portValue = portArg?.split("=")[1];
   const port = portValue !== undefined ? parseInt(portValue, 10) : 9229;
@@ -64,7 +64,7 @@ async function startServer(): Promise<void> {
     }
   });
 
-  await server.start();
+  server.start();
 
   // Handle graceful shutdown
   process.on("SIGINT", () => {
@@ -104,7 +104,9 @@ function showVersion(): void {
   console.log("@hex-di/devtools-network v0.1.0");
 }
 
-main().catch(err => {
+try {
+  main();
+} catch (err) {
   console.error("Fatal error:", err);
   process.exit(1);
-});
+}

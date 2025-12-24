@@ -21,9 +21,12 @@ yarn add @hex-di/graph @hex-di/ports
 
 ## Quick Start
 
+### Using `defineService` (Recommended)
+
+The `defineService` helper combines port and adapter creation in one step with sensible defaults:
+
 ```typescript
-import { createPort } from "@hex-di/ports";
-import { createAdapter, GraphBuilder } from "@hex-di/graph";
+import { defineService, GraphBuilder } from "@hex-di/graph";
 
 // Define service interfaces
 interface Logger {
@@ -38,10 +41,61 @@ interface UserService {
   getUser(id: string): Promise<{ id: string; name: string }>;
 }
 
+// Define services - port and adapter in one step
+const [LoggerPort, LoggerAdapter] = defineService<"Logger", Logger>("Logger", {
+  // defaults: requires=[], lifetime="singleton"
+  factory: () => ({
+    log: msg => console.log(msg),
+  }),
+});
+
+const [DatabasePort, DatabaseAdapter] = defineService<"Database", Database>("Database", {
+  requires: [LoggerPort],
+  factory: ({ Logger }) => {
+    Logger.log("Initializing database...");
+    return {
+      query: async sql => {
+        /* ... */
+      },
+    };
+  },
+});
+
+const [UserServicePort, UserServiceAdapter] = defineService<"UserService", UserService>(
+  "UserService",
+  {
+    requires: [LoggerPort, DatabasePort],
+    lifetime: "scoped",
+    factory: ({ Logger, Database }) => ({
+      getUser: async id => {
+        Logger.log(`Fetching user ${id}`);
+        const result = await Database.query(`SELECT * FROM users WHERE id = '${id}'`);
+        return result as { id: string; name: string };
+      },
+    }),
+  }
+);
+
+// Build the dependency graph
+const graph = GraphBuilder.create()
+  .provide(LoggerAdapter)
+  .provide(DatabaseAdapter)
+  .provide(UserServiceAdapter)
+  .build();
+
+// graph is ready for use with @hex-di/runtime
+```
+
+### Using `createPort` and `createAdapter` (Explicit)
+
+For more control, use the lower-level APIs separately:
+
+```typescript
+import { createPort } from "@hex-di/ports";
+import { createAdapter, GraphBuilder } from "@hex-di/graph";
+
 // Create port tokens
 const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
 
 // Create adapters
 const LoggerAdapter = createAdapter({
@@ -52,46 +106,6 @@ const LoggerAdapter = createAdapter({
     log: msg => console.log(msg),
   }),
 });
-
-const DatabaseAdapter = createAdapter({
-  provides: DatabasePort,
-  requires: [LoggerPort],
-  lifetime: "singleton",
-  factory: deps => {
-    // deps is typed as { Logger: Logger }
-    deps.Logger.log("Initializing database...");
-    return {
-      query: async sql => {
-        /* ... */
-      },
-    };
-  },
-});
-
-const UserServiceAdapter = createAdapter({
-  provides: UserServicePort,
-  requires: [LoggerPort, DatabasePort],
-  lifetime: "scoped",
-  factory: deps => {
-    // deps is typed as { Logger: Logger; Database: Database }
-    return {
-      getUser: async id => {
-        deps.Logger.log(`Fetching user ${id}`);
-        const result = await deps.Database.query(`SELECT * FROM users WHERE id = '${id}'`);
-        return result as { id: string; name: string };
-      },
-    };
-  },
-});
-
-// Build the dependency graph
-const graph = GraphBuilder.create()
-  .provide(LoggerAdapter)
-  .provide(DatabaseAdapter)
-  .provide(UserServiceAdapter)
-  .build();
-
-// graph is ready for use with @hex-di/runtime
 ```
 
 ## Core Concepts
@@ -220,6 +234,93 @@ Type 'DuplicateProviderError<...>' is not assignable...
 
 ## API Reference
 
+### `defineService(name, config)` (Recommended)
+
+Creates a port and adapter in a single step with sensible defaults.
+
+#### Parameters
+
+| Parameter | Type     | Description                       |
+| --------- | -------- | --------------------------------- |
+| `name`    | `string` | Unique name for the port          |
+| `config`  | `object` | Service configuration (see below) |
+
+#### Config Properties
+
+| Property    | Type                 | Default       | Description                             |
+| ----------- | -------------------- | ------------- | --------------------------------------- |
+| `requires`  | `readonly Port[]`    | `[]`          | Array of port dependencies              |
+| `lifetime`  | `Lifetime`           | `"singleton"` | Service lifetime scope                  |
+| `factory`   | `(deps) => T`        | (required)    | Factory function                        |
+| `finalizer` | `(instance) => void` | (optional)    | Cleanup function called during disposal |
+
+#### Returns
+
+`readonly [Port<T, TName>, Adapter<...>]` - A frozen tuple of port and adapter.
+
+#### Examples
+
+```typescript
+// Minimal - no deps, singleton (default)
+const [LoggerPort, LoggerAdapter] = defineService<"Logger", Logger>("Logger", {
+  factory: () => new ConsoleLogger(),
+});
+
+// With dependencies
+const [UserServicePort, UserServiceAdapter] = defineService<"UserService", UserService>(
+  "UserService",
+  {
+    requires: [LoggerPort, DatabasePort],
+    lifetime: "scoped",
+    factory: ({ Logger, Database }) => new UserServiceImpl(Logger, Database),
+  }
+);
+
+// With finalizer
+const [DbPort, DbAdapter] = defineService<"Database", Database>("Database", {
+  factory: () => new DatabaseConnection(),
+  finalizer: db => db.close(),
+});
+```
+
+### `defineAsyncService(name, config)`
+
+Creates a port and async adapter in a single step. Async services are always singletons.
+
+#### Parameters
+
+| Parameter | Type     | Description                       |
+| --------- | -------- | --------------------------------- |
+| `name`    | `string` | Unique name for the port          |
+| `config`  | `object` | Service configuration (see below) |
+
+#### Config Properties
+
+| Property       | Type                   | Default  | Description                   |
+| -------------- | ---------------------- | -------- | ----------------------------- |
+| `requires`     | `readonly Port[]`      | `[]`     | Array of port dependencies    |
+| `factory`      | `(deps) => Promise<T>` | required | Async factory function        |
+| `initPriority` | `number`               | `100`    | Initialization order (0-1000) |
+| `finalizer`    | `(instance) => void`   | optional | Cleanup function              |
+
+#### Returns
+
+`readonly [Port<T, TName>, Adapter<..., "singleton", "async">]` - A frozen tuple.
+
+#### Example
+
+```typescript
+const [ConfigPort, ConfigAdapter] = defineAsyncService<"Config", Config>("Config", {
+  factory: async () => await loadConfigFromFile(),
+  initPriority: 10, // Initialize early
+});
+
+const [DatabasePort, DatabaseAdapter] = defineAsyncService<"Database", Database>("Database", {
+  requires: [ConfigPort],
+  factory: async ({ Config }) => await connectToDb(Config.dbUrl),
+});
+```
+
 ### `createAdapter(config)`
 
 Creates a typed adapter with dependency metadata.
@@ -275,6 +376,37 @@ Registers an adapter with the graph, returning a new builder.
 
 - On success: `GraphBuilder<TProvides | AdapterProvides, TRequires | AdapterRequires>`
 - On duplicate: `DuplicateProviderError<DuplicatePort>`
+
+### `GraphBuilder.provideMany(adapters)`
+
+Registers multiple adapters at once, returning a new builder. This is a convenience method for batch registration.
+
+#### Parameters
+
+| Parameter  | Type        | Description                   |
+| ---------- | ----------- | ----------------------------- |
+| `adapters` | `Adapter[]` | Array of adapters to register |
+
+#### Returns
+
+- On success: `GraphBuilder<TProvides | AllAdapterProvides, TRequires | AllAdapterRequires>`
+- On duplicate: `DuplicateProviderError<DuplicatePort>`
+
+#### Example
+
+```typescript
+// Instead of chaining multiple .provide() calls:
+const graph = GraphBuilder.create()
+  .provideMany([LoggerAdapter, DatabaseAdapter, UserServiceAdapter])
+  .build();
+
+// Equivalent to:
+const graph = GraphBuilder.create()
+  .provide(LoggerAdapter)
+  .provide(DatabaseAdapter)
+  .provide(UserServiceAdapter)
+  .build();
+```
 
 ### `GraphBuilder.build()`
 

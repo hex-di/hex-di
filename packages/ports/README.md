@@ -19,8 +19,12 @@ yarn add @hex-di/ports
 
 ## Quick Start
 
+### Using `port()` (Recommended)
+
+The `port()` function uses a curried pattern that enables partial type inference - you only need to specify the service type, and the port name is automatically inferred:
+
 ```typescript
-import { createPort, type Port, type InferService } from '@hex-di/ports';
+import { port, type InferService } from "@hex-di/ports";
 
 // Define your service interface
 interface Logger {
@@ -28,8 +32,8 @@ interface Logger {
   error(message: string, error?: Error): void;
 }
 
-// Create a typed port token
-const LoggerPort = createPort<'Logger', Logger>('Logger');
+// Create a typed port token - only service type needed, name inferred!
+const LoggerPort = port<Logger>()("Logger");
 
 // Use the port as a value for registration (in your container/graph)
 // container.register(LoggerPort, consoleLoggerAdapter);
@@ -40,6 +44,17 @@ type LoggerPortType = typeof LoggerPort;
 // Extract the service type when needed
 type LoggerService = InferService<typeof LoggerPort>;
 // LoggerService = Logger
+```
+
+### Using `createPort` (Explicit)
+
+For cases where you want to explicitly specify both type parameters:
+
+```typescript
+import { createPort, type Port, type InferService } from "@hex-di/ports";
+
+// Both type parameters required
+const LoggerPort = createPort<"Logger", Logger>("Logger");
 ```
 
 ## Core Concepts
@@ -65,8 +80,8 @@ interface Logger {
 }
 
 // Same interface, different ports
-const ConsoleLoggerPort = createPort<'ConsoleLogger', Logger>('ConsoleLogger');
-const FileLoggerPort = createPort<'FileLogger', Logger>('FileLogger');
+const ConsoleLoggerPort = createPort<"ConsoleLogger", Logger>("ConsoleLogger");
+const FileLoggerPort = createPort<"FileLogger", Logger>("FileLogger");
 
 // These are type-incompatible despite having the same service interface!
 // ConsoleLoggerPort !== FileLoggerPort at the type level
@@ -75,7 +90,7 @@ declare function resolve<T>(port: Port<T, string>): T;
 
 // Each resolves to the correct implementation
 const consoleLogger = resolve(ConsoleLoggerPort); // Logger from ConsoleLogger registration
-const fileLogger = resolve(FileLoggerPort);       // Logger from FileLogger registration
+const fileLogger = resolve(FileLoggerPort); // Logger from FileLogger registration
 ```
 
 The brand is achieved through a unique symbol that exists only at the type level, ensuring zero runtime overhead.
@@ -86,7 +101,7 @@ Ports exhibit value-type duality - they work both as runtime values and as types
 
 ```typescript
 // Create as a value
-const LoggerPort = createPort<'Logger', Logger>('Logger');
+const LoggerPort = createPort<"Logger", Logger>("Logger");
 
 // Use as a value (for registration keys, resolution, etc.)
 function registerService(port: Port<unknown, string>, implementation: unknown): void {
@@ -107,7 +122,7 @@ The port object at runtime contains only:
 
 ```javascript
 {
-  __portName: "Logger"  // The string name for debugging/error messages
+  __portName: "Logger"; // The string name for debugging/error messages
 }
 ```
 
@@ -115,22 +130,72 @@ The brand symbol (`__brand`) and service type exist purely at the type level. Th
 
 ## API Reference
 
-### `createPort<TName, TService>(name)`
+### `port<TService>()(name)` (Recommended)
 
-Creates a typed port token for a service interface.
+Creates a typed port token with partial type inference. This curried function allows you to specify only the service type while the port name is automatically inferred from the string argument.
 
 #### Type Parameters
 
-| Parameter | Description |
-|-----------|-------------|
-| `TName extends string` | The literal string type for the port name. Uses `const` modifier for automatic literal type preservation. |
+| Parameter  | Description                                                                          |
+| ---------- | ------------------------------------------------------------------------------------ |
 | `TService` | The service interface type. This is a phantom type that exists only at compile time. |
 
 #### Parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `name` | `TName` | The unique name for this port. Preserved as a literal type. |
+| Parameter | Type                   | Description                                                |
+| --------- | ---------------------- | ---------------------------------------------------------- |
+| `name`    | `TName extends string` | The unique name for this port. Inferred as a literal type. |
+
+#### Returns
+
+`Port<TService, TName>` - A frozen port object with the `__portName` property set to the provided name.
+
+#### Why Curried?
+
+TypeScript doesn't support partial type argument inference - you must either provide all type arguments or none. The curried pattern works around this limitation by splitting type parameters across two function calls:
+
+```typescript
+// First call: explicitly provide TService
+const createLoggerPort = port<Logger>();
+
+// Second call: TName is inferred from the string argument
+const LoggerPort = createLoggerPort("Logger");
+
+// Or combined:
+const LoggerPort = port<Logger>()("Logger");
+```
+
+#### Example
+
+```typescript
+interface UserRepository {
+  findById(id: string): Promise<User | null>;
+  save(user: User): Promise<void>;
+}
+
+// Only service type needed - name "UserRepository" is inferred
+const UserRepositoryPort = port<UserRepository>()("UserRepository");
+
+// Type of UserRepositoryPort: Port<UserRepository, 'UserRepository'>
+// Runtime value: { __portName: 'UserRepository' }
+```
+
+### `createPort<TName, TService>(name)`
+
+Creates a typed port token for a service interface. This is the explicit version requiring both type parameters.
+
+#### Type Parameters
+
+| Parameter              | Description                                                                                               |
+| ---------------------- | --------------------------------------------------------------------------------------------------------- |
+| `TName extends string` | The literal string type for the port name. Uses `const` modifier for automatic literal type preservation. |
+| `TService`             | The service interface type. This is a phantom type that exists only at compile time.                      |
+
+#### Parameters
+
+| Parameter | Type    | Description                                                 |
+| --------- | ------- | ----------------------------------------------------------- |
+| `name`    | `TName` | The unique name for this port. Preserved as a literal type. |
 
 #### Returns
 
@@ -144,7 +209,7 @@ interface UserRepository {
   save(user: User): Promise<void>;
 }
 
-const UserRepositoryPort = createPort<'UserRepository', UserRepository>('UserRepository');
+const UserRepositoryPort = createPort<"UserRepository", UserRepository>("UserRepository");
 
 // Type of UserRepositoryPort: Port<UserRepository, 'UserRepository'>
 // Runtime value: { __portName: 'UserRepository' }
@@ -156,26 +221,26 @@ The branded port type that serves as a compile-time contract.
 
 #### Type Parameters
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `T` | - | The service interface type (phantom type) |
+| Parameter              | Default  | Description                               |
+| ---------------------- | -------- | ----------------------------------------- |
+| `T`                    | -        | The service interface type (phantom type) |
 | `TName extends string` | `string` | The literal string type for the port name |
 
 #### Properties
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `__portName` | `TName` | The port name, exposed for debugging and error messages |
-| `[__brand]` | `[T, TName]` | Internal brand for nominal typing (type-level only) |
+| Property     | Type         | Description                                             |
+| ------------ | ------------ | ------------------------------------------------------- |
+| `__portName` | `TName`      | The port name, exposed for debugging and error messages |
+| `[__brand]`  | `[T, TName]` | Internal brand for nominal typing (type-level only)     |
 
 #### Example
 
 ```typescript
 // Direct type usage (less common)
-type LoggerPort = Port<Logger, 'Logger'>;
+type LoggerPort = Port<Logger, "Logger">;
 
 // Via typeof (recommended)
-const LoggerPort = createPort<'Logger', Logger>('Logger');
+const LoggerPort = createPort<"Logger", Logger>("Logger");
 type LoggerPortType = typeof LoggerPort;
 ```
 
@@ -185,9 +250,9 @@ Extracts the service interface type from a Port type.
 
 #### Type Parameters
 
-| Parameter | Description |
-|-----------|-------------|
-| `P` | The Port type to extract the service from |
+| Parameter | Description                               |
+| --------- | ----------------------------------------- |
+| `P`       | The Port type to extract the service from |
 
 #### Returns
 
@@ -197,7 +262,7 @@ Extracts the service interface type from a Port type.
 #### Example
 
 ```typescript
-const LoggerPort = createPort<'Logger', Logger>('Logger');
+const LoggerPort = createPort<"Logger", Logger>("Logger");
 
 type LoggerService = InferService<typeof LoggerPort>;
 // LoggerService = Logger
@@ -212,9 +277,9 @@ Extracts the port name literal type from a Port type.
 
 #### Type Parameters
 
-| Parameter | Description |
-|-----------|-------------|
-| `P` | The Port type to extract the name from |
+| Parameter | Description                            |
+| --------- | -------------------------------------- |
+| `P`       | The Port type to extract the name from |
 
 #### Returns
 
@@ -224,7 +289,7 @@ Extracts the port name literal type from a Port type.
 #### Example
 
 ```typescript
-const LoggerPort = createPort<'Logger', Logger>('Logger');
+const LoggerPort = createPort<"Logger", Logger>("Logger");
 
 type PortName = InferPortName<typeof LoggerPort>;
 // PortName = 'Logger'
@@ -238,7 +303,7 @@ type Invalid = InferPortName<number>;
 ### Generic Functions with Ports
 
 ```typescript
-import { createPort, type Port, type InferService } from '@hex-di/ports';
+import { createPort, type Port, type InferService } from "@hex-di/ports";
 
 // A generic resolver function
 function resolve<P extends Port<unknown, string>>(
@@ -260,18 +325,17 @@ const logger = resolve(LoggerPort, registry);
 ### Conditional Port Types
 
 ```typescript
-import { type Port, type InferService } from '@hex-di/ports';
+import { type Port, type InferService } from "@hex-di/ports";
 
 // Extract service only if it matches a constraint
-type AsyncService<P> = InferService<P> extends { execute(): Promise<infer R> }
-  ? InferService<P>
-  : never;
+type AsyncService<P> =
+  InferService<P> extends { execute(): Promise<infer R> } ? InferService<P> : never;
 
 interface Command {
   execute(): Promise<void>;
 }
 
-const CommandPort = createPort<'Command', Command>('Command');
+const CommandPort = createPort<"Command", Command>("Command");
 
 type ExtractedCommand = AsyncService<typeof CommandPort>;
 // ExtractedCommand = Command (matches the constraint)
@@ -281,9 +345,9 @@ type ExtractedCommand = AsyncService<typeof CommandPort>;
 
 ```typescript
 const ports = {
-  logger: createPort<'Logger', Logger>('Logger'),
-  config: createPort<'Config', Config>('Config'),
-  database: createPort<'Database', Database>('Database'),
+  logger: createPort<"Logger", Logger>("Logger"),
+  config: createPort<"Config", Config>("Config"),
+  database: createPort<"Database", Database>("Database"),
 } as const;
 
 // Type-safe port access
@@ -301,8 +365,8 @@ interface UnsafePort<T> {
   name: string;
 }
 
-const AuthService: UnsafePort<AuthService> = { name: 'AuthService' };
-const PaymentService: UnsafePort<PaymentService> = { name: 'PaymentService' };
+const AuthService: UnsafePort<AuthService> = { name: "AuthService" };
+const PaymentService: UnsafePort<PaymentService> = { name: "PaymentService" };
 
 // DANGER: These would be assignable to each other if PaymentService
 // has the same structure as AuthService!

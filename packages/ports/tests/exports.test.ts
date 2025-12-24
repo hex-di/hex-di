@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createPort, InferPortName, InferService, type Port } from "../src/index.js";
+import { createPort, port, InferPortName, InferService, type Port } from "../src/index.js";
 
 // Sample service interface for testing
 interface TestService {
@@ -34,6 +34,23 @@ describe("Public API exports", () => {
     // Verify the type annotation works correctly
     expectTypeOf(port).toMatchTypeOf<Port<TestService, "TypedPort">>();
     expectTypeOf(port.__portName).toEqualTypeOf<"TypedPort">();
+  });
+
+  it("port (curried API) is exported and callable", () => {
+    // port should be a function
+    expect(typeof port).toBe("function");
+
+    // Should return a function that creates a port
+    const createLogger = port<TestService>();
+    expect(typeof createLogger).toBe("function");
+
+    // Should create a port with inferred name
+    const loggerPort = createLogger("CurriedPort");
+    expect(loggerPort).toBeDefined();
+    expect(loggerPort.__portName).toBe("CurriedPort");
+
+    // Verify type inference works
+    expectTypeOf(loggerPort).toEqualTypeOf<Port<TestService, "CurriedPort">>();
   });
 
   it("utility types InferService and InferPortName are exported and functional", () => {

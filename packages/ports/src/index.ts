@@ -154,6 +154,64 @@ export function createPort<const TName extends string, TService>(
 }
 
 // =============================================================================
+// port - Curried API for Partial Type Inference
+// =============================================================================
+
+/**
+ * Creates a typed port token with partial type inference.
+ *
+ * This is a curried version of `createPort` that enables a more ergonomic API:
+ * - You explicitly specify the service type `TService`
+ * - The port name `TName` is automatically inferred from the string argument
+ *
+ * @typeParam TService - The service interface type (explicitly provided)
+ *
+ * @returns A function that accepts the port name and returns a Port
+ *
+ * @remarks
+ * This uses the curried function pattern to work around TypeScript's limitation
+ * that prevents partial type argument inference. By splitting the type parameters
+ * across two function calls, we can infer `TName` while explicitly specifying `TService`.
+ *
+ * @see {@link createPort} - The non-curried version requiring both type params
+ * @see {@link Port} - The branded port type returned
+ *
+ * @example Basic usage
+ * ```typescript
+ * interface Logger {
+ *   log(message: string): void;
+ * }
+ *
+ * // Before: Both type params required, name duplicated
+ * const LoggerPort = createPort<"Logger", Logger>("Logger");
+ *
+ * // After: Only service type needed, name inferred
+ * const LoggerPort = port<Logger>()("Logger");
+ * ```
+ *
+ * @example Multiple ports
+ * ```typescript
+ * interface Database {
+ *   query(sql: string): Promise<unknown>;
+ * }
+ *
+ * const LoggerPort = port<Logger>()("Logger");
+ * const DatabasePort = port<Database>()("Database");
+ *
+ * // Names are correctly inferred as literal types
+ * type LoggerName = typeof LoggerPort["__portName"];  // "Logger"
+ * type DbName = typeof DatabasePort["__portName"];    // "Database"
+ * ```
+ */
+export function port<TService>() {
+  return <const TName extends string>(name: TName): Port<TService, TName> => {
+    return Object.freeze({
+      __portName: name,
+    }) as Port<TService, TName>;
+  };
+}
+
+// =============================================================================
 // Type-Level Utilities
 // =============================================================================
 
@@ -215,7 +273,4 @@ export type InferService<P> = P extends Port<infer T, infer _TName> ? T : never;
  * // Invalid = never
  * ```
  */
-export type InferPortName<P> = P extends Port<infer _T, infer TName>
-  ? TName
-  : never;
-
+export type InferPortName<P> = P extends Port<infer _T, infer TName> ? TName : never;
