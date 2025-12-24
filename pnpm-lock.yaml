@@ -333,6 +333,9 @@ importers:
 
   packages/react:
     dependencies:
+      '@hex-di/graph':
+        specifier: workspace:*
+        version: link:../graph
       '@hex-di/ports':
         specifier: workspace:*
         version: link:../ports

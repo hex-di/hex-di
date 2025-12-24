@@ -1,30 +1,22 @@
 /**
- * Type-level tests for ContainerBuilder override and extend operations.
+ * Type-level tests for child container creation with Graph-based API.
  *
  * These tests verify compile-time validation for:
- * 1. Override of valid port (in parent) compiles successfully
- * 2. Override of non-existent port produces OverridePortNotFoundError
- * 3. Extend of new port (not in parent) compiles successfully
- * 4. Extend of existing port produces DuplicateProviderError
- * 5. Extended ports visible in child's TProvides
- * 6. Error messages are readable in IDE tooltips
- * 7. Inheritance mode validation with valid port names
- * 8. Resolution type constraints for parent and extended ports
- * 9. Async port constraints in child containers
+ * 1. createChild(graph) returns Container with combined types
+ * 2. Child container can resolve parent ports
+ * 3. Child container can resolve extended ports (via provide)
+ * 4. Child container can resolve overridden ports (via override)
+ * 5. Inheritance mode configuration accepts valid port names
+ * 6. Resolution type constraints for parent and extended ports
  *
  * @packageDocumentation
  */
 
 import { describe, expectTypeOf, it, expect } from "vitest";
 import { createPort } from "@hex-di/ports";
-import {
-  GraphBuilder,
-  createAdapter,
-  DuplicateProviderError,
-  OverridePortNotFoundError,
-} from "@hex-di/graph";
+import { GraphBuilder, createAdapter } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
-import type { ContainerBuilder, Container, InheritanceMode } from "../src/types.js";
+import type { Container, InheritanceMode } from "../src/types.js";
 
 // =============================================================================
 // Test Service Interfaces
@@ -82,6 +74,13 @@ const AlternativeLoggerAdapter = createAdapter({
   factory: () => ({ log: () => {} }),
 });
 
+const DatabaseAdapter = createAdapter({
+  provides: DatabasePort,
+  requires: [],
+  lifetime: "singleton",
+  factory: () => ({ query: () => null }),
+});
+
 const ConfigAdapter = createAdapter({
   provides: ConfigPort,
   requires: [],
@@ -97,161 +96,32 @@ const CacheAdapter = createAdapter({
 });
 
 // =============================================================================
-// Override Type Tests
+// Child Container Creation Type Tests
 // =============================================================================
 
-describe("ContainerBuilder.override type validation", () => {
-  it("override of valid port (in parent) returns ContainerBuilder", () => {
+describe("createChild() type validation", () => {
+  it("createChild(graph) returns Container", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
     const container = createContainer(graph);
 
-    const builder = container.createChild();
-    const overrideResult = builder.override(AlternativeLoggerAdapter);
-    expect(overrideResult).toBeDefined();
+    const childGraph = GraphBuilder.create().build();
+    const childContainer = container.createChild(childGraph);
+    expect(childContainer).toBeDefined();
 
-    // Result should be a ContainerBuilder (not an error type)
-    expectTypeOf(overrideResult).toHaveProperty("build");
-    expectTypeOf(overrideResult).toHaveProperty("override");
-    expectTypeOf(overrideResult).toHaveProperty("extend");
-  });
-
-  it("override of non-existent port produces OverridePortNotFoundError", () => {
-    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
-
-    const builder = container.createChild();
-    // ConfigPort is NOT in parent, so override should produce error type
-    const overrideResult = builder.override(ConfigAdapter);
-    expect(overrideResult).toBeDefined();
-
-    // Result should be OverridePortNotFoundError
-    type Result = typeof overrideResult;
-    expectTypeOf<Result>().toMatchTypeOf<OverridePortNotFoundError<ConfigPortType>>();
-  });
-
-  it("OverridePortNotFoundError has readable message", () => {
-    type ErrorType = OverridePortNotFoundError<ConfigPortType>;
-
-    // Verify the error message structure
-    expectTypeOf<ErrorType["__message"]>().toEqualTypeOf<"Port not found in parent: Config">();
-    expectTypeOf<ErrorType["__errorBrand"]>().toEqualTypeOf<"OverridePortNotFoundError">();
-    expectTypeOf<ErrorType["__valid"]>().toEqualTypeOf<false>();
-  });
-
-  it("chained overrides work correctly", () => {
-    const DatabaseAdapter = createAdapter({
-      provides: DatabasePort,
-      requires: [],
-      lifetime: "singleton",
-      factory: () => ({ query: () => null }),
-    });
-
-    const AlternativeDatabaseAdapter = createAdapter({
-      provides: DatabasePort,
-      requires: [],
-      lifetime: "singleton",
-      factory: () => ({ query: () => "other" }),
-    });
-
-    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
-    const container = createContainer(graph);
-
-    // Multiple valid overrides should work
-    const builder = container
-      .createChild()
-      .override(AlternativeLoggerAdapter)
-      .override(AlternativeDatabaseAdapter);
-
-    // Result should still be a valid ContainerBuilder
-    expectTypeOf(builder).toHaveProperty("build");
-  });
-});
-
-// =============================================================================
-// Extend Type Tests
-// =============================================================================
-
-describe("ContainerBuilder.extend type validation", () => {
-  it("extend of new port (not in parent) returns ContainerBuilder", () => {
-    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
-
-    const builder = container.createChild();
-    // ConfigPort is NOT in parent, so extend should succeed
-    const extendResult = builder.extend(ConfigAdapter);
-    expect(extendResult).toBeDefined();
-
-    // Result should be a ContainerBuilder with extended types
-    expectTypeOf(extendResult).toHaveProperty("build");
-    expectTypeOf(extendResult).toHaveProperty("override");
-    expectTypeOf(extendResult).toHaveProperty("extend");
-  });
-
-  it("extend of existing port (in parent) produces DuplicateProviderError", () => {
-    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
-
-    const builder = container.createChild();
-    // LoggerPort IS in parent, so extend should produce error type
-    const extendResult = builder.extend(AlternativeLoggerAdapter);
-    expect(extendResult).toBeDefined();
-
-    // Result should be DuplicateProviderError
-    type Result = typeof extendResult;
-    expectTypeOf<Result>().toMatchTypeOf<DuplicateProviderError<LoggerPortType>>();
-  });
-
-  it("DuplicateProviderError has readable message", () => {
-    type ErrorType = DuplicateProviderError<LoggerPortType>;
-
-    // Verify the error message structure
-    expectTypeOf<ErrorType["__message"]>().toEqualTypeOf<"Duplicate provider for: Logger">();
-    expectTypeOf<ErrorType["__errorBrand"]>().toEqualTypeOf<"DuplicateProviderError">();
-    expectTypeOf<ErrorType["__valid"]>().toEqualTypeOf<false>();
-  });
-
-  it("multiple extends accumulate TExtends correctly", () => {
-    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
-
-    // Extend with multiple new ports
-    const builder = container.createChild().extend(ConfigAdapter).extend(CacheAdapter);
-
-    // Build result should include extended ports
-    const childContainer = builder.build();
-
-    // Child container should be able to resolve extended ports
-    // (This verifies the type accumulation works)
+    // Result should be a Container
     expectTypeOf(childContainer).toHaveProperty("resolve");
+    expectTypeOf(childContainer).toHaveProperty("resolveAsync");
+    expectTypeOf(childContainer).toHaveProperty("createScope");
+    expectTypeOf(childContainer).toHaveProperty("createChild");
+    expectTypeOf(childContainer).toHaveProperty("dispose");
   });
 
-  it("extend after extend with duplicate produces DuplicateProviderError", () => {
-    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
-
-    // First extend succeeds
-    const builder1 = container.createChild().extend(ConfigAdapter);
-
-    // Second extend with same port should fail
-    const builder2 = builder1.extend(ConfigAdapter);
-    expect(builder2).toBeDefined();
-
-    // Result should be DuplicateProviderError
-    type Result = typeof builder2;
-    expectTypeOf<Result>().toMatchTypeOf<DuplicateProviderError<ConfigPortType>>();
-  });
-});
-
-// =============================================================================
-// ChildContainer Resolution Type Tests
-// =============================================================================
-
-describe("ChildContainer resolution types", () => {
   it("child container can resolve parent ports", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
     const container = createContainer(graph);
 
-    const childContainer = container.createChild().build();
+    const childGraph = GraphBuilder.create().build();
+    const childContainer = container.createChild(childGraph);
     expect(childContainer).toBeDefined();
 
     // Child should be able to resolve LoggerPort (from parent)
@@ -259,11 +129,12 @@ describe("ChildContainer resolution types", () => {
     expectTypeOf(logger).toEqualTypeOf<Logger>();
   });
 
-  it("child container can resolve extended ports", () => {
+  it("child container can resolve extended ports from graph", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
     const container = createContainer(graph);
 
-    const childContainer = container.createChild().extend(ConfigAdapter).build();
+    const childGraph = GraphBuilder.create().provide(ConfigAdapter).build();
+    const childContainer = container.createChild(childGraph);
 
     // Child should be able to resolve both parent and extended ports
     const logger = childContainer.resolve(LoggerPort);
@@ -273,270 +144,129 @@ describe("ChildContainer resolution types", () => {
     expectTypeOf(config).toEqualTypeOf<Config>();
   });
 
-  it("build() return type reflects TExtends", () => {
+  it("child container with override can resolve overridden port", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
     const container = createContainer(graph);
 
-    const childContainer = container
-      .createChild()
-      .extend(ConfigAdapter)
-      .extend(CacheAdapter)
-      .build();
-    expect(childContainer).toBeDefined();
+    const childGraph = GraphBuilder.create().override(AlternativeLoggerAdapter).build();
+    const childContainer = container.createChild(childGraph);
 
-    // The child container type should include Logger (parent) + Config + Cache (extends)
-    type ChildType = typeof childContainer;
+    // Child should be able to resolve overridden port
+    const logger = childContainer.resolve(LoggerPort);
+    expectTypeOf(logger).toEqualTypeOf<Logger>();
+  });
 
-    // Verify we have a ChildContainer
-    expectTypeOf<ChildType>().toHaveProperty("resolve");
-    expectTypeOf<ChildType>().toHaveProperty("createScope");
-    expectTypeOf<ChildType>().toHaveProperty("createChild");
-    expectTypeOf<ChildType>().toHaveProperty("dispose");
+  it("multiple provides accumulate types correctly", () => {
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const container = createContainer(graph);
+
+    // Extend with multiple new ports
+    const childGraph = GraphBuilder.create().provide(ConfigAdapter).provide(CacheAdapter).build();
+    const childContainer = container.createChild(childGraph);
+
+    // Child container should be able to resolve all ports
+    const logger = childContainer.resolve(LoggerPort);
+    const config = childContainer.resolve(ConfigPort);
+    const cache = childContainer.resolve(CachePort);
+
+    expectTypeOf(logger).toEqualTypeOf<Logger>();
+    expectTypeOf(config).toEqualTypeOf<Config>();
+    expectTypeOf(cache).toEqualTypeOf<Cache>();
   });
 });
 
 // =============================================================================
-// Task Group 6.1: ContainerBuilder API Type Tests
+// ChildContainer Resolution Type Tests
 // =============================================================================
 
-describe("ContainerBuilder API types (6.1)", () => {
-  it("createChild() returns correctly typed builder", () => {
-    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
-
-    const builder = container.createChild();
-
-    // Builder should have the correct type with parent's TProvides
-    expectTypeOf(builder).toMatchTypeOf<ContainerBuilder<LoggerPortType, never>>();
-    expectTypeOf(builder).toHaveProperty("override");
-    expectTypeOf(builder).toHaveProperty("extend");
-    expectTypeOf(builder).toHaveProperty("withInheritanceMode");
-    expectTypeOf(builder).toHaveProperty("build");
-  });
-
-  it("builder type accumulates extends correctly through chained calls", () => {
-    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
-
-    // Initial builder has no extensions
-    const builder1 = container.createChild();
-
-    // After first extend, TExtends should include ConfigPort
-    const builder2 = builder1.extend(ConfigAdapter);
-
-    // After second extend, TExtends should include both ConfigPort and CachePort
-    const builder3 = builder2.extend(CacheAdapter);
-    expect(builder3).toBeDefined();
-
-    // Verify builder still has all methods after chaining
-    type Builder3Type = typeof builder3;
-    expectTypeOf<Builder3Type>().toHaveProperty("override");
-    expectTypeOf<Builder3Type>().toHaveProperty("extend");
-    expectTypeOf<Builder3Type>().toHaveProperty("build");
-  });
-
-  it(".build() return type includes extended ports", () => {
-    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
-
-    const childContainer = container.createChild().extend(ConfigAdapter).build();
-
-    // Child container type should be ChildContainer<LoggerPort, ConfigPort, never>
-    type ChildType = typeof childContainer;
-
-    // Verify it is a ChildContainer (not Container)
-    expectTypeOf<ChildType>().toHaveProperty("parent");
-
-    // Verify resolve can accept both parent and extended ports
-    const logger = childContainer.resolve(LoggerPort);
-    const config = childContainer.resolve(ConfigPort);
-    expectTypeOf(logger).toEqualTypeOf<Logger>();
-    expectTypeOf(config).toEqualTypeOf<Config>();
-  });
-
-  it("type narrowing through builder chain preserves parent provides", () => {
-    const DatabaseAdapter = createAdapter({
-      provides: DatabasePort,
-      requires: [],
-      lifetime: "singleton",
-      factory: () => ({ query: () => null }),
-    });
-
+describe("ChildContainer resolution types", () => {
+  it("empty child container preserves parent types", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
     const container = createContainer(graph);
 
-    // Chain multiple operations
-    const childContainer = container
-      .createChild()
-      .override(AlternativeLoggerAdapter) // override Logger
-      .extend(ConfigAdapter) // extend with Config
-      .build();
+    // Empty child container
+    const childGraph = GraphBuilder.create().build();
+    const childContainer = container.createChild(childGraph);
 
-    // Parent ports (Logger, Database) should still be resolvable
+    // Should still resolve parent ports
     const logger = childContainer.resolve(LoggerPort);
     const database = childContainer.resolve(DatabasePort);
-    const config = childContainer.resolve(ConfigPort);
 
     expectTypeOf(logger).toEqualTypeOf<Logger>();
     expectTypeOf(database).toEqualTypeOf<Database>();
+  });
+
+  it("resolveAsync() accepts all ports", () => {
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const container = createContainer(graph);
+
+    const childGraph = GraphBuilder.create().provide(ConfigAdapter).build();
+    const childContainer = container.createChild(childGraph);
+
+    // resolveAsync should return Promise<ServiceType>
+    const loggerPromise = childContainer.resolveAsync(LoggerPort);
+    const configPromise = childContainer.resolveAsync(ConfigPort);
+
+    expectTypeOf(loggerPromise).toEqualTypeOf<Promise<Logger>>();
+    expectTypeOf(configPromise).toEqualTypeOf<Promise<Config>>();
+  });
+
+  it("createScope() returns scope with combined port types", () => {
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const container = createContainer(graph);
+
+    const childGraph = GraphBuilder.create().provide(ConfigAdapter).build();
+    const childContainer = container.createChild(childGraph);
+    const scope = childContainer.createScope();
+
+    // Scope should be able to resolve both parent and extended ports
+    const logger = scope.resolve(LoggerPort);
+    const config = scope.resolve(ConfigPort);
+
+    expectTypeOf(logger).toEqualTypeOf<Logger>();
     expectTypeOf(config).toEqualTypeOf<Config>();
   });
 
-  it("createChild() on ChildContainer returns builder with combined ports", () => {
+  it("grandchild container can resolve ports from entire hierarchy", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
     const container = createContainer(graph);
 
-    // Create child with extension
-    const childContainer = container.createChild().extend(ConfigAdapter).build();
+    // Child extends with Config
+    const childGraph = GraphBuilder.create().provide(ConfigAdapter).build();
+    const childContainer = container.createChild(childGraph);
 
-    // Create grandchild builder
-    const grandchildBuilder = childContainer.createChild();
-    expect(grandchildBuilder).toBeDefined();
+    // Grandchild extends with Cache
+    const grandchildGraph = GraphBuilder.create().provide(CacheAdapter).build();
+    const grandchildContainer = childContainer.createChild(grandchildGraph);
 
-    // Grandchild builder should see combined ports (Logger + Config)
-    type GrandchildBuilderType = typeof grandchildBuilder;
-    expectTypeOf<GrandchildBuilderType>().toHaveProperty("override");
-    expectTypeOf<GrandchildBuilderType>().toHaveProperty("extend");
-  });
-});
+    // Grandchild can resolve: Logger (from root), Config (from child), Cache (from grandchild)
+    const logger = grandchildContainer.resolve(LoggerPort);
+    const config = grandchildContainer.resolve(ConfigPort);
+    const cache = grandchildContainer.resolve(CachePort);
 
-// =============================================================================
-// Task Group 6.2: Override Validation Type Tests
-// =============================================================================
-
-describe("Override validation types (6.2)", () => {
-  it("override of valid port compiles (additional verification)", () => {
-    const DatabaseAdapter = createAdapter({
-      provides: DatabasePort,
-      requires: [],
-      lifetime: "singleton",
-      factory: () => ({ query: () => null }),
-    });
-
-    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
-    const container = createContainer(graph);
-
-    // Both overrides should compile successfully
-    const builder = container.createChild().override(AlternativeLoggerAdapter);
-
-    // Verify it is still a valid builder
-    expectTypeOf(builder).toHaveProperty("build");
-    expectTypeOf(builder).toHaveProperty("override");
-    expectTypeOf(builder).toHaveProperty("extend");
-  });
-
-  it("OverridePortNotFoundError includes port type information", () => {
-    // Verify error type structure preserves port type
-    type ErrorType = OverridePortNotFoundError<ConfigPortType>;
-
-    expectTypeOf<ErrorType["__port"]>().toMatchTypeOf<ConfigPortType>();
-    expectTypeOf<ErrorType["__valid"]>().toEqualTypeOf<false>();
-  });
-
-  // Note: Async adapter override with isolated mode is a runtime behavior.
-  // Type-level enforcement would require tracking inheritance mode at the type level,
-  // which is not currently implemented. This is documented as a runtime validation.
-});
-
-// =============================================================================
-// Task Group 6.3: Extend Validation Type Tests
-// =============================================================================
-
-describe("Extend validation types (6.3)", () => {
-  it("extend of new port compiles (additional verification)", () => {
-    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
-
-    const builder = container.createChild().extend(ConfigAdapter);
-
-    // Result should be a valid builder
-    expectTypeOf(builder).toHaveProperty("build");
-    expectTypeOf(builder).toHaveProperty("override");
-    expectTypeOf(builder).toHaveProperty("extend");
-  });
-
-  it("extended ports visible in child's TProvides but not parent", () => {
-    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
-
-    // Extend child with ConfigPort
-    const childContainer = container.createChild().extend(ConfigAdapter).build();
-
-    // Child CAN resolve ConfigPort
-    const config = childContainer.resolve(ConfigPort);
+    expectTypeOf(logger).toEqualTypeOf<Logger>();
     expectTypeOf(config).toEqualTypeOf<Config>();
-
-    // Parent CANNOT resolve ConfigPort - this would be a type error
-    // Note: We cannot directly test that something DOES NOT compile in vitest expectTypeOf,
-    // but we can verify the parent type does not include ConfigPort
-
-    type ParentProvides =
-      typeof container extends Container<infer P, infer _E, infer _A, infer _Ph> ? P : never;
-    type ChildProvides =
-      typeof childContainer extends Container<infer P, infer E, infer _A, infer _Ph>
-        ? P | E
-        : never;
-
-    // Parent only provides LoggerPort
-    expectTypeOf<ParentProvides>().toEqualTypeOf<LoggerPortType>();
-
-    // Child provides LoggerPort + ConfigPort (via TProvides | TExtends)
-    // The union includes both ports
-    type HasLogger = LoggerPortType extends ChildProvides ? true : false;
-    type HasConfig = ConfigPortType extends ChildProvides ? true : false;
-    expectTypeOf<HasLogger>().toEqualTypeOf<true>();
-    expectTypeOf<HasConfig>().toEqualTypeOf<true>();
-  });
-
-  it("DuplicateProviderError includes duplicate port type", () => {
-    type ErrorType = DuplicateProviderError<LoggerPortType>;
-
-    expectTypeOf<ErrorType["__duplicate"]>().toMatchTypeOf<LoggerPortType>();
-    expectTypeOf<ErrorType["__valid"]>().toEqualTypeOf<false>();
-  });
-
-  it("extend detects duplicate with previously extended port", () => {
-    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
-
-    // First extend with Config
-    const builder1 = container.createChild().extend(ConfigAdapter);
-
-    // Create another ConfigAdapter to try extending again
-    const AnotherConfigAdapter = createAdapter({
-      provides: ConfigPort,
-      requires: [],
-      lifetime: "singleton",
-      factory: () => ({ getValue: () => "another" }),
-    });
-
-    // Second extend with same port should produce error type
-    const builder2 = builder1.extend(AnotherConfigAdapter);
-    expect(builder2).toBeDefined();
-
-    type Result = typeof builder2;
-    expectTypeOf<Result>().toMatchTypeOf<DuplicateProviderError<ConfigPortType>>();
+    expectTypeOf(cache).toEqualTypeOf<Cache>();
   });
 });
 
 // =============================================================================
-// Task Group 6.4: Inheritance Mode Type Tests
+// Inheritance Mode Type Tests
 // =============================================================================
 
-describe("Inheritance mode types (6.4)", () => {
-  it(".withInheritanceMode() accepts valid port names", () => {
+describe("Inheritance mode types", () => {
+  it("inheritance modes accept valid port names", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
     const container = createContainer(graph);
 
     // Valid port name should compile
-    const builder = container.createChild().withInheritanceMode({
+    const childGraph = GraphBuilder.create().build();
+    const childContainer = container.createChild(childGraph, {
       Logger: "shared",
     });
 
-    // Result should be a valid builder
-    expectTypeOf(builder).toHaveProperty("build");
-    expectTypeOf(builder).toHaveProperty("override");
-    expectTypeOf(builder).toHaveProperty("extend");
+    expect(childContainer).toBeDefined();
+    expectTypeOf(childContainer).toHaveProperty("resolve");
   });
 
   it("mode values restricted to valid literals", () => {
@@ -562,24 +292,20 @@ describe("Inheritance mode types (6.4)", () => {
     expect(isolated).toBe("isolated");
   });
 
-  it("withInheritanceMode can be chained with override and extend", () => {
-    const DatabaseAdapter = createAdapter({
-      provides: DatabasePort,
-      requires: [],
-      lifetime: "singleton",
-      factory: () => ({ query: () => null }),
-    });
-
+  it("inheritance modes can be combined with graph overrides and provides", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
     const container = createContainer(graph);
 
-    // Chain all builder methods
-    const childContainer = container
-      .createChild()
-      .withInheritanceMode({ Logger: "forked", Database: "isolated" })
+    // Child graph with override and extension
+    const childGraph = GraphBuilder.create()
       .override(AlternativeLoggerAdapter)
-      .extend(ConfigAdapter)
+      .provide(ConfigAdapter)
       .build();
+
+    // Create child with inheritance modes
+    const childContainer = container.createChild(childGraph, {
+      Database: "isolated",
+    });
 
     // All ports should be resolvable
     const logger = childContainer.resolve(LoggerPort);
@@ -590,158 +316,35 @@ describe("Inheritance mode types (6.4)", () => {
     expectTypeOf(database).toEqualTypeOf<Database>();
     expectTypeOf(config).toEqualTypeOf<Config>();
   });
-
-  // Note: Testing that invalid port names produce compile errors is difficult
-  // with expectTypeOf. The type system DOES restrict port names to those in TProvides,
-  // but vitest doesn't have a mechanism to assert compilation failure.
-  // The InheritanceModeConfig<TProvides> type enforces this at compile time.
 });
 
 // =============================================================================
-// Task Group 6.5: Child Container Resolution Type Tests
+// Child Container Properties Type Tests
 // =============================================================================
 
-describe("Child container resolution types (6.5)", () => {
-  it("resolve() accepts ports from parent", () => {
-    const DatabaseAdapter = createAdapter({
-      provides: DatabasePort,
-      requires: [],
-      lifetime: "singleton",
-      factory: () => ({ query: () => null }),
-    });
-
-    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
-    const container = createContainer(graph);
-
-    const childContainer = container.createChild().build();
-
-    // Both parent ports should be resolvable
-    const logger = childContainer.resolve(LoggerPort);
-    const database = childContainer.resolve(DatabasePort);
-
-    expectTypeOf(logger).toEqualTypeOf<Logger>();
-    expectTypeOf(database).toEqualTypeOf<Database>();
-  });
-
-  it("resolve() accepts extended ports", () => {
-    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
-
-    const childContainer = container
-      .createChild()
-      .extend(ConfigAdapter)
-      .extend(CacheAdapter)
-      .build();
-
-    // Both extended ports should be resolvable
-    const config = childContainer.resolve(ConfigPort);
-    const cache = childContainer.resolve(CachePort);
-
-    expectTypeOf(config).toEqualTypeOf<Config>();
-    expectTypeOf(cache).toEqualTypeOf<Cache>();
-  });
-
-  // Note: Testing that resolve() rejects unknown ports is difficult with expectTypeOf.
-  // The type system DOES reject unknown ports at compile time via the generic constraint
-  // <P extends TProvides | TExtends>, but vitest cannot assert compilation failure.
-
-  it("resolveAsync() accepts all ports", () => {
-    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
-
-    const childContainer = container.createChild().extend(ConfigAdapter).build();
-
-    // resolveAsync should return Promise<ServiceType>
-    const loggerPromise = childContainer.resolveAsync(LoggerPort);
-    const configPromise = childContainer.resolveAsync(ConfigPort);
-
-    expectTypeOf(loggerPromise).toEqualTypeOf<Promise<Logger>>();
-    expectTypeOf(configPromise).toEqualTypeOf<Promise<Config>>();
-  });
-
-  it("createScope() returns scope with combined port types", () => {
-    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
-
-    const childContainer = container.createChild().extend(ConfigAdapter).build();
-    const scope = childContainer.createScope();
-
-    // Scope should be able to resolve both parent and extended ports
-    const logger = scope.resolve(LoggerPort);
-    const config = scope.resolve(ConfigPort);
-
-    expectTypeOf(logger).toEqualTypeOf<Logger>();
-    expectTypeOf(config).toEqualTypeOf<Config>();
-  });
-
-  it("grandchild container can resolve ports from entire hierarchy", () => {
-    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
-
-    // Child extends with Config
-    const childContainer = container.createChild().extend(ConfigAdapter).build();
-
-    // Grandchild extends with Cache
-    const grandchildContainer = childContainer.createChild().extend(CacheAdapter).build();
-
-    // Grandchild can resolve: Logger (from root), Config (from child), Cache (from grandchild)
-    const logger = grandchildContainer.resolve(LoggerPort);
-    const config = grandchildContainer.resolve(ConfigPort);
-    const cache = grandchildContainer.resolve(CachePort);
-
-    expectTypeOf(logger).toEqualTypeOf<Logger>();
-    expectTypeOf(config).toEqualTypeOf<Config>();
-    expectTypeOf(cache).toEqualTypeOf<Cache>();
-  });
-});
-
-// =============================================================================
-// Additional Edge Case Type Tests
-// =============================================================================
-
-describe("Edge case type tests", () => {
-  it("empty child container (no override/extend) preserves parent types", () => {
-    const DatabaseAdapter = createAdapter({
-      provides: DatabasePort,
-      requires: [],
-      lifetime: "singleton",
-      factory: () => ({ query: () => null }),
-    });
-
-    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
-    const container = createContainer(graph);
-
-    // Empty child container
-    const childContainer = container.createChild().build();
-
-    // Should still resolve parent ports
-    const logger = childContainer.resolve(LoggerPort);
-    const database = childContainer.resolve(DatabasePort);
-
-    expectTypeOf(logger).toEqualTypeOf<Logger>();
-    expectTypeOf(database).toEqualTypeOf<Database>();
-  });
-
+describe("Child container property types", () => {
   it("parent property has correct type", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
     const container = createContainer(graph);
 
-    const childContainer = container.createChild().build();
+    const childGraph = GraphBuilder.create().build();
+    const childContainer = container.createChild(childGraph);
 
     // Parent should be accessible
     const parent = childContainer.parent;
 
-    // Parent is a Container (or ChildContainer for grandchildren)
+    // Parent is a Container
     expectTypeOf(parent).toHaveProperty("resolve");
     expectTypeOf(parent).toHaveProperty("createScope");
     expectTypeOf(parent).toHaveProperty("createChild");
   });
 
-  it("ChildContainer has correct branded type properties", () => {
+  it("ChildContainer has correct structure", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
     const container = createContainer(graph);
 
-    const childContainer = container.createChild().extend(ConfigAdapter).build();
+    const childGraph = GraphBuilder.create().provide(ConfigAdapter).build();
+    const childContainer = container.createChild(childGraph);
     expect(childContainer).toBeDefined();
 
     type ChildType = typeof childContainer;
@@ -760,7 +363,8 @@ describe("Edge case type tests", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
     const container = createContainer(graph);
 
-    const childContainer = container.createChild().build();
+    const childGraph = GraphBuilder.create().build();
+    const childContainer = container.createChild(childGraph);
 
     const disposeResult = childContainer.dispose();
     expectTypeOf(disposeResult).toEqualTypeOf<Promise<void>>();
@@ -770,8 +374,66 @@ describe("Edge case type tests", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
     const container = createContainer(graph);
 
-    const childContainer = container.createChild().build();
+    const childGraph = GraphBuilder.create().build();
+    const childContainer = container.createChild(childGraph);
 
     expectTypeOf(childContainer.isDisposed).toEqualTypeOf<boolean>();
+  });
+});
+
+// =============================================================================
+// Extended Ports Type Tests
+// =============================================================================
+
+describe("Extended ports type validation", () => {
+  it("extended ports visible in child's types but not parent", () => {
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const container = createContainer(graph);
+
+    // Extend child with ConfigPort
+    const childGraph = GraphBuilder.create().provide(ConfigAdapter).build();
+    const childContainer = container.createChild(childGraph);
+
+    // Child CAN resolve ConfigPort
+    const config = childContainer.resolve(ConfigPort);
+    expectTypeOf(config).toEqualTypeOf<Config>();
+
+    // Parent type does not include ConfigPort
+    type ParentProvides =
+      typeof container extends Container<infer P, infer _E, infer _A, infer _Ph> ? P : never;
+    type ChildProvides =
+      typeof childContainer extends Container<infer P, infer E, infer _A, infer _Ph>
+        ? P | E
+        : never;
+
+    // Parent only provides LoggerPort
+    expectTypeOf<ParentProvides>().toEqualTypeOf<LoggerPortType>();
+
+    // Child provides LoggerPort + ConfigPort (via TProvides | TExtends)
+    type HasLogger = LoggerPortType extends ChildProvides ? true : false;
+    type HasConfig = ConfigPortType extends ChildProvides ? true : false;
+    expectTypeOf<HasLogger>().toEqualTypeOf<true>();
+    expectTypeOf<HasConfig>().toEqualTypeOf<true>();
+  });
+
+  it("createChild on child container creates grandchild with combined ports", () => {
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const container = createContainer(graph);
+
+    // Create child with extension
+    const childGraph = GraphBuilder.create().provide(ConfigAdapter).build();
+    const childContainer = container.createChild(childGraph);
+
+    // Create grandchild
+    const grandchildGraph = GraphBuilder.create().build();
+    const grandchildContainer = childContainer.createChild(grandchildGraph);
+    expect(grandchildContainer).toBeDefined();
+
+    // Grandchild sees combined ports (Logger + Config)
+    const logger = grandchildContainer.resolve(LoggerPort);
+    const config = grandchildContainer.resolve(ConfigPort);
+
+    expectTypeOf(logger).toEqualTypeOf<Logger>();
+    expectTypeOf(config).toEqualTypeOf<Config>();
   });
 });

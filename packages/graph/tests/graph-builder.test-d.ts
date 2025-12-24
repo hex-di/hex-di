@@ -14,7 +14,13 @@
 
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { createPort, Port } from "@hex-di/ports";
-import { GraphBuilder, Adapter, InferGraphProvides, InferGraphRequires } from "../src/index.js";
+import {
+  GraphBuilder,
+  Adapter,
+  AdapterAny,
+  InferGraphProvides,
+  InferGraphRequires,
+} from "../src/index.js";
 
 // =============================================================================
 // Test Service Interfaces
@@ -193,7 +199,7 @@ describe("GraphBuilder internal adapter registry", () => {
 
     // Adapters should be a readonly array
     type AdaptersType = (typeof builder)["adapters"];
-    expectTypeOf<AdaptersType>().toMatchTypeOf<readonly Adapter<any, any, any, any>[]>();
+    expectTypeOf<AdaptersType>().toMatchTypeOf<readonly AdapterAny[]>();
   });
 
   it("initial builder has empty adapters array type", () => {
@@ -203,10 +209,8 @@ describe("GraphBuilder internal adapter registry", () => {
     // Empty builder should have empty adapters array
     type AdaptersType = (typeof builder)["adapters"];
 
-    // The array should be assignable to readonly Adapter array
-    expectTypeOf<AdaptersType>().toMatchTypeOf<
-      readonly Adapter<Port<unknown, string>, any, any, any>[]
-    >();
+    // The array should be assignable to readonly AdapterAny array
+    expectTypeOf<AdaptersType>().toMatchTypeOf<readonly AdapterAny[]>();
   });
 });
 

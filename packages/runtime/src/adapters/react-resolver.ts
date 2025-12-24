@@ -185,12 +185,15 @@ export interface RuntimeContainer extends RuntimeResolver {
   readonly isInitialized: boolean;
 
   /**
-   * Creates a child container builder.
+   * Creates a child container from a graph.
    *
-   * Note: Returns `unknown` because ChildContainerBuilder has complex
-   * type parameters. Use typed APIs when building child containers.
+   * Note: Returns `unknown` because the child container has complex
+   * type parameters. Use typed APIs when creating child containers.
+   *
+   * @param graph - The child graph containing adapters to add/override
+   * @param inheritanceModes - Optional inheritance mode configuration
    */
-  readonly createChild: () => unknown;
+  readonly createChild: (graph: unknown, inheritanceModes?: unknown) => unknown;
 }
 
 // =============================================================================
@@ -213,9 +216,7 @@ export interface RuntimeContainer extends RuntimeResolver {
  * }
  * ```
  */
-export function isRuntimeContainer(
-  resolver: RuntimeResolver
-): resolver is RuntimeContainer {
+export function isRuntimeContainer(resolver: RuntimeResolver): resolver is RuntimeContainer {
   return (
     "initialize" in resolver &&
     typeof resolver.initialize === "function" &&
@@ -314,20 +315,18 @@ function isResolverLike(value: unknown): value is ResolverLike {
  * const logger = typed.resolve(LoggerPort);
  * ```
  */
-export function toRuntimeResolver(
-  resolver: ResolverLike
-): RuntimeResolver {
+export function toRuntimeResolver(resolver: ResolverLike): RuntimeResolver {
   // Create a new object that wraps the resolver's methods.
   // This is type-safe because:
   // 1. ResolverLike describes what Container/Scope actually have
   // 2. We're explicitly creating RuntimeResolver with widened types
   // 3. Runtime port validation ensures safety
   const wrapped: RuntimeResolver = {
-    resolve: (port) => resolver.resolve(port),
-    resolveAsync: (port) => resolver.resolveAsync(port),
+    resolve: port => resolver.resolve(port),
+    resolveAsync: port => resolver.resolveAsync(port),
     createScope: () => toRuntimeResolver(resolver.createScope()),
     dispose: () => resolver.dispose(),
-    has: (port) => resolver.has(port),
+    has: port => resolver.has(port),
     get isDisposed() {
       return resolver.isDisposed;
     },
@@ -360,7 +359,7 @@ export function toRuntimeContainer(
   container: ResolverLike & {
     initialize?(): Promise<unknown>;
     readonly isInitialized?: boolean;
-    createChild?(): unknown;
+    createChild?(graph: unknown, inheritanceModes?: unknown): unknown;
   }
 ): RuntimeContainer {
   const base = toRuntimeResolver(container);
@@ -381,7 +380,8 @@ export function toRuntimeContainer(
     get isInitialized() {
       return container.isInitialized ?? false;
     },
-    createChild: () => container.createChild?.(),
+    createChild: (graph: unknown, inheritanceModes?: unknown) =>
+      container.createChild?.(graph, inheritanceModes),
   };
 
   return wrapped;
@@ -473,7 +473,7 @@ function createTypedResolverWrapper<TProvides extends Port<unknown, string>>(
     resolveAsync,
     createScope: () => createTypedResolverWrapper<TProvides>(resolver.createScope()),
     dispose: () => resolver.dispose(),
-    has: (port) => resolver.has(port),
+    has: port => resolver.has(port),
     get isDisposed() {
       return resolver.isDisposed;
     },

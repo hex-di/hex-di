@@ -16,7 +16,7 @@ import type { Lifetime } from "@hex-di/graph";
 import { MemoMap } from "../common/memo-map.js";
 import { ResolutionContext } from "../resolution/context.js";
 import { AsyncFactoryError, ContainerError } from "../common/errors.js";
-import type { RuntimeAdapter, RuntimeAdapterFor } from "./internal-types.js";
+import type { RuntimeAdapterFor } from "./internal-types.js";
 import { HooksRunner, checkCacheHit } from "./hooks-runner.js";
 
 // =============================================================================

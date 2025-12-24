@@ -28,6 +28,7 @@
  */
 
 import type { Port } from "@hex-di/ports";
+import type { Graph } from "@hex-di/graph";
 import {
   toRuntimeResolver,
   toRuntimeContainer,
@@ -35,6 +36,7 @@ import {
   type RuntimeResolver,
   type RuntimeContainer,
   type TypedResolver,
+  type InheritanceMode,
 } from "@hex-di/runtime";
 
 // =============================================================================
@@ -158,9 +160,30 @@ export function toTypedResolver<TProvides extends Port<unknown, string>>(
 // =============================================================================
 
 /**
+ * Base graph type - widest valid Graph for structural compatibility.
+ * @internal
+ */
+type GraphAny = Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>;
+
+/**
+ * Inheritance mode map with string keys for structural compatibility.
+ * @internal
+ */
+type InheritanceModeMap = Partial<Record<string, InheritanceMode>>;
+
+/**
  * Internal interface describing what Container/Scope look like at runtime.
  * Used to type the conversion function parameters.
  *
+ * CRITICAL: Uses method syntax (not property function syntax) for bivariance.
+ * Under `strictFunctionTypes`:
+ * - Method syntax `method(x: T): R` is bivariant in `T`
+ * - Property syntax `method: (x: T) => R` is contravariant in `T`
+ *
+ * This allows Container<LoggerPort> to be assigned to ResolverLike even though
+ * LoggerPort is narrower than Port<unknown, string>.
+ *
+ * @see https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-6.html
  * @internal
  */
 interface ResolverLike {
@@ -175,10 +198,13 @@ interface ResolverLike {
 /**
  * Internal interface describing Container-specific methods.
  *
+ * Uses method syntax for bivariance, allowing Container<TProvides>
+ * to be assigned to ContainerLike regardless of TProvides.
+ *
  * @internal
  */
 interface ContainerLike extends ResolverLike {
-  initialize?(): Promise<unknown>;
+  initialize?(): Promise<ResolverLike>;
   readonly isInitialized?: boolean;
-  createChild?(): unknown;
+  createChild?(graph: GraphAny, inheritanceModes?: InheritanceModeMap): ResolverLike;
 }

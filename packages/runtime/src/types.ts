@@ -11,6 +11,7 @@
  */
 
 import type { Port, InferService } from "@hex-di/ports";
+import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
 import { INTERNAL_ACCESS } from "./inspector/symbols.js";
 import type { ContainerInternalState, ScopeInternalState } from "./inspector/types.js";
 
@@ -94,7 +95,7 @@ export const ScopeBrand: unique symbol = Symbol("hex-di.Scope");
  *
  * @see {@link Scope} - Child scope type with identical resolution API but separate brand
  * @see {@link createContainer} - Factory function to create root container instances
- * @see {@link ContainerBuilder} - Builder for creating child containers
+ * @see {@link Container.createChild} - Creates child containers from a Graph
  *
  * @example Root container usage
  * ```typescript
@@ -210,16 +211,41 @@ export type Container<
   createScope(): Scope<TProvides | TExtends, TAsyncPorts, TPhase>;
 
   /**
-   * Creates a child container builder for hierarchical dependency injection.
+   * Creates a child container from a child graph.
    *
    * Child containers can:
-   * - Override parent adapters for their scope
-   * - Extend with new adapters not in parent
+   * - Override parent adapters using `GraphBuilder.override()`
+   * - Add new adapters using `GraphBuilder.provide()`
    * - Configure singleton inheritance modes (shared, forked, isolated)
    *
-   * @returns A new ContainerBuilder instance
+   * @typeParam TChildGraph - The child graph type
+   * @param childGraph - Graph built with GraphBuilder, using override() for replacements
+   * @param inheritanceModes - Optional per-port inheritance mode configuration
+   * @returns A new child Container instance
+   *
+   * @example
+   * ```typescript
+   * const childGraph = GraphBuilder.create()
+   *   .override(MockLoggerAdapter)  // Override parent's Logger
+   *   .provide(CacheAdapter)        // Add new Cache port
+   *   .build();
+   *
+   * const child = container.createChild(childGraph);
+   * const mockLogger = child.resolve(LoggerPort);  // Uses MockLogger
+   * const db = child.resolve(DatabasePort);        // Inherited from parent
+   * const cache = child.resolve(CachePort);        // From child graph
+   * ```
    */
-  createChild(): ContainerBuilder<TProvides | TExtends, TAsyncPorts>;
+  createChild<
+    TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+  >(
+    childGraph: TChildGraph,
+    inheritanceModes?: InheritanceModeConfig<TProvides | TExtends>
+  ): Container<
+    TProvides | TExtends,
+    Exclude<InferGraphProvides<TChildGraph>, TProvides | TExtends>,
+    TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+  >;
 
   /**
    * Disposes the container and all singleton instances.
@@ -469,94 +495,7 @@ export type InheritanceModeMap<TPortNames extends string> = {
 };
 
 // =============================================================================
-// ContainerBuilder Type Utilities
-// =============================================================================
-
-import type {
-  Adapter,
-  Lifetime,
-  FactoryKind,
-  HasOverlap,
-  DuplicateProviderError,
-  OverridePortNotFoundError,
-  InferAdapterProvides,
-} from "@hex-di/graph";
-
-/**
- * Type utility to check if a port exists in a union.
- * @internal
- */
-type PortExistsIn<
-  TPort extends Port<unknown, string>,
-  TUnion extends Port<unknown, string>,
-> = HasOverlap<TPort, TUnion>;
-
-/**
- * The return type of `ContainerBuilder.override()`.
- *
- * Conditionally returns either a new `ContainerBuilder` with the override applied,
- * or an `OverridePortNotFoundError` if the adapter's port is not in the parent.
- *
- * @internal
- */
-export type OverrideResult<
-  TParentProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
-  A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>,
-> =
-  PortExistsIn<InferAdapterProvides<A>, TParentProvides> extends true
-    ? ContainerBuilder<TParentProvides, TAsyncPorts, TExtends>
-    : OverridePortNotFoundError<InferAdapterProvides<A>>;
-
-/**
- * The return type of `ContainerBuilder.extend()`.
- *
- * Conditionally returns either a new `ContainerBuilder` with the extension applied,
- * or a `DuplicateProviderError` if the adapter's port already exists in parent or extensions.
- *
- * @internal
- */
-export type ExtendResult<
-  TParentProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
-  A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>,
-> =
-  PortExistsIn<InferAdapterProvides<A>, TParentProvides | TExtends> extends true
-    ? DuplicateProviderError<InferAdapterProvides<A>>
-    : ContainerBuilder<TParentProvides, TAsyncPorts, TExtends | InferAdapterProvides<A>>;
-
-/**
- * Method signature for override with type-level validation.
- * @internal
- */
-type OverrideMethod<
-  TParentProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
-> = <
-  A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>,
->(
-  adapter: A
-) => OverrideResult<TParentProvides, TExtends, TAsyncPorts, A>;
-
-/**
- * Method signature for extend with type-level validation.
- * @internal
- */
-type ExtendMethod<
-  TParentProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
-> = <
-  A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime, FactoryKind>,
->(
-  adapter: A
-) => ExtendResult<TParentProvides, TExtends, TAsyncPorts, A>;
-
-// =============================================================================
-// WithInheritanceMode Type Utilities
+// Inheritance Mode Configuration
 // =============================================================================
 
 /**
@@ -569,134 +508,21 @@ type ExtractPortNames<T extends Port<unknown, string>> =
 /**
  * Valid inheritance mode configuration map.
  * Keys are restricted to port names from TProvides.
- * @internal
+ *
+ * Used as the second parameter to `createChild()` to configure how
+ * the child container inherits singleton instances from its parent.
+ *
+ * @example
+ * ```typescript
+ * const childGraph = GraphBuilder.create().build();
+ * const child = container.createChild(childGraph, {
+ *   Logger: 'shared',    // Share parent's instance (default)
+ *   Database: 'isolated' // Create fresh instance
+ * });
+ * ```
  */
 export type InheritanceModeConfig<TProvides extends Port<unknown, string>> = {
   [K in ExtractPortNames<TProvides>]?: InheritanceMode;
-};
-
-/**
- * Method signature for withInheritanceMode.
- * Validates that all keys in the config are valid port names from TProvides.
- * @internal
- */
-type WithInheritanceModeMethod<
-  TParentProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-> = <TConfig extends InheritanceModeConfig<TParentProvides>>(
-  config: TConfig
-) => ContainerBuilder<TParentProvides, TAsyncPorts, TExtends>;
-
-// =============================================================================
-// ContainerBuilder Type
-// =============================================================================
-
-/**
- * An immutable builder for constructing child containers with overrides and extensions.
- *
- * ContainerBuilder follows the immutable fluent API pattern established by GraphBuilder.
- * Each method returns a new builder instance, enabling composable configuration.
- *
- * @typeParam TParentProvides - Union of ports provided by the parent container
- * @typeParam TAsyncPorts - Union of ports with async factories from parent
- * @typeParam TExtends - Union of ports added via extend() (not in parent)
- *
- * @remarks
- * - Builder instances are frozen and immutable
- * - Each method returns a new builder with accumulated state
- * - `.build()` creates a frozen Container
- * - Override validates adapter's port exists in parent
- * - Extend validates adapter's port does NOT exist in parent
- *
- * @see {@link Container} - The container type created by .build()
- * @see {@link Container.createChild} - Entry point for creating builders
- *
- * @example Basic usage with override
- * ```typescript
- * const child = container.createChild()
- *   .override(MockLoggerAdapter)
- *   .build();
- * ```
- *
- * @example Basic usage with extend
- * ```typescript
- * const child = container.createChild()
- *   .extend(NewFeatureAdapter)
- *   .build();
- * ```
- *
- * @example Configuring inheritance modes
- * ```typescript
- * const child = container.createChild()
- *   .withInheritanceMode({
- *     Logger: 'shared',    // Share parent's instance
- *     Database: 'isolated' // Create fresh instance
- *   })
- *   .build();
- * ```
- */
-export type ContainerBuilder<
-  TParentProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> = never,
-  TExtends extends Port<unknown, string> = never,
-> = {
-  /**
-   * Overrides a parent adapter with a new adapter for the child's scope.
-   *
-   * The adapter's port must exist in the parent's TProvides.
-   * Returns an error type if the port is not found in parent.
-   *
-   * @typeParam A - The adapter type being used for override
-   * @param adapter - The adapter that provides a port in the parent
-   * @returns A new builder with the override registered, or OverridePortNotFoundError
-   */
-  override: OverrideMethod<TParentProvides, TExtends, TAsyncPorts>;
-
-  /**
-   * Extends the child container with a new adapter not in the parent.
-   *
-   * The adapter's port must NOT exist in the parent's TProvides.
-   * Returns an error type if the port already exists in parent.
-   *
-   * @typeParam A - The adapter type being used for extension
-   * @param adapter - The adapter that provides a port not in parent
-   * @returns A new builder with the extension registered, or DuplicateProviderError
-   */
-  extend: ExtendMethod<TParentProvides, TExtends, TAsyncPorts>;
-
-  /**
-   * Configures per-port singleton inheritance modes.
-   *
-   * Defines how the child container inherits singleton instances from its parent:
-   * - `'shared'`: Child sees parent's singleton instance (live reference, mutations visible)
-   * - `'forked'`: Child gets a snapshot copy at creation time (immutable from parent's perspective)
-   * - `'isolated'`: Child creates its own fresh singleton instance (ignores parent entirely)
-   *
-   * The default mode is `'shared'` for all ports not explicitly configured.
-   * Mode configuration applies only to non-overridden ports (overrides always create new instances).
-   *
-   * @param config - Object mapping port names to inheritance modes
-   * @returns A new builder with the mode configuration applied
-   *
-   * @example
-   * ```typescript
-   * const child = container.createChild()
-   *   .withInheritanceMode({
-   *     Counter: 'forked',   // Snapshot parent's Counter at child creation
-   *     Database: 'isolated' // Create fresh Database in child
-   *   })
-   *   .build();
-   * ```
-   */
-  withInheritanceMode: WithInheritanceModeMethod<TParentProvides, TAsyncPorts, TExtends>;
-
-  /**
-   * Builds the child container with the current configuration.
-   *
-   * @returns A frozen Container instance with TExtends ports
-   */
-  build(): Container<TParentProvides, TExtends, TAsyncPorts>;
 };
 
 // =============================================================================

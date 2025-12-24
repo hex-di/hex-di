@@ -54,11 +54,8 @@
  * @packageDocumentation
  */
 
-import type { Port } from "@hex-di/ports";
 import type {
-  Adapter,
-  Lifetime,
-  FactoryKind,
+  AdapterAny,
   InferAdapterProvides,
   InferAdapterRequires,
   InferManyProvides,
@@ -170,6 +167,7 @@ type IsNever<T> = [T] extends [never] ? true : false;
  * @typeParam TAsyncPorts - Current union of async ports
  * @typeParam TDepGraph - Current type-level dependency graph
  * @typeParam TLifetimeMap - Current type-level lifetime map
+ * @typeParam TOverrides - Current union of override ports
  * @typeParam A - The adapter being added
  *
  * @internal
@@ -180,7 +178,8 @@ type ProvideResult<
   TAsyncPorts,
   TDepGraph,
   TLifetimeMap,
-  A extends Adapter<any, any, any, any>,
+  TOverrides,
+  A extends AdapterAny,
 > =
   // ═══════════════════════════════════════════════════════════════════════════
   // STEP 1: Duplicate Detection (fastest check, fail early)
@@ -217,13 +216,15 @@ type ProvideResult<
             // - TRequires grows by the new requirements
             // - TDepGraph adds the new edge
             // - TLifetimeMap adds the new port's lifetime
+            // - TOverrides is preserved (provide() doesn't add to overrides)
             // ═══════════════════════════════════════════════════════════════════════
             GraphBuilder<
               TProvides | InferAdapterProvides<A>,
               TRequires | InferAdapterRequires<A>,
               TAsyncPorts,
               AddEdge<TDepGraph, AdapterProvidesName<A>, AdapterRequiresNames<A>>,
-              AddLifetime<TLifetimeMap, AdapterProvidesName<A>, DirectAdapterLifetime<A>>
+              AddLifetime<TLifetimeMap, AdapterProvidesName<A>, DirectAdapterLifetime<A>>,
+              TOverrides
             >
           : CaptivePort extends string
             ? CaptiveErrorMessage<
@@ -238,7 +239,8 @@ type ProvideResult<
                 TRequires | InferAdapterRequires<A>,
                 TAsyncPorts,
                 AddEdge<TDepGraph, AdapterProvidesName<A>, AdapterRequiresNames<A>>,
-                AddLifetime<TLifetimeMap, AdapterProvidesName<A>, DirectAdapterLifetime<A>>
+                AddLifetime<TLifetimeMap, AdapterProvidesName<A>, DirectAdapterLifetime<A>>,
+                TOverrides
               >
         : never;
 
@@ -255,7 +257,8 @@ type ProvideAsyncResult<
   TAsyncPorts,
   TDepGraph,
   TLifetimeMap,
-  A extends Adapter<any, any, any, "async">,
+  TOverrides,
+  A extends AdapterAny & { readonly factoryKind: "async" },
 > =
   // First check for duplicate providers
   HasOverlap<InferAdapterProvides<A>, TProvides> extends true
@@ -282,7 +285,8 @@ type ProvideAsyncResult<
               TRequires | InferAdapterRequires<A>,
               TAsyncPorts | InferAdapterProvides<A>,
               AddEdge<TDepGraph, AdapterProvidesName<A>, AdapterRequiresNames<A>>,
-              AddLifetime<TLifetimeMap, AdapterProvidesName<A>, "singleton">
+              AddLifetime<TLifetimeMap, AdapterProvidesName<A>, "singleton">,
+              TOverrides
             >
           : CaptivePort extends string
             ? CaptiveErrorMessage<
@@ -297,7 +301,8 @@ type ProvideAsyncResult<
                 TRequires | InferAdapterRequires<A>,
                 TAsyncPorts | InferAdapterProvides<A>,
                 AddEdge<TDepGraph, AdapterProvidesName<A>, AdapterRequiresNames<A>>,
-                AddLifetime<TLifetimeMap, AdapterProvidesName<A>, "singleton">
+                AddLifetime<TLifetimeMap, AdapterProvidesName<A>, "singleton">,
+                TOverrides
               >
         : never;
 
@@ -320,7 +325,8 @@ type ProvideManyResult<
   TAsyncPorts,
   TDepGraph,
   TLifetimeMap,
-  A extends readonly Adapter<any, any, any, any>[],
+  TOverrides,
+  A extends readonly AdapterAny[],
 > =
   // First check for duplicate providers
   BatchHasOverlap<InferManyProvides<A>, TProvides> extends true
@@ -342,7 +348,8 @@ type ProvideManyResult<
             TRequires | InferManyRequires<A>,
             TAsyncPorts | InferManyAsyncPorts<A>,
             AddManyEdges<TDepGraph, A>,
-            AddManyLifetimes<TLifetimeMap, A>
+            AddManyLifetimes<TLifetimeMap, A>,
+            TOverrides
           >;
 
 /**
@@ -368,11 +375,13 @@ type MergeResult<
   TAsyncPorts,
   TDepGraph,
   TLifetimeMap,
+  TOverrides,
   OProvides,
   ORequires,
   OAsyncPorts,
   ODepGraph,
   OLifetimeMap,
+  OOverrides,
 > =
   // Step 0: Check for lifetime inconsistency (same port, different lifetimes)
   // This provides a more specific error than generic duplicate detection
@@ -390,11 +399,13 @@ type MergeResult<
             TAsyncPorts,
             TDepGraph,
             TLifetimeMap,
+            TOverrides,
             OProvides,
             ORequires,
             OAsyncPorts,
             ODepGraph,
-            OLifetimeMap
+            OLifetimeMap,
+            OOverrides
           >
       : MergeResultAfterLifetimeCheck<
           TProvides,
@@ -402,11 +413,13 @@ type MergeResult<
           TAsyncPorts,
           TDepGraph,
           TLifetimeMap,
+          TOverrides,
           OProvides,
           ORequires,
           OAsyncPorts,
           ODepGraph,
-          OLifetimeMap
+          OLifetimeMap,
+          OOverrides
         >
     : MergeResultAfterLifetimeCheck<
         TProvides,
@@ -414,11 +427,13 @@ type MergeResult<
         TAsyncPorts,
         TDepGraph,
         TLifetimeMap,
+        TOverrides,
         OProvides,
         ORequires,
         OAsyncPorts,
         ODepGraph,
-        OLifetimeMap
+        OLifetimeMap,
+        OOverrides
       >;
 
 /**
@@ -432,11 +447,13 @@ type MergeResultAfterLifetimeCheck<
   TAsyncPorts,
   TDepGraph,
   TLifetimeMap,
+  TOverrides,
   OProvides,
   ORequires,
   OAsyncPorts,
   ODepGraph,
   OLifetimeMap,
+  OOverrides,
 > =
   // Step 1: Check for duplicate ports
   HasOverlap<OProvides, TProvides> extends true
@@ -452,11 +469,13 @@ type MergeResultAfterLifetimeCheck<
               TAsyncPorts,
               TDepGraph,
               TLifetimeMap,
+              TOverrides,
               OProvides,
               ORequires,
               OAsyncPorts,
               ODepGraph,
-              OLifetimeMap
+              OLifetimeMap,
+              OOverrides
             >
         : MergeResultAfterCycleCheck<
             TProvides,
@@ -464,11 +483,13 @@ type MergeResultAfterLifetimeCheck<
             TAsyncPorts,
             TDepGraph,
             TLifetimeMap,
+            TOverrides,
             OProvides,
             ORequires,
             OAsyncPorts,
             ODepGraph,
-            OLifetimeMap
+            OLifetimeMap,
+            OOverrides
           >
       : MergeResultAfterCycleCheck<
           TProvides,
@@ -476,11 +497,13 @@ type MergeResultAfterLifetimeCheck<
           TAsyncPorts,
           TDepGraph,
           TLifetimeMap,
+          TOverrides,
           OProvides,
           ORequires,
           OAsyncPorts,
           ODepGraph,
-          OLifetimeMap
+          OLifetimeMap,
+          OOverrides
         >;
 
 /**
@@ -494,11 +517,13 @@ type MergeResultAfterCycleCheck<
   TAsyncPorts,
   TDepGraph,
   TLifetimeMap,
+  TOverrides,
   OProvides,
   ORequires,
   OAsyncPorts,
   ODepGraph,
   OLifetimeMap,
+  OOverrides,
 > =
   // Step 3: Check for captive dependencies in merged graph
   DetectCaptiveInMergedGraph<
@@ -514,7 +539,8 @@ type MergeResultAfterCycleCheck<
             TRequires | ORequires,
             TAsyncPorts | OAsyncPorts,
             MergeDependencyMaps<TDepGraph, ODepGraph>,
-            MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
+            MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>,
+            TOverrides | OOverrides
           >
       : // No captive errors - return merged builder
         GraphBuilder<
@@ -522,7 +548,8 @@ type MergeResultAfterCycleCheck<
           TRequires | ORequires,
           TAsyncPorts | OAsyncPorts,
           MergeDependencyMaps<TDepGraph, ODepGraph>,
-          MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
+          MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>,
+          TOverrides | OOverrides
         >
     : // Shouldn't happen - fallback
       GraphBuilder<
@@ -530,7 +557,8 @@ type MergeResultAfterCycleCheck<
         TRequires | ORequires,
         TAsyncPorts | OAsyncPorts,
         MergeDependencyMaps<TDepGraph, ODepGraph>,
-        MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>
+        MergeLifetimeMaps<TLifetimeMap, OLifetimeMap>,
+        TOverrides | OOverrides
       >;
 
 /**
@@ -589,18 +617,38 @@ type EmptyLifetimeMap = {};
  * type parameters. The original instance is not modified. This enables
  * "branching" - creating specialized graphs from a common base.
  *
+ * ## Child Graphs with override()
+ *
+ * The `override()` method marks an adapter as replacing a parent's adapter:
+ *
+ * ```typescript
+ * const childGraph = GraphBuilder.create()
+ *   .override(MockLoggerAdapter)  // Replaces parent's Logger
+ *   .provide(CacheAdapter)        // Adds new Cache port
+ *   .build();
+ * ```
+ *
  * @typeParam TProvides - Union of all port types provided by adapters in this graph
  * @typeParam TRequires - Union of all port types required by adapters in this graph
  * @typeParam TAsyncPorts - Union of all async port types in this graph
  * @typeParam TDepGraph - Type-level dependency map `{ PortName: RequiredPortNames }`
  * @typeParam TLifetimeMap - Type-level lifetime map `{ PortName: 1 | 2 | 3 }`
+ * @typeParam TOverrides - Union of port types that are overrides (not new provides)
  *
- * @example Creating a graph
+ * @example Creating a root graph
  * ```typescript
  * const graph = GraphBuilder.create()
  *   .provide(LoggerAdapter)    // Type changes to include Logger
  *   .provide(DatabaseAdapter)  // Type changes to include Database
  *   .build();                  // Validates all requirements met
+ * ```
+ *
+ * @example Creating a child graph with overrides
+ * ```typescript
+ * const childGraph = GraphBuilder.create()
+ *   .override(MockLoggerAdapter)  // Override parent's Logger
+ *   .provide(CacheAdapter)        // Add new Cache port
+ *   .build();
  * ```
  */
 export class GraphBuilder<
@@ -609,6 +657,7 @@ export class GraphBuilder<
   TAsyncPorts = never,
   TDepGraph = EmptyDependencyGraph,
   TLifetimeMap = EmptyLifetimeMap,
+  TOverrides = never,
 > {
   /**
    * Type-level brand property for nominal typing.
@@ -625,6 +674,7 @@ export class GraphBuilder<
     TAsyncPorts,
     TDepGraph,
     TLifetimeMap,
+    TOverrides,
   ];
 
   /**
@@ -712,52 +762,70 @@ export class GraphBuilder<
   declare readonly __lifetimeMap: TLifetimeMap;
 
   /**
-   * The readonly array of registered adapters.
+   * Phantom type property for compile-time override tracking.
+   *
+   * Tracks which ports are marked as overrides (via `.override()`)
+   * vs new provides (via `.provide()`).
+   *
+   * @internal
    */
-  readonly adapters: readonly Adapter<
-    Port<unknown, string>,
-    Port<unknown, string> | never,
-    Lifetime,
-    FactoryKind
-  >[];
+  declare readonly __overrides: TOverrides;
+
+  /**
+   * The readonly array of registered adapters.
+   * Uses AdapterAny for structural compatibility with all adapter types.
+   */
+  readonly adapters: readonly AdapterAny[];
+
+  /**
+   * The set of port names marked as overrides.
+   * Used at runtime to distinguish overrides from extensions.
+   */
+  readonly overridePortNames: ReadonlySet<string>;
 
   /**
    * Private constructor to enforce factory method pattern.
+   * Uses AdapterAny for structural compatibility with all adapter types.
    * @internal
    */
   private constructor(
-    adapters: readonly Adapter<
-      Port<unknown, string>,
-      Port<unknown, string> | never,
-      Lifetime,
-      FactoryKind
-    >[]
+    adapters: readonly AdapterAny[],
+    overridePortNames: ReadonlySet<string> = new Set()
   ) {
     // Freeze the adapters array for deep immutability
     this.adapters = Object.freeze([...adapters]);
+    this.overridePortNames = overridePortNames;
     Object.freeze(this);
   }
 
   /**
    * Creates a new empty GraphBuilder.
    */
-  static create(): GraphBuilder<never, never, never, EmptyDependencyGraph, EmptyLifetimeMap> {
-    return new GraphBuilder([]);
+  static create(): GraphBuilder<
+    never,
+    never,
+    never,
+    EmptyDependencyGraph,
+    EmptyLifetimeMap,
+    never
+  > {
+    return new GraphBuilder([], new Set());
   }
 
   /**
    * Registers an adapter with the graph.
    * Performs compile-time duplicate, circular, and captive dependency detection.
    */
-  provide<A extends Adapter<any, any, any, any>>(
+  provide<A extends AdapterAny>(
     adapter: A
-  ): ProvideResult<TProvides, TRequires, TAsyncPorts, TDepGraph, TLifetimeMap, A> {
-    return new GraphBuilder([...this.adapters, adapter]) as ProvideResult<
+  ): ProvideResult<TProvides, TRequires, TAsyncPorts, TDepGraph, TLifetimeMap, TOverrides, A> {
+    return new GraphBuilder([...this.adapters, adapter], this.overridePortNames) as ProvideResult<
       TProvides,
       TRequires,
       TAsyncPorts,
       TDepGraph,
       TLifetimeMap,
+      TOverrides,
       A
     >;
   }
@@ -766,15 +834,19 @@ export class GraphBuilder<
    * Registers an async adapter with the graph.
    * Performs compile-time duplicate, circular, and captive dependency detection.
    */
-  provideAsync<A extends Adapter<any, any, any, "async">>(
+  provideAsync<A extends AdapterAny & { readonly factoryKind: "async" }>(
     adapter: A
-  ): ProvideAsyncResult<TProvides, TRequires, TAsyncPorts, TDepGraph, TLifetimeMap, A> {
-    return new GraphBuilder([...this.adapters, adapter]) as ProvideAsyncResult<
+  ): ProvideAsyncResult<TProvides, TRequires, TAsyncPorts, TDepGraph, TLifetimeMap, TOverrides, A> {
+    return new GraphBuilder(
+      [...this.adapters, adapter],
+      this.overridePortNames
+    ) as ProvideAsyncResult<
       TProvides,
       TRequires,
       TAsyncPorts,
       TDepGraph,
       TLifetimeMap,
+      TOverrides,
       A
     >;
   }
@@ -783,15 +855,59 @@ export class GraphBuilder<
    * Registers multiple adapters with the graph in a batch.
    * Performs compile-time duplicate, circular, and captive dependency detection.
    */
-  provideMany<const A extends readonly Adapter<any, any, any, any>[]>(
+  provideMany<const A extends readonly AdapterAny[]>(
     adapters: A
-  ): ProvideManyResult<TProvides, TRequires, TAsyncPorts, TDepGraph, TLifetimeMap, A> {
-    return new GraphBuilder([...this.adapters, ...adapters]) as ProvideManyResult<
+  ): ProvideManyResult<TProvides, TRequires, TAsyncPorts, TDepGraph, TLifetimeMap, TOverrides, A> {
+    return new GraphBuilder(
+      [...this.adapters, ...adapters],
+      this.overridePortNames
+    ) as ProvideManyResult<
       TProvides,
       TRequires,
       TAsyncPorts,
       TDepGraph,
       TLifetimeMap,
+      TOverrides,
+      A
+    >;
+  }
+
+  /**
+   * Registers an adapter as an override for a parent container's adapter.
+   *
+   * Use this when building a child graph to replace a parent's adapter.
+   * Overrides are like `provide()` but marked for replacement rather than extension.
+   *
+   * @example
+   * ```typescript
+   * const childGraph = GraphBuilder.create()
+   *   .override(MockLoggerAdapter)  // Replaces parent's Logger
+   *   .provide(CacheAdapter)        // Adds new Cache port
+   *   .build();
+   * ```
+   */
+  override<A extends AdapterAny>(
+    adapter: A
+  ): ProvideResult<
+    TProvides,
+    TRequires,
+    TAsyncPorts,
+    TDepGraph,
+    TLifetimeMap,
+    TOverrides | InferAdapterProvides<A>,
+    A
+  > {
+    // Add to overridePortNames set
+    const newOverrides = new Set(this.overridePortNames);
+    newOverrides.add(adapter.provides.__portName);
+
+    return new GraphBuilder([...this.adapters, adapter], newOverrides) as ProvideResult<
+      TProvides,
+      TRequires,
+      TAsyncPorts,
+      TDepGraph,
+      TLifetimeMap,
+      TOverrides | InferAdapterProvides<A>,
       A
     >;
   }
@@ -804,31 +920,38 @@ export class GraphBuilder<
    * 2. Circular dependencies - detects cycles that form when graphs are combined
    * 3. Captive dependencies - detects lifetime violations in the merged graph
    */
-  merge<OProvides, ORequires, OAsyncPorts, ODepGraph, OLifetimeMap>(
-    other: GraphBuilder<OProvides, ORequires, OAsyncPorts, ODepGraph, OLifetimeMap>
+  merge<OProvides, ORequires, OAsyncPorts, ODepGraph, OLifetimeMap, OOverrides>(
+    other: GraphBuilder<OProvides, ORequires, OAsyncPorts, ODepGraph, OLifetimeMap, OOverrides>
   ): MergeResult<
     TProvides,
     TRequires,
     TAsyncPorts,
     TDepGraph,
     TLifetimeMap,
+    TOverrides,
     OProvides,
     ORequires,
     OAsyncPorts,
     ODepGraph,
-    OLifetimeMap
+    OLifetimeMap,
+    OOverrides
   > {
-    return new GraphBuilder([...this.adapters, ...other.adapters]) as MergeResult<
+    // Merge override port names from both builders
+    const mergedOverrides = new Set([...this.overridePortNames, ...other.overridePortNames]);
+
+    return new GraphBuilder([...this.adapters, ...other.adapters], mergedOverrides) as MergeResult<
       TProvides,
       TRequires,
       TAsyncPorts,
       TDepGraph,
       TLifetimeMap,
+      TOverrides,
       OProvides,
       ORequires,
       OAsyncPorts,
       ODepGraph,
-      OLifetimeMap
+      OLifetimeMap,
+      OOverrides
     >;
   }
 
@@ -850,16 +973,52 @@ export class GraphBuilder<
    * ```
    */
   build(): [UnsatisfiedDependencies<TProvides, TRequires>] extends [never]
-    ? Graph<TProvides, TAsyncPorts>
+    ? Graph<TProvides, TAsyncPorts, TOverrides>
     : `ERROR: Missing adapters for ${ExtractPortNames<UnsatisfiedDependencies<TProvides, TRequires>>}. Call .provide() first.` {
-    // Phantom type properties (__provides, __asyncPorts) exist only at compile-time.
-    // The runtime object only needs the adapters array.
+    // Phantom type properties (__provides, __asyncPorts, __overrides) exist only at compile-time.
+    // The runtime object needs the adapters array and overridePortNames set.
     // The conditional return type is only for compile-time validation.
     // At runtime, this always returns a Graph (even if incomplete - that's a type-level error).
     return Object.freeze({
       adapters: this.adapters,
+      overridePortNames: this.overridePortNames,
     }) as [UnsatisfiedDependencies<TProvides, TRequires>] extends [never]
-      ? Graph<TProvides, TAsyncPorts>
+      ? Graph<TProvides, TAsyncPorts, TOverrides>
       : `ERROR: Missing adapters for ${ExtractPortNames<UnsatisfiedDependencies<TProvides, TRequires>>}. Call .provide() first.`;
+  }
+
+  /**
+   * Builds a graph fragment for child containers.
+   *
+   * Unlike `build()`, this method does NOT validate that all dependencies are
+   * satisfied internally. Child graphs can have adapters that require ports
+   * provided by the parent container.
+   *
+   * @remarks
+   * Use this when creating child graphs where dependencies will be satisfied
+   * by the parent container at runtime.
+   *
+   * @example
+   * ```typescript
+   * // ConfigAdapter requires LoggerPort which parent provides
+   * const ConfigAdapter = createAdapter({
+   *   provides: ConfigPort,
+   *   requires: [LoggerPort],  // Will come from parent
+   *   factory: deps => ({ getValue: () => deps.Logger.log('config') })
+   * });
+   *
+   * // Use buildFragment() when dependencies come from parent
+   * const childGraph = GraphBuilder.create()
+   *   .provide(ConfigAdapter)
+   *   .buildFragment();  // No error about missing Logger
+   *
+   * const child = container.createChild(childGraph);
+   * ```
+   */
+  buildFragment(): Graph<TProvides, TAsyncPorts, TOverrides> {
+    return Object.freeze({
+      adapters: this.adapters,
+      overridePortNames: this.overridePortNames,
+    }) as Graph<TProvides, TAsyncPorts, TOverrides>;
   }
 }

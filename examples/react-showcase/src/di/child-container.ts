@@ -11,7 +11,7 @@
  */
 
 import type { Container, ContainerPhase } from "@hex-di/runtime";
-import { createAdapter } from "@hex-di/graph";
+import { createAdapter, GraphBuilder } from "@hex-di/graph";
 import type { Message, MessageListener, MessageStore, ChatService } from "../types.js";
 import {
   ChatServicePort,
@@ -98,6 +98,18 @@ const PluginChatServiceAdapter = createAdapter({
 });
 
 /**
+ * Child graph containing the overrides for the plugin container.
+ * Overrides are declared in the graph, then applied when creating the child container.
+ *
+ * Uses buildFragment() instead of build() because the dependencies (LoggerPort,
+ * UserSessionPort, MessageStorePort) will be satisfied by the parent container.
+ */
+const PluginChildGraph = GraphBuilder.create()
+  .override(PluginMessageStoreAdapter)
+  .override(PluginChatServiceAdapter)
+  .buildFragment();
+
+/**
  * Builds the child container used in the React showcase.
  *
  * @param parent - The root/tracing container created from the app graph
@@ -105,9 +117,5 @@ const PluginChatServiceAdapter = createAdapter({
 export function createPluginChildContainer(
   parent: Container<AppPorts, never, AppAsyncPorts, ContainerPhase>
 ): Container<AppPorts, never, AppAsyncPorts, ContainerPhase> {
-  return parent
-    .createChild()
-    .override(PluginMessageStoreAdapter)
-    .override(PluginChatServiceAdapter)
-    .build();
+  return parent.createChild(PluginChildGraph);
 }

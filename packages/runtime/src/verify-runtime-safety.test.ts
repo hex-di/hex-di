@@ -1,14 +1,15 @@
+import { describe, it, expect } from "vitest";
+import { createPort } from "@hex-di/ports";
+import { createAdapter, GraphBuilder } from "@hex-di/graph";
+import { createContainer } from "./index.js";
+import { toRuntimeResolver } from "./adapters/react-resolver.js";
 
-import { describe, it, expect } from 'vitest';
-import { createPort } from '@hex-di/ports';
-import { createAdapter, GraphBuilder } from '@hex-di/graph';
-import { createContainer } from './index.js';
-import { toRuntimeResolver } from './adapters/react-resolver.js';
-
-describe('Runtime Safety Verification', () => {
-  it('should implement has(port) correctly across all interfaces', () => {
+describe("Runtime Safety Verification", () => {
+  it("should implement has(port) correctly across all interfaces", () => {
     // Setup
-    interface Service { name: string }
+    interface Service {
+      name: string;
+    }
     const PortA = createPort<"A", Service>("A");
     const PortB = createPort<"B", Service>("B");
     const PortScoped = createPort<"Scoped", Service>("Scoped");
@@ -16,21 +17,18 @@ describe('Runtime Safety Verification', () => {
     const AdapterA = createAdapter({
       provides: PortA,
       requires: [],
-      lifetime: 'singleton',
-      factory: () => ({ name: 'A' })
+      lifetime: "singleton",
+      factory: () => ({ name: "A" }),
     });
 
     const AdapterScoped = createAdapter({
       provides: PortScoped,
       requires: [],
-      lifetime: 'scoped',
-      factory: () => ({ name: 'Scoped' })
+      lifetime: "scoped",
+      factory: () => ({ name: "Scoped" }),
     });
 
-    const graph = GraphBuilder.create()
-      .provide(AdapterA)
-      .provide(AdapterScoped)
-      .build();
+    const graph = GraphBuilder.create().provide(AdapterA).provide(AdapterScoped).build();
 
     const container = createContainer(graph);
 
@@ -50,14 +48,14 @@ describe('Runtime Safety Verification', () => {
     const AdapterB = createAdapter({
       provides: PortB,
       requires: [],
-      lifetime: 'singleton',
-      factory: () => ({ name: 'B' })
+      lifetime: "singleton",
+      factory: () => ({ name: "B" }),
     });
-    
-    // createChild returns a builder. extend() returns a new builder. build() returns container.
-    const childContainer = container.createChild()
-      .extend(AdapterB)
-      .build();
+
+    // createChild accepts a Graph and returns a child container
+    const childGraph = GraphBuilder.create().provide(AdapterB).build();
+
+    const childContainer = container.createChild(childGraph);
 
     expect(childContainer.has(PortA)).toBe(true); // Inherited
     expect(childContainer.has(PortB)).toBe(true); // Extended

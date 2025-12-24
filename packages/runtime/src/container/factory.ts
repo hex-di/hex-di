@@ -4,15 +4,23 @@
  */
 
 import type { Port, InferService } from "@hex-di/ports";
-import type { Graph } from "@hex-di/graph";
+import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
 import type { ContainerOptions } from "../resolution/hooks.js";
-import type { Container, Scope, ContainerBuilder } from "../types.js";
+import type { Container, Scope, InheritanceModeConfig, InheritanceMode } from "../types.js";
 import { ContainerBrand } from "../types.js";
-import { ContainerImpl, type RootContainerConfig, type ParentContainerLike } from "./impl.js";
+import {
+  RootContainerImpl,
+  ChildContainerImpl,
+  type RootContainerConfig,
+  type ParentContainerLike,
+  type ChildContainerConfig,
+  type RuntimeAdapter,
+} from "./impl.js";
 import type { InternalContainerMethods } from "./internal-types.js";
-import { createContainerBuilderFromLike } from "./builder.js";
 import { INTERNAL_ACCESS, ADAPTER_ACCESS } from "../inspector/symbols.js";
 import { unreachable } from "../common/unreachable.js";
+import { createChildContainerWrapper } from "./wrappers.js";
+import { isInheritanceMode } from "./helpers.js";
 
 /**
  * Creates a new dependency injection container from a graph.
@@ -33,7 +41,7 @@ export function createContainer<
     graph,
     options,
   };
-  const impl = new ContainerImpl<TProvides, never, TAsyncPorts>(config);
+  const impl = new RootContainerImpl<TProvides, TAsyncPorts>(config);
 
   // Create wrapper
   return createUninitializedContainerWrapper(impl);
@@ -67,7 +75,7 @@ function createUninitializedContainerWrapper<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string> = never,
 >(
-  impl: ContainerImpl<TProvides, never, TAsyncPorts>
+  impl: RootContainerImpl<TProvides, TAsyncPorts>
 ): Container<TProvides, never, TAsyncPorts, "uninitialized"> {
   let initializedContainer: Container<TProvides, never, TAsyncPorts, "initialized"> | null = null;
 
@@ -90,7 +98,20 @@ function createUninitializedContainerWrapper<
       return initializedContainer;
     },
     createScope: () => createRootScope<TProvides, TAsyncPorts, "uninitialized">(impl),
-    createChild: (): ContainerBuilder<TProvides, TAsyncPorts> => {
+    createChild: <
+      TChildGraph extends Graph<
+        Port<unknown, string>,
+        Port<unknown, string>,
+        Port<unknown, string>
+      >,
+    >(
+      childGraph: TChildGraph,
+      inheritanceModes?: InheritanceModeConfig<TProvides>
+    ): Container<
+      TProvides,
+      Exclude<InferGraphProvides<TChildGraph>, TProvides>,
+      TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+    > => {
       const parentLike: ParentContainerLike<TProvides, TAsyncPorts> = {
         resolveInternal: <P extends TProvides>(port: P) => impl.resolve(port),
         resolveAsyncInternal: <P extends TProvides>(port: P) => impl.resolveAsync(port),
@@ -101,7 +122,7 @@ function createUninitializedContainerWrapper<
         unregisterChildContainer: child => impl.unregisterChildContainer(child),
         originalParent: container,
       };
-      return createContainerBuilderFromLike(parentLike);
+      return createChildFromGraph(parentLike, childGraph, inheritanceModes);
     },
     dispose: () => impl.dispose(),
     get isInitialized() {
@@ -133,7 +154,7 @@ function createInitializedContainerWrapper<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string> = never,
 >(
-  impl: ContainerImpl<TProvides, never, TAsyncPorts>
+  impl: RootContainerImpl<TProvides, TAsyncPorts>
 ): Container<TProvides, never, TAsyncPorts, "initialized"> {
   function resolve<P extends TProvides>(port: P): InferService<P> {
     return impl.resolve(port);
@@ -150,7 +171,20 @@ function createInitializedContainerWrapper<
       return unreachable("Initialized containers cannot be initialized again");
     },
     createScope: () => createRootScope<TProvides, TAsyncPorts, "initialized">(impl),
-    createChild: (): ContainerBuilder<TProvides, TAsyncPorts> => {
+    createChild: <
+      TChildGraph extends Graph<
+        Port<unknown, string>,
+        Port<unknown, string>,
+        Port<unknown, string>
+      >,
+    >(
+      childGraph: TChildGraph,
+      inheritanceModes?: InheritanceModeConfig<TProvides>
+    ): Container<
+      TProvides,
+      Exclude<InferGraphProvides<TChildGraph>, TProvides>,
+      TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+    > => {
       const parentLike: ParentContainerLike<TProvides, TAsyncPorts> = {
         resolveInternal: <P extends TProvides>(port: P) => impl.resolve(port),
         resolveAsyncInternal: <P extends TProvides>(port: P) => impl.resolveAsync(port),
@@ -161,7 +195,7 @@ function createInitializedContainerWrapper<
         unregisterChildContainer: child => impl.unregisterChildContainer(child),
         originalParent: container,
       };
-      return createContainerBuilderFromLike(parentLike);
+      return createChildFromGraph(parentLike, childGraph, inheritanceModes);
     },
     dispose: () => impl.dispose(),
     get isInitialized() {
@@ -196,13 +230,78 @@ function createRootScope<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
   TPhase extends "uninitialized" | "initialized",
->(
-  containerImpl: ContainerImpl<TProvides, never, TAsyncPorts>
-): Scope<TProvides, TAsyncPorts, TPhase> {
+>(containerImpl: RootContainerImpl<TProvides, TAsyncPorts>): Scope<TProvides, TAsyncPorts, TPhase> {
   const scopeImpl = new ScopeImpl<TProvides, TAsyncPorts, TPhase>(
     containerImpl,
     containerImpl.getSingletonMemo()
   );
   containerImpl.registerChildScope(scopeImpl);
   return createScopeWrapper(scopeImpl);
+}
+
+// =============================================================================
+// Child Container Creation from Graph
+// =============================================================================
+
+/**
+ * Creates a child container from a Graph.
+ *
+ * This function parses the child graph to separate overrides from extensions,
+ * creates a ChildContainerImpl, and wraps it.
+ *
+ * @internal
+ */
+function createChildFromGraph<
+  TParentProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string>,
+  TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+>(
+  parentLike: ParentContainerLike<TParentProvides, TAsyncPorts>,
+  childGraph: TChildGraph,
+  inheritanceModes?: InheritanceModeConfig<TParentProvides>
+): Container<
+  TParentProvides,
+  Exclude<InferGraphProvides<TChildGraph>, TParentProvides>,
+  TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+> {
+  // Parse the child graph to separate overrides from extensions
+  const overrides = new Map<Port<unknown, string>, RuntimeAdapter>();
+  const extensions = new Map<Port<unknown, string>, RuntimeAdapter>();
+
+  for (const adapter of childGraph.adapters) {
+    const portName = adapter.provides.__portName;
+    if (childGraph.overridePortNames.has(portName)) {
+      // This is an override - replaces parent's adapter
+      overrides.set(adapter.provides, adapter);
+    } else {
+      // This is an extension - new adapter not in parent
+      extensions.set(adapter.provides, adapter);
+    }
+  }
+
+  // Convert inheritance modes config to Map
+  const inheritanceModesMap = new Map<string, InheritanceMode>();
+  if (inheritanceModes !== undefined) {
+    for (const [portName, mode] of Object.entries(inheritanceModes)) {
+      if (isInheritanceMode(mode)) {
+        inheritanceModesMap.set(portName, mode);
+      }
+    }
+  }
+
+  const config: ChildContainerConfig<TParentProvides, TAsyncPorts> = {
+    kind: "child",
+    parent: parentLike,
+    overrides,
+    extensions,
+    inheritanceModes: inheritanceModesMap,
+  };
+
+  const impl = new ChildContainerImpl<
+    TParentProvides,
+    Exclude<InferGraphProvides<TChildGraph>, TParentProvides>,
+    TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+  >(config);
+
+  return createChildContainerWrapper(impl);
 }

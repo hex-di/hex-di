@@ -4,7 +4,7 @@
  */
 
 import type { Port, InferService } from "@hex-di/ports";
-import type { Adapter, Lifetime, FactoryKind } from "@hex-di/graph";
+import type { Adapter, Lifetime, FactoryKind, AdapterAny } from "@hex-di/graph";
 import type { ResolutionHooks } from "../resolution/hooks.js";
 import type { MemoMap } from "../common/memo-map.js";
 import { AsyncInitializationRequiredError } from "../common/errors.js";
@@ -14,12 +14,11 @@ import { ADAPTER_ACCESS } from "../inspector/symbols.js";
 // Runtime Adapter Types
 // =============================================================================
 
-export type RuntimeAdapter = Adapter<
-  Port<unknown, string>,
-  Port<unknown, string> | never,
-  Lifetime,
-  FactoryKind
->;
+/**
+ * Type alias for adapters at runtime.
+ * Uses AdapterAny from @hex-di/graph for structural compatibility with Graph.adapters.
+ */
+export type RuntimeAdapter = AdapterAny;
 
 export type RuntimeAdapterFor<P extends Port<unknown, string>> = Adapter<
   P,

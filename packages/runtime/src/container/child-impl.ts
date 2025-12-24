@@ -84,8 +84,10 @@ export class ChildContainerImpl<
     return this.parentContainer.originalParent;
   }
 
-  async initialize(): Promise<void> {
-    throw new Error("Child containers cannot be initialized - they inherit state from parent");
+  initialize(): Promise<void> {
+    return Promise.reject(
+      new Error("Child containers cannot be initialized - they inherit state from parent")
+    );
   }
 
   protected getParentUnregisterCallback(): (() => void) | undefined {

@@ -1,4 +1,4 @@
-import type { InferService, InferPortName } from "@hex-di/ports";
+import type { InferService, InferPortName, Port } from "@hex-di/ports";
 
 // =============================================================================
 // Brand Symbols
@@ -98,3 +98,80 @@ export type Adapter<
    */
   finalizer?(instance: InferService<TProvides>): void | Promise<void>;
 };
+
+// =============================================================================
+// AdapterAny - Universal Adapter Constraint (Zero `any` Types)
+// =============================================================================
+
+/**
+ * Structural interface matching ANY Adapter without using `any`.
+ *
+ * This uses TypeScript's variance rules to create a type that ALL Adapters
+ * are assignable to:
+ * - `unknown` in covariant positions (outputs/reads)
+ * - `never` in contravariant positions (inputs/writes)
+ *
+ * When used as a constraint `<A extends AdapterAny>`, the generic parameter `A`
+ * preserves the EXACT adapter type for full inference.
+ *
+ * @example
+ * ```typescript
+ * // All adapters match this constraint
+ * function process<A extends AdapterAny>(adapter: A): InferAdapterProvides<A> {
+ *   // A is inferred as exact adapter type, not widened to AdapterAny
+ * }
+ *
+ * const result = process(LoggerAdapter);
+ * // result is LoggerPort, not unknown!
+ * ```
+ *
+ * @remarks
+ * This follows the Effect-TS pattern of `Layer.Any`, `Service.Any` interfaces.
+ * The key insight is that we only match the STRUCTURE of an Adapter, not its
+ * exact type parameters, while preserving full type inference through generics.
+ *
+ * **Variance explanation:**
+ * - `provides: Port<unknown, string>` - Widest Port type (covariant)
+ * - `requires: readonly Port<unknown, string>[]` - Array of ports (covariant)
+ * - `factory: (...args: never[]) => unknown` - Contravariant in params, covariant in return
+ * - `finalizer?(instance: never)` - Contravariant param accepts any input
+ */
+export interface AdapterAny {
+  /**
+   * The port this adapter provides (read-only, covariant).
+   * Uses Port<unknown, string> as the widest Port type.
+   */
+  readonly provides: Port<unknown, string>;
+
+  /**
+   * The ports this adapter depends on (read-only, covariant).
+   * Each element is a Port with `__portName` for runtime identification.
+   */
+  readonly requires: readonly Port<unknown, string>[];
+
+  /**
+   * The lifetime scope (fixed union, all values assignable).
+   */
+  readonly lifetime: Lifetime;
+
+  /**
+   * The factory kind discriminator (fixed union, all values assignable).
+   */
+  readonly factoryKind: FactoryKind;
+
+  /**
+   * Factory function (contravariant in params, covariant in return).
+   * `never[]` params accept any function signature.
+   */
+  readonly factory: (...args: never[]) => unknown;
+
+  /**
+   * Optional initialization priority.
+   */
+  readonly initPriority?: number;
+
+  /**
+   * Optional finalizer (contravariant param accepts any instance type).
+   */
+  finalizer?(instance: never): void | Promise<void>;
+}

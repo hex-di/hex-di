@@ -432,4 +432,4 @@ The nested conditional ensures:
 - [TypeScript Handbook: Conditional Types](https://www.typescriptlang.org/docs/handbook/2/conditional-types.html)
 - [TypeScript Handbook: Template Literal Types](https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html)
 - [Effect-TS Layer System](https://effect.website/docs/requirements-management/layers) - Inspiration for union subtraction
-- [@hex-di/graph ARCHITECTURE.md](../../packages/graph/ARCHITECTURE.md) - Internal implementation details
+- [@hex-di/graph Architecture](../api/graph-architecture.md) - Internal implementation details

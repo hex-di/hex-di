@@ -23,7 +23,7 @@ import { ResolutionEngine } from "./resolution-engine.js";
 import { AsyncResolutionEngine } from "./async-resolution-engine.js";
 import { AsyncInitializer } from "./async-initializer.js";
 import { AdapterRegistry } from "./adapter-registry.js";
-import { isDisposableChild, createMemoMapSnapshot } from "./helpers.js";
+import { createMemoMapSnapshot } from "./helpers.js";
 
 /**
  * Abstract base class for container implementations.

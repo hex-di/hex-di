@@ -19,9 +19,7 @@ import {
   createAdapter,
   Graph,
   InferGraphProvides,
-  Lifetime,
-  Adapter,
-  FactoryKind,
+  AdapterAny,
 } from "../src/index.js";
 import type { Port } from "@hex-di/ports";
 
@@ -431,14 +429,7 @@ describe("built graph is immutable (type-level readonly)", () => {
     type GraphAdapters = Graph<LoggerPortType>["adapters"];
 
     // Verify it's a readonly array at type level
-    type IsReadonly = GraphAdapters extends readonly Adapter<
-      Port<unknown, string>,
-      Port<unknown, string> | never,
-      Lifetime,
-      FactoryKind
-    >[]
-      ? true
-      : false;
+    type IsReadonly = GraphAdapters extends readonly AdapterAny[] ? true : false;
     expectTypeOf<IsReadonly>().toEqualTypeOf<true>();
   });
 
@@ -478,16 +469,8 @@ describe("built graph contains all registered adapters", () => {
     type AdaptersType = (typeof graph)["adapters"];
     type ElementType = AdaptersType[number];
 
-    // Element type should be compatible with Adapter
-    type IsAdapter =
-      ElementType extends Adapter<
-        Port<unknown, string>,
-        Port<unknown, string> | never,
-        Lifetime,
-        FactoryKind
-      >
-        ? true
-        : false;
+    // Element type should be compatible with AdapterAny
+    type IsAdapter = ElementType extends AdapterAny ? true : false;
     expectTypeOf<IsAdapter>().toEqualTypeOf<true>();
   });
 

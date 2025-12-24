@@ -4,19 +4,20 @@
  */
 
 import type { Port, InferService } from "@hex-di/ports";
-import type { Container, Scope } from "../types.js";
+import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
+import type { Container, Scope, InheritanceModeConfig, InheritanceMode } from "../types.js";
 import { ContainerBrand } from "../types.js";
 import { ADAPTER_ACCESS, INTERNAL_ACCESS } from "../inspector/symbols.js";
 import { unreachable } from "../common/unreachable.js";
 import { isRecord } from "../common/type-guards.js";
 import { ScopeImpl, createScopeWrapper } from "../scope/impl.js";
-import type { ContainerImpl } from "./impl.js";
+import { ChildContainerImpl, type RuntimeAdapter, type ChildContainerConfig } from "./impl.js";
+import { isInheritanceMode } from "./helpers.js";
 import type {
   DisposableChild,
   ParentContainerLike,
   InternalContainerMethods,
 } from "./internal-types.js";
-import { ContainerBuilderImpl } from "./builder.js";
 
 // =============================================================================
 // Type Guards
@@ -121,7 +122,7 @@ export function createChildContainerWrapper<
   TExtends extends Port<unknown, string> = never,
   TAsyncPorts extends Port<unknown, string> = never,
 >(
-  impl: ContainerImpl<TProvides, TExtends, TAsyncPorts>
+  impl: ChildContainerImpl<TProvides, TExtends, TAsyncPorts>
 ): Container<TProvides, TExtends, TAsyncPorts> {
   type ChildContainerInternals = Container<TProvides, TExtends, TAsyncPorts> &
     InternalContainerMethods<TProvides | TExtends>;
@@ -141,7 +142,20 @@ export function createChildContainerWrapper<
     has: (port: Port<unknown, string>): boolean => impl.has(port),
     hasAdapter: (port: Port<unknown, string>): boolean => impl.hasAdapter(port),
     createScope: () => createChildContainerScope(impl),
-    createChild: () => {
+    createChild: <
+      TChildGraph extends Graph<
+        Port<unknown, string>,
+        Port<unknown, string>,
+        Port<unknown, string>
+      >,
+    >(
+      childGraph: TChildGraph,
+      inheritanceModes?: InheritanceModeConfig<TProvides | TExtends>
+    ): Container<
+      TProvides | TExtends,
+      Exclude<InferGraphProvides<TChildGraph>, TProvides | TExtends>,
+      TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+    > => {
       const parentLike: ParentContainerLike<TProvides | TExtends, TAsyncPorts> = {
         resolveInternal: <P extends TProvides | TExtends>(port: P) => impl.resolve(port),
         resolveAsyncInternal: <P extends TProvides | TExtends>(port: P) => impl.resolveAsync(port),
@@ -152,7 +166,7 @@ export function createChildContainerWrapper<
         unregisterChildContainer: child => impl.unregisterChildContainer(child),
         originalParent: childContainer,
       };
-      return ContainerBuilderImpl.create(parentLike);
+      return createChildFromGraphInternal(parentLike, childGraph, inheritanceModes);
     },
     dispose: () => impl.dispose(),
     get isDisposed() {
@@ -202,7 +216,7 @@ export function createChildContainerScope<
   TExtends extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
 >(
-  impl: ContainerImpl<TProvides, TExtends, TAsyncPorts>
+  impl: ChildContainerImpl<TProvides, TExtends, TAsyncPorts>
 ): Scope<TProvides | TExtends, TAsyncPorts, "initialized"> {
   const scopeImpl = new ScopeImpl<TProvides | TExtends, TAsyncPorts, "initialized">(
     impl,
@@ -210,4 +224,69 @@ export function createChildContainerScope<
   );
   impl.registerChildScope(scopeImpl);
   return createScopeWrapper(scopeImpl);
+}
+
+// =============================================================================
+// Child Container Creation from Graph (internal for wrappers)
+// =============================================================================
+
+/**
+ * Creates a child container from a Graph.
+ * Internal version used by child containers' createChild method.
+ *
+ * @internal
+ */
+function createChildFromGraphInternal<
+  TParentProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string>,
+  TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+>(
+  parentLike: ParentContainerLike<TParentProvides, TAsyncPorts>,
+  childGraph: TChildGraph,
+  inheritanceModes?: InheritanceModeConfig<TParentProvides>
+): Container<
+  TParentProvides,
+  Exclude<InferGraphProvides<TChildGraph>, TParentProvides>,
+  TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+> {
+  // Parse the child graph to separate overrides from extensions
+  const overrides = new Map<Port<unknown, string>, RuntimeAdapter>();
+  const extensions = new Map<Port<unknown, string>, RuntimeAdapter>();
+
+  for (const adapter of childGraph.adapters) {
+    const portName = adapter.provides.__portName;
+    if (childGraph.overridePortNames.has(portName)) {
+      // This is an override - replaces parent's adapter
+      overrides.set(adapter.provides, adapter);
+    } else {
+      // This is an extension - new adapter not in parent
+      extensions.set(adapter.provides, adapter);
+    }
+  }
+
+  // Convert inheritance modes config to Map
+  const inheritanceModesMap = new Map<string, InheritanceMode>();
+  if (inheritanceModes !== undefined) {
+    for (const [portName, mode] of Object.entries(inheritanceModes)) {
+      if (isInheritanceMode(mode)) {
+        inheritanceModesMap.set(portName, mode);
+      }
+    }
+  }
+
+  const config: ChildContainerConfig<TParentProvides, TAsyncPorts> = {
+    kind: "child",
+    parent: parentLike,
+    overrides,
+    extensions,
+    inheritanceModes: inheritanceModesMap,
+  };
+
+  const impl = new ChildContainerImpl<
+    TParentProvides,
+    Exclude<InferGraphProvides<TChildGraph>, TParentProvides>,
+    TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+  >(config);
+
+  return createChildContainerWrapper(impl);
 }
