@@ -13,7 +13,7 @@
 
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { createPort, Port } from "@hex-di/ports";
-import { Adapter, createAdapter } from "../src/index.js";
+import { Adapter, createAdapter, InferClonable, IsClonableAdapter } from "../src/index.js";
 
 // =============================================================================
 // Test Service Interfaces
@@ -203,5 +203,110 @@ describe("createAdapter function", () => {
     expectTypeOf(adapter).toMatchTypeOf<
       Adapter<UserServicePortType, LoggerPortType, "transient">
     >();
+  });
+});
+
+// =============================================================================
+// Clonable Adapter Type Tests
+// =============================================================================
+
+describe("clonable adapter", () => {
+  it("defaults clonable to false when not specified", () => {
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: () => {} }),
+    });
+
+    // Default clonable should be false
+    expectTypeOf(adapter.clonable).toEqualTypeOf<false>();
+
+    // InferClonable should return false
+    expectTypeOf<InferClonable<typeof adapter>>().toEqualTypeOf<false>();
+
+    // IsClonableAdapter should return false
+    expectTypeOf<IsClonableAdapter<typeof adapter>>().toEqualTypeOf<false>();
+  });
+
+  it("preserves clonable: true as literal type", () => {
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      clonable: true,
+      factory: () => ({ log: () => {} }),
+    });
+
+    // clonable should be true literal type
+    expectTypeOf(adapter.clonable).toEqualTypeOf<true>();
+
+    // InferClonable should return true
+    expectTypeOf<InferClonable<typeof adapter>>().toEqualTypeOf<true>();
+
+    // IsClonableAdapter should return true
+    expectTypeOf<IsClonableAdapter<typeof adapter>>().toEqualTypeOf<true>();
+  });
+
+  it("preserves clonable: false as literal type", () => {
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      clonable: false,
+      factory: () => ({ log: () => {} }),
+    });
+
+    // clonable should be false literal type
+    expectTypeOf(adapter.clonable).toEqualTypeOf<false>();
+
+    // IsClonableAdapter should return false
+    expectTypeOf<IsClonableAdapter<typeof adapter>>().toEqualTypeOf<false>();
+  });
+
+  it("includes clonable in full Adapter type signature", () => {
+    const clonableAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      clonable: true,
+      factory: () => ({ log: () => {} }),
+    });
+
+    // Full type signature should include clonable as 5th type parameter
+    expectTypeOf(clonableAdapter).toMatchTypeOf<
+      Adapter<LoggerPortType, never, "singleton", "sync", true>
+    >();
+
+    const nonClonableAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: () => {} }),
+    });
+
+    // Non-clonable adapter should have false as 5th type parameter
+    expectTypeOf(nonClonableAdapter).toMatchTypeOf<
+      Adapter<LoggerPortType, never, "singleton", "sync", false>
+    >();
+  });
+
+  it("works with dependencies and clonable", () => {
+    const adapter = createAdapter({
+      provides: UserServicePort,
+      requires: [LoggerPort, DatabasePort],
+      lifetime: "scoped",
+      clonable: true,
+      factory: deps => {
+        expectTypeOf(deps.Logger).toEqualTypeOf<Logger>();
+        expectTypeOf(deps.Database).toEqualTypeOf<Database>();
+        return {
+          getUser: id => Promise.resolve({ id, name: "test" }),
+        };
+      },
+    });
+
+    expectTypeOf(adapter.clonable).toEqualTypeOf<true>();
+    expectTypeOf<IsClonableAdapter<typeof adapter>>().toEqualTypeOf<true>();
   });
 });

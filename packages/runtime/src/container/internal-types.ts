@@ -24,7 +24,8 @@ export type RuntimeAdapterFor<P extends Port<unknown, string>> = Adapter<
   P,
   Port<unknown, string> | never,
   Lifetime,
-  FactoryKind
+  FactoryKind,
+  boolean
 >;
 
 // =============================================================================

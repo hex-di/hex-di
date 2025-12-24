@@ -18,6 +18,7 @@ import {
   DisposedScopeError,
   ScopeRequiredError,
   AsyncFactoryError,
+  NonClonableForkedError,
 } from "../src/index.js";
 
 // =============================================================================
@@ -229,6 +230,33 @@ describe("ScopeRequiredError", () => {
 });
 
 // =============================================================================
+// NonClonableForkedError Tests
+// =============================================================================
+
+describe("NonClonableForkedError", () => {
+  it("has correct code and isProgrammingError", () => {
+    const error = new NonClonableForkedError("DatabasePort");
+
+    expect(error.code).toBe("NON_CLONABLE_FORKED");
+    expect(error.isProgrammingError).toBe(true);
+  });
+
+  it("stores port name", () => {
+    const error = new NonClonableForkedError("ConnectionPort");
+
+    expect(error.portName).toBe("ConnectionPort");
+  });
+
+  it("message indicates forked mode requires clonable adapter", () => {
+    const error = new NonClonableForkedError("SocketPort");
+
+    expect(error.message).toContain("SocketPort");
+    expect(error.message).toContain("clonable");
+    expect(error.message).toContain("forked");
+  });
+});
+
+// =============================================================================
 // Error Inheritance Hierarchy Tests
 // =============================================================================
 
@@ -239,12 +267,14 @@ describe("Error inheritance hierarchy", () => {
     const asyncFactoryError = new AsyncFactoryError("Port", new Error());
     const disposedError = new DisposedScopeError("Port");
     const scopeRequiredError = new ScopeRequiredError("Port");
+    const nonClonableError = new NonClonableForkedError("Port");
 
     expect(circularError).toBeInstanceOf(ContainerError);
     expect(factoryError).toBeInstanceOf(ContainerError);
     expect(asyncFactoryError).toBeInstanceOf(ContainerError);
     expect(disposedError).toBeInstanceOf(ContainerError);
     expect(scopeRequiredError).toBeInstanceOf(ContainerError);
+    expect(nonClonableError).toBeInstanceOf(ContainerError);
   });
 
   it("all error classes extend Error", () => {
@@ -253,12 +283,14 @@ describe("Error inheritance hierarchy", () => {
     const asyncFactoryError = new AsyncFactoryError("Port", new Error());
     const disposedError = new DisposedScopeError("Port");
     const scopeRequiredError = new ScopeRequiredError("Port");
+    const nonClonableError = new NonClonableForkedError("Port");
 
     expect(circularError).toBeInstanceOf(Error);
     expect(factoryError).toBeInstanceOf(Error);
     expect(asyncFactoryError).toBeInstanceOf(Error);
     expect(disposedError).toBeInstanceOf(Error);
     expect(scopeRequiredError).toBeInstanceOf(Error);
+    expect(nonClonableError).toBeInstanceOf(Error);
   });
 
   it("each error class has correct name getter", () => {
@@ -267,11 +299,13 @@ describe("Error inheritance hierarchy", () => {
     const asyncFactoryError = new AsyncFactoryError("Port", new Error());
     const disposedError = new DisposedScopeError("Port");
     const scopeRequiredError = new ScopeRequiredError("Port");
+    const nonClonableError = new NonClonableForkedError("Port");
 
     expect(circularError.name).toBe("CircularDependencyError");
     expect(factoryError.name).toBe("FactoryError");
     expect(asyncFactoryError.name).toBe("AsyncFactoryError");
     expect(disposedError.name).toBe("DisposedScopeError");
     expect(scopeRequiredError.name).toBe("ScopeRequiredError");
+    expect(nonClonableError.name).toBe("NonClonableForkedError");
   });
 });

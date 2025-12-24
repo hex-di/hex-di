@@ -107,6 +107,7 @@ describe("@hex-di/runtime exports", () => {
         "ScopeRequiredError",
         "AsyncFactoryError",
         "AsyncInitializationRequiredError",
+        "NonClonableForkedError",
         "INTERNAL_ACCESS",
         "TRACING_ACCESS",
         "getInternalAccessor",

@@ -5,6 +5,7 @@ import type { Adapter, Lifetime, FactoryKind } from "./types";
 type InferPlaceholder = Port<unknown, string> | never;
 type LifetimePlaceholder = Lifetime;
 type FactoryKindPlaceholder = FactoryKind;
+type ClonablePlaceholder = boolean;
 
 /**
  * Helper to extract the Provided port type from an Adapter.
@@ -13,7 +14,13 @@ type FactoryKindPlaceholder = FactoryKind;
  * @internal
  */
 export type InferAdapterProvides<A> =
-  A extends Adapter<infer P, InferPlaceholder, LifetimePlaceholder, FactoryKindPlaceholder>
+  A extends Adapter<
+    infer P,
+    InferPlaceholder,
+    LifetimePlaceholder,
+    FactoryKindPlaceholder,
+    ClonablePlaceholder
+  >
     ? P
     : never;
 
@@ -24,7 +31,13 @@ export type InferAdapterProvides<A> =
  * @internal
  */
 export type InferAdapterRequires<A> =
-  A extends Adapter<InferPlaceholder, infer R, LifetimePlaceholder, FactoryKindPlaceholder>
+  A extends Adapter<
+    InferPlaceholder,
+    infer R,
+    LifetimePlaceholder,
+    FactoryKindPlaceholder,
+    ClonablePlaceholder
+  >
     ? R
     : never;
 
@@ -35,7 +48,13 @@ export type InferAdapterRequires<A> =
  * @internal
  */
 export type InferManyProvides<A> = A extends readonly (infer Element)[]
-  ? Element extends Adapter<infer P, InferPlaceholder, LifetimePlaceholder, FactoryKindPlaceholder>
+  ? Element extends Adapter<
+      infer P,
+      InferPlaceholder,
+      LifetimePlaceholder,
+      FactoryKindPlaceholder,
+      ClonablePlaceholder
+    >
     ? P
     : never
   : never;
@@ -47,7 +66,13 @@ export type InferManyProvides<A> = A extends readonly (infer Element)[]
  * @internal
  */
 export type InferManyRequires<A> = A extends readonly (infer Element)[]
-  ? Element extends Adapter<InferPlaceholder, infer R, LifetimePlaceholder, FactoryKindPlaceholder>
+  ? Element extends Adapter<
+      InferPlaceholder,
+      infer R,
+      LifetimePlaceholder,
+      FactoryKindPlaceholder,
+      ClonablePlaceholder
+    >
     ? R
     : never
   : never;
@@ -60,7 +85,13 @@ export type InferManyRequires<A> = A extends readonly (infer Element)[]
  * @internal
  */
 export type InferManyAsyncPorts<A> = A extends readonly (infer Element)[]
-  ? Element extends Adapter<infer P, InferPlaceholder, LifetimePlaceholder, "async">
+  ? Element extends Adapter<
+      infer P,
+      InferPlaceholder,
+      LifetimePlaceholder,
+      "async",
+      ClonablePlaceholder
+    >
     ? P
     : never
   : never;
@@ -72,6 +103,12 @@ export type InferManyAsyncPorts<A> = A extends readonly (infer Element)[]
  * @internal
  */
 export type InferAdapterLifetime<A> =
-  A extends Adapter<InferPlaceholder, InferPlaceholder, infer L, FactoryKindPlaceholder>
+  A extends Adapter<
+    InferPlaceholder,
+    InferPlaceholder,
+    infer L,
+    FactoryKindPlaceholder,
+    ClonablePlaceholder
+  >
     ? L
     : never;

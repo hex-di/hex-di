@@ -148,6 +148,7 @@ export {
   ScopeRequiredError,
   AsyncFactoryError,
   AsyncInitializationRequiredError,
+  NonClonableForkedError,
 } from "./common/errors.js";
 
 // =============================================================================

@@ -452,3 +452,65 @@ export class AsyncInitializationRequiredError extends ContainerError {
     this.portName = portName;
   }
 }
+
+// =============================================================================
+// NonClonableForkedError
+// =============================================================================
+
+/**
+ * Error thrown when attempting to use forked inheritance mode with a non-clonable adapter.
+ *
+ * Forked inheritance mode creates a shallow clone of the parent's service instance.
+ * This is only safe for services that don't contain resource handles (sockets,
+ * file handles, connections) or external references that would become shared.
+ *
+ * @remarks
+ * - This is a programming error - the adapter must be marked as clonable
+ * - Use `.clonable()` when defining the adapter if shallow cloning is safe
+ * - Alternative: use 'shared' (share parent's instance) or 'isolated' (create new via factory)
+ *
+ * @example
+ * ```typescript
+ * // DatabaseAdapter is NOT marked as clonable (has socket resource)
+ * const child = parent.createChild({
+ *   inherit: { Database: 'forked' }  // This will throw NonClonableForkedError
+ * });
+ *
+ * // Solutions:
+ * // 1. Use shared mode (share parent's connection):
+ * parent.createChild({ inherit: { Database: 'shared' } });
+ *
+ * // 2. Use isolated mode (create new connection):
+ * parent.createChild({ inherit: { Database: 'isolated' } });
+ *
+ * // 3. Mark adapter as clonable if shallow cloning is safe:
+ * const LoggerAdapter = createAdapter({
+ *   provides: LoggerPort,
+ *   factory: () => new ConsoleLogger(),
+ *   clonable: true,  // ← Safe to shallow clone
+ * });
+ * ```
+ */
+export class NonClonableForkedError extends ContainerError {
+  readonly code = "NON_CLONABLE_FORKED" as const;
+  readonly isProgrammingError = true as const;
+
+  /**
+   * The name of the port that was attempted to be forked.
+   */
+  readonly portName: string;
+
+  /**
+   * Creates a new NonClonableForkedError.
+   *
+   * @param portName - The name of the port that cannot be forked
+   */
+  constructor(portName: string) {
+    super(
+      `Cannot use forked inheritance for port '${portName}': adapter is not marked as clonable. ` +
+        `Use 'shared' or 'isolated' mode, or mark the adapter as clonable if shallow cloning is safe.`
+    );
+
+    this.portName = portName;
+  }
+}

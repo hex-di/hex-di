@@ -480,6 +480,7 @@ describe("Inheritance Modes", () => {
       provides: CounterPort,
       requires: [],
       lifetime: "singleton",
+      clonable: true, // Required for forked inheritance mode
       factory: () => ({
         value: 0,
         increment() {
@@ -1313,6 +1314,7 @@ describe("Child Container Integration Tests", () => {
       provides: CounterPort,
       requires: [],
       lifetime: "singleton",
+      clonable: true, // Required for forked inheritance mode
       factory: () => ({
         value: 0,
         increment() {

@@ -100,7 +100,7 @@ export type BuildErrorMessage<MissingPorts> = [MissingPorts] extends [never]
 export type DuplicateProviderError<DuplicatePort> = {
   readonly __valid: false;
   readonly __errorBrand: "DuplicateProviderError";
-  readonly __message: `Duplicate provider for: ${InferPortName<DuplicatePort>}`;
+  readonly __message: `Duplicate provider for: ${InferPortName<DuplicatePort> & string}`;
   readonly __duplicate: DuplicatePort;
 };
 
@@ -113,7 +113,7 @@ export type DuplicateProviderError<DuplicatePort> = {
 export type OverridePortNotFoundError<TPort> = {
   readonly __valid: false;
   readonly __errorBrand: "OverridePortNotFoundError";
-  readonly __message: `Port not found in parent: ${InferPortName<TPort>}`;
+  readonly __message: `Port not found in parent: ${InferPortName<TPort> & string}`;
   readonly __port: TPort;
 };
 
@@ -156,7 +156,7 @@ export type OverridePortNotFoundError<TPort> = {
  * ```
  */
 export type DuplicateErrorMessage<DuplicatePort> =
-  `ERROR: Duplicate adapter for ${InferPortName<DuplicatePort>}. Already provided.`;
+  `ERROR: Duplicate adapter for ${InferPortName<DuplicatePort> & string}. Already provided.`;
 
 /**
  * Template literal error message for circular dependency detection.

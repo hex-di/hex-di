@@ -17,6 +17,7 @@ import type { ForkedEntry, ParentContainerLike, RuntimeAdapterFor } from "./inte
 import { isForkedEntryForPort, isAdapterForPort } from "./internal-types.js";
 import { shallowClone } from "./helpers.js";
 import { ADAPTER_ACCESS } from "../inspector/symbols.js";
+import { NonClonableForkedError } from "../common/errors.js";
 
 // =============================================================================
 // Types
@@ -217,11 +218,19 @@ export class InheritanceResolver<
 
   /**
    * Resolves using forked mode - shallow clone of parent instance.
+   *
+   * @throws {NonClonableForkedError} If the adapter is not marked as clonable
    */
   private resolveForked<P extends TProvides>(port: P, portName: string): InferService<P> {
     const cached = this.forkedInstances.get(portName);
     if (cached !== undefined && isForkedEntryForPort(cached, port)) {
       return cached.instance;
+    }
+
+    // Check if adapter is clonable before cloning
+    const adapter = this.parentContainer[ADAPTER_ACCESS](port);
+    if (adapter === undefined || !adapter.clonable) {
+      throw new NonClonableForkedError(portName);
     }
 
     const parentInstance = this.parentContainer.resolveInternal(port);
