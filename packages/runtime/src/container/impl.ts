@@ -21,16 +21,16 @@ import type { InheritanceMode } from "../types.js";
 import type {
   RuntimeAdapter,
   RuntimeAdapterFor,
-  ForkedEntry,
   DisposableChild,
   ParentContainerLike,
   RootContainerConfig,
   ChildContainerConfig,
   ContainerConfig,
 } from "./internal-types.js";
-import { isAdapterForPort, assertSyncAdapter, isForkedEntryForPort } from "./internal-types.js";
+import { isAdapterForPort, assertSyncAdapter } from "./internal-types.js";
 import { HooksRunner, checkCacheHit } from "./hooks-runner.js";
 import { LifecycleManager } from "./lifecycle-manager.js";
+import { InheritanceResolver } from "./inheritance-resolver.js";
 import { isDisposableChild, createMemoMapSnapshot } from "./helpers.js";
 import { ADAPTER_ACCESS } from "../inspector/symbols.js";
 
@@ -79,7 +79,7 @@ export class ContainerImpl<
   // Child-only state
   private readonly parentContainer: ParentContainerLike<TProvides, TAsyncPorts> | null;
   private readonly inheritanceModes: ReadonlyMap<string, InheritanceMode>;
-  private readonly forkedInstances: Map<string, ForkedEntry<Port<unknown, string>>>;
+  private readonly inheritanceResolver: InheritanceResolver<TProvides, TAsyncPorts> | null;
   private readonly localPorts: Set<Port<unknown, string>>;
   private wrapper: unknown = null;
 
@@ -91,18 +91,19 @@ export class ContainerImpl<
     this.asyncPorts = new Set();
     this.asyncAdapters = [];
     this.pendingResolutions = new Map();
-    this.forkedInstances = new Map();
     this.localPorts = new Set();
 
     if (config.kind === "root") {
       this.isRoot = true;
       this.parentContainer = null;
       this.inheritanceModes = new Map();
+      this.inheritanceResolver = null;
       this.hooksRunner = this.initializeFromGraph(config);
     } else {
       this.isRoot = false;
       this.parentContainer = config.parent;
       this.inheritanceModes = config.inheritanceModes;
+      this.inheritanceResolver = new InheritanceResolver(config.parent, config.inheritanceModes);
       this.hooksRunner = null;
       this.initializeFromParent(config);
     }
@@ -305,42 +306,17 @@ export class ContainerImpl<
   }
 
   private resolveWithInheritanceMode<P extends TProvides | TExtends>(port: P): InferService<P> {
-    const portName = port.__portName;
-    const mode = this.inheritanceModes.get(portName) ?? "shared";
-
-    if (this.parentContainer === null) {
-      throw new Error(`Port ${portName} not found - no parent container.`);
+    if (this.inheritanceResolver === null || this.parentContainer === null) {
+      throw new Error(`Port ${port.__portName} not found - no parent container.`);
     }
 
-    switch (mode) {
-      case "shared":
-        // Type assertion needed because parent only knows about TProvides
-        return this.parentContainer.resolveInternal(
-          port as unknown as TProvides
-        ) as InferService<P>;
-
-      case "forked": {
-        const cached = this.forkedInstances.get(portName);
-        if (cached !== undefined && isForkedEntryForPort(cached, port)) {
-          return cached.instance;
-        }
-        const parentInstance = this.parentContainer.resolveInternal(port as unknown as TProvides);
-        const forkedInstance = this.shallowClone(parentInstance) as InferService<P>;
-        const entry: ForkedEntry<P> = { port, instance: forkedInstance };
-        this.forkedInstances.set(portName, entry as ForkedEntry<Port<unknown, string>>);
-        return forkedInstance;
-      }
-
-      case "isolated":
-        return this.singletonMemo.getOrElseMemoize(
-          port,
-          () => this.createIsolatedInstance(port),
-          undefined
-        );
-
-      default:
-        throw new Error(`Unknown inheritance mode: ${mode}`);
+    const result = this.inheritanceResolver.tryResolve(port as unknown as TProvides);
+    if (result.resolved) {
+      return result.value as InferService<P>;
     }
+
+    // Handle isolated mode in container (requires full type context)
+    return this.createIsolatedInstance(port);
   }
 
   private createIsolatedInstance<P extends TProvides | TExtends>(port: P): InferService<P> {
@@ -363,20 +339,26 @@ export class ContainerImpl<
 
     assertSyncAdapter(adapter, portName);
 
-    this.resolutionContext.enter(portName);
-    try {
-      const deps: Record<string, unknown> = {};
-      for (const requiredPort of adapter.requires) {
-        deps[requiredPort.__portName] = this.resolve(requiredPort as TProvides | TExtends);
-      }
-      try {
-        return adapter.factory(deps);
-      } catch (error) {
-        throw new FactoryError(portName, error);
-      }
-    } finally {
-      this.resolutionContext.exit(portName);
-    }
+    return this.singletonMemo.getOrElseMemoize(
+      port,
+      () => {
+        this.resolutionContext.enter(portName);
+        try {
+          const deps: Record<string, unknown> = {};
+          for (const requiredPort of adapter.requires) {
+            deps[requiredPort.__portName] = this.resolve(requiredPort as TProvides | TExtends);
+          }
+          try {
+            return adapter.factory(deps);
+          } catch (error) {
+            throw new FactoryError(portName, error);
+          }
+        } finally {
+          this.resolutionContext.exit(portName);
+        }
+      },
+      undefined
+    );
   }
 
   private shallowClone<T>(obj: T): T {
@@ -408,11 +390,11 @@ export class ContainerImpl<
     const adapter = this.getAdapter(port);
 
     if (adapter === undefined || !isAdapterForPort(adapter, port)) {
-      // For child containers, delegate to parent if not local
-      if (!this.isRoot && this.parentContainer !== null && !this.localPorts.has(port)) {
-        const mode = this.inheritanceModes.get(portName) ?? "shared";
+      // For child containers, delegate to parent if not local and mode is shared
+      if (this.inheritanceResolver !== null && !this.localPorts.has(port)) {
+        const mode = this.inheritanceResolver.getMode(portName);
         if (mode === "shared") {
-          return this.parentContainer.resolveInternal(port as TProvides);
+          return this.inheritanceResolver.resolveSharedInternal(port as TProvides);
         }
       }
       throw new Error(`No adapter registered for port '${portName}'`);
