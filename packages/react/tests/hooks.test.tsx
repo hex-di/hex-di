@@ -17,10 +17,10 @@ import { createPort } from "@hex-di/ports";
 import { ContainerBrand, ScopeBrand } from "@hex-di/runtime";
 import type { Container, Scope } from "@hex-di/runtime";
 import { MissingProviderError } from "../src/errors.js";
-import { ContainerProvider, ScopeProvider } from "../src/context.jsx";
-import { useContainer } from "../src/use-container.js";
-import { usePort } from "../src/use-port.js";
-import { useScope } from "../src/use-scope.js";
+import { ContainerProvider, ScopeProvider } from "../src/providers/index.js";
+import { useContainer } from "../src/hooks/use-container.js";
+import { usePort } from "../src/hooks/use-port.js";
+import { useScope } from "../src/hooks/use-scope.js";
 
 // =============================================================================
 // Test Fixtures

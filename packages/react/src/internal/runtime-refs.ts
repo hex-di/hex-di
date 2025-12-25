@@ -1,13 +1,13 @@
 /**
  * Runtime reference types for React context storage.
  *
- * This module re-exports and adapts the RuntimeResolver types from @hex-di/runtime
- * for use in React context. The underlying types solve the variance problem when
+ * This module re-exports and adapts the RuntimeResolver types for use in
+ * React context. The underlying types solve the variance problem when
  * storing typed containers in React state/context.
  *
  * ## Architecture
  *
- * The type erasure and conversion functions are defined in @hex-di/runtime:
+ * The type erasure and conversion functions are defined in runtime-resolver.ts:
  * - `RuntimeResolver` - Type-erased interface for storage
  * - `toRuntimeResolver()` - Converts Container/Scope to RuntimeResolver
  * - `assertResolverProvides()` - Narrows back to typed resolution
@@ -17,8 +17,7 @@
  *
  * ## ZERO CAST in React Package
  *
- * By using the @hex-di/runtime APIs, this package achieves ZERO type assertions.
- * All type boundary handling is centralized in the runtime package where:
+ * All type boundary handling is centralized in runtime-resolver.ts where:
  * 1. Container/Scope implement the required interface
  * 2. The conversion functions are properly typed
  * 3. Runtime port validation ensures safety
@@ -29,6 +28,7 @@
 
 import type { Port } from "@hex-di/ports";
 import type { Graph } from "@hex-di/graph";
+import type { InheritanceMode } from "@hex-di/runtime";
 import {
   toRuntimeResolver,
   toRuntimeContainer,
@@ -36,8 +36,7 @@ import {
   type RuntimeResolver,
   type RuntimeContainer,
   type TypedResolver,
-  type InheritanceMode,
-} from "@hex-di/runtime";
+} from "./runtime-resolver.js";
 
 // =============================================================================
 // Re-exports with React-specific aliases

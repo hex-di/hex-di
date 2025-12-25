@@ -77,7 +77,7 @@
  * @see {@link createTypedHooks} - Factory function documentation
  * @see {@link TypedReactIntegration} - Return type definition
  */
-export { createTypedHooks } from "./create-typed-hooks.js";
+export { createTypedHooks } from "./factories/index.js";
 
 // =============================================================================
 // Type Exports
@@ -105,7 +105,7 @@ export type {
   AsyncContainerReadyProps,
   Resolver,
   ToResolver,
-} from "./types.js";
+} from "./types/index.js";
 
 // =============================================================================
 // Global Provider Components
@@ -122,7 +122,22 @@ export type {
  * @see {@link ScopeProvider} - Manual scope management
  * @see {@link AutoScopeProvider} - Automatic scope lifecycle
  */
-export { ContainerProvider, ScopeProvider, AutoScopeProvider } from "./context.js";
+export { ContainerProvider, ScopeProvider, AutoScopeProvider } from "./providers/index.js";
+
+/**
+ * ReactiveScopeProvider for external scope lifecycle management.
+ *
+ * This provider enables a reactive pattern where scopes created outside React
+ * can trigger automatic component unmounting when disposed. Useful for:
+ * - Logout/Session End: dispose user scope -> unmount user-specific UI
+ * - Resource Cleanup: connection closes -> show reconnect UI
+ * - Multi-Tenant Switching: dispose workspace scope -> swap UI trees
+ *
+ * @see {@link ReactiveScopeProvider} - Provider component documentation
+ * @see {@link ReactiveScopeProviderProps} - Props type
+ */
+export { ReactiveScopeProvider } from "./providers/index.js";
+export type { ReactiveScopeProviderProps } from "./providers/index.js";
 
 /**
  * Global AsyncContainerProvider component for async container initialization.
@@ -133,7 +148,7 @@ export { ContainerProvider, ScopeProvider, AutoScopeProvider } from "./context.j
  *
  * @see {@link AsyncContainerProvider} - Provider component documentation
  */
-export { AsyncContainerProvider, useAsyncContainerState } from "./async-container-provider.js";
+export { AsyncContainerProvider, useAsyncContainerState } from "./providers/index.js";
 
 // =============================================================================
 // Global Hooks
@@ -148,8 +163,35 @@ export { AsyncContainerProvider, useAsyncContainerState } from "./async-containe
  *
  * @see {@link usePort} - Hook documentation
  */
-export { usePort } from "./use-port.js";
-export { useContainer } from "./use-container.js";
+export { usePort } from "./hooks/index.js";
+export { useContainer } from "./hooks/index.js";
+
+// =============================================================================
+// Declarative Component Creation
+// =============================================================================
+
+/**
+ * Standalone function for creating React components with explicit dependencies.
+ *
+ * Following the same pattern as `createAdapter` from @hex-di/graph, this
+ * function provides a declarative way to define components with their
+ * DI dependencies visible at definition time.
+ *
+ * @see {@link createComponent} - Function documentation
+ * @see {@link ComponentConfig} - Configuration type
+ */
+export { createComponent } from "./factories/index.js";
+export type { ComponentConfig } from "./factories/index.js";
+
+/**
+ * Standalone hook for resolving multiple ports at once.
+ *
+ * This hook provides a convenient way to resolve multiple dependencies
+ * in a single call, returning a typed object with resolved services.
+ *
+ * @see {@link useDeps} - Hook documentation
+ */
+export { useDeps } from "./hooks/index.js";
 
 // =============================================================================
 // Error Classes

@@ -17,13 +17,9 @@ import { createPort } from "@hex-di/ports";
 import { ContainerBrand, ScopeBrand, INTERNAL_ACCESS } from "@hex-di/runtime";
 import type { Container, Scope, ContainerInternalState, ScopeInternalState } from "@hex-di/runtime";
 import { MissingProviderError } from "../src/errors.js";
-import {
-  ContainerProvider,
-  ScopeProvider,
-  AutoScopeProvider,
-  ContainerContext,
-  ResolverContext,
-} from "../src/context.jsx";
+import { ContainerProvider, ScopeProvider, AutoScopeProvider } from "../src/providers/index.js";
+import { ContainerContext } from "../src/context/container-context.jsx";
+import { ResolverContext } from "../src/context/resolver-context.jsx";
 
 // =============================================================================
 // Test Fixtures
@@ -75,6 +71,8 @@ function createMockScope(): TestScope {
     dispose: mockDispose,
     has: vi.fn().mockReturnValue(true),
     isDisposed: false,
+    subscribe: vi.fn().mockReturnValue(() => {}),
+    getDisposalState: vi.fn().mockReturnValue("active"),
     [ScopeBrand]: { provides: TestServicePort },
     [INTERNAL_ACCESS]: () => mockInternalState,
   };
@@ -108,6 +106,16 @@ function createMockContainer(): TestContainer {
     resolveAsync: mockResolveAsync,
     createScope: mockCreateScope,
     createChild: vi.fn(),
+    createChildAsync: vi.fn(),
+    createLazyChild: vi.fn().mockReturnValue({
+      resolve: vi.fn().mockResolvedValue({ name: "lazy-service" }),
+      resolveAsync: vi.fn().mockResolvedValue({ name: "lazy-service" }),
+      load: vi.fn(),
+      isLoaded: false,
+      isDisposed: false,
+      has: vi.fn().mockReturnValue(true),
+      dispose: vi.fn().mockResolvedValue(undefined),
+    }),
     dispose: mockDispose,
     has: vi.fn().mockReturnValue(true),
     initialize: mockInitialize,

@@ -11,12 +11,13 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import type { Port } from "@hex-di/ports";
 import type { Container } from "@hex-di/runtime";
-import { ContainerContext, ResolverContext } from "./context.js";
+import { ContainerContext } from "../context/container-context.js";
+import { ResolverContext } from "../context/resolver-context.js";
 import {
   toRuntimeContainerWithInit,
   type RuntimeContainerRef,
   type RuntimeContainer,
-} from "./internal/runtime-refs.js";
+} from "../internal/runtime-refs.js";
 
 // =============================================================================
 // Runtime Context Types (without phantom brands)

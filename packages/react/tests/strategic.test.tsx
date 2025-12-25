@@ -15,7 +15,7 @@ import React, { Component, type ReactNode, type ErrorInfo } from "react";
 import { createPort } from "@hex-di/ports";
 import { ContainerBrand, ScopeBrand, INTERNAL_ACCESS } from "@hex-di/runtime";
 import type { Container, Scope } from "@hex-di/runtime";
-import { createTypedHooks } from "../src/create-typed-hooks.jsx";
+import { createTypedHooks } from "../src/factories/create-typed-hooks.jsx";
 
 // =============================================================================
 // Test Fixtures
@@ -66,6 +66,8 @@ function createMockScope(options: MockScopeOptions | string = "scoped-service"):
     dispose: mockDispose,
     has: vi.fn().mockReturnValue(true),
     isDisposed: false,
+    subscribe: vi.fn().mockReturnValue(() => {}),
+    getDisposalState: vi.fn().mockReturnValue("active"),
     [ScopeBrand]: { provides: TestServicePort },
     [INTERNAL_ACCESS]: (() => ({})) as () => unknown,
   } as TestScope;
@@ -92,6 +94,16 @@ function createMockContainer(): TestContainer {
     resolveAsync: mockResolveAsync,
     createScope: mockCreateScope,
     createChild: vi.fn(),
+    createChildAsync: vi.fn(),
+    createLazyChild: vi.fn().mockReturnValue({
+      resolve: vi.fn().mockResolvedValue({ name: "lazy-service" }),
+      resolveAsync: vi.fn().mockResolvedValue({ name: "lazy-service" }),
+      load: vi.fn(),
+      isLoaded: false,
+      isDisposed: false,
+      has: vi.fn().mockReturnValue(true),
+      dispose: vi.fn().mockResolvedValue(undefined),
+    }),
     dispose: mockDispose,
     has: vi.fn().mockReturnValue(true),
     initialize: mockInitialize,

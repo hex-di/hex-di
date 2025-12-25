@@ -16,8 +16,8 @@ import React from "react";
 import { createPort } from "@hex-di/ports";
 import { ContainerBrand, ScopeBrand, INTERNAL_ACCESS } from "@hex-di/runtime";
 import type { Container, Scope, ContainerInternalState, ScopeInternalState } from "@hex-di/runtime";
-import { createTypedHooks } from "../src/create-typed-hooks.jsx";
-import type { TypedReactIntegration } from "../src/types.js";
+import { createTypedHooks } from "../src/factories/create-typed-hooks.jsx";
+import type { TypedReactIntegration } from "../src/types/index.js";
 
 // =============================================================================
 // Test Fixtures
@@ -71,6 +71,8 @@ function createMockScope(name: string = "scoped-logger"): TestScope {
     dispose: mockDispose,
     has: vi.fn().mockReturnValue(true),
     isDisposed: false,
+    subscribe: vi.fn().mockReturnValue(() => {}),
+    getDisposalState: vi.fn().mockReturnValue("active"),
     [ScopeBrand]: { provides: LoggerPort },
     [INTERNAL_ACCESS]: () => mockInternalState,
   };
@@ -104,6 +106,16 @@ function createMockContainer(): TestContainer {
     resolveAsync: mockResolveAsync,
     createScope: mockCreateScope,
     createChild: vi.fn(),
+    createChildAsync: vi.fn(),
+    createLazyChild: vi.fn().mockReturnValue({
+      resolve: vi.fn().mockResolvedValue({ log: vi.fn() }),
+      resolveAsync: vi.fn().mockResolvedValue({ log: vi.fn() }),
+      load: vi.fn(),
+      isLoaded: false,
+      isDisposed: false,
+      has: vi.fn().mockReturnValue(true),
+      dispose: vi.fn().mockResolvedValue(undefined),
+    }),
     dispose: mockDispose,
     has: vi.fn().mockReturnValue(true),
     initialize: mockInitialize,

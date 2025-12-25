@@ -10,10 +10,10 @@
 
 import { useContext } from "react";
 import type { Port } from "@hex-di/ports";
-import { ContainerContext } from "./context.js";
-import { MissingProviderError } from "./errors.js";
-import type { Resolver } from "./types.js";
-import { toTypedResolver } from "./internal/runtime-refs.js";
+import { ContainerContext } from "../context/container-context.js";
+import { MissingProviderError } from "../errors.js";
+import type { Resolver } from "../types/core.js";
+import { toTypedResolver } from "../internal/runtime-refs.js";
 
 /**
  * Hook that returns the nearest Container or ChildContainer from the nearest ContainerProvider.
@@ -58,7 +58,7 @@ import { toTypedResolver } from "./internal/runtime-refs.js";
  * ```
  */
 export function useContainer<
-  TProvides extends Port<unknown, string> = Port<unknown, string>
+  TProvides extends Port<unknown, string> = Port<unknown, string>,
 >(): Resolver<TProvides> {
   const context = useContext(ContainerContext);
 

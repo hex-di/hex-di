@@ -15,14 +15,14 @@
 import { describe, expectTypeOf, it } from "vitest";
 import { createPort, type InferService } from "@hex-di/ports";
 import type { Container } from "@hex-di/runtime";
-import { createTypedHooks } from "../src/create-typed-hooks.jsx";
+import { createTypedHooks } from "../src/factories/create-typed-hooks.jsx";
 import type {
   TypedReactIntegration,
   ContainerProviderProps,
   ScopeProviderProps,
   AutoScopeProviderProps,
   Resolver,
-} from "../src/types.js";
+} from "../src/types/index.js";
 
 // =============================================================================
 // Test Service Interfaces

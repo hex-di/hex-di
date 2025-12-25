@@ -10,8 +10,8 @@
 
 import { useContext } from "react";
 import type { Port, InferService } from "@hex-di/ports";
-import { ResolverContext } from "./context.js";
-import { MissingProviderError } from "./errors.js";
+import { ResolverContext } from "../context/resolver-context.js";
+import { MissingProviderError } from "../errors.js";
 
 /**
  * Hook that resolves a service instance from the nearest resolver context.
@@ -72,7 +72,7 @@ import { MissingProviderError } from "./errors.js";
  */
 export function usePort<
   TProvides extends Port<unknown, string> = Port<unknown, string>,
-  P extends TProvides = TProvides
+  P extends TProvides = TProvides,
 >(port: P): InferService<P> {
   const context = useContext(ResolverContext);
 

@@ -29,8 +29,8 @@ import type {
   AsyncContainerErrorProps,
   AsyncContainerReadyProps,
   Resolver,
-} from "./types.js";
-import { MissingProviderError } from "./errors.js";
+} from "../types/index.js";
+import { MissingProviderError } from "../errors.js";
 
 // =============================================================================
 // Async Container Types
