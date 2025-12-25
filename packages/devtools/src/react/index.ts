@@ -115,6 +115,24 @@
 export { DevToolsProvider, DevToolsContext } from "./context/index.js";
 export type { DevToolsProviderProps, DevToolsContextValue } from "./context/index.js";
 
+/**
+ * ContainerRegistryProvider for multi-container DevTools support.
+ *
+ * Place at the top of your app to enable tracking of all containers
+ * (root, child, lazy, scope). Components can register containers using
+ * useRegisterContainer and access them via useContainerList and useInspector.
+ *
+ * @see {@link ContainerRegistryProviderProps} - Provider props interface
+ * @see {@link ContainerRegistryValue} - Context value interface
+ * @see {@link ContainerEntry} - Registered container entry type
+ */
+export { ContainerRegistryProvider, ContainerRegistryContext } from "./context/index.js";
+export type {
+  ContainerRegistryProviderProps,
+  ContainerRegistryValue,
+  ContainerEntry,
+} from "./context/index.js";
+
 // =============================================================================
 // React Hooks
 // =============================================================================
@@ -138,6 +156,31 @@ export {
   useTracingControls,
 } from "./hooks/index.js";
 export type { UseTracesResult, UseTracingControlsResult } from "./hooks/index.js";
+
+/**
+ * Multi-container inspector hooks.
+ *
+ * - useRegisterContainer: Register a container with DevTools
+ * - useContainerList: Get all registered containers
+ * - useInspector: Access selected container's InspectorAPI
+ * - useInspectorStrict: Access InspectorAPI with non-null assertion
+ * - useInspectorSnapshot: Subscribe to container snapshots
+ * - useContainerPhase: Track container phase and kind
+ */
+export {
+  useRegisterContainer,
+  useContainerList,
+  useInspector,
+  useInspectorStrict,
+  useInspectorSnapshot,
+  useContainerPhase,
+} from "./hooks/index.js";
+export type {
+  UseRegisterContainerOptions,
+  UseContainerListResult,
+  UseInspectorSnapshotResult,
+  UseContainerPhaseResult,
+} from "./hooks/index.js";
 
 // =============================================================================
 // Re-exports from Main Package (for convenience)
@@ -262,6 +305,32 @@ export type { DevToolsFloatingProps, DevToolsPosition } from "./devtools-floatin
  */
 export { ContainerInspector } from "./container-inspector.js";
 export type { ContainerInspectorProps } from "./container-inspector.js";
+
+/**
+ * ContainerSelector component for switching between registered containers.
+ *
+ * Provides a dropdown to select from all registered containers in multi-container
+ * applications. Works with ContainerRegistryProvider to track root, child, lazy,
+ * and scope containers.
+ *
+ * @example Basic usage
+ * ```tsx
+ * import { ContainerSelector } from '@hex-di/devtools/react';
+ *
+ * function InspectorHeader() {
+ *   return (
+ *     <div className="header">
+ *       <ContainerSelector />
+ *     </div>
+ *   );
+ * }
+ * ```
+ *
+ * @see {@link ContainerSelectorProps} - Component props interface
+ * @see {@link ContainerKindBadge} - Badge component for container types
+ */
+export { ContainerSelector, ContainerKindBadge } from "./container-selector.js";
+export type { ContainerSelectorProps, ContainerKindBadgeProps } from "./container-selector.js";
 
 /**
  * ScopeHierarchy component for visualizing scope tree structure.

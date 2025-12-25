@@ -244,6 +244,7 @@ export type {
   ResolutionHookContext,
   ResolutionResultContext,
   ContainerOptions,
+  ContainerKind,
 } from "./resolution/hooks.js";
 
 // =============================================================================
@@ -337,6 +338,8 @@ export type {
   PluginHooks,
   ScopeEventEmitter,
   ScopeInfo,
+  ChildContainerInfo,
+  ContainerInfo,
   AnyPlugin,
   InferPluginSymbol,
   InferPluginApi,

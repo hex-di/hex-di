@@ -11,17 +11,101 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, type ReactElement } from "react";
 import type { Port } from "@hex-di/ports";
 import type { Container, ContainerPhase } from "@hex-di/runtime";
+import type { InspectorAPI } from "@hex-di/inspector";
 import { createInspector } from "../index.js";
-import type {
-  ContainerInspector as InspectorType,
-  ContainerSnapshot,
-  ScopeTree,
-} from "../index.js";
-import type { ExportedGraph } from "@hex-di/devtools-core";
-import type { TracingAPI } from "@hex-di/devtools-core";
+import type { ContainerInspector as RuntimeInspector } from "../index.js";
+import type { ExportedGraph, TracingAPI, ScopeTree } from "@hex-di/devtools-core";
 import { containerInspectorStyles } from "./styles.js";
 import { ScopeHierarchy } from "./scope-hierarchy.js";
 import { ResolvedServices, type ServiceInfo } from "./resolved-services.js";
+
+/**
+ * Minimal singleton entry interface for display purposes.
+ * Compatible with both runtime and devtools-core snapshot types.
+ */
+interface MinimalSingletonEntry {
+  readonly portName: string;
+  readonly isResolved: boolean;
+  readonly resolvedAt?: number;
+  readonly resolutionOrder?: number;
+}
+
+/**
+ * Minimal snapshot interface that captures the common fields between
+ * RuntimeInspector.snapshot() and InspectorAPI.getSnapshot().
+ *
+ * This allows the component to work with both inspector types without
+ * requiring exact type compatibility.
+ */
+interface MinimalSnapshot {
+  readonly isDisposed: boolean;
+  readonly singletons: readonly MinimalSingletonEntry[];
+  readonly scopes: ScopeTree;
+}
+
+// =============================================================================
+// Normalized Inspector Interface
+// =============================================================================
+
+/**
+ * Unified inspector interface that works with both InspectorAPI and RuntimeInspector.
+ *
+ * This abstracts away the method name differences:
+ * - InspectorAPI: `getSnapshot()`, `getScopeTree()`
+ * - RuntimeInspector: `snapshot()`, `getScopeTree()`
+ */
+interface NormalizedInspector {
+  getSnapshot(): MinimalSnapshot;
+  getScopeTree(): ScopeTree;
+  isResolved(portName: string): boolean | "scope-required";
+}
+
+/**
+ * Type guard to check if an inspector is an InspectorAPI (has getSnapshot method).
+ */
+function isInspectorAPI(inspector: InspectorAPI | RuntimeInspector): inspector is InspectorAPI {
+  return "getSnapshot" in inspector && typeof inspector.getSnapshot === "function";
+}
+
+/**
+ * Normalizes either InspectorAPI or RuntimeInspector to a common interface.
+ *
+ * Both inspector types return compatible snapshot data, but with slightly
+ * different type definitions. We cast to MinimalSnapshot which captures
+ * only the fields we actually use.
+ */
+function normalizeInspector(inspector: InspectorAPI | RuntimeInspector): NormalizedInspector {
+  if (isInspectorAPI(inspector)) {
+    return {
+      getSnapshot: (): MinimalSnapshot => {
+        const snapshot = inspector.getSnapshot();
+        // InspectorAPI returns devtools-core ContainerSnapshot (discriminated union)
+        // We extract only the fields we need
+        return {
+          isDisposed: snapshot.isDisposed,
+          singletons: snapshot.singletons,
+          scopes: snapshot.scopes,
+        };
+      },
+      getScopeTree: () => inspector.getScopeTree(),
+      isResolved: (portName: string) => inspector.isResolved(portName),
+    };
+  }
+  return {
+    getSnapshot: (): MinimalSnapshot => {
+      const snapshot = inspector.snapshot();
+      // RuntimeInspector returns runtime ContainerSnapshot
+      // We extract only the fields we need
+      return {
+        isDisposed: snapshot.isDisposed,
+        singletons: snapshot.singletons,
+        scopes: snapshot.scopes,
+      };
+    },
+    getScopeTree: () => inspector.getScopeTree(),
+    isResolved: (portName: string) => inspector.isResolved(portName),
+  };
+}
 
 // =============================================================================
 // Types
@@ -29,6 +113,10 @@ import { ResolvedServices, type ServiceInfo } from "./resolved-services.js";
 
 /**
  * Props for the ContainerInspector component.
+ *
+ * Either `container` or `inspector` must be provided:
+ * - Use `container` when inspecting a Container directly
+ * - Use `inspector` when using an InspectorAPI from the registry
  */
 export interface ContainerInspectorProps<
   TProvides extends Port<unknown, string> = Port<unknown, string>,
@@ -36,8 +124,17 @@ export interface ContainerInspectorProps<
   TAsyncPorts extends Port<unknown, string> = never,
   TPhase extends ContainerPhase = ContainerPhase,
 > {
-  /** The runtime container to inspect */
-  readonly container: Container<TProvides, TExtends, TAsyncPorts, TPhase>;
+  /**
+   * The runtime container to inspect.
+   * An inspector will be created from this container.
+   */
+  readonly container?: Container<TProvides, TExtends, TAsyncPorts, TPhase>;
+  /**
+   * Pre-created InspectorAPI to use.
+   * Takes precedence over `container` when provided.
+   * Useful when using ContainerRegistryProvider with useInspector().
+   */
+  readonly inspector?: InspectorAPI;
   /** The exported dependency graph for metadata */
   readonly exportedGraph: ExportedGraph;
   /** Optional tracing API for request service stats */
@@ -108,10 +205,10 @@ function getRequestServiceStats(
  * @returns Array of ServiceInfo for display
  */
 function buildServiceList(
-  snapshot: ContainerSnapshot,
+  snapshot: MinimalSnapshot,
   exportedGraph: ExportedGraph,
   selectedScopeId: string | null,
-  inspector: InspectorType,
+  inspector: NormalizedInspector,
   tracingAPI: TracingAPI | undefined
 ): readonly ServiceInfo[] {
   const services: ServiceInfo[] = [];
@@ -251,24 +348,40 @@ export function ContainerInspector<
   TPhase extends ContainerPhase = ContainerPhase,
 >({
   container,
+  inspector: inspectorProp,
   exportedGraph,
   tracingAPI,
 }: ContainerInspectorProps<TProvides, TExtends, TAsyncPorts, TPhase>): ReactElement {
-  // Create inspector once
-  const inspector = useMemo(() => createInspector(container), [container]);
+  // Create inspector from container if not provided directly
+  const createdInspector = useMemo(
+    () => (container !== undefined ? createInspector(container) : null),
+    [container]
+  );
+
+  // Use provided inspector or created one, then normalize
+  const rawInspector = inspectorProp ?? createdInspector;
+
+  // Normalize the inspector to a common interface
+  const inspector = useMemo(
+    () => (rawInspector !== null ? normalizeInspector(rawInspector) : null),
+    [rawInspector]
+  );
 
   // State
-  const [snapshot, setSnapshot] = useState<ContainerSnapshot | null>(null);
+  const [snapshot, setSnapshot] = useState<MinimalSnapshot | null>(null);
   const [scopeTree, setScopeTree] = useState<ScopeTree | null>(null);
   const [selectedScopeId, setSelectedScopeId] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Refresh function
+  // Refresh function - handles null inspector gracefully
   const refresh = useCallback(() => {
+    if (inspector === null) {
+      return;
+    }
     try {
-      const newSnapshot = inspector.snapshot();
+      const newSnapshot = inspector.getSnapshot();
       const newTree = inspector.getScopeTree();
       setSnapshot(newSnapshot);
       setScopeTree(newTree);
@@ -304,9 +417,9 @@ export function ContainerInspector<
     };
   }, [autoRefresh, refresh]);
 
-  // Build service list
+  // Build service list - returns empty array if inspector is null
   const services = useMemo(() => {
-    if (snapshot === null) {
+    if (snapshot === null || inspector === null) {
       return [];
     }
     return buildServiceList(snapshot, exportedGraph, selectedScopeId, inspector, tracingAPI);
@@ -316,6 +429,15 @@ export function ContainerInspector<
   const handleAutoRefreshToggle = useCallback(() => {
     setAutoRefresh(prev => !prev);
   }, []);
+
+  // Validate that we have an inspector - all hooks called before this point
+  if (inspector === null) {
+    return (
+      <div style={containerInspectorStyles.container}>
+        <div style={containerInspectorStyles.error}>No container or inspector provided</div>
+      </div>
+    );
+  }
 
   // Error state
   if (error !== null) {

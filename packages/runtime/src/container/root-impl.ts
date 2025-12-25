@@ -8,7 +8,7 @@
 import type { Port, InferService } from "@hex-di/ports";
 import { DisposedScopeError } from "../common/errors.js";
 import type { RootContainerConfig } from "./internal-types.js";
-import { HooksRunner } from "./hooks-runner.js";
+import { HooksRunner, type ContainerMetadata } from "./hooks-runner.js";
 import { AdapterRegistry } from "./adapter-registry.js";
 import { BaseContainerImpl } from "./base-impl.js";
 
@@ -43,7 +43,12 @@ export class RootContainerImpl<
   >(config: RootContainerConfig<TProvides, TAsyncPorts>): HooksRunner | null {
     const { options } = config;
     if (options?.hooks?.beforeResolve !== undefined || options?.hooks?.afterResolve !== undefined) {
-      return new HooksRunner(options.hooks);
+      const containerMetadata: ContainerMetadata = {
+        containerId: "root",
+        containerKind: "root",
+        parentContainerId: null,
+      };
+      return new HooksRunner(options.hooks, containerMetadata);
     }
     return null;
   }

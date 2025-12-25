@@ -14,6 +14,22 @@
 import type { Port } from "@hex-di/ports";
 import type { Lifetime } from "@hex-di/graph";
 import type { AnyPlugin } from "../plugin/types.js";
+import type { InheritanceMode } from "../types.js";
+
+// =============================================================================
+// Container Kind Type
+// =============================================================================
+
+/**
+ * The kind of container where resolution is occurring.
+ *
+ * Used by plugins to track which container resolved a service:
+ * - `'root'`: The root container created by `createContainer()`
+ * - `'child'`: A child container created by `createChild()`
+ * - `'lazy'`: A lazy container created by `createLazyChild()`
+ * - `'scope'`: A scope created by `createScope()`
+ */
+export type ContainerKind = "root" | "child" | "lazy" | "scope";
 
 // =============================================================================
 // Hook Context Types
@@ -85,6 +101,33 @@ export interface ResolutionHookContext {
    * 0 for top-level resolutions, increments for each level of dependencies.
    */
   readonly depth: number;
+
+  /**
+   * Unique ID of the container where resolution is occurring.
+   * Format: "root", "child-xxx", "lazy-xxx", "scope-xxx"
+   */
+  readonly containerId: string;
+
+  /**
+   * Kind of container where resolution is occurring.
+   * Identifies whether this is a root, child, lazy, or scope container.
+   */
+  readonly containerKind: ContainerKind;
+
+  /**
+   * For child containers, the inheritance mode for this port.
+   * - `'shared'`: Instance from parent container
+   * - `'forked'`: Snapshot copy from parent
+   * - `'isolated'`: Fresh instance in child
+   * - `null`: Not a child container, or port is locally defined
+   */
+  readonly inheritanceMode: InheritanceMode | null;
+
+  /**
+   * ID of the parent container, or null for root containers.
+   * Used to trace the container hierarchy.
+   */
+  readonly parentContainerId: string | null;
 }
 
 /**

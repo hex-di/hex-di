@@ -238,7 +238,7 @@ function createUninitializedContainerWrapper<
         unregisterChildContainer: child => impl.unregisterChildContainer(child),
         originalParent: container,
       };
-      return createChildFromGraph(parentLike, childGraph, inheritanceModes);
+      return createChildFromGraph(parentLike, childGraph, inheritanceModes, pluginManager);
     },
     createChildAsync: <
       TChildGraph extends Graph<
@@ -271,11 +271,21 @@ function createUninitializedContainerWrapper<
       TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
     > => createLazyChildContainer(container, graphLoader, inheritanceModes),
     dispose: async () => {
-      // Dispose plugins first (in reverse order), then container
+      // Dispose container first (cascades to children in LIFO order)
+      // Children emit their onContainerDisposed events during this phase
+      await impl.dispose();
+      // Emit parent's container disposed event after children
+      if (pluginManager !== null) {
+        pluginManager.emitContainerDisposed({
+          id: "root",
+          kind: "root",
+          parentId: null,
+        });
+      }
+      // Dispose plugins last
       if (pluginManager !== null) {
         await pluginManager.dispose();
       }
-      await impl.dispose();
     },
     get isInitialized() {
       return impl.isInitialized;
@@ -360,7 +370,7 @@ function createInitializedContainerWrapper<
         unregisterChildContainer: child => impl.unregisterChildContainer(child),
         originalParent: container,
       };
-      return createChildFromGraph(parentLike, childGraph, inheritanceModes);
+      return createChildFromGraph(parentLike, childGraph, inheritanceModes, pluginManager);
     },
     createChildAsync: <
       TChildGraph extends Graph<
@@ -393,11 +403,21 @@ function createInitializedContainerWrapper<
       TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
     > => createLazyChildContainer(container, graphLoader, inheritanceModes),
     dispose: async () => {
-      // Dispose plugins first (in reverse order), then container
+      // Dispose container first (cascades to children in LIFO order)
+      // Children emit their onContainerDisposed events during this phase
+      await impl.dispose();
+      // Emit parent's container disposed event after children
+      if (pluginManager !== null) {
+        pluginManager.emitContainerDisposed({
+          id: "root",
+          kind: "root",
+          parentId: null,
+        });
+      }
+      // Dispose plugins last
       if (pluginManager !== null) {
         await pluginManager.dispose();
       }
-      await impl.dispose();
     },
     get isInitialized() {
       return impl.isInitialized;
@@ -468,6 +488,16 @@ function createRootScope<
 }
 
 // =============================================================================
+// Child Container ID Generation
+// =============================================================================
+
+let childContainerCounter = 0;
+
+function generateChildContainerId(): string {
+  return `child-${++childContainerCounter}`;
+}
+
+// =============================================================================
 // Child Container Creation from Graph
 // =============================================================================
 
@@ -476,6 +506,12 @@ function createRootScope<
  *
  * This function parses the child graph to separate overrides from extensions,
  * creates a ChildContainerImpl, and wraps it.
+ *
+ * @param parentLike - Parent container interface for resolution and registration
+ * @param childGraph - The child graph containing adapters
+ * @param inheritanceModes - Optional per-port inheritance mode configuration
+ * @param pluginManager - Optional plugin manager inherited from root (for hooks and plugin APIs)
+ * @param parentContainerId - ID of the parent container for hierarchy tracking (defaults to "root")
  *
  * @internal
  */
@@ -486,12 +522,17 @@ function createChildFromGraph<
 >(
   parentLike: ParentContainerLike<TParentProvides, TAsyncPorts>,
   childGraph: TChildGraph,
-  inheritanceModes?: InheritanceModeConfig<TParentProvides>
+  inheritanceModes?: InheritanceModeConfig<TParentProvides>,
+  pluginManager?: PluginManager | null,
+  parentContainerId: string = "root"
 ): Container<
   TParentProvides,
   Exclude<InferGraphProvides<TChildGraph>, TParentProvides>,
   TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
 > {
+  // Generate unique ID for this child container
+  const containerId = generateChildContainerId();
+
   // Parse the child graph to separate overrides from extensions
   const overrides = new Map<Port<unknown, string>, RuntimeAdapter>();
   const extensions = new Map<Port<unknown, string>, RuntimeAdapter>();
@@ -523,6 +564,9 @@ function createChildFromGraph<
     overrides,
     extensions,
     inheritanceModes: inheritanceModesMap,
+    pluginManager: pluginManager ?? null,
+    containerId,
+    parentContainerId,
   };
 
   const impl = new ChildContainerImpl<
@@ -531,7 +575,7 @@ function createChildFromGraph<
     TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
   >(config);
 
-  return createChildContainerWrapper(impl);
+  return createChildContainerWrapper(impl, pluginManager ?? null, containerId, parentContainerId);
 }
 
 // =============================================================================

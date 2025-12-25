@@ -64,6 +64,8 @@ export type {
   PluginHooks,
   ScopeEventEmitter,
   ScopeInfo,
+  ChildContainerInfo,
+  ContainerInfo,
   AnyPlugin,
   InferPluginSymbol,
   InferPluginApi,

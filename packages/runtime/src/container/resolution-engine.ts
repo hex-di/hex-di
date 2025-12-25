@@ -17,6 +17,7 @@ import { FactoryError, ContainerError } from "../common/errors.js";
 import type { RuntimeAdapterFor } from "./internal-types.js";
 import { assertSyncAdapter } from "./internal-types.js";
 import { HooksRunner, checkCacheHit } from "./hooks-runner.js";
+import type { InheritanceMode } from "../types.js";
 
 // =============================================================================
 // Types
@@ -97,20 +98,22 @@ export class ResolutionEngine {
    * @param adapter - The adapter that provides the service
    * @param scopedMemo - The scoped cache for the current resolution context
    * @param scopeId - The scope ID or null for container-level resolution
+   * @param inheritanceMode - Inheritance mode for child container resolutions
    * @returns The resolved service instance with full type inference
    */
   resolve<P extends Port<unknown, string>>(
     port: P,
     adapter: RuntimeAdapterFor<P>,
     scopedMemo: MemoMap,
-    scopeId: string | null
+    scopeId: string | null,
+    inheritanceMode: InheritanceMode | null = null
   ): InferService<P> {
     if (this.hooksRunner === null) {
       return this.resolveCore(port, adapter, scopedMemo, scopeId);
     }
 
     const isCacheHit = checkCacheHit(port, adapter.lifetime, this.singletonMemo, scopedMemo);
-    return this.hooksRunner.runSync(port, adapter, scopeId, isCacheHit, () =>
+    return this.hooksRunner.runSync(port, adapter, scopeId, isCacheHit, inheritanceMode, () =>
       this.resolveCore(port, adapter, scopedMemo, scopeId)
     );
   }

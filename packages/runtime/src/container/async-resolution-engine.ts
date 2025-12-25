@@ -18,6 +18,7 @@ import { ResolutionContext } from "../resolution/context.js";
 import { AsyncFactoryError, ContainerError } from "../common/errors.js";
 import type { RuntimeAdapterFor } from "./internal-types.js";
 import { HooksRunner, checkCacheHit } from "./hooks-runner.js";
+import type { InheritanceMode } from "../types.js";
 
 // =============================================================================
 // Types
@@ -106,28 +107,30 @@ export class AsyncResolutionEngine {
    * @param adapter - The adapter that provides the service
    * @param scopedMemo - The scoped cache for the current resolution context
    * @param scopeId - The scope ID or null for container-level resolution
+   * @param inheritanceMode - Inheritance mode for child container resolutions
    * @returns Promise resolving to the service instance with full type inference
    */
   resolve<P extends Port<unknown, string>>(
     port: P,
     adapter: RuntimeAdapterFor<P>,
     scopedMemo: MemoMap,
-    scopeId: string | null
+    scopeId: string | null,
+    inheritanceMode: InheritanceMode | null = null
   ): Promise<InferService<P>> {
     if (this.hooksRunner === null) {
-      return this.resolveCore(port, adapter, scopedMemo, scopeId);
+      return this.resolveCore(port, adapter, scopedMemo, scopeId, inheritanceMode);
     }
 
     const isCacheHit = checkCacheHit(port, adapter.lifetime, this.singletonMemo, scopedMemo);
     if (isCacheHit) {
       // For cache hits, run hooks around the cached resolution
-      return this.hooksRunner.runAsync(port, adapter, scopeId, true, () =>
-        this.resolveCore(port, adapter, scopedMemo, scopeId)
+      return this.hooksRunner.runAsync(port, adapter, scopeId, true, inheritanceMode, () =>
+        this.resolveCore(port, adapter, scopedMemo, scopeId, inheritanceMode)
       );
     }
 
     // For non-cache hits, hooks are handled in createPendingResolutionPromise
-    return this.resolveCore(port, adapter, scopedMemo, scopeId);
+    return this.resolveCore(port, adapter, scopedMemo, scopeId, inheritanceMode);
   }
 
   // ===========================================================================
@@ -141,7 +144,8 @@ export class AsyncResolutionEngine {
     port: P,
     adapter: RuntimeAdapterFor<P>,
     scopedMemo: MemoMap,
-    scopeId: string | null
+    scopeId: string | null,
+    inheritanceMode: InheritanceMode | null
   ): Promise<InferService<P>> {
     const memo = this.getMemoForLifetime(adapter.lifetime, scopedMemo);
     const cached = memo?.getIfPresent(port);
@@ -162,7 +166,14 @@ export class AsyncResolutionEngine {
     }
 
     // Create new resolution promise
-    const promise = this.createPendingResolutionPromise(port, adapter, scopedMemo, scopeId, memo);
+    const promise = this.createPendingResolutionPromise(
+      port,
+      adapter,
+      scopedMemo,
+      scopeId,
+      memo,
+      inheritanceMode
+    );
     scopePending.set(scopeId, promise);
     return promise;
   }
@@ -189,14 +200,15 @@ export class AsyncResolutionEngine {
     adapter: RuntimeAdapterFor<P>,
     scopedMemo: MemoMap,
     scopeId: string | null,
-    memo: MemoMap | null
+    memo: MemoMap | null,
+    inheritanceMode: InheritanceMode | null
   ): Promise<InferService<P>> {
     const resolution = () => this.executeAsyncResolution(port, adapter, scopedMemo, scopeId, memo);
 
     // Wrap with hooks if enabled (isCacheHit=false for new resolutions)
     const promise =
       this.hooksRunner !== null
-        ? this.hooksRunner.runAsync(port, adapter, scopeId, false, resolution)
+        ? this.hooksRunner.runAsync(port, adapter, scopeId, false, inheritanceMode, resolution)
         : resolution();
 
     // Suppress unhandled rejection warnings

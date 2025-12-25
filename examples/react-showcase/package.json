@@ -18,6 +18,7 @@
     "@hex-di/runtime": "workspace:*",
     "@hex-di/react": "workspace:*",
     "@hex-di/tracing": "workspace:*",
+    "@hex-di/inspector": "workspace:*",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   },

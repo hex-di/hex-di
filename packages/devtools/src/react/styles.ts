@@ -711,6 +711,7 @@ interface ContainerInspectorStyleDef {
   refreshButton: CSSProperties;
   autoRefreshToggle: CSSProperties;
   autoRefreshToggleActive: CSSProperties;
+  error: CSSProperties;
 }
 
 /** Scope tree style properties */
@@ -809,6 +810,11 @@ export const containerInspectorStyles: ContainerInspectorStyleDef = {
     backgroundColor: "var(--hex-devtools-accent, #89b4fa)",
     border: "1px solid var(--hex-devtools-accent, #89b4fa)",
     color: "#1e1e2e",
+  },
+  error: {
+    color: "#f38ba8",
+    padding: "16px",
+    fontSize: "13px",
   },
 };
 

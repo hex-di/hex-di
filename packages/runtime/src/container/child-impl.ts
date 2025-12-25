@@ -19,6 +19,9 @@ import { InheritanceResolver } from "./inheritance-resolver.js";
 import { AdapterRegistry } from "./adapter-registry.js";
 import { BaseContainerImpl } from "./base-impl.js";
 import { isDisposableChild } from "./helpers.js";
+import { HooksRunner, type ContainerMetadata } from "./hooks-runner.js";
+import type { PluginManager } from "../plugin/plugin-manager.js";
+import { ADAPTER_ACCESS } from "../inspector/symbols.js";
 
 /**
  * Child container created from a parent with overrides/extensions.
@@ -40,17 +43,47 @@ export class ChildContainerImpl<
   private readonly parentContainer: ParentContainerLike<TProvides, TAsyncPorts>;
   private readonly inheritanceModes: ReadonlyMap<string, InheritanceMode>;
   private readonly inheritanceResolver: InheritanceResolver<TProvides, TAsyncPorts>;
+  private readonly containerId: string;
+  private readonly parentContainerId: string;
 
   constructor(config: ChildContainerConfig<TProvides, TAsyncPorts>) {
     const adapterRegistry = new AdapterRegistry<TProvides, TAsyncPorts>(config.parent);
 
-    super(adapterRegistry, null);
+    // Create HooksRunner from PluginManager if available
+    const hooksRunner = ChildContainerImpl.createHooksRunner(config);
+
+    super(adapterRegistry, hooksRunner);
 
     this.parentContainer = config.parent;
     this.inheritanceModes = config.inheritanceModes;
     this.inheritanceResolver = new InheritanceResolver(config.parent, config.inheritanceModes);
+    this.containerId = config.containerId;
+    this.parentContainerId = config.parentContainerId;
 
     this.initializeFromParent(config);
+  }
+
+  private static createHooksRunner<
+    TProvides extends Port<unknown, string>,
+    TAsyncPorts extends Port<unknown, string>,
+  >(config: ChildContainerConfig<TProvides, TAsyncPorts>): HooksRunner | null {
+    const { pluginManager, containerId, parentContainerId } = config;
+    if (pluginManager === null) {
+      return null;
+    }
+
+    const composedHooks = pluginManager.getComposedHooks();
+    if (composedHooks === null) {
+      return null;
+    }
+
+    const containerMetadata: ContainerMetadata = {
+      containerId,
+      containerKind: "child",
+      parentContainerId,
+    };
+
+    return new HooksRunner(composedHooks, containerMetadata);
   }
 
   private initializeFromParent(config: ChildContainerConfig<TProvides, TAsyncPorts>): void {
@@ -103,6 +136,38 @@ export class ChildContainerImpl<
       throw new Error(`Port ${port.__portName} not found - no parent container.`);
     }
 
+    const portName = port.__portName;
+    const mode = this.inheritanceResolver.getMode(portName);
+
+    // Get adapter from parent for hook context
+    const adapter = this.parentContainer[ADAPTER_ACCESS](port);
+
+    // Wrap resolution with hooks if enabled
+    if (this.hooksRunner !== null && adapter !== undefined) {
+      // For inherited resolutions, isCacheHit is based on whether this is a shared resolution
+      // (which reuses parent's singleton) or forked/isolated (which creates new instance)
+      const isCacheHit = mode === "shared";
+
+      return this.hooksRunner.runSync(
+        port,
+        adapter,
+        null, // scopeId
+        isCacheHit,
+        mode, // inheritanceMode
+        () => this.resolveWithInheritanceInternal(port, mode)
+      );
+    }
+
+    return this.resolveWithInheritanceInternal(port, mode);
+  }
+
+  /**
+   * Internal inheritance resolution logic.
+   */
+  private resolveWithInheritanceInternal<P extends TProvides | TExtends>(
+    port: P,
+    _mode: InheritanceMode
+  ): InferService<P> {
     // SAFETY: Port type widening needed for variance - parent provides TExtends ports,
     // but resolveWithCallback expects TProvides. Cast is sound because:
     // 1. InheritanceResolver validates port membership before resolution

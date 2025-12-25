@@ -10,13 +10,16 @@
 import type { Port } from "@hex-di/ports";
 import type { Graph } from "@hex-di/graph";
 import type { Container, ContainerPhase } from "@hex-di/runtime";
+import { createInspector } from "@hex-di/runtime";
 import { getTracingAPI, type TracingAPI } from "@hex-di/tracing";
+import { getInspectorAPI, type InspectorAPI } from "@hex-di/inspector";
 import type {
   ExportedGraph,
   PresenterDataSourceContract,
   TraceEntry,
   TraceStats,
   ContainerSnapshot,
+  ContainerKind,
 } from "@hex-di/devtools-core";
 import { toJSON } from "../to-json.js";
 import type {
@@ -57,6 +60,7 @@ import type {
 export class LocalDataSource implements DataSource, PresenterDataSourceContract {
   private readonly exportedGraph: ExportedGraph;
   private readonly tracingAPI: TracingAPI | null;
+  private readonly inspectorAPI: InspectorAPI | null;
   private readonly containerRef: Container<
     Port<unknown, string>,
     Port<unknown, string>,
@@ -90,6 +94,9 @@ export class LocalDataSource implements DataSource, PresenterDataSourceContract 
 
     // Extract tracing API if TracingPlugin is registered
     this.tracingAPI = container !== undefined ? (getTracingAPI(container) ?? null) : null;
+
+    // Extract inspector API if InspectorPlugin is registered
+    this.inspectorAPI = container !== undefined ? (getInspectorAPI(container) ?? null) : null;
 
     // Subscribe to tracing changes
     if (this.tracingAPI !== null) {
@@ -209,18 +216,41 @@ export class LocalDataSource implements DataSource, PresenterDataSourceContract 
 
   /**
    * Get container snapshot.
+   *
+   * Uses InspectorPlugin if available, otherwise falls back to createInspector().
    */
   getContainerSnapshot(): ContainerSnapshot | null {
     if (this.containerRef === null) {
       return null;
     }
 
-    // Container snapshot is limited without direct access to container internals
-    // Return basic snapshot structure
+    // Prefer InspectorPlugin for typed snapshots
+    if (this.inspectorAPI !== null) {
+      return this.inspectorAPI.getSnapshot();
+    }
+
+    // Fallback: use createInspector directly
+    const inspector = createInspector(this.containerRef);
+    const rawSnapshot = inspector.snapshot();
+
+    // Map runtime's SingletonEntry to devtools-core's SingletonEntry
+    const singletons = rawSnapshot.singletons.map(entry => ({
+      portName: entry.portName,
+      lifetime: entry.lifetime,
+      isResolved: entry.isResolved,
+      resolvedAt: entry.resolvedAt ?? 0,
+    }));
+
+    // Build a root container snapshot from the raw data
     return {
-      singletons: [],
-      scopes: [],
-      phase: "ready",
+      kind: "root",
+      phase: rawSnapshot.isDisposed ? "disposed" : "initialized",
+      isDisposed: rawSnapshot.isDisposed,
+      singletons,
+      scopes: inspector.getScopeTree(),
+      isInitialized: true,
+      asyncAdaptersTotal: 0,
+      asyncAdaptersInitialized: 0,
     };
   }
 

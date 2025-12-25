@@ -366,9 +366,7 @@ export interface TracingAPI {
 /**
  * Type guard to check if an object has tracing capabilities.
  */
-export function hasTracingAccess(
-  container: unknown
-): container is { [key: symbol]: TracingAPI } {
+export function hasTracingAccess(container: unknown): container is { [key: symbol]: TracingAPI } {
   return (
     typeof container === "object" &&
     container !== null &&
@@ -379,6 +377,42 @@ export function hasTracingAccess(
 // =============================================================================
 // Container Types
 // =============================================================================
+
+/**
+ * Container type discriminant for type-safe snapshot handling.
+ */
+export type ContainerKind = "root" | "child" | "lazy" | "scope";
+
+/**
+ * Container phase states across all container types.
+ *
+ * Different container types have different valid phases:
+ * - Root: "uninitialized" | "initialized" | "disposing" | "disposed"
+ * - Child: "initialized" | "disposing" | "disposed" (inherits init from parent)
+ * - Lazy: "unloaded" | "loading" | "loaded" | "disposing" | "disposed"
+ * - Scope: "active" | "disposing" | "disposed"
+ */
+export type ContainerPhase =
+  | "uninitialized"
+  | "initialized"
+  | "unloaded"
+  | "loading"
+  | "loaded"
+  | "active"
+  | "disposing"
+  | "disposed";
+
+/**
+ * Information about a resolved singleton.
+ */
+export interface SingletonEntry {
+  /** Port name of the singleton */
+  readonly portName: string;
+  /** Timestamp when the singleton was resolved */
+  readonly resolvedAt: number;
+  /** Whether the singleton is currently resolved (has cached instance) */
+  readonly isResolved: boolean;
+}
 
 /**
  * Information about an active scope.
@@ -393,13 +427,107 @@ export interface ScopeInfo {
 }
 
 /**
- * Snapshot of the container state.
+ * Hierarchical tree structure for scopes.
  */
-export interface ContainerSnapshot {
-  readonly singletons: readonly { portName: string; resolvedAt: number }[];
-  readonly scopes: readonly ScopeInfo[];
-  readonly phase: "initializing" | "ready" | "disposing" | "disposed";
+export interface ScopeTree {
+  readonly id: string;
+  readonly status: "active" | "disposed";
+  readonly resolvedCount: number;
+  readonly totalCount: number;
+  readonly children: readonly ScopeTree[];
 }
+
+/**
+ * Base snapshot fields shared by all container types.
+ */
+interface ContainerSnapshotBase {
+  readonly singletons: readonly SingletonEntry[];
+  readonly scopes: ScopeTree;
+  readonly isDisposed: boolean;
+}
+
+/**
+ * Root container snapshot.
+ *
+ * Root containers are created via `createContainer(graph)` and own
+ * the dependency graph. They manage async adapter initialization.
+ */
+export interface RootContainerSnapshot extends ContainerSnapshotBase {
+  readonly kind: "root";
+  readonly phase: "uninitialized" | "initialized" | "disposing" | "disposed";
+  readonly isInitialized: boolean;
+  readonly asyncAdaptersTotal: number;
+  readonly asyncAdaptersInitialized: number;
+}
+
+/**
+ * Child container snapshot.
+ *
+ * Child containers are created via `container.createChild(graph)` and
+ * extend or override the parent's adapters.
+ */
+export interface ChildContainerSnapshot extends ContainerSnapshotBase {
+  readonly kind: "child";
+  readonly phase: "initialized" | "disposing" | "disposed";
+  readonly parentId: string;
+  readonly inheritanceMode: "shared" | "forked" | "isolated";
+}
+
+/**
+ * Lazy container snapshot.
+ *
+ * Lazy containers are created via `container.createLazyChild(loader)` and
+ * defer graph loading until first use.
+ */
+export interface LazyContainerSnapshot extends ContainerSnapshotBase {
+  readonly kind: "lazy";
+  readonly phase: "unloaded" | "loading" | "loaded" | "disposing" | "disposed";
+  readonly isLoaded: boolean;
+}
+
+/**
+ * Scope snapshot.
+ *
+ * Scopes are created via `container.createScope()` and provide
+ * isolated scoped service instances.
+ */
+export interface ScopeSnapshot extends ContainerSnapshotBase {
+  readonly kind: "scope";
+  readonly phase: "active" | "disposing" | "disposed";
+  readonly scopeId: string;
+  readonly parentScopeId: string | null;
+}
+
+/**
+ * Discriminated union of all container snapshots.
+ *
+ * Use `snapshot.kind` for type-safe narrowing to specific container types.
+ *
+ * @example
+ * ```typescript
+ * function handleSnapshot(snapshot: ContainerSnapshot) {
+ *   switch (snapshot.kind) {
+ *     case "root":
+ *       console.log(`Async adapters: ${snapshot.asyncAdaptersInitialized}/${snapshot.asyncAdaptersTotal}`);
+ *       break;
+ *     case "lazy":
+ *       console.log(`Loaded: ${snapshot.isLoaded}`);
+ *       break;
+ *     case "child":
+ *       console.log(`Inheritance: ${snapshot.inheritanceMode}`);
+ *       break;
+ *     case "scope":
+ *       console.log(`Scope ID: ${snapshot.scopeId}`);
+ *       break;
+ *   }
+ * }
+ * ```
+ */
+export type ContainerSnapshot =
+  | RootContainerSnapshot
+  | ChildContainerSnapshot
+  | LazyContainerSnapshot
+  | ScopeSnapshot;
 
 // =============================================================================
 // Error Types

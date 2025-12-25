@@ -22,11 +22,13 @@ import type { TracingAPI } from "@hex-di/devtools-core";
 import type { ExportedGraph } from "@hex-di/devtools-core";
 import { panelStyles, sectionStyles, emptyStyles } from "./styles.js";
 import { ContainerInspector } from "./container-inspector.js";
+import { ContainerSelector } from "./container-selector.js";
 import { TabNavigation, type TabId } from "./tab-navigation.js";
 import { ResolutionTracingSection } from "./resolution-tracing-section.js";
 import { DependencyGraph } from "./graph-visualization/index.js";
 import { EnhancedServicesView } from "./enhanced-services-view.js";
 import type { ServiceInfo } from "./resolved-services.js";
+import { useContainerList } from "./hooks/use-container-list.js";
 
 // =============================================================================
 // Types
@@ -245,6 +247,98 @@ function buildServicesFromGraph(exportedGraph: ExportedGraph): readonly ServiceI
     resolutionOrder: undefined,
     dependencies: dependencyMap.get(node.id) ?? [],
   }));
+}
+
+// =============================================================================
+// InspectorTabContent Component
+// =============================================================================
+
+/**
+ * Props for the InspectorTabContent component.
+ */
+interface InspectorTabContentProps<
+  TProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string>,
+  TPhase extends ContainerPhase,
+> {
+  readonly container: Container<TProvides, TExtends, TAsyncPorts, TPhase>;
+  readonly exportedGraph: ExportedGraph;
+  readonly tracingAPI: TracingAPI | undefined;
+}
+
+/**
+ * Inspector tab content with container selector and inspector.
+ *
+ * When inside a ContainerRegistryProvider, shows a dropdown to select
+ * from all registered containers. Otherwise, inspects the provided container.
+ */
+function InspectorTabContent<
+  TProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string>,
+  TPhase extends ContainerPhase,
+>({
+  container,
+  exportedGraph,
+  tracingAPI,
+}: InspectorTabContentProps<TProvides, TExtends, TAsyncPorts, TPhase>): ReactElement {
+  const { isAvailable, containers, selectedId } = useContainerList();
+
+  // Find the selected entry from containers
+  const selectedEntry = useMemo(
+    () => (selectedId !== null ? (containers.find(c => c.id === selectedId) ?? null) : null),
+    [containers, selectedId]
+  );
+
+  // When registry is available and a container is selected, use InspectorAPI directly
+  // Otherwise fall back to creating inspector from the container prop
+  const selectedInspector = isAvailable && selectedEntry !== null ? selectedEntry.inspector : null;
+
+  return (
+    <div
+      data-testid="tab-content-inspector"
+      id="tabpanel-inspector"
+      role="tabpanel"
+      aria-labelledby="tab-inspector"
+      style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 0,
+      }}
+    >
+      {/* Container selector when registry is available */}
+      {isAvailable && (
+        <div
+          style={{
+            padding: "12px 16px",
+            borderBottom: "1px solid var(--hex-devtools-border, #45475a)",
+            backgroundColor: "var(--hex-devtools-bg-secondary, #2a2a3e)",
+          }}
+        >
+          <ContainerSelector compact />
+        </div>
+      )}
+
+      {/* Container inspector - uses selected inspector from registry or creates from container */}
+      <div style={{ flex: 1, overflow: "auto" }}>
+        {selectedInspector !== null ? (
+          <ContainerInspector
+            inspector={selectedInspector}
+            exportedGraph={exportedGraph}
+            tracingAPI={tracingAPI}
+          />
+        ) : (
+          <ContainerInspector
+            container={container}
+            exportedGraph={exportedGraph}
+            tracingAPI={tracingAPI}
+          />
+        )}
+      </div>
+    </div>
+  );
 }
 
 // =============================================================================
@@ -469,24 +563,11 @@ export function DevToolsPanel<
         )}
 
         {activeTab === "inspector" && container !== undefined && (
-          <div
-            data-testid="tab-content-inspector"
-            id="tabpanel-inspector"
-            role="tabpanel"
-            aria-labelledby="tab-inspector"
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              minHeight: 0,
-            }}
-          >
-            <ContainerInspector
-              container={container}
-              exportedGraph={exportedGraph}
-              tracingAPI={tracingAPI}
-            />
-          </div>
+          <InspectorTabContent
+            container={container}
+            exportedGraph={exportedGraph}
+            tracingAPI={tracingAPI}
+          />
         )}
       </div>
     </div>

@@ -93,6 +93,9 @@ importers:
       '@hex-di/graph':
         specifier: workspace:*
         version: link:../../packages/graph
+      '@hex-di/inspector':
+        specifier: workspace:*
+        version: link:../../packages/inspector
       '@hex-di/ports':
         specifier: workspace:*
         version: link:../../packages/ports
@@ -175,6 +178,9 @@ importers:
       '@hex-di/graph':
         specifier: workspace:*
         version: link:../graph
+      '@hex-di/inspector':
+        specifier: workspace:*
+        version: link:../inspector
       '@hex-di/ports':
         specifier: workspace:*
         version: link:../ports
@@ -330,6 +336,24 @@ importers:
       hono:
         specifier: ^4.11.1
         version: 4.11.1
+
+  packages/inspector:
+    dependencies:
+      '@hex-di/devtools-core':
+        specifier: workspace:*
+        version: link:../devtools-core
+      '@hex-di/graph':
+        specifier: workspace:*
+        version: link:../graph
+      '@hex-di/ports':
+        specifier: workspace:*
+        version: link:../ports
+      '@hex-di/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+      typescript:
+        specifier: '>=5.0'
+        version: 5.6.3
 
   packages/ports:
     dependencies:

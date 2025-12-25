@@ -132,11 +132,17 @@ export interface DefinePluginConfig<
   /** Symbol used to access this plugin's API on the container */
   readonly symbol: TSymbol;
 
-  /** Required dependencies - plugin fails without these */
-  readonly requires?: TRequired;
+  /**
+   * Required dependencies - plugin fails without these.
+   * Use `[] as const` for plugins with no required dependencies.
+   */
+  readonly requires: TRequired;
 
-  /** Optional dependencies - enhanced functionality when present */
-  readonly enhancedBy?: TOptional;
+  /**
+   * Optional dependencies - enhanced functionality when present.
+   * Use `[] as const` for plugins with no optional dependencies.
+   */
+  readonly enhancedBy: TOptional;
 
   /**
    * Factory that creates the plugin's API.
@@ -187,6 +193,8 @@ export interface DefinePluginConfig<
  * const LoggingPlugin = definePlugin({
  *   name: "logging",
  *   symbol: LOGGING,
+ *   requires: [] as const,
+ *   enhancedBy: [] as const,
  *
  *   createApi() {
  *     let level: "debug" | "info" | "warn" | "error" = "info";
@@ -229,6 +237,7 @@ export interface DefinePluginConfig<
  *       reason: "DevTools requires tracing for graph visualization",
  *     }),
  *   ] as const,
+ *   enhancedBy: [] as const,
  *
  *   createApi(context) {
  *     const tracing = context.getDependency(TRACING);
@@ -252,8 +261,8 @@ export function definePlugin<
   const plugin: Plugin<TSymbol, TApi, TRequired, TOptional> = {
     name: config.name,
     symbol: config.symbol,
-    requires: (config.requires ?? ([] as unknown as TRequired)) as TRequired,
-    enhancedBy: (config.enhancedBy ?? ([] as unknown as TOptional)) as TOptional,
+    requires: config.requires,
+    enhancedBy: config.enhancedBy,
     createApi: config.createApi,
     hooks: config.hooks,
     dispose: config.dispose,

@@ -9,6 +9,7 @@ import type { ContainerOptions, ResolutionHooks } from "../resolution/hooks.js";
 import type { AnyPlugin } from "../plugin/types.js";
 import type { MemoMap } from "../common/memo-map.js";
 import type { InheritanceMode } from "../types.js";
+import type { PluginManager } from "../plugin/plugin-manager.js";
 import { AsyncInitializationRequiredError } from "../common/errors.js";
 import { ADAPTER_ACCESS } from "../inspector/symbols.js";
 
@@ -141,6 +142,20 @@ export interface ChildContainerConfig<
   overrides: ReadonlyMap<Port<unknown, string>, RuntimeAdapter>;
   extensions: ReadonlyMap<Port<unknown, string>, RuntimeAdapter>;
   inheritanceModes: ReadonlyMap<string, InheritanceMode>;
+  /**
+   * Plugin manager inherited from parent container.
+   * Used to create HooksRunner for child container hook integration.
+   */
+  pluginManager: PluginManager | null;
+  /**
+   * Unique identifier for this child container.
+   * Used in hook context and DevTools tracking.
+   */
+  containerId: string;
+  /**
+   * Parent container's ID for hierarchy tracking.
+   */
+  parentContainerId: string;
 }
 
 export type ContainerConfig<

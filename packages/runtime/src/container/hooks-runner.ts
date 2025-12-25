@@ -15,7 +15,9 @@ import type {
   ResolutionHooks,
   ResolutionHookContext,
   ResolutionResultContext,
+  ContainerKind,
 } from "../resolution/hooks.js";
+import type { InheritanceMode } from "../types.js";
 import type { MemoMap } from "../common/memo-map.js";
 
 // =============================================================================
@@ -28,6 +30,31 @@ import type { MemoMap } from "../common/memo-map.js";
  */
 interface AdapterInfo {
   readonly lifetime: Lifetime;
+}
+
+/**
+ * Container metadata for resolution context.
+ * Provides information about which container is resolving.
+ * @internal
+ */
+export interface ContainerMetadata {
+  /** Unique ID of the container (e.g., "root", "child-123") */
+  readonly containerId: string;
+
+  /** Kind of container: "root", "child", "lazy", or "scope" */
+  readonly containerKind: ContainerKind;
+
+  /** ID of parent container, null for root */
+  readonly parentContainerId: string | null;
+}
+
+/**
+ * Resolution metadata for inheritance tracking.
+ * @internal
+ */
+export interface ResolutionMetadata {
+  /** Inheritance mode for this port, null if not from parent */
+  readonly inheritanceMode: InheritanceMode | null;
 }
 
 /**
@@ -80,8 +107,12 @@ export class HooksRunner {
    * Creates a new HooksRunner instance.
    *
    * @param hooks - Resolution hooks to invoke. Both beforeResolve and afterResolve are optional.
+   * @param containerMetadata - Metadata about the container (id, kind, parentId)
    */
-  constructor(private readonly hooks: ResolutionHooks) {}
+  constructor(
+    private readonly hooks: ResolutionHooks,
+    private readonly containerMetadata: ContainerMetadata
+  ) {}
 
   // ===========================================================================
   // Public API
@@ -97,6 +128,7 @@ export class HooksRunner {
    * @param adapter - Adapter info (for lifetime)
    * @param scopeId - Scope ID or null for container-level
    * @param isCacheHit - Whether this resolution will be served from cache
+   * @param inheritanceMode - Inheritance mode for this port (for child containers)
    * @param action - The actual resolution action to execute
    * @returns The result of the action
    */
@@ -105,9 +137,10 @@ export class HooksRunner {
     adapter: AdapterInfo,
     scopeId: string | null,
     isCacheHit: boolean,
+    inheritanceMode: InheritanceMode | null,
     action: () => T
   ): T {
-    const context = this.createContext(port, adapter, scopeId, isCacheHit);
+    const context = this.createContext(port, adapter, scopeId, isCacheHit, inheritanceMode);
 
     if (this.hooks.beforeResolve !== undefined) {
       this.hooks.beforeResolve(context);
@@ -137,6 +170,7 @@ export class HooksRunner {
    * @param adapter - Adapter info (for lifetime)
    * @param scopeId - Scope ID or null for container-level
    * @param isCacheHit - Whether this resolution will be served from cache
+   * @param inheritanceMode - Inheritance mode for this port (for child containers)
    * @param action - The async resolution action to execute
    * @returns Promise resolving to the result of the action
    */
@@ -145,9 +179,10 @@ export class HooksRunner {
     adapter: AdapterInfo,
     scopeId: string | null,
     isCacheHit: boolean,
+    inheritanceMode: InheritanceMode | null,
     action: () => Promise<T>
   ): Promise<T> {
-    const context = this.createContext(port, adapter, scopeId, isCacheHit);
+    const context = this.createContext(port, adapter, scopeId, isCacheHit, inheritanceMode);
 
     if (this.hooks.beforeResolve !== undefined) {
       this.hooks.beforeResolve(context);
@@ -178,7 +213,8 @@ export class HooksRunner {
     port: Port<unknown, string>,
     adapter: AdapterInfo,
     scopeId: string | null,
-    isCacheHit: boolean
+    isCacheHit: boolean,
+    inheritanceMode: InheritanceMode | null
   ): ResolutionHookContext {
     const parentEntry =
       this.parentStack.length > 0 ? this.parentStack[this.parentStack.length - 1] : null;
@@ -191,6 +227,10 @@ export class HooksRunner {
       parentPort: parentEntry?.port ?? null,
       isCacheHit,
       depth: this.parentStack.length,
+      containerId: this.containerMetadata.containerId,
+      containerKind: this.containerMetadata.containerKind,
+      inheritanceMode,
+      parentContainerId: this.containerMetadata.parentContainerId,
     };
   }
 

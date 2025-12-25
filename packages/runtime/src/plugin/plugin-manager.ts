@@ -16,6 +16,8 @@ import type {
   PluginHooks,
   ScopeEventEmitter,
   ScopeInfo,
+  ChildContainerInfo,
+  ContainerInfo,
 } from "./types.js";
 import type { ResolutionHookContext, ResolutionResultContext } from "../resolution/hooks.js";
 import {
@@ -318,6 +320,32 @@ export class PluginManager {
     for (const plugin of this.initializedPlugins) {
       if (plugin.hooks?.onScopeDisposed) {
         plugin.hooks.onScopeDisposed(scope);
+      }
+    }
+  }
+
+  /**
+   * Emits child container created event to all plugins.
+   *
+   * @param info - Information about the created child container
+   */
+  emitChildCreated(info: ChildContainerInfo): void {
+    for (const plugin of this.initializedPlugins) {
+      if (plugin.hooks?.onChildCreated) {
+        plugin.hooks.onChildCreated(info);
+      }
+    }
+  }
+
+  /**
+   * Emits container disposed event to all plugins.
+   *
+   * @param info - Information about the disposed container
+   */
+  emitContainerDisposed(info: ContainerInfo): void {
+    for (const plugin of this.initializedPlugins) {
+      if (plugin.hooks?.onContainerDisposed) {
+        plugin.hooks.onContainerDisposed(info);
       }
     }
   }

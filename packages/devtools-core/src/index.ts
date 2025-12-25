@@ -54,8 +54,16 @@ export type {
   TracingOptions,
   TracingAPI,
   // Container types
-  ContainerSnapshot,
+  ContainerKind,
+  ContainerPhase,
+  SingletonEntry,
   ScopeInfo,
+  ScopeTree,
+  ContainerSnapshot,
+  RootContainerSnapshot,
+  ChildContainerSnapshot,
+  LazyContainerSnapshot,
+  ScopeSnapshot,
   // Error types
   DevToolsError,
   // Communication types
@@ -163,11 +171,7 @@ export {
   type TraceEntryInput,
 } from "./ports/trace-collector.port.js";
 
-export {
-  LoggerPort,
-  type Logger,
-  type LogLevel,
-} from "./ports/logger.port.js";
+export { LoggerPort, type Logger, type LogLevel } from "./ports/logger.port.js";
 
 // Infrastructure Ports
 export {

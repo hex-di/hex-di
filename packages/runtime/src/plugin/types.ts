@@ -65,6 +65,41 @@ export interface ScopeInfo {
 }
 
 // =============================================================================
+// Container Info Types
+// =============================================================================
+
+/**
+ * Information about a child container, provided to lifecycle hooks.
+ */
+export interface ChildContainerInfo {
+  /** Unique identifier for this child container */
+  readonly id: string;
+
+  /** ID of the parent container */
+  readonly parentId: string;
+
+  /** Kind of child container: "child" or "lazy" */
+  readonly kind: "child" | "lazy";
+
+  /** Timestamp when the child container was created (Date.now()) */
+  readonly createdAt: number;
+}
+
+/**
+ * Information about a container, provided to disposal hooks.
+ */
+export interface ContainerInfo {
+  /** Unique identifier for this container */
+  readonly id: string;
+
+  /** Kind of container: "root", "child", or "lazy" */
+  readonly kind: "root" | "child" | "lazy";
+
+  /** ID of the parent container, or null for root containers */
+  readonly parentId: string | null;
+}
+
+// =============================================================================
 // Scope Event Emitter
 // =============================================================================
 
@@ -278,6 +313,20 @@ export interface PluginHooks {
    * @param scope - Information about the disposed scope
    */
   onScopeDisposed?(scope: ScopeInfo): void;
+
+  /**
+   * Called when a child container is created.
+   *
+   * @param info - Information about the created child container
+   */
+  onChildCreated?(info: ChildContainerInfo): void;
+
+  /**
+   * Called when a container is disposed.
+   *
+   * @param info - Information about the disposed container
+   */
+  onContainerDisposed?(info: ContainerInfo): void;
 }
 
 // =============================================================================

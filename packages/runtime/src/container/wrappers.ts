@@ -25,6 +25,8 @@ import type {
   ParentContainerLike,
   InternalContainerMethods,
 } from "./internal-types.js";
+import type { PluginManager } from "../plugin/plugin-manager.js";
+import type { ChildContainerInfo } from "../plugin/types.js";
 
 // =============================================================================
 // Type Guards
@@ -122,6 +124,13 @@ export function asParentContainerLike<
 
 /**
  * Creates a frozen Container wrapper for child containers.
+ *
+ * @param impl - The child container implementation
+ * @param pluginManager - Optional plugin manager inherited from parent (for plugin API access and event emission)
+ * @param containerId - Unique identifier for this child container
+ * @param parentContainerId - ID of the parent container for hierarchy tracking
+ * @returns A frozen Container wrapper augmented with plugin APIs if pluginManager is provided
+ *
  * @internal
  */
 export function createChildContainerWrapper<
@@ -129,7 +138,10 @@ export function createChildContainerWrapper<
   TExtends extends Port<unknown, string> = never,
   TAsyncPorts extends Port<unknown, string> = never,
 >(
-  impl: ChildContainerImpl<TProvides, TExtends, TAsyncPorts>
+  impl: ChildContainerImpl<TProvides, TExtends, TAsyncPorts>,
+  pluginManager: PluginManager | null,
+  containerId: string,
+  parentContainerId: string
 ): Container<TProvides, TExtends, TAsyncPorts> {
   type ChildContainerInternals = Container<TProvides, TExtends, TAsyncPorts> &
     InternalContainerMethods<TProvides | TExtends>;
@@ -173,7 +185,13 @@ export function createChildContainerWrapper<
         unregisterChildContainer: child => impl.unregisterChildContainer(child),
         originalParent: childContainer,
       };
-      return createChildFromGraphInternal(parentLike, childGraph, inheritanceModes);
+      return createChildFromGraphInternal(
+        parentLike,
+        childGraph,
+        inheritanceModes,
+        pluginManager,
+        containerId // This child's ID becomes the grandchild's parentContainerId
+      );
     },
     createChildAsync: <
       TChildGraph extends Graph<
@@ -205,7 +223,17 @@ export function createChildContainerWrapper<
       Exclude<InferGraphProvides<TChildGraph>, TProvides | TExtends>,
       TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
     > => createLazyChildContainerInternal(childContainer, graphLoader, inheritanceModes),
-    dispose: () => impl.dispose(),
+    dispose: async () => {
+      // Emit container disposed event before disposing
+      if (pluginManager !== null) {
+        pluginManager.emitContainerDisposed({
+          id: containerId,
+          kind: "child",
+          parentId: parentContainerId,
+        });
+      }
+      await impl.dispose();
+    },
     get isDisposed() {
       return impl.isDisposed;
     },
@@ -234,6 +262,27 @@ export function createChildContainerWrapper<
       );
     },
   };
+
+  // Augment container with plugin APIs (inherited from parent)
+  if (pluginManager !== null) {
+    for (const [symbol, api] of pluginManager.getSymbolApis()) {
+      Object.defineProperty(childContainer, symbol, {
+        value: api,
+        writable: false,
+        enumerable: false,
+        configurable: false,
+      });
+    }
+
+    // Emit child created event
+    const childInfo: ChildContainerInfo = {
+      id: containerId,
+      parentId: parentContainerId,
+      kind: "child",
+      createdAt: Date.now(),
+    };
+    pluginManager.emitChildCreated(childInfo);
+  }
 
   impl.setWrapper(childContainer);
   Object.freeze(childContainer);
@@ -264,12 +313,28 @@ export function createChildContainerScope<
 }
 
 // =============================================================================
+// Child Container ID Generation (internal for wrappers)
+// =============================================================================
+
+let childContainerCounter = 0;
+
+function generateChildContainerId(): string {
+  return `child-${++childContainerCounter}`;
+}
+
+// =============================================================================
 // Child Container Creation from Graph (internal for wrappers)
 // =============================================================================
 
 /**
  * Creates a child container from a Graph.
  * Internal version used by child containers' createChild method.
+ *
+ * @param parentLike - Parent container interface for resolution and registration
+ * @param childGraph - The child graph containing adapters
+ * @param inheritanceModes - Optional per-port inheritance mode configuration
+ * @param pluginManager - Optional plugin manager inherited from root (for plugin API access and event emission)
+ * @param parentContainerId - ID of the parent container for hierarchy tracking
  *
  * @internal
  */
@@ -280,12 +345,17 @@ function createChildFromGraphInternal<
 >(
   parentLike: ParentContainerLike<TParentProvides, TAsyncPorts>,
   childGraph: TChildGraph,
-  inheritanceModes?: InheritanceModeConfig<TParentProvides>
+  inheritanceModes?: InheritanceModeConfig<TParentProvides>,
+  pluginManager?: PluginManager | null,
+  parentContainerId: string = "root"
 ): Container<
   TParentProvides,
   Exclude<InferGraphProvides<TChildGraph>, TParentProvides>,
   TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
 > {
+  // Generate unique ID for this child container
+  const containerId = generateChildContainerId();
+
   // Parse the child graph to separate overrides from extensions
   const overrides = new Map<Port<unknown, string>, RuntimeAdapter>();
   const extensions = new Map<Port<unknown, string>, RuntimeAdapter>();
@@ -317,6 +387,9 @@ function createChildFromGraphInternal<
     overrides,
     extensions,
     inheritanceModes: inheritanceModesMap,
+    pluginManager: pluginManager ?? null,
+    containerId,
+    parentContainerId,
   };
 
   const impl = new ChildContainerImpl<
@@ -325,7 +398,7 @@ function createChildFromGraphInternal<
     TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
   >(config);
 
-  return createChildContainerWrapper(impl);
+  return createChildContainerWrapper(impl, pluginManager ?? null, containerId, parentContainerId);
 }
 
 // =============================================================================
