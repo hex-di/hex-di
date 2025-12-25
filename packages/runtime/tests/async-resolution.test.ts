@@ -11,14 +11,13 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createPort } from "@hex-di/ports";
+import { createPort, type Port } from "@hex-di/ports";
 import { GraphBuilder, createAdapter, createAsyncAdapter } from "@hex-di/graph";
 import {
   createContainer,
   AsyncFactoryError,
   AsyncInitializationRequiredError,
   DisposedScopeError,
-  toRuntimeResolver,
 } from "../src/index.js";
 
 // =============================================================================
@@ -498,10 +497,9 @@ describe("Async error handling", () => {
 
       // Type system prevents calling resolve on async ports before initialization
       // At runtime, we also throw an error as a safety net
-      // We need to bypass the type system to test the runtime check
-      expect(() => {
-        toRuntimeResolver(container).resolve(DatabasePort);
-      }).toThrow(AsyncInitializationRequiredError);
+      // Cast to bypass type system and test runtime check
+      const resolve = container.resolve as (port: Port<unknown, string>) => unknown;
+      expect(() => resolve(DatabasePort)).toThrow(AsyncInitializationRequiredError);
 
       await container.dispose();
     });

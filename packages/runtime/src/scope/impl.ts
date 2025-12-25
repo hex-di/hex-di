@@ -12,6 +12,12 @@ import type { ScopeInternalState, MemoMapSnapshot, MemoEntrySnapshot } from "../
 import { DisposedScopeError } from "../common/errors.js";
 import type { ScopeContainerAccess } from "../container/impl.js";
 import { unreachable } from "../common/unreachable.js";
+import {
+  ScopeLifecycleEmitter,
+  type ScopeLifecycleListener,
+  type ScopeSubscription,
+  type ScopeDisposalState,
+} from "./lifecycle-events.js";
 
 // Scope ID Generation
 let scopeIdCounter = 0;
@@ -34,6 +40,7 @@ export class ScopeImpl<
   private disposed: boolean = false;
   private readonly childScopes: Set<ScopeImpl<TProvides, TAsyncPorts, TPhase>> = new Set();
   private readonly parentScope: ScopeImpl<TProvides, TAsyncPorts, TPhase> | null;
+  private readonly lifecycleEmitter: ScopeLifecycleEmitter;
 
   constructor(
     container: ScopeContainerAccess<TProvides>,
@@ -44,6 +51,7 @@ export class ScopeImpl<
     this.container = container;
     this.scopedMemo = singletonMemo.fork();
     this.parentScope = parentScope;
+    this.lifecycleEmitter = new ScopeLifecycleEmitter();
   }
 
   resolve<P extends TProvides>(port: P): InferService<P> {
@@ -76,6 +84,11 @@ export class ScopeImpl<
     if (this.disposed) {
       return;
     }
+
+    // Emit 'disposing' synchronously before async disposal begins
+    // This allows React components to unmount immediately
+    this.lifecycleEmitter.emit("disposing");
+
     this.disposed = true;
     for (const child of this.childScopes) {
       await child.dispose();
@@ -85,6 +98,12 @@ export class ScopeImpl<
     if (this.parentScope !== null) {
       this.parentScope.childScopes.delete(this);
     }
+
+    // Emit 'disposed' after async disposal completes
+    this.lifecycleEmitter.emit("disposed");
+
+    // Clear listeners to prevent memory leaks
+    this.lifecycleEmitter.clear();
   }
 
   get isDisposed(): boolean {
@@ -93,6 +112,24 @@ export class ScopeImpl<
 
   has(port: Port<unknown, string>): boolean {
     return this.container.hasAdapter(port);
+  }
+
+  /**
+   * Subscribe to scope lifecycle events.
+   *
+   * @param listener - Callback for lifecycle events
+   * @returns Unsubscribe function
+   */
+  subscribe(listener: ScopeLifecycleListener): ScopeSubscription {
+    return this.lifecycleEmitter.subscribe(listener);
+  }
+
+  /**
+   * Get current disposal state synchronously.
+   * Used as getSnapshot for useSyncExternalStore in React.
+   */
+  getDisposalState(): ScopeDisposalState {
+    return this.lifecycleEmitter.getState();
   }
 
   getInternalState(): ScopeInternalState {
@@ -155,6 +192,8 @@ export function createScopeWrapper<
       return impl.isDisposed;
     },
     has: port => impl.has(port),
+    subscribe: listener => impl.subscribe(listener),
+    getDisposalState: () => impl.getDisposalState(),
     [INTERNAL_ACCESS]: () => impl.getInternalState(),
     get [ScopeBrand]() {
       return unreachable<{ provides: TProvides }>("Scope brand is type-only");

@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { createAdapter, GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "./index.js";
-import { toRuntimeResolver } from "./adapters/react-resolver.js";
 
 describe("Runtime Safety Verification", () => {
   it("should implement has(port) correctly across all interfaces", () => {
@@ -61,13 +60,6 @@ describe("Runtime Safety Verification", () => {
     expect(childContainer.has(PortB)).toBe(true); // Extended
     expect(childContainer.has(PortScoped)).toBe(false); // Inherits "false" from root parent for scoped
 
-    // 4. RuntimeResolver.has checks
-    const runtimeResolver = toRuntimeResolver(container);
-    expect(runtimeResolver.has(PortA)).toBe(true);
-    expect(runtimeResolver.has(PortScoped)).toBe(false);
-
-    const runtimeScope = toRuntimeResolver(scope);
-    expect(runtimeScope.has(PortA)).toBe(true);
-    expect(runtimeScope.has(PortScoped)).toBe(true);
+    // Note: RuntimeResolver.has tests are in @hex-di/react package
   });
 });

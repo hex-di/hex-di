@@ -11,10 +11,9 @@
  */
 
 import { describe, test, expect, vi } from "vitest";
-import { createPort } from "@hex-di/ports";
+import { createPort, type Port } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
-import { toRuntimeResolver } from "../src/adapters/react-resolver.js";
 
 // =============================================================================
 // Test Fixtures
@@ -378,12 +377,9 @@ describe("ChildContainer.extend()", () => {
 
     // Parent cannot resolve extended port (this is a type-level constraint)
     // At runtime, parent doesn't have the adapter so it would throw
-    // We test this indirectly by checking the parent's adapter map doesn't have ConfigPort
-    expect(() => {
-      // This would throw at runtime because parent doesn't have ConfigPort adapter
-      // TypeScript would prevent this at compile time with proper types
-      toRuntimeResolver(container).resolve(ConfigPort);
-    }).toThrow();
+    // Cast to test runtime behavior with an unregistered port
+    const resolve = container.resolve as (port: Port<unknown, string>) => unknown;
+    expect(() => resolve(ConfigPort)).toThrow();
   });
 
   test("extended adapters can depend on parent adapters", () => {

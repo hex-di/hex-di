@@ -6,11 +6,10 @@
  */
 
 import { describe, test, expect, vi } from "vitest";
-import { createPort } from "@hex-di/ports";
+import { createPort, type Port } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
 import { DisposedScopeError, ScopeRequiredError } from "../src/common/errors.js";
-import { toRuntimeResolver } from "../src/adapters/react-resolver.js";
 
 // =============================================================================
 // Test Fixtures
@@ -101,8 +100,9 @@ describe("createContainer", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
     const container = createContainer(graph);
 
-    const untyped = toRuntimeResolver(container);
-    expect(() => untyped.resolve(DatabasePort)).toThrow();
+    // Cast to test runtime behavior with an unregistered port
+    const resolve = container.resolve as (port: Port<unknown, string>) => unknown;
+    expect(() => resolve(DatabasePort)).toThrow();
   });
 
   test("singleton instances are cached across resolves", () => {

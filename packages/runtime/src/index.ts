@@ -158,6 +158,7 @@ export {
 export type {
   Container,
   Scope,
+  LazyContainer,
   ContainerPhase,
   InheritanceMode,
   InheritanceModeConfig,
@@ -167,6 +168,36 @@ export type {
 } from "./types.js";
 
 export { ContainerBrand, ScopeBrand } from "./types.js";
+
+// =============================================================================
+// Scope Lifecycle Events
+// =============================================================================
+
+/**
+ * Types for scope lifecycle event subscriptions.
+ *
+ * These types enable reactive UI patterns where components can respond
+ * to scope disposal triggered from outside React (e.g., logout, connection loss).
+ *
+ * @example
+ * ```typescript
+ * import { type ScopeLifecycleListener } from '@hex-di/runtime';
+ *
+ * const listener: ScopeLifecycleListener = (event) => {
+ *   if (event === 'disposing') {
+ *     console.log('Scope is being disposed');
+ *   }
+ * };
+ *
+ * const unsubscribe = scope.subscribe(listener);
+ * ```
+ */
+export type {
+  ScopeLifecycleEvent,
+  ScopeLifecycleListener,
+  ScopeSubscription,
+  ScopeDisposalState,
+} from "./scope/lifecycle-events.js";
 
 // =============================================================================
 // Type Utility Functions
@@ -196,22 +227,7 @@ export {
 
 export { isPort, isPortNamed } from "./types/type-guards.js";
 
-// =============================================================================
-// Runtime Resolver Types
-// =============================================================================
-
-export type {
-  RuntimeResolver,
-  RuntimeContainer,
-  TypedResolver,
-} from "./adapters/react-resolver.js";
-
-export {
-  isRuntimeContainer,
-  assertResolverProvides,
-  toRuntimeResolver,
-  toRuntimeContainer,
-} from "./adapters/react-resolver.js";
+export { isRecord } from "./common/type-guards.js";
 
 // =============================================================================
 // Container Factory

@@ -6,7 +6,13 @@
 import type { Port, InferService } from "@hex-di/ports";
 import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
 import type { ContainerOptions } from "../resolution/hooks.js";
-import type { Container, Scope, InheritanceModeConfig, InheritanceMode } from "../types.js";
+import type {
+  Container,
+  Scope,
+  InheritanceModeConfig,
+  InheritanceMode,
+  LazyContainer,
+} from "../types.js";
 import { ContainerBrand } from "../types.js";
 import {
   RootContainerImpl,
@@ -124,6 +130,36 @@ function createUninitializedContainerWrapper<
       };
       return createChildFromGraph(parentLike, childGraph, inheritanceModes);
     },
+    createChildAsync: <
+      TChildGraph extends Graph<
+        Port<unknown, string>,
+        Port<unknown, string>,
+        Port<unknown, string>
+      >,
+    >(
+      graphLoader: () => Promise<TChildGraph>,
+      inheritanceModes?: InheritanceModeConfig<TProvides>
+    ): Promise<
+      Container<
+        TProvides,
+        Exclude<InferGraphProvides<TChildGraph>, TProvides>,
+        TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+      >
+    > => createChildContainerAsync(container, graphLoader, inheritanceModes),
+    createLazyChild: <
+      TChildGraph extends Graph<
+        Port<unknown, string>,
+        Port<unknown, string>,
+        Port<unknown, string>
+      >,
+    >(
+      graphLoader: () => Promise<TChildGraph>,
+      inheritanceModes?: InheritanceModeConfig<TProvides>
+    ): LazyContainer<
+      TProvides,
+      Exclude<InferGraphProvides<TChildGraph>, TProvides>,
+      TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+    > => createLazyChildContainer(container, graphLoader, inheritanceModes),
     dispose: () => impl.dispose(),
     get isInitialized() {
       return impl.isInitialized;
@@ -197,6 +233,36 @@ function createInitializedContainerWrapper<
       };
       return createChildFromGraph(parentLike, childGraph, inheritanceModes);
     },
+    createChildAsync: <
+      TChildGraph extends Graph<
+        Port<unknown, string>,
+        Port<unknown, string>,
+        Port<unknown, string>
+      >,
+    >(
+      graphLoader: () => Promise<TChildGraph>,
+      inheritanceModes?: InheritanceModeConfig<TProvides>
+    ): Promise<
+      Container<
+        TProvides,
+        Exclude<InferGraphProvides<TChildGraph>, TProvides>,
+        TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+      >
+    > => createChildContainerAsync(container, graphLoader, inheritanceModes),
+    createLazyChild: <
+      TChildGraph extends Graph<
+        Port<unknown, string>,
+        Port<unknown, string>,
+        Port<unknown, string>
+      >,
+    >(
+      graphLoader: () => Promise<TChildGraph>,
+      inheritanceModes?: InheritanceModeConfig<TProvides>
+    ): LazyContainer<
+      TProvides,
+      Exclude<InferGraphProvides<TChildGraph>, TProvides>,
+      TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+    > => createLazyChildContainer(container, graphLoader, inheritanceModes),
     dispose: () => impl.dispose(),
     get isInitialized() {
       return impl.isInitialized;
@@ -304,4 +370,111 @@ function createChildFromGraph<
   >(config);
 
   return createChildContainerWrapper(impl);
+}
+
+// =============================================================================
+// Async and Lazy Child Container Creation
+// =============================================================================
+
+import { LazyContainerImpl, type LazyContainerParent } from "./lazy-impl.js";
+
+/**
+ * Creates a child container asynchronously from a graph loader.
+ *
+ * Use this when the child graph is loaded via dynamic import for code-splitting.
+ * The returned Promise resolves to a normal Container that can be used synchronously.
+ *
+ * @param parent - The parent container
+ * @param graphLoader - Async function that returns the child graph
+ * @param inheritanceModes - Optional per-port inheritance mode configuration
+ * @returns A Promise that resolves to the child container
+ *
+ * @example
+ * ```typescript
+ * const pluginContainer = await createChildContainerAsync(
+ *   container,
+ *   () => import('./plugin-graph').then(m => m.PluginGraph)
+ * );
+ *
+ * // Use like a normal container
+ * const service = pluginContainer.resolve(PluginPort);
+ * ```
+ *
+ * @internal
+ */
+export async function createChildContainerAsync<
+  TParentProvides extends Port<unknown, string>,
+  TParentExtends extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string>,
+  TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+>(
+  parent: Container<TParentProvides, TParentExtends, TAsyncPorts>,
+  graphLoader: () => Promise<TChildGraph>,
+  inheritanceModes?: InheritanceModeConfig<TParentProvides | TParentExtends>
+): Promise<
+  Container<
+    TParentProvides | TParentExtends,
+    Exclude<InferGraphProvides<TChildGraph>, TParentProvides | TParentExtends>,
+    TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+  >
+> {
+  const graph = await graphLoader();
+  return parent.createChild(graph, inheritanceModes);
+}
+
+/**
+ * Creates a lazy-loading child container wrapper.
+ *
+ * The graph is not loaded until the first call to `resolve()` or `load()`.
+ * Use this for optional features that may never be accessed, maximizing
+ * code-splitting benefits.
+ *
+ * @param parent - The parent container
+ * @param graphLoader - Async function that returns the child graph
+ * @param inheritanceModes - Optional per-port inheritance mode configuration
+ * @returns A LazyContainer that loads on first use
+ *
+ * @example
+ * ```typescript
+ * const lazyPlugin = createLazyChildContainer(
+ *   container,
+ *   () => import('./plugin-graph').then(m => m.PluginGraph)
+ * );
+ *
+ * // Graph not loaded yet
+ * console.log(lazyPlugin.isLoaded); // false
+ *
+ * // Graph loaded on first resolve
+ * const service = await lazyPlugin.resolve(PluginPort);
+ * console.log(lazyPlugin.isLoaded); // true
+ * ```
+ *
+ * @internal
+ */
+export function createLazyChildContainer<
+  TParentProvides extends Port<unknown, string>,
+  TParentExtends extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string>,
+  TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+>(
+  parent: Container<TParentProvides, TParentExtends, TAsyncPorts>,
+  graphLoader: () => Promise<TChildGraph>,
+  inheritanceModes?: InheritanceModeConfig<TParentProvides | TParentExtends>
+): LazyContainer<
+  TParentProvides | TParentExtends,
+  Exclude<InferGraphProvides<TChildGraph>, TParentProvides | TParentExtends>,
+  TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+> {
+  // Parent implements LazyContainerParent interface via its has() and createChild() methods
+  const parentLike: LazyContainerParent<TParentProvides | TParentExtends, TAsyncPorts> = {
+    has: port => parent.has(port),
+    createChild: (graph, modes) => parent.createChild(graph, modes),
+  };
+
+  return new LazyContainerImpl<
+    TParentProvides | TParentExtends,
+    Exclude<InferGraphProvides<TChildGraph>, TParentProvides | TParentExtends>,
+    TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
+    TChildGraph
+  >(parentLike, graphLoader, inheritanceModes);
 }

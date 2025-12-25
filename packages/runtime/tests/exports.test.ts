@@ -113,11 +113,6 @@ describe("@hex-di/runtime exports", () => {
         "getInternalAccessor",
         "ContainerBrand",
         "ScopeBrand",
-        // RuntimeResolver utilities (type-safe container access without casts)
-        "toRuntimeResolver",
-        "toRuntimeContainer",
-        "isRuntimeContainer",
-        "assertResolverProvides",
         // Type utilities for context variables and ports
         "createContextVariableKey",
         "getContextVariable",
@@ -125,6 +120,7 @@ describe("@hex-di/runtime exports", () => {
         "getContextVariableOrDefault",
         "isPort",
         "isPortNamed",
+        "isRecord",
         "portComparator",
       ];
 
@@ -265,6 +261,27 @@ describe("Type exports (compile-time verification)", () => {
 
   it("should re-export ResolvedDeps type from @hex-di/graph", () => {
     type _ResolvedDeps = RuntimeExports.ResolvedDeps<never>;
+    expect(true).toBe(true);
+  });
+
+  // Scope lifecycle event types
+  it("should export ScopeLifecycleEvent type", () => {
+    type _ScopeLifecycleEvent = RuntimeExports.ScopeLifecycleEvent;
+    expect(true).toBe(true);
+  });
+
+  it("should export ScopeLifecycleListener type", () => {
+    type _ScopeLifecycleListener = RuntimeExports.ScopeLifecycleListener;
+    expect(true).toBe(true);
+  });
+
+  it("should export ScopeSubscription type", () => {
+    type _ScopeSubscription = RuntimeExports.ScopeSubscription;
+    expect(true).toBe(true);
+  });
+
+  it("should export ScopeDisposalState type", () => {
+    type _ScopeDisposalState = RuntimeExports.ScopeDisposalState;
     expect(true).toBe(true);
   });
 });

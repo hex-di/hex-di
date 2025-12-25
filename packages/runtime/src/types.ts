@@ -14,6 +14,11 @@ import type { Port, InferService } from "@hex-di/ports";
 import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
 import { INTERNAL_ACCESS } from "./inspector/symbols.js";
 import type { ContainerInternalState, ScopeInternalState } from "./inspector/types.js";
+import type {
+  ScopeLifecycleListener,
+  ScopeSubscription,
+  ScopeDisposalState,
+} from "./scope/lifecycle-events.js";
 
 // =============================================================================
 // Container Phase Type
@@ -248,6 +253,78 @@ export type Container<
   >;
 
   /**
+   * Creates a child container asynchronously from a graph loader.
+   *
+   * Use this method when the child graph is loaded via dynamic import
+   * for code-splitting. The returned Promise resolves to a normal Container
+   * that can be used synchronously.
+   *
+   * @typeParam TChildGraph - The child graph type
+   * @param graphLoader - Async function that returns the child graph
+   * @param inheritanceModes - Optional per-port inheritance mode configuration
+   * @returns A Promise that resolves to the child container
+   *
+   * @example
+   * ```typescript
+   * const pluginContainer = await container.createChildAsync(
+   *   () => import('./plugin-graph').then(m => m.PluginGraph)
+   * );
+   *
+   * // Use like a normal container
+   * const service = pluginContainer.resolve(PluginPort);
+   * ```
+   */
+  createChildAsync<
+    TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+  >(
+    graphLoader: () => Promise<TChildGraph>,
+    inheritanceModes?: InheritanceModeConfig<TProvides | TExtends>
+  ): Promise<
+    Container<
+      TProvides | TExtends,
+      Exclude<InferGraphProvides<TChildGraph>, TProvides | TExtends>,
+      TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+    >
+  >;
+
+  /**
+   * Creates a lazy-loading child container wrapper.
+   *
+   * The graph is not loaded until the first call to `resolve()` or `load()`.
+   * Use this for optional features that may never be accessed, maximizing
+   * code-splitting benefits.
+   *
+   * @typeParam TChildGraph - The child graph type
+   * @param graphLoader - Async function that returns the child graph
+   * @param inheritanceModes - Optional per-port inheritance mode configuration
+   * @returns A LazyContainer that loads on first use
+   *
+   * @example
+   * ```typescript
+   * const lazyPlugin = container.createLazyChild(
+   *   () => import('./plugin-graph').then(m => m.PluginGraph)
+   * );
+   *
+   * // Graph not loaded yet
+   * console.log(lazyPlugin.isLoaded); // false
+   *
+   * // Graph loaded on first resolve
+   * const service = await lazyPlugin.resolve(PluginPort);
+   * console.log(lazyPlugin.isLoaded); // true
+   * ```
+   */
+  createLazyChild<
+    TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+  >(
+    graphLoader: () => Promise<TChildGraph>,
+    inheritanceModes?: InheritanceModeConfig<TProvides | TExtends>
+  ): LazyContainer<
+    TProvides | TExtends,
+    Exclude<InferGraphProvides<TChildGraph>, TProvides | TExtends>,
+    TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+  >;
+
+  /**
    * Disposes the container and all singleton instances.
    *
    * After disposal, the container cannot be used to resolve services.
@@ -437,6 +514,51 @@ export type Scope<
    * @returns true if the port is provided by this scope or its container
    */
   has(port: Port<unknown, string>): boolean;
+
+  /**
+   * Subscribe to scope lifecycle events.
+   *
+   * Enables reactive UI patterns where components can respond to scope
+   * disposal triggered from outside React (e.g., logout, connection loss).
+   *
+   * @param listener - Callback invoked with lifecycle events
+   * @returns Unsubscribe function
+   *
+   * @remarks
+   * - `'disposing'` is emitted synchronously when dispose() is called
+   * - `'disposed'` is emitted after async disposal completes
+   * - Useful with React's useSyncExternalStore for reactive unmounting
+   *
+   * @example
+   * ```typescript
+   * const unsubscribe = scope.subscribe((event) => {
+   *   if (event === 'disposing') {
+   *     console.log('Scope is being disposed');
+   *   }
+   * });
+   *
+   * // Later: cleanup
+   * unsubscribe();
+   * ```
+   */
+  subscribe(listener: ScopeLifecycleListener): ScopeSubscription;
+
+  /**
+   * Get current disposal state synchronously.
+   *
+   * Designed for use with React's useSyncExternalStore getSnapshot.
+   *
+   * @returns Current disposal state: 'active', 'disposing', or 'disposed'
+   *
+   * @example
+   * ```typescript
+   * const state = scope.getDisposalState();
+   * if (state === 'active') {
+   *   // Safe to resolve services
+   * }
+   * ```
+   */
+  getDisposalState(): ScopeDisposalState;
 
   /**
    * Brand property for nominal typing.
@@ -729,3 +851,139 @@ export type IsChildContainer<T> =
       ? false
       : true
     : false;
+
+// =============================================================================
+// Lazy Container Type
+// =============================================================================
+
+/**
+ * A lazy-loading container wrapper that defers graph loading until first use.
+ *
+ * LazyContainer is returned by `container.createLazyChild()` and enables
+ * code-splitting for dependency injection graphs. The graph is loaded
+ * asynchronously on the first call to `resolve()` or `load()`.
+ *
+ * @typeParam TProvides - Union of Port types inherited from the parent container.
+ * @typeParam TExtends - Union of Port types added by the lazy-loaded graph.
+ * @typeParam TAsyncPorts - Union of Port types that have async factories.
+ *
+ * @remarks
+ * - All resolution methods return Promises since graph loading is async
+ * - `load()` can be called to pre-load the graph before resolution
+ * - `has()` delegates to parent before loading, includes child graph ports after
+ * - Concurrent `load()` calls share the same loading promise (deduplication)
+ * - Disposing before load completes marks as disposed without error
+ *
+ * @example Basic usage with dynamic import
+ * ```typescript
+ * const lazyPlugin = container.createLazyChild(
+ *   () => import('./plugin-graph').then(m => m.PluginGraph)
+ * );
+ *
+ * // Graph loaded on first resolve
+ * const service = await lazyPlugin.resolve(PluginPort);
+ *
+ * // Subsequent resolves use cached container
+ * const same = await lazyPlugin.resolve(PluginPort); // No load
+ * ```
+ *
+ * @example Pre-loading for eager initialization
+ * ```typescript
+ * const lazyPlugin = container.createLazyChild(loadPluginGraph);
+ *
+ * // Explicitly load in the background
+ * const containerPromise = lazyPlugin.load();
+ *
+ * // Later, await the container
+ * const pluginContainer = await containerPromise;
+ * const service = pluginContainer.resolve(PluginPort); // Sync
+ * ```
+ *
+ * @see {@link Container.createLazyChild} - Factory method that creates LazyContainer
+ * @see {@link Container.createChildAsync} - Alternative that returns Promise<Container>
+ */
+export type LazyContainer<
+  TProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string> = never,
+  TAsyncPorts extends Port<unknown, string> = never,
+> = {
+  /**
+   * Resolves a service instance for the given port asynchronously.
+   *
+   * On first call, loads the graph and creates the child container.
+   * Subsequent calls use the cached container for resolution.
+   *
+   * @typeParam P - The specific port type being resolved
+   * @param port - The port token to resolve
+   * @returns A promise that resolves to the service instance
+   *
+   * @throws {DisposedScopeError} If the lazy container has been disposed
+   * @throws {CircularDependencyError} If a circular dependency is detected
+   * @throws {FactoryError} If the adapter's factory function throws
+   */
+  resolve<P extends TProvides | TExtends>(port: P): Promise<InferService<P>>;
+
+  /**
+   * Resolves a service instance for the given port asynchronously.
+   *
+   * Alias for `resolve()` - both methods behave identically since
+   * graph loading is inherently asynchronous.
+   *
+   * @typeParam P - The specific port type being resolved
+   * @param port - The port token to resolve
+   * @returns A promise that resolves to the service instance
+   */
+  resolveAsync<P extends TProvides | TExtends>(port: P): Promise<InferService<P>>;
+
+  /**
+   * Explicitly loads the graph and returns the underlying container.
+   *
+   * Use this method to:
+   * - Pre-load the graph in the background
+   * - Access the sync container API after loading
+   * - Control when loading occurs
+   *
+   * Concurrent calls share the same loading promise (deduplication).
+   *
+   * @returns A promise that resolves to the loaded child container
+   *
+   * @throws {DisposedScopeError} If the lazy container has been disposed
+   */
+  load(): Promise<Container<TProvides, TExtends, TAsyncPorts>>;
+
+  /**
+   * Whether the graph has been loaded and the container is ready.
+   *
+   * Once loaded, `resolve()` calls use the cached container.
+   */
+  readonly isLoaded: boolean;
+
+  /**
+   * Whether the lazy container has been disposed.
+   *
+   * After disposal, all methods will throw DisposedScopeError.
+   */
+  readonly isDisposed: boolean;
+
+  /**
+   * Checks if a port is available for resolution.
+   *
+   * Before loading: Delegates to parent container.
+   * After loading: Includes both parent and child graph ports.
+   *
+   * @param port - The port token to check
+   * @returns true if the port can be resolved
+   */
+  has(port: Port<unknown, string>): boolean;
+
+  /**
+   * Disposes the lazy container.
+   *
+   * If the graph is loaded, disposes the underlying child container.
+   * If loading is in progress, waits for load completion then disposes.
+   * If not yet loaded, marks as disposed without loading.
+   *
+   * @returns A promise that resolves when disposal is complete
+   */
+  dispose(): Promise<void>;
+};
