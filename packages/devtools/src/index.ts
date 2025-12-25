@@ -112,21 +112,6 @@ export { relabelPorts } from "./relabel-ports.js";
 export { DevToolsFloating, DevToolsPanel } from "./react/index.js";
 
 // =============================================================================
-// Tracing
-// =============================================================================
-
-export { createTracingContainer } from "./tracing/index.js";
-export type { TracingContainer, TracingContainerOptions } from "./tracing/index.js";
-export type {
-  TracingAPI,
-  TraceEntry,
-  TraceFilter,
-  TraceStats,
-  TraceRetentionPolicy,
-} from "@hex-di/devtools-core";
-export type { TraceCollector } from "./tracing/collector.js";
-
-// =============================================================================
 // Data Sources
 // =============================================================================
 

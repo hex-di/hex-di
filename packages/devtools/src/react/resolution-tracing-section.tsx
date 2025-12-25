@@ -395,10 +395,10 @@ function EmptyState(): ReactElement {
  *
  * @example With TracingAPI (connected mode)
  * ```tsx
- * import { TRACING_ACCESS } from '@hex-di/runtime';
+ * import { TRACING } from '@hex-di/tracing';
  *
  * function TracingTab({ container }) {
- *   const tracingAPI = container[TRACING_ACCESS];
+ *   const tracingAPI = container[TRACING];
  *   return (
  *     <ResolutionTracingSection
  *       initialView="summary"

@@ -16,7 +16,7 @@ import React, { useState, useMemo, useCallback, type ReactElement } from "react"
 import type { Port } from "@hex-di/ports";
 import type { Graph } from "@hex-di/graph";
 import type { Container, ContainerPhase } from "@hex-di/runtime";
-import { TRACING_ACCESS } from "@hex-di/runtime";
+import { getTracingAPI } from "@hex-di/tracing";
 import { toJSON } from "../to-json.js";
 import type { TracingAPI } from "@hex-di/devtools-core";
 import type { ExportedGraph } from "@hex-di/devtools-core";
@@ -341,16 +341,12 @@ export function DevToolsPanel<
   // Determine if Inspector tab should be shown
   const showInspector = container !== undefined;
 
-  // Extract tracingAPI from container if it has TRACING_ACCESS
+  // Extract tracingAPI from container if TracingPlugin is registered
   // This enables the ResolutionTracingSection to display trace data
-  const tracingAPI = useMemo((): TracingAPI | undefined => {
-    if (container === undefined) {
-      return undefined;
-    }
-    // Access TRACING_ACCESS symbol from the container
-    const containerWithTracing = container as { [TRACING_ACCESS]?: TracingAPI };
-    return containerWithTracing[TRACING_ACCESS];
-  }, [container]);
+  const tracingAPI = useMemo(
+    (): TracingAPI | undefined => (container !== undefined ? getTracingAPI(container) : undefined),
+    [container]
+  );
 
   // Build services list from graph for enhanced services view
   const services = useMemo(() => buildServicesFromGraph(exportedGraph), [exportedGraph]);

@@ -122,6 +122,17 @@ describe("@hex-di/runtime exports", () => {
         "isPortNamed",
         "isRecord",
         "portComparator",
+        // Plugin system exports
+        "definePlugin",
+        "requires",
+        "optionallyRequires",
+        "PluginError",
+        "PluginDependencyMissingError",
+        "PluginCircularDependencyError",
+        "PluginInitializationError",
+        "PluginNotFoundError",
+        "PluginAlreadyRegisteredError",
+        "PluginManager",
       ];
 
       // Verify all expected exports exist

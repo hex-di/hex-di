@@ -27,30 +27,138 @@ import { INTERNAL_ACCESS, ADAPTER_ACCESS } from "../inspector/symbols.js";
 import { unreachable } from "../common/unreachable.js";
 import { createChildContainerWrapper } from "./wrappers.js";
 import { isInheritanceMode } from "./helpers.js";
+import type { AnyPlugin } from "../plugin/types.js";
+import { PluginManager } from "../plugin/plugin-manager.js";
+import type { ComposedHooks } from "../plugin/plugin-manager.js";
+import type { PluginAugmentedContainer, ValidatePluginOrder } from "../plugin/validation.js";
+import type { ResolutionHooks } from "../resolution/hooks.js";
 
 /**
  * Creates a new dependency injection container from a graph.
  *
  * @param graph - The validated ServiceGraph containing all adapters
- * @param options - Optional configuration including resolution hooks
- * @returns A frozen Container instance (root container with TExtends = never)
+ * @param options - Optional configuration including resolution hooks and plugins
+ * @returns A frozen Container instance, augmented with plugin APIs if plugins are provided
+ *
+ * @typeParam TProvides - Port union provided by the graph
+ * @typeParam TAsyncPorts - Port union with async factories
+ * @typeParam TPlugins - Readonly tuple of plugins to register
+ *
+ * @example Without plugins
+ * ```typescript
+ * const container = createContainer(graph);
+ * const logger = container.resolve(LoggerPort);
+ * ```
+ *
+ * @example With plugins
+ * ```typescript
+ * const container = createContainer(graph, {
+ *   plugins: [TracingPlugin, MetricsPlugin],
+ * });
+ *
+ * // Type-safe plugin API access
+ * const tracing = container[TRACING];
+ * tracing.getTraces();
+ * ```
  */
 export function createContainer<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string> = never,
+  const TPlugins extends readonly AnyPlugin[] = readonly [],
 >(
   graph: Graph<TProvides, Port<unknown, string>>,
-  options?: ContainerOptions
-): Container<TProvides, never, TAsyncPorts, "uninitialized"> {
+  options?: ContainerOptions<TPlugins>
+): ValidatePluginOrder<TPlugins> extends true
+  ? PluginAugmentedContainer<TProvides, never, TAsyncPorts, "uninitialized", TPlugins>
+  : ValidatePluginOrder<TPlugins> {
+  // Initialize plugins first to get composed hooks
+  const pluginManager = initializePlugins(options?.plugins);
+
+  // Merge plugin hooks with user hooks
+  const mergedHooks = mergeHooks(pluginManager?.getComposedHooks() ?? null, options?.hooks);
+
+  // Create config with merged hooks
   const config: RootContainerConfig<TProvides, TAsyncPorts> = {
     kind: "root",
     graph,
-    options,
+    options: mergedHooks !== null ? { ...options, hooks: mergedHooks } : options,
   };
   const impl = new RootContainerImpl<TProvides, TAsyncPorts>(config);
 
-  // Create wrapper
-  return createUninitializedContainerWrapper(impl);
+  // Create wrapper with plugin APIs
+  return createUninitializedContainerWrapper(
+    impl,
+    pluginManager
+  ) as ValidatePluginOrder<TPlugins> extends true
+    ? PluginAugmentedContainer<TProvides, never, TAsyncPorts, "uninitialized", TPlugins>
+    : ValidatePluginOrder<TPlugins>;
+}
+
+/**
+ * Initializes plugins if provided, returning a PluginManager or null.
+ */
+function initializePlugins(plugins: readonly AnyPlugin[] | undefined): PluginManager | null {
+  if (plugins === undefined || plugins.length === 0) {
+    return null;
+  }
+
+  const manager = new PluginManager();
+  manager.initialize(plugins);
+  return manager;
+}
+
+/**
+ * Merges plugin hooks with user hooks.
+ *
+ * Plugin hooks run first, then user hooks.
+ * Returns null if no hooks are provided from either source.
+ */
+function mergeHooks(
+  pluginHooks: ComposedHooks | null,
+  userHooks: ResolutionHooks | undefined
+): ResolutionHooks | null {
+  // No hooks at all
+  if (pluginHooks === null && userHooks === undefined) {
+    return null;
+  }
+
+  // Only user hooks
+  if (pluginHooks === null) {
+    return userHooks ?? null;
+  }
+
+  // Only plugin hooks
+  if (userHooks === undefined) {
+    return pluginHooks;
+  }
+
+  // Merge both: plugin hooks run first, then user hooks
+  const merged: ResolutionHooks = {};
+
+  if (pluginHooks.beforeResolve !== undefined || userHooks.beforeResolve !== undefined) {
+    merged.beforeResolve = ctx => {
+      if (pluginHooks.beforeResolve !== undefined) {
+        pluginHooks.beforeResolve(ctx);
+      }
+      if (userHooks.beforeResolve !== undefined) {
+        userHooks.beforeResolve(ctx);
+      }
+    };
+  }
+
+  if (pluginHooks.afterResolve !== undefined || userHooks.afterResolve !== undefined) {
+    merged.afterResolve = ctx => {
+      // Plugin afterResolve runs first (already in reverse order from PluginManager)
+      if (pluginHooks.afterResolve !== undefined) {
+        pluginHooks.afterResolve(ctx);
+      }
+      if (userHooks.afterResolve !== undefined) {
+        userHooks.afterResolve(ctx);
+      }
+    };
+  }
+
+  return merged;
 }
 
 /**
@@ -81,7 +189,8 @@ function createUninitializedContainerWrapper<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string> = never,
 >(
-  impl: RootContainerImpl<TProvides, TAsyncPorts>
+  impl: RootContainerImpl<TProvides, TAsyncPorts>,
+  pluginManager: PluginManager | null
 ): Container<TProvides, never, TAsyncPorts, "uninitialized"> {
   let initializedContainer: Container<TProvides, never, TAsyncPorts, "initialized"> | null = null;
 
@@ -99,11 +208,12 @@ function createUninitializedContainerWrapper<
     initialize: async () => {
       await impl.initialize();
       if (initializedContainer === null) {
-        initializedContainer = createInitializedContainerWrapper(impl);
+        initializedContainer = createInitializedContainerWrapper(impl, pluginManager);
       }
       return initializedContainer;
     },
-    createScope: () => createRootScope<TProvides, TAsyncPorts, "uninitialized">(impl),
+    createScope: () =>
+      createRootScope<TProvides, TAsyncPorts, "uninitialized">(impl, pluginManager),
     createChild: <
       TChildGraph extends Graph<
         Port<unknown, string>,
@@ -160,7 +270,13 @@ function createUninitializedContainerWrapper<
       Exclude<InferGraphProvides<TChildGraph>, TProvides>,
       TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
     > => createLazyChildContainer(container, graphLoader, inheritanceModes),
-    dispose: () => impl.dispose(),
+    dispose: async () => {
+      // Dispose plugins first (in reverse order), then container
+      if (pluginManager !== null) {
+        await pluginManager.dispose();
+      }
+      await impl.dispose();
+    },
     get isInitialized() {
       return impl.isInitialized;
     },
@@ -182,6 +298,18 @@ function createUninitializedContainerWrapper<
     },
   };
 
+  // Augment container with plugin APIs
+  if (pluginManager !== null) {
+    for (const [symbol, api] of pluginManager.getSymbolApis()) {
+      Object.defineProperty(container, symbol, {
+        value: api,
+        writable: false,
+        enumerable: false,
+        configurable: false,
+      });
+    }
+  }
+
   Object.freeze(container);
   return container;
 }
@@ -190,7 +318,8 @@ function createInitializedContainerWrapper<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string> = never,
 >(
-  impl: RootContainerImpl<TProvides, TAsyncPorts>
+  impl: RootContainerImpl<TProvides, TAsyncPorts>,
+  pluginManager: PluginManager | null
 ): Container<TProvides, never, TAsyncPorts, "initialized"> {
   function resolve<P extends TProvides>(port: P): InferService<P> {
     return impl.resolve(port);
@@ -206,7 +335,7 @@ function createInitializedContainerWrapper<
     get initialize(): never {
       return unreachable("Initialized containers cannot be initialized again");
     },
-    createScope: () => createRootScope<TProvides, TAsyncPorts, "initialized">(impl),
+    createScope: () => createRootScope<TProvides, TAsyncPorts, "initialized">(impl, pluginManager),
     createChild: <
       TChildGraph extends Graph<
         Port<unknown, string>,
@@ -263,7 +392,13 @@ function createInitializedContainerWrapper<
       Exclude<InferGraphProvides<TChildGraph>, TProvides>,
       TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
     > => createLazyChildContainer(container, graphLoader, inheritanceModes),
-    dispose: () => impl.dispose(),
+    dispose: async () => {
+      // Dispose plugins first (in reverse order), then container
+      if (pluginManager !== null) {
+        await pluginManager.dispose();
+      }
+      await impl.dispose();
+    },
     get isInitialized() {
       return impl.isInitialized;
     },
@@ -285,23 +420,50 @@ function createInitializedContainerWrapper<
     },
   };
 
+  // Augment container with plugin APIs
+  if (pluginManager !== null) {
+    for (const [symbol, api] of pluginManager.getSymbolApis()) {
+      Object.defineProperty(container, symbol, {
+        value: api,
+        writable: false,
+        enumerable: false,
+        configurable: false,
+      });
+    }
+  }
+
   Object.freeze(container);
   return container;
 }
 
 // Helper to avoid circular dependency issues if possible, or just import ScopeImpl
 import { ScopeImpl, createScopeWrapper } from "../scope/impl.js";
+import type { ScopeInfo } from "../plugin/types.js";
 
 function createRootScope<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
   TPhase extends "uninitialized" | "initialized",
->(containerImpl: RootContainerImpl<TProvides, TAsyncPorts>): Scope<TProvides, TAsyncPorts, TPhase> {
+>(
+  containerImpl: RootContainerImpl<TProvides, TAsyncPorts>,
+  pluginManager: PluginManager | null
+): Scope<TProvides, TAsyncPorts, TPhase> {
   const scopeImpl = new ScopeImpl<TProvides, TAsyncPorts, TPhase>(
     containerImpl,
     containerImpl.getSingletonMemo()
   );
   containerImpl.registerChildScope(scopeImpl);
+
+  // Emit scope created event to plugins
+  if (pluginManager !== null) {
+    const scopeInfo: ScopeInfo = {
+      id: scopeImpl.id,
+      parentId: null, // Root scope has no parent
+      createdAt: Date.now(),
+    };
+    pluginManager.emitScopeCreated(scopeInfo);
+  }
+
   return createScopeWrapper(scopeImpl);
 }
 

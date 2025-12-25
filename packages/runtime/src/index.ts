@@ -289,3 +289,81 @@ export type {
 } from "./inspector/types.js";
 
 export { createInspector, getInternalAccessor } from "./inspector/creation.js";
+
+// =============================================================================
+// Plugin System
+// =============================================================================
+
+/**
+ * Plugin system for extending container functionality.
+ *
+ * Provides type-safe container extensibility with:
+ * - Symbol-based API access: `container[PLUGIN_SYMBOL]`
+ * - Plugin dependencies with compile-time validation
+ * - Lifecycle hooks for resolution and scope events
+ * - Zero overhead when no plugins are registered
+ *
+ * @example Basic plugin usage
+ * ```typescript
+ * import { definePlugin, createContainer } from '@hex-di/runtime';
+ *
+ * const LOGGING = Symbol.for('hex-di/logging');
+ *
+ * const LoggingPlugin = definePlugin({
+ *   name: 'logging',
+ *   symbol: LOGGING,
+ *   createApi() {
+ *     return { log: (msg: string) => console.log(msg) };
+ *   },
+ * });
+ *
+ * const container = createContainer(graph, {
+ *   plugins: [LoggingPlugin],
+ * });
+ *
+ * container[LOGGING].log('Hello!');
+ * ```
+ */
+
+// Plugin definition and factory functions
+export { definePlugin, requires, optionallyRequires } from "./plugin/index.js";
+export type { DefinePluginConfig } from "./plugin/index.js";
+
+// Plugin types
+export type {
+  Plugin,
+  PluginDependency,
+  PluginContext,
+  PluginHooks,
+  ScopeEventEmitter,
+  ScopeInfo,
+  AnyPlugin,
+  InferPluginSymbol,
+  InferPluginApi,
+  InferPluginRequires,
+  InferPluginEnhancedBy,
+} from "./plugin/index.js";
+
+// Plugin validation types
+export type {
+  PluginApiMap,
+  PluginAugmentedContainer,
+  ValidatePluginOrder,
+  MissingPluginDependencyError as PluginMissingDependencyTypeError,
+  CircularPluginDependencyError as PluginCircularDependencyTypeError,
+} from "./plugin/index.js";
+
+// Plugin errors
+export {
+  PluginError,
+  PluginDependencyMissingError,
+  PluginCircularDependencyError,
+  PluginInitializationError,
+  PluginNotFoundError,
+  PluginAlreadyRegisteredError,
+} from "./plugin/index.js";
+export type { PluginErrorCode } from "./plugin/index.js";
+
+// Plugin manager (for advanced use cases)
+export { PluginManager } from "./plugin/index.js";
+export type { ComposedHooks } from "./plugin/index.js";

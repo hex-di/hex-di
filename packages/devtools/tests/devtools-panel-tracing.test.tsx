@@ -1,7 +1,7 @@
 /**
  * Tests for DevToolsPanel tracing integration.
  *
- * Verifies that DevToolsPanel correctly extracts TRACING_ACCESS from
+ * Verifies that DevToolsPanel correctly extracts TRACING symbol from
  * the container and passes tracingAPI to ResolutionTracingSection.
  *
  * @packageDocumentation
@@ -10,7 +10,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
 import { DevToolsPanel } from "../src/react/devtools-panel.js";
-import { TRACING_ACCESS } from "@hex-di/runtime";
+import { TRACING } from "@hex-di/tracing";
 import type { TracingAPI, TraceStats } from "@hex-di/devtools-core";
 
 // =============================================================================
@@ -44,7 +44,7 @@ function createMockTracingAPI(): TracingAPI {
 }
 
 /**
- * Creates a mock container with TRACING_ACCESS.
+ * Creates a mock container with TRACING symbol (TracingPlugin).
  */
 function createMockTracingContainer(tracingAPI: TracingAPI) {
   return {
@@ -52,7 +52,7 @@ function createMockTracingContainer(tracingAPI: TracingAPI) {
     createScope: vi.fn(),
     dispose: vi.fn(() => Promise.resolve()),
     isDisposed: false,
-    [TRACING_ACCESS]: tracingAPI,
+    [TRACING]: tracingAPI,
   };
 }
 
@@ -143,12 +143,7 @@ describe("DevToolsPanel tracing integration", () => {
     it("should render without error when no container is provided", () => {
       const mockGraph = createMockGraph();
 
-      render(
-        <DevToolsPanel
-          graph={mockGraph as never}
-          initialTab="tracing"
-        />
-      );
+      render(<DevToolsPanel graph={mockGraph as never} initialTab="tracing" />);
 
       // Should render empty state without errors (may have multiple instances)
       expect(screen.getAllByText(/no resolution traces recorded/i).length).toBeGreaterThan(0);

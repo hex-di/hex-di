@@ -4,9 +4,11 @@
  */
 
 import type { Port, InferService } from "@hex-di/ports";
-import type { Adapter, Lifetime, FactoryKind, AdapterAny } from "@hex-di/graph";
-import type { ResolutionHooks } from "../resolution/hooks.js";
+import type { Adapter, Lifetime, FactoryKind, AdapterAny, Graph } from "@hex-di/graph";
+import type { ContainerOptions, ResolutionHooks } from "../resolution/hooks.js";
+import type { AnyPlugin } from "../plugin/types.js";
 import type { MemoMap } from "../common/memo-map.js";
+import type { InheritanceMode } from "../types.js";
 import { AsyncInitializationRequiredError } from "../common/errors.js";
 import { ADAPTER_ACCESS } from "../inspector/symbols.js";
 
@@ -115,10 +117,6 @@ export interface ParentContainerLike<
 // Container Configuration Types
 // =============================================================================
 
-import type { Graph } from "@hex-di/graph";
-import type { ContainerOptions } from "../resolution/hooks.js";
-import type { InheritanceMode } from "../types.js";
-
 /**
  * Configuration for creating a root container from a Graph.
  */
@@ -128,7 +126,7 @@ export interface RootContainerConfig<
 > {
   kind: "root";
   graph: Graph<TProvides, Port<unknown, string>>;
-  options?: ContainerOptions;
+  options?: ContainerOptions<readonly AnyPlugin[]>;
 }
 
 /**

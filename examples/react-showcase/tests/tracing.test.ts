@@ -1,17 +1,17 @@
 /**
- * Tracing Integration Tests - Verify tracing container captures service resolutions.
+ * Tracing Integration Tests - Verify TracingPlugin captures service resolutions.
  *
  * These tests verify that:
- * 1. createTracingContainer properly wraps a container with tracing capabilities
+ * 1. TracingPlugin properly instruments container resolutions
  * 2. Service resolutions are captured as trace entries
- * 3. TracingAPI provides access to trace data
+ * 3. TracingAPI provides access to trace data via TRACING symbol
  *
  * @packageDocumentation
  */
 
 import { describe, it, expect, beforeEach } from "./setup.js";
-import { TRACING_ACCESS } from "@hex-di/runtime";
-import { createTracingContainer } from "@hex-di/devtools";
+import { createContainer } from "@hex-di/runtime";
+import { TracingPlugin, TRACING } from "@hex-di/tracing";
 import { appGraph } from "../src/di/graph.js";
 import { UserSessionPort } from "../src/di/ports.js";
 import { setCurrentUserSelection } from "../src/di/adapters.js";
@@ -26,21 +26,25 @@ describe("Tracing Integration", () => {
     setCurrentUserSelection("alice");
   });
 
-  describe("createTracingContainer", () => {
-    it("should add TRACING_ACCESS Symbol to wrapped container", () => {
-      const tracingContainer = createTracingContainer(appGraph);
+  describe("TracingPlugin", () => {
+    it("should add TRACING Symbol to container with TracingPlugin", () => {
+      const tracingContainer = createContainer(appGraph, {
+        plugins: [TracingPlugin],
+      });
 
-      // Container should have TRACING_ACCESS Symbol
-      expect(TRACING_ACCESS in tracingContainer).toBe(true);
+      // Container should have TRACING Symbol
+      expect(TRACING in tracingContainer).toBe(true);
 
       // Clean up
       void tracingContainer.dispose();
     });
 
-    it("should provide TracingAPI via TRACING_ACCESS", () => {
-      const tracingContainer = createTracingContainer(appGraph);
+    it("should provide TracingAPI via TRACING symbol", () => {
+      const tracingContainer = createContainer(appGraph, {
+        plugins: [TracingPlugin],
+      });
 
-      const tracingAPI = tracingContainer[TRACING_ACCESS];
+      const tracingAPI = tracingContainer[TRACING];
 
       // TracingAPI should have expected methods
       expect(tracingAPI).toBeDefined();
@@ -58,11 +62,13 @@ describe("Tracing Integration", () => {
 
   describe("trace recording", () => {
     it("should record traces when services are resolved", () => {
-      const tracingContainer = createTracingContainer(appGraph);
+      const tracingContainer = createContainer(appGraph, {
+        plugins: [TracingPlugin],
+      });
       const scope = tracingContainer.createScope();
 
       // Initially no traces
-      const tracingAPI = tracingContainer[TRACING_ACCESS];
+      const tracingAPI = tracingContainer[TRACING];
       expect(tracingAPI.getTraces()).toHaveLength(0);
 
       // Resolve a service
@@ -73,9 +79,7 @@ describe("Tracing Integration", () => {
       expect(traces.length).toBeGreaterThan(0);
 
       // First trace should be for UserSession
-      const userSessionTrace = traces.find(
-        (t) => t.portName === "UserSession"
-      );
+      const userSessionTrace = traces.find(t => t.portName === "UserSession");
       expect(userSessionTrace).toBeDefined();
 
       // Clean up
@@ -84,22 +88,24 @@ describe("Tracing Integration", () => {
     });
 
     it("should capture trace metadata correctly", () => {
-      const tracingContainer = createTracingContainer(appGraph);
+      const tracingContainer = createContainer(appGraph, {
+        plugins: [TracingPlugin],
+      });
       const scope = tracingContainer.createScope();
 
       scope.resolve(UserSessionPort);
 
-      const tracingAPI = tracingContainer[TRACING_ACCESS];
+      const tracingAPI = tracingContainer[TRACING];
       const traces = tracingAPI.getTraces();
       const trace = traces[0];
 
       // Trace should have required properties
       expect(trace).toBeDefined();
-      expect(trace!.id).toBeDefined();
-      expect(trace!.portName).toBeDefined();
-      expect(trace!.lifetime).toBeDefined();
-      expect(typeof trace!.duration).toBe("number");
-      expect(typeof trace!.isCacheHit).toBe("boolean");
+      expect(trace?.id).toBeDefined();
+      expect(trace?.portName).toBeDefined();
+      expect(trace?.lifetime).toBeDefined();
+      expect(typeof trace?.duration).toBe("number");
+      expect(typeof trace?.isCacheHit).toBe("boolean");
 
       // Clean up
       void scope.dispose();

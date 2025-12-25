@@ -1,0 +1,72 @@
+{
+  "name": "@hex-di/tracing",
+  "version": "0.1.0",
+  "description": "Tracing plugin for HexDI - resolution tracing, performance metrics, and debugging tools",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "lint": "eslint . --cache",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:types": "vitest run --typecheck",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "dependency-injection",
+    "di",
+    "tracing",
+    "debugging",
+    "performance",
+    "hexagonal-architecture",
+    "typescript",
+    "type-safe"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hex-di/hex-di.git",
+    "directory": "packages/tracing"
+  },
+  "bugs": {
+    "url": "https://github.com/hex-di/hex-di/issues"
+  },
+  "homepage": "https://github.com/hex-di/hex-di/tree/main/packages/tracing#readme",
+  "dependencies": {
+    "@hex-di/devtools-core": "workspace:*",
+    "@hex-di/graph": "workspace:*",
+    "@hex-di/ports": "workspace:*",
+    "@hex-di/runtime": "workspace:*"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "sideEffects": false
+}

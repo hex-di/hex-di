@@ -5,11 +5,15 @@
  * These hooks enable instrumentation (like tracing) without modifying
  * core resolution logic. When hooks are not provided, there is zero overhead.
  *
+ * For richer lifecycle support including scope events and plugin dependencies,
+ * use the plugin system via ContainerOptions.plugins.
+ *
  * @packageDocumentation
  */
 
 import type { Port } from "@hex-di/ports";
 import type { Lifetime } from "@hex-di/graph";
+import type { AnyPlugin } from "../plugin/types.js";
 
 // =============================================================================
 // Hook Context Types
@@ -190,10 +194,15 @@ export interface ResolutionHooks {
 /**
  * Options for createContainer.
  *
- * All options are optional. When not provided, the container behaves normally
- * with zero overhead from hooks.
+ * Supports two extensibility mechanisms:
+ * - `hooks`: Simple resolution lifecycle hooks (beforeResolve, afterResolve)
+ * - `plugins`: Full plugin system with dependencies, scope events, and APIs
  *
- * @example
+ * When neither is provided, the container behaves normally with zero overhead.
+ *
+ * @typeParam TPlugins - Readonly tuple of plugins to register
+ *
+ * @example Using hooks (simple)
  * ```typescript
  * const container = createContainer(graph, {
  *   hooks: {
@@ -202,14 +211,45 @@ export interface ResolutionHooks {
  *   },
  * });
  * ```
+ *
+ * @example Using plugins (full system)
+ * ```typescript
+ * const container = createContainer(graph, {
+ *   plugins: [TracingPlugin, MetricsPlugin],
+ * });
+ *
+ * const tracing = container[TRACING];
+ * tracing.getTraces();
+ * ```
  */
-export interface ContainerOptions {
+export interface ContainerOptions<TPlugins extends readonly AnyPlugin[] = readonly []> {
   /**
    * Optional resolution lifecycle hooks.
    *
    * When provided, hooks are called for every resolution including
    * nested dependency resolutions. When not provided, there is zero
    * overhead - the hooks code path is not executed.
+   *
+   * @remarks
+   * For richer lifecycle support including scope events, use `plugins` instead.
+   * If both `hooks` and `plugins` are provided, plugin hooks run first,
+   * then the options hooks.
    */
   readonly hooks?: ResolutionHooks;
+
+  /**
+   * Plugins to initialize with the container.
+   *
+   * Plugins provide:
+   * - Type-safe APIs accessible via `container[PLUGIN_SYMBOL]`
+   * - Required and optional dependencies on other plugins
+   * - Lifecycle hooks for resolution and scope events
+   * - Zero overhead when no plugins are registered
+   *
+   * @remarks
+   * - Plugins are sorted by dependencies and initialized in order
+   * - Plugin APIs are frozen and immutable
+   * - Plugins are disposed in reverse order during container disposal
+   */
+  readonly plugins?: TPlugins;
 }

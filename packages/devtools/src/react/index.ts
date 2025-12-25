@@ -7,6 +7,8 @@
  *
  * ## Key Components
  *
+ * - **DevToolsProvider**: Context provider for DevTools data access via hooks.
+ *
  * - **DevToolsPanel**: Full panel component for graph visualization and
  *   container inspection. Embed directly in your app layout.
  *
@@ -14,6 +16,31 @@
  *   the DevTools panel. Auto-hides in production builds.
  *
  * ## Quick Start
+ *
+ * @example Using DevToolsProvider with hooks
+ * ```typescript
+ * import { DevToolsProvider, useTraces, useTraceStats } from '@hex-di/devtools/react';
+ * import { TracingPlugin } from '@hex-di/tracing';
+ * import { createContainer } from '@hex-di/runtime';
+ * import { appGraph } from './graph';
+ *
+ * const container = createContainer(appGraph, { plugins: [TracingPlugin] });
+ *
+ * function App() {
+ *   return (
+ *     <DevToolsProvider graph={appGraph} container={container}>
+ *       <MainApp />
+ *       <DevToolsPanel />
+ *     </DevToolsProvider>
+ *   );
+ * }
+ *
+ * function TraceList() {
+ *   const { traces, isAvailable } = useTraces();
+ *   if (!isAvailable) return <div>Tracing not enabled</div>;
+ *   return <ul>{traces.map(t => <li key={t.id}>{t.portName}</li>)}</ul>;
+ * }
+ * ```
  *
  * @example DevToolsFloating (recommended for development)
  * ```typescript
@@ -71,6 +98,46 @@
  *
  * @packageDocumentation
  */
+
+// =============================================================================
+// Context and Provider
+// =============================================================================
+
+/**
+ * DevToolsProvider provides TracingAPI and graph data to child components.
+ *
+ * Wrap your application or DevTools section with this provider to enable
+ * context-based access via hooks like useTracingAPI, useTraces, etc.
+ *
+ * @see {@link DevToolsProviderProps} - Provider props interface
+ * @see {@link DevToolsContextValue} - Context value interface
+ */
+export { DevToolsProvider, DevToolsContext } from "./context/index.js";
+export type { DevToolsProviderProps, DevToolsContextValue } from "./context/index.js";
+
+// =============================================================================
+// React Hooks
+// =============================================================================
+
+/**
+ * Hooks for accessing DevTools data from context.
+ *
+ * - useDevTools: Full context access
+ * - useTracingAPI: Direct TracingAPI access
+ * - useExportedGraph: Exported graph data access
+ * - useTraces: Subscribe to trace entries with automatic updates
+ * - useTraceStats: Subscribe to trace statistics
+ * - useTracingControls: Pause, resume, clear, pin/unpin controls
+ */
+export {
+  useDevTools,
+  useTracingAPI,
+  useExportedGraph,
+  useTraces,
+  useTraceStats,
+  useTracingControls,
+} from "./hooks/index.js";
+export type { UseTracesResult, UseTracingControlsResult } from "./hooks/index.js";
 
 // =============================================================================
 // Re-exports from Main Package (for convenience)
@@ -177,10 +244,7 @@ export type { DevToolsPanelProps, DevToolsPanelMode } from "./devtools-panel.js"
  * ```
  */
 export { DevToolsFloating } from "./devtools-floating.js";
-export type {
-  DevToolsFloatingProps,
-  DevToolsPosition,
-} from "./devtools-floating.js";
+export type { DevToolsFloatingProps, DevToolsPosition } from "./devtools-floating.js";
 
 // =============================================================================
 // Container Inspector Components (Task Group 4)
@@ -215,11 +279,7 @@ export type { ScopeHierarchyProps } from "./scope-hierarchy.js";
  * @see {@link ServiceFilters} - Filter state structure
  */
 export { ResolvedServices } from "./resolved-services.js";
-export type {
-  ResolvedServicesProps,
-  ServiceInfo,
-  ServiceFilters,
-} from "./resolved-services.js";
+export type { ResolvedServicesProps, ServiceInfo, ServiceFilters } from "./resolved-services.js";
 
 /**
  * EnhancedServicesView component for comprehensive service exploration.
@@ -231,10 +291,7 @@ export type {
  * @see {@link ServicesViewMode} - View mode type
  */
 export { EnhancedServicesView } from "./enhanced-services-view.js";
-export type {
-  EnhancedServicesViewProps,
-  ServicesViewMode,
-} from "./enhanced-services-view.js";
+export type { EnhancedServicesViewProps, ServicesViewMode } from "./enhanced-services-view.js";
 
 /**
  * ServiceDependencyTree component for hierarchical dependency visualization.
@@ -290,10 +347,7 @@ export {
   findParentServiceId,
   countTreeNodes,
 } from "./services-tree.js";
-export type {
-  ServiceTreeNode,
-  ServiceWithRelations,
-} from "./services-tree.js";
+export type { ServiceTreeNode, ServiceWithRelations } from "./services-tree.js";
 
 // =============================================================================
 // Tabbed Interface Components (Task Group 6)
@@ -321,10 +375,7 @@ export type { TabNavigationProps, TabId } from "./tab-navigation.js";
  * @see {@link TracingViewId} - Tracing view identifier type
  */
 export { ResolutionTracingSection } from "./resolution-tracing-section.js";
-export type {
-  ResolutionTracingSectionProps,
-  TracingViewId,
-} from "./resolution-tracing-section.js";
+export type { ResolutionTracingSectionProps, TracingViewId } from "./resolution-tracing-section.js";
 
 // =============================================================================
 // Controls Bar Component (Task Group 7)
@@ -482,11 +533,7 @@ export {
   findConnectedNodes,
   findConnectedEdges,
 } from "./graph-visualization/index.js";
-export type {
-  LayoutConfig,
-  InputNode,
-  InputEdge,
-} from "./graph-visualization/index.js";
+export type { LayoutConfig, InputNode, InputEdge } from "./graph-visualization/index.js";
 
 /**
  * Graph visualization types.

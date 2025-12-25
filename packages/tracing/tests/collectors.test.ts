@@ -12,10 +12,10 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { TraceEntry, TraceFilter } from "@hex-di/devtools-core";
-import type { TraceCollector } from "../../src/tracing/collector.js";
-import { MemoryCollector } from "../../src/tracing/memory-collector.js";
-import { NoOpCollector } from "../../src/tracing/noop-collector.js";
-import { CompositeCollector } from "../../src/tracing/composite-collector.js";
+import type { TraceCollector } from "../src/collectors/collector.js";
+import { MemoryCollector } from "../src/collectors/memory-collector.js";
+import { NoOpCollector } from "../src/collectors/noop-collector.js";
+import { CompositeCollector } from "../src/collectors/composite-collector.js";
 
 // =============================================================================
 // Test Fixtures
@@ -94,7 +94,7 @@ describe("MemoryCollector", () => {
       const traces = collector.getTraces(filter);
 
       expect(traces).toHaveLength(2);
-      expect(traces.map((t) => t.id)).toEqual(["t1", "t3"]);
+      expect(traces.map(t => t.id)).toEqual(["t1", "t3"]);
     });
 
     it("filters by lifetime", () => {
@@ -106,7 +106,7 @@ describe("MemoryCollector", () => {
       const traces = collector.getTraces(filter);
 
       expect(traces).toHaveLength(2);
-      expect(traces.map((t) => t.id)).toEqual(["t1", "t3"]);
+      expect(traces.map(t => t.id)).toEqual(["t1", "t3"]);
     });
 
     it("filters by cache hit status", () => {
@@ -118,7 +118,7 @@ describe("MemoryCollector", () => {
       const traces = collector.getTraces(filter);
 
       expect(traces).toHaveLength(2);
-      expect(traces.map((t) => t.id)).toEqual(["t2", "t3"]);
+      expect(traces.map(t => t.id)).toEqual(["t2", "t3"]);
     });
 
     it("filters by duration range (minDuration and maxDuration)", () => {
@@ -254,6 +254,26 @@ describe("MemoryCollector", () => {
 
       expect(callback1).toHaveBeenCalledWith(entry);
       expect(callback2).toHaveBeenCalledWith(entry);
+    });
+  });
+
+  describe("pin/unpin", () => {
+    it("pins a trace to protect it from eviction", () => {
+      collector.collect(createMockTraceEntry({ id: "t1" }));
+      collector.pin("t1");
+
+      const traces = collector.getTraces({ isPinned: true });
+      expect(traces).toHaveLength(1);
+      expect(traces[0]?.id).toBe("t1");
+    });
+
+    it("unpins a trace to make it eligible for eviction", () => {
+      collector.collect(createMockTraceEntry({ id: "t1" }));
+      collector.pin("t1");
+      collector.unpin("t1");
+
+      const traces = collector.getTraces({ isPinned: true });
+      expect(traces).toHaveLength(0);
     });
   });
 });
@@ -402,7 +422,7 @@ describe("CompositeCollector", () => {
     expect(collector2.getTraces()).toHaveLength(0);
   });
 
-  it("delegates subscribe() to all child collectors", () => {
+  it("delegates subscribe() to first collector", () => {
     const collector1 = new MemoryCollector();
     const collector2 = new MemoryCollector();
     const composite = new CompositeCollector([collector1, collector2]);
@@ -413,11 +433,7 @@ describe("CompositeCollector", () => {
     const entry = createMockTraceEntry();
     composite.collect(entry);
 
-    // Callback should be called once per child collector subscription
-    // But since we subscribe to the composite, the implementation should
-    // ensure the callback is called once per trace (from first collector)
-    // OR once per collector - depending on design choice
-    // Spec says "delegates to multiple collectors", so we expect delegation
+    // Callback is called via first collector subscription
     expect(callback).toHaveBeenCalled();
   });
 

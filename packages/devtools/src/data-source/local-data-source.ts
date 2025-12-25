@@ -10,7 +10,7 @@
 import type { Port } from "@hex-di/ports";
 import type { Graph } from "@hex-di/graph";
 import type { Container, ContainerPhase } from "@hex-di/runtime";
-import { TRACING_ACCESS } from "@hex-di/runtime";
+import { getTracingAPI, type TracingAPI } from "@hex-di/tracing";
 import type {
   ExportedGraph,
   PresenterDataSourceContract,
@@ -25,54 +25,6 @@ import type {
   DataSourceEvent,
   DataSourceListener,
 } from "./data-source.js";
-
-// =============================================================================
-// Tracing API Type (matching runtime's TracingAPI)
-// =============================================================================
-
-/**
- * Trace entry from the runtime tracing system.
- */
-interface RuntimeTraceEntry {
-  readonly id: string;
-  readonly portName: string;
-  readonly lifetime: "singleton" | "scoped" | "transient";
-  readonly startTime: number;
-  readonly duration: number;
-  readonly isCacheHit: boolean;
-  readonly isPinned: boolean;
-  readonly parentId: string | null;
-  readonly childIds: readonly string[];
-  readonly scopeId: string | null;
-  readonly order: number;
-}
-
-/**
- * Trace statistics from the runtime.
- */
-interface RuntimeTraceStats {
-  readonly totalResolutions: number;
-  readonly averageDuration: number;
-  readonly cacheHitRate: number;
-  readonly slowCount: number;
-  readonly sessionStart: number;
-  readonly totalDuration: number;
-}
-
-/**
- * Runtime tracing API interface.
- */
-interface RuntimeTracingAPI {
-  getTraces(): readonly RuntimeTraceEntry[];
-  getStats(): RuntimeTraceStats;
-  isPaused(): boolean;
-  pause(): void;
-  resume(): void;
-  clear(): void;
-  pinTrace(traceId: string): void;
-  unpinTrace(traceId: string): void;
-  subscribe(callback: () => void): () => void;
-}
 
 // =============================================================================
 // Local Data Source
@@ -104,7 +56,7 @@ interface RuntimeTracingAPI {
  */
 export class LocalDataSource implements DataSource, PresenterDataSourceContract {
   private readonly exportedGraph: ExportedGraph;
-  private readonly tracingAPI: RuntimeTracingAPI | null;
+  private readonly tracingAPI: TracingAPI | null;
   private readonly containerRef: Container<
     Port<unknown, string>,
     Port<unknown, string>,
@@ -136,20 +88,15 @@ export class LocalDataSource implements DataSource, PresenterDataSourceContract 
     this.exportedGraph = toJSON(graph);
     this.containerRef = container ?? null;
 
-    // Extract tracing API if available
-    if (container !== undefined) {
-      const containerWithTracing = container as { [TRACING_ACCESS]?: RuntimeTracingAPI };
-      this.tracingAPI = containerWithTracing[TRACING_ACCESS] ?? null;
+    // Extract tracing API if TracingPlugin is registered
+    this.tracingAPI = container !== undefined ? (getTracingAPI(container) ?? null) : null;
 
-      // Subscribe to tracing changes
-      if (this.tracingAPI !== null) {
-        this.unsubscribeFromTracing = this.tracingAPI.subscribe(() => {
-          this.notifySubscribers();
-          this.notifyTracesSubscribers();
-        });
-      }
-    } else {
-      this.tracingAPI = null;
+    // Subscribe to tracing changes
+    if (this.tracingAPI !== null) {
+      this.unsubscribeFromTracing = this.tracingAPI.subscribe(() => {
+        this.notifySubscribers();
+        this.notifyTracesSubscribers();
+      });
     }
   }
 
@@ -333,7 +280,7 @@ export class LocalDataSource implements DataSource, PresenterDataSourceContract 
    */
   pinTrace(traceId: string): void {
     if (this.tracingAPI !== null) {
-      this.tracingAPI.pinTrace(traceId);
+      this.tracingAPI.pin(traceId);
     }
   }
 
@@ -342,7 +289,7 @@ export class LocalDataSource implements DataSource, PresenterDataSourceContract 
    */
   unpinTrace(traceId: string): void {
     if (this.tracingAPI !== null) {
-      this.tracingAPI.unpinTrace(traceId);
+      this.tracingAPI.unpin(traceId);
     }
   }
 

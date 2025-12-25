@@ -9,8 +9,9 @@
  */
 
 // Import DevTools - simple local-only floating panel
-import { DevToolsFloating, createTracingContainer } from "@hex-di/devtools";
-import type { Container } from "@hex-di/runtime";
+import { DevToolsFloating } from "@hex-di/devtools";
+import { createContainer, type Container } from "@hex-di/runtime";
+import { TracingPlugin } from "@hex-di/tracing";
 
 import { AsyncContainerProvider, ContainerProvider } from "./di/hooks.js";
 import { appGraph } from "./di/graph.js";
@@ -23,16 +24,18 @@ import { ChatRoom } from "./components/ChatRoom.js";
 // =============================================================================
 
 /**
- * Create the DI container from the application graph.
+ * Create the DI container from the application graph with TracingPlugin.
  *
  * This is created at module level to ensure a single container instance
  * for the application lifetime. In SSR scenarios, this would be created
  * per-request instead.
  *
- * The container is wrapped with tracing to enable resolution tracking
+ * The container includes TracingPlugin to enable resolution tracking
  * in the DevTools panel.
  */
-const container = createTracingContainer(appGraph);
+const container = createContainer(appGraph, {
+  plugins: [TracingPlugin],
+});
 const pluginContainer = createPluginChildContainer(container);
 const pluginContainerForProvider = pluginContainer as unknown as Container<
   AppPorts,

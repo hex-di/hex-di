@@ -25,16 +25,6 @@
         "types": "./dist/react/index.d.cts",
         "default": "./dist/react/index.cjs"
       }
-    },
-    "./tracing": {
-      "import": {
-        "types": "./dist/tracing/index.d.ts",
-        "default": "./dist/tracing/index.js"
-      },
-      "require": {
-        "types": "./dist/tracing/index.d.cts",
-        "default": "./dist/tracing/index.cjs"
-      }
     }
   },
   "files": [
@@ -79,6 +69,7 @@
     "@hex-di/graph": "workspace:*",
     "@hex-di/ports": "workspace:*",
     "@hex-di/runtime": "workspace:*",
+    "@hex-di/tracing": "workspace:*",
     "d3-selection": "^3.0.0",
     "d3-transition": "^3.0.0",
     "d3-zoom": "^3.0.0",

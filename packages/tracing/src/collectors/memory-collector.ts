@@ -166,13 +166,13 @@ export class MemoryCollector implements TraceCollector {
     // Apply time-based expiry before returning traces
     this.applyTimeExpiry();
 
-    const entries = this.storedTraces.map((st) => st.entry);
+    const entries = this.storedTraces.map(st => st.entry);
 
     if (!filter) {
       return [...entries];
     }
 
-    return entries.filter((trace) => this.matchesFilter(trace, filter));
+    return entries.filter(trace => this.matchesFilter(trace, filter));
   }
 
   /**
@@ -269,7 +269,7 @@ export class MemoryCollector implements TraceCollector {
    * @param traceId - ID of the trace to pin
    */
   pin(traceId: string): void {
-    const stored = this.storedTraces.find((st) => st.entry.id === traceId);
+    const stored = this.storedTraces.find(st => st.entry.id === traceId);
     if (stored && !stored.entry.isPinned) {
       stored.entry = { ...stored.entry, isPinned: true };
       // Enforce pinned limit after manual pinning
@@ -283,7 +283,7 @@ export class MemoryCollector implements TraceCollector {
    * @param traceId - ID of the trace to unpin
    */
   unpin(traceId: string): void {
-    const stored = this.storedTraces.find((st) => st.entry.id === traceId);
+    const stored = this.storedTraces.find(st => st.entry.id === traceId);
     if (stored && stored.entry.isPinned) {
       stored.entry = { ...stored.entry, isPinned: false };
     }
@@ -349,7 +349,7 @@ export class MemoryCollector implements TraceCollector {
 
     while (this.storedTraces.length > maxTraces) {
       // Find the oldest non-pinned trace
-      const indexToRemove = this.storedTraces.findIndex((st) => !st.entry.isPinned);
+      const indexToRemove = this.storedTraces.findIndex(st => !st.entry.isPinned);
 
       if (indexToRemove === -1) {
         // All traces are pinned, cannot evict via FIFO

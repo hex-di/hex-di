@@ -102,6 +102,9 @@ importers:
       '@hex-di/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
+      '@hex-di/tracing':
+        specifier: workspace:*
+        version: link:../../packages/tracing
       react:
         specifier: ^19.2.3
         version: 19.2.3
@@ -178,6 +181,9 @@ importers:
       '@hex-di/runtime':
         specifier: workspace:*
         version: link:../runtime
+      '@hex-di/tracing':
+        specifier: workspace:*
+        version: link:../tracing
       d3-selection:
         specifier: ^3.0.0
         version: 3.0.0
@@ -416,6 +422,24 @@ importers:
       react-dom:
         specifier: ^19.2.3
         version: 19.2.3(react@19.2.3)
+
+  packages/tracing:
+    dependencies:
+      '@hex-di/devtools-core':
+        specifier: workspace:*
+        version: link:../devtools-core
+      '@hex-di/graph':
+        specifier: workspace:*
+        version: link:../graph
+      '@hex-di/ports':
+        specifier: workspace:*
+        version: link:../ports
+      '@hex-di/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+      typescript:
+        specifier: '>=5.0'
+        version: 5.6.3
 
   website:
     dependencies:

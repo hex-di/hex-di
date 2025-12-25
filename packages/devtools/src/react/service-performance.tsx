@@ -10,6 +10,7 @@
 import React, { useMemo, type ReactElement, type CSSProperties } from "react";
 import type { TracingAPI, TraceEntry } from "@hex-di/devtools-core";
 import { formatDuration } from "./styles.js";
+import { useTracingAPI } from "./hooks/use-devtools.js";
 
 // =============================================================================
 // Types
@@ -204,11 +205,7 @@ export function ServicePerformanceDisplay({
   compact = false,
 }: ServicePerformanceDisplayProps): ReactElement {
   if (performance.totalResolutions === 0) {
-    return (
-      <div style={performanceStyles.emptyState}>
-        No resolution data available
-      </div>
-    );
+    return <div style={performanceStyles.emptyState}>No resolution data available</div>;
   }
 
   const cacheHitPercent = Math.round(performance.cacheHitRate * 100);
@@ -227,9 +224,7 @@ export function ServicePerformanceDisplay({
         : performanceStyles.valueBad;
 
   const slowStyle =
-    performance.slowCount === 0
-      ? performanceStyles.valueGood
-      : performanceStyles.valueBad;
+    performance.slowCount === 0 ? performanceStyles.valueGood : performanceStyles.valueBad;
 
   if (compact) {
     return (
@@ -242,15 +237,11 @@ export function ServicePerformanceDisplay({
         </span>
         <span style={performanceStyles.compactItem}>
           <span style={performanceStyles.label}>Cache:</span>
-          <span style={{ ...performanceStyles.value, ...cacheHitStyle }}>
-            {cacheHitPercent}%
-          </span>
+          <span style={{ ...performanceStyles.value, ...cacheHitStyle }}>{cacheHitPercent}%</span>
         </span>
         <span style={performanceStyles.compactItem}>
           <span style={performanceStyles.label}>Total:</span>
-          <span style={performanceStyles.value}>
-            {performance.totalResolutions}
-          </span>
+          <span style={performanceStyles.value}>{performance.totalResolutions}</span>
         </span>
       </div>
     );
@@ -266,28 +257,21 @@ export function ServicePerformanceDisplay({
       </div>
       <div style={performanceStyles.row}>
         <span style={performanceStyles.label}>Cache Hit Rate</span>
-        <span style={{ ...performanceStyles.value, ...cacheHitStyle }}>
-          {cacheHitPercent}%
-        </span>
+        <span style={{ ...performanceStyles.value, ...cacheHitStyle }}>{cacheHitPercent}%</span>
       </div>
       <div style={performanceStyles.row}>
         <span style={performanceStyles.label}>Total Resolutions</span>
-        <span style={performanceStyles.value}>
-          {performance.totalResolutions}
-        </span>
+        <span style={performanceStyles.value}>{performance.totalResolutions}</span>
       </div>
       <div style={performanceStyles.row}>
         <span style={performanceStyles.label}>Slow Resolutions</span>
-        <span style={{ ...performanceStyles.value, ...slowStyle }}>
-          {performance.slowCount}
-        </span>
+        <span style={{ ...performanceStyles.value, ...slowStyle }}>{performance.slowCount}</span>
       </div>
       {performance.totalResolutions > 1 && (
         <div style={performanceStyles.row}>
           <span style={performanceStyles.label}>Duration Range</span>
           <span style={performanceStyles.value}>
-            {formatDuration(performance.minDuration)} -{" "}
-            {formatDuration(performance.maxDuration)}
+            {formatDuration(performance.minDuration)} - {formatDuration(performance.maxDuration)}
           </span>
         </div>
       )}
@@ -329,18 +313,37 @@ export function ServicePerformanceInfo({
 /**
  * Hook to get performance metrics for a service.
  *
+ * If tracingAPIOverride is not provided, falls back to TracingAPI from DevToolsContext.
+ *
  * @param portName - The port name to get metrics for
- * @param tracingAPI - The tracing API (optional)
+ * @param tracingAPIOverride - Optional TracingAPI override (falls back to context)
  * @param slowThreshold - Duration threshold for slow resolutions
- * @returns Performance metrics or null if no tracing API
+ * @returns Performance metrics or null if no tracing API available
+ *
+ * @example Using with context (recommended)
+ * ```tsx
+ * function ServiceMetrics({ portName }: { portName: string }) {
+ *   const performance = useServicePerformance(portName);
+ *   if (!performance) return <div>No tracing data</div>;
+ *   return <ServicePerformanceDisplay performance={performance} />;
+ * }
+ * ```
+ *
+ * @example With explicit TracingAPI override
+ * ```tsx
+ * const performance = useServicePerformance("UserService", customTracingAPI, 50);
+ * ```
  */
 export function useServicePerformance(
   portName: string,
-  tracingAPI: TracingAPI | undefined,
+  tracingAPIOverride?: TracingAPI,
   slowThreshold: number = 100
 ): ServicePerformance | null {
+  const contextTracingAPI = useTracingAPI();
+  const tracingAPI = tracingAPIOverride ?? contextTracingAPI;
+
   return useMemo(() => {
-    if (tracingAPI === undefined) {
+    if (tracingAPI === null) {
       return null;
     }
     const traces = tracingAPI.getTraces({ portName });
