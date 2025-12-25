@@ -4,7 +4,7 @@
  * @packageDocumentation
  */
 
-import { useContext, useEffect, useMemo } from "react";
+import { useContext, useEffect, useMemo, useRef } from "react";
 import type { Container, ContainerPhase } from "@hex-di/runtime";
 import type { Port } from "@hex-di/ports";
 import { getInspectorAPI } from "@hex-di/inspector";
@@ -100,13 +100,19 @@ export function useRegisterContainer<
   const registry = useContext(ContainerRegistryContext);
   const inspector = useMemo(() => getInspectorAPI(container), [container]);
 
+  // Use refs to avoid re-running effect when registry object changes
+  // (registry callbacks are stable, but the object reference changes)
+  const registryRef = useRef(registry);
+  registryRef.current = registry;
+
   useEffect(() => {
+    const currentRegistry = registryRef.current;
     // Skip if registry is not available or inspector plugin is not registered
-    if (registry === null || inspector === undefined) {
+    if (currentRegistry === null || inspector === undefined) {
       return;
     }
 
-    registry.registerContainer({
+    currentRegistry.registerContainer({
       id: options.id,
       label: options.label,
       kind: options.kind,
@@ -116,7 +122,7 @@ export function useRegisterContainer<
     });
 
     return () => {
-      registry.unregisterContainer(options.id);
+      currentRegistry.unregisterContainer(options.id);
     };
-  }, [registry, inspector, options.id, options.label, options.kind, options.parentId]);
+  }, [inspector, options.id, options.label, options.kind, options.parentId]);
 }

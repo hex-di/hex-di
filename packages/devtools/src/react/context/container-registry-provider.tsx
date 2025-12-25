@@ -51,6 +51,11 @@ export function ContainerRegistryProvider({
 
   const registerContainer = useCallback((entry: ContainerEntry): void => {
     setContainers(prev => {
+      // Skip if entry already exists to prevent infinite loops
+      const existing = prev.get(entry.id);
+      if (existing !== undefined) {
+        return prev; // Return same reference to avoid re-render
+      }
       const next = new Map(prev);
       next.set(entry.id, entry);
       return next;
