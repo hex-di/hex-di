@@ -12,6 +12,10 @@ interface Logger {
   log(message: string): void;
 }
 
+// Shared port for type-only tests - value consumed via void to suppress lint warning
+const LoggerPort = createPort<"Logger", Logger>("Logger");
+void LoggerPort;
+
 describe("NotAPortError type", () => {
   it("has the expected branded structure", () => {
     type Error = NotAPortError<string>;
@@ -53,7 +57,6 @@ describe("InferService error channeling", () => {
   });
 
   it("returns service type for port created with createPort", () => {
-    const LoggerPort = createPort<"Logger", Logger>("Logger");
     type Service = InferService<typeof LoggerPort>;
 
     expectTypeOf<Service>().toEqualTypeOf<Logger>();
@@ -107,7 +110,6 @@ describe("InferPortName error channeling", () => {
   });
 
   it("returns port name for port created with createPort", () => {
-    const LoggerPort = createPort<"Logger", Logger>("Logger");
     type Name = InferPortName<typeof LoggerPort>;
 
     expectTypeOf<Name>().toEqualTypeOf<"Logger">();
@@ -135,7 +137,6 @@ describe("InferPortName error channeling", () => {
 
 describe("Edge cases", () => {
   it("handles union types correctly (distributes)", () => {
-    const LoggerPort = createPort<"Logger", Logger>("Logger");
     type ValidPort = typeof LoggerPort;
 
     // Union of valid port and invalid type

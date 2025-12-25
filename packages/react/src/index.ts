@@ -103,6 +103,12 @@ export type {
   AsyncContainerLoadingProps,
   AsyncContainerErrorProps,
   AsyncContainerReadyProps,
+  LazyContainerProviderProps,
+  LazyContainerProviderComponent,
+  LazyContainerLoadingProps,
+  LazyContainerErrorProps,
+  LazyContainerReadyProps,
+  LazyContainerStatus,
   Resolver,
   ToResolver,
 } from "./types/index.js";
@@ -149,6 +155,22 @@ export type { ReactiveScopeProviderProps } from "./providers/index.js";
  * @see {@link AsyncContainerProvider} - Provider component documentation
  */
 export { AsyncContainerProvider, useAsyncContainerState } from "./providers/index.js";
+
+/**
+ * LazyContainerProvider for deferred graph loading.
+ *
+ * This provider handles lazy-loaded child containers, showing loading/error/ready
+ * states. Useful for:
+ * - Code Splitting: Load plugin graphs on demand
+ * - Optional Features: Load feature graphs only when needed
+ * - Progressive Loading: Defer non-critical services
+ *
+ * @see {@link LazyContainerProvider} - Provider component documentation
+ * @see {@link LazyContainerProviderProps} - Props type
+ * @see {@link useLazyContainerState} - Hook for accessing loading state
+ */
+export { LazyContainerProvider, useLazyContainerState } from "./providers/index.js";
+export type { UseLazyContainerStateResult } from "./providers/index.js";
 
 // =============================================================================
 // Global Hooks
@@ -224,7 +246,7 @@ export type { Port, InferService, InferPortName } from "@hex-di/ports";
  *
  * These types are commonly used alongside React integration types.
  */
-export type { Container, Scope } from "@hex-di/runtime";
+export type { Container, Scope, LazyContainer } from "@hex-di/runtime";
 
 /**
  * Re-export error classes from @hex-di/runtime that may propagate through hooks.

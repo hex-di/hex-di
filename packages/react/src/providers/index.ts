@@ -26,3 +26,6 @@ export type {
 
 export { ReactiveScopeProvider } from "./reactive-scope-provider.js";
 export type { ReactiveScopeProviderProps } from "./reactive-scope-provider.js";
+
+export { LazyContainerProvider, useLazyContainerState } from "./lazy-container-provider.js";
+export type { UseLazyContainerStateResult } from "./lazy-container-provider.js";

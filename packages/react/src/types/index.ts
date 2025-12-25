@@ -21,4 +21,13 @@ export type {
 
 export type { TypedReactIntegration } from "./factory.js";
 
+export type {
+  LazyContainerProviderProps,
+  LazyContainerLoadingProps,
+  LazyContainerErrorProps,
+  LazyContainerReadyProps,
+  LazyContainerProviderComponent,
+  LazyContainerStatus,
+} from "./lazy-container-props.js";
+
 export * from "./unified.js";

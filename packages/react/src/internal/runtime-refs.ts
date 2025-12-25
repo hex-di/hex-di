@@ -207,3 +207,102 @@ interface ContainerLike extends ResolverLike {
   readonly isInitialized?: boolean;
   createChild?(graph: GraphAny, inheritanceModes?: InheritanceModeMap): ResolverLike;
 }
+
+/**
+ * Internal interface describing what LazyContainer looks like at runtime.
+ *
+ * CRITICAL: Uses method syntax (not property function syntax) for bivariance.
+ *
+ * @internal
+ */
+interface LazyContainerLike {
+  load(): Promise<ResolverLike>;
+  has(port: Port<unknown, string>): boolean;
+  dispose(): Promise<void>;
+  readonly isLoaded: boolean;
+  readonly isDisposed: boolean;
+}
+
+// =============================================================================
+// LazyContainer Support
+// =============================================================================
+
+/**
+ * Runtime lazy container reference for React context storage.
+ *
+ * Provides a type-erased interface for storing LazyContainer in React state
+ * without complex generic propagation. The `load()` method returns a
+ * RuntimeResolver that can be stored and used for resolution.
+ *
+ * @internal
+ */
+export interface RuntimeLazyContainer {
+  /**
+   * Loads the lazy container and returns the underlying container as RuntimeResolver.
+   * Concurrent calls share the same promise. Failed loads allow retry.
+   */
+  load(): Promise<RuntimeResolver>;
+
+  /**
+   * Checks if a port is available.
+   * Before loading, delegates to parent. After loading, includes child ports.
+   */
+  has(port: Port<unknown, string>): boolean;
+
+  /**
+   * Disposes the lazy container.
+   */
+  dispose(): Promise<void>;
+
+  /**
+   * Whether the graph has been loaded.
+   */
+  readonly isLoaded: boolean;
+
+  /**
+   * Whether the lazy container has been disposed.
+   */
+  readonly isDisposed: boolean;
+}
+
+/**
+ * Converts any LazyContainer to a RuntimeLazyContainer for React storage.
+ *
+ * This function wraps the LazyContainer's methods to return RuntimeResolver
+ * instead of typed Container, enabling storage in React state/context without
+ * complex generic propagation.
+ *
+ * @param lazyContainer - The lazy container to convert
+ * @returns A RuntimeLazyContainer that wraps the lazy container's methods
+ *
+ * @example
+ * ```typescript
+ * const runtimeLazy = toRuntimeLazyContainer(lazyContainer);
+ * const loadedResolver = await runtimeLazy.load();
+ * // loadedResolver is RuntimeResolver, can be stored in React state
+ * ```
+ *
+ * @internal
+ */
+export function toRuntimeLazyContainer<T extends LazyContainerLike>(
+  lazyContainer: T
+): RuntimeLazyContainer {
+  return {
+    async load(): Promise<RuntimeResolver> {
+      const loaded = await lazyContainer.load();
+      return toRuntimeResolver(loaded);
+    },
+    has(port: Port<unknown, string>): boolean {
+      return lazyContainer.has(port);
+    },
+    dispose(): Promise<void> {
+      return lazyContainer.dispose();
+    },
+    get isLoaded(): boolean {
+      return lazyContainer.isLoaded;
+    },
+    get isDisposed(): boolean {
+      return lazyContainer.isDisposed;
+    },
+  };
+}
