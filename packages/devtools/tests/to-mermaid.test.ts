@@ -13,7 +13,7 @@
 import { describe, it, expect } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
-import { toMermaid } from "../src/to-mermaid.js";
+import { toMermaid } from "../src/index.js";
 
 // =============================================================================
 // Test Fixtures

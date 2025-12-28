@@ -6,7 +6,7 @@
 
 import React, { type ReactElement, useCallback } from "react";
 import type { PositionedNode } from "./types.js";
-import { getLifetimeStrokeVar } from "./graph-styles.js";
+import { getLifetimeStrokeVar, graphNodeStyles } from "./graph-styles.js";
 
 // =============================================================================
 // Types
@@ -66,14 +66,13 @@ export function GraphNode({
   const strokeColor = getLifetimeStrokeVar(node.lifetime);
 
   // Compute opacity and filter based on state
-  const opacity = isDimmed ? 0.3 : 1;
+  const opacity = isDimmed ? graphNodeStyles.rectDimmed.opacity : 1;
   const strokeWidth = isHovered || isSelected ? 3 : 2;
-  const filter =
-    isSelected
-      ? "drop-shadow(0 0 6px var(--hex-devtools-accent, #89b4fa))"
-      : isHovered
-        ? "brightness(1.15)"
-        : undefined;
+  const filter = isSelected
+    ? "drop-shadow(0 0 6px var(--hex-devtools-accent, #89b4fa))"
+    : isHovered
+      ? "brightness(1.15)"
+      : undefined;
 
   return (
     <g

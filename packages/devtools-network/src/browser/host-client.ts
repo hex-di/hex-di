@@ -18,6 +18,7 @@ import type {
   ContainerSnapshot,
   JsonRpcRequest,
   JsonRpcMessage,
+  VerboseLogger,
 } from "@hex-di/devtools-core";
 import {
   Methods,
@@ -26,6 +27,7 @@ import {
   createNotification,
   isRequest,
   ErrorCodes,
+  createVerboseLogger,
 } from "@hex-di/devtools-core";
 
 // =============================================================================
@@ -185,6 +187,7 @@ export class DevToolsHostClient {
   private shouldReconnect = false;
   private readonly listeners = new Set<HostClientEventListener>();
   private readonly options: Required<HostClientOptions>;
+  private readonly logger: VerboseLogger;
 
   constructor(options: HostClientOptions) {
     this.options = {
@@ -197,6 +200,7 @@ export class DevToolsHostClient {
       reconnectDelay: options.reconnectDelay ?? 5000,
       verbose: options.verbose ?? false,
     };
+    this.logger = createVerboseLogger(`DevToolsHost:${this.options.appId}`, this.options.verbose);
   }
 
   /**
@@ -206,7 +210,7 @@ export class DevToolsHostClient {
    */
   registerHandlers(handlers: HostDataHandlers): void {
     this.handlers = handlers;
-    this.log("Handlers registered");
+    this.logger.log("Handlers registered");
   }
 
   /**
@@ -224,12 +228,12 @@ export class DevToolsHostClient {
     this.shouldReconnect = this.options.autoReconnect;
 
     return new Promise((resolve, reject) => {
-      this.log(`Connecting to ${this.options.url}...`);
+      this.logger.log(`Connecting to ${this.options.url}...`);
       this.ws = new WebSocket(this.options.url);
 
       this.ws.onopen = () => {
         this.isConnected = true;
-        this.log("Connected to relay server");
+        this.logger.log("Connected to relay server");
         this.emit({ type: "connected" });
         this.registerWithRelay();
         resolve();
@@ -243,14 +247,14 @@ export class DevToolsHostClient {
         this.isConnected = false;
         this.isRegistered = false;
         this.ws = null;
-        this.log("Disconnected from relay server");
+        this.logger.log("Disconnected from relay server");
         this.emit({ type: "disconnected" });
         this.handleReconnect();
       };
 
       this.ws.onerror = _event => {
         const error = new Error("WebSocket connection error");
-        this.log(`Connection error: ${error.message}`);
+        this.logger.log(`Connection error: ${error.message}`);
         this.emit({ type: "error", error });
         if (!this.isConnected) {
           reject(error);
@@ -284,7 +288,7 @@ export class DevToolsHostClient {
 
     const notification = createNotification(Methods.DATA_UPDATE, { type });
     this.send(notification);
-    this.log(`Sent data update notification: ${type}`);
+    this.logger.log(`Sent data update notification: ${type}`);
   }
 
   /**
@@ -337,7 +341,7 @@ export class DevToolsHostClient {
     };
 
     this.send(request);
-    this.log(`Registering as ${this.options.appName} (${this.options.appId})`);
+    this.logger.log(`Registering as ${this.options.appName} (${this.options.appId})`);
   }
 
   private handleMessage(data: string): void {
@@ -346,14 +350,14 @@ export class DevToolsHostClient {
     try {
       message = JSON.parse(data) as JsonRpcMessage;
     } catch {
-      this.log("Failed to parse message");
+      this.logger.log("Failed to parse message");
       return;
     }
 
     // Handle registration response
     if ("id" in message && message.id === 1 && "result" in message) {
       this.isRegistered = true;
-      this.log("Registration successful");
+      this.logger.log("Registration successful");
       this.emit({ type: "registered" });
       return;
     }
@@ -370,7 +374,7 @@ export class DevToolsHostClient {
       return;
     }
 
-    this.log(`Handling request: ${request.method}`);
+    this.logger.log(`Handling request: ${request.method}`);
 
     try {
       switch (request.method) {
@@ -446,7 +450,7 @@ export class DevToolsHostClient {
       return;
     }
 
-    this.log(`Reconnecting in ${this.options.reconnectDelay}ms...`);
+    this.logger.log(`Reconnecting in ${this.options.reconnectDelay}ms...`);
     setTimeout(() => {
       if (this.shouldReconnect) {
         this.connect().catch(() => {
@@ -463,13 +467,6 @@ export class DevToolsHostClient {
       } catch {
         // Ignore listener errors
       }
-    }
-  }
-
-  private log(message: string): void {
-    if (this.options.verbose) {
-      // Using console.warn for debug logs since console.log is disallowed
-      console.warn(`[DevToolsHost:${this.options.appId}] ${message}`);
     }
   }
 }

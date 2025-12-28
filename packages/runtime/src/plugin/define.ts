@@ -10,6 +10,7 @@
  */
 
 import type { Plugin, PluginDependency, PluginContext, PluginHooks } from "./types.js";
+import type { InternalAccessible } from "../inspector/types.js";
 
 // =============================================================================
 // Dependency Declaration Factories
@@ -165,6 +166,26 @@ export interface DefinePluginConfig<
    * Plugins are disposed in reverse initialization order (LIFO).
    */
   readonly dispose?: () => void | Promise<void>;
+
+  /**
+   * Create a child-specific API instance.
+   *
+   * Called when a child container inherits this plugin. Returns an API
+   * instance bound to the child container instead of the parent.
+   *
+   * If not provided, child containers share the parent's API (default behavior).
+   * Use this when your plugin needs per-container state (e.g., InspectorPlugin).
+   *
+   * @param childContainer - The child container being created
+   * @param parentApi - The parent's API instance (for delegation if needed)
+   * @param parentContainer - The parent container
+   * @returns A new API instance for the child
+   */
+  createApiForChild?(
+    childContainer: InternalAccessible,
+    parentApi: TApi,
+    parentContainer: InternalAccessible
+  ): TApi;
 }
 
 /**
@@ -266,6 +287,7 @@ export function definePlugin<
     createApi: config.createApi,
     hooks: config.hooks,
     dispose: config.dispose,
+    createApiForChild: config.createApiForChild,
   };
 
   return Object.freeze(plugin);

@@ -12,6 +12,7 @@ export {
   ContainerRegistryContext,
   type ContainerEntry,
   type ContainerRegistryValue,
+  type InheritanceMode,
 } from "./container-registry.js";
 export {
   ContainerRegistryProvider,

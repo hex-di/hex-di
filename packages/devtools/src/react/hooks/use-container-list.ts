@@ -1,24 +1,30 @@
 /**
  * Hook for accessing the list of registered containers.
  *
+ * Uses Option<T> for selection state, enabling exhaustive pattern matching
+ * instead of null checks.
+ *
  * @packageDocumentation
  */
 
 import { useContext, useMemo } from "react";
 import { ContainerRegistryContext, type ContainerEntry } from "../context/container-registry.js";
+import { None, type Option } from "../types/adt.js";
 
 /**
  * Result of useContainerList hook.
+ *
+ * Uses Option<T> for selectedId to enable exhaustive pattern matching.
  */
 export interface UseContainerListResult {
   /** All registered containers */
   readonly containers: readonly ContainerEntry[];
 
-  /** Currently selected container ID */
-  readonly selectedId: string | null;
+  /** Currently selected container ID (Option instead of string | null) */
+  readonly selectedId: Option<string>;
 
-  /** Select a container for inspection */
-  readonly selectContainer: (id: string | null) => void;
+  /** Select a container for inspection (accepts Option<string>) */
+  readonly selectContainer: (id: Option<string>) => void;
 
   /** Whether the container registry is available */
   readonly isAvailable: boolean;
@@ -96,7 +102,7 @@ export function useContainerList(): UseContainerListResult {
     if (registry === null) {
       return {
         containers: [],
-        selectedId: null,
+        selectedId: None,
         selectContainer: () => {},
         isAvailable: false,
       };

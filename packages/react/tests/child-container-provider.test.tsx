@@ -114,6 +114,7 @@ function createMockContainer(): TestContainer {
   const mockCreateChild = vi.fn();
 
   const mockInternalState: ContainerInternalState = {
+    containerId: "parent-container",
     disposed: false,
     singletonMemo: { size: 0, entries: [] },
     childScopes: [],
@@ -180,11 +181,14 @@ function createMockChildContainer(
   const mockDispose = vi.fn().mockResolvedValue(undefined);
   const mockCreateChild = vi.fn();
 
+  // Child containers must have parentState to be detected as child containers
   const mockInternalState: ContainerInternalState = {
+    containerId: "child-container",
     disposed: false,
     singletonMemo: { size: 0, entries: [] },
     childScopes: [],
     adapterMap: new Map(),
+    parentState: parentContainer[INTERNAL_ACCESS](),
   };
 
   const mockChildContainer = {
@@ -245,11 +249,13 @@ function createMockUninitializedChildContainer(
       provides: TestServicePort,
       extends: ExtendedServicePort,
     },
+    // Child containers must have parentState to be detected as child containers
     [INTERNAL_ACCESS]: () => ({
       disposed: false,
       singletonMemo: { size: 0, entries: [] },
       childScopes: [],
       adapterMap: new Map(),
+      parentState: parentContainer[INTERNAL_ACCESS](),
     }),
   };
 
@@ -272,11 +278,14 @@ function createMockUninitializedChildContainer(
     return initializedChildContainer;
   });
 
+  // Child containers must have parentState to be detected as child containers
   const mockInternalState: ContainerInternalState = {
+    containerId: "child-container",
     disposed: false,
     singletonMemo: { size: 0, entries: [] },
     childScopes: [],
     adapterMap: new Map(),
+    parentState: parentContainer[INTERNAL_ACCESS](),
   };
 
   return {

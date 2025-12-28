@@ -45,25 +45,20 @@ const ServiceAdapter = createAdapter({
 
 describe("toJSON", () => {
   it("extracts nodes from graph adapters", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(ConfigAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(ConfigAdapter).build();
 
     const exported = toJSON(graph);
 
     expect(exported.nodes).toHaveLength(2);
-    expect(exported.nodes.map((n) => n.id)).toContain("Logger");
-    expect(exported.nodes.map((n) => n.id)).toContain("Config");
+    expect(exported.nodes.map(n => n.id)).toContain("Logger");
+    expect(exported.nodes.map(n => n.id)).toContain("Config");
   });
 
   it("includes node lifetime and factoryKind", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     const exported = toJSON(graph);
-    const loggerNode = exported.nodes.find((n) => n.id === "Logger");
+    const loggerNode = exported.nodes.find(n => n.id === "Logger");
 
     expect(loggerNode?.lifetime).toBe("singleton");
     expect(loggerNode?.factoryKind).toBe("sync");
@@ -84,9 +79,7 @@ describe("toJSON", () => {
   });
 
   it("returns frozen immutable structure", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     const exported = toJSON(graph);
 
@@ -103,7 +96,7 @@ describe("toJSON", () => {
       .build();
 
     const exported = toJSON(graph);
-    const ids = exported.nodes.map((n) => n.id);
+    const ids = exported.nodes.map(n => n.id);
 
     expect(ids).toEqual(["Config", "Logger", "Service"]);
   });
@@ -115,9 +108,7 @@ describe("toJSON", () => {
 
 describe("toDOT", () => {
   it("produces valid DOT digraph format", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     const dot = toDOT(graph);
 
@@ -127,9 +118,7 @@ describe("toDOT", () => {
   });
 
   it("includes node labels with lifetime", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     const dot = toDOT(graph);
 
@@ -150,9 +139,7 @@ describe("toDOT", () => {
   });
 
   it("respects direction option", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     const dotLR = toDOT(graph, { direction: "LR" });
     const dotTB = toDOT(graph, { direction: "TB" });
@@ -163,7 +150,7 @@ describe("toDOT", () => {
 
   it("accepts ExportedGraph directly", () => {
     const exported: ExportedGraph = {
-      nodes: [{ id: "Test", label: "Test", portName: "Test", lifetime: "singleton", factoryKind: "sync" }],
+      nodes: [{ id: "Test", label: "Test", lifetime: "singleton", factoryKind: "sync" }],
       edges: [],
     };
 
@@ -180,9 +167,7 @@ describe("toDOT", () => {
 
 describe("toMermaid", () => {
   it("produces valid Mermaid graph syntax", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     const mermaid = toMermaid(graph);
 
@@ -204,9 +189,7 @@ describe("toMermaid", () => {
   });
 
   it("respects direction option", () => {
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     const mermaidLR = toMermaid(graph, { direction: "LR" });
     const mermaidTD = toMermaid(graph, { direction: "TD" });
@@ -217,7 +200,7 @@ describe("toMermaid", () => {
 
   it("accepts ExportedGraph directly", () => {
     const exported: ExportedGraph = {
-      nodes: [{ id: "Test", label: "Test", portName: "Test", lifetime: "scoped", factoryKind: "sync" }],
+      nodes: [{ id: "Test", label: "Test", lifetime: "scoped", factoryKind: "sync" }],
       edges: [],
     };
 
@@ -228,7 +211,9 @@ describe("toMermaid", () => {
 
   it("sanitizes node IDs for Mermaid compatibility", () => {
     const exported: ExportedGraph = {
-      nodes: [{ id: "My-Service.v2", label: "My-Service.v2", portName: "My-Service.v2", lifetime: "singleton", factoryKind: "sync" }],
+      nodes: [
+        { id: "My-Service.v2", label: "My-Service.v2", lifetime: "singleton", factoryKind: "sync" },
+      ],
       edges: [],
     };
 

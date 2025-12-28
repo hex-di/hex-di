@@ -4,10 +4,11 @@
  * @packageDocumentation
  */
 
-import { useState, useEffect } from "react";
+import { useContext, useMemo } from "react";
 import type { ContainerKind, ContainerPhase } from "@hex-di/devtools-core";
-import type { InspectorEvent } from "@hex-di/inspector";
-import { useInspector } from "./use-inspector.js";
+import { ContainerRegistryContext } from "../context/container-registry.js";
+import { useContainerInspector } from "./use-container-inspector.js";
+import { isSome } from "../types/adt.js";
 
 /**
  * Result of useContainerPhase hook.
@@ -24,10 +25,19 @@ export interface UseContainerPhaseResult {
 }
 
 /**
+ * Derive container phase from snapshot state.
+ *
+ * @internal
+ */
+function derivePhase(isDisposed: boolean): ContainerPhase {
+  return isDisposed ? "disposed" : "initialized";
+}
+
+/**
  * Track the current container's phase and kind.
  *
- * Subscribes to phase-changed events and updates automatically.
  * Returns null values if no container is selected.
+ * Phase is derived from the container's disposed state.
  *
  * @example Phase indicator
  * ```typescript
@@ -89,29 +99,28 @@ export interface UseContainerPhaseResult {
  * ```
  */
 export function useContainerPhase(): UseContainerPhaseResult {
-  const inspector = useInspector();
-  const [phase, setPhase] = useState<ContainerPhase | null>(() => inspector?.getPhase() ?? null);
+  const registry = useContext(ContainerRegistryContext);
+  const inspectorOpt = useContainerInspector();
 
-  useEffect(() => {
-    if (inspector === null) {
-      setPhase(null);
-      return;
+  return useMemo((): UseContainerPhaseResult => {
+    if (!isSome(inspectorOpt)) {
+      return {
+        phase: null,
+        kind: null,
+        isAvailable: false,
+      };
     }
 
-    // Initial phase
-    setPhase(inspector.getPhase());
+    const snapshot = inspectorOpt.value.snapshot();
+    const kind: ContainerKind | null =
+      registry !== null && isSome(registry.selectedEntry)
+        ? registry.selectedEntry.value.kind
+        : null;
 
-    // Subscribe to phase changes
-    return inspector.subscribe((event: InspectorEvent) => {
-      if (event.type === "phase-changed") {
-        setPhase(event.phase);
-      }
-    });
-  }, [inspector]);
-
-  return {
-    phase,
-    kind: inspector?.getContainerKind() ?? null,
-    isAvailable: inspector !== null,
-  };
+    return {
+      phase: derivePhase(snapshot.isDisposed),
+      kind,
+      isAvailable: true,
+    };
+  }, [inspectorOpt, registry]);
 }

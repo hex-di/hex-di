@@ -4,11 +4,15 @@
  * Tracks all containers in the application (root, child, lazy, scope)
  * and provides selection state for the DevTools inspector.
  *
+ * Uses Rust-like Option<T> for optional values instead of nullable types.
+ *
  * @packageDocumentation
  */
 
 import { createContext } from "react";
-import type { InspectorAPI, ContainerKind } from "@hex-di/inspector";
+import type { ContainerKind } from "@hex-di/inspector";
+import type { Option } from "../types/adt.js";
+import type { InspectableContainer } from "../types/inspectable-container.js";
 
 // =============================================================================
 // Container Entry Types
@@ -16,7 +20,20 @@ import type { InspectorAPI, ContainerKind } from "@hex-di/inspector";
 
 /**
  * Entry for a tracked container in DevTools.
+ *
+ * Stores the container reference directly (as InspectableContainer trait object)
+ * instead of InspectorAPI. This enables per-container RuntimeInspector creation
+ * via createInspector(), fixing the bug where all containers showed root data.
  */
+/**
+ * Inheritance mode for child containers.
+ *
+ * - shared: Child uses parent's singletons directly
+ * - forked: Child gets independent copies of parent's singletons
+ * - isolated: Child is completely isolated from parent
+ */
+export type InheritanceMode = "shared" | "forked" | "isolated";
+
 export interface ContainerEntry {
   /** Unique identifier for this container */
   readonly id: string;
@@ -27,14 +44,17 @@ export interface ContainerEntry {
   /** Container type (root, child, lazy, scope) */
   readonly kind: ContainerKind;
 
-  /** InspectorAPI for this container */
-  readonly inspector: InspectorAPI;
+  /** Container reference for inspection (trait object pattern) */
+  readonly container: InspectableContainer;
 
   /** Parent container ID, if any */
   readonly parentId: string | null;
 
   /** Timestamp when the container was registered */
   readonly createdAt: number;
+
+  /** Inheritance mode for child containers (only present for kind === "child") */
+  readonly inheritanceMode?: InheritanceMode;
 }
 
 // =============================================================================
@@ -43,22 +63,25 @@ export interface ContainerEntry {
 
 /**
  * Context value for multi-container DevTools.
+ *
+ * Uses Option<T> for optional values, enabling exhaustive pattern matching
+ * instead of null checks. All selection-related fields use Option.
  */
 export interface ContainerRegistryValue {
   /** All registered containers */
   readonly containers: ReadonlyMap<string, ContainerEntry>;
 
-  /** Currently selected container ID */
-  readonly selectedId: string | null;
+  /** Currently selected container ID (Option instead of string | null) */
+  readonly selectedId: Option<string>;
 
-  /** Select a container for inspection */
-  readonly selectContainer: (id: string | null) => void;
+  /** Select a container for inspection (accepts Option<string>) */
+  readonly selectContainer: (id: Option<string>) => void;
 
-  /** Get the currently selected container's inspector */
-  readonly selectedInspector: InspectorAPI | null;
+  /** Get the currently selected container (Option instead of nullable) */
+  readonly selectedContainer: Option<InspectableContainer>;
 
-  /** Get the currently selected container entry */
-  readonly selectedEntry: ContainerEntry | null;
+  /** Get the currently selected container entry (Option instead of nullable) */
+  readonly selectedEntry: Option<ContainerEntry>;
 
   /** Register a new container */
   readonly registerContainer: (entry: ContainerEntry) => void;
@@ -76,15 +99,16 @@ export interface ContainerRegistryValue {
  *
  * Use ContainerRegistryProvider at the root of your app to enable
  * tracking of all containers. Components can then use hooks like
- * useContainerList and useInspector to access container data.
+ * useContainerList and useContainerInspector to access container data.
  *
  * @example
  * ```typescript
  * import {
  *   ContainerRegistryProvider,
  *   useContainerList,
- *   useInspector
+ *   useContainerInspector
  * } from "@hex-di/devtools";
+ * import { isSome, Some, None } from "@hex-di/devtools/react/types/adt";
  *
  * function App() {
  *   return (
@@ -97,13 +121,15 @@ export interface ContainerRegistryValue {
  *
  * function DevToolsPanel() {
  *   const { containers, selectedId, selectContainer } = useContainerList();
- *   const inspector = useInspector();
+ *   const inspectorOpt = useContainerInspector();
  *
  *   return (
  *     <div>
  *       <select
- *         value={selectedId ?? ""}
- *         onChange={(e) => selectContainer(e.target.value || null)}
+ *         value={isSome(selectedId) ? selectedId.value : ""}
+ *         onChange={(e) => selectContainer(
+ *           e.target.value ? Some(e.target.value) : None
+ *         )}
  *       >
  *         {Array.from(containers.values()).map((entry) => (
  *           <option key={entry.id} value={entry.id}>
@@ -112,8 +138,8 @@ export interface ContainerRegistryValue {
  *         ))}
  *       </select>
  *
- *       {inspector && (
- *         <pre>{JSON.stringify(inspector.getSnapshot(), null, 2)}</pre>
+ *       {isSome(inspectorOpt) && (
+ *         <pre>{JSON.stringify(inspectorOpt.value.snapshot(), null, 2)}</pre>
  *       )}
  *     </div>
  *   );

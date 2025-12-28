@@ -108,6 +108,7 @@ describe("@hex-di/runtime exports", () => {
         "AsyncFactoryError",
         "AsyncInitializationRequiredError",
         "NonClonableForkedError",
+        "HOOKS_ACCESS",
         "INTERNAL_ACCESS",
         "TRACING_ACCESS",
         "getInternalAccessor",
@@ -133,6 +134,18 @@ describe("@hex-di/runtime exports", () => {
         "PluginNotFoundError",
         "PluginAlreadyRegisteredError",
         "PluginManager",
+        // Plugin wrapper utilities (Zustand/Redux-style enhancement pattern)
+        "createPluginWrapper",
+        "getAppliedWrappers",
+        "applyParentWrappers",
+        "getDisposalCallbacks",
+        "APPLIED_WRAPPERS",
+        // Composition utilities
+        "pipe",
+        "compose2",
+        "compose3",
+        "compose4",
+        "compose5",
       ];
 
       // Verify all expected exports exist

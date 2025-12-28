@@ -8,6 +8,7 @@
  */
 
 import type { Plugin, ViteDevServer } from "vite";
+import { createVerboseLogger } from "@hex-di/devtools-core";
 import { DevToolsServer } from "../server/websocket-server.js";
 
 // =============================================================================
@@ -73,6 +74,7 @@ export interface ViteDevServerWithDevTools extends ViteDevServer {
  */
 export function devToolsPlugin(options: DevToolsPluginOptions = {}): Plugin {
   const { path = "/devtools", verbose = false } = options;
+  const logger = createVerboseLogger("hex-di-devtools", verbose);
   let devToolsServer: DevToolsServer | null = null;
 
   return {
@@ -101,13 +103,12 @@ export function devToolsPlugin(options: DevToolsPluginOptions = {}): Plugin {
           const address = server.httpServer?.address();
           const port = typeof address === "object" && address !== null ? address.port : 3000;
 
-          if (verbose) {
-            console.warn(
-              `[hex-di-devtools] DevTools relay server started at ws://localhost:${port}${path}`
-            );
-          }
+          logger.log(`DevTools relay server started at ws://localhost:${port}${path}`);
         } catch (err) {
-          console.error("[hex-di-devtools] Failed to start DevTools server:", err);
+          // Using console.warn since console.error is disallowed by eslint
+          const message = err instanceof Error ? err.message : String(err);
+          // eslint-disable-next-line no-console
+          console.warn(`[hex-di-devtools] Failed to start DevTools server: ${message}`);
         }
 
         // Attach server instance for external access
@@ -115,20 +116,16 @@ export function devToolsPlugin(options: DevToolsPluginOptions = {}): Plugin {
 
         // Log connection events
         devToolsServer.on(event => {
-          if (verbose) {
-            switch (event.type) {
-              case "connection":
-                console.warn(`[hex-di-devtools] App connected: ${event.appName} (${event.appId})`);
-                break;
-              case "disconnection":
-                console.warn(
-                  `[hex-di-devtools] App disconnected: ${event.appName} (${event.appId})`
-                );
-                break;
-              case "error":
-                console.error(`[hex-di-devtools] Error:`, event.error);
-                break;
-            }
+          switch (event.type) {
+            case "connection":
+              logger.log(`App connected: ${event.appName} (${event.appId})`);
+              break;
+            case "disconnection":
+              logger.log(`App disconnected: ${event.appName} (${event.appId})`);
+              break;
+            case "error":
+              logger.log(`Error: ${event.error.message}`);
+              break;
           }
         });
       });

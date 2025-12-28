@@ -14,14 +14,9 @@
 
 import React, { useMemo, useCallback, type ReactElement, type CSSProperties } from "react";
 import type { Lifetime } from "@hex-di/graph";
-import type { TraceEntry, TraceStats } from "@hex-di/devtools-core";
+import { formatDuration, type TraceEntry, type TraceStats } from "@hex-di/devtools-core";
 import type { TracingExportFormat } from "./tracing-controls-bar.js";
-import {
-  summaryStyles,
-  emptyStyles,
-  nodeStyles,
-  formatDuration,
-} from "./styles.js";
+import { summaryStyles, emptyStyles, nodeStyles } from "./styles.js";
 
 // =============================================================================
 // Types
@@ -173,7 +168,8 @@ const localStyles: {
   slowestServiceBar: {
     height: "8px",
     borderRadius: "2px",
-    background: "linear-gradient(to right, var(--hex-devtools-medium, #f9e2af), var(--hex-devtools-slow, #f38ba8))",
+    background:
+      "linear-gradient(to right, var(--hex-devtools-medium, #f9e2af), var(--hex-devtools-slow, #f38ba8))",
     minWidth: "4px",
   },
   lifetimeCard: {
@@ -246,9 +242,7 @@ const localStyles: {
 /**
  * Computes duration distribution across buckets.
  */
-function computeDurationDistribution(
-  traces: readonly TraceEntry[]
-): Map<string, number> {
+function computeDurationDistribution(traces: readonly TraceEntry[]): Map<string, number> {
   const distribution = new Map<string, number>();
 
   // Initialize all buckets to 0
@@ -277,13 +271,13 @@ function getSlowestServices(
   limit: number
 ): readonly SlowestService[] {
   // Filter to non-cached traces for accurate "slowest" measurement
-  const freshTraces = traces.filter((t) => !t.isCacheHit);
+  const freshTraces = traces.filter(t => !t.isCacheHit);
 
   // Sort by duration descending
   const sorted = [...freshTraces].sort((a, b) => b.duration - a.duration);
 
   // Take top N and map to display format
-  return sorted.slice(0, limit).map((trace) => ({
+  return sorted.slice(0, limit).map(trace => ({
     traceId: trace.id,
     portName: trace.portName,
     duration: trace.duration,
@@ -294,9 +288,7 @@ function getSlowestServices(
 /**
  * Computes statistics grouped by lifetime.
  */
-function computeLifetimeStats(
-  traces: readonly TraceEntry[]
-): Record<Lifetime, LifetimeStats> {
+function computeLifetimeStats(traces: readonly TraceEntry[]): Record<Lifetime, LifetimeStats> {
   const stats: Record<Lifetime, { count: number; totalDuration: number }> = {
     singleton: { count: 0, totalDuration: 0 },
     scoped: { count: 0, totalDuration: 0 },
@@ -313,25 +305,18 @@ function computeLifetimeStats(
       count: stats.singleton.count,
       totalDuration: stats.singleton.totalDuration,
       averageDuration:
-        stats.singleton.count > 0
-          ? stats.singleton.totalDuration / stats.singleton.count
-          : 0,
+        stats.singleton.count > 0 ? stats.singleton.totalDuration / stats.singleton.count : 0,
     },
     scoped: {
       count: stats.scoped.count,
       totalDuration: stats.scoped.totalDuration,
-      averageDuration:
-        stats.scoped.count > 0
-          ? stats.scoped.totalDuration / stats.scoped.count
-          : 0,
+      averageDuration: stats.scoped.count > 0 ? stats.scoped.totalDuration / stats.scoped.count : 0,
     },
     transient: {
       count: stats.transient.count,
       totalDuration: stats.transient.totalDuration,
       averageDuration:
-        stats.transient.count > 0
-          ? stats.transient.totalDuration / stats.transient.count
-          : 0,
+        stats.transient.count > 0 ? stats.transient.totalDuration / stats.transient.count : 0,
     },
   };
 }
@@ -443,16 +428,10 @@ function OverviewCard({
   };
 
   return (
-    <div
-      data-testid={testId}
-      data-warning={isWarning.toString()}
-      style={cardStyle}
-    >
+    <div data-testid={testId} data-warning={isWarning.toString()} style={cardStyle}>
       <div style={summaryStyles.cardLabel}>{label}</div>
       <div style={summaryStyles.cardValue}>{value}</div>
-      {subtext !== undefined && (
-        <div style={summaryStyles.cardSubtext}>{subtext}</div>
-      )}
+      {subtext !== undefined && <div style={summaryStyles.cardSubtext}>{subtext}</div>}
     </div>
   );
 }
@@ -484,10 +463,7 @@ function DurationBucketRow({
   };
 
   return (
-    <div
-      data-testid={`duration-bucket-${bucket.id}`}
-      style={summaryStyles.barRow}
-    >
+    <div data-testid={`duration-bucket-${bucket.id}`} style={summaryStyles.barRow}>
       <span style={summaryStyles.barLabel}>{bucket.label}</span>
       <div style={barStyle} />
       <span style={summaryStyles.barValue}>
@@ -528,7 +504,7 @@ function SlowestServiceRow({
       onClick={onClick}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => {
+      onKeyDown={e => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           onClick();
@@ -537,13 +513,9 @@ function SlowestServiceRow({
     >
       <span style={localStyles.slowestServiceRank}>{index + 1}.</span>
       <span style={localStyles.slowestServiceName}>{service.portName}</span>
-      <span style={localStyles.slowestServiceDuration}>
-        {formatDuration(service.duration)}
-      </span>
+      <span style={localStyles.slowestServiceDuration}>{formatDuration(service.duration)}</span>
       <div style={barStyle} />
-      <span style={getLifetimeBadgeStyle(service.lifetime)}>
-        {service.lifetime.toUpperCase()}
-      </span>
+      <span style={getLifetimeBadgeStyle(service.lifetime)}>{service.lifetime.toUpperCase()}</span>
     </div>
   );
 }
@@ -571,17 +543,14 @@ function LifetimeBreakdownCard({
   };
 
   return (
-    <div
-      data-testid={`lifetime-breakdown-${lifetime}`}
-      style={localStyles.lifetimeCard}
-    >
+    <div data-testid={`lifetime-breakdown-${lifetime}`} style={localStyles.lifetimeCard}>
       <div style={localStyles.lifetimeHeader}>
-        <span style={getLifetimeBadgeStyle(lifetime)}>
-          {lifetime.toUpperCase()}
-        </span>
+        <span style={getLifetimeBadgeStyle(lifetime)}>{lifetime.toUpperCase()}</span>
       </div>
       <div style={localStyles.lifetimeStats}>
-        <span>{stats.count} service{stats.count !== 1 ? "s" : ""}</span>
+        <span>
+          {stats.count} service{stats.count !== 1 ? "s" : ""}
+        </span>
         <span>Avg: {formatDuration(stats.averageDuration)}</span>
         <span>Total: {formatDuration(stats.totalDuration)}</span>
       </div>
@@ -708,9 +677,7 @@ function ExportButtons({ onExport }: ExportButtonsProps): ReactElement {
 function EmptyState(): ReactElement {
   return (
     <div data-testid="summary-empty-state" style={localStyles.emptyStateContainer}>
-      <div style={{ fontWeight: 500, marginBottom: "8px" }}>
-        No trace data available
-      </div>
+      <div style={{ fontWeight: 500, marginBottom: "8px" }}>No trace data available</div>
       <div style={{ fontSize: "12px", color: "var(--hex-devtools-text-muted, #a6adc8)" }}>
         Statistics will appear here once services are resolved.
       </div>
@@ -759,22 +726,13 @@ export function SummaryStatsView({
   onExport,
 }: SummaryStatsViewProps): ReactElement {
   // Compute derived data
-  const durationDistribution = useMemo(
-    () => computeDurationDistribution(traces),
-    [traces]
-  );
+  const durationDistribution = useMemo(() => computeDurationDistribution(traces), [traces]);
 
-  const slowestServices = useMemo(
-    () => getSlowestServices(traces, MAX_SLOWEST_SERVICES),
-    [traces]
-  );
+  const slowestServices = useMemo(() => getSlowestServices(traces, MAX_SLOWEST_SERVICES), [traces]);
 
   const lifetimeStats = useMemo(() => computeLifetimeStats(traces), [traces]);
 
-  const cacheEfficiency = useMemo(
-    () => computeCacheEfficiency(traces),
-    [traces]
-  );
+  const cacheEfficiency = useMemo(() => computeCacheEfficiency(traces), [traces]);
 
   // Compute max values for bar scaling
   const maxBucketCount = useMemo(() => {
@@ -851,7 +809,7 @@ export function SummaryStatsView({
       <div style={localStyles.section}>
         <div style={summaryStyles.sectionHeader}>Duration Distribution</div>
         <div style={summaryStyles.barChart}>
-          {DURATION_BUCKETS.map((bucket) => (
+          {DURATION_BUCKETS.map(bucket => (
             <DurationBucketRow
               key={bucket.id}
               bucket={bucket}
@@ -865,9 +823,7 @@ export function SummaryStatsView({
 
       {/* Slowest Services */}
       <div style={localStyles.section}>
-        <div style={summaryStyles.sectionHeader}>
-          Slowest Services (Top {MAX_SLOWEST_SERVICES})
-        </div>
+        <div style={summaryStyles.sectionHeader}>Slowest Services (Top {MAX_SLOWEST_SERVICES})</div>
         <div data-testid="slowest-services-list">
           {slowestServices.map((service, index) => (
             <SlowestServiceRow
@@ -879,7 +835,13 @@ export function SummaryStatsView({
             />
           ))}
           {slowestServices.length === 0 && (
-            <div style={{ fontSize: "12px", color: "var(--hex-devtools-text-muted, #a6adc8)", padding: "8px 0" }}>
+            <div
+              style={{
+                fontSize: "12px",
+                color: "var(--hex-devtools-text-muted, #a6adc8)",
+                padding: "8px 0",
+              }}
+            >
               No services recorded yet.
             </div>
           )}

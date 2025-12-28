@@ -19,10 +19,10 @@ import React, {
   type ReactElement,
   type CSSProperties,
 } from "react";
-import type { TraceEntry } from "@hex-di/devtools-core";
+import { formatDuration, type TraceEntry } from "@hex-di/devtools-core";
 import { TimeRuler } from "./time-ruler.js";
 import { TimelineRow } from "./timeline-row.js";
-import { timelineStyles, formatDuration, emptyStyles, containerInspectorStyles } from "./styles.js";
+import { timelineStyles, emptyStyles, containerInspectorStyles } from "./styles.js";
 
 // =============================================================================
 // Types

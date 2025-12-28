@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { filterGraph, byLifetime, byPortName } from "../src/filter-graph.js";
+import { filterGraph, byLifetime, byPortName } from "../src/index.js";
 import type { ExportedGraph, ExportedNode } from "@hex-di/devtools-core";
 
 // =============================================================================
@@ -56,11 +56,7 @@ describe("filterGraph", () => {
 
     // Should have only singleton nodes
     expect(result.nodes).toHaveLength(3);
-    expect(result.nodes.map((n) => n.id)).toEqual([
-      "Config",
-      "Database",
-      "Logger",
-    ]);
+    expect(result.nodes.map(n => n.id)).toEqual(["Config", "Database", "Logger"]);
 
     // Should be a new object
     expect(result).not.toBe(original);
@@ -135,7 +131,7 @@ describe("byLifetime", () => {
     const result = filterGraph(original, byLifetime("singleton"));
 
     expect(result.nodes).toHaveLength(3);
-    expect(result.nodes.every((n) => n.lifetime === "singleton")).toBe(true);
+    expect(result.nodes.every(n => n.lifetime === "singleton")).toBe(true);
   });
 
   it("filters nodes by scoped lifetime", () => {
@@ -143,11 +139,8 @@ describe("byLifetime", () => {
     const result = filterGraph(original, byLifetime("scoped"));
 
     expect(result.nodes).toHaveLength(2);
-    expect(result.nodes.map((n) => n.id)).toEqual([
-      "UserRepository",
-      "UserService",
-    ]);
-    expect(result.nodes.every((n) => n.lifetime === "scoped")).toBe(true);
+    expect(result.nodes.map(n => n.id)).toEqual(["UserRepository", "UserService"]);
+    expect(result.nodes.every(n => n.lifetime === "scoped")).toBe(true);
   });
 
   it("filters nodes by transient lifetime", () => {
@@ -188,10 +181,7 @@ describe("byPortName", () => {
     const result = filterGraph(original, byPortName(/user/i));
 
     expect(result.nodes).toHaveLength(2);
-    expect(result.nodes.map((n) => n.id)).toEqual([
-      "UserRepository",
-      "UserService",
-    ]);
+    expect(result.nodes.map(n => n.id)).toEqual(["UserRepository", "UserService"]);
   });
 
   it("filters nodes matching prefix pattern", () => {
@@ -199,7 +189,7 @@ describe("byPortName", () => {
     const result = filterGraph(original, byPortName(/^User/));
 
     expect(result.nodes).toHaveLength(2);
-    expect(result.nodes.every((n) => n.id.startsWith("User"))).toBe(true);
+    expect(result.nodes.every(n => n.id.startsWith("User"))).toBe(true);
   });
 
   it("returns empty result when no nodes match pattern", () => {

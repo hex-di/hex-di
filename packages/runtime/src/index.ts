@@ -245,6 +245,7 @@ export type {
   ResolutionResultContext,
   ContainerOptions,
   ContainerKind,
+  HooksInstaller,
 } from "./resolution/hooks.js";
 
 // =============================================================================
@@ -273,7 +274,7 @@ export type {
 // Container State Inspection
 // =============================================================================
 
-export { INTERNAL_ACCESS, TRACING_ACCESS } from "./inspector/symbols.js";
+export { INTERNAL_ACCESS, TRACING_ACCESS, HOOKS_ACCESS } from "./inspector/symbols.js";
 
 export type {
   ContainerInternalState,
@@ -289,7 +290,11 @@ export type {
   ScopeTree,
 } from "./inspector/types.js";
 
-export { createInspector, getInternalAccessor } from "./inspector/creation.js";
+export {
+  createInspector,
+  getInternalAccessor,
+  type InternalAccessible,
+} from "./inspector/creation.js";
 
 // =============================================================================
 // Plugin System
@@ -337,7 +342,7 @@ export type {
   PluginContext,
   PluginHooks,
   ScopeEventEmitter,
-  ScopeInfo,
+  ScopeEventInfo,
   ChildContainerInfo,
   ContainerInfo,
   AnyPlugin,
@@ -370,3 +375,51 @@ export type { PluginErrorCode } from "./plugin/index.js";
 // Plugin manager (for advanced use cases)
 export { PluginManager } from "./plugin/index.js";
 export type { ComposedHooks } from "./plugin/index.js";
+
+// =============================================================================
+// Plugin Wrapper Pattern (Zustand/Redux-style enhancement)
+// =============================================================================
+
+/**
+ * Enhancement wrapper utilities for type-safe plugin composition.
+ *
+ * The wrapper pattern provides compile-time type safety for plugin APIs
+ * without requiring type casts. Each wrapper adds a symbol-keyed API to
+ * the container type through intersection.
+ *
+ * @example
+ * ```typescript
+ * import { createContainer, pipe, createPluginWrapper } from '@hex-di/runtime';
+ * import { InspectorPlugin, INSPECTOR } from '@hex-di/inspector';
+ *
+ * const withInspector = createPluginWrapper(InspectorPlugin);
+ *
+ * const container = pipe(
+ *   createContainer(graph),
+ *   withInspector
+ * );
+ *
+ * // TypeScript knows container has [INSPECTOR]: InspectorAPI
+ * container[INSPECTOR].getSnapshot();
+ * ```
+ */
+export {
+  createPluginWrapper,
+  getAppliedWrappers,
+  applyParentWrappers,
+  getDisposalCallbacks,
+  APPLIED_WRAPPERS,
+} from "./plugin/index.js";
+
+export type {
+  PluginWrapper,
+  EnhanceableContainer,
+  WrapperContext,
+  WithPlugin,
+  ApplyWrapper,
+  AppliedWrapper,
+  WrapperTracking,
+} from "./plugin/index.js";
+
+// Composition utilities
+export { pipe, compose2, compose3, compose4, compose5 } from "./plugin/index.js";

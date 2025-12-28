@@ -16,8 +16,8 @@ import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
 import type { Graph } from "@hex-di/graph";
 import type { Port } from "@hex-di/ports";
-import { createContainer } from "@hex-di/runtime";
-import { TracingPlugin } from "@hex-di/tracing";
+import { createContainer, pipe } from "@hex-di/runtime";
+import { withTracing } from "@hex-di/tracing";
 import {
   DevToolsProvider,
   useDevTools,
@@ -114,7 +114,7 @@ describe("DevToolsProvider", () => {
 
     it("provides tracingAPI when container with TracingPlugin is provided", () => {
       const graph = createTestGraph();
-      const container = createContainer(graph, { plugins: [TracingPlugin] });
+      const container = pipe(createContainer(graph), withTracing);
 
       render(
         <DevToolsProvider graph={graph} container={container}>

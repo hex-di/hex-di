@@ -63,7 +63,7 @@ export type {
   PluginContext,
   PluginHooks,
   ScopeEventEmitter,
-  ScopeInfo,
+  ScopeEventInfo,
   ChildContainerInfo,
   ContainerInfo,
   AnyPlugin,
@@ -108,3 +108,24 @@ export type { PluginErrorCode } from "./errors.js";
 // Plugin manager
 export { PluginManager } from "./plugin-manager.js";
 export type { ComposedHooks } from "./plugin-manager.js";
+
+// Wrapper utilities (Zustand/Redux-style enhancement pattern)
+export {
+  createPluginWrapper,
+  getAppliedWrappers,
+  applyParentWrappers,
+  getDisposalCallbacks,
+  APPLIED_WRAPPERS,
+} from "./wrapper.js";
+export type {
+  PluginWrapper,
+  EnhanceableContainer,
+  WrapperContext,
+  WithPlugin,
+  ApplyWrapper,
+  AppliedWrapper,
+  WrapperTracking,
+} from "./wrapper.js";
+
+// Composition utilities
+export { pipe, compose2, compose3, compose4, compose5 } from "./compose.js";

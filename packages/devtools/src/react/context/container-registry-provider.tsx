@@ -4,6 +4,8 @@
  * Provides a context for tracking all containers (root, child, lazy, scope)
  * in the application and managing selection state for the DevTools inspector.
  *
+ * Uses Rust-like Option<T> for optional values instead of nullable types.
+ *
  * @packageDocumentation
  */
 
@@ -13,6 +15,7 @@ import {
   type ContainerEntry,
   type ContainerRegistryValue,
 } from "./container-registry.js";
+import { Some, None, isSome, type Option } from "../types/adt.js";
 
 /**
  * Props for ContainerRegistryProvider component.
@@ -27,7 +30,10 @@ export interface ContainerRegistryProviderProps {
  *
  * Place at the top of your app, above all ContainerProviders, to enable
  * tracking of all containers. Components can register containers using
- * useRegisterContainer and access them via useContainerList and useInspector.
+ * useRegisterContainer and access them via useContainerList and useContainerInspector.
+ *
+ * Uses Option<T> for selection state, enabling exhaustive pattern matching
+ * instead of null checks.
  *
  * @example Basic usage
  * ```typescript
@@ -47,7 +53,7 @@ export function ContainerRegistryProvider({
   children,
 }: ContainerRegistryProviderProps): ReactElement {
   const [containers, setContainers] = useState<Map<string, ContainerEntry>>(() => new Map());
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<Option<string>>(None);
 
   const registerContainer = useCallback((entry: ContainerEntry): void => {
     setContainers(prev => {
@@ -61,7 +67,7 @@ export function ContainerRegistryProvider({
       return next;
     });
     // Auto-select first container
-    setSelectedId(current => current ?? entry.id);
+    setSelectedId(current => (isSome(current) ? current : Some(entry.id)));
   }, []);
 
   const unregisterContainer = useCallback((id: string): void => {
@@ -70,22 +76,22 @@ export function ContainerRegistryProvider({
       next.delete(id);
       return next;
     });
-    setSelectedId(current => (current === id ? null : current));
+    setSelectedId(current => (isSome(current) && current.value === id ? None : current));
   }, []);
 
-  const selectContainer = useCallback((id: string | null): void => {
+  const selectContainer = useCallback((id: Option<string>): void => {
     setSelectedId(id);
   }, []);
 
   const value = useMemo((): ContainerRegistryValue => {
-    const selectedEntry = selectedId !== null ? (containers.get(selectedId) ?? null) : null;
+    const entry = isSome(selectedId) ? containers.get(selectedId.value) : undefined;
 
     return {
       containers,
       selectedId,
       selectContainer,
-      selectedInspector: selectedEntry?.inspector ?? null,
-      selectedEntry,
+      selectedContainer: entry !== undefined ? Some(entry.container) : None,
+      selectedEntry: entry !== undefined ? Some(entry) : None,
       registerContainer,
       unregisterContainer,
     };

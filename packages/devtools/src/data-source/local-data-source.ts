@@ -13,15 +13,15 @@ import type { Container, ContainerPhase } from "@hex-di/runtime";
 import { createInspector } from "@hex-di/runtime";
 import { getTracingAPI, type TracingAPI } from "@hex-di/tracing";
 import { getInspectorAPI, type InspectorAPI } from "@hex-di/inspector";
-import type {
-  ExportedGraph,
-  PresenterDataSourceContract,
-  TraceEntry,
-  TraceStats,
-  ContainerSnapshot,
-  ContainerKind,
+import {
+  toJSON,
+  type ExportedGraph,
+  type PresenterDataSourceContract,
+  type TraceEntry,
+  type TraceStats,
+  type ContainerSnapshot,
+  type ContainerKind,
 } from "@hex-di/devtools-core";
-import { toJSON } from "../to-json.js";
 import type {
   DataSource,
   DataSourceConnectionState,

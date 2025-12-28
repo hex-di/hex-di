@@ -1,263 +1,242 @@
 /**
- * InspectorPlugin - Plugin for container state inspection.
+ * InspectorPlugin - Singleton plugin for container state inspection.
  *
- * Provides runtime state inspection via a hybrid push/pull API:
- * - Pull-based: getSnapshot(), getScopeTree(), listPorts(), isResolved()
- * - Push-based: subscribe() for real-time UI updates
+ * Uses WeakMap-based external state to track multiple containers:
+ * - Each container gets isolated state via WeakMap
+ * - Automatic GC cleanup when containers are collected
+ * - Event routing via containerId for proper isolation
  *
  * @packageDocumentation
  */
 
 import {
   definePlugin,
-  createInspector,
   type PluginContext,
   type PluginHooks,
+  type InternalAccessible,
+  type ScopeEventInfo,
+  INTERNAL_ACCESS,
 } from "@hex-di/runtime";
-import type { Container, ContainerPhase } from "@hex-di/runtime";
-import type { Port } from "@hex-di/ports";
-import type { ContainerKind, ContainerPhase as TypedPhase, ScopeInfo } from "@hex-di/devtools-core";
-import type { InspectorAPI, InspectorEvent, InspectorListener } from "./types.js";
+import type { InspectorWithSubscription, InspectorEvent, InspectorListener } from "./types.js";
 import { INSPECTOR } from "./symbols.js";
-import { detectContainerKind, detectPhase, buildTypedSnapshot } from "./helpers.js";
+import { createInspector } from "./inspector.js";
 
 // =============================================================================
-// Plugin State Types
+// State Store (Module-Level)
 // =============================================================================
 
 /**
- * Internal state for the inspector plugin.
+ * Per-container inspector state.
  * @internal
  */
 interface InspectorState {
-  /** Set of event listeners */
+  /** Set of event listeners for this container */
   readonly listeners: Set<InspectorListener>;
   /** Whether the container is disposed */
   isDisposed: boolean;
-  /** Current container phase */
-  phase: TypedPhase;
-  /** Container kind (cached after first detection) */
-  containerKind: ContainerKind | null;
-  /** Bound container reference - uses minimal type for storage */
-  containerRef: Container<
-    Port<unknown, string>,
-    Port<unknown, string>,
-    Port<unknown, string>,
-    ContainerPhase
-  > | null;
+}
+
+/**
+ * WeakMap storing per-container state.
+ * State is automatically cleaned up when container is garbage collected.
+ * @internal
+ */
+const containerStates = new WeakMap<InternalAccessible, InspectorState>();
+
+/**
+ * Registry mapping containerId to container via WeakRef.
+ * Enables hook event routing to correct container listeners.
+ * @internal
+ */
+const containerRegistry = new Map<string, WeakRef<InternalAccessible>>();
+
+/**
+ * Gets or creates state for a container.
+ * @internal
+ */
+function getOrCreateState(container: InternalAccessible): InspectorState {
+  let state = containerStates.get(container);
+  if (state === undefined) {
+    state = {
+      listeners: new Set(),
+      isDisposed: false,
+    };
+    containerStates.set(container, state);
+  }
+  return state;
+}
+
+/**
+ * Emits an event to all listeners registered for a specific container.
+ * Routes events via containerId lookup.
+ * @internal
+ */
+function emitToContainer(containerId: string, event: InspectorEvent): void {
+  const containerRef = containerRegistry.get(containerId);
+  if (containerRef === undefined) return;
+
+  const container = containerRef.deref();
+  if (container === undefined) {
+    // Container was garbage collected, clean up registry
+    containerRegistry.delete(containerId);
+    return;
+  }
+
+  const state = containerStates.get(container);
+  if (state === undefined) return;
+
+  for (const listener of state.listeners) {
+    try {
+      listener(event);
+    } catch {
+      // Swallow listener errors to prevent affecting other listeners
+    }
+  }
 }
 
 // =============================================================================
-// Plugin Factory
+// API Factory (Shared by createApi and createApiForChild)
 // =============================================================================
 
 /**
- * Creates an InspectorPlugin instance.
+ * Creates an InspectorWithSubscription API for a container.
+ * Used by both root and child container API creation.
+ * @internal
+ */
+function createInspectorAPI(
+  container: InternalAccessible,
+  containerId: string
+): InspectorWithSubscription {
+  const state = getOrCreateState(container);
+
+  // Register container for event routing
+  containerRegistry.set(containerId, new WeakRef(container));
+
+  // Create core inspector (uses WeakMap caching internally)
+  const coreInspector = createInspector(container);
+
+  const api: InspectorWithSubscription = {
+    getSnapshot() {
+      return coreInspector.getSnapshot();
+    },
+
+    getScopeTree() {
+      return coreInspector.getScopeTree();
+    },
+
+    listPorts() {
+      return coreInspector.listPorts();
+    },
+
+    isResolved(portName: string) {
+      return coreInspector.isResolved(portName);
+    },
+
+    getContainerKind() {
+      return coreInspector.getContainerKind();
+    },
+
+    getPhase() {
+      return coreInspector.getPhase();
+    },
+
+    get isDisposed() {
+      return state.isDisposed;
+    },
+
+    subscribe(listener: InspectorListener) {
+      state.listeners.add(listener);
+      return () => {
+        state.listeners.delete(listener);
+      };
+    },
+  };
+
+  return Object.freeze(api);
+}
+
+// =============================================================================
+// Plugin Definition (Singleton)
+// =============================================================================
+
+/**
+ * Singleton InspectorPlugin for container state inspection.
  *
- * The plugin requires late-binding to the container after creation.
- * This is necessary because plugins are initialized before the container
- * is fully constructed.
- *
- * @returns An object containing the plugin and a bind function
+ * Uses WeakMap-based external state to track multiple containers:
+ * - Single plugin instance works across all containers
+ * - Each container gets isolated listener sets via WeakMap
+ * - Events route to correct container via containerId
+ * - Automatic cleanup when containers are garbage collected
  *
  * @example
  * ```typescript
  * import { createContainer } from '@hex-di/runtime';
- * import { createInspectorPlugin, INSPECTOR } from '@hex-di/inspector';
+ * import { InspectorPlugin, INSPECTOR } from '@hex-di/inspector';
  *
- * // Create the inspector plugin
- * const { plugin: InspectorPlugin, bindContainer } = createInspectorPlugin();
- *
- * // Create container with the plugin
+ * // Use the singleton plugin directly
  * const container = createContainer(graph, {
  *   plugins: [InspectorPlugin],
  * });
  *
- * // Bind the container to enable inspection
- * bindContainer(container);
- *
- * // Now you can use the inspector API
+ * // Inspector is immediately ready
  * const snapshot = container[INSPECTOR].getSnapshot();
+ * console.log(`Container kind: ${snapshot.kind}`);
+ *
+ * // Subscribe to events
+ * const unsubscribe = container[INSPECTOR].subscribe((event) => {
+ *   if (event.type === 'resolution') {
+ *     console.log(`Resolved ${event.portName} in ${event.duration}ms`);
+ *   }
+ * });
  * ```
  */
-export function createInspectorPlugin<
-  TProvides extends Port<unknown, string> = Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
-  TPhase extends ContainerPhase = ContainerPhase,
->(): {
-  readonly plugin: ReturnType<
-    typeof definePlugin<typeof INSPECTOR, InspectorAPI, readonly [], readonly []>
-  >;
-  readonly bindContainer: (container: Container<TProvides, TExtends, TAsyncPorts, TPhase>) => void;
-} {
-  // Shared state across createApi and hooks
-  const state: InspectorState = {
-    listeners: new Set(),
-    isDisposed: false,
-    phase: "uninitialized",
-    containerKind: null,
-    containerRef: null,
-  };
+export const InspectorPlugin = definePlugin({
+  name: "inspector",
+  symbol: INSPECTOR,
+  requires: [] as const,
+  enhancedBy: [] as const,
 
-  /**
-   * Emits an event to all listeners.
-   */
-  const emit = (event: InspectorEvent): void => {
-    for (const listener of state.listeners) {
-      try {
-        listener(event);
-      } catch {
-        // Swallow listener errors to prevent affecting other listeners
-      }
-    }
-  };
+  createApi(context: PluginContext): InspectorWithSubscription {
+    const container = context.getContainer();
+    const containerId = container[INTERNAL_ACCESS]().containerId;
+    const state = getOrCreateState(container);
 
-  /**
-   * Ensures the container is bound before use.
-   * Returns the container with the minimal type needed for inspection.
-   */
-  const ensureBound = (): Container<
-    Port<unknown, string>,
-    Port<unknown, string>,
-    Port<unknown, string>,
-    ContainerPhase
-  > => {
-    if (state.containerRef === null) {
-      throw new Error(
-        "InspectorPlugin not bound to container. " +
-          "Call bindContainer(container) after createContainer()."
-      );
-    }
-    return state.containerRef;
-  };
+    // Register disposal callback
+    context.onDispose(() => {
+      state.isDisposed = true;
+      emitToContainer(containerId, { type: "phase-changed", phase: "disposed" });
+      emitToContainer(containerId, { type: "snapshot-changed" });
+      state.listeners.clear();
+      containerRegistry.delete(containerId);
+    });
 
-  /**
-   * Gets or detects the container kind.
-   */
-  const getContainerKind = (): ContainerKind => {
-    if (state.containerKind === null) {
-      state.containerKind = detectContainerKind(ensureBound());
-    }
-    return state.containerKind;
-  };
+    return createInspectorAPI(container, containerId);
+  },
 
-  // Define the plugin hooks
-  const hooks: PluginHooks = {
+  createApiForChild(childContainer: InternalAccessible): InspectorWithSubscription {
+    const containerId = childContainer[INTERNAL_ACCESS]().containerId;
+    return createInspectorAPI(childContainer, containerId);
+  },
+
+  hooks: {
     afterResolve(ctx) {
-      emit({
+      emitToContainer(ctx.containerId, {
         type: "resolution",
         portName: ctx.portName,
         duration: ctx.duration,
         isCacheHit: ctx.isCacheHit,
       });
-      emit({ type: "snapshot-changed" });
+      emitToContainer(ctx.containerId, { type: "snapshot-changed" });
     },
 
-    onScopeCreated(scope: ScopeInfo) {
-      emit({ type: "scope-created", scope });
-      emit({ type: "snapshot-changed" });
+    onScopeCreated(scope: ScopeEventInfo) {
+      emitToContainer(scope.containerId, { type: "scope-created", scope });
+      emitToContainer(scope.containerId, { type: "snapshot-changed" });
     },
 
-    onScopeDisposed(scope: ScopeInfo) {
-      emit({ type: "scope-disposed", scopeId: scope.id });
-      emit({ type: "snapshot-changed" });
+    onScopeDisposed(scope: ScopeEventInfo) {
+      emitToContainer(scope.containerId, { type: "scope-disposed", scopeId: scope.id });
+      emitToContainer(scope.containerId, { type: "snapshot-changed" });
     },
-  };
-
-  // Create the plugin
-  const plugin = definePlugin({
-    name: "inspector",
-    symbol: INSPECTOR,
-    requires: [] as const,
-    enhancedBy: [] as const,
-
-    createApi(_context: PluginContext): InspectorAPI {
-      // Create the InspectorAPI with lazy container access
-      const api: InspectorAPI = {
-        // Pull-based queries
-        getSnapshot() {
-          const container = ensureBound();
-          const inspector = createInspector(container);
-          const kind = getContainerKind();
-          return buildTypedSnapshot(inspector.snapshot(), kind, container);
-        },
-
-        getScopeTree() {
-          const container = ensureBound();
-          const inspector = createInspector(container);
-          return inspector.getScopeTree();
-        },
-
-        listPorts() {
-          const container = ensureBound();
-          const inspector = createInspector(container);
-          return inspector.listPorts();
-        },
-
-        isResolved(portName: string) {
-          const container = ensureBound();
-          const inspector = createInspector(container);
-          return inspector.isResolved(portName);
-        },
-
-        // Push-based subscriptions
-        subscribe(listener: InspectorListener) {
-          state.listeners.add(listener);
-          return () => {
-            state.listeners.delete(listener);
-          };
-        },
-
-        // Container metadata
-        getContainerKind() {
-          return getContainerKind();
-        },
-
-        getPhase() {
-          const container = ensureBound();
-          const inspector = createInspector(container);
-          const kind = getContainerKind();
-          return detectPhase(container, inspector.snapshot(), kind);
-        },
-
-        get isDisposed() {
-          return state.isDisposed;
-        },
-      };
-
-      return Object.freeze(api);
-    },
-
-    hooks,
-
-    dispose() {
-      state.isDisposed = true;
-      state.phase = "disposed";
-      emit({ type: "phase-changed", phase: "disposed" });
-      emit({ type: "snapshot-changed" });
-      state.listeners.clear();
-    },
-  });
-
-  // Bind function to be called after container creation
-  const bindContainer = (container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): void => {
-    if (state.containerRef !== null) {
-      throw new Error("InspectorPlugin already bound to a container.");
-    }
-    // Store with wider type - Container is covariant in TProvides
-    state.containerRef = container as unknown as Container<
-      Port<unknown, string>,
-      Port<unknown, string>,
-      Port<unknown, string>,
-      ContainerPhase
-    >;
-    state.containerKind = detectContainerKind(container);
-    state.phase = "initialized";
-  };
-
-  return {
-    plugin,
-    bindContainer,
-  };
-}
+  } satisfies PluginHooks,
+});

@@ -347,11 +347,20 @@ export abstract class BaseContainerImpl<
       singletonMemo: createMemoMapSnapshot(this.singletonMemo),
       childScopes: Object.freeze(childScopeSnapshots),
       adapterMap: this.createAdapterMapSnapshot(),
+      containerId: "root",
     };
     return Object.freeze(snapshot);
   }
 
-  private createAdapterMapSnapshot(): ReadonlyMap<
+  /**
+   * Creates a snapshot of adapters for DevTools inspection.
+   *
+   * Root containers return only local adapters.
+   * Child containers should override this to include inherited adapters.
+   *
+   * @returns A readonly map of ports to adapter info
+   */
+  protected createAdapterMapSnapshot(): ReadonlyMap<
     Port<unknown, string>,
     import("../inspector/types.js").AdapterInfo
   > {
@@ -360,8 +369,9 @@ export abstract class BaseContainerImpl<
       map.set(port, {
         portName: port.__portName,
         lifetime: adapter.lifetime,
-        dependencyCount: 0,
-        dependencyNames: [],
+        factoryKind: adapter.factoryKind,
+        dependencyCount: adapter.requires.length,
+        dependencyNames: adapter.requires.map(p => p.__portName),
       });
     }
     return map;

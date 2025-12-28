@@ -9,7 +9,9 @@
 
 import React, { type ReactElement, type CSSProperties } from "react";
 import { useContainerList } from "./hooks/use-container-list.js";
-import type { ContainerEntry } from "./context/container-registry.js";
+import type { ContainerEntry, InheritanceMode } from "./context/container-registry.js";
+import { isSome, Some, None } from "./types/adt.js";
+import { getInheritanceModeBadgeStyle } from "./styles.js";
 
 // =============================================================================
 // Props
@@ -68,12 +70,12 @@ const selectorStyles = {
   } as CSSProperties,
 
   selectHover: {
-    borderColor: "var(--hex-devtools-border-hover, #565f89)",
+    border: "1px solid var(--hex-devtools-border-hover, #565f89)",
     boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
   } as CSSProperties,
 
   selectFocus: {
-    borderColor: "var(--hex-devtools-accent, #89b4fa)",
+    border: "1px solid var(--hex-devtools-accent, #89b4fa)",
     boxShadow: "0 0 0 2px rgba(137, 180, 250, 0.2)",
   } as CSSProperties,
 
@@ -151,9 +153,15 @@ function getKindStyle(kind: ContainerEntry["kind"]): CSSProperties {
 
 /**
  * Format container entry for display in the dropdown.
+ *
+ * For child containers with inheritance mode, includes both kind and mode:
+ * - "MyContainer (child · shared)"
  */
 function formatContainerLabel(entry: ContainerEntry, showKind: boolean): string {
   if (showKind) {
+    if (entry.kind === "child" && entry.inheritanceMode !== undefined) {
+      return `${entry.label} (${entry.kind} · ${entry.inheritanceMode})`;
+    }
     return `${entry.label} (${entry.kind})`;
   }
   return entry.label;
@@ -227,8 +235,11 @@ export function ContainerSelector({
 
   const handleChange = (event: React.ChangeEvent<HTMLSelectElement>): void => {
     const value = event.target.value;
-    selectContainer(value === "" ? null : value);
+    selectContainer(value === "" ? None : Some(value));
   };
+
+  // Extract selected ID value for the select element
+  const selectedIdValue = isSome(selectedId) ? selectedId.value : "";
 
   return (
     <div
@@ -241,7 +252,7 @@ export function ContainerSelector({
       </label>
       <select
         id="container-select"
-        value={selectedId ?? ""}
+        value={selectedIdValue}
         onChange={handleChange}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -297,6 +308,52 @@ export function ContainerKindBadge({ kind }: ContainerKindBadgeProps): ReactElem
   return (
     <span style={getKindStyle(kind)} data-testid="container-kind-badge">
       {kind}
+    </span>
+  );
+}
+
+// =============================================================================
+// InheritanceModeBadge Component
+// =============================================================================
+
+/**
+ * Props for the InheritanceModeBadge component.
+ */
+export interface InheritanceModeBadgeProps {
+  /** The inheritance mode to display */
+  readonly mode: InheritanceMode;
+}
+
+/**
+ * InheritanceModeBadge component for displaying child container inheritance mode.
+ *
+ * Color coding:
+ * - shared (blue): Child uses parent's singletons directly
+ * - forked (orange): Child gets independent copies
+ * - isolated (red): Child is completely isolated from parent
+ *
+ * @param props - The component props
+ * @returns A React element containing the inheritance mode badge
+ *
+ * @example
+ * ```tsx
+ * function ContainerItem({ entry }: { entry: ContainerEntry }) {
+ *   return (
+ *     <div>
+ *       <span>{entry.label}</span>
+ *       <ContainerKindBadge kind={entry.kind} />
+ *       {entry.kind === "child" && entry.inheritanceMode && (
+ *         <InheritanceModeBadge mode={entry.inheritanceMode} />
+ *       )}
+ *     </div>
+ *   );
+ * }
+ * ```
+ */
+export function InheritanceModeBadge({ mode }: InheritanceModeBadgeProps): ReactElement {
+  return (
+    <span style={getInheritanceModeBadgeStyle(mode)} data-testid="inheritance-mode-badge">
+      {mode}
     </span>
   );
 }

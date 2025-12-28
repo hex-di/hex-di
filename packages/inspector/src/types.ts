@@ -1,6 +1,10 @@
 /**
  * Type definitions for @hex-di/inspector.
  *
+ * Clean API: Only exports types needed for InspectorAPI.
+ * - For display types (ScopeInfo), import from @hex-di/devtools-core
+ * - For plugin hooks (ScopeEventInfo), import from @hex-di/runtime
+ *
  * @packageDocumentation
  */
 
@@ -9,11 +13,11 @@ import type {
   ContainerPhase,
   ContainerSnapshot,
   ScopeTree,
-  ScopeInfo,
 } from "@hex-di/devtools-core";
+import type { ScopeEventInfo } from "@hex-di/runtime";
 
-// Re-export for convenience
-export type { ContainerKind, ContainerPhase, ContainerSnapshot, ScopeTree, ScopeInfo };
+// Re-export types used in InspectorAPI
+export type { ContainerKind, ContainerPhase, ContainerSnapshot, ScopeTree };
 
 // =============================================================================
 // Inspector Event Types
@@ -26,7 +30,7 @@ export type { ContainerKind, ContainerPhase, ContainerSnapshot, ScopeTree, Scope
  */
 export type InspectorEvent =
   | { readonly type: "snapshot-changed" }
-  | { readonly type: "scope-created"; readonly scope: ScopeInfo }
+  | { readonly type: "scope-created"; readonly scope: ScopeEventInfo }
   | { readonly type: "scope-disposed"; readonly scopeId: string }
   | {
       readonly type: "resolution";
@@ -52,31 +56,32 @@ export type InspectorListener = (event: InspectorEvent) => void;
 // =============================================================================
 
 /**
- * API exposed by InspectorPlugin on containers.
+ * Unified container inspector interface.
  *
- * Provides hybrid push/pull design:
- * - Pull-based: `getSnapshot()`, `getScopeTree()`, etc. for on-demand queries
- * - Push-based: `subscribe()` for real-time UI updates
+ * Pull-based by default. When created via InspectorPlugin,
+ * includes subscribe() for push-based events.
  *
  * All returned data is frozen and immutable.
  *
- * @example
+ * @example Pull-based usage
+ * ```typescript
+ * const inspector = createInspector(container);
+ *
+ * const snapshot = inspector.getSnapshot();
+ * console.log(`Container kind: ${snapshot.kind}`);
+ * ```
+ *
+ * @example Push-based with InspectorPlugin
  * ```typescript
  * const inspector = container[INSPECTOR];
  *
- * // Pull-based: get current state
- * const snapshot = inspector.getSnapshot();
- * console.log(`Container kind: ${snapshot.kind}`);
- *
- * // Push-based: subscribe to changes
- * const unsubscribe = inspector.subscribe((event) => {
- *   if (event.type === "resolution") {
- *     console.log(`Resolved ${event.portName} in ${event.duration}ms`);
- *   }
- * });
- *
- * // Cleanup
- * unsubscribe();
+ * if (hasSubscription(inspector)) {
+ *   const unsubscribe = inspector.subscribe((event) => {
+ *     if (event.type === "resolution") {
+ *       console.log(`Resolved ${event.portName}`);
+ *     }
+ *   });
+ * }
  * ```
  */
 export interface InspectorAPI {
@@ -111,11 +116,14 @@ export interface InspectorAPI {
   isResolved(portName: string): boolean | "scope-required";
 
   // =========================================================================
-  // Push-based subscriptions
+  // Push-based subscriptions (optional)
   // =========================================================================
 
   /**
    * Subscribe to container state changes.
+   *
+   * Only available when using InspectorPlugin. Use `hasSubscription()`
+   * type guard to check availability before calling.
    *
    * Events are emitted on:
    * - Service resolution (with timing)
@@ -126,7 +134,7 @@ export interface InspectorAPI {
    * @param listener - Called when container state changes
    * @returns Unsubscribe function
    */
-  subscribe(listener: InspectorListener): () => void;
+  subscribe?(listener: InspectorListener): () => void;
 
   // =========================================================================
   // Container metadata
@@ -146,4 +154,35 @@ export interface InspectorAPI {
    * Whether the container has been disposed.
    */
   readonly isDisposed: boolean;
+}
+
+/**
+ * Type for inspector with subscription support.
+ * Returned by InspectorPlugin.
+ */
+export type InspectorWithSubscription = InspectorAPI & {
+  subscribe(listener: InspectorListener): () => void;
+};
+
+/**
+ * Type guard to check if an inspector has subscription support.
+ *
+ * Inspectors created via `createInspector()` are pull-only.
+ * Inspectors from InspectorPlugin have subscription support.
+ *
+ * @example
+ * ```typescript
+ * const inspector = getInspector(); // may or may not have subscribe
+ *
+ * if (hasSubscription(inspector)) {
+ *   // TypeScript knows subscribe() is available
+ *   const unsubscribe = inspector.subscribe(listener);
+ * } else {
+ *   // Fall back to polling
+ *   setInterval(() => refresh(inspector.getSnapshot()), 1000);
+ * }
+ * ```
+ */
+export function hasSubscription(inspector: InspectorAPI): inspector is InspectorWithSubscription {
+  return inspector.subscribe !== undefined;
 }

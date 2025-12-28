@@ -310,10 +310,13 @@ describe("PluginApiMap", () => {
     expectTypeOf<Map>().toHaveProperty(METRICS);
   });
 
-  it("should return empty record for empty plugin array", () => {
+  it("should return object type for empty plugin array", () => {
     type Map = PluginApiMap<readonly []>;
-    // Returns Record<symbol, never> to avoid ESLint's no-empty-object-type rule
-    expectTypeOf<Map>().toEqualTypeOf<Record<symbol, never>>();
+    // Returns `object` (not Record<symbol, never>) because:
+    // - Record<symbol, never> creates an index signature requiring all symbol
+    //   properties to be `never`, conflicting with [INTERNAL_ACCESS] etc.
+    // - `object` is a proper empty constraint that intersects cleanly
+    expectTypeOf<Map>().toEqualTypeOf<object>();
   });
 });
 

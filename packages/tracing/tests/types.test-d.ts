@@ -2,7 +2,7 @@
  * Type-level tests for @hex-di/tracing.
  *
  * These tests verify:
- * 1. TracingPlugin type inference
+ * 1. TracingPlugin type inference via wrapper pattern
  * 2. Container augmentation with TRACING symbol
  * 3. TracingAPI type safety
  */
@@ -10,9 +10,9 @@
 import { describe, it, expectTypeOf } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
-import { createContainer } from "@hex-di/runtime";
+import { createContainer, pipe } from "@hex-di/runtime";
 import type { TracingAPI, TraceEntry, TraceStats, TraceFilter } from "@hex-di/devtools-core";
-import { TracingPlugin, TRACING, createTracingPlugin } from "../src/index.js";
+import { TracingPlugin, TRACING, createTracingPlugin, withTracing } from "../src/index.js";
 
 // =============================================================================
 // Test Fixtures
@@ -39,12 +39,10 @@ function createTestGraph() {
 // Type Tests
 // =============================================================================
 
-describe("TracingPlugin type inference", () => {
+describe("TracingPlugin type inference via wrapper pattern", () => {
   it("infers TracingAPI type from container[TRACING]", () => {
     const graph = createTestGraph();
-    const container = createContainer(graph, {
-      plugins: [TracingPlugin],
-    });
+    const container = pipe(createContainer(graph), withTracing);
 
     const tracingAPI = container[TRACING];
 
@@ -62,9 +60,7 @@ describe("TracingPlugin type inference", () => {
 
   it("getTraces returns readonly TraceEntry array", () => {
     const graph = createTestGraph();
-    const container = createContainer(graph, {
-      plugins: [TracingPlugin],
-    });
+    const container = pipe(createContainer(graph), withTracing);
 
     const traces = container[TRACING].getTraces();
 
@@ -73,9 +69,7 @@ describe("TracingPlugin type inference", () => {
 
   it("getTraces accepts optional TraceFilter", () => {
     const graph = createTestGraph();
-    const container = createContainer(graph, {
-      plugins: [TracingPlugin],
-    });
+    const container = pipe(createContainer(graph), withTracing);
 
     // Without filter
     const allTraces = container[TRACING].getTraces();
@@ -88,9 +82,7 @@ describe("TracingPlugin type inference", () => {
 
   it("getStats returns TraceStats", () => {
     const graph = createTestGraph();
-    const container = createContainer(graph, {
-      plugins: [TracingPlugin],
-    });
+    const container = pipe(createContainer(graph), withTracing);
 
     const stats = container[TRACING].getStats();
 
@@ -99,9 +91,7 @@ describe("TracingPlugin type inference", () => {
 
   it("subscribe accepts callback with TraceEntry parameter", () => {
     const graph = createTestGraph();
-    const container = createContainer(graph, {
-      plugins: [TracingPlugin],
-    });
+    const container = pipe(createContainer(graph), withTracing);
 
     // Subscribe should accept (entry: TraceEntry) => void
     container[TRACING].subscribe(entry => {
@@ -111,9 +101,7 @@ describe("TracingPlugin type inference", () => {
 
   it("subscribe returns unsubscribe function", () => {
     const graph = createTestGraph();
-    const container = createContainer(graph, {
-      plugins: [TracingPlugin],
-    });
+    const container = pipe(createContainer(graph), withTracing);
 
     const unsubscribe = container[TRACING].subscribe(() => {});
 
@@ -122,9 +110,7 @@ describe("TracingPlugin type inference", () => {
 
   it("isPaused returns boolean", () => {
     const graph = createTestGraph();
-    const container = createContainer(graph, {
-      plugins: [TracingPlugin],
-    });
+    const container = pipe(createContainer(graph), withTracing);
 
     const paused = container[TRACING].isPaused();
 
@@ -133,9 +119,7 @@ describe("TracingPlugin type inference", () => {
 
   it("pin/unpin accept string traceId", () => {
     const graph = createTestGraph();
-    const container = createContainer(graph, {
-      plugins: [TracingPlugin],
-    });
+    const container = pipe(createContainer(graph), withTracing);
 
     // Should accept string
     container[TRACING].pin("trace-1");

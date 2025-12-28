@@ -11,6 +11,7 @@
  */
 
 import type { ResolutionHookContext, ResolutionResultContext } from "../resolution/hooks.js";
+import type { InternalAccessible } from "../inspector/types.js";
 
 // =============================================================================
 // Plugin Dependency Types
@@ -47,13 +48,16 @@ export interface PluginDependency<TSymbol extends symbol, TApi, TOptional extend
 }
 
 // =============================================================================
-// Scope Info Types
+// Scope Event Types
 // =============================================================================
 
 /**
- * Information about a scope, provided to lifecycle hooks.
+ * Information about a scope lifecycle event.
+ *
+ * Used in plugin hooks for scope creation/disposal events.
+ * For display-oriented scope information, see `ScopeInfo` in @hex-di/devtools-core.
  */
-export interface ScopeInfo {
+export interface ScopeEventInfo {
   /** Unique identifier for this scope */
   readonly id: string;
 
@@ -62,6 +66,9 @@ export interface ScopeInfo {
 
   /** Timestamp when the scope was created (Date.now()) */
   readonly createdAt: number;
+
+  /** ID of the container that owns this scope */
+  readonly containerId: string;
 }
 
 // =============================================================================
@@ -115,21 +122,21 @@ export interface ScopeEventEmitter {
    * @param listener - Called when a new scope is created
    * @returns Unsubscribe function
    */
-  onScopeCreated(listener: (scope: ScopeInfo) => void): () => void;
+  onScopeCreated(listener: (scope: ScopeEventInfo) => void): () => void;
 
   /**
    * Subscribe to scope disposal start events.
    * @param listener - Called when a scope starts disposing
    * @returns Unsubscribe function
    */
-  onScopeDisposing(listener: (scope: ScopeInfo) => void): () => void;
+  onScopeDisposing(listener: (scope: ScopeEventInfo) => void): () => void;
 
   /**
    * Subscribe to scope disposal complete events.
    * @param listener - Called when a scope finishes disposing
    * @returns Unsubscribe function
    */
-  onScopeDisposed(listener: (scope: ScopeInfo) => void): () => void;
+  onScopeDisposed(listener: (scope: ScopeEventInfo) => void): () => void;
 }
 
 // =============================================================================
@@ -253,6 +260,17 @@ export interface PluginContext<
    * @param callback - Function to call during disposal
    */
   onDispose(callback: () => void | Promise<void>): void;
+
+  /**
+   * Access the container being augmented by this plugin.
+   *
+   * Returns a minimal interface for inspector access via the
+   * INTERNAL_ACCESS symbol. This enables plugins to inspect
+   * container state without requiring late-binding patterns.
+   *
+   * @returns A trait-like interface providing container inspection access
+   */
+  getContainer(): InternalAccessible;
 }
 
 // =============================================================================
@@ -298,21 +316,21 @@ export interface PluginHooks {
    *
    * @param scope - Information about the created scope
    */
-  onScopeCreated?(scope: ScopeInfo): void;
+  onScopeCreated?(scope: ScopeEventInfo): void;
 
   /**
    * Called when a scope starts disposing.
    *
    * @param scope - Information about the scope being disposed
    */
-  onScopeDisposing?(scope: ScopeInfo): void;
+  onScopeDisposing?(scope: ScopeEventInfo): void;
 
   /**
    * Called when a scope finishes disposing.
    *
    * @param scope - Information about the disposed scope
    */
-  onScopeDisposed?(scope: ScopeInfo): void;
+  onScopeDisposed?(scope: ScopeEventInfo): void;
 
   /**
    * Called when a child container is created.
@@ -427,6 +445,29 @@ export interface Plugin<
    * Plugins are disposed in reverse initialization order (LIFO).
    */
   readonly dispose?: () => void | Promise<void>;
+
+  /**
+   * Create a child-specific API instance.
+   *
+   * Called when a child container inherits this plugin. Returns an API
+   * instance bound to the child container instead of the parent.
+   *
+   * If not provided, child containers share the parent's API (default behavior).
+   * Use this when your plugin needs per-container state (e.g., InspectorPlugin).
+   *
+   * Note: Uses method syntax for bivariant parameter handling, allowing
+   * specific Plugin types to be assignable to AnyPlugin.
+   *
+   * @param childContainer - The child container being created
+   * @param parentApi - The parent's API instance (for delegation if needed)
+   * @param parentContainer - The parent container
+   * @returns A new API instance for the child
+   */
+  createApiForChild?(
+    childContainer: InternalAccessible,
+    parentApi: TApi,
+    parentContainer: InternalAccessible
+  ): TApi;
 }
 
 // =============================================================================
@@ -471,3 +512,51 @@ export type AnyPlugin = Plugin<
   readonly PluginDependency<symbol, unknown, false>[],
   readonly PluginDependency<symbol, unknown, true>[]
 >;
+
+// =============================================================================
+// Plugin API Map (moved here to avoid import cycles with types.ts)
+// =============================================================================
+
+/**
+ * Empty object type used as the base case for PluginApiMap recursion.
+ *
+ * IMPORTANT: Using `object` (not `Record<symbol, never>`) because:
+ * - `Record<symbol, never>` creates an index signature requiring all symbol
+ *   properties to be `never`, which conflicts with container symbol properties
+ *   like `[INTERNAL_ACCESS]` and `[ADAPTER_ACCESS]`
+ * - `object` is a proper "empty constraint" that intersects cleanly
+ *
+ * @internal
+ */
+type EmptyPluginApiMap = object;
+
+/**
+ * Maps a tuple of plugins to an intersection of symbol -> API properties.
+ *
+ * Used to augment Container type with plugin APIs accessible via their symbols.
+ *
+ * @typeParam TPlugins - Readonly tuple of Plugin types
+ * @returns Intersection type with `{ readonly [symbol]: API }` for each plugin
+ *
+ * @example
+ * ```typescript
+ * type Plugins = readonly [typeof TracingPlugin, typeof MetricsPlugin];
+ * type ApiMap = PluginApiMap<Plugins>;
+ * // { readonly [TRACING]: TracingAPI } & { readonly [METRICS]: MetricsAPI }
+ * ```
+ */
+export type PluginApiMap<TPlugins extends readonly AnyPlugin[]> = TPlugins extends readonly [
+  infer First,
+  ...infer Rest,
+]
+  ? First extends Plugin<
+      infer S,
+      infer A,
+      readonly PluginDependency<symbol, unknown, false>[],
+      readonly PluginDependency<symbol, unknown, true>[]
+    >
+    ? { readonly [K in S]: A } & (Rest extends readonly AnyPlugin[]
+        ? PluginApiMap<Rest>
+        : EmptyPluginApiMap)
+    : EmptyPluginApiMap
+  : EmptyPluginApiMap;

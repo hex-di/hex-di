@@ -108,3 +108,26 @@ export const TRACING_ACCESS = Symbol.for("hex-di/tracing-access");
  * @internal
  */
 export const ADAPTER_ACCESS = Symbol.for("hex-di/adapter-access");
+
+/**
+ * Symbol used to access hook installation capabilities on containers.
+ *
+ * This Symbol grants controlled access to install resolution hooks
+ * after container creation. This enables the wrapper pattern (withTracing,
+ * withInspector) to install plugin hooks dynamically.
+ *
+ * Using `Symbol.for()` ensures cross-realm consistency.
+ *
+ * @remarks
+ * - Returns a HooksInstaller that can add/remove hooks
+ * - Hooks are composed in order of installation
+ * - Used by createPluginWrapper to install plugin hooks
+ *
+ * @example
+ * ```typescript
+ * const installer = container[HOOKS_ACCESS]();
+ * const uninstall = installer.installHooks(pluginHooks);
+ * // Later: uninstall() to remove hooks
+ * ```
+ */
+export const HOOKS_ACCESS = Symbol.for("hex-di/hooks-access");

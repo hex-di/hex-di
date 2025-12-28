@@ -94,16 +94,13 @@ export type {
 // Export Functions
 // =============================================================================
 
-export { toJSON } from "./to-json.js";
-export { toDOT } from "./to-dot.js";
-export { toMermaid } from "./to-mermaid.js";
+export { toJSON, toDOT, toMermaid } from "@hex-di/devtools-core";
 
 // =============================================================================
 // Transform Utilities
 // =============================================================================
 
-export { filterGraph, byLifetime, byPortName } from "./filter-graph.js";
-export { relabelPorts } from "./relabel-ports.js";
+export { filterGraph, byLifetime, byPortName, relabelPorts } from "@hex-di/devtools-core";
 
 // =============================================================================
 // React DevTools Components

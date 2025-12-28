@@ -5,9 +5,10 @@
 
 import type { Port, InferService } from "@hex-di/ports";
 import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
-import type { ContainerOptions } from "../resolution/hooks.js";
+import type { ContainerOptions, HooksInstaller } from "../resolution/hooks.js";
 import type {
   Container,
+  ContainerMembers,
   Scope,
   InheritanceModeConfig,
   InheritanceMode,
@@ -23,38 +24,89 @@ import {
   type RuntimeAdapter,
 } from "./impl.js";
 import type { InternalContainerMethods } from "./internal-types.js";
-import { INTERNAL_ACCESS, ADAPTER_ACCESS } from "../inspector/symbols.js";
+import { INTERNAL_ACCESS, ADAPTER_ACCESS, HOOKS_ACCESS } from "../inspector/symbols.js";
 import { unreachable } from "../common/unreachable.js";
 import { createChildContainerWrapper } from "./wrappers.js";
 import { isInheritanceMode } from "./helpers.js";
-import type { AnyPlugin } from "../plugin/types.js";
-import { PluginManager } from "../plugin/plugin-manager.js";
-import type { ComposedHooks } from "../plugin/plugin-manager.js";
-import type { PluginAugmentedContainer, ValidatePluginOrder } from "../plugin/validation.js";
-import type { ResolutionHooks } from "../resolution/hooks.js";
+import type {
+  ResolutionHooks,
+  ResolutionHookContext,
+  ResolutionResultContext,
+} from "../resolution/hooks.js";
+
+// =============================================================================
+// Late-Binding Hooks
+// =============================================================================
+
+/**
+ * Holder for late-bound hooks with dynamic composition.
+ *
+ * Supports multiple hook sources that are composed together:
+ * - beforeResolve: Called in order of installation
+ * - afterResolve: Called in reverse order (middleware pattern)
+ *
+ * @internal
+ */
+interface HooksHolder {
+  /** Array of installed hook sources */
+  readonly hookSources: ResolutionHooks[];
+}
+
+/**
+ * Creates placeholder hooks that delegate to all installed hook sources.
+ * This allows hooks to be installed dynamically via wrappers.
+ * @internal
+ */
+function createLateBindingHooks(holder: HooksHolder): ResolutionHooks {
+  return {
+    beforeResolve(ctx: ResolutionHookContext): void {
+      // Call beforeResolve in order of installation
+      for (const source of holder.hookSources) {
+        source.beforeResolve?.(ctx);
+      }
+    },
+    afterResolve(ctx: ResolutionResultContext): void {
+      // Call afterResolve in reverse order (middleware pattern)
+      for (let i = holder.hookSources.length - 1; i >= 0; i--) {
+        holder.hookSources[i].afterResolve?.(ctx);
+      }
+    },
+  };
+}
 
 /**
  * Creates a new dependency injection container from a graph.
  *
  * @param graph - The validated ServiceGraph containing all adapters
- * @param options - Optional configuration including resolution hooks and plugins
- * @returns A frozen Container instance, augmented with plugin APIs if plugins are provided
+ * @param options - Optional configuration including resolution hooks
+ * @returns A frozen Container instance
  *
  * @typeParam TProvides - Port union provided by the graph
  * @typeParam TAsyncPorts - Port union with async factories
- * @typeParam TPlugins - Readonly tuple of plugins to register
  *
- * @example Without plugins
+ * @example Basic usage
  * ```typescript
  * const container = createContainer(graph);
  * const logger = container.resolve(LoggerPort);
  * ```
  *
- * @example With plugins
+ * @example With hooks
  * ```typescript
  * const container = createContainer(graph, {
- *   plugins: [TracingPlugin, MetricsPlugin],
+ *   hooks: {
+ *     beforeResolve: (ctx) => console.log(`Resolving ${ctx.portName}`),
+ *     afterResolve: (ctx) => console.log(`Resolved in ${ctx.duration}ms`),
+ *   },
  * });
+ * ```
+ *
+ * @example With wrapper pattern for plugins
+ * ```typescript
+ * import { pipe, createPluginWrapper } from '@hex-di/runtime';
+ * import { TracingPlugin, TRACING } from '@hex-di/tracing';
+ *
+ * const withTracing = createPluginWrapper(TracingPlugin);
+ * const container = pipe(createContainer(graph), withTracing);
  *
  * // Type-safe plugin API access
  * const tracing = container[TRACING];
@@ -64,123 +116,57 @@ import type { ResolutionHooks } from "../resolution/hooks.js";
 export function createContainer<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string> = never,
-  const TPlugins extends readonly AnyPlugin[] = readonly [],
 >(
   graph: Graph<TProvides, Port<unknown, string>>,
-  options?: ContainerOptions<TPlugins>
-): ValidatePluginOrder<TPlugins> extends true
-  ? PluginAugmentedContainer<TProvides, never, TAsyncPorts, "uninitialized", TPlugins>
-  : ValidatePluginOrder<TPlugins> {
-  // Initialize plugins first to get composed hooks
-  const pluginManager = initializePlugins(options?.plugins);
+  options?: ContainerOptions
+): Container<TProvides, never, TAsyncPorts, "uninitialized", readonly []> {
+  // Create late-binding hooks holder with array for dynamic composition
+  // This allows hooks to be installed AFTER container creation via wrappers
+  const hooksHolder: HooksHolder = { hookSources: [] };
 
-  // Merge plugin hooks with user hooks
-  const mergedHooks = mergeHooks(pluginManager?.getComposedHooks() ?? null, options?.hooks);
+  // Always create late-binding hooks - wrappers may install hooks later
+  const lateBindingHooks = createLateBindingHooks(hooksHolder);
 
-  // Create config with merged hooks
+  // Create config with late-binding hooks
   const config: RootContainerConfig<TProvides, TAsyncPorts> = {
     kind: "root",
     graph,
-    options: mergedHooks !== null ? { ...options, hooks: mergedHooks } : options,
+    options: { ...options, hooks: lateBindingHooks },
   };
   const impl = new RootContainerImpl<TProvides, TAsyncPorts>(config);
 
-  // Create wrapper with plugin APIs
-  return createUninitializedContainerWrapper(
-    impl,
-    pluginManager
-  ) as ValidatePluginOrder<TPlugins> extends true
-    ? PluginAugmentedContainer<TProvides, never, TAsyncPorts, "uninitialized", TPlugins>
-    : ValidatePluginOrder<TPlugins>;
-}
-
-/**
- * Initializes plugins if provided, returning a PluginManager or null.
- */
-function initializePlugins(plugins: readonly AnyPlugin[] | undefined): PluginManager | null {
-  if (plugins === undefined || plugins.length === 0) {
-    return null;
-  }
-
-  const manager = new PluginManager();
-  manager.initialize(plugins);
-  return manager;
-}
-
-/**
- * Merges plugin hooks with user hooks.
- *
- * Plugin hooks run first, then user hooks.
- * Returns null if no hooks are provided from either source.
- */
-function mergeHooks(
-  pluginHooks: ComposedHooks | null,
-  userHooks: ResolutionHooks | undefined
-): ResolutionHooks | null {
-  // No hooks at all
-  if (pluginHooks === null && userHooks === undefined) {
-    return null;
-  }
-
-  // Only user hooks
-  if (pluginHooks === null) {
-    return userHooks ?? null;
-  }
-
-  // Only plugin hooks
-  if (userHooks === undefined) {
-    return pluginHooks;
-  }
-
-  // Merge both: plugin hooks run first, then user hooks
-  const merged: ResolutionHooks = {};
-
-  if (pluginHooks.beforeResolve !== undefined || userHooks.beforeResolve !== undefined) {
-    merged.beforeResolve = ctx => {
-      if (pluginHooks.beforeResolve !== undefined) {
-        pluginHooks.beforeResolve(ctx);
-      }
-      if (userHooks.beforeResolve !== undefined) {
-        userHooks.beforeResolve(ctx);
-      }
-    };
-  }
-
-  if (pluginHooks.afterResolve !== undefined || userHooks.afterResolve !== undefined) {
-    merged.afterResolve = ctx => {
-      // Plugin afterResolve runs first (already in reverse order from PluginManager)
-      if (pluginHooks.afterResolve !== undefined) {
-        pluginHooks.afterResolve(ctx);
-      }
-      if (userHooks.afterResolve !== undefined) {
-        userHooks.afterResolve(ctx);
-      }
-    };
-  }
-
-  return merged;
+  // Create wrapper with hooks holder for dynamic hook installation
+  return createUninitializedContainerWrapper(impl, options?.hooks, hooksHolder);
 }
 
 /**
  * Internal type for uninitialized root container.
- * Uses explicit initialize type instead of conditional to avoid TypeScript inference issues.
+ * Uses readonly [] for TPlugins because plugin APIs are added via wrappers (withInspector, etc.)
+ * which provide compile-time type safety through intersection types.
  */
 type UninitializedContainerInternals<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
-> = Omit<Container<TProvides, never, TAsyncPorts, "uninitialized">, "initialize"> &
+> = Omit<
+  ContainerMembers<TProvides, never, TAsyncPorts, "uninitialized", readonly []>,
+  "initialize"
+> &
   InternalContainerMethods<TProvides> & {
-    initialize: () => Promise<Container<TProvides, never, TAsyncPorts, "initialized">>;
+    initialize: () => Promise<Container<TProvides, never, TAsyncPorts, "initialized", readonly []>>;
   };
 
 /**
  * Internal type for initialized root container.
- * Uses explicit never type instead of conditional to avoid TypeScript inference issues.
+ * Uses readonly [] for TPlugins because plugin APIs are added via wrappers (withInspector, etc.)
+ * which provide compile-time type safety through intersection types.
  */
 type InitializedContainerInternals<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
-> = Omit<Container<TProvides, never, TAsyncPorts, "initialized">, "initialize"> &
+> = Omit<
+  ContainerMembers<TProvides, never, TAsyncPorts, "initialized", readonly []>,
+  "initialize"
+> &
   InternalContainerMethods<TProvides> & {
     readonly initialize: never;
   };
@@ -190,9 +176,16 @@ function createUninitializedContainerWrapper<
   TAsyncPorts extends Port<unknown, string> = never,
 >(
   impl: RootContainerImpl<TProvides, TAsyncPorts>,
-  pluginManager: PluginManager | null
-): Container<TProvides, never, TAsyncPorts, "uninitialized"> {
-  let initializedContainer: Container<TProvides, never, TAsyncPorts, "initialized"> | null = null;
+  userHooks: ResolutionHooks | undefined,
+  hooksHolder: HooksHolder
+): Container<TProvides, never, TAsyncPorts, "uninitialized", readonly []> {
+  let initializedContainer: Container<
+    TProvides,
+    never,
+    TAsyncPorts,
+    "initialized",
+    readonly []
+  > | null = null;
 
   function resolve<P extends Exclude<TProvides, TAsyncPorts>>(port: P): InferService<P> {
     return impl.resolve(port);
@@ -208,12 +201,11 @@ function createUninitializedContainerWrapper<
     initialize: async () => {
       await impl.initialize();
       if (initializedContainer === null) {
-        initializedContainer = createInitializedContainerWrapper(impl, pluginManager);
+        initializedContainer = createInitializedContainerWrapper<TProvides, TAsyncPorts>(impl);
       }
       return initializedContainer;
     },
-    createScope: () =>
-      createRootScope<TProvides, TAsyncPorts, "uninitialized">(impl, pluginManager),
+    createScope: () => createRootScope<TProvides, TAsyncPorts, "uninitialized">(impl),
     createChild: <
       TChildGraph extends Graph<
         Port<unknown, string>,
@@ -226,7 +218,9 @@ function createUninitializedContainerWrapper<
     ): Container<
       TProvides,
       Exclude<InferGraphProvides<TChildGraph>, TProvides>,
-      TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+      TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
+      "initialized",
+      readonly []
     > => {
       const parentLike: ParentContainerLike<TProvides, TAsyncPorts> = {
         resolveInternal: <P extends TProvides>(port: P) => impl.resolve(port),
@@ -238,7 +232,11 @@ function createUninitializedContainerWrapper<
         unregisterChildContainer: child => impl.unregisterChildContainer(child),
         originalParent: container,
       };
-      return createChildFromGraph(parentLike, childGraph, inheritanceModes, pluginManager);
+      return createChildFromGraph<TProvides, TAsyncPorts, TChildGraph>(
+        parentLike,
+        childGraph,
+        inheritanceModes
+      );
     },
     createChildAsync: <
       TChildGraph extends Graph<
@@ -253,7 +251,9 @@ function createUninitializedContainerWrapper<
       Container<
         TProvides,
         Exclude<InferGraphProvides<TChildGraph>, TProvides>,
-        TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+        TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
+        "initialized",
+        readonly []
       >
     > => createChildContainerAsync(container, graphLoader, inheritanceModes),
     createLazyChild: <
@@ -268,24 +268,11 @@ function createUninitializedContainerWrapper<
     ): LazyContainer<
       TProvides,
       Exclude<InferGraphProvides<TChildGraph>, TProvides>,
-      TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+      TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
+      readonly []
     > => createLazyChildContainer(container, graphLoader, inheritanceModes),
     dispose: async () => {
-      // Dispose container first (cascades to children in LIFO order)
-      // Children emit their onContainerDisposed events during this phase
       await impl.dispose();
-      // Emit parent's container disposed event after children
-      if (pluginManager !== null) {
-        pluginManager.emitContainerDisposed({
-          id: "root",
-          kind: "root",
-          parentId: null,
-        });
-      }
-      // Dispose plugins last
-      if (pluginManager !== null) {
-        await pluginManager.dispose();
-      }
     },
     get isInitialized() {
       return impl.isInitialized;
@@ -308,17 +295,29 @@ function createUninitializedContainerWrapper<
     },
   };
 
-  // Augment container with plugin APIs
-  if (pluginManager !== null) {
-    for (const [symbol, api] of pluginManager.getSymbolApis()) {
-      Object.defineProperty(container, symbol, {
-        value: api,
-        writable: false,
-        enumerable: false,
-        configurable: false,
-      });
-    }
+  // Add user hooks to hookSources (if any)
+  if (userHooks !== undefined) {
+    hooksHolder.hookSources.push(userHooks);
   }
+
+  // Add HOOKS_ACCESS for dynamic hook installation via wrappers
+  const hooksInstaller: HooksInstaller = {
+    installHooks(hooks: ResolutionHooks): () => void {
+      hooksHolder.hookSources.push(hooks);
+      return () => {
+        const idx = hooksHolder.hookSources.indexOf(hooks);
+        if (idx !== -1) {
+          hooksHolder.hookSources.splice(idx, 1);
+        }
+      };
+    },
+  };
+  Object.defineProperty(container, HOOKS_ACCESS, {
+    value: () => hooksInstaller,
+    writable: false,
+    enumerable: false,
+    configurable: false,
+  });
 
   Object.freeze(container);
   return container;
@@ -328,9 +327,8 @@ function createInitializedContainerWrapper<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string> = never,
 >(
-  impl: RootContainerImpl<TProvides, TAsyncPorts>,
-  pluginManager: PluginManager | null
-): Container<TProvides, never, TAsyncPorts, "initialized"> {
+  impl: RootContainerImpl<TProvides, TAsyncPorts>
+): Container<TProvides, never, TAsyncPorts, "initialized", readonly []> {
   function resolve<P extends TProvides>(port: P): InferService<P> {
     return impl.resolve(port);
   }
@@ -345,7 +343,7 @@ function createInitializedContainerWrapper<
     get initialize(): never {
       return unreachable("Initialized containers cannot be initialized again");
     },
-    createScope: () => createRootScope<TProvides, TAsyncPorts, "initialized">(impl, pluginManager),
+    createScope: () => createRootScope<TProvides, TAsyncPorts, "initialized">(impl),
     createChild: <
       TChildGraph extends Graph<
         Port<unknown, string>,
@@ -358,7 +356,9 @@ function createInitializedContainerWrapper<
     ): Container<
       TProvides,
       Exclude<InferGraphProvides<TChildGraph>, TProvides>,
-      TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+      TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
+      "initialized",
+      readonly []
     > => {
       const parentLike: ParentContainerLike<TProvides, TAsyncPorts> = {
         resolveInternal: <P extends TProvides>(port: P) => impl.resolve(port),
@@ -370,7 +370,11 @@ function createInitializedContainerWrapper<
         unregisterChildContainer: child => impl.unregisterChildContainer(child),
         originalParent: container,
       };
-      return createChildFromGraph(parentLike, childGraph, inheritanceModes, pluginManager);
+      return createChildFromGraph<TProvides, TAsyncPorts, TChildGraph>(
+        parentLike,
+        childGraph,
+        inheritanceModes
+      );
     },
     createChildAsync: <
       TChildGraph extends Graph<
@@ -385,7 +389,9 @@ function createInitializedContainerWrapper<
       Container<
         TProvides,
         Exclude<InferGraphProvides<TChildGraph>, TProvides>,
-        TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+        TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
+        "initialized",
+        readonly []
       >
     > => createChildContainerAsync(container, graphLoader, inheritanceModes),
     createLazyChild: <
@@ -400,24 +406,11 @@ function createInitializedContainerWrapper<
     ): LazyContainer<
       TProvides,
       Exclude<InferGraphProvides<TChildGraph>, TProvides>,
-      TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+      TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
+      readonly []
     > => createLazyChildContainer(container, graphLoader, inheritanceModes),
     dispose: async () => {
-      // Dispose container first (cascades to children in LIFO order)
-      // Children emit their onContainerDisposed events during this phase
       await impl.dispose();
-      // Emit parent's container disposed event after children
-      if (pluginManager !== null) {
-        pluginManager.emitContainerDisposed({
-          id: "root",
-          kind: "root",
-          parentId: null,
-        });
-      }
-      // Dispose plugins last
-      if (pluginManager !== null) {
-        await pluginManager.dispose();
-      }
     },
     get isInitialized() {
       return impl.isInitialized;
@@ -440,49 +433,25 @@ function createInitializedContainerWrapper<
     },
   };
 
-  // Augment container with plugin APIs
-  if (pluginManager !== null) {
-    for (const [symbol, api] of pluginManager.getSymbolApis()) {
-      Object.defineProperty(container, symbol, {
-        value: api,
-        writable: false,
-        enumerable: false,
-        configurable: false,
-      });
-    }
-  }
-
   Object.freeze(container);
   return container;
 }
 
 // Helper to avoid circular dependency issues if possible, or just import ScopeImpl
 import { ScopeImpl, createScopeWrapper } from "../scope/impl.js";
-import type { ScopeInfo } from "../plugin/types.js";
 
 function createRootScope<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
   TPhase extends "uninitialized" | "initialized",
 >(
-  containerImpl: RootContainerImpl<TProvides, TAsyncPorts>,
-  pluginManager: PluginManager | null
-): Scope<TProvides, TAsyncPorts, TPhase> {
+  containerImpl: RootContainerImpl<TProvides, TAsyncPorts>
+): Scope<TProvides, TAsyncPorts, TPhase, readonly []> {
   const scopeImpl = new ScopeImpl<TProvides, TAsyncPorts, TPhase>(
     containerImpl,
     containerImpl.getSingletonMemo()
   );
   containerImpl.registerChildScope(scopeImpl);
-
-  // Emit scope created event to plugins
-  if (pluginManager !== null) {
-    const scopeInfo: ScopeInfo = {
-      id: scopeImpl.id,
-      parentId: null, // Root scope has no parent
-      createdAt: Date.now(),
-    };
-    pluginManager.emitScopeCreated(scopeInfo);
-  }
 
   return createScopeWrapper(scopeImpl);
 }
@@ -510,7 +479,6 @@ function generateChildContainerId(): string {
  * @param parentLike - Parent container interface for resolution and registration
  * @param childGraph - The child graph containing adapters
  * @param inheritanceModes - Optional per-port inheritance mode configuration
- * @param pluginManager - Optional plugin manager inherited from root (for hooks and plugin APIs)
  * @param parentContainerId - ID of the parent container for hierarchy tracking (defaults to "root")
  *
  * @internal
@@ -523,12 +491,13 @@ function createChildFromGraph<
   parentLike: ParentContainerLike<TParentProvides, TAsyncPorts>,
   childGraph: TChildGraph,
   inheritanceModes?: InheritanceModeConfig<TParentProvides>,
-  pluginManager?: PluginManager | null,
   parentContainerId: string = "root"
 ): Container<
   TParentProvides,
   Exclude<InferGraphProvides<TChildGraph>, TParentProvides>,
-  TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+  TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
+  "initialized",
+  readonly []
 > {
   // Generate unique ID for this child container
   const containerId = generateChildContainerId();
@@ -564,7 +533,6 @@ function createChildFromGraph<
     overrides,
     extensions,
     inheritanceModes: inheritanceModesMap,
-    pluginManager: pluginManager ?? null,
     containerId,
     parentContainerId,
   };
@@ -575,7 +543,11 @@ function createChildFromGraph<
     TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
   >(config);
 
-  return createChildContainerWrapper(impl, pluginManager ?? null, containerId, parentContainerId);
+  return createChildContainerWrapper<
+    TParentProvides,
+    Exclude<InferGraphProvides<TChildGraph>, TParentProvides>,
+    TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+  >(impl, containerId, parentContainerId);
 }
 
 // =============================================================================
@@ -614,14 +586,20 @@ export async function createChildContainerAsync<
   TAsyncPorts extends Port<unknown, string>,
   TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
 >(
-  parent: Container<TParentProvides, TParentExtends, TAsyncPorts>,
+  // Using Pick to accept ContainerMembers (used by internal wrappers) as well as Container
+  parent: Pick<
+    ContainerMembers<TParentProvides, TParentExtends, TAsyncPorts, "initialized", readonly []>,
+    "createChild"
+  >,
   graphLoader: () => Promise<TChildGraph>,
   inheritanceModes?: InheritanceModeConfig<TParentProvides | TParentExtends>
 ): Promise<
   Container<
     TParentProvides | TParentExtends,
     Exclude<InferGraphProvides<TChildGraph>, TParentProvides | TParentExtends>,
-    TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+    TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
+    "initialized",
+    readonly []
   >
 > {
   const graph = await graphLoader();
@@ -663,16 +641,25 @@ export function createLazyChildContainer<
   TAsyncPorts extends Port<unknown, string>,
   TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
 >(
-  parent: Container<TParentProvides, TParentExtends, TAsyncPorts>,
+  // Using Pick to accept ContainerMembers (used by internal wrappers) as well as Container
+  parent: Pick<
+    ContainerMembers<TParentProvides, TParentExtends, TAsyncPorts, "initialized", readonly []>,
+    "has" | "createChild"
+  >,
   graphLoader: () => Promise<TChildGraph>,
   inheritanceModes?: InheritanceModeConfig<TParentProvides | TParentExtends>
 ): LazyContainer<
   TParentProvides | TParentExtends,
   Exclude<InferGraphProvides<TChildGraph>, TParentProvides | TParentExtends>,
-  TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
+  TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
+  readonly []
 > {
   // Parent implements LazyContainerParent interface via its has() and createChild() methods
-  const parentLike: LazyContainerParent<TParentProvides | TParentExtends, TAsyncPorts> = {
+  const parentLike: LazyContainerParent<
+    TParentProvides | TParentExtends,
+    TAsyncPorts,
+    readonly []
+  > = {
     has: port => parent.has(port),
     createChild: (graph, modes) => parent.createChild(graph, modes),
   };
@@ -681,6 +668,7 @@ export function createLazyChildContainer<
     TParentProvides | TParentExtends,
     Exclude<InferGraphProvides<TChildGraph>, TParentProvides | TParentExtends>,
     TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
+    readonly [],
     TChildGraph
   >(parentLike, graphLoader, inheritanceModes);
 }

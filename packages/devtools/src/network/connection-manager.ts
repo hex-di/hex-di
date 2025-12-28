@@ -10,6 +10,8 @@
  * @packageDocumentation
  */
 
+import { createVerboseLogger, type VerboseLogger } from "@hex-di/devtools-core";
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -114,6 +116,7 @@ const DEFAULT_CONFIG: Omit<ConnectionManagerConfig, "url"> = {
  */
 export class ConnectionManager {
   private readonly config: ResolvedConfig;
+  private readonly logger: VerboseLogger;
   private socket: WebSocket | null = null;
   private state: ConnectionState = "disconnected";
   private reconnectAttempts = 0;
@@ -125,6 +128,7 @@ export class ConnectionManager {
 
   constructor(config: ConnectionManagerConfig) {
     this.config = { ...DEFAULT_CONFIG, ...config } as ResolvedConfig;
+    this.logger = createVerboseLogger("ConnectionManager", this.config.verbose);
   }
 
   /**
@@ -132,12 +136,12 @@ export class ConnectionManager {
    */
   async connect(): Promise<void> {
     if (this.state === "connected" || this.state === "connecting") {
-      this.log("Already connected or connecting");
+      this.logger.log("Already connected or connecting");
       return;
     }
 
     this.state = "connecting";
-    this.log(`Connecting to ${this.config.url}`);
+    this.logger.log(`Connecting to ${this.config.url}`);
 
     return new Promise((resolve, reject) => {
       try {
@@ -159,7 +163,7 @@ export class ConnectionManager {
           this.state = "connected";
           this.reconnectAttempts = 0;
           this.lastConnectedTime = Date.now();
-          this.log("Connected");
+          this.logger.log("Connected");
           this.emit({
             type: "connected",
             url: this.config.url,
@@ -172,7 +176,7 @@ export class ConnectionManager {
           this.clearConnectionTimer();
           const reason = event.reason || "Connection closed";
           this.lastDisconnectReason = reason;
-          this.log(`Disconnected: ${reason}`);
+          this.logger.log(`Disconnected: ${reason}`);
           this.emit({
             type: "disconnected",
             reason,
@@ -211,7 +215,7 @@ export class ConnectionManager {
    * @param reason - Reason for disconnection
    */
   disconnect(reason = "Manual disconnect"): void {
-    this.log(`Disconnecting: ${reason}`);
+    this.logger.log(`Disconnecting: ${reason}`);
 
     // Cancel any pending reconnection
     this.cancelReconnect();
@@ -234,7 +238,7 @@ export class ConnectionManager {
    */
   send(data: string): boolean {
     if (this.socket === null || this.state !== "connected") {
-      this.log("Cannot send: not connected");
+      this.logger.log("Cannot send: not connected");
       return false;
     }
 
@@ -242,7 +246,7 @@ export class ConnectionManager {
       this.socket.send(data);
       return true;
     } catch (error) {
-      this.log(`Send error: ${error}`);
+      this.logger.log(`Send error: ${error}`);
       return false;
     }
   }
@@ -318,7 +322,7 @@ export class ConnectionManager {
   }
 
   private handleError(error: Error): void {
-    this.log(`Error: ${error.message}`);
+    this.logger.log(`Error: ${error.message}`);
     this.state = "error";
     this.emit({
       type: "error",
@@ -333,7 +337,7 @@ export class ConnectionManager {
       this.config.maxReconnectAttempts > 0 &&
       this.reconnectAttempts >= this.config.maxReconnectAttempts
     ) {
-      this.log("Max reconnection attempts reached");
+      this.logger.log("Max reconnection attempts reached");
       return;
     }
 
@@ -347,7 +351,7 @@ export class ConnectionManager {
       this.config.maxReconnectDelay
     );
 
-    this.log(`Scheduling reconnection attempt ${this.reconnectAttempts} in ${delay}ms`);
+    this.logger.log(`Scheduling reconnection attempt ${this.reconnectAttempts} in ${delay}ms`);
     this.emit({
       type: "reconnecting",
       attempt: this.reconnectAttempts,
@@ -356,10 +360,10 @@ export class ConnectionManager {
     });
 
     this.reconnectTimer = setTimeout(() => {
-      this.log(`Reconnection attempt ${this.reconnectAttempts}`);
+      this.logger.log(`Reconnection attempt ${this.reconnectAttempts}`);
       this.connect().catch((error: unknown) => {
         const message = error instanceof Error ? error.message : String(error);
-        this.log(`Reconnection failed: ${message}`);
+        this.logger.log(`Reconnection failed: ${message}`);
         // Will schedule next attempt via handleDisconnect
       });
     }, delay);
@@ -385,14 +389,8 @@ export class ConnectionManager {
       try {
         listener(event);
       } catch (error) {
-        this.log(`Listener error: ${error}`);
+        this.logger.log(`Listener error: ${error}`);
       }
-    }
-  }
-
-  private log(message: string): void {
-    if (this.config.verbose) {
-      console.warn(`[ConnectionManager] ${message}`);
     }
   }
 }

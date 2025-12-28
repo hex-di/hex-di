@@ -13,11 +13,11 @@
 import { describe, it, expect, vi } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
-import { createContainer } from "@hex-di/runtime";
+import { createContainer, pipe, createPluginWrapper } from "@hex-di/runtime";
 import {
-  TracingPlugin,
   createTracingPlugin,
   TRACING,
+  withTracing,
   MemoryCollector,
   NoOpCollector,
 } from "../src/index.js";
@@ -80,17 +80,22 @@ function createTestGraph() {
     .build();
 }
 
+/**
+ * Creates a fresh tracing wrapper for test isolation.
+ * Each test should use this to avoid shared state between tests.
+ */
+function createFreshTracingWrapper() {
+  return createPluginWrapper(createTracingPlugin());
+}
+
 // =============================================================================
 // Plugin Registration Tests
 // =============================================================================
 
 describe("TracingPlugin registration", () => {
-  it("registers and provides TRACING symbol access", () => {
+  it("registers and provides TRACING symbol access via wrapper", () => {
     const graph = createTestGraph();
-    const plugin = createTracingPlugin();
-    const container = createContainer(graph, {
-      plugins: [plugin],
-    });
+    const container = pipe(createContainer(graph), withTracing);
 
     // TRACING symbol should be accessible
     expect(TRACING in container).toBe(true);
@@ -113,8 +118,11 @@ describe("TracingPlugin registration", () => {
     const plugin1 = createTracingPlugin();
     const plugin2 = createTracingPlugin();
 
-    const container1 = createContainer(graph, { plugins: [plugin1] });
-    const container2 = createContainer(graph, { plugins: [plugin2] });
+    const withTracing1 = createPluginWrapper(plugin1);
+    const withTracing2 = createPluginWrapper(plugin2);
+
+    const container1 = pipe(createContainer(graph), withTracing1);
+    const container2 = pipe(createContainer(graph), withTracing2);
 
     container1.resolve(LoggerPort);
 
@@ -131,10 +139,8 @@ describe("TracingPlugin registration", () => {
 describe("resolution tracing", () => {
   it("captures traces for resolved services", () => {
     const graph = createTestGraph();
-    const plugin = createTracingPlugin();
-    const container = createContainer(graph, {
-      plugins: [plugin],
-    });
+    const freshWithTracing = createFreshTracingWrapper();
+    const container = pipe(createContainer(graph), freshWithTracing);
 
     container.resolve(LoggerPort);
 
@@ -153,10 +159,8 @@ describe("resolution tracing", () => {
 
   it("detects cache hits for singleton services", () => {
     const graph = createTestGraph();
-    const plugin = createTracingPlugin();
-    const container = createContainer(graph, {
-      plugins: [plugin],
-    });
+    const freshWithTracing = createFreshTracingWrapper();
+    const container = pipe(createContainer(graph), freshWithTracing);
 
     // First resolution - cache miss
     container.resolve(LoggerPort);
@@ -173,10 +177,8 @@ describe("resolution tracing", () => {
 
   it("assigns unique trace IDs and incremental order values", () => {
     const graph = createTestGraph();
-    const plugin = createTracingPlugin();
-    const container = createContainer(graph, {
-      plugins: [plugin],
-    });
+    const freshWithTracing = createFreshTracingWrapper();
+    const container = pipe(createContainer(graph), freshWithTracing);
 
     container.resolve(LoggerPort);
     container.resolve(DatabasePort);
@@ -194,10 +196,8 @@ describe("resolution tracing", () => {
 
   it("tracks parent-child hierarchy for nested resolutions", () => {
     const graph = createTestGraph();
-    const plugin = createTracingPlugin();
-    const container = createContainer(graph, {
-      plugins: [plugin],
-    });
+    const freshWithTracing = createFreshTracingWrapper();
+    const container = pipe(createContainer(graph), freshWithTracing);
 
     // UserService depends on Logger and Database
     const scope = container.createScope();
@@ -229,10 +229,8 @@ describe("resolution tracing", () => {
 describe("TracingAPI methods", () => {
   it("getTraces() supports filtering", () => {
     const graph = createTestGraph();
-    const plugin = createTracingPlugin();
-    const container = createContainer(graph, {
-      plugins: [plugin],
-    });
+    const freshWithTracing = createFreshTracingWrapper();
+    const container = pipe(createContainer(graph), freshWithTracing);
 
     container.resolve(LoggerPort);
     container.resolve(DatabasePort);
@@ -247,10 +245,8 @@ describe("TracingAPI methods", () => {
 
   it("getStats() computes aggregate statistics", () => {
     const graph = createTestGraph();
-    const plugin = createTracingPlugin();
-    const container = createContainer(graph, {
-      plugins: [plugin],
-    });
+    const freshWithTracing = createFreshTracingWrapper();
+    const container = pipe(createContainer(graph), freshWithTracing);
 
     container.resolve(LoggerPort);
     container.resolve(LoggerPort); // Cache hit
@@ -265,10 +261,8 @@ describe("TracingAPI methods", () => {
 
   it("clear() removes all traces", () => {
     const graph = createTestGraph();
-    const plugin = createTracingPlugin();
-    const container = createContainer(graph, {
-      plugins: [plugin],
-    });
+    const freshWithTracing = createFreshTracingWrapper();
+    const container = pipe(createContainer(graph), freshWithTracing);
 
     container.resolve(LoggerPort);
     expect(container[TRACING].getTraces()).toHaveLength(1);
@@ -279,10 +273,8 @@ describe("TracingAPI methods", () => {
 
   it("subscribe() notifies on new traces", () => {
     const graph = createTestGraph();
-    const plugin = createTracingPlugin();
-    const container = createContainer(graph, {
-      plugins: [plugin],
-    });
+    const freshWithTracing = createFreshTracingWrapper();
+    const container = pipe(createContainer(graph), freshWithTracing);
 
     const callback = vi.fn();
     const unsubscribe = container[TRACING].subscribe(callback);
@@ -304,10 +296,8 @@ describe("TracingAPI methods", () => {
 describe("pause/resume functionality", () => {
   it("pause() stops trace recording", () => {
     const graph = createTestGraph();
-    const plugin = createTracingPlugin();
-    const container = createContainer(graph, {
-      plugins: [plugin],
-    });
+    const freshWithTracing = createFreshTracingWrapper();
+    const container = pipe(createContainer(graph), freshWithTracing);
 
     expect(container[TRACING].isPaused()).toBe(false);
 
@@ -323,10 +313,8 @@ describe("pause/resume functionality", () => {
 
   it("resume() restarts trace recording", () => {
     const graph = createTestGraph();
-    const plugin = createTracingPlugin();
-    const container = createContainer(graph, {
-      plugins: [plugin],
-    });
+    const freshWithTracing = createFreshTracingWrapper();
+    const container = pipe(createContainer(graph), freshWithTracing);
 
     container[TRACING].pause();
     container.resolve(LoggerPort);
@@ -350,10 +338,9 @@ describe("custom collector configuration", () => {
     const graph = createTestGraph();
     const collector = new MemoryCollector();
     const plugin = createTracingPlugin({ collector });
+    const customWithTracing = createPluginWrapper(plugin);
 
-    const container = createContainer(graph, {
-      plugins: [plugin],
-    });
+    const container = pipe(createContainer(graph), customWithTracing);
 
     container.resolve(LoggerPort);
 
@@ -366,10 +353,9 @@ describe("custom collector configuration", () => {
     const graph = createTestGraph();
     const collector = new NoOpCollector();
     const plugin = createTracingPlugin({ collector });
+    const customWithTracing = createPluginWrapper(plugin);
 
-    const container = createContainer(graph, {
-      plugins: [plugin],
-    });
+    const container = pipe(createContainer(graph), customWithTracing);
 
     container.resolve(LoggerPort);
     container.resolve(DatabasePort);
@@ -387,10 +373,9 @@ describe("custom collector configuration", () => {
         slowThresholdMs: 10,
       },
     });
+    const customWithTracing = createPluginWrapper(plugin);
 
-    const container = createContainer(graph, {
-      plugins: [plugin],
-    });
+    const container = pipe(createContainer(graph), customWithTracing);
 
     container.resolve(LoggerPort);
     container.resolve(DatabasePort);
@@ -409,10 +394,8 @@ describe("custom collector configuration", () => {
 describe("scope integration", () => {
   it("tracks scopeId for scoped service resolutions", () => {
     const graph = createTestGraph();
-    const plugin = createTracingPlugin();
-    const container = createContainer(graph, {
-      plugins: [plugin],
-    });
+    const freshWithTracing = createFreshTracingWrapper();
+    const container = pipe(createContainer(graph), freshWithTracing);
 
     const scope = container.createScope();
     scope.resolve(UserServicePort);
@@ -427,10 +410,8 @@ describe("scope integration", () => {
 
   it("captures traces from nested scopes", () => {
     const graph = createTestGraph();
-    const plugin = createTracingPlugin();
-    const container = createContainer(graph, {
-      plugins: [plugin],
-    });
+    const freshWithTracing = createFreshTracingWrapper();
+    const container = pipe(createContainer(graph), freshWithTracing);
 
     const scope = container.createScope();
     scope.resolve(UserServicePort);

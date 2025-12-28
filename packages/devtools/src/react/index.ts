@@ -131,6 +131,7 @@ export type {
   ContainerRegistryProviderProps,
   ContainerRegistryValue,
   ContainerEntry,
+  InheritanceMode,
 } from "./context/index.js";
 
 // =============================================================================
@@ -161,17 +162,17 @@ export type { UseTracesResult, UseTracingControlsResult } from "./hooks/index.js
  * Multi-container inspector hooks.
  *
  * - useRegisterContainer: Register a container with DevTools
- * - useContainerList: Get all registered containers
- * - useInspector: Access selected container's InspectorAPI
- * - useInspectorStrict: Access InspectorAPI with non-null assertion
- * - useInspectorSnapshot: Subscribe to container snapshots
+ * - useContainerList: Get all registered containers and selection state (uses Option<T>)
+ * - useContainerInspector: Access RuntimeInspector for selected container
+ * - useContainerInspectorStrict: Access RuntimeInspector with guaranteed selection
+ * - useInspectorSnapshot: Get container snapshots
  * - useContainerPhase: Track container phase and kind
  */
 export {
   useRegisterContainer,
   useContainerList,
-  useInspector,
-  useInspectorStrict,
+  useContainerInspector,
+  useContainerInspectorStrict,
   useInspectorSnapshot,
   useContainerPhase,
 } from "./hooks/index.js";
@@ -181,6 +182,64 @@ export type {
   UseInspectorSnapshotResult,
   UseContainerPhaseResult,
 } from "./hooks/index.js";
+
+// =============================================================================
+// Rust-like ADT Types (Option<T>, Result<T, E>)
+// =============================================================================
+
+/**
+ * Rust-like algebraic data types for type-safe optional values and error handling.
+ *
+ * - Option<T>: Replaces `T | null` with exhaustive pattern matching
+ * - Result<T, E>: Replaces thrown errors with type-safe error handling
+ * - Some, None: Option constructors
+ * - Ok, Err: Result constructors
+ * - isSome, isNone, isOk, isErr: Type guards for pattern matching
+ *
+ * @example Option usage
+ * ```typescript
+ * const inspectorOpt = useContainerInspector();
+ * if (isSome(inspectorOpt)) {
+ *   const snapshot = inspectorOpt.value.snapshot();
+ * }
+ *
+ * // Or with exhaustive matching
+ * switch (inspectorOpt._tag) {
+ *   case "Some": return <Inspector value={inspectorOpt.value} />;
+ *   case "None": return <NoContainer />;
+ * }
+ * ```
+ */
+export {
+  Some,
+  None,
+  isSome,
+  isNone,
+  unwrapOr,
+  mapOption,
+  Ok,
+  Err,
+  isOk,
+  isErr,
+} from "./types/adt.js";
+export type {
+  Option,
+  Result,
+  Some as SomeType,
+  None as NoneType,
+  Ok as OkType,
+  Err as ErrType,
+} from "./types/adt.js";
+
+/**
+ * InspectableContainer interface for type-safe container storage.
+ *
+ * This trait-like interface enables storing heterogeneous containers
+ * without type parameter variance issues. All Container variants
+ * satisfy this interface structurally.
+ */
+export type { InspectableContainer } from "./types/inspectable-container.js";
+export { isInspectableContainer, INTERNAL_ACCESS } from "./types/inspectable-container.js";
 
 // =============================================================================
 // Re-exports from Main Package (for convenience)
@@ -328,9 +387,18 @@ export type { ContainerInspectorProps } from "./container-inspector.js";
  *
  * @see {@link ContainerSelectorProps} - Component props interface
  * @see {@link ContainerKindBadge} - Badge component for container types
+ * @see {@link InheritanceModeBadge} - Badge component for inheritance mode
  */
-export { ContainerSelector, ContainerKindBadge } from "./container-selector.js";
-export type { ContainerSelectorProps, ContainerKindBadgeProps } from "./container-selector.js";
+export {
+  ContainerSelector,
+  ContainerKindBadge,
+  InheritanceModeBadge,
+} from "./container-selector.js";
+export type {
+  ContainerSelectorProps,
+  ContainerKindBadgeProps,
+  InheritanceModeBadgeProps,
+} from "./container-selector.js";
 
 /**
  * ScopeHierarchy component for visualizing scope tree structure.
@@ -581,6 +649,42 @@ export type { SummaryStatsViewProps } from "./summary-stats-view.js";
  */
 export { DependencyGraph } from "./graph-visualization/index.js";
 export type { DependencyGraphProps } from "./graph-visualization/index.js";
+
+/**
+ * GraphTabContent component with container switching support.
+ *
+ * Provides a container selector dropdown when inside a ContainerRegistryProvider,
+ * allowing users to switch between registered containers and view their dependency graphs.
+ *
+ * @example
+ * ```tsx
+ * import { GraphTabContent } from '@hex-di/devtools/react';
+ * import { toJSON } from '@hex-di/devtools-core';
+ *
+ * function MyDevTools({ graph }) {
+ *   const exportedGraph = useMemo(() => toJSON(graph), [graph]);
+ *   return <GraphTabContent defaultGraph={exportedGraph} />;
+ * }
+ * ```
+ */
+export { GraphTabContent } from "./graph-tab-content.js";
+export type { GraphTabContentProps } from "./graph-tab-content.js";
+
+/**
+ * Utility to build ExportedGraph from a container's internal state.
+ *
+ * Enables visualizing the dependency graph for any container without
+ * requiring the original Graph object.
+ *
+ * @example
+ * ```tsx
+ * import { buildExportedGraphFromContainer } from '@hex-di/devtools/react';
+ *
+ * const graph = buildExportedGraphFromContainer(container);
+ * console.log(`${graph.nodes.length} services`);
+ * ```
+ */
+export { buildExportedGraphFromContainer } from "./utils/build-graph-from-container.js";
 
 /**
  * GraphRenderer component for low-level SVG rendering with D3 zoom.

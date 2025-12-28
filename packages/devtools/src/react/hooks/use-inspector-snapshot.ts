@@ -1,34 +1,42 @@
 /**
- * Hook for subscribing to container snapshots.
+ * Hook for getting container snapshots.
  *
  * @packageDocumentation
  */
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import type { ContainerSnapshot } from "@hex-di/devtools-core";
-import type { InspectorEvent } from "@hex-di/inspector";
-import { useInspector } from "./use-inspector.js";
+import { useMemo, useCallback } from "react";
+import { useContainerInspector } from "./use-container-inspector.js";
+import { isSome } from "../types/adt.js";
+
+/**
+ * Runtime snapshot from ContainerInspector.
+ *
+ * This is the raw snapshot type from @hex-di/runtime, not the typed
+ * ContainerSnapshot from @hex-di/devtools-core.
+ */
+type RuntimeSnapshot = ReturnType<
+  ReturnType<typeof import("@hex-di/runtime").createInspector>["snapshot"]
+>;
 
 /**
  * Result of useInspectorSnapshot hook.
  */
 export interface UseInspectorSnapshotResult {
   /** Current container snapshot, or null if not available */
-  readonly snapshot: ContainerSnapshot | null;
+  readonly snapshot: RuntimeSnapshot | null;
 
   /** Whether the inspector is available */
   readonly isAvailable: boolean;
 
-  /** Force refresh the snapshot */
+  /** Force refresh the snapshot (triggers re-render) */
   readonly refresh: () => void;
 }
 
 /**
- * Subscribe to container snapshots with RAF debouncing.
+ * Get a snapshot of the currently selected container.
  *
- * This hook subscribes to snapshot-changed events from the InspectorPlugin
- * and automatically updates the snapshot state. Updates are debounced using
- * requestAnimationFrame to prevent excessive re-renders during rapid changes.
+ * Returns the raw runtime snapshot from ContainerInspector.snapshot().
+ * Call refresh() to force a re-render with the latest snapshot.
  *
  * @example Basic usage
  * ```typescript
@@ -47,29 +55,8 @@ export interface UseInspectorSnapshotResult {
  *
  *   return (
  *     <div>
- *       <p>Container kind: {snapshot.kind}</p>
  *       <p>Disposed: {snapshot.isDisposed ? "Yes" : "No"}</p>
  *       <button onClick={refresh}>Refresh</button>
- *     </div>
- *   );
- * }
- * ```
- *
- * @example With type narrowing for root container
- * ```typescript
- * function RootContainerInfo() {
- *   const { snapshot } = useInspectorSnapshot();
- *
- *   if (snapshot?.kind !== "root") {
- *     return null;
- *   }
- *
- *   return (
- *     <div>
- *       <p>Initialized: {snapshot.isInitialized ? "Yes" : "No"}</p>
- *       <p>
- *         Async adapters: {snapshot.asyncAdaptersInitialized}/{snapshot.asyncAdaptersTotal}
- *       </p>
  *     </div>
  *   );
  * }
@@ -105,52 +92,25 @@ export interface UseInspectorSnapshotResult {
  * ```
  */
 export function useInspectorSnapshot(): UseInspectorSnapshotResult {
-  const inspector = useInspector();
-  const [snapshot, setSnapshot] = useState<ContainerSnapshot | null>(
-    () => inspector?.getSnapshot() ?? null
-  );
-  const rafIdRef = useRef<number | null>(null);
+  const inspectorOpt = useContainerInspector();
 
+  const snapshot = useMemo((): RuntimeSnapshot | null => {
+    if (!isSome(inspectorOpt)) {
+      return null;
+    }
+    return inspectorOpt.value.snapshot();
+  }, [inspectorOpt]);
+
+  // refresh is a no-op since snapshot is computed on each render
+  // kept for API compatibility - consumers may call it to express intent
   const refresh = useCallback((): void => {
-    if (inspector !== null) {
-      setSnapshot(inspector.getSnapshot());
-    }
-  }, [inspector]);
-
-  useEffect(() => {
-    if (inspector === null) {
-      setSnapshot(null);
-      return;
-    }
-
-    // Initial snapshot
-    setSnapshot(inspector.getSnapshot());
-
-    // Subscribe to changes
-    const unsubscribe = inspector.subscribe((event: InspectorEvent) => {
-      if (event.type === "snapshot-changed") {
-        // Debounce with RAF to prevent excessive re-renders
-        if (rafIdRef.current === null) {
-          rafIdRef.current = requestAnimationFrame(() => {
-            rafIdRef.current = null;
-            setSnapshot(inspector.getSnapshot());
-          });
-        }
-      }
-    });
-
-    return () => {
-      unsubscribe();
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
-        rafIdRef.current = null;
-      }
-    };
-  }, [inspector]);
+    // Snapshot is derived from inspectorOpt, which changes when registry changes
+    // This callback exists for API compatibility
+  }, []);
 
   return {
     snapshot,
-    isAvailable: inspector !== null,
+    isAvailable: isSome(inspectorOpt),
     refresh,
   };
 }

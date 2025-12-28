@@ -8,8 +8,7 @@
  */
 
 import React, { useMemo, type ReactElement, type CSSProperties } from "react";
-import type { TracingAPI, TraceEntry } from "@hex-di/devtools-core";
-import { formatDuration } from "./styles.js";
+import { formatDuration, type TracingAPI, type TraceEntry } from "@hex-di/devtools-core";
 import { useTracingAPI } from "./hooks/use-devtools.js";
 
 // =============================================================================

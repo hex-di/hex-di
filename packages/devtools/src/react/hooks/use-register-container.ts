@@ -1,15 +1,20 @@
 /**
  * Hook for registering a container with DevTools.
  *
+ * Stores the container reference directly (as InspectableContainer trait object)
+ * instead of InspectorAPI. This enables per-container RuntimeInspector creation,
+ * fixing the bug where all containers showed root data.
+ *
  * @packageDocumentation
  */
 
-import { useContext, useEffect, useMemo, useRef } from "react";
+import { useContext, useEffect, useRef } from "react";
 import type { Container, ContainerPhase } from "@hex-di/runtime";
 import type { Port } from "@hex-di/ports";
-import { getInspectorAPI } from "@hex-di/inspector";
 import type { ContainerKind } from "@hex-di/devtools-core";
 import { ContainerRegistryContext } from "../context/container-registry.js";
+import type { InheritanceMode } from "../context/container-registry.js";
+import type { InspectableContainer } from "../types/inspectable-container.js";
 
 /**
  * Options for registering a container with DevTools.
@@ -26,6 +31,9 @@ export interface UseRegisterContainerOptions {
 
   /** Parent container ID, if any */
   readonly parentId?: string;
+
+  /** Inheritance mode for child containers (only for kind === "child") */
+  readonly inheritanceMode?: InheritanceMode;
 }
 
 /**
@@ -34,25 +42,20 @@ export interface UseRegisterContainerOptions {
  * Call this hook in components that create or manage containers.
  * The container will be automatically unregistered when the component unmounts.
  *
- * Requires InspectorPlugin to be registered on the container for full
- * inspection capabilities. If InspectorPlugin is not present, the hook
- * will silently do nothing.
+ * Unlike the previous implementation that used getInspectorAPI (which returned
+ * a shared InspectorAPI bound to the root container), this hook stores the
+ * container reference directly. This enables createInspector() to be called
+ * on the actual selected container.
  *
  * @example Register a root container
  * ```typescript
  * import { useRegisterContainer } from "@hex-di/devtools/react";
- * import { createInspectorPlugin } from "@hex-di/inspector";
  *
  * function AppContainer({ graph, children }) {
- *   const { plugin, bindContainer } = createInspectorPlugin();
  *   const container = useMemo(
- *     () => createContainer(graph, { plugins: [plugin] }),
- *     [graph, plugin]
+ *     () => createContainer(graph),
+ *     [graph]
  *   );
- *
- *   useEffect(() => {
- *     bindContainer(container);
- *   }, [bindContainer, container]);
  *
  *   useRegisterContainer(container, {
  *     id: "root",
@@ -66,16 +69,11 @@ export interface UseRegisterContainerOptions {
  *
  * @example Register a child container
  * ```typescript
- * function FeatureContainer({ parentContainer, graph, children }) {
- *   const { plugin, bindContainer } = createInspectorPlugin();
+ * function FeatureContainer({ parentContainer, extensionGraph, children }) {
  *   const container = useMemo(
- *     () => createChildContainer(parentContainer, graph, { plugins: [plugin] }),
- *     [parentContainer, graph, plugin]
+ *     () => parentContainer.createChild().extend(extensionGraph).build(),
+ *     [parentContainer, extensionGraph]
  *   );
- *
- *   useEffect(() => {
- *     bindContainer(container);
- *   }, [bindContainer, container]);
  *
  *   useRegisterContainer(container, {
  *     id: "feature-auth",
@@ -89,26 +87,33 @@ export interface UseRegisterContainerOptions {
  * ```
  */
 export function useRegisterContainer<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<TService, string>,
+  TService,
+  TExtends extends Port<TExtService, string> = never,
+  TExtService = never,
+  TAsyncPorts extends Port<TAsyncService, string> = never,
+  TAsyncService = never,
   TPhase extends ContainerPhase = ContainerPhase,
 >(
   container: Container<TProvides, TExtends, TAsyncPorts, TPhase>,
   options: UseRegisterContainerOptions
 ): void {
   const registry = useContext(ContainerRegistryContext);
-  const inspector = useMemo(() => getInspectorAPI(container), [container]);
 
   // Use refs to avoid re-running effect when registry object changes
   // (registry callbacks are stable, but the object reference changes)
   const registryRef = useRef(registry);
   registryRef.current = registry;
 
+  // Store container reference - Container satisfies InspectableContainer
+  // via structural typing (trait object pattern)
+  const containerRef = useRef<InspectableContainer>(container);
+  containerRef.current = container;
+
   useEffect(() => {
     const currentRegistry = registryRef.current;
-    // Skip if registry is not available or inspector plugin is not registered
-    if (currentRegistry === null || inspector === undefined) {
+    // Skip if registry is not available
+    if (currentRegistry === null) {
       return;
     }
 
@@ -116,13 +121,14 @@ export function useRegisterContainer<
       id: options.id,
       label: options.label,
       kind: options.kind,
-      inspector,
+      container: containerRef.current,
       parentId: options.parentId ?? null,
       createdAt: Date.now(),
+      inheritanceMode: options.inheritanceMode,
     });
 
     return () => {
       currentRegistry.unregisterContainer(options.id);
     };
-  }, [inspector, options.id, options.label, options.kind, options.parentId]);
+  }, [options.id, options.label, options.kind, options.parentId, options.inheritanceMode]);
 }

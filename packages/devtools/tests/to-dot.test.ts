@@ -13,7 +13,7 @@
 import { describe, it, expect } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
-import { toDOT } from "../src/to-dot.js";
+import { toDOT } from "../src/index.js";
 
 // =============================================================================
 // Test Fixtures

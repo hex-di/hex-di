@@ -8,10 +8,10 @@
  */
 
 import { describe, it, expect } from "vitest";
+import { formatDuration } from "@hex-di/devtools-core";
 import {
   getPerformanceBarStyle,
   getTraceRowStyle,
-  formatDuration,
   timelineStyles,
   tracingStyles,
 } from "../src/react/styles.js";
@@ -137,10 +137,8 @@ describe("CSS Property Consistency", () => {
 
       // The active state should also use borderBottom shorthand
       // NOT borderBottomColor (which causes React warnings)
-      const activeHasShorthand =
-        "borderBottom" in tracingStyles.viewToggleTabActive;
-      const activeHasSpecific =
-        "borderBottomColor" in tracingStyles.viewToggleTabActive;
+      const activeHasShorthand = "borderBottom" in tracingStyles.viewToggleTabActive;
+      const activeHasSpecific = "borderBottomColor" in tracingStyles.viewToggleTabActive;
 
       // This test will FAIL with the bug:
       // activeHasSpecific will be true (bug)

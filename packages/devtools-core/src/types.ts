@@ -47,11 +47,6 @@ export interface ExportedNode {
   readonly lifetime: Lifetime;
   /** Factory kind - sync or async */
   readonly factoryKind: FactoryKind;
-  /**
-   * Port name (same as id, included for clarity in certain contexts).
-   * @deprecated Use `id` instead. This field is included for backward compatibility.
-   */
-  readonly portName?: string;
 }
 
 /**
@@ -435,6 +430,8 @@ export interface ScopeTree {
   readonly resolvedCount: number;
   readonly totalCount: number;
   readonly children: readonly ScopeTree[];
+  /** Port names of resolved services in this scope */
+  readonly resolvedPorts: readonly string[];
 }
 
 /**

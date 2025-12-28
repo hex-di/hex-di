@@ -15,11 +15,12 @@ import type {
   PluginDependency,
   PluginHooks,
   ScopeEventEmitter,
-  ScopeInfo,
+  ScopeEventInfo,
   ChildContainerInfo,
   ContainerInfo,
 } from "./types.js";
 import type { ResolutionHookContext, ResolutionResultContext } from "../resolution/hooks.js";
+import type { InternalAccessible } from "../inspector/types.js";
 import {
   PluginDependencyMissingError,
   PluginCircularDependencyError,
@@ -59,6 +60,7 @@ interface InternalPluginContext {
   hasPlugin: (symbol: symbol) => boolean;
   readonly scopeEvents: ScopeEventEmitter;
   onDispose: (callback: () => void | Promise<void>) => void;
+  getContainer: () => InternalAccessible;
 }
 
 // =============================================================================
@@ -70,11 +72,11 @@ interface InternalPluginContext {
  * @internal
  */
 class ScopeEventEmitterImpl implements ScopeEventEmitter {
-  private readonly createdListeners: Array<(scope: ScopeInfo) => void> = [];
-  private readonly disposingListeners: Array<(scope: ScopeInfo) => void> = [];
-  private readonly disposedListeners: Array<(scope: ScopeInfo) => void> = [];
+  private readonly createdListeners: Array<(scope: ScopeEventInfo) => void> = [];
+  private readonly disposingListeners: Array<(scope: ScopeEventInfo) => void> = [];
+  private readonly disposedListeners: Array<(scope: ScopeEventInfo) => void> = [];
 
-  onScopeCreated(listener: (scope: ScopeInfo) => void): () => void {
+  onScopeCreated(listener: (scope: ScopeEventInfo) => void): () => void {
     this.createdListeners.push(listener);
     return () => {
       const idx = this.createdListeners.indexOf(listener);
@@ -82,7 +84,7 @@ class ScopeEventEmitterImpl implements ScopeEventEmitter {
     };
   }
 
-  onScopeDisposing(listener: (scope: ScopeInfo) => void): () => void {
+  onScopeDisposing(listener: (scope: ScopeEventInfo) => void): () => void {
     this.disposingListeners.push(listener);
     return () => {
       const idx = this.disposingListeners.indexOf(listener);
@@ -90,7 +92,7 @@ class ScopeEventEmitterImpl implements ScopeEventEmitter {
     };
   }
 
-  onScopeDisposed(listener: (scope: ScopeInfo) => void): () => void {
+  onScopeDisposed(listener: (scope: ScopeEventInfo) => void): () => void {
     this.disposedListeners.push(listener);
     return () => {
       const idx = this.disposedListeners.indexOf(listener);
@@ -98,19 +100,19 @@ class ScopeEventEmitterImpl implements ScopeEventEmitter {
     };
   }
 
-  emitCreated(scope: ScopeInfo): void {
+  emitCreated(scope: ScopeEventInfo): void {
     for (const listener of this.createdListeners) {
       listener(scope);
     }
   }
 
-  emitDisposing(scope: ScopeInfo): void {
+  emitDisposing(scope: ScopeEventInfo): void {
     for (const listener of this.disposingListeners) {
       listener(scope);
     }
   }
 
-  emitDisposed(scope: ScopeInfo): void {
+  emitDisposed(scope: ScopeEventInfo): void {
     for (const listener of this.disposedListeners) {
       listener(scope);
     }
@@ -151,6 +153,9 @@ export class PluginManager {
   /** Symbol -> API mapping */
   private readonly apis: Map<symbol, unknown> = new Map();
 
+  /** Symbol -> Plugin mapping (for createChildApis lookup) */
+  private readonly pluginsBySymbol: Map<symbol, AnyPlugin> = new Map();
+
   /** Disposal callbacks (LIFO order) */
   private readonly disposeCallbacks: Array<() => void | Promise<void>> = [];
 
@@ -163,16 +168,23 @@ export class PluginManager {
   /** Whether the manager has been disposed */
   private isDisposed = false;
 
+  /** Reference to the container for plugin access */
+  private containerRef: InternalAccessible | null = null;
+
   /**
    * Initializes all plugins in dependency order.
    *
    * @param plugins - Array of plugins to initialize
+   * @param container - The container being augmented (for plugin access)
    * @throws {PluginAlreadyRegisteredError} If a plugin symbol is duplicated
    * @throws {PluginDependencyMissingError} If a required dependency is missing
    * @throws {PluginCircularDependencyError} If circular dependencies exist
    * @throws {PluginInitializationError} If a plugin's createApi throws
    */
-  initialize(plugins: readonly AnyPlugin[]): void {
+  initialize(plugins: readonly AnyPlugin[], container: InternalAccessible): void {
+    // Store container reference for plugin access
+    this.containerRef = container;
+
     if (plugins.length === 0) {
       return;
     }
@@ -237,6 +249,35 @@ export class PluginManager {
   }
 
   /**
+   * Creates plugin APIs for a child container.
+   *
+   * For plugins that implement `createApiForChild`, creates new API instances
+   * bound to the child container. For plugins without this method, returns
+   * the parent's API (shared behavior).
+   *
+   * @param childContainer - The child container being created
+   * @returns Map of symbol to API for the child container
+   */
+  createChildApis(childContainer: InternalAccessible): ReadonlyMap<symbol, unknown> {
+    const childApis = new Map<symbol, unknown>();
+
+    for (const [symbol, parentApi] of this.apis.entries()) {
+      const plugin = this.pluginsBySymbol.get(symbol);
+
+      if (plugin?.createApiForChild !== undefined && this.containerRef !== null) {
+        // Create child-specific API
+        const childApi = plugin.createApiForChild(childContainer, parentApi, this.containerRef);
+        childApis.set(symbol, Object.freeze(childApi));
+      } else {
+        // Share parent's API (existing behavior)
+        childApis.set(symbol, parentApi);
+      }
+    }
+
+    return childApis;
+  }
+
+  /**
    * Disposes all plugins in reverse initialization order.
    *
    * Calls each plugin's dispose method (if any) and then all
@@ -281,7 +322,7 @@ export class PluginManager {
    *
    * @param scope - Information about the created scope
    */
-  emitScopeCreated(scope: ScopeInfo): void {
+  emitScopeCreated(scope: ScopeEventInfo): void {
     this.scopeEvents.emitCreated(scope);
 
     // Also call plugin hooks
@@ -297,7 +338,7 @@ export class PluginManager {
    *
    * @param scope - Information about the scope being disposed
    */
-  emitScopeDisposing(scope: ScopeInfo): void {
+  emitScopeDisposing(scope: ScopeEventInfo): void {
     this.scopeEvents.emitDisposing(scope);
 
     // Also call plugin hooks
@@ -313,7 +354,7 @@ export class PluginManager {
    *
    * @param scope - Information about the disposed scope
    */
-  emitScopeDisposed(scope: ScopeInfo): void {
+  emitScopeDisposed(scope: ScopeEventInfo): void {
     this.scopeEvents.emitDisposed(scope);
 
     // Also call plugin hooks
@@ -525,6 +566,7 @@ export class PluginManager {
       // Freeze the API to prevent modification
       const frozenApi = Object.freeze(api);
       this.apis.set(plugin.symbol, frozenApi);
+      this.pluginsBySymbol.set(plugin.symbol, plugin);
       this.initializedPlugins.push(plugin);
     } catch (error) {
       throw new PluginInitializationError(plugin.name, error);
@@ -571,6 +613,16 @@ export class PluginManager {
 
       onDispose: (callback: () => void | Promise<void>) => {
         this.disposeCallbacks.push(callback);
+      },
+
+      getContainer: (): InternalAccessible => {
+        if (this.containerRef === null) {
+          throw new Error(
+            `Plugin "${plugin.name}" called getContainer() before initialize(). ` +
+              `This is an internal error.`
+          );
+        }
+        return this.containerRef;
       },
     };
   }

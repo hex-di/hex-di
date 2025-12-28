@@ -7,6 +7,7 @@
 import React, { type ReactElement } from "react";
 import type { PositionedEdge } from "./types.js";
 import { generateEdgePath } from "./graph-layout.js";
+import { graphEdgeStyles } from "./graph-styles.js";
 
 // =============================================================================
 // Types
@@ -49,10 +50,8 @@ export function GraphEdge({
     ? "var(--hex-devtools-accent, #89b4fa)"
     : "var(--hex-devtools-border, #45475a)";
   const strokeWidth = isHighlighted ? 2 : 1.5;
-  const opacity = isDimmed ? 0.2 : 1;
-  const marker = isHighlighted
-    ? `url(#${highlightedMarkerId})`
-    : `url(#${markerId})`;
+  const opacity = isDimmed ? graphEdgeStyles.pathDimmed.opacity : 1;
+  const marker = isHighlighted ? `url(#${highlightedMarkerId})` : `url(#${markerId})`;
 
   return (
     <path
@@ -88,10 +87,7 @@ export interface ArrowMarkerDefsProps {
  *
  * Must be included in the SVG to enable arrow markers on edges.
  */
-export function ArrowMarkerDefs({
-  id,
-  highlightedId,
-}: ArrowMarkerDefsProps): ReactElement {
+export function ArrowMarkerDefs({ id, highlightedId }: ArrowMarkerDefsProps): ReactElement {
   return (
     <defs>
       {/* Default arrow marker */}
@@ -104,10 +100,7 @@ export function ArrowMarkerDefs({
         markerHeight="6"
         orient="auto-start-reverse"
       >
-        <path
-          d="M 0 0 L 10 5 L 0 10 z"
-          fill="var(--hex-devtools-border, #45475a)"
-        />
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--hex-devtools-border, #45475a)" />
       </marker>
 
       {/* Highlighted arrow marker */}
@@ -120,10 +113,7 @@ export function ArrowMarkerDefs({
         markerHeight="6"
         orient="auto-start-reverse"
       >
-        <path
-          d="M 0 0 L 10 5 L 0 10 z"
-          fill="var(--hex-devtools-accent, #89b4fa)"
-        />
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--hex-devtools-accent, #89b4fa)" />
       </marker>
     </defs>
   );

@@ -14,12 +14,11 @@
  */
 
 import React, { useCallback, type ReactElement, type CSSProperties } from "react";
-import type { TraceEntry } from "@hex-di/devtools-core";
+import { formatDuration, type TraceEntry } from "@hex-di/devtools-core";
 import {
   timelineStyles,
   getLifetimeBadgeStyle,
   getLifetimeClassName,
-  formatDuration,
   getTraceRowStyle,
 } from "./styles.js";
 

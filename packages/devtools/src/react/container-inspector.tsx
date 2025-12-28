@@ -14,8 +14,8 @@ import type { Container, ContainerPhase } from "@hex-di/runtime";
 import type { InspectorAPI } from "@hex-di/inspector";
 import { createInspector } from "../index.js";
 import type { ContainerInspector as RuntimeInspector } from "../index.js";
-import type { ExportedGraph, TracingAPI, ScopeTree } from "@hex-di/devtools-core";
-import { containerInspectorStyles } from "./styles.js";
+import type { ExportedGraph, TracingAPI, ScopeTree, ContainerKind } from "@hex-di/devtools-core";
+import { containerInspectorStyles, getInheritanceModeBadgeStyle } from "./styles.js";
 import { ScopeHierarchy } from "./scope-hierarchy.js";
 import { ResolvedServices, type ServiceInfo } from "./resolved-services.js";
 
@@ -31,6 +31,11 @@ interface MinimalSingletonEntry {
 }
 
 /**
+ * Inheritance mode for child containers.
+ */
+type InheritanceMode = "shared" | "forked" | "isolated";
+
+/**
  * Minimal snapshot interface that captures the common fields between
  * RuntimeInspector.snapshot() and InspectorAPI.getSnapshot().
  *
@@ -41,6 +46,14 @@ interface MinimalSnapshot {
   readonly isDisposed: boolean;
   readonly singletons: readonly MinimalSingletonEntry[];
   readonly scopes: ScopeTree;
+  /**
+   * Container kind (root, child, lazy, scope).
+   * Only present when using InspectorAPI (devtools-core types).
+   * Not available when using RuntimeInspector directly.
+   */
+  readonly kind?: ContainerKind;
+  /** Inheritance mode (only present for child containers) */
+  readonly inheritanceMode?: InheritanceMode;
 }
 
 // =============================================================================
@@ -80,12 +93,18 @@ function normalizeInspector(inspector: InspectorAPI | RuntimeInspector): Normali
       getSnapshot: (): MinimalSnapshot => {
         const snapshot = inspector.getSnapshot();
         // InspectorAPI returns devtools-core ContainerSnapshot (discriminated union)
-        // We extract only the fields we need
-        return {
+        // We extract the fields we need, including kind and inheritanceMode for child containers
+        const base = {
           isDisposed: snapshot.isDisposed,
           singletons: snapshot.singletons,
           scopes: snapshot.scopes,
+          kind: snapshot.kind,
         };
+        // Extract inheritanceMode for child containers
+        if (snapshot.kind === "child") {
+          return { ...base, inheritanceMode: snapshot.inheritanceMode };
+        }
+        return base;
       },
       getScopeTree: () => inspector.getScopeTree(),
       isResolved: (portName: string) => inspector.isResolved(portName),
@@ -94,12 +113,13 @@ function normalizeInspector(inspector: InspectorAPI | RuntimeInspector): Normali
   return {
     getSnapshot: (): MinimalSnapshot => {
       const snapshot = inspector.snapshot();
-      // RuntimeInspector returns runtime ContainerSnapshot
-      // We extract only the fields we need
+      // RuntimeInspector returns runtime ContainerSnapshot (simpler type without kind)
+      // We extract only the fields available in runtime snapshot
       return {
         isDisposed: snapshot.isDisposed,
         singletons: snapshot.singletons,
         scopes: snapshot.scopes,
+        // kind is not available in runtime snapshot - omitted
       };
     },
     getScopeTree: () => inspector.getScopeTree(),
@@ -116,7 +136,7 @@ function normalizeInspector(inspector: InspectorAPI | RuntimeInspector): Normali
  *
  * Either `container` or `inspector` must be provided:
  * - Use `container` when inspecting a Container directly
- * - Use `inspector` when using an InspectorAPI from the registry
+ * - Use `inspector` when using an InspectorAPI or RuntimeInspector
  */
 export interface ContainerInspectorProps<
   TProvides extends Port<unknown, string> = Port<unknown, string>,
@@ -130,11 +150,11 @@ export interface ContainerInspectorProps<
    */
   readonly container?: Container<TProvides, TExtends, TAsyncPorts, TPhase>;
   /**
-   * Pre-created InspectorAPI to use.
+   * Pre-created inspector to use.
    * Takes precedence over `container` when provided.
-   * Useful when using ContainerRegistryProvider with useInspector().
+   * Accepts either InspectorAPI (deprecated) or RuntimeInspector.
    */
-  readonly inspector?: InspectorAPI;
+  readonly inspector?: InspectorAPI | RuntimeInspector;
   /** The exported dependency graph for metadata */
   readonly exportedGraph: ExportedGraph;
   /** Optional tracing API for request service stats */
@@ -190,6 +210,26 @@ function getRequestServiceStats(
 }
 
 /**
+ * Recursively searches for a scope in the tree and returns its resolvedPorts.
+ *
+ * @param tree - The scope tree to search
+ * @param scopeId - The scope ID to find
+ * @returns Set of resolved port names, or null if scope not found
+ */
+function findScopeResolvedPorts(tree: ScopeTree, scopeId: string): Set<string> | null {
+  if (tree.id === scopeId) {
+    return new Set(tree.resolvedPorts);
+  }
+  for (const child of tree.children) {
+    const result = findScopeResolvedPorts(child, scopeId);
+    if (result !== null) {
+      return result;
+    }
+  }
+  return null;
+}
+
+/**
  * Builds the service info list from snapshot and graph data.
  *
  * Combines information from:
@@ -230,6 +270,12 @@ function buildServiceList(
     singletonMap.set(entry.portName, entry);
   }
 
+  // Find the selected scope's resolved ports if a scope is selected
+  let scopeResolvedPorts: Set<string> | null = null;
+  if (selectedScopeId !== null && selectedScopeId !== "container") {
+    scopeResolvedPorts = findScopeResolvedPorts(snapshot.scopes, selectedScopeId);
+  }
+
   // Process all nodes from the graph
   for (const node of exportedGraph.nodes) {
     const dependencies = dependencyMap.get(node.id) ?? [];
@@ -240,25 +286,39 @@ function buildServiceList(
     let resolvedAt: number | undefined;
     let resolutionOrder: number | undefined;
 
-    try {
-      const status = inspector.isResolved(node.id);
-      if (status === "scope-required") {
-        isScopeRequired = selectedScopeId === null;
-        isResolved = false;
+    // Handle scoped services when a scope is selected
+    if (node.lifetime === "scoped") {
+      if (scopeResolvedPorts !== null) {
+        // We have scope data, check if this service is resolved in the selected scope
+        isResolved = scopeResolvedPorts.has(node.id);
+        isScopeRequired = false;
       } else {
-        isResolved = status;
+        // No scope selected, mark as scope-required
+        isScopeRequired = true;
+        isResolved = false;
       }
-    } catch {
-      // Port might not be in container if graph was modified
-      isResolved = false;
-    }
+    } else {
+      // For singleton/transient, use existing logic
+      try {
+        const status = inspector.isResolved(node.id);
+        if (status === "scope-required") {
+          isScopeRequired = selectedScopeId === null;
+          isResolved = false;
+        } else {
+          isResolved = status;
+        }
+      } catch {
+        // Port might not be in container if graph was modified
+        isResolved = false;
+      }
 
-    // Get metadata from singleton entries
-    const singletonEntry = singletonMap.get(node.id);
-    if (singletonEntry !== undefined) {
-      isResolved = singletonEntry.isResolved;
-      resolvedAt = singletonEntry.resolvedAt;
-      resolutionOrder = singletonEntry.resolutionOrder;
+      // Get metadata from singleton entries
+      const singletonEntry = singletonMap.get(node.id);
+      if (singletonEntry !== undefined) {
+        isResolved = singletonEntry.isResolved;
+        resolvedAt = singletonEntry.resolvedAt;
+        resolutionOrder = singletonEntry.resolutionOrder;
+      }
     }
 
     // Get stats for request-scoped services from tracing data
@@ -483,6 +543,16 @@ export function ContainerInspector<
         >
           Auto {autoRefresh ? "ON" : "OFF"}
         </button>
+        {/* Inheritance mode badge for child containers */}
+        {snapshot.kind === "child" && snapshot.inheritanceMode !== undefined && (
+          <span
+            style={getInheritanceModeBadgeStyle(snapshot.inheritanceMode)}
+            data-testid="container-inheritance-mode"
+            title={`Inheritance mode: ${snapshot.inheritanceMode}`}
+          >
+            {snapshot.inheritanceMode}
+          </span>
+        )}
       </div>
 
       {/* Scope Hierarchy */}

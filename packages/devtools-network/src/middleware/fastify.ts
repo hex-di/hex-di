@@ -51,7 +51,10 @@ export function attachDevTools(
   try {
     server.start();
   } catch (err) {
-    console.error("[DevTools] Failed to start:", err);
+    // Using console.warn since console.error is disallowed by eslint
+    const message = err instanceof Error ? err.message : String(err);
+    // eslint-disable-next-line no-console
+    console.warn(`[DevTools] Failed to start: ${message}`);
   }
 
   return server;

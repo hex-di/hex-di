@@ -18,6 +18,8 @@ import React, {
   type Context,
 } from "react";
 import type { Port, InferService } from "@hex-di/ports";
+import type { ContainerInternalState } from "@hex-di/runtime";
+import { INTERNAL_ACCESS } from "@hex-di/runtime";
 import type {
   TypedReactIntegration,
   ContainerProviderProps,
@@ -83,16 +85,19 @@ interface ContainerLike<TProvides extends Port<unknown, string>> {
   has(port: Port<unknown, string>): boolean;
   readonly isDisposed: boolean;
   readonly isInitialized: boolean;
-  // parent property is accessed via try/catch for child detection
-  readonly parent?: unknown;
+  // Internal access for child container detection without throwing
+  readonly [INTERNAL_ACCESS]: () => ContainerInternalState;
 }
 
 /**
  * Checks if the provided container is a child container.
  *
- * With unified Container type, child containers are distinguished by
- * having a `parent` property that doesn't throw. Root containers' `parent`
- * property throws when accessed.
+ * Uses INTERNAL_ACCESS to check parentState instead of catching errors from
+ * accessing the `parent` property (which throws for root containers).
+ * This approach avoids browser devtools logging caught errors.
+ *
+ * For containers without INTERNAL_ACCESS (mocks in tests), returns false to
+ * allow them to be used as root containers.
  *
  * @param container - The container to check
  * @returns true if the container is a child container, false otherwise
@@ -102,13 +107,16 @@ interface ContainerLike<TProvides extends Port<unknown, string>> {
 function isChildContainer<TProvides extends Port<unknown, string>>(
   container: ContainerLike<TProvides>
 ): boolean {
-  // With unified Container type, check if parent access throws
-  try {
-    const _parent = container.parent;
-    return true;
-  } catch {
-    return false;
+  // Preferred: Use internal state to detect child containers - no throwing involved
+  const accessor = container[INTERNAL_ACCESS];
+  if (typeof accessor === "function") {
+    const internalState = accessor();
+    return internalState.parentState !== undefined;
   }
+
+  // For mock containers without INTERNAL_ACCESS (tests), return false
+  // This allows them to be used as root containers
+  return false;
 }
 
 // =============================================================================
@@ -312,16 +320,18 @@ export function createTypedHooks<
     // Detect nested ContainerProvider
     const existingContext = useContext(ContainerContext);
 
-    // Check if the new container is a child container.
-    // With unified Container type, child containers are distinguished by
-    // having a `parent` property that doesn't throw.
+    // Check if the new container is a child container using internal state.
+    // This avoids the try-catch approach which logs errors in browser devtools.
+    // Inline detection to avoid type inference issues with generic constraints.
     let containerIsChild = false;
-    try {
-      const _parent = (container as { parent?: unknown }).parent;
-      containerIsChild = true;
-    } catch {
-      containerIsChild = false;
+    const accessor = (container as unknown as { [INTERNAL_ACCESS]?: () => ContainerInternalState })[
+      INTERNAL_ACCESS
+    ];
+    if (typeof accessor === "function") {
+      const internalState = accessor();
+      containerIsChild = internalState.parentState !== undefined;
     }
+    // For mock containers without INTERNAL_ACCESS (tests), containerIsChild stays false
 
     // If there's an existing context and the new container is NOT a child container,
     // this is an error (cannot nest root containers)

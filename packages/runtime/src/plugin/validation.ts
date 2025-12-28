@@ -10,52 +10,11 @@
  */
 
 import type { Port } from "@hex-di/ports";
-import type { Plugin, PluginDependency, AnyPlugin } from "./types.js";
+import type { Plugin, PluginDependency, AnyPlugin, PluginApiMap } from "./types.js";
 import type { Container, ContainerPhase } from "../types.js";
 
-// =============================================================================
-// Plugin API Map
-// =============================================================================
-
-/**
- * Empty record type used as the base case for PluginApiMap recursion.
- * This is semantically correct for "no plugin APIs" and avoids
- * the `@typescript-eslint/no-empty-object-type` ESLint rule.
- *
- * @internal
- */
-type EmptyPluginApiMap = Record<symbol, never>;
-
-/**
- * Maps a tuple of plugins to an intersection of symbol -> API properties.
- *
- * Used to augment Container type with plugin APIs accessible via their symbols.
- *
- * @typeParam TPlugins - Readonly tuple of Plugin types
- * @returns Intersection type with `{ readonly [symbol]: API }` for each plugin
- *
- * @example
- * ```typescript
- * type Plugins = readonly [typeof TracingPlugin, typeof MetricsPlugin];
- * type ApiMap = PluginApiMap<Plugins>;
- * // { readonly [TRACING]: TracingAPI } & { readonly [METRICS]: MetricsAPI }
- * ```
- */
-export type PluginApiMap<TPlugins extends readonly AnyPlugin[]> = TPlugins extends readonly [
-  infer First,
-  ...infer Rest,
-]
-  ? First extends Plugin<
-      infer S,
-      infer A,
-      readonly PluginDependency<symbol, unknown, false>[],
-      readonly PluginDependency<symbol, unknown, true>[]
-    >
-    ? { readonly [K in S]: A } & (Rest extends readonly AnyPlugin[]
-        ? PluginApiMap<Rest>
-        : EmptyPluginApiMap)
-    : EmptyPluginApiMap
-  : EmptyPluginApiMap;
+// Re-export PluginApiMap for backwards compatibility
+export type { PluginApiMap };
 
 // =============================================================================
 // Plugin Augmented Container
@@ -64,8 +23,8 @@ export type PluginApiMap<TPlugins extends readonly AnyPlugin[]> = TPlugins exten
 /**
  * Container type augmented with plugin APIs.
  *
- * Creates an intersection of the base Container type and plugin API map,
- * enabling type-safe access via `container[PLUGIN_SYMBOL]`.
+ * Now a simple alias for Container<..., TPlugins> since Container
+ * includes PluginApiMap<TPlugins> directly in its definition.
  *
  * @typeParam TProvides - Port union provided by the container
  * @typeParam TExtends - Port union extended by child containers
@@ -92,7 +51,7 @@ export type PluginAugmentedContainer<
   TAsyncPorts extends Port<unknown, string>,
   TPhase extends ContainerPhase,
   TPlugins extends readonly AnyPlugin[],
-> = Container<TProvides, TExtends, TAsyncPorts, TPhase> & PluginApiMap<TPlugins>;
+> = Container<TProvides, TExtends, TAsyncPorts, TPhase, TPlugins>;
 
 // =============================================================================
 // Plugin Dependency Validation Errors

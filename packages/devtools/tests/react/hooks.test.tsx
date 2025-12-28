@@ -15,8 +15,8 @@ import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
 import type { Graph } from "@hex-di/graph";
 import type { Port } from "@hex-di/ports";
-import { createContainer } from "@hex-di/runtime";
-import { TracingPlugin } from "@hex-di/tracing";
+import { createContainer, pipe } from "@hex-di/runtime";
+import { withTracing } from "@hex-di/tracing";
 import {
   DevToolsProvider,
   useTraces,
@@ -111,7 +111,7 @@ describe("DevTools Hooks", () => {
 
     it("returns isAvailable=true when tracing is available", () => {
       const graph = createTestGraph();
-      const container = createContainer(graph, { plugins: [TracingPlugin] });
+      const container = pipe(createContainer(graph), withTracing);
 
       render(
         <DevToolsProvider graph={graph} container={container}>
@@ -124,7 +124,7 @@ describe("DevTools Hooks", () => {
 
     it("returns empty traces initially", () => {
       const graph = createTestGraph();
-      const container = createContainer(graph, { plugins: [TracingPlugin] });
+      const container = pipe(createContainer(graph), withTracing);
 
       render(
         <DevToolsProvider graph={graph} container={container}>
@@ -158,7 +158,7 @@ describe("DevTools Hooks", () => {
 
     it("returns stats from TracingAPI when available", () => {
       const graph = createTestGraph();
-      const container = createContainer(graph, { plugins: [TracingPlugin] });
+      const container = pipe(createContainer(graph), withTracing);
 
       render(
         <DevToolsProvider graph={graph} container={container}>
@@ -192,7 +192,7 @@ describe("DevTools Hooks", () => {
 
     it("returns isAvailable=true when tracing is available", () => {
       const graph = createTestGraph();
-      const container = createContainer(graph, { plugins: [TracingPlugin] });
+      const container = pipe(createContainer(graph), withTracing);
 
       render(
         <DevToolsProvider graph={graph} container={container}>
@@ -205,7 +205,7 @@ describe("DevTools Hooks", () => {
 
     it("pause and resume work correctly", async () => {
       const graph = createTestGraph();
-      const container = createContainer(graph, { plugins: [TracingPlugin] });
+      const container = pipe(createContainer(graph), withTracing);
 
       render(
         <DevToolsProvider graph={graph} container={container}>

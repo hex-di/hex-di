@@ -9,7 +9,8 @@
  */
 
 import type { Port } from "@hex-di/ports";
-import type { Lifetime } from "@hex-di/graph";
+import type { Lifetime, FactoryKind } from "@hex-di/graph";
+import { INTERNAL_ACCESS } from "./symbols.js";
 
 // =============================================================================
 // Container Internal State
@@ -40,6 +41,17 @@ export interface ContainerInternalState {
 
   /** Map of port to adapter information */
   readonly adapterMap: ReadonlyMap<Port<unknown, string>, AdapterInfo>;
+
+  /**
+   * Parent container's internal state for inherited resolution tracking.
+   *
+   * Present only for child containers with "shared" inheritance mode.
+   * Enables inspector to report inherited singletons as resolved.
+   */
+  readonly parentState?: ContainerInternalState;
+
+  /** Unique identifier for this container (e.g., "root", "child-1") */
+  readonly containerId: string;
 }
 
 /**
@@ -82,6 +94,9 @@ export interface AdapterInfo {
 
   /** Service lifetime */
   readonly lifetime: Lifetime;
+
+  /** Factory kind (sync or async) */
+  readonly factoryKind: FactoryKind;
 
   /** Number of dependencies */
   readonly dependencyCount: number;
@@ -145,6 +160,29 @@ export type InternalAccessor<T> = () => T;
  */
 export interface HasInternalAccess<T> {
   [key: symbol]: InternalAccessor<T>;
+}
+
+/**
+ * Minimal interface for container inspection access.
+ *
+ * This trait-like interface captures the capability to access
+ * container internals via the INTERNAL_ACCESS Symbol. Any Container
+ * satisfies this interface structurally (like Rust's impl Trait).
+ *
+ * Used by:
+ * - PluginContext.getContainer() to provide container access
+ * - createInspector() to accept any container variant
+ *
+ * @example
+ * ```typescript
+ * function inspectContainer(container: InternalAccessible): void {
+ *   const state = container[INTERNAL_ACCESS]();
+ *   console.log("Disposed:", state.disposed);
+ * }
+ * ```
+ */
+export interface InternalAccessible {
+  readonly [INTERNAL_ACCESS]: () => ContainerInternalState;
 }
 
 // =============================================================================
@@ -259,4 +297,7 @@ export interface ScopeTree {
 
   /** Child scopes created from this scope */
   readonly children: readonly ScopeTree[];
+
+  /** Port names of resolved services in this scope */
+  readonly resolvedPorts: readonly string[];
 }

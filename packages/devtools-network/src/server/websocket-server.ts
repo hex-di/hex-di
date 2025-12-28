@@ -9,6 +9,7 @@
 import { WebSocketServer as WSServer, WebSocket } from "ws";
 import type { IncomingMessage, Server as HttpServer } from "http";
 import type { Http2SecureServer } from "http2";
+import { createVerboseLogger, type VerboseLogger } from "@hex-di/devtools-core";
 import { ClientRegistry, type AppInfo } from "./client-registry.js";
 import {
   type JsonRpcMessage,
@@ -159,6 +160,7 @@ export class DevToolsServer {
   private readonly registry = new ClientRegistry();
   private readonly listeners = new Set<ServerEventListener>();
   private readonly options: ResolvedDevToolsOptions;
+  private readonly logger: VerboseLogger;
   private isRunning = false;
 
   /** Map of request ID to pending request info for response correlation */
@@ -174,6 +176,7 @@ export class DevToolsServer {
       path: options.path ?? "/devtools",
       verbose: options.verbose ?? false,
     };
+    this.logger = createVerboseLogger("DevToolsServer", this.options.verbose);
 
     // Forward registry events
     this.registry.addListener((event, app) => {
@@ -249,7 +252,7 @@ export class DevToolsServer {
       this.emit({ type: "error", error });
     });
 
-    this.log(`DevTools server started on port ${actualPort}`);
+    this.logger.log(`DevTools server started on port ${actualPort}`);
     this.emit({ type: "started", port: actualPort });
   }
 
@@ -277,7 +280,7 @@ export class DevToolsServer {
         this.isRunning = false;
         this.wss = null;
         this.registry.clear();
-        this.log("DevTools server stopped");
+        this.logger.log("DevTools server stopped");
         this.emit({ type: "stopped" });
         resolve();
       });
@@ -324,19 +327,19 @@ export class DevToolsServer {
   // ===========================================================================
 
   private handleConnection(socket: WebSocket, _request: IncomingMessage): void {
-    this.log("New connection established");
+    this.logger.log("New connection established");
 
     socket.on("message", data => {
       this.handleMessage(socket, data.toString());
     });
 
     socket.on("close", () => {
-      this.log("Connection closed");
+      this.logger.log("Connection closed");
       this.registry.unregisterBySocket(socket);
     });
 
     socket.on("error", error => {
-      this.log(`Connection error: ${error.message}`);
+      this.logger.log(`Connection error: ${error.message}`);
       this.emit({ type: "error", error });
     });
   }
@@ -359,7 +362,7 @@ export class DevToolsServer {
   }
 
   private handleRequest(socket: WebSocket, request: JsonRpcRequest): void {
-    this.log(`Request: ${request.method}`);
+    this.logger.log(`Request: ${request.method}`);
 
     switch (request.method) {
       case Methods.REGISTER_APP:
@@ -391,7 +394,7 @@ export class DevToolsServer {
   }
 
   private handleNotification(socket: WebSocket, notification: JsonRpcNotification): void {
-    this.log(`Notification: ${notification.method}`);
+    this.logger.log(`Notification: ${notification.method}`);
 
     if (notification.method === Methods.DATA_UPDATE) {
       // Broadcast to all connected UI clients
@@ -457,13 +460,13 @@ export class DevToolsServer {
 
     // Forward the request to the target app
     this.send(targetApp.socket, request);
-    this.log(`Forwarded request ${request.id} to app ${request.params.appId}`);
+    this.logger.log(`Forwarded request ${request.id} to app ${request.params.appId}`);
   }
 
   private handleResponse(_socket: WebSocket, response: JsonRpcResponse): void {
     // Error responses can have null id - ignore these as we can't route them
     if (response.id === null) {
-      this.log("Received error response with null ID, cannot route");
+      this.logger.log("Received error response with null ID, cannot route");
       return;
     }
 
@@ -471,7 +474,7 @@ export class DevToolsServer {
     const pending = this.pendingRequests.get(response.id);
 
     if (pending === undefined) {
-      this.log(`Received response for unknown request ID: ${response.id}`);
+      this.logger.log(`Received response for unknown request ID: ${response.id}`);
       return;
     }
 
@@ -481,7 +484,7 @@ export class DevToolsServer {
 
     // Forward the response to the original client
     this.send(pending.originSocket, response);
-    this.log(`Forwarded response ${response.id} to client`);
+    this.logger.log(`Forwarded response ${response.id} to client`);
   }
 
   private broadcastNotification(notification: JsonRpcNotification): void {
@@ -515,13 +518,6 @@ export class DevToolsServer {
       } catch {
         // Ignore listener errors
       }
-    }
-  }
-
-  private log(message: string): void {
-    if (this.options.verbose) {
-      // Using console.warn for debug logs since console.log is disallowed
-      console.warn(`[DevToolsServer] ${message}`);
     }
   }
 }

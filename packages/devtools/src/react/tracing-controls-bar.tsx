@@ -19,12 +19,8 @@ import React, {
   type ChangeEvent,
 } from "react";
 import type { Lifetime } from "@hex-di/graph";
-import {
-  controlsStyles,
-  serviceListStyles,
-  containerInspectorStyles,
-  formatDuration,
-} from "./styles.js";
+import { formatDuration } from "@hex-di/devtools-core";
+import { controlsStyles, serviceListStyles, containerInspectorStyles } from "./styles.js";
 
 // =============================================================================
 // Types

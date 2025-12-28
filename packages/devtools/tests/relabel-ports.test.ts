@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { relabelPorts } from "../src/relabel-ports.js";
+import { relabelPorts } from "../src/index.js";
 import type { ExportedGraph, ExportedNode } from "@hex-di/devtools-core";
 
 // =============================================================================
@@ -50,48 +50,40 @@ describe("relabelPorts", () => {
     const labelFn = (node: ExportedNode) => `${node.label} [${node.lifetime}]`;
     const result = relabelPorts(original, labelFn);
 
-    expect(result.nodes.find((n) => n.id === "Config")?.label).toBe(
-      "Config [singleton]"
-    );
-    expect(result.nodes.find((n) => n.id === "Database")?.label).toBe(
-      "Database [singleton]"
-    );
-    expect(result.nodes.find((n) => n.id === "UserService")?.label).toBe(
-      "UserService [scoped]"
-    );
-    expect(result.nodes.find((n) => n.id === "RequestHandler")?.label).toBe(
+    expect(result.nodes.find(n => n.id === "Config")?.label).toBe("Config [singleton]");
+    expect(result.nodes.find(n => n.id === "Database")?.label).toBe("Database [singleton]");
+    expect(result.nodes.find(n => n.id === "UserService")?.label).toBe("UserService [scoped]");
+    expect(result.nodes.find(n => n.id === "RequestHandler")?.label).toBe(
       "RequestHandler [transient]"
     );
   });
 
   it("preserves node IDs (used for edge references)", () => {
     const original = createTestGraph();
-    const originalIds = original.nodes.map((n) => n.id);
+    const originalIds = original.nodes.map(n => n.id);
 
     // Apply a transform that changes the label
     const labelFn = (node: ExportedNode) => `Transformed-${node.label}`;
     const result = relabelPorts(original, labelFn);
 
     // IDs should be identical
-    expect(result.nodes.map((n) => n.id)).toEqual(originalIds);
+    expect(result.nodes.map(n => n.id)).toEqual(originalIds);
 
     // Labels should be transformed
-    expect(result.nodes.map((n) => n.label)).not.toEqual(originalIds);
-    expect(result.nodes.every((n) => n.label.startsWith("Transformed-"))).toBe(
-      true
-    );
+    expect(result.nodes.map(n => n.label)).not.toEqual(originalIds);
+    expect(result.nodes.every(n => n.label.startsWith("Transformed-"))).toBe(true);
   });
 
   it("does not modify the original graph (immutability)", () => {
     const original = createTestGraph();
-    const originalLabels = original.nodes.map((n) => n.label);
+    const originalLabels = original.nodes.map(n => n.label);
 
     // Apply transform
     const labelFn = (node: ExportedNode) => `Modified-${node.label}`;
     relabelPorts(original, labelFn);
 
     // Original should be unchanged
-    expect(original.nodes.map((n) => n.label)).toEqual(originalLabels);
+    expect(original.nodes.map(n => n.label)).toEqual(originalLabels);
   });
 
   it("returns new object instances", () => {
@@ -160,18 +152,13 @@ describe("relabelPorts transform scenarios", () => {
       ],
     };
 
-    const labelFn = (node: ExportedNode) =>
-      node.label.replace("App.Services.", "");
+    const labelFn = (node: ExportedNode) => node.label.replace("App.Services.", "");
     const result = relabelPorts(graph, labelFn);
 
-    expect(result.nodes.map((n) => n.label)).toEqual([
-      "Logger",
-      "Database",
-      "UserService",
-    ]);
+    expect(result.nodes.map(n => n.label)).toEqual(["Logger", "Database", "UserService"]);
 
     // IDs should still have the prefix
-    expect(result.nodes.map((n) => n.id)).toEqual([
+    expect(result.nodes.map(n => n.id)).toEqual([
       "App.Services.Logger",
       "App.Services.Database",
       "App.Services.UserService",
@@ -182,25 +169,14 @@ describe("relabelPorts transform scenarios", () => {
     const original = createTestGraph();
 
     const labelFn = (node: ExportedNode) => {
-      const emoji =
-        node.lifetime === "singleton"
-          ? "S"
-          : node.lifetime === "scoped"
-            ? "C"
-            : "R";
+      const emoji = node.lifetime === "singleton" ? "S" : node.lifetime === "scoped" ? "C" : "R";
       return `[${emoji}] ${node.label}`;
     };
     const result = relabelPorts(original, labelFn);
 
-    expect(result.nodes.find((n) => n.id === "Config")?.label).toBe(
-      "[S] Config"
-    );
-    expect(result.nodes.find((n) => n.id === "UserService")?.label).toBe(
-      "[C] UserService"
-    );
-    expect(result.nodes.find((n) => n.id === "RequestHandler")?.label).toBe(
-      "[R] RequestHandler"
-    );
+    expect(result.nodes.find(n => n.id === "Config")?.label).toBe("[S] Config");
+    expect(result.nodes.find(n => n.id === "UserService")?.label).toBe("[C] UserService");
+    expect(result.nodes.find(n => n.id === "RequestHandler")?.label).toBe("[R] RequestHandler");
   });
 
   it("preserves node lifetimes", () => {
@@ -210,8 +186,8 @@ describe("relabelPorts transform scenarios", () => {
     const result = relabelPorts(original, labelFn);
 
     // Lifetimes should be preserved
-    original.nodes.forEach((originalNode) => {
-      const resultNode = result.nodes.find((n) => n.id === originalNode.id);
+    original.nodes.forEach(originalNode => {
+      const resultNode = result.nodes.find(n => n.id === originalNode.id);
       expect(resultNode?.lifetime).toBe(originalNode.lifetime);
     });
   });

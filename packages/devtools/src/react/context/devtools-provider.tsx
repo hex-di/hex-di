@@ -9,7 +9,7 @@ import type { Graph } from "@hex-di/graph";
 import type { Container, ContainerPhase } from "@hex-di/runtime";
 import type { Port } from "@hex-di/ports";
 import { getTracingAPI } from "@hex-di/tracing";
-import { toJSON } from "../../to-json.js";
+import { toJSON } from "@hex-di/devtools-core";
 import { DevToolsContext, type DevToolsContextValue } from "./devtools-context.js";
 
 /**

@@ -1,43 +1,63 @@
 /**
- * @hex-di/inspector - Container inspection plugin for HexDI.
+ * @hex-di/inspector - Container inspection for HexDI.
  *
- * Provides runtime state inspection via the InspectorPlugin:
- * - Pull-based queries: getSnapshot(), getScopeTree(), listPorts(), isResolved()
- * - Push-based events: subscribe() for real-time UI updates
- * - Type-safe access via INSPECTOR symbol and type guards
+ * Provides runtime state inspection with two modes:
  *
- * @example Basic usage
+ * 1. **Pull-only** via `createInspector()` - lightweight, no subscription overhead
+ * 2. **Push+Pull** via `InspectorPlugin` - real-time events via `subscribe()`
+ *
+ * @example Pull-only inspector (no plugin needed)
  * ```typescript
  * import { createContainer } from '@hex-di/runtime';
- * import { createInspectorPlugin, INSPECTOR, hasInspector } from '@hex-di/inspector';
+ * import { createInspector } from '@hex-di/inspector';
  *
- * // Create inspector plugin
- * const { plugin: InspectorPlugin, bindContainer } = createInspectorPlugin();
+ * const container = createContainer(graph);
+ * const inspector = createInspector(container);
  *
- * // Create container with plugin
+ * // Pull-based queries
+ * const snapshot = inspector.getSnapshot();
+ * const ports = inspector.listPorts();
+ * ```
+ *
+ * @example Plugin with real-time events
+ * ```typescript
+ * import { createContainer } from '@hex-di/runtime';
+ * import { InspectorPlugin, INSPECTOR } from '@hex-di/inspector';
+ *
+ * // Create container with plugin - no binding needed!
  * const container = createContainer(graph, {
  *   plugins: [InspectorPlugin],
  * });
  *
- * // Bind container for inspection
- * bindContainer(container);
- *
- * // Use pull-based API
+ * // Pull-based queries
  * const snapshot = container[INSPECTOR].getSnapshot();
  * if (snapshot.kind === "root") {
  *   console.log(`Initialized: ${snapshot.isInitialized}`);
  * }
  *
- * // Use push-based API
+ * // Push-based events (only with plugin)
  * const unsubscribe = container[INSPECTOR].subscribe((event) => {
  *   if (event.type === "resolution") {
  *     console.log(`Resolved ${event.portName} in ${event.duration}ms`);
  *   }
  * });
+ * ```
  *
- * // Type-safe access with type guard
+ * @example Type-safe access with guards
+ * ```typescript
+ * import { hasInspector, hasSubscription, INSPECTOR } from '@hex-di/inspector';
+ *
+ * // Check if container has inspector
  * if (hasInspector(container)) {
- *   const phase = container[INSPECTOR].getPhase();
+ *   const inspector = container[INSPECTOR];
+ *
+ *   // Check if inspector has subscription (plugin vs standalone)
+ *   if (hasSubscription(inspector)) {
+ *     inspector.subscribe(handleEvent);
+ *   } else {
+ *     // Fall back to polling for pull-only inspector
+ *     setInterval(() => refresh(inspector.getSnapshot()), 1000);
+ *   }
  * }
  * ```
  *
@@ -51,33 +71,43 @@
 export { INSPECTOR } from "./symbols.js";
 
 // =============================================================================
+// Factory Exports
+// =============================================================================
+
+export { createInspector } from "./inspector.js";
+export { InspectorPlugin } from "./plugin.js";
+
+// =============================================================================
+// Wrapper Export (Zustand/Redux-style enhancement pattern)
+// =============================================================================
+
+export { withInspector, type WithInspector } from "./wrapper.js";
+
+// =============================================================================
 // Type Exports
 // =============================================================================
 
 export type {
-  // API interface
+  // Core API interface
   InspectorAPI,
+  // Extended API with subscription (from plugin)
+  InspectorWithSubscription,
+  // Event types
   InspectorEvent,
   InspectorListener,
-  // Re-exports from devtools-core for convenience
+  // Types needed by InspectorAPI (from devtools-core)
   ContainerKind,
   ContainerPhase,
   ContainerSnapshot,
   ScopeTree,
-  ScopeInfo,
 } from "./types.js";
 
 // =============================================================================
 // Type Guard Exports
 // =============================================================================
 
+export { hasSubscription } from "./types.js";
 export { hasInspector, getInspectorAPI, type ContainerWithInspector } from "./type-guards.js";
-
-// =============================================================================
-// Plugin Export
-// =============================================================================
-
-export { createInspectorPlugin } from "./plugin.js";
 
 // =============================================================================
 // Helper Exports (for advanced use cases)

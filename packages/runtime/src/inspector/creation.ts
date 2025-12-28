@@ -55,10 +55,15 @@ export type { ContainerInspector, ContainerSnapshot, SingletonEntry, ScopeTree }
  */
 /**
  * The minimal interface for accessing INTERNAL_ACCESS from a container.
- * This allows getInternalAccessor to accept any Container variant without
- * running into variance issues from the Container type's conditional methods.
+ *
+ * This trait-like interface allows getInternalAccessor and createInspector to
+ * accept any Container variant without running into variance issues from the
+ * Container type's conditional methods.
+ *
+ * All Container variants satisfy this interface structurally (like impl Trait in Rust).
+ * This enables storing heterogeneous containers in DevTools registries.
  */
-interface InternalAccessible {
+export interface InternalAccessible {
   readonly [INTERNAL_ACCESS]: () => ContainerInternalState;
 }
 
@@ -112,12 +117,19 @@ function buildScopeTreeNode(scopeState: ScopeInternalState, totalCount: number):
     children.push(buildScopeTreeNode(childState, totalCount));
   }
 
+  // Extract port names from scopedMemo entries
+  const resolvedPorts: string[] = [];
+  for (const entry of scopeState.scopedMemo.entries) {
+    resolvedPorts.push(entry.portName);
+  }
+
   const node: ScopeTree = {
     id: scopeState.id,
     status: scopeState.disposed ? "disposed" : "active",
     resolvedCount: scopeState.scopedMemo.size,
     totalCount,
     children: Object.freeze(children),
+    resolvedPorts: Object.freeze(resolvedPorts),
   };
 
   return Object.freeze(node);
@@ -163,12 +175,17 @@ function buildScopeTreeNode(scopeState: ScopeInternalState, totalCount: number):
  *
  * @throws {Error} If the container doesn't expose INTERNAL_ACCESS
  */
+// Overload 1: Full Container type with generics (for type inference)
 export function createInspector<
   TProvides extends Port<unknown, string>,
   TExtends extends Port<unknown, string> = never,
   TAsyncPorts extends Port<unknown, string> = never,
   TPhase extends ContainerPhase = ContainerPhase,
->(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): ContainerInspector {
+>(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): ContainerInspector;
+// Overload 2: Minimal InternalAccessible interface (for DevTools registry)
+export function createInspector(container: InternalAccessible): ContainerInspector;
+// Implementation
+export function createInspector(container: InternalAccessible): ContainerInspector {
   // Store container reference for later access - O(1) operation
   const containerRef = container;
 
@@ -254,12 +271,19 @@ export function createInspector<
       children.push(buildScopeTreeNode(childState, scopedAdapterCount));
     }
 
+    // Extract port names from singletonMemo entries for root container
+    const resolvedPorts: string[] = [];
+    for (const entry of state.singletonMemo.entries) {
+      resolvedPorts.push(entry.portName);
+    }
+
     const root: ScopeTree = {
       id: "container",
       status: state.disposed ? "disposed" : "active",
       resolvedCount: state.singletonMemo.size,
       totalCount,
       children: Object.freeze(children),
+      resolvedPorts: Object.freeze(resolvedPorts),
     };
 
     return Object.freeze(root);
@@ -290,6 +314,7 @@ export function createInspector<
    * Implementation of isResolved() method.
    *
    * Checks singleton memo for resolution status.
+   * For child containers, also checks parent's memo for inherited resolutions.
    * Returns "scope-required" for scoped ports.
    * Throws if port name is not registered.
    */
@@ -318,11 +343,35 @@ export function createInspector<
       return "scope-required";
     }
 
-    // Check if resolved in singleton memo
+    // Check if resolved in local singleton memo
     for (const entry of state.singletonMemo.entries) {
       if (entry.portName === portName) {
         return true;
       }
+    }
+
+    // For child containers, check parent's singleton memo for inherited resolutions
+    if (state.parentState !== undefined) {
+      return isResolvedInParentChain(state.parentState, portName);
+    }
+
+    return false;
+  }
+
+  /**
+   * Recursively checks parent chain for resolved singletons.
+   */
+  function isResolvedInParentChain(parentState: ContainerInternalState, portName: string): boolean {
+    // Check parent's singleton memo
+    for (const entry of parentState.singletonMemo.entries) {
+      if (entry.portName === portName) {
+        return true;
+      }
+    }
+
+    // Recursively check grandparent if present
+    if (parentState.parentState !== undefined) {
+      return isResolvedInParentChain(parentState.parentState, portName);
     }
 
     return false;

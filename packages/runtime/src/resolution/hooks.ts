@@ -13,7 +13,6 @@
 
 import type { Port } from "@hex-di/ports";
 import type { Lifetime } from "@hex-di/graph";
-import type { AnyPlugin } from "../plugin/types.js";
 import type { InheritanceMode } from "../types.js";
 
 // =============================================================================
@@ -231,21 +230,46 @@ export interface ResolutionHooks {
 }
 
 // =============================================================================
+// Hook Installation
+// =============================================================================
+
+/**
+ * Interface for installing hooks dynamically after container creation.
+ *
+ * Used by the wrapper pattern (withTracing, withInspector) to install
+ * plugin hooks when a wrapper is applied. Hooks are composed in order
+ * of installation for beforeResolve, and reverse order for afterResolve.
+ *
+ * @example
+ * ```typescript
+ * const installer = container[HOOKS_ACCESS]();
+ * const uninstall = installer.installHooks({
+ *   beforeResolve: (ctx) => console.log(`Resolving ${ctx.portName}`),
+ *   afterResolve: (ctx) => console.log(`Done in ${ctx.duration}ms`),
+ * });
+ *
+ * // Later, to remove the hooks:
+ * uninstall();
+ * ```
+ */
+export interface HooksInstaller {
+  /**
+   * Installs resolution hooks into the container.
+   *
+   * @param hooks - The hooks to install
+   * @returns Uninstall function to remove the hooks
+   */
+  installHooks(hooks: ResolutionHooks): () => void;
+}
+
+// =============================================================================
 // Container Options
 // =============================================================================
 
 /**
  * Options for createContainer.
  *
- * Supports two extensibility mechanisms:
- * - `hooks`: Simple resolution lifecycle hooks (beforeResolve, afterResolve)
- * - `plugins`: Full plugin system with dependencies, scope events, and APIs
- *
- * When neither is provided, the container behaves normally with zero overhead.
- *
- * @typeParam TPlugins - Readonly tuple of plugins to register
- *
- * @example Using hooks (simple)
+ * @example Using hooks
  * ```typescript
  * const container = createContainer(graph, {
  *   hooks: {
@@ -255,17 +279,19 @@ export interface ResolutionHooks {
  * });
  * ```
  *
- * @example Using plugins (full system)
+ * @example Using wrapper pattern for plugins
  * ```typescript
- * const container = createContainer(graph, {
- *   plugins: [TracingPlugin, MetricsPlugin],
- * });
+ * import { pipe, createPluginWrapper } from '@hex-di/runtime';
+ * import { TracingPlugin, TRACING } from '@hex-di/tracing';
+ *
+ * const withTracing = createPluginWrapper(TracingPlugin);
+ * const container = pipe(createContainer(graph), withTracing);
  *
  * const tracing = container[TRACING];
  * tracing.getTraces();
  * ```
  */
-export interface ContainerOptions<TPlugins extends readonly AnyPlugin[] = readonly []> {
+export interface ContainerOptions {
   /**
    * Optional resolution lifecycle hooks.
    *
@@ -273,26 +299,8 @@ export interface ContainerOptions<TPlugins extends readonly AnyPlugin[] = readon
    * nested dependency resolutions. When not provided, there is zero
    * overhead - the hooks code path is not executed.
    *
-   * @remarks
-   * For richer lifecycle support including scope events, use `plugins` instead.
-   * If both `hooks` and `plugins` are provided, plugin hooks run first,
-   * then the options hooks.
+   * For plugins with type-safe API access, use the wrapper pattern with
+   * `createPluginWrapper` and `pipe`.
    */
   readonly hooks?: ResolutionHooks;
-
-  /**
-   * Plugins to initialize with the container.
-   *
-   * Plugins provide:
-   * - Type-safe APIs accessible via `container[PLUGIN_SYMBOL]`
-   * - Required and optional dependencies on other plugins
-   * - Lifecycle hooks for resolution and scope events
-   * - Zero overhead when no plugins are registered
-   *
-   * @remarks
-   * - Plugins are sorted by dependencies and initialized in order
-   * - Plugin APIs are frozen and immutable
-   * - Plugins are disposed in reverse order during container disposal
-   */
-  readonly plugins?: TPlugins;
 }

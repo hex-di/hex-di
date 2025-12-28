@@ -11,14 +11,17 @@
 import { describe, it, expectTypeOf } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
-import { createContainer, type Container, type ContainerPhase } from "@hex-di/runtime";
-import type { Port } from "@hex-di/ports";
+import { createContainer, pipe, type Container } from "@hex-di/runtime";
 import {
-  createInspectorPlugin,
+  InspectorPlugin,
+  createInspector,
   INSPECTOR,
   hasInspector,
   getInspectorAPI,
+  hasSubscription,
+  withInspector,
   type InspectorAPI,
+  type InspectorWithSubscription,
   type InspectorEvent,
   type ContainerWithInspector,
   type ContainerSnapshot,
@@ -52,9 +55,7 @@ const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
 describe("ContainerSnapshot discriminated union", () => {
   it("narrows to RootContainerSnapshot when kind is 'root'", () => {
-    const { plugin, bindContainer } = createInspectorPlugin();
-    const container = createContainer(graph, { plugins: [plugin] });
-    bindContainer(container);
+    const container = pipe(createContainer(graph), withInspector);
 
     const snapshot = container[INSPECTOR].getSnapshot();
 
@@ -112,26 +113,51 @@ describe("ContainerSnapshot discriminated union", () => {
 
 describe("hasInspector type guard", () => {
   it("narrows container type to ContainerWithInspector", () => {
-    const { plugin, bindContainer } = createInspectorPlugin();
-    const container = createContainer(graph, { plugins: [plugin] });
-    bindContainer(container);
+    const container = pipe(createContainer(graph), withInspector);
 
     if (hasInspector(container)) {
       // After type guard, INSPECTOR is known to exist
-      expectTypeOf(container[INSPECTOR]).toEqualTypeOf<InspectorAPI>();
+      // Use toMatchTypeOf since the actual type is InspectorWithSubscription
+      expectTypeOf(container[INSPECTOR]).toMatchTypeOf<InspectorAPI>();
     }
   });
 
   it("preserves generic type parameters after narrowing", () => {
-    const { plugin, bindContainer } = createInspectorPlugin<typeof LoggerPort>();
-    const container = createContainer(graph, { plugins: [plugin] });
-    bindContainer(container);
+    const container = pipe(createContainer(graph), withInspector);
 
     if (hasInspector(container)) {
       // Original container type parameters are preserved
       type ContainerType = typeof container;
       expectTypeOf<ContainerType>().toMatchTypeOf<ContainerWithInspector>();
     }
+  });
+});
+
+describe("hasSubscription type guard", () => {
+  it("narrows InspectorAPI to InspectorWithSubscription", () => {
+    const container = pipe(createContainer(graph), withInspector);
+    const inspector = container[INSPECTOR];
+
+    if (hasSubscription(inspector)) {
+      // After type guard, subscribe is known to exist
+      expectTypeOf(inspector.subscribe).toEqualTypeOf<
+        (listener: (event: InspectorEvent) => void) => () => void
+      >();
+    }
+  });
+
+  it("distinguishes plugin vs standalone inspector", () => {
+    // Plugin inspector has subscription
+    const containerWithPlugin = pipe(createContainer(graph), withInspector);
+    const pluginInspector = containerWithPlugin[INSPECTOR];
+    expectTypeOf(pluginInspector).toEqualTypeOf<InspectorWithSubscription>();
+
+    // Standalone inspector has subscribe set to undefined (not the function type)
+    const containerWithout = createContainer(graph);
+    const standaloneInspector = createInspector(containerWithout);
+    // The return type from createInspector has subscribe as undefined, not the function
+    // Use hasSubscription at runtime to check
+    expectTypeOf(hasSubscription(standaloneInspector)).toEqualTypeOf<boolean>();
   });
 });
 
@@ -172,74 +198,96 @@ describe("ContainerWithInspector type", () => {
 
 describe("InspectorAPI type safety", () => {
   it("getSnapshot returns ContainerSnapshot", () => {
-    const { plugin, bindContainer } = createInspectorPlugin();
-    const container = createContainer(graph, { plugins: [plugin] });
-    bindContainer(container);
+    const container = pipe(createContainer(graph), withInspector);
 
     const snapshot = container[INSPECTOR].getSnapshot();
     expectTypeOf(snapshot).toMatchTypeOf<ContainerSnapshot>();
   });
 
   it("getScopeTree returns ScopeTree", () => {
-    const { plugin, bindContainer } = createInspectorPlugin();
-    const container = createContainer(graph, { plugins: [plugin] });
-    bindContainer(container);
+    const container = pipe(createContainer(graph), withInspector);
 
     const tree = container[INSPECTOR].getScopeTree();
     expectTypeOf(tree).toMatchTypeOf<ScopeTree>();
   });
 
   it("listPorts returns readonly string array", () => {
-    const { plugin, bindContainer } = createInspectorPlugin();
-    const container = createContainer(graph, { plugins: [plugin] });
-    bindContainer(container);
+    const container = pipe(createContainer(graph), withInspector);
 
     const ports = container[INSPECTOR].listPorts();
     expectTypeOf(ports).toMatchTypeOf<readonly string[]>();
   });
 
   it("isResolved returns boolean or 'scope-required'", () => {
-    const { plugin, bindContainer } = createInspectorPlugin();
-    const container = createContainer(graph, { plugins: [plugin] });
-    bindContainer(container);
+    const container = pipe(createContainer(graph), withInspector);
 
     const result = container[INSPECTOR].isResolved("Logger");
     expectTypeOf(result).toEqualTypeOf<boolean | "scope-required">();
   });
 
-  it("subscribe returns unsubscribe function", () => {
-    const { plugin, bindContainer } = createInspectorPlugin();
-    const container = createContainer(graph, { plugins: [plugin] });
-    bindContainer(container);
+  it("subscribe returns unsubscribe function (plugin inspector)", () => {
+    const container = pipe(createContainer(graph), withInspector);
 
+    // Plugin inspector has subscribe defined
     const unsubscribe = container[INSPECTOR].subscribe(() => {});
     expectTypeOf(unsubscribe).toEqualTypeOf<() => void>();
   });
 
   it("getContainerKind returns ContainerKind", () => {
-    const { plugin, bindContainer } = createInspectorPlugin();
-    const container = createContainer(graph, { plugins: [plugin] });
-    bindContainer(container);
+    const container = pipe(createContainer(graph), withInspector);
 
     const kind = container[INSPECTOR].getContainerKind();
     expectTypeOf(kind).toEqualTypeOf<ContainerKind>();
   });
 
   it("getPhase returns ContainerPhase", () => {
-    const { plugin, bindContainer } = createInspectorPlugin();
-    const container = createContainer(graph, { plugins: [plugin] });
-    bindContainer(container);
+    const container = pipe(createContainer(graph), withInspector);
 
     const phase = container[INSPECTOR].getPhase();
     expectTypeOf(phase).toEqualTypeOf<TypedPhase>();
   });
 
   it("isDisposed is readonly boolean", () => {
-    const { plugin, bindContainer } = createInspectorPlugin();
-    const container = createContainer(graph, { plugins: [plugin] });
-    bindContainer(container);
+    const container = pipe(createContainer(graph), withInspector);
 
     expectTypeOf(container[INSPECTOR].isDisposed).toEqualTypeOf<boolean>();
+  });
+});
+
+// =============================================================================
+// Standalone createInspector Type Tests
+// =============================================================================
+
+describe("standalone createInspector", () => {
+  it("returns InspectorAPI", () => {
+    const container = createContainer(graph);
+    const inspector = createInspector(container);
+
+    expectTypeOf(inspector).toMatchTypeOf<InspectorAPI>();
+  });
+
+  it("subscribe is not callable on standalone inspector", () => {
+    const container = createContainer(graph);
+    const inspector = createInspector(container);
+
+    // hasSubscription returns false for standalone inspector
+    // This is the type-safe way to check for subscription support
+    expectTypeOf(hasSubscription(inspector)).toEqualTypeOf<boolean>();
+    // And we can verify that subscribe is optional (may be undefined)
+    expectTypeOf(inspector).toMatchTypeOf<InspectorAPI>();
+  });
+
+  it("all other methods are available", () => {
+    const container = createContainer(graph);
+    const inspector = createInspector(container);
+
+    expectTypeOf(inspector.getSnapshot).toBeFunction();
+    expectTypeOf(inspector.getScopeTree).toBeFunction();
+    expectTypeOf(inspector.listPorts).toBeFunction();
+    expectTypeOf(inspector.isResolved).toBeFunction();
+    expectTypeOf(inspector.getContainerKind).toBeFunction();
+    expectTypeOf(inspector.getPhase).toBeFunction();
+    expectTypeOf(inspector.isDisposed).toEqualTypeOf<boolean>();
   });
 });
 

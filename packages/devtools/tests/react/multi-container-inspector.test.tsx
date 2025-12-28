@@ -16,18 +16,21 @@ import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/re
 import React from "react";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
-import { toJSON } from "../../src/to-json.js";
-import { createContainer } from "@hex-di/runtime";
+import { toJSON } from "../../src/index.js";
+import { createContainer, INTERNAL_ACCESS, type ContainerInternalState } from "@hex-di/runtime";
 import type { Container, ContainerPhase } from "@hex-di/runtime";
 import type { Port } from "@hex-di/ports";
 import type { InspectorAPI } from "@hex-di/inspector";
-import { createInspectorPlugin } from "@hex-di/inspector";
+import { withInspector } from "@hex-di/inspector";
+import { pipe } from "@hex-di/runtime";
 import { ContainerInspector } from "../../src/react/container-inspector.js";
 import { ContainerRegistryContext } from "../../src/react/context/container-registry.js";
 import type {
   ContainerRegistryValue,
   ContainerEntry,
 } from "../../src/react/context/container-registry.js";
+import { Some, None, isSome, type Option } from "../../src/react/types/adt.js";
+import type { InspectableContainer } from "../../src/react/types/inspectable-container.js";
 
 // =============================================================================
 // Test Fixtures
@@ -43,6 +46,22 @@ interface Database {
 
 interface Config {
   getValue(key: string): string;
+}
+
+/**
+ * Creates a mock InspectableContainer for testing.
+ */
+function createMockContainer(): InspectableContainer {
+  const mockState: ContainerInternalState = {
+    disposed: false,
+    singletonMemo: { size: 0, entries: [] },
+    childScopes: [],
+    adapterMap: new Map(),
+    containerId: "mock",
+  };
+  return {
+    [INTERNAL_ACCESS]: () => mockState,
+  };
 }
 
 const LoggerPort = createPort<"Logger", Logger>("Logger");
@@ -89,10 +108,29 @@ function createChildGraph() {
  */
 function createInspectableContainer() {
   const graph = createTestGraph();
-  const { plugin, bindContainer } = createInspectorPlugin();
-  const container = createContainer(graph, { plugins: [plugin] });
-  bindContainer(container);
+  const container = pipe(createContainer(graph), withInspector);
   return { container, graph };
+}
+
+/**
+ * Creates a valid ScopeTree for mocks.
+ */
+function createMockScopeTree(): {
+  id: string;
+  status: "active" | "disposed";
+  resolvedCount: number;
+  totalCount: number;
+  children: readonly never[];
+  resolvedPorts: readonly string[];
+} {
+  return {
+    id: "container",
+    status: "active",
+    resolvedCount: 0,
+    totalCount: 0,
+    children: [],
+    resolvedPorts: [],
+  };
 }
 
 /**
@@ -101,18 +139,23 @@ function createInspectableContainer() {
 function createMockInspector(overrides: Partial<InspectorAPI> = {}): InspectorAPI {
   return {
     getSnapshot: () => ({
+      kind: "root" as const,
+      phase: "initialized" as const,
+      isInitialized: true,
+      asyncAdaptersTotal: 0,
+      asyncAdaptersInitialized: 0,
       isDisposed: false,
       containerId: "mock",
-      containerKind: "root" as const,
-      phase: "initialized" as const,
-      singletons: [
-        { portName: "Logger", isResolved: true, resolvedAt: Date.now(), resolutionOrder: 1 },
-      ],
-      scopes: { id: "container", isRoot: true, children: [] },
+      singletons: [{ portName: "Logger", isResolved: true, resolvedAt: Date.now() }],
+      scopes: createMockScopeTree(),
     }),
-    getScopeTree: () => ({ id: "container", isRoot: true, children: [] }),
+    getScopeTree: createMockScopeTree,
+    listPorts: () => ["Logger"],
     isResolved: (portName: string) => portName === "Logger",
-    getResolutionOrder: () => ["Logger"],
+    subscribe: () => () => {},
+    getContainerKind: () => "root",
+    getPhase: () => "initialized",
+    isDisposed: false,
     ...overrides,
   };
 }
@@ -124,14 +167,13 @@ function createMockContainerEntry(
   id: string,
   label: string,
   kind: "root" | "child" | "lazy" | "scope",
-  inspector: InspectorAPI,
   parentId: string | null = null
 ): ContainerEntry {
   return {
     id,
     label,
     kind,
-    inspector,
+    container: createMockContainer(),
     parentId,
     createdAt: Date.now(),
   };
@@ -149,12 +191,15 @@ function createMockRegistryValue(
     containers.set(entry.id, entry);
   }
 
+  const selectedIdOption: Option<string> = selectedId !== null ? Some(selectedId) : None;
+  const selectedEntry = selectedId !== null ? containers.get(selectedId) : undefined;
+
   return {
     containers,
-    selectedId,
+    selectedId: selectedIdOption,
     selectContainer: vi.fn(),
-    selectedInspector: selectedId !== null ? (containers.get(selectedId)?.inspector ?? null) : null,
-    selectedEntry: selectedId !== null ? (containers.get(selectedId) ?? null) : null,
+    selectedContainer: selectedEntry !== undefined ? Some(selectedEntry.container) : None,
+    selectedEntry: selectedEntry !== undefined ? Some(selectedEntry) : None,
     registerContainer: vi.fn(),
     unregisterContainer: vi.fn(),
   };
@@ -253,14 +298,15 @@ describe("ContainerInspector Multi-Container", () => {
       // Create two mock inspectors with different resolved services
       const rootInspector = createMockInspector({
         getSnapshot: () => ({
+          kind: "root" as const,
+          phase: "initialized" as const,
+          isInitialized: true,
+          asyncAdaptersTotal: 0,
+          asyncAdaptersInitialized: 0,
           isDisposed: false,
           containerId: "root",
-          containerKind: "root" as const,
-          phase: "initialized" as const,
-          singletons: [
-            { portName: "Logger", isResolved: true, resolvedAt: Date.now(), resolutionOrder: 1 },
-          ],
-          scopes: { id: "container", isRoot: true, children: [] },
+          singletons: [{ portName: "Logger", isResolved: true, resolvedAt: Date.now() }],
+          scopes: createMockScopeTree(),
         }),
         isResolved: (portName: string) => portName === "Logger",
       });
@@ -280,17 +326,20 @@ describe("ContainerInspector Multi-Container", () => {
       // Now create a different inspector with different state
       const childInspector = createMockInspector({
         getSnapshot: () => ({
+          kind: "child" as const,
+          phase: "initialized" as const,
+          parentId: "root",
+          inheritanceMode: "shared" as const,
           isDisposed: false,
           containerId: "child",
-          containerKind: "child" as const,
-          phase: "initialized" as const,
           singletons: [
-            { portName: "Logger", isResolved: false },
-            { portName: "Database", isResolved: true, resolvedAt: Date.now(), resolutionOrder: 1 },
+            { portName: "Logger", isResolved: false, resolvedAt: 0 },
+            { portName: "Database", isResolved: true, resolvedAt: Date.now() },
           ],
-          scopes: { id: "container", isRoot: true, children: [] },
+          scopes: createMockScopeTree(),
         }),
         isResolved: (portName: string) => portName === "Database",
+        getContainerKind: () => "child",
       });
 
       // Rerender with child inspector
@@ -307,8 +356,11 @@ describe("ContainerInspector Multi-Container", () => {
       const mockInspector = createMockInspector({
         getScopeTree: () => ({
           id: "container",
-          isRoot: true,
+          status: "active" as const,
+          resolvedCount: 0,
+          totalCount: 0,
           children: [],
+          resolvedPorts: [],
         }),
       });
       const graph = createTestGraph();
@@ -326,11 +378,28 @@ describe("ContainerInspector Multi-Container", () => {
       const mockInspector = createMockInspector({
         getScopeTree: () => ({
           id: "container",
-          isRoot: true,
+          status: "active" as const,
+          resolvedCount: 0,
+          totalCount: 0,
           children: [
-            { id: "scope-1", isRoot: false, children: [] },
-            { id: "scope-2", isRoot: false, children: [] },
+            {
+              id: "scope-1",
+              status: "active" as const,
+              resolvedCount: 0,
+              totalCount: 0,
+              children: [],
+              resolvedPorts: [],
+            },
+            {
+              id: "scope-2",
+              status: "active" as const,
+              resolvedCount: 0,
+              totalCount: 0,
+              children: [],
+              resolvedPorts: [],
+            },
           ],
+          resolvedPorts: [],
         }),
       });
       const graph = createTestGraph();
@@ -361,15 +430,18 @@ describe("ContainerInspector Multi-Container", () => {
     it("shows correct resolution status for each service", () => {
       const mockInspector = createMockInspector({
         getSnapshot: () => ({
+          kind: "root" as const,
+          phase: "initialized" as const,
+          isInitialized: true,
+          asyncAdaptersTotal: 0,
+          asyncAdaptersInitialized: 0,
           isDisposed: false,
           containerId: "test",
-          containerKind: "root" as const,
-          phase: "initialized" as const,
           singletons: [
-            { portName: "Logger", isResolved: true, resolvedAt: Date.now(), resolutionOrder: 1 },
-            { portName: "Database", isResolved: false },
+            { portName: "Logger", isResolved: true, resolvedAt: Date.now() },
+            { portName: "Database", isResolved: false, resolvedAt: 0 },
           ],
-          scopes: { id: "container", isRoot: true, children: [] },
+          scopes: createMockScopeTree(),
         }),
         isResolved: (portName: string) => portName === "Logger",
       });
@@ -406,12 +478,15 @@ describe("ContainerInspector Multi-Container", () => {
         getSnapshot: () => {
           callCount++;
           return {
+            kind: "root" as const,
+            phase: "initialized" as const,
+            isInitialized: true,
+            asyncAdaptersTotal: 0,
+            asyncAdaptersInitialized: 0,
             isDisposed: false,
             containerId: "test",
-            containerKind: "root" as const,
-            phase: "initialized" as const,
             singletons: [],
-            scopes: { id: "container", isRoot: true, children: [] },
+            scopes: createMockScopeTree(),
           };
         },
       });

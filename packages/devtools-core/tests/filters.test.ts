@@ -14,11 +14,11 @@ import type { ExportedGraph, ExportedNode } from "../src/types.js";
 
 const createTestGraph = (): ExportedGraph => ({
   nodes: [
-    { id: "Logger", label: "Logger", portName: "Logger", lifetime: "singleton", factoryKind: "sync" },
-    { id: "Config", label: "Config", portName: "Config", lifetime: "singleton", factoryKind: "sync" },
-    { id: "UserService", label: "UserService", portName: "UserService", lifetime: "scoped", factoryKind: "sync" },
-    { id: "UserRepository", label: "UserRepository", portName: "UserRepository", lifetime: "scoped", factoryKind: "sync" },
-    { id: "RequestHandler", label: "RequestHandler", portName: "RequestHandler", lifetime: "transient", factoryKind: "sync" },
+    { id: "Logger", label: "Logger", lifetime: "singleton", factoryKind: "sync" },
+    { id: "Config", label: "Config", lifetime: "singleton", factoryKind: "sync" },
+    { id: "UserService", label: "UserService", lifetime: "scoped", factoryKind: "sync" },
+    { id: "UserRepository", label: "UserRepository", lifetime: "scoped", factoryKind: "sync" },
+    { id: "RequestHandler", label: "RequestHandler", lifetime: "transient", factoryKind: "sync" },
   ],
   edges: [
     { from: "UserService", to: "Logger" },
@@ -40,7 +40,7 @@ describe("filterGraph", () => {
     const filtered = filterGraph(graph, predicate);
 
     expect(filtered.nodes).toHaveLength(2);
-    expect(filtered.nodes.map((n) => n.id)).toEqual(["UserService", "UserRepository"]);
+    expect(filtered.nodes.map(n => n.id)).toEqual(["UserService", "UserRepository"]);
   });
 
   it("removes edges referencing filtered-out nodes", () => {
@@ -56,7 +56,7 @@ describe("filterGraph", () => {
   it("preserves edges between remaining nodes", () => {
     const graph = createTestGraph();
     // Keep UserService, UserRepository, Logger, Config (excludes RequestHandler)
-    const filtered = filterGraph(graph, (n) => n.id !== "RequestHandler");
+    const filtered = filterGraph(graph, n => n.id !== "RequestHandler");
 
     expect(filtered.nodes).toHaveLength(4);
     // Should keep 3 edges (excluding RequestHandler -> UserService)
@@ -80,7 +80,7 @@ describe("filterGraph", () => {
     const originalNodeCount = graph.nodes.length;
     const originalEdgeCount = graph.edges.length;
 
-    filterGraph(graph, (n) => n.id === "Logger");
+    filterGraph(graph, n => n.id === "Logger");
 
     expect(graph.nodes.length).toBe(originalNodeCount);
     expect(graph.edges.length).toBe(originalEdgeCount);
@@ -97,7 +97,7 @@ describe("byLifetime", () => {
     const filtered = filterGraph(graph, byLifetime("singleton"));
 
     expect(filtered.nodes).toHaveLength(2);
-    expect(filtered.nodes.every((n) => n.lifetime === "singleton")).toBe(true);
+    expect(filtered.nodes.every(n => n.lifetime === "singleton")).toBe(true);
   });
 
   it("creates predicate that matches scoped lifetime", () => {
@@ -105,8 +105,8 @@ describe("byLifetime", () => {
     const filtered = filterGraph(graph, byLifetime("scoped"));
 
     expect(filtered.nodes).toHaveLength(2);
-    expect(filtered.nodes.map((n) => n.id)).toContain("UserService");
-    expect(filtered.nodes.map((n) => n.id)).toContain("UserRepository");
+    expect(filtered.nodes.map(n => n.id)).toContain("UserService");
+    expect(filtered.nodes.map(n => n.id)).toContain("UserRepository");
   });
 
   it("creates predicate that matches transient lifetime", () => {
@@ -136,8 +136,8 @@ describe("byPortName", () => {
     const filtered = filterGraph(graph, byPortName(/^User/));
 
     expect(filtered.nodes).toHaveLength(2);
-    expect(filtered.nodes.map((n) => n.id)).toContain("UserService");
-    expect(filtered.nodes.map((n) => n.id)).toContain("UserRepository");
+    expect(filtered.nodes.map(n => n.id)).toContain("UserService");
+    expect(filtered.nodes.map(n => n.id)).toContain("UserRepository");
   });
 
   it("creates predicate that matches containing pattern", () => {

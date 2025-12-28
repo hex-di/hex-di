@@ -14,3 +14,4 @@ export {
   formatTimestamp,
   formatTime,
 } from "./format.js";
+export { createVerboseLogger, noopLogger, type VerboseLogger } from "./verbose-logger.js";

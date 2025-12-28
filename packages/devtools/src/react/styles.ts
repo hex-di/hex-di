@@ -661,6 +661,75 @@ export const floatingStyles: FloatingStyleDef = {
 // Utility Functions
 // =============================================================================
 
+// =============================================================================
+// Inheritance Mode Badge Styles
+// =============================================================================
+
+/** Inheritance mode badge style properties */
+interface InheritanceModeBadgeStyleDef {
+  badge: CSSProperties;
+  shared: CSSProperties;
+  forked: CSSProperties;
+  isolated: CSSProperties;
+}
+
+/**
+ * Inheritance mode badge styles for child containers.
+ *
+ * - shared (blue): Child uses parent's singletons directly
+ * - forked (yellow/orange): Child gets independent copies
+ * - isolated (red): Child is completely isolated from parent
+ */
+export const inheritanceModeBadgeStyles: InheritanceModeBadgeStyleDef = {
+  badge: {
+    fontSize: "9px",
+    fontWeight: 600,
+    padding: "2px 5px",
+    borderRadius: "3px",
+    textTransform: "uppercase",
+    letterSpacing: "0.3px",
+    marginLeft: "4px",
+  },
+  shared: {
+    backgroundColor: "var(--hex-devtools-scoped, #89b4fa)",
+    color: "#1e1e2e",
+  },
+  forked: {
+    backgroundColor: "var(--hex-devtools-request, #fab387)",
+    color: "#1e1e2e",
+  },
+  isolated: {
+    backgroundColor: "#f38ba8",
+    color: "#1e1e2e",
+  },
+};
+
+/**
+ * Get badge style based on inheritance mode.
+ *
+ * @param mode - The inheritance mode (shared, forked, isolated)
+ * @returns CSS properties for the inheritance mode badge
+ */
+export function getInheritanceModeBadgeStyle(
+  mode: "shared" | "forked" | "isolated"
+): CSSProperties {
+  const baseStyle = inheritanceModeBadgeStyles.badge;
+  switch (mode) {
+    case "shared":
+      return { ...baseStyle, ...inheritanceModeBadgeStyles.shared };
+    case "forked":
+      return { ...baseStyle, ...inheritanceModeBadgeStyles.forked };
+    case "isolated":
+      return { ...baseStyle, ...inheritanceModeBadgeStyles.isolated };
+    default:
+      return baseStyle;
+  }
+}
+
+// =============================================================================
+// Utility Functions
+// =============================================================================
+
 /**
  * Get badge style based on lifetime.
  */
@@ -1197,7 +1266,6 @@ export const timelineStyles: TimelineStyleDef = {
     bottom: 0,
     width: "1px",
     backgroundColor: "var(--hex-devtools-threshold, #f38ba8)",
-    borderStyle: "dashed",
   },
   row: {
     display: "flex",
@@ -1662,11 +1730,3 @@ export function getTraceRowStyle(
 
   return style;
 }
-
-/**
- * Format duration for display.
- *
- * @deprecated Use `formatDuration` from `@hex-di/devtools-core` directly.
- * Re-exported here for backwards compatibility.
- */
-export { formatDuration } from "@hex-di/devtools-core";

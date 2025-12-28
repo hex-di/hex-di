@@ -6,6 +6,7 @@
 import type { Port, InferService } from "@hex-di/ports";
 import type { Scope } from "../types.js";
 import { ScopeBrand } from "../types.js";
+import type { AnyPlugin } from "../plugin/types.js";
 import { MemoMap } from "../common/memo-map.js";
 import { INTERNAL_ACCESS } from "../inspector/symbols.js";
 import type { ScopeInternalState, MemoMapSnapshot, MemoEntrySnapshot } from "../inspector/types.js";
@@ -176,14 +177,17 @@ export function createScopeWrapper<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string> = never,
   TPhase extends "uninitialized" | "initialized" = "uninitialized",
->(impl: ScopeImpl<TProvides, TAsyncPorts, TPhase>): Scope<TProvides, TAsyncPorts, TPhase> {
+  TPlugins extends readonly AnyPlugin[] = readonly [],
+>(
+  impl: ScopeImpl<TProvides, TAsyncPorts, TPhase>
+): Scope<TProvides, TAsyncPorts, TPhase, TPlugins> {
   function resolve<
     P extends TPhase extends "initialized" ? TProvides : Exclude<TProvides, TAsyncPorts>,
   >(port: P): InferService<P> {
     return impl.resolve(port);
   }
 
-  const scope: Scope<TProvides, TAsyncPorts, TPhase> = {
+  const scope: Scope<TProvides, TAsyncPorts, TPhase, TPlugins> = {
     resolve,
     resolveAsync: port => impl.resolveAsync(port),
     createScope: () => impl.createScope(),

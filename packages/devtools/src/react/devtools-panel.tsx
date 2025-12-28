@@ -17,8 +17,7 @@ import type { Port } from "@hex-di/ports";
 import type { Graph } from "@hex-di/graph";
 import type { Container, ContainerPhase } from "@hex-di/runtime";
 import { getTracingAPI } from "@hex-di/tracing";
-import { toJSON } from "../to-json.js";
-import type { TracingAPI } from "@hex-di/devtools-core";
+import { toJSON, type TracingAPI } from "@hex-di/devtools-core";
 import type { ExportedGraph } from "@hex-di/devtools-core";
 import { panelStyles, sectionStyles, emptyStyles } from "./styles.js";
 import { ContainerInspector } from "./container-inspector.js";
@@ -27,8 +26,11 @@ import { TabNavigation, type TabId } from "./tab-navigation.js";
 import { ResolutionTracingSection } from "./resolution-tracing-section.js";
 import { DependencyGraph } from "./graph-visualization/index.js";
 import { EnhancedServicesView } from "./enhanced-services-view.js";
+import { GraphTabContent } from "./graph-tab-content.js";
 import type { ServiceInfo } from "./resolved-services.js";
 import { useContainerList } from "./hooks/use-container-list.js";
+import { isSome } from "./types/adt.js";
+import { createInspector } from "../index.js";
 
 // =============================================================================
 // Types
@@ -272,6 +274,10 @@ interface InspectorTabContentProps<
  *
  * When inside a ContainerRegistryProvider, shows a dropdown to select
  * from all registered containers. Otherwise, inspects the provided container.
+ *
+ * KEY FIX: Uses createInspector() on the selected container directly,
+ * not a shared InspectorAPI. This enables proper multi-container inspection
+ * where each container gets its own RuntimeInspector.
  */
 function InspectorTabContent<
   TProvides extends Port<unknown, string>,
@@ -285,15 +291,22 @@ function InspectorTabContent<
 }: InspectorTabContentProps<TProvides, TExtends, TAsyncPorts, TPhase>): ReactElement {
   const { isAvailable, containers, selectedId } = useContainerList();
 
-  // Find the selected entry from containers
+  // Find the selected entry from containers using Option<string>
   const selectedEntry = useMemo(
-    () => (selectedId !== null ? (containers.find(c => c.id === selectedId) ?? null) : null),
+    () => (isSome(selectedId) ? (containers.find(c => c.id === selectedId.value) ?? null) : null),
     [containers, selectedId]
   );
 
-  // When registry is available and a container is selected, use InspectorAPI directly
-  // Otherwise fall back to creating inspector from the container prop
-  const selectedInspector = isAvailable && selectedEntry !== null ? selectedEntry.inspector : null;
+  // Create RuntimeInspector for the selected container
+  // This is the KEY FIX - each container gets its own inspector
+  const selectedRuntimeInspector = useMemo(() => {
+    if (selectedEntry === null) {
+      return null;
+    }
+    // Create inspector directly from the container reference
+    // This replaces the old approach that used shared InspectorAPI
+    return createInspector(selectedEntry.container);
+  }, [selectedEntry]);
 
   return (
     <div
@@ -321,11 +334,11 @@ function InspectorTabContent<
         </div>
       )}
 
-      {/* Container inspector - uses selected inspector from registry or creates from container */}
+      {/* Container inspector - uses RuntimeInspector for selected container or creates from prop */}
       <div style={{ flex: 1, overflow: "auto" }}>
-        {selectedInspector !== null ? (
+        {selectedRuntimeInspector !== null ? (
           <ContainerInspector
-            inspector={selectedInspector}
+            inspector={selectedRuntimeInspector}
             exportedGraph={exportedGraph}
             tracingAPI={tracingAPI}
           />
@@ -506,22 +519,7 @@ export function DevToolsPanel<
 
       {/* Tab Content */}
       <div style={panelStyles.content}>
-        {activeTab === "graph" && (
-          <div
-            data-testid="tab-content-graph"
-            id="tabpanel-graph"
-            role="tabpanel"
-            aria-labelledby="tab-graph"
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              minHeight: 0,
-            }}
-          >
-            <GraphView exportedGraph={exportedGraph} />
-          </div>
-        )}
+        {activeTab === "graph" && <GraphTabContent defaultGraph={exportedGraph} />}
 
         {activeTab === "services" && (
           <div

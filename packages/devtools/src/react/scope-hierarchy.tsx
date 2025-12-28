@@ -97,9 +97,7 @@ function ScopeTreeNode({
 
   const iconStyle = {
     ...scopeTreeStyles.nodeIcon,
-    ...(isContainer
-      ? scopeTreeStyles.nodeIconContainer
-      : scopeTreeStyles.nodeIconScope),
+    ...(isContainer ? scopeTreeStyles.nodeIconContainer : scopeTreeStyles.nodeIconScope),
   };
 
   const statusStyle = {
@@ -123,7 +121,7 @@ function ScopeTreeNode({
           <button
             style={scopeTreeStyles.expandButton}
             onClick={handleToggleExpand}
-            onKeyDown={(e) => {
+            onKeyDown={e => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
                 handleToggleExpand(e);
@@ -145,19 +143,21 @@ function ScopeTreeNode({
 
         <span style={scopeTreeStyles.nodeInfo}>
           {node.resolvedCount}/{node.totalCount} resolved
+          {node.resolvedPorts.length > 0 && (
+            <span style={{ marginLeft: "4px", opacity: 0.7 }}>
+              ({node.resolvedPorts.join(", ")})
+            </span>
+          )}
         </span>
 
-        <span
-          style={statusStyle}
-          data-testid={`scope-node-${node.id}-status`}
-        >
+        <span style={statusStyle} data-testid={`scope-node-${node.id}-status`}>
           {node.status === "active" ? "Active" : "Disposed"}
         </span>
       </div>
 
       {hasChildren && isExpanded && (
         <div style={scopeTreeStyles.childrenContainer}>
-          {node.children.map((child) => (
+          {node.children.map(child => (
             <ScopeTreeNode
               key={child.id}
               node={child}
@@ -210,8 +210,7 @@ export function ScopeHierarchy({
   onScopeSelect,
 }: ScopeHierarchyProps): ReactElement {
   // Determine if root container is selected (null or "container")
-  const isRootSelected =
-    selectedScopeId === null || selectedScopeId === "container";
+  const isRootSelected = selectedScopeId === null || selectedScopeId === "container";
 
   return (
     <div data-testid="scope-hierarchy" style={scopeTreeStyles.container}>

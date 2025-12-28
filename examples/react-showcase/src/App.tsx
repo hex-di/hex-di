@@ -14,9 +14,9 @@ import {
   ContainerRegistryProvider,
   useRegisterContainer,
 } from "@hex-di/devtools/react";
-import { createContainer, type Container } from "@hex-di/runtime";
+import { createContainer, pipe, createPluginWrapper, type Container } from "@hex-di/runtime";
 import { TracingPlugin } from "@hex-di/tracing";
-import { createInspectorPlugin } from "@hex-di/inspector";
+import { InspectorPlugin } from "@hex-di/inspector";
 
 import { AsyncContainerProvider, ContainerProvider } from "./di/hooks.js";
 import { appGraph } from "./di/graph.js";
@@ -28,6 +28,10 @@ import { ChatRoom } from "./components/ChatRoom.js";
 // Container Creation with InspectorPlugin
 // =============================================================================
 
+// Plugin wrappers for enhancing containers
+const withTracing = createPluginWrapper(TracingPlugin);
+const withInspector = createPluginWrapper(InspectorPlugin);
+
 /**
  * Create the root DI container with TracingPlugin and InspectorPlugin.
  *
@@ -35,18 +39,11 @@ import { ChatRoom } from "./components/ChatRoom.js";
  * for the application lifetime. In SSR scenarios, this would be created
  * per-request instead.
  *
- * The container includes:
+ * The container includes (via wrapper pattern):
  * - TracingPlugin: Enables resolution tracking in DevTools
  * - InspectorPlugin: Enables real-time container state inspection
  */
-const { plugin: rootInspectorPlugin, bindContainer: bindRootContainer } = createInspectorPlugin();
-
-const container = createContainer(appGraph, {
-  plugins: [TracingPlugin, rootInspectorPlugin],
-});
-
-// Bind the inspector to the root container
-bindRootContainer(container);
+const container = pipe(createContainer(appGraph), withTracing, withInspector);
 
 /**
  * Create the child container for feature isolation.

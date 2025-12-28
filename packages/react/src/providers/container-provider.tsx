@@ -9,7 +9,8 @@
 
 import { useContext, type ReactNode } from "react";
 import type { Port, InferService } from "@hex-di/ports";
-import type { Scope, ContainerPhase } from "@hex-di/runtime";
+import type { Scope, ContainerPhase, ContainerInternalState } from "@hex-di/runtime";
+import { INTERNAL_ACCESS } from "@hex-di/runtime";
 import { MissingProviderError } from "../errors.js";
 import {
   ContainerContext,
@@ -40,17 +41,19 @@ type AnyContainer<TProvides extends Port<unknown, string>> = {
   has(port: Port<unknown, string>): boolean;
   readonly isDisposed: boolean;
   readonly isInitialized: boolean;
-  // parent property is accessed via try/catch for child detection
-  // not included here to avoid type conflicts between root (never) and child (Container)
-  readonly parent?: unknown;
+  // Internal access for child container detection without throwing
+  readonly [INTERNAL_ACCESS]: () => ContainerInternalState;
 };
 
 /**
  * Checks if the provided container is a child container.
  *
- * With the unified Container type, child containers are distinguished by
- * having a `parent` property that doesn't throw. Root containers' `parent`
- * property throws when accessed.
+ * Uses INTERNAL_ACCESS to check parentState instead of catching errors from
+ * accessing the `parent` property (which throws for root containers).
+ * This approach avoids browser devtools logging caught errors.
+ *
+ * For containers without INTERNAL_ACCESS (mocks in tests), returns false to
+ * allow them to be used as root containers.
  *
  * @param container - The container to check
  * @returns true if the container is a child container, false otherwise
@@ -60,13 +63,16 @@ type AnyContainer<TProvides extends Port<unknown, string>> = {
 function isChildContainer<TProvides extends Port<unknown, string>>(
   container: AnyContainer<TProvides>
 ): boolean {
-  try {
-    // Accessing parent on root container throws, on child container returns parent
-    const _parent = container.parent;
-    return true;
-  } catch {
-    return false;
+  // Preferred: Use internal state to detect child containers - no throwing involved
+  const accessor = container[INTERNAL_ACCESS];
+  if (typeof accessor === "function") {
+    const internalState = accessor();
+    return internalState.parentState !== undefined;
   }
+
+  // For mock containers without INTERNAL_ACCESS (tests), return false
+  // This allows them to be used as root containers
+  return false;
 }
 
 // =============================================================================

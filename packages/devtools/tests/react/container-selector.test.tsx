@@ -22,28 +22,40 @@ import type {
   ContainerRegistryValue,
   ContainerEntry,
 } from "../../src/react/context/container-registry.js";
-import type { InspectorAPI } from "@hex-di/inspector";
+import { Some, None, type Option } from "../../src/react/types/adt.js";
+import type { InspectableContainer } from "../../src/react/types/inspectable-container.js";
+import { INTERNAL_ACCESS, type ContainerInternalState } from "@hex-di/runtime";
 
 // =============================================================================
 // Test Fixtures
 // =============================================================================
 
 /**
- * Creates a mock InspectorAPI for testing.
+ * Creates a valid ScopeTree for mocks.
  */
-function createMockInspector(): InspectorAPI {
+function createMockScopeTree(): {
+  id: string;
+  status: "active" | "disposed";
+  resolvedCount: number;
+  totalCount: number;
+  children: readonly never[];
+} {
+  return { id: "container", status: "active", resolvedCount: 0, totalCount: 0, children: [] };
+}
+
+/**
+ * Creates a mock InspectableContainer for testing.
+ */
+function createMockContainer(): InspectableContainer {
+  const mockState: ContainerInternalState = {
+    containerId: "mock",
+    disposed: false,
+    singletonMemo: { size: 0, entries: [] },
+    childScopes: [],
+    adapterMap: new Map(),
+  };
   return {
-    getSnapshot: () => ({
-      isDisposed: false,
-      containerId: "test",
-      containerKind: "root",
-      phase: "initialized",
-      singletons: [],
-      scopes: { id: "container", isRoot: true, children: [] },
-    }),
-    getScopeTree: () => ({ id: "container", isRoot: true, children: [] }),
-    isResolved: () => false,
-    getResolutionOrder: () => [],
+    [INTERNAL_ACCESS]: () => mockState,
   };
 }
 
@@ -55,7 +67,7 @@ function createMockContainerEntry(overrides: Partial<ContainerEntry> = {}): Cont
     id: "test-container",
     label: "Test Container",
     kind: "root",
-    inspector: createMockInspector(),
+    container: createMockContainer(),
     parentId: null,
     createdAt: Date.now(),
     ...overrides,
@@ -75,13 +87,15 @@ function createMockRegistryValue(
   }
 
   const selectContainerMock = vi.fn();
+  const selectedIdOption: Option<string> = selectedId !== null ? Some(selectedId) : None;
+  const selectedEntry = selectedId !== null ? containers.get(selectedId) : undefined;
 
   return {
     containers,
-    selectedId,
+    selectedId: selectedIdOption,
     selectContainer: selectContainerMock,
-    selectedInspector: selectedId !== null ? (containers.get(selectedId)?.inspector ?? null) : null,
-    selectedEntry: selectedId !== null ? (containers.get(selectedId) ?? null) : null,
+    selectedContainer: selectedEntry !== undefined ? Some(selectedEntry.container) : None,
+    selectedEntry: selectedEntry !== undefined ? Some(selectedEntry) : None,
     registerContainer: vi.fn(),
     unregisterContainer: vi.fn(),
   };
@@ -206,11 +220,11 @@ describe("ContainerSelector Component", () => {
       // Change selection to child container
       fireEvent.change(selectElement, { target: { value: "child" } });
 
-      // Verify selectContainer was called with the new ID
-      expect(registry.selectContainer).toHaveBeenCalledWith("child");
+      // Verify selectContainer was called with Some("child")
+      expect(registry.selectContainer).toHaveBeenCalledWith(Some("child"));
     });
 
-    it("selecting empty value calls selectContainer with null", () => {
+    it("selecting empty value calls selectContainer with None", () => {
       const entries = [createMockContainerEntry({ id: "root", label: "Root", kind: "root" })];
       const registry = createMockRegistryValue(entries, "root");
 
@@ -225,8 +239,8 @@ describe("ContainerSelector Component", () => {
       // Change selection to empty (deselect)
       fireEvent.change(selectElement, { target: { value: "" } });
 
-      // Verify selectContainer was called with null
-      expect(registry.selectContainer).toHaveBeenCalledWith(null);
+      // Verify selectContainer was called with None
+      expect(registry.selectContainer).toHaveBeenCalledWith(None);
     });
   });
 

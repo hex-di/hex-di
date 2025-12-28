@@ -24,15 +24,6 @@ import { NonClonableForkedError } from "../common/errors.js";
 // =============================================================================
 
 /**
- * Result of inheritance resolution attempt.
- * Uses discriminated union for type-safe handling.
- * @internal
- */
-export type InheritanceResult<T> =
-  | { readonly resolved: true; readonly value: T }
-  | { readonly resolved: false; readonly mode: "isolated" };
-
-/**
  * Callback for creating isolated instances when an adapter is available.
  *
  * Called by InheritanceResolver when:
@@ -58,25 +49,21 @@ export type IsolatedInstanceCreator<TProvides extends Port<unknown, string>> = <
 // =============================================================================
 
 /**
- * Manages child container inheritance mode resolution for shared and forked modes.
+ * Manages child container inheritance mode resolution.
  *
- * This class handles two of the three inheritance modes:
+ * This class handles all three inheritance modes:
  * - **shared**: Returns parent's singleton instance directly
  * - **forked**: Creates and caches a shallow clone of parent's instance
- *
- * The **isolated** mode is handled by the container itself since it requires
- * full access to the container's resolution machinery and type parameters.
+ * - **isolated**: Creates new instance via callback with child's dependency resolution
  *
  * @example
  * ```typescript
  * const resolver = new InheritanceResolver(parentContainer, inheritanceModes);
  *
- * const result = resolver.tryResolve(port);
- * if (result.resolved) {
- *   return result.value; // shared or forked instance
- * } else {
- *   return this.createIsolatedInstance(port); // handle in container
- * }
+ * const service = resolver.resolveWithCallback(port, (p, adapter) => {
+ *   // Create isolated instance with adapter
+ *   return createInstanceWithDeps(p, adapter);
+ * });
  * ```
  *
  * @internal
@@ -113,39 +100,6 @@ export class InheritanceResolver<
    */
   getMode(portName: string): InheritanceMode {
     return this.inheritanceModes.get(portName) ?? "shared";
-  }
-
-  /**
-   * Attempts to resolve a port using shared or forked mode.
-   * Returns a discriminated union indicating success or need for isolated handling.
-   *
-   * @param port - The port to resolve
-   * @returns Resolution result with value for shared/forked, or mode indicator for isolated
-   * @deprecated Use resolveWithCallback for consistent callback pattern
-   */
-  tryResolve<P extends TProvides>(port: P): InheritanceResult<InferService<P>> {
-    const portName = port.__portName;
-    const mode = this.getMode(portName);
-
-    switch (mode) {
-      case "shared":
-        return {
-          resolved: true,
-          value: this.resolveShared(port),
-        };
-
-      case "forked":
-        return {
-          resolved: true,
-          value: this.resolveForked(port, portName),
-        };
-
-      case "isolated":
-        return { resolved: false, mode: "isolated" };
-
-      default:
-        throw new Error(`Unknown inheritance mode: ${mode}`);
-    }
   }
 
   /**

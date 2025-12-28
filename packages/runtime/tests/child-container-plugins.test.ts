@@ -2,24 +2,26 @@
  * Plugin inheritance tests for child containers.
  *
  * These tests verify:
- * 1. Child container inherits parent's PluginManager
- * 2. onChildCreated hook fires with correct ChildContainerInfo
- * 3. onContainerDisposed hook fires when child is disposed
- * 4. Resolution hooks include container metadata (containerId, containerKind)
- * 5. Inheritance mode (shared/forked/isolated) passed to hooks
- * 6. Multiple child containers each get unique IDs
+ * 1. Plugin APIs can be applied to child containers via wrapper pattern
+ * 2. Resolution hooks work on containers with wrapper-installed hooks
+ * 3. applyParentWrappers() correctly applies parent wrappers to child
+ * 4. Container IDs are correctly passed in hook contexts
+ *
+ * Note: With the wrapper pattern, plugins are applied per-container.
+ * Use applyParentWrappers() to apply parent's wrappers to child containers.
  *
  * @packageDocumentation
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { createAdapter, GraphBuilder } from "@hex-di/graph";
 import {
   createContainer,
   definePlugin,
-  type ChildContainerInfo,
-  type ContainerInfo,
+  createPluginWrapper,
+  pipe,
+  applyParentWrappers,
   type ResolutionHookContext,
 } from "../src/index.js";
 
@@ -43,8 +45,6 @@ const LIFECYCLE_TRACKER = Symbol.for("test/lifecycle-tracker");
 
 // Interface for the lifecycle tracker API
 interface LifecycleTrackerAPI {
-  getChildCreatedEvents(): readonly ChildContainerInfo[];
-  getContainerDisposedEvents(): readonly ContainerInfo[];
   getResolutionContexts(): readonly ResolutionHookContext[];
   clearEvents(): void;
 }
@@ -80,12 +80,97 @@ function createGraphWithConfig() {
 }
 
 // =============================================================================
-// Plugin Inheritance Tests
+// Plugin Wrapper Pattern Tests
 // =============================================================================
 
 describe("Plugin Inheritance in Child Containers", () => {
-  describe("child container inherits parent's PluginManager", () => {
-    it("resolution hooks from parent plugin fire for child container resolutions", () => {
+  describe("plugin APIs via wrapper pattern", () => {
+    it("plugin APIs are accessible on child container via applyParentWrappers", () => {
+      const TrackerPlugin = definePlugin({
+        name: "tracker",
+        symbol: LIFECYCLE_TRACKER,
+        requires: [] as const,
+        enhancedBy: [] as const,
+        createApi(): LifecycleTrackerAPI {
+          return {
+            getResolutionContexts: () => [],
+            clearEvents: () => {},
+          };
+        },
+      });
+
+      // Use wrapper pattern for type-safe plugin API access
+      const withTracker = createPluginWrapper(TrackerPlugin);
+
+      const graph = createTestGraph();
+      const container = pipe(createContainer(graph), withTracker);
+
+      // Verify plugin API is accessible on parent
+      expect(container[LIFECYCLE_TRACKER]).toBeDefined();
+
+      // Create child container and apply parent's wrappers
+      const childGraph = GraphBuilder.create().build();
+      const childContainer = container.createChild(childGraph);
+      const enhancedChild = applyParentWrappers(container, childContainer);
+
+      // Plugin API should also be accessible on enhanced child
+      const childAsAny = enhancedChild as unknown as Record<symbol, unknown>;
+      expect(childAsAny[LIFECYCLE_TRACKER]).toBeDefined();
+    });
+
+    it("container IDs follow expected pattern", () => {
+      const graph = createTestGraph();
+      const container = createContainer(graph);
+
+      // Create child containers
+      const childGraph = GraphBuilder.create().build();
+      const child1 = container.createChild(childGraph);
+      const child2 = container.createChild(childGraph);
+
+      // Access internal state to verify IDs
+      // Using hooks to capture container IDs
+      const capturedIds: string[] = [];
+
+      const TrackerPlugin = definePlugin({
+        name: "tracker",
+        symbol: LIFECYCLE_TRACKER,
+        requires: [] as const,
+        enhancedBy: [] as const,
+        createApi(): LifecycleTrackerAPI {
+          return {
+            getResolutionContexts: () => [],
+            clearEvents: () => {},
+          };
+        },
+        hooks: {
+          beforeResolve(ctx) {
+            if (!capturedIds.includes(ctx.containerId)) {
+              capturedIds.push(ctx.containerId);
+            }
+          },
+        },
+      });
+
+      const withTracker = createPluginWrapper(TrackerPlugin);
+
+      // Apply tracker to child containers
+      const enhancedChild1 = pipe(applyParentWrappers(container, child1), withTracker);
+      const enhancedChild2 = pipe(applyParentWrappers(container, child2), withTracker);
+
+      // Resolve to trigger hooks
+      enhancedChild1.resolve(LoggerPort);
+      enhancedChild2.resolve(LoggerPort);
+
+      // Both children should have unique IDs
+      expect(capturedIds.length).toBe(2);
+      expect(capturedIds[0]).toMatch(/^child-\d+$/);
+      expect(capturedIds[1]).toMatch(/^child-\d+$/);
+      expect(capturedIds[0]).not.toBe(capturedIds[1]);
+    });
+  });
+
+  describe("resolution hooks with wrapper pattern", () => {
+    it("hooks fire for container with applied wrapper", () => {
       const resolutionEvents: string[] = [];
 
       const TrackerPlugin = definePlugin({
@@ -95,8 +180,6 @@ describe("Plugin Inheritance in Child Containers", () => {
         enhancedBy: [] as const,
         createApi(): LifecycleTrackerAPI {
           return {
-            getChildCreatedEvents: () => [],
-            getContainerDisposedEvents: () => [],
             getResolutionContexts: () => [],
             clearEvents: () => {},
           };
@@ -111,308 +194,20 @@ describe("Plugin Inheritance in Child Containers", () => {
         },
       });
 
+      const withTracker = createPluginWrapper(TrackerPlugin);
       const graph = createTestGraph();
-      const container = createContainer(graph, {
-        plugins: [TrackerPlugin],
-      });
-
-      // Create child container
-      const childGraph = GraphBuilder.create().build();
-      const childContainer = container.createChild(childGraph);
-
-      // Resolve from child - should trigger parent's plugin hooks
-      childContainer.resolve(LoggerPort);
-
-      // Check that both before and after hooks were called with child container info
-      expect(resolutionEvents.some(e => e.startsWith("before:Logger:child-"))).toBe(true);
-      expect(resolutionEvents.some(e => e.startsWith("after:Logger:child-"))).toBe(true);
-    });
-
-    it("plugin APIs are accessible on child container via symbols", () => {
-      const TrackerPlugin = definePlugin({
-        name: "tracker",
-        symbol: LIFECYCLE_TRACKER,
-        requires: [] as const,
-        enhancedBy: [] as const,
-        createApi(): LifecycleTrackerAPI {
-          return {
-            getChildCreatedEvents: () => [],
-            getContainerDisposedEvents: () => [],
-            getResolutionContexts: () => [],
-            clearEvents: () => {},
-          };
-        },
-      });
-
-      const graph = createTestGraph();
-      const container = createContainer(graph, {
-        plugins: [TrackerPlugin],
-      });
-
-      // Verify plugin API is accessible on parent
-      expect(container[LIFECYCLE_TRACKER]).toBeDefined();
-
-      // Create child container
-      const childGraph = GraphBuilder.create().build();
-      const childContainer = container.createChild(childGraph);
-
-      // Plugin API should also be accessible on child container (via inheritance)
-      // TypeScript doesn't track plugin augmentation through createChild,
-      // but the runtime correctly inherits plugin APIs
-      const childAsAny = childContainer as unknown as Record<symbol, unknown>;
-      expect(childAsAny[LIFECYCLE_TRACKER]).toBeDefined();
-      expect(childAsAny[LIFECYCLE_TRACKER]).toBe(container[LIFECYCLE_TRACKER]);
-    });
-  });
-
-  describe("onChildCreated hook fires with correct ChildContainerInfo", () => {
-    it("onChildCreated hook receives correct ChildContainerInfo for child container", () => {
-      const childCreatedEvents: ChildContainerInfo[] = [];
-
-      const TrackerPlugin = definePlugin({
-        name: "tracker",
-        symbol: LIFECYCLE_TRACKER,
-        requires: [] as const,
-        enhancedBy: [] as const,
-        createApi(): LifecycleTrackerAPI {
-          return {
-            getChildCreatedEvents: () => childCreatedEvents,
-            getContainerDisposedEvents: () => [],
-            getResolutionContexts: () => [],
-            clearEvents: () => {
-              childCreatedEvents.length = 0;
-            },
-          };
-        },
-        hooks: {
-          onChildCreated(info) {
-            childCreatedEvents.push(info);
-          },
-        },
-      });
-
-      const graph = createTestGraph();
-      const container = createContainer(graph, {
-        plugins: [TrackerPlugin],
-      });
-
-      // Create child container
-      const childGraph = GraphBuilder.create().build();
-      container.createChild(childGraph);
-
-      // Verify onChildCreated was called
-      expect(childCreatedEvents.length).toBe(1);
-      const event = childCreatedEvents[0];
-      expect(event).toBeDefined();
-      expect(event?.kind).toBe("child");
-      expect(event?.parentId).toBe("root");
-      expect(event?.id).toMatch(/^child-/);
-      expect(typeof event?.createdAt).toBe("number");
-    });
-
-    it("multiple child containers each trigger separate onChildCreated events", () => {
-      const childCreatedEvents: ChildContainerInfo[] = [];
-
-      const TrackerPlugin = definePlugin({
-        name: "tracker",
-        symbol: LIFECYCLE_TRACKER,
-        requires: [] as const,
-        enhancedBy: [] as const,
-        createApi(): LifecycleTrackerAPI {
-          return {
-            getChildCreatedEvents: () => childCreatedEvents,
-            getContainerDisposedEvents: () => [],
-            getResolutionContexts: () => [],
-            clearEvents: () => {
-              childCreatedEvents.length = 0;
-            },
-          };
-        },
-        hooks: {
-          onChildCreated(info) {
-            childCreatedEvents.push(info);
-          },
-        },
-      });
-
-      const graph = createTestGraph();
-      const container = createContainer(graph, {
-        plugins: [TrackerPlugin],
-      });
-
-      // Create multiple child containers
-      const childGraph = GraphBuilder.create().build();
-      container.createChild(childGraph);
-      container.createChild(childGraph);
-      container.createChild(childGraph);
-
-      // Verify all onChildCreated events were fired
-      expect(childCreatedEvents.length).toBe(3);
-
-      // Each child should have a unique ID
-      const ids = new Set(childCreatedEvents.map(e => e.id));
-      expect(ids.size).toBe(3);
-    });
-  });
-
-  describe("onContainerDisposed hook fires when child is disposed", () => {
-    it("onContainerDisposed fires when child container is disposed", async () => {
-      const disposedEvents: ContainerInfo[] = [];
-
-      const TrackerPlugin = definePlugin({
-        name: "tracker",
-        symbol: LIFECYCLE_TRACKER,
-        requires: [] as const,
-        enhancedBy: [] as const,
-        createApi(): LifecycleTrackerAPI {
-          return {
-            getChildCreatedEvents: () => [],
-            getContainerDisposedEvents: () => disposedEvents,
-            getResolutionContexts: () => [],
-            clearEvents: () => {
-              disposedEvents.length = 0;
-            },
-          };
-        },
-        hooks: {
-          onContainerDisposed(info) {
-            disposedEvents.push(info);
-          },
-        },
-      });
-
-      const graph = createTestGraph();
-      const container = createContainer(graph, {
-        plugins: [TrackerPlugin],
-      });
-
-      // Create child container
-      const childGraph = GraphBuilder.create().build();
-      const childContainer = container.createChild(childGraph);
-
-      // Dispose child container
-      await childContainer.dispose();
-
-      // Verify onContainerDisposed was called for child
-      expect(disposedEvents.length).toBe(1);
-      const event = disposedEvents[0];
-      expect(event).toBeDefined();
-      expect(event?.kind).toBe("child");
-      expect(event?.parentId).toBe("root");
-      expect(event?.id).toMatch(/^child-/);
-    });
-
-    it("disposing parent also triggers onContainerDisposed for children", async () => {
-      const disposedEvents: ContainerInfo[] = [];
-
-      const TrackerPlugin = definePlugin({
-        name: "tracker",
-        symbol: LIFECYCLE_TRACKER,
-        requires: [] as const,
-        enhancedBy: [] as const,
-        createApi(): LifecycleTrackerAPI {
-          return {
-            getChildCreatedEvents: () => [],
-            getContainerDisposedEvents: () => disposedEvents,
-            getResolutionContexts: () => [],
-            clearEvents: () => {
-              disposedEvents.length = 0;
-            },
-          };
-        },
-        hooks: {
-          onContainerDisposed(info) {
-            disposedEvents.push(info);
-          },
-        },
-      });
-
-      const graph = createTestGraph();
-      const container = createContainer(graph, {
-        plugins: [TrackerPlugin],
-      });
-
-      // Create child container
-      const childGraph = GraphBuilder.create().build();
-      container.createChild(childGraph);
-
-      // Dispose parent container (should cascade to child)
-      await container.dispose();
-
-      // Verify both child and parent disposed events fired
-      expect(disposedEvents.length).toBe(2);
-
-      // Child should be disposed first (LIFO)
-      const childEvent = disposedEvents.find(e => e.kind === "child");
-      const parentEvent = disposedEvents.find(e => e.kind === "root");
-
-      expect(childEvent).toBeDefined();
-      expect(parentEvent).toBeDefined();
-
-      // Child should come before parent in the array (disposed first)
-      const childIndex = disposedEvents.indexOf(childEvent!);
-      const parentIndex = disposedEvents.indexOf(parentEvent!);
-      expect(childIndex).toBeLessThan(parentIndex);
-    });
-  });
-
-  describe("resolution hooks include container metadata", () => {
-    it("hooks receive containerId and containerKind for child container", () => {
-      const capturedContexts: ResolutionHookContext[] = [];
-
-      const TrackerPlugin = definePlugin({
-        name: "tracker",
-        symbol: LIFECYCLE_TRACKER,
-        requires: [] as const,
-        enhancedBy: [] as const,
-        createApi(): LifecycleTrackerAPI {
-          return {
-            getChildCreatedEvents: () => [],
-            getContainerDisposedEvents: () => [],
-            getResolutionContexts: () => capturedContexts,
-            clearEvents: () => {
-              capturedContexts.length = 0;
-            },
-          };
-        },
-        hooks: {
-          beforeResolve(ctx) {
-            capturedContexts.push(ctx);
-          },
-        },
-      });
-
-      const graph = createTestGraph();
-      const container = createContainer(graph, {
-        plugins: [TrackerPlugin],
-      });
+      const container = pipe(createContainer(graph), withTracker);
 
       // Resolve from parent
       container.resolve(LoggerPort);
 
-      // Create child and resolve from child
-      const childGraph = GraphBuilder.create().build();
-      const childContainer = container.createChild(childGraph);
-      childContainer.resolve(LoggerPort);
-
-      // Verify parent resolution context
-      const parentContext = capturedContexts.find(c => c.containerKind === "root");
-      expect(parentContext).toBeDefined();
-      expect(parentContext?.containerId).toBe("root");
-      expect(parentContext?.containerKind).toBe("root");
-      expect(parentContext?.parentContainerId).toBeNull();
-
-      // Verify child resolution context
-      const childContext = capturedContexts.find(c => c.containerKind === "child");
-      expect(childContext).toBeDefined();
-      expect(childContext?.containerId).toMatch(/^child-/);
-      expect(childContext?.containerKind).toBe("child");
-      expect(childContext?.parentContainerId).toBe("root");
+      // Check hooks were called for parent
+      expect(resolutionEvents.some(e => e.startsWith("before:Logger:root"))).toBe(true);
+      expect(resolutionEvents.some(e => e.startsWith("after:Logger:root"))).toBe(true);
     });
 
-    it("hooks receive parentContainerId for nested child containers", () => {
+    it("hooks receive correct metadata for root container", () => {
       const capturedContexts: ResolutionHookContext[] = [];
-      const childCreatedEvents: ChildContainerInfo[] = [];
 
       const TrackerPlugin = definePlugin({
         name: "tracker",
@@ -421,12 +216,9 @@ describe("Plugin Inheritance in Child Containers", () => {
         enhancedBy: [] as const,
         createApi(): LifecycleTrackerAPI {
           return {
-            getChildCreatedEvents: () => childCreatedEvents,
-            getContainerDisposedEvents: () => [],
             getResolutionContexts: () => capturedContexts,
             clearEvents: () => {
               capturedContexts.length = 0;
-              childCreatedEvents.length = 0;
             },
           };
         },
@@ -434,37 +226,71 @@ describe("Plugin Inheritance in Child Containers", () => {
           beforeResolve(ctx) {
             capturedContexts.push(ctx);
           },
-          onChildCreated(info) {
-            childCreatedEvents.push(info);
+        },
+      });
+
+      const withTracker = createPluginWrapper(TrackerPlugin);
+      const graph = createTestGraph();
+      const container = pipe(createContainer(graph), withTracker);
+
+      // Resolve from root container
+      container.resolve(LoggerPort);
+
+      // Verify context metadata
+      expect(capturedContexts.length).toBe(1);
+      const ctx = capturedContexts[0];
+      expect(ctx.containerId).toBe("root");
+      expect(ctx.containerKind).toBe("root");
+      expect(ctx.parentContainerId).toBeNull();
+      expect(ctx.inheritanceMode).toBeNull();
+    });
+
+    it("hooks receive child container metadata when wrapper applied to child", () => {
+      const capturedContexts: ResolutionHookContext[] = [];
+
+      const TrackerPlugin = definePlugin({
+        name: "tracker",
+        symbol: LIFECYCLE_TRACKER,
+        requires: [] as const,
+        enhancedBy: [] as const,
+        createApi(): LifecycleTrackerAPI {
+          return {
+            getResolutionContexts: () => capturedContexts,
+            clearEvents: () => {
+              capturedContexts.length = 0;
+            },
+          };
+        },
+        hooks: {
+          beforeResolve(ctx) {
+            capturedContexts.push(ctx);
           },
         },
       });
 
+      const withTracker = createPluginWrapper(TrackerPlugin);
       const graph = createTestGraph();
-      const container = createContainer(graph, {
-        plugins: [TrackerPlugin],
-      });
+      const container = createContainer(graph);
 
-      // Create child -> grandchild hierarchy
+      // Create child container and apply wrapper directly to it
       const childGraph = GraphBuilder.create().build();
       const childContainer = container.createChild(childGraph);
-      const grandchildGraph = GraphBuilder.create().build();
-      childContainer.createChild(grandchildGraph);
+      const enhancedChild = pipe(childContainer, withTracker);
 
-      // Verify the child creation events show correct parentId
-      // First child's parentId should be "root"
-      const firstChildEvent = childCreatedEvents[0];
-      expect(firstChildEvent?.parentId).toBe("root");
+      // Resolve from child
+      enhancedChild.resolve(LoggerPort);
 
-      // Grandchild's parentId should be the first child's id
-      const grandchildEvent = childCreatedEvents[1];
-      expect(grandchildEvent?.parentId).toMatch(/^child-/);
-      expect(grandchildEvent?.parentId).toBe(firstChildEvent?.id);
+      // Verify child context metadata
+      expect(capturedContexts.length).toBe(1);
+      const ctx = capturedContexts[0];
+      expect(ctx.containerId).toMatch(/^child-/);
+      expect(ctx.containerKind).toBe("child");
+      expect(ctx.parentContainerId).toBe("root");
     });
   });
 
-  describe("inheritance mode passed to hooks", () => {
-    it("hooks receive inheritanceMode=shared for default behavior", () => {
+  describe("inheritance mode in hook context", () => {
+    it("hooks receive inheritanceMode=shared for default inherited resolution", () => {
       const capturedContexts: ResolutionHookContext[] = [];
 
       const TrackerPlugin = definePlugin({
@@ -474,8 +300,6 @@ describe("Plugin Inheritance in Child Containers", () => {
         enhancedBy: [] as const,
         createApi(): LifecycleTrackerAPI {
           return {
-            getChildCreatedEvents: () => [],
-            getContainerDisposedEvents: () => [],
             getResolutionContexts: () => capturedContexts,
             clearEvents: () => {
               capturedContexts.length = 0;
@@ -489,21 +313,20 @@ describe("Plugin Inheritance in Child Containers", () => {
         },
       });
 
+      const withTracker = createPluginWrapper(TrackerPlugin);
       const graph = createGraphWithConfig();
-      const container = createContainer(graph, {
-        plugins: [TrackerPlugin],
-      });
+      const container = createContainer(graph);
 
       // Resolve from parent first to create singleton
       container.resolve(LoggerPort);
-      capturedContexts.length = 0; // Clear parent resolution
 
-      // Create child with default (shared) mode
+      // Create child with default (shared) mode and apply wrapper
       const childGraph = GraphBuilder.create().build();
       const childContainer = container.createChild(childGraph);
+      const enhancedChild = pipe(childContainer, withTracker);
 
       // Resolve from child
-      childContainer.resolve(LoggerPort);
+      enhancedChild.resolve(LoggerPort);
 
       const childContext = capturedContexts[0];
       expect(childContext).toBeDefined();
@@ -520,8 +343,6 @@ describe("Plugin Inheritance in Child Containers", () => {
         enhancedBy: [] as const,
         createApi(): LifecycleTrackerAPI {
           return {
-            getChildCreatedEvents: () => [],
-            getContainerDisposedEvents: () => [],
             getResolutionContexts: () => capturedContexts,
             clearEvents: () => {
               capturedContexts.length = 0;
@@ -535,21 +356,20 @@ describe("Plugin Inheritance in Child Containers", () => {
         },
       });
 
+      const withTracker = createPluginWrapper(TrackerPlugin);
       const graph = createGraphWithConfig();
-      const container = createContainer(graph, {
-        plugins: [TrackerPlugin],
-      });
+      const container = createContainer(graph);
 
       // Resolve from parent first to create singleton
       container.resolve(LoggerPort);
-      capturedContexts.length = 0; // Clear parent resolution
 
-      // Create child with forked mode for Logger
+      // Create child with forked mode and apply wrapper
       const childGraph = GraphBuilder.create().build();
       const childContainer = container.createChild(childGraph, { Logger: "forked" });
+      const enhancedChild = pipe(childContainer, withTracker);
 
       // Resolve from child
-      childContainer.resolve(LoggerPort);
+      enhancedChild.resolve(LoggerPort);
 
       const childContext = capturedContexts[0];
       expect(childContext).toBeDefined();
@@ -566,8 +386,6 @@ describe("Plugin Inheritance in Child Containers", () => {
         enhancedBy: [] as const,
         createApi(): LifecycleTrackerAPI {
           return {
-            getChildCreatedEvents: () => [],
-            getContainerDisposedEvents: () => [],
             getResolutionContexts: () => capturedContexts,
             clearEvents: () => {
               capturedContexts.length = 0;
@@ -581,21 +399,20 @@ describe("Plugin Inheritance in Child Containers", () => {
         },
       });
 
+      const withTracker = createPluginWrapper(TrackerPlugin);
       const graph = createGraphWithConfig();
-      const container = createContainer(graph, {
-        plugins: [TrackerPlugin],
-      });
+      const container = createContainer(graph);
 
       // Resolve from parent first to create singleton
       container.resolve(LoggerPort);
-      capturedContexts.length = 0; // Clear parent resolution
 
-      // Create child with isolated mode for Logger
+      // Create child with isolated mode and apply wrapper
       const childGraph = GraphBuilder.create().build();
       const childContainer = container.createChild(childGraph, { Logger: "isolated" });
+      const enhancedChild = pipe(childContainer, withTracker);
 
       // Resolve from child
-      childContainer.resolve(LoggerPort);
+      enhancedChild.resolve(LoggerPort);
 
       const childContext = capturedContexts[0];
       expect(childContext).toBeDefined();
@@ -612,8 +429,6 @@ describe("Plugin Inheritance in Child Containers", () => {
         enhancedBy: [] as const,
         createApi(): LifecycleTrackerAPI {
           return {
-            getChildCreatedEvents: () => [],
-            getContainerDisposedEvents: () => [],
             getResolutionContexts: () => capturedContexts,
             clearEvents: () => {
               capturedContexts.length = 0;
@@ -627,10 +442,9 @@ describe("Plugin Inheritance in Child Containers", () => {
         },
       });
 
+      const withTracker = createPluginWrapper(TrackerPlugin);
       const graph = createTestGraph();
-      const container = createContainer(graph, {
-        plugins: [TrackerPlugin],
-      });
+      const container = pipe(createContainer(graph), withTracker);
 
       // Resolve from root container
       container.resolve(LoggerPort);
@@ -638,94 +452,6 @@ describe("Plugin Inheritance in Child Containers", () => {
       const rootContext = capturedContexts[0];
       expect(rootContext).toBeDefined();
       expect(rootContext?.inheritanceMode).toBeNull();
-    });
-  });
-
-  describe("multiple child containers get unique IDs", () => {
-    it("each child container has a unique containerId", () => {
-      const capturedContainerIds: string[] = [];
-
-      const TrackerPlugin = definePlugin({
-        name: "tracker",
-        symbol: LIFECYCLE_TRACKER,
-        requires: [] as const,
-        enhancedBy: [] as const,
-        createApi(): LifecycleTrackerAPI {
-          return {
-            getChildCreatedEvents: () => [],
-            getContainerDisposedEvents: () => [],
-            getResolutionContexts: () => [],
-            clearEvents: () => {},
-          };
-        },
-        hooks: {
-          beforeResolve(ctx) {
-            if (!capturedContainerIds.includes(ctx.containerId)) {
-              capturedContainerIds.push(ctx.containerId);
-            }
-          },
-        },
-      });
-
-      const graph = createTestGraph();
-      const container = createContainer(graph, {
-        plugins: [TrackerPlugin],
-      });
-
-      // Create multiple child containers and resolve from each
-      const childGraph = GraphBuilder.create().build();
-      const child1 = container.createChild(childGraph);
-      const child2 = container.createChild(childGraph);
-      const child3 = container.createChild(childGraph);
-
-      child1.resolve(LoggerPort);
-      child2.resolve(LoggerPort);
-      child3.resolve(LoggerPort);
-
-      // Verify each child has a unique ID (plus root)
-      expect(capturedContainerIds.length).toBe(4); // root + 3 children
-      expect(new Set(capturedContainerIds).size).toBe(4);
-    });
-
-    it("container IDs follow expected pattern", () => {
-      const childCreatedEvents: ChildContainerInfo[] = [];
-
-      const TrackerPlugin = definePlugin({
-        name: "tracker",
-        symbol: LIFECYCLE_TRACKER,
-        requires: [] as const,
-        enhancedBy: [] as const,
-        createApi(): LifecycleTrackerAPI {
-          return {
-            getChildCreatedEvents: () => childCreatedEvents,
-            getContainerDisposedEvents: () => [],
-            getResolutionContexts: () => [],
-            clearEvents: () => {
-              childCreatedEvents.length = 0;
-            },
-          };
-        },
-        hooks: {
-          onChildCreated(info) {
-            childCreatedEvents.push(info);
-          },
-        },
-      });
-
-      const graph = createTestGraph();
-      const container = createContainer(graph, {
-        plugins: [TrackerPlugin],
-      });
-
-      // Create child containers
-      const childGraph = GraphBuilder.create().build();
-      container.createChild(childGraph);
-      container.createChild(childGraph);
-
-      // Verify ID pattern
-      for (const event of childCreatedEvents) {
-        expect(event.id).toMatch(/^child-\d+$/);
-      }
     });
   });
 });
