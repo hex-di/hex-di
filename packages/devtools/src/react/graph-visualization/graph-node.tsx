@@ -74,6 +74,15 @@ export function GraphNode({
       ? "brightness(1.15)"
       : undefined;
 
+  // Use dashed border for inherited services
+  const strokeDasharray = node.origin === "inherited" ? "4 2" : undefined;
+
+  // Async services get a purple-tinted background
+  const bgFill =
+    node.factoryKind === "async"
+      ? "rgba(203, 166, 247, 0.3)"
+      : "var(--hex-devtools-bg-secondary, #2a2a3e)";
+
   return (
     <g
       className="graph-node"
@@ -91,9 +100,10 @@ export function GraphNode({
         height={node.height}
         rx={6}
         ry={6}
-        fill="var(--hex-devtools-bg-secondary, #2a2a3e)"
+        fill={bgFill}
         stroke={strokeColor}
         strokeWidth={strokeWidth}
+        strokeDasharray={strokeDasharray}
         style={{
           transition: "all 0.15s ease",
           filter,
@@ -133,6 +143,57 @@ export function GraphNode({
       >
         {node.lifetime}
       </text>
+
+      {/* Async corner badge (top-right) */}
+      {node.factoryKind === "async" && (
+        <g style={{ pointerEvents: "none" }}>
+          <circle cx={x + node.width - 8} cy={y + 8} r={8} fill="#cba6f7" />
+          <text
+            x={x + node.width - 8}
+            y={y + 8}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill="#1e1e2e"
+            fontSize="9px"
+            fontWeight={700}
+            fontFamily="var(--hex-devtools-font-mono, 'JetBrains Mono', monospace)"
+            style={{ userSelect: "none" }}
+          >
+            A
+          </text>
+        </g>
+      )}
+
+      {/* Inheritance mode corner badge (top-left) */}
+      {node.inheritanceMode !== undefined && (
+        <g style={{ pointerEvents: "none" }}>
+          <circle
+            cx={x + 8}
+            cy={y + 8}
+            r={8}
+            fill={
+              node.inheritanceMode === "shared"
+                ? "#89b4fa"
+                : node.inheritanceMode === "forked"
+                  ? "#fab387"
+                  : "#f38ba8"
+            }
+          />
+          <text
+            x={x + 8}
+            y={y + 8}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill="#1e1e2e"
+            fontSize="9px"
+            fontWeight={700}
+            fontFamily="var(--hex-devtools-font-mono, 'JetBrains Mono', monospace)"
+            style={{ userSelect: "none" }}
+          >
+            {node.inheritanceMode[0].toUpperCase()}
+          </text>
+        </g>
+      )}
     </g>
   );
 }

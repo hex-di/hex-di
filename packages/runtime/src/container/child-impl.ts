@@ -285,77 +285,36 @@ export class ChildContainerImpl<
   // ===========================================================================
 
   /**
-   * Returns internal state including parent state for inherited resolution tracking.
+   * Returns internal state for DevTools inspection.
    *
-   * Overrides base implementation to add `parentState` field, enabling the
-   * inspector to check parent's singleton memo for shared inherited ports.
+   * Overrides base implementation to set correct containerId and expose
+   * per-port inheritance modes. Note: parentState is NOT included to avoid
+   * circular calls when parent iterates its child containers. The inspector
+   * can access parent state via the container hierarchy if needed.
    */
   override getInternalState(): ContainerInternalState {
     // Get base internal state
     const baseState = super.getInternalState();
 
-    // Add parent state for inherited resolution tracking
-    const parentInternal = this.getParentInternalState();
-
-    // Create new state with child's containerId (override base's "root")
+    // Create new state with child's containerId and inheritanceModes
     const stateWithChild: ContainerInternalState = {
       ...baseState,
       containerId: this.containerId,
-      parentState: parentInternal ?? undefined,
+      inheritanceModes: this.inheritanceModes,
     };
 
     return Object.freeze(stateWithChild);
   }
 
   /**
-   * Creates adapter map snapshot that includes both local and inherited adapters.
+   * Creates adapter map snapshot with only local adapters.
    *
-   * Child containers merge parent's adapter map with local overrides/extensions.
-   * Local adapters take precedence over inherited ones.
+   * Note: Only includes local (overrides/extensions) adapters to avoid
+   * circular calls when parent iterates its child containers. The parent's
+   * adapters are available in the parent's own snapshot.
    */
   protected override createAdapterMapSnapshot(): ReadonlyMap<Port<unknown, string>, AdapterInfo> {
-    const map = new Map<Port<unknown, string>, AdapterInfo>();
-
-    // First, get parent's adapter map via INTERNAL_ACCESS
-    const parentInternal = this.getParentInternalState();
-    if (parentInternal !== null) {
-      for (const [port, adapterInfo] of parentInternal.adapterMap) {
-        map.set(port, adapterInfo);
-      }
-    }
-
-    // Then, add/override with local adapters
-    for (const [port, adapter] of this.adapterRegistry.entries()) {
-      map.set(port, {
-        portName: port.__portName,
-        lifetime: adapter.lifetime,
-        factoryKind: adapter.factoryKind,
-        dependencyCount: adapter.requires.length,
-        dependencyNames: adapter.requires.map(p => p.__portName),
-      });
-    }
-
-    return map;
-  }
-
-  /**
-   * Safely accesses parent's internal state for adapter map inheritance.
-   * @returns Parent's internal state or null if not accessible
-   */
-  private getParentInternalState(): ContainerInternalState | null {
-    const parent = this.parentContainer.originalParent;
-    if (!isRecord(parent)) {
-      return null;
-    }
-    const accessor = parent[INTERNAL_ACCESS];
-    if (typeof accessor !== "function") {
-      return null;
-    }
-    try {
-      return accessor();
-    } catch {
-      // Parent might be disposed
-      return null;
-    }
+    // Only include local adapters to avoid circular parent access
+    return super.createAdapterMapSnapshot();
   }
 }

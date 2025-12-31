@@ -61,7 +61,7 @@ describe("Tracing Integration", () => {
   describe("trace recording", () => {
     it("should record traces when services are resolved", () => {
       const tracingContainer = pipe(createContainer(appGraph), withTracing);
-      const scope = tracingContainer.createScope();
+      const scope = tracingContainer.createScope("tracing-test-scope");
 
       // Initially no traces
       const tracingAPI = tracingContainer[TRACING];
@@ -87,7 +87,7 @@ describe("Tracing Integration", () => {
 
     it("should capture trace metadata correctly", () => {
       const tracingContainer = pipe(createContainer(appGraph), withTracing);
-      const scope = tracingContainer.createScope();
+      const scope = tracingContainer.createScope("metadata-test-scope");
 
       scope.resolve(UserSessionPort);
 

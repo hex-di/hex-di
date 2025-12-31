@@ -8,7 +8,7 @@
  * 4. filterGraph type inference
  * 5. relabelPorts type inference
  * 6. DevToolsPanel prop types
- * 7. DevToolsFloating prop types
+ * 7. HexDiDevTools prop types
  */
 
 import { describe, expectTypeOf, it } from "vitest";
@@ -39,11 +39,11 @@ import type {
 } from "@hex-di/devtools-core";
 
 // Import React components
-import { DevToolsPanel, DevToolsFloating } from "../src/react/index.js";
+import { DevToolsPanel, HexDiDevTools } from "../src/react/index.js";
 
 import type {
   DevToolsPanelProps,
-  DevToolsFloatingProps,
+  HexDiDevToolsProps,
   DevToolsPosition,
 } from "../src/react/index.js";
 
@@ -357,27 +357,27 @@ describe("DevToolsPanel prop types", () => {
 });
 
 // =============================================================================
-// DevToolsFloating Type Tests
+// HexDiDevTools Type Tests
 // =============================================================================
 
-describe("DevToolsFloating prop types", () => {
-  it("DevToolsFloatingProps has graph property", () => {
-    expectTypeOf<DevToolsFloatingProps>().toHaveProperty("graph");
-    expectTypeOf<DevToolsFloatingProps["graph"]>().toMatchTypeOf<
+describe("HexDiDevTools prop types", () => {
+  it("HexDiDevToolsProps has graph property", () => {
+    expectTypeOf<HexDiDevToolsProps>().toHaveProperty("graph");
+    expectTypeOf<HexDiDevToolsProps["graph"]>().toMatchTypeOf<
       Graph<Port<unknown, string>, never>
     >();
   });
 
-  it("DevToolsFloatingProps has optional container property", () => {
-    expectTypeOf<DevToolsFloatingProps>().toHaveProperty("container");
-    expectTypeOf<DevToolsFloatingProps["container"]>().toMatchTypeOf<
+  it("HexDiDevToolsProps has optional container property", () => {
+    expectTypeOf<HexDiDevToolsProps>().toHaveProperty("container");
+    expectTypeOf<HexDiDevToolsProps["container"]>().toMatchTypeOf<
       Container<Port<unknown, string>, never, never, ContainerPhase> | undefined
     >();
   });
 
-  it("DevToolsFloatingProps has optional position property", () => {
-    expectTypeOf<DevToolsFloatingProps>().toHaveProperty("position");
-    expectTypeOf<DevToolsFloatingProps["position"]>().toEqualTypeOf<DevToolsPosition | undefined>();
+  it("HexDiDevToolsProps has optional position property", () => {
+    expectTypeOf<HexDiDevToolsProps>().toHaveProperty("position");
+    expectTypeOf<HexDiDevToolsProps["position"]>().toEqualTypeOf<DevToolsPosition | undefined>();
   });
 
   it("DevToolsPosition has all corner values", () => {
@@ -386,12 +386,12 @@ describe("DevToolsFloating prop types", () => {
     >();
   });
 
-  it("DevToolsFloating is a function component", () => {
-    expectTypeOf(DevToolsFloating).toBeFunction();
-    expectTypeOf(DevToolsFloating).returns.toMatchTypeOf<ReactElement | null>();
+  it("HexDiDevTools is a function component", () => {
+    expectTypeOf(HexDiDevTools).toBeFunction();
+    expectTypeOf(HexDiDevTools).returns.toMatchTypeOf<ReactElement | null>();
 
     // Verify props can be passed to the component - the assignment compiling proves type compatibility
-    const _validProps: DevToolsFloatingProps<
+    const _validProps: HexDiDevToolsProps<
       typeof LoggerPort | typeof DatabasePort | typeof UserServicePort,
       never,
       never,
@@ -402,9 +402,9 @@ describe("DevToolsFloating prop types", () => {
     // Type compatibility is proven by the assignment above compiling
   });
 
-  it("DevToolsFloating returns ReactElement or null", () => {
+  it("HexDiDevTools returns ReactElement or null", () => {
     // The component can return null in production mode
-    type FloatingReturnType = globalThis.ReturnType<typeof DevToolsFloating>;
+    type FloatingReturnType = globalThis.ReturnType<typeof HexDiDevTools>;
     expectTypeOf<FloatingReturnType>().toMatchTypeOf<ReactElement | null>();
   });
 });

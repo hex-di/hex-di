@@ -7,20 +7,17 @@
  * @packageDocumentation
  */
 
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-  type ReactElement,
-} from "react";
-import type { Lifetime } from "@hex-di/graph";
+import React, { useState, useEffect, useRef, useCallback, type ReactElement } from "react";
+import type { Lifetime, FactoryKind } from "@hex-di/graph";
+import type { InheritanceMode } from "@hex-di/devtools-core";
 import {
   serviceListStyles,
   serviceItemStyles,
   getLifetimeBadgeStyle,
   getLifetimeClassName,
   getStatusIndicatorStyle,
+  getInheritanceModeBadgeStyle,
+  asyncBadgeStyle,
 } from "./styles.js";
 
 // =============================================================================
@@ -51,6 +48,10 @@ export interface ServiceInfo {
   readonly lastResolvedAt?: number | undefined;
   /** Average resolution duration in ms (for request-scoped services) */
   readonly averageDuration?: number | undefined;
+  /** Inheritance mode for inherited services in child containers (shared, forked, isolated) */
+  readonly inheritanceMode?: InheritanceMode;
+  /** Factory kind - sync or async */
+  readonly factoryKind?: FactoryKind;
 }
 
 /**
@@ -86,11 +87,7 @@ interface ServiceSearchProps {
 /**
  * Search input component with clear button.
  */
-function ServiceSearch({
-  value,
-  onChange,
-  onClear,
-}: ServiceSearchProps): ReactElement {
+function ServiceSearch({ value, onChange, onClear }: ServiceSearchProps): ReactElement {
   return (
     <div style={serviceListStyles.searchContainer}>
       <input
@@ -98,7 +95,7 @@ function ServiceSearch({
         type="text"
         placeholder="Search services..."
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={e => onChange(e.target.value)}
         style={serviceListStyles.searchInput}
         aria-label="Search services"
       />
@@ -129,10 +126,7 @@ interface ServiceFiltersProps {
 /**
  * Filter buttons for lifetime and resolution status.
  */
-function ServiceFiltersComponent({
-  filters,
-  onFiltersChange,
-}: ServiceFiltersProps): ReactElement {
+function ServiceFiltersComponent({ filters, onFiltersChange }: ServiceFiltersProps): ReactElement {
   const handleLifetimeFilter = (lifetime: Lifetime | null): void => {
     onFiltersChange({ ...filters, lifetime });
   };
@@ -193,9 +187,7 @@ function ServiceFiltersComponent({
         <button
           data-testid="service-filter-resolved"
           style={getFilterButtonStyle(filters.resolved === true)}
-          onClick={() =>
-            handleResolvedFilter(filters.resolved === true ? null : true)
-          }
+          onClick={() => handleResolvedFilter(filters.resolved === true ? null : true)}
           type="button"
           aria-pressed={filters.resolved === true}
         >
@@ -204,9 +196,7 @@ function ServiceFiltersComponent({
         <button
           data-testid="service-filter-pending"
           style={getFilterButtonStyle(filters.resolved === false)}
-          onClick={() =>
-            handleResolvedFilter(filters.resolved === false ? null : false)
-          }
+          onClick={() => handleResolvedFilter(filters.resolved === false ? null : false)}
           type="button"
           aria-pressed={filters.resolved === false}
         >
@@ -235,7 +225,8 @@ function ServiceItem({ service }: ServiceItemProps): ReactElement {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // For transient services with call count, show transient (orange) status
-  const hasBeenCalled = service.lifetime === "transient" && service.callCount !== undefined && service.callCount > 0;
+  const hasBeenCalled =
+    service.lifetime === "transient" && service.callCount !== undefined && service.callCount > 0;
   const statusStyle = getStatusIndicatorStyle(
     service.isResolved,
     service.isScopeRequired,
@@ -245,6 +236,12 @@ function ServiceItem({ service }: ServiceItemProps): ReactElement {
   const headerStyle = {
     ...serviceItemStyles.header,
     ...(isExpanded ? serviceItemStyles.headerExpanded : {}),
+  };
+
+  // Async services get a purple-tinted background
+  const containerStyle = {
+    ...serviceItemStyles.container,
+    ...(service.factoryKind === "async" ? { backgroundColor: "rgba(203, 166, 247, 0.2)" } : {}),
   };
 
   const handleKeyDown = (e: React.KeyboardEvent): void => {
@@ -266,10 +263,7 @@ function ServiceItem({ service }: ServiceItemProps): ReactElement {
   };
 
   return (
-    <div
-      data-testid={`service-item-${service.portName}`}
-      style={serviceItemStyles.container}
-    >
+    <div data-testid={`service-item-${service.portName}`} style={containerStyle}>
       <div
         style={headerStyle}
         onClick={() => setIsExpanded(!isExpanded)}
@@ -278,13 +272,33 @@ function ServiceItem({ service }: ServiceItemProps): ReactElement {
         tabIndex={0}
         aria-expanded={isExpanded}
       >
-        <span style={statusStyle} aria-label={hasBeenCalled ? "Transient" : service.isResolved ? "Resolved" : "Pending"} />
+        <span
+          style={statusStyle}
+          aria-label={hasBeenCalled ? "Transient" : service.isResolved ? "Resolved" : "Pending"}
+        />
         <span style={serviceItemStyles.serviceName}>{service.portName}</span>
+        {/* Inheritance mode badge for inherited services */}
+        {service.inheritanceMode !== undefined && (
+          <span
+            style={getInheritanceModeBadgeStyle(service.inheritanceMode)}
+            data-testid={`service-item-${service.portName}-inheritance-mode`}
+          >
+            {service.inheritanceMode}
+          </span>
+        )}
+        {/* Async badge for async services */}
+        {service.factoryKind === "async" && (
+          <span style={asyncBadgeStyle} data-testid={`service-item-${service.portName}-async`}>
+            async
+          </span>
+        )}
         <span
           className={getLifetimeClassName(service.lifetime)}
           style={getLifetimeBadgeStyle(service.lifetime)}
         >
-          {service.lifetime === "transient" && service.callCount !== undefined && service.callCount > 0
+          {service.lifetime === "transient" &&
+          service.callCount !== undefined &&
+          service.callCount > 0
             ? `${service.callCount} call${service.callCount > 1 ? "s" : ""}`
             : service.lifetime}
         </span>
@@ -340,17 +354,13 @@ function ServiceItem({ service }: ServiceItemProps): ReactElement {
           {service.isResolved && service.resolutionOrder !== undefined && (
             <div style={serviceItemStyles.detailRow}>
               <span style={serviceItemStyles.detailLabel}>Resolution #:</span>
-              <span style={serviceItemStyles.detailValue}>
-                {service.resolutionOrder}
-              </span>
+              <span style={serviceItemStyles.detailValue}>{service.resolutionOrder}</span>
             </div>
           )}
           <div style={serviceItemStyles.detailRow}>
             <span style={serviceItemStyles.detailLabel}>Dependencies:</span>
             <span style={serviceItemStyles.detailValue}>
-              {service.dependencies.length === 0
-                ? "None"
-                : service.dependencies.join(", ")}
+              {service.dependencies.length === 0 ? "None" : service.dependencies.join(", ")}
             </span>
           </div>
         </div>
@@ -420,7 +430,7 @@ export function ResolvedServices({
   }, [onSearchChange]);
 
   // Filter services based on search and filters
-  const filteredServices = services.filter((service) => {
+  const filteredServices = services.filter(service => {
     // Search filter (case-insensitive partial match)
     if (debouncedQuery.length > 0) {
       const query = debouncedQuery.toLowerCase();
@@ -448,11 +458,7 @@ export function ResolvedServices({
 
   return (
     <div data-testid="resolved-services" style={serviceListStyles.container}>
-      <ServiceSearch
-        value={searchQuery}
-        onChange={setSearchQuery}
-        onClear={handleClearSearch}
-      />
+      <ServiceSearch value={searchQuery} onChange={setSearchQuery} onClear={handleClearSearch} />
 
       <ServiceFiltersComponent filters={filters} onFiltersChange={setFilters} />
 
@@ -464,9 +470,7 @@ export function ResolvedServices({
               : "No services match the current filters."}
           </div>
         ) : (
-          filteredServices.map((service) => (
-            <ServiceItem key={service.portName} service={service} />
-          ))
+          filteredServices.map(service => <ServiceItem key={service.portName} service={service} />)
         )}
       </div>
     </div>

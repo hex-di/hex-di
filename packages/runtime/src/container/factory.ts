@@ -205,7 +205,8 @@ function createUninitializedContainerWrapper<
       }
       return initializedContainer;
     },
-    createScope: () => createRootScope<TProvides, TAsyncPorts, "uninitialized">(impl),
+    createScope: (name?: string) =>
+      createRootScope<TProvides, TAsyncPorts, "uninitialized">(impl, name),
     createChild: <
       TChildGraph extends Graph<
         Port<unknown, string>,
@@ -343,7 +344,8 @@ function createInitializedContainerWrapper<
     get initialize(): never {
       return unreachable("Initialized containers cannot be initialized again");
     },
-    createScope: () => createRootScope<TProvides, TAsyncPorts, "initialized">(impl),
+    createScope: (name?: string) =>
+      createRootScope<TProvides, TAsyncPorts, "initialized">(impl, name),
     createChild: <
       TChildGraph extends Graph<
         Port<unknown, string>,
@@ -445,11 +447,15 @@ function createRootScope<
   TAsyncPorts extends Port<unknown, string>,
   TPhase extends "uninitialized" | "initialized",
 >(
-  containerImpl: RootContainerImpl<TProvides, TAsyncPorts>
+  containerImpl: RootContainerImpl<TProvides, TAsyncPorts>,
+  name?: string
 ): Scope<TProvides, TAsyncPorts, TPhase, readonly []> {
   const scopeImpl = new ScopeImpl<TProvides, TAsyncPorts, TPhase>(
     containerImpl,
-    containerImpl.getSingletonMemo()
+    containerImpl.getSingletonMemo(),
+    null, // parentScope
+    () => containerImpl.unregisterChildScope(scopeImpl), // unregister callback for disposal
+    name
   );
   containerImpl.registerChildScope(scopeImpl);
 

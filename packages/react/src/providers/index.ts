@@ -6,26 +6,26 @@
  * @packageDocumentation
  */
 
-export { ContainerProvider } from "./container-provider.js";
-export type { ContainerProviderProps } from "./container-provider.js";
+export { HexDiContainerProvider } from "./container-provider.js";
+export type { HexDiContainerProviderProps } from "./container-provider.js";
 
-export { ScopeProvider } from "./scope-provider.js";
-export type { ScopeProviderProps } from "./scope-provider.js";
+export { HexDiScopeProvider } from "./scope-provider.js";
+export type { HexDiScopeProviderProps } from "./scope-provider.js";
 
-export { AutoScopeProvider } from "./auto-scope-provider.js";
-export type { AutoScopeProviderProps } from "./auto-scope-provider.js";
+export { HexDiAutoScopeProvider } from "./auto-scope-provider.js";
+export type { HexDiAutoScopeProviderProps } from "./auto-scope-provider.js";
 
-export { AsyncContainerProvider, useAsyncContainerState } from "./async-container-provider.js";
+export { HexDiAsyncContainerProvider, useAsyncContainerState } from "./async-container-provider.js";
 export type {
-  AsyncContainerProviderProps,
-  AsyncContainerLoadingProps,
-  AsyncContainerErrorProps,
-  AsyncContainerReadyProps,
-  AsyncContainerProviderComponent,
+  HexDiAsyncContainerProviderProps,
+  HexDiAsyncContainerLoadingProps,
+  HexDiAsyncContainerErrorProps,
+  HexDiAsyncContainerReadyProps,
+  HexDiAsyncContainerProviderComponent,
 } from "./async-container-provider.js";
 
 export { ReactiveScopeProvider } from "./reactive-scope-provider.js";
 export type { ReactiveScopeProviderProps } from "./reactive-scope-provider.js";
 
-export { LazyContainerProvider, useLazyContainerState } from "./lazy-container-provider.js";
+export { HexDiLazyContainerProvider, useLazyContainerState } from "./lazy-container-provider.js";
 export type { UseLazyContainerStateResult } from "./lazy-container-provider.js";

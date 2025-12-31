@@ -52,9 +52,6 @@ export interface ContainerEntry {
 
   /** Timestamp when the container was registered */
   readonly createdAt: number;
-
-  /** Inheritance mode for child containers (only present for kind === "child") */
-  readonly inheritanceMode?: InheritanceMode;
 }
 
 // =============================================================================

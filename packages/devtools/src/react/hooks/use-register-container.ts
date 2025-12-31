@@ -13,7 +13,6 @@ import type { Container, ContainerPhase } from "@hex-di/runtime";
 import type { Port } from "@hex-di/ports";
 import type { ContainerKind } from "@hex-di/devtools-core";
 import { ContainerRegistryContext } from "../context/container-registry.js";
-import type { InheritanceMode } from "../context/container-registry.js";
 import type { InspectableContainer } from "../types/inspectable-container.js";
 
 /**
@@ -31,9 +30,6 @@ export interface UseRegisterContainerOptions {
 
   /** Parent container ID, if any */
   readonly parentId?: string;
-
-  /** Inheritance mode for child containers (only for kind === "child") */
-  readonly inheritanceMode?: InheritanceMode;
 }
 
 /**
@@ -124,11 +120,10 @@ export function useRegisterContainer<
       container: containerRef.current,
       parentId: options.parentId ?? null,
       createdAt: Date.now(),
-      inheritanceMode: options.inheritanceMode,
     });
 
     return () => {
       currentRegistry.unregisterContainer(options.id);
     };
-  }, [options.id, options.label, options.kind, options.parentId, options.inheritanceMode]);
+  }, [options.id, options.label, options.kind, options.parentId]);
 }

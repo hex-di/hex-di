@@ -1,5 +1,5 @@
 /**
- * AutoScopeProvider component for @hex-di/react.
+ * HexDiAutoScopeProvider component for @hex-di/react.
  *
  * Provides automatic scope lifecycle management tied to React component lifecycle.
  *
@@ -12,13 +12,19 @@ import { ResolverContext, type RuntimeResolverContextValue } from "../context/re
 import type { RuntimeResolverRef } from "../internal/runtime-refs.js";
 
 // =============================================================================
-// AutoScopeProvider Component
+// HexDiAutoScopeProvider Component
 // =============================================================================
 
 /**
- * Props for the AutoScopeProvider component.
+ * Props for the HexDiAutoScopeProvider component.
  */
-export interface AutoScopeProviderProps {
+export interface HexDiAutoScopeProviderProps {
+  /**
+   * Optional custom name for the scope (for DevTools identification).
+   * If not provided, an auto-generated name like "scope-0" will be used.
+   */
+  readonly name?: string;
+
   /**
    * React children that will resolve services from the auto-managed scope.
    */
@@ -28,18 +34,18 @@ export interface AutoScopeProviderProps {
 /**
  * Provider component that automatically manages scope lifecycle.
  *
- * AutoScopeProvider creates a new scope on mount and disposes it on unmount,
+ * HexDiAutoScopeProvider creates a new scope on mount and disposes it on unmount,
  * tying the scope lifecycle to the React component lifecycle.
  *
  * @param props - The provider props containing children
  *
- * @throws {MissingProviderError} If used outside a ContainerProvider.
- *   AutoScopeProvider requires a container to create scopes from.
+ * @throws {MissingProviderError} If used outside a HexDiContainerProvider.
+ *   HexDiAutoScopeProvider requires a container to create scopes from.
  *
  * @remarks
  * - Creates scope from current resolver (container or parent scope) on mount
  * - Automatically disposes scope on unmount via useEffect cleanup
- * - Supports nesting - child AutoScopeProvider creates scope from parent scope
+ * - Supports nesting - child HexDiAutoScopeProvider creates scope from parent scope
  * - Uses useEffect (not useLayoutEffect) for SSR compatibility
  * - Renders children immediately with the new scope context
  *
@@ -47,10 +53,10 @@ export interface AutoScopeProviderProps {
  * ```tsx
  * function UserPage() {
  *   return (
- *     <AutoScopeProvider>
+ *     <HexDiAutoScopeProvider>
  *       <UserProfile />
  *       <UserSettings />
- *     </AutoScopeProvider>
+ *     </HexDiAutoScopeProvider>
  *   );
  * }
  * ```
@@ -59,23 +65,26 @@ export interface AutoScopeProviderProps {
  * ```tsx
  * function App() {
  *   return (
- *     <ContainerProvider container={container}>
- *       <AutoScopeProvider>
- *         <AutoScopeProvider>
+ *     <HexDiContainerProvider container={container}>
+ *       <HexDiAutoScopeProvider>
+ *         <HexDiAutoScopeProvider>
  *           <Component />
- *         </AutoScopeProvider>
- *       </AutoScopeProvider>
- *     </ContainerProvider>
+ *         </HexDiAutoScopeProvider>
+ *       </HexDiAutoScopeProvider>
+ *     </HexDiContainerProvider>
  *   );
  * }
  * ```
  */
-export function AutoScopeProvider({ children }: AutoScopeProviderProps): React.ReactNode {
-  // Get current resolver context - must be inside ContainerProvider
+export function HexDiAutoScopeProvider({
+  name,
+  children,
+}: HexDiAutoScopeProviderProps): React.ReactNode {
+  // Get current resolver context - must be inside HexDiContainerProvider
   const resolverContext = useContext(ResolverContext);
 
   if (resolverContext === null) {
-    throw new MissingProviderError("AutoScopeProvider", "ContainerProvider");
+    throw new MissingProviderError("HexDiAutoScopeProvider", "HexDiContainerProvider");
   }
 
   // Use ref to track the scope - allows recreation if disposed (StrictMode)
@@ -91,7 +100,7 @@ export function AutoScopeProvider({ children }: AutoScopeProviderProps): React.R
   if (scopeRef.current === null || scopeRef.current.isDisposed) {
     // createScope() on RuntimeResolverRef returns RuntimeScopeRef.
     // No type cast needed - the bivariant types flow through.
-    scopeRef.current = resolverContext.resolver.createScope();
+    scopeRef.current = resolverContext.resolver.createScope(name);
   }
 
   // Dispose scope on unmount using useEffect (SSR compatible)

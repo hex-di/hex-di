@@ -106,7 +106,7 @@ export { filterGraph, byLifetime, byPortName, relabelPorts } from "@hex-di/devto
 // React DevTools Components
 // =============================================================================
 
-export { DevToolsFloating, DevToolsPanel } from "./react/index.js";
+export { HexDiDevTools, DevToolsPanel } from "./react/index.js";
 
 // =============================================================================
 // Data Sources

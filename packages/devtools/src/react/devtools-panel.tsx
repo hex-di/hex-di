@@ -194,12 +194,13 @@ function GraphView({ exportedGraph }: GraphViewProps): ReactElement {
     return <div style={emptyStyles.container}>No adapters registered in this graph.</div>;
   }
 
-  // Transform nodes to include lifetime and factoryKind for DependencyGraph
+  // Transform nodes to include lifetime, factoryKind, and origin for DependencyGraph
   const graphNodes = exportedGraph.nodes.map(node => ({
     id: node.id,
     label: node.label,
     lifetime: node.lifetime as "singleton" | "scoped" | "transient",
     factoryKind: node.factoryKind as "sync" | "async",
+    origin: node.origin,
   }));
 
   return (
@@ -289,7 +290,7 @@ function InspectorTabContent<
   exportedGraph,
   tracingAPI,
 }: InspectorTabContentProps<TProvides, TExtends, TAsyncPorts, TPhase>): ReactElement {
-  const { isAvailable, containers, selectedId } = useContainerList();
+  const { containers, selectedId } = useContainerList();
 
   // Find the selected entry from containers using Option<string>
   const selectedEntry = useMemo(
@@ -321,19 +322,6 @@ function InspectorTabContent<
         minHeight: 0,
       }}
     >
-      {/* Container selector when registry is available */}
-      {isAvailable && (
-        <div
-          style={{
-            padding: "12px 16px",
-            borderBottom: "1px solid var(--hex-devtools-border, #45475a)",
-            backgroundColor: "var(--hex-devtools-bg-secondary, #2a2a3e)",
-          }}
-        >
-          <ContainerSelector compact />
-        </div>
-      )}
-
       {/* Container inspector - uses RuntimeInspector for selected container or creates from prop */}
       <div style={{ flex: 1, overflow: "auto" }}>
         {selectedRuntimeInspector !== null ? (

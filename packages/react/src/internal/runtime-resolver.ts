@@ -118,9 +118,10 @@ export interface RuntimeResolver {
   /**
    * Creates a child scope for managing scoped service lifetimes.
    *
+   * @param name - Optional custom name for the scope (for DevTools identification)
    * @returns A new RuntimeResolver representing the child scope
    */
-  readonly createScope: () => RuntimeResolver;
+  readonly createScope: (name?: string) => RuntimeResolver;
 
   /**
    * Disposes the resolver and all cached instances.
@@ -240,7 +241,7 @@ export function isRuntimeContainer(resolver: RuntimeResolver): resolver is Runti
 interface ResolverLike {
   resolve(port: Port<unknown, string>): unknown;
   resolveAsync(port: Port<unknown, string>): Promise<unknown>;
-  createScope(): ResolverLike;
+  createScope(name?: string): ResolverLike;
   dispose(): Promise<void>;
   has(port: Port<unknown, string>): boolean;
   readonly isDisposed: boolean;
@@ -324,7 +325,7 @@ export function toRuntimeResolver(resolver: ResolverLike): RuntimeResolver {
   const wrapped: RuntimeResolver = {
     resolve: port => resolver.resolve(port),
     resolveAsync: port => resolver.resolveAsync(port),
-    createScope: () => toRuntimeResolver(resolver.createScope()),
+    createScope: (name?: string) => toRuntimeResolver(resolver.createScope(name)),
     dispose: () => resolver.dispose(),
     has: port => resolver.has(port),
     get isDisposed() {
@@ -367,7 +368,7 @@ export function toRuntimeContainer(
   const wrapped: RuntimeContainer = {
     ...base,
     // Override createScope to return RuntimeResolver
-    createScope: () => toRuntimeResolver(container.createScope()),
+    createScope: (name?: string) => toRuntimeResolver(container.createScope(name)),
     initialize: async () => {
       if (container.initialize) {
         const initialized = await container.initialize();
@@ -471,7 +472,8 @@ function createTypedResolverWrapper<TProvides extends Port<unknown, string>>(
   const result: TypedResolver<TProvides> = {
     resolve,
     resolveAsync,
-    createScope: () => createTypedResolverWrapper<TProvides>(resolver.createScope()),
+    createScope: (name?: string) =>
+      createTypedResolverWrapper<TProvides>(resolver.createScope(name)),
     dispose: () => resolver.dispose(),
     has: port => resolver.has(port),
     get isDisposed() {
@@ -516,8 +518,10 @@ export interface TypedResolver<TProvides extends Port<unknown, string>> {
 
   /**
    * Creates a child scope with the same type parameters.
+   *
+   * @param name - Optional custom name for the scope (for DevTools identification)
    */
-  createScope(): TypedResolver<TProvides>;
+  createScope(name?: string): TypedResolver<TProvides>;
 
   /**
    * Disposes the resolver.

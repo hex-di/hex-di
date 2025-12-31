@@ -2,10 +2,10 @@
  * Unit tests for React Provider nesting with child containers.
  *
  * These tests verify:
- * 1. Nested ContainerProvider with child container works
+ * 1. Nested HexDiContainerProvider with child container works
  * 2. useContainer() returns nearest container in tree
  * 3. usePort() resolves from nested child container
- * 4. Nested AsyncContainerProvider with async child container
+ * 4. Nested HexDiAsyncContainerProvider with async child container
  * 5. Compound components work with nested providers
  * 6. Disposal on unmount for nested providers
  * 7. usePort() resolves overridden port from child container
@@ -20,9 +20,9 @@ import { ContainerBrand, ScopeBrand, INTERNAL_ACCESS } from "@hex-di/runtime";
 import type { Container, Scope, ContainerInternalState, ScopeInternalState } from "@hex-di/runtime";
 import { MissingProviderError } from "../src/errors.js";
 import {
-  ContainerProvider,
-  AutoScopeProvider,
-  AsyncContainerProvider,
+  HexDiContainerProvider,
+  HexDiAutoScopeProvider,
+  HexDiAsyncContainerProvider,
 } from "../src/providers/index.js";
 import { useContainer } from "../src/hooks/use-container.js";
 import { usePort } from "../src/hooks/use-port.js";
@@ -114,10 +114,11 @@ function createMockContainer(): TestContainer {
   const mockCreateChild = vi.fn();
 
   const mockInternalState: ContainerInternalState = {
-    containerId: "parent-container",
+    containerId: "root",
     disposed: false,
     singletonMemo: { size: 0, entries: [] },
     childScopes: [],
+    childContainers: [],
     adapterMap: new Map(),
   };
 
@@ -181,14 +182,14 @@ function createMockChildContainer(
   const mockDispose = vi.fn().mockResolvedValue(undefined);
   const mockCreateChild = vi.fn();
 
-  // Child containers must have parentState to be detected as child containers
+  // Child containers have containerId != "root" to be detected as child containers
   const mockInternalState: ContainerInternalState = {
     containerId: "child-container",
     disposed: false,
     singletonMemo: { size: 0, entries: [] },
     childScopes: [],
+    childContainers: [],
     adapterMap: new Map(),
-    parentState: parentContainer[INTERNAL_ACCESS](),
   };
 
   const mockChildContainer = {
@@ -249,13 +250,14 @@ function createMockUninitializedChildContainer(
       provides: TestServicePort,
       extends: ExtendedServicePort,
     },
-    // Child containers must have parentState to be detected as child containers
+    // Child containers have containerId != "root" to be detected as child containers
     [INTERNAL_ACCESS]: () => ({
+      containerId: "child-container",
       disposed: false,
       singletonMemo: { size: 0, entries: [] },
       childScopes: [],
+      childContainers: [],
       adapterMap: new Map(),
-      parentState: parentContainer[INTERNAL_ACCESS](),
     }),
   };
 
@@ -278,14 +280,14 @@ function createMockUninitializedChildContainer(
     return initializedChildContainer;
   });
 
-  // Child containers must have parentState to be detected as child containers
+  // Child containers have containerId != "root" to be detected as child containers
   const mockInternalState: ContainerInternalState = {
     containerId: "child-container",
     disposed: false,
     singletonMemo: { size: 0, entries: [] },
     childScopes: [],
+    childContainers: [],
     adapterMap: new Map(),
-    parentState: parentContainer[INTERNAL_ACCESS](),
   };
 
   return {
@@ -310,10 +312,10 @@ function createMockUninitializedChildContainer(
 }
 
 // =============================================================================
-// Test 1: Nested ContainerProvider with child container works
+// Test 1: Nested HexDiContainerProvider with child container works
 // =============================================================================
 
-describe("ContainerProvider nesting with child containers", () => {
+describe("HexDiContainerProvider nesting with child containers", () => {
   afterEach(() => {
     cleanup();
   });
@@ -328,13 +330,13 @@ describe("ContainerProvider nesting with child containers", () => {
     }
 
     render(
-      <ContainerProvider container={parentContainer}>
-        <ContainerProvider
+      <HexDiContainerProvider container={parentContainer}>
+        <HexDiContainerProvider
           container={childContainer as unknown as Container<typeof TestServicePort>}
         >
           <TestComponent />
-        </ContainerProvider>
-      </ContainerProvider>
+        </HexDiContainerProvider>
+      </HexDiContainerProvider>
     );
 
     // Should resolve from child container
@@ -352,11 +354,11 @@ describe("ContainerProvider nesting with child containers", () => {
 
     expect(() => {
       render(
-        <ContainerProvider container={container1}>
-          <ContainerProvider container={container2}>
+        <HexDiContainerProvider container={container1}>
+          <HexDiContainerProvider container={container2}>
             <div>Content</div>
-          </ContainerProvider>
-        </ContainerProvider>
+          </HexDiContainerProvider>
+        </HexDiContainerProvider>
       );
     }).toThrow(MissingProviderError);
 
@@ -385,13 +387,13 @@ describe("useContainer() with nested providers", () => {
     }
 
     render(
-      <ContainerProvider container={parentContainer}>
-        <ContainerProvider
+      <HexDiContainerProvider container={parentContainer}>
+        <HexDiContainerProvider
           container={childContainer as unknown as Container<typeof TestServicePort>}
         >
           <TestComponent />
-        </ContainerProvider>
-      </ContainerProvider>
+        </HexDiContainerProvider>
+      </HexDiContainerProvider>
     );
 
     expect(capturedContainer).toBeDefined();
@@ -410,9 +412,9 @@ describe("useContainer() with nested providers", () => {
     }
 
     render(
-      <ContainerProvider container={parentContainer}>
+      <HexDiContainerProvider container={parentContainer}>
         <TestComponent />
-      </ContainerProvider>
+      </HexDiContainerProvider>
     );
 
     expect(capturedContainer).toBeDefined();
@@ -441,13 +443,13 @@ describe("usePort() with nested child containers", () => {
     }
 
     render(
-      <ContainerProvider container={parentContainer}>
-        <ContainerProvider
+      <HexDiContainerProvider container={parentContainer}>
+        <HexDiContainerProvider
           container={childContainer as unknown as Container<typeof TestServicePort>}
         >
           <TestComponent />
-        </ContainerProvider>
-      </ContainerProvider>
+        </HexDiContainerProvider>
+      </HexDiContainerProvider>
     );
 
     expect(screen.getByTestId("service-name").textContent).toBe("overridden-child-service");
@@ -469,14 +471,14 @@ describe("usePort() with nested child containers", () => {
     }
 
     render(
-      <ContainerProvider container={parentContainer}>
+      <HexDiContainerProvider container={parentContainer}>
         <ParentConsumer />
-        <ContainerProvider
+        <HexDiContainerProvider
           container={childContainer as unknown as Container<typeof TestServicePort>}
         >
           <ChildConsumer />
-        </ContainerProvider>
-      </ContainerProvider>
+        </HexDiContainerProvider>
+      </HexDiContainerProvider>
     );
 
     expect(screen.getByTestId("parent-service").textContent).toBe("parent-service");
@@ -485,10 +487,10 @@ describe("usePort() with nested child containers", () => {
 });
 
 // =============================================================================
-// Test 4: Nested AsyncContainerProvider with async child container
+// Test 4: Nested HexDiAsyncContainerProvider with async child container
 // =============================================================================
 
-describe("AsyncContainerProvider with nested child containers", () => {
+describe("HexDiAsyncContainerProvider with nested child containers", () => {
   afterEach(() => {
     cleanup();
   });
@@ -503,10 +505,10 @@ describe("AsyncContainerProvider with nested child containers", () => {
     }
 
     render(
-      <ContainerProvider container={parentContainer}>
-        <AsyncContainerProvider
+      <HexDiContainerProvider container={parentContainer}>
+        <HexDiAsyncContainerProvider
           container={
-            // Cast to root container type since AsyncContainerProvider requires initialize()
+            // Cast to root container type since HexDiAsyncContainerProvider requires initialize()
             asyncChildContainer as unknown as Container<
               typeof TestServicePort,
               never,
@@ -517,8 +519,8 @@ describe("AsyncContainerProvider with nested child containers", () => {
           loadingFallback={<div data-testid="loading">Loading...</div>}
         >
           <TestComponent />
-        </AsyncContainerProvider>
-      </ContainerProvider>
+        </HexDiAsyncContainerProvider>
+      </HexDiContainerProvider>
     );
 
     // Initially should show loading
@@ -552,10 +554,10 @@ describe("Compound components with nested providers", () => {
     }
 
     render(
-      <ContainerProvider container={parentContainer}>
-        <AsyncContainerProvider
+      <HexDiContainerProvider container={parentContainer}>
+        <HexDiAsyncContainerProvider
           container={
-            // Cast to root container type since AsyncContainerProvider requires initialize()
+            // Cast to root container type since HexDiAsyncContainerProvider requires initialize()
             asyncChildContainer as unknown as Container<
               typeof TestServicePort,
               never,
@@ -564,17 +566,17 @@ describe("Compound components with nested providers", () => {
             >
           }
         >
-          <AsyncContainerProvider.Loading>
+          <HexDiAsyncContainerProvider.Loading>
             <div data-testid="compound-loading">Loading with compound...</div>
-          </AsyncContainerProvider.Loading>
-          <AsyncContainerProvider.Ready>
+          </HexDiAsyncContainerProvider.Loading>
+          <HexDiAsyncContainerProvider.Ready>
             <TestComponent />
-          </AsyncContainerProvider.Ready>
-          <AsyncContainerProvider.Error>
+          </HexDiAsyncContainerProvider.Ready>
+          <HexDiAsyncContainerProvider.Error>
             {error => <div data-testid="compound-error">{error.message}</div>}
-          </AsyncContainerProvider.Error>
-        </AsyncContainerProvider>
-      </ContainerProvider>
+          </HexDiAsyncContainerProvider.Error>
+        </HexDiAsyncContainerProvider>
+      </HexDiContainerProvider>
     );
 
     // Initially should show compound loading
@@ -610,16 +612,16 @@ describe("Disposal on unmount for nested providers", () => {
 
     function App({ showChild }: { showChild: boolean }): React.ReactElement {
       return (
-        <ContainerProvider container={parentContainer}>
+        <HexDiContainerProvider container={parentContainer}>
           <ParentContent />
           {showChild && (
-            <ContainerProvider
+            <HexDiContainerProvider
               container={childContainer as unknown as Container<typeof TestServicePort>}
             >
               <TestComponent />
-            </ContainerProvider>
+            </HexDiContainerProvider>
           )}
-        </ContainerProvider>
+        </HexDiContainerProvider>
       );
     }
 
@@ -649,7 +651,7 @@ describe("Scoped ports with child container's scopes", () => {
     cleanup();
   });
 
-  it("AutoScopeProvider creates scope from child container when nested", async () => {
+  it("HexDiAutoScopeProvider creates scope from child container when nested", async () => {
     const parentContainer = createMockContainer();
     const childContainer = createMockChildContainer(parentContainer);
     const childScope = createMockScope("scoped-from-child");
@@ -661,18 +663,18 @@ describe("Scoped ports with child container's scopes", () => {
     }
 
     const { unmount } = render(
-      <ContainerProvider container={parentContainer}>
-        <ContainerProvider
+      <HexDiContainerProvider container={parentContainer}>
+        <HexDiContainerProvider
           container={childContainer as unknown as Container<typeof TestServicePort>}
         >
-          <AutoScopeProvider>
+          <HexDiAutoScopeProvider>
             <ScopedComponent />
-          </AutoScopeProvider>
-        </ContainerProvider>
-      </ContainerProvider>
+          </HexDiAutoScopeProvider>
+        </HexDiContainerProvider>
+      </HexDiContainerProvider>
     );
 
-    // AutoScopeProvider should have created scope from child container
+    // HexDiAutoScopeProvider should have created scope from child container
     expect(childContainer.createScope).toHaveBeenCalledTimes(1);
     // Parent's createScope should NOT have been called
     expect(parentContainer.createScope).not.toHaveBeenCalled();
@@ -716,17 +718,17 @@ describe("Multiple levels of nested providers", () => {
     }
 
     render(
-      <ContainerProvider container={parentContainer}>
-        <ContainerProvider
+      <HexDiContainerProvider container={parentContainer}>
+        <HexDiContainerProvider
           container={childContainer as unknown as Container<typeof TestServicePort>}
         >
-          <ContainerProvider
+          <HexDiContainerProvider
             container={grandchildContainer as unknown as Container<typeof TestServicePort>}
           >
             <TestComponent />
-          </ContainerProvider>
-        </ContainerProvider>
-      </ContainerProvider>
+          </HexDiContainerProvider>
+        </HexDiContainerProvider>
+      </HexDiContainerProvider>
     );
 
     // Should resolve from grandchild (deepest nested)

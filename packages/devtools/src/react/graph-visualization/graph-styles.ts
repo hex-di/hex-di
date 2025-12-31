@@ -280,3 +280,15 @@ export const LIFETIME_COLORS = {
   transient: "#fab387",
   default: "#45475a",
 } as const;
+
+/**
+ * Colors for inheritance mode badge indicator.
+ * - shared: Green (sharing parent's singleton instances)
+ * - forked: Blue (independent snapshot copies)
+ * - isolated: Orange (completely isolated instances)
+ */
+export const INHERITANCE_MODE_COLORS = {
+  shared: "#a6e3a1",
+  forked: "#89b4fa",
+  isolated: "#fab387",
+} as const;

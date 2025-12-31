@@ -95,10 +95,11 @@ function createMockContainer(): TestContainer {
   });
 
   const mockInternalState: ContainerInternalState = {
-    containerId: "test-container",
+    containerId: "root",
     disposed: false,
     singletonMemo: { size: 0, entries: [] },
     childScopes: [],
+    childContainers: [],
     adapterMap: new Map(),
   };
 

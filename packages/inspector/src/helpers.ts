@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { Container, ContainerPhase } from "@hex-di/runtime";
+import { type Container, type ContainerPhase, INTERNAL_ACCESS } from "@hex-di/runtime";
 import type { Port } from "@hex-di/ports";
 import type {
   ContainerKind,
@@ -19,6 +19,7 @@ import type {
   ScopeSnapshot,
   ScopeTree,
   SingletonEntry,
+  InheritanceMode,
 } from "@hex-di/devtools-core";
 import type { ContainerSnapshot as RuntimeSnapshot } from "@hex-di/runtime";
 
@@ -356,15 +357,15 @@ function buildChildSnapshot<
   phase: TypedPhase,
   container: Container<TProvides, TExtends, TAsyncPorts, TPhase>
 ): ChildContainerSnapshot {
-  // Extract inheritance mode and parent info
-  const inheritanceMode = extractInheritanceMode(container);
+  // Extract inheritance modes and parent info
+  const inheritanceModes = extractInheritanceModes(container);
   const parentId = extractParentId(container) ?? "unknown";
 
   const snapshot: ChildContainerSnapshot = {
     kind: "child",
     phase: phase as "initialized" | "disposing" | "disposed",
     parentId,
-    inheritanceMode,
+    inheritanceModes,
     singletons: base.singletons,
     scopes: base.scopes,
     isDisposed: base.isDisposed,
@@ -457,25 +458,28 @@ function extractAsyncAdapterInfo<
 }
 
 /**
- * Extracts the inheritance mode from a child container.
+ * Extracts the per-port inheritance modes from a child container.
  * @internal
  */
-function extractInheritanceMode<
+function extractInheritanceModes<
   TProvides extends Port<unknown, string>,
   TExtends extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
   TPhase extends ContainerPhase,
 >(
   container: Container<TProvides, TExtends, TAsyncPorts, TPhase>
-): "shared" | "forked" | "isolated" {
-  if ("_inheritanceMode" in container) {
-    const mode = container._inheritanceMode;
-    if (mode === "shared" || mode === "forked" || mode === "isolated") {
-      return mode;
+): ReadonlyMap<string, InheritanceMode> {
+  // Try to get inheritance modes from container's internal state
+  try {
+    const internalState = container[INTERNAL_ACCESS]();
+    if (internalState.inheritanceModes !== undefined) {
+      return internalState.inheritanceModes;
     }
+  } catch {
+    // Container may not support INTERNAL_ACCESS
   }
-  // Default to shared (most common mode)
-  return "shared";
+  // Return empty map as fallback
+  return new Map();
 }
 
 /**

@@ -1,5 +1,5 @@
 /**
- * ContainerRegistryProvider for multi-container DevTools support.
+ * HexDiDevToolsProvider for multi-container DevTools support.
  *
  * Provides a context for tracking all containers (root, child, lazy, scope)
  * in the application and managing selection state for the DevTools inspector.
@@ -18,9 +18,9 @@ import {
 import { Some, None, isSome, type Option } from "../types/adt.js";
 
 /**
- * Props for ContainerRegistryProvider component.
+ * Props for HexDiDevToolsProvider component.
  */
-export interface ContainerRegistryProviderProps {
+export interface HexDiDevToolsProviderProps {
   /** Child components that will have access to container registry */
   readonly children: ReactNode;
 }
@@ -28,7 +28,7 @@ export interface ContainerRegistryProviderProps {
 /**
  * Root provider for multi-container DevTools.
  *
- * Place at the top of your app, above all ContainerProviders, to enable
+ * Place at the top of your app, above all HexDiContainerProviders, to enable
  * tracking of all containers. Components can register containers using
  * useRegisterContainer and access them via useContainerList and useContainerInspector.
  *
@@ -37,21 +37,19 @@ export interface ContainerRegistryProviderProps {
  *
  * @example Basic usage
  * ```typescript
- * import { ContainerRegistryProvider } from "@hex-di/devtools/react";
+ * import { HexDiDevToolsProvider } from "@hex-di/devtools/react";
  *
  * function App() {
  *   return (
- *     <ContainerRegistryProvider>
+ *     <HexDiDevToolsProvider>
  *       <MainApp />
- *       <DevToolsPanel />
- *     </ContainerRegistryProvider>
+ *       <HexDiDevTools />
+ *     </HexDiDevToolsProvider>
  *   );
  * }
  * ```
  */
-export function ContainerRegistryProvider({
-  children,
-}: ContainerRegistryProviderProps): ReactElement {
+export function HexDiDevToolsProvider({ children }: HexDiDevToolsProviderProps): ReactElement {
   const [containers, setContainers] = useState<Map<string, ContainerEntry>>(() => new Map());
   const [selectedId, setSelectedId] = useState<Option<string>>(None);
 

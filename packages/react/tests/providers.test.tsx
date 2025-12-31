@@ -17,7 +17,11 @@ import { createPort } from "@hex-di/ports";
 import { ContainerBrand, ScopeBrand, INTERNAL_ACCESS } from "@hex-di/runtime";
 import type { Container, Scope, ContainerInternalState, ScopeInternalState } from "@hex-di/runtime";
 import { MissingProviderError } from "../src/errors.js";
-import { ContainerProvider, ScopeProvider, AutoScopeProvider } from "../src/providers/index.js";
+import {
+  HexDiContainerProvider,
+  HexDiScopeProvider,
+  HexDiAutoScopeProvider,
+} from "../src/providers/index.js";
 import { ContainerContext } from "../src/context/container-context.jsx";
 import { ResolverContext } from "../src/context/resolver-context.jsx";
 
@@ -95,10 +99,11 @@ function createMockContainer(): TestContainer {
   });
 
   const mockInternalState: ContainerInternalState = {
-    containerId: "test-container",
+    containerId: "root",
     disposed: false,
     singletonMemo: { size: 0, entries: [] },
     childScopes: [],
+    childContainers: [],
     adapterMap: new Map(),
   };
 
@@ -165,9 +170,9 @@ describe("ContainerProvider", () => {
     const container = createMockContainer();
 
     render(
-      <ContainerProvider container={container}>
+      <HexDiContainerProvider container={container}>
         <div data-testid="child">Child Content</div>
-      </ContainerProvider>
+      </HexDiContainerProvider>
     );
 
     expect(screen.getByTestId("child").textContent).toBe("Child Content");
@@ -177,9 +182,9 @@ describe("ContainerProvider", () => {
     const container = createMockContainer();
 
     render(
-      <ContainerProvider container={container}>
+      <HexDiContainerProvider container={container}>
         <ContainerConsumer />
-      </ContainerProvider>
+      </HexDiContainerProvider>
     );
 
     expect(screen.getByTestId("container-value").textContent).toBe("has-container");
@@ -194,11 +199,11 @@ describe("ContainerProvider", () => {
 
     expect(() => {
       render(
-        <ContainerProvider container={container1}>
-          <ContainerProvider container={container2}>
+        <HexDiContainerProvider container={container1}>
+          <HexDiContainerProvider container={container2}>
             <div>Nested content</div>
-          </ContainerProvider>
-        </ContainerProvider>
+          </HexDiContainerProvider>
+        </HexDiContainerProvider>
       );
     }).toThrow(MissingProviderError);
 
@@ -220,12 +225,12 @@ describe("ScopeProvider", () => {
     const scope = createMockScope();
 
     render(
-      <ContainerProvider container={container}>
-        <ScopeProvider scope={scope}>
+      <HexDiContainerProvider container={container}>
+        <HexDiScopeProvider scope={scope}>
           <div data-testid="child">Child Content</div>
           <ResolverConsumer />
-        </ScopeProvider>
-      </ContainerProvider>
+        </HexDiScopeProvider>
+      </HexDiContainerProvider>
     );
 
     expect(screen.getByTestId("child").textContent).toBe("Child Content");
@@ -248,11 +253,11 @@ describe("AutoScopeProvider", () => {
     (container.createScope as ReturnType<typeof vi.fn>).mockReturnValue(mockScope);
 
     const { unmount } = render(
-      <ContainerProvider container={container}>
-        <AutoScopeProvider>
+      <HexDiContainerProvider container={container}>
+        <HexDiAutoScopeProvider>
           <ResolverConsumer />
-        </AutoScopeProvider>
-      </ContainerProvider>
+        </HexDiAutoScopeProvider>
+      </HexDiContainerProvider>
     );
 
     // Verify scope was created
@@ -274,9 +279,9 @@ describe("AutoScopeProvider", () => {
 
     expect(() => {
       render(
-        <AutoScopeProvider>
+        <HexDiAutoScopeProvider>
           <div>Content</div>
-        </AutoScopeProvider>
+        </HexDiAutoScopeProvider>
       );
     }).toThrow(MissingProviderError);
 

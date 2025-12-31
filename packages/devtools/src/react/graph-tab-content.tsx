@@ -13,7 +13,10 @@ import { ContainerSelector } from "./container-selector.js";
 import { DependencyGraph } from "./graph-visualization/index.js";
 import { useContainerList } from "./hooks/use-container-list.js";
 import { isSome } from "./types/adt.js";
-import { buildExportedGraphFromContainer } from "./utils/build-graph-from-container.js";
+import {
+  buildExportedGraphFromContainer,
+  buildMergedGraphForChild,
+} from "./utils/build-graph-from-container.js";
 import { emptyStyles } from "./styles.js";
 
 // =============================================================================
@@ -47,12 +50,14 @@ function GraphView({ exportedGraph }: GraphViewProps): ReactElement {
     return <div style={emptyStyles.container}>No adapters registered in this graph.</div>;
   }
 
-  // Transform nodes to include lifetime and factoryKind for DependencyGraph
+  // Transform nodes to include lifetime, factoryKind, origin, and inheritanceMode for DependencyGraph
   const graphNodes = exportedGraph.nodes.map(node => ({
     id: node.id,
     label: node.label,
     lifetime: node.lifetime as "singleton" | "scoped" | "transient",
     factoryKind: node.factoryKind as "sync" | "async",
+    origin: node.origin,
+    inheritanceMode: node.inheritanceMode,
   }));
 
   return (
@@ -108,12 +113,26 @@ export function GraphTabContent({ defaultGraph }: GraphTabContentProps): ReactEl
   );
 
   // Build graph from selected container, or use default
+  // For child containers, merge parent services to show inherited + own
   const exportedGraph = useMemo(() => {
     if (selectedEntry !== null) {
-      return buildExportedGraphFromContainer(selectedEntry.container);
+      const childGraph = buildExportedGraphFromContainer(selectedEntry.container);
+
+      // If has parent, merge inherited services with inheritance modes
+      if (selectedEntry.parentId !== null) {
+        const parentEntry = containers.find(c => c.id === selectedEntry.parentId);
+        if (parentEntry !== undefined) {
+          return buildMergedGraphForChild(
+            childGraph,
+            parentEntry.container,
+            selectedEntry.container
+          );
+        }
+      }
+      return childGraph;
     }
     return defaultGraph;
-  }, [selectedEntry, defaultGraph]);
+  }, [selectedEntry, containers, defaultGraph]);
 
   return (
     <div

@@ -15,6 +15,7 @@ import { describe, test, expect, vi } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
+import { createInspector } from "../src/inspector/creation.js";
 import { DisposedScopeError } from "../src/common/errors.js";
 
 // =============================================================================
@@ -397,5 +398,119 @@ describe("Scope disposal", () => {
 
     // Child should be disposed before parent
     expect(callOrder).toEqual(["child", "parent"]);
+  });
+});
+
+// =============================================================================
+// Custom Scope Name Tests
+// =============================================================================
+
+describe("Scope custom names", () => {
+  test("createScope accepts optional name parameter", () => {
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const container = createContainer(graph);
+    const scope = container.createScope("my-custom-scope");
+
+    // The scope should have the custom name as its ID
+    expect(scope).toBeDefined();
+    // We'll verify the name through the inspector
+  });
+
+  test("scope name appears in inspector getScopeTree", () => {
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const container = createContainer(graph);
+    container.createScope("request-handler-scope");
+
+    const inspector = createInspector(container);
+    const tree = inspector.getScopeTree();
+
+    expect(tree.children.length).toBe(1);
+    expect(tree.children[0].id).toBe("request-handler-scope");
+  });
+
+  test("nested scopes can have custom names", () => {
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const container = createContainer(graph);
+
+    const parentScope = container.createScope("parent-scope");
+    const childScope = parentScope.createScope("child-scope");
+
+    const inspector = createInspector(container);
+    const tree = inspector.getScopeTree();
+
+    expect(tree.children.length).toBe(1);
+    expect(tree.children[0].id).toBe("parent-scope");
+    expect(tree.children[0].children.length).toBe(1);
+    expect(tree.children[0].children[0].id).toBe("child-scope");
+  });
+
+  test("auto-generates name when not provided", () => {
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const container = createContainer(graph);
+
+    // Create scope without name
+    container.createScope();
+
+    const inspector = createInspector(container);
+    const tree = inspector.getScopeTree();
+
+    expect(tree.children.length).toBe(1);
+    // Should have auto-generated name like "scope-N"
+    expect(tree.children[0].id).toMatch(/^scope-\d+$/);
+  });
+
+  test("mixed named and auto-named scopes work together", () => {
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const container = createContainer(graph);
+
+    container.createScope("named-scope");
+    container.createScope(); // auto-named
+    container.createScope("another-named-scope");
+
+    const inspector = createInspector(container);
+    const tree = inspector.getScopeTree();
+
+    expect(tree.children.length).toBe(3);
+
+    const names = tree.children.map((c: { id: string }) => c.id);
+    expect(names).toContain("named-scope");
+    expect(names).toContain("another-named-scope");
+    // One should be auto-named
+    expect(names.some((n: string) => /^scope-\d+$/.test(n))).toBe(true);
   });
 });

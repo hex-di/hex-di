@@ -22,7 +22,10 @@ import {
 
 // Scope ID Generation
 let scopeIdCounter = 0;
-function generateScopeId(): string {
+function generateScopeId(name?: string): string {
+  if (name !== undefined) {
+    return name;
+  }
   return `scope-${scopeIdCounter++}`;
 }
 
@@ -42,17 +45,21 @@ export class ScopeImpl<
   private readonly childScopes: Set<ScopeImpl<TProvides, TAsyncPorts, TPhase>> = new Set();
   private readonly parentScope: ScopeImpl<TProvides, TAsyncPorts, TPhase> | null;
   private readonly lifecycleEmitter: ScopeLifecycleEmitter;
+  private readonly unregisterFromContainer: (() => void) | undefined;
 
   constructor(
     container: ScopeContainerAccess<TProvides>,
     singletonMemo: MemoMap,
-    parentScope: ScopeImpl<TProvides, TAsyncPorts, TPhase> | null = null
+    parentScope: ScopeImpl<TProvides, TAsyncPorts, TPhase> | null = null,
+    unregisterFromContainer?: () => void,
+    name?: string
   ) {
-    this.id = generateScopeId();
+    this.id = generateScopeId(name);
     this.container = container;
     this.scopedMemo = singletonMemo.fork();
     this.parentScope = parentScope;
     this.lifecycleEmitter = new ScopeLifecycleEmitter();
+    this.unregisterFromContainer = unregisterFromContainer;
   }
 
   resolve<P extends TProvides>(port: P): InferService<P> {
@@ -71,11 +78,13 @@ export class ScopeImpl<
     return this.container.resolveAsyncInternal(port, this.scopedMemo, this.id);
   }
 
-  createScope(): Scope<TProvides, TAsyncPorts, TPhase> {
+  createScope(name?: string): Scope<TProvides, TAsyncPorts, TPhase> {
     const child = new ScopeImpl<TProvides, TAsyncPorts, TPhase>(
       this.container,
       this.container.getSingletonMemo(),
-      this
+      this,
+      undefined,
+      name
     );
     this.childScopes.add(child);
     return createScopeWrapper(child);
@@ -98,6 +107,9 @@ export class ScopeImpl<
     await this.scopedMemo.dispose();
     if (this.parentScope !== null) {
       this.parentScope.childScopes.delete(this);
+    } else if (this.unregisterFromContainer !== undefined) {
+      // Root scope: unregister from container's LifecycleManager
+      this.unregisterFromContainer();
     }
 
     // Emit 'disposed' after async disposal completes
@@ -190,7 +202,7 @@ export function createScopeWrapper<
   const scope: Scope<TProvides, TAsyncPorts, TPhase, TPlugins> = {
     resolve,
     resolveAsync: port => impl.resolveAsync(port),
-    createScope: () => impl.createScope(),
+    createScope: (name?: string) => impl.createScope(name),
     dispose: () => impl.dispose(),
     get isDisposed() {
       return impl.isDisposed;

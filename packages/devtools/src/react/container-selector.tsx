@@ -153,15 +153,11 @@ function getKindStyle(kind: ContainerEntry["kind"]): CSSProperties {
 
 /**
  * Format container entry for display in the dropdown.
- *
- * For child containers with inheritance mode, includes both kind and mode:
- * - "MyContainer (child · shared)"
+ * Shows container label with optional kind.
+ * Example: "MyContainer (child)"
  */
 function formatContainerLabel(entry: ContainerEntry, showKind: boolean): string {
   if (showKind) {
-    if (entry.kind === "child" && entry.inheritanceMode !== undefined) {
-      return `${entry.label} (${entry.kind} · ${entry.inheritanceMode})`;
-    }
     return `${entry.label} (${entry.kind})`;
   }
   return entry.label;

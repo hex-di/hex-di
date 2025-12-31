@@ -17,7 +17,7 @@ import { createPort } from "@hex-di/ports";
 import { ContainerBrand, ScopeBrand } from "@hex-di/runtime";
 import type { Container, Scope } from "@hex-di/runtime";
 import { MissingProviderError } from "../src/errors.js";
-import { ContainerProvider, ScopeProvider } from "../src/providers/index.js";
+import { HexDiContainerProvider, HexDiScopeProvider } from "../src/providers/index.js";
 import { useContainer } from "../src/hooks/use-container.js";
 import { usePort } from "../src/hooks/use-port.js";
 import { useScope } from "../src/hooks/use-scope.js";
@@ -130,9 +130,9 @@ describe("usePort", () => {
     }
 
     render(
-      <ContainerProvider container={container}>
+      <HexDiContainerProvider container={container}>
         <TestComponent />
-      </ContainerProvider>
+      </HexDiContainerProvider>
     );
 
     expect(screen.getByTestId("service-name").textContent).toBe("test-service");
@@ -149,11 +149,11 @@ describe("usePort", () => {
     }
 
     render(
-      <ContainerProvider container={container}>
-        <ScopeProvider scope={scope}>
+      <HexDiContainerProvider container={container}>
+        <HexDiScopeProvider scope={scope}>
           <TestComponent />
-        </ScopeProvider>
-      </ContainerProvider>
+        </HexDiScopeProvider>
+      </HexDiContainerProvider>
     );
 
     expect(screen.getByTestId("service-name").textContent).toBe("scope-service");
@@ -198,9 +198,9 @@ describe("useContainer", () => {
     }
 
     render(
-      <ContainerProvider container={container}>
+      <HexDiContainerProvider container={container}>
         <TestComponent />
-      </ContainerProvider>
+      </HexDiContainerProvider>
     );
 
     expect(capturedContainer).toBeDefined();
@@ -247,9 +247,9 @@ describe("useScope", () => {
     }
 
     const { unmount } = render(
-      <ContainerProvider container={container}>
+      <HexDiContainerProvider container={container}>
         <TestComponent />
-      </ContainerProvider>
+      </HexDiContainerProvider>
     );
 
     // Verify scope was created from container

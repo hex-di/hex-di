@@ -68,9 +68,10 @@ export interface Resolver<TProvides extends Port<unknown, string>> {
   /**
    * Creates a child scope for managing scoped service lifetimes.
    *
+   * @param name - Optional custom name for the scope (for DevTools identification)
    * @returns A new resolver (Scope) for the child scope
    */
-  createScope(): Resolver<TProvides>;
+  createScope(name?: string): Resolver<TProvides>;
 
   /**
    * Disposes the resolver and all its cached instances.

@@ -125,6 +125,18 @@ export class LifecycleManager {
   }
 
   /**
+   * Unregisters a child scope from lifecycle tracking.
+   *
+   * Called when a root scope is disposed to remove it from the container's
+   * tracking Set. This prevents disposed scopes from accumulating.
+   *
+   * @param scope - The child scope to remove
+   */
+  unregisterChildScope(scope: Disposable): void {
+    this.childScopes.delete(scope);
+  }
+
+  /**
    * Disposes all managed resources in correct order.
    *
    * Disposal order (LIFO):
@@ -180,6 +192,24 @@ export class LifecycleManager {
         snapshots.push(getSnapshot(scope));
       } catch {
         // Skip disposed scopes
+      }
+    }
+    return snapshots;
+  }
+
+  /**
+   * Returns snapshots of child containers for inspection.
+   *
+   * @param getSnapshot - Function to get snapshot from a container (may throw for disposed)
+   * @returns Array of snapshots, excluding any that threw
+   */
+  getChildContainerSnapshots<T>(getSnapshot: (container: Disposable) => T): T[] {
+    const snapshots: T[] = [];
+    for (const container of this.childContainers) {
+      try {
+        snapshots.push(getSnapshot(container));
+      } catch {
+        // Skip disposed containers
       }
     }
     return snapshots;

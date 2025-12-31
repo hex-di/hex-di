@@ -684,23 +684,27 @@ export const inheritanceModeBadgeStyles: InheritanceModeBadgeStyleDef = {
   badge: {
     fontSize: "9px",
     fontWeight: 600,
-    padding: "2px 5px",
+    padding: "1px 4px",
     borderRadius: "3px",
     textTransform: "uppercase",
     letterSpacing: "0.3px",
     marginLeft: "4px",
+    border: "1px solid",
   },
   shared: {
-    backgroundColor: "var(--hex-devtools-scoped, #89b4fa)",
-    color: "#1e1e2e",
+    backgroundColor: "rgba(137, 180, 250, 0.15)",
+    borderColor: "var(--hex-devtools-scoped, #89b4fa)",
+    color: "var(--hex-devtools-scoped, #89b4fa)",
   },
   forked: {
-    backgroundColor: "var(--hex-devtools-request, #fab387)",
-    color: "#1e1e2e",
+    backgroundColor: "rgba(250, 179, 135, 0.15)",
+    borderColor: "var(--hex-devtools-request, #fab387)",
+    color: "var(--hex-devtools-request, #fab387)",
   },
   isolated: {
-    backgroundColor: "#f38ba8",
-    color: "#1e1e2e",
+    backgroundColor: "rgba(243, 139, 168, 0.15)",
+    borderColor: "#f38ba8",
+    color: "#f38ba8",
   },
 };
 
@@ -725,6 +729,30 @@ export function getInheritanceModeBadgeStyle(
       return baseStyle;
   }
 }
+
+// =============================================================================
+// Async Badge Styles
+// =============================================================================
+
+/**
+ * Styles for async factory badge.
+ *
+ * Uses outline style (like inheritance mode) to distinguish from lifetime badges.
+ * Purple color indicates async services that require initialization.
+ */
+export const asyncBadgeStyle: CSSProperties = {
+  fontSize: "9px",
+  fontWeight: 600,
+  padding: "1px 4px",
+  borderRadius: "3px",
+  textTransform: "uppercase",
+  letterSpacing: "0.3px",
+  marginLeft: "4px",
+  border: "1px solid",
+  backgroundColor: "rgba(203, 166, 247, 0.15)",
+  borderColor: "#cba6f7",
+  color: "#cba6f7",
+};
 
 // =============================================================================
 // Utility Functions

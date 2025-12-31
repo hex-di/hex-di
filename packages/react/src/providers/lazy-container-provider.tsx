@@ -1,5 +1,5 @@
 /**
- * LazyContainerProvider with Compound Components.
+ * HexDiLazyContainerProvider with Compound Components.
  *
  * This module provides a lazy-loading container provider that handles deferred
  * graph loading via LazyContainer. The graph is loaded on-demand, showing
@@ -95,17 +95,19 @@ GlobalLazyContainerContext.displayName = "HexDI.GlobalLazyContainerContext";
  *
  * @example
  * ```tsx
- * <LazyContainerProvider lazyContainer={lazyPlugin}>
- *   <LazyContainerProvider.Loading>
+ * <HexDiLazyContainerProvider lazyContainer={lazyPlugin}>
+ *   <HexDiLazyContainerProvider.Loading>
  *     <LoadingSpinner />
- *   </LazyContainerProvider.Loading>
- * </LazyContainerProvider>
+ *   </HexDiLazyContainerProvider.Loading>
+ * </HexDiLazyContainerProvider>
  * ```
  */
 function Loading({ children }: LazyContainerLoadingProps): ReactNode {
   const context = useContext(GlobalLazyContainerContext);
   if (!context) {
-    throw new Error("LazyContainerProvider.Loading must be used within LazyContainerProvider");
+    throw new Error(
+      "HexDiLazyContainerProvider.Loading must be used within HexDiLazyContainerProvider"
+    );
   }
   return context.state.status === "loading" || context.state.status === "pending" ? (
     <>{children}</>
@@ -118,22 +120,24 @@ function Loading({ children }: LazyContainerLoadingProps): ReactNode {
  *
  * @example Static children
  * ```tsx
- * <LazyContainerProvider.Error>
+ * <HexDiLazyContainerProvider.Error>
  *   <div>Something went wrong</div>
- * </LazyContainerProvider.Error>
+ * </HexDiLazyContainerProvider.Error>
  * ```
  *
  * @example Render prop pattern
  * ```tsx
- * <LazyContainerProvider.Error>
+ * <HexDiLazyContainerProvider.Error>
  *   {(error) => <div>Error: {error.message}</div>}
- * </LazyContainerProvider.Error>
+ * </HexDiLazyContainerProvider.Error>
  * ```
  */
 function ErrorComponent({ children }: LazyContainerErrorProps): ReactNode {
   const context = useContext(GlobalLazyContainerContext);
   if (!context) {
-    throw new Error("LazyContainerProvider.Error must be used within LazyContainerProvider");
+    throw new Error(
+      "HexDiLazyContainerProvider.Error must be used within HexDiLazyContainerProvider"
+    );
   }
 
   if (context.state.status !== "error" || !context.state.error) {
@@ -152,17 +156,19 @@ function ErrorComponent({ children }: LazyContainerErrorProps): ReactNode {
  *
  * @example
  * ```tsx
- * <LazyContainerProvider lazyContainer={lazyPlugin}>
- *   <LazyContainerProvider.Ready>
+ * <HexDiLazyContainerProvider lazyContainer={lazyPlugin}>
+ *   <HexDiLazyContainerProvider.Ready>
  *     <PluginUI />
- *   </LazyContainerProvider.Ready>
- * </LazyContainerProvider>
+ *   </HexDiLazyContainerProvider.Ready>
+ * </HexDiLazyContainerProvider>
  * ```
  */
 function Ready({ children }: LazyContainerReadyProps): ReactNode {
   const context = useContext(GlobalLazyContainerContext);
   if (!context) {
-    throw new Error("LazyContainerProvider.Ready must be used within LazyContainerProvider");
+    throw new Error(
+      "HexDiLazyContainerProvider.Ready must be used within HexDiLazyContainerProvider"
+    );
   }
 
   if (context.state.status !== "ready" || !context.state.container) {
@@ -240,7 +246,7 @@ function DefaultError({ error }: { error: Error }): ReactNode {
 // =============================================================================
 
 /**
- * Root LazyContainerProvider component.
+ * Root HexDiLazyContainerProvider component.
  *
  * Handles deferred graph loading via LazyContainer. The graph is loaded
  * on mount (by default) or manually, showing loading/error/ready states.
@@ -255,7 +261,7 @@ function DefaultError({ error }: { error: Error }): ReactNode {
  *
  * @internal
  */
-function LazyContainerProviderRoot<
+function HexDiLazyContainerProviderRoot<
   TProvides extends Port<unknown, string>,
   TExtends extends Port<unknown, string> = never,
   TAsyncPorts extends Port<unknown, string> = never,
@@ -405,7 +411,7 @@ function LazyContainerProviderRoot<
 // =============================================================================
 
 /**
- * LazyContainerProvider component with compound components.
+ * HexDiLazyContainerProvider component with compound components.
  *
  * Handles deferred graph loading via LazyContainer, showing loading/error/ready
  * states. Provides a Compound Component API for customizable state rendering.
@@ -418,44 +424,44 @@ function LazyContainerProviderRoot<
  *   );
  *
  *   return (
- *     <LazyContainerProvider lazyContainer={lazyPlugin}>
- *       <LazyContainerProvider.Loading>
+ *     <HexDiLazyContainerProvider lazyContainer={lazyPlugin}>
+ *       <HexDiLazyContainerProvider.Loading>
  *         <LoadingSpinner />
- *       </LazyContainerProvider.Loading>
+ *       </HexDiLazyContainerProvider.Loading>
  *
- *       <LazyContainerProvider.Error>
+ *       <HexDiLazyContainerProvider.Error>
  *         {(error) => <ErrorDisplay error={error} />}
- *       </LazyContainerProvider.Error>
+ *       </HexDiLazyContainerProvider.Error>
  *
- *       <LazyContainerProvider.Ready>
+ *       <HexDiLazyContainerProvider.Ready>
  *         <PluginUI />
- *       </LazyContainerProvider.Ready>
- *     </LazyContainerProvider>
+ *       </HexDiLazyContainerProvider.Ready>
+ *     </HexDiLazyContainerProvider>
  *   );
  * }
  * ```
  *
  * @example Simple usage with fallback props
  * ```tsx
- * <LazyContainerProvider
+ * <HexDiLazyContainerProvider
  *   lazyContainer={lazyPlugin}
  *   loadingFallback={<LoadingSpinner />}
  *   errorFallback={(error) => <ErrorDisplay error={error} />}
  * >
  *   <PluginUI />
- * </LazyContainerProvider>
+ * </HexDiLazyContainerProvider>
  * ```
  *
  * @example Manual loading (autoLoad=false)
  * ```tsx
- * <LazyContainerProvider lazyContainer={lazyPlugin} autoLoad={false}>
+ * <HexDiLazyContainerProvider lazyContainer={lazyPlugin} autoLoad={false}>
  *   <ManualLoadUI />
- * </LazyContainerProvider>
+ * </HexDiLazyContainerProvider>
  *
  * function ManualLoadUI() {
  *   const { load, isLoading, isLoaded } = useLazyContainerState();
  *
- *   if (isLoaded) return <LazyContainerProvider.Ready><PluginUI /></LazyContainerProvider.Ready>;
+ *   if (isLoaded) return <HexDiLazyContainerProvider.Ready><PluginUI /></HexDiLazyContainerProvider.Ready>;
  *
  *   return (
  *     <button onClick={load} disabled={isLoading}>
@@ -465,7 +471,7 @@ function LazyContainerProviderRoot<
  * }
  * ```
  */
-export const LazyContainerProvider = Object.assign(LazyContainerProviderRoot, {
+export const HexDiLazyContainerProvider = Object.assign(HexDiLazyContainerProviderRoot, {
   Loading,
   Error: ErrorComponent,
   Ready,
@@ -520,7 +526,7 @@ export interface UseLazyContainerStateResult {
 export function useLazyContainerState(): UseLazyContainerStateResult {
   const context = useContext(GlobalLazyContainerContext);
   if (!context) {
-    throw new Error("useLazyContainerState must be used within LazyContainerProvider");
+    throw new Error("useLazyContainerState must be used within HexDiLazyContainerProvider");
   }
 
   return {

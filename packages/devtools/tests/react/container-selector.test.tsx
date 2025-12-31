@@ -52,6 +52,7 @@ function createMockContainer(): InspectableContainer {
     disposed: false,
     singletonMemo: { size: 0, entries: [] },
     childScopes: [],
+    childContainers: [],
     adapterMap: new Map(),
   };
   return {

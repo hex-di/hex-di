@@ -3,25 +3,24 @@
  *
  * Sets up AsyncContainerProvider with the DI container and renders the
  * ChatRoom component. Uses compound components for loading/error states.
- * Includes DevToolsFloating with multi-container support via InspectorPlugin.
+ * Includes HexDiDevTools with multi-container support via InspectorPlugin.
  *
  * @packageDocumentation
  */
 
-// DevTools imports - multi-container support with ContainerRegistryProvider
-import {
-  DevToolsFloating,
-  ContainerRegistryProvider,
-  useRegisterContainer,
-} from "@hex-di/devtools/react";
-import { createContainer, pipe, createPluginWrapper, type Container } from "@hex-di/runtime";
+// DevTools imports - multi-container support with HexDiDevToolsProvider
+import { HexDiDevTools, HexDiDevToolsProvider, useRegisterContainer } from "@hex-di/devtools/react";
+import { createContainer, pipe, createPluginWrapper } from "@hex-di/runtime";
 import { TracingPlugin } from "@hex-di/tracing";
 import { InspectorPlugin } from "@hex-di/inspector";
 
 import { AsyncContainerProvider, ContainerProvider } from "./di/hooks.js";
 import { appGraph } from "./di/graph.js";
-import type { AppPorts } from "./di/ports.js";
-import { createPluginChildContainer } from "./di/child-container.js";
+import {
+  createSharedChildContainer,
+  createForkedChildContainer,
+  createIsolatedChildContainer,
+} from "./di/child-container.js";
 import { ChatRoom } from "./components/ChatRoom.js";
 
 // =============================================================================
@@ -46,25 +45,21 @@ const withInspector = createPluginWrapper(InspectorPlugin);
 const container = pipe(createContainer(appGraph), withTracing, withInspector);
 
 /**
- * Create the child container for feature isolation.
+ * Create child containers with different inheritance modes.
  *
- * Child containers now automatically inherit plugins from their parent.
- * This means the pluginContainer will have access to:
+ * Child containers automatically inherit plugins from their parent.
+ * This means each child will have access to:
  * - TracingPlugin: Tracks resolutions in the child container
  * - InspectorPlugin: Enables inspection of child container state
  *
- * Resolutions in the child container will include inheritance metadata:
- * - containerId: "child-1" (auto-generated)
- * - containerKind: "child"
- * - inheritanceMode: "shared" | "forked" | "isolated"
+ * The three inheritance modes demonstrate different behaviors:
+ * - shared: Child shares parent's singleton instances (live reference)
+ * - forked: Child gets a snapshot copy of parent's instances at creation
+ * - isolated: Child creates completely fresh instances, ignoring parent's cache
  */
-const pluginContainer = createPluginChildContainer(container);
-const pluginContainerForProvider = pluginContainer as unknown as Container<
-  AppPorts,
-  never,
-  never,
-  "uninitialized"
->;
+const sharedChild = createSharedChildContainer(container);
+const forkedChild = createForkedChildContainer(container);
+const isolatedChild = createIsolatedChildContainer(container);
 
 // =============================================================================
 // Container Registration Components
@@ -85,16 +80,43 @@ function RootContainerSection({ children }: { readonly children: React.ReactNode
 }
 
 /**
- * Wrapper component that registers the child container with DevTools.
- *
- * With plugin inheritance, child containers automatically inherit plugins
- * from their parent. This means TracingPlugin and InspectorPlugin both
- * track resolutions in the child container.
+ * Wrapper component that registers the shared child container with DevTools.
+ * Shared mode: Child shares parent's singleton instances (live reference).
  */
-function ChildContainerSection({ children }: { readonly children: React.ReactNode }) {
-  useRegisterContainer(pluginContainer, {
-    id: "child-plugin",
-    label: "Plugin Container",
+function SharedChildSection({ children }: { readonly children: React.ReactNode }) {
+  useRegisterContainer(sharedChild, {
+    id: "child-shared",
+    label: "Shared Child",
+    kind: "child",
+    parentId: "root",
+  });
+
+  return <>{children}</>;
+}
+
+/**
+ * Wrapper component that registers the forked child container with DevTools.
+ * Forked mode: Child gets a snapshot copy of parent's instances at creation.
+ */
+function ForkedChildSection({ children }: { readonly children: React.ReactNode }) {
+  useRegisterContainer(forkedChild, {
+    id: "child-forked",
+    label: "Forked Child",
+    kind: "child",
+    parentId: "root",
+  });
+
+  return <>{children}</>;
+}
+
+/**
+ * Wrapper component that registers the isolated child container with DevTools.
+ * Isolated mode: Child creates completely fresh instances, ignoring parent's cache.
+ */
+function IsolatedChildSection({ children }: { readonly children: React.ReactNode }) {
+  useRegisterContainer(isolatedChild, {
+    id: "child-isolated",
+    label: "Isolated Child",
     kind: "child",
     parentId: "root",
   });
@@ -110,11 +132,11 @@ function ChildContainerSection({ children }: { readonly children: React.ReactNod
  * Root application component.
  *
  * Features:
- * - ContainerRegistryProvider for multi-container DevTools support
+ * - HexDiDevToolsProvider for multi-container DevTools support
  * - AsyncContainerProvider wraps the app and initializes async adapters
  * - Compound Components (Loading, Error, Ready) for state-based rendering
  * - ChatRoom is the main application content
- * - DevToolsFloating provides development tools with multi-container selection
+ * - HexDiDevTools provides development tools with multi-container selection
  *
  * @example
  * ```tsx
@@ -131,7 +153,7 @@ function ChildContainerSection({ children }: { readonly children: React.ReactNod
  */
 export function App() {
   return (
-    <ContainerRegistryProvider>
+    <HexDiDevToolsProvider>
       <AsyncContainerProvider container={container}>
         {/* Loading state - shown during async adapter initialization */}
         <AsyncContainerProvider.Loading>
@@ -168,68 +190,100 @@ export function App() {
                 </p>
               </header>
 
-              {/* Grid shows root container and child container side-by-side */}
+              {/* Grid shows root container and 3 child containers with different inheritance modes */}
               <div className="grid gap-6 lg:grid-cols-2">
                 {/* Root Container - registers itself with DevTools */}
                 <RootContainerSection>
-                  <div className="rounded-xl border border-gray-200 bg-white/80 p-4 shadow-lg">
+                  <div className="rounded-xl border border-gray-200 bg-white/80 p-4 shadow-lg h-full">
                     <div className="mb-3 flex items-center justify-between">
-                      <h2 className="text-lg font-semibold text-gray-800">
-                        Root Container (persisted)
-                      </h2>
+                      <h2 className="text-lg font-semibold text-gray-800">Root Container</h2>
                       <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
-                        LocalStorage-backed store
+                        LocalStorage-backed
                       </span>
                     </div>
                     <p className="mb-4 text-sm text-gray-600">
-                      This is the base container defined by the app graph. Messages are persisted
-                      via localStorage to showcase singleton behavior.
+                      Base container with persisted messages via localStorage.
                     </p>
-                    <ChatRoom />
+                    <ChatRoom scopePrefix="root" />
                   </div>
                 </RootContainerSection>
 
-                {/* Child Container - inherits plugins from parent */}
-                <ChildContainerSection>
-                  <ContainerProvider container={pluginContainerForProvider}>
-                    <div className="rounded-xl border border-purple-200 bg-white/80 p-4 shadow-lg">
+                {/* Shared Child - shares parent's singleton instances */}
+                <SharedChildSection>
+                  <ContainerProvider container={sharedChild}>
+                    <div className="rounded-xl border border-green-200 bg-white/80 p-4 shadow-lg h-full">
                       <div className="mb-3 flex items-center justify-between">
-                        <h2 className="text-lg font-semibold text-gray-800">
-                          Child Container (plug-and-play)
-                        </h2>
-                        <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">
-                          In-memory overrides
+                        <h2 className="text-lg font-semibold text-gray-800">Shared Child</h2>
+                        <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                          shared
                         </span>
                       </div>
                       <p className="mb-4 text-sm text-gray-600">
-                        Built from the root via <code>createChild()</code>, this container swaps in
-                        an ephemeral MessageStore and a tagged ChatService to demonstrate feature
-                        isolation without touching the parent graph.
+                        Shares parent&apos;s Logger instance. Changes to Logger are visible to
+                        parent.
                       </p>
-                      <ChatRoom />
+                      <ChatRoom scopePrefix="shared" />
                     </div>
                   </ContainerProvider>
-                </ChildContainerSection>
+                </SharedChildSection>
+
+                {/* Forked Child - snapshot copy of parent's instances */}
+                <ForkedChildSection>
+                  <ContainerProvider container={forkedChild}>
+                    <div className="rounded-xl border border-amber-200 bg-white/80 p-4 shadow-lg h-full">
+                      <div className="mb-3 flex items-center justify-between">
+                        <h2 className="text-lg font-semibold text-gray-800">Forked Child</h2>
+                        <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+                          forked
+                        </span>
+                      </div>
+                      <p className="mb-4 text-sm text-gray-600">
+                        Gets a snapshot copy of Logger at creation time. Isolated from parent
+                        changes.
+                      </p>
+                      <ChatRoom scopePrefix="forked" />
+                    </div>
+                  </ContainerProvider>
+                </ForkedChildSection>
+
+                {/* Isolated Child - fresh instances, ignores parent's cache */}
+                <IsolatedChildSection>
+                  <ContainerProvider container={isolatedChild}>
+                    <div className="rounded-xl border border-red-200 bg-white/80 p-4 shadow-lg h-full">
+                      <div className="mb-3 flex items-center justify-between">
+                        <h2 className="text-lg font-semibold text-gray-800">Isolated Child</h2>
+                        <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
+                          isolated
+                        </span>
+                      </div>
+                      <p className="mb-4 text-sm text-gray-600">
+                        Creates fresh Logger instance, completely independent from parent.
+                      </p>
+                      <ChatRoom scopePrefix="isolated" />
+                    </div>
+                  </ContainerProvider>
+                </IsolatedChildSection>
               </div>
 
               {/* Feature explanation */}
               <footer className="mt-8 text-center text-sm text-gray-500">
                 <p>
-                  This showcase demonstrates singleton, scoped, request, and child container
-                  lifetimes with reactive updates and DevTools integration.
+                  This showcase demonstrates all three inheritance modes: <strong>shared</strong>{" "}
+                  (live reference), <strong>forked</strong> (snapshot copy), and{" "}
+                  <strong>isolated</strong> (fresh instances).
                 </p>
                 <p className="mt-2 text-xs text-gray-400">
-                  DevTools support multi-container inspection with plugin inheritance. Both root and
-                  child containers are tracked via InspectorPlugin.
+                  Use DevTools to inspect each container. The graph view shows inheritance mode
+                  badges and distinguishes own vs inherited services with dashed borders.
                 </p>
               </footer>
             </div>
           </div>
         </AsyncContainerProvider.Ready>
 
-        {/* DevToolsFloating - now with multi-container support via ContainerRegistryProvider */}
-        <DevToolsFloating graph={appGraph} container={container} position="bottom-right" />
+        {/* HexDiDevTools - now with multi-container support via HexDiDevToolsProvider */}
+        <HexDiDevTools graph={appGraph} container={container} position="bottom-right" />
       </AsyncContainerProvider>
-    </ContainerRegistryProvider>
+    </HexDiDevToolsProvider>
   );
 }

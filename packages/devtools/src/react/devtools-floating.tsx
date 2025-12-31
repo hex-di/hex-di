@@ -1,5 +1,5 @@
 /**
- * DevToolsFloating React component for HexDI graph visualization.
+ * HexDiDevTools React component for HexDI graph visualization.
  *
  * Provides a floating toggle button that expands to show the full
  * DevToolsPanel. Follows the TanStack DevTools pattern with a small
@@ -72,7 +72,7 @@ type ResizeEdge = "top" | "bottom" | "left" | "right" | "corner";
 export type DevToolsPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";
 
 /**
- * Props for the DevToolsFloating component.
+ * Props for the HexDiDevTools component.
  *
  * @remarks
  * - `graph` is required and provides the dependency graph data
@@ -81,14 +81,14 @@ export type DevToolsPosition = "bottom-right" | "bottom-left" | "top-right" | "t
  *
  * @example Basic usage
  * ```tsx
- * import { DevToolsFloating } from '@hex-di/devtools/react';
+ * import { HexDiDevTools } from '@hex-di/devtools/react';
  * import { appGraph } from './graph';
  *
  * function App() {
  *   return (
  *     <>
  *       <MainApp />
- *       <DevToolsFloating graph={appGraph} />
+ *       <HexDiDevTools graph={appGraph} />
  *     </>
  *   );
  * }
@@ -96,7 +96,7 @@ export type DevToolsPosition = "bottom-right" | "bottom-left" | "top-right" | "t
  *
  * @example With position and container
  * ```tsx
- * import { DevToolsFloating } from '@hex-di/devtools/react';
+ * import { HexDiDevTools } from '@hex-di/devtools/react';
  * import { appGraph } from './graph';
  * import { container } from './container';
  *
@@ -104,7 +104,7 @@ export type DevToolsPosition = "bottom-right" | "bottom-left" | "top-right" | "t
  *   return (
  *     <>
  *       <MainApp />
- *       <DevToolsFloating
+ *       <HexDiDevTools
  *         graph={appGraph}
  *         container={container}
  *         position="top-left"
@@ -114,7 +114,7 @@ export type DevToolsPosition = "bottom-right" | "bottom-left" | "top-right" | "t
  * }
  * ```
  */
-export interface DevToolsFloatingProps<
+export interface HexDiDevToolsProps<
   TProvides extends Port<unknown, string> = Port<unknown, string>,
   TExtends extends Port<unknown, string> = never,
   TAsyncPorts extends Port<unknown, string> = never,
@@ -257,7 +257,7 @@ function getResizeHandlePosition(position: DevToolsPosition): CSSProperties {
 // =============================================================================
 
 /**
- * DevToolsFloating component for toggle-able DevTools overlay.
+ * HexDiDevTools component for toggle-able DevTools overlay.
  *
  * Renders a small floating toggle button that expands to show the full
  * DevToolsPanel when clicked. The open/closed state is persisted in
@@ -272,14 +272,14 @@ function getResizeHandlePosition(position: DevToolsPosition): CSSProperties {
  *
  * @example Basic usage
  * ```tsx
- * import { DevToolsFloating } from '@hex-di/devtools/react';
+ * import { HexDiDevTools } from '@hex-di/devtools/react';
  * import { appGraph } from './graph';
  *
  * function App() {
  *   return (
  *     <>
  *       <MainApp />
- *       <DevToolsFloating graph={appGraph} position="bottom-right" />
+ *       <HexDiDevTools graph={appGraph} position="bottom-right" />
  *     </>
  *   );
  * }
@@ -288,37 +288,37 @@ function getResizeHandlePosition(position: DevToolsPosition): CSSProperties {
  * @example All corner positions
  * ```tsx
  * // Bottom-right (default)
- * <DevToolsFloating graph={graph} position="bottom-right" />
+ * <HexDiDevTools graph={graph} position="bottom-right" />
  *
  * // Bottom-left
- * <DevToolsFloating graph={graph} position="bottom-left" />
+ * <HexDiDevTools graph={graph} position="bottom-left" />
  *
  * // Top-right
- * <DevToolsFloating graph={graph} position="top-right" />
+ * <HexDiDevTools graph={graph} position="top-right" />
  *
  * // Top-left
- * <DevToolsFloating graph={graph} position="top-left" />
+ * <HexDiDevTools graph={graph} position="top-left" />
  * ```
  */
-export function DevToolsFloating<
+export function HexDiDevTools<
   TProvides extends Port<unknown, string>,
   TExtends extends Port<unknown, string> = never,
   TAsyncPorts extends Port<unknown, string> = never,
   TPhase extends ContainerPhase = ContainerPhase,
->(props: DevToolsFloatingProps<TProvides, TExtends, TAsyncPorts, TPhase>): ReactElement | null {
+>(props: HexDiDevToolsProps<TProvides, TExtends, TAsyncPorts, TPhase>): ReactElement | null {
   // Production mode check - must be before any hooks
   if (typeof process !== "undefined" && process.env?.NODE_ENV === "production") {
     return null;
   }
 
-  return <DevToolsFloatingInner {...props} />;
+  return <HexDiDevToolsInner {...props} />;
 }
 
 /**
  * Inner component containing all hooks and logic.
  * Separated to avoid conditional hook calls in production check.
  */
-function DevToolsFloatingInner<
+function HexDiDevToolsInner<
   TProvides extends Port<unknown, string>,
   TExtends extends Port<unknown, string> = never,
   TAsyncPorts extends Port<unknown, string> = never,
@@ -327,7 +327,7 @@ function DevToolsFloatingInner<
   graph,
   container,
   position = "bottom-right",
-}: DevToolsFloatingProps<TProvides, TExtends, TAsyncPorts, TPhase>): ReactElement {
+}: HexDiDevToolsProps<TProvides, TExtends, TAsyncPorts, TPhase>): ReactElement {
   // State for open/closed panel
   const [isOpen, setIsOpen] = useState(() => getStoredState());
 

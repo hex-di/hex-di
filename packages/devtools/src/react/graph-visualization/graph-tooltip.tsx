@@ -83,6 +83,60 @@ export function GraphTooltip({
         </span>
       </div>
 
+      {/* Origin (only shown for child containers) */}
+      {node.origin !== undefined && (
+        <div style={tooltipStyles.row}>
+          <span style={tooltipStyles.label}>Origin</span>
+          <span
+            style={{
+              ...tooltipStyles.value,
+              textTransform: "capitalize",
+              color:
+                node.origin === "inherited"
+                  ? "var(--hex-devtools-text-muted, #a6adc8)"
+                  : "var(--hex-devtools-text, #cdd6f4)",
+            }}
+          >
+            {node.origin}
+          </span>
+        </div>
+      )}
+
+      {/* Factory Kind */}
+      <div style={tooltipStyles.row}>
+        <span style={tooltipStyles.label}>Factory</span>
+        <span
+          style={{
+            ...tooltipStyles.value,
+            textTransform: "capitalize",
+            color: node.factoryKind === "async" ? "#cba6f7" : "var(--hex-devtools-text, #cdd6f4)",
+          }}
+        >
+          {node.factoryKind ?? "sync"}
+        </span>
+      </div>
+
+      {/* Inheritance Mode (only for inherited services) */}
+      {node.inheritanceMode !== undefined && (
+        <div style={tooltipStyles.row}>
+          <span style={tooltipStyles.label}>Inheritance</span>
+          <span
+            style={{
+              ...tooltipStyles.value,
+              textTransform: "capitalize",
+              color:
+                node.inheritanceMode === "shared"
+                  ? "#89b4fa"
+                  : node.inheritanceMode === "forked"
+                    ? "#fab387"
+                    : "#f38ba8",
+            }}
+          >
+            {node.inheritanceMode}
+          </span>
+        </div>
+      )}
+
       {/* Dependencies */}
       <div style={tooltipStyles.row}>
         <span style={tooltipStyles.label}>Dependencies</span>

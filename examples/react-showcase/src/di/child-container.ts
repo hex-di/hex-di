@@ -110,12 +110,41 @@ const PluginChildGraph = GraphBuilder.create()
   .buildFragment();
 
 /**
- * Builds the child container used in the React showcase.
+ * Builds a child container with "shared" inheritance mode (default).
+ * Child shares parent's singleton instances - mutations are visible to both.
  *
  * @param parent - The root/tracing container created from the app graph
  */
-export function createPluginChildContainer(
+export function createSharedChildContainer(
   parent: Container<AppPorts, never, AppAsyncPorts, ContainerPhase>
-): Container<AppPorts, never, AppAsyncPorts, ContainerPhase> {
+): Container<AppPorts, never, AppAsyncPorts, "initialized"> {
   return parent.createChild(PluginChildGraph);
+}
+
+/**
+ * Builds a child container with "forked" inheritance mode.
+ * Child gets a snapshot copy of parent's instances at creation time.
+ *
+ * @param parent - The root/tracing container created from the app graph
+ */
+export function createForkedChildContainer(
+  parent: Container<AppPorts, never, AppAsyncPorts, ContainerPhase>
+): Container<AppPorts, never, AppAsyncPorts, "initialized"> {
+  return parent.createChild(PluginChildGraph, {
+    Logger: "forked",
+  });
+}
+
+/**
+ * Builds a child container with "isolated" inheritance mode.
+ * Child creates completely fresh instances, ignoring parent's cache.
+ *
+ * @param parent - The root/tracing container created from the app graph
+ */
+export function createIsolatedChildContainer(
+  parent: Container<AppPorts, never, AppAsyncPorts, ContainerPhase>
+): Container<AppPorts, never, AppAsyncPorts, "initialized"> {
+  return parent.createChild(PluginChildGraph, {
+    Logger: "isolated",
+  });
 }

@@ -226,9 +226,10 @@ export type ContainerMembers<
    * Scoped services are created once per scope and shared within that scope.
    * The returned scope has the effective provides (`TProvides | TExtends`).
    *
+   * @param name - Optional custom name for the scope (for DevTools identification)
    * @returns A new Scope instance
    */
-  createScope(): Scope<TProvides | TExtends, TAsyncPorts, TPhase, TPlugins>;
+  createScope(name?: string): Scope<TProvides | TExtends, TAsyncPorts, TPhase, TPlugins>;
 
   /**
    * Creates a child container from a child graph.
@@ -518,9 +519,10 @@ export type ScopeMembers<
    * The returned scope inherits singletons from the root container
    * and scoped instances from this scope (if configured).
    *
+   * @param name - Optional custom name for the scope (for DevTools identification)
    * @returns A new Scope instance
    */
-  createScope(): Scope<TProvides, TAsyncPorts, TPhase, TPlugins>;
+  createScope(name?: string): Scope<TProvides, TAsyncPorts, TPhase, TPlugins>;
 
   /**
    * Disposes the scope and all scoped instances.

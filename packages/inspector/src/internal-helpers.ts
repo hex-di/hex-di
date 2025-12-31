@@ -185,7 +185,7 @@ function buildChildSnapshot(
     kind: "child",
     phase: phase as "initialized" | "disposing" | "disposed",
     parentId: "unknown",
-    inheritanceMode: "shared",
+    inheritanceModes: new Map(),
     singletons: base.singletons,
     scopes: base.scopes,
     isDisposed: base.isDisposed,

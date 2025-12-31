@@ -5,4 +5,5 @@
  */
 
 export * from "./adt.js";
+export * from "./container-scope-tree.js";
 export * from "./inspectable-container.js";

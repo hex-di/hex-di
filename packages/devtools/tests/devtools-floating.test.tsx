@@ -15,7 +15,7 @@ import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import React from "react";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
-import { DevToolsFloating } from "../src/react/devtools-floating.js";
+import { HexDiDevTools } from "../src/react/devtools-floating.js";
 
 // =============================================================================
 // Test Fixtures
@@ -50,10 +50,7 @@ function createTestGraph() {
     factory: () => ({ query: () => ({}) }),
   });
 
-  return GraphBuilder.create()
-    .provide(LoggerAdapter)
-    .provide(DatabaseAdapter)
-    .build();
+  return GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
 }
 
 // =============================================================================
@@ -113,7 +110,7 @@ describe("DevToolsFloating", () => {
   it("renders toggle button by default", () => {
     const graph = createTestGraph();
 
-    render(<DevToolsFloating graph={graph} />);
+    render(<HexDiDevTools graph={graph} />);
 
     // Should render the toggle button
     const toggleButton = screen.getByTestId("devtools-floating-toggle");
@@ -125,7 +122,7 @@ describe("DevToolsFloating", () => {
   it("clicking toggle expands to full panel", () => {
     const graph = createTestGraph();
 
-    render(<DevToolsFloating graph={graph} />);
+    render(<HexDiDevTools graph={graph} />);
 
     // Initially panel should not be visible
     expect(screen.queryByTestId("devtools-panel")).toBeNull();
@@ -148,7 +145,7 @@ describe("DevToolsFloating", () => {
   it("position prop affects placement - bottom-right (default)", () => {
     const graph = createTestGraph();
 
-    render(<DevToolsFloating graph={graph} position="bottom-right" />);
+    render(<HexDiDevTools graph={graph} position="bottom-right" />);
 
     const container = screen.getByTestId("devtools-floating-container");
     expect(container.style.bottom).toBe("16px");
@@ -158,7 +155,7 @@ describe("DevToolsFloating", () => {
   it("position prop affects placement - bottom-left", () => {
     const graph = createTestGraph();
 
-    render(<DevToolsFloating graph={graph} position="bottom-left" />);
+    render(<HexDiDevTools graph={graph} position="bottom-left" />);
 
     const container = screen.getByTestId("devtools-floating-container");
     expect(container.style.bottom).toBe("16px");
@@ -168,7 +165,7 @@ describe("DevToolsFloating", () => {
   it("position prop affects placement - top-right", () => {
     const graph = createTestGraph();
 
-    render(<DevToolsFloating graph={graph} position="top-right" />);
+    render(<HexDiDevTools graph={graph} position="top-right" />);
 
     const container = screen.getByTestId("devtools-floating-container");
     expect(container.style.top).toBe("16px");
@@ -178,7 +175,7 @@ describe("DevToolsFloating", () => {
   it("position prop affects placement - top-left", () => {
     const graph = createTestGraph();
 
-    render(<DevToolsFloating graph={graph} position="top-left" />);
+    render(<HexDiDevTools graph={graph} position="top-left" />);
 
     const container = screen.getByTestId("devtools-floating-container");
     expect(container.style.top).toBe("16px");
@@ -188,17 +185,14 @@ describe("DevToolsFloating", () => {
   it("localStorage state persistence - saves open state", () => {
     const graph = createTestGraph();
 
-    render(<DevToolsFloating graph={graph} />);
+    render(<HexDiDevTools graph={graph} />);
 
     // Open the panel
     const toggleButton = screen.getByTestId("devtools-floating-toggle");
     fireEvent.click(toggleButton);
 
     // Should save to localStorage
-    expect(localStorageMock.setItem).toHaveBeenCalledWith(
-      "hex-di-devtools-open",
-      "true"
-    );
+    expect(localStorageMock.setItem).toHaveBeenCalledWith("hex-di-devtools-open", "true");
   });
 
   it("localStorage state persistence - restores open state on mount", () => {
@@ -207,7 +201,7 @@ describe("DevToolsFloating", () => {
     // Pre-set localStorage value before mounting
     localStorageMock._preset("hex-di-devtools-open", "true");
 
-    render(<DevToolsFloating graph={graph} />);
+    render(<HexDiDevTools graph={graph} />);
 
     // Panel should be open due to localStorage state
     expect(screen.getByTestId("devtools-panel")).toBeDefined();
@@ -219,23 +213,20 @@ describe("DevToolsFloating", () => {
     // Start with open state
     localStorageMock._preset("hex-di-devtools-open", "true");
 
-    render(<DevToolsFloating graph={graph} />);
+    render(<HexDiDevTools graph={graph} />);
 
     // Close the panel
     const closeButton = screen.getByTestId("devtools-floating-close");
     fireEvent.click(closeButton);
 
     // Should save closed state to localStorage
-    expect(localStorageMock.setItem).toHaveBeenCalledWith(
-      "hex-di-devtools-open",
-      "false"
-    );
+    expect(localStorageMock.setItem).toHaveBeenCalledWith("hex-di-devtools-open", "false");
   });
 
   it("DevToolsPanel is rendered when expanded with correct props", () => {
     const graph = createTestGraph();
 
-    render(<DevToolsFloating graph={graph} />);
+    render(<HexDiDevTools graph={graph} />);
 
     // Open the panel
     const toggleButton = screen.getByTestId("devtools-floating-toggle");
@@ -277,7 +268,7 @@ describe("DevToolsFloating production mode", () => {
 
     const graph = createTestGraph();
 
-    const { container } = render(<DevToolsFloating graph={graph} />);
+    const { container } = render(<HexDiDevTools graph={graph} />);
 
     // Should render nothing (container should be empty)
     expect(container.firstChild).toBeNull();
@@ -311,7 +302,7 @@ describe("DevToolsFloating edge cases", () => {
   it("renders with empty graph", () => {
     const graph = GraphBuilder.create().build();
 
-    render(<DevToolsFloating graph={graph} />);
+    render(<HexDiDevTools graph={graph} />);
 
     // Should render the toggle button even with empty graph
     expect(screen.getByTestId("devtools-floating-toggle")).toBeDefined();
@@ -327,7 +318,7 @@ describe("DevToolsFloating edge cases", () => {
   it("default position is bottom-right when not specified", () => {
     const graph = createTestGraph();
 
-    render(<DevToolsFloating graph={graph} />);
+    render(<HexDiDevTools graph={graph} />);
 
     const container = screen.getByTestId("devtools-floating-container");
     expect(container.style.bottom).toBe("16px");

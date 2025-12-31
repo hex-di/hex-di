@@ -17,7 +17,7 @@ import { createPort } from "@hex-di/ports";
 import { ContainerBrand, ScopeBrand } from "@hex-di/runtime";
 import type { Container, Scope } from "@hex-di/runtime";
 import { MissingProviderError } from "../src/errors.js";
-import { ContainerProvider, ScopeProvider } from "../src/providers/index.js";
+import { HexDiContainerProvider, HexDiScopeProvider } from "../src/providers/index.js";
 import { createComponent } from "../src/factories/create-component.js";
 
 // =============================================================================
@@ -130,9 +130,9 @@ describe("createComponent", () => {
     });
 
     render(
-      <ContainerProvider container={container}>
+      <HexDiContainerProvider container={container}>
         <TestComponent />
-      </ContainerProvider>
+      </HexDiContainerProvider>
     );
 
     expect(screen.getByTestId("logger-name").textContent).toBe("container-Logger");
@@ -155,9 +155,9 @@ describe("createComponent", () => {
     });
 
     render(
-      <ContainerProvider container={container}>
+      <HexDiContainerProvider container={container}>
         <TestComponent />
-      </ContainerProvider>
+      </HexDiContainerProvider>
     );
 
     expect(screen.getByTestId("logger-name").textContent).toBe("container-Logger");
@@ -178,11 +178,11 @@ describe("createComponent", () => {
     });
 
     render(
-      <ContainerProvider container={container}>
-        <ScopeProvider scope={scope}>
+      <HexDiContainerProvider container={container}>
+        <HexDiScopeProvider scope={scope}>
           <TestComponent />
-        </ScopeProvider>
-      </ContainerProvider>
+        </HexDiScopeProvider>
+      </HexDiContainerProvider>
     );
 
     expect(screen.getByTestId("logger-name").textContent).toBe("scope-Logger");
@@ -234,9 +234,9 @@ describe("createComponent props", () => {
     });
 
     render(
-      <ContainerProvider container={container}>
+      <HexDiContainerProvider container={container}>
         <TestComponent userId="user-123" />
-      </ContainerProvider>
+      </HexDiContainerProvider>
     );
 
     expect(screen.getByTestId("logger-name").textContent).toBe("container-Logger");
@@ -259,9 +259,9 @@ describe("createComponent props", () => {
     });
 
     render(
-      <ContainerProvider container={container}>
+      <HexDiContainerProvider container={container}>
         <TestComponent name="test" count={42} />
-      </ContainerProvider>
+      </HexDiContainerProvider>
     );
 
     expect(screen.getByTestId("name").textContent).toBe("test");
@@ -289,9 +289,9 @@ describe("createComponent with empty requires", () => {
     });
 
     render(
-      <ContainerProvider container={container}>
+      <HexDiContainerProvider container={container}>
         <TestComponent message="Hello World" />
-      </ContainerProvider>
+      </HexDiContainerProvider>
     );
 
     expect(screen.getByTestId("message").textContent).toBe("Hello World");
@@ -312,9 +312,9 @@ describe("createComponent with empty requires", () => {
     });
 
     render(
-      <ContainerProvider container={container}>
+      <HexDiContainerProvider container={container}>
         <TestComponent />
-      </ContainerProvider>
+      </HexDiContainerProvider>
     );
 
     expect(screen.getByTestId("component").textContent).toBe("Rendered");

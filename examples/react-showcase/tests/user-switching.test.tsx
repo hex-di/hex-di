@@ -98,7 +98,7 @@ describe("User Switching", () => {
       .override(mockConfig)
       .build();
     const aliceContainer = createContainer(aliceGraph);
-    const aliceScope = aliceContainer.createScope();
+    const aliceScope = aliceContainer.createScope("alice-scope");
     const aliceSession = aliceScope.resolve(UserSessionPort);
     expect(aliceSession.user.name).toBe("Alice");
     void aliceScope.dispose();
@@ -111,7 +111,7 @@ describe("User Switching", () => {
       .override(mockConfig)
       .build();
     const bobContainer = createContainer(bobGraph);
-    const bobScope = bobContainer.createScope();
+    const bobScope = bobContainer.createScope("bob-scope");
     const bobSession = bobScope.resolve(UserSessionPort);
     expect(bobSession.user.name).toBe("Bob");
     void bobScope.dispose();

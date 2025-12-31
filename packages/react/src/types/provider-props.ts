@@ -2,7 +2,7 @@
  * Provider component props for @hex-di/react.
  *
  * This module exports all provider component prop types used by
- * ContainerProvider, ScopeProvider, AutoScopeProvider, and AsyncContainerProvider.
+ * HexDiContainerProvider, HexDiScopeProvider, HexDiAutoScopeProvider, and HexDiAsyncContainerProvider.
  *
  * @packageDocumentation
  */
@@ -13,15 +13,15 @@ import type { Container } from "@hex-di/runtime";
 import type { Resolver } from "./core.js";
 
 // =============================================================================
-// ContainerProvider Props
+// HexDiContainerProvider Props
 // =============================================================================
 
 /**
- * Props for the ContainerProvider component.
+ * Props for the HexDiContainerProvider component.
  *
  * @typeParam TProvides - Union of Port types that the container can resolve
  */
-export interface ContainerProviderProps<TProvides extends Port<unknown, string>> {
+export interface HexDiContainerProviderProps<TProvides extends Port<unknown, string>> {
   /**
    * The pre-created Container instance to provide to the React tree.
    */
@@ -34,19 +34,19 @@ export interface ContainerProviderProps<TProvides extends Port<unknown, string>>
 }
 
 // =============================================================================
-// ScopeProvider Props
+// HexDiScopeProvider Props
 // =============================================================================
 
 /**
- * Props for the ScopeProvider component.
+ * Props for the HexDiScopeProvider component.
  *
  * @typeParam TProvides - Union of Port types that the scope can resolve
  *
  * @remarks
  * Accepts Resolver<TProvides> which is satisfied by both Container and Scope.
- * This allows passing the result of useScope() directly to ScopeProvider.
+ * This allows passing the result of useScope() directly to HexDiScopeProvider.
  */
-export interface ScopeProviderProps<TProvides extends Port<unknown, string>> {
+export interface HexDiScopeProviderProps<TProvides extends Port<unknown, string>> {
   /**
    * The externally managed resolver (scope or container) to provide to the React tree.
    * Accepts any Resolver<TProvides> - typically a Scope from useScope() or createScope().
@@ -60,13 +60,19 @@ export interface ScopeProviderProps<TProvides extends Port<unknown, string>> {
 }
 
 // =============================================================================
-// AutoScopeProvider Props
+// HexDiAutoScopeProvider Props
 // =============================================================================
 
 /**
- * Props for the AutoScopeProvider component.
+ * Props for the HexDiAutoScopeProvider component.
  */
-export interface AutoScopeProviderProps {
+export interface HexDiAutoScopeProviderProps {
+  /**
+   * Optional custom name for the scope (for DevTools identification).
+   * If not provided, an auto-generated name like "scope-0" will be used.
+   */
+  readonly name?: string;
+
   /**
    * React children that will resolve services from the auto-managed scope.
    */
@@ -74,16 +80,16 @@ export interface AutoScopeProviderProps {
 }
 
 // =============================================================================
-// AsyncContainerProvider Props
+// HexDiAsyncContainerProvider Props
 // =============================================================================
 
 /**
- * Props for the AsyncContainerProvider component.
+ * Props for the HexDiAsyncContainerProvider component.
  *
  * @typeParam TProvides - Union of Port types that the container can resolve
  * @typeParam TAsyncPorts - Union of Port types that require async initialization
  */
-export interface AsyncContainerProviderProps<
+export interface HexDiAsyncContainerProviderProps<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string> = Port<unknown, string>,
 > {
@@ -114,39 +120,39 @@ export interface AsyncContainerProviderProps<
 }
 
 /**
- * Props for the AsyncContainerProvider.Loading compound component.
+ * Props for the HexDiAsyncContainerProvider.Loading compound component.
  */
-export interface AsyncContainerLoadingProps {
+export interface HexDiAsyncContainerLoadingProps {
   readonly children: ReactNode;
 }
 
 /**
- * Props for the AsyncContainerProvider.Error compound component.
+ * Props for the HexDiAsyncContainerProvider.Error compound component.
  * Supports both static children and render prop pattern.
  */
-export interface AsyncContainerErrorProps {
+export interface HexDiAsyncContainerErrorProps {
   readonly children: ReactNode | ((error: Error) => ReactNode);
 }
 
 /**
- * Props for the AsyncContainerProvider.Ready compound component.
+ * Props for the HexDiAsyncContainerProvider.Ready compound component.
  */
-export interface AsyncContainerReadyProps {
+export interface HexDiAsyncContainerReadyProps {
   readonly children: ReactNode;
 }
 
 /**
- * Type for the AsyncContainerProvider component with compound components.
+ * Type for the HexDiAsyncContainerProvider component with compound components.
  *
  * @typeParam TProvides - Union of Port types that the container can resolve
  * @typeParam TAsyncPorts - Union of Port types that require async initialization
  */
-export interface AsyncContainerProviderComponent<
+export interface HexDiAsyncContainerProviderComponent<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string> = Port<unknown, string>,
 > {
-  (props: AsyncContainerProviderProps<TProvides, TAsyncPorts>): ReactNode;
-  Loading: ComponentType<AsyncContainerLoadingProps>;
-  Error: ComponentType<AsyncContainerErrorProps>;
-  Ready: ComponentType<AsyncContainerReadyProps>;
+  (props: HexDiAsyncContainerProviderProps<TProvides, TAsyncPorts>): ReactNode;
+  Loading: ComponentType<HexDiAsyncContainerLoadingProps>;
+  Error: ComponentType<HexDiAsyncContainerErrorProps>;
+  Ready: ComponentType<HexDiAsyncContainerReadyProps>;
 }

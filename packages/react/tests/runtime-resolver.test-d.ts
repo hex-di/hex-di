@@ -276,8 +276,8 @@ describe("edge cases", () => {
         (port: import("@hex-di/ports").Port<unknown, string>) => Promise<unknown>
       >();
 
-      // createScope returns RuntimeResolver
-      expectTypeOf(resolver.createScope).toEqualTypeOf<() => RuntimeResolver>();
+      // createScope accepts optional name and returns RuntimeResolver
+      expectTypeOf(resolver.createScope).toEqualTypeOf<(name?: string) => RuntimeResolver>();
 
       // dispose returns Promise<void>
       expectTypeOf(resolver.dispose).toEqualTypeOf<() => Promise<void>>();

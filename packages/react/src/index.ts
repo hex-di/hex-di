@@ -12,8 +12,8 @@
  * - **Factory Pattern**: createTypedHooks captures TProvides at creation time,
  *   avoiding global type registry and enabling multiple isolated integrations.
  *
- * - **Provider Components**: ContainerProvider for root container access,
- *   ScopeProvider for manual scope management, AutoScopeProvider for automatic
+ * - **Provider Components**: HexDiContainerProvider for root container access,
+ *   HexDiScopeProvider for manual scope management, HexDiAutoScopeProvider for automatic
  *   scope lifecycle tied to React component lifecycle.
  *
  * - **SSR Compatible**: No global state - each createTypedHooks call creates
@@ -32,14 +32,14 @@
  * type AppPorts = typeof LoggerPort;
  *
  * // Create typed React integration
- * const { ContainerProvider, usePort } = createTypedHooks<AppPorts>();
+ * const { HexDiContainerProvider, usePort } = createTypedHooks<AppPorts>();
  *
  * // Use in your React app
  * function App() {
  *   return (
- *     <ContainerProvider container={container}>
+ *     <HexDiContainerProvider container={container}>
  *       <MyComponent />
- *     </ContainerProvider>
+ *     </HexDiContainerProvider>
  *   );
  * }
  *
@@ -53,10 +53,10 @@
  * ```typescript
  * function UserPage() {
  *   return (
- *     <AutoScopeProvider>
+ *     <HexDiAutoScopeProvider>
  *       <UserProfile />
  *       <UserSettings />
- *     </AutoScopeProvider>
+ *     </HexDiAutoScopeProvider>
  *   );
  * }
  * ```
@@ -87,22 +87,22 @@ export { createTypedHooks } from "./factories/index.js";
  * Type definitions for the React integration.
  *
  * @see {@link TypedReactIntegration} - Return type of createTypedHooks
- * @see {@link ContainerProviderProps} - Props for ContainerProvider
- * @see {@link ScopeProviderProps} - Props for ScopeProvider
- * @see {@link AutoScopeProviderProps} - Props for AutoScopeProvider
+ * @see {@link HexDiContainerProviderProps} - Props for HexDiContainerProvider
+ * @see {@link HexDiScopeProviderProps} - Props for HexDiScopeProvider
+ * @see {@link HexDiAutoScopeProviderProps} - Props for HexDiAutoScopeProvider
  * @see {@link Resolver} - Type-safe resolver interface for Container/Scope
  * @see {@link ToResolver} - Utility to extract Resolver from Container/Scope
  */
 export type {
   TypedReactIntegration,
-  ContainerProviderProps,
-  ScopeProviderProps,
-  AutoScopeProviderProps,
-  AsyncContainerProviderProps,
-  AsyncContainerProviderComponent,
-  AsyncContainerLoadingProps,
-  AsyncContainerErrorProps,
-  AsyncContainerReadyProps,
+  HexDiContainerProviderProps,
+  HexDiScopeProviderProps,
+  HexDiAutoScopeProviderProps,
+  HexDiAsyncContainerProviderProps,
+  HexDiAsyncContainerProviderComponent,
+  HexDiAsyncContainerLoadingProps,
+  HexDiAsyncContainerErrorProps,
+  HexDiAsyncContainerReadyProps,
   LazyContainerProviderProps,
   LazyContainerProviderComponent,
   LazyContainerLoadingProps,
@@ -118,17 +118,21 @@ export type {
 // =============================================================================
 
 /**
- * Global ContainerProvider component that uses the shared React context.
+ * Global HexDiContainerProvider component that uses the shared React context.
  *
  * This is exported for use cases where a global provider is needed, such as
  * testing utilities. For application code, prefer using `createTypedHooks()`
  * which provides better type safety.
  *
- * @see {@link ContainerProvider} - Provider component documentation
- * @see {@link ScopeProvider} - Manual scope management
- * @see {@link AutoScopeProvider} - Automatic scope lifecycle
+ * @see {@link HexDiContainerProvider} - Provider component documentation
+ * @see {@link HexDiScopeProvider} - Manual scope management
+ * @see {@link HexDiAutoScopeProvider} - Automatic scope lifecycle
  */
-export { ContainerProvider, ScopeProvider, AutoScopeProvider } from "./providers/index.js";
+export {
+  HexDiContainerProvider,
+  HexDiScopeProvider,
+  HexDiAutoScopeProvider,
+} from "./providers/index.js";
 
 /**
  * ReactiveScopeProvider for external scope lifecycle management.
@@ -146,18 +150,18 @@ export { ReactiveScopeProvider } from "./providers/index.js";
 export type { ReactiveScopeProviderProps } from "./providers/index.js";
 
 /**
- * Global AsyncContainerProvider component for async container initialization.
+ * Global HexDiAsyncContainerProvider component for async container initialization.
  *
  * This is exported for use cases where a global provider is needed, such as
  * testing utilities. For application code, prefer using `createTypedHooks()`
  * which provides better type safety.
  *
- * @see {@link AsyncContainerProvider} - Provider component documentation
+ * @see {@link HexDiAsyncContainerProvider} - Provider component documentation
  */
-export { AsyncContainerProvider, useAsyncContainerState } from "./providers/index.js";
+export { HexDiAsyncContainerProvider, useAsyncContainerState } from "./providers/index.js";
 
 /**
- * LazyContainerProvider for deferred graph loading.
+ * HexDiLazyContainerProvider for deferred graph loading.
  *
  * This provider handles lazy-loaded child containers, showing loading/error/ready
  * states. Useful for:
@@ -165,11 +169,11 @@ export { AsyncContainerProvider, useAsyncContainerState } from "./providers/inde
  * - Optional Features: Load feature graphs only when needed
  * - Progressive Loading: Defer non-critical services
  *
- * @see {@link LazyContainerProvider} - Provider component documentation
+ * @see {@link HexDiLazyContainerProvider} - Provider component documentation
  * @see {@link LazyContainerProviderProps} - Props type
  * @see {@link useLazyContainerState} - Hook for accessing loading state
  */
-export { LazyContainerProvider, useLazyContainerState } from "./providers/index.js";
+export { HexDiLazyContainerProvider, useLazyContainerState } from "./providers/index.js";
 export type { UseLazyContainerStateResult } from "./providers/index.js";
 
 // =============================================================================

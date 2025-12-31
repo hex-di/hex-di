@@ -9,14 +9,14 @@
 export type { Resolver, ToResolver } from "./core.js";
 
 export type {
-  ContainerProviderProps,
-  ScopeProviderProps,
-  AutoScopeProviderProps,
-  AsyncContainerProviderProps,
-  AsyncContainerLoadingProps,
-  AsyncContainerErrorProps,
-  AsyncContainerReadyProps,
-  AsyncContainerProviderComponent,
+  HexDiContainerProviderProps,
+  HexDiScopeProviderProps,
+  HexDiAutoScopeProviderProps,
+  HexDiAsyncContainerProviderProps,
+  HexDiAsyncContainerLoadingProps,
+  HexDiAsyncContainerErrorProps,
+  HexDiAsyncContainerReadyProps,
+  HexDiAsyncContainerProviderComponent,
 } from "./provider-props.js";
 
 export type { TypedReactIntegration } from "./factory.js";

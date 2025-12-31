@@ -1,5 +1,5 @@
 /**
- * AsyncContainerProvider with React Suspense and Compound Components.
+ * HexDiAsyncContainerProvider with React Suspense and Compound Components.
  *
  * This module provides an async-aware container provider that automatically
  * initializes containers with async adapters before making them available
@@ -75,11 +75,11 @@ interface AsyncContainerContextValue {
 }
 
 /**
- * Props for the AsyncContainerProvider component.
+ * Props for the HexDiAsyncContainerProvider component.
  *
  * @typeParam TProvides - Union of Port types that the container can resolve
  */
-export interface AsyncContainerProviderProps<TProvides extends Port<unknown, string>> {
+export interface HexDiAsyncContainerProviderProps<TProvides extends Port<unknown, string>> {
   /**
    * The uninitialized Container instance to initialize and provide.
    * Must be created with createContainer() and NOT yet initialized.
@@ -109,7 +109,7 @@ export interface AsyncContainerProviderProps<TProvides extends Port<unknown, str
 /**
  * Props for the Loading compound component.
  */
-export interface AsyncContainerLoadingProps {
+export interface HexDiAsyncContainerLoadingProps {
   readonly children: ReactNode;
 }
 
@@ -117,14 +117,14 @@ export interface AsyncContainerLoadingProps {
  * Props for the Error compound component.
  * Supports both static children and render prop pattern.
  */
-export interface AsyncContainerErrorProps {
+export interface HexDiAsyncContainerErrorProps {
   readonly children: ReactNode | ((error: Error) => ReactNode);
 }
 
 /**
  * Props for the Ready compound component.
  */
-export interface AsyncContainerReadyProps {
+export interface HexDiAsyncContainerReadyProps {
   readonly children: ReactNode;
 }
 
@@ -144,17 +144,19 @@ GlobalAsyncContainerContext.displayName = "HexDI.GlobalAsyncContainerContext";
  *
  * @example
  * ```tsx
- * <AsyncContainerProvider container={container}>
- *   <AsyncContainerProvider.Loading>
+ * <HexDiAsyncContainerProvider container={container}>
+ *   <HexDiAsyncContainerProvider.Loading>
  *     <LoadingSpinner />
- *   </AsyncContainerProvider.Loading>
- * </AsyncContainerProvider>
+ *   </HexDiAsyncContainerProvider.Loading>
+ * </HexDiAsyncContainerProvider>
  * ```
  */
-function Loading({ children }: AsyncContainerLoadingProps): ReactNode {
+function Loading({ children }: HexDiAsyncContainerLoadingProps): ReactNode {
   const context = useContext(GlobalAsyncContainerContext);
   if (!context) {
-    throw new Error("AsyncContainerProvider.Loading must be used within AsyncContainerProvider");
+    throw new Error(
+      "HexDiAsyncContainerProvider.Loading must be used within HexDiAsyncContainerProvider"
+    );
   }
   return context.state.status === "loading" ? <>{children}</> : null;
 }
@@ -165,22 +167,24 @@ function Loading({ children }: AsyncContainerLoadingProps): ReactNode {
  *
  * @example Static children
  * ```tsx
- * <AsyncContainerProvider.Error>
+ * <HexDiAsyncContainerProvider.Error>
  *   <div>Something went wrong</div>
- * </AsyncContainerProvider.Error>
+ * </HexDiAsyncContainerProvider.Error>
  * ```
  *
  * @example Render prop pattern
  * ```tsx
- * <AsyncContainerProvider.Error>
+ * <HexDiAsyncContainerProvider.Error>
  *   {(error) => <div>Error: {error.message}</div>}
- * </AsyncContainerProvider.Error>
+ * </HexDiAsyncContainerProvider.Error>
  * ```
  */
-function ErrorComponent({ children }: AsyncContainerErrorProps): ReactNode {
+function ErrorComponent({ children }: HexDiAsyncContainerErrorProps): ReactNode {
   const context = useContext(GlobalAsyncContainerContext);
   if (!context) {
-    throw new Error("AsyncContainerProvider.Error must be used within AsyncContainerProvider");
+    throw new Error(
+      "HexDiAsyncContainerProvider.Error must be used within HexDiAsyncContainerProvider"
+    );
   }
 
   if (context.state.status !== "error" || !context.state.error) {
@@ -199,17 +203,19 @@ function ErrorComponent({ children }: AsyncContainerErrorProps): ReactNode {
  *
  * @example
  * ```tsx
- * <AsyncContainerProvider container={container}>
- *   <AsyncContainerProvider.Ready>
+ * <HexDiAsyncContainerProvider container={container}>
+ *   <HexDiAsyncContainerProvider.Ready>
  *     <MyApp />
- *   </AsyncContainerProvider.Ready>
- * </AsyncContainerProvider>
+ *   </HexDiAsyncContainerProvider.Ready>
+ * </HexDiAsyncContainerProvider>
  * ```
  */
-function Ready({ children }: AsyncContainerReadyProps): ReactNode {
+function Ready({ children }: HexDiAsyncContainerReadyProps): ReactNode {
   const context = useContext(GlobalAsyncContainerContext);
   if (!context) {
-    throw new Error("AsyncContainerProvider.Ready must be used within AsyncContainerProvider");
+    throw new Error(
+      "HexDiAsyncContainerProvider.Ready must be used within HexDiAsyncContainerProvider"
+    );
   }
 
   if (context.state.status !== "ready" || !context.state.container) {
@@ -287,7 +293,7 @@ function DefaultError({ error }: { error: Error }): ReactNode {
 // =============================================================================
 
 /**
- * Root AsyncContainerProvider component.
+ * Root HexDiAsyncContainerProvider component.
  *
  * Automatically initializes the container with async adapters before
  * making it available to React components. Supports two usage modes:
@@ -300,12 +306,12 @@ function DefaultError({ error }: { error: Error }): ReactNode {
  *
  * @internal
  */
-function AsyncContainerProviderRoot<TProvides extends Port<unknown, string>>({
+function HexDiAsyncContainerProviderRoot<TProvides extends Port<unknown, string>>({
   container,
   children,
   loadingFallback,
   errorFallback,
-}: AsyncContainerProviderProps<TProvides>): ReactNode {
+}: HexDiAsyncContainerProviderProps<TProvides>): ReactNode {
   // Convert container to RuntimeContainer for type-safe initialization.
   // This uses the bivariant interface from @hex-di/runtime.
   const runtimeContainer: RuntimeContainer = toRuntimeContainerWithInit(container);
@@ -412,7 +418,7 @@ function AsyncContainerProviderRoot<TProvides extends Port<unknown, string>>({
 // =============================================================================
 
 /**
- * AsyncContainerProvider component with compound components.
+ * HexDiAsyncContainerProvider component with compound components.
  *
  * Automatically initializes containers with async adapters before making
  * them available to React components. Provides a Compound Component API
@@ -422,45 +428,45 @@ function AsyncContainerProviderRoot<TProvides extends Port<unknown, string>>({
  * ```tsx
  * function App() {
  *   return (
- *     <AsyncContainerProvider container={container}>
- *       <AsyncContainerProvider.Loading>
+ *     <HexDiAsyncContainerProvider container={container}>
+ *       <HexDiAsyncContainerProvider.Loading>
  *         <LoadingSpinner />
- *       </AsyncContainerProvider.Loading>
+ *       </HexDiAsyncContainerProvider.Loading>
  *
- *       <AsyncContainerProvider.Error>
+ *       <HexDiAsyncContainerProvider.Error>
  *         {(error) => <ErrorDisplay error={error} />}
- *       </AsyncContainerProvider.Error>
+ *       </HexDiAsyncContainerProvider.Error>
  *
- *       <AsyncContainerProvider.Ready>
+ *       <HexDiAsyncContainerProvider.Ready>
  *         <MyApp />
- *       </AsyncContainerProvider.Ready>
- *     </AsyncContainerProvider>
+ *       </HexDiAsyncContainerProvider.Ready>
+ *     </HexDiAsyncContainerProvider>
  *   );
  * }
  * ```
  *
  * @example Simple usage with fallback props
  * ```tsx
- * <AsyncContainerProvider
+ * <HexDiAsyncContainerProvider
  *   container={container}
  *   loadingFallback={<LoadingSpinner />}
  *   errorFallback={(error) => <ErrorDisplay error={error} />}
  * >
  *   <MyApp />
- * </AsyncContainerProvider>
+ * </HexDiAsyncContainerProvider>
  * ```
  */
-export const AsyncContainerProvider = Object.assign(AsyncContainerProviderRoot, {
+export const HexDiAsyncContainerProvider = Object.assign(HexDiAsyncContainerProviderRoot, {
   Loading,
   Error: ErrorComponent,
   Ready,
 });
 
 /**
- * Type for the AsyncContainerProvider component with compound components.
+ * Type for the HexDiAsyncContainerProvider component with compound components.
  */
-export type AsyncContainerProviderComponent<TProvides extends Port<unknown, string>> = {
-  (props: AsyncContainerProviderProps<TProvides>): ReactNode;
+export type HexDiAsyncContainerProviderComponent<TProvides extends Port<unknown, string>> = {
+  (props: HexDiAsyncContainerProviderProps<TProvides>): ReactNode;
   Loading: typeof Loading;
   Error: typeof ErrorComponent;
   Ready: typeof Ready;
@@ -479,7 +485,7 @@ export type AsyncContainerProviderComponent<TProvides extends Port<unknown, stri
  * @returns The current initialization state.
  *   If you need typed access to the container, use the Ready compound
  *   component which provides the container through context.
- * @throws If used outside AsyncContainerProvider
+ * @throws If used outside HexDiAsyncContainerProvider
  *
  * @example
  * ```tsx
@@ -492,7 +498,7 @@ export type AsyncContainerProviderComponent<TProvides extends Port<unknown, stri
 export function useAsyncContainerState(): AsyncContainerState {
   const context = useContext(GlobalAsyncContainerContext);
   if (!context) {
-    throw new Error("useAsyncContainerState must be used within AsyncContainerProvider");
+    throw new Error("useAsyncContainerState must be used within HexDiAsyncContainerProvider");
   }
   return context.state;
 }

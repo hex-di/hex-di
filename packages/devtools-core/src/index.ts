@@ -36,6 +36,9 @@ export type {
   // Re-exported from @hex-di/graph
   Lifetime,
   FactoryKind,
+  // Inheritance types
+  InheritanceMode,
+  ServiceOrigin,
   // Graph types
   ExportedNode,
   ExportedEdge,

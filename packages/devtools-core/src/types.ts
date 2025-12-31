@@ -18,6 +18,21 @@ export type { FactoryKind } from "@hex-di/graph";
  */
 export type Lifetime = GraphLifetime;
 
+/**
+ * Inheritance mode for child containers.
+ * - shared: Child shares parent's singleton instance (live reference)
+ * - forked: Child gets a snapshot copy of parent's instance
+ * - isolated: Child creates its own fresh instance
+ */
+export type InheritanceMode = "shared" | "forked" | "isolated";
+
+/**
+ * Origin of a service in a container.
+ * - own: Service is defined in the current container (local adapter)
+ * - inherited: Service is inherited from a parent container
+ */
+export type ServiceOrigin = "own" | "inherited";
+
 // =============================================================================
 // Exported Graph Types
 // =============================================================================
@@ -47,6 +62,10 @@ export interface ExportedNode {
   readonly lifetime: Lifetime;
   /** Factory kind - sync or async */
   readonly factoryKind: FactoryKind;
+  /** Origin of this service - own (defined locally) or inherited (from parent) */
+  readonly origin?: ServiceOrigin;
+  /** Inheritance mode for inherited services in child containers (shared, forked, isolated) */
+  readonly inheritanceMode?: InheritanceMode;
 }
 
 /**
@@ -467,7 +486,8 @@ export interface ChildContainerSnapshot extends ContainerSnapshotBase {
   readonly kind: "child";
   readonly phase: "initialized" | "disposing" | "disposed";
   readonly parentId: string;
-  readonly inheritanceMode: "shared" | "forked" | "isolated";
+  /** Per-port inheritance modes (port name -> mode). Defaults to 'shared' if not specified. */
+  readonly inheritanceModes: ReadonlyMap<string, InheritanceMode>;
 }
 
 /**
@@ -511,7 +531,7 @@ export interface ScopeSnapshot extends ContainerSnapshotBase {
  *       console.log(`Loaded: ${snapshot.isLoaded}`);
  *       break;
  *     case "child":
- *       console.log(`Inheritance: ${snapshot.inheritanceMode}`);
+ *       console.log(`Inheritance modes: ${snapshot.inheritanceModes.size} configured`);
  *       break;
  *     case "scope":
  *       console.log(`Scope ID: ${snapshot.scopeId}`);

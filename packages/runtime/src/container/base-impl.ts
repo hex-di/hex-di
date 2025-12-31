@@ -14,7 +14,8 @@ import {
   ScopeRequiredError,
   AsyncInitializationRequiredError,
 } from "../common/errors.js";
-import type { ContainerInternalState } from "../inspector/types.js";
+import type { ContainerInternalState, InternalAccessible } from "../inspector/types.js";
+import { INTERNAL_ACCESS } from "../inspector/symbols.js";
 import type { RuntimeAdapter, RuntimeAdapterFor, DisposableChild } from "./internal-types.js";
 import { isAdapterForPort } from "./internal-types.js";
 import { HooksRunner } from "./hooks-runner.js";
@@ -309,6 +310,12 @@ export abstract class BaseContainerImpl<
     this.lifecycleManager.registerChildScope(scope);
   }
 
+  unregisterChildScope(
+    scope: ScopeImpl<TProvides | TExtends, TAsyncPorts, "uninitialized" | "initialized">
+  ): void {
+    this.lifecycleManager.unregisterChildScope(scope);
+  }
+
   getSingletonMemo(): MemoMap {
     return this.singletonMemo;
   }
@@ -342,10 +349,22 @@ export abstract class BaseContainerImpl<
       return typedScope.getInternalState();
     });
 
+    const childContainerSnapshots = this.lifecycleManager.getChildContainerSnapshots(container => {
+      // Child containers are stored as wrapper objects, not impl instances.
+      // Access internal state via INTERNAL_ACCESS symbol protocol.
+      const accessible = container as unknown as InternalAccessible;
+      const accessor = accessible[INTERNAL_ACCESS];
+      if (typeof accessor !== "function") {
+        throw new Error("Child container does not expose INTERNAL_ACCESS accessor");
+      }
+      return accessor();
+    });
+
     const snapshot: ContainerInternalState = {
       disposed: this.lifecycleManager.isDisposed,
       singletonMemo: createMemoMapSnapshot(this.singletonMemo),
       childScopes: Object.freeze(childScopeSnapshots),
+      childContainers: Object.freeze(childContainerSnapshots),
       adapterMap: this.createAdapterMapSnapshot(),
       containerId: "root",
     };

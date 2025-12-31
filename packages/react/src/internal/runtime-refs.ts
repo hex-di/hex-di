@@ -189,7 +189,7 @@ interface ResolverLike {
   resolve(port: Port<unknown, string>): unknown;
   resolveAsync(port: Port<unknown, string>): Promise<unknown>;
   has(port: Port<unknown, string>): boolean;
-  createScope(): ResolverLike;
+  createScope(name?: string): ResolverLike;
   dispose(): Promise<void>;
   readonly isDisposed: boolean;
 }

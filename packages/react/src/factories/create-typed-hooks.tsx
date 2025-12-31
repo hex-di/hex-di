@@ -22,14 +22,14 @@ import type { ContainerInternalState } from "@hex-di/runtime";
 import { INTERNAL_ACCESS } from "@hex-di/runtime";
 import type {
   TypedReactIntegration,
-  ContainerProviderProps,
-  ScopeProviderProps,
-  AutoScopeProviderProps,
-  AsyncContainerProviderProps,
-  AsyncContainerProviderComponent,
-  AsyncContainerLoadingProps,
-  AsyncContainerErrorProps,
-  AsyncContainerReadyProps,
+  HexDiContainerProviderProps,
+  HexDiScopeProviderProps,
+  HexDiAutoScopeProviderProps,
+  HexDiAsyncContainerProviderProps,
+  HexDiAsyncContainerProviderComponent,
+  HexDiAsyncContainerLoadingProps,
+  HexDiAsyncContainerErrorProps,
+  HexDiAsyncContainerReadyProps,
   Resolver,
 } from "../types/index.js";
 import { MissingProviderError } from "../errors.js";
@@ -80,7 +80,7 @@ interface AsyncContainerContextValue<TProvides extends Port<unknown, string>> {
 interface ContainerLike<TProvides extends Port<unknown, string>> {
   resolve<P extends TProvides>(port: P): InferService<P>;
   resolveAsync<P extends TProvides>(port: P): Promise<InferService<P>>;
-  createScope(): Resolver<TProvides>;
+  createScope(name?: string): Resolver<TProvides>;
   dispose(): Promise<void>;
   has(port: Port<unknown, string>): boolean;
   readonly isDisposed: boolean;
@@ -111,7 +111,9 @@ function isChildContainer<TProvides extends Port<unknown, string>>(
   const accessor = container[INTERNAL_ACCESS];
   if (typeof accessor === "function") {
     const internalState = accessor();
-    return internalState.parentState !== undefined;
+    // Child containers have containerId like "child-1", "child-2", etc.
+    // Root containers have containerId "root"
+    return internalState.containerId !== "root";
   }
 
   // For mock containers without INTERNAL_ACCESS (tests), return false
@@ -170,7 +172,7 @@ interface ResolverContextValue<TProvides extends Port<unknown, string>> {
 interface ResolvableMethods {
   readonly resolve: (port: Port<unknown, string>) => unknown;
   readonly resolveAsync: (port: Port<unknown, string>) => Promise<unknown>;
-  readonly createScope: () => ResolvableMethods;
+  readonly createScope: (name?: string) => ResolvableMethods;
   readonly dispose: () => Promise<void>;
   readonly isDisposed: boolean;
 }
@@ -191,7 +193,7 @@ function extractMethods(resolver: unknown): ResolvableMethods {
   return {
     resolve: port => r.resolve(port),
     resolveAsync: port => r.resolveAsync(port),
-    createScope: () => extractMethods(r.createScope()),
+    createScope: (name?: string) => extractMethods(r.createScope(name)),
     dispose: () => r.dispose(),
     get isDisposed() {
       return r.isDisposed;
@@ -215,7 +217,7 @@ function toResolver<TProvides extends Port<unknown, string>>(
     resolve: <P extends TProvides>(port: P) => methods.resolve(port) as InferService<P>,
     resolveAsync: <P extends TProvides>(port: P) =>
       methods.resolveAsync(port) as Promise<InferService<P>>,
-    createScope: () => toResolver<TProvides>(methods.createScope()),
+    createScope: (name?: string) => toResolver<TProvides>(methods.createScope(name)),
     dispose: () => methods.dispose(),
     get isDisposed() {
       return methods.isDisposed;
@@ -316,7 +318,7 @@ export function createTypedHooks<
   function ContainerProvider({
     container,
     children,
-  }: ContainerProviderProps<TProvides>): ReactNode {
+  }: HexDiContainerProviderProps<TProvides>): ReactNode {
     // Detect nested ContainerProvider
     const existingContext = useContext(ContainerContext);
 
@@ -329,7 +331,9 @@ export function createTypedHooks<
     ];
     if (typeof accessor === "function") {
       const internalState = accessor();
-      containerIsChild = internalState.parentState !== undefined;
+      // Child containers have containerId like "child-1", "child-2", etc.
+      // Root containers have containerId "root"
+      containerIsChild = internalState.containerId !== "root";
     }
     // For mock containers without INTERNAL_ACCESS (tests), containerIsChild stays false
 
@@ -362,7 +366,7 @@ export function createTypedHooks<
   /**
    * ScopeProvider implementation for this typed integration.
    */
-  function ScopeProvider({ scope, children }: ScopeProviderProps<TProvides>): ReactNode {
+  function ScopeProvider({ scope, children }: HexDiScopeProviderProps<TProvides>): ReactNode {
     // Create resolver context value with the provided scope
     const resolverContextValue: ResolverContextValue<TProvides> = {
       getResolver: () => scope,
@@ -381,7 +385,7 @@ export function createTypedHooks<
    * the scope while useEffect cleanup disposes it. Using useRef with
    * isDisposed check allows recreation of disposed scopes.
    */
-  function AutoScopeProvider({ children }: AutoScopeProviderProps): ReactNode {
+  function AutoScopeProvider({ name, children }: HexDiAutoScopeProviderProps): ReactNode {
     // Get current resolver context - must be inside ContainerProvider
     const resolverContext = useContext(ResolverContext);
 
@@ -396,7 +400,7 @@ export function createTypedHooks<
     // Create or recreate scope if needed during initial render
     // This handles StrictMode where scope may have been disposed during unmount
     if (scopeRef.current === null || scopeRef.current.isDisposed) {
-      scopeRef.current = resolverContext.getResolver().createScope();
+      scopeRef.current = resolverContext.getResolver().createScope(name);
     }
 
     // Dispose scope on unmount using useEffect (SSR compatible)
@@ -418,7 +422,7 @@ export function createTypedHooks<
       getResolver: () => {
         // Recreate scope if it was disposed (StrictMode unmount/remount)
         if (scopeRef.current === null || scopeRef.current.isDisposed) {
-          scopeRef.current = resolverContext.getResolver().createScope();
+          scopeRef.current = resolverContext.getResolver().createScope(name);
         }
         return scopeRef.current;
       },
@@ -443,7 +447,7 @@ export function createTypedHooks<
   /**
    * Loading compound component - renders children while initializing.
    */
-  function Loading({ children }: AsyncContainerLoadingProps): ReactNode {
+  function Loading({ children }: HexDiAsyncContainerLoadingProps): ReactNode {
     const context = useContext(AsyncContainerContext);
     if (!context) {
       throw new Error("AsyncContainerProvider.Loading must be used within AsyncContainerProvider");
@@ -454,7 +458,7 @@ export function createTypedHooks<
   /**
    * Error compound component - renders children when initialization fails.
    */
-  function ErrorComponent({ children }: AsyncContainerErrorProps): ReactNode {
+  function ErrorComponent({ children }: HexDiAsyncContainerErrorProps): ReactNode {
     const context = useContext(AsyncContainerContext);
     if (!context) {
       throw new Error("AsyncContainerProvider.Error must be used within AsyncContainerProvider");
@@ -473,7 +477,7 @@ export function createTypedHooks<
   /**
    * Ready compound component - renders children when container is initialized.
    */
-  function Ready({ children }: AsyncContainerReadyProps): ReactNode {
+  function Ready({ children }: HexDiAsyncContainerReadyProps): ReactNode {
     const context = useContext(AsyncContainerContext);
     if (!context) {
       throw new Error("AsyncContainerProvider.Ready must be used within AsyncContainerProvider");
@@ -547,7 +551,7 @@ export function createTypedHooks<
     children,
     loadingFallback,
     errorFallback,
-  }: AsyncContainerProviderProps<TProvides>): ReactNode {
+  }: HexDiAsyncContainerProviderProps<TProvides>): ReactNode {
     const [state, setState] = useState<AsyncContainerState<TProvides>>({
       status: "loading",
       container: null,
@@ -634,7 +638,7 @@ export function createTypedHooks<
   }
 
   // Assemble AsyncContainerProvider with compound components
-  const AsyncContainerProvider: AsyncContainerProviderComponent<TProvides> = Object.assign(
+  const AsyncContainerProvider: HexDiAsyncContainerProviderComponent<TProvides> = Object.assign(
     AsyncContainerProviderRoot,
     {
       Loading,

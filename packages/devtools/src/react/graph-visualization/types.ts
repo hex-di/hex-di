@@ -7,7 +7,8 @@
  * @packageDocumentation
  */
 
-import type { Lifetime } from "@hex-di/graph";
+import type { Lifetime, FactoryKind } from "@hex-di/graph";
+import type { InheritanceMode } from "@hex-di/devtools-core";
 
 // =============================================================================
 // Layout Types
@@ -31,6 +32,8 @@ export interface PositionedNode {
   readonly label: string;
   /** Service lifetime */
   readonly lifetime: Lifetime;
+  /** Factory kind - sync or async */
+  readonly factoryKind?: FactoryKind;
   /** Center X position */
   readonly x: number;
   /** Center Y position */
@@ -39,6 +42,10 @@ export interface PositionedNode {
   readonly width: number;
   /** Node height */
   readonly height: number;
+  /** Service origin - own (defined locally) or inherited (from parent) */
+  readonly origin?: "own" | "inherited";
+  /** Inheritance mode for inherited services (shared, forked, isolated) */
+  readonly inheritanceMode?: InheritanceMode;
 }
 
 /**
@@ -141,6 +148,12 @@ export interface DependencyGraphProps {
     readonly id: string;
     readonly label: string;
     readonly lifetime: Lifetime;
+    /** Factory kind - sync or async */
+    readonly factoryKind?: FactoryKind;
+    /** Service origin - own or inherited */
+    readonly origin?: "own" | "inherited";
+    /** Inheritance mode for inherited services */
+    readonly inheritanceMode?: InheritanceMode;
   }>;
   /** The graph edges */
   readonly edges: ReadonlyArray<{

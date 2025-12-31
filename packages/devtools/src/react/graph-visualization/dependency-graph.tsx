@@ -7,19 +7,9 @@
  * @packageDocumentation
  */
 
-import React, {
-  type ReactElement,
-  useMemo,
-  useState,
-  useCallback,
-  useRef,
-} from "react";
+import React, { type ReactElement, useMemo, useState, useCallback, useRef } from "react";
 import type { DependencyGraphProps } from "./types.js";
-import {
-  computeLayout,
-  findConnectedNodes,
-  findConnectedEdges,
-} from "./graph-layout.js";
+import { computeLayout, findConnectedNodes, findConnectedEdges } from "./graph-layout.js";
 import { GraphRenderer } from "./graph-renderer.js";
 import { GraphTooltip } from "./graph-tooltip.js";
 
@@ -106,10 +96,14 @@ export function DependencyGraph({
     [onNodeHover]
   );
 
-  // Handle node click
+  // Handle node click (empty nodeId = background click to deselect)
   const handleNodeClick = useCallback(
     (nodeId: string) => {
-      setSelectedNodeId((prev) => (prev === nodeId ? null : nodeId));
+      if (nodeId === "") {
+        setSelectedNodeId(null);
+        return;
+      }
+      setSelectedNodeId(prev => (prev === nodeId ? null : nodeId));
       onNodeClick?.(nodeId);
     },
     [onNodeClick]
@@ -128,7 +122,7 @@ export function DependencyGraph({
   // Get hovered node data for tooltip
   const hoveredNode = useMemo(() => {
     if (hoveredNodeId === null) return null;
-    return layout.nodes.find((n) => n.id === hoveredNodeId) ?? null;
+    return layout.nodes.find(n => n.id === hoveredNodeId) ?? null;
   }, [hoveredNodeId, layout.nodes]);
 
   // Count dependencies and dependents for tooltip

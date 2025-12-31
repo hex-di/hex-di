@@ -18,3 +18,7 @@ export { useContainerList, type UseContainerListResult } from "./use-container-l
 export { useContainerInspector, useContainerInspectorStrict } from "./use-container-inspector.js";
 export { useInspectorSnapshot, type UseInspectorSnapshotResult } from "./use-inspector-snapshot.js";
 export { useContainerPhase, type UseContainerPhaseResult } from "./use-container-phase.js";
+export {
+  useContainerScopeTree,
+  type UseContainerScopeTreeResult,
+} from "./use-container-scope-tree.js";

@@ -167,7 +167,7 @@ export function createChildContainerWrapper<
       impl.resolveAsync(port),
     has: (port: Port<unknown, string>): boolean => impl.has(port),
     hasAdapter: (port: Port<unknown, string>): boolean => impl.hasAdapter(port),
-    createScope: () => createChildContainerScope(impl),
+    createScope: (name?: string) => createChildContainerScope(impl, name),
     createChild: <
       TChildGraph extends Graph<
         Port<unknown, string>,
@@ -301,6 +301,8 @@ export function createChildContainerWrapper<
 
 /**
  * Creates a scope from a unified container implementation.
+ * @param impl - The child container implementation
+ * @param name - Optional name for the scope (used for DevTools identification)
  * @internal
  */
 export function createChildContainerScope<
@@ -308,11 +310,15 @@ export function createChildContainerScope<
   TExtends extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
 >(
-  impl: ChildContainerImpl<TProvides, TExtends, TAsyncPorts>
+  impl: ChildContainerImpl<TProvides, TExtends, TAsyncPorts>,
+  name?: string
 ): Scope<TProvides | TExtends, TAsyncPorts, "initialized", readonly []> {
   const scopeImpl = new ScopeImpl<TProvides | TExtends, TAsyncPorts, "initialized">(
     impl,
-    impl.getSingletonMemo()
+    impl.getSingletonMemo(),
+    null, // parentScope
+    () => impl.unregisterChildScope(scopeImpl), // unregister callback for disposal
+    name // scope name
   );
   impl.registerChildScope(scopeImpl);
   return createScopeWrapper(scopeImpl);

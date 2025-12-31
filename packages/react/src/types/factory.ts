@@ -11,10 +11,10 @@ import type { ReactNode } from "react";
 import type { Port, InferService } from "@hex-di/ports";
 import type { Resolver } from "./core.js";
 import type {
-  ContainerProviderProps,
-  ScopeProviderProps,
-  AutoScopeProviderProps,
-  AsyncContainerProviderComponent,
+  HexDiContainerProviderProps,
+  HexDiScopeProviderProps,
+  HexDiAutoScopeProviderProps,
+  HexDiAsyncContainerProviderComponent,
 } from "./provider-props.js";
 
 // =============================================================================
@@ -80,7 +80,7 @@ export interface TypedReactIntegration<TProvides extends Port<unknown, string>> 
    * }
    * ```
    */
-  readonly ContainerProvider: (props: ContainerProviderProps<TProvides>) => ReactNode;
+  readonly ContainerProvider: (props: HexDiContainerProviderProps<TProvides>) => ReactNode;
 
   /**
    * Provider component that overrides the resolver context with a manual scope.
@@ -107,7 +107,7 @@ export interface TypedReactIntegration<TProvides extends Port<unknown, string>> 
    * }
    * ```
    */
-  readonly ScopeProvider: (props: ScopeProviderProps<TProvides>) => ReactNode;
+  readonly ScopeProvider: (props: HexDiScopeProviderProps<TProvides>) => ReactNode;
 
   /**
    * Provider component that automatically manages scope lifecycle.
@@ -136,7 +136,7 @@ export interface TypedReactIntegration<TProvides extends Port<unknown, string>> 
    * }
    * ```
    */
-  readonly AutoScopeProvider: (props: AutoScopeProviderProps) => ReactNode;
+  readonly AutoScopeProvider: (props: HexDiAutoScopeProviderProps) => ReactNode;
 
   /**
    * Provider component that initializes async adapters before making
@@ -170,7 +170,7 @@ export interface TypedReactIntegration<TProvides extends Port<unknown, string>> 
    * </AsyncContainerProvider>
    * ```
    */
-  readonly AsyncContainerProvider: AsyncContainerProviderComponent<TProvides>;
+  readonly AsyncContainerProvider: HexDiAsyncContainerProviderComponent<TProvides>;
 
   // ===========================================================================
   // Resolution Hooks

@@ -18,9 +18,9 @@ import type { Container } from "@hex-di/runtime";
 import { createTypedHooks } from "../src/factories/create-typed-hooks.jsx";
 import type {
   TypedReactIntegration,
-  ContainerProviderProps,
-  ScopeProviderProps,
-  AutoScopeProviderProps,
+  HexDiContainerProviderProps,
+  HexDiScopeProviderProps,
+  HexDiAutoScopeProviderProps,
   Resolver,
 } from "../src/types/index.js";
 
@@ -221,19 +221,19 @@ describe("createTypedHooks preserves TProvides through all hooks", () => {
 
 describe("Container and Scope type parameters flow correctly", () => {
   it("ContainerProvider props accept Container<TProvides>", () => {
-    type Props = ContainerProviderProps<TestProvides>;
+    type Props = HexDiContainerProviderProps<TestProvides>;
 
     expectTypeOf<Props["container"]>().toEqualTypeOf<Container<TestProvides>>();
   });
 
   it("ScopeProvider props accept Resolver<TProvides>", () => {
-    type Props = ScopeProviderProps<TestProvides>;
+    type Props = HexDiScopeProviderProps<TestProvides>;
 
     expectTypeOf<Props["scope"]>().toEqualTypeOf<Resolver<TestProvides>>();
   });
 
   it("AutoScopeProvider props has children", () => {
-    type Props = AutoScopeProviderProps;
+    type Props = HexDiAutoScopeProviderProps;
 
     expectTypeOf<Props>().toHaveProperty("children");
   });
@@ -304,16 +304,16 @@ describe("invalid port error cases", () => {
 // =============================================================================
 
 describe("ContainerProvider type requirements", () => {
-  it("ContainerProviderProps is generic over TProvides", () => {
-    type PropsA = ContainerProviderProps<LoggerPortType>;
-    type PropsB = ContainerProviderProps<DatabasePortType>;
+  it("HexDiContainerProviderProps is generic over TProvides", () => {
+    type PropsA = HexDiContainerProviderProps<LoggerPortType>;
+    type PropsB = HexDiContainerProviderProps<DatabasePortType>;
 
     // Different TProvides should produce different prop types
     expectTypeOf<PropsA>().not.toEqualTypeOf<PropsB>();
   });
 
   it("container prop type is Container<TProvides>", () => {
-    type Props = ContainerProviderProps<TestProvides>;
+    type Props = HexDiContainerProviderProps<TestProvides>;
 
     // The container prop should be Container<TestProvides>
     type ContainerProp = Props["container"];
@@ -329,11 +329,11 @@ describe("ContainerProvider type requirements", () => {
 // =============================================================================
 
 describe("ScopeProvider type requirements", () => {
-  it("ScopeProviderProps is generic over TProvides", () => {
+  it("HexDiScopeProviderProps is generic over TProvides", () => {
     // Different TProvides should produce different prop types
     // Verify by checking that scope property has the correct Resolver type
-    type PropsA = ScopeProviderProps<LoggerPortType>;
-    type PropsB = ScopeProviderProps<DatabasePortType>;
+    type PropsA = HexDiScopeProviderProps<LoggerPortType>;
+    type PropsB = HexDiScopeProviderProps<DatabasePortType>;
 
     // Check that the scope prop types differ by verifying resolve method constraints
     type ResolveA = PropsA["scope"]["resolve"];
@@ -342,7 +342,7 @@ describe("ScopeProvider type requirements", () => {
   });
 
   it("scope prop type is Resolver<TProvides>", () => {
-    type Props = ScopeProviderProps<TestProvides>;
+    type Props = HexDiScopeProviderProps<TestProvides>;
 
     // The scope prop should be Resolver<TestProvides>
     type ScopeProp = Props["scope"];

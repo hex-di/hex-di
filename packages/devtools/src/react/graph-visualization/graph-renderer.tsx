@@ -236,6 +236,17 @@ export function GraphRenderer({
   // Determine if nodes/edges should be dimmed
   const hasHighlight = highlightedNodeIds.size > 0;
 
+  // Handle background click to deselect
+  const handleBackgroundClick = useCallback(
+    (event: React.MouseEvent<SVGSVGElement>) => {
+      // Only deselect if clicking directly on SVG (not on a node)
+      if (event.target === event.currentTarget) {
+        onNodeClick?.("");
+      }
+    },
+    [onNodeClick]
+  );
+
   return (
     <div ref={containerRef} style={graphContainerStyles.wrapper}>
       <svg
@@ -244,6 +255,7 @@ export function GraphRenderer({
           ...graphContainerStyles.svg,
           cursor: "grab",
         }}
+        onClick={handleBackgroundClick}
       >
         <ArrowMarkerDefs id={MARKER_ID} highlightedId={HIGHLIGHTED_MARKER_ID} />
 

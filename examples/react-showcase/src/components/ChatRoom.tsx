@@ -21,6 +21,17 @@ import { NotificationButton } from "./NotificationButton.js";
 
 type UserType = "alice" | "bob";
 
+/**
+ * Props for the ChatRoom component.
+ */
+interface ChatRoomProps {
+  /**
+   * Optional prefix for the scope name to distinguish ChatRooms across containers.
+   * When provided, scope names will be formatted as "{scopePrefix}-{user}-session".
+   */
+  readonly scopePrefix?: string;
+}
+
 // =============================================================================
 // ChatRoom Component
 // =============================================================================
@@ -46,12 +57,17 @@ type UserType = "alice" | "bob";
  * }
  * ```
  */
-export function ChatRoom() {
+export function ChatRoom({ scopePrefix }: ChatRoomProps) {
   // Track current user for scope key - changing this recreates the scope
   const [currentUser, setCurrentUser] = useState<UserType>("alice");
 
   // Scope key includes user to force scope recreation on user switch
   const scopeKey = `user-scope-${currentUser}`;
+
+  // Scope name for DevTools identification
+  const scopeName = scopePrefix
+    ? `${scopePrefix}-${currentUser}-session`
+    : `${currentUser}-session`;
 
   return (
     <div className="mx-auto max-w-2xl rounded-xl bg-white shadow-lg">
@@ -90,8 +106,8 @@ export function ChatRoom() {
         </div>
       </div>
 
-      {/* AutoScopeProvider with key for scope recreation */}
-      <AutoScopeProvider key={scopeKey}>
+      {/* AutoScopeProvider with key for scope recreation and name for DevTools */}
+      <AutoScopeProvider key={scopeKey} name={scopeName}>
         {/* User info section */}
         <div className="border-b border-gray-200 p-4">
           <div className="flex items-center justify-between">

@@ -1,7 +1,7 @@
 /**
- * Tests for LazyContainerProvider component.
+ * Tests for HexDiLazyContainerProvider component.
  *
- * These tests verify that LazyContainerProvider correctly:
+ * These tests verify that HexDiLazyContainerProvider correctly:
  * - Loads lazily on mount (autoLoad=true)
  * - Waits for manual trigger (autoLoad=false)
  * - Shows loading state while loading
@@ -19,8 +19,8 @@ import { render, screen, act, cleanup, waitFor } from "@testing-library/react";
 import { createPort } from "@hex-di/ports";
 import { createAdapter, GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "@hex-di/runtime";
-import { LazyContainerProvider, useLazyContainerState, usePort } from "../src/index.js";
-import { ContainerProvider } from "../src/providers/container-provider.js";
+import { HexDiLazyContainerProvider, useLazyContainerState, usePort } from "../src/index.js";
+import { HexDiContainerProvider } from "../src/providers/container-provider.js";
 
 // =============================================================================
 // Test Fixtures
@@ -93,7 +93,7 @@ function ManualLoadButton() {
 // Tests
 // =============================================================================
 
-describe("LazyContainerProvider", () => {
+describe("HexDiLazyContainerProvider", () => {
   let parentContainer: ReturnType<typeof createParentContainer>;
 
   beforeEach(() => {
@@ -111,16 +111,16 @@ describe("LazyContainerProvider", () => {
       const lazyPlugin = parentContainer.createLazyChild(() => Promise.resolve(pluginGraph));
 
       render(
-        <ContainerProvider container={parentContainer}>
-          <LazyContainerProvider lazyContainer={lazyPlugin}>
-            <LazyContainerProvider.Loading>
+        <HexDiContainerProvider container={parentContainer}>
+          <HexDiLazyContainerProvider lazyContainer={lazyPlugin}>
+            <HexDiLazyContainerProvider.Loading>
               <LoadingUI />
-            </LazyContainerProvider.Loading>
-            <LazyContainerProvider.Ready>
+            </HexDiLazyContainerProvider.Loading>
+            <HexDiLazyContainerProvider.Ready>
               <PluginUI />
-            </LazyContainerProvider.Ready>
-          </LazyContainerProvider>
-        </ContainerProvider>
+            </HexDiLazyContainerProvider.Ready>
+          </HexDiLazyContainerProvider>
+        </HexDiContainerProvider>
       );
 
       // Initially shows loading
@@ -141,19 +141,19 @@ describe("LazyContainerProvider", () => {
       );
 
       render(
-        <ContainerProvider container={parentContainer}>
-          <LazyContainerProvider lazyContainer={lazyPlugin}>
-            <LazyContainerProvider.Loading>
+        <HexDiContainerProvider container={parentContainer}>
+          <HexDiLazyContainerProvider lazyContainer={lazyPlugin}>
+            <HexDiLazyContainerProvider.Loading>
               <LoadingUI />
-            </LazyContainerProvider.Loading>
-            <LazyContainerProvider.Error>
-              {error => <ErrorUI error={error} />}
-            </LazyContainerProvider.Error>
-            <LazyContainerProvider.Ready>
+            </HexDiLazyContainerProvider.Loading>
+            <HexDiLazyContainerProvider.Error>
+              {(error: Error) => <ErrorUI error={error} />}
+            </HexDiLazyContainerProvider.Error>
+            <HexDiLazyContainerProvider.Ready>
               <PluginUI />
-            </LazyContainerProvider.Ready>
-          </LazyContainerProvider>
-        </ContainerProvider>
+            </HexDiLazyContainerProvider.Ready>
+          </HexDiLazyContainerProvider>
+        </HexDiContainerProvider>
       );
 
       // Wait for error to appear
@@ -172,14 +172,14 @@ describe("LazyContainerProvider", () => {
       const lazyPlugin = parentContainer.createLazyChild(() => Promise.resolve(pluginGraph));
 
       render(
-        <ContainerProvider container={parentContainer}>
-          <LazyContainerProvider lazyContainer={lazyPlugin} autoLoad={false}>
+        <HexDiContainerProvider container={parentContainer}>
+          <HexDiLazyContainerProvider lazyContainer={lazyPlugin} autoLoad={false}>
             <ManualLoadButton />
-            <LazyContainerProvider.Ready>
+            <HexDiLazyContainerProvider.Ready>
               <PluginUI />
-            </LazyContainerProvider.Ready>
-          </LazyContainerProvider>
-        </ContainerProvider>
+            </HexDiLazyContainerProvider.Ready>
+          </HexDiLazyContainerProvider>
+        </HexDiContainerProvider>
       );
 
       // Shows load button in pending state
@@ -219,17 +219,17 @@ describe("LazyContainerProvider", () => {
       // StateTracker needs to render in all states, so we put it outside compound components
       // but still inside the provider (using compound mode)
       render(
-        <ContainerProvider container={parentContainer}>
-          <LazyContainerProvider lazyContainer={lazyPlugin} autoLoad={false}>
+        <HexDiContainerProvider container={parentContainer}>
+          <HexDiLazyContainerProvider lazyContainer={lazyPlugin} autoLoad={false}>
             <StateTracker />
-            <LazyContainerProvider.Loading>
+            <HexDiLazyContainerProvider.Loading>
               <ManualLoadButton />
-            </LazyContainerProvider.Loading>
-            <LazyContainerProvider.Ready>
+            </HexDiLazyContainerProvider.Loading>
+            <HexDiLazyContainerProvider.Ready>
               <div data-testid="ready-content">Ready!</div>
-            </LazyContainerProvider.Ready>
-          </LazyContainerProvider>
-        </ContainerProvider>
+            </HexDiLazyContainerProvider.Ready>
+          </HexDiLazyContainerProvider>
+        </HexDiContainerProvider>
       );
 
       expect(screen.getByTestId("state").textContent).toContain("pending");
@@ -257,14 +257,14 @@ describe("LazyContainerProvider", () => {
       const lazyPlugin = parentContainer.createLazyChild(() => Promise.resolve(pluginGraph));
 
       render(
-        <ContainerProvider container={parentContainer}>
-          <LazyContainerProvider
+        <HexDiContainerProvider container={parentContainer}>
+          <HexDiLazyContainerProvider
             lazyContainer={lazyPlugin}
             loadingFallback={<div data-testid="custom-loading">Custom loading...</div>}
           >
             <PluginUI />
-          </LazyContainerProvider>
-        </ContainerProvider>
+          </HexDiLazyContainerProvider>
+        </HexDiContainerProvider>
       );
 
       // Shows custom loading
@@ -282,14 +282,14 @@ describe("LazyContainerProvider", () => {
       );
 
       render(
-        <ContainerProvider container={parentContainer}>
-          <LazyContainerProvider
+        <HexDiContainerProvider container={parentContainer}>
+          <HexDiLazyContainerProvider
             lazyContainer={lazyPlugin}
-            errorFallback={error => <div data-testid="custom-error">{error.message}</div>}
+            errorFallback={(error: Error) => <div data-testid="custom-error">{error.message}</div>}
           >
             <PluginUI />
-          </LazyContainerProvider>
-        </ContainerProvider>
+          </HexDiLazyContainerProvider>
+        </HexDiContainerProvider>
       );
 
       // Wait for error
@@ -308,11 +308,11 @@ describe("LazyContainerProvider", () => {
       );
 
       render(
-        <ContainerProvider container={parentContainer}>
-          <LazyContainerProvider lazyContainer={lazyPlugin}>
+        <HexDiContainerProvider container={parentContainer}>
+          <HexDiLazyContainerProvider lazyContainer={lazyPlugin}>
             <PluginUI />
-          </LazyContainerProvider>
-        </ContainerProvider>
+          </HexDiLazyContainerProvider>
+        </HexDiContainerProvider>
       );
 
       // Should show default loading (contains "Loading")
@@ -334,16 +334,16 @@ describe("LazyContainerProvider", () => {
       await lazyPlugin.load();
 
       render(
-        <ContainerProvider container={parentContainer}>
-          <LazyContainerProvider lazyContainer={lazyPlugin}>
-            <LazyContainerProvider.Loading>
+        <HexDiContainerProvider container={parentContainer}>
+          <HexDiLazyContainerProvider lazyContainer={lazyPlugin}>
+            <HexDiLazyContainerProvider.Loading>
               <LoadingUI />
-            </LazyContainerProvider.Loading>
-            <LazyContainerProvider.Ready>
+            </HexDiLazyContainerProvider.Loading>
+            <HexDiLazyContainerProvider.Ready>
               <PluginUI />
-            </LazyContainerProvider.Ready>
-          </LazyContainerProvider>
-        </ContainerProvider>
+            </HexDiLazyContainerProvider.Ready>
+          </HexDiLazyContainerProvider>
+        </HexDiContainerProvider>
       );
 
       // Should show ready immediately (no loading state)
@@ -364,16 +364,16 @@ describe("LazyContainerProvider", () => {
       await lazyPlugin.dispose();
 
       render(
-        <ContainerProvider container={parentContainer}>
-          <LazyContainerProvider lazyContainer={lazyPlugin}>
-            <LazyContainerProvider.Error>
-              {error => <ErrorUI error={error} />}
-            </LazyContainerProvider.Error>
-            <LazyContainerProvider.Ready>
+        <HexDiContainerProvider container={parentContainer}>
+          <HexDiLazyContainerProvider lazyContainer={lazyPlugin}>
+            <HexDiLazyContainerProvider.Error>
+              {(error: Error) => <ErrorUI error={error} />}
+            </HexDiLazyContainerProvider.Error>
+            <HexDiLazyContainerProvider.Ready>
               <PluginUI />
-            </LazyContainerProvider.Ready>
-          </LazyContainerProvider>
-        </ContainerProvider>
+            </HexDiLazyContainerProvider.Ready>
+          </HexDiLazyContainerProvider>
+        </HexDiContainerProvider>
       );
 
       // Should show error
@@ -394,13 +394,13 @@ describe("LazyContainerProvider", () => {
       }
 
       render(
-        <ContainerProvider container={parentContainer}>
-          <LazyContainerProvider lazyContainer={lazyPlugin}>
-            <LazyContainerProvider.Ready>
+        <HexDiContainerProvider container={parentContainer}>
+          <HexDiLazyContainerProvider lazyContainer={lazyPlugin}>
+            <HexDiLazyContainerProvider.Ready>
               <PluginWithHook />
-            </LazyContainerProvider.Ready>
-          </LazyContainerProvider>
-        </ContainerProvider>
+            </HexDiLazyContainerProvider.Ready>
+          </HexDiLazyContainerProvider>
+        </HexDiContainerProvider>
       );
 
       await waitFor(() => {
@@ -420,13 +420,13 @@ describe("LazyContainerProvider", () => {
       }
 
       render(
-        <ContainerProvider container={parentContainer}>
-          <LazyContainerProvider lazyContainer={lazyPlugin}>
-            <LazyContainerProvider.Ready>
+        <HexDiContainerProvider container={parentContainer}>
+          <HexDiLazyContainerProvider lazyContainer={lazyPlugin}>
+            <HexDiLazyContainerProvider.Ready>
               <ParentServiceAccess />
-            </LazyContainerProvider.Ready>
-          </LazyContainerProvider>
-        </ContainerProvider>
+            </HexDiLazyContainerProvider.Ready>
+          </HexDiLazyContainerProvider>
+        </HexDiContainerProvider>
       );
 
       await waitFor(() => {

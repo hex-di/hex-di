@@ -2,11 +2,11 @@
  * React Testing Library integration for @hex-di/testing.
  *
  * This module provides the `renderWithContainer` helper that wraps React Testing
- * Library's render function with ContainerProvider from @hex-di/react, enabling
+ * Library's render function with HexDiContainerProvider from @hex-di/react, enabling
  * easy testing of React components that use DI hooks.
  *
  * @remarks
- * This module imports the global shared ContainerProvider from @hex-di/react's
+ * This module imports the global shared HexDiContainerProvider from @hex-di/react's
  * internal context module. This ensures that components using the global usePort
  * hook (imported from use-port.js) can resolve services from the provider.
  *
@@ -18,7 +18,7 @@
 
 import React, { type ReactElement } from "react";
 import { render, type RenderOptions, type RenderResult } from "@testing-library/react";
-import { ContainerProvider } from "@hex-di/react";
+import { HexDiContainerProvider } from "@hex-di/react";
 import { createContainer, type Container } from "@hex-di/runtime";
 import type { Graph } from "@hex-di/graph";
 import type { Port } from "@hex-di/ports";
@@ -52,8 +52,9 @@ import type { Port } from "@hex-di/ports";
  * expect(logger.log).toHaveBeenCalledWith('User loaded');
  * ```
  */
-export interface RenderWithContainerResult<TProvides extends Port<unknown, string>>
-  extends RenderResult {
+export interface RenderWithContainerResult<
+  TProvides extends Port<unknown, string>,
+> extends RenderResult {
   /**
    * The DI container created for this render.
    *
@@ -73,10 +74,10 @@ export interface RenderWithContainerResult<TProvides extends Port<unknown, strin
 // =============================================================================
 
 /**
- * Renders a React element with a DI container wrapping it in ContainerProvider.
+ * Renders a React element with a DI container wrapping it in HexDiContainerProvider.
  *
  * This helper combines React Testing Library's `render` with HexDI's
- * `ContainerProvider`, making it easy to test components that use `usePort`
+ * `HexDiContainerProvider`, making it easy to test components that use `usePort`
  * and other DI hooks.
  *
  * @typeParam TProvides - Union of Port types provided by the graph (inferred)
@@ -149,12 +150,10 @@ export function renderWithContainer<TProvides extends Port<unknown, string>>(
   // Create a container from the provided graph
   const diContainer = createContainer(graph);
 
-  // Wrap the element with the global shared ContainerProvider
+  // Wrap the element with the global shared HexDiContainerProvider
   // This uses the same context that the global usePort hook consumes
   const wrappedElement = (
-    <ContainerProvider container={diContainer}>
-      {element}
-    </ContainerProvider>
+    <HexDiContainerProvider container={diContainer}>{element}</HexDiContainerProvider>
   );
 
   // Render using RTL and spread the result

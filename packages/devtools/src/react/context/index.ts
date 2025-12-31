@@ -15,6 +15,6 @@ export {
   type InheritanceMode,
 } from "./container-registry.js";
 export {
-  ContainerRegistryProvider,
-  type ContainerRegistryProviderProps,
+  HexDiDevToolsProvider,
+  type HexDiDevToolsProviderProps,
 } from "./container-registry-provider.js";

@@ -17,7 +17,7 @@ import { createPort } from "@hex-di/ports";
 import { ContainerBrand, ScopeBrand } from "@hex-di/runtime";
 import type { Container, Scope } from "@hex-di/runtime";
 import { MissingProviderError } from "../src/errors.js";
-import { ContainerProvider, ScopeProvider } from "../src/providers/index.js";
+import { HexDiContainerProvider, HexDiScopeProvider } from "../src/providers/index.js";
 import { useDeps } from "../src/hooks/use-deps.js";
 
 // =============================================================================
@@ -154,9 +154,9 @@ describe("useDeps with single dependency", () => {
     }
 
     render(
-      <ContainerProvider container={container}>
+      <HexDiContainerProvider container={container}>
         <TestComponent />
-      </ContainerProvider>
+      </HexDiContainerProvider>
     );
 
     expect(screen.getByTestId("logger-name").textContent).toBe("container-Logger");
@@ -187,9 +187,9 @@ describe("useDeps with multiple dependencies", () => {
     }
 
     render(
-      <ContainerProvider container={container}>
+      <HexDiContainerProvider container={container}>
         <TestComponent />
-      </ContainerProvider>
+      </HexDiContainerProvider>
     );
 
     expect(screen.getByTestId("logger-name").textContent).toBe("container-Logger");
@@ -213,9 +213,9 @@ describe("useDeps with multiple dependencies", () => {
     }
 
     render(
-      <ContainerProvider container={container}>
+      <HexDiContainerProvider container={container}>
         <TestComponent />
-      </ContainerProvider>
+      </HexDiContainerProvider>
     );
 
     expect(screen.getByTestId("logger-name").textContent).toBe("container-Logger");
@@ -243,11 +243,11 @@ describe("useDeps with scope", () => {
     }
 
     render(
-      <ContainerProvider container={container}>
-        <ScopeProvider scope={scope}>
+      <HexDiContainerProvider container={container}>
+        <HexDiScopeProvider scope={scope}>
           <TestComponent />
-        </ScopeProvider>
-      </ContainerProvider>
+        </HexDiScopeProvider>
+      </HexDiContainerProvider>
     );
 
     expect(screen.getByTestId("logger-name").textContent).toBe("scope-Logger");
@@ -301,9 +301,9 @@ describe("useDeps with no arguments", () => {
     }
 
     render(
-      <ContainerProvider container={container}>
+      <HexDiContainerProvider container={container}>
         <TestComponent />
-      </ContainerProvider>
+      </HexDiContainerProvider>
     );
 
     expect(screen.getByTestId("component").textContent).toBe("Rendered");
@@ -333,9 +333,9 @@ describe("useDeps port name keying", () => {
     }
 
     render(
-      <ContainerProvider container={container}>
+      <HexDiContainerProvider container={container}>
         <TestComponent />
-      </ContainerProvider>
+      </HexDiContainerProvider>
     );
 
     // Verify keys match port names

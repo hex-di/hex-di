@@ -251,6 +251,7 @@ export function createInspector(container: InternalAccessible): ContainerInspect
 
   /**
    * Builds the root scope tree from container state.
+   * Recursively includes scopes from child containers.
    */
   function buildContainerScopeTree(state: ContainerInternalState): ScopeTree {
     const totalCount = state.adapterMap.size;
@@ -267,6 +268,7 @@ export function createInspector(container: InternalAccessible): ContainerInspect
 
     const children: ScopeTree[] = [];
 
+    // Direct child scopes
     for (const childState of state.childScopes) {
       children.push(buildScopeTreeNode(childState, scopedAdapterCount));
     }

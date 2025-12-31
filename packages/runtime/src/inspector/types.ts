@@ -11,6 +11,7 @@
 import type { Port } from "@hex-di/ports";
 import type { Lifetime, FactoryKind } from "@hex-di/graph";
 import { INTERNAL_ACCESS } from "./symbols.js";
+import type { InheritanceMode } from "../types.js";
 
 // =============================================================================
 // Container Internal State
@@ -39,6 +40,9 @@ export interface ContainerInternalState {
   /** Array of child scope internal states */
   readonly childScopes: readonly ScopeInternalState[];
 
+  /** Array of child container internal states */
+  readonly childContainers: readonly ContainerInternalState[];
+
   /** Map of port to adapter information */
   readonly adapterMap: ReadonlyMap<Port<unknown, string>, AdapterInfo>;
 
@@ -52,6 +56,13 @@ export interface ContainerInternalState {
 
   /** Unique identifier for this container (e.g., "root", "child-1") */
   readonly containerId: string;
+
+  /**
+   * Per-port inheritance modes for child containers.
+   * Maps port name to inheritance mode (shared, forked, isolated).
+   * Only present for child containers.
+   */
+  readonly inheritanceModes?: ReadonlyMap<string, InheritanceMode>;
 }
 
 /**

@@ -11,13 +11,80 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, type ReactElement } from "react";
 import type { Port } from "@hex-di/ports";
 import type { Container, ContainerPhase } from "@hex-di/runtime";
+import { INTERNAL_ACCESS } from "@hex-di/runtime";
 import type { InspectorAPI } from "@hex-di/inspector";
 import { createInspector } from "../index.js";
 import type { ContainerInspector as RuntimeInspector } from "../index.js";
 import type { ExportedGraph, TracingAPI, ScopeTree, ContainerKind } from "@hex-di/devtools-core";
-import { containerInspectorStyles, getInheritanceModeBadgeStyle } from "./styles.js";
+import type { InspectableContainer } from "./types/inspectable-container.js";
+import { containerInspectorStyles } from "./styles.js";
+import { ContainerScopeHierarchy } from "./container-scope-hierarchy.js";
 import { ScopeHierarchy } from "./scope-hierarchy.js";
+import { useContainerScopeTree } from "./hooks/use-container-scope-tree.js";
+import { useContainerList } from "./hooks/use-container-list.js";
 import { ResolvedServices, type ServiceInfo } from "./resolved-services.js";
+import {
+  buildExportedGraphFromContainer,
+  buildMergedGraphForChild,
+} from "./utils/build-graph-from-container.js";
+
+// =============================================================================
+// Node ID Parsing
+// =============================================================================
+
+/**
+ * Parsed selection from a tree node ID.
+ *
+ * Node IDs follow the format:
+ * - Container: "container:{containerId}"
+ * - Scope: "scope:{containerId}:{scopeId}"
+ */
+interface ParsedSelection {
+  /** The container ID if a container or scope is selected */
+  readonly containerId: string | null;
+  /** The scope ID if a scope is selected (within the container) */
+  readonly scopeId: string | null;
+}
+
+/**
+ * Parses a tree node ID into container and scope IDs.
+ *
+ * @param nodeId - The node ID from tree selection
+ * @returns Parsed container ID and scope ID
+ *
+ * @example Container selection
+ * ```typescript
+ * parseNodeId("container:root")
+ * // Returns: { containerId: "root", scopeId: null }
+ * ```
+ *
+ * @example Scope selection
+ * ```typescript
+ * parseNodeId("scope:root:alice-session")
+ * // Returns: { containerId: "root", scopeId: "alice-session" }
+ * ```
+ */
+function parseNodeId(nodeId: string | null): ParsedSelection {
+  if (nodeId === null) {
+    return { containerId: null, scopeId: null };
+  }
+
+  const parts = nodeId.split(":");
+  const type = parts[0];
+
+  if (type === "container" && parts.length >= 2) {
+    return { containerId: parts[1], scopeId: null };
+  }
+
+  if (type === "scope" && parts.length >= 3) {
+    // Format: "scope:{containerId}:{scopeId}"
+    // Scope ID might contain colons, so join remaining parts
+    return { containerId: parts[1], scopeId: parts.slice(2).join(":") };
+  }
+
+  // Fallback: treat as old-style scope ID (for backwards compatibility)
+  return { containerId: null, scopeId: nodeId };
+}
 
 /**
  * Minimal singleton entry interface for display purposes.
@@ -29,11 +96,6 @@ interface MinimalSingletonEntry {
   readonly resolvedAt?: number;
   readonly resolutionOrder?: number;
 }
-
-/**
- * Inheritance mode for child containers.
- */
-type InheritanceMode = "shared" | "forked" | "isolated";
 
 /**
  * Minimal snapshot interface that captures the common fields between
@@ -52,8 +114,6 @@ interface MinimalSnapshot {
    * Not available when using RuntimeInspector directly.
    */
   readonly kind?: ContainerKind;
-  /** Inheritance mode (only present for child containers) */
-  readonly inheritanceMode?: InheritanceMode;
 }
 
 // =============================================================================
@@ -93,18 +153,13 @@ function normalizeInspector(inspector: InspectorAPI | RuntimeInspector): Normali
       getSnapshot: (): MinimalSnapshot => {
         const snapshot = inspector.getSnapshot();
         // InspectorAPI returns devtools-core ContainerSnapshot (discriminated union)
-        // We extract the fields we need, including kind and inheritanceMode for child containers
-        const base = {
+        // We extract the fields we need
+        return {
           isDisposed: snapshot.isDisposed,
           singletons: snapshot.singletons,
           scopes: snapshot.scopes,
           kind: snapshot.kind,
         };
-        // Extract inheritanceMode for child containers
-        if (snapshot.kind === "child") {
-          return { ...base, inheritanceMode: snapshot.inheritanceMode };
-        }
-        return base;
       },
       getScopeTree: () => inspector.getScopeTree(),
       isResolved: (portName: string) => inspector.isResolved(portName),
@@ -346,6 +401,8 @@ function buildServiceList(
       callCount,
       lastResolvedAt,
       averageDuration,
+      inheritanceMode: node.inheritanceMode,
+      factoryKind: node.factoryKind,
     });
   }
 
@@ -427,15 +484,114 @@ export function ContainerInspector<
     [rawInspector]
   );
 
+  // Get unified container/scope tree from the hook
+  // This tree includes ALL containers (root + children) and their scopes
+  // When registry is available, use the unified tree; otherwise fall back to single-container view
+  const {
+    tree: containerScopeTree,
+    isAvailable: isRegistryAvailable,
+    refresh: refreshTree,
+  } = useContainerScopeTree();
+
+  // Get container list from registry for container-based selection
+  const { containers, isAvailable: isContainerListAvailable } = useContainerList();
+
   // State
   const [snapshot, setSnapshot] = useState<MinimalSnapshot | null>(null);
   const [scopeTree, setScopeTree] = useState<ScopeTree | null>(null);
-  const [selectedScopeId, setSelectedScopeId] = useState<string | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Parse selected node ID to extract container ID and scope ID
+  const parsedSelection = useMemo(() => parseNodeId(selectedNodeId), [selectedNodeId]);
+
+  // Get inspector for the selected container (or fall back to default)
+  // This enables viewing services from different containers when clicking in the tree
+  const selectedInspector = useMemo((): NormalizedInspector | null => {
+    // If no container ID in selection or no registry, use the default inspector
+    if (!isContainerListAvailable || parsedSelection.containerId === null) {
+      return inspector;
+    }
+
+    // Find the container entry in the registry
+    const entry = containers.find(c => c.id === parsedSelection.containerId);
+    if (entry === undefined) {
+      return inspector;
+    }
+
+    // Create an inspector for the selected container
+    try {
+      const containerInspector = createInspector(entry.container);
+      return normalizeInspector(containerInspector);
+    } catch {
+      // Fall back to default inspector on error
+      return inspector;
+    }
+  }, [isContainerListAvailable, parsedSelection.containerId, containers, inspector]);
+
+  // Get snapshot and scope tree from the selected inspector
+  // This ensures we show services from the correct container
+  const selectedSnapshot = useMemo((): MinimalSnapshot | null => {
+    if (selectedInspector === null) {
+      return null;
+    }
+    try {
+      return selectedInspector.getSnapshot();
+    } catch {
+      return null;
+    }
+  }, [selectedInspector]);
+
+  const selectedScopeTree = useMemo((): ScopeTree | null => {
+    if (selectedInspector === null) {
+      return null;
+    }
+    try {
+      return selectedInspector.getScopeTree();
+    } catch {
+      return null;
+    }
+  }, [selectedInspector]);
+
+  // Build ExportedGraph from selected container with merged parent services.
+  // For child containers, this merges:
+  // - Parent's services (inherited) with inheritance mode badges
+  // - Child's local services (own) without inheritance badges
+  const selectedExportedGraph = useMemo((): ExportedGraph => {
+    // If no container selected from registry, use the default exportedGraph
+    if (!isContainerListAvailable || parsedSelection.containerId === null) {
+      return exportedGraph;
+    }
+
+    // Find the selected container entry
+    const entry = containers.find(c => c.id === parsedSelection.containerId);
+    if (entry === undefined) {
+      return exportedGraph;
+    }
+
+    try {
+      // Build child's graph (only has local overrides)
+      const childGraph = buildExportedGraphFromContainer(entry.container);
+
+      // If child has a parent, merge parent's services
+      if (entry.parentId !== null) {
+        const parentEntry = containers.find(c => c.id === entry.parentId);
+        if (parentEntry !== undefined) {
+          // Build merged graph with parent's inherited + child's own services
+          return buildMergedGraphForChild(childGraph, parentEntry.container, entry.container);
+        }
+      }
+
+      return childGraph;
+    } catch {
+      return exportedGraph;
+    }
+  }, [isContainerListAvailable, parsedSelection.containerId, containers, exportedGraph]);
+
   // Refresh function - handles null inspector gracefully
+  // Also refreshes the unified container/scope tree
   const refresh = useCallback(() => {
     if (inspector === null) {
       return;
@@ -446,6 +602,8 @@ export function ContainerInspector<
       setSnapshot(newSnapshot);
       setScopeTree(newTree);
       setError(null);
+      // Refresh the unified container/scope tree so scopes are visible
+      refreshTree();
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
@@ -453,7 +611,7 @@ export function ContainerInspector<
         setError("Failed to inspect container");
       }
     }
-  }, [inspector]);
+  }, [inspector, refreshTree]);
 
   // Initial load
   useEffect(() => {
@@ -477,13 +635,32 @@ export function ContainerInspector<
     };
   }, [autoRefresh, refresh]);
 
+  // Determine which snapshot and scope tree to use for services
+  // Prefer selected container's data, fall back to base inspector's data
+  const effectiveSnapshot = selectedSnapshot ?? snapshot;
+  const effectiveScopeTree = selectedScopeTree ?? scopeTree;
+  const effectiveInspector = selectedInspector ?? inspector;
+
   // Build service list - returns empty array if inspector is null
+  // Uses selectedExportedGraph which includes per-service inheritance modes
   const services = useMemo(() => {
-    if (snapshot === null || inspector === null) {
+    if (effectiveSnapshot === null || effectiveInspector === null) {
       return [];
     }
-    return buildServiceList(snapshot, exportedGraph, selectedScopeId, inspector, tracingAPI);
-  }, [snapshot, exportedGraph, selectedScopeId, inspector, tracingAPI]);
+    return buildServiceList(
+      effectiveSnapshot,
+      selectedExportedGraph,
+      parsedSelection.scopeId,
+      effectiveInspector,
+      tracingAPI
+    );
+  }, [
+    effectiveSnapshot,
+    selectedExportedGraph,
+    parsedSelection.scopeId,
+    effectiveInspector,
+    tracingAPI,
+  ]);
 
   // Handle auto-refresh toggle
   const handleAutoRefreshToggle = useCallback(() => {
@@ -543,16 +720,6 @@ export function ContainerInspector<
         >
           Auto {autoRefresh ? "ON" : "OFF"}
         </button>
-        {/* Inheritance mode badge for child containers */}
-        {snapshot.kind === "child" && snapshot.inheritanceMode !== undefined && (
-          <span
-            style={getInheritanceModeBadgeStyle(snapshot.inheritanceMode)}
-            data-testid="container-inheritance-mode"
-            title={`Inheritance mode: ${snapshot.inheritanceMode}`}
-          >
-            {snapshot.inheritanceMode}
-          </span>
-        )}
       </div>
 
       {/* Scope Hierarchy */}
@@ -569,11 +736,29 @@ export function ContainerInspector<
         >
           Scope Hierarchy
         </div>
-        <ScopeHierarchy
-          scopeTree={scopeTree}
-          selectedScopeId={selectedScopeId}
-          onScopeSelect={setSelectedScopeId}
-        />
+        {isRegistryAvailable && containerScopeTree.length > 0 ? (
+          <ContainerScopeHierarchy
+            selectedNodeId={selectedNodeId}
+            onNodeSelect={setSelectedNodeId}
+            tree={containerScopeTree}
+          />
+        ) : (
+          <ScopeHierarchy
+            scopeTree={
+              effectiveScopeTree ??
+              scopeTree ?? {
+                id: "container",
+                status: "active",
+                children: [],
+                resolvedPorts: [],
+                resolvedCount: 0,
+                totalCount: 0,
+              }
+            }
+            selectedScopeId={parsedSelection.scopeId}
+            onScopeSelect={scopeId => setSelectedNodeId(scopeId)}
+          />
+        )}
       </div>
 
       {/* Resolved Services */}

@@ -8,7 +8,8 @@
  */
 
 import dagre from "dagre";
-import type { Lifetime } from "@hex-di/graph";
+import type { Lifetime, FactoryKind } from "@hex-di/graph";
+import type { InheritanceMode } from "@hex-di/devtools-core";
 import type {
   PositionedNode,
   PositionedEdge,
@@ -65,6 +66,12 @@ export interface InputNode {
   readonly id: string;
   readonly label: string;
   readonly lifetime: Lifetime;
+  /** Factory kind - sync or async */
+  readonly factoryKind?: FactoryKind;
+  /** Service origin - own or inherited (optional, for child containers) */
+  readonly origin?: "own" | "inherited";
+  /** Inheritance mode for inherited services (shared, forked, isolated) */
+  readonly inheritanceMode?: InheritanceMode;
 }
 
 /**
@@ -143,15 +150,18 @@ export function computeLayout(
   for (const nodeId of g.nodes()) {
     const nodeData = g.node(nodeId);
     if (nodeData) {
-      const inputNode = nodes.find((n) => n.id === nodeId);
+      const inputNode = nodes.find(n => n.id === nodeId);
       positionedNodes.push({
         id: nodeId,
         label: inputNode?.label ?? nodeId,
         lifetime: inputNode?.lifetime ?? "singleton",
+        factoryKind: inputNode?.factoryKind,
         x: nodeData.x,
         y: nodeData.y,
         width: nodeData.width,
         height: nodeData.height,
+        origin: inputNode?.origin,
+        inheritanceMode: inputNode?.inheritanceMode,
       });
     }
   }
@@ -256,10 +266,7 @@ export function generateEdgePath(points: readonly Point[]): string {
  * @param edges - All edges in the graph
  * @returns Set of connected node IDs (includes the input node)
  */
-export function findConnectedNodes(
-  nodeId: string,
-  edges: readonly InputEdge[]
-): Set<string> {
+export function findConnectedNodes(nodeId: string, edges: readonly InputEdge[]): Set<string> {
   const connected = new Set<string>([nodeId]);
   const visited = new Set<string>();
 
@@ -300,10 +307,7 @@ export function findConnectedNodes(
  * @param edges - All edges in the graph
  * @returns Set of edge keys (from->to format)
  */
-export function findConnectedEdges(
-  nodeIds: Set<string>,
-  edges: readonly InputEdge[]
-): Set<string> {
+export function findConnectedEdges(nodeIds: Set<string>, edges: readonly InputEdge[]): Set<string> {
   const connectedEdges = new Set<string>();
 
   for (const edge of edges) {

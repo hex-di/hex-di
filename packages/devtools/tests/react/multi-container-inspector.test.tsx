@@ -56,6 +56,7 @@ function createMockContainer(): InspectableContainer {
     disposed: false,
     singletonMemo: { size: 0, entries: [] },
     childScopes: [],
+    childContainers: [],
     adapterMap: new Map(),
     containerId: "mock",
   };
@@ -329,7 +330,10 @@ describe("ContainerInspector Multi-Container", () => {
           kind: "child" as const,
           phase: "initialized" as const,
           parentId: "root",
-          inheritanceMode: "shared" as const,
+          inheritanceModes: new Map([
+            ["Logger", "shared"],
+            ["Database", "shared"],
+          ]),
           isDisposed: false,
           containerId: "child",
           singletons: [

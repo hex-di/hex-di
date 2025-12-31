@@ -1,7 +1,7 @@
 /**
- * ContainerProvider component for @hex-di/react.
+ * HexDiContainerProvider component for @hex-di/react.
  *
- * Provides the root ContainerProvider that makes a DI container
+ * Provides the root HexDiContainerProvider that makes a DI container
  * available to React components.
  *
  * @packageDocumentation
@@ -67,7 +67,9 @@ function isChildContainer<TProvides extends Port<unknown, string>>(
   const accessor = container[INTERNAL_ACCESS];
   if (typeof accessor === "function") {
     const internalState = accessor();
-    return internalState.parentState !== undefined;
+    // Child containers have containerId like "child-1", "child-2", etc.
+    // Root containers have containerId "root"
+    return internalState.containerId !== "root";
   }
 
   // For mock containers without INTERNAL_ACCESS (tests), return false
@@ -76,15 +78,15 @@ function isChildContainer<TProvides extends Port<unknown, string>>(
 }
 
 // =============================================================================
-// ContainerProvider Component
+// HexDiContainerProvider Component
 // =============================================================================
 
 /**
- * Props for the ContainerProvider component.
+ * Props for the HexDiContainerProvider component.
  *
  * @typeParam TProvides - Union of Port types that the container can resolve
  */
-export interface ContainerProviderProps<TProvides extends Port<unknown, string>> {
+export interface HexDiContainerProviderProps<TProvides extends Port<unknown, string>> {
   /**
    * The pre-created Container instance to provide to the React tree.
    *
@@ -105,18 +107,18 @@ export interface ContainerProviderProps<TProvides extends Port<unknown, string>>
 /**
  * Provider component that makes a DI container available to React components.
  *
- * ContainerProvider establishes the root of a DI tree in React. All hooks
- * (usePort, useContainer, etc.) require a ContainerProvider ancestor.
+ * HexDiContainerProvider establishes the root of a DI tree in React. All hooks
+ * (usePort, useContainer, etc.) require a HexDiContainerProvider ancestor.
  *
  * @typeParam TProvides - Union of Port types that the container can resolve
  *
  * @param props - The provider props including container and children
  *
- * @throws {MissingProviderError} If nested inside another ContainerProvider with a root container.
+ * @throws {MissingProviderError} If nested inside another HexDiContainerProvider with a root container.
  *   Child containers can be nested, but root containers cannot.
  *
  * @remarks
- * - Root ContainerProvider allows one per React tree (nested root providers throw)
+ * - Root HexDiContainerProvider allows one per React tree (nested root providers throw)
  * - Child containers can be nested inside parent providers
  * - The container prop should come from `createContainer()` or `container.createChild().build()` in @hex-di/runtime
  * - Provider does NOT manage container lifecycle - caller owns disposal
@@ -126,15 +128,15 @@ export interface ContainerProviderProps<TProvides extends Port<unknown, string>>
  * @example Basic usage
  * ```tsx
  * import { createContainer } from '@hex-di/runtime';
- * import { ContainerProvider, usePort } from '@hex-di/react';
+ * import { HexDiContainerProvider, usePort } from '@hex-di/react';
  *
  * const container = createContainer(graph);
  *
  * function App() {
  *   return (
- *     <ContainerProvider container={container}>
+ *     <HexDiContainerProvider container={container}>
  *       <MyComponent />
- *     </ContainerProvider>
+ *     </HexDiContainerProvider>
  *   );
  * }
  *
@@ -150,19 +152,19 @@ export interface ContainerProviderProps<TProvides extends Port<unknown, string>>
  *
  * function App() {
  *   return (
- *     <ContainerProvider container={container}>
- *       <ContainerProvider container={childContainer}>
+ *     <HexDiContainerProvider container={container}>
+ *       <HexDiContainerProvider container={childContainer}>
  *         <ComponentWithMockLogger />
- *       </ContainerProvider>
- *     </ContainerProvider>
+ *       </HexDiContainerProvider>
+ *     </HexDiContainerProvider>
  *   );
  * }
  * ```
  */
-export function ContainerProvider<TProvides extends Port<unknown, string>>({
+export function HexDiContainerProvider<TProvides extends Port<unknown, string>>({
   container,
   children,
-}: ContainerProviderProps<TProvides>): React.ReactNode {
+}: HexDiContainerProviderProps<TProvides>): React.ReactNode {
   // Detect nested ContainerProvider
   const existingContext = useContext(ContainerContext);
 
@@ -173,8 +175,8 @@ export function ContainerProvider<TProvides extends Port<unknown, string>>({
   // this is an error (cannot nest root containers)
   if (existingContext !== null && !containerIsChild) {
     throw new MissingProviderError(
-      "ContainerProvider",
-      "ContainerProvider (nested providers not allowed)"
+      "HexDiContainerProvider",
+      "HexDiContainerProvider (nested providers not allowed)"
     );
   }
 

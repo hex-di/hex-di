@@ -42,22 +42,22 @@
  * }
  * ```
  *
- * @example DevToolsFloating (recommended for development)
+ * @example HexDiDevTools (recommended for development)
  * ```typescript
- * import { DevToolsFloating } from '@hex-di/devtools/react';
+ * import { HexDiDevToolsProvider, HexDiDevTools } from '@hex-di/devtools/react';
  * import { appGraph } from './graph';
  * import { container } from './container';
  *
  * function App() {
  *   return (
- *     <>
+ *     <HexDiDevToolsProvider>
  *       <MainApp />
- *       <DevToolsFloating
+ *       <HexDiDevTools
  *         graph={appGraph}
  *         container={container}
  *         position="bottom-right"
  *       />
- *     </>
+ *     </HexDiDevToolsProvider>
  *   );
  * }
  * ```
@@ -116,19 +116,19 @@ export { DevToolsProvider, DevToolsContext } from "./context/index.js";
 export type { DevToolsProviderProps, DevToolsContextValue } from "./context/index.js";
 
 /**
- * ContainerRegistryProvider for multi-container DevTools support.
+ * HexDiDevToolsProvider for multi-container DevTools support.
  *
  * Place at the top of your app to enable tracking of all containers
  * (root, child, lazy, scope). Components can register containers using
  * useRegisterContainer and access them via useContainerList and useInspector.
  *
- * @see {@link ContainerRegistryProviderProps} - Provider props interface
+ * @see {@link HexDiDevToolsProviderProps} - Provider props interface
  * @see {@link ContainerRegistryValue} - Context value interface
  * @see {@link ContainerEntry} - Registered container entry type
  */
-export { ContainerRegistryProvider, ContainerRegistryContext } from "./context/index.js";
+export { HexDiDevToolsProvider, ContainerRegistryContext } from "./context/index.js";
 export type {
-  ContainerRegistryProviderProps,
+  HexDiDevToolsProviderProps,
   ContainerRegistryValue,
   ContainerEntry,
   InheritanceMode,
@@ -175,12 +175,14 @@ export {
   useContainerInspectorStrict,
   useInspectorSnapshot,
   useContainerPhase,
+  useContainerScopeTree,
 } from "./hooks/index.js";
 export type {
   UseRegisterContainerOptions,
   UseContainerListResult,
   UseInspectorSnapshotResult,
   UseContainerPhaseResult,
+  UseContainerScopeTreeResult,
 } from "./hooks/index.js";
 
 // =============================================================================
@@ -298,11 +300,11 @@ export { DevToolsPanel } from "./devtools-panel.js";
 export type { DevToolsPanelProps, DevToolsPanelMode } from "./devtools-panel.js";
 
 // =============================================================================
-// DevToolsFloating Component (Task Group 8)
+// HexDiDevTools Component (Floating DevTools)
 // =============================================================================
 
 /**
- * DevToolsFloating component for toggle-able DevTools overlay.
+ * HexDiDevTools component for toggle-able DevTools overlay.
  *
  * Renders a small floating toggle button that expands to show the full
  * DevToolsPanel when clicked. The open/closed state is persisted in
@@ -312,19 +314,19 @@ export type { DevToolsPanelProps, DevToolsPanelMode } from "./devtools-panel.js"
  * this component returns `null` to ensure DevTools are not visible
  * in production builds.
  *
- * @see {@link DevToolsFloatingProps} - Component props interface
+ * @see {@link HexDiDevToolsProps} - Component props interface
  * @see {@link DevToolsPosition} - Position type for the toggle button
  *
  * @example Basic usage
  * ```typescript
- * import { DevToolsFloating } from '@hex-di/devtools/react';
+ * import { HexDiDevTools } from '@hex-di/devtools/react';
  * import { appGraph } from './graph';
  *
  * function App() {
  *   return (
  *     <>
  *       <MainApp />
- *       <DevToolsFloating graph={appGraph} position="bottom-right" />
+ *       <HexDiDevTools graph={appGraph} position="bottom-right" />
  *     </>
  *   );
  * }
@@ -333,20 +335,20 @@ export type { DevToolsPanelProps, DevToolsPanelMode } from "./devtools-panel.js"
  * @example All corner positions
  * ```typescript
  * // Bottom-right (default)
- * <DevToolsFloating graph={graph} position="bottom-right" />
+ * <HexDiDevTools graph={graph} position="bottom-right" />
  *
  * // Bottom-left
- * <DevToolsFloating graph={graph} position="bottom-left" />
+ * <HexDiDevTools graph={graph} position="bottom-left" />
  *
  * // Top-right
- * <DevToolsFloating graph={graph} position="top-right" />
+ * <HexDiDevTools graph={graph} position="top-right" />
  *
  * // Top-left
- * <DevToolsFloating graph={graph} position="top-left" />
+ * <HexDiDevTools graph={graph} position="top-left" />
  * ```
  */
-export { DevToolsFloating } from "./devtools-floating.js";
-export type { DevToolsFloatingProps, DevToolsPosition } from "./devtools-floating.js";
+export { HexDiDevTools } from "./devtools-floating.js";
+export type { HexDiDevToolsProps, DevToolsPosition } from "./devtools-floating.js";
 
 // =============================================================================
 // Container Inspector Components (Task Group 4)
@@ -407,6 +409,24 @@ export type {
  */
 export { ScopeHierarchy } from "./scope-hierarchy.js";
 export type { ScopeHierarchyProps } from "./scope-hierarchy.js";
+
+/**
+ * ContainerScopeHierarchy component for unified container/scope tree visualization.
+ *
+ * Displays ALL containers and their scopes in a single hierarchical tree.
+ * Containers are nested according to their parent-child relationships.
+ *
+ * @see {@link ContainerScopeHierarchyProps} - Component props interface
+ * @see {@link ContainerScopeTreeNode} - Tree node types
+ */
+export { ContainerScopeHierarchy } from "./container-scope-hierarchy.js";
+export type { ContainerScopeHierarchyProps } from "./container-scope-hierarchy.js";
+export type {
+  ContainerScopeTreeNode,
+  ContainerNode,
+  ScopeNode,
+} from "./types/container-scope-tree.js";
+export { isContainerNode, isScopeNode } from "./types/container-scope-tree.js";
 
 /**
  * ResolvedServices component for displaying service resolution status.
