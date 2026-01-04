@@ -10,18 +10,19 @@
 import type { Port } from "@hex-di/ports";
 import type { Graph } from "@hex-di/graph";
 import type { Container, ContainerPhase } from "@hex-di/runtime";
-import { createInspector } from "@hex-di/runtime";
-import { getTracingAPI, type TracingAPI } from "@hex-di/tracing";
-import { getInspectorAPI, type InspectorAPI } from "@hex-di/inspector";
+import {
+  createInspector,
+  getTracingAPI,
+  getInspectorAPI,
+  type TracingAPI,
+  type InspectorAPI,
+} from "@hex-di/runtime";
 import {
   toJSON,
   type ExportedGraph,
   type PresenterDataSourceContract,
-  type TraceEntry,
-  type TraceStats,
-  type ContainerSnapshot,
-  type ContainerKind,
 } from "@hex-di/devtools-core";
+import type { TraceEntry, TraceStats, ContainerSnapshot } from "@hex-di/plugin";
 import type {
   DataSource,
   DataSourceConnectionState,
@@ -251,6 +252,7 @@ export class LocalDataSource implements DataSource, PresenterDataSourceContract 
       isInitialized: true,
       asyncAdaptersTotal: 0,
       asyncAdaptersInitialized: 0,
+      containerName: rawSnapshot.containerName,
     };
   }
 

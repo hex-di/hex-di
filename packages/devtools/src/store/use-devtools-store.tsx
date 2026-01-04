@@ -27,7 +27,6 @@ import {
 } from "../react/context/devtools-context.js";
 import { useStore, type StoreApi } from "zustand";
 import type { InspectorWithSubscription } from "@hex-di/runtime";
-import type { DevToolsFlowRuntime } from "../runtime/devtools-flow-runtime.js";
 import type { DevToolsPlugin } from "../runtime/plugin-types.js";
 import {
   createDevToolsStoreWithRuntime,

@@ -11,22 +11,15 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, type ReactElement } from "react";
 import type { Port } from "@hex-di/ports";
 import type { Container, ContainerPhase } from "@hex-di/runtime";
-import { INTERNAL_ACCESS } from "@hex-di/runtime";
-import type { InspectorAPI } from "@hex-di/inspector";
 import { createInspector } from "../index.js";
 import type { ContainerInspector as RuntimeInspector } from "../index.js";
-import type { ExportedGraph, TracingAPI, ScopeTree, ContainerKind } from "@hex-di/devtools-core";
-import type { InspectableContainer } from "./types/inspectable-container.js";
+import type { ExportedGraph } from "@hex-di/devtools-core";
+import type { TracingAPI, ScopeTree, ContainerKind } from "@hex-di/plugin";
 import { containerInspectorStyles } from "./styles.js";
 import { ContainerScopeHierarchy } from "./container-scope-hierarchy.js";
 import { ScopeHierarchy } from "./scope-hierarchy.js";
-import { useContainerScopeTree } from "./hooks/use-container-scope-tree.js";
-import { useContainerList } from "./hooks/use-container-list.js";
 import { ResolvedServices, type ServiceInfo } from "./resolved-services.js";
-import {
-  buildExportedGraphFromContainer,
-  buildMergedGraphForChild,
-} from "./utils/build-graph-from-container.js";
+import { useContainerScopeTreeOptional } from "./hooks/use-container-scope-tree.js";
 
 // =============================================================================
 // Node ID Parsing
@@ -99,10 +92,9 @@ interface MinimalSingletonEntry {
 
 /**
  * Minimal snapshot interface that captures the common fields between
- * RuntimeInspector.snapshot() and InspectorAPI.getSnapshot().
+ * RuntimeInspector.snapshot() and legacy APIs.
  *
- * This allows the component to work with both inspector types without
- * requiring exact type compatibility.
+ * This allows the component to work with RuntimeInspector.
  */
 interface MinimalSnapshot {
   readonly isDisposed: boolean;
@@ -110,8 +102,7 @@ interface MinimalSnapshot {
   readonly scopes: ScopeTree;
   /**
    * Container kind (root, child, lazy, scope).
-   * Only present when using InspectorAPI (devtools-core types).
-   * Not available when using RuntimeInspector directly.
+   * Only present in certain snapshot types.
    */
   readonly kind?: ContainerKind;
 }
@@ -121,11 +112,7 @@ interface MinimalSnapshot {
 // =============================================================================
 
 /**
- * Unified inspector interface that works with both InspectorAPI and RuntimeInspector.
- *
- * This abstracts away the method name differences:
- * - InspectorAPI: `getSnapshot()`, `getScopeTree()`
- * - RuntimeInspector: `snapshot()`, `getScopeTree()`
+ * Unified inspector interface for RuntimeInspector.
  */
 interface NormalizedInspector {
   getSnapshot(): MinimalSnapshot;
@@ -134,47 +121,17 @@ interface NormalizedInspector {
 }
 
 /**
- * Type guard to check if an inspector is an InspectorAPI (has getSnapshot method).
+ * Normalizes RuntimeInspector (from @hex-di/runtime) to a common interface.
  */
-function isInspectorAPI(inspector: InspectorAPI | RuntimeInspector): inspector is InspectorAPI {
-  return "getSnapshot" in inspector && typeof inspector.getSnapshot === "function";
-}
-
-/**
- * Normalizes either InspectorAPI or RuntimeInspector to a common interface.
- *
- * Both inspector types return compatible snapshot data, but with slightly
- * different type definitions. We cast to MinimalSnapshot which captures
- * only the fields we actually use.
- */
-function normalizeInspector(inspector: InspectorAPI | RuntimeInspector): NormalizedInspector {
-  if (isInspectorAPI(inspector)) {
-    return {
-      getSnapshot: (): MinimalSnapshot => {
-        const snapshot = inspector.getSnapshot();
-        // InspectorAPI returns devtools-core ContainerSnapshot (discriminated union)
-        // We extract the fields we need
-        return {
-          isDisposed: snapshot.isDisposed,
-          singletons: snapshot.singletons,
-          scopes: snapshot.scopes,
-          kind: snapshot.kind,
-        };
-      },
-      getScopeTree: () => inspector.getScopeTree(),
-      isResolved: (portName: string) => inspector.isResolved(portName),
-    };
-  }
+function normalizeRuntimeInspector(inspector: RuntimeInspector): NormalizedInspector {
   return {
     getSnapshot: (): MinimalSnapshot => {
       const snapshot = inspector.snapshot();
-      // RuntimeInspector returns runtime ContainerSnapshot (simpler type without kind)
-      // We extract only the fields available in runtime snapshot
+      // RuntimeInspector returns runtime ContainerSnapshot
       return {
         isDisposed: snapshot.isDisposed,
         singletons: snapshot.singletons,
         scopes: snapshot.scopes,
-        // kind is not available in runtime snapshot - omitted
       };
     },
     getScopeTree: () => inspector.getScopeTree(),
@@ -191,7 +148,7 @@ function normalizeInspector(inspector: InspectorAPI | RuntimeInspector): Normali
  *
  * Either `container` or `inspector` must be provided:
  * - Use `container` when inspecting a Container directly
- * - Use `inspector` when using an InspectorAPI or RuntimeInspector
+ * - Use `inspector` when using a RuntimeInspector
  */
 export interface ContainerInspectorProps<
   TProvides extends Port<unknown, string> = Port<unknown, string>,
@@ -207,9 +164,8 @@ export interface ContainerInspectorProps<
   /**
    * Pre-created inspector to use.
    * Takes precedence over `container` when provided.
-   * Accepts either InspectorAPI (deprecated) or RuntimeInspector.
    */
-  readonly inspector?: InspectorAPI | RuntimeInspector;
+  readonly inspector?: RuntimeInspector;
   /** The exported dependency graph for metadata */
   readonly exportedGraph: ExportedGraph;
   /** Optional tracing API for request service stats */
@@ -480,21 +436,20 @@ export function ContainerInspector<
 
   // Normalize the inspector to a common interface
   const inspector = useMemo(
-    () => (rawInspector !== null ? normalizeInspector(rawInspector) : null),
+    () => (rawInspector !== null ? normalizeRuntimeInspector(rawInspector) : null),
     [rawInspector]
   );
 
-  // Get unified container/scope tree from the hook
-  // This tree includes ALL containers (root + children) and their scopes
-  // When registry is available, use the unified tree; otherwise fall back to single-container view
-  const {
-    tree: containerScopeTree,
-    isAvailable: isRegistryAvailable,
-    refresh: refreshTree,
-  } = useContainerScopeTree();
-
-  // Get container list from registry for container-based selection
-  const { containers, isAvailable: isContainerListAvailable } = useContainerList();
+  // Get container scope tree from DevToolsProvider if available
+  // Falls back to empty tree when used outside DevToolsProvider
+  const containerScopeTreeResult = useContainerScopeTreeOptional();
+  const containerScopeTree = containerScopeTreeResult?.tree ?? [];
+  const isRegistryAvailable = containerScopeTreeResult?.isRegistryAvailable ?? false;
+  // Stable reference for refreshTree to avoid useCallback dependency issues
+  const refreshTree = useMemo(
+    () => containerScopeTreeResult?.refreshTree ?? (() => {}),
+    [containerScopeTreeResult?.refreshTree]
+  );
 
   // State
   const [snapshot, setSnapshot] = useState<MinimalSnapshot | null>(null);
@@ -509,27 +464,14 @@ export function ContainerInspector<
 
   // Get inspector for the selected container (or fall back to default)
   // This enables viewing services from different containers when clicking in the tree
+  // Note: ContainerTreeEntry from discovery doesn't include inspector access,
+  // so we fall back to the default inspector. Full inspector access requires
+  // the InspectorPlugin integration which provides inspector via different path.
   const selectedInspector = useMemo((): NormalizedInspector | null => {
-    // If no container ID in selection or no registry, use the default inspector
-    if (!isContainerListAvailable || parsedSelection.containerId === null) {
-      return inspector;
-    }
-
-    // Find the container entry in the registry
-    const entry = containers.find(c => c.id === parsedSelection.containerId);
-    if (entry === undefined) {
-      return inspector;
-    }
-
-    // Create an inspector for the selected container
-    try {
-      const containerInspector = createInspector(entry.container);
-      return normalizeInspector(containerInspector);
-    } catch {
-      // Fall back to default inspector on error
-      return inspector;
-    }
-  }, [isContainerListAvailable, parsedSelection.containerId, containers, inspector]);
+    // ContainerTreeEntry doesn't have inspector access - use default
+    // Future: integrate with InspectorPlugin's getChildContainers() for inspector access
+    return inspector;
+  }, [inspector]);
 
   // Get snapshot and scope tree from the selected inspector
   // This ensures we show services from the correct container
@@ -556,39 +498,14 @@ export function ContainerInspector<
   }, [selectedInspector]);
 
   // Build ExportedGraph from selected container with merged parent services.
-  // For child containers, this merges:
-  // - Parent's services (inherited) with inheritance mode badges
-  // - Child's local services (own) without inheritance badges
+  // Note: ContainerTreeEntry doesn't include inspector access for graph building,
+  // so we use the exportedGraph prop. Full multi-container graph support requires
+  // InspectorPlugin integration.
   const selectedExportedGraph = useMemo((): ExportedGraph => {
-    // If no container selected from registry, use the default exportedGraph
-    if (!isContainerListAvailable || parsedSelection.containerId === null) {
-      return exportedGraph;
-    }
-
-    // Find the selected container entry
-    const entry = containers.find(c => c.id === parsedSelection.containerId);
-    if (entry === undefined) {
-      return exportedGraph;
-    }
-
-    try {
-      // Build child's graph (only has local overrides)
-      const childGraph = buildExportedGraphFromContainer(entry.container);
-
-      // If child has a parent, merge parent's services
-      if (entry.parentId !== null) {
-        const parentEntry = containers.find(c => c.id === entry.parentId);
-        if (parentEntry !== undefined) {
-          // Build merged graph with parent's inherited + child's own services
-          return buildMergedGraphForChild(childGraph, parentEntry.container, entry.container);
-        }
-      }
-
-      return childGraph;
-    } catch {
-      return exportedGraph;
-    }
-  }, [isContainerListAvailable, parsedSelection.containerId, containers, exportedGraph]);
+    // Use the provided exportedGraph - multi-container graph building
+    // requires inspector access not available in ContainerTreeEntry
+    return exportedGraph;
+  }, [exportedGraph]);
 
   // Refresh function - handles null inspector gracefully
   // Also refreshes the unified container/scope tree

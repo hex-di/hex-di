@@ -13,7 +13,6 @@ import { useDevToolsFlowRuntimeOptional } from "../../store/index.js";
 import { buildContainerScopeTreeFromEntries } from "../utils/build-container-scope-tree.js";
 import type { ContainerScopeTreeNode } from "../types/container-scope-tree.js";
 import type { ContainerTreeEntry } from "@hex-di/devtools-core";
-import type { DevToolsSnapshot } from "../../runtime/devtools-snapshot.js";
 
 // =============================================================================
 // Types
@@ -91,8 +90,9 @@ export function useContainerScopeTree(): UseContainerScopeTreeResult {
 
 /**
  * Fallback result when DevToolsProvider is not available.
+ * @internal Reserved for future use in alternative fallback patterns.
  */
-const FALLBACK_RESULT: UseContainerScopeTreeResult = Object.freeze({
+const _FALLBACK_RESULT: UseContainerScopeTreeResult = Object.freeze({
   tree: Object.freeze([]),
   isRegistryAvailable: false,
   refreshTree: () => {
@@ -151,13 +151,13 @@ export function useContainerScopeTreeOptional(): UseContainerScopeTreeResult | n
     // getSnapshot
     useCallback(() => {
       if (!hasRuntime) return EMPTY_CONTAINERS;
-      const snapshot = runtime.getSnapshot() as DevToolsSnapshot;
+      const snapshot = runtime.getSnapshot();
       return snapshot.containerTree.context.containers;
     }, [runtime, hasRuntime]),
     // getServerSnapshot
     useCallback(() => {
       if (!hasRuntime) return EMPTY_CONTAINERS;
-      const snapshot = runtime.getSnapshot() as DevToolsSnapshot;
+      const snapshot = runtime.getSnapshot();
       return snapshot.containerTree.context.containers;
     }, [runtime, hasRuntime])
   );
