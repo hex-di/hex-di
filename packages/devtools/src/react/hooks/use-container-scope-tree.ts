@@ -1,50 +1,43 @@
 /**
- * Hook for building unified container/scope tree.
+ * useContainerScopeTree Hook
  *
- * Combines data from ContainerRegistryProvider with each container's
- * scope tree to build a unified hierarchical view.
+ * Provides access to the unified container/scope tree for the DevTools UI.
+ * Combines container hierarchy from ContainerTree machine with scope trees
+ * from each container's inspector.
  *
  * @packageDocumentation
  */
 
-import { useState, useCallback, useEffect } from "react";
-import { useContainerList } from "./use-container-list.js";
-import {
-  buildContainerScopeTree,
-  createInspectorsForContainers,
-} from "../utils/build-container-scope-tree.js";
+import { useMemo, useCallback, useSyncExternalStore } from "react";
+import { useDevToolsFlowRuntimeOptional } from "../../store/index.js";
+import { buildContainerScopeTreeFromEntries } from "../utils/build-container-scope-tree.js";
 import type { ContainerScopeTreeNode } from "../types/container-scope-tree.js";
+import type { ContainerTreeEntry } from "@hex-di/devtools-core";
+import type { DevToolsSnapshot } from "../../runtime/devtools-snapshot.js";
 
 // =============================================================================
 // Types
 // =============================================================================
 
 /**
- * Result of the useContainerScopeTree hook.
+ * Result type for useContainerScopeTree hook.
  */
 export interface UseContainerScopeTreeResult {
   /**
    * The unified container/scope tree.
-   *
-   * Root-level nodes are root containers. Each container node
-   * may contain both scope children and child container children.
+   * Empty array if no containers have been discovered.
    */
   readonly tree: readonly ContainerScopeTreeNode[];
 
   /**
-   * Whether the container registry is available.
-   *
-   * False if ContainerRegistryProvider is not present in the tree.
+   * Whether the container registry is available (containers discovered).
    */
-  readonly isAvailable: boolean;
+  readonly isRegistryAvailable: boolean;
 
   /**
-   * Force refresh the tree data.
-   *
-   * Call this to rebuild the tree with fresh scope data from all containers.
-   * Useful for manual refresh buttons or after known state changes.
+   * Dispatch a DISCOVER event to re-discover containers.
    */
-  readonly refresh: () => void;
+  readonly refreshTree: () => void;
 }
 
 // =============================================================================
@@ -52,73 +45,149 @@ export interface UseContainerScopeTreeResult {
 // =============================================================================
 
 /**
- * Build a unified container/scope tree from all registered containers.
+ * Hook to get the unified container/scope tree.
  *
- * This hook combines:
- * 1. Container hierarchy from ContainerRegistryProvider (via useContainerList)
- * 2. Scope trees from each container (via createInspector().getScopeTree())
+ * Uses complete data from ContainerTreeEntry (fetched during discovery by FSM).
+ * NO direct inspector access - React components are "dumb" and only consume
+ * FSM-provided data.
  *
- * The resulting tree shows containers nested according to their parentId
- * relationships, with each container's scopes shown as children.
+ * @returns The container/scope tree and registry status
+ * @throws Error if used outside DevToolsProvider
  *
- * @returns The unified tree, availability status, and refresh function
+ * @example
+ * ```tsx
+ * function ContainerHierarchy() {
+ *   const { tree, isRegistryAvailable, refreshTree } = useContainerScopeTree();
  *
- * @example Basic usage
- * ```typescript
- * function ScopeHierarchyView() {
- *   const { tree, isAvailable, refresh } = useContainerScopeTree();
- *
- *   if (!isAvailable) {
- *     return <div>Container registry not available</div>;
+ *   if (!isRegistryAvailable) {
+ *     return <div>No containers discovered</div>;
  *   }
  *
  *   return (
  *     <div>
- *       <button onClick={refresh}>Refresh</button>
- *       <TreeView nodes={tree} />
+ *       <button onClick={refreshTree}>Refresh</button>
+ *       <TreeView tree={tree} />
  *     </div>
  *   );
  * }
  * ```
+ */
+export function useContainerScopeTree(): UseContainerScopeTreeResult {
+  const result = useContainerScopeTreeOptional();
+
+  if (result === null) {
+    throw new Error(
+      "useContainerScopeTree must be used within a DevToolsStoreProvider. " +
+        "Wrap your component tree with <DevToolsStoreProvider inspector={inspector}>."
+    );
+  }
+
+  return result;
+}
+
+// =============================================================================
+// Fallback Result
+// =============================================================================
+
+/**
+ * Fallback result when DevToolsProvider is not available.
+ */
+const FALLBACK_RESULT: UseContainerScopeTreeResult = Object.freeze({
+  tree: Object.freeze([]),
+  isRegistryAvailable: false,
+  refreshTree: () => {
+    // No-op when not in DevToolsProvider
+  },
+});
+
+// =============================================================================
+// Optional Hook (Safe for standalone use)
+// =============================================================================
+
+/**
+ * Empty containers array for fallback.
+ */
+const EMPTY_CONTAINERS: readonly ContainerTreeEntry[] = Object.freeze([]);
+
+/**
+ * Hook to get the unified container/scope tree, or null if outside DevToolsProvider.
  *
- * @example With auto-refresh
- * ```typescript
- * function AutoRefreshingHierarchy() {
- *   const { tree, refresh } = useContainerScopeTree();
+ * Uses complete data from ContainerTreeEntry (fetched during discovery by FSM).
+ * NO direct inspector access - React components are "dumb" and only consume
+ * FSM-provided data.
  *
- *   useEffect(() => {
- *     const interval = setInterval(refresh, 1000);
- *     return () => clearInterval(interval);
- *   }, [refresh]);
+ * @returns The container/scope tree and registry status, or null if no provider
  *
- *   return <TreeView nodes={tree} />;
+ * @example
+ * ```tsx
+ * function ContainerHierarchy() {
+ *   const containerScopeTree = useContainerScopeTreeOptional();
+ *
+ *   // Fall back to default behavior if no DevToolsProvider
+ *   const tree = containerScopeTree?.tree ?? [];
+ *   const isRegistryAvailable = containerScopeTree?.isRegistryAvailable ?? false;
+ *
+ *   // ...
  * }
  * ```
  */
-export function useContainerScopeTree(): UseContainerScopeTreeResult {
-  const { containers, isAvailable } = useContainerList();
+export function useContainerScopeTreeOptional(): UseContainerScopeTreeResult | null {
+  // Get runtime from store context, returns null if no provider (optional version)
+  const runtime = useDevToolsFlowRuntimeOptional();
+  const hasRuntime = runtime !== null;
 
-  // State-based tree: updated via refresh(), not memoization
-  // This ensures fresh data when scopes are created/disposed
-  const [tree, setTree] = useState<readonly ContainerScopeTreeNode[]>(Object.freeze([]));
+  // Get container entries using useSyncExternalStore directly (safe for no runtime)
+  // ContainerTreeEntry now includes complete data (scopeTree, graphData, etc.)
+  // fetched during discovery - NO inspector access needed!
+  const containers = useSyncExternalStore(
+    // subscribe
+    useCallback(
+      (callback: () => void) => {
+        if (!hasRuntime) return () => {};
+        return runtime.subscribe(callback);
+      },
+      [runtime, hasRuntime]
+    ),
+    // getSnapshot
+    useCallback(() => {
+      if (!hasRuntime) return EMPTY_CONTAINERS;
+      const snapshot = runtime.getSnapshot() as DevToolsSnapshot;
+      return snapshot.containerTree.context.containers;
+    }, [runtime, hasRuntime]),
+    // getServerSnapshot
+    useCallback(() => {
+      if (!hasRuntime) return EMPTY_CONTAINERS;
+      const snapshot = runtime.getSnapshot() as DevToolsSnapshot;
+      return snapshot.containerTree.context.containers;
+    }, [runtime, hasRuntime])
+  );
 
-  // Rebuild tree from all containers with fresh inspector data
-  const refresh = useCallback(() => {
-    if (!isAvailable || containers.length === 0) {
-      setTree(Object.freeze([]));
-      return;
+  // Build the unified tree directly from ContainerTreeEntry data
+  // NO inspector access - data is already embedded in entries from FSM
+  const tree = useMemo(() => {
+    if (!hasRuntime || containers.length === 0) {
+      return Object.freeze([]) as readonly ContainerScopeTreeNode[];
     }
-    const inspectors = createInspectorsForContainers(containers);
-    const newTree = buildContainerScopeTree(containers, inspectors);
-    setTree(newTree);
-  }, [containers, isAvailable]);
 
-  // Initial refresh + delayed refresh to catch scope creation timing
-  useEffect(() => {
-    refresh();
-    const timer = setTimeout(refresh, 100);
-    return () => clearTimeout(timer);
-  }, [refresh]);
+    // Use FSM-based tree builder (no inspector needed)
+    return buildContainerScopeTreeFromEntries(containers);
+  }, [containers, hasRuntime]);
 
-  return { tree, isAvailable, refresh };
+  // Refresh callback to dispatch DISCOVER event
+  const refreshTree = useCallback(() => {
+    if (hasRuntime) {
+      runtime.dispatch({ type: "CONTAINER_TREE.DISCOVER" });
+    }
+  }, [runtime, hasRuntime]);
+
+  // Return null if no runtime is available
+  if (!hasRuntime) {
+    return null;
+  }
+
+  return {
+    tree,
+    isRegistryAvailable: containers.length > 0,
+    refreshTree,
+  };
 }

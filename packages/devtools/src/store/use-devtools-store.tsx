@@ -7,15 +7,28 @@
  * Architecture:
  * - DevToolsStoreProvider wraps app with store context
  * - useDevToolsStore hook provides selector-based access
+ * - Plugins are provided via a separate immutable context
  * - Specialized hooks for common use cases
  *
  * @packageDocumentation
  */
 
-import { createContext, useContext, useRef, type ReactNode, type ReactElement } from "react";
+import React, {
+  createContext,
+  useContext,
+  useRef,
+  useMemo,
+  type ReactNode,
+  type ReactElement,
+} from "react";
+import {
+  DevToolsContext,
+  type DevToolsFlowRuntimeLike,
+} from "../react/context/devtools-context.js";
 import { useStore, type StoreApi } from "zustand";
 import type { InspectorWithSubscription } from "@hex-di/runtime";
 import type { DevToolsFlowRuntime } from "../runtime/devtools-flow-runtime.js";
+import type { DevToolsPlugin } from "../runtime/plugin-types.js";
 import {
   createDevToolsStoreWithRuntime,
   type DevToolsStore,
@@ -23,7 +36,7 @@ import {
   type DevToolsStoreWithRuntime,
   selectFirstSelectedId,
 } from "./devtools-store.js";
-import { DevToolsContext } from "../react/context/devtools-context.js";
+import { defaultPlugins } from "../plugins/presets.js";
 
 // =============================================================================
 // Store Context
@@ -36,6 +49,18 @@ import { DevToolsContext } from "../react/context/devtools-context.js";
 const DevToolsStoreContext = createContext<DevToolsStoreWithRuntime | null>(null);
 
 // =============================================================================
+// Plugins Context
+// =============================================================================
+
+/**
+ * React context for DevTools plugins.
+ * Plugins are immutable and provided separately from the store.
+ * This enables components to access plugins without triggering
+ * re-renders on store state changes.
+ */
+const DevToolsPluginsContext = createContext<readonly DevToolsPlugin[]>([]);
+
+// =============================================================================
 // Provider
 // =============================================================================
 
@@ -45,6 +70,10 @@ const DevToolsStoreContext = createContext<DevToolsStoreWithRuntime | null>(null
 export interface DevToolsStoreProviderProps {
   /** The root inspector for the container hierarchy */
   readonly inspector: InspectorWithSubscription;
+  /** DevTools plugins to use. Defaults to defaultPlugins() */
+  readonly plugins?: readonly DevToolsPlugin[];
+  /** Initial active tab. Defaults to "graph" */
+  readonly initialTab?: string;
   /** Child components */
   readonly children: ReactNode;
 }
@@ -75,11 +104,18 @@ export interface DevToolsStoreProviderProps {
  */
 export function DevToolsStoreProvider({
   inspector,
+  plugins,
+  initialTab,
   children,
 }: DevToolsStoreProviderProps): ReactElement {
   // Use ref to keep store stable across re-renders and Strict Mode cycles
   const storeRef = useRef<DevToolsStoreWithRuntime | null>(null);
   const inspectorRef = useRef(inspector);
+  const initialTabAppliedRef = useRef(false);
+
+  // Memoize plugins - use defaultPlugins() if not provided
+  // Plugins are immutable after creation
+  const pluginsToUse = useMemo(() => plugins ?? defaultPlugins(), [plugins]);
 
   // Recreate store if inspector changed (rare, but handle it)
   if (inspectorRef.current !== inspector) {
@@ -90,6 +126,7 @@ export function DevToolsStoreProvider({
     }
     storeRef.current = null;
     inspectorRef.current = inspector;
+    initialTabAppliedRef.current = false;
   }
 
   // Create store if not exists
@@ -97,13 +134,24 @@ export function DevToolsStoreProvider({
     storeRef.current = createDevToolsStoreWithRuntime({ inspector });
   }
 
-  // Get the underlying FSM runtime from the store
-  // This is needed for hooks like useContainerScopeTreeOptional that use DevToolsContext
-  const fsmRuntime = storeRef.current.getRuntime();
+  // Apply initialTab if specified and not yet applied
+  if (initialTab !== undefined && !initialTabAppliedRef.current) {
+    initialTabAppliedRef.current = true;
+    storeRef.current.getState().selectTab(initialTab);
+  }
 
+  // Provider hierarchy:
+  // - DevToolsStoreContext: The Zustand store with FSM runtime access via store.getRuntime()
+  // - DevToolsPluginsContext: Immutable plugins array for tab configuration
+  //
+  // Note: DevToolsContext is NOT provided here. Hooks that need FSM runtime access
+  // should use useDevToolsFlowRuntime() which gets the runtime from the store context.
+  // This consolidates all context access through the store.
   return (
     <DevToolsStoreContext.Provider value={storeRef.current}>
-      <DevToolsContext.Provider value={fsmRuntime}>{children}</DevToolsContext.Provider>
+      <DevToolsPluginsContext.Provider value={pluginsToUse}>
+        {children}
+      </DevToolsPluginsContext.Provider>
     </DevToolsStoreContext.Provider>
   );
 }
@@ -190,8 +238,49 @@ export function useDevToolsStoreApi(): StoreApi<DevToolsStore> {
 }
 
 // =============================================================================
-// Runtime Access Hook
+// Runtime Access Hooks
 // =============================================================================
+
+/**
+ * Internal hook to get the FSM runtime from the store context.
+ *
+ * This hook is used internally by other hooks that need to subscribe to the
+ * FSM runtime using useSyncExternalStore. It provides the runtime's subscribe
+ * and getSnapshot methods for React 18 compatibility.
+ *
+ * For backward compatibility, this hook also checks the legacy DevToolsContext
+ * if no store context is found. This allows existing code using DevToolsProvider
+ * to continue working.
+ *
+ * @internal
+ * @throws Error if used outside DevToolsStoreProvider or DevToolsProvider
+ */
+export function useRuntimeFromStoreContext(): DevToolsFlowRuntimeLike {
+  const store = useContext(DevToolsStoreContext);
+  const legacyRuntime = useContext(DevToolsContext);
+
+  // Primary path: use store context
+  if (store !== null) {
+    const runtime = store.getRuntime();
+
+    if (runtime === null) {
+      throw new Error("DevTools runtime has been disposed.");
+    }
+
+    return runtime;
+  }
+
+  // Fallback: use legacy DevToolsContext for backward compatibility
+  if (legacyRuntime !== null) {
+    return legacyRuntime;
+  }
+
+  // No context found
+  throw new Error(
+    "This hook must be used within a DevToolsStoreProvider. " +
+      "Wrap your component tree with <DevToolsStoreProvider inspector={inspector}>."
+  );
+}
 
 /**
  * Hook to access the underlying DevToolsFlowRuntime.
@@ -199,13 +288,16 @@ export function useDevToolsStoreApi(): StoreApi<DevToolsStore> {
  * This is an escape hatch for advanced use cases that need direct runtime access,
  * such as building merged graphs via getAncestorChain() or getInspector().
  *
- * @returns The DevToolsFlowRuntime, or null if disposed
- * @throws Error if used outside DevToolsStoreProvider
+ * For backward compatibility, this hook also checks the legacy DevToolsContext
+ * if no store context is found.
+ *
+ * @returns The DevToolsFlowRuntimeLike, or null if disposed/not available
+ * @throws Error if used outside DevToolsStoreProvider or DevToolsProvider
  *
  * @example
  * ```tsx
  * function GraphBuilder() {
- *   const runtime = useDevToolsRuntime();
+ *   const runtime = useDevToolsFlowRuntime();
  *   const selectedId = useDevToolsStore(selectFirstSelectedId);
  *
  *   const graph = useMemo(() => {
@@ -219,16 +311,71 @@ export function useDevToolsStoreApi(): StoreApi<DevToolsStore> {
  * }
  * ```
  */
-export function useDevToolsRuntime(): DevToolsFlowRuntime | null {
+export function useDevToolsFlowRuntime(): DevToolsFlowRuntimeLike | null {
   const store = useContext(DevToolsStoreContext);
+  const legacyRuntime = useContext(DevToolsContext);
 
-  if (store === null) {
-    throw new Error("useDevToolsRuntime must be used within a DevToolsStoreProvider.");
+  // Primary path: use store context
+  if (store !== null) {
+    return store.getRuntime();
   }
 
-  // Access runtime via the extended store
-  return store.getRuntime();
+  // Fallback: use legacy DevToolsContext for backward compatibility
+  if (legacyRuntime !== null) {
+    return legacyRuntime;
+  }
+
+  // No context found
+  throw new Error("useDevToolsFlowRuntime must be used within a DevToolsStoreProvider.");
 }
+
+/**
+ * Optional version of useDevToolsFlowRuntime that returns null when no provider is available.
+ *
+ * Use this hook when the component should gracefully handle being outside a provider context.
+ * This is useful for optional UI components that may or may not have DevTools available.
+ *
+ * @returns The DevToolsFlowRuntimeLike, or null if no provider/disposed
+ *
+ * @example
+ * ```tsx
+ * function OptionalDevToolsInfo() {
+ *   const runtime = useDevToolsFlowRuntimeOptional();
+ *
+ *   if (!runtime) {
+ *     return null; // No DevTools available
+ *   }
+ *
+ *   return <DevToolsPanel runtime={runtime} />;
+ * }
+ * ```
+ */
+export function useDevToolsFlowRuntimeOptional(): DevToolsFlowRuntimeLike | null {
+  const store = useContext(DevToolsStoreContext);
+  const legacyRuntime = useContext(DevToolsContext);
+
+  // Primary path: use store context
+  if (store !== null) {
+    return store.getRuntime();
+  }
+
+  // Fallback: use legacy DevToolsContext for backward compatibility
+  if (legacyRuntime !== null) {
+    return legacyRuntime;
+  }
+
+  // No context found - return null instead of throwing
+  return null;
+}
+
+/**
+ * @deprecated Use `useDevToolsFlowRuntime()` instead.
+ * This alias exists for backward compatibility but will be removed in a future version.
+ *
+ * Note: This hook returns `DevToolsFlowRuntime | null`, NOT `DevToolsSnapshot`.
+ * For the FSM snapshot, use `useDevToolsSnapshot()` from `@hex-di/devtools/react`.
+ */
+export const useDevToolsRuntime = useDevToolsFlowRuntime;
 
 // =============================================================================
 // Specialized Hooks
@@ -372,6 +519,65 @@ export function useTracingActions(): Pick<
     stopTracing: state.stopTracing,
     clearTraces: state.clearTraces,
   }));
+}
+
+// =============================================================================
+// Plugin Hooks
+// =============================================================================
+
+/**
+ * Tab configuration for navigation.
+ */
+export interface TabConfig {
+  /** Unique tab identifier */
+  readonly id: string;
+  /** Tab display label */
+  readonly label: string;
+  /** Optional tab icon */
+  readonly icon?: React.ReactElement;
+}
+
+/**
+ * Hook to get the DevTools plugins array.
+ *
+ * Plugins are immutable and provided via DevToolsStoreProvider.
+ * This hook does not cause re-renders on store state changes.
+ *
+ * @returns Array of registered plugins
+ */
+export function usePlugins(): readonly DevToolsPlugin[] {
+  return useContext(DevToolsPluginsContext);
+}
+
+/**
+ * Hook to get the active plugin based on activeTab.
+ *
+ * Combines plugins from context with activeTab from store.
+ *
+ * @returns The active plugin, or undefined if not found
+ */
+export function useActivePlugin(): DevToolsPlugin | undefined {
+  const plugins = usePlugins();
+  const activeTab = useActiveTab();
+  return plugins.find(p => p.id === activeTab);
+}
+
+/**
+ * Hook to get tab configuration for navigation.
+ *
+ * @returns Array of tab configs
+ */
+export function useTabList(): readonly TabConfig[] {
+  const plugins = usePlugins();
+  return useMemo(
+    () =>
+      plugins.map(p => ({
+        id: p.id,
+        label: p.label,
+        icon: p.icon,
+      })),
+    [plugins]
+  );
 }
 
 // =============================================================================
