@@ -1,127 +1,380 @@
 /**
- * App component - Root component for the React Showcase Chat Dashboard.
+ * App component - Root component for the React Showcase.
  *
- * Sets up AsyncContainerProvider with the DI container and renders the
- * ChatRoom component. Uses compound components for loading/error states.
- * Includes HexDiDevTools with multi-container support via InspectorPlugin.
+ * Architecture:
+ * - Unified root container with TracingPlugin and InspectorPlugin
+ * - Chat Dashboard as child container (loads immediately)
+ * - TaskFlow as lazy container (loads on navigation)
+ * - Single HexDiDevTools panel for all containers
+ *
+ * Container Hierarchy:
+ * ```
+ * AppRootContainer (Logger, Config)
+ * ├── ChatContainer (MessageStore, UserSession, ChatService, NotificationService)
+ * │   ├── SharedChild (inherits parent singletons)
+ * │   ├── ForkedChild (snapshot copy of parent singletons)
+ * │   └── IsolatedChild (fresh instances)
+ * └── TaskFlowContainer [LAZY] (TaskApi, TaskCache, FilterStore, etc.)
+ * ```
+ *
+ * @example Usage
+ * ```tsx
+ * import { HexDiDevTools } from '@hex-di/devtools/react';
+ * <HexDiDevTools container={rootContainer} />
+ * ```
+ *
+ * The graph is automatically extracted from the container via InspectorPlugin.
  *
  * @packageDocumentation
  */
 
-// DevTools imports - multi-container support with HexDiDevToolsProvider
-import { HexDiDevTools, HexDiDevToolsProvider, useRegisterContainer } from "@hex-di/devtools/react";
-import { createContainer, pipe, createPluginWrapper } from "@hex-di/runtime";
-import { TracingPlugin } from "@hex-di/tracing";
-import { InspectorPlugin } from "@hex-di/inspector";
+import { BrowserRouter, Routes, Route, NavLink, useRoutes } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import { AsyncContainerProvider, ContainerProvider } from "./di/hooks.js";
-import { appGraph } from "./di/graph.js";
+// DevTools imports
+import { HexDiDevTools } from "@hex-di/devtools/react";
 import {
-  createSharedChildContainer,
-  createForkedChildContainer,
-  createIsolatedChildContainer,
-} from "./di/child-container.js";
+  createContainer,
+  pipe,
+  createPluginWrapper,
+  TracingPlugin,
+  InspectorPlugin,
+} from "@hex-di/runtime";
+
+// React package imports for providers
+import {
+  HexDiAsyncContainerProvider,
+  HexDiLazyContainerProvider,
+  HexDiContainerProvider,
+} from "@hex-di/react";
+
+// DI graphs
+import { rootGraph } from "./di/root-graph.js";
+import { chatGraphFragment } from "./di/chat-graph.js";
+import { createTaskflowGraphFragment } from "./taskflow/di/graph.js";
+
+// Child container graph for Chat Dashboard inheritance demo
+import { PluginChildGraph } from "./di/child-container.js";
+
+// TaskFlow imports
+import { routes as taskflowRoutes } from "./taskflow/routes.js";
+import { ModalProvider } from "./taskflow/components/modals/index.js";
+
+// Chat components
 import { ChatRoom } from "./components/ChatRoom.js";
 
 // =============================================================================
-// Container Creation with InspectorPlugin
+// Plugin Wrappers
 // =============================================================================
 
-// Plugin wrappers for enhancing containers
 const withTracing = createPluginWrapper(TracingPlugin);
 const withInspector = createPluginWrapper(InspectorPlugin);
 
-/**
- * Create the root DI container with TracingPlugin and InspectorPlugin.
- *
- * This is created at module level to ensure a single container instance
- * for the application lifetime. In SSR scenarios, this would be created
- * per-request instead.
- *
- * The container includes (via wrapper pattern):
- * - TracingPlugin: Enables resolution tracking in DevTools
- * - InspectorPlugin: Enables real-time container state inspection
- */
-const container = pipe(createContainer(appGraph), withTracing, withInspector);
-
-/**
- * Create child containers with different inheritance modes.
- *
- * Child containers automatically inherit plugins from their parent.
- * This means each child will have access to:
- * - TracingPlugin: Tracks resolutions in the child container
- * - InspectorPlugin: Enables inspection of child container state
- *
- * The three inheritance modes demonstrate different behaviors:
- * - shared: Child shares parent's singleton instances (live reference)
- * - forked: Child gets a snapshot copy of parent's instances at creation
- * - isolated: Child creates completely fresh instances, ignoring parent's cache
- */
-const sharedChild = createSharedChildContainer(container);
-const forkedChild = createForkedChildContainer(container);
-const isolatedChild = createIsolatedChildContainer(container);
-
 // =============================================================================
-// Container Registration Components
+// Root Container (with plugins)
 // =============================================================================
 
 /**
- * Wrapper component that registers the root container with DevTools.
- * The root container has InspectorPlugin so it can be fully inspected.
+ * Root container with shared infrastructure (Logger, Config).
+ * All feature containers are children of this root.
  */
-function RootContainerSection({ children }: { readonly children: React.ReactNode }) {
-  useRegisterContainer(container, {
-    id: "root",
-    label: "Root Container",
-    kind: "root",
-  });
+const rootContainer = pipe(
+  createContainer(rootGraph, { name: "App Root" }),
+  withTracing,
+  withInspector
+);
 
-  return <>{children}</>;
-}
+// =============================================================================
+// Chat Container (child of root)
+// =============================================================================
 
 /**
- * Wrapper component that registers the shared child container with DevTools.
- * Shared mode: Child shares parent's singleton instances (live reference).
+ * Chat Dashboard container - child of root.
+ * Adds chat-specific services (MessageStore, UserSession, ChatService, NotificationService).
+ *
+ * Child containers automatically inherit parent's plugins (TracingPlugin, InspectorPlugin).
  */
-function SharedChildSection({ children }: { readonly children: React.ReactNode }) {
-  useRegisterContainer(sharedChild, {
-    id: "child-shared",
-    label: "Shared Child",
-    kind: "child",
-    parentId: "root",
-  });
-
-  return <>{children}</>;
-}
+const chatContainer = rootContainer.createChild(chatGraphFragment, { name: "Chat Dashboard" });
 
 /**
- * Wrapper component that registers the forked child container with DevTools.
- * Forked mode: Child gets a snapshot copy of parent's instances at creation.
+ * Create grandchild containers for inheritance demo.
+ * These demonstrate shared/forked/isolated inheritance modes.
+ *
+ * Child containers automatically inherit parent's plugins (TracingPlugin, InspectorPlugin).
  */
-function ForkedChildSection({ children }: { readonly children: React.ReactNode }) {
-  useRegisterContainer(forkedChild, {
-    id: "child-forked",
-    label: "Forked Child",
-    kind: "child",
-    parentId: "root",
-  });
+const sharedChild = chatContainer.createChild(PluginChildGraph, { name: "Shared Child" });
+const forkedChild = chatContainer.createChild(PluginChildGraph, {
+  name: "Forked Child",
+  inheritanceModes: { Logger: "forked" },
+});
+const isolatedChild = chatContainer.createChild(PluginChildGraph, {
+  name: "Isolated Child",
+  inheritanceModes: { Logger: "isolated" },
+});
 
-  return <>{children}</>;
-}
+// =============================================================================
+// QueryClient for TaskFlow
+// =============================================================================
 
 /**
- * Wrapper component that registers the isolated child container with DevTools.
- * Isolated mode: Child creates completely fresh instances, ignoring parent's cache.
+ * QueryClient for TaskFlow's React Query integration.
+ * Created at module level to persist across route changes.
  */
-function IsolatedChildSection({ children }: { readonly children: React.ReactNode }) {
-  useRegisterContainer(isolatedChild, {
-    id: "child-isolated",
-    label: "Isolated Child",
-    kind: "child",
-    parentId: "root",
-  });
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: 1,
+    },
+  },
+});
 
-  return <>{children}</>;
+// =============================================================================
+// TaskFlow Lazy Container
+// =============================================================================
+
+/**
+ * TaskFlow container - lazy loaded child of root.
+ * Only loads when navigating to /taskflow.
+ */
+const lazyTaskflowContainer = rootContainer.createLazyChild(
+  async () => {
+    // Graph fragment is created here with access to queryClient
+    return createTaskflowGraphFragment(queryClient);
+  },
+  { name: "TaskFlow" }
+);
+
+// =============================================================================
+// NOTE: Manual container registration is no longer needed!
+// HexDiDevTools now automatically discovers all child containers via
+// InspectorPlugin's getChildContainers() method.
+// =============================================================================
+
+// =============================================================================
+// Navigation Component
+// =============================================================================
+
+/**
+ * Navigation bar for switching between demos.
+ */
+function AppNavigation() {
+  return (
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-lg font-bold text-gray-800">HexDI</span>
+          <span className="text-sm text-gray-500">React Showcase</span>
+        </div>
+        <div className="flex gap-2">
+          <NavLink
+            to="/"
+            end
+            className={({ isActive }) =>
+              `px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive ? "bg-blue-500 text-white" : "text-gray-600 hover:bg-gray-100"
+              }`
+            }
+          >
+            Chat Dashboard
+          </NavLink>
+          <NavLink
+            to="/taskflow"
+            className={({ isActive }) =>
+              `px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive ? "bg-blue-500 text-white" : "text-gray-600 hover:bg-gray-100"
+              }`
+            }
+          >
+            TaskFlow
+          </NavLink>
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+// =============================================================================
+// Global Loading Component
+// =============================================================================
+
+function GlobalLoadingSpinner() {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto" />
+        <p className="mt-4 text-gray-600">Initializing services...</p>
+      </div>
+    </div>
+  );
+}
+
+function GlobalErrorDisplay({ error }: { readonly error: Error }) {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-red-50 to-pink-100">
+      <div className="bg-white border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow-lg max-w-md">
+        <h2 className="font-bold text-lg mb-2">Initialization Error</h2>
+        <p className="text-sm">{error.message}</p>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Chat Dashboard Demo
+// =============================================================================
+
+/**
+ * Chat Dashboard demo component.
+ * Demonstrates DI container inheritance patterns (shared, forked, isolated).
+ *
+ * NOTE: No manual registration needed! HexDiDevTools auto-discovers all
+ * child containers via InspectorPlugin's getChildContainers() method.
+ */
+function ChatDashboardDemo() {
+  return (
+    <HexDiContainerProvider container={chatContainer}>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 pt-20">
+        <div className="container mx-auto px-4">
+          {/* Header */}
+          <header className="mb-8 text-center">
+            <h1 className="text-3xl font-bold text-gray-800">Chat Dashboard Demo</h1>
+            <p className="mt-2 text-gray-600">
+              Real-Time Chat demonstrating dependency injection inheritance patterns
+            </p>
+          </header>
+
+          {/* Grid: Chat container and 3 grandchild containers */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Chat Root Container */}
+            <div className="rounded-xl border border-gray-200 bg-white/80 p-4 shadow-lg h-full">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-800">Chat Container</h2>
+                <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                  LocalStorage-backed
+                </span>
+              </div>
+              <p className="mb-4 text-sm text-gray-600">
+                Base container with persisted messages via localStorage.
+              </p>
+              <ChatRoom scopePrefix="chat" />
+            </div>
+
+            {/* Shared Child */}
+            <HexDiContainerProvider container={sharedChild}>
+              <div className="rounded-xl border border-green-200 bg-white/80 p-4 shadow-lg h-full">
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-800">Shared Child</h2>
+                  <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                    shared
+                  </span>
+                </div>
+                <p className="mb-4 text-sm text-gray-600">
+                  Shares parent&apos;s Logger instance. Changes are visible to parent.
+                </p>
+                <ChatRoom scopePrefix="shared" />
+              </div>
+            </HexDiContainerProvider>
+
+            {/* Forked Child */}
+            <HexDiContainerProvider container={forkedChild}>
+              <div className="rounded-xl border border-amber-200 bg-white/80 p-4 shadow-lg h-full">
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-800">Forked Child</h2>
+                  <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+                    forked
+                  </span>
+                </div>
+                <p className="mb-4 text-sm text-gray-600">
+                  Gets a snapshot copy of Logger at creation time. Isolated from parent.
+                </p>
+                <ChatRoom scopePrefix="forked" />
+              </div>
+            </HexDiContainerProvider>
+
+            {/* Isolated Child */}
+            <HexDiContainerProvider container={isolatedChild}>
+              <div className="rounded-xl border border-red-200 bg-white/80 p-4 shadow-lg h-full">
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-800">Isolated Child</h2>
+                  <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
+                    isolated
+                  </span>
+                </div>
+                <p className="mb-4 text-sm text-gray-600">
+                  Creates fresh Logger instance, completely independent from parent.
+                </p>
+                <ChatRoom scopePrefix="isolated" />
+              </div>
+            </HexDiContainerProvider>
+          </div>
+
+          {/* Footer */}
+          <footer className="mt-8 text-center text-sm text-gray-500">
+            <p>
+              This showcase demonstrates all three inheritance modes: <strong>shared</strong> (live
+              reference), <strong>forked</strong> (snapshot copy), and <strong>isolated</strong>{" "}
+              (fresh instances).
+            </p>
+            <p className="mt-2 text-xs text-gray-400">
+              Use DevTools to inspect each container. The graph view shows inheritance mode badges
+              and distinguishes own vs inherited services with dashed borders.
+            </p>
+          </footer>
+        </div>
+      </div>
+    </HexDiContainerProvider>
+  );
+}
+
+// =============================================================================
+// TaskFlow Demo
+// =============================================================================
+
+/**
+ * TaskFlow demo component with lazy loading.
+ * Graph only loads when navigating to /taskflow.
+ *
+ * NOTE: No manual registration needed! HexDiDevTools auto-discovers
+ * lazy containers via InspectorPlugin's getChildContainers() method.
+ */
+function TaskFlowDemo() {
+  const element = useRoutes(taskflowRoutes);
+
+  return (
+    <HexDiLazyContainerProvider lazyContainer={lazyTaskflowContainer}>
+      {/* Loading state */}
+      <HexDiLazyContainerProvider.Loading>
+        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 pt-14">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto" />
+            <p className="mt-4 text-gray-600">Loading TaskFlow...</p>
+          </div>
+        </div>
+      </HexDiLazyContainerProvider.Loading>
+
+      {/* Error state */}
+      <HexDiLazyContainerProvider.Error>
+        {error => (
+          <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-red-50 to-pink-100 pt-14">
+            <div className="bg-white border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow-lg max-w-md">
+              <h2 className="font-bold text-lg mb-2">Failed to Load TaskFlow</h2>
+              <p className="text-sm">{error.message}</p>
+            </div>
+          </div>
+        )}
+      </HexDiLazyContainerProvider.Error>
+
+      {/* Ready state - no registration needed */}
+      <HexDiLazyContainerProvider.Ready>
+        <QueryClientProvider client={queryClient}>
+          <ModalProvider>
+            <div className="pt-14">{element}</div>
+          </ModalProvider>
+        </QueryClientProvider>
+      </HexDiLazyContainerProvider.Ready>
+    </HexDiLazyContainerProvider>
+  );
 }
 
 // =============================================================================
@@ -132,158 +385,41 @@ function IsolatedChildSection({ children }: { readonly children: React.ReactNode
  * Root application component.
  *
  * Features:
- * - HexDiDevToolsProvider for multi-container DevTools support
- * - AsyncContainerProvider wraps the app and initializes async adapters
- * - Compound Components (Loading, Error, Ready) for state-based rendering
- * - ChatRoom is the main application content
- * - HexDiDevTools provides development tools with multi-container selection
+ * - Unified root container with TracingPlugin and InspectorPlugin
+ * - HexDiDevTools auto-discovers all child containers via InspectorPlugin
+ * - Single HexDiDevTools panel visible on all routes
+ * - AsyncContainerProvider for root initialization
+ * - Chat Dashboard (/) and TaskFlow (/taskflow/*) demos
  *
- * @example
- * ```tsx
- * import { StrictMode } from "react";
- * import { createRoot } from "react-dom/client";
- * import { App } from "./App";
- *
- * createRoot(document.getElementById("root")!).render(
- *   <StrictMode>
- *     <App />
- *   </StrictMode>
- * );
- * ```
+ * Just pass the root container to HexDiDevTools and it discovers all children.
+ * The graph is automatically extracted from the container via InspectorPlugin.
  */
 export function App() {
   return (
-    <HexDiDevToolsProvider>
-      <AsyncContainerProvider container={container}>
-        {/* Loading state - shown during async adapter initialization */}
-        <AsyncContainerProvider.Loading>
-          <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto" />
-              <p className="mt-4 text-gray-600">Initializing services...</p>
-            </div>
-          </div>
-        </AsyncContainerProvider.Loading>
+    <BrowserRouter>
+      <HexDiAsyncContainerProvider container={rootContainer}>
+        {/* Loading state for root container async initialization */}
+        <HexDiAsyncContainerProvider.Loading>
+          <GlobalLoadingSpinner />
+        </HexDiAsyncContainerProvider.Loading>
 
-        {/* Error state - shown if initialization fails */}
-        <AsyncContainerProvider.Error>
-          {error => (
-            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-red-50 to-pink-100">
-              <div className="bg-white border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow-lg max-w-md">
-                <h2 className="font-bold text-lg mb-2">Initialization Error</h2>
-                <p className="text-sm">{error.message}</p>
-              </div>
-            </div>
-          )}
-        </AsyncContainerProvider.Error>
+        {/* Error state */}
+        <HexDiAsyncContainerProvider.Error>
+          {error => <GlobalErrorDisplay error={error} />}
+        </HexDiAsyncContainerProvider.Error>
 
-        {/* Ready state - shown when container is initialized */}
-        <AsyncContainerProvider.Ready>
-          {/* Main application layout */}
-          <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
-            <div className="container mx-auto px-4">
-              {/* App title */}
-              <header className="mb-8 text-center">
-                <h1 className="text-3xl font-bold text-gray-800">HexDI React Showcase</h1>
-                <p className="mt-2 text-gray-600">
-                  Real-Time Chat Dashboard demonstrating dependency injection patterns
-                </p>
-              </header>
+        {/* Ready state - root container initialized */}
+        <HexDiAsyncContainerProvider.Ready>
+          <AppNavigation />
+          <Routes>
+            <Route path="/" element={<ChatDashboardDemo />} />
+            <Route path="/taskflow/*" element={<TaskFlowDemo />} />
+          </Routes>
+        </HexDiAsyncContainerProvider.Ready>
+      </HexDiAsyncContainerProvider>
 
-              {/* Grid shows root container and 3 child containers with different inheritance modes */}
-              <div className="grid gap-6 lg:grid-cols-2">
-                {/* Root Container - registers itself with DevTools */}
-                <RootContainerSection>
-                  <div className="rounded-xl border border-gray-200 bg-white/80 p-4 shadow-lg h-full">
-                    <div className="mb-3 flex items-center justify-between">
-                      <h2 className="text-lg font-semibold text-gray-800">Root Container</h2>
-                      <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
-                        LocalStorage-backed
-                      </span>
-                    </div>
-                    <p className="mb-4 text-sm text-gray-600">
-                      Base container with persisted messages via localStorage.
-                    </p>
-                    <ChatRoom scopePrefix="root" />
-                  </div>
-                </RootContainerSection>
-
-                {/* Shared Child - shares parent's singleton instances */}
-                <SharedChildSection>
-                  <ContainerProvider container={sharedChild}>
-                    <div className="rounded-xl border border-green-200 bg-white/80 p-4 shadow-lg h-full">
-                      <div className="mb-3 flex items-center justify-between">
-                        <h2 className="text-lg font-semibold text-gray-800">Shared Child</h2>
-                        <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-                          shared
-                        </span>
-                      </div>
-                      <p className="mb-4 text-sm text-gray-600">
-                        Shares parent&apos;s Logger instance. Changes to Logger are visible to
-                        parent.
-                      </p>
-                      <ChatRoom scopePrefix="shared" />
-                    </div>
-                  </ContainerProvider>
-                </SharedChildSection>
-
-                {/* Forked Child - snapshot copy of parent's instances */}
-                <ForkedChildSection>
-                  <ContainerProvider container={forkedChild}>
-                    <div className="rounded-xl border border-amber-200 bg-white/80 p-4 shadow-lg h-full">
-                      <div className="mb-3 flex items-center justify-between">
-                        <h2 className="text-lg font-semibold text-gray-800">Forked Child</h2>
-                        <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
-                          forked
-                        </span>
-                      </div>
-                      <p className="mb-4 text-sm text-gray-600">
-                        Gets a snapshot copy of Logger at creation time. Isolated from parent
-                        changes.
-                      </p>
-                      <ChatRoom scopePrefix="forked" />
-                    </div>
-                  </ContainerProvider>
-                </ForkedChildSection>
-
-                {/* Isolated Child - fresh instances, ignores parent's cache */}
-                <IsolatedChildSection>
-                  <ContainerProvider container={isolatedChild}>
-                    <div className="rounded-xl border border-red-200 bg-white/80 p-4 shadow-lg h-full">
-                      <div className="mb-3 flex items-center justify-between">
-                        <h2 className="text-lg font-semibold text-gray-800">Isolated Child</h2>
-                        <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
-                          isolated
-                        </span>
-                      </div>
-                      <p className="mb-4 text-sm text-gray-600">
-                        Creates fresh Logger instance, completely independent from parent.
-                      </p>
-                      <ChatRoom scopePrefix="isolated" />
-                    </div>
-                  </ContainerProvider>
-                </IsolatedChildSection>
-              </div>
-
-              {/* Feature explanation */}
-              <footer className="mt-8 text-center text-sm text-gray-500">
-                <p>
-                  This showcase demonstrates all three inheritance modes: <strong>shared</strong>{" "}
-                  (live reference), <strong>forked</strong> (snapshot copy), and{" "}
-                  <strong>isolated</strong> (fresh instances).
-                </p>
-                <p className="mt-2 text-xs text-gray-400">
-                  Use DevTools to inspect each container. The graph view shows inheritance mode
-                  badges and distinguishes own vs inherited services with dashed borders.
-                </p>
-              </footer>
-            </div>
-          </div>
-        </AsyncContainerProvider.Ready>
-
-        {/* HexDiDevTools - now with multi-container support via HexDiDevToolsProvider */}
-        <HexDiDevTools graph={appGraph} container={container} position="bottom-right" />
-      </AsyncContainerProvider>
-    </HexDiDevToolsProvider>
+      {/* Single DevTools panel - auto-discovers all child containers */}
+      <HexDiDevTools container={rootContainer} position="bottom-right" />
+    </BrowserRouter>
   );
 }

@@ -66,7 +66,7 @@ describe("RuntimeResolver scope registration", () => {
     };
   }
 
-  const container = createContainer(graph);
+  const container = createContainer(graph, { name: "Test" });
 
   test("scopes created through RuntimeResolver wrapper should be registered with the original container", () => {
     // Create RuntimeResolver wrapper like React does
@@ -86,7 +86,7 @@ describe("RuntimeResolver scope registration", () => {
 
   test("nested scopes through wrapper should also be registered", () => {
     // Create a fresh container for this test
-    const freshContainer = createContainer(graph);
+    const freshContainer = createContainer(graph, { name: "Test" });
     const runtimeResolver = toRuntimeResolver(freshContainer);
 
     // Create a scope and then a nested scope
@@ -117,7 +117,7 @@ describe("RuntimeResolver scope registration", () => {
     const withMock = createPluginWrapper(MockPlugin);
 
     // Create plugin-wrapped container like App.tsx does
-    const wrappedContainer = pipe(createContainer(graph), withMock);
+    const wrappedContainer = pipe(createContainer(graph, { name: "Test" }), withMock);
 
     // Create RuntimeResolver from the wrapped container (like AsyncContainerProvider does)
     const runtimeResolver = toRuntimeResolver(wrappedContainer);
@@ -136,7 +136,7 @@ describe("RuntimeResolver scope registration", () => {
 
   test("inspector created BEFORE scope creation should see scopes on refresh", () => {
     // Create fresh container
-    const freshContainer = createContainer(graph);
+    const freshContainer = createContainer(graph, { name: "Test" });
     const runtimeResolver = toRuntimeResolver(freshContainer);
 
     // Create inspector FIRST (like DevTools does on initial mount)
@@ -163,7 +163,7 @@ describe("RuntimeResolver scope registration", () => {
     //
     // Bug: disposed scope-1 stays in childScopes Set, blocking visibility
 
-    const freshContainer = createContainer(graph);
+    const freshContainer = createContainer(graph, { name: "Test" });
     const runtimeResolver = toRuntimeResolver(freshContainer);
     const inspector = createInspector(freshContainer);
 
@@ -230,7 +230,7 @@ describe("RuntimeResolver scope registration", () => {
       createApi: () => ({ mock: true }),
     });
     const withMock = createPluginWrapper(MockPlugin);
-    const pluginContainer = pipe(createContainer(graph), withMock);
+    const pluginContainer = pipe(createContainer(graph, { name: "Test" }), withMock);
 
     // Create inspector on the plugin-wrapped container (like DevTools does)
     const inspector = createInspector(pluginContainer);
@@ -284,7 +284,7 @@ describe("RuntimeResolver scope registration", () => {
       createApi: () => ({ mock: true }),
     });
     const withMock = createPluginWrapper(MockPlugin);
-    const pluginContainer = pipe(createContainer(graph), withMock);
+    const pluginContainer = pipe(createContainer(graph, { name: "Test" }), withMock);
 
     // Create inspector on the plugin-wrapped container (like DevTools does)
     const inspector = createInspector(pluginContainer);
@@ -312,7 +312,7 @@ describe("RuntimeResolver scope registration", () => {
     // 2. Unmount effect cleanup: void dispose() called (non-blocking)
     // 3. Remount: if isDisposed, create new scope
 
-    const freshContainer = createContainer(graph);
+    const freshContainer = createContainer(graph, { name: "Test" });
     const inspector = createInspector(freshContainer);
     const runtimeResolver = toRuntimeResolver(freshContainer);
 

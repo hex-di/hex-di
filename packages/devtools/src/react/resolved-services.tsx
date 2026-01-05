@@ -9,7 +9,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, type ReactElement } from "react";
 import type { Lifetime, FactoryKind } from "@hex-di/graph";
-import type { InheritanceMode } from "@hex-di/devtools-core";
+import type { InheritanceMode } from "@hex-di/plugin";
 import {
   serviceListStyles,
   serviceItemStyles,

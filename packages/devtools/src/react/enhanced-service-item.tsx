@@ -9,13 +9,10 @@
  */
 
 import React, { useState, type ReactElement, type CSSProperties } from "react";
-import type { TracingAPI } from "@hex-di/devtools-core";
+import type { TracingAPI } from "@hex-di/plugin";
 import type { ServiceWithRelations } from "./services-tree.js";
 import { serviceItemStyles, getLifetimeBadgeStyle } from "./styles.js";
-import {
-  ServicePerformanceDisplay,
-  useServicePerformance,
-} from "./service-performance.js";
+import { ServicePerformanceDisplay, useServicePerformance } from "./service-performance.js";
 
 // =============================================================================
 // Types
@@ -148,32 +145,24 @@ interface DependencyListProps {
   readonly emptyText: string;
 }
 
-function DependencyList({
-  items,
-  onItemClick,
-  emptyText,
-}: DependencyListProps): ReactElement {
+function DependencyList({ items, onItemClick, emptyText }: DependencyListProps): ReactElement {
   if (items.length === 0) {
     return <span style={enhancedStyles.emptyText}>{emptyText}</span>;
   }
 
   return (
     <div style={enhancedStyles.listContainer}>
-      {items.map((name) => (
+      {items.map(name => (
         <span
           key={name}
           style={{
             ...enhancedStyles.listItem,
-            ...(onItemClick !== undefined
-              ? enhancedStyles.listItemClickable
-              : {}),
+            ...(onItemClick !== undefined ? enhancedStyles.listItemClickable : {}),
           }}
-          onClick={
-            onItemClick !== undefined ? () => onItemClick(name) : undefined
-          }
+          onClick={onItemClick !== undefined ? () => onItemClick(name) : undefined}
           onKeyDown={
             onItemClick !== undefined
-              ? (e) => {
+              ? e => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
                     onItemClick(name);
@@ -229,15 +218,9 @@ export function EnhancedServiceItem({
 }: EnhancedServiceItemProps): ReactElement {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const performance = useServicePerformance(
-    service.portName,
-    tracingAPI,
-    100
-  );
+  const performance = useServicePerformance(service.portName, tracingAPI, 100);
 
-  const headerStyle = isExpanded
-    ? enhancedStyles.headerExpanded
-    : enhancedStyles.header;
+  const headerStyle = isExpanded ? enhancedStyles.headerExpanded : enhancedStyles.header;
 
   const containerStyle: CSSProperties = {
     ...enhancedStyles.container,
@@ -276,10 +259,7 @@ export function EnhancedServiceItem({
   const totalDependents = service.dependents.length;
 
   return (
-    <div
-      data-testid={`enhanced-service-item-${service.portName}`}
-      style={containerStyle}
-    >
+    <div data-testid={`enhanced-service-item-${service.portName}`} style={containerStyle}>
       <div
         style={headerStyle}
         onClick={() => setIsExpanded(!isExpanded)}
@@ -314,9 +294,7 @@ export function EnhancedServiceItem({
           </span>
         )}
 
-        <span style={getLifetimeBadgeStyle(service.lifetime)}>
-          {service.lifetime}
-        </span>
+        <span style={getLifetimeBadgeStyle(service.lifetime)}>{service.lifetime}</span>
       </div>
 
       {isExpanded && (
@@ -338,17 +316,13 @@ export function EnhancedServiceItem({
             {service.isResolved && service.resolvedAt !== undefined && (
               <div style={enhancedStyles.statusRow}>
                 <span style={enhancedStyles.statusLabel}>Created At:</span>
-                <span style={enhancedStyles.timestamp}>
-                  {formatTimestamp(service.resolvedAt)}
-                </span>
+                <span style={enhancedStyles.timestamp}>{formatTimestamp(service.resolvedAt)}</span>
               </div>
             )}
             {service.isResolved && service.resolutionOrder !== undefined && (
               <div style={enhancedStyles.statusRow}>
                 <span style={enhancedStyles.statusLabel}>Resolution #:</span>
-                <span style={enhancedStyles.statusValue}>
-                  {service.resolutionOrder}
-                </span>
+                <span style={enhancedStyles.statusValue}>{service.resolutionOrder}</span>
               </div>
             )}
           </div>
@@ -367,9 +341,7 @@ export function EnhancedServiceItem({
 
           {/* Dependents Section */}
           <div style={enhancedStyles.section}>
-            <div style={enhancedStyles.sectionHeader}>
-              Used By ({service.dependents.length})
-            </div>
+            <div style={enhancedStyles.sectionHeader}>Used By ({service.dependents.length})</div>
             <DependencyList
               items={service.dependents}
               onItemClick={onDependencyClick}

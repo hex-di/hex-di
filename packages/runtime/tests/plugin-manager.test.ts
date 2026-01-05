@@ -98,7 +98,7 @@ describe("Plugin Wrappers", () => {
     });
 
     const withTracing = createPluginWrapper(TracingPlugin);
-    const container = pipe(createContainer(createTestGraph()), withTracing);
+    const container = pipe(createContainer(createTestGraph(), { name: "Test" }), withTracing);
 
     expect(initCalled).toHaveBeenCalledTimes(1);
     expect(container[TRACING]).toBeDefined();
@@ -133,7 +133,11 @@ describe("Plugin Wrappers", () => {
     const withTracing = createPluginWrapper(TracingPlugin);
     const withMetrics = createPluginWrapper(MetricsPlugin);
 
-    const container = pipe(createContainer(createTestGraph()), withTracing, withMetrics);
+    const container = pipe(
+      createContainer(createTestGraph(), { name: "Test" }),
+      withTracing,
+      withMetrics
+    );
 
     // Wrappers are applied in pipe order
     expect(initOrder).toEqual(["tracing", "metrics"]);
@@ -153,7 +157,7 @@ describe("Plugin Wrappers", () => {
     });
 
     const withTracing = createPluginWrapper(TracingPlugin);
-    const container = pipe(createContainer(createTestGraph()), withTracing);
+    const container = pipe(createContainer(createTestGraph(), { name: "Test" }), withTracing);
 
     // Container should still have resolve method
     const service = container.resolve(TestPort);
@@ -176,7 +180,7 @@ describe("Plugin Wrappers", () => {
     });
 
     const withTracing = createPluginWrapper(TracingPlugin);
-    const container = pipe(createContainer(createTestGraph()), withTracing);
+    const container = pipe(createContainer(createTestGraph(), { name: "Test" }), withTracing);
 
     // After applying wrapper, we can access the API
     container[TRACING].addTrace("test-trace");
@@ -212,7 +216,7 @@ describe("Hook Installation via Wrappers", () => {
     });
 
     const withTracing = createPluginWrapper(TracingPlugin);
-    const container = pipe(createContainer(createTestGraph()), withTracing);
+    const container = pipe(createContainer(createTestGraph(), { name: "Test" }), withTracing);
 
     container.resolve(TestPort);
 
@@ -262,7 +266,11 @@ describe("Hook Installation via Wrappers", () => {
     const withTracing = createPluginWrapper(TracingPlugin);
     const withMetrics = createPluginWrapper(MetricsPlugin);
 
-    const container = pipe(createContainer(createTestGraph()), withTracing, withMetrics);
+    const container = pipe(
+      createContainer(createTestGraph(), { name: "Test" }),
+      withTracing,
+      withMetrics
+    );
 
     container.resolve(TestPort);
 
@@ -300,12 +308,16 @@ describe("Hook Installation via Wrappers", () => {
 
     // Container with hooks option
     const container = pipe(
-      createContainer(createTestGraph(), {
-        hooks: {
-          beforeResolve: () => hookOrder.push("options-before"),
-          afterResolve: () => hookOrder.push("options-after"),
-        },
-      }),
+      createContainer(
+        createTestGraph(),
+        { name: "Test" },
+        {
+          hooks: {
+            beforeResolve: () => hookOrder.push("options-before"),
+            afterResolve: () => hookOrder.push("options-after"),
+          },
+        }
+      ),
       withTracing
     );
 
@@ -338,7 +350,7 @@ describe("Plugin Disposal via Wrappers", () => {
     });
 
     const withTracing = createPluginWrapper(TracingPlugin);
-    const container = pipe(createContainer(createTestGraph()), withTracing);
+    const container = pipe(createContainer(createTestGraph(), { name: "Test" }), withTracing);
 
     await container.dispose();
 
@@ -377,7 +389,11 @@ describe("Plugin Disposal via Wrappers", () => {
     const withTracing = createPluginWrapper(TracingPlugin);
     const withMetrics = createPluginWrapper(MetricsPlugin);
 
-    const container = pipe(createContainer(createTestGraph()), withTracing, withMetrics);
+    const container = pipe(
+      createContainer(createTestGraph(), { name: "Test" }),
+      withTracing,
+      withMetrics
+    );
 
     await container.dispose();
 
@@ -403,7 +419,7 @@ describe("PluginManager Direct Usage", () => {
     });
 
     const manager = new PluginManager();
-    const container = createContainer(createTestGraph());
+    const container = createContainer(createTestGraph(), { name: "Test" });
     const accessible = { [INTERNAL_ACCESS]: container[INTERNAL_ACCESS] };
 
     manager.initialize([TracingPlugin], accessible);
@@ -445,7 +461,7 @@ describe("PluginManager Direct Usage", () => {
     });
 
     const manager = new PluginManager();
-    const container = createContainer(createTestGraph());
+    const container = createContainer(createTestGraph(), { name: "Test" });
     const accessible = { [INTERNAL_ACCESS]: container[INTERNAL_ACCESS] };
 
     // Pass in wrong order - manager should sort
@@ -472,7 +488,7 @@ describe("PluginManager Direct Usage", () => {
     });
 
     const manager = new PluginManager();
-    const container = createContainer(createTestGraph());
+    const container = createContainer(createTestGraph(), { name: "Test" });
     const accessible = { [INTERNAL_ACCESS]: container[INTERNAL_ACCESS] };
 
     expect(() => {
@@ -520,7 +536,7 @@ describe("PluginManager Direct Usage", () => {
     });
 
     const manager = new PluginManager();
-    const container = createContainer(createTestGraph());
+    const container = createContainer(createTestGraph(), { name: "Test" });
     const accessible = { [INTERNAL_ACCESS]: container[INTERNAL_ACCESS] };
 
     expect(() => {
@@ -540,7 +556,7 @@ describe("PluginManager Direct Usage", () => {
     });
 
     const manager = new PluginManager();
-    const container = createContainer(createTestGraph());
+    const container = createContainer(createTestGraph(), { name: "Test" });
     const accessible = { [INTERNAL_ACCESS]: container[INTERNAL_ACCESS] };
 
     expect(() => {
@@ -583,7 +599,7 @@ describe("Plugin Context in Wrappers", () => {
     const withMetrics = createPluginWrapper(MetricsPlugin);
 
     // Apply tracing first, then metrics
-    pipe(createContainer(createTestGraph()), withTracing, withMetrics);
+    pipe(createContainer(createTestGraph(), { name: "Test" }), withTracing, withMetrics);
 
     expect(hasPluginResult).toBe(true);
   });
@@ -615,7 +631,7 @@ describe("Scope Events via Wrappers", () => {
     });
 
     const withTracing = createPluginWrapper(TracingPlugin);
-    const container = pipe(createContainer(createTestGraph()), withTracing);
+    const container = pipe(createContainer(createTestGraph(), { name: "Test" }), withTracing);
 
     // Note: In wrapper pattern, scope events may not be automatically fired
     // because the wrapper is applied to the container, not the scope.
@@ -646,7 +662,7 @@ describe("Container Internal Access", () => {
     });
 
     const withTracing = createPluginWrapper(TracingPlugin);
-    pipe(createContainer(createTestGraph()), withTracing);
+    pipe(createContainer(createTestGraph(), { name: "Test" }), withTracing);
 
     expect(containerAccessible).toBe(true);
   });
@@ -658,7 +674,7 @@ describe("Container Internal Access", () => {
 
 describe("Edge Cases", () => {
   it("should handle empty wrapper chain", () => {
-    const container = createContainer(createTestGraph());
+    const container = createContainer(createTestGraph(), { name: "Test" });
     const service = container.resolve(TestPort);
     expect(service.value).toBe(42);
   });
@@ -676,7 +692,7 @@ describe("Edge Cases", () => {
     });
 
     const withTracing = createPluginWrapper(TracingPlugin);
-    const container = pipe(createContainer(createTestGraph()), withTracing);
+    const container = pipe(createContainer(createTestGraph(), { name: "Test" }), withTracing);
 
     // Should work without errors
     container.resolve(TestPort);
@@ -695,7 +711,7 @@ describe("Edge Cases", () => {
     });
 
     const withTracing = createPluginWrapper(TracingPlugin);
-    const container = pipe(createContainer(createTestGraph()), withTracing);
+    const container = pipe(createContainer(createTestGraph(), { name: "Test" }), withTracing);
 
     // API should be frozen
     expect(Object.isFrozen(container[TRACING])).toBe(true);

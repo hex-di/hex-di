@@ -79,7 +79,7 @@ describe("Internal Access Protocol", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Access internal state via Symbol
     const accessor = getContainerAccessor(container);
@@ -102,7 +102,7 @@ describe("Internal Access Protocol", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     const accessor = getContainerAccessor(container);
     const state = accessor();
@@ -124,7 +124,7 @@ describe("Internal Access Protocol", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     await container.dispose();
 
@@ -141,7 +141,7 @@ describe("Internal Access Protocol", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     const scope = container.createScope();
     const scopeAccessor = getScopeAccessor(scope);
@@ -162,7 +162,7 @@ describe("Internal Access Protocol", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     const scope1 = container.createScope();
     const scope2 = container.createScope();
@@ -190,7 +190,7 @@ describe("Internal Access Protocol", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     const scope = container.createScope();
     // Resolve to populate scopedMemo

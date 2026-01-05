@@ -4,6 +4,7 @@
  * Simple registry that owns adapter storage and lookup logic:
  * - Local adapters (registered directly or via overrides/extensions)
  * - Parent fallback (for child containers)
+ * - Override tracking (for DevTools visualization)
  *
  * @packageDocumentation
  * @internal
@@ -21,6 +22,8 @@ import { ADAPTER_ACCESS } from "../inspector/symbols.js";
  * - **get**: Get adapter, checking local first then parent
  * - **isLocal**: Check if port was registered locally (not inherited)
  * - **entries**: Iterate over local adapters
+ * - **markOverride**: Mark a port as overriding a parent adapter
+ * - **isOverride**: Check if port overrides a parent adapter
  *
  * @example
  * ```typescript
@@ -35,6 +38,11 @@ import { ADAPTER_ACCESS } from "../inspector/symbols.js";
  * // Check if locally registered
  * if (registry.isLocal(port)) {
  *   // Handle local resolution
+ * }
+ *
+ * // Check if an override
+ * if (registry.isOverride("Logger")) {
+ *   // Handle override styling in DevTools
  * }
  * ```
  *
@@ -53,6 +61,16 @@ export class AdapterRegistry<
    * Set of ports registered locally (not inherited from parent).
    */
   private readonly localPorts: Set<Port<unknown, string>> = new Set();
+
+  /**
+   * Set of port names that override parent adapters.
+   *
+   * Enables DevTools to distinguish between:
+   * - own: New adapter (not in parent)
+   * - inherited: Adapter from parent (not overridden)
+   * - overridden: Adapter that replaces parent's adapter
+   */
+  private readonly _overridePorts: Set<string> = new Set();
 
   /**
    * Creates a new AdapterRegistry.
@@ -79,6 +97,18 @@ export class AdapterRegistry<
     if (markLocal) {
       this.localPorts.add(port);
     }
+  }
+
+  /**
+   * Marks a port name as an override of a parent adapter.
+   *
+   * Should be called during child container creation when processing
+   * the overrides map (adapters that replace parent adapters).
+   *
+   * @param portName - The port name to mark as override
+   */
+  markOverride(portName: string): void {
+    this._overridePorts.add(portName);
   }
 
   /**
@@ -116,6 +146,25 @@ export class AdapterRegistry<
    */
   isLocal(port: Port<unknown, string>): boolean {
     return this.localPorts.has(port);
+  }
+
+  /**
+   * Checks if a port name is an override of a parent adapter.
+   *
+   * @param portName - The port name to check
+   * @returns True if the port overrides a parent adapter
+   */
+  isOverride(portName: string): boolean {
+    return this._overridePorts.has(portName);
+  }
+
+  /**
+   * Gets the set of port names that are overrides.
+   *
+   * @returns A readonly set of overridden port names
+   */
+  get overridePorts(): ReadonlySet<string> {
+    return this._overridePorts;
   }
 
   /**

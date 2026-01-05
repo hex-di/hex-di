@@ -1,0 +1,247 @@
+/**
+ * Tests for property-based API (`container.inspector`, `container.tracer`).
+ *
+ * These tests verify that the inspector and tracer APIs are available as
+ * direct readonly properties on containers, following the recommendation
+ * from the DI Container Architect for maximum discoverability and zero ceremony.
+ *
+ * @packageDocumentation
+ */
+
+import { describe, it, expect, vi, expectTypeOf } from "vitest";
+import { createPort } from "@hex-di/ports";
+import { GraphBuilder, createAdapter } from "@hex-di/graph";
+import { createContainer } from "../../src/container/factory.js";
+import type { Container, InferContainerProvides } from "../../src/types.js";
+import type { InspectorAPI } from "../../src/plugins/inspector/types.js";
+import type { TracingAPI } from "@hex-di/plugin";
+
+// =============================================================================
+// Test Fixtures
+// =============================================================================
+
+interface Logger {
+  log(message: string): void;
+}
+
+interface Database {
+  query(sql: string): unknown;
+}
+
+const LoggerPort = createPort<"Logger", Logger>("Logger");
+const DatabasePort = createPort<"Database", Database>("Database");
+
+function createTestGraph() {
+  const LoggerAdapter = createAdapter({
+    provides: LoggerPort,
+    requires: [],
+    lifetime: "singleton",
+    factory: () => ({ log: vi.fn() }),
+  });
+
+  const DatabaseAdapter = createAdapter({
+    provides: DatabasePort,
+    requires: [LoggerPort],
+    lifetime: "singleton",
+    factory: ({ Logger }) => ({ query: () => Logger }),
+  });
+
+  return GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
+}
+
+function createChildGraph() {
+  const LoggerOverride = createAdapter({
+    provides: LoggerPort,
+    requires: [],
+    lifetime: "singleton",
+    factory: () => ({ log: vi.fn() }),
+  });
+
+  return GraphBuilder.create().override(LoggerOverride).build();
+}
+
+// =============================================================================
+// Property-Based API Tests
+// =============================================================================
+
+describe("Property-Based API", () => {
+  describe("container.inspector property", () => {
+    it("exists and returns InspectorAPI", () => {
+      const graph = createTestGraph();
+      const container = createContainer(graph, { name: "TestContainer" });
+
+      expect(container.inspector).toBeDefined();
+
+      // Verify it has the expected InspectorAPI methods
+      const inspector = container.inspector;
+      expect(typeof inspector.getSnapshot).toBe("function");
+      expect(typeof inspector.getScopeTree).toBe("function");
+      expect(typeof inspector.listPorts).toBe("function");
+      expect(typeof inspector.isResolved).toBe("function");
+      expect(typeof inspector.getContainerKind).toBe("function");
+      expect(typeof inspector.getPhase).toBe("function");
+      expect(typeof inspector.isDisposed).toBe("boolean");
+    });
+
+    it("is non-enumerable", () => {
+      const graph = createTestGraph();
+      const container = createContainer(graph, { name: "TestContainer" });
+
+      const propertyDescriptor = Object.getOwnPropertyDescriptor(container, "inspector");
+      expect(propertyDescriptor).toBeDefined();
+      expect(propertyDescriptor?.enumerable).toBe(false);
+    });
+
+    it("is frozen/immutable", () => {
+      const graph = createTestGraph();
+      const container = createContainer(graph, { name: "TestContainer" });
+
+      const inspector = container.inspector;
+      expect(Object.isFrozen(inspector)).toBe(true);
+    });
+  });
+
+  describe("container.tracer property", () => {
+    it("exists and returns TracerAPI", () => {
+      const graph = createTestGraph();
+      const container = createContainer(graph, { name: "TestContainer" });
+
+      expect(container.tracer).toBeDefined();
+
+      // Verify it has the expected TracingAPI methods
+      const tracer = container.tracer;
+      expect(typeof tracer.getTraces).toBe("function");
+      expect(typeof tracer.getStats).toBe("function");
+      expect(typeof tracer.pause).toBe("function");
+      expect(typeof tracer.resume).toBe("function");
+      expect(typeof tracer.clear).toBe("function");
+      expect(typeof tracer.subscribe).toBe("function");
+      expect(typeof tracer.isPaused).toBe("function");
+      expect(typeof tracer.pin).toBe("function");
+      expect(typeof tracer.unpin).toBe("function");
+    });
+
+    it("is non-enumerable", () => {
+      const graph = createTestGraph();
+      const container = createContainer(graph, { name: "TestContainer" });
+
+      const propertyDescriptor = Object.getOwnPropertyDescriptor(container, "tracer");
+      expect(propertyDescriptor).toBeDefined();
+      expect(propertyDescriptor?.enumerable).toBe(false);
+    });
+
+    it("is frozen/immutable", () => {
+      const graph = createTestGraph();
+      const container = createContainer(graph, { name: "TestContainer" });
+
+      const tracer = container.tracer;
+      expect(Object.isFrozen(tracer)).toBe(true);
+    });
+  });
+
+  describe("child container properties", () => {
+    it("child containers have inspector property", () => {
+      const graph = createTestGraph();
+      const container = createContainer(graph, { name: "ParentContainer" });
+      const childGraph = createChildGraph();
+      const child = container.createChild(childGraph, { name: "ChildContainer" });
+
+      expect(child.inspector).toBeDefined();
+      expect(typeof child.inspector.getSnapshot).toBe("function");
+      expect(typeof child.inspector.getContainerKind).toBe("function");
+
+      // Child container should report as "child" kind
+      expect(child.inspector.getContainerKind()).toBe("child");
+    });
+
+    it("child containers have tracer property", () => {
+      const graph = createTestGraph();
+      const container = createContainer(graph, { name: "ParentContainer" });
+      const childGraph = createChildGraph();
+      const child = container.createChild(childGraph, { name: "ChildContainer" });
+
+      expect(child.tracer).toBeDefined();
+      expect(typeof child.tracer.getTraces).toBe("function");
+      expect(typeof child.tracer.getStats).toBe("function");
+    });
+
+    it("child container properties are non-enumerable and frozen", () => {
+      const graph = createTestGraph();
+      const container = createContainer(graph, { name: "ParentContainer" });
+      const childGraph = createChildGraph();
+      const child = container.createChild(childGraph, { name: "ChildContainer" });
+
+      // Inspector
+      const inspectorDescriptor = Object.getOwnPropertyDescriptor(child, "inspector");
+      expect(inspectorDescriptor?.enumerable).toBe(false);
+      expect(Object.isFrozen(child.inspector)).toBe(true);
+
+      // Tracer
+      const tracerDescriptor = Object.getOwnPropertyDescriptor(child, "tracer");
+      expect(tracerDescriptor?.enumerable).toBe(false);
+      expect(Object.isFrozen(child.tracer)).toBe(true);
+    });
+  });
+
+  describe("type inference", () => {
+    it("container.inspector.getSnapshot() return type is correctly inferred", () => {
+      const graph = createTestGraph();
+      const container = createContainer(graph, { name: "TestContainer" });
+
+      // This test passes if it compiles - verifies type inference
+      const snapshot = container.inspector.getSnapshot();
+
+      // Runtime verification that snapshot has expected shape
+      expect(snapshot).toBeDefined();
+      expect("kind" in snapshot).toBe(true);
+      expect("containerName" in snapshot).toBe(true);
+      expect(snapshot.containerName).toBe("TestContainer");
+    });
+
+    it("container.tracer methods have correctly inferred types", () => {
+      const graph = createTestGraph();
+      const container = createContainer(graph, { name: "TestContainer" });
+
+      // This test passes if it compiles - verifies type inference
+      const traces = container.tracer.getTraces();
+      const stats = container.tracer.getStats();
+
+      // Runtime verification
+      expect(Array.isArray(traces)).toBe(true);
+      expect(typeof stats.totalResolutions).toBe("number");
+      expect(typeof stats.averageDuration).toBe("number");
+    });
+  });
+});
+
+// =============================================================================
+// Type-Level Tests (compile-time verification)
+// =============================================================================
+
+describe("Type-Level Property API Tests", () => {
+  it("Container type includes inspector property", () => {
+    const graph = createTestGraph();
+    const container = createContainer(graph, { name: "TestContainer" });
+
+    // This compiles only if container.inspector is InspectorAPI
+    expectTypeOf(container.inspector).toMatchTypeOf<InspectorAPI>();
+  });
+
+  it("Container type includes tracer property", () => {
+    const graph = createTestGraph();
+    const container = createContainer(graph, { name: "TestContainer" });
+
+    // This compiles only if container.tracer is TracingAPI
+    expectTypeOf(container.tracer).toMatchTypeOf<TracingAPI>();
+  });
+
+  it("child container types include inspector and tracer properties", () => {
+    const graph = createTestGraph();
+    const container = createContainer(graph, { name: "ParentContainer" });
+    const childGraph = createChildGraph();
+    const child = container.createChild(childGraph, { name: "ChildContainer" });
+
+    expectTypeOf(child.inspector).toMatchTypeOf<InspectorAPI>();
+    expectTypeOf(child.tracer).toMatchTypeOf<TracingAPI>();
+  });
+});

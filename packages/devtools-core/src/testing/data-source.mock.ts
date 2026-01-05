@@ -5,13 +5,8 @@
  * @packageDocumentation
  */
 
-import type {
-  ExportedGraph,
-  TraceEntry,
-  TraceStats,
-  ContainerSnapshot,
-  PresenterDataSourceContract,
-} from "../types.js";
+import type { ExportedGraph, PresenterDataSourceContract } from "../types.js";
+import type { TraceEntry, TraceStats, ContainerSnapshot } from "@hex-di/plugin";
 
 // =============================================================================
 // Mock Configuration
@@ -105,10 +100,7 @@ export interface MockDataSourceActions {
    * @param snapshot - The new snapshot
    * @param autoTrigger - Whether to automatically trigger subscribers (default: true)
    */
-  _setSnapshot(
-    snapshot: ContainerSnapshot | null,
-    autoTrigger?: boolean
-  ): void;
+  _setSnapshot(snapshot: ContainerSnapshot | null, autoTrigger?: boolean): void;
 
   /**
    * Get all currently subscribed callbacks.
@@ -258,18 +250,14 @@ export function createMockDataSource(
     pinTrace(traceId: string): void {
       pinnedTraceIds.add(traceId);
       // Update the trace to be pinned
-      traces = traces.map((trace) =>
-        trace.id === traceId ? { ...trace, isPinned: true } : trace
-      );
+      traces = traces.map(trace => (trace.id === traceId ? { ...trace, isPinned: true } : trace));
       triggerUpdate();
     },
 
     unpinTrace(traceId: string): void {
       pinnedTraceIds.delete(traceId);
       // Update the trace to be unpinned
-      traces = traces.map((trace) =>
-        trace.id === traceId ? { ...trace, isPinned: false } : trace
-      );
+      traces = traces.map(trace => (trace.id === traceId ? { ...trace, isPinned: false } : trace));
       triggerUpdate();
     },
 
@@ -306,10 +294,7 @@ export function createMockDataSource(
       }
     },
 
-    _setSnapshot(
-      newSnapshot: ContainerSnapshot | null,
-      autoTrigger = true
-    ): void {
+    _setSnapshot(newSnapshot: ContainerSnapshot | null, autoTrigger = true): void {
       snapshot = newSnapshot;
       if (autoTrigger) {
         triggerUpdate();

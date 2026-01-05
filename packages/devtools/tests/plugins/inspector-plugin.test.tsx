@@ -12,7 +12,7 @@ import React from "react";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import type { ExportedGraph } from "@hex-di/devtools-core";
-import { InspectorPlugin } from "../../src/plugins/inspector-plugin.js";
+import { InspectorTabPlugin } from "../../src/plugins/inspector-plugin.js";
 import { InspectorPluginContent } from "../../src/plugins/inspector/inspector-content.js";
 import type {
   PluginProps,
@@ -120,25 +120,25 @@ function createMockGraphWithServices(
 }
 
 // =============================================================================
-// InspectorPlugin Factory Tests
+// InspectorTabPlugin Factory Tests
 // =============================================================================
 
-describe("InspectorPlugin", () => {
+describe("InspectorTabPlugin", () => {
   describe("plugin factory", () => {
     it("should create a plugin with id 'inspector'", () => {
-      const plugin = InspectorPlugin();
+      const plugin = InspectorTabPlugin();
 
       expect(plugin.id).toBe("inspector");
     });
 
     it("should create a plugin with label 'Inspector'", () => {
-      const plugin = InspectorPlugin();
+      const plugin = InspectorTabPlugin();
 
       expect(plugin.label).toBe("Inspector");
     });
 
     it("should include a keyboard shortcut 'i' to focus inspector tab", () => {
-      const plugin = InspectorPlugin();
+      const plugin = InspectorTabPlugin();
 
       expect(plugin.shortcuts).toBeDefined();
       expect(plugin.shortcuts).toHaveLength(1);
@@ -149,14 +149,14 @@ describe("InspectorPlugin", () => {
     });
 
     it("should have a component defined", () => {
-      const plugin = InspectorPlugin();
+      const plugin = InspectorTabPlugin();
 
       expect(plugin.component).toBeDefined();
       expect(typeof plugin.component).toBe("function");
     });
 
     it("should return a frozen plugin object", () => {
-      const plugin = InspectorPlugin();
+      const plugin = InspectorTabPlugin();
 
       expect(Object.isFrozen(plugin)).toBe(true);
     });
@@ -269,7 +269,7 @@ describe("InspectorPluginContent", () => {
 // Integration Tests
 // =============================================================================
 
-describe("InspectorPlugin Integration", () => {
+describe("InspectorTabPlugin Integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -279,7 +279,7 @@ describe("InspectorPlugin Integration", () => {
   });
 
   it("should be usable as a DevToolsPlugin", () => {
-    const plugin = InspectorPlugin();
+    const plugin = InspectorTabPlugin();
 
     // Verify it satisfies the DevToolsPlugin interface
     expect(plugin).toHaveProperty("id");

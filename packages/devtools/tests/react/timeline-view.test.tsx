@@ -16,7 +16,7 @@ import React from "react";
 import { TimelineView, type TimelineViewProps } from "../../src/react/timeline-view.js";
 import { TimelineRow } from "../../src/react/timeline-row.js";
 import { TimeRuler } from "../../src/react/time-ruler.js";
-import type { TraceEntry } from "@hex-di/devtools-core";
+import type { TraceEntry } from "@hex-di/plugin";
 
 // =============================================================================
 // Test Fixtures

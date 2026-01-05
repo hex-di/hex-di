@@ -77,7 +77,7 @@ export function useDevToolsSelector<T>(selector: DevToolsSnapshotSelector<T>): T
   // Create a memoized getSnapshot that applies the selector
   // and returns a stable reference when the selected value hasn't changed
   const getSnapshot = useCallback((): T => {
-    const snapshot = runtime.getSnapshot() as DevToolsSnapshot;
+    const snapshot = runtime.getSnapshot();
     const nextValue = selector(snapshot);
 
     // Return previous value if it's equal (using Object.is for primitives)
@@ -93,7 +93,7 @@ export function useDevToolsSelector<T>(selector: DevToolsSnapshotSelector<T>): T
 
   // Server snapshot uses the same selector logic
   const getServerSnapshot = useCallback((): T => {
-    const snapshot = runtime.getSnapshot() as DevToolsSnapshot;
+    const snapshot = runtime.getSnapshot();
     return selector(snapshot);
   }, [runtime, selector]);
 

@@ -4,11 +4,11 @@
  * These tests verify:
  * 1. Plugin APIs can be applied to child containers via wrapper pattern
  * 2. Resolution hooks work on containers with wrapper-installed hooks
- * 3. applyParentWrappers() correctly applies parent wrappers to child
+ * 3. Plugins are automatically inherited by child containers (auto-inherit)
  * 4. Container IDs are correctly passed in hook contexts
  *
  * Note: With the wrapper pattern, plugins are applied per-container.
- * Use applyParentWrappers() to apply parent's wrappers to child containers.
+ * Child containers automatically inherit parent's wrappers via createChild().
  *
  * @packageDocumentation
  */
@@ -21,7 +21,6 @@ import {
   definePlugin,
   createPluginWrapper,
   pipe,
-  applyParentWrappers,
   type ResolutionHookContext,
 } from "../src/index.js";
 
@@ -85,7 +84,7 @@ function createGraphWithConfig() {
 
 describe("Plugin Inheritance in Child Containers", () => {
   describe("plugin APIs via wrapper pattern", () => {
-    it("plugin APIs are accessible on child container via applyParentWrappers", () => {
+    it("plugin APIs are automatically inherited by child containers", () => {
       const TrackerPlugin = definePlugin({
         name: "tracker",
         symbol: LIFECYCLE_TRACKER,
@@ -103,30 +102,21 @@ describe("Plugin Inheritance in Child Containers", () => {
       const withTracker = createPluginWrapper(TrackerPlugin);
 
       const graph = createTestGraph();
-      const container = pipe(createContainer(graph), withTracker);
+      const container = pipe(createContainer(graph, { name: "Test" }), withTracker);
 
       // Verify plugin API is accessible on parent
       expect(container[LIFECYCLE_TRACKER]).toBeDefined();
 
-      // Create child container and apply parent's wrappers
+      // Child containers automatically inherit parent's wrappers via createChild()
       const childGraph = GraphBuilder.create().build();
-      const childContainer = container.createChild(childGraph);
-      const enhancedChild = applyParentWrappers(container, childContainer);
+      const childContainer = container.createChild(childGraph, { name: "Child" });
 
-      // Plugin API should also be accessible on enhanced child
-      const childAsAny = enhancedChild as unknown as Record<symbol, unknown>;
+      // Plugin API should be accessible on child automatically (no applyParentWrappers needed)
+      const childAsAny = childContainer as unknown as Record<symbol, unknown>;
       expect(childAsAny[LIFECYCLE_TRACKER]).toBeDefined();
     });
 
     it("container IDs follow expected pattern", () => {
-      const graph = createTestGraph();
-      const container = createContainer(graph);
-
-      // Create child containers
-      const childGraph = GraphBuilder.create().build();
-      const child1 = container.createChild(childGraph);
-      const child2 = container.createChild(childGraph);
-
       // Access internal state to verify IDs
       // Using hooks to capture container IDs
       const capturedIds: string[] = [];
@@ -152,20 +142,27 @@ describe("Plugin Inheritance in Child Containers", () => {
       });
 
       const withTracker = createPluginWrapper(TrackerPlugin);
+      const graph = createTestGraph();
 
-      // Apply tracker to child containers
-      const enhancedChild1 = pipe(applyParentWrappers(container, child1), withTracker);
-      const enhancedChild2 = pipe(applyParentWrappers(container, child2), withTracker);
+      // Create parent with tracker plugin
+      const container = pipe(createContainer(graph, { name: "Test" }), withTracker);
+
+      // Create child containers - they auto-inherit the tracker plugin
+      const childGraph = GraphBuilder.create().build();
+      const child1 = container.createChild(childGraph, { name: "Child" });
+      const child2 = container.createChild(childGraph, { name: "Child" });
 
       // Resolve to trigger hooks
-      enhancedChild1.resolve(LoggerPort);
-      enhancedChild2.resolve(LoggerPort);
+      child1.resolve(LoggerPort);
+      child2.resolve(LoggerPort);
 
-      // Both children should have unique IDs
-      expect(capturedIds.length).toBe(2);
-      expect(capturedIds[0]).toMatch(/^child-\d+$/);
-      expect(capturedIds[1]).toMatch(/^child-\d+$/);
-      expect(capturedIds[0]).not.toBe(capturedIds[1]);
+      // Both children should have unique child-* IDs
+      // Filter to only child IDs (parent may also have hooks that fire)
+      const childIds = capturedIds.filter(id => id.startsWith("child-"));
+      expect(childIds.length).toBe(2);
+      expect(childIds[0]).toMatch(/^child-\d+$/);
+      expect(childIds[1]).toMatch(/^child-\d+$/);
+      expect(childIds[0]).not.toBe(childIds[1]);
     });
   });
 
@@ -196,7 +193,7 @@ describe("Plugin Inheritance in Child Containers", () => {
 
       const withTracker = createPluginWrapper(TrackerPlugin);
       const graph = createTestGraph();
-      const container = pipe(createContainer(graph), withTracker);
+      const container = pipe(createContainer(graph, { name: "Test" }), withTracker);
 
       // Resolve from parent
       container.resolve(LoggerPort);
@@ -231,7 +228,7 @@ describe("Plugin Inheritance in Child Containers", () => {
 
       const withTracker = createPluginWrapper(TrackerPlugin);
       const graph = createTestGraph();
-      const container = pipe(createContainer(graph), withTracker);
+      const container = pipe(createContainer(graph, { name: "Test" }), withTracker);
 
       // Resolve from root container
       container.resolve(LoggerPort);
@@ -270,11 +267,11 @@ describe("Plugin Inheritance in Child Containers", () => {
 
       const withTracker = createPluginWrapper(TrackerPlugin);
       const graph = createTestGraph();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       // Create child container and apply wrapper directly to it
       const childGraph = GraphBuilder.create().build();
-      const childContainer = container.createChild(childGraph);
+      const childContainer = container.createChild(childGraph, { name: "Child" });
       const enhancedChild = pipe(childContainer, withTracker);
 
       // Resolve from child
@@ -285,7 +282,7 @@ describe("Plugin Inheritance in Child Containers", () => {
       const ctx = capturedContexts[0];
       expect(ctx.containerId).toMatch(/^child-/);
       expect(ctx.containerKind).toBe("child");
-      expect(ctx.parentContainerId).toBe("root");
+      expect(ctx.parentContainerId).toBe("Test"); // Parent's name is "Test"
     });
   });
 
@@ -315,14 +312,14 @@ describe("Plugin Inheritance in Child Containers", () => {
 
       const withTracker = createPluginWrapper(TrackerPlugin);
       const graph = createGraphWithConfig();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       // Resolve from parent first to create singleton
       container.resolve(LoggerPort);
 
       // Create child with default (shared) mode and apply wrapper
       const childGraph = GraphBuilder.create().build();
-      const childContainer = container.createChild(childGraph);
+      const childContainer = container.createChild(childGraph, { name: "Child" });
       const enhancedChild = pipe(childContainer, withTracker);
 
       // Resolve from child
@@ -358,14 +355,17 @@ describe("Plugin Inheritance in Child Containers", () => {
 
       const withTracker = createPluginWrapper(TrackerPlugin);
       const graph = createGraphWithConfig();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       // Resolve from parent first to create singleton
       container.resolve(LoggerPort);
 
       // Create child with forked mode and apply wrapper
       const childGraph = GraphBuilder.create().build();
-      const childContainer = container.createChild(childGraph, { Logger: "forked" });
+      const childContainer = container.createChild(childGraph, {
+        name: "Child",
+        inheritanceModes: { Logger: "forked" },
+      });
       const enhancedChild = pipe(childContainer, withTracker);
 
       // Resolve from child
@@ -401,14 +401,17 @@ describe("Plugin Inheritance in Child Containers", () => {
 
       const withTracker = createPluginWrapper(TrackerPlugin);
       const graph = createGraphWithConfig();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       // Resolve from parent first to create singleton
       container.resolve(LoggerPort);
 
       // Create child with isolated mode and apply wrapper
       const childGraph = GraphBuilder.create().build();
-      const childContainer = container.createChild(childGraph, { Logger: "isolated" });
+      const childContainer = container.createChild(childGraph, {
+        name: "Child",
+        inheritanceModes: { Logger: "isolated" },
+      });
       const enhancedChild = pipe(childContainer, withTracker);
 
       // Resolve from child
@@ -444,7 +447,7 @@ describe("Plugin Inheritance in Child Containers", () => {
 
       const withTracker = createPluginWrapper(TrackerPlugin);
       const graph = createTestGraph();
-      const container = pipe(createContainer(graph), withTracker);
+      const container = pipe(createContainer(graph, { name: "Test" }), withTracker);
 
       // Resolve from root container
       container.resolve(LoggerPort);

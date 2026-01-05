@@ -7,6 +7,7 @@
  */
 
 import type { CSSProperties } from "react";
+import type { ServiceOrigin } from "@hex-di/plugin";
 
 // =============================================================================
 // Style Type Definitions
@@ -56,6 +57,39 @@ interface TooltipStyleDef {
   row: CSSProperties;
   label: CSSProperties;
   value: CSSProperties;
+}
+
+/**
+ * Configuration for ownership-based visual styling of graph nodes.
+ *
+ * Each ownership state has distinct visual characteristics to help
+ * developers quickly identify adapter origins in the dependency graph.
+ */
+interface OwnershipStyleConfig {
+  /** Border style name for documentation */
+  readonly borderStyle: "solid" | "dashed" | "double";
+  /** SVG stroke-dasharray value (undefined = solid) */
+  readonly strokeDasharray: string | undefined;
+  /** SVG stroke-width value */
+  readonly strokeWidth: number;
+  /** Opacity for the entire node */
+  readonly opacity: number;
+  /** Whether to show the OVR badge (overridden nodes only) */
+  readonly showOvrBadge: boolean;
+}
+
+/**
+ * Result type for getOwnershipStyle utility.
+ */
+interface OwnershipStyleResult {
+  /** SVG stroke-dasharray value */
+  readonly strokeDasharray: string | undefined;
+  /** SVG stroke-width value */
+  readonly strokeWidth: number;
+  /** Opacity for the entire node */
+  readonly opacity: number;
+  /** Whether to show the OVR badge */
+  readonly showOvrBadge: boolean;
 }
 
 // =============================================================================
@@ -283,12 +317,96 @@ export const LIFETIME_COLORS = {
 
 /**
  * Colors for inheritance mode badge indicator.
- * - shared: Green (sharing parent's singleton instances)
- * - forked: Blue (independent snapshot copies)
- * - isolated: Orange (completely isolated instances)
+ * - shared: Blue (sharing parent's singleton instances)
+ * - forked: Orange (independent snapshot copies)
+ * - isolated: Pink/Red (completely isolated instances)
  */
 export const INHERITANCE_MODE_COLORS = {
-  shared: "#a6e3a1",
-  forked: "#89b4fa",
-  isolated: "#fab387",
+  shared: "#89b4fa",
+  forked: "#fab387",
+  isolated: "#f38ba8",
 } as const;
+
+// =============================================================================
+// Ownership Styling
+// =============================================================================
+
+/**
+ * Ownership-based visual styling configurations for graph nodes.
+ *
+ * Defines distinct visual treatments for the 3-state adapter ownership model:
+ * - `own`: Adapter registered directly in the current container
+ * - `inherited`: Adapter inherited from a parent container
+ * - `overridden`: Child container override of a parent adapter
+ *
+ * Visual specifications from the DevTools Architecture Visualization spec:
+ * - Own: Solid 2px border, opacity 1.0
+ * - Inherited: Dashed "4 2" border, opacity 0.85, S/F/I badge for inheritance mode
+ * - Overridden: Double 3px border, opacity 1.0, OVR badge
+ */
+export const OWNERSHIP_STYLES: Record<ServiceOrigin, OwnershipStyleConfig> = {
+  own: {
+    borderStyle: "solid",
+    strokeDasharray: undefined,
+    strokeWidth: 2,
+    opacity: 1,
+    showOvrBadge: false,
+  },
+  inherited: {
+    borderStyle: "dashed",
+    strokeDasharray: "4 2",
+    strokeWidth: 2,
+    opacity: 0.85,
+    showOvrBadge: false,
+  },
+  overridden: {
+    borderStyle: "double",
+    // For SVG, we simulate "double" with a solid stroke but thicker width
+    // The visual effect is achieved through stroke-width of 3
+    strokeDasharray: "1 0",
+    strokeWidth: 3,
+    opacity: 1,
+    showOvrBadge: true,
+  },
+};
+
+/**
+ * Get ownership-based style properties for a graph node.
+ *
+ * Returns CSS properties to apply based on the node's ownership state.
+ * Defaults to "own" styling if ownership is undefined.
+ *
+ * @param ownership - The ownership state of the node (own, inherited, or overridden)
+ * @returns Style properties to apply to the node
+ *
+ * @example
+ * ```typescript
+ * const style = getOwnershipStyle("inherited");
+ * // Returns: { strokeDasharray: "4 2", strokeWidth: 2, opacity: 0.85, showOvrBadge: false }
+ *
+ * const defaultStyle = getOwnershipStyle(undefined);
+ * // Returns: { strokeDasharray: undefined, strokeWidth: 2, opacity: 1, showOvrBadge: false }
+ * ```
+ */
+export function getOwnershipStyle(ownership: ServiceOrigin | undefined): OwnershipStyleResult {
+  const config = ownership !== undefined ? OWNERSHIP_STYLES[ownership] : OWNERSHIP_STYLES.own;
+
+  return {
+    strokeDasharray: config.strokeDasharray,
+    strokeWidth: config.strokeWidth,
+    opacity: config.opacity,
+    showOvrBadge: config.showOvrBadge,
+  };
+}
+
+/**
+ * Color for the OVR (overridden) badge.
+ * Uses an amber/orange color to draw attention to overridden adapters.
+ */
+export const OVR_BADGE_COLOR = "#fab387";
+
+/**
+ * Color for the adapter count badge background.
+ * Uses a muted gray to not compete with other badges.
+ */
+export const COUNT_BADGE_COLOR = "#6c7086";

@@ -160,6 +160,9 @@ export type {
   Scope,
   LazyContainer,
   ContainerPhase,
+  CreateContainerOptions,
+  CreateChildOptions,
+  ContainerDevToolsOptions,
   InheritanceMode,
   InheritanceModeConfig,
   InferContainerEffectiveProvides,
@@ -389,10 +392,7 @@ export type { ComposedHooks } from "./plugin/index.js";
  *
  * @example
  * ```typescript
- * import { createContainer, pipe, createPluginWrapper } from '@hex-di/runtime';
- * import { InspectorPlugin, INSPECTOR } from '@hex-di/inspector';
- *
- * const withInspector = createPluginWrapper(InspectorPlugin);
+ * import { createContainer, pipe, withInspector, INSPECTOR } from '@hex-di/runtime';
  *
  * const container = pipe(
  *   createContainer(graph),
@@ -406,7 +406,7 @@ export type { ComposedHooks } from "./plugin/index.js";
 export {
   createPluginWrapper,
   getAppliedWrappers,
-  applyParentWrappers,
+  getEnhancedWrapper,
   getDisposalCallbacks,
   APPLIED_WRAPPERS,
 } from "./plugin/index.js";
@@ -423,3 +423,157 @@ export type {
 
 // Composition utilities
 export { pipe, compose2, compose3, compose4, compose5 } from "./plugin/index.js";
+
+// =============================================================================
+// Inspector Plugin
+// =============================================================================
+
+/**
+ * Container state inspection plugin for DevTools and debugging.
+ *
+ * Provides:
+ * - Container state snapshots (singletons, scopes, phase)
+ * - Container kind detection (root, child, lazy, scope)
+ * - Real-time event subscriptions
+ * - Child container discovery
+ * - Dependency graph visualization data
+ *
+ * @example Basic usage with plugin
+ * ```typescript
+ * import { createContainer, InspectorPlugin, INSPECTOR } from '@hex-di/runtime';
+ *
+ * const container = createContainer(graph, {
+ *   plugins: [InspectorPlugin],
+ * });
+ *
+ * const snapshot = container[INSPECTOR].getSnapshot();
+ * console.log(`Container kind: ${snapshot.kind}`);
+ *
+ * // Subscribe to events
+ * container[INSPECTOR].subscribe((event) => {
+ *   if (event.type === 'resolution') {
+ *     console.log(`Resolved ${event.portName} in ${event.duration}ms`);
+ *   }
+ * });
+ * ```
+ *
+ * @example Using wrapper pattern
+ * ```typescript
+ * import { createContainer, pipe, withInspector, INSPECTOR } from '@hex-di/runtime';
+ *
+ * const container = pipe(
+ *   createContainer(graph),
+ *   withInspector
+ * );
+ *
+ * // Full type safety - TypeScript knows container has [INSPECTOR]
+ * container[INSPECTOR].getSnapshot();
+ * ```
+ */
+
+// Inspector symbol and plugin
+export { INSPECTOR, InspectorPlugin } from "./plugins/inspector/index.js";
+
+// Inspector factory (pull-only, no subscription)
+export { createInspector as createInspectorAPI } from "./plugins/inspector/index.js";
+
+// Inspector wrapper
+export { withInspector, type WithInspector } from "./plugins/inspector/index.js";
+
+// Inspector type guards
+export {
+  hasInspector,
+  getInspectorAPI,
+  hasSubscription,
+  type ContainerWithInspector,
+} from "./plugins/inspector/index.js";
+
+// Inspector helper functions
+export { detectContainerKind, detectPhase, buildTypedSnapshot } from "./plugins/inspector/index.js";
+
+// Inspector types
+export type {
+  InspectorAPI,
+  InspectorWithSubscription,
+  InspectorEvent,
+  InspectorListener,
+  AdapterInfo as InspectorAdapterInfo,
+  VisualizableAdapter,
+  ContainerGraphData,
+  ContainerKind as InspectorContainerKind,
+  ContainerPhase as InspectorContainerPhase,
+  ContainerSnapshot as InspectorContainerSnapshot,
+  ScopeTree as InspectorScopeTree,
+} from "./plugins/inspector/index.js";
+
+// =============================================================================
+// Tracing Plugin
+// =============================================================================
+
+/**
+ * Resolution tracing plugin for performance monitoring and debugging.
+ *
+ * Provides:
+ * - Resolution timing and statistics
+ * - Parent-child dependency tracking
+ * - Cache hit detection
+ * - Configurable retention policies
+ * - Real-time subscription support
+ *
+ * @example Basic usage
+ * ```typescript
+ * import { createContainer, TracingPlugin, TRACING } from '@hex-di/runtime';
+ *
+ * const container = createContainer(graph, {
+ *   plugins: [TracingPlugin],
+ * });
+ *
+ * const tracing = container[TRACING];
+ * const traces = tracing.getTraces();
+ * const stats = tracing.getStats();
+ * ```
+ *
+ * @example Using wrapper pattern
+ * ```typescript
+ * import { createContainer, pipe, withTracing, TRACING } from '@hex-di/runtime';
+ *
+ * const container = pipe(
+ *   createContainer(graph),
+ *   withTracing
+ * );
+ *
+ * container[TRACING].subscribe((trace) => {
+ *   console.log(`Resolved ${trace.portName} in ${trace.duration}ms`);
+ * });
+ * ```
+ */
+
+// Tracing symbol and plugin
+export {
+  TRACING,
+  TracingPlugin,
+  createTracingPlugin,
+  type TracingPluginOptions,
+} from "./plugins/tracing/index.js";
+
+// Tracing wrapper
+export { withTracing, type WithTracing } from "./plugins/tracing/index.js";
+
+// Tracing collectors
+export { MemoryCollector, NoOpCollector, CompositeCollector } from "./plugins/tracing/index.js";
+
+export type { TraceCollector, TraceSubscriber, Unsubscribe } from "./plugins/tracing/index.js";
+
+// Tracing type guards and helpers
+export { hasTracing, getTracingAPI, type ContainerWithTracing } from "./plugins/tracing/index.js";
+
+// Re-export tracing types from @hex-di/plugin
+export type {
+  TraceEntry,
+  TraceStats,
+  TraceRetentionPolicy,
+  TraceFilter,
+  TracingAPI,
+} from "@hex-di/plugin";
+
+export { DEFAULT_RETENTION_POLICY } from "@hex-di/plugin";

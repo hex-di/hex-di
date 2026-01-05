@@ -7,7 +7,7 @@
 
 import type { Port, InferService } from "@hex-di/ports";
 import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
-import type { Container, LazyContainer, InheritanceModeConfig } from "../types.js";
+import type { Container, LazyContainer, CreateChildOptions } from "../types.js";
 import type { AnyPlugin } from "../plugin/types.js";
 import { DisposedScopeError } from "../common/errors.js";
 
@@ -25,7 +25,7 @@ export interface LazyContainerParent<
     TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
   >(
     childGraph: TChildGraph,
-    inheritanceModes?: InheritanceModeConfig<TProvides>
+    options: CreateChildOptions<TProvides>
   ): Container<
     TProvides,
     Exclude<InferGraphProvides<TChildGraph>, TProvides>,
@@ -61,7 +61,7 @@ export class LazyContainerImpl<
   constructor(
     private readonly parent: LazyContainerParent<TProvides, TAsyncPorts, TPlugins>,
     private readonly graphLoader: () => Promise<TChildGraph>,
-    private readonly inheritanceModes?: InheritanceModeConfig<TProvides>
+    private readonly options: CreateChildOptions<TProvides>
   ) {}
 
   /**
@@ -119,10 +119,13 @@ export class LazyContainerImpl<
       // Create child container using parent's createChild
       // SAFETY: Type assertion needed because createChild returns a computed type
       // based on the graph, but we know it produces Container<TProvides, TExtends, TAsyncPorts, "initialized", TPlugins>
-      this.container = this.parent.createChild(
-        graph,
-        this.inheritanceModes
-      ) as unknown as Container<TProvides, TExtends, TAsyncPorts, "initialized", TPlugins>;
+      this.container = this.parent.createChild(graph, this.options) as unknown as Container<
+        TProvides,
+        TExtends,
+        TAsyncPorts,
+        "initialized",
+        TPlugins
+      >;
 
       return this.container;
     } catch (error) {

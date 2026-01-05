@@ -9,6 +9,7 @@
 
 import { createContext } from "react";
 import type { DevToolsFlowRuntime } from "../../runtime/devtools-flow-runtime.js";
+import type { DevToolsSnapshot, DevToolsFlowEvent } from "../../runtime/devtools-snapshot.js";
 import type { InspectorWithSubscription } from "@hex-di/runtime";
 
 // =============================================================================
@@ -32,12 +33,12 @@ export interface DevToolsFlowRuntimeLike {
    * Returns the current combined snapshot of all machine states.
    * Compatible with React 18's useSyncExternalStore.
    */
-  getSnapshot(): unknown;
+  getSnapshot(): DevToolsSnapshot;
 
   /**
    * Dispatches an event to the appropriate machine.
    */
-  dispatch(event: unknown): void;
+  dispatch(event: DevToolsFlowEvent): void;
 
   /**
    * Whether the runtime has been disposed.

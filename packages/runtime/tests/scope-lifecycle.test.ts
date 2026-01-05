@@ -51,7 +51,7 @@ describe("Scope lifecycle events", () => {
   describe("subscribe()", () => {
     test("listener is called with 'disposing' when dispose() is called", async () => {
       const graph = createTestGraph();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
       const scope = container.createScope();
 
       const events: ScopeLifecycleEvent[] = [];
@@ -66,7 +66,7 @@ describe("Scope lifecycle events", () => {
 
     test("listener is called with 'disposed' after disposal completes", async () => {
       const graph = createTestGraph();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
       const scope = container.createScope();
 
       const events: ScopeLifecycleEvent[] = [];
@@ -81,7 +81,7 @@ describe("Scope lifecycle events", () => {
 
     test("'disposing' is emitted before 'disposed'", async () => {
       const graph = createTestGraph();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
       const scope = container.createScope();
 
       const events: ScopeLifecycleEvent[] = [];
@@ -96,7 +96,7 @@ describe("Scope lifecycle events", () => {
 
     test("multiple listeners are called in registration order", async () => {
       const graph = createTestGraph();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
       const scope = container.createScope();
 
       const callOrder: number[] = [];
@@ -112,7 +112,7 @@ describe("Scope lifecycle events", () => {
 
     test("unsubscribe prevents future event delivery", async () => {
       const graph = createTestGraph();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
       const scope = container.createScope();
 
       const listener = vi.fn();
@@ -128,7 +128,7 @@ describe("Scope lifecycle events", () => {
 
     test("unsubscribe after dispose is a no-op", async () => {
       const graph = createTestGraph();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
       const scope = container.createScope();
 
       const listener = vi.fn();
@@ -142,7 +142,7 @@ describe("Scope lifecycle events", () => {
 
     test("listener errors do not prevent disposal or other listeners", async () => {
       const graph = createTestGraph();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
       const scope = container.createScope();
 
       const goodListener = vi.fn();
@@ -164,7 +164,7 @@ describe("Scope lifecycle events", () => {
   describe("getDisposalState()", () => {
     test("returns 'active' for fresh scope", () => {
       const graph = createTestGraph();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
       const scope = container.createScope();
 
       expect(scope.getDisposalState()).toBe("active");
@@ -172,7 +172,7 @@ describe("Scope lifecycle events", () => {
 
     test("returns 'disposing' during async disposal", async () => {
       const graph = createTestGraph();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
       const scope = container.createScope();
 
       const states: ScopeDisposalState[] = [];
@@ -188,7 +188,7 @@ describe("Scope lifecycle events", () => {
 
     test("returns 'disposed' after disposal completes", async () => {
       const graph = createTestGraph();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
       const scope = container.createScope();
 
       await scope.dispose();
@@ -198,7 +198,7 @@ describe("Scope lifecycle events", () => {
 
     test("state transitions are synchronous with event emission", async () => {
       const graph = createTestGraph();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
       const scope = container.createScope();
 
       const observations: Array<{ event: ScopeLifecycleEvent; state: ScopeDisposalState }> = [];
@@ -221,7 +221,7 @@ describe("Scope lifecycle events", () => {
   describe("child scopes", () => {
     test("parent disposal triggers child disposal events", async () => {
       const graph = createTestGraph();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
       const parentScope = container.createScope();
       const childScope = parentScope.createScope();
 
@@ -240,7 +240,7 @@ describe("Scope lifecycle events", () => {
 
     test("child listeners called before parent disposal completes", async () => {
       const graph = createTestGraph();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
       const parentScope = container.createScope();
       const childScope = parentScope.createScope();
 
@@ -262,7 +262,7 @@ describe("Scope lifecycle events", () => {
   describe("integration with React pattern", () => {
     test("useSyncExternalStore pattern works with subscribe/getSnapshot", async () => {
       const graph = createTestGraph();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
       const scope = container.createScope();
 
       // Simulate useSyncExternalStore pattern
@@ -288,7 +288,7 @@ describe("Scope lifecycle events", () => {
 
     test("multiple subscribers share the same scope lifecycle", async () => {
       const graph = createTestGraph();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
       const scope = container.createScope();
 
       // Simulate multiple React components subscribing
@@ -309,7 +309,7 @@ describe("Scope lifecycle events", () => {
   describe("idempotent disposal", () => {
     test("disposing already disposed scope does not emit events again", async () => {
       const graph = createTestGraph();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
       const scope = container.createScope();
 
       const listener = vi.fn();

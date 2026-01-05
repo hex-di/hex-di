@@ -58,13 +58,10 @@ interface ChatRoomProps {
  * ```
  */
 export function ChatRoom({ scopePrefix }: ChatRoomProps) {
-  // Track current user for scope key - changing this recreates the scope
+  // Track current user - changing this changes scopeName which triggers scope recreation
   const [currentUser, setCurrentUser] = useState<UserType>("alice");
 
-  // Scope key includes user to force scope recreation on user switch
-  const scopeKey = `user-scope-${currentUser}`;
-
-  // Scope name for DevTools identification
+  // Scope name includes user - changing name triggers scope recreation in AutoScopeProvider
   const scopeName = scopePrefix
     ? `${scopePrefix}-${currentUser}-session`
     : `${currentUser}-session`;
@@ -106,8 +103,8 @@ export function ChatRoom({ scopePrefix }: ChatRoomProps) {
         </div>
       </div>
 
-      {/* AutoScopeProvider with key for scope recreation and name for DevTools */}
-      <AutoScopeProvider key={scopeKey} name={scopeName}>
+      {/* AutoScopeProvider creates scope from closest container - name changes trigger scope recreation */}
+      <AutoScopeProvider name={scopeName}>
         {/* User info section */}
         <div className="border-b border-gray-200 p-4">
           <div className="flex items-center justify-between">

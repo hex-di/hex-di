@@ -7,7 +7,8 @@
  * @packageDocumentation
  */
 
-import type { ExportedGraph, TraceEntry } from "@hex-di/devtools-core";
+import type { ExportedGraph } from "@hex-di/devtools-core";
+import type { TraceEntry } from "@hex-di/plugin";
 
 // =============================================================================
 // DataSource Interface
@@ -90,11 +91,7 @@ export interface DataSource {
 /**
  * Connection state for data sources.
  */
-export type DataSourceConnectionState =
-  | "disconnected"
-  | "connecting"
-  | "connected"
-  | "error";
+export type DataSourceConnectionState = "disconnected" | "connecting" | "connected" | "error";
 
 /**
  * Event emitted by data sources.

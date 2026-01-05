@@ -52,7 +52,8 @@
   "homepage": "https://github.com/hex-di/hex-di/tree/main/packages/runtime#readme",
   "dependencies": {
     "@hex-di/ports": "workspace:*",
-    "@hex-di/graph": "workspace:*"
+    "@hex-di/graph": "workspace:*",
+    "@hex-di/plugin": "workspace:*"
   },
   "peerDependencies": {
     "typescript": ">=5.0"

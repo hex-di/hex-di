@@ -19,6 +19,7 @@ import { assertSyncAdapter } from "./internal-types.js";
 import { InheritanceResolver } from "./inheritance-resolver.js";
 import { AdapterRegistry } from "./adapter-registry.js";
 import { BaseContainerImpl } from "./base-impl.js";
+import type { MemoMap } from "../common/memo-map.js";
 import { HooksRunner, type ContainerMetadata } from "./hooks-runner.js";
 import { isDisposableChild } from "./helpers.js";
 import { ADAPTER_ACCESS, INTERNAL_ACCESS } from "../inspector/symbols.js";
@@ -32,6 +33,7 @@ import { isRecord } from "../common/type-guards.js";
  * - Inherits adapters from parent
  * - Supports inheritance modes (shared, forked, isolated)
  * - Can override and extend parent adapters
+ * - Tracks which ports are overrides for DevTools visualization
  *
  * @internal
  */
@@ -46,6 +48,7 @@ export class ChildContainerImpl<
   private readonly inheritanceModes: ReadonlyMap<string, InheritanceMode>;
   private readonly inheritanceResolver: InheritanceResolver<TProvides, TAsyncPorts>;
   private readonly containerId: string;
+  private readonly containerName: string;
   private readonly parentContainerId: string;
 
   /**
@@ -107,9 +110,14 @@ export class ChildContainerImpl<
     this.inheritanceModes = config.inheritanceModes;
     this.inheritanceResolver = new InheritanceResolver(config.parent, config.inheritanceModes);
     this.containerId = config.containerId;
+    this.containerName = config.containerName;
     this.parentContainerId = config.parentContainerId;
 
     this.initializeFromParent(config);
+  }
+
+  protected getContainerName(): string {
+    return this.containerName;
   }
 
   // ===========================================================================
@@ -138,14 +146,17 @@ export class ChildContainerImpl<
   private initializeFromParent(config: ChildContainerConfig<TProvides, TAsyncPorts>): void {
     const { overrides, extensions } = config;
 
-    // Add overrides (marked as local)
+    // Add overrides (marked as local and as overrides)
     for (const [port, adapter] of overrides) {
       this.adapterRegistry.register(port, adapter, true);
+      // Mark this port as an override (it replaces a parent adapter)
+      this.adapterRegistry.markOverride(port.__portName);
     }
 
-    // Add extensions (marked as local)
+    // Add extensions (marked as local, but NOT as overrides - these are new ports)
     for (const [port, adapter] of extensions) {
       this.adapterRegistry.register(port, adapter, true);
+      // Do NOT call markOverride for extensions - they're new ports, not overrides
     }
 
     // Child containers are considered initialized (inherit from parent)
@@ -170,6 +181,53 @@ export class ChildContainerImpl<
     return Promise.reject(
       new Error("Child containers cannot be initialized - they inherit state from parent")
     );
+  }
+
+  // ===========================================================================
+  // Resolution Override - Delegate Inherited Ports to Parent
+  // ===========================================================================
+
+  /**
+   * Override resolveInternal to delegate inherited (non-local) ports to parent.
+   *
+   * This ensures async ports inherited from parent are resolved via the parent's
+   * cached value (already initialized) instead of trying to create a new instance
+   * locally which would fail for async adapters.
+   *
+   * @param port - The port to resolve
+   * @param scopedMemo - Memoization map for scoped instances
+   * @param scopeId - Optional scope identifier
+   * @returns The resolved service instance with full type inference
+   */
+  resolveInternal<P extends TProvides | TExtends>(
+    port: P,
+    scopedMemo: MemoMap,
+    scopeId?: string | null
+  ): InferService<P>;
+  resolveInternal(
+    port: Port<unknown, string>,
+    scopedMemo: MemoMap,
+    scopeId?: string | null
+  ): unknown;
+  resolveInternal(
+    port: Port<unknown, string>,
+    scopedMemo: MemoMap,
+    scopeId: string | null = null
+  ): unknown {
+    // For inherited ports, delegate to inheritance resolver
+    // This handles shared mode by calling parent.resolveInternal which returns cached value
+    if (!this.adapterRegistry.isLocal(port)) {
+      // Check adapter lifetime - scoped ports must be created locally (not delegated)
+      const adapter = this.adapterRegistry.get(port);
+      if (adapter !== undefined && adapter.lifetime === "scoped") {
+        // Scoped ports: base class creates scoped instance in child's scope
+        return super.resolveInternal(port, scopedMemo, scopeId);
+      }
+      // Non-scoped inherited ports: delegate to fallback (respects inheritance mode)
+      return this.resolveInternalFallback(port, port.__portName);
+    }
+    // Local ports resolve normally via base implementation
+    return super.resolveInternal(port, scopedMemo, scopeId);
   }
 
   protected getParentUnregisterCallback(): (() => void) | undefined {
@@ -229,12 +287,14 @@ export class ChildContainerImpl<
   }
 
   protected resolveInternalFallback(port: Port<unknown, string>, portName: string): unknown {
-    // For child containers, delegate to parent if not local and mode is shared
+    // For child containers, delegate to parent based on inheritance mode
     if (!this.adapterRegistry.isLocal(port)) {
       const mode = this.inheritanceResolver.getMode(portName);
       if (mode === "shared") {
         return this.inheritanceResolver.resolveSharedInternal(port as TProvides);
       }
+      // For forked/isolated modes, use resolveWithInheritance
+      return this.resolveWithInheritance(port as TProvides | TExtends);
     }
     throw new Error(`No adapter registered for port '${portName}'`);
   }
@@ -296,10 +356,11 @@ export class ChildContainerImpl<
     // Get base internal state
     const baseState = super.getInternalState();
 
-    // Create new state with child's containerId and inheritanceModes
+    // Create new state with child's containerId, containerName, and inheritanceModes
     const stateWithChild: ContainerInternalState = {
       ...baseState,
       containerId: this.containerId,
+      containerName: this.containerName,
       inheritanceModes: this.inheritanceModes,
     };
 

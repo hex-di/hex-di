@@ -182,6 +182,20 @@ interface FloatingStyleDef {
   resizeEdgeRight: CSSProperties;
 }
 
+/** Lifecycle animation style properties */
+interface LifecycleAnimationStyleDef {
+  /** Container enter animation (250ms fade-in) */
+  containerEnter: CSSProperties;
+  /** Container exit animation (200ms fade-out) */
+  containerExit: CSSProperties;
+  /** Badge color transition (150ms ease) */
+  badgeTransition: CSSProperties;
+  /** Stagger delay for sibling containers (50ms) */
+  staggerDelay: number;
+  /** Keyframes CSS string for injection */
+  keyframes: string;
+}
+
 // =============================================================================
 // CSS Variables for Theming
 // =============================================================================
@@ -1758,3 +1772,259 @@ export function getTraceRowStyle(
 
   return style;
 }
+
+// =============================================================================
+// Lifecycle Animation Styles (Task Group 7)
+// =============================================================================
+
+/**
+ * CSS keyframes for lifecycle animations.
+ *
+ * These need to be injected into the document for animations to work.
+ * Use `injectLifecycleAnimationStyles()` to add them to the page.
+ */
+const lifecycleKeyframes = `
+@keyframes hexDevtoolsFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hexDevtoolsFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes hexDevtoolsPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+`;
+
+/**
+ * Lifecycle animation styles for container state changes.
+ *
+ * Animation timing from spec:
+ * - Container Enter: 250ms fade-in with 50ms sibling stagger
+ * - Container Exit: 200ms fade-out
+ * - State Change: 150ms badge color transition
+ */
+export const lifecycleAnimationStyles: LifecycleAnimationStyleDef = {
+  /**
+   * Container enter animation - 250ms fade-in.
+   */
+  containerEnter: {
+    animation: "hexDevtoolsFadeIn 250ms ease-out forwards",
+  },
+
+  /**
+   * Container exit animation - 200ms fade-out.
+   */
+  containerExit: {
+    animation: "hexDevtoolsFadeOut 200ms ease-in forwards",
+  },
+
+  /**
+   * Badge color transition - 150ms ease.
+   */
+  badgeTransition: {
+    transition: "background-color 150ms ease, color 150ms ease, border-color 150ms ease",
+  },
+
+  /**
+   * Stagger delay for sibling containers - 50ms.
+   */
+  staggerDelay: 50,
+
+  /**
+   * Keyframes CSS string for injection.
+   */
+  keyframes: lifecycleKeyframes,
+};
+
+/**
+ * Get animation style with stagger delay for sibling containers.
+ *
+ * @param presenceState - Current presence state (entering/entered/exiting/exited)
+ * @param siblingIndex - Index among siblings for stagger calculation
+ * @returns CSS properties for the animated element
+ */
+export function getPresenceAnimationStyle(
+  presenceState: "entering" | "entered" | "exiting" | "exited",
+  siblingIndex = 0
+): CSSProperties {
+  const staggerDelay = siblingIndex * lifecycleAnimationStyles.staggerDelay;
+
+  switch (presenceState) {
+    case "entering":
+      return {
+        ...lifecycleAnimationStyles.containerEnter,
+        animationDelay: `${staggerDelay}ms`,
+      };
+    case "exiting":
+      return {
+        ...lifecycleAnimationStyles.containerExit,
+        animationDelay: `${staggerDelay}ms`,
+      };
+    case "entered":
+      return {
+        opacity: 1,
+        transform: "translateY(0)",
+      };
+    case "exited":
+      return {
+        opacity: 0,
+        transform: "translateY(8px)",
+        pointerEvents: "none",
+      };
+  }
+}
+
+/** Flag to track if animation styles have been injected */
+let animationStylesInjected = false;
+
+/**
+ * Inject lifecycle animation keyframes into the document.
+ *
+ * This function is idempotent - it will only inject styles once.
+ * Call this early in your application setup to enable animations.
+ */
+export function injectLifecycleAnimationStyles(): void {
+  if (animationStylesInjected) {
+    return;
+  }
+
+  if (typeof document !== "undefined") {
+    const style = document.createElement("style");
+    style.setAttribute("data-hex-devtools-animations", "true");
+    style.textContent = lifecycleKeyframes;
+    document.head.appendChild(style);
+    animationStylesInjected = true;
+  }
+}
+
+// =============================================================================
+// Filter Toolbar Styles (Task Group 7)
+// =============================================================================
+
+/** Filter toolbar style properties */
+interface FilterToolbarStyleDef {
+  container: CSSProperties;
+  row: CSSProperties;
+  searchContainer: CSSProperties;
+  searchInput: CSSProperties;
+  searchIcon: CSSProperties;
+  clearButton: CSSProperties;
+  filterSection: CSSProperties;
+  presetSection: CSSProperties;
+  activeFilterBadge: CSSProperties;
+  separator: CSSProperties;
+}
+
+/**
+ * Filter toolbar styles for GraphTabContent.
+ */
+export const filterToolbarStyles: FilterToolbarStyleDef = {
+  container: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+    padding: "8px 12px",
+    borderBottom: "1px solid var(--hex-devtools-border, #45475a)",
+    backgroundColor: "var(--hex-devtools-bg-secondary, #2a2a3e)",
+  },
+  row: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    flexWrap: "wrap",
+  },
+  searchContainer: {
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+    flex: "1 1 200px",
+    minWidth: "150px",
+    maxWidth: "300px",
+  },
+  searchInput: {
+    width: "100%",
+    padding: "6px 28px 6px 28px",
+    fontSize: "11px",
+    backgroundColor: "var(--hex-devtools-bg, #1e1e2e)",
+    border: "1px solid var(--hex-devtools-border, #45475a)",
+    borderRadius: "4px",
+    color: "var(--hex-devtools-text, #cdd6f4)",
+    fontFamily: "var(--hex-devtools-font-mono, monospace)",
+    outline: "none",
+    transition: "border-color 0.15s ease",
+  },
+  searchIcon: {
+    position: "absolute",
+    left: "8px",
+    fontSize: "12px",
+    color: "var(--hex-devtools-text-muted, #a6adc8)",
+    pointerEvents: "none",
+  },
+  clearButton: {
+    position: "absolute",
+    right: "6px",
+    padding: "2px",
+    fontSize: "10px",
+    backgroundColor: "transparent",
+    border: "none",
+    color: "var(--hex-devtools-text-muted, #a6adc8)",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "2px",
+    transition: "color 0.15s ease",
+  },
+  filterSection: {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+  },
+  presetSection: {
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+    marginLeft: "auto",
+  },
+  activeFilterBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: "16px",
+    height: "16px",
+    padding: "0 4px",
+    fontSize: "10px",
+    fontWeight: 600,
+    backgroundColor: "var(--hex-devtools-accent, #89b4fa)",
+    color: "var(--hex-devtools-bg, #1e1e2e)",
+    borderRadius: "8px",
+    marginLeft: "4px",
+  },
+  separator: {
+    width: "1px",
+    height: "20px",
+    backgroundColor: "var(--hex-devtools-border, #45475a)",
+    margin: "0 4px",
+  },
+};

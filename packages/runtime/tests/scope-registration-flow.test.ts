@@ -27,6 +27,8 @@ const TestPluginSymbol = Symbol.for("test-plugin");
 const TestPlugin = {
   symbol: TestPluginSymbol,
   name: "TestPlugin",
+  requires: [] as const,
+  enhancedBy: [] as const,
   createApi: () => Object.freeze({ value: 42 }),
 } as const;
 
@@ -57,7 +59,7 @@ describe("Scope Registration Flow (AsyncContainerProvider simulation)", () => {
   test("scope created via initialize() wrapper should appear in original container inspector", async () => {
     // Step 1: Create container with plugin (like in App.tsx)
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = pipe(createContainer(graph), withTestPlugin);
+    const container = pipe(createContainer(graph, { name: "Test" }), withTestPlugin);
 
     // Step 2: Simulate what AsyncContainerProvider does:
     // Call initialize() which returns the initialized container
@@ -86,7 +88,7 @@ describe("Scope Registration Flow (AsyncContainerProvider simulation)", () => {
 
   test("multiple scopes created via initialize() wrapper should all appear in original container inspector", async () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = pipe(createContainer(graph), withTestPlugin);
+    const container = pipe(createContainer(graph, { name: "Test" }), withTestPlugin);
 
     const initializedContainer = await container.initialize();
 
@@ -114,7 +116,7 @@ describe("Scope Registration Flow (AsyncContainerProvider simulation)", () => {
 
   test("scope disposal via initialize() wrapper should remove from original container inspector", async () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = pipe(createContainer(graph), withTestPlugin);
+    const container = pipe(createContainer(graph, { name: "Test" }), withTestPlugin);
 
     const initializedContainer = await container.initialize();
     const scope = initializedContainer.createScope("disposable-scope");
@@ -140,7 +142,7 @@ describe("Scope Registration Flow (AsyncContainerProvider simulation)", () => {
 
   test("nested scopes created via initialize() wrapper should appear hierarchically", async () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = pipe(createContainer(graph), withTestPlugin);
+    const container = pipe(createContainer(graph, { name: "Test" }), withTestPlugin);
 
     const initializedContainer = await container.initialize();
 
@@ -172,13 +174,19 @@ describe("Scope Registration Flow (AsyncContainerProvider simulation)", () => {
     const SecondPlugin = {
       symbol: SecondPluginSymbol,
       name: "SecondPlugin",
+      requires: [] as const,
+      enhancedBy: [] as const,
       createApi: () => Object.freeze({ data: "test" }),
     } as const;
     const withSecondPlugin = createPluginWrapper(SecondPlugin);
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
     // Apply multiple plugins via pipe
-    const container = pipe(createContainer(graph), withTestPlugin, withSecondPlugin);
+    const container = pipe(
+      createContainer(graph, { name: "Test" }),
+      withTestPlugin,
+      withSecondPlugin
+    );
 
     const initializedContainer = await container.initialize();
     const scope = initializedContainer.createScope("multi-plugin-scope");

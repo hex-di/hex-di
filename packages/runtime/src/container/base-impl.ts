@@ -57,6 +57,11 @@ export abstract class BaseContainerImpl<
    */
   protected abstract readonly isRoot: boolean;
 
+  /**
+   * Returns the human-readable container name for DevTools display.
+   */
+  protected abstract getContainerName(): string;
+
   protected constructor(
     adapterRegistry: AdapterRegistry<TProvides, TAsyncPorts>,
     hooksRunner: HooksRunner | null
@@ -357,8 +362,14 @@ export abstract class BaseContainerImpl<
       if (typeof accessor !== "function") {
         throw new Error("Child container does not expose INTERNAL_ACCESS accessor");
       }
-      return accessor();
+      const state = accessor();
+      // Include wrapper reference so InspectorPlugin can access INSPECTOR API directly
+      return { ...state, wrapper: container };
     });
+
+    // Create the overridePorts set and isOverride function
+    const overridePorts = this.adapterRegistry.overridePorts;
+    const isOverride = (portName: string): boolean => this.adapterRegistry.isOverride(portName);
 
     const snapshot: ContainerInternalState = {
       disposed: this.lifecycleManager.isDisposed,
@@ -367,6 +378,9 @@ export abstract class BaseContainerImpl<
       childContainers: Object.freeze(childContainerSnapshots),
       adapterMap: this.createAdapterMapSnapshot(),
       containerId: "root",
+      containerName: this.getContainerName(),
+      overridePorts,
+      isOverride,
     };
     return Object.freeze(snapshot);
   }

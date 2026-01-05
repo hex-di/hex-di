@@ -175,7 +175,7 @@ export function useTestContainer<TProvides extends Port<unknown, string>>(
     const graph = graphFactory();
 
     // Create fresh container and scope
-    currentContainer = createContainer(graph);
+    currentContainer = createContainer(graph, { name: "Test" });
     currentScope = currentContainer.createScope();
   });
 
@@ -275,7 +275,7 @@ export function useTestContainer<TProvides extends Port<unknown, string>>(
 export function createTestContainer<TProvides extends Port<unknown, string>>(
   graph: Graph<TProvides>
 ): TestContainerResult<TProvides> {
-  const container = createContainer(graph);
+  const container = createContainer(graph, { name: "Test" });
   const scope = container.createScope();
 
   return Object.freeze({

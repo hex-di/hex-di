@@ -51,7 +51,7 @@ describe("createInspector Factory", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
     const inspector = createInspector(container);
 
     // Inspector should have all required methods
@@ -80,7 +80,7 @@ describe("createInspector Factory", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Resolve one service to populate singleton memo
     container.resolve(LoggerPort);
@@ -130,7 +130,7 @@ describe("createInspector Factory", () => {
       .provide(DatabaseAdapter)
       .provide(RequestContextAdapter)
       .build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
     const inspector = createInspector(container);
 
     const ports = inspector.listPorts();
@@ -175,7 +175,7 @@ describe("createInspector Factory", () => {
       .provide(DatabaseAdapter)
       .provide(RequestContextAdapter)
       .build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Resolve only Logger
     container.resolve(LoggerPort);
@@ -214,7 +214,7 @@ describe("createInspector Factory", () => {
       .provide(LoggerAdapter)
       .provide(RequestContextAdapter)
       .build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Create nested scope structure
     const scope1 = container.createScope();
@@ -287,7 +287,7 @@ describe("createInspector Factory", () => {
       .provide(ScopedAdapter2)
       .provide(RequestAdapter)
       .build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Resolve the singleton
     container.resolve(LoggerPort);
@@ -347,7 +347,7 @@ describe("createInspector Factory", () => {
       .provide(RequestContextAdapter)
       .provide(UserServiceAdapter)
       .build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Resolve all singletons to populate memos
     container.resolve(LoggerPort);
@@ -391,7 +391,7 @@ describe("createInspector Factory", () => {
       .provide(LoggerAdapter)
       .provide(RequestContextAdapter)
       .build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
     container.resolve(LoggerPort);
 
     const scope = container.createScope();
@@ -433,7 +433,7 @@ describe("createInspector Factory", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
     const inspector = createInspector(container);
 
     // Dispose the container

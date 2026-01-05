@@ -109,7 +109,7 @@ export type SpiedAdapter<P extends Port<object, string>> = Adapter<P, never, "tr
  *   .override(spiedLogger)
  *   .build();
  *
- * const container = createContainer(graph);
+ * const container = createContainer(graph, { name: "Test" });
  * const logger = container.resolve(LoggerPort);
  *
  * logger.log('test');

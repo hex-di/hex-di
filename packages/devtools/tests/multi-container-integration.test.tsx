@@ -13,8 +13,13 @@ import { describe, it, expect, vi } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
 import { createContainer, pipe, createPluginWrapper, type PluginWrapper } from "@hex-di/runtime";
-import { TRACING, createTracingPlugin, type TracingAPI } from "@hex-di/tracing";
-import { withInspector, getInspectorAPI } from "@hex-di/inspector";
+import {
+  TRACING,
+  createTracingPlugin,
+  type TracingAPI,
+  withInspector,
+  getInspectorAPI,
+} from "@hex-di/runtime";
 
 // Create fresh wrappers per test to avoid shared state
 function createFreshTracingWrapper(): PluginWrapper<typeof TRACING, TracingAPI> {
@@ -66,7 +71,7 @@ describe("Multi-Container DevTools Integration", () => {
     it("TracingPlugin tracks resolutions in root container", () => {
       const graph = createTestGraph();
       const freshWithTracing = createFreshTracingWrapper();
-      const rootContainer = pipe(createContainer(graph), freshWithTracing);
+      const rootContainer = pipe(createContainer(graph, { name: "Test" }), freshWithTracing);
 
       // Resolve services
       rootContainer.resolve(LoggerPort);
@@ -88,7 +93,7 @@ describe("Multi-Container DevTools Integration", () => {
     it("TracingPlugin tracks child resolutions with parent relationship", () => {
       const graph = createTestGraph();
       const freshWithTracing = createFreshTracingWrapper();
-      const rootContainer = pipe(createContainer(graph), freshWithTracing);
+      const rootContainer = pipe(createContainer(graph, { name: "Test" }), freshWithTracing);
 
       // Resolve Database (which depends on Logger)
       rootContainer.resolve(DatabasePort);
@@ -110,7 +115,7 @@ describe("Multi-Container DevTools Integration", () => {
     it("TracingPlugin reports cache hits correctly", () => {
       const graph = createTestGraph();
       const freshWithTracing = createFreshTracingWrapper();
-      const rootContainer = pipe(createContainer(graph), freshWithTracing);
+      const rootContainer = pipe(createContainer(graph, { name: "Test" }), freshWithTracing);
 
       // Resolve Logger
       rootContainer.resolve(LoggerPort);
@@ -144,7 +149,7 @@ describe("Multi-Container DevTools Integration", () => {
   describe("InspectorPlugin functionality", () => {
     it("InspectorPlugin provides isResolved status", () => {
       const graph = createTestGraph();
-      const rootContainer = pipe(createContainer(graph), withInspector);
+      const rootContainer = pipe(createContainer(graph, { name: "Test" }), withInspector);
 
       const inspector = getInspectorAPI(rootContainer);
       expect(inspector).toBeDefined();
@@ -169,7 +174,7 @@ describe("Multi-Container DevTools Integration", () => {
 
     it("InspectorPlugin getSnapshot returns correct singletons", () => {
       const graph = createTestGraph();
-      const rootContainer = pipe(createContainer(graph), withInspector);
+      const rootContainer = pipe(createContainer(graph, { name: "Test" }), withInspector);
 
       // Resolve Logger
       rootContainer.resolve(LoggerPort);
@@ -189,7 +194,7 @@ describe("Multi-Container DevTools Integration", () => {
 
     it("InspectorPlugin tracks scope creation", () => {
       const graph = createTestGraph();
-      const rootContainer = pipe(createContainer(graph), withInspector);
+      const rootContainer = pipe(createContainer(graph, { name: "Test" }), withInspector);
 
       // Create scopes
       rootContainer.createScope();
@@ -213,11 +218,11 @@ describe("Multi-Container DevTools Integration", () => {
     it("child container inherits TracingPlugin from parent", () => {
       const graph = createTestGraph();
       const freshWithTracing = createFreshTracingWrapper();
-      const rootContainer = pipe(createContainer(graph), freshWithTracing);
+      const rootContainer = pipe(createContainer(graph, { name: "Test" }), freshWithTracing);
 
       // Create child container
       const childGraph = GraphBuilder.create().build();
-      const childContainer = rootContainer.createChild(childGraph);
+      const childContainer = rootContainer.createChild(childGraph, { name: "Child" });
 
       // Child should have access to parent's tracing API via symbol
       // TypeScript doesn't track plugin augmentation through createChild,
@@ -229,11 +234,11 @@ describe("Multi-Container DevTools Integration", () => {
 
     it("child container inherits InspectorPlugin from parent", () => {
       const graph = createTestGraph();
-      const rootContainer = pipe(createContainer(graph), withInspector);
+      const rootContainer = pipe(createContainer(graph, { name: "Test" }), withInspector);
 
       // Create child container
       const childGraph = GraphBuilder.create().build();
-      const childContainer = rootContainer.createChild(childGraph);
+      const childContainer = rootContainer.createChild(childGraph, { name: "Child" });
 
       // Child should be able to get inspector API (inherits from parent)
       const childInspector = getInspectorAPI(childContainer);
@@ -243,14 +248,14 @@ describe("Multi-Container DevTools Integration", () => {
     it("child container resolutions tracked in parent's TracingPlugin", () => {
       const graph = createTestGraph();
       const freshWithTracing = createFreshTracingWrapper();
-      const rootContainer = pipe(createContainer(graph), freshWithTracing);
+      const rootContainer = pipe(createContainer(graph, { name: "Test" }), freshWithTracing);
 
       // Resolve from parent first
       rootContainer.resolve(LoggerPort);
 
       // Create child container and resolve
       const childGraph = GraphBuilder.create().build();
-      const childContainer = rootContainer.createChild(childGraph);
+      const childContainer = rootContainer.createChild(childGraph, { name: "Child" });
       childContainer.resolve(DatabasePort);
 
       // All resolutions should be in parent's tracing API
@@ -271,7 +276,10 @@ describe("Multi-Container DevTools Integration", () => {
       const graph = createTestGraph();
       const freshWithTracing = createFreshTracingWrapper();
       // Apply both wrappers using pipe composition
-      const rootContainer = pipe(pipe(createContainer(graph), freshWithTracing), withInspector);
+      const rootContainer = pipe(
+        pipe(createContainer(graph, { name: "Test" }), freshWithTracing),
+        withInspector
+      );
 
       // Resolve services
       rootContainer.resolve(LoggerPort);

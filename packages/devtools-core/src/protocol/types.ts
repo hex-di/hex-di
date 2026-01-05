@@ -7,7 +7,8 @@
  * @packageDocumentation
  */
 
-import type { ExportedGraph, TraceEntry, TraceStats, ContainerSnapshot } from "../types.js";
+import type { ExportedGraph } from "../types.js";
+import type { TraceEntry, TraceStats, ContainerSnapshot } from "@hex-di/plugin";
 
 // =============================================================================
 // Base JSON-RPC Types

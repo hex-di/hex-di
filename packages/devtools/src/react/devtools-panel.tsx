@@ -5,44 +5,44 @@
  * and inspecting container state. Displays nodes (ports/adapters), edges
  * (dependencies), and allows drilling into adapter details.
  *
- * Supports two display modes:
- * - "tabs" (default): Modern tabbed interface with Graph, Services, Tracing, Inspector tabs
- * - "sections": Legacy CollapsibleSection layout for backward compatibility
+ * Uses a tabbed interface with plugin architecture:
+ * - Each plugin contributes one tab
+ * - Default plugins: Graph, Services, Tracing, Inspector
+ * - Custom plugins can be provided via the `plugins` prop
+ * - External runtime can be provided via the `runtime` prop
  *
  * @packageDocumentation
  */
 
-import React, { useState, useMemo, useCallback, type ReactElement } from "react";
+import React, { useMemo, useEffect, useCallback, type ReactElement } from "react";
 import type { Port } from "@hex-di/ports";
 import type { Graph } from "@hex-di/graph";
-import type { Container, ContainerPhase } from "@hex-di/runtime";
-import { getTracingAPI } from "@hex-di/tracing";
-import { toJSON, type TracingAPI } from "@hex-di/devtools-core";
+import type {
+  Container,
+  ContainerPhase,
+  TracingAPI,
+  InspectorWithSubscription,
+} from "@hex-di/runtime";
+import { getTracingAPI } from "@hex-di/runtime";
+import { toJSON } from "@hex-di/devtools-core";
 import type { ExportedGraph } from "@hex-di/devtools-core";
-import { panelStyles, sectionStyles, emptyStyles } from "./styles.js";
-import { ContainerInspector } from "./container-inspector.js";
-import { ContainerSelector } from "./container-selector.js";
-import { TabNavigation, type TabId } from "./tab-navigation.js";
-import { ResolutionTracingSection } from "./resolution-tracing-section.js";
-import { DependencyGraph } from "./graph-visualization/index.js";
-import { EnhancedServicesView } from "./enhanced-services-view.js";
-import { GraphTabContent } from "./graph-tab-content.js";
-import type { ServiceInfo } from "./resolved-services.js";
-import { useContainerList } from "./hooks/use-container-list.js";
-import { isSome } from "./types/adt.js";
-import { createInspector } from "../index.js";
+import { panelStyles } from "./styles.js";
+import { TabNavigation } from "./tab-navigation.js";
+import { PluginTabContent } from "./plugin-tab-content.js";
+import { DevToolsStoreProvider, usePlugins, useDevToolsStore } from "../store/index.js";
+import type { DevToolsPlugin } from "../runtime/plugin-types.js";
+import { defaultPlugins } from "../plugins/presets.js";
 
 // =============================================================================
 // Types
 // =============================================================================
 
 /**
- * Display mode for the DevTools panel.
- *
- * - "tabs": Modern tabbed interface with Graph, Services, Tracing, Inspector tabs
- * - "sections": Legacy CollapsibleSection layout for backward compatibility
+ * Tab ID type for the DevTools panel.
+ * Default tabs are: graph, services, tracing, inspector.
+ * Custom plugins can add additional tabs.
  */
-export type DevToolsPanelMode = "tabs" | "sections";
+export type TabId = string;
 
 /**
  * Props for the DevToolsPanel component.
@@ -50,10 +50,11 @@ export type DevToolsPanelMode = "tabs" | "sections";
  * @remarks
  * - `graph` is required and provides the dependency graph data
  * - `container` is optional and enables additional runtime inspection features
- * - `mode` controls the display mode (tabs or sections), default is "tabs"
- * - `initialTab` sets the initial active tab when mode is "tabs"
+ * - `initialTab` sets the initial active tab
+ * - `plugins` allows custom plugins (defaults to `defaultPlugins()`)
+ * - `runtime` allows providing an external runtime (creates one internally if not provided)
  *
- * @example Basic usage with graph only (tabs mode, default)
+ * @example Basic usage with graph only
  * ```tsx
  * import { DevToolsPanel } from '@hex-di/devtools/react';
  * import { appGraph } from './graph';
@@ -74,23 +75,19 @@ export type DevToolsPanelMode = "tabs" | "sections";
  * }
  * ```
  *
- * @example Legacy sections mode for backward compatibility
+ * @example With custom plugins
  * ```tsx
- * import { DevToolsPanel } from '@hex-di/devtools/react';
+ * import { DevToolsPanel, defaultPlugins } from '@hex-di/devtools/react';
  * import { appGraph } from './graph';
+ * import { MyCustomPlugin } from './plugins';
  *
  * function DevView() {
- *   return <DevToolsPanel graph={appGraph} mode="sections" />;
- * }
- * ```
- *
- * @example With initial tab selection
- * ```tsx
- * import { DevToolsPanel } from '@hex-di/devtools/react';
- * import { appGraph } from './graph';
- *
- * function DevView() {
- *   return <DevToolsPanel graph={appGraph} mode="tabs" initialTab="tracing" />;
+ *   return (
+ *     <DevToolsPanel
+ *       graph={appGraph}
+ *       plugins={[...defaultPlugins(), MyCustomPlugin()]}
+ *     />
+ *   );
  * }
  * ```
  */
@@ -114,229 +111,99 @@ export interface DevToolsPanelProps<
    */
   readonly container?: Container<TProvides, TExtends, TAsyncPorts, TPhase>;
   /**
-   * Display mode for the panel.
-   * - "tabs" (default): Modern tabbed interface
-   * - "sections": Legacy CollapsibleSection layout
-   */
-  readonly mode?: DevToolsPanelMode;
-  /**
-   * Initial active tab when mode is "tabs".
+   * Initial active tab.
    * @default "graph"
    */
   readonly initialTab?: TabId;
+  /**
+   * Plugins to use for the tabbed interface.
+   * @default defaultPlugins()
+   */
+  readonly plugins?: readonly DevToolsPlugin[];
 }
 
 // =============================================================================
-// Internal Components
+// DevToolsPanel Tabs Mode Component
 // =============================================================================
 
 /**
- * Collapsible section component.
+ * Props for the internal tabs mode panel.
  */
-interface CollapsibleSectionProps {
-  readonly title: string;
-  readonly testIdPrefix: string;
-  readonly defaultExpanded?: boolean;
-  readonly children: React.ReactNode;
-}
-
-function CollapsibleSection({
-  title,
-  testIdPrefix,
-  defaultExpanded = false,
-  children,
-}: CollapsibleSectionProps): ReactElement {
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-
-  return (
-    <div>
-      <div
-        data-testid={`${testIdPrefix}-header`}
-        style={sectionStyles.header}
-        onClick={() => setIsExpanded(!isExpanded)}
-        onKeyDown={e => {
-          if (e.key === "Enter" || e.key === " ") {
-            setIsExpanded(!isExpanded);
-          }
-        }}
-        role="button"
-        tabIndex={0}
-        aria-expanded={isExpanded}
-      >
-        <span style={sectionStyles.title}>{title}</span>
-        <span
-          style={{
-            ...sectionStyles.chevron,
-            ...(isExpanded ? sectionStyles.chevronExpanded : {}),
-          }}
-        >
-          {">"}
-        </span>
-      </div>
-      {isExpanded && (
-        <div data-testid={`${testIdPrefix}-content`} style={sectionStyles.content}>
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
- * Graph view section showing visual dependency graph.
- */
-interface GraphViewProps {
-  readonly exportedGraph: ExportedGraph;
-}
-
-function GraphView({ exportedGraph }: GraphViewProps): ReactElement {
-  if (exportedGraph.nodes.length === 0) {
-    return <div style={emptyStyles.container}>No adapters registered in this graph.</div>;
-  }
-
-  // Transform nodes to include lifetime, factoryKind, and origin for DependencyGraph
-  const graphNodes = exportedGraph.nodes.map(node => ({
-    id: node.id,
-    label: node.label,
-    lifetime: node.lifetime as "singleton" | "scoped" | "transient",
-    factoryKind: node.factoryKind as "sync" | "async",
-    origin: node.origin,
-  }));
-
-  return (
-    <div
-      style={{
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-      }}
-    >
-      <DependencyGraph
-        nodes={graphNodes}
-        edges={exportedGraph.edges}
-        direction="TB"
-        showControls={true}
-      />
-    </div>
-  );
-}
-
-/**
- * Build ServiceInfo list from exported graph (without container).
- *
- * Creates basic service info with dependencies but without resolution
- * status (since no container is available to query).
- */
-function buildServicesFromGraph(exportedGraph: ExportedGraph): readonly ServiceInfo[] {
-  // Build a map of port name to dependencies
-  const dependencyMap = new Map<string, readonly string[]>();
-  for (const edge of exportedGraph.edges) {
-    const deps = dependencyMap.get(edge.from);
-    if (deps !== undefined) {
-      dependencyMap.set(edge.from, [...deps, edge.to]);
-    } else {
-      dependencyMap.set(edge.from, [edge.to]);
-    }
-  }
-
-  return exportedGraph.nodes.map(node => ({
-    portName: node.id,
-    lifetime: node.lifetime,
-    factoryKind: node.factoryKind,
-    isResolved: false,
-    isScopeRequired: node.lifetime !== "singleton",
-    resolvedAt: undefined,
-    resolutionOrder: undefined,
-    dependencies: dependencyMap.get(node.id) ?? [],
-  }));
-}
-
-// =============================================================================
-// InspectorTabContent Component
-// =============================================================================
-
-/**
- * Props for the InspectorTabContent component.
- */
-interface InspectorTabContentProps<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
-  TPhase extends ContainerPhase,
-> {
-  readonly container: Container<TProvides, TExtends, TAsyncPorts, TPhase>;
+interface DevToolsPanelTabsModeProps {
   readonly exportedGraph: ExportedGraph;
   readonly tracingAPI: TracingAPI | undefined;
 }
 
 /**
- * Inspector tab content with container selector and inspector.
+ * Internal component for tabs mode rendering with plugin architecture.
  *
- * When inside a ContainerRegistryProvider, shows a dropdown to select
- * from all registered containers. Otherwise, inspects the provided container.
- *
- * KEY FIX: Uses createInspector() on the selected container directly,
- * not a shared InspectorAPI. This enables proper multi-container inspection
- * where each container gets its own RuntimeInspector.
+ * This component must be rendered within a DevToolsRuntimeProvider context.
+ * Handles keyboard shortcuts for plugin tab switching.
  */
-function InspectorTabContent<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
-  TPhase extends ContainerPhase,
->({
-  container,
+function DevToolsPanelTabsMode({
   exportedGraph,
   tracingAPI,
-}: InspectorTabContentProps<TProvides, TExtends, TAsyncPorts, TPhase>): ReactElement {
-  const { containers, selectedId } = useContainerList();
+}: DevToolsPanelTabsModeProps): ReactElement {
+  const plugins = usePlugins();
+  const selectTab = useDevToolsStore(state => state.selectTab);
 
-  // Find the selected entry from containers using Option<string>
-  const selectedEntry = useMemo(
-    () => (isSome(selectedId) ? (containers.find(c => c.id === selectedId.value) ?? null) : null),
-    [containers, selectedId]
+  /**
+   * Handle keyboard shortcuts for plugin tabs.
+   * Listens for single-key shortcuts defined in plugin.shortcuts.
+   */
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent): void => {
+      // Skip if modifier keys are pressed (allow browser shortcuts)
+      if (event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+
+      // Skip if target is an input element
+      const target = event.target;
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      const pressedKey = event.key.toLowerCase();
+
+      // Find plugin with matching shortcut
+      for (const plugin of plugins) {
+        if (plugin.shortcuts === undefined) continue;
+
+        for (const shortcut of plugin.shortcuts) {
+          // Only handle single-key shortcuts (no modifiers)
+          if (shortcut.key.toLowerCase() === pressedKey) {
+            event.preventDefault();
+            // Call the shortcut's action callback
+            shortcut.action();
+            // Also select the tab (the primary action)
+            selectTab(plugin.id);
+            return;
+          }
+        }
+      }
+    },
+    [plugins, selectTab]
   );
 
-  // Create RuntimeInspector for the selected container
-  // This is the KEY FIX - each container gets its own inspector
-  const selectedRuntimeInspector = useMemo(() => {
-    if (selectedEntry === null) {
-      return null;
-    }
-    // Create inspector directly from the container reference
-    // This replaces the old approach that used shared InspectorAPI
-    return createInspector(selectedEntry.container);
-  }, [selectedEntry]);
+  // Register global keyboard listener for shortcuts
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleKeyDown]);
 
   return (
-    <div
-      data-testid="tab-content-inspector"
-      id="tabpanel-inspector"
-      role="tabpanel"
-      aria-labelledby="tab-inspector"
-      style={{
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        minHeight: 0,
-      }}
-    >
-      {/* Container inspector - uses RuntimeInspector for selected container or creates from prop */}
-      <div style={{ flex: 1, overflow: "auto" }}>
-        {selectedRuntimeInspector !== null ? (
-          <ContainerInspector
-            inspector={selectedRuntimeInspector}
-            exportedGraph={exportedGraph}
-            tracingAPI={tracingAPI}
-          />
-        ) : (
-          <ContainerInspector
-            container={container}
-            exportedGraph={exportedGraph}
-            tracingAPI={tracingAPI}
-          />
-        )}
+    <div data-testid="devtools-panel" style={panelStyles.container}>
+      <div style={panelStyles.header}>HexDI DevTools</div>
+
+      {/* Tab Navigation - reads from runtime via context */}
+      <TabNavigation />
+
+      {/* Tab Content - renders active plugin's component */}
+      <div style={panelStyles.content}>
+        <PluginTabContent graph={exportedGraph} tracingAPI={tracingAPI} />
       </div>
     </div>
   );
@@ -347,18 +214,62 @@ function InspectorTabContent<
 // =============================================================================
 
 /**
+ * Creates a minimal mock inspector for graph-only mode.
+ * Used when DevToolsPanel is rendered without a container.
+ */
+function createMockInspector(): InspectorWithSubscription {
+  return {
+    getSnapshot: () => ({
+      kind: "root" as const,
+      phase: "initialized" as const,
+      isInitialized: true,
+      asyncAdaptersTotal: 0,
+      asyncAdaptersInitialized: 0,
+      singletons: [],
+      scopes: {
+        id: "container",
+        status: "active" as const,
+        children: [],
+        resolvedPorts: [],
+        resolvedCount: 0,
+        totalCount: 0,
+      },
+      isDisposed: false,
+      containerName: "GraphOnlyContainer",
+      containerId: "graph-only-container",
+    }),
+    getScopeTree: () => ({
+      id: "container",
+      status: "active" as const,
+      children: [],
+      resolvedPorts: [],
+      resolvedCount: 0,
+      totalCount: 0,
+    }),
+    getAdapterInfo: () => [],
+    getGraphData: () => ({
+      containerName: "GraphOnlyContainer",
+      kind: "root" as const,
+      parentName: null,
+      adapters: [],
+    }),
+    getChildContainers: () => [],
+    subscribe: () => () => {},
+    listPorts: () => [],
+    getContainerKind: () => "root" as const,
+    getPhase: () => "initialized" as const,
+    isResolved: () => false,
+    isDisposed: false,
+  };
+}
+
+/**
  * DevToolsPanel component for visualizing HexDI dependency graphs.
  *
- * Displays an interactive panel with:
- * - **Graph View**: Visual list of all nodes (ports) with lifetime badges
- *   and dependency edges
- * - **Container Browser**: Collapsible adapter details with port name,
- *   lifetime, and dependency information
- *
- * Supports two display modes:
- * - **Tabs Mode** (default): Modern tabbed interface with Graph, Services,
- *   Tracing, and Inspector tabs
- * - **Sections Mode**: Legacy CollapsibleSection layout for backward compatibility
+ * Displays an interactive panel with a tabbed interface using plugin architecture:
+ * - Each plugin contributes one tab
+ * - Default plugins: Graph, Services, Tracing, Inspector
+ * - Custom plugins can be provided via the `plugins` prop
  *
  * Nodes are visually differentiated by lifetime:
  * - **Singleton**: Green badge
@@ -368,7 +279,7 @@ function InspectorTabContent<
  * @param props - The component props
  * @returns A React element containing the DevTools panel
  *
- * @example Basic usage (tabs mode, default)
+ * @example Basic usage
  * ```tsx
  * import { DevToolsPanel } from '@hex-di/devtools/react';
  * import { appGraph } from './graph';
@@ -401,13 +312,19 @@ function InspectorTabContent<
  * }
  * ```
  *
- * @example Legacy sections mode
+ * @example With custom plugins
  * ```tsx
- * import { DevToolsPanel } from '@hex-di/devtools/react';
+ * import { DevToolsPanel, defaultPlugins } from '@hex-di/devtools/react';
  * import { appGraph } from './graph';
+ * import { MyCustomPlugin } from './plugins';
  *
  * function App() {
- *   return <DevToolsPanel graph={appGraph} mode="sections" />;
+ *   return (
+ *     <DevToolsPanel
+ *       graph={appGraph}
+ *       plugins={[...defaultPlugins(), MyCustomPlugin()]}
+ *     />
+ *   );
  * }
  * ```
  */
@@ -419,22 +336,11 @@ export function DevToolsPanel<
 >({
   graph,
   container,
-  mode = "tabs",
   initialTab = "graph",
+  plugins,
 }: DevToolsPanelProps<TProvides, TExtends, TAsyncPorts, TPhase>): ReactElement {
   // Convert graph to exported format for visualization
   const exportedGraph = useMemo(() => toJSON(graph), [graph]);
-
-  // State for active tab (only used in tabs mode)
-  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
-
-  // Callback for tab change
-  const handleTabChange = useCallback((tabId: TabId) => {
-    setActiveTab(tabId);
-  }, []);
-
-  // Determine if Inspector tab should be shown
-  const showInspector = container !== undefined;
 
   // Extract tracingAPI from container if TracingPlugin is registered
   // This enables the ResolutionTracingSection to display trace data
@@ -443,119 +349,26 @@ export function DevToolsPanel<
     [container]
   );
 
-  // Build services list from graph for enhanced services view
-  const services = useMemo(() => buildServicesFromGraph(exportedGraph), [exportedGraph]);
+  // ==========================================================================
+  // Create inspector and plugins
+  // ==========================================================================
 
-  // Render sections mode (legacy layout)
-  if (mode === "sections") {
-    return (
-      <div data-testid="devtools-panel" style={panelStyles.container}>
-        <div style={panelStyles.header}>HexDI DevTools</div>
+  // Create mock inspector for graph-only mode
+  const inspector = useMemo((): InspectorWithSubscription => {
+    return createMockInspector();
+  }, []);
 
-        {/* Graph View Section */}
-        <CollapsibleSection title="Graph View" testIdPrefix="graph-view" defaultExpanded={true}>
-          <GraphView exportedGraph={exportedGraph} />
-        </CollapsibleSection>
+  // Use provided plugins or default plugins
+  const pluginsToUse = useMemo(() => plugins ?? defaultPlugins(), [plugins]);
 
-        {/* Services Section */}
-        <CollapsibleSection title="Services" testIdPrefix="services" defaultExpanded={false}>
-          <EnhancedServicesView
-            services={services}
-            exportedGraph={exportedGraph}
-            tracingAPI={tracingAPI}
-          />
-        </CollapsibleSection>
+  // ==========================================================================
+  // Render
+  // ==========================================================================
 
-        {/* Container Inspector Section - Only shown when container is provided */}
-        {container !== undefined && (
-          <CollapsibleSection
-            title="Container Inspector"
-            testIdPrefix="container-inspector"
-            defaultExpanded={false}
-          >
-            <ContainerInspector
-              container={container}
-              exportedGraph={exportedGraph}
-              tracingAPI={tracingAPI}
-            />
-          </CollapsibleSection>
-        )}
-
-        {/* Resolution Tracing Section */}
-        <CollapsibleSection
-          title="Resolution Tracing"
-          testIdPrefix="resolution-tracing"
-          defaultExpanded={false}
-        >
-          <ResolutionTracingSection {...(tracingAPI !== undefined ? { tracingAPI } : {})} />
-        </CollapsibleSection>
-      </div>
-    );
-  }
-
-  // Render tabs mode (default, new layout)
+  // DevToolsStoreProvider provides the store context needed by TabNavigation and PluginTabContent
   return (
-    <div data-testid="devtools-panel" style={panelStyles.container}>
-      <div style={panelStyles.header}>HexDI DevTools</div>
-
-      {/* Tab Navigation */}
-      <TabNavigation
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        showInspector={showInspector}
-      />
-
-      {/* Tab Content */}
-      <div style={panelStyles.content}>
-        {activeTab === "graph" && <GraphTabContent defaultGraph={exportedGraph} />}
-
-        {activeTab === "services" && (
-          <div
-            data-testid="tab-content-services"
-            id="tabpanel-services"
-            role="tabpanel"
-            aria-labelledby="tab-services"
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              minHeight: 0,
-              overflow: "auto",
-            }}
-          >
-            <EnhancedServicesView
-              services={services}
-              exportedGraph={exportedGraph}
-              tracingAPI={tracingAPI}
-            />
-          </div>
-        )}
-
-        {activeTab === "tracing" && (
-          <div
-            data-testid="tab-content-tracing"
-            id="tabpanel-tracing"
-            role="tabpanel"
-            aria-labelledby="tab-tracing"
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              minHeight: 0,
-            }}
-          >
-            <ResolutionTracingSection {...(tracingAPI !== undefined ? { tracingAPI } : {})} />
-          </div>
-        )}
-
-        {activeTab === "inspector" && container !== undefined && (
-          <InspectorTabContent
-            container={container}
-            exportedGraph={exportedGraph}
-            tracingAPI={tracingAPI}
-          />
-        )}
-      </div>
-    </div>
+    <DevToolsStoreProvider inspector={inspector} plugins={pluginsToUse} initialTab={initialTab}>
+      <DevToolsPanelTabsMode exportedGraph={exportedGraph} tracingAPI={tracingAPI} />
+    </DevToolsStoreProvider>
   );
 }

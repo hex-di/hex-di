@@ -49,11 +49,11 @@ describe("ChildContainer", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Create empty child graph
     const childGraph = GraphBuilder.create().build();
-    const childContainer = container.createChild(childGraph);
+    const childContainer = container.createChild(childGraph, { name: "Child" });
 
     expect(Object.isFrozen(childContainer)).toBe(true);
   });
@@ -68,14 +68,14 @@ describe("ChildContainer", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Resolve from parent first
     const parentLogger = container.resolve(LoggerPort);
 
     // Create empty child container
     const childGraph = GraphBuilder.create().build();
-    const childContainer = container.createChild(childGraph);
+    const childContainer = container.createChild(childGraph, { name: "Child" });
 
     // Child should be able to resolve the same port
     const childLogger = childContainer.resolve(LoggerPort);
@@ -104,11 +104,11 @@ describe("ChildContainer", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Create child container
     const childGraph = GraphBuilder.create().build();
-    const childContainer = container.createChild(childGraph);
+    const childContainer = container.createChild(childGraph, { name: "Child" });
 
     // Resolve both from child - should delegate to parent
     const childLogger = childContainer.resolve(LoggerPort);
@@ -136,10 +136,10 @@ describe("ChildContainer", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     const childGraph = GraphBuilder.create().build();
-    const childContainer = container.createChild(childGraph);
+    const childContainer = container.createChild(childGraph, { name: "Child" });
 
     // Initially not disposed
     expect(childContainer.isDisposed).toBe(false);
@@ -160,10 +160,10 @@ describe("ChildContainer", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     const childGraph = GraphBuilder.create().build();
-    const childContainer = container.createChild(childGraph);
+    const childContainer = container.createChild(childGraph, { name: "Child" });
 
     // Child should have a reference to its parent
     expect(childContainer.parent).toBe(container);
@@ -178,10 +178,10 @@ describe("ChildContainer", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     const childGraph = GraphBuilder.create().build();
-    const childContainer = container.createChild(childGraph);
+    const childContainer = container.createChild(childGraph, { name: "Child" });
 
     // Child should have createScope method
     expect(typeof childContainer.createScope).toBe("function");
@@ -217,11 +217,11 @@ describe("ChildContainer.override()", () => {
     });
 
     const graph = GraphBuilder.create().provide(ParentLoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Create child with override using graph
     const childGraph = GraphBuilder.create().override(ChildLoggerAdapter).build();
-    const childContainer = container.createChild(childGraph);
+    const childContainer = container.createChild(childGraph, { name: "Child" });
 
     // Resolve from parent - should use parent adapter
     const parentLogger = container.resolve(LoggerPort);
@@ -254,14 +254,14 @@ describe("ChildContainer.override()", () => {
     });
 
     const graph = GraphBuilder.create().provide(ParentLoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Resolve from parent first
     const parentLogger = container.resolve(LoggerPort);
 
     // Create child with override
     const childGraph = GraphBuilder.create().override(ChildLoggerAdapter).build();
-    const childContainer = container.createChild(childGraph);
+    const childContainer = container.createChild(childGraph, { name: "Child" });
 
     // Resolve from child - should create NEW instance
     const childLogger = childContainer.resolve(LoggerPort);
@@ -298,11 +298,11 @@ describe("ChildContainer.override()", () => {
     });
 
     const graph = GraphBuilder.create().provide(ParentLoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Create child with override (transient lifetime)
     const childGraph = GraphBuilder.create().override(ChildLoggerAdapter).build();
-    const childContainer = container.createChild(childGraph);
+    const childContainer = container.createChild(childGraph, { name: "Child" });
 
     // Each resolution from child should create new instance (transient)
     const childLogger1 = childContainer.resolve(LoggerPort);
@@ -334,11 +334,11 @@ describe("ChildContainer.extend()", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Create child with extension
     const childGraph = GraphBuilder.create().provide(ConfigAdapter).build();
-    const childContainer = container.createChild(childGraph);
+    const childContainer = container.createChild(childGraph, { name: "Child" });
 
     // Child should resolve the extended port
     const config = childContainer.resolve(ConfigPort);
@@ -365,11 +365,11 @@ describe("ChildContainer.extend()", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Create child with extension
     const childGraph = GraphBuilder.create().provide(ConfigAdapter).build();
-    const childContainer = container.createChild(childGraph);
+    const childContainer = container.createChild(childGraph, { name: "Child" });
 
     // Child can resolve extended port
     const config = childContainer.resolve(ConfigPort);
@@ -403,12 +403,12 @@ describe("ChildContainer.extend()", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Create child with extension that depends on parent's Logger
     // Use buildFragment() since ConfigAdapter's dependency (Logger) comes from parent
     const childGraph = GraphBuilder.create().provide(ConfigAdapter).buildFragment();
-    const childContainer = container.createChild(childGraph);
+    const childContainer = container.createChild(childGraph, { name: "Child" });
 
     // Resolve extended port - should use Logger from parent
     const config = childContainer.resolve(ConfigPort);
@@ -445,11 +445,11 @@ describe("ChildContainer.extend()", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Create child with multiple extensions
     const childGraph = GraphBuilder.create().provide(ConfigAdapter).provide(CacheAdapter).build();
-    const childContainer = container.createChild(childGraph);
+    const childContainer = container.createChild(childGraph, { name: "Child" });
 
     // Child should resolve all ports (parent + extended)
     expect(childContainer.resolve(LoggerPort)).toBeDefined();
@@ -490,7 +490,7 @@ describe("Inheritance Modes", () => {
       const CounterAdapter = createCounterAdapter();
 
       const graph = GraphBuilder.create().provide(CounterAdapter).build();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       // Resolve from parent first
       const parentCounter = container.resolve(CounterPort);
@@ -499,7 +499,7 @@ describe("Inheritance Modes", () => {
 
       // Create child container (default shared mode)
       const childGraph = GraphBuilder.create().build();
-      const childContainer = container.createChild(childGraph);
+      const childContainer = container.createChild(childGraph, { name: "Child" });
 
       // Child should see the same instance
       const childCounter = childContainer.resolve(CounterPort);
@@ -511,7 +511,7 @@ describe("Inheritance Modes", () => {
       const CounterAdapter = createCounterAdapter();
 
       const graph = GraphBuilder.create().provide(CounterAdapter).build();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       // Resolve from parent
       const parentCounter = container.resolve(CounterPort);
@@ -519,7 +519,7 @@ describe("Inheritance Modes", () => {
 
       // Create child and mutate
       const childGraph = GraphBuilder.create().build();
-      const childContainer = container.createChild(childGraph);
+      const childContainer = container.createChild(childGraph, { name: "Child" });
       const childCounter = childContainer.resolve(CounterPort);
       childCounter.increment();
       childCounter.increment();
@@ -534,7 +534,7 @@ describe("Inheritance Modes", () => {
       const CounterAdapter = createCounterAdapter();
 
       const graph = GraphBuilder.create().provide(CounterAdapter).build();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       // Resolve from parent and set initial state
       const parentCounter = container.resolve(CounterPort);
@@ -543,7 +543,10 @@ describe("Inheritance Modes", () => {
 
       // Create child with forked mode
       const childGraph = GraphBuilder.create().build();
-      const childContainer = container.createChild(childGraph, { Counter: "forked" });
+      const childContainer = container.createChild(childGraph, {
+        name: "Child",
+        inheritanceModes: { Counter: "forked" },
+      });
 
       // Child should have its own copy with same initial value
       const childCounter = childContainer.resolve(CounterPort);
@@ -555,7 +558,7 @@ describe("Inheritance Modes", () => {
       const CounterAdapter = createCounterAdapter();
 
       const graph = GraphBuilder.create().provide(CounterAdapter).build();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       // Resolve from parent
       const parentCounter = container.resolve(CounterPort);
@@ -564,7 +567,10 @@ describe("Inheritance Modes", () => {
 
       // Create child with forked mode and mutate
       const childGraph = GraphBuilder.create().build();
-      const childContainer = container.createChild(childGraph, { Counter: "forked" });
+      const childContainer = container.createChild(childGraph, {
+        name: "Child",
+        inheritanceModes: { Counter: "forked" },
+      });
 
       const childCounter = childContainer.resolve(CounterPort);
       childCounter.increment();
@@ -594,7 +600,7 @@ describe("Inheritance Modes", () => {
       });
 
       const graph = GraphBuilder.create().provide(CounterAdapter).build();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       // Resolve from parent and set initial state
       const parentCounter = container.resolve(CounterPort);
@@ -604,7 +610,10 @@ describe("Inheritance Modes", () => {
 
       // Create child with isolated mode
       const childGraph = GraphBuilder.create().build();
-      const childContainer = container.createChild(childGraph, { Counter: "isolated" });
+      const childContainer = container.createChild(childGraph, {
+        name: "Child",
+        inheritanceModes: { Counter: "isolated" },
+      });
 
       // Child should have a fresh instance (value starts at 0)
       const childCounter = childContainer.resolve(CounterPort);
@@ -619,14 +628,17 @@ describe("Inheritance Modes", () => {
       const CounterAdapter = createCounterAdapter();
 
       const graph = GraphBuilder.create().provide(CounterAdapter).build();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       // Resolve from parent
       const parentCounter = container.resolve(CounterPort);
 
       // Create child with isolated mode
       const childGraph = GraphBuilder.create().build();
-      const childContainer = container.createChild(childGraph, { Counter: "isolated" });
+      const childContainer = container.createChild(childGraph, {
+        name: "Child",
+        inheritanceModes: { Counter: "isolated" },
+      });
 
       const childCounter = childContainer.resolve(CounterPort);
 
@@ -657,7 +669,7 @@ describe("Inheritance Modes", () => {
       });
 
       const graph = GraphBuilder.create().provide(CounterAdapter).build();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       // Resolve parent
       const parentCounter = container.resolve(CounterPort);
@@ -666,7 +678,10 @@ describe("Inheritance Modes", () => {
       // Create child with override and forked mode
       // The override should take precedence over inheritance mode
       const childGraph = GraphBuilder.create().override(OverrideCounterAdapter).build();
-      const childContainer = container.createChild(childGraph, { Counter: "forked" });
+      const childContainer = container.createChild(childGraph, {
+        name: "Child",
+        inheritanceModes: { Counter: "forked" },
+      });
 
       const childCounter = childContainer.resolve(CounterPort);
 
@@ -690,7 +705,7 @@ describe("Inheritance Modes", () => {
       });
 
       const graph = GraphBuilder.create().provide(CounterAdapter).provide(StateAdapter).build();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       // Set up parent state
       const parentCounter = container.resolve(CounterPort);
@@ -702,8 +717,11 @@ describe("Inheritance Modes", () => {
       // Create child with different modes per port
       const childGraph = GraphBuilder.create().build();
       const childContainer = container.createChild(childGraph, {
-        Counter: "isolated",
-        State: "shared",
+        name: "Child",
+        inheritanceModes: {
+          Counter: "isolated",
+          State: "shared",
+        },
       });
 
       // Counter should be isolated (fresh instance)
@@ -733,18 +751,20 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       // Create child container
       const childGraph = GraphBuilder.create().build();
-      const childContainer = container.createChild(childGraph);
+      const childContainer = container.createChild(childGraph, { name: "Child" });
 
       // Child container should have createChild method
       expect(typeof childContainer.createChild).toBe("function");
 
       // Create grandchild container
       const grandchildGraph = GraphBuilder.create().build();
-      const grandchildContainer = childContainer.createChild(grandchildGraph);
+      const grandchildContainer = childContainer.createChild(grandchildGraph, {
+        name: "Grandchild",
+      });
       expect(grandchildContainer).toBeDefined();
       expect(typeof grandchildContainer.resolve).toBe("function");
     });
@@ -759,13 +779,15 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       // Create chain: container -> child -> grandchild
       const childGraph = GraphBuilder.create().build();
-      const childContainer = container.createChild(childGraph);
+      const childContainer = container.createChild(childGraph, { name: "Child" });
       const grandchildGraph = GraphBuilder.create().build();
-      const grandchildContainer = childContainer.createChild(grandchildGraph);
+      const grandchildContainer = childContainer.createChild(grandchildGraph, {
+        name: "Grandchild",
+      });
 
       // Resolve from grandchild - should walk up to root
       const logger = grandchildContainer.resolve(LoggerPort);
@@ -783,12 +805,14 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       const childGraph = GraphBuilder.create().build();
-      const childContainer = container.createChild(childGraph);
+      const childContainer = container.createChild(childGraph, { name: "Child" });
       const grandchildGraph = GraphBuilder.create().build();
-      const grandchildContainer = childContainer.createChild(grandchildGraph);
+      const grandchildContainer = childContainer.createChild(grandchildGraph, {
+        name: "Grandchild",
+      });
 
       // Grandchild's parent should be child
       expect(grandchildContainer.parent).toBe(childContainer);
@@ -817,14 +841,16 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(RootLoggerAdapter).build();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       // Child overrides Logger
       const childGraph = GraphBuilder.create().override(ChildLoggerAdapter).build();
-      const childContainer = container.createChild(childGraph);
+      const childContainer = container.createChild(childGraph, { name: "Child" });
       // Grandchild doesn't override - should walk up to child
       const grandchildGraph = GraphBuilder.create().build();
-      const grandchildContainer = childContainer.createChild(grandchildGraph);
+      const grandchildContainer = childContainer.createChild(grandchildGraph, {
+        name: "Grandchild",
+      });
 
       // Resolve from grandchild - should get child's override
       const logger = grandchildContainer.resolve(LoggerPort);
@@ -853,14 +879,16 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(RootLoggerAdapter).build();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       // Child doesn't override Logger
       const childGraph = GraphBuilder.create().build();
-      const childContainer = container.createChild(childGraph);
+      const childContainer = container.createChild(childGraph, { name: "Child" });
       // Grandchild overrides Logger
       const grandchildGraph = GraphBuilder.create().override(GrandchildLoggerAdapter).build();
-      const grandchildContainer = childContainer.createChild(grandchildGraph);
+      const grandchildContainer = childContainer.createChild(grandchildGraph, {
+        name: "Grandchild",
+      });
 
       // Resolve from grandchild - should use grandchild's override
       const logger = grandchildContainer.resolve(LoggerPort);
@@ -886,12 +914,14 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       const childGraph = GraphBuilder.create().build();
-      const childContainer = container.createChild(childGraph);
+      const childContainer = container.createChild(childGraph, { name: "Child" });
       const grandchildGraph = GraphBuilder.create().provide(ConfigAdapter).build();
-      const grandchildContainer = childContainer.createChild(grandchildGraph);
+      const grandchildContainer = childContainer.createChild(grandchildGraph, {
+        name: "Grandchild",
+      });
 
       // Grandchild can resolve extended port
       const config = grandchildContainer.resolve(ConfigPort);
@@ -925,14 +955,14 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       // Resolve from parent to create singleton
       container.resolve(LoggerPort);
 
       // Create child and resolve to create child's singleton
       const childGraph = GraphBuilder.create().override(ChildLoggerAdapter).build();
-      const childContainer = container.createChild(childGraph);
+      const childContainer = container.createChild(childGraph, { name: "Child" });
       childContainer.resolve(LoggerPort);
 
       // Dispose parent
@@ -984,15 +1014,15 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       // Create children in order: child1, child2, child3
       const child1Graph = GraphBuilder.create().override(Child1Adapter).build();
-      const child1 = container.createChild(child1Graph);
+      const child1 = container.createChild(child1Graph, { name: "Child1" });
       const child2Graph = GraphBuilder.create().override(Child2Adapter).build();
-      const child2 = container.createChild(child2Graph);
+      const child2 = container.createChild(child2Graph, { name: "Child2" });
       const child3Graph = GraphBuilder.create().override(Child3Adapter).build();
-      const child3 = container.createChild(child3Graph);
+      const child3 = container.createChild(child3Graph, { name: "Child3" });
 
       // Resolve from all children to create singletons
       child1.resolve(LoggerPort);
@@ -1015,13 +1045,13 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       // Create two children
       const child1Graph = GraphBuilder.create().build();
-      const child1 = container.createChild(child1Graph);
+      const child1 = container.createChild(child1Graph, { name: "Child1" });
       const child2Graph = GraphBuilder.create().build();
-      const child2 = container.createChild(child2Graph);
+      const child2 = container.createChild(child2Graph, { name: "Child2" });
 
       // Dispose child1 individually
       await child1.dispose();
@@ -1070,12 +1100,14 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(RootAdapter).build();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       const childGraph = GraphBuilder.create().override(ChildAdapter).build();
-      const childContainer = container.createChild(childGraph);
+      const childContainer = container.createChild(childGraph, { name: "Child" });
       const grandchildGraph = GraphBuilder.create().override(GrandchildAdapter).build();
-      const grandchildContainer = childContainer.createChild(grandchildGraph);
+      const grandchildContainer = childContainer.createChild(grandchildGraph, {
+        name: "Grandchild",
+      });
 
       // Resolve to create singletons
       container.resolve(LoggerPort);
@@ -1117,11 +1149,11 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(RootLoggerAdapter).build();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       // Create child with override
       const childGraph = GraphBuilder.create().override(ChildLoggerAdapter).build();
-      const childContainer = container.createChild(childGraph);
+      const childContainer = container.createChild(childGraph, { name: "Child" });
 
       // Create scope from child container
       const scope = childContainer.createScope();
@@ -1150,10 +1182,10 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       const childGraph = GraphBuilder.create().provide(ConfigAdapter).build();
-      const childContainer = container.createChild(childGraph);
+      const childContainer = container.createChild(childGraph, { name: "Child" });
       const scope = childContainer.createScope();
 
       // Scope can resolve extended port
@@ -1173,10 +1205,10 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-      const container = createContainer(graph);
+      const container = createContainer(graph, { name: "Test" });
 
       const childGraph = GraphBuilder.create().build();
-      const childContainer = container.createChild(childGraph);
+      const childContainer = container.createChild(childGraph, { name: "Child" });
       const scope = childContainer.createScope();
 
       // Resolve scoped port
@@ -1211,7 +1243,7 @@ describe("Child Container Integration Tests", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const parentContainer = createContainer(graph);
+    const parentContainer = createContainer(graph, { name: "Test" });
 
     // 2. Resolve from parent to ensure singleton exists
     const parentLogger = parentContainer.resolve(LoggerPort);
@@ -1241,7 +1273,7 @@ describe("Child Container Integration Tests", () => {
       .override(ChildLoggerAdapter)
       .provide(ConfigAdapter)
       .build();
-    const childContainer = parentContainer.createChild(childGraph);
+    const childContainer = parentContainer.createChild(childGraph, { name: "Child" });
 
     // 4. Resolve from child - should use overridden Logger and extended Config
     const childLogger = childContainer.resolve(LoggerPort);
@@ -1284,9 +1316,9 @@ describe("Child Container Integration Tests", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
     const childGraph = GraphBuilder.create().build();
-    const childContainer = container.createChild(childGraph);
+    const childContainer = container.createChild(childGraph, { name: "Child" });
 
     // Dispose child container
     await childContainer.dispose();
@@ -1320,7 +1352,7 @@ describe("Child Container Integration Tests", () => {
     });
 
     const graph = GraphBuilder.create().provide(CounterAdapter).build();
-    const rootContainer = createContainer(graph);
+    const rootContainer = createContainer(graph, { name: "Test" });
 
     // Root counter: value = 0 -> increment -> value = 1
     const rootCounter = rootContainer.resolve(CounterPort);
@@ -1329,7 +1361,10 @@ describe("Child Container Integration Tests", () => {
 
     // Child with forked mode: gets snapshot at value = 1
     const childGraph = GraphBuilder.create().build();
-    const childContainer = rootContainer.createChild(childGraph, { Counter: "forked" });
+    const childContainer = rootContainer.createChild(childGraph, {
+      name: "Child",
+      inheritanceModes: { Counter: "forked" },
+    });
 
     const childCounter = childContainer.resolve(CounterPort);
     expect(childCounter.value).toBe(1); // Snapshot from root
@@ -1342,7 +1377,8 @@ describe("Child Container Integration Tests", () => {
     // Grandchild with isolated mode: fresh instance starting at 0
     const grandchildGraph = GraphBuilder.create().build();
     const grandchildContainer = childContainer.createChild(grandchildGraph, {
-      Counter: "isolated",
+      name: "Grandchild",
+      inheritanceModes: { Counter: "isolated" },
     });
 
     const grandchildCounter = grandchildContainer.resolve(CounterPort);
@@ -1378,10 +1414,10 @@ describe("Child Container Integration Tests", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     const childGraph = GraphBuilder.create().override(TransientLoggerAdapter).build();
-    const childContainer = container.createChild(childGraph);
+    const childContainer = container.createChild(childGraph, { name: "Child" });
 
     // Each resolve should create a new instance
     const logger1 = childContainer.resolve(LoggerPort);
@@ -1424,13 +1460,13 @@ describe("Child Container Integration Tests", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     const childGraph = GraphBuilder.create()
       .override(ChildLoggerAdapter)
       .provide(ConfigAdapter)
       .build();
-    const childContainer = container.createChild(childGraph);
+    const childContainer = container.createChild(childGraph, { name: "Child" });
 
     // Resolve extended adapter - should use overridden Logger
     const config = childContainer.resolve(ConfigPort);
@@ -1461,14 +1497,20 @@ describe("Child Container Integration Tests", () => {
     });
 
     const graph = GraphBuilder.create().provide(CounterAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Create two sibling child containers with isolated mode
     const child1Graph = GraphBuilder.create().build();
-    const child1 = container.createChild(child1Graph, { Counter: "isolated" });
+    const child1 = container.createChild(child1Graph, {
+      name: "Child1",
+      inheritanceModes: { Counter: "isolated" },
+    });
 
     const child2Graph = GraphBuilder.create().build();
-    const child2 = container.createChild(child2Graph, { Counter: "isolated" });
+    const child2 = container.createChild(child2Graph, {
+      name: "Child2",
+      inheritanceModes: { Counter: "isolated" },
+    });
 
     // Get counters from each
     const counter1 = child1.resolve(CounterPort);

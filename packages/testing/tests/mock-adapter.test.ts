@@ -126,7 +126,7 @@ describe("createMockAdapter", () => {
 
     const graph = GraphBuilder.create().provide(mockAdapter).build();
 
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
     const logger = container.resolve(LoggerPort);
 
     logger.log("test message");
@@ -169,7 +169,7 @@ describe("createMockAdapter with dependencies", () => {
       .provide(UserServiceAdapter)
       .build();
 
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
     const userService = container.resolve(UserServicePort);
 
     void userService.getUser("123");

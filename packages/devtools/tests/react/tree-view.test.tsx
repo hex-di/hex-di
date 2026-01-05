@@ -11,18 +11,10 @@
  */
 
 import { describe, it, expect, afterEach, vi } from "vitest";
-import {
-  render,
-  screen,
-  cleanup,
-  fireEvent,
-} from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import React from "react";
-import {
-  TreeView,
-  type TreeViewProps,
-} from "../../src/react/tree-view.js";
-import type { TraceEntry } from "@hex-di/devtools-core";
+import { TreeView, type TreeViewProps } from "../../src/react/tree-view.js";
+import type { TraceEntry } from "@hex-di/plugin";
 
 // =============================================================================
 // Test Fixtures
@@ -95,9 +87,7 @@ function createHierarchicalTraces(): readonly TraceEntry[] {
 /**
  * Default props for TreeView component.
  */
-function createDefaultProps(
-  overrides: Partial<TreeViewProps> = {}
-): TreeViewProps {
+function createDefaultProps(overrides: Partial<TreeViewProps> = {}): TreeViewProps {
   return {
     traces: createHierarchicalTraces(),
     threshold: 50,

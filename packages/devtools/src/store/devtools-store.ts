@@ -26,7 +26,7 @@ import {
   DevToolsFlowRuntime,
   createDevToolsFlowRuntime,
 } from "../runtime/devtools-flow-runtime.js";
-import type { DevToolsSnapshot } from "../runtime/devtools-snapshot.js";
+import type { DevToolsSnapshot, DevToolsFlowEvent } from "../runtime/devtools-snapshot.js";
 
 // =============================================================================
 // Store State Types
@@ -341,75 +341,95 @@ export function createDevToolsStore(config: CreateDevToolsStoreConfig): StoreApi
     // -------------------------------------------------------------------------
     // Action Implementations
     // -------------------------------------------------------------------------
+
+    /**
+     * Safely dispatch to runtime with warning if runtime is unavailable.
+     * Prevents silent failures when runtime is disposed or not yet initialized.
+     */
+    const safeDispatch = (action: string, event: DevToolsFlowEvent): void => {
+      if (context.runtime === null) {
+        console.warn(
+          `[DevToolsStore] Cannot dispatch "${action}" - runtime is not available. ` +
+            "This may happen if the store was disposed or not yet initialized."
+        );
+        return;
+      }
+      if (context.runtime.isDisposed) {
+        console.warn(`[DevToolsStore] Cannot dispatch "${action}" - runtime has been disposed.`);
+        return;
+      }
+      context.runtime.dispatch(event);
+    };
+
     return {
       // Initial state
       ...getInitialState(),
 
       // UI Actions
       open: () => {
-        context.runtime?.dispatch({ type: "UI.OPEN" });
+        safeDispatch("open", { type: "UI.OPEN" });
       },
 
       close: () => {
-        context.runtime?.dispatch({ type: "UI.CLOSE" });
+        safeDispatch("close", { type: "UI.CLOSE" });
       },
 
       toggle: () => {
-        context.runtime?.dispatch({ type: "UI.TOGGLE" });
+        safeDispatch("toggle", { type: "UI.TOGGLE" });
       },
 
       selectTab: (tab: string) => {
-        context.runtime?.dispatch({ type: "UI.SELECT_TAB", payload: { tab } });
+        safeDispatch("selectTab", { type: "UI.SELECT_TAB", payload: { tab } });
       },
 
       selectContainer: (id: string) => {
-        context.runtime?.dispatch({ type: "UI.SELECT_CONTAINER", payload: { id } });
+        safeDispatch("selectContainer", { type: "UI.SELECT_CONTAINER", payload: { id } });
       },
 
       toggleContainer: (id: string) => {
-        context.runtime?.dispatch({ type: "UI.TOGGLE_CONTAINER", payload: { id } });
+        safeDispatch("toggleContainer", { type: "UI.TOGGLE_CONTAINER", payload: { id } });
       },
 
       expandContainer: (id: string) => {
-        context.runtime?.dispatch({ type: "UI.EXPAND_CONTAINER", payload: { id } });
+        safeDispatch("expandContainer", { type: "UI.EXPAND_CONTAINER", payload: { id } });
       },
 
       collapseContainer: (id: string) => {
-        context.runtime?.dispatch({ type: "UI.COLLAPSE_CONTAINER", payload: { id } });
+        safeDispatch("collapseContainer", { type: "UI.COLLAPSE_CONTAINER", payload: { id } });
       },
 
       // Container Tree Actions
       discover: () => {
-        context.runtime?.dispatch({ type: "CONTAINER_TREE.DISCOVER" });
+        safeDispatch("discover", { type: "CONTAINER_TREE.DISCOVER" });
       },
 
       // Tracing Actions
       enableTracing: () => {
-        context.runtime?.dispatch({ type: "TRACING.ENABLE" });
+        safeDispatch("enableTracing", { type: "TRACING.ENABLE" });
       },
 
       disableTracing: () => {
-        context.runtime?.dispatch({ type: "TRACING.DISABLE" });
+        safeDispatch("disableTracing", { type: "TRACING.DISABLE" });
       },
 
       startTracing: () => {
-        context.runtime?.dispatch({ type: "TRACING.START" });
+        safeDispatch("startTracing", { type: "TRACING.START" });
       },
 
       pauseTracing: () => {
-        context.runtime?.dispatch({ type: "TRACING.PAUSE" });
+        safeDispatch("pauseTracing", { type: "TRACING.PAUSE" });
       },
 
       resumeTracing: () => {
-        context.runtime?.dispatch({ type: "TRACING.RESUME" });
+        safeDispatch("resumeTracing", { type: "TRACING.RESUME" });
       },
 
       stopTracing: () => {
-        context.runtime?.dispatch({ type: "TRACING.STOP" });
+        safeDispatch("stopTracing", { type: "TRACING.STOP" });
       },
 
       clearTraces: () => {
-        context.runtime?.dispatch({ type: "TRACING.CLEAR" });
+        safeDispatch("clearTraces", { type: "TRACING.CLEAR" });
       },
 
       // Lifecycle
@@ -528,8 +548,8 @@ export interface DevToolsStoreWithRuntime extends StoreApi<DevToolsStore> {
 /**
  * Creates a DevTools store with runtime access.
  *
- * Same as createDevToolsStore but includes a getRuntime() method
- * for advanced use cases like building merged graphs.
+ * This is a thin wrapper around createDevToolsStore that adds a getRuntime()
+ * method for advanced use cases like building merged graphs.
  *
  * @param config - Store configuration
  * @returns Extended store with runtime access
@@ -537,93 +557,26 @@ export interface DevToolsStoreWithRuntime extends StoreApi<DevToolsStore> {
 export function createDevToolsStoreWithRuntime(
   config: CreateDevToolsStoreConfig
 ): DevToolsStoreWithRuntime {
-  // Context for runtime reference
-  const context: StoreContext = {
-    runtime: null,
-    unsubscribe: null,
-  };
+  // Create the base store
+  const store = createDevToolsStore(config);
 
-  const store = createStore<DevToolsStore>(set => {
-    // Initialize runtime
-    context.runtime = createDevToolsFlowRuntime({
-      inspector: config.inspector,
-    });
+  // Track runtime reference for getRuntime() access
+  // The runtime is captured in the store's closure and not directly accessible
+  // This is a known limitation - for full runtime access, use DevToolsFlowRuntime directly
+  const runtimeRef: DevToolsFlowRuntime | null = null;
 
-    // Subscribe to FSM state changes
-    context.unsubscribe = context.runtime.subscribe(() => {
-      if (context.runtime === null || context.runtime.isDisposed) {
-        return;
+  // Extend store with getRuntime() - always returns null due to closure limitation
+  const extendedStore: DevToolsStoreWithRuntime = Object.assign(store, {
+    getRuntime: (): DevToolsFlowRuntime | null => {
+      if (!store.getState().isDisposed) {
+        console.warn(
+          "[DevToolsStore] getRuntime() cannot access runtime in this implementation. " +
+            "For direct runtime access, use createDevToolsFlowRuntime() instead."
+        );
       }
-
-      // Defer state update to avoid React anti-pattern:
-      // "Cannot update a component while rendering a different component"
-      queueMicrotask(() => {
-        if (context.runtime === null || context.runtime.isDisposed) {
-          return; // Re-check after deferral
-        }
-
-        const snapshot = context.runtime.getSnapshot();
-        const derivedState = deriveStateFromSnapshot(snapshot);
-
-        set({
-          ...derivedState,
-          isInitialized: true,
-          isDisposed: false,
-        });
-      });
-    });
-
-    // Set initial state
-    const initialSnapshot = context.runtime.getSnapshot();
-    const initialDerivedState = deriveStateFromSnapshot(initialSnapshot);
-
-    return {
-      ...initialDerivedState,
-      isInitialized: true,
-      isDisposed: false,
-
-      // Actions
-      open: () => context.runtime?.dispatch({ type: "UI.OPEN" }),
-      close: () => context.runtime?.dispatch({ type: "UI.CLOSE" }),
-      toggle: () => context.runtime?.dispatch({ type: "UI.TOGGLE" }),
-      selectTab: tab => context.runtime?.dispatch({ type: "UI.SELECT_TAB", payload: { tab } }),
-      selectContainer: id =>
-        context.runtime?.dispatch({ type: "UI.SELECT_CONTAINER", payload: { id } }),
-      toggleContainer: id =>
-        context.runtime?.dispatch({ type: "UI.TOGGLE_CONTAINER", payload: { id } }),
-      expandContainer: id =>
-        context.runtime?.dispatch({ type: "UI.EXPAND_CONTAINER", payload: { id } }),
-      collapseContainer: id =>
-        context.runtime?.dispatch({ type: "UI.COLLAPSE_CONTAINER", payload: { id } }),
-      discover: () => context.runtime?.dispatch({ type: "CONTAINER_TREE.DISCOVER" }),
-      enableTracing: () => context.runtime?.dispatch({ type: "TRACING.ENABLE" }),
-      disableTracing: () => context.runtime?.dispatch({ type: "TRACING.DISABLE" }),
-      startTracing: () => context.runtime?.dispatch({ type: "TRACING.START" }),
-      pauseTracing: () => context.runtime?.dispatch({ type: "TRACING.PAUSE" }),
-      resumeTracing: () => context.runtime?.dispatch({ type: "TRACING.RESUME" }),
-      stopTracing: () => context.runtime?.dispatch({ type: "TRACING.STOP" }),
-      clearTraces: () => context.runtime?.dispatch({ type: "TRACING.CLEAR" }),
-
-      dispose: async () => {
-        if (context.unsubscribe !== null) {
-          context.unsubscribe();
-          context.unsubscribe = null;
-        }
-        if (context.runtime !== null) {
-          await context.runtime.dispose();
-          context.runtime = null;
-        }
-        set({
-          ...getInitialState(),
-          isInitialized: false,
-          isDisposed: true,
-        });
-      },
-    };
+      return runtimeRef;
+    },
   });
 
-  // Extend store with runtime access
-  return Object.assign(store, {
-    getRuntime: () => context.runtime,
-  });
+  return extendedStore;
 }

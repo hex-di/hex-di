@@ -44,7 +44,7 @@ describe("Child Container Scope Visibility", () => {
     });
 
     const parentGraph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const parentContainer = createContainer(parentGraph);
+    const parentContainer = createContainer(parentGraph, { name: "Test" });
 
     // Create child container with a Plugin
     const PluginAdapter = createAdapter({
@@ -56,7 +56,7 @@ describe("Child Container Scope Visibility", () => {
 
     // Use buildFragment() since PluginAdapter's dependency (Logger) comes from parent
     const childGraph = GraphBuilder.create().provide(PluginAdapter).buildFragment();
-    const childContainer = parentContainer.createChild(childGraph);
+    const childContainer = parentContainer.createChild(childGraph, { name: "Child" });
 
     // Create a scope on the child container
     const _scope = childContainer.createScope();
@@ -85,11 +85,11 @@ describe("Child Container Scope Visibility", () => {
     });
 
     const parentGraph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const parentContainer = createContainer(parentGraph);
+    const parentContainer = createContainer(parentGraph, { name: "Test" });
 
     // Create child container
     const childGraph = GraphBuilder.create().build();
-    const childContainer = parentContainer.createChild(childGraph);
+    const childContainer = parentContainer.createChild(childGraph, { name: "Child" });
 
     // Inspect parent's internal state
     const inspector = createInspector(parentContainer);
@@ -112,12 +112,12 @@ describe("Child Container Scope Visibility", () => {
     });
 
     const parentGraph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const parentContainer = createContainer(parentGraph);
+    const parentContainer = createContainer(parentGraph, { name: "Test" });
 
     // Create two child containers
     const childGraph = GraphBuilder.create().build();
-    const child1 = parentContainer.createChild(childGraph);
-    const child2 = parentContainer.createChild(childGraph);
+    const child1 = parentContainer.createChild(childGraph, { name: "Child" });
+    const child2 = parentContainer.createChild(childGraph, { name: "Child" });
 
     // Create scopes on each child
     const _scope1 = child1.createScope();
@@ -150,14 +150,14 @@ describe("Child Container Scope Visibility", () => {
     });
 
     const parentGraph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const rootContainer = createContainer(parentGraph);
+    const rootContainer = createContainer(parentGraph, { name: "Test" });
 
     // Create child container
     const childGraph = GraphBuilder.create().build();
-    const childContainer = rootContainer.createChild(childGraph);
+    const childContainer = rootContainer.createChild(childGraph, { name: "Child" });
 
     // Create grandchild container from child
-    const grandchildContainer = childContainer.createChild(childGraph);
+    const grandchildContainer = childContainer.createChild(childGraph, { name: "Child" });
 
     // Create scope on grandchild
     const _scope = grandchildContainer.createScope();
@@ -188,14 +188,14 @@ describe("Child Container Scope Visibility", () => {
     });
 
     const parentGraph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const parentContainer = createContainer(parentGraph);
+    const parentContainer = createContainer(parentGraph, { name: "Test" });
 
     // Create scope on parent
     const _parentScope = parentContainer.createScope();
 
     // Create child container and scope
     const childGraph = GraphBuilder.create().build();
-    const childContainer = parentContainer.createChild(childGraph);
+    const childContainer = parentContainer.createChild(childGraph, { name: "Child" });
     const _childScope = childContainer.createScope();
 
     // Verify parent only sees its own scope

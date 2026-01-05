@@ -6,13 +6,8 @@
  * @packageDocumentation
  */
 
-import { createPort } from '@hex-di/ports';
-import type {
-  TraceEntry,
-  TraceFilter,
-  TraceStats,
-  Lifetime,
-} from '../types.js';
+import { createPort } from "@hex-di/ports";
+import type { TraceEntry, TraceFilter, TraceStats, Lifetime } from "@hex-di/plugin";
 
 // =============================================================================
 // Service Interface
@@ -90,4 +85,4 @@ export interface TraceEntryInput {
  *
  * Supports real-time subscription to new traces and trace data caching.
  */
-export const TraceCollectorPort = createPort<'TraceCollector', TraceCollector>('TraceCollector');
+export const TraceCollectorPort = createPort<"TraceCollector", TraceCollector>("TraceCollector");

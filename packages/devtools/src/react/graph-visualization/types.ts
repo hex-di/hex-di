@@ -1,29 +1,51 @@
 /**
- * Types for the visual dependency graph component.
+ * DI-specific types for the visual dependency graph component.
  *
- * Extends the ExportedGraph types with position and dimension information
- * for SVG rendering.
+ * These types extend the generic graph-viz types with DI-specific
+ * properties like lifetime, ownership, and inheritance mode.
+ *
+ * Generic graph types (Point, GraphDirection, etc.) are re-exported
+ * from @hex-di/graph-viz for convenience.
  *
  * @packageDocumentation
  */
 
 import type { Lifetime, FactoryKind } from "@hex-di/graph";
-import type { InheritanceMode } from "@hex-di/devtools-core";
+import type { InheritanceMode, ServiceOrigin } from "@hex-di/plugin";
+
+// Re-export generic types from @hex-di/graph-viz
+export type {
+  Point,
+  GraphDirection,
+  TransformState,
+  GraphInteractionState,
+} from "@hex-di/graph-viz";
+
+export { createEdgeKey, DEFAULT_TRANSFORM } from "@hex-di/graph-viz";
 
 // =============================================================================
-// Layout Types
+// DI-Specific Node Types
 // =============================================================================
 
 /**
- * A point in 2D space.
+ * Per-container ownership entry for a port/adapter.
+ *
+ * Used in unified multi-container graph views to show which containers
+ * provide a given port and what their individual ownership state is.
  */
-export interface Point {
-  readonly x: number;
-  readonly y: number;
+export interface ContainerOwnershipEntry {
+  /** The unique identifier of the container */
+  readonly containerId: string;
+  /** The ownership state for this port in this container */
+  readonly ownership: ServiceOrigin;
+  /** Optional inheritance mode (only for inherited ownership) */
+  readonly inheritanceMode?: InheritanceMode;
 }
 
 /**
- * A node with computed position and dimensions from layout algorithm.
+ * A DI node with computed position and dimensions from layout algorithm.
+ *
+ * Extends the generic PositionedNode with DI-specific metadata.
  */
 export interface PositionedNode {
   /** Unique identifier (port name) */
@@ -42,14 +64,38 @@ export interface PositionedNode {
   readonly width: number;
   /** Node height */
   readonly height: number;
-  /** Service origin - own (defined locally) or inherited (from parent) */
-  readonly origin?: "own" | "inherited";
+  /** Service origin - own (defined locally), inherited (from parent), or overridden (replaces parent) */
+  readonly origin?: ServiceOrigin;
   /** Inheritance mode for inherited services (shared, forked, isolated) */
   readonly inheritanceMode?: InheritanceMode;
+  /** List of containers that provide this port (for unified multi-select view) */
+  readonly containers?: readonly string[];
+  /**
+   * Ownership state for visual styling.
+   *
+   * Determines the visual treatment of the node:
+   * - `"own"`: Solid 2px border, full opacity - adapter registered directly in container
+   * - `"inherited"`: Dashed 4-2 border, 85% opacity - adapter from parent container
+   * - `"overridden"`: Double 3px border, OVR badge - child override of parent adapter
+   */
+  readonly ownership?: ServiceOrigin;
+  /**
+   * Per-container ownership metadata for multi-container views.
+   *
+   * When displaying a unified graph across multiple containers, this field
+   * provides the ownership state for each container that provides this port.
+   */
+  readonly containerOwnership?: ReadonlyArray<ContainerOwnershipEntry>;
 }
 
+// =============================================================================
+// DI-Specific Edge Types
+// =============================================================================
+
 /**
- * An edge with computed path points from layout algorithm.
+ * A DI edge with computed path points from layout algorithm.
+ *
+ * Uses the same structure as generic PositionedEdge from @hex-di/graph-viz.
  */
 export interface PositionedEdge {
   /** Source node id */
@@ -57,14 +103,18 @@ export interface PositionedEdge {
   /** Target node id */
   readonly to: string;
   /** Path points for the edge curve */
-  readonly points: readonly Point[];
+  readonly points: readonly { readonly x: number; readonly y: number }[];
 }
 
+// =============================================================================
+// DI-Specific Layout Result
+// =============================================================================
+
 /**
- * Result of layout computation.
+ * Result of DI graph layout computation.
  */
 export interface LayoutResult {
-  /** Positioned nodes */
+  /** Positioned DI nodes */
   readonly nodes: readonly PositionedNode[];
   /** Positioned edges */
   readonly edges: readonly PositionedEdge[];
@@ -73,67 +123,6 @@ export interface LayoutResult {
   /** Total graph height */
   readonly height: number;
 }
-
-// =============================================================================
-// Graph Direction
-// =============================================================================
-
-/**
- * Direction of the graph layout.
- * - TB: Top to bottom (default)
- * - LR: Left to right
- */
-export type GraphDirection = "TB" | "LR";
-
-// =============================================================================
-// Interaction State
-// =============================================================================
-
-/**
- * State for tracking user interactions with the graph.
- */
-export interface GraphInteractionState {
-  /** Currently hovered node id, or null if none */
-  readonly hoveredNodeId: string | null;
-  /** Currently selected node id, or null if none */
-  readonly selectedNodeId: string | null;
-  /** Set of node ids that should be highlighted (connected to hovered/selected) */
-  readonly highlightedNodeIds: ReadonlySet<string>;
-  /** Set of edge keys (from-to) that should be highlighted */
-  readonly highlightedEdgeKeys: ReadonlySet<string>;
-}
-
-/**
- * Creates an edge key for lookup in Sets/Maps.
- */
-export function createEdgeKey(from: string, to: string): string {
-  return `${from}->${to}`;
-}
-
-// =============================================================================
-// Zoom/Pan State
-// =============================================================================
-
-/**
- * Transform state for zoom and pan.
- */
-export interface TransformState {
-  /** Current zoom scale (1 = 100%) */
-  readonly scale: number;
-  /** X translation offset */
-  readonly translateX: number;
-  /** Y translation offset */
-  readonly translateY: number;
-}
-
-/**
- * Default transform state (no zoom, no pan).
- */
-export const DEFAULT_TRANSFORM: TransformState = {
-  scale: 1,
-  translateX: 0,
-  translateY: 0,
-};
 
 // =============================================================================
 // Component Props
@@ -150,10 +139,28 @@ export interface DependencyGraphProps {
     readonly lifetime: Lifetime;
     /** Factory kind - sync or async */
     readonly factoryKind?: FactoryKind;
-    /** Service origin - own or inherited */
-    readonly origin?: "own" | "inherited";
+    /** Service origin - own, inherited, or overridden */
+    readonly origin?: ServiceOrigin;
     /** Inheritance mode for inherited services */
     readonly inheritanceMode?: InheritanceMode;
+    /** List of containers that provide this port (for unified multi-select view) */
+    readonly containers?: readonly string[];
+    /**
+     * Ownership state for visual styling.
+     *
+     * Determines the visual treatment of the node:
+     * - `"own"`: Solid 2px border, full opacity
+     * - `"inherited"`: Dashed 4-2 border, 85% opacity
+     * - `"overridden"`: Double 3px border, OVR badge
+     */
+    readonly ownership?: ServiceOrigin;
+    /**
+     * Per-container ownership metadata for multi-container views.
+     *
+     * When displaying a unified graph across multiple containers, this field
+     * provides the ownership state for each container that provides this port.
+     */
+    readonly containerOwnership?: ReadonlyArray<ContainerOwnershipEntry>;
   }>;
   /** The graph edges */
   readonly edges: ReadonlyArray<{
@@ -161,7 +168,7 @@ export interface DependencyGraphProps {
     readonly to: string;
   }>;
   /** Graph layout direction */
-  readonly direction?: GraphDirection;
+  readonly direction?: "TB" | "LR";
   /** Callback when a node is clicked */
   readonly onNodeClick?: (nodeId: string) => void;
   /** Callback when a node is hovered */

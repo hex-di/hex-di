@@ -1,37 +1,44 @@
 /**
  * Core types for @hex-di/devtools-core.
  *
- * This module defines the canonical type definitions for the entire
- * DevTools ecosystem. All other packages should import from here
- * to ensure type consistency.
+ * This module defines visualization-layer types for the DevTools ecosystem.
+ * Container and tracing types are defined in @hex-di/plugin and should be
+ * imported directly from there.
  *
  * @packageDocumentation
  */
 
-import type { Lifetime as GraphLifetime, FactoryKind } from "@hex-di/graph";
+import type { FactoryKind } from "@hex-di/graph";
 
-// Re-export from graph
+// Import types from plugin for internal use (NOT re-exported)
+import type {
+  Lifetime,
+  InheritanceMode,
+  ServiceOrigin,
+  TraceEntry,
+  TraceStats,
+  ContainerSnapshot,
+} from "@hex-di/plugin";
+
+// Re-export from graph (visualization layer needs these)
 export type { FactoryKind } from "@hex-di/graph";
 
-/**
- * Service lifetime - directly from @hex-di/graph.
- */
-export type Lifetime = GraphLifetime;
+// =============================================================================
+// Container Ownership Metadata
+// =============================================================================
 
 /**
- * Inheritance mode for child containers.
- * - shared: Child shares parent's singleton instance (live reference)
- * - forked: Child gets a snapshot copy of parent's instance
- * - isolated: Child creates its own fresh instance
+ * Per-container ownership entry for a port/adapter.
+ *
+ * Used in unified multi-container graph views to show which containers
+ * provide a given port and what their individual ownership state is.
  */
-export type InheritanceMode = "shared" | "forked" | "isolated";
-
-/**
- * Origin of a service in a container.
- * - own: Service is defined in the current container (local adapter)
- * - inherited: Service is inherited from a parent container
- */
-export type ServiceOrigin = "own" | "inherited";
+export interface ContainerOwnershipEntry {
+  /** The unique identifier of the container */
+  readonly containerId: string;
+  /** The ownership state for this port in this container */
+  readonly ownership: ServiceOrigin;
+}
 
 // =============================================================================
 // Exported Graph Types
@@ -62,10 +69,42 @@ export interface ExportedNode {
   readonly lifetime: Lifetime;
   /** Factory kind - sync or async */
   readonly factoryKind: FactoryKind;
-  /** Origin of this service - own (defined locally) or inherited (from parent) */
+  /** Origin of this service - own (defined locally), inherited (from parent), or overridden (replaces parent) */
   readonly origin?: ServiceOrigin;
   /** Inheritance mode for inherited services in child containers (shared, forked, isolated) */
   readonly inheritanceMode?: InheritanceMode;
+  /**
+   * Ownership state for visual styling.
+   *
+   * Determines the visual treatment of the node in graph visualizations:
+   * - `"own"`: Solid 2px border, full opacity - adapter registered directly in container
+   * - `"inherited"`: Dashed 4-2 border, 85% opacity - adapter from parent container
+   * - `"overridden"`: Double 3px border, OVR badge - child override of parent adapter
+   */
+  readonly ownership?: ServiceOrigin;
+  /**
+   * Per-container ownership metadata for multi-container views.
+   *
+   * When displaying a unified graph across multiple containers, this field
+   * provides the ownership state for each container that provides this port.
+   * This enables tooltips and detailed views to show per-container ownership.
+   *
+   * @example
+   * ```typescript
+   * const node: ExportedNode = {
+   *   id: 'Logger',
+   *   label: 'Logger',
+   *   lifetime: 'singleton',
+   *   factoryKind: 'sync',
+   *   containerOwnership: [
+   *     { containerId: 'root', ownership: 'own' },
+   *     { containerId: 'child-1', ownership: 'inherited' },
+   *     { containerId: 'child-2', ownership: 'overridden' },
+   *   ]
+   * };
+   * ```
+   */
+  readonly containerOwnership?: ReadonlyArray<ContainerOwnershipEntry>;
 }
 
 /**
@@ -206,345 +245,6 @@ export type NodePredicate = (node: ExportedNode) => boolean;
  * ```
  */
 export type LabelTransform = (node: ExportedNode) => string;
-
-// =============================================================================
-// Trace Types (Canonical - Single Source of Truth)
-// =============================================================================
-
-/**
- * Represents a single resolution trace entry.
- *
- * Each TraceEntry captures comprehensive data about one service resolution,
- * including timing information, cache status, and dependency hierarchy.
- * Entries form a tree structure through parentId/childIds relationships.
- *
- * @example
- * ```typescript
- * const entry: TraceEntry = {
- *   id: "trace-1",
- *   portName: "UserService",
- *   lifetime: "scoped",
- *   startTime: 1234.567,
- *   duration: 25.3,
- *   isCacheHit: false,
- *   parentId: null,
- *   childIds: ["trace-2", "trace-3"],
- *   scopeId: "scope-1",
- *   order: 1,
- *   isPinned: false,
- * };
- * ```
- */
-export interface TraceEntry {
-  /** Unique identifier for this trace entry */
-  readonly id: string;
-  /** Name of the port being resolved */
-  readonly portName: string;
-  /** Service lifetime of the resolved adapter */
-  readonly lifetime: Lifetime;
-  /** High-resolution timestamp when resolution started */
-  readonly startTime: number;
-  /** Duration of the resolution in milliseconds */
-  readonly duration: number;
-  /** Whether this resolution was served from cache */
-  readonly isCacheHit: boolean;
-  /** ID of the parent trace entry, or null for root resolutions */
-  readonly parentId: string | null;
-  /** IDs of child trace entries */
-  readonly childIds: readonly string[];
-  /** ID of the scope where resolution occurred, or null for container-level */
-  readonly scopeId: string | null;
-  /** Global resolution order counter */
-  readonly order: number;
-  /** Whether this trace is pinned (protected from FIFO eviction) */
-  readonly isPinned: boolean;
-}
-
-/**
- * Aggregate statistics computed from trace entries.
- *
- * Provides high-level metrics for performance analysis and monitoring.
- *
- * @example
- * ```typescript
- * const stats: TraceStats = {
- *   totalResolutions: 150,
- *   averageDuration: 25.5,
- *   cacheHitRate: 0.65,    // 65% cache hit rate
- *   slowCount: 12,
- *   sessionStart: 1702500000000,
- * };
- * ```
- */
-export interface TraceStats {
-  /** Total number of resolution traces recorded */
-  readonly totalResolutions: number;
-  /** Average resolution duration in milliseconds */
-  readonly averageDuration: number;
-  /** Ratio of cache hits to total resolutions (0 to 1) */
-  readonly cacheHitRate: number;
-  /** Number of resolutions that exceeded slowThresholdMs */
-  readonly slowCount: number;
-  /** Timestamp when the tracing session started */
-  readonly sessionStart: number;
-  /** Total cumulative duration of all resolutions in milliseconds */
-  readonly totalDuration: number;
-}
-
-/**
- * Filter criteria for querying trace entries.
- *
- * All properties are optional; multiple criteria are ANDed together.
- *
- * @example
- * ```typescript
- * const filter: TraceFilter = {
- *   lifetime: "scoped",
- *   minDuration: 50,
- * };
- * ```
- */
-export interface TraceFilter {
-  /** Filter by port name (partial match, case-insensitive) */
-  readonly portName?: string;
-  /** Filter by service lifetime */
-  readonly lifetime?: Lifetime;
-  /** Filter by cache hit status */
-  readonly isCacheHit?: boolean;
-  /** Minimum duration in milliseconds (inclusive) */
-  readonly minDuration?: number;
-  /** Maximum duration in milliseconds (inclusive) */
-  readonly maxDuration?: number;
-  /** Filter by scope ID */
-  readonly scopeId?: string | null;
-  /** Filter by pinned status */
-  readonly isPinned?: boolean;
-}
-
-/**
- * Configuration for trace buffer retention and eviction policy.
- */
-export interface TraceRetentionPolicy {
-  /** Maximum number of traces to retain in the buffer. @default 1000 */
-  readonly maxTraces: number;
-  /** Maximum number of pinned (slow) traces to retain. @default 100 */
-  readonly maxPinnedTraces: number;
-  /** Duration threshold in milliseconds for auto-pinning slow traces. @default 100 */
-  readonly slowThresholdMs: number;
-  /** Time in milliseconds after which non-pinned traces expire. @default 300000 */
-  readonly expiryMs: number;
-}
-
-/**
- * Default trace retention policy values.
- */
-export const DEFAULT_RETENTION_POLICY: TraceRetentionPolicy = {
-  maxTraces: 1000,
-  maxPinnedTraces: 100,
-  slowThresholdMs: 100,
-  expiryMs: 300000,
-} as const;
-
-/**
- * Configuration options for createTracingContainer().
- */
-export interface TracingOptions {
-  /** Custom retention policy configuration */
-  readonly retentionPolicy?: Partial<TraceRetentionPolicy>;
-}
-
-/**
- * API exposed via TRACING_ACCESS Symbol on tracing-enabled containers.
- */
-export interface TracingAPI {
-  /** Retrieves trace entries, optionally filtered */
-  getTraces(filter?: TraceFilter): readonly TraceEntry[];
-  /** Computes and returns aggregate trace statistics */
-  getStats(): TraceStats;
-  /** Pauses trace recording */
-  pause(): void;
-  /** Resumes trace recording after pause() */
-  resume(): void;
-  /** Clears all traces from the buffer */
-  clear(): void;
-  /** Subscribes to new trace entries in real-time */
-  subscribe(callback: (entry: TraceEntry) => void): () => void;
-  /** Returns whether tracing is currently paused */
-  isPaused(): boolean;
-  /** Manually pins a trace to protect it from FIFO eviction */
-  pin(traceId: string): void;
-  /** Unpins a trace, making it eligible for FIFO eviction */
-  unpin(traceId: string): void;
-}
-
-/**
- * Type guard to check if an object has tracing capabilities.
- */
-export function hasTracingAccess(container: unknown): container is { [key: symbol]: TracingAPI } {
-  return (
-    typeof container === "object" &&
-    container !== null &&
-    Symbol.for("hex-di/tracing-access") in container
-  );
-}
-
-// =============================================================================
-// Container Types
-// =============================================================================
-
-/**
- * Container type discriminant for type-safe snapshot handling.
- */
-export type ContainerKind = "root" | "child" | "lazy" | "scope";
-
-/**
- * Container phase states across all container types.
- *
- * Different container types have different valid phases:
- * - Root: "uninitialized" | "initialized" | "disposing" | "disposed"
- * - Child: "initialized" | "disposing" | "disposed" (inherits init from parent)
- * - Lazy: "unloaded" | "loading" | "loaded" | "disposing" | "disposed"
- * - Scope: "active" | "disposing" | "disposed"
- */
-export type ContainerPhase =
-  | "uninitialized"
-  | "initialized"
-  | "unloaded"
-  | "loading"
-  | "loaded"
-  | "active"
-  | "disposing"
-  | "disposed";
-
-/**
- * Information about a resolved singleton.
- */
-export interface SingletonEntry {
-  /** Port name of the singleton */
-  readonly portName: string;
-  /** Timestamp when the singleton was resolved */
-  readonly resolvedAt: number;
-  /** Whether the singleton is currently resolved (has cached instance) */
-  readonly isResolved: boolean;
-}
-
-/**
- * Information about an active scope.
- */
-export interface ScopeInfo {
-  readonly id: string;
-  readonly parentId: string | null;
-  readonly childIds: readonly string[];
-  readonly resolvedPorts: readonly string[];
-  readonly createdAt: number;
-  readonly isActive: boolean;
-}
-
-/**
- * Hierarchical tree structure for scopes.
- */
-export interface ScopeTree {
-  readonly id: string;
-  readonly status: "active" | "disposed";
-  readonly resolvedCount: number;
-  readonly totalCount: number;
-  readonly children: readonly ScopeTree[];
-  /** Port names of resolved services in this scope */
-  readonly resolvedPorts: readonly string[];
-}
-
-/**
- * Base snapshot fields shared by all container types.
- */
-interface ContainerSnapshotBase {
-  readonly singletons: readonly SingletonEntry[];
-  readonly scopes: ScopeTree;
-  readonly isDisposed: boolean;
-}
-
-/**
- * Root container snapshot.
- *
- * Root containers are created via `createContainer(graph)` and own
- * the dependency graph. They manage async adapter initialization.
- */
-export interface RootContainerSnapshot extends ContainerSnapshotBase {
-  readonly kind: "root";
-  readonly phase: "uninitialized" | "initialized" | "disposing" | "disposed";
-  readonly isInitialized: boolean;
-  readonly asyncAdaptersTotal: number;
-  readonly asyncAdaptersInitialized: number;
-}
-
-/**
- * Child container snapshot.
- *
- * Child containers are created via `container.createChild(graph)` and
- * extend or override the parent's adapters.
- */
-export interface ChildContainerSnapshot extends ContainerSnapshotBase {
-  readonly kind: "child";
-  readonly phase: "initialized" | "disposing" | "disposed";
-  readonly parentId: string;
-  /** Per-port inheritance modes (port name -> mode). Defaults to 'shared' if not specified. */
-  readonly inheritanceModes: ReadonlyMap<string, InheritanceMode>;
-}
-
-/**
- * Lazy container snapshot.
- *
- * Lazy containers are created via `container.createLazyChild(loader)` and
- * defer graph loading until first use.
- */
-export interface LazyContainerSnapshot extends ContainerSnapshotBase {
-  readonly kind: "lazy";
-  readonly phase: "unloaded" | "loading" | "loaded" | "disposing" | "disposed";
-  readonly isLoaded: boolean;
-}
-
-/**
- * Scope snapshot.
- *
- * Scopes are created via `container.createScope()` and provide
- * isolated scoped service instances.
- */
-export interface ScopeSnapshot extends ContainerSnapshotBase {
-  readonly kind: "scope";
-  readonly phase: "active" | "disposing" | "disposed";
-  readonly scopeId: string;
-  readonly parentScopeId: string | null;
-}
-
-/**
- * Discriminated union of all container snapshots.
- *
- * Use `snapshot.kind` for type-safe narrowing to specific container types.
- *
- * @example
- * ```typescript
- * function handleSnapshot(snapshot: ContainerSnapshot) {
- *   switch (snapshot.kind) {
- *     case "root":
- *       console.log(`Async adapters: ${snapshot.asyncAdaptersInitialized}/${snapshot.asyncAdaptersTotal}`);
- *       break;
- *     case "lazy":
- *       console.log(`Loaded: ${snapshot.isLoaded}`);
- *       break;
- *     case "child":
- *       console.log(`Inheritance modes: ${snapshot.inheritanceModes.size} configured`);
- *       break;
- *     case "scope":
- *       console.log(`Scope ID: ${snapshot.scopeId}`);
- *       break;
- *   }
- * }
- * ```
- */
-export type ContainerSnapshot =
-  | RootContainerSnapshot
-  | ChildContainerSnapshot
-  | LazyContainerSnapshot
-  | ScopeSnapshot;
 
 // =============================================================================
 // Error Types

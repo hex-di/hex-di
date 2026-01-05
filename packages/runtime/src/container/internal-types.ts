@@ -125,6 +125,10 @@ export interface RootContainerConfig<
 > {
   kind: "root";
   graph: Graph<TProvides, Port<unknown, string>>;
+  /**
+   * Human-readable container name for DevTools display.
+   */
+  containerName: string;
   options?: ContainerOptions;
 }
 
@@ -145,6 +149,10 @@ export interface ChildContainerConfig<
    * Used in hook context and DevTools tracking.
    */
   containerId: string;
+  /**
+   * Human-readable container name for DevTools display.
+   */
+  containerName: string;
   /**
    * Parent container's ID for hierarchy tracking.
    */

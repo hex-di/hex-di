@@ -8,7 +8,14 @@
  * @packageDocumentation
  */
 
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+  type ReactNode,
+} from "react";
 import type { Port } from "@hex-di/ports";
 import type { Container } from "@hex-di/runtime";
 import { ContainerContext } from "../context/container-context.js";
@@ -313,8 +320,12 @@ function HexDiAsyncContainerProviderRoot<TProvides extends Port<unknown, string>
   errorFallback,
 }: HexDiAsyncContainerProviderProps<TProvides>): ReactNode {
   // Convert container to RuntimeContainer for type-safe initialization.
-  // This uses the bivariant interface from @hex-di/runtime.
-  const runtimeContainer: RuntimeContainer = toRuntimeContainerWithInit(container);
+  // Memoize to prevent creating new object on every render, which would cause
+  // the useEffect to re-run and trigger an infinite loop.
+  const runtimeContainer: RuntimeContainer = useMemo(
+    () => toRuntimeContainerWithInit(container),
+    [container]
+  );
 
   // State stores the initialized container as RuntimeContainerRef.
   const [state, setState] = useState<AsyncContainerState>({

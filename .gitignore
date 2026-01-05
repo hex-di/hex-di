@@ -34,3 +34,6 @@ coverage/
 
 # Agent OS
 .agent-os/
+
+# Auto Claude data directory
+.auto-claude/

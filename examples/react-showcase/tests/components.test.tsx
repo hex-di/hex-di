@@ -23,7 +23,7 @@ import {
 } from "./setup.js";
 import { createContainer, type Container } from "@hex-di/runtime";
 import type { Graph } from "@hex-di/graph";
-import { appGraph, type AppPorts, type AppAsyncPorts } from "../src/di/graph.js";
+import { appGraph, type AppPorts, type AppAsyncPorts } from "../src/di/app-graph.js";
 import {
   UserSessionPort,
   MessageStorePort,
@@ -64,7 +64,7 @@ function renderWithAppContainer(
   element: ReactElement,
   graph: Graph<AppPorts, AppAsyncPorts>
 ): RenderWithAppContainerResult {
-  const diContainer = createContainer(graph);
+  const diContainer = createContainer(graph, { name: "Test" });
 
   const { container } = render(
     <ContainerProvider container={diContainer}>{element}</ContainerProvider>

@@ -9,7 +9,6 @@
  */
 
 import React, { useState, type ReactElement, type CSSProperties } from "react";
-import { useContainerScopeTree } from "./hooks/use-container-scope-tree.js";
 import type {
   ContainerScopeTreeNode,
   ContainerNode,
@@ -369,10 +368,10 @@ export function ContainerScopeHierarchy({
   onNodeSelect,
   tree: treeProp,
 }: ContainerScopeHierarchyProps): ReactElement {
-  // Use provided tree or fall back to hook (for backwards compatibility)
-  const hookResult = useContainerScopeTree();
-  const tree = treeProp ?? hookResult.tree;
-  const isAvailable = treeProp !== undefined || hookResult.isAvailable;
+  // Tree must be provided via props - container discovery is handled by parent
+  // The tree prop is required for multi-container support via ContainerTreeMachine
+  const tree = treeProp ?? [];
+  const isAvailable = treeProp !== undefined && treeProp.length > 0;
 
   if (!isAvailable) {
     return (

@@ -14,7 +14,10 @@
 import { describe, expectTypeOf, it } from "vitest";
 import { createPort, type Port } from "@hex-di/ports";
 import { GraphBuilder, createAdapter, type Graph, type Lifetime } from "@hex-di/graph";
+import { createContainer, pipe, createPluginWrapper } from "@hex-di/runtime";
 import type { Container, ContainerPhase } from "@hex-di/runtime";
+import { InspectorPlugin } from "@hex-di/runtime";
+import type { InspectableContainer } from "../src/react/types/inspectable-container.js";
 import type { ReactElement } from "react";
 
 // Import devtools exports
@@ -361,18 +364,13 @@ describe("DevToolsPanel prop types", () => {
 // =============================================================================
 
 describe("HexDiDevTools prop types", () => {
-  it("HexDiDevToolsProps has graph property", () => {
-    expectTypeOf<HexDiDevToolsProps>().toHaveProperty("graph");
-    expectTypeOf<HexDiDevToolsProps["graph"]>().toMatchTypeOf<
-      Graph<Port<unknown, string>, never>
-    >();
-  });
+  // Create a test container with InspectorPlugin for type tests
+  const withInspector = createPluginWrapper(InspectorPlugin);
+  const testContainer = pipe(createContainer(testGraph, { name: "Test Container" }), withInspector);
 
-  it("HexDiDevToolsProps has optional container property", () => {
+  it("HexDiDevToolsProps has container property", () => {
     expectTypeOf<HexDiDevToolsProps>().toHaveProperty("container");
-    expectTypeOf<HexDiDevToolsProps["container"]>().toMatchTypeOf<
-      Container<Port<unknown, string>, never, never, ContainerPhase> | undefined
-    >();
+    expectTypeOf<HexDiDevToolsProps["container"]>().toMatchTypeOf<InspectableContainer>();
   });
 
   it("HexDiDevToolsProps has optional position property", () => {
@@ -391,13 +389,8 @@ describe("HexDiDevTools prop types", () => {
     expectTypeOf(HexDiDevTools).returns.toMatchTypeOf<ReactElement | null>();
 
     // Verify props can be passed to the component - the assignment compiling proves type compatibility
-    const _validProps: HexDiDevToolsProps<
-      typeof LoggerPort | typeof DatabasePort | typeof UserServicePort,
-      never,
-      never,
-      ContainerPhase
-    > = {
-      graph: testGraph,
+    const _validProps: HexDiDevToolsProps = {
+      container: testContainer,
     };
     // Type compatibility is proven by the assignment above compiling
   });

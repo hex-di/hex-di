@@ -1,24 +1,20 @@
 /**
  * Tests for the DI layer graph configuration.
  *
- * These tests verify that the dependency graph is correctly configured,
- * all adapters are properly registered, and the graph validates successfully.
+ * These tests verify that the dependency graphs are correctly configured,
+ * all adapters are properly registered, and the graphs validate successfully.
+ *
+ * With the new unified container architecture:
+ * - rootGraph: Logger, Config (shared infrastructure)
+ * - chatGraphFragment: MessageStore, UserSession, ChatService, NotificationService
  *
  * @packageDocumentation
  */
 
 import { describe, it, expect } from "vitest";
 import { assertGraphComplete, serializeGraph } from "@hex-di/testing";
-import { GraphBuilder, type Graph } from "@hex-di/graph";
-import type { Port } from "@hex-di/ports";
-import { appGraph } from "../src/di/graph.js";
-import {
-  ConfigAdapter,
-  LoggerAdapter,
-  MessageStoreAdapter,
-  ChatServiceAdapter,
-  NotificationServiceAdapter,
-} from "../src/di/adapters.js";
+import { rootGraph } from "../src/di/root-graph.js";
+import { chatGraphFragment } from "../src/di/chat-graph.js";
 import {
   ConfigPort,
   LoggerPort,
@@ -29,21 +25,29 @@ import {
 } from "../src/di/ports.js";
 
 describe("DI Graph", () => {
-  describe("Graph Construction", () => {
-    it("should build graph successfully with all 6 adapters", () => {
-      // Verify the graph was built successfully
-      expect(appGraph).toBeDefined();
-      expect(appGraph.adapters).toBeDefined();
-      expect(appGraph.adapters).toHaveLength(6);
+  describe("Root Graph Construction", () => {
+    it("should build root graph successfully with 2 adapters", () => {
+      expect(rootGraph).toBeDefined();
+      expect(rootGraph.adapters).toBeDefined();
+      expect(rootGraph.adapters).toHaveLength(2);
     });
 
-    it("should register adapters in correct order", () => {
-      const adapters = appGraph.adapters;
-
-      // Verify all expected adapters are present
-      const adapterPorts = adapters.map(a => a.provides.__portName);
+    it("should register root adapters", () => {
+      const adapterPorts = rootGraph.adapters.map(a => a.provides.__portName);
       expect(adapterPorts).toContain("Config");
       expect(adapterPorts).toContain("Logger");
+    });
+  });
+
+  describe("Chat Graph Fragment Construction", () => {
+    it("should build chat graph fragment with 4 adapters", () => {
+      expect(chatGraphFragment).toBeDefined();
+      expect(chatGraphFragment.adapters).toBeDefined();
+      expect(chatGraphFragment.adapters).toHaveLength(4);
+    });
+
+    it("should register chat adapters", () => {
+      const adapterPorts = chatGraphFragment.adapters.map(a => a.provides.__portName);
       expect(adapterPorts).toContain("MessageStore");
       expect(adapterPorts).toContain("UserSession");
       expect(adapterPorts).toContain("ChatService");
@@ -51,16 +55,13 @@ describe("DI Graph", () => {
     });
   });
 
-  describe("Graph Validation", () => {
-    it("should pass assertGraphComplete() for valid graph", () => {
-      // This should not throw - if it does, the test fails
-      expect(() => assertGraphComplete(appGraph)).not.toThrow();
+  describe("Root Graph Validation", () => {
+    it("should pass assertGraphComplete() for root graph", () => {
+      expect(() => assertGraphComplete(rootGraph)).not.toThrow();
     });
 
-    it("should validate dependency relationships", () => {
-      const adapters = appGraph.adapters;
-
-      // Find adapters by port name
+    it("should validate root adapter relationships", () => {
+      const adapters = rootGraph.adapters;
       const findAdapter = (portName: string) =>
         adapters.find(a => a.provides.__portName === portName);
 
@@ -73,6 +74,14 @@ describe("DI Graph", () => {
       const loggerAdapter = findAdapter("Logger");
       expect(loggerAdapter?.requires).toHaveLength(0);
       expect(loggerAdapter?.lifetime).toBe("singleton");
+    });
+  });
+
+  describe("Chat Graph Fragment Validation", () => {
+    it("should validate chat adapter relationships", () => {
+      const adapters = chatGraphFragment.adapters;
+      const findAdapter = (portName: string) =>
+        adapters.find(a => a.provides.__portName === portName);
 
       // MessageStoreAdapter should require Logger
       const messageStoreAdapter = findAdapter("MessageStore");
@@ -106,59 +115,37 @@ describe("DI Graph", () => {
   });
 
   describe("Graph Serialization", () => {
-    it("should produce expected structure with serializeGraph()", () => {
-      const snapshot = serializeGraph(appGraph);
+    it("should produce expected structure for root graph", () => {
+      const snapshot = serializeGraph(rootGraph);
 
-      // Use deep equality assertion - sorted by port name for deterministic ordering
-      expect(snapshot).toEqual({
-        adapters: [
-          {
-            lifetime: "scoped",
-            port: "ChatService",
-            requires: ["Config", "Logger", "MessageStore", "UserSession"],
-          },
-          {
-            lifetime: "singleton",
-            port: "Config",
-            requires: [],
-          },
-          {
-            lifetime: "singleton",
-            port: "Logger",
-            requires: [],
-          },
-          {
-            lifetime: "singleton",
-            port: "MessageStore",
-            requires: ["Logger"],
-          },
-          {
-            lifetime: "transient",
-            port: "NotificationService",
-            requires: ["Config", "Logger"],
-          },
-          {
-            lifetime: "scoped",
-            port: "UserSession",
-            requires: [],
-          },
-        ],
-      });
-    });
+      expect(snapshot.adapters).toHaveLength(2);
 
-    it("should serialize adapter metadata correctly", () => {
-      const snapshot = serializeGraph(appGraph);
-
-      expect(snapshot.adapters).toHaveLength(6);
-
-      // Verify structure of serialized adapters
       const findAdapter = (portName: string) => snapshot.adapters.find(a => a.port === portName);
 
-      const configSnapshot = findAdapter("Config");
-      expect(configSnapshot).toEqual({
+      expect(findAdapter("Config")).toEqual({
         port: "Config",
         lifetime: "singleton",
         requires: [],
+      });
+
+      expect(findAdapter("Logger")).toEqual({
+        port: "Logger",
+        lifetime: "singleton",
+        requires: [],
+      });
+    });
+
+    it("should produce expected structure for chat graph fragment", () => {
+      const snapshot = serializeGraph(chatGraphFragment);
+
+      expect(snapshot.adapters).toHaveLength(4);
+
+      const findAdapter = (portName: string) => snapshot.adapters.find(a => a.port === portName);
+
+      expect(findAdapter("MessageStore")).toEqual({
+        port: "MessageStore",
+        lifetime: "singleton",
+        requires: ["Logger"],
       });
 
       const chatServiceSnapshot = findAdapter("ChatService");
@@ -167,54 +154,6 @@ describe("DI Graph", () => {
       expect(chatServiceSnapshot?.requires).toContain("Logger");
       expect(chatServiceSnapshot?.requires).toContain("UserSession");
       expect(chatServiceSnapshot?.requires).toContain("MessageStore");
-    });
-  });
-
-  describe("Compile-Time Validation", () => {
-    it("should demonstrate that incomplete graphs produce error types", () => {
-      // This test documents that the GraphBuilder produces MissingDependencyError types
-      // at compile-time when dependencies are not satisfied.
-      //
-      // The following code would NOT compile if uncommented:
-      //
-      // const incompleteGraph: Graph<Port<unknown, string>> = GraphBuilder.create()
-      //   .provide(ConfigAdapter)
-      //   .provide(LoggerAdapter)
-      //   .provide(MessageStoreAdapter)
-      //   .provide(ChatServiceAdapter) // Requires UserSession, which is missing
-      //   .provide(NotificationServiceAdapter)
-      //   .build();
-      //
-      // TypeScript would show:
-      // Type 'MissingDependencyError<typeof UserSessionPort>' is not assignable to type 'Graph<...>'
-
-      // Instead, we verify that the complete graph is correctly typed
-      const completeGraphType: Graph<
-        Port<unknown, string>,
-        Port<unknown, string> | never
-      > = appGraph;
-      expect(completeGraphType.adapters).toBeDefined();
-    });
-
-    it("should expose missing dependency information in error type", () => {
-      // This test verifies that when we intentionally create an incomplete builder,
-      // the type system captures which dependencies are missing.
-      // The error message contains the port name for actionable feedback.
-      const incompleteBuilder = GraphBuilder.create()
-        .provide(ConfigAdapter)
-        .provide(LoggerAdapter)
-        .provide(MessageStoreAdapter)
-        // Missing UserSessionAdapter
-        .provide(ChatServiceAdapter)
-        .provide(NotificationServiceAdapter);
-
-      // The builder itself still has valid adapters array for inspection
-      expect(incompleteBuilder.adapters).toHaveLength(5);
-
-      // Verify the adapters that were added
-      const adapterNames = incompleteBuilder.adapters.map(a => a.provides.__portName);
-      expect(adapterNames).not.toContain("UserSession");
-      expect(adapterNames).toContain("ChatService");
     });
   });
 

@@ -90,7 +90,7 @@ describe("singleton lifetime", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Resolve from container
     const containerLogger = container.resolve(LoggerPort);
@@ -125,7 +125,7 @@ describe("singleton lifetime", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Resolve multiple times from container
     container.resolve(LoggerPort);
@@ -163,7 +163,7 @@ describe("scoped lifetime", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Create two scopes
     const scope1 = container.createScope();
@@ -194,7 +194,7 @@ describe("scoped lifetime", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Create three scopes
     const scope1 = container.createScope();
@@ -231,7 +231,7 @@ describe("transient lifetime", () => {
     });
 
     const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Every resolve from container returns a new instance
     const db1 = container.resolve(DatabasePort);
@@ -266,7 +266,7 @@ describe("transient lifetime", () => {
     });
 
     const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Resolve 3 times from container
     container.resolve(DatabasePort);
@@ -323,7 +323,7 @@ describe("mixed lifetimes in dependency chain", () => {
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(UserServiceAdapter).build();
 
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
     const scope = container.createScope();
 
     // Resolve user service from both container and scope
@@ -377,7 +377,7 @@ describe("mixed lifetimes in dependency chain", () => {
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(AuditServiceAdapter).build();
 
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
     const scope1 = container.createScope();
     const scope2 = container.createScope();
 
@@ -436,7 +436,7 @@ describe("mixed lifetimes in dependency chain", () => {
       .provide(UserServiceAdapter)
       .build();
 
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
     const scope = container.createScope();
 
     // Resolve user service multiple times from the same scope

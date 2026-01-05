@@ -375,45 +375,7 @@ describe("Architecture Integration (Task Group 9)", () => {
   });
 
   // ===========================================================================
-  // Test 4: Plugin props derivation integration
-  // ===========================================================================
-  describe("Plugin props derivation", () => {
-    it("derivePluginProps correctly transforms snapshot to plugin props", async () => {
-      const { derivePluginProps } = await import("../src/runtime/plugin-props-derivation.js");
-
-      // Need to create a proper DevToolsRuntimeSnapshot
-      const runtimeSnapshot = {
-        containerTree: [],
-        containerStates: new Map(),
-        events: [],
-        uiState: {
-          isOpen: true,
-          selectedContainerIds: ["container-1"],
-          expandedContainerIds: [],
-        },
-        tracingState: {
-          enabled: false,
-          paused: false,
-          filter: null,
-          threshold: 100,
-        },
-      };
-
-      const dispatch = vi.fn();
-      const props = derivePluginProps({
-        snapshot: runtimeSnapshot,
-        dispatch,
-      });
-
-      expect(props.snapshot).toBe(runtimeSnapshot);
-      expect(props.dispatch).toBe(dispatch);
-      expect(props.graph).toBeDefined();
-      expect(props.containers).toBeDefined();
-    });
-  });
-
-  // ===========================================================================
-  // Test 5: State machine state transitions reflected in hooks
+  // Test 4: State machine state transitions reflected in hooks
   // ===========================================================================
   describe("State machine integration", () => {
     it("UI state transitions are reflected in hook values", async () => {

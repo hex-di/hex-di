@@ -10,17 +10,9 @@
  * touching the root container.
  */
 
-import type { Container, ContainerPhase } from "@hex-di/runtime";
 import { createAdapter, GraphBuilder } from "@hex-di/graph";
 import type { Message, MessageListener, MessageStore, ChatService } from "../types.js";
-import {
-  ChatServicePort,
-  LoggerPort,
-  MessageStorePort,
-  UserSessionPort,
-  type AppPorts,
-} from "./ports.js";
-import type { AppAsyncPorts } from "./graph.js";
+import { ChatServicePort, LoggerPort, MessageStorePort, UserSessionPort } from "./ports.js";
 
 /**
  * In-memory message store used only inside the child container.
@@ -104,20 +96,36 @@ const PluginChatServiceAdapter = createAdapter({
  * Uses buildFragment() instead of build() because the dependencies (LoggerPort,
  * UserSessionPort, MessageStorePort) will be satisfied by the parent container.
  */
-const PluginChildGraph = GraphBuilder.create()
+export const PluginChildGraph = GraphBuilder.create()
   .override(PluginMessageStoreAdapter)
   .override(PluginChatServiceAdapter)
   .buildFragment();
 
 /**
+ * Type for a container that can create children and be used with React providers.
+ * This is a structural type that matches the runtime Container interface.
+ */
+export interface ChildContainerLike {
+  createChild: (
+    graph: typeof PluginChildGraph,
+    modes?: Record<string, "shared" | "forked" | "isolated">
+  ) => ChildContainerLike;
+  resolve: (port: unknown) => unknown;
+  resolveAsync: (port: unknown) => Promise<unknown>;
+  createScope: () => unknown;
+  dispose: () => Promise<void>;
+  has: (port: unknown) => boolean;
+  isDisposed: boolean;
+  isInitialized: boolean;
+}
+
+/**
  * Builds a child container with "shared" inheritance mode (default).
  * Child shares parent's singleton instances - mutations are visible to both.
  *
- * @param parent - The root/tracing container created from the app graph
+ * @param parent - The chat container created from the chat graph
  */
-export function createSharedChildContainer(
-  parent: Container<AppPorts, never, AppAsyncPorts, ContainerPhase>
-): Container<AppPorts, never, AppAsyncPorts, "initialized"> {
+export function createSharedChildContainer(parent: ChildContainerLike): ChildContainerLike {
   return parent.createChild(PluginChildGraph);
 }
 
@@ -125,11 +133,9 @@ export function createSharedChildContainer(
  * Builds a child container with "forked" inheritance mode.
  * Child gets a snapshot copy of parent's instances at creation time.
  *
- * @param parent - The root/tracing container created from the app graph
+ * @param parent - The chat container created from the chat graph
  */
-export function createForkedChildContainer(
-  parent: Container<AppPorts, never, AppAsyncPorts, ContainerPhase>
-): Container<AppPorts, never, AppAsyncPorts, "initialized"> {
+export function createForkedChildContainer(parent: ChildContainerLike): ChildContainerLike {
   return parent.createChild(PluginChildGraph, {
     Logger: "forked",
   });
@@ -139,11 +145,9 @@ export function createForkedChildContainer(
  * Builds a child container with "isolated" inheritance mode.
  * Child creates completely fresh instances, ignoring parent's cache.
  *
- * @param parent - The root/tracing container created from the app graph
+ * @param parent - The chat container created from the chat graph
  */
-export function createIsolatedChildContainer(
-  parent: Container<AppPorts, never, AppAsyncPorts, ContainerPhase>
-): Container<AppPorts, never, AppAsyncPorts, "initialized"> {
+export function createIsolatedChildContainer(parent: ChildContainerLike): ChildContainerLike {
   return parent.createChild(PluginChildGraph, {
     Logger: "isolated",
   });

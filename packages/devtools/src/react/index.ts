@@ -7,57 +7,25 @@
  *
  * ## Key Components
  *
- * - **DevToolsProvider**: Context provider for DevTools data access via hooks.
+ * - **HexDiDevTools**: Floating toggle button that expands to show
+ *   the DevTools panel. Auto-hides in production builds.
  *
  * - **DevToolsPanel**: Full panel component for graph visualization and
  *   container inspection. Embed directly in your app layout.
  *
- * - **DevToolsFloating**: Floating toggle button that expands to show
- *   the DevTools panel. Auto-hides in production builds.
- *
  * ## Quick Start
  *
- * @example Using DevToolsProvider with hooks
+ * @example Using HexDiDevTools (recommended for development)
  * ```typescript
- * import { DevToolsProvider, useTraces, useTraceStats } from '@hex-di/devtools/react';
- * import { TracingPlugin } from '@hex-di/tracing';
- * import { createContainer } from '@hex-di/runtime';
- * import { appGraph } from './graph';
- *
- * const container = createContainer(appGraph, { plugins: [TracingPlugin] });
- *
- * function App() {
- *   return (
- *     <DevToolsProvider graph={appGraph} container={container}>
- *       <MainApp />
- *       <DevToolsPanel />
- *     </DevToolsProvider>
- *   );
- * }
- *
- * function TraceList() {
- *   const { traces, isAvailable } = useTraces();
- *   if (!isAvailable) return <div>Tracing not enabled</div>;
- *   return <ul>{traces.map(t => <li key={t.id}>{t.portName}</li>)}</ul>;
- * }
- * ```
- *
- * @example HexDiDevTools (recommended for development)
- * ```typescript
- * import { HexDiDevToolsProvider, HexDiDevTools } from '@hex-di/devtools/react';
- * import { appGraph } from './graph';
+ * import { HexDiDevTools } from '@hex-di/devtools/react';
  * import { container } from './container';
  *
  * function App() {
  *   return (
- *     <HexDiDevToolsProvider>
+ *     <>
  *       <MainApp />
- *       <HexDiDevTools
- *         graph={appGraph}
- *         container={container}
- *         position="bottom-right"
- *       />
- *     </HexDiDevToolsProvider>
+ *       <HexDiDevTools container={container} />
+ *     </>
  *   );
  * }
  * ```
@@ -87,8 +55,7 @@
  * - **Container Inspection**: Browse registered ports, view adapter
  *   configurations, and inspect dependency relationships.
  *
- * - **Collapsible Sections**: Organize information into collapsible
- *   sections for a clean developer experience.
+ * - **Tabbed Interface**: Modern tabbed interface with Graph, Services, Tracing, Inspector tabs.
  *
  * - **Production Safety**: DevToolsFloating automatically returns null
  *   in production mode (NODE_ENV === 'production').
@@ -100,138 +67,78 @@
  */
 
 // =============================================================================
-// Context and Provider
+// Unified DevTools Provider
 // =============================================================================
 
 /**
- * DevToolsProvider provides TracingAPI and graph data to child components.
+ * DevToolsProvider for the new unified DevToolsFlowRuntime.
  *
- * Wrap your application or DevTools section with this provider to enable
- * context-based access via hooks like useTracingAPI, useTraces, etc.
- *
- * @see {@link DevToolsProviderProps} - Provider props interface
- * @see {@link DevToolsContextValue} - Context value interface
+ * Use this provider with the new hooks:
+ * - useDevToolsRuntime: Get the full DevToolsSnapshot
+ * - useDevToolsSelector: Subscribe to a selected slice
+ * - useDevToolsDispatch: Get stable dispatch function
  */
-export { DevToolsProvider, DevToolsContext } from "./context/index.js";
-export type { DevToolsProviderProps, DevToolsContextValue } from "./context/index.js";
-
-/**
- * HexDiDevToolsProvider for multi-container DevTools support.
- *
- * Place at the top of your app to enable tracking of all containers
- * (root, child, lazy, scope). Components can register containers using
- * useRegisterContainer and access them via useContainerList and useInspector.
- *
- * @see {@link HexDiDevToolsProviderProps} - Provider props interface
- * @see {@link ContainerRegistryValue} - Context value interface
- * @see {@link ContainerEntry} - Registered container entry type
- */
-export { HexDiDevToolsProvider, ContainerRegistryContext } from "./context/index.js";
-export type {
-  HexDiDevToolsProviderProps,
-  ContainerRegistryValue,
-  ContainerEntry,
-  InheritanceMode,
-} from "./context/index.js";
+export { DevToolsProvider, type DevToolsProviderProps } from "./providers/devtools-provider.js";
 
 // =============================================================================
-// React Hooks
+// DevTools Runtime Hooks (Plugin Architecture)
 // =============================================================================
 
 /**
- * Hooks for accessing DevTools data from context.
+ * Unified hooks for accessing DevTools state.
  *
- * - useDevTools: Full context access
- * - useTracingAPI: Direct TracingAPI access
- * - useExportedGraph: Exported graph data access
- * - useTraces: Subscribe to trace entries with automatic updates
- * - useTraceStats: Subscribe to trace statistics
- * - useTracingControls: Pause, resume, clear, pin/unpin controls
+ * - useDevToolsRuntime: Get the full DevToolsSnapshot
+ * - useDevToolsSelector: Subscribe to a selected slice of state
+ * - useDevToolsDispatch: Get stable dispatch function
  */
 export {
-  useDevTools,
-  useTracingAPI,
-  useExportedGraph,
-  useTraces,
-  useTraceStats,
-  useTracingControls,
+  useDevToolsRuntime,
+  useDevToolsSelector,
+  useDevToolsDispatch,
+  type DevToolsSnapshotSelector,
+  type DevToolsDispatch,
 } from "./hooks/index.js";
-export type { UseTracesResult, UseTracingControlsResult } from "./hooks/index.js";
+
+// =============================================================================
+// Utility Hooks
+// =============================================================================
+
+/**
+ * Utility hooks for specialized use cases.
+ *
+ * - useGraphFilters: Manage filter state for graph nodes with debounced search
+ * - useTraceStats: Subscribe to trace statistics
+ */
+export {
+  useGraphFilters,
+  useTraceStats,
+  type GraphFilterState,
+  type UseGraphFiltersResult,
+} from "./hooks/index.js";
+
+// =============================================================================
+// Container Inspector Hooks
+// =============================================================================
 
 /**
  * Multi-container inspector hooks.
  *
- * - useRegisterContainer: Register a container with DevTools
- * - useContainerList: Get all registered containers and selection state (uses Option<T>)
- * - useContainerInspector: Access RuntimeInspector for selected container
+ * - useContainerInspector: Access RuntimeInspector for selected container (returns T | null)
  * - useContainerInspectorStrict: Access RuntimeInspector with guaranteed selection
  * - useInspectorSnapshot: Get container snapshots
  * - useContainerPhase: Track container phase and kind
  */
 export {
-  useRegisterContainer,
-  useContainerList,
   useContainerInspector,
   useContainerInspectorStrict,
   useInspectorSnapshot,
   useContainerPhase,
-  useContainerScopeTree,
 } from "./hooks/index.js";
-export type {
-  UseRegisterContainerOptions,
-  UseContainerListResult,
-  UseInspectorSnapshotResult,
-  UseContainerPhaseResult,
-  UseContainerScopeTreeResult,
-} from "./hooks/index.js";
+export type { UseInspectorSnapshotResult, UseContainerPhaseResult } from "./hooks/index.js";
 
 // =============================================================================
-// Rust-like ADT Types (Option<T>, Result<T, E>)
+// InspectableContainer Type
 // =============================================================================
-
-/**
- * Rust-like algebraic data types for type-safe optional values and error handling.
- *
- * - Option<T>: Replaces `T | null` with exhaustive pattern matching
- * - Result<T, E>: Replaces thrown errors with type-safe error handling
- * - Some, None: Option constructors
- * - Ok, Err: Result constructors
- * - isSome, isNone, isOk, isErr: Type guards for pattern matching
- *
- * @example Option usage
- * ```typescript
- * const inspectorOpt = useContainerInspector();
- * if (isSome(inspectorOpt)) {
- *   const snapshot = inspectorOpt.value.snapshot();
- * }
- *
- * // Or with exhaustive matching
- * switch (inspectorOpt._tag) {
- *   case "Some": return <Inspector value={inspectorOpt.value} />;
- *   case "None": return <NoContainer />;
- * }
- * ```
- */
-export {
-  Some,
-  None,
-  isSome,
-  isNone,
-  unwrapOr,
-  mapOption,
-  Ok,
-  Err,
-  isOk,
-  isErr,
-} from "./types/adt.js";
-export type {
-  Option,
-  Result,
-  Some as SomeType,
-  None as NoneType,
-  Ok as OkType,
-  Err as ErrType,
-} from "./types/adt.js";
 
 /**
  * InspectableContainer interface for type-safe container storage.
@@ -254,7 +161,7 @@ export { isInspectableContainer, INTERNAL_ACCESS } from "./types/inspectable-con
 export type { Graph, Adapter, Lifetime, Container, Scope } from "../index.js";
 
 // =============================================================================
-// DevToolsPanel Component (Task Group 7)
+// DevToolsPanel Component
 // =============================================================================
 
 /**
@@ -265,14 +172,11 @@ export type { Graph, Adapter, Lifetime, Container, Scope } from "../index.js";
  * - Dependency edges visualization
  * - Container browser with collapsible adapter details
  *
- * Supports two display modes:
- * - "tabs" (default): Modern tabbed interface with Graph, Services, Tracing, Inspector tabs
- * - "sections": Legacy CollapsibleSection layout for backward compatibility
+ * Uses a modern tabbed interface with Graph, Services, Tracing, Inspector tabs.
  *
  * @see {@link DevToolsPanelProps} - Component props interface
- * @see {@link DevToolsPanelMode} - Display mode type
  *
- * @example Basic usage (tabs mode)
+ * @example Basic usage
  * ```typescript
  * import { DevToolsPanel } from '@hex-di/devtools/react';
  * import { appGraph } from './graph';
@@ -285,19 +189,9 @@ export type { Graph, Adapter, Lifetime, Container, Scope } from "../index.js";
  *   );
  * }
  * ```
- *
- * @example Legacy sections mode
- * ```typescript
- * import { DevToolsPanel } from '@hex-di/devtools/react';
- * import { appGraph } from './graph';
- *
- * function DeveloperView() {
- *   return <DevToolsPanel graph={appGraph} mode="sections" />;
- * }
- * ```
  */
 export { DevToolsPanel } from "./devtools-panel.js";
-export type { DevToolsPanelProps, DevToolsPanelMode } from "./devtools-panel.js";
+export type { DevToolsPanelProps } from "./devtools-panel.js";
 
 // =============================================================================
 // HexDiDevTools Component (Floating DevTools)
@@ -314,44 +208,44 @@ export type { DevToolsPanelProps, DevToolsPanelMode } from "./devtools-panel.js"
  * this component returns `null` to ensure DevTools are not visible
  * in production builds.
  *
+ * Automatically extracts the graph from the container via InspectorPlugin.
+ *
  * @see {@link HexDiDevToolsProps} - Component props interface
  * @see {@link DevToolsPosition} - Position type for the toggle button
  *
  * @example Basic usage
  * ```typescript
  * import { HexDiDevTools } from '@hex-di/devtools/react';
- * import { appGraph } from './graph';
+ * import { container } from './container';
  *
  * function App() {
  *   return (
  *     <>
  *       <MainApp />
- *       <HexDiDevTools graph={appGraph} position="bottom-right" />
+ *       <HexDiDevTools container={container} />
  *     </>
  *   );
  * }
  * ```
  *
- * @example All corner positions
+ * @example With custom plugins
  * ```typescript
- * // Bottom-right (default)
- * <HexDiDevTools graph={graph} position="bottom-right" />
+ * import { HexDiDevTools, defaultPlugins } from '@hex-di/devtools/react';
+ * import { container } from './container';
+ * import { MyPlugin } from './my-plugin';
  *
- * // Bottom-left
- * <HexDiDevTools graph={graph} position="bottom-left" />
- *
- * // Top-right
- * <HexDiDevTools graph={graph} position="top-right" />
- *
- * // Top-left
- * <HexDiDevTools graph={graph} position="top-left" />
+ * <HexDiDevTools
+ *   container={container}
+ *   plugins={[...defaultPlugins(), MyPlugin()]}
+ *   position="top-left"
+ * />
  * ```
  */
-export { HexDiDevTools } from "./devtools-floating.js";
-export type { HexDiDevToolsProps, DevToolsPosition } from "./devtools-floating.js";
+export { HexDiDevTools } from "./hex-di-devtools.js";
+export type { HexDiDevToolsProps, DevToolsPosition } from "./hex-di-devtools.js";
 
 // =============================================================================
-// Container Inspector Components (Task Group 4)
+// Container Inspector Components
 // =============================================================================
 
 /**
@@ -371,7 +265,7 @@ export type { ContainerInspectorProps } from "./container-inspector.js";
  * ContainerSelector component for switching between registered containers.
  *
  * Provides a dropdown to select from all registered containers in multi-container
- * applications. Works with ContainerRegistryProvider to track root, child, lazy,
+ * applications. Works with the runtime architecture to track root, child, lazy,
  * and scope containers.
  *
  * @example Basic usage
@@ -507,7 +401,7 @@ export {
 export type { ServiceTreeNode, ServiceWithRelations } from "./services-tree.js";
 
 // =============================================================================
-// Tabbed Interface Components (Task Group 6)
+// Tabbed Interface Components
 // =============================================================================
 
 /**
@@ -517,25 +411,26 @@ export type { ServiceTreeNode, ServiceWithRelations } from "./services-tree.js";
  * Graph, Services, Tracing, and Inspector views.
  *
  * @see {@link TabNavigationProps} - Component props interface
- * @see {@link TabId} - Tab identifier type
  */
 export { TabNavigation } from "./tab-navigation.js";
-export type { TabNavigationProps, TabId } from "./tab-navigation.js";
+export type { TabNavigationProps } from "./tab-navigation.js";
 
 /**
- * ResolutionTracingSection component for the Tracing tab.
+ * PluginTabContent component for rendering active plugin content.
  *
- * Container component providing sub-view tabs for Timeline, Tree,
- * and Summary views within the tracing feature.
+ * Dynamically renders the active plugin's component within a tabpanel.
+ * Only mounts the active plugin for performance (no hidden tabs).
  *
- * @see {@link ResolutionTracingSectionProps} - Component props interface
- * @see {@link TracingViewId} - Tracing view identifier type
+ * @see {@link PluginTabContentProps} - Component props interface
  */
-export { ResolutionTracingSection } from "./resolution-tracing-section.js";
-export type { ResolutionTracingSectionProps, TracingViewId } from "./resolution-tracing-section.js";
+export { PluginTabContent } from "./plugin-tab-content.js";
+export type { PluginTabContentProps } from "./plugin-tab-content.js";
+
+// ResolutionTracingSection was removed - use TracingPlugin instead
+// The plugin architecture provides a cleaner approach via plugins/tracing-plugin.ts
 
 // =============================================================================
-// Controls Bar Component (Task Group 7)
+// Controls Bar Component
 // =============================================================================
 
 /**
@@ -560,7 +455,7 @@ export type {
 } from "./tracing-controls-bar.js";
 
 // =============================================================================
-// Timeline View Components (Task Group 8)
+// Timeline View Components
 // =============================================================================
 
 /**
@@ -602,7 +497,7 @@ export { TimeRuler } from "./time-ruler.js";
 export type { TimeRulerProps } from "./time-ruler.js";
 
 // =============================================================================
-// Tree View Component (Task Group 9)
+// Tree View Component
 // =============================================================================
 
 /**
@@ -619,7 +514,7 @@ export { TreeView } from "./tree-view.js";
 export type { TreeViewProps, TimeDisplayMode } from "./tree-view.js";
 
 // =============================================================================
-// Summary Stats View Component (Task Group 10)
+// Summary Stats View Component
 // =============================================================================
 
 /**
@@ -670,25 +565,8 @@ export type { SummaryStatsViewProps } from "./summary-stats-view.js";
 export { DependencyGraph } from "./graph-visualization/index.js";
 export type { DependencyGraphProps } from "./graph-visualization/index.js";
 
-/**
- * GraphTabContent component with container switching support.
- *
- * Provides a container selector dropdown when inside a ContainerRegistryProvider,
- * allowing users to switch between registered containers and view their dependency graphs.
- *
- * @example
- * ```tsx
- * import { GraphTabContent } from '@hex-di/devtools/react';
- * import { toJSON } from '@hex-di/devtools-core';
- *
- * function MyDevTools({ graph }) {
- *   const exportedGraph = useMemo(() => toJSON(graph), [graph]);
- *   return <GraphTabContent defaultGraph={exportedGraph} />;
- * }
- * ```
- */
-export { GraphTabContent } from "./graph-tab-content.js";
-export type { GraphTabContentProps } from "./graph-tab-content.js";
+// GraphTabContent was removed - use GraphPlugin instead
+// The plugin architecture provides a cleaner approach via plugins/graph-plugin.ts
 
 /**
  * Utility to build ExportedGraph from a container's internal state.
@@ -726,7 +604,7 @@ export {
   findConnectedNodes,
   findConnectedEdges,
 } from "./graph-visualization/index.js";
-export type { LayoutConfig, InputNode, InputEdge } from "./graph-visualization/index.js";
+export type { LayoutConfig } from "./graph-visualization/index.js";
 
 /**
  * Graph visualization types.
@@ -739,6 +617,7 @@ export type {
   GraphDirection,
   GraphInteractionState,
   TransformState,
+  ContainerOwnershipEntry,
 } from "./graph-visualization/index.js";
 export { createEdgeKey, DEFAULT_TRANSFORM } from "./graph-visualization/index.js";
 
@@ -754,3 +633,51 @@ export {
   getLifetimeStrokeVar,
   LIFETIME_COLORS,
 } from "./graph-visualization/index.js";
+
+// =============================================================================
+// Filter Components
+// =============================================================================
+
+/**
+ * Filter chip components for graph filtering UI.
+ *
+ * - FilterChip: A single toggleable chip for filtering
+ * - FilterChipGroup: A labeled group of related filter chips
+ *
+ * @example
+ * ```tsx
+ * import { FilterChip, FilterChipGroup } from '@hex-di/devtools/react';
+ *
+ * <FilterChipGroup label="Lifetime">
+ *   <FilterChip label="Singleton" isActive={true} onClick={() => {}} />
+ *   <FilterChip label="Scoped" isActive={false} onClick={() => {}} />
+ * </FilterChipGroup>
+ * ```
+ */
+export { FilterChip, FilterChipGroup } from "./components/filter-chips.js";
+export type { FilterChipProps, FilterChipGroupProps } from "./components/filter-chips.js";
+
+/**
+ * Filter preset buttons for quick filter configurations.
+ *
+ * Provides preset buttons for common filtering scenarios:
+ * - "Overrides Only" - filter to ownership === "overridden"
+ * - "Async Services" - filter to factoryKind === "async"
+ * - "Current Container" - filter to first selected container
+ * - "Inherited Only" - filter to ownership === "inherited"
+ *
+ * @example
+ * ```tsx
+ * import { FilterPresets, getPresetFilterConfig } from '@hex-di/devtools/react';
+ *
+ * <FilterPresets
+ *   onPresetSelect={(presetId) => {
+ *     const config = getPresetFilterConfig(presetId);
+ *     // Apply config to filters
+ *   }}
+ *   activePreset={null}
+ * />
+ * ```
+ */
+export { FilterPresets, getPresetFilterConfig } from "./components/filter-presets.js";
+export type { FilterPresetsProps, FilterPresetId } from "./components/filter-presets.js";

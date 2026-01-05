@@ -244,6 +244,7 @@ export function createInspector(container: InternalAccessible): ContainerInspect
       isDisposed: state.disposed,
       singletons: Object.freeze(singletons),
       scopes: scopeTree,
+      containerName: state.containerName,
     };
 
     return deepFreeze(result);

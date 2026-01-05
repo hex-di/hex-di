@@ -13,13 +13,11 @@
 
 import type {
   ExportedGraph,
-  TraceEntry,
-  TraceStats,
-  ContainerSnapshot,
   JsonRpcRequest,
   JsonRpcMessage,
   VerboseLogger,
 } from "@hex-di/devtools-core";
+import type { TraceEntry, TraceStats, ContainerSnapshot } from "@hex-di/plugin";
 import {
   Methods,
   createSuccessResponse,

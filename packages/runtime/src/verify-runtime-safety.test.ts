@@ -29,7 +29,7 @@ describe("Runtime Safety Verification", () => {
 
     const graph = GraphBuilder.create().provide(AdapterA).provide(AdapterScoped).build();
 
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // 1. Container.has checks
     expect(container.has(PortA)).toBe(true);
@@ -54,7 +54,7 @@ describe("Runtime Safety Verification", () => {
     // createChild accepts a Graph and returns a child container
     const childGraph = GraphBuilder.create().provide(AdapterB).build();
 
-    const childContainer = container.createChild(childGraph);
+    const childContainer = container.createChild(childGraph, { name: "Child" });
 
     expect(childContainer.has(PortA)).toBe(true); // Inherited
     expect(childContainer.has(PortB)).toBe(true); // Extended

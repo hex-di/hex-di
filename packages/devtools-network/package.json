@@ -6,9 +6,6 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "bin": {
-    "hexdi-devtools": "./dist/cli/index.js"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -56,11 +53,11 @@
   "dependencies": {
     "@hex-di/devtools-core": "workspace:*",
     "@hex-di/graph": "workspace:*",
+    "@hex-di/plugin": "workspace:*",
     "@hex-di/ports": "workspace:*",
     "ws": "^8.18.0"
   },
   "devDependencies": {
-    "@hex-di/devtools-testing": "workspace:*",
     "@types/node": "25.0.3",
     "@types/ws": "^8.5.13",
     "typescript": "^5.6.3",

@@ -6,16 +6,15 @@
 
 import { useMemo, useCallback } from "react";
 import { useContainerInspector } from "./use-container-inspector.js";
-import { isSome } from "../types/adt.js";
 
 /**
- * Runtime snapshot from ContainerInspector.
+ * Runtime snapshot from InspectorWithSubscription.
  *
- * This is the raw snapshot type from @hex-di/runtime, not the typed
- * ContainerSnapshot from @hex-di/devtools-core.
+ * This is the raw snapshot type from @hex-di/runtime inspector API,
+ * not the typed ContainerSnapshot from @hex-di/devtools-core.
  */
 type RuntimeSnapshot = ReturnType<
-  ReturnType<typeof import("@hex-di/runtime").createInspector>["snapshot"]
+  import("@hex-di/runtime").InspectorWithSubscription["getSnapshot"]
 >;
 
 /**
@@ -92,25 +91,25 @@ export interface UseInspectorSnapshotResult {
  * ```
  */
 export function useInspectorSnapshot(): UseInspectorSnapshotResult {
-  const inspectorOpt = useContainerInspector();
+  const inspector = useContainerInspector();
 
   const snapshot = useMemo((): RuntimeSnapshot | null => {
-    if (!isSome(inspectorOpt)) {
+    if (inspector === null) {
       return null;
     }
-    return inspectorOpt.value.snapshot();
-  }, [inspectorOpt]);
+    return inspector.getSnapshot();
+  }, [inspector]);
 
   // refresh is a no-op since snapshot is computed on each render
   // kept for API compatibility - consumers may call it to express intent
   const refresh = useCallback((): void => {
-    // Snapshot is derived from inspectorOpt, which changes when registry changes
+    // Snapshot is derived from inspector, which changes when registry changes
     // This callback exists for API compatibility
   }, []);
 
   return {
     snapshot,
-    isAvailable: isSome(inspectorOpt),
+    isAvailable: inspector !== null,
     refresh,
   };
 }

@@ -47,14 +47,14 @@ export function useDevToolsSnapshot(): DevToolsSnapshot {
   // Get runtime from store context (consolidated - no separate DevToolsContext)
   const runtime = useRuntimeFromStoreContext();
 
-  // Stable getSnapshot callback
+  // Stable getSnapshot callback - runtime.getSnapshot() now returns DevToolsSnapshot
   const getSnapshot = useCallback((): DevToolsSnapshot => {
-    return runtime.getSnapshot() as DevToolsSnapshot;
+    return runtime.getSnapshot();
   }, [runtime]);
 
   // Server snapshot returns the same as client for now
   const getServerSnapshot = useCallback((): DevToolsSnapshot => {
-    return runtime.getSnapshot() as DevToolsSnapshot;
+    return runtime.getSnapshot();
   }, [runtime]);
 
   // Use useSyncExternalStore for proper concurrent rendering support

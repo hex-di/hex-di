@@ -17,7 +17,7 @@ import {
   SummaryStatsView,
   type SummaryStatsViewProps,
 } from "../../src/react/summary-stats-view.js";
-import type { TraceEntry, TraceStats } from "@hex-di/devtools-core";
+import type { TraceEntry, TraceStats } from "@hex-di/plugin";
 
 // =============================================================================
 // Test Fixtures
@@ -63,16 +63,76 @@ function createMockStats(overrides: Partial<TraceStats> = {}): TraceStats {
  */
 function createTestTraces(): readonly TraceEntry[] {
   return [
-    createMockTrace({ id: "trace-1", portName: "DatabasePort", duration: 62.3, lifetime: "singleton", isCacheHit: false }),
-    createMockTrace({ id: "trace-2", portName: "PaymentGateway", duration: 45.2, lifetime: "singleton", isCacheHit: false }),
-    createMockTrace({ id: "trace-3", portName: "HttpClient", duration: 38.9, lifetime: "singleton", isCacheHit: false }),
-    createMockTrace({ id: "trace-4", portName: "UserRepository", duration: 22.4, lifetime: "scoped", isCacheHit: false }),
-    createMockTrace({ id: "trace-5", portName: "AuthService", duration: 15.1, lifetime: "scoped", isCacheHit: false }),
-    createMockTrace({ id: "trace-6", portName: "Logger", duration: 5.2, lifetime: "singleton", isCacheHit: true }),
-    createMockTrace({ id: "trace-7", portName: "ConfigPort", duration: 3.1, lifetime: "singleton", isCacheHit: true }),
-    createMockTrace({ id: "trace-8", portName: "CacheService", duration: 8.5, lifetime: "singleton", isCacheHit: false }),
-    createMockTrace({ id: "trace-9", portName: "RequestLogger", duration: 2.1, lifetime: "transient", isCacheHit: false }),
-    createMockTrace({ id: "trace-10", portName: "SessionManager", duration: 1.5, lifetime: "transient", isCacheHit: false }),
+    createMockTrace({
+      id: "trace-1",
+      portName: "DatabasePort",
+      duration: 62.3,
+      lifetime: "singleton",
+      isCacheHit: false,
+    }),
+    createMockTrace({
+      id: "trace-2",
+      portName: "PaymentGateway",
+      duration: 45.2,
+      lifetime: "singleton",
+      isCacheHit: false,
+    }),
+    createMockTrace({
+      id: "trace-3",
+      portName: "HttpClient",
+      duration: 38.9,
+      lifetime: "singleton",
+      isCacheHit: false,
+    }),
+    createMockTrace({
+      id: "trace-4",
+      portName: "UserRepository",
+      duration: 22.4,
+      lifetime: "scoped",
+      isCacheHit: false,
+    }),
+    createMockTrace({
+      id: "trace-5",
+      portName: "AuthService",
+      duration: 15.1,
+      lifetime: "scoped",
+      isCacheHit: false,
+    }),
+    createMockTrace({
+      id: "trace-6",
+      portName: "Logger",
+      duration: 5.2,
+      lifetime: "singleton",
+      isCacheHit: true,
+    }),
+    createMockTrace({
+      id: "trace-7",
+      portName: "ConfigPort",
+      duration: 3.1,
+      lifetime: "singleton",
+      isCacheHit: true,
+    }),
+    createMockTrace({
+      id: "trace-8",
+      portName: "CacheService",
+      duration: 8.5,
+      lifetime: "singleton",
+      isCacheHit: false,
+    }),
+    createMockTrace({
+      id: "trace-9",
+      portName: "RequestLogger",
+      duration: 2.1,
+      lifetime: "transient",
+      isCacheHit: false,
+    }),
+    createMockTrace({
+      id: "trace-10",
+      portName: "SessionManager",
+      duration: 1.5,
+      lifetime: "transient",
+      isCacheHit: false,
+    }),
   ];
 }
 
@@ -184,12 +244,12 @@ describe("SummaryStatsView", () => {
 
     it("displays correct counts in distribution buckets", () => {
       const traces = [
-        createMockTrace({ duration: 5 }),    // 0-10ms bucket
-        createMockTrace({ duration: 8 }),    // 0-10ms bucket
-        createMockTrace({ duration: 15 }),   // 10-25ms bucket
-        createMockTrace({ duration: 30 }),   // 25-50ms bucket
-        createMockTrace({ duration: 75 }),   // 50-100ms bucket
-        createMockTrace({ duration: 150 }),  // >100ms bucket
+        createMockTrace({ duration: 5 }), // 0-10ms bucket
+        createMockTrace({ duration: 8 }), // 0-10ms bucket
+        createMockTrace({ duration: 15 }), // 10-25ms bucket
+        createMockTrace({ duration: 30 }), // 25-50ms bucket
+        createMockTrace({ duration: 75 }), // 50-100ms bucket
+        createMockTrace({ duration: 150 }), // >100ms bucket
       ];
 
       const props = createDefaultProps({ traces });

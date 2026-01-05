@@ -22,7 +22,7 @@ import {
   beforeEach,
 } from "./setup.js";
 import { createContainer } from "@hex-di/runtime";
-import { appGraph } from "../src/di/graph.js";
+import { appGraph } from "../src/di/app-graph.js";
 import {
   MessageStorePort,
   UserSessionPort,
@@ -97,7 +97,7 @@ describe("User Switching", () => {
       .override(mockLogger)
       .override(mockConfig)
       .build();
-    const aliceContainer = createContainer(aliceGraph);
+    const aliceContainer = createContainer(aliceGraph, { name: "Alice" });
     const aliceScope = aliceContainer.createScope("alice-scope");
     const aliceSession = aliceScope.resolve(UserSessionPort);
     expect(aliceSession.user.name).toBe("Alice");
@@ -110,7 +110,7 @@ describe("User Switching", () => {
       .override(mockLogger)
       .override(mockConfig)
       .build();
-    const bobContainer = createContainer(bobGraph);
+    const bobContainer = createContainer(bobGraph, { name: "Bob" });
     const bobScope = bobContainer.createScope("bob-scope");
     const bobSession = bobScope.resolve(UserSessionPort);
     expect(bobSession.user.name).toBe("Bob");
@@ -158,7 +158,7 @@ describe("User Switching", () => {
       .override(mockNotificationService)
       .build();
 
-    const container = createContainer(testGraph);
+    const container = createContainer(testGraph, { name: "Test" });
 
     render(
       <AsyncContainerProvider

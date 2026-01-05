@@ -18,7 +18,8 @@ import React, {
   type CSSProperties,
   type KeyboardEvent,
 } from "react";
-import { formatDuration, type TraceEntry } from "@hex-di/devtools-core";
+import { formatDuration } from "@hex-di/devtools-core";
+import type { TraceEntry } from "@hex-di/plugin";
 import { treeViewStyles, emptyStyles, getLifetimeBadgeStyle } from "./styles.js";
 
 // =============================================================================

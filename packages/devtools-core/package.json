@@ -59,8 +59,11 @@
   },
   "homepage": "https://github.com/hex-di/hex-di/tree/main/packages/devtools-core#readme",
   "dependencies": {
+    "@hex-di/flow": "workspace:*",
     "@hex-di/graph": "workspace:*",
-    "@hex-di/ports": "workspace:*"
+    "@hex-di/plugin": "workspace:*",
+    "@hex-di/ports": "workspace:*",
+    "@hex-di/runtime": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.6.3",

@@ -2,15 +2,14 @@
  * Tests for DevTools Tabbed Interface.
  *
  * These tests verify:
- * 1. mode="tabs" renders tab navigation
- * 2. mode="sections" preserves CollapsibleSection behavior
- * 3. Tab switching changes active view
- * 4. Default tab selection
- * 5. Backward compatibility with existing props
+ * 1. Tab navigation renders correctly
+ * 2. Tab switching changes active view
+ * 3. Default tab selection
+ * 4. Backward compatibility with existing props
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import React from "react";
 import { DevToolsPanel } from "../../src/react/devtools-panel.js";
 import { createPort } from "@hex-di/ports";
@@ -71,57 +70,28 @@ describe("DevToolsPanel Tabbed Interface", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Test 1: mode="tabs" renders tab navigation
+  // Test 1: Tab navigation renders
   // ---------------------------------------------------------------------------
-  describe("mode='tabs' rendering", () => {
-    it("renders tab navigation when mode is 'tabs'", () => {
-      render(<DevToolsPanel graph={testGraph} mode="tabs" />);
+  describe("tab navigation rendering", () => {
+    it("renders tab navigation", () => {
+      render(<DevToolsPanel graph={testGraph} />);
 
       // Should render the tab navigation container
       expect(screen.getByTestId("tab-navigation")).toBeDefined();
 
-      // Should render the four main tabs
+      // Should render the main tabs
       expect(screen.getByRole("tab", { name: /graph/i })).toBeDefined();
       expect(screen.getByRole("tab", { name: /services/i })).toBeDefined();
       expect(screen.getByRole("tab", { name: /tracing/i })).toBeDefined();
-      // Inspector tab is shown only when container is provided - we don't have container here
-    });
-
-    it("does not render CollapsibleSections when mode is 'tabs'", () => {
-      render(<DevToolsPanel graph={testGraph} mode="tabs" />);
-
-      // CollapsibleSection headers should not be present
-      expect(screen.queryByTestId("graph-view-header")).toBeNull();
-      expect(screen.queryByTestId("services-header")).toBeNull();
     });
   });
 
   // ---------------------------------------------------------------------------
-  // Test 2: mode="sections" preserves CollapsibleSection behavior
-  // ---------------------------------------------------------------------------
-  describe("mode='sections' rendering", () => {
-    it("renders CollapsibleSections when mode is 'sections'", () => {
-      render(<DevToolsPanel graph={testGraph} mode="sections" />);
-
-      // Should render the section headers (existing behavior)
-      expect(screen.getByTestId("graph-view-header")).toBeDefined();
-      expect(screen.getByTestId("services-header")).toBeDefined();
-    });
-
-    it("does not render tab navigation when mode is 'sections'", () => {
-      render(<DevToolsPanel graph={testGraph} mode="sections" />);
-
-      // Tab navigation should not be present
-      expect(screen.queryByTestId("tab-navigation")).toBeNull();
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // Test 3: Tab switching changes active view
+  // Test 2: Tab switching changes active view
   // ---------------------------------------------------------------------------
   describe("tab switching", () => {
-    it("changes active view when clicking different tabs", () => {
-      render(<DevToolsPanel graph={testGraph} mode="tabs" />);
+    it("changes active view when clicking different tabs", async () => {
+      render(<DevToolsPanel graph={testGraph} />);
 
       // Initially, Graph tab should be active (first tab)
       const graphTab = screen.getByRole("tab", { name: /graph/i });
@@ -131,13 +101,15 @@ describe("DevToolsPanel Tabbed Interface", () => {
       const servicesTab = screen.getByRole("tab", { name: /services/i });
       fireEvent.click(servicesTab);
 
-      // Services tab should now be selected
-      expect(servicesTab.getAttribute("aria-selected")).toBe("true");
-      expect(graphTab.getAttribute("aria-selected")).toBe("false");
+      // Services tab should now be selected (async due to queueMicrotask in store)
+      await waitFor(() => {
+        expect(servicesTab.getAttribute("aria-selected")).toBe("true");
+        expect(graphTab.getAttribute("aria-selected")).toBe("false");
+      });
     });
 
-    it("renders the correct content for the active tab", () => {
-      render(<DevToolsPanel graph={testGraph} mode="tabs" />);
+    it("renders the correct content for the active tab", async () => {
+      render(<DevToolsPanel graph={testGraph} />);
 
       // Graph view content should be visible initially
       expect(screen.getByTestId("tab-content-graph")).toBeDefined();
@@ -146,44 +118,42 @@ describe("DevToolsPanel Tabbed Interface", () => {
       const tracingTab = screen.getByRole("tab", { name: /tracing/i });
       fireEvent.click(tracingTab);
 
-      // Tracing view content should now be visible
-      expect(screen.getByTestId("tab-content-tracing")).toBeDefined();
+      // Tracing view content should now be visible (async due to queueMicrotask in store)
+      await waitFor(() => {
+        expect(screen.getByTestId("tab-content-tracing")).toBeDefined();
+      });
       expect(screen.queryByTestId("tab-content-graph")).toBeNull();
     });
   });
 
   // ---------------------------------------------------------------------------
-  // Test 4: Default tab selection
+  // Test 3: Default tab selection
   // ---------------------------------------------------------------------------
   describe("default tab selection", () => {
-    it("defaults to 'tabs' mode when mode prop is not specified", () => {
-      render(<DevToolsPanel graph={testGraph} />);
-
-      // Should render tab navigation (default mode is tabs)
-      expect(screen.getByTestId("tab-navigation")).toBeDefined();
-    });
-
     it("selects the first tab (Graph) by default", () => {
-      render(<DevToolsPanel graph={testGraph} mode="tabs" />);
+      render(<DevToolsPanel graph={testGraph} />);
 
       const graphTab = screen.getByRole("tab", { name: /graph/i });
       expect(graphTab.getAttribute("aria-selected")).toBe("true");
     });
 
-    it("respects initialTab prop for initial tab selection", () => {
-      render(<DevToolsPanel graph={testGraph} mode="tabs" initialTab="tracing" />);
+    it("respects initialTab prop for initial tab selection", async () => {
+      render(<DevToolsPanel graph={testGraph} initialTab="tracing" />);
 
-      const tracingTab = screen.getByRole("tab", { name: /tracing/i });
-      expect(tracingTab.getAttribute("aria-selected")).toBe("true");
+      // Need to wait for store initialization with initialTab (async due to queueMicrotask)
+      await waitFor(() => {
+        const tracingTab = screen.getByRole("tab", { name: /tracing/i });
+        expect(tracingTab.getAttribute("aria-selected")).toBe("true");
+      });
     });
   });
 
   // ---------------------------------------------------------------------------
-  // Test 5: Backward compatibility
+  // Test 4: Backward compatibility
   // ---------------------------------------------------------------------------
   describe("backward compatibility", () => {
     it("preserves existing graph prop behavior", () => {
-      render(<DevToolsPanel graph={testGraph} mode="sections" />);
+      render(<DevToolsPanel graph={testGraph} />);
 
       // Should render the panel with graph prop
       expect(screen.getByTestId("devtools-panel")).toBeDefined();
@@ -191,7 +161,7 @@ describe("DevToolsPanel Tabbed Interface", () => {
 
     it("works with empty graph", () => {
       const emptyGraph = createEmptyGraph();
-      render(<DevToolsPanel graph={emptyGraph} mode="tabs" />);
+      render(<DevToolsPanel graph={emptyGraph} />);
 
       // Panel should still render
       expect(screen.getByTestId("devtools-panel")).toBeDefined();
@@ -215,8 +185,8 @@ describe("TabNavigation Component", () => {
     cleanup();
   });
 
-  it("supports keyboard navigation between tabs", () => {
-    render(<DevToolsPanel graph={testGraph} mode="tabs" />);
+  it("supports keyboard navigation between tabs", async () => {
+    render(<DevToolsPanel graph={testGraph} />);
 
     const graphTab = screen.getByRole("tab", { name: /graph/i });
     graphTab.focus();
@@ -224,19 +194,21 @@ describe("TabNavigation Component", () => {
     // Press ArrowRight to move to next tab
     fireEvent.keyDown(graphTab, { key: "ArrowRight" });
 
-    // After keyboard navigation, Services tab should have focus and be selected
-    const servicesTab = screen.getByRole("tab", { name: /services/i });
-    expect(servicesTab.getAttribute("aria-selected")).toBe("true");
+    // After keyboard navigation, Services tab should have focus and be selected (async due to queueMicrotask)
+    await waitFor(() => {
+      const servicesTab = screen.getByRole("tab", { name: /services/i });
+      expect(servicesTab.getAttribute("aria-selected")).toBe("true");
+    });
   });
 
   it("has proper ARIA attributes for accessibility", () => {
-    render(<DevToolsPanel graph={testGraph} mode="tabs" />);
+    render(<DevToolsPanel graph={testGraph} />);
 
     const tabList = screen.getByRole("tablist");
     expect(tabList).toBeDefined();
 
     const tabs = screen.getAllByRole("tab");
-    tabs.forEach((tab) => {
+    tabs.forEach(tab => {
       expect(tab.hasAttribute("aria-selected")).toBe(true);
     });
   });

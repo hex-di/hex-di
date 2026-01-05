@@ -5,7 +5,7 @@
  */
 
 import React, { type ReactElement } from "react";
-import type { PositionedNode } from "./types.js";
+import type { PositionedNode, ContainerOwnershipEntry } from "./types.js";
 import { tooltipStyles, getLifetimeStrokeVar } from "./graph-styles.js";
 
 // =============================================================================
@@ -26,6 +26,53 @@ export interface GraphTooltipProps {
 }
 
 // =============================================================================
+// Constants
+// =============================================================================
+
+/**
+ * Color mapping for ownership states.
+ */
+const OWNERSHIP_COLORS = {
+  own: "#a6e3a1", // Green
+  inherited: "#a6adc8", // Gray/Muted
+  overridden: "#fab387", // Orange
+} as const;
+
+/**
+ * Inheritance mode abbreviations.
+ */
+const INHERITANCE_MODE_ABBREV = {
+  shared: "S",
+  forked: "F",
+  isolated: "I",
+} as const;
+
+// =============================================================================
+// Helper Functions
+// =============================================================================
+
+/**
+ * Formats ownership state for display.
+ */
+function formatOwnership(ownership: "own" | "inherited" | "overridden"): string {
+  return ownership.charAt(0).toUpperCase() + ownership.slice(1);
+}
+
+/**
+ * Formats a container entry with ownership for display.
+ */
+function formatContainerWithOwnership(
+  containerName: string,
+  ownership: "own" | "inherited" | "overridden",
+  inheritanceMode?: "shared" | "forked" | "isolated"
+): string {
+  if (ownership === "inherited" && inheritanceMode !== undefined) {
+    return `${containerName} (inherited [${INHERITANCE_MODE_ABBREV[inheritanceMode]}])`;
+  }
+  return `${containerName} (${ownership})`;
+}
+
+// =============================================================================
 // Component
 // =============================================================================
 
@@ -35,8 +82,12 @@ export interface GraphTooltipProps {
  * Shows:
  * - Node name
  * - Lifetime with color indicator
+ * - Ownership state with color
+ * - Inheritance mode for inherited services
+ * - Factory kind
  * - Number of dependencies
  * - Number of dependents
+ * - Container list with per-container ownership
  */
 export function GraphTooltip({
   node,
@@ -46,6 +97,16 @@ export function GraphTooltip({
   dependentCount,
 }: GraphTooltipProps): ReactElement {
   const lifetimeColor = getLifetimeStrokeVar(node.lifetime);
+  const ownership = node.ownership ?? node.origin ?? "own";
+  const ownershipColor = OWNERSHIP_COLORS[ownership];
+
+  // Build a lookup map for container ownership
+  const containerOwnershipMap = new Map<string, ContainerOwnershipEntry>();
+  if (node.containerOwnership !== undefined) {
+    for (const entry of node.containerOwnership) {
+      containerOwnershipMap.set(entry.containerId, entry);
+    }
+  }
 
   return (
     <div
@@ -83,8 +144,21 @@ export function GraphTooltip({
         </span>
       </div>
 
-      {/* Origin (only shown for child containers) */}
-      {node.origin !== undefined && (
+      {/* Ownership - always shown with color coding */}
+      <div style={tooltipStyles.row}>
+        <span style={tooltipStyles.label}>Ownership</span>
+        <span
+          style={{
+            ...tooltipStyles.value,
+            color: ownershipColor,
+          }}
+        >
+          {formatOwnership(ownership)}
+        </span>
+      </div>
+
+      {/* Origin (legacy support - only shown if different from ownership) */}
+      {node.origin !== undefined && node.origin !== ownership && (
         <div style={tooltipStyles.row}>
           <span style={tooltipStyles.label}>Origin</span>
           <span
@@ -148,6 +222,60 @@ export function GraphTooltip({
         <span style={tooltipStyles.label}>Dependents</span>
         <span style={tooltipStyles.value}>{dependentCount}</span>
       </div>
+
+      {/* Containers with per-container ownership */}
+      {node.containers !== undefined && node.containers.length > 0 && (
+        <div style={{ ...tooltipStyles.row, flexDirection: "column", alignItems: "flex-start" }}>
+          <span style={tooltipStyles.label}>Containers</span>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
+              marginTop: "4px",
+              width: "100%",
+            }}
+          >
+            {node.containers.map(containerName => {
+              const ownershipEntry = containerOwnershipMap.get(containerName);
+              const containerOwnership = ownershipEntry?.ownership ?? "own";
+              const containerInheritanceMode = ownershipEntry?.inheritanceMode;
+              const containerColor = OWNERSHIP_COLORS[containerOwnership];
+
+              return (
+                <span
+                  key={containerName}
+                  style={{
+                    fontSize: "10px",
+                    padding: "2px 6px",
+                    borderRadius: "3px",
+                    backgroundColor: "var(--hex-devtools-bg-tertiary, #313244)",
+                    color: containerColor,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: "6px",
+                      height: "6px",
+                      borderRadius: "50%",
+                      backgroundColor: containerColor,
+                      flexShrink: 0,
+                    }}
+                  />
+                  {formatContainerWithOwnership(
+                    containerName,
+                    containerOwnership,
+                    containerInheritanceMode
+                  )}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

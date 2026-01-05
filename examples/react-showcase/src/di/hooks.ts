@@ -8,7 +8,16 @@
  * @packageDocumentation
  */
 
-import { createTypedHooks } from "@hex-di/react";
+import {
+  createTypedHooks,
+  HexDiContainerProvider,
+  HexDiAutoScopeProvider,
+  HexDiScopeProvider,
+  HexDiAsyncContainerProvider,
+  usePort as globalUsePort,
+  useContainer as globalUseContainer,
+  useScope as globalUseScope,
+} from "@hex-di/react";
 import type { AppPorts } from "./ports.js";
 
 // =============================================================================
@@ -31,8 +40,8 @@ const typedHooks = createTypedHooks<AppPorts>();
 /**
  * Root container provider component.
  *
- * Wraps the application tree to provide the DI container context.
- * All usePort calls within this provider will resolve from the container.
+ * Uses the global HexDiContainerProvider to work with all providers
+ * in the application (including DevTools auto-discovery).
  *
  * @example
  * ```tsx
@@ -51,7 +60,7 @@ const typedHooks = createTypedHooks<AppPorts>();
  * }
  * ```
  */
-export const ContainerProvider = typedHooks.ContainerProvider;
+export const ContainerProvider = HexDiContainerProvider;
 
 /**
  * Automatic scope provider component.
@@ -59,6 +68,8 @@ export const ContainerProvider = typedHooks.ContainerProvider;
  * Creates a new scope on mount and disposes it on unmount.
  * Use this to isolate scoped services (like UserSession) to a
  * specific part of the component tree.
+ *
+ * Uses the global HexDiAutoScopeProvider to work with HexDiContainerProvider.
  *
  * @example
  * ```tsx
@@ -75,7 +86,7 @@ export const ContainerProvider = typedHooks.ContainerProvider;
  * }
  * ```
  */
-export const AutoScopeProvider = typedHooks.AutoScopeProvider;
+export const AutoScopeProvider = HexDiAutoScopeProvider;
 
 /**
  * Manual scope provider component.
@@ -96,7 +107,7 @@ export const AutoScopeProvider = typedHooks.AutoScopeProvider;
  * }
  * ```
  */
-export const ScopeProvider = typedHooks.ScopeProvider;
+export const ScopeProvider = HexDiScopeProvider;
 
 /**
  * Async container provider component with compound components.
@@ -130,7 +141,7 @@ export const ScopeProvider = typedHooks.ScopeProvider;
  * }
  * ```
  */
-export const AsyncContainerProvider = typedHooks.AsyncContainerProvider;
+export const AsyncContainerProvider = HexDiAsyncContainerProvider;
 
 // =============================================================================
 // Hooks
@@ -141,6 +152,8 @@ export const AsyncContainerProvider = typedHooks.AsyncContainerProvider;
  *
  * This hook is type-safe - it only accepts ports that are in AppPorts.
  * The return type is automatically inferred from the port's service type.
+ *
+ * Uses the global usePort hook to work with HexDiContainerProvider.
  *
  * @example
  * ```tsx
@@ -156,13 +169,15 @@ export const AsyncContainerProvider = typedHooks.AsyncContainerProvider;
  * }
  * ```
  */
-export const usePort = typedHooks.usePort;
+export const usePort = globalUsePort;
 
 /**
  * Returns the root container instance.
  *
  * Use this when you need direct access to the container, for example
  * to create scopes manually or resolve services programmatically.
+ *
+ * Uses the global useContainer hook to work with HexDiContainerProvider.
  *
  * @example
  * ```tsx
@@ -182,13 +197,15 @@ export const usePort = typedHooks.usePort;
  * }
  * ```
  */
-export const useContainer = typedHooks.useContainer;
+export const useContainer = globalUseContainer;
 
 /**
  * Creates and returns a scope tied to the component lifecycle.
  *
  * The scope is created on first render and disposed on unmount.
  * Useful when you need access to the scope object itself.
+ *
+ * Uses the global useScope hook to work with HexDiContainerProvider.
  *
  * @example
  * ```tsx
@@ -201,7 +218,7 @@ export const useContainer = typedHooks.useContainer;
  * }
  * ```
  */
-export const useScope = typedHooks.useScope;
+export const useScope = globalUseScope;
 
 /**
  * Optionally resolves a port to its service instance.

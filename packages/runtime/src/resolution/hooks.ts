@@ -281,8 +281,7 @@ export interface HooksInstaller {
  *
  * @example Using wrapper pattern for plugins
  * ```typescript
- * import { pipe, createPluginWrapper } from '@hex-di/runtime';
- * import { TracingPlugin, TRACING } from '@hex-di/tracing';
+ * import { pipe, createPluginWrapper, TracingPlugin, TRACING } from '@hex-di/runtime';
  *
  * const withTracing = createPluginWrapper(TracingPlugin);
  * const container = pipe(createContainer(graph), withTracing);

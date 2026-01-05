@@ -113,7 +113,7 @@ export type { ComposedHooks } from "./plugin-manager.js";
 export {
   createPluginWrapper,
   getAppliedWrappers,
-  applyParentWrappers,
+  getEnhancedWrapper,
   getDisposalCallbacks,
   APPLIED_WRAPPERS,
 } from "./wrapper.js";

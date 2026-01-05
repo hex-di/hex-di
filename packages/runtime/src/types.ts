@@ -12,8 +12,10 @@
 
 import type { Port, InferService } from "@hex-di/ports";
 import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
+import type { TracingAPI } from "@hex-di/plugin";
 import { INTERNAL_ACCESS } from "./inspector/symbols.js";
 import type { ContainerInternalState, ScopeInternalState } from "./inspector/types.js";
+import type { InspectorAPI } from "./plugins/inspector/types.js";
 import type {
   ScopeLifecycleListener,
   ScopeSubscription,
@@ -36,6 +38,127 @@ import type { AnyPlugin, PluginApiMap } from "./plugin/types.js";
  * - `'initialized'`: All async ports have been initialized; sync resolve works for all ports
  */
 export type ContainerPhase = "uninitialized" | "initialized";
+
+// =============================================================================
+// Container Naming Types
+// =============================================================================
+
+/**
+ * The kind of container in the hierarchy.
+ *
+ * - `'root'`: The root container created by `createContainer()`
+ * - `'child'`: A child container created by `createChild()`
+ */
+export type ContainerKind = "root" | "child";
+
+// =============================================================================
+// DevTools Options
+// =============================================================================
+
+/**
+ * DevTools-specific options for container visibility and display.
+ *
+ * These options control how the container appears in DevTools
+ * without affecting runtime behavior.
+ *
+ * @example
+ * ```typescript
+ * const container = createContainer(graph, {
+ *   name: "App",
+ *   devtools: {
+ *     discoverable: true,
+ *     label: "Main Application Container",
+ *   },
+ * });
+ * ```
+ */
+export interface ContainerDevToolsOptions {
+  /**
+   * Whether this container is discoverable by DevTools.
+   *
+   * When `false`, DevTools will not automatically discover or display
+   * this container or its children. Useful for internal/infrastructure
+   * containers that should not appear in the UI.
+   *
+   * @default true
+   */
+  readonly discoverable?: boolean;
+
+  /**
+   * Custom display label for DevTools.
+   *
+   * When provided, DevTools will use this label instead of the container name
+   * for display purposes. The container name is still used for identification.
+   *
+   * @default undefined (uses container name)
+   */
+  readonly label?: string;
+}
+
+/**
+ * Options for creating a root container.
+ *
+ * @example
+ * ```typescript
+ * const root = createContainer(graph, { name: "Root Container" });
+ * root.name       // "Root Container"
+ * root.parentName // null
+ * root.kind       // "root"
+ * ```
+ *
+ * @example With DevTools options
+ * ```typescript
+ * const root = createContainer(graph, {
+ *   name: "App",
+ *   devtools: { label: "Main Application" },
+ * });
+ * ```
+ */
+export interface CreateContainerOptions {
+  /** Container name - serves as both identifier and display label */
+  readonly name: string;
+
+  /** DevTools-specific options for visibility and display */
+  readonly devtools?: ContainerDevToolsOptions;
+}
+
+/**
+ * Options for creating a child container.
+ *
+ * @example
+ * ```typescript
+ * const child = root.createChild(childGraph, { name: "Auth Feature" });
+ * child.name       // "Auth Feature"
+ * child.parentName // "Root Container" (derived from parent.name)
+ * child.kind       // "child"
+ * ```
+ *
+ * @example With inheritance modes
+ * ```typescript
+ * const child = root.createChild(childGraph, {
+ *   name: "Forked Feature",
+ *   inheritanceModes: { Logger: "forked" }
+ * });
+ * ```
+ *
+ * @example With DevTools options
+ * ```typescript
+ * const child = root.createChild(childGraph, {
+ *   name: "Internal",
+ *   devtools: { discoverable: false },
+ * });
+ * ```
+ */
+export interface CreateChildOptions<TProvides extends Port<unknown, string> = never> {
+  /** Container name - serves as both identifier and display label */
+  readonly name: string;
+
+  /** Optional per-port inheritance mode configuration */
+  readonly inheritanceModes?: InheritanceModeConfig<TProvides>;
+
+  /** DevTools-specific options for visibility and display */
+  readonly devtools?: ContainerDevToolsOptions;
+}
 
 // =============================================================================
 // Brand Symbols
@@ -251,17 +374,17 @@ export type ContainerMembers<
    *   .provide(CacheAdapter)        // Add new Cache port
    *   .build();
    *
-   * const child = container.createChild(childGraph);
-   * const mockLogger = child.resolve(LoggerPort);  // Uses MockLogger
-   * const db = child.resolve(DatabasePort);        // Inherited from parent
-   * const cache = child.resolve(CachePort);        // From child graph
+   * const child = container.createChild(childGraph, { name: "Feature" });
+   * child.name       // "Feature"
+   * child.parentName // parent's name (auto-derived)
+   * child.kind       // "child"
    * ```
    */
   createChild<
     TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
   >(
     childGraph: TChildGraph,
-    inheritanceModes?: InheritanceModeConfig<TProvides | TExtends>
+    options: CreateChildOptions<TProvides | TExtends>
   ): Container<
     TProvides | TExtends,
     Exclude<InferGraphProvides<TChildGraph>, TProvides | TExtends>,
@@ -279,13 +402,14 @@ export type ContainerMembers<
    *
    * @typeParam TChildGraph - The child graph type
    * @param graphLoader - Async function that returns the child graph
-   * @param inheritanceModes - Optional per-port inheritance mode configuration
+   * @param options - Container options including id, label, and optional inheritanceModes
    * @returns A Promise that resolves to the child container
    *
    * @example
    * ```typescript
    * const pluginContainer = await container.createChildAsync(
-   *   () => import('./plugin-graph').then(m => m.PluginGraph)
+   *   () => import('./plugin-graph').then(m => m.PluginGraph),
+   *   { name: "Plugin Container" }
    * );
    *
    * // Use like a normal container
@@ -296,7 +420,7 @@ export type ContainerMembers<
     TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
   >(
     graphLoader: () => Promise<TChildGraph>,
-    inheritanceModes?: InheritanceModeConfig<TProvides | TExtends>
+    options: CreateChildOptions<TProvides | TExtends>
   ): Promise<
     Container<
       TProvides | TExtends,
@@ -316,13 +440,14 @@ export type ContainerMembers<
    *
    * @typeParam TChildGraph - The child graph type
    * @param graphLoader - Async function that returns the child graph
-   * @param inheritanceModes - Optional per-port inheritance mode configuration
+   * @param options - Container options including id, label, and optional inheritanceModes
    * @returns A LazyContainer that loads on first use
    *
    * @example
    * ```typescript
    * const lazyPlugin = container.createLazyChild(
-   *   () => import('./plugin-graph').then(m => m.PluginGraph)
+   *   () => import('./plugin-graph').then(m => m.PluginGraph),
+   *   { name: "Plugin Container" }
    * );
    *
    * // Graph not loaded yet
@@ -337,7 +462,7 @@ export type ContainerMembers<
     TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
   >(
     graphLoader: () => Promise<TChildGraph>,
-    inheritanceModes?: InheritanceModeConfig<TProvides | TExtends>
+    options: CreateChildOptions<TProvides | TExtends>
   ): LazyContainer<
     TProvides | TExtends,
     Exclude<InferGraphProvides<TChildGraph>, TProvides | TExtends>,
@@ -373,6 +498,26 @@ export type ContainerMembers<
   has(port: Port<unknown, string>): boolean;
 
   /**
+   * Container name - serves as both identifier and display label.
+   *
+   * Set via `createContainer(graph, { name })` or `createChild(graph, { name })`.
+   */
+  readonly name: string;
+
+  /**
+   * Parent container's name, null for root containers.
+   *
+   * For child containers, this is automatically derived from `parent.name`
+   * at creation time.
+   */
+  readonly parentName: string | null;
+
+  /**
+   * Container kind - "root" for root containers, "child" for child containers.
+   */
+  readonly kind: ContainerKind;
+
+  /**
    * Reference to the parent container.
    *
    * **Only available on child containers** (when `TExtends` is not `never`).
@@ -382,6 +527,50 @@ export type ContainerMembers<
   readonly parent: [TExtends] extends [never]
     ? never
     : Container<TProvides, Port<unknown, string>, TAsyncPorts, TPhase, TPlugins>;
+
+  // =========================================================================
+  // Built-in Plugin APIs (always present, zero ceremony access)
+  // =========================================================================
+
+  /**
+   * Inspector API for container state inspection and DevTools integration.
+   *
+   * Provides pull-based queries for container state, scope trees, and port resolution status.
+   * Always available on containers - no plugin configuration or symbol imports required.
+   *
+   * @example
+   * ```typescript
+   * const container = createContainer(graph, { name: "App" });
+   *
+   * // Direct property access - maximum discoverability
+   * const snapshot = container.inspector.getSnapshot();
+   * const ports = container.inspector.listPorts();
+   * const kind = container.inspector.getContainerKind();
+   * ```
+   */
+  readonly inspector: InspectorAPI;
+
+  /**
+   * Tracer API for resolution tracing and performance monitoring.
+   *
+   * Provides methods to retrieve traces, statistics, and subscribe to resolution events.
+   * Always available on containers - no plugin configuration or symbol imports required.
+   *
+   * @example
+   * ```typescript
+   * const container = createContainer(graph, { name: "App" });
+   *
+   * // Direct property access - maximum discoverability
+   * const traces = container.tracer.getTraces();
+   * const stats = container.tracer.getStats();
+   *
+   * // Subscribe to real-time traces
+   * container.tracer.subscribe((entry) => {
+   *   console.log(`Resolved ${entry.portName} in ${entry.duration}ms`);
+   * });
+   * ```
+   */
+  readonly tracer: TracingAPI;
 
   /**
    * Brand property for nominal typing.

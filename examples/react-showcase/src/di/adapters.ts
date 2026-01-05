@@ -110,7 +110,7 @@ export const ConfigAdapter = createAsyncAdapter({
   // No lifetime field - async adapters are always singletons
   factory: async (): Promise<Config> => {
     // Simulate loading config from API
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await new Promise(resolve => setTimeout(resolve, 3000));
     return {
       notificationDuration: 3000,
       maxMessages: 100,
@@ -132,6 +132,7 @@ export const LoggerAdapter = createAdapter({
   provides: LoggerPort,
   requires: [],
   lifetime: "singleton",
+  clonable: true,
   factory: () => ({
     log: (message: string): void => {
       console.log(`[ChatApp] ${message}`);
@@ -175,7 +176,7 @@ export const MessageStoreAdapter = createAdapter({
           timestamp: string;
         }>;
         // Convert timestamp strings back to Date objects
-        messages = parsed.map((m) => ({
+        messages = parsed.map(m => ({
           ...m,
           timestamp: new Date(m.timestamp),
         }));
@@ -189,7 +190,7 @@ export const MessageStoreAdapter = createAdapter({
 
     const notifyListeners = (): void => {
       const frozenMessages = Object.freeze([...messages]) as readonly Message[];
-      listeners.forEach((listener) => listener(frozenMessages));
+      listeners.forEach(listener => listener(frozenMessages));
     };
 
     const persistMessages = (): void => {

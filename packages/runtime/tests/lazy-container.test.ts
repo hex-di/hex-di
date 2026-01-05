@@ -97,10 +97,11 @@ function createExtensionGraph() {
 describe("createChildAsync", () => {
   it("loads graph and returns container", async () => {
     const parentGraph = createParentGraph();
-    const container = createContainer(parentGraph);
+    const container = createContainer(parentGraph, { name: "Test" });
 
-    const pluginContainer = await container.createChildAsync(() =>
-      Promise.resolve(createPluginGraph())
+    const pluginContainer = await container.createChildAsync(
+      () => Promise.resolve(createPluginGraph()),
+      { name: "Plugin" }
     );
 
     // Should be able to resolve from child
@@ -112,10 +113,11 @@ describe("createChildAsync", () => {
 
   it("returned container works like normal child container", async () => {
     const parentGraph = createParentGraph();
-    const container = createContainer(parentGraph);
+    const container = createContainer(parentGraph, { name: "Test" });
 
-    const pluginContainer = await container.createChildAsync(() =>
-      Promise.resolve(createPluginGraph())
+    const pluginContainer = await container.createChildAsync(
+      () => Promise.resolve(createPluginGraph()),
+      { name: "Plugin" }
     );
 
     // Can resolve parent ports
@@ -134,7 +136,7 @@ describe("createChildAsync", () => {
 
   it("passes inheritance modes correctly", async () => {
     const parentGraph = createParentGraph();
-    const container = createContainer(parentGraph);
+    const container = createContainer(parentGraph, { name: "Test" });
 
     // Resolve logger from parent first
     const parentLogger = container.resolve(LoggerPort);
@@ -142,7 +144,7 @@ describe("createChildAsync", () => {
     // Use extension graph (doesn't provide Logger) to test inheritance modes
     const childContainer = await container.createChildAsync(
       () => Promise.resolve(createExtensionGraph()),
-      { Logger: "isolated" }
+      { name: "Child", inheritanceModes: { Logger: "isolated" } }
     );
 
     // With isolated mode, child should have a different logger instance
@@ -154,10 +156,10 @@ describe("createChildAsync", () => {
 
   it("handles graph loader errors", async () => {
     const parentGraph = createParentGraph();
-    const container = createContainer(parentGraph);
+    const container = createContainer(parentGraph, { name: "Test" });
 
     await expect(
-      container.createChildAsync(() => Promise.reject(new Error("Load failed")))
+      container.createChildAsync(() => Promise.reject(new Error("Load failed")), { name: "Failed" })
     ).rejects.toThrow("Load failed");
 
     await container.dispose();
@@ -173,14 +175,14 @@ describe("createLazyChild", () => {
 
   beforeEach(() => {
     const parentGraph = createParentGraph();
-    parentContainer = createContainer(parentGraph);
+    parentContainer = createContainer(parentGraph, { name: "Test" });
   });
 
   describe("basic functionality", () => {
     it("returns immediately without loading", () => {
       const graphLoader = vi.fn(() => Promise.resolve(createPluginGraph()));
 
-      const lazyPlugin = parentContainer.createLazyChild(graphLoader);
+      const lazyPlugin = parentContainer.createLazyChild(graphLoader, { name: "Lazy" });
 
       // Should not have called graphLoader yet
       expect(graphLoader).not.toHaveBeenCalled();
@@ -190,7 +192,7 @@ describe("createLazyChild", () => {
     it("first resolve triggers load", async () => {
       const graphLoader = vi.fn(() => Promise.resolve(createPluginGraph()));
 
-      const lazyPlugin = parentContainer.createLazyChild(graphLoader);
+      const lazyPlugin = parentContainer.createLazyChild(graphLoader, { name: "Lazy" });
 
       const plugin = await lazyPlugin.resolve(PluginPort);
 
@@ -202,7 +204,7 @@ describe("createLazyChild", () => {
     it("subsequent resolves do not reload", async () => {
       const graphLoader = vi.fn(() => Promise.resolve(createPluginGraph()));
 
-      const lazyPlugin = parentContainer.createLazyChild(graphLoader);
+      const lazyPlugin = parentContainer.createLazyChild(graphLoader, { name: "Lazy" });
 
       await lazyPlugin.resolve(PluginPort);
       await lazyPlugin.resolve(PluginPort);
@@ -214,7 +216,7 @@ describe("createLazyChild", () => {
     it("resolveAsync works the same as resolve", async () => {
       const graphLoader = vi.fn(() => Promise.resolve(createPluginGraph()));
 
-      const lazyPlugin = parentContainer.createLazyChild(graphLoader);
+      const lazyPlugin = parentContainer.createLazyChild(graphLoader, { name: "Lazy" });
 
       const plugin = await lazyPlugin.resolveAsync(PluginPort);
 
@@ -227,7 +229,7 @@ describe("createLazyChild", () => {
     it("load() can be called explicitly", async () => {
       const graphLoader = vi.fn(() => Promise.resolve(createPluginGraph()));
 
-      const lazyPlugin = parentContainer.createLazyChild(graphLoader);
+      const lazyPlugin = parentContainer.createLazyChild(graphLoader, { name: "Lazy" });
 
       const container = await lazyPlugin.load();
 
@@ -242,7 +244,7 @@ describe("createLazyChild", () => {
     it("concurrent loads share same promise", async () => {
       const graphLoader = vi.fn(() => Promise.resolve(createPluginGraph()));
 
-      const lazyPlugin = parentContainer.createLazyChild(graphLoader);
+      const lazyPlugin = parentContainer.createLazyChild(graphLoader, { name: "Lazy" });
 
       // Start multiple loads concurrently
       const load1 = lazyPlugin.load();
@@ -262,8 +264,9 @@ describe("createLazyChild", () => {
 
   describe("has() behavior", () => {
     it("has() works before loading (delegates to parent)", () => {
-      const lazyPlugin = parentContainer.createLazyChild(() =>
-        Promise.resolve(createPluginGraph())
+      const lazyPlugin = parentContainer.createLazyChild(
+        () => Promise.resolve(createPluginGraph()),
+        { name: "Lazy" }
       );
 
       // Before loading, can check parent ports
@@ -273,8 +276,9 @@ describe("createLazyChild", () => {
     });
 
     it("has() works after loading (includes child graph)", async () => {
-      const lazyPlugin = parentContainer.createLazyChild(() =>
-        Promise.resolve(createPluginGraph())
+      const lazyPlugin = parentContainer.createLazyChild(
+        () => Promise.resolve(createPluginGraph()),
+        { name: "Lazy" }
       );
 
       await lazyPlugin.load();
@@ -288,7 +292,7 @@ describe("createLazyChild", () => {
     it("dispose() works before loading", async () => {
       const graphLoader = vi.fn(() => Promise.resolve(createPluginGraph()));
 
-      const lazyPlugin = parentContainer.createLazyChild(graphLoader);
+      const lazyPlugin = parentContainer.createLazyChild(graphLoader, { name: "Lazy" });
 
       await lazyPlugin.dispose();
 
@@ -297,8 +301,9 @@ describe("createLazyChild", () => {
     });
 
     it("dispose() disposes loaded container", async () => {
-      const lazyPlugin = parentContainer.createLazyChild(() =>
-        Promise.resolve(createPluginGraph())
+      const lazyPlugin = parentContainer.createLazyChild(
+        () => Promise.resolve(createPluginGraph()),
+        { name: "Lazy" }
       );
 
       await lazyPlugin.load();
@@ -308,8 +313,9 @@ describe("createLazyChild", () => {
     });
 
     it("dispose() prevents further operations", async () => {
-      const lazyPlugin = parentContainer.createLazyChild(() =>
-        Promise.resolve(createPluginGraph())
+      const lazyPlugin = parentContainer.createLazyChild(
+        () => Promise.resolve(createPluginGraph()),
+        { name: "Lazy" }
       );
 
       await lazyPlugin.dispose();
@@ -319,8 +325,9 @@ describe("createLazyChild", () => {
     });
 
     it("double dispose is safe", async () => {
-      const lazyPlugin = parentContainer.createLazyChild(() =>
-        Promise.resolve(createPluginGraph())
+      const lazyPlugin = parentContainer.createLazyChild(
+        () => Promise.resolve(createPluginGraph()),
+        { name: "Lazy" }
       );
 
       await lazyPlugin.dispose();
@@ -341,7 +348,7 @@ describe("createLazyChild", () => {
         return Promise.resolve(createPluginGraph());
       });
 
-      const lazyPlugin = parentContainer.createLazyChild(graphLoader);
+      const lazyPlugin = parentContainer.createLazyChild(graphLoader, { name: "Lazy" });
 
       // First load fails
       await expect(lazyPlugin.load()).rejects.toThrow("First load failed");
@@ -362,7 +369,7 @@ describe("createLazyChild", () => {
       // Use extension graph (doesn't provide Logger) to test inheritance modes
       const lazyExtension = parentContainer.createLazyChild(
         () => Promise.resolve(createExtensionGraph()),
-        { Logger: "isolated" }
+        { name: "Lazy", inheritanceModes: { Logger: "isolated" } }
       );
 
       // Load the container
@@ -384,9 +391,11 @@ describe("createLazyChild", () => {
 describe("LazyContainer type safety", () => {
   it("infers correct types for resolve", async () => {
     const parentGraph = createParentGraph();
-    const container = createContainer(parentGraph);
+    const container = createContainer(parentGraph, { name: "Test" });
 
-    const lazyPlugin = container.createLazyChild(() => Promise.resolve(createPluginGraph()));
+    const lazyPlugin = container.createLazyChild(() => Promise.resolve(createPluginGraph()), {
+      name: "Lazy",
+    });
 
     // Type should be inferred correctly
     const plugin = await lazyPlugin.resolve(PluginPort);
@@ -399,9 +408,11 @@ describe("LazyContainer type safety", () => {
 
   it("load() returns typed Container", async () => {
     const parentGraph = createParentGraph();
-    const container = createContainer(parentGraph);
+    const container = createContainer(parentGraph, { name: "Test" });
 
-    const lazyPlugin = container.createLazyChild(() => Promise.resolve(createPluginGraph()));
+    const lazyPlugin = container.createLazyChild(() => Promise.resolve(createPluginGraph()), {
+      name: "Lazy",
+    });
 
     const loadedContainer = await lazyPlugin.load();
 

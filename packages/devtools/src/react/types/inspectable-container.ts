@@ -13,14 +13,19 @@
  * // Can be stored as InspectableContainer
  * const inspectable: InspectableContainer = container;
  *
- * // Create inspector for the actual container
- * const inspector = createInspector(inspectable);
+ * // Use built-in inspector for basic inspection
+ * const snapshot = container.inspector.getSnapshot();
  * ```
  *
  * @packageDocumentation
  */
 
-import { INTERNAL_ACCESS, type ContainerInternalState } from "@hex-di/runtime";
+import {
+  INTERNAL_ACCESS,
+  type ContainerInternalState,
+  type InspectorAPI,
+  type TracingAPI,
+} from "@hex-di/runtime";
 
 // Re-export for consumers
 export { INTERNAL_ACCESS };
@@ -35,6 +40,8 @@ export { INTERNAL_ACCESS };
  * - Storing containers of different types in a single registry
  * - Creating RuntimeInspector for any container
  * - Type-safe access to container internals via INTERNAL_ACCESS
+ * - Auto-registration with DevTools using name/parentName/kind
+ * - Direct access to inspector and tracer via property-based API
  *
  * The interface uses a concrete return type (ContainerInternalState)
  * rather than generics, avoiding variance issues while maintaining
@@ -48,29 +55,79 @@ export interface InspectableContainer {
    * including singleton memo, adapter map, and child scopes.
    */
   readonly [INTERNAL_ACCESS]: () => ContainerInternalState;
+
+  /**
+   * Container name - serves as both identifier and display label.
+   *
+   * For root containers, this is set via createContainer options.
+   * For child containers, this is set via createChild options.
+   */
+  readonly name: string;
+
+  /**
+   * Parent container's name, null for root containers.
+   *
+   * Child containers automatically derive this from their parent's name.
+   */
+  readonly parentName: string | null;
+
+  /**
+   * Container kind - "root" for root containers, "child" for child containers.
+   */
+  readonly kind: "root" | "child";
+
+  /**
+   * Built-in inspector API for container state inspection.
+   *
+   * Provides pull-based queries for container state, scope trees, and port resolution status.
+   * Always available on containers - no plugin configuration required.
+   *
+   * For full DevTools functionality (subscriptions, child discovery, graph data),
+   * containers need the InspectorPlugin via `withInspector` wrapper which provides
+   * InspectorWithSubscription via the INSPECTOR symbol.
+   */
+  readonly inspector: InspectorAPI;
+
+  /**
+   * Built-in tracer API for resolution tracing.
+   *
+   * Provides methods to retrieve traces, statistics, and subscribe to resolution events.
+   * Always available on containers - no plugin configuration required.
+   */
+  readonly tracer: TracingAPI;
 }
 
 /**
  * Type guard to check if a value is an InspectableContainer.
  *
- * Uses the INTERNAL_ACCESS symbol presence to determine if an object
- * can be inspected. This is a runtime check that enables safe casting
- * of containers from external sources.
+ * Uses both property-based checks and symbol presence to determine if an object
+ * can be inspected. Prefers property-based checks for the new API pattern.
  *
  * @param value - The object to check
  * @returns true if value implements InspectableContainer
  *
  * @example
  * ```typescript
- * function inspectIfPossible(maybeContainer: object): Option<ContainerInspector> {
+ * function inspectIfPossible(maybeContainer: object): Option<ContainerSnapshot> {
  *   if (isInspectableContainer(maybeContainer)) {
- *     return Some(createInspector(maybeContainer));
+ *     // Use property-based API
+ *     return Some(maybeContainer.inspector.getSnapshot());
  *   }
  *   return None;
  * }
  * ```
  */
 export function isInspectableContainer(value: object): value is InspectableContainer {
+  // Check for property-based API (new pattern)
+  if (
+    "inspector" in value &&
+    value.inspector !== undefined &&
+    typeof (value.inspector as { getSnapshot?: unknown }).getSnapshot === "function"
+  ) {
+    return true;
+  }
+
+  // Fallback: check for INTERNAL_ACCESS symbol (legacy pattern)
   return (
     INTERNAL_ACCESS in value &&
     typeof (value as Record<symbol, unknown>)[INTERNAL_ACCESS] === "function"

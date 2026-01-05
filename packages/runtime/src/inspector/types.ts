@@ -57,12 +57,44 @@ export interface ContainerInternalState {
   /** Unique identifier for this container (e.g., "root", "child-1") */
   readonly containerId: string;
 
+  /** Human-readable container name (e.g., "App Root", "Chat Dashboard") */
+  readonly containerName: string;
+
   /**
    * Per-port inheritance modes for child containers.
    * Maps port name to inheritance mode (shared, forked, isolated).
    * Only present for child containers.
    */
   readonly inheritanceModes?: ReadonlyMap<string, InheritanceMode>;
+
+  /**
+   * Reference to the actual container wrapper object.
+   *
+   * Used by InspectorPlugin to access child container's INSPECTOR API directly
+   * when the child may not have been registered in the apiRegistry.
+   * Only present in child container snapshots within the childContainers array.
+   */
+  readonly wrapper?: unknown;
+
+  /**
+   * Set of port names that are overridden from the parent container.
+   *
+   * Enables DevTools to distinguish between:
+   * - own: Adapter registered directly (new port in this container)
+   * - inherited: Adapter from parent (not overridden)
+   * - overridden: Adapter replaces parent's adapter for the same port
+   *
+   * Only present for child containers. Empty set for root containers.
+   */
+  readonly overridePorts: ReadonlySet<string>;
+
+  /**
+   * Checks if a port name is an override of a parent adapter.
+   *
+   * @param portName - The port name to check
+   * @returns `true` if the port overrides a parent adapter, `false` otherwise
+   */
+  isOverride(portName: string): boolean;
 }
 
 /**
@@ -263,6 +295,9 @@ export interface ContainerSnapshot {
 
   /** Hierarchical scope tree starting from the container */
   readonly scopes: ScopeTree;
+
+  /** Human-readable container name for DevTools display */
+  readonly containerName: string;
 }
 
 /**

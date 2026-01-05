@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { createMockWebSocket, type MockWebSocketActions } from "@hex-di/devtools-testing";
+import { createMockWebSocket, type MockWebSocketActions } from "@hex-di/devtools-core/testing";
 import {
   Methods,
   createSuccessResponse,

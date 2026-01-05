@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import type { ContainerKind } from "@hex-di/devtools-core";
+import type { ContainerKind } from "@hex-di/plugin";
 
 // =============================================================================
 // Discriminated Union Types

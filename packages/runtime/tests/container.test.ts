@@ -50,7 +50,7 @@ describe("createContainer", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     expect(Object.isFrozen(container)).toBe(true);
   });
@@ -64,7 +64,7 @@ describe("createContainer", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     expect(typeof container.resolve).toBe("function");
     expect(typeof container.createScope).toBe("function");
@@ -81,7 +81,7 @@ describe("createContainer", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     const logger = container.resolve(LoggerPort);
     logger.log("test");
@@ -98,7 +98,7 @@ describe("createContainer", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Cast to test runtime behavior with an unregistered port
     const resolve = container.resolve as (port: Port<unknown, string>) => unknown;
@@ -115,7 +115,7 @@ describe("createContainer", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     const first = container.resolve(LoggerPort);
     const second = container.resolve(LoggerPort);
@@ -134,7 +134,7 @@ describe("createContainer", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     const first = container.resolve(LoggerPort);
     const second = container.resolve(LoggerPort);
@@ -154,7 +154,7 @@ describe("createContainer", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Resolve to trigger instance creation
     container.resolve(LoggerPort);
@@ -173,7 +173,7 @@ describe("createContainer", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     await container.dispose();
 
@@ -189,7 +189,7 @@ describe("createContainer", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     expect(() => container.resolve(RequestContextPort)).toThrow(ScopeRequiredError);
   });
@@ -223,7 +223,7 @@ describe("createContainer with dependencies", () => {
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(UserServiceAdapter).build();
 
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
     const userService = container.resolve(UserServicePort);
 
     userService.getUser("123");

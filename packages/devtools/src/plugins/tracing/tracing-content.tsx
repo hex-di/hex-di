@@ -1,0 +1,665 @@
+/**
+ * TracingPluginContent Component
+ *
+ * The content component for the Tracing plugin. Accepts PluginProps
+ * and renders the resolution tracing section with timeline, tree,
+ * and summary views.
+ *
+ * Dispatches commands to the runtime for:
+ * - Pause/resume tracing
+ * - Clear all traces
+ * - Set slow resolution threshold
+ *
+ * Uses the tracingAPI prop for trace data and the runtime state
+ * for tracing configuration (paused, threshold).
+ *
+ * @packageDocumentation
+ */
+
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  type ReactElement,
+  type CSSProperties,
+} from "react";
+import { tracingStyles, emptyStyles } from "../../react/styles.js";
+import type { TraceEntry, TraceStats } from "@hex-di/plugin";
+import type { PluginProps } from "../../runtime/plugin-types.js";
+import {
+  TracingControlsBar,
+  type TracingFilters,
+  type TracingSortOption,
+  type TracingExportFormat,
+} from "../../react/tracing-controls-bar.js";
+import { SummaryStatsView } from "../../react/summary-stats-view.js";
+import { TimelineView } from "../../react/timeline-view.js";
+import { TreeView, type TimeDisplayMode } from "../../react/tree-view.js";
+
+// =============================================================================
+// Types
+// =============================================================================
+
+/**
+ * Sub-view identifiers for the tracing section.
+ */
+export type TracingViewId = "timeline" | "tree" | "summary";
+
+/**
+ * Configuration for a tracing sub-view tab.
+ */
+interface ViewTabConfig {
+  readonly id: TracingViewId;
+  readonly label: string;
+}
+
+// =============================================================================
+// Constants
+// =============================================================================
+
+/**
+ * View tab configuration.
+ */
+const VIEW_TAB_CONFIGS: readonly ViewTabConfig[] = [
+  { id: "timeline", label: "Timeline" },
+  { id: "tree", label: "Tree" },
+  { id: "summary", label: "Summary" },
+] as const;
+
+/**
+ * Default filter state.
+ */
+const DEFAULT_FILTERS: TracingFilters = {
+  searchQuery: "",
+  lifetime: null,
+  status: null,
+  slowOnly: false,
+};
+
+/**
+ * Default sort option.
+ */
+const DEFAULT_SORT: TracingSortOption = "chronological";
+
+/**
+ * Local styles for the view toggle tabs.
+ */
+const viewToggleStyles: {
+  readonly container: CSSProperties;
+  readonly tab: CSSProperties;
+  readonly tabActive: CSSProperties;
+} = {
+  container: {
+    ...tracingStyles.viewToggleContainer,
+    display: "flex",
+    gap: "0",
+    marginBottom: "12px",
+    borderBottom: "1px solid var(--hex-devtools-border, #45475a)",
+  },
+  tab: {
+    ...tracingStyles.viewToggleTab,
+    padding: "8px 16px",
+    fontSize: "11px",
+    fontWeight: 500,
+    color: "var(--hex-devtools-text-muted, #a6adc8)",
+    backgroundColor: "transparent",
+    border: "none",
+    borderBottom: "2px solid transparent",
+    cursor: "pointer",
+    transition: "color 0.15s ease, border-color 0.15s ease",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+  },
+  tabActive: {
+    ...tracingStyles.viewToggleTabActive,
+    color: "var(--hex-devtools-accent, #89b4fa)",
+    borderBottom: "2px solid var(--hex-devtools-accent, #89b4fa)",
+  },
+};
+
+// =============================================================================
+// Helper Functions
+// =============================================================================
+
+/**
+ * Filters traces based on the current filter state.
+ */
+function filterTraces(
+  traces: readonly TraceEntry[],
+  filters: TracingFilters,
+  threshold: number
+): readonly TraceEntry[] {
+  return traces.filter(trace => {
+    // Search query filter (case-insensitive partial match)
+    if (
+      filters.searchQuery.length > 0 &&
+      !trace.portName.toLowerCase().includes(filters.searchQuery.toLowerCase())
+    ) {
+      return false;
+    }
+
+    // Lifetime filter
+    if (filters.lifetime !== null && trace.lifetime !== filters.lifetime) {
+      return false;
+    }
+
+    // Status filter (fresh/cached)
+    if (filters.status === "fresh" && trace.isCacheHit) {
+      return false;
+    }
+    if (filters.status === "cached" && !trace.isCacheHit) {
+      return false;
+    }
+
+    // Slow only filter
+    if (filters.slowOnly && trace.duration < threshold) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+/**
+ * Sorts traces based on the current sort option.
+ */
+function sortTraces(traces: readonly TraceEntry[], sort: TracingSortOption): readonly TraceEntry[] {
+  const sorted = [...traces];
+
+  switch (sort) {
+    case "chronological":
+      sorted.sort((a, b) => a.startTime - b.startTime);
+      break;
+    case "slowest":
+      sorted.sort((a, b) => b.duration - a.duration);
+      break;
+    case "fastest":
+      sorted.sort((a, b) => a.duration - b.duration);
+      break;
+    case "alphabetical":
+      sorted.sort((a, b) => a.portName.localeCompare(b.portName));
+      break;
+    case "alphabetical-desc":
+      sorted.sort((a, b) => b.portName.localeCompare(a.portName));
+      break;
+    case "resolution-order":
+      sorted.sort((a, b) => a.order - b.order);
+      break;
+  }
+
+  return sorted;
+}
+
+/**
+ * Creates empty stats object.
+ */
+function createEmptyStats(): TraceStats {
+  return {
+    totalResolutions: 0,
+    averageDuration: 0,
+    cacheHitRate: 0,
+    slowCount: 0,
+    sessionStart: Date.now(),
+    totalDuration: 0,
+  };
+}
+
+/**
+ * Exports trace data in the specified format.
+ */
+function exportTraces(
+  traces: readonly TraceEntry[],
+  stats: TraceStats,
+  format: TracingExportFormat
+): void {
+  switch (format) {
+    case "json": {
+      const data = JSON.stringify({ traces, stats }, null, 2);
+      const blob = new Blob([data], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `traces-${Date.now()}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      break;
+    }
+    case "csv": {
+      const headers = [
+        "id",
+        "portName",
+        "lifetime",
+        "startTime",
+        "duration",
+        "isCacheHit",
+        "parentId",
+        "scopeId",
+        "order",
+        "isPinned",
+      ];
+      const rows = traces.map(t => [
+        t.id,
+        t.portName,
+        t.lifetime,
+        t.startTime.toString(),
+        t.duration.toString(),
+        t.isCacheHit.toString(),
+        t.parentId ?? "",
+        t.scopeId ?? "",
+        t.order.toString(),
+        t.isPinned.toString(),
+      ]);
+      const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `traces-${Date.now()}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      break;
+    }
+    case "clipboard": {
+      const summary = `Resolution Tracing Summary
+========================
+Total Resolutions: ${stats.totalResolutions}
+Average Duration: ${stats.averageDuration.toFixed(2)}ms
+Cache Hit Rate: ${(stats.cacheHitRate * 100).toFixed(1)}%
+Slow Count: ${stats.slowCount}
+Total Duration: ${stats.totalDuration.toFixed(2)}ms
+
+Top 5 Slowest:
+${traces
+  .slice()
+  .sort((a, b) => b.duration - a.duration)
+  .slice(0, 5)
+  .map((t, i) => `${i + 1}. ${t.portName}: ${t.duration.toFixed(2)}ms`)
+  .join("\n")}
+`;
+      navigator.clipboard.writeText(summary).catch(() => {
+        // Fallback if clipboard API fails
+        console.warn("Failed to copy to clipboard");
+      });
+      break;
+    }
+  }
+}
+
+// =============================================================================
+// ViewToggleTabs Component
+// =============================================================================
+
+/**
+ * Props for the ViewToggleTabs component.
+ */
+interface ViewToggleTabsProps {
+  readonly activeView: TracingViewId;
+  readonly onViewChange: (viewId: TracingViewId) => void;
+}
+
+/**
+ * View toggle tabs for switching between Timeline, Tree, and Summary views.
+ */
+function ViewToggleTabs({ activeView, onViewChange }: ViewToggleTabsProps): ReactElement {
+  return (
+    <div
+      data-testid="tracing-view-tabs"
+      role="tablist"
+      aria-label="Tracing views"
+      style={viewToggleStyles.container}
+    >
+      {VIEW_TAB_CONFIGS.map(tab => {
+        const isActive = activeView === tab.id;
+        const tabStyle: CSSProperties = {
+          ...viewToggleStyles.tab,
+          ...(isActive ? viewToggleStyles.tabActive : {}),
+        };
+
+        return (
+          <button
+            key={tab.id}
+            role="tab"
+            id={`tracing-tab-${tab.id}`}
+            aria-selected={isActive}
+            aria-controls={`tracing-panel-${tab.id}`}
+            tabIndex={isActive ? 0 : -1}
+            style={tabStyle}
+            onClick={() => onViewChange(tab.id)}
+            type="button"
+          >
+            {tab.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// =============================================================================
+// Empty State Component
+// =============================================================================
+
+/**
+ * Empty state when no traces are recorded.
+ */
+function EmptyState(): ReactElement {
+  return (
+    <div data-testid="tracing-empty-state" style={emptyStyles.container}>
+      <div style={{ fontWeight: 500, marginBottom: "8px" }}>No resolution traces recorded.</div>
+      <div
+        style={{
+          fontSize: "12px",
+          color: "var(--hex-devtools-text-muted, #a6adc8)",
+          maxWidth: "280px",
+          margin: "0 auto",
+        }}
+      >
+        Traces are captured when services are resolved from a tracing-enabled container. Use
+        createTracingContainer() to enable tracing.
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// TracingPluginContent Component
+// =============================================================================
+
+/**
+ * Content component for the Tracing plugin.
+ *
+ * Displays the resolution tracing section with:
+ * - ViewToggleTabs for Timeline/Tree/Summary switching
+ * - TracingControlsBar for filtering, sorting, and threshold controls
+ * - Real-time trace data subscription via TracingAPI
+ * - Empty state when no traces
+ * - View container for active sub-view
+ *
+ * All tracing controls dispatch commands to the runtime:
+ * - `pauseTracing` / `resumeTracing` for pause/resume toggle
+ * - `setThreshold` for slow resolution threshold
+ * - `clearTraces` for clearing all recorded traces
+ *
+ * @example
+ * ```tsx
+ * import { TracingPluginContent } from './tracing-content';
+ *
+ * function MyTracingPlugin(props: PluginProps) {
+ *   return <TracingPluginContent {...props} />;
+ * }
+ * ```
+ */
+export function TracingPluginContent(props: PluginProps): ReactElement {
+  const { runtime, state, tracingAPI } = props;
+
+  // Get threshold from runtime state
+  const threshold = state.tracingThreshold;
+
+  // View state
+  const [activeView, setActiveView] = useState<TracingViewId>("timeline");
+
+  // Controls state (local filter/sort state)
+  const [filters, setFilters] = useState<TracingFilters>(DEFAULT_FILTERS);
+  const [sort, setSort] = useState<TracingSortOption>(DEFAULT_SORT);
+
+  // Trace data state
+  const [traces, setTraces] = useState<readonly TraceEntry[]>([]);
+  const [stats, setStats] = useState<TraceStats>(createEmptyStats);
+
+  // TreeView state
+  const [timeDisplayMode, setTimeDisplayMode] = useState<TimeDisplayMode>("self");
+
+  // Ref to schedule deferred updates (avoid state updates during render)
+  const rafIdRef = useRef<number | null>(null);
+
+  // Derive recording state from runtime state (not from tracingAPI)
+  const isRecording = !state.tracingPaused;
+
+  // Subscribe to trace updates when tracingAPI is provided
+  useEffect(() => {
+    if (tracingAPI === undefined) {
+      return;
+    }
+
+    // Initial load of existing traces
+    setTraces(tracingAPI.getTraces());
+    setStats(tracingAPI.getStats());
+
+    // Subscribe to new traces
+    const unsubscribe = tracingAPI.subscribe(() => {
+      // Defer state update to next frame to avoid updating during render
+      // This prevents "Cannot update a component while rendering a different component" warning
+      if (rafIdRef.current === null) {
+        rafIdRef.current = requestAnimationFrame(() => {
+          rafIdRef.current = null;
+          setTraces(tracingAPI.getTraces());
+          setStats(tracingAPI.getStats());
+        });
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+    };
+  }, [tracingAPI]);
+
+  // Compute filtered and sorted traces
+  const processedTraces = useMemo(() => {
+    const filtered = filterTraces(traces, filters, threshold);
+    return sortTraces(filtered, sort);
+  }, [traces, filters, sort, threshold]);
+
+  // Compute total duration for controls bar
+  const totalDuration = useMemo(() => {
+    return traces.reduce((sum, t) => sum + t.duration, 0);
+  }, [traces]);
+
+  // Handlers
+  const handleViewChange = useCallback((viewId: TracingViewId) => {
+    setActiveView(viewId);
+  }, []);
+
+  const handleFiltersChange = useCallback((newFilters: TracingFilters) => {
+    setFilters(newFilters);
+  }, []);
+
+  const handleSortChange = useCallback((newSort: TracingSortOption) => {
+    setSort(newSort);
+  }, []);
+
+  // Threshold changes dispatch to runtime
+  const handleThresholdChange = useCallback(
+    (newThreshold: number) => {
+      runtime.dispatch({ type: "setThreshold", value: newThreshold });
+    },
+    [runtime]
+  );
+
+  // Clear dispatches to runtime
+  const handleClear = useCallback(() => {
+    runtime.dispatch({ type: "clearTraces" });
+    // Also clear local state immediately for responsiveness
+    if (tracingAPI !== undefined) {
+      tracingAPI.clear();
+      setTraces([]);
+      setStats(createEmptyStats());
+    }
+  }, [runtime, tracingAPI]);
+
+  // Pause/resume dispatches to runtime
+  const handlePauseToggle = useCallback(() => {
+    if (state.tracingPaused) {
+      runtime.dispatch({ type: "resumeTracing" });
+    } else {
+      runtime.dispatch({ type: "pauseTracing" });
+    }
+    // Also update the tracingAPI for immediate effect
+    if (tracingAPI !== undefined) {
+      if (state.tracingPaused) {
+        tracingAPI.resume();
+      } else {
+        tracingAPI.pause();
+      }
+    }
+  }, [runtime, state.tracingPaused, tracingAPI]);
+
+  const handleExport = useCallback(
+    (format: TracingExportFormat) => {
+      exportTraces(processedTraces, stats, format);
+    },
+    [processedTraces, stats]
+  );
+
+  const handleNavigateToTrace = useCallback((traceId: string) => {
+    // Switch to timeline view and potentially highlight the trace
+    // For now, just switch to timeline view
+    setActiveView("timeline");
+    // In the future, this could set a selectedTraceId state
+    // to highlight the trace in the timeline
+    void traceId;
+  }, []);
+
+  // TimelineView handlers
+  const handleTogglePin = useCallback(
+    (traceId: string) => {
+      if (tracingAPI === undefined) {
+        return;
+      }
+      // Find the trace to check its current pin status
+      const trace = traces.find(t => t.id === traceId);
+      if (trace === undefined) {
+        return;
+      }
+      if (trace.isPinned) {
+        tracingAPI.unpin(traceId);
+      } else {
+        tracingAPI.pin(traceId);
+      }
+      // Refresh traces to reflect the updated pin status
+      setTraces(tracingAPI.getTraces());
+    },
+    [tracingAPI, traces]
+  );
+
+  const handleViewInTree = useCallback((traceId: string) => {
+    setActiveView("tree");
+    // In the future, this could focus/expand the trace in tree view
+    void traceId;
+  }, []);
+
+  // TreeView handlers
+  const handleViewInTimeline = useCallback((traceId: string) => {
+    setActiveView("timeline");
+    // In the future, this could highlight the trace in timeline view
+    void traceId;
+  }, []);
+
+  const handleTraceSelect = useCallback((traceId: string) => {
+    // For now, just log selection - could be used for cross-view highlighting
+    void traceId;
+  }, []);
+
+  const handleTimeDisplayModeChange = useCallback((mode: TimeDisplayMode) => {
+    setTimeDisplayMode(mode);
+  }, []);
+
+  // Determine if we have traces to display
+  const hasTraces = traces.length > 0;
+
+  /**
+   * Render the active view content.
+   */
+  const renderActiveView = (): ReactElement => {
+    if (!hasTraces && tracingAPI === undefined) {
+      return <EmptyState />;
+    }
+
+    switch (activeView) {
+      case "timeline":
+        if (!hasTraces) {
+          return <EmptyState />;
+        }
+        return (
+          <TimelineView
+            traces={processedTraces}
+            threshold={threshold}
+            totalDuration={totalDuration}
+            onTogglePin={handleTogglePin}
+            onViewInTree={handleViewInTree}
+          />
+        );
+
+      case "tree":
+        if (!hasTraces) {
+          return <EmptyState />;
+        }
+        return (
+          <TreeView
+            traces={processedTraces}
+            threshold={threshold}
+            timeDisplayMode={timeDisplayMode}
+            onTraceSelect={handleTraceSelect}
+            onViewInTimeline={handleViewInTimeline}
+            onTimeDisplayModeChange={handleTimeDisplayModeChange}
+          />
+        );
+
+      case "summary":
+        return (
+          <SummaryStatsView
+            traces={processedTraces}
+            stats={stats}
+            threshold={threshold}
+            onNavigateToTrace={handleNavigateToTrace}
+            onExport={handleExport}
+          />
+        );
+
+      default: {
+        // Exhaustive check
+        const _exhaustive: never = activeView;
+        return _exhaustive;
+      }
+    }
+  };
+
+  return (
+    <div data-testid="tab-content-tracing" style={tracingStyles.container}>
+      {/* Controls Bar - only show when tracingAPI is connected or we have traces */}
+      {(tracingAPI !== undefined || hasTraces) && (
+        <TracingControlsBar
+          filters={filters}
+          sort={sort}
+          threshold={threshold}
+          isRecording={isRecording}
+          traceCount={traces.length}
+          totalDuration={totalDuration}
+          onFiltersChange={handleFiltersChange}
+          onSortChange={handleSortChange}
+          onThresholdChange={handleThresholdChange}
+          onClear={handleClear}
+          onPauseToggle={handlePauseToggle}
+          onExport={handleExport}
+        />
+      )}
+
+      {/* View Toggle Tabs */}
+      <ViewToggleTabs activeView={activeView} onViewChange={handleViewChange} />
+
+      {/* Active View Content */}
+      <div
+        id={`tracing-panel-${activeView}`}
+        role="tabpanel"
+        aria-labelledby={`tracing-tab-${activeView}`}
+        style={tracingStyles.viewContent}
+      >
+        {renderActiveView()}
+      </div>
+    </div>
+  );
+}

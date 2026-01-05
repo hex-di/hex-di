@@ -1,8 +1,8 @@
 /**
- * Tests for DevToolsFloating React component.
+ * Tests for HexDiDevTools React component.
  *
  * These tests verify:
- * 1. DevToolsFloating renders toggle button by default
+ * 1. HexDiDevTools renders toggle button by default
  * 2. Clicking toggle expands to full panel
  * 3. Position prop affects placement
  * 4. localStorage state persistence works
@@ -15,7 +15,9 @@ import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import React from "react";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "@hex-di/graph";
-import { HexDiDevTools } from "../src/react/devtools-floating.js";
+import { createContainer, pipe, createPluginWrapper } from "@hex-di/runtime";
+import { InspectorPlugin } from "@hex-di/runtime";
+import { HexDiDevTools } from "../src/react/hex-di-devtools.js";
 
 // =============================================================================
 // Test Fixtures
@@ -32,10 +34,12 @@ interface Database {
 const LoggerPort = createPort<"Logger", Logger>("Logger");
 const DatabasePort = createPort<"Database", Database>("Database");
 
+const withInspector = createPluginWrapper(InspectorPlugin);
+
 /**
- * Creates a test graph with basic adapters.
+ * Creates a test container with InspectorPlugin installed.
  */
-function createTestGraph() {
+function createTestContainer() {
   const LoggerAdapter = createAdapter({
     provides: LoggerPort,
     requires: [],
@@ -50,7 +54,17 @@ function createTestGraph() {
     factory: () => ({ query: () => ({}) }),
   });
 
-  return GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
+  const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
+
+  return pipe(createContainer(graph, { name: "Test Container" }), withInspector);
+}
+
+/**
+ * Creates an empty test container with InspectorPlugin installed.
+ */
+function createEmptyTestContainer() {
+  const graph = GraphBuilder.create().build();
+  return pipe(createContainer(graph, { name: "Empty Container" }), withInspector);
 }
 
 // =============================================================================
@@ -85,10 +99,10 @@ function createLocalStorageMock() {
 }
 
 // =============================================================================
-// DevToolsFloating Basic Tests
+// HexDiDevTools Basic Tests
 // =============================================================================
 
-describe("DevToolsFloating", () => {
+describe("HexDiDevTools", () => {
   let localStorageMock: ReturnType<typeof createLocalStorageMock>;
 
   beforeEach(() => {
@@ -108,9 +122,9 @@ describe("DevToolsFloating", () => {
   });
 
   it("renders toggle button by default", () => {
-    const graph = createTestGraph();
+    const container = createTestContainer();
 
-    render(<HexDiDevTools graph={graph} />);
+    render(<HexDiDevTools container={container} />);
 
     // Should render the toggle button
     const toggleButton = screen.getByTestId("devtools-floating-toggle");
@@ -120,9 +134,9 @@ describe("DevToolsFloating", () => {
   });
 
   it("clicking toggle expands to full panel", () => {
-    const graph = createTestGraph();
+    const container = createTestContainer();
 
-    render(<HexDiDevTools graph={graph} />);
+    render(<HexDiDevTools container={container} />);
 
     // Initially panel should not be visible
     expect(screen.queryByTestId("devtools-panel")).toBeNull();
@@ -143,49 +157,49 @@ describe("DevToolsFloating", () => {
   });
 
   it("position prop affects placement - bottom-right (default)", () => {
-    const graph = createTestGraph();
+    const container = createTestContainer();
 
-    render(<HexDiDevTools graph={graph} position="bottom-right" />);
+    render(<HexDiDevTools container={container} position="bottom-right" />);
 
-    const container = screen.getByTestId("devtools-floating-container");
-    expect(container.style.bottom).toBe("16px");
-    expect(container.style.right).toBe("16px");
+    const wrapper = screen.getByTestId("devtools-floating-container");
+    expect(wrapper.style.bottom).toBe("16px");
+    expect(wrapper.style.right).toBe("16px");
   });
 
   it("position prop affects placement - bottom-left", () => {
-    const graph = createTestGraph();
+    const container = createTestContainer();
 
-    render(<HexDiDevTools graph={graph} position="bottom-left" />);
+    render(<HexDiDevTools container={container} position="bottom-left" />);
 
-    const container = screen.getByTestId("devtools-floating-container");
-    expect(container.style.bottom).toBe("16px");
-    expect(container.style.left).toBe("16px");
+    const wrapper = screen.getByTestId("devtools-floating-container");
+    expect(wrapper.style.bottom).toBe("16px");
+    expect(wrapper.style.left).toBe("16px");
   });
 
   it("position prop affects placement - top-right", () => {
-    const graph = createTestGraph();
+    const container = createTestContainer();
 
-    render(<HexDiDevTools graph={graph} position="top-right" />);
+    render(<HexDiDevTools container={container} position="top-right" />);
 
-    const container = screen.getByTestId("devtools-floating-container");
-    expect(container.style.top).toBe("16px");
-    expect(container.style.right).toBe("16px");
+    const wrapper = screen.getByTestId("devtools-floating-container");
+    expect(wrapper.style.top).toBe("16px");
+    expect(wrapper.style.right).toBe("16px");
   });
 
   it("position prop affects placement - top-left", () => {
-    const graph = createTestGraph();
+    const container = createTestContainer();
 
-    render(<HexDiDevTools graph={graph} position="top-left" />);
+    render(<HexDiDevTools container={container} position="top-left" />);
 
-    const container = screen.getByTestId("devtools-floating-container");
-    expect(container.style.top).toBe("16px");
-    expect(container.style.left).toBe("16px");
+    const wrapper = screen.getByTestId("devtools-floating-container");
+    expect(wrapper.style.top).toBe("16px");
+    expect(wrapper.style.left).toBe("16px");
   });
 
   it("localStorage state persistence - saves open state", () => {
-    const graph = createTestGraph();
+    const container = createTestContainer();
 
-    render(<HexDiDevTools graph={graph} />);
+    render(<HexDiDevTools container={container} />);
 
     // Open the panel
     const toggleButton = screen.getByTestId("devtools-floating-toggle");
@@ -196,24 +210,24 @@ describe("DevToolsFloating", () => {
   });
 
   it("localStorage state persistence - restores open state on mount", () => {
-    const graph = createTestGraph();
+    const container = createTestContainer();
 
     // Pre-set localStorage value before mounting
     localStorageMock._preset("hex-di-devtools-open", "true");
 
-    render(<HexDiDevTools graph={graph} />);
+    render(<HexDiDevTools container={container} />);
 
     // Panel should be open due to localStorage state
     expect(screen.getByTestId("devtools-panel")).toBeDefined();
   });
 
   it("localStorage state persistence - saves closed state", () => {
-    const graph = createTestGraph();
+    const container = createTestContainer();
 
     // Start with open state
     localStorageMock._preset("hex-di-devtools-open", "true");
 
-    render(<HexDiDevTools graph={graph} />);
+    render(<HexDiDevTools container={container} />);
 
     // Close the panel
     const closeButton = screen.getByTestId("devtools-floating-close");
@@ -224,9 +238,9 @@ describe("DevToolsFloating", () => {
   });
 
   it("DevToolsPanel is rendered when expanded with correct props", () => {
-    const graph = createTestGraph();
+    const container = createTestContainer();
 
-    render(<HexDiDevTools graph={graph} />);
+    render(<HexDiDevTools container={container} />);
 
     // Open the panel
     const toggleButton = screen.getByTestId("devtools-floating-toggle");
@@ -243,10 +257,10 @@ describe("DevToolsFloating", () => {
 });
 
 // =============================================================================
-// DevToolsFloating Production Mode Tests
+// HexDiDevTools Production Mode Tests
 // =============================================================================
 
-describe("DevToolsFloating production mode", () => {
+describe("HexDiDevTools production mode", () => {
   let localStorageMock: ReturnType<typeof createLocalStorageMock>;
 
   beforeEach(() => {
@@ -266,9 +280,9 @@ describe("DevToolsFloating production mode", () => {
   it("renders null in production mode", () => {
     vi.stubEnv("NODE_ENV", "production");
 
-    const graph = createTestGraph();
+    const diContainer = createTestContainer();
 
-    const { container } = render(<HexDiDevTools graph={graph} />);
+    const { container } = render(<HexDiDevTools container={diContainer} />);
 
     // Should render nothing (container should be empty)
     expect(container.firstChild).toBeNull();
@@ -278,10 +292,10 @@ describe("DevToolsFloating production mode", () => {
 });
 
 // =============================================================================
-// DevToolsFloating Edge Cases
+// HexDiDevTools Edge Cases
 // =============================================================================
 
-describe("DevToolsFloating edge cases", () => {
+describe("HexDiDevTools edge cases", () => {
   let localStorageMock: ReturnType<typeof createLocalStorageMock>;
 
   beforeEach(() => {
@@ -299,12 +313,12 @@ describe("DevToolsFloating edge cases", () => {
     vi.unstubAllEnvs();
   });
 
-  it("renders with empty graph", () => {
-    const graph = GraphBuilder.create().build();
+  it("renders with empty container", () => {
+    const container = createEmptyTestContainer();
 
-    render(<HexDiDevTools graph={graph} />);
+    render(<HexDiDevTools container={container} />);
 
-    // Should render the toggle button even with empty graph
+    // Should render the toggle button even with empty container
     expect(screen.getByTestId("devtools-floating-toggle")).toBeDefined();
 
     // Open the panel
@@ -316,12 +330,12 @@ describe("DevToolsFloating edge cases", () => {
   });
 
   it("default position is bottom-right when not specified", () => {
-    const graph = createTestGraph();
+    const container = createTestContainer();
 
-    render(<HexDiDevTools graph={graph} />);
+    render(<HexDiDevTools container={container} />);
 
-    const container = screen.getByTestId("devtools-floating-container");
-    expect(container.style.bottom).toBe("16px");
-    expect(container.style.right).toBe("16px");
+    const wrapper = screen.getByTestId("devtools-floating-container");
+    expect(wrapper.style.bottom).toBe("16px");
+    expect(wrapper.style.right).toBe("16px");
   });
 });

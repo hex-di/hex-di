@@ -121,7 +121,7 @@ describe("Disposal LIFO ordering", () => {
       .provide(CacheAdapter)
       .build();
 
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Resolve in order: Logger, Database, Cache
     container.resolve(LoggerPort);
@@ -162,7 +162,7 @@ describe("Disposal LIFO ordering", () => {
       .provide(SessionAdapter)
       .build();
 
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
     const scope = container.createScope();
 
     // Resolve in order: RequestContext, SessionStore
@@ -190,7 +190,7 @@ describe("Disposal state tracking", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     await container.dispose();
 
@@ -207,7 +207,7 @@ describe("Disposal state tracking", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
     const scope = container.createScope();
 
     await scope.dispose();
@@ -225,7 +225,7 @@ describe("Disposal state tracking", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // First resolve succeeds
     const logger = container.resolve(LoggerPort);
@@ -254,7 +254,7 @@ describe("Disposal state tracking", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
     const scope = container.createScope();
 
     // First resolve succeeds
@@ -307,7 +307,7 @@ describe("Child scope cascade disposal", () => {
       .provide(SessionAdapter)
       .build();
 
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
     const parentScope = container.createScope();
     const childScope = parentScope.createScope();
 
@@ -362,7 +362,7 @@ describe("Child scope cascade disposal", () => {
       .provide(SessionAdapter)
       .build();
 
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Resolve singleton
     container.resolve(LoggerPort);
@@ -399,7 +399,7 @@ describe("Child scope cascade disposal", () => {
     });
 
     const graphWithId = GraphBuilder.create().provide(RequestContextAdapterWithId).build();
-    const containerWithId = createContainer(graphWithId);
+    const containerWithId = createContainer(graphWithId, { name: "Test" });
 
     const nestedScope1 = containerWithId.createScope();
     const nestedScope2 = nestedScope1.createScope();
@@ -462,7 +462,7 @@ describe("Finalizer error handling", () => {
       .provide(CacheAdapter)
       .build();
 
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     container.resolve(LoggerPort);
     container.resolve(DatabasePort);
@@ -512,7 +512,7 @@ describe("Finalizer error handling", () => {
       .provide(CacheAdapter)
       .build();
 
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     container.resolve(LoggerPort);
     container.resolve(DatabasePort);
@@ -565,7 +565,7 @@ describe("Async finalizer support", () => {
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
 
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     container.resolve(LoggerPort);
     container.resolve(DatabasePort);
@@ -605,7 +605,7 @@ describe("Async finalizer support", () => {
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
 
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Resolve in order: Logger first, Database second
     container.resolve(LoggerPort);
@@ -631,7 +631,7 @@ describe("Async finalizer support", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     container.resolve(LoggerPort);
 
@@ -665,7 +665,7 @@ describe("Idempotent disposal", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     container.resolve(LoggerPort);
 
@@ -692,7 +692,7 @@ describe("Idempotent disposal", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
     const scope = container.createScope();
 
     scope.resolve(RequestContextPort);
@@ -715,7 +715,7 @@ describe("Idempotent disposal", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     // Multiple dispose calls should not throw
     await container.dispose();
@@ -736,7 +736,7 @@ describe("Idempotent disposal", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
 
     container.resolve(LoggerPort);
 

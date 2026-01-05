@@ -7,11 +7,10 @@
  * @packageDocumentation
  */
 
-import React, { type ReactElement, type CSSProperties } from "react";
-import { useContainerList } from "./hooks/use-container-list.js";
-import type { ContainerEntry, InheritanceMode } from "./context/container-registry.js";
-import { isSome, Some, None } from "./types/adt.js";
+import React, { type ReactElement, type CSSProperties, useCallback } from "react";
+import { useDevToolsStore, useSelectedContainerId, useContainers } from "../store/index.js";
 import { getInheritanceModeBadgeStyle } from "./styles.js";
+import type { ContainerKind, InheritanceMode } from "@hex-di/plugin";
 
 // =============================================================================
 // Props
@@ -40,7 +39,7 @@ const selectorStyles = {
     display: "flex",
     alignItems: "center",
     gap: 8,
-  } as CSSProperties,
+  } satisfies CSSProperties,
 
   label: {
     fontSize: 12,
@@ -48,7 +47,7 @@ const selectorStyles = {
     color: "var(--hex-devtools-text-muted, #a6adc8)",
     textTransform: "uppercase",
     letterSpacing: "0.05em",
-  } as CSSProperties,
+  } satisfies CSSProperties,
 
   select: {
     appearance: "none",
@@ -67,23 +66,23 @@ const selectorStyles = {
     backgroundPosition: "right 10px center",
     transition: "border-color 0.15s ease, box-shadow 0.15s ease",
     minWidth: 180,
-  } as CSSProperties,
+  } satisfies CSSProperties,
 
   selectHover: {
     border: "1px solid var(--hex-devtools-border-hover, #565f89)",
     boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
-  } as CSSProperties,
+  } satisfies CSSProperties,
 
   selectFocus: {
     border: "1px solid var(--hex-devtools-accent, #89b4fa)",
     boxShadow: "0 0 0 2px rgba(137, 180, 250, 0.2)",
-  } as CSSProperties,
+  } satisfies CSSProperties,
 
   selectCompact: {
     padding: "6px 28px 6px 10px",
     fontSize: 12,
     minWidth: 150,
-  } as CSSProperties,
+  } satisfies CSSProperties,
 
   kindBadge: {
     display: "inline-block",
@@ -94,49 +93,59 @@ const selectorStyles = {
     letterSpacing: "0.05em",
     borderRadius: 4,
     marginLeft: 8,
-  } as CSSProperties,
+  } satisfies CSSProperties,
 
   kindRoot: {
     backgroundColor: "rgba(137, 180, 250, 0.15)",
     color: "var(--hex-devtools-accent, #89b4fa)",
-  } as CSSProperties,
+  } satisfies CSSProperties,
 
   kindChild: {
     backgroundColor: "rgba(166, 227, 161, 0.15)",
     color: "#a6e3a1",
-  } as CSSProperties,
+  } satisfies CSSProperties,
 
   kindLazy: {
     backgroundColor: "rgba(249, 226, 175, 0.15)",
     color: "#f9e2af",
-  } as CSSProperties,
+  } satisfies CSSProperties,
 
   kindScope: {
     backgroundColor: "rgba(203, 166, 247, 0.15)",
     color: "#cba6f7",
-  } as CSSProperties,
+  } satisfies CSSProperties,
 
   emptyState: {
     fontSize: 12,
     color: "var(--hex-devtools-text-muted, #a6adc8)",
     fontStyle: "italic",
-  } as CSSProperties,
+  } satisfies CSSProperties,
 
   notAvailable: {
     fontSize: 11,
     color: "var(--hex-devtools-text-muted, #a6adc8)",
     opacity: 0.7,
-  } as CSSProperties,
-} as const;
+  } satisfies CSSProperties,
+};
 
 // =============================================================================
 // Helper Functions
 // =============================================================================
 
 /**
+ * Unified container entry type for selector display.
+ * Works with tree-based entries from automatic discovery.
+ */
+interface SelectorEntry {
+  readonly id: string;
+  readonly label: string;
+  readonly kind: ContainerKind;
+}
+
+/**
  * Get the style for a container kind badge.
  */
-function getKindStyle(kind: ContainerEntry["kind"]): CSSProperties {
+function getKindStyle(kind: ContainerKind): CSSProperties {
   switch (kind) {
     case "root":
       return { ...selectorStyles.kindBadge, ...selectorStyles.kindRoot };
@@ -156,7 +165,7 @@ function getKindStyle(kind: ContainerEntry["kind"]): CSSProperties {
  * Shows container label with optional kind.
  * Example: "MyContainer (child)"
  */
-function formatContainerLabel(entry: ContainerEntry, showKind: boolean): string {
+function formatContainerLabel(entry: SelectorEntry, showKind: boolean): string {
   if (showKind) {
     return `${entry.label} (${entry.kind})`;
   }
@@ -208,11 +217,39 @@ export function ContainerSelector({
   showKind = true,
   compact = false,
 }: ContainerSelectorProps): ReactElement | null {
-  const { containers, selectedId, selectContainer, isAvailable } = useContainerList();
+  // Use Zustand store hooks for container data
+  const discoveredContainers = useContainers();
+  const selectedContainerId = useSelectedContainerId();
+  const selectContainer = useDevToolsStore(state => state.selectContainer);
+
   const [isHovered, setIsHovered] = React.useState(false);
   const [isFocused, setIsFocused] = React.useState(false);
 
-  // Don't render if registry is not available
+  // Get containers from discovery - ContainerTreeEntry has id, label, kind
+  const isAvailable = discoveredContainers.length > 0;
+
+  // Convert to selector entries
+  const containers: readonly SelectorEntry[] = discoveredContainers.map(entry => ({
+    id: entry.id,
+    label: entry.label,
+    kind: entry.kind,
+  }));
+
+  // Get selected container ID (or empty string for select placeholder)
+  const selectedIdValue = selectedContainerId ?? "";
+
+  // Handle selection change
+  const handleChange = useCallback(
+    (event: React.ChangeEvent<HTMLSelectElement>): void => {
+      const value = event.target.value;
+      if (value !== "") {
+        selectContainer(value);
+      }
+    },
+    [selectContainer]
+  );
+
+  // Don't render if containers not available
   if (!isAvailable) {
     return <div style={selectorStyles.notAvailable}>Container registry not available</div>;
   }
@@ -228,14 +265,6 @@ export function ContainerSelector({
     ...(isHovered ? selectorStyles.selectHover : {}),
     ...(isFocused ? selectorStyles.selectFocus : {}),
   };
-
-  const handleChange = (event: React.ChangeEvent<HTMLSelectElement>): void => {
-    const value = event.target.value;
-    selectContainer(value === "" ? None : Some(value));
-  };
-
-  // Extract selected ID value for the select element
-  const selectedIdValue = isSome(selectedId) ? selectedId.value : "";
 
   return (
     <div
@@ -279,7 +308,7 @@ export function ContainerSelector({
  */
 export interface ContainerKindBadgeProps {
   /** The container kind to display */
-  readonly kind: ContainerEntry["kind"];
+  readonly kind: ContainerKind;
 }
 
 /**

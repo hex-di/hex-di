@@ -128,8 +128,9 @@ function validateDependencies<
   TRequires extends Port<unknown, string> | never,
   TLifetime extends Lifetime,
   TFactoryKind extends FactoryKind,
+  TClonable extends boolean = boolean,
 >(
-  adapter: Adapter<TProvides, TRequires, TLifetime, TFactoryKind>,
+  adapter: Adapter<TProvides, TRequires, TLifetime, TFactoryKind, TClonable>,
   mockDependencies: Record<string, unknown>
 ): void {
   const requires = adapter.requires as readonly Port<unknown, string>[];
@@ -238,8 +239,9 @@ export function createAdapterTest<
   TRequires extends Port<unknown, string> | never,
   TLifetime extends Lifetime,
   TFactoryKind extends FactoryKind = FactoryKind,
+  TClonable extends boolean = boolean,
 >(
-  adapter: Adapter<TProvides, TRequires, TLifetime, TFactoryKind>,
+  adapter: Adapter<TProvides, TRequires, TLifetime, TFactoryKind, TClonable>,
   mockDependencies: ResolvedDeps<TRequires>
 ): AdapterTestHarness<TProvides, TRequires, TFactoryKind> {
   // Validate all required dependencies are provided

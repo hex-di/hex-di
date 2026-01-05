@@ -122,7 +122,7 @@ describe("createSpiedMockAdapter", () => {
 
     const graph = GraphBuilder.create().provide(spiedAdapter).build();
 
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "Test" });
     const logger = container.resolve(LoggerPort);
 
     logger.log("test message");

@@ -1,8 +1,8 @@
 # DevTools Architecture Violations Report
 
-> **Last Updated**: 2026-01-04 (Phase 3 complete)
+> **Last Updated**: 2026-01-04 (Phase 5 complete - ALL PHASES DONE)
 > **Target**: Consolidate to Flow-based context system
-> **Status**: 845 tests passing
+> **Status**: All tests passing
 
 ---
 
@@ -16,10 +16,10 @@
 | HIGH     | H1  | Provider Nesting Confusion          | ✅ Resolved (via C1) |
 | HIGH     | H2  | Plugin Naming Collision             | ✅ Fixed             |
 | HIGH     | H3  | Over-engineered State Management    | ✅ Resolved (via C1) |
-| MEDIUM   | M1  | Hook Naming Inconsistency           | 🔴 Not Started       |
+| MEDIUM   | M1  | Hook Naming Inconsistency           | ✅ FALSE POSITIVE    |
 | MEDIUM   | M2  | Incomplete Migration                | ✅ Complete          |
-| MEDIUM   | M3  | IoC Violation in Store              | 🔴 Not Started       |
-| LOW      | L1  | Export Naming Confusion             | 🔴 Not Started       |
+| MEDIUM   | M3  | IoC Violation in Store              | ✅ FALSE POSITIVE    |
+| LOW      | L1  | Export Naming Confusion             | ✅ Fixed             |
 
 ---
 
@@ -239,17 +239,19 @@ Container Inspector
 
 ### M1: Hook Naming Inconsistency
 
-**Status**: 🔴 Not Started
+**Status**: ✅ FALSE POSITIVE (Phase 5)
 
 **Problem**: `useTraceStats(tracingAPI)` looks like a context hook but takes a prop parameter.
 
-**Impact**: Inconsistent with naming convention. Other `use*` hooks consume context.
+**Analysis**: After expert review, this is a valid React "subscriber hook" pattern:
 
-**Solution**: Rename to `computeTraceStats` or document clearly
+- The hook uses `useState`, `useEffect`, and `useRef` internally
+- It manages subscription lifecycle and returns reactive state
+- Similar patterns exist in React Query (`useQuery(key)`) and SWR (`useSWR(key)`)
 
-**Files**:
+The `use*` prefix is appropriate for hooks that manage React state, regardless of whether they consume context.
 
-- `src/react/hooks/use-trace-stats.ts`
+**Verdict**: No action needed - the pattern is correct.
 
 ---
 
@@ -272,7 +274,7 @@ Now only Flow-based system remains. No dual codepaths.
 
 ### M3: Store Creates Runtime Internally (IoC Violation)
 
-**Status**: 🔴 Not Started
+**Status**: ✅ FALSE POSITIVE (Phase 5)
 
 **Problem**: In `src/store/devtools-store.ts`:
 
@@ -283,19 +285,16 @@ export function createDevToolsStoreWithRuntime(config: CreateDevToolsStoreConfig
 }
 ```
 
-Store creates its own runtime instead of receiving it via dependency injection.
+**Analysis**: After DI Container Architect review, this is **acceptable encapsulation**, not an IoC violation:
 
-**Impact**:
+1. **True dependency IS injected**: The `inspector` (which comes from the DI container) is the real external dependency
+2. **Runtime is implementation detail**: The store is a Facade pattern - runtime is an internal coordination mechanism
+3. **Testing is not compromised**: Tests can:
+   - Test the FSM runtime directly with real containers
+   - Test hooks with mock runtimes implementing `DevToolsFlowRuntimeLike` interface
+4. **Both patterns exist**: `DevToolsStoreProvider` creates internally, `DevToolsProvider` accepts externally
 
-- Makes testing harder
-- Violates Inversion of Control
-- Creates hidden coupling
-
-**Solution**: Accept runtime as parameter or create factory pattern
-
-**Files**:
-
-- `src/store/devtools-store.ts`
+**Verdict**: No action needed - the Facade pattern is appropriate here.
 
 ---
 
@@ -303,7 +302,7 @@ Store creates its own runtime instead of receiving it via dependency injection.
 
 ### L1: Export Naming Confusion
 
-**Status**: 🔴 Not Started
+**Status**: ✅ Fixed (Phase 5)
 
 **Problem**: `src/index.ts` exports both store and runtime selectors with inconsistent prefixes:
 
@@ -312,11 +311,24 @@ Store creates its own runtime instead of receiving it via dependency injection.
 
 **Impact**: No clear API surface distinction.
 
-**Solution**: Consistent naming: `storeSelect*` vs `runtimeSelect*`
+**Solution Applied**: Added `runtime` prefix to all runtime selectors:
+
+```typescript
+// Now exported with consistent prefixes
+runtimeSelectPlugins,
+runtimeSelectActivePlugin,
+runtimeSelectPluginById,
+runtimeSelectTabList,
+runtimeSelectSelectedContainers,
+runtimeSelectIsContainerSelected,
+runtimeSelectTracingState,
+runtimeSelectIsTracingActive,
+// Unprefixed names kept as deprecated aliases for backward compatibility
+```
 
 **Files**:
 
-- `src/index.ts`
+- `src/index.ts` ✅
 
 ---
 
@@ -353,12 +365,17 @@ Store creates its own runtime instead of receiving it via dependency injection.
 - [x] Delete `tests/plugin-architecture-integration.test.tsx`
 - [x] Keep only Flow-based system
 
-### Phase 5: Cleanup 🔄 IN PROGRESS
+### Phase 5: Cleanup ✅ COMPLETE
 
-- [ ] Fix export naming consistency (L1)
-- [ ] Fix hook naming inconsistency (M1)
-- [ ] Fix IoC violation in store (M3)
-- [x] Final test pass - 845 tests passing
+- [x] Fix export naming consistency (L1) - Added `runtime` prefix to runtime selectors
+- [x] Fix hook naming inconsistency (M1) - FALSE POSITIVE: Valid React pattern
+- [x] Fix IoC violation in store (M3) - FALSE POSITIVE: Acceptable Facade pattern
+- [x] Fix TypeScript violations:
+  - [x] Removed eslint-disable comment in devtools-flow-runtime.ts
+  - [x] Fixed hook type casts by typing `getSnapshot()` return properly
+  - [x] Fixed CSSProperties casts with `satisfies` operator
+  - [x] Fixed JSON.parse cast with type guard
+- [x] Final test pass
 
 ---
 

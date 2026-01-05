@@ -205,7 +205,10 @@ interface ResolverLike {
 interface ContainerLike extends ResolverLike {
   initialize?(): Promise<ResolverLike>;
   readonly isInitialized?: boolean;
-  createChild?(graph: GraphAny, inheritanceModes?: InheritanceModeMap): ResolverLike;
+  createChild?(
+    graph: GraphAny,
+    options?: { readonly name: string; readonly inheritanceModes?: InheritanceModeMap }
+  ): ResolverLike;
 }
 
 /**

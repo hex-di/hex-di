@@ -1,0 +1,66 @@
+task_groups:
+  # Phase 1: Core Runtime Infrastructure
+  - name: "Task Group 1: DevTools Runtime Core Types and State"
+    claude_code_subagent: typescript-type-system-architect
+    rationale: "Discriminated unions, state types - needs expert type-level programming"
+
+  - name: "Task Group 2: DevToolsRuntime Implementation"
+    claude_code_subagent: di-container-architect
+    rationale: "Runtime/container pattern with dispatch, subscribe - IoC expertise"
+
+  - name: "Task Group 3: Selector System"
+    claude_code_subagent: typescript-type-system-architect
+    rationale: "Memoized selectors with full type inference"
+
+  # Phase 2: Plugin Interface
+  - name: "Task Group 4: DevToolsPlugin Interface Definition"
+    claude_code_subagent: typescript-type-system-architect
+    rationale: "Plugin interface types - needs precise generic typing"
+
+  - name: "Task Group 5: Plugin Factory Helpers"
+    claude_code_subagent: implementer
+    rationale: "Factory functions and validation utilities"
+
+  # Phase 3: Built-in Plugins Extraction
+  - name: "Task Group 6: GraphPlugin Extraction"
+    claude_code_subagent: react-ports-integrator
+    rationale: "React component extraction maintaining type safety"
+
+  - name: "Task Group 7: ServicesPlugin Extraction"
+    claude_code_subagent: react-ports-integrator
+    rationale: "React component extraction maintaining type safety"
+
+  - name: "Task Group 8: TracingPlugin Extraction"
+    claude_code_subagent: react-ports-integrator
+    rationale: "React component extraction with runtime command integration"
+
+  - name: "Task Group 9: InspectorPlugin Extraction"
+    claude_code_subagent: react-ports-integrator
+    rationale: "React component extraction maintaining type safety"
+
+  # Phase 4: Preset Functions
+  - name: "Task Group 10: Plugin Preset Factory Functions"
+    claude_code_subagent: implementer
+    rationale: "Simple preset factory functions"
+
+  # Phase 5: React Integration Layer
+  - name: "Task Group 11: React Context and Hooks"
+    claude_code_subagent: react-ports-integrator
+    rationale: "useSyncExternalStore pattern, context providers"
+
+  - name: "Task Group 12: Tab Navigation Integration"
+    claude_code_subagent: react-ports-integrator
+    rationale: "React component refactoring with runtime integration"
+
+  - name: "Task Group 13: DevToolsPanel Refactor"
+    claude_code_subagent: react-ports-integrator
+    rationale: "Major React refactoring with backward compatibility"
+
+  # Phase 6: Testing and Documentation
+  - name: "Task Group 14: Integration Testing"
+    claude_code_subagent: composition-test-architect
+    rationale: "Integration testing with proper composition patterns"
+
+  - name: "Task Group 15: Exports and Package Structure"
+    claude_code_subagent: implementer
+    rationale: "Package exports and structure finalization"

@@ -19,7 +19,8 @@ import React, {
   type ReactElement,
   type CSSProperties,
 } from "react";
-import { formatDuration, type TraceEntry } from "@hex-di/devtools-core";
+import { formatDuration } from "@hex-di/devtools-core";
+import type { TraceEntry } from "@hex-di/plugin";
 import { TimeRuler } from "./time-ruler.js";
 import { TimelineRow } from "./timeline-row.js";
 import { timelineStyles, emptyStyles, containerInspectorStyles } from "./styles.js";

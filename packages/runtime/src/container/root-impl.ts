@@ -27,6 +27,7 @@ export class RootContainerImpl<
   TAsyncPorts extends Port<unknown, string> = never,
 > extends BaseContainerImpl<TProvides, never, TAsyncPorts> {
   protected readonly isRoot = true as const;
+  private readonly containerNameValue: string;
 
   constructor(config: RootContainerConfig<TProvides, TAsyncPorts>) {
     const adapterRegistry = new AdapterRegistry<TProvides, TAsyncPorts>(null);
@@ -34,7 +35,12 @@ export class RootContainerImpl<
 
     super(adapterRegistry, hooksRunner);
 
+    this.containerNameValue = config.containerName;
     this.initializeFromGraph(config);
+  }
+
+  protected getContainerName(): string {
+    return this.containerNameValue;
   }
 
   private static createHooksRunner<

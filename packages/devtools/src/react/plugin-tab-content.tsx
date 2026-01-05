@@ -11,10 +11,10 @@
  * @packageDocumentation
  */
 
-import React, { useMemo, type ReactElement } from "react";
+import React, { useMemo, useCallback, type ReactElement } from "react";
 import type { ExportedGraph } from "@hex-di/devtools-core";
 import type { TracingAPI } from "@hex-di/plugin";
-import type { PluginProps, ContainerEntry } from "../runtime/plugin-types.js";
+import type { PluginProps, PluginCommand, ContainerEntry } from "../runtime/plugin-types.js";
 import { useActivePlugin, usePlugins, useActiveTab, useDevToolsStore } from "../store/index.js";
 
 // =============================================================================
@@ -91,29 +91,81 @@ const EMPTY_CONTAINERS: readonly ContainerEntry[] = [];
  */
 export function PluginTabContent(props: PluginTabContentProps = {}): ReactElement | null {
   // Use store hooks instead of plugin-based hooks
-  const selectTab = useDevToolsStore(state => state.selectTab);
   const plugins = usePlugins();
   const activeTabId = useActiveTab();
   const selectedContainerIds = useDevToolsStore(state => state.ui.selectedIds);
   const tracingEnabled = useDevToolsStore(state => state.tracing.isEnabled);
   const tracingPaused = useDevToolsStore(state => state.tracing.fsmState === "paused");
-  const tracingThreshold = useDevToolsStore(_state => 100); // Default threshold
   const activePlugin = useActivePlugin();
+
+  // Get all store actions needed for command dispatch
+  const selectTab = useDevToolsStore(state => state.selectTab);
+  const selectContainer = useDevToolsStore(state => state.selectContainer);
+  const enableTracing = useDevToolsStore(state => state.enableTracing);
+  const disableTracing = useDevToolsStore(state => state.disableTracing);
+  const pauseTracing = useDevToolsStore(state => state.pauseTracing);
+  const resumeTracing = useDevToolsStore(state => state.resumeTracing);
+  const clearTraces = useDevToolsStore(state => state.clearTraces);
+
+  // Tracing threshold - currently fixed at 100ms (slow resolution threshold)
+  // TODO: Add setThreshold action to store when threshold configurability is needed
+  const tracingThreshold = 100;
 
   // Use provided props or fall back to defaults
   const graph = props.graph ?? EMPTY_GRAPH;
   const containers = props.containers ?? EMPTY_CONTAINERS;
 
   // Build the PluginProps object
-  // Create a dispatch function compatible with plugin interface
-  const dispatch = useMemo(
-    () => (command: { type: string; [key: string]: unknown }) => {
-      if (command.type === "selectTab" && typeof command.tabId === "string") {
-        selectTab(command.tabId);
+  // Create a type-safe dispatch function that handles all PluginCommand types
+  const dispatch = useCallback(
+    (command: PluginCommand): void => {
+      switch (command.type) {
+        case "selectTab":
+          selectTab(command.tabId);
+          break;
+        case "selectContainers":
+          // Select first container from the set (store supports single selection)
+          // Multi-select could be supported by adding a selectContainers action to store
+          for (const id of command.ids) {
+            selectContainer(id);
+            break; // Select first only for now
+          }
+          break;
+        case "toggleTracing":
+          if (tracingEnabled) {
+            disableTracing();
+          } else {
+            enableTracing();
+          }
+          break;
+        case "pauseTracing":
+          pauseTracing();
+          break;
+        case "resumeTracing":
+          resumeTracing();
+          break;
+        case "setThreshold":
+          // TODO: Add setThreshold action to store when threshold configurability is needed
+          // For now, threshold is fixed at 100ms
+          console.warn(
+            `[DevTools] setThreshold command received (value: ${command.value}ms) but threshold configuration is not yet implemented`
+          );
+          break;
+        case "clearTraces":
+          clearTraces();
+          break;
       }
-      // Other commands can be mapped as needed
     },
-    [selectTab]
+    [
+      selectTab,
+      selectContainer,
+      tracingEnabled,
+      enableTracing,
+      disableTracing,
+      pauseTracing,
+      resumeTracing,
+      clearTraces,
+    ]
   );
 
   const pluginProps: PluginProps = useMemo(

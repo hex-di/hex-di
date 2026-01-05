@@ -10,9 +10,8 @@
  */
 
 import { describe, it, expect, beforeEach } from "./setup.js";
-import { createContainer, pipe } from "@hex-di/runtime";
-import { TRACING, withTracing } from "@hex-di/tracing";
-import { appGraph } from "../src/di/graph.js";
+import { createContainer, pipe, TRACING, withTracing } from "@hex-di/runtime";
+import { appGraph } from "../src/di/app-graph.js";
 import { UserSessionPort } from "../src/di/ports.js";
 import { setCurrentUserSelection } from "../src/di/adapters.js";
 
@@ -28,7 +27,7 @@ describe("Tracing Integration", () => {
 
   describe("TracingPlugin via wrapper pattern", () => {
     it("should add TRACING Symbol to container with withTracing wrapper", () => {
-      const tracingContainer = pipe(createContainer(appGraph), withTracing);
+      const tracingContainer = pipe(createContainer(appGraph, { name: "Test" }), withTracing);
 
       // Container should have TRACING Symbol
       expect(TRACING in tracingContainer).toBe(true);
@@ -39,7 +38,7 @@ describe("Tracing Integration", () => {
 
     it("should provide type-safe TracingAPI via wrapper pattern", () => {
       // Using wrapper pattern for compile-time type safety
-      const tracingContainer = pipe(createContainer(appGraph), withTracing);
+      const tracingContainer = pipe(createContainer(appGraph, { name: "Test" }), withTracing);
 
       // TypeScript knows container[TRACING] exists - no cast needed!
       const tracingAPI = tracingContainer[TRACING];
@@ -60,7 +59,7 @@ describe("Tracing Integration", () => {
 
   describe("trace recording", () => {
     it("should record traces when services are resolved", () => {
-      const tracingContainer = pipe(createContainer(appGraph), withTracing);
+      const tracingContainer = pipe(createContainer(appGraph, { name: "Test" }), withTracing);
       const scope = tracingContainer.createScope("tracing-test-scope");
 
       // Initially no traces
@@ -86,7 +85,7 @@ describe("Tracing Integration", () => {
     });
 
     it("should capture trace metadata correctly", () => {
-      const tracingContainer = pipe(createContainer(appGraph), withTracing);
+      const tracingContainer = pipe(createContainer(appGraph, { name: "Test" }), withTracing);
       const scope = tracingContainer.createScope("metadata-test-scope");
 
       scope.resolve(UserSessionPort);

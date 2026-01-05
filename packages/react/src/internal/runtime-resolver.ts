@@ -95,6 +95,11 @@ import { isRecord } from "@hex-di/runtime";
  * setResolver(container);  // No cast needed!
  * ```
  */
+/**
+ * Disposal state type for scope lifecycle tracking.
+ */
+export type ScopeDisposalState = "active" | "disposing" | "disposed";
+
 export interface RuntimeResolver {
   /**
    * Resolves a service instance for the given port synchronously.
@@ -142,6 +147,23 @@ export interface RuntimeResolver {
    * Whether the resolver has been disposed.
    */
   readonly isDisposed: boolean;
+
+  /**
+   * Subscribe to disposal state changes.
+   * Optional - only available on scopes, not containers.
+   *
+   * @param listener - Called when disposal state changes
+   * @returns Unsubscribe function
+   */
+  readonly subscribe?: (listener: () => void) => () => void;
+
+  /**
+   * Get current disposal state.
+   * Optional - only available on scopes, not containers.
+   *
+   * @returns Current disposal state
+   */
+  readonly getDisposalState?: () => ScopeDisposalState;
 }
 
 // =============================================================================
@@ -245,6 +267,9 @@ interface ResolverLike {
   dispose(): Promise<void>;
   has(port: Port<unknown, string>): boolean;
   readonly isDisposed: boolean;
+  // Optional scope-specific methods
+  subscribe?(listener: () => void): () => void;
+  getDisposalState?(): ScopeDisposalState;
 }
 
 function isResolverLike(value: unknown): value is ResolverLike {
@@ -322,6 +347,12 @@ export function toRuntimeResolver(resolver: ResolverLike): RuntimeResolver {
   // 1. ResolverLike describes what Container/Scope actually have
   // 2. We're explicitly creating RuntimeResolver with widened types
   // 3. Runtime port validation ensures safety
+
+  // Capture optional scope methods if they exist
+  // Using local const avoids non-null assertions in the wrapped object
+  const subscribeMethod = resolver.subscribe;
+  const getDisposalStateMethod = resolver.getDisposalState;
+
   const wrapped: RuntimeResolver = {
     resolve: port => resolver.resolve(port),
     resolveAsync: port => resolver.resolveAsync(port),
@@ -331,6 +362,10 @@ export function toRuntimeResolver(resolver: ResolverLike): RuntimeResolver {
     get isDisposed() {
       return resolver.isDisposed;
     },
+    // Conditionally include scope-specific subscription methods
+    subscribe: subscribeMethod !== undefined ? listener => subscribeMethod(listener) : undefined,
+    getDisposalState:
+      getDisposalStateMethod !== undefined ? () => getDisposalStateMethod() : undefined,
   };
 
   return wrapped;

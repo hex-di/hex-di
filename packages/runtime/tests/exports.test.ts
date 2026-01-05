@@ -137,7 +137,7 @@ describe("@hex-di/runtime exports", () => {
         // Plugin wrapper utilities (Zustand/Redux-style enhancement pattern)
         "createPluginWrapper",
         "getAppliedWrappers",
-        "applyParentWrappers",
+        "getEnhancedWrapper",
         "getDisposalCallbacks",
         "APPLIED_WRAPPERS",
         // Composition utilities
@@ -146,6 +146,29 @@ describe("@hex-di/runtime exports", () => {
         "compose3",
         "compose4",
         "compose5",
+        // Inspector plugin exports
+        "INSPECTOR",
+        "InspectorPlugin",
+        "createInspectorAPI",
+        "withInspector",
+        "hasInspector",
+        "getInspectorAPI",
+        "hasSubscription",
+        "detectContainerKind",
+        "detectPhase",
+        "buildTypedSnapshot",
+        // Tracing plugin exports
+        "TRACING",
+        "TracingPlugin",
+        "createTracingPlugin",
+        "withTracing",
+        "MemoryCollector",
+        "NoOpCollector",
+        "CompositeCollector",
+        "hasTracing",
+        "getTracingAPI",
+        // Re-exports from @hex-di/plugin
+        "DEFAULT_RETENTION_POLICY",
       ];
 
       // Verify all expected exports exist

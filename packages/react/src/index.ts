@@ -191,6 +191,7 @@ export type { UseLazyContainerStateResult } from "./providers/index.js";
  */
 export { usePort } from "./hooks/index.js";
 export { useContainer } from "./hooks/index.js";
+export { useScope } from "./hooks/index.js";
 
 // =============================================================================
 // Declarative Component Creation

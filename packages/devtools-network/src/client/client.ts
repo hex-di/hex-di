@@ -9,15 +9,13 @@
 
 import type {
   ExportedGraph,
-  TraceEntry,
-  TraceStats,
-  ContainerSnapshot,
   JsonRpcMessage,
   JsonRpcSuccessResponse,
   MethodParams,
   MethodResult,
   MethodMap,
 } from "@hex-di/devtools-core";
+import type { TraceEntry, TraceStats, ContainerSnapshot } from "@hex-di/plugin";
 import { Methods, createRequest, isResponse, isErrorResponse } from "@hex-di/devtools-core";
 import type { WebSocketService } from "./ports/websocket.port.js";
 

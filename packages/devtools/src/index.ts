@@ -109,6 +109,45 @@ export { filterGraph, byLifetime, byPortName, relabelPorts } from "@hex-di/devto
 export { HexDiDevTools, DevToolsPanel } from "./react/index.js";
 
 // =============================================================================
+// Zustand Store (React Integration)
+// =============================================================================
+
+export {
+  // Store factory
+  createDevToolsStore,
+  createDevToolsStoreWithRuntime,
+  // React Provider and hooks
+  DevToolsStoreProvider,
+  useDevToolsStore,
+  useDevToolsStoreApi,
+  useDevToolsRuntime,
+  useDevToolsUI,
+  useContainerTree,
+  useTracingState,
+  useSelectedContainerId,
+  useContainers,
+  useIsDevToolsOpen,
+  useActiveTab,
+  useDevToolsActions,
+  useTracingActions,
+  // Selectors (prefixed with "store" to avoid conflicts with runtime selectors)
+  selectFirstSelectedId as storeSelectFirstSelectedId,
+  selectIsContainerExpanded as storeSelectIsContainerExpanded,
+  selectContainerById as storeSelectContainerById,
+  selectIsContainerTreeReady as storeSelectIsContainerTreeReady,
+  // Types
+  type CreateDevToolsStoreConfig,
+  type DevToolsStore,
+  type DevToolsStoreState,
+  type DevToolsStoreActions,
+  type DevToolsStoreWithRuntime,
+  type UIState as StoreUIState,
+  type ContainerTreeState as StoreContainerTreeState,
+  type TracingState as StoreTracingState,
+  type DevToolsStoreProviderProps,
+} from "./store/index.js";
+
+// =============================================================================
 // Data Sources
 // =============================================================================
 
@@ -162,3 +201,103 @@ export {
   type MethodResult,
   type ParseMessageResult,
 } from "./network/index.js";
+
+// =============================================================================
+// DevTools Runtime
+// =============================================================================
+
+export {
+  // Factory
+  createDevToolsRuntime,
+  PluginConfigurationError,
+  // Plugin Factory Helper
+  defineDevToolsPlugin,
+  // Selector Utilities
+  createSelector,
+  createParameterizedSelector,
+  // Selectors (prefixed with "runtime" for consistency with store selectors)
+  selectPlugins as runtimeSelectPlugins,
+  selectActivePlugin as runtimeSelectActivePlugin,
+  selectPluginById as runtimeSelectPluginById,
+  selectTabList as runtimeSelectTabList,
+  selectSelectedContainers as runtimeSelectSelectedContainers,
+  selectIsContainerSelected as runtimeSelectIsContainerSelected,
+  selectTracingState as runtimeSelectTracingState,
+  selectIsTracingActive as runtimeSelectIsTracingActive,
+  // Deprecated: Unprefixed selectors (kept for backward compatibility)
+  selectPlugins,
+  selectActivePlugin,
+  selectPluginById,
+  selectTabList,
+  selectSelectedContainers,
+  selectIsContainerSelected,
+  selectTracingState,
+  selectIsTracingActive,
+  // Type Guards
+  isDevToolsCommand,
+  isDevToolsEvent,
+} from "./runtime/index.js";
+
+// Runtime Types
+export type {
+  // State
+  DevToolsRuntimeState,
+  DevToolsRuntimeConfig,
+  DevToolsRuntime,
+  // Plugin Types
+  DevToolsPlugin,
+  PluginProps,
+  PluginShortcut,
+  ContainerEntry,
+  PluginRuntimeAccess,
+  PluginCommand,
+  PluginStateSnapshot,
+  // Plugin Utility Types
+  ExtractPluginIds,
+  PluginConfig,
+  HasShortcuts,
+  StrictPlugin,
+  MinimalPlugin,
+  // Commands
+  DevToolsCommand,
+  SelectTabCommand,
+  SelectContainersCommand,
+  ToggleTracingCommand,
+  PauseTracingCommand,
+  ResumeTracingCommand,
+  SetThresholdCommand,
+  ClearTracesCommand,
+  // Events
+  DevToolsEvent,
+  TabChangedEvent,
+  ContainersSelectedEvent,
+  TracingStateChangedEvent,
+  TracesClearedEvent,
+  // Utility Types
+  CommandType,
+  EventType,
+  ExtractCommand,
+  ExtractEvent,
+  StateListener,
+  EventListener,
+  // Selector Types
+  Selector,
+  ParameterizedSelector,
+  TabConfig,
+  TracingStateSnapshot,
+} from "./runtime/index.js";
+
+// =============================================================================
+// Built-in Plugins
+// =============================================================================
+
+export {
+  // Individual Plugins
+  GraphPlugin,
+  ServicesPlugin,
+  TracingPlugin,
+  InspectorTabPlugin,
+  // Plugin Presets
+  defaultPlugins,
+  minimalPlugins,
+} from "./plugins/index.js";

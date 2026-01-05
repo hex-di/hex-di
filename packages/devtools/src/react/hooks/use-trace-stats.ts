@@ -1,12 +1,14 @@
 /**
  * Hook for subscribing to trace statistics with automatic updates.
  *
+ * This hook now requires a TracingAPI to be passed explicitly
+ * since the legacy DevToolsContext has been removed.
+ *
  * @packageDocumentation
  */
 
 import { useState, useEffect, useRef } from "react";
-import type { TraceStats } from "@hex-di/devtools-core";
-import { useTracingAPI } from "./use-devtools.js";
+import type { TraceStats, TracingAPI } from "@hex-di/plugin";
 
 /**
  * Empty stats object returned when tracing is not available.
@@ -26,12 +28,13 @@ const EMPTY_STATS: TraceStats = {
  * Uses requestAnimationFrame to debounce high-frequency updates.
  * Returns empty stats if tracing is not available.
  *
+ * @param tracingAPI - The tracing API instance (optional, returns empty stats if null/undefined)
  * @returns Current TraceStats (empty stats if tracing unavailable)
  *
  * @example
  * ```typescript
- * function StatsPanel() {
- *   const stats = useTraceStats();
+ * function StatsPanel({ tracingAPI }: { tracingAPI?: TracingAPI }) {
+ *   const stats = useTraceStats(tracingAPI);
  *
  *   return (
  *     <div>
@@ -43,8 +46,7 @@ const EMPTY_STATS: TraceStats = {
  * }
  * ```
  */
-export function useTraceStats(): TraceStats {
-  const tracingAPI = useTracingAPI();
+export function useTraceStats(tracingAPI: TracingAPI | undefined | null): TraceStats {
   const [stats, setStats] = useState<TraceStats>(EMPTY_STATS);
   const rafIdRef = useRef<number | null>(null);
 

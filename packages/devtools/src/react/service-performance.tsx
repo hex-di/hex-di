@@ -8,8 +8,8 @@
  */
 
 import React, { useMemo, type ReactElement, type CSSProperties } from "react";
-import { formatDuration, type TracingAPI, type TraceEntry } from "@hex-di/devtools-core";
-import { useTracingAPI } from "./hooks/use-devtools.js";
+import { formatDuration } from "@hex-di/devtools-core";
+import type { TracingAPI, TraceEntry } from "@hex-di/plugin";
 
 // =============================================================================
 // Types
@@ -312,37 +312,30 @@ export function ServicePerformanceInfo({
 /**
  * Hook to get performance metrics for a service.
  *
- * If tracingAPIOverride is not provided, falls back to TracingAPI from DevToolsContext.
+ * Requires an explicit TracingAPI to be passed. Use this hook when you have
+ * access to a TracingAPI instance (e.g., from PluginProps).
  *
  * @param portName - The port name to get metrics for
- * @param tracingAPIOverride - Optional TracingAPI override (falls back to context)
+ * @param tracingAPI - TracingAPI instance to query (optional, returns null if not provided)
  * @param slowThreshold - Duration threshold for slow resolutions
  * @returns Performance metrics or null if no tracing API available
  *
- * @example Using with context (recommended)
+ * @example Using with TracingAPI from props
  * ```tsx
- * function ServiceMetrics({ portName }: { portName: string }) {
- *   const performance = useServicePerformance(portName);
+ * function ServiceMetrics({ portName, tracingAPI }: { portName: string; tracingAPI?: TracingAPI }) {
+ *   const performance = useServicePerformance(portName, tracingAPI);
  *   if (!performance) return <div>No tracing data</div>;
  *   return <ServicePerformanceDisplay performance={performance} />;
  * }
  * ```
- *
- * @example With explicit TracingAPI override
- * ```tsx
- * const performance = useServicePerformance("UserService", customTracingAPI, 50);
- * ```
  */
 export function useServicePerformance(
   portName: string,
-  tracingAPIOverride?: TracingAPI,
+  tracingAPI?: TracingAPI,
   slowThreshold: number = 100
 ): ServicePerformance | null {
-  const contextTracingAPI = useTracingAPI();
-  const tracingAPI = tracingAPIOverride ?? contextTracingAPI;
-
   return useMemo(() => {
-    if (tracingAPI === null) {
+    if (tracingAPI === undefined) {
       return null;
     }
     const traces = tracingAPI.getTraces({ portName });

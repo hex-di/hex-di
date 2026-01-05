@@ -211,6 +211,12 @@ export function createPluginWrapper<
 
     // Copy all properties from the original container (including symbols)
     for (const key of Reflect.ownKeys(container)) {
+      // Skip copying the plugin's own symbol - we'll define it ourselves with a fresh API
+      // This prevents "Cannot redefine property" errors when the input already has this symbol
+      if (key === plugin.symbol) {
+        continue;
+      }
+
       const descriptor = Object.getOwnPropertyDescriptor(container, key);
       if (descriptor !== undefined) {
         // For the dispose method, wrap it to run plugin disposal callbacks
@@ -228,6 +234,54 @@ export function createPluginWrapper<
               return originalDispose.call(container);
             },
           });
+        } else if (key === "createChild" && typeof descriptor.value === "function") {
+          // Intercept createChild to auto-apply parent wrappers to child containers.
+          // When wrappers are chained via pipe(), each wrapper intercepts createChild.
+          // To avoid applying wrappers multiple times, we:
+          // 1. Store the original base createChild (from the first wrapper application)
+          // 2. Always call the base createChild, not the intercepted chain
+          // 3. Apply the CURRENT enhanced object's accumulated wrappers
+          const currentCreateChild = descriptor.value as (
+            ...args: unknown[]
+          ) => EnhanceableContainer;
+
+          // Get or store the base createChild
+          // If container already has a base stored, use that; otherwise this IS the base
+          const baseCreateChild = baseCreateChildMap.get(container) ?? currentCreateChild;
+          // Store the base for this enhanced object so subsequent wrappers can find it
+          baseCreateChildMap.set(enhanced, baseCreateChild);
+
+          Object.defineProperty(enhanced, key, {
+            ...descriptor,
+            value: function (this: unknown, ...args: unknown[]) {
+              // Always call the BASE createChild to get raw child without any wrapper effects
+              const rawChild = baseCreateChild.apply(container, args);
+              // Apply THIS enhanced object's accumulated wrappers
+              return applyParentWrappers(
+                enhanced as EnhanceableContainer & WrapperTracking,
+                rawChild
+              );
+            },
+          });
+        } else if (key === "createChildAsync" && typeof descriptor.value === "function") {
+          // Same logic for async version
+          const currentCreateChildAsync = descriptor.value as (
+            ...args: unknown[]
+          ) => Promise<EnhanceableContainer>;
+
+          const baseCreateChildAsync =
+            baseCreateChildAsyncMap.get(container) ?? currentCreateChildAsync;
+          baseCreateChildAsyncMap.set(enhanced, baseCreateChildAsync);
+
+          Object.defineProperty(enhanced, key, {
+            ...descriptor,
+            value: function (this: unknown, ...args: unknown[]) {
+              const childPromise = baseCreateChildAsync.apply(container, args);
+              return childPromise.then(rawChild =>
+                applyParentWrappers(enhanced as EnhanceableContainer & WrapperTracking, rawChild)
+              );
+            },
+          });
         } else {
           Object.defineProperty(enhanced, key, descriptor);
         }
@@ -242,8 +296,17 @@ export function createPluginWrapper<
       writable: false,
     });
 
-    // Track applied wrapper for child inheritance
-    trackAppliedWrapper(enhanced, plugin, wrapper as unknown as PluginWrapperFn<symbol, unknown>);
+    // Get inherited wrappers from input container before tracking
+    // This enables wrapper accumulation when using pipe() with multiple wrappers
+    const inheritedWrappers = getAppliedWrappers(container);
+
+    // Track applied wrapper for child inheritance, including inherited wrappers
+    trackAppliedWrapper(
+      enhanced,
+      plugin,
+      wrapper as unknown as PluginWrapperFn<symbol, unknown>,
+      inheritedWrappers
+    );
 
     // Freeze the enhanced object for immutability
     Object.freeze(enhanced);
@@ -304,15 +367,21 @@ const wrapperTrackingMap = new WeakMap<EnhanceableContainer, readonly AppliedWra
 /**
  * Tracks an applied wrapper on a container for child inheritance.
  * Uses WeakMap to store tracking data externally since containers are frozen.
+ *
+ * When wrappers are chained via `pipe()`, each new enhanced object must
+ * accumulate ALL previous wrappers, not just track its own. The `inheritedWrappers`
+ * parameter enables this by passing wrappers from the input container.
+ *
  * @internal
  */
 function trackAppliedWrapper(
   container: EnhanceableContainer,
   plugin: AnyPlugin,
-  wrapper: PluginWrapperFn<symbol, unknown>
+  wrapper: PluginWrapperFn<symbol, unknown>,
+  inheritedWrappers: readonly AppliedWrapper[] = []
 ): void {
-  const existingWrappers = wrapperTrackingMap.get(container) ?? [];
-  const newWrappers = [...existingWrappers, { plugin, wrapper }];
+  // Merge inherited wrappers (from input container) with the new wrapper
+  const newWrappers = [...inheritedWrappers, { plugin, wrapper }];
   wrapperTrackingMap.set(container, Object.freeze(newWrappers));
 }
 
@@ -322,6 +391,55 @@ function trackAppliedWrapper(
  */
 export function getAppliedWrappers(container: EnhanceableContainer): readonly AppliedWrapper[] {
   return wrapperTrackingMap.get(container) ?? [];
+}
+
+/**
+ * WeakMap to track original-to-enhanced wrapper relationships.
+ *
+ * When `applyParentWrappers()` enhances a child container, the parent's
+ * `childContainers` array still references the original (raw) wrapper.
+ * This map enables `getChildContainers()` to discover the enhanced wrapper
+ * (with plugin APIs like INSPECTOR) from the original wrapper.
+ *
+ * @internal
+ */
+const originalToEnhancedMap = new WeakMap<EnhanceableContainer, EnhanceableContainer>();
+
+/**
+ * WeakMap to store the original (non-intercepted) createChild function.
+ *
+ * When wrappers are chained via pipe(), each wrapper intercepts createChild.
+ * To avoid applying wrappers multiple times (once per wrapper in the chain),
+ * we store the original base createChild and always use that instead of
+ * calling through the intercepted chain.
+ *
+ * @internal
+ */
+const baseCreateChildMap = new WeakMap<
+  EnhanceableContainer,
+  (...args: unknown[]) => EnhanceableContainer
+>();
+
+/**
+ * WeakMap to store the original (non-intercepted) createChildAsync function.
+ * @internal
+ */
+const baseCreateChildAsyncMap = new WeakMap<
+  EnhanceableContainer,
+  (...args: unknown[]) => Promise<EnhanceableContainer>
+>();
+
+/**
+ * Gets the enhanced wrapper for an original (raw) wrapper.
+ *
+ * Returns the enhanced wrapper if the original was enhanced via
+ * `applyParentWrappers()`, otherwise returns the original wrapper.
+ *
+ * @internal
+ */
+export function getEnhancedWrapper<C extends EnhanceableContainer>(original: C): C {
+  const enhanced = originalToEnhancedMap.get(original);
+  return (enhanced ?? original) as C;
 }
 
 /**
@@ -350,6 +468,11 @@ export function applyParentWrappers<C extends EnhanceableContainer>(
   for (const { wrapper } of wrappers) {
     enhanced = wrapper(enhanced);
   }
+
+  // Track original→enhanced relationship for getChildContainers() discovery.
+  // The parent's childContainers array stores the original (raw) wrapper,
+  // but getChildContainers() needs to find the enhanced wrapper (with INSPECTOR).
+  originalToEnhancedMap.set(childContainer, enhanced);
 
   return enhanced as C;
 }
