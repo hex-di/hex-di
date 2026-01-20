@@ -1,5 +1,6 @@
 import type { Port } from "@hex-di/ports";
 import type { Adapter, Lifetime, FactoryKind } from "./types.js";
+import type { InferenceError } from "../common/index.js";
 
 // =============================================================================
 // Type Inference Utilities
@@ -227,3 +228,159 @@ export type InferClonable<TAdapter> =
  * ```
  */
 export type IsClonableAdapter<TAdapter> = InferClonable<TAdapter> extends true ? true : false;
+
+// =============================================================================
+// Debug Inference Types
+// =============================================================================
+//
+// These types provide better error messages when debugging type inference issues.
+// Instead of returning silent `never`, they return descriptive `InferenceError`
+// objects that show in IDE tooltips.
+//
+// **When to use:**
+// - Debugging why a type inference failed
+// - Investigating "mysterious never" results
+// - Learning how the type system works
+//
+// **When NOT to use:**
+// - In production types that need conditional checking (use the standard versions)
+// - Performance-sensitive type checking (InferenceError adds complexity)
+//
+
+/**
+ * Debug version of `InferAdapterProvides` that returns an `InferenceError`
+ * instead of `never` when the input is not a valid Adapter type.
+ *
+ * Use this when debugging type inference issues. The IDE tooltip will show
+ * exactly what went wrong instead of just `never`.
+ *
+ * @typeParam TAdapter - The type to extract from
+ * @returns The provided Port, or `InferenceError` with details if not an adapter
+ *
+ * @example
+ * ```typescript
+ * // Normal type shows just `never` on hover:
+ * type A = InferAdapterProvides<{ notAdapter: true }>;
+ *
+ * // Debug type shows descriptive error on hover:
+ * type B = DebugInferAdapterProvides<{ notAdapter: true }>;
+ * // { __inferenceError: true; __source: "InferAdapterProvides"; __message: "...", ... }
+ * ```
+ *
+ * @internal
+ */
+export type DebugInferAdapterProvides<TAdapter> =
+  TAdapter extends Adapter<
+    infer TProvides,
+    InferPlaceholder,
+    LifetimePlaceholder,
+    FactoryKindPlaceholder,
+    ClonablePlaceholder
+  >
+    ? TProvides
+    : InferenceError<
+        "InferAdapterProvides",
+        "Input is not a valid Adapter type. Expected Adapter<TProvides, TRequires, TLifetime, TFactoryKind, TClonable>.",
+        TAdapter
+      >;
+
+/**
+ * Debug version of `InferAdapterRequires` that returns an `InferenceError`
+ * instead of `never` when the input is not a valid Adapter type.
+ *
+ * Note: Returns `never` for adapters with no requirements (intentional empty case).
+ * Only returns `InferenceError` when the input is not an adapter at all.
+ *
+ * @typeParam TAdapter - The type to extract from
+ * @returns The required Ports union, `never` if no requirements, or `InferenceError` if not an adapter
+ *
+ * @internal
+ */
+export type DebugInferAdapterRequires<TAdapter> =
+  TAdapter extends Adapter<
+    InferPlaceholder,
+    infer TRequires,
+    LifetimePlaceholder,
+    FactoryKindPlaceholder,
+    ClonablePlaceholder
+  >
+    ? TRequires
+    : InferenceError<
+        "InferAdapterRequires",
+        "Input is not a valid Adapter type. Expected Adapter<TProvides, TRequires, TLifetime, TFactoryKind, TClonable>.",
+        TAdapter
+      >;
+
+/**
+ * Debug version of `InferAdapterLifetime` that returns an `InferenceError`
+ * instead of `never` when the input is not a valid Adapter type.
+ *
+ * @typeParam TAdapter - The type to extract from
+ * @returns The Lifetime, or `InferenceError` if not an adapter
+ *
+ * @internal
+ */
+export type DebugInferAdapterLifetime<TAdapter> =
+  TAdapter extends Adapter<
+    InferPlaceholder,
+    InferPlaceholder,
+    infer TLifetime,
+    FactoryKindPlaceholder,
+    ClonablePlaceholder
+  >
+    ? TLifetime
+    : InferenceError<
+        "InferAdapterLifetime",
+        "Input is not a valid Adapter type. Expected Adapter<TProvides, TRequires, TLifetime, TFactoryKind, TClonable>.",
+        TAdapter
+      >;
+
+/**
+ * Debug version of `InferManyProvides` that returns an `InferenceError`
+ * instead of `never` when the input is not a valid array of Adapters.
+ *
+ * @typeParam TAdapters - The array type to extract from
+ * @returns Union of provided Ports, or `InferenceError` if not a valid adapter array
+ *
+ * @internal
+ */
+export type DebugInferManyProvides<TAdapters> = TAdapters extends readonly (infer TElement)[]
+  ? TElement extends Adapter<
+      infer TProvides,
+      InferPlaceholder,
+      LifetimePlaceholder,
+      FactoryKindPlaceholder,
+      ClonablePlaceholder
+    >
+    ? TProvides
+    : InferenceError<"InferManyProvides", "Array element is not a valid Adapter type.", TElement>
+  : InferenceError<
+      "InferManyProvides",
+      "Input is not a readonly array. Expected readonly Adapter[].",
+      TAdapters
+    >;
+
+/**
+ * Debug version of `InferManyRequires` that returns an `InferenceError`
+ * instead of `never` when the input is not a valid array of Adapters.
+ *
+ * @typeParam TAdapters - The array type to extract from
+ * @returns Union of required Ports, or `InferenceError` if not a valid adapter array
+ *
+ * @internal
+ */
+export type DebugInferManyRequires<TAdapters> = TAdapters extends readonly (infer TElement)[]
+  ? TElement extends Adapter<
+      InferPlaceholder,
+      infer TRequires,
+      LifetimePlaceholder,
+      FactoryKindPlaceholder,
+      ClonablePlaceholder
+    >
+    ? TRequires
+    : InferenceError<"InferManyRequires", "Array element is not a valid Adapter type.", TElement>
+  : InferenceError<
+      "InferManyRequires",
+      "Input is not a readonly array. Expected readonly Adapter[].",
+      TAdapters
+    >;

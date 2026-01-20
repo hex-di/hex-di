@@ -33,3 +33,19 @@ export type {
   DetectCaptiveInMergedGraph,
   FindLifetimeInconsistency,
 } from "./captive-dependency.js";
+
+// Init priority types (infrastructure for future compile-time validation)
+export type {
+  PriorityBand,
+  PriorityBandLevel,
+  GetBandLevel,
+  IsValidBandOrder,
+  EmptyInitPriorityMap,
+  AddInitPriority,
+  GetInitPriority,
+  DefaultInitPriority,
+  InferAdapterInitPriority,
+  InitPriorityErrorMessage,
+  MergeInitPriorityMaps,
+  AddManyInitPriorities,
+} from "./init-priority.js";
