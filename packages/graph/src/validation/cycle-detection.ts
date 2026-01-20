@@ -43,10 +43,18 @@ import type { IsNever } from "../common";
 // =============================================================================
 
 /**
- * Extracts the port name string from an adapter's provides property.
+ * Extracts the **port name string** from an adapter's `provides` property.
  *
- * @typeParam A - The adapter type
- * @returns The port name as a string literal type
+ * Returns only the string literal name (e.g., `"Logger"`), not the full Port type.
+ * This is used for dependency graph tracking where we only need the name for
+ * cycle detection.
+ *
+ * **Contrast with `InferAdapterProvides`** (in `adapter/inference.ts`):
+ * - `AdapterProvidesName<A>` → `"Logger"` (string literal)
+ * - `InferAdapterProvides<A>` → `Port<Logger, "Logger">` (full Port type)
+ *
+ * @typeParam A - The adapter type to extract from
+ * @returns The port name as a string literal type, or `never` if not an adapter
  *
  * @example
  * ```typescript
@@ -151,25 +159,57 @@ export type GetDirectDeps<TMap, TPort extends string> = TPort extends keyof TMap
 /**
  * Maximum recursion depth for type-level graph traversal.
  *
- * @remarks
- * **Why 30?**
- * - TypeScript's limit varies (50-100) based on complexity of types involved
- * - 30 provides a safe margin while supporting most real-world dependency graphs
- * - Real applications rarely have dependency chains deeper than 15 levels
- * - If exceeded, we return `false` (assumes no cycle), and runtime catches it
+ * ## Why 30?
  *
- * **Trade-off:**
- * - Lower values = safer but might miss deep cycles (caught at runtime)
- * - Higher values = catches more cycles but risks TS2589 on complex types
+ * - **TypeScript limits**: The type system has recursion limits (50-100) that
+ *   vary based on type complexity. 30 provides a 2x safety margin.
+ * - **Real-world graphs**: Production dependency graphs rarely exceed 15 levels.
+ *   30 covers virtually all legitimate use cases.
+ * - **Graceful degradation**: If exceeded, we assume no cycle. Runtime catches it.
  *
- * **Important Limitation:**
- * Cycles at depth 31 or deeper will NOT be detected at compile time.
- * These cycles will silently pass type validation but will be caught at runtime
- * when the container attempts to resolve the cyclic dependency. If you have
- * dependency chains deeper than 30 levels, consider restructuring your graph
- * or be aware that cycle detection relies on runtime checks for those paths.
+ * ## Trade-offs
+ *
+ * | Value | Pros | Cons |
+ * |-------|------|------|
+ * | Lower (10-20) | Faster type checking, no TS2589 risk | May miss deep cycles |
+ * | Current (30) | Balanced: catches most cycles safely | Very deep graphs need runtime |
+ * | Higher (50+) | Catches deeper cycles | Risks TS2589 on complex types |
+ *
+ * ## What If My Graph Is Deeper?
+ *
+ * If `builder.inspect().maxChainDepth` approaches or exceeds 30:
+ *
+ * 1. **Architectural Review**: Deep chains often indicate design issues.
+ *    Consider if intermediate abstractions can flatten the hierarchy.
+ *
+ * 2. **Use `buildFragment()`**: Child graphs built with `buildFragment()`
+ *    skip compile-time validation, deferring to runtime checks.
+ *
+ * 3. **Split Graphs**: Build smaller subgraphs independently, then merge
+ *    them at runtime. Each subgraph validates independently.
+ *
+ * 4. **Runtime Monitoring**: Use `builder.inspect()` to check `maxChainDepth`
+ *    at runtime. Log warnings when approaching the limit.
+ *
+ * ## Important Limitation
+ *
+ * Cycles at depth 31+ will **NOT** be detected at compile time. They pass
+ * type validation but are caught at runtime when the container attempts
+ * to resolve the cyclic dependency.
+ *
+ * ## Configurability
+ *
+ * This value cannot be easily changed at the consumer level because TypeScript's
+ * type system evaluates types at definition time, not use time. To use a different
+ * depth limit, you would need to fork the library and modify this value.
+ *
+ * For most use cases, the recommended approach is:
+ * - Use `buildFragment()` to skip compile-time validation for deep subgraphs
+ * - Let runtime validation catch any cycles
+ *
+ * @internal - Exported via `@hex-di/graph/internal` for advanced inspection
  */
-type MaxDepth = 30;
+export type MaxDepth = 30;
 
 /**
  * Depth counter using tuple length.
@@ -291,14 +331,14 @@ export type IsReachable<
             TFrom extends TTarget
             ? true
             : // Step 3c: Recurse with dependencies of current port
-              IsReachable_CheckDeps<TMap, TFrom, TTarget, TVisited, TDepth>
+              IsReachableCheckDeps<TMap, TFrom, TTarget, TVisited, TDepth>
         : false;
 
 /**
  * Helper type to check dependencies, handling the never case.
  * @internal
  */
-type IsReachable_CheckDeps<
+type IsReachableCheckDeps<
   TMap,
   TFrom extends string,
   TTarget extends string,
@@ -548,15 +588,4 @@ type CheckPortForCycle<TMap, TPort extends string> =
           ? CircularDependencyError<BuildCyclePath<TMap, TPort, Deps>>
           : never
         : never
-    : never;
-
-/**
- * Extracts the first error from a union of errors.
- * Used to consolidate multiple potential cycle errors into one.
- * @internal
- */
-export type FirstCycleError<T> = [T] extends [never]
-  ? never
-  : T extends CircularDependencyError<infer Path>
-    ? CircularDependencyError<Path>
     : never;
