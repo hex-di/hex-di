@@ -14,7 +14,7 @@ import type { Container, ContainerPhase } from "@hex-di/runtime";
 import { createInspector } from "../index.js";
 import type { ContainerInspector as RuntimeInspector } from "../index.js";
 import type { ExportedGraph } from "@hex-di/devtools-core";
-import type { TracingAPI, ScopeTree, ContainerKind } from "@hex-di/plugin";
+import type { TracingAPI, ScopeTree, ContainerKind, TraceEntry } from "@hex-di/plugin";
 import { containerInspectorStyles } from "./styles.js";
 import { ContainerScopeHierarchy } from "./container-scope-hierarchy.js";
 import { ScopeHierarchy } from "./scope-hierarchy.js";
@@ -204,14 +204,14 @@ function getRequestServiceStats(
   }
 
   const traces = tracingAPI.getTraces({ portName });
-  const requestTraces = traces.filter(t => t.lifetime === "transient");
+  const requestTraces = traces.filter((t: TraceEntry) => t.lifetime === "transient");
 
   if (requestTraces.length === 0) {
     return undefined;
   }
 
-  const totalDuration = requestTraces.reduce((sum, t) => sum + t.duration, 0);
-  const lastResolvedAt = Math.max(...requestTraces.map(t => t.startTime));
+  const totalDuration = requestTraces.reduce((sum: number, t: TraceEntry) => sum + t.duration, 0);
+  const lastResolvedAt = Math.max(...requestTraces.map((t: TraceEntry) => t.startTime));
 
   return {
     callCount: requestTraces.length,

@@ -85,6 +85,66 @@ type ContainerTreeRunner = MachineRunner<
 >;
 
 // =============================================================================
+// Type-Safe Event Helpers
+// =============================================================================
+
+/**
+ * Full UI event with type and optional payload.
+ * Used for cross-machine event forwarding where the payload structure
+ * is known at compile time.
+ */
+interface FullUIEvent {
+  readonly type: DevToolsUIEvent;
+  readonly payload?: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * Sends an event to the UI machine with an isolated type cast.
+ *
+ * SAFETY: This function exists to isolate the `as unknown as` cast needed
+ * at the machine boundary. The Flow library's `MachineRunner.send()` type
+ * is narrower than the actual event acceptance (it only declares `{ type: E }`
+ * but actually accepts full events with payloads).
+ *
+ * All callers construct events via the `UIEventBuilders` to ensure
+ * correct structure at compile time.
+ *
+ * @param runner - The UI machine runner
+ * @param event - The fully-typed event with payload
+ */
+function sendUIEvent(runner: UIRunner, event: FullUIEvent): void {
+  // SAFETY: Cast documented above. Event is always constructed via builders.
+  runner.send(event as { readonly type: DevToolsUIEvent });
+}
+
+/**
+ * Type-safe event builders for cross-machine communication.
+ * These ensure events are correctly structured at compile time.
+ */
+const UIEventBuilders = {
+  /**
+   * Builds a CONTAINER_REGISTERED event for the UI machine.
+   */
+  containerRegistered: (entry: {
+    readonly id: string;
+    readonly label: string;
+    readonly kind: string;
+    readonly parentId: string | null;
+  }): FullUIEvent => ({
+    type: "CONTAINER_REGISTERED",
+    payload: { entry },
+  }),
+
+  /**
+   * Builds a CONTAINER_UNREGISTERED event for the UI machine.
+   */
+  containerUnregistered: (id: string): FullUIEvent => ({
+    type: "CONTAINER_UNREGISTERED",
+    payload: { id },
+  }),
+} as const;
+
+// =============================================================================
 // Container Discovery Event Types
 // =============================================================================
 
@@ -669,11 +729,8 @@ export class DevToolsFlowRuntime {
    * to keep container registration in sync.
    *
    * Uses discriminated union narrowing on originalEvent.type for type safety
-   * when accessing payload data. The cast to unknown then to the UI event type
-   * is necessary at the machine boundary because:
-   * 1. The Flow library's send() type only accepts { type: string }
-   * 2. But the machine actions expect full event objects with payloads
-   * 3. This is a known limitation of the type system, not a safety issue
+   * when accessing payload data. Event sending uses sendUIEvent() helper
+   * which isolates the necessary type cast at the machine boundary.
    */
   private handleContainerTreeCrossMachineEvents(
     _localEventType: string,
@@ -684,31 +741,21 @@ export class DevToolsFlowRuntime {
     if (originalEvent.type === "CONTAINER_TREE.CONTAINER_ADDED") {
       // TypeScript narrows originalEvent to have payload.entry: ContainerTreeEntry
       const entry = originalEvent.payload.entry;
-      // Construct the UI event with properly typed payload
-      const uiEvent = {
-        type: "CONTAINER_REGISTERED" as const,
-        payload: {
-          entry: {
-            id: entry.id,
-            label: entry.label,
-            kind: entry.kind,
-            parentId: entry.parentId,
-          },
-        },
-      };
-      // Cast required at machine boundary - Flow's send() type is too narrow
-      this.uiRunner.send(uiEvent as unknown as { readonly type: DevToolsUIEvent });
+      // Use type-safe event builder
+      const uiEvent = UIEventBuilders.containerRegistered({
+        id: entry.id,
+        label: entry.label,
+        kind: entry.kind,
+        parentId: entry.parentId,
+      });
+      sendUIEvent(this.uiRunner, uiEvent);
     }
 
     // Forward CONTAINER_REMOVED to UI machine as CONTAINER_UNREGISTERED
     if (originalEvent.type === "CONTAINER_TREE.CONTAINER_REMOVED") {
       // TypeScript narrows originalEvent to have payload.id: string
-      const uiEvent = {
-        type: "CONTAINER_UNREGISTERED" as const,
-        payload: { id: originalEvent.payload.id },
-      };
-      // Cast required at machine boundary - Flow's send() type is too narrow
-      this.uiRunner.send(uiEvent as unknown as { readonly type: DevToolsUIEvent });
+      const uiEvent = UIEventBuilders.containerUnregistered(originalEvent.payload.id);
+      sendUIEvent(this.uiRunner, uiEvent);
     }
   }
 
@@ -807,6 +854,10 @@ export class DevToolsFlowRuntime {
         deps: {},
       }
     ).catch((error: unknown) => {
+      // Ignore errors if runtime is already disposed
+      if (this.disposed) {
+        return;
+      }
       // Handle unexpected errors
       const err = error instanceof Error ? error : new Error(String(error));
       this.dispatch({
@@ -863,8 +914,8 @@ export class DevToolsFlowRuntime {
         );
       })
       .catch((error: unknown) => {
-        // Only log if not aborted (expected during dispose)
-        if (!this.subscriptionAbortController?.signal.aborted) {
+        // Only log if not aborted (expected during dispose) and not disposed
+        if (!this.subscriptionAbortController?.signal.aborted && !this.disposed) {
           debugLog("[spawnContainerSubscription] ERROR:", error);
         }
       });

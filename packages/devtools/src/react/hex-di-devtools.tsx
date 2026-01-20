@@ -4,8 +4,8 @@
  * Simplified API for HexDI DevTools that accepts only a container prop.
  * The component automatically:
  * - Extracts the inspector from the container using hasInspector type guard
- * - Creates the DevToolsRuntime internally
- * - Provides the runtime via DevToolsRuntimeProvider
+ * - Creates the DevToolsFlowRuntime internally
+ * - Provides state management via DevToolsStoreProvider
  *
  * Note: For full DevTools functionality (child discovery, graph data, subscriptions),
  * containers need the InspectorPlugin installed via `withInspector` wrapper.
@@ -29,7 +29,8 @@ import {
   type VisualizableAdapter,
 } from "@hex-di/runtime";
 import type { TracingAPI } from "@hex-di/plugin";
-import type { DevToolsPlugin } from "../runtime/plugin-types.js";
+import type { ExportedGraph } from "@hex-di/devtools-core";
+import type { DevToolsPlugin } from "./types/plugin-types.js";
 import { defaultPlugins } from "../plugins/presets.js";
 // DevToolsRuntimeProvider removed - plugins now provided via DevToolsStoreProvider
 import { floatingStyles, getPositionStyles, panelStyles } from "./styles.js";
@@ -41,7 +42,7 @@ import { ContainerSelector } from "./container-selector.js";
 import {
   DevToolsStoreProvider,
   useSelectedContainerId,
-  useDevToolsRuntime,
+  useDevToolsFlowRuntime,
   useDevToolsStore,
 } from "../store/index.js";
 
@@ -65,25 +66,46 @@ interface PanelSize {
   height: number;
 }
 
-/** Type guard to check if value is a non-null object */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-/** Type guard for PanelSize from localStorage */
-function isPanelSize(value: unknown): value is PanelSize {
-  if (!isRecord(value)) return false;
-  return typeof value.width === "number" && typeof value.height === "number";
-}
-
 /** Default panel dimensions */
 const DEFAULT_SIZE: PanelSize = { width: 400, height: 500 };
 
 /** Minimum panel dimensions */
 const MIN_SIZE: PanelSize = { width: 300, height: 300 };
 
+/** Empty graph for null runtime case */
+const EMPTY_GRAPH: ExportedGraph = Object.freeze({ nodes: [], edges: [] });
+
 /** Maximum panel dimensions */
 const MAX_SIZE: PanelSize = { width: 1200, height: 900 };
+
+/** Type guard to check if value is a non-null object */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+/**
+ * Type guard for PanelSize from localStorage.
+ *
+ * Validates:
+ * - Value is a non-null object
+ * - width and height are finite numbers (not NaN, Infinity)
+ * - Values are within reasonable bounds (MIN_SIZE to MAX_SIZE)
+ */
+function isPanelSize(value: unknown): value is PanelSize {
+  if (!isRecord(value)) return false;
+
+  const { width, height } = value;
+
+  // Must be finite numbers (excludes NaN, Infinity, -Infinity)
+  if (typeof width !== "number" || !Number.isFinite(width)) return false;
+  if (typeof height !== "number" || !Number.isFinite(height)) return false;
+
+  // Must be within valid range
+  if (width < MIN_SIZE.width || width > MAX_SIZE.width) return false;
+  if (height < MIN_SIZE.height || height > MAX_SIZE.height) return false;
+
+  return true;
+}
 
 /** Resize edge types */
 type ResizeEdge = "top" | "bottom" | "left" | "right" | "corner";
@@ -242,8 +264,6 @@ interface DevToolsPanelContentProps {
   readonly position: DevToolsPosition;
   readonly onClose: () => void;
   readonly tracingAPI: TracingAPI | undefined;
-  /** Root inspector as fallback when no container selected */
-  readonly rootInspector: InspectorWithSubscription;
 }
 
 /**
@@ -254,22 +274,23 @@ function DevToolsPanelContent({
   position,
   onClose,
   tracingAPI,
-  rootInspector,
 }: DevToolsPanelContentProps): ReactElement {
   // Get selected container ID from Zustand store
   const selectedContainerId = useSelectedContainerId();
 
-  // Get runtime for inspector lookups via Zustand store
-  const flowRuntime = useDevToolsRuntime();
+  // Get runtime for inspector lookups via Zustand store (V12 fix - derive from runtime)
+  const flowRuntime = useDevToolsFlowRuntime();
 
   // Build graph from selected container with merged parent services
   // Uses getAncestorChain to include inherited services from all ancestor containers
   const exportedGraph = useMemo(() => {
+    // Return empty graph if no runtime available
     if (flowRuntime === null) {
-      // Fallback to root inspector if runtime not available
-      const graphData = rootInspector.getGraphData();
-      return buildExportedGraphFromVisualizableAdapters(graphData.adapters);
+      return EMPTY_GRAPH;
     }
+
+    // Get root inspector from runtime
+    const rootInspector = flowRuntime.getRootInspector();
 
     // Get the ancestor chain [root, ..., parent, selected]
     const chain = flowRuntime.getAncestorChain(selectedContainerId ?? "");
@@ -298,7 +319,7 @@ function DevToolsPanelContent({
     }
 
     return buildExportedGraphFromVisualizableAdapters(mergedAdapters);
-  }, [selectedContainerId, flowRuntime, rootInspector]);
+  }, [selectedContainerId, flowRuntime]);
 
   // Local state for panel size and fullscreen
   const [panelSize, setPanelSize] = useState<PanelSize>(() => {
@@ -660,7 +681,6 @@ function HexDiDevToolsInner({
         position={position}
         positionStyles={positionStyles}
         tracingAPI={tracingAPI}
-        rootInspector={inspector}
       />
     </DevToolsStoreProvider>
   );
@@ -673,7 +693,6 @@ interface DevToolsFloatingUIProps {
   readonly position: DevToolsPosition;
   readonly positionStyles: CSSProperties;
   readonly tracingAPI: TracingAPI | undefined;
-  readonly rootInspector: InspectorWithSubscription;
 }
 
 /**
@@ -684,7 +703,6 @@ function DevToolsFloatingUI({
   position,
   positionStyles,
   tracingAPI,
-  rootInspector,
 }: DevToolsFloatingUIProps): ReactElement {
   // Get store actions - select individually to maintain stable references
   const open = useDevToolsStore(state => state.open);
@@ -751,12 +769,7 @@ function DevToolsFloatingUI({
       }}
     >
       {isOpen ? (
-        <DevToolsPanelContent
-          position={position}
-          onClose={handleClose}
-          tracingAPI={tracingAPI}
-          rootInspector={rootInspector}
-        />
+        <DevToolsPanelContent position={position} onClose={handleClose} tracingAPI={tracingAPI} />
       ) : (
         <button
           data-testid="devtools-floating-toggle"

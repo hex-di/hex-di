@@ -5,6 +5,7 @@
  */
 
 import React, { type ReactElement } from "react";
+import type { ServiceOrigin } from "@hex-di/plugin";
 import type { PositionedNode, ContainerOwnershipEntry } from "./types.js";
 import { tooltipStyles, getLifetimeStrokeVar } from "./graph-styles.js";
 
@@ -32,11 +33,11 @@ export interface GraphTooltipProps {
 /**
  * Color mapping for ownership states.
  */
-const OWNERSHIP_COLORS = {
+const OWNERSHIP_COLORS: Record<ServiceOrigin, string> = {
   own: "#a6e3a1", // Green
   inherited: "#a6adc8", // Gray/Muted
   overridden: "#fab387", // Orange
-} as const;
+};
 
 /**
  * Inheritance mode abbreviations.

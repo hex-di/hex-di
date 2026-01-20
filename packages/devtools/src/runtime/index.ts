@@ -42,16 +42,12 @@ export {
 } from "./devtools-snapshot.js";
 
 // =============================================================================
-// Factory
-// =============================================================================
-
-export { createDevToolsRuntime, PluginConfigurationError } from "./create-runtime.js";
-
-// =============================================================================
 // Plugin Factory and Validation
 // =============================================================================
 
-export { defineDevToolsPlugin, defineDevToolsPlugins } from "./define-plugin.js";
+// Note: defineDevToolsPlugin is React-specific
+// and have been moved to the React layer. For backward compatibility,
+// they are re-exported from ../react/define-plugin.js below.
 
 export {
   validatePluginId,
@@ -60,6 +56,7 @@ export {
   validatePluginConfigs,
   validateShortcuts,
   PluginValidationError,
+  PluginConfigurationError,
 } from "./validation.js";
 
 // =============================================================================
@@ -113,9 +110,19 @@ export type {
 } from "./plugin-types-core.js";
 
 // =============================================================================
-// Plugin Types (React-specific, from plugin-types.ts)
+// Plugin Types (React-specific)
 // =============================================================================
 
+/**
+ * Note: React-specific plugin types are now in the React layer.
+ * Import from `@hex-di/devtools/react` or `../react/types/plugin-types.js`.
+ *
+ * For framework-agnostic types, use PluginDefinition/PluginMetadata from
+ * plugin-types-core.ts.
+ */
+
+// Re-export from React types for backward compatibility in this release
+// TODO: Remove these re-exports in next major version
 export type {
   // React-Specific Plugin Types
   DevToolsPlugin,
@@ -133,7 +140,11 @@ export type {
   HasShortcuts,
   StrictPlugin,
   MinimalPlugin,
-} from "./plugin-types.js";
+} from "../react/types/plugin-types.js";
+
+// Re-export React-specific factory functions for backward compatibility
+// TODO: Remove these re-exports in next major version - import from @hex-di/devtools/react
+export { defineDevToolsPlugin } from "../react/define-plugin.js";
 
 // =============================================================================
 // Type Guards

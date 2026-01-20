@@ -15,6 +15,26 @@
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
+    },
+    "./internal": {
+      "import": {
+        "types": "./dist/internal.d.ts",
+        "default": "./dist/internal.js"
+      },
+      "require": {
+        "types": "./dist/internal.d.cts",
+        "default": "./dist/internal.cjs"
+      }
+    },
+    "./convenience": {
+      "import": {
+        "types": "./dist/convenience.d.ts",
+        "default": "./dist/convenience.js"
+      },
+      "require": {
+        "types": "./dist/convenience.d.cts",
+        "default": "./dist/convenience.cjs"
+      }
     }
   },
   "files": [
@@ -64,5 +84,8 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "devDependencies": {
+    "fast-check": "^4.5.3"
+  }
 }

@@ -16,7 +16,7 @@ import type { Graph } from "@hex-di/graph";
 import type { Port } from "@hex-di/ports";
 import { DevToolsPanel } from "../../src/react/index.js";
 import { defaultPlugins } from "../../src/plugins/presets.js";
-import type { DevToolsPlugin, PluginProps } from "../../src/runtime/plugin-types.js";
+import type { DevToolsPlugin, PluginProps } from "../../src/runtime/index.js";
 
 // =============================================================================
 // Test Fixtures

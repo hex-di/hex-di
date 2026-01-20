@@ -6,32 +6,12 @@
  */
 
 import { describe, it, expectTypeOf } from "vitest";
-import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "../src/index.js";
 import type {
   NewlySatisfiedDependencies,
   MergeSatisfiesDependencies,
 } from "../src/validation/index.js";
-
-// =============================================================================
-// Test Fixtures
-// =============================================================================
-
-interface Logger {
-  log(message: string): void;
-}
-
-interface Database {
-  query(sql: string): Promise<unknown>;
-}
-
-interface UserService {
-  getUser(id: string): Promise<{ id: string; name: string }>;
-}
-
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
+import { LoggerPort, DatabasePort, UserServicePort } from "./fixtures.js";
 
 // =============================================================================
 // NewlySatisfiedDependencies Tests

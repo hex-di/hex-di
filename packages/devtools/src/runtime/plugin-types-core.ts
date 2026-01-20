@@ -12,6 +12,8 @@
  * @packageDocumentation
  */
 
+import type { ContainerSnapshot } from "@hex-di/plugin";
+
 // =============================================================================
 // Plugin Shortcut (Framework-Agnostic)
 // =============================================================================
@@ -21,7 +23,20 @@
  *
  * Plugins can define keyboard bindings to provide quick access
  * to their functionality. Shortcuts are registered with the runtime
- * and handled by the DevTools panel.
+ * and displayed in the DevTools UI for discoverability.
+ *
+ * ## Design Note: Action Callback
+ *
+ * The `action` callback serves primarily as a hook for future extensibility.
+ * Currently, the DevTools panel handles keyboard events and performs tab
+ * navigation directly via the store. The action callback is NOT invoked
+ * by the keyboard event handler - it exists for:
+ *
+ * 1. **Metadata completeness** - Allows plugins to declare intent
+ * 2. **Future extensibility** - May be used for custom plugin actions
+ * 3. **Testing** - Can be invoked directly in unit tests
+ *
+ * For now, providing an empty function `() => {}` is acceptable and expected.
  *
  * Key format follows standard keyboard event patterns:
  * - Single key: "g", "s", "t"
@@ -29,9 +44,10 @@
  *
  * @example
  * ```typescript
+ * // Typical usage - action is a stub for now
  * const shortcut: PluginShortcut = {
  *   key: "g",
- *   action: () => runtime.dispatch({ type: "selectTab", tabId: "graph" }),
+ *   action: () => {},  // Keyboard handling done by DevTools panel
  *   description: "Focus graph tab",
  * };
  * ```
@@ -39,7 +55,13 @@
 export interface PluginShortcut {
   /** Keyboard key or combination (e.g., "g", "ctrl+s", "shift+t") */
   readonly key: string;
-  /** Callback invoked when shortcut is triggered */
+  /**
+   * Callback invoked when shortcut is triggered.
+   *
+   * Note: Currently not called by the DevTools keyboard handler.
+   * Tab switching is handled directly via the store. This callback
+   * is reserved for future plugin-specific shortcut actions.
+   */
   readonly action: () => void;
   /** Human-readable description for help/tooltips */
   readonly description: string;
@@ -126,4 +148,129 @@ export interface TabConfigCore {
   readonly id: string;
   /** Display label for the tab */
   readonly label: string;
+}
+
+// =============================================================================
+// Plugin Commands (Framework-Agnostic)
+// =============================================================================
+
+/**
+ * Command types that plugins can dispatch.
+ *
+ * Commands are framework-agnostic actions that modify runtime state.
+ */
+export type PluginCommand =
+  | { readonly type: "selectTab"; readonly tabId: string }
+  | { readonly type: "selectContainers"; readonly ids: ReadonlySet<string> }
+  | { readonly type: "toggleTracing" }
+  | { readonly type: "pauseTracing" }
+  | { readonly type: "resumeTracing" }
+  | { readonly type: "setThreshold"; readonly value: number }
+  | { readonly type: "clearTraces" }
+  | { readonly type: "pinTrace"; readonly traceId: string }
+  | { readonly type: "unpinTrace"; readonly traceId: string };
+
+// =============================================================================
+// Plugin Runtime Access (Framework-Agnostic)
+// =============================================================================
+
+/**
+ * Minimal runtime interface required by plugins.
+ *
+ * This interface is framework-agnostic - it only requires a dispatch function.
+ */
+export interface PluginRuntimeAccess {
+  /**
+   * Dispatch a command to mutate runtime state.
+   * Commands are processed synchronously.
+   */
+  dispatch(command: PluginCommand): void;
+}
+
+// =============================================================================
+// Plugin State Snapshot (Framework-Agnostic)
+// =============================================================================
+
+/**
+ * Framework-agnostic state snapshot for plugins.
+ *
+ * This version uses `readonly PluginMetadata[]` instead of the React-specific
+ * `DevToolsPlugin[]`. The React layer extends this with the full plugin type.
+ *
+ * @typeParam TPlugin - The plugin type (defaults to PluginMetadata for framework-agnostic use)
+ */
+export interface PluginStateSnapshotCore<TPlugin extends PluginMetadata = PluginMetadata> {
+  readonly activeTabId: string;
+  readonly selectedContainerIds: ReadonlySet<string>;
+  readonly tracingEnabled: boolean;
+  readonly tracingPaused: boolean;
+  readonly tracingThreshold: number;
+  readonly plugins: readonly TPlugin[];
+}
+
+// =============================================================================
+// Container Discovery State (Framework-Agnostic)
+// =============================================================================
+
+/**
+ * Lifecycle state for container discovery and subscription.
+ *
+ * Tracks the progression of container integration with DevTools:
+ * - pending: Container registered but not yet subscribed
+ * - subscribing: Subscription in progress
+ * - active: Actively receiving events
+ * - paused: Subscription paused (e.g., DevTools minimized)
+ * - error: Subscription failed
+ * - disposing: Container being disposed
+ * - disposed: Container fully disposed
+ */
+export type ContainerDiscoveryState =
+  | "pending"
+  | "subscribing"
+  | "active"
+  | "paused"
+  | "error"
+  | "disposing"
+  | "disposed";
+
+// =============================================================================
+// Container Entry (Framework-Agnostic)
+// =============================================================================
+
+/**
+ * Entry representing a registered container with all metadata needed for UI display.
+ *
+ * This type is framework-agnostic - it contains only data, no UI elements.
+ */
+export interface ContainerEntry {
+  /** Unique identifier for the container */
+  readonly id: string;
+  /** Human-readable display name */
+  readonly name: string;
+  /** Formatted path string (e.g., "root/child/grandchild") */
+  readonly path: string;
+  /** Container type in the hierarchy */
+  readonly kind: "root" | "child" | "lazy";
+  /** Current discovery/subscription state */
+  readonly state: ContainerDiscoveryState;
+  /** Whether this container is currently selected in the UI */
+  readonly isSelected: boolean;
+  /** Optional current snapshot of container state */
+  readonly snapshot?: ContainerSnapshot;
+}
+
+// =============================================================================
+// Plugin Config (Framework-Agnostic Base)
+// =============================================================================
+
+/**
+ * Framework-agnostic plugin configuration.
+ *
+ * This is the base type for plugin configuration. Framework-specific
+ * versions extend this with icon and component types.
+ */
+export interface PluginConfigCore {
+  readonly id: string;
+  readonly label: string;
+  readonly shortcuts?: readonly PluginShortcut[];
 }

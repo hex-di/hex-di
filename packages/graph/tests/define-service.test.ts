@@ -13,35 +13,19 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { createPort } from "@hex-di/ports";
 import { defineService, defineAsyncService } from "../src/index.js";
+import {
+  type Logger,
+  type Database,
+  type UserService,
+  LoggerPort,
+  DatabasePort,
+} from "./fixtures.js";
 
-// =============================================================================
-// Test Service Interfaces
-// =============================================================================
-
-interface Logger {
-  log(message: string): void;
-}
-
-interface Database {
-  query(sql: string): Promise<unknown>;
-}
-
-interface UserService {
-  getUser(id: string): Promise<{ id: string; name: string }>;
-}
-
+// Local interface for Config (different signature from fixtures.ConfigService)
 interface Config {
   get(key: string): string;
 }
-
-// =============================================================================
-// Dependency Ports for Testing
-// =============================================================================
-
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
 
 // =============================================================================
 // defineService Unit Tests

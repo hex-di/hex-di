@@ -19,26 +19,24 @@ import type { ContainerKind } from "@hex-di/plugin";
 import type { InspectorWithSubscription, InspectorEvent } from "@hex-di/runtime";
 
 // =============================================================================
-// Plugin Types (re-exported from plugin-types.ts)
+// Framework-Agnostic Plugin Types (from core)
 // =============================================================================
 
 export type {
-  ContainerEntry,
   PluginShortcut,
-  PluginProps,
-  DevToolsPlugin,
-  ExtractPluginIds,
-  PluginConfig,
-  HasShortcuts,
-  PluginRuntimeAccess,
+  PluginMetadata,
+  PluginDefinition,
+  TabConfigCore,
   PluginCommand,
-  PluginStateSnapshot,
-  StrictPlugin,
-  MinimalPlugin,
-} from "./plugin-types.js";
+  PluginRuntimeAccess,
+  PluginStateSnapshotCore,
+  ContainerDiscoveryState,
+  ContainerEntry,
+  PluginConfigCore,
+} from "./plugin-types-core.js";
 
-// Import for use in this file
-import type { DevToolsPlugin } from "./plugin-types.js";
+// Import types for use in this file
+import type { PluginMetadata, ContainerDiscoveryState } from "./plugin-types-core.js";
 
 // =============================================================================
 // Container Node Type (formerly in container-discovery.ts)
@@ -87,7 +85,7 @@ export interface ContainerNode {
  * };
  * ```
  */
-export interface DevToolsRuntimeState {
+export interface DevToolsRuntimeState<TPlugin extends PluginMetadata = PluginMetadata> {
   /** ID of the currently selected plugin tab */
   readonly activeTabId: string;
   /** Set of selected container IDs for multi-container support */
@@ -99,7 +97,7 @@ export interface DevToolsRuntimeState {
   /** Threshold in ms for marking resolutions as slow */
   readonly tracingThreshold: number;
   /** Registered plugins (immutable after runtime creation) */
-  readonly plugins: readonly DevToolsPlugin[];
+  readonly plugins: readonly TPlugin[];
 }
 
 // =============================================================================
@@ -410,9 +408,9 @@ export interface DevToolsRuntime {
  * };
  * ```
  */
-export interface DevToolsRuntimeConfig {
+export interface DevToolsRuntimeConfig<TPlugin extends PluginMetadata = PluginMetadata> {
   /** Plugins to register (required, at least one) */
-  readonly plugins: readonly DevToolsPlugin[];
+  readonly plugins: readonly TPlugin[];
   /** Initial active tab ID (defaults to first plugin's id) */
   readonly initialTabId?: string;
   /** Initial container selection */
@@ -550,41 +548,7 @@ export type ExtractEvent<T extends EventType> = Extract<DevToolsEvent, { type: T
 // Container Lifecycle State Types
 // =============================================================================
 
-/**
- * Container discovery state machine states.
- *
- * Represents the lifecycle of a container from DevTools' perspective:
- * - `pending`: Container discovered, awaiting subscription setup
- * - `subscribing`: Establishing inspector subscription
- * - `active`: Subscribed and monitoring events
- * - `paused`: User-initiated pause of monitoring
- * - `error`: Subscription failed (may be retried)
- * - `disposing`: Container is being disposed
- * - `disposed`: Terminal state, container no longer exists
- *
- * @example
- * ```typescript
- * function getStatusBadge(state: ContainerDiscoveryState): string {
- *   switch (state) {
- *     case "pending": return "Waiting";
- *     case "subscribing": return "Connecting...";
- *     case "active": return "Monitoring";
- *     case "paused": return "Paused";
- *     case "error": return "Error";
- *     case "disposing": return "Disposing...";
- *     case "disposed": return "Disposed";
- *   }
- * }
- * ```
- */
-export type ContainerDiscoveryState =
-  | "pending"
-  | "subscribing"
-  | "active"
-  | "paused"
-  | "error"
-  | "disposing"
-  | "disposed";
+// ContainerDiscoveryState is now exported from plugin-types-core.ts
 
 /**
  * Context data for a container's discovery state machine.

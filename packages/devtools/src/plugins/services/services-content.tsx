@@ -13,7 +13,7 @@
 
 import React, { useMemo, type ReactElement } from "react";
 import type { ExportedGraph } from "@hex-di/devtools-core";
-import type { PluginProps } from "../../runtime/plugin-types.js";
+import type { PluginProps } from "../../react/types/plugin-types.js";
 import { EnhancedServicesView } from "../../react/enhanced-services-view.js";
 import type { ServiceInfo } from "../../react/resolved-services.js";
 import { emptyStyles } from "../../react/styles.js";

@@ -14,12 +14,11 @@
 
 import React, { useMemo, useState, type ReactElement } from "react";
 import type { ExportedGraph } from "@hex-di/devtools-core";
-import type { PluginProps } from "../../runtime/plugin-types.js";
+import type { PluginProps } from "../../react/types/plugin-types.js";
 import { DependencyGraph } from "../../react/graph-visualization/index.js";
 import { emptyStyles } from "../../react/styles.js";
 import { transformNodesToGraphNodes, isEmptyGraph } from "./utils.js";
 import { ContainerScopeHierarchy } from "../shared/container-scope-hierarchy.js";
-import { useContainerScopeTreeOptional } from "../../react/hooks/use-container-scope-tree.js";
 
 // =============================================================================
 // Internal Components
@@ -121,10 +120,9 @@ const splitLayoutStyles = {
  * ```
  */
 export function GraphPluginContent(props: PluginProps): ReactElement {
-  const { graph } = props;
+  const { graph, containerScopeTree } = props;
 
-  // Get container/scope tree for the left panel
-  const containerScopeTree = useContainerScopeTreeOptional();
+  // Get tree from containerScopeTree prop (V7 fix - data via props not hooks)
   const tree = containerScopeTree?.tree ?? [];
 
   // Track selected node in hierarchy

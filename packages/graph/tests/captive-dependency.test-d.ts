@@ -9,7 +9,6 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/ports";
 import {
   GraphBuilder,
   createAdapter,
@@ -22,41 +21,13 @@ import {
   FindAnyCaptiveDependency,
   IsCaptiveDependency,
 } from "../src/index.js";
-
-// =============================================================================
-// Test Service Interfaces
-// =============================================================================
-
-interface Logger {
-  log(message: string): void;
-}
-
-interface Database {
-  query(sql: string): Promise<unknown>;
-}
-
-interface UserService {
-  getUser(id: string): Promise<{ id: string; name: string }>;
-}
-
-interface RequestContext {
-  requestId: string;
-}
-
-interface Cache {
-  get(key: string): unknown;
-  set(key: string, value: unknown): void;
-}
-
-// =============================================================================
-// Test Port Tokens
-// =============================================================================
-
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
-const RequestContextPort = createPort<"RequestContext", RequestContext>("RequestContext");
-const CachePort = createPort<"Cache", Cache>("Cache");
+import {
+  LoggerPort,
+  DatabasePort,
+  UserServicePort,
+  RequestContextPort,
+  CachePortSimple as CachePort,
+} from "./fixtures.js";
 
 // =============================================================================
 // Test Helper Type
@@ -397,7 +368,7 @@ describe("CaptiveDependencyError and CaptiveErrorMessage types", () => {
   it("CaptiveErrorMessage returns template literal with all details", () => {
     // Template literal error message directly shows the lifetime conflict
     type ErrorMessage = CaptiveErrorMessage<"UserService", "Singleton", "Database", "Scoped">;
-    expectTypeOf<ErrorMessage>().toEqualTypeOf<"ERROR: Captive dependency: Singleton 'UserService' cannot depend on Scoped 'Database'">();
+    expectTypeOf<ErrorMessage>().toEqualTypeOf<"ERROR: Captive dependency: Singleton 'UserService' cannot depend on Scoped 'Database'. Fix: Change 'UserService' to Scoped/Transient, or change 'Database' to Singleton.">();
   });
 
   it("CaptiveDependencyError branded type has correct structure", () => {

@@ -87,8 +87,8 @@ const tabNavigationStyles: {
  * - ARIA-compliant tab pattern
  * - Visual indication of active tab
  *
- * This component must be used within a DevToolsRuntimeProvider.
- * It reads tab configuration from the runtime's plugin list and
+ * This component must be used within a DevToolsStoreProvider.
+ * It reads tab configuration from the store's plugin list and
  * dispatches selectTab commands when tabs are clicked.
  *
  * @returns A React element containing the tab navigation
@@ -97,10 +97,10 @@ const tabNavigationStyles: {
  * ```tsx
  * function DevToolsPanel() {
  *   return (
- *     <DevToolsRuntimeProvider runtime={runtime}>
+ *     <DevToolsStoreProvider inspector={inspector} plugins={plugins}>
  *       <TabNavigation />
  *       <PluginTabContent />
- *     </DevToolsRuntimeProvider>
+ *     </DevToolsStoreProvider>
  *   );
  * }
  * ```

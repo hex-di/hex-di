@@ -23,6 +23,8 @@
  * @packageDocumentation
  */
 
+import type { Prettify } from "../common/index.js";
+
 // =============================================================================
 // Priority Band Types (Recommended Approach)
 // =============================================================================
@@ -112,7 +114,7 @@ export type AddInitPriority<
   TMap,
   TPortName extends string,
   TPriority extends number | "default",
-> = TMap & { [K in TPortName]: TPriority };
+> = Prettify<TMap & { [K in TPortName]: TPriority }>;
 
 /**
  * Gets the init priority for a port from the map.
@@ -176,7 +178,7 @@ export type InitPriorityErrorMessage<
  * @typeParam TMapB - Second priority map
  * @returns Combined map (B's values override A's for same keys)
  */
-export type MergeInitPriorityMaps<TMapA, TMapB> = TMapA & TMapB;
+export type MergeInitPriorityMaps<TMapA, TMapB> = Prettify<TMapA & TMapB>;
 
 /**
  * Adds init priorities from multiple adapters to a map.

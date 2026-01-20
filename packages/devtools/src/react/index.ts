@@ -585,28 +585,6 @@ export type { DependencyGraphProps } from "./graph-visualization/index.js";
 export { buildExportedGraphFromContainer } from "./utils/build-graph-from-container.js";
 
 /**
- * GraphRenderer component for low-level SVG rendering with D3 zoom.
- *
- * Used internally by DependencyGraph but exported for advanced customization.
- */
-export { GraphRenderer } from "./graph-visualization/index.js";
-
-/**
- * Layout utilities for computing graph positions.
- *
- * - computeLayout: Computes node positions using Dagre
- * - generateEdgePath: Creates SVG path strings for edges
- * - findConnectedNodes/findConnectedEdges: For highlighting
- */
-export {
-  computeLayout,
-  generateEdgePath,
-  findConnectedNodes,
-  findConnectedEdges,
-} from "./graph-visualization/index.js";
-export type { LayoutConfig } from "./graph-visualization/index.js";
-
-/**
  * Graph visualization types.
  */
 export type {
@@ -618,20 +596,6 @@ export type {
   GraphInteractionState,
   TransformState,
   ContainerOwnershipEntry,
-} from "./graph-visualization/index.js";
-export { createEdgeKey, DEFAULT_TRANSFORM } from "./graph-visualization/index.js";
-
-/**
- * Graph styling utilities.
- */
-export {
-  graphContainerStyles,
-  graphNodeStyles,
-  graphEdgeStyles,
-  graphControlsStyles,
-  tooltipStyles,
-  getLifetimeStrokeVar,
-  LIFETIME_COLORS,
 } from "./graph-visualization/index.js";
 
 // =============================================================================
@@ -681,3 +645,26 @@ export type { FilterChipProps, FilterChipGroupProps } from "./components/filter-
  */
 export { FilterPresets, getPresetFilterConfig } from "./components/filter-presets.js";
 export type { FilterPresetsProps, FilterPresetId } from "./components/filter-presets.js";
+
+// =============================================================================
+// Plugin Factory Functions
+// =============================================================================
+
+/**
+ * Factory functions for creating validated, frozen DevTools plugin instances.
+ *
+ * These functions ensure plugins are properly configured with valid IDs,
+ * labels, and components, and return immutable plugin objects.
+ *
+ * @example
+ * ```typescript
+ * import { defineDevToolsPlugin } from '@hex-di/devtools/react';
+ *
+ * const MyPlugin = defineDevToolsPlugin({
+ *   id: "my-plugin",
+ *   label: "My Plugin",
+ *   component: MyPluginContent,
+ * });
+ * ```
+ */
+export { defineDevToolsPlugin } from "./define-plugin.js";

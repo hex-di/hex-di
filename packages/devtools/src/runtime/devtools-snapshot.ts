@@ -106,6 +106,10 @@ export type UIEvent =
   | { readonly type: "UI.SELECT_CONTAINER"; readonly payload: { readonly id: string } }
   | { readonly type: "UI.TOGGLE_CONTAINER"; readonly payload: { readonly id: string } }
   | {
+      readonly type: "UI.SELECTION_COMPLETE";
+      readonly payload: { readonly ids: ReadonlySet<string> };
+    }
+  | {
       readonly type: "UI.CONTAINER_REGISTERED";
       readonly payload: { readonly entry: ContainerEntryPayload };
     }

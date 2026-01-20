@@ -19,9 +19,13 @@ import type { ContainerKind } from "@hex-di/plugin";
 // =============================================================================
 
 /**
- * Available DevTools tabs.
+ * Tab identifier type.
+ *
+ * Using `string` instead of a union type to support custom plugin tabs.
+ * Built-in tabs use: "graph", "services", "tracing", "inspector"
+ * Custom plugins can define their own tab IDs.
  */
-export type TabId = "graph" | "inspector" | "traces";
+export type TabId = string;
 
 /**
  * DevTools panel position options.

@@ -4,6 +4,11 @@
  * React context holding the DevToolsFlowRuntime reference.
  * Provides type-safe context with proper null handling.
  *
+ * @deprecated This context is part of the legacy provider system.
+ * For new code, use `DevToolsStoreProvider` and `DevToolsStoreContext` instead.
+ * The legacy `DevToolsContext` is maintained for backward compatibility with
+ * code that uses `DevToolsProvider` directly, but will be removed in v2.0.
+ *
  * @packageDocumentation
  */
 

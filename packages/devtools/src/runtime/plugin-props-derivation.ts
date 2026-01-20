@@ -11,11 +11,11 @@
 import type { ExportedGraph, ExportedNode, ExportedEdge } from "@hex-di/devtools-core";
 import type { ContainerKind } from "@hex-di/plugin";
 import type { DevToolsRuntimeSnapshot } from "./types.js";
-import type { ContainerEntry } from "./plugin-types.js";
+import type { ContainerEntry } from "./plugin-types-core.js";
 import type { ContainerNode } from "./types.js";
 
 // Re-export ContainerEntry for convenience
-export type { ContainerEntry } from "./plugin-types.js";
+export type { ContainerEntry } from "./plugin-types-core.js";
 
 // =============================================================================
 // Helper Functions

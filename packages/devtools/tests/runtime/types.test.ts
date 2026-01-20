@@ -13,11 +13,10 @@
 import { describe, it, expect } from "vitest";
 import type {
   DevToolsRuntimeState,
-  DevToolsPlugin,
   DevToolsCommand,
   DevToolsEvent,
-  PluginProps,
 } from "../../src/runtime/types.js";
+import type { DevToolsPlugin, PluginProps } from "../../src/react/types/plugin-types.js";
 import { isDevToolsCommand, isDevToolsEvent } from "../../src/runtime/types.js";
 
 // =============================================================================

@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from "vitest";
 import { defaultPlugins, minimalPlugins } from "../../src/plugins/presets.js";
-import type { DevToolsPlugin } from "../../src/runtime/plugin-types.js";
+import type { DevToolsPlugin } from "../../src/runtime/index.js";
 
 describe("Plugin Presets", () => {
   describe("defaultPlugins", () => {
@@ -25,18 +25,19 @@ describe("Plugin Presets", () => {
       expect(plugins[3].label).toBe("Inspector");
     });
 
-    it("returns fresh plugin instances on each call", () => {
+    it("returns the same cached plugin instances on each call", () => {
       const plugins1 = defaultPlugins();
       const plugins2 = defaultPlugins();
 
-      // Arrays should be different references
-      expect(plugins1).not.toBe(plugins2);
+      // Arrays should be the same reference (cached for efficiency)
+      // Plugins are immutable frozen objects, so sharing is safe
+      expect(plugins1).toBe(plugins2);
 
-      // Each plugin should be a different instance
-      expect(plugins1[0]).not.toBe(plugins2[0]);
-      expect(plugins1[1]).not.toBe(plugins2[1]);
-      expect(plugins1[2]).not.toBe(plugins2[2]);
-      expect(plugins1[3]).not.toBe(plugins2[3]);
+      // Each plugin should be the same cached instance
+      expect(plugins1[0]).toBe(plugins2[0]);
+      expect(plugins1[1]).toBe(plugins2[1]);
+      expect(plugins1[2]).toBe(plugins2[2]);
+      expect(plugins1[3]).toBe(plugins2[3]);
     });
 
     it("returns a readonly array", () => {
@@ -58,16 +59,17 @@ describe("Plugin Presets", () => {
       expect(plugins[1].label).toBe("Inspector");
     });
 
-    it("returns fresh plugin instances on each call", () => {
+    it("returns the same cached plugin instances on each call", () => {
       const plugins1 = minimalPlugins();
       const plugins2 = minimalPlugins();
 
-      // Arrays should be different references
-      expect(plugins1).not.toBe(plugins2);
+      // Arrays should be the same reference (cached for efficiency)
+      // Plugins are immutable frozen objects, so sharing is safe
+      expect(plugins1).toBe(plugins2);
 
-      // Each plugin should be a different instance
-      expect(plugins1[0]).not.toBe(plugins2[0]);
-      expect(plugins1[1]).not.toBe(plugins2[1]);
+      // Each plugin should be the same cached instance
+      expect(plugins1[0]).toBe(plugins2[0]);
+      expect(plugins1[1]).toBe(plugins2[1]);
     });
 
     it("returns a readonly array", () => {

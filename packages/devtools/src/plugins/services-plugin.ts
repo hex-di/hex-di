@@ -15,8 +15,8 @@
  * @packageDocumentation
  */
 
-import { defineDevToolsPlugin } from "../runtime/define-plugin.js";
-import type { DevToolsPlugin } from "../runtime/plugin-types.js";
+import { defineDevToolsPlugin } from "../react/define-plugin.js";
+import type { DevToolsPlugin } from "../react/types/plugin-types.js";
 import { ServicesPluginContent } from "./services/services-content.js";
 
 // =============================================================================

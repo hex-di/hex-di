@@ -36,7 +36,7 @@
  */
 
 import type { Port } from "@hex-di/ports";
-import type { IsNever } from "../common/index.js";
+import type { IsNever, Prettify } from "../common/index.js";
 
 // =============================================================================
 // Adapter Name Extraction
@@ -113,9 +113,9 @@ export type AdapterRequiresNames<TAdapter> = TAdapter extends {
  * type Map3 = AddEdge<Map2, "Service", "Logger" | "Config">; // { Logger: never, Service: "Logger" | "Config" }
  * ```
  */
-export type AddEdge<TMap, TProvides extends string, TRequires extends string> = TMap & {
-  [K in TProvides]: TRequires;
-};
+export type AddEdge<TMap, TProvides extends string, TRequires extends string> = Prettify<
+  TMap & { [K in TProvides]: TRequires }
+>;
 
 /**
  * Gets the direct dependencies of a port from the dependency map.
@@ -655,7 +655,7 @@ export type CircularDependencyError<TCyclePath extends string> = {
  * @typeParam TMap1 - First dependency map
  * @typeParam TMap2 - Second dependency map
  */
-export type MergeDependencyMaps<TMap1, TMap2> = TMap1 & TMap2;
+export type MergeDependencyMaps<TMap1, TMap2> = Prettify<TMap1 & TMap2>;
 
 /**
  * Adds multiple edges to the dependency map from an array of adapters.

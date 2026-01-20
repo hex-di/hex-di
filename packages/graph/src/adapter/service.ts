@@ -36,6 +36,47 @@ import type { Adapter, Lifetime, ResolvedDeps } from "./types.js";
 import type { TupleToUnion } from "../common/index.js";
 
 // =============================================================================
+// Literal Value Helpers
+// =============================================================================
+
+/**
+ * Helper function that returns a value with its literal type preserved.
+ * TypeScript infers the const type parameter from the argument.
+ * @internal
+ */
+function literal<const T>(value: T): T {
+  return value;
+}
+
+/**
+ * Literal-typed constant values for defaults.
+ * Using the `literal()` helper preserves exact types without `as const`.
+ * @internal
+ */
+const SINGLETON = literal("singleton");
+const EMPTY_REQUIRES = Object.freeze(literal([]));
+
+// Type aliases for clarity
+type Singleton = typeof SINGLETON;
+type EmptyRequires = typeof EMPTY_REQUIRES;
+
+// =============================================================================
+// Result Tuple Helper
+// =============================================================================
+
+/**
+ * Creates a frozen tuple of [Port, Adapter] with the correct type.
+ * This helper preserves the exact types of both elements.
+ * @internal
+ */
+function createServiceTuple<
+  TPort extends Port<unknown, string>,
+  TAdapter extends Adapter<TPort, unknown, Lifetime, "sync" | "async", boolean, readonly unknown[]>,
+>(port: TPort, adapter: TAdapter): readonly [TPort, TAdapter] {
+  return Object.freeze([port, adapter]);
+}
+
+// =============================================================================
 // defineService - Overloads
 // =============================================================================
 
@@ -50,7 +91,6 @@ import type { TupleToUnion } from "../common/index.js";
  *
  * @typeParam TName - The literal string type for the port name
  * @typeParam TService - The service interface type
- * @typeParam TClonable - Whether the service is clonable for forked inheritance
  *
  * @param name - Unique port name
  * @param config - Service configuration with factory (no requires/lifetime)
@@ -62,29 +102,38 @@ import type { TupleToUnion } from "../common/index.js";
  *   factory: () => new ConsoleLogger(),
  * });
  * ```
- *
- * @example Clonable service for forked inheritance
- * ```typescript
- * const [ConfigPort, ConfigAdapter] = defineService<'Config', Config>('Config', {
- *   factory: () => ({ apiUrl: 'https://api.example.com' }),
- *   clonable: true,
- * });
- * ```
  */
-export function defineService<
-  const TName extends string,
-  TService,
-  const TClonable extends boolean = false,
->(
+export function defineService<const TName extends string, TService>(
   name: TName,
   config: {
     factory: (deps: Record<string, unknown>) => TService;
-    clonable?: TClonable;
+    clonable?: undefined;
     finalizer?: (instance: TService) => void | Promise<void>;
   }
 ): readonly [
   Port<TService, TName>,
-  Adapter<Port<TService, TName>, never, "singleton", "sync", TClonable, readonly []>,
+  Adapter<Port<TService, TName>, never, Singleton, "sync", false, EmptyRequires>,
+];
+
+/**
+ * Defines a sync service with clonable option.
+ *
+ * @overload When clonable is explicitly provided
+ */
+export function defineService<
+  const TName extends string,
+  TService,
+  const TClonable extends boolean,
+>(
+  name: TName,
+  config: {
+    factory: (deps: Record<string, unknown>) => TService;
+    clonable: TClonable;
+    finalizer?: (instance: TService) => void | Promise<void>;
+  }
+): readonly [
+  Port<TService, TName>,
+  Adapter<Port<TService, TName>, never, Singleton, "sync", TClonable, EmptyRequires>,
 ];
 
 /**
@@ -93,7 +142,6 @@ export function defineService<
  * @typeParam TName - The literal string type for the port name
  * @typeParam TService - The service interface type
  * @typeParam TLifetime - Lifetime scope
- * @typeParam TClonable - Whether the service is clonable for forked inheritance
  *
  * @param name - Unique port name
  * @param config - Service configuration with lifetime
@@ -111,18 +159,38 @@ export function defineService<
   const TName extends string,
   TService,
   const TLifetime extends Lifetime,
-  const TClonable extends boolean = false,
 >(
   name: TName,
   config: {
     lifetime: TLifetime;
     factory: (deps: Record<string, unknown>) => TService;
-    clonable?: TClonable;
+    clonable?: undefined;
     finalizer?: (instance: TService) => void | Promise<void>;
   }
 ): readonly [
   Port<TService, TName>,
-  Adapter<Port<TService, TName>, never, TLifetime, "sync", TClonable, readonly []>,
+  Adapter<Port<TService, TName>, never, TLifetime, "sync", false, EmptyRequires>,
+];
+
+/**
+ * Defines a sync service with custom lifetime and clonable.
+ */
+export function defineService<
+  const TName extends string,
+  TService,
+  const TLifetime extends Lifetime,
+  const TClonable extends boolean,
+>(
+  name: TName,
+  config: {
+    lifetime: TLifetime;
+    factory: (deps: Record<string, unknown>) => TService;
+    clonable: TClonable;
+    finalizer?: (instance: TService) => void | Promise<void>;
+  }
+): readonly [
+  Port<TService, TName>,
+  Adapter<Port<TService, TName>, never, TLifetime, "sync", TClonable, EmptyRequires>,
 ];
 
 /**
@@ -131,7 +199,6 @@ export function defineService<
  * @typeParam TName - The literal string type for the port name
  * @typeParam TService - The service interface type
  * @typeParam TRequires - Tuple of required port dependencies
- * @typeParam TClonable - Whether the service is clonable for forked inheritance
  *
  * @param name - Unique port name
  * @param config - Service configuration with requires
@@ -152,25 +219,38 @@ export function defineService<
   const TName extends string,
   TService,
   const TRequires extends readonly Port<unknown, string>[],
-  const TClonable extends boolean = false,
 >(
   name: TName,
   config: {
     requires: TRequires;
     factory: (deps: ResolvedDeps<TupleToUnion<TRequires>>) => TService;
-    clonable?: TClonable;
+    clonable?: undefined;
     finalizer?: (instance: TService) => void | Promise<void>;
   }
 ): readonly [
   Port<TService, TName>,
-  Adapter<
-    Port<TService, TName>,
-    TupleToUnion<TRequires>,
-    "singleton",
-    "sync",
-    TClonable,
-    TRequires
-  >,
+  Adapter<Port<TService, TName>, TupleToUnion<TRequires>, Singleton, "sync", false, TRequires>,
+];
+
+/**
+ * Defines a sync service with dependencies and clonable.
+ */
+export function defineService<
+  const TName extends string,
+  TService,
+  const TRequires extends readonly Port<unknown, string>[],
+  const TClonable extends boolean,
+>(
+  name: TName,
+  config: {
+    requires: TRequires;
+    factory: (deps: ResolvedDeps<TupleToUnion<TRequires>>) => TService;
+    clonable: TClonable;
+    finalizer?: (instance: TService) => void | Promise<void>;
+  }
+): readonly [
+  Port<TService, TName>,
+  Adapter<Port<TService, TName>, TupleToUnion<TRequires>, Singleton, "sync", TClonable, TRequires>,
 ];
 
 /**
@@ -180,7 +260,6 @@ export function defineService<
  * @typeParam TService - The service interface type
  * @typeParam TRequires - Tuple of required port dependencies
  * @typeParam TLifetime - Lifetime scope
- * @typeParam TClonable - Whether the service is clonable for forked inheritance
  *
  * @param name - Unique port name
  * @param config - Service configuration with requires and lifetime
@@ -203,14 +282,36 @@ export function defineService<
   TService,
   const TRequires extends readonly Port<unknown, string>[],
   const TLifetime extends Lifetime,
-  const TClonable extends boolean = false,
 >(
   name: TName,
   config: {
     requires: TRequires;
     lifetime: TLifetime;
     factory: (deps: ResolvedDeps<TupleToUnion<TRequires>>) => TService;
-    clonable?: TClonable;
+    clonable?: undefined;
+    finalizer?: (instance: TService) => void | Promise<void>;
+  }
+): readonly [
+  Port<TService, TName>,
+  Adapter<Port<TService, TName>, TupleToUnion<TRequires>, TLifetime, "sync", false, TRequires>,
+];
+
+/**
+ * Defines a sync service with dependencies, custom lifetime, and clonable.
+ */
+export function defineService<
+  const TName extends string,
+  TService,
+  const TRequires extends readonly Port<unknown, string>[],
+  const TLifetime extends Lifetime,
+  const TClonable extends boolean,
+>(
+  name: TName,
+  config: {
+    requires: TRequires;
+    lifetime: TLifetime;
+    factory: (deps: ResolvedDeps<TupleToUnion<TRequires>>) => TService;
+    clonable: TClonable;
     finalizer?: (instance: TService) => void | Promise<void>;
   }
 ): readonly [
@@ -218,57 +319,63 @@ export function defineService<
   Adapter<Port<TService, TName>, TupleToUnion<TRequires>, TLifetime, "sync", TClonable, TRequires>,
 ];
 
-// Implementation
-export function defineService<
-  const TName extends string,
-  TService,
-  const TRequires extends readonly Port<unknown, string>[],
-  const TLifetime extends Lifetime,
-  const TClonable extends boolean = false,
->(
+/**
+ * Implementation that handles all defineService overload cases.
+ *
+ * The implementation uses a wide signature to accept all overload variants.
+ * Type safety is ensured by the public overload signatures - the implementation
+ * just needs to correctly construct the adapter at runtime.
+ */
+export function defineService<const TName extends string, TService>(
   name: TName,
   config: {
-    requires?: TRequires;
-    lifetime?: TLifetime;
-    factory: (deps: ResolvedDeps<TupleToUnion<TRequires>>) => TService;
-    clonable?: TClonable;
+    requires?: readonly Port<unknown, string>[];
+    lifetime?: Lifetime;
+    factory: (deps: Record<string, unknown>) => TService;
+    clonable?: boolean;
     finalizer?: (instance: TService) => void | Promise<void>;
   }
 ): readonly [
   Port<TService, TName>,
-  Adapter<Port<TService, TName>, TupleToUnion<TRequires>, TLifetime, "sync", TClonable, TRequires>,
+  Adapter<
+    Port<TService, TName>,
+    unknown,
+    Lifetime,
+    "sync",
+    boolean,
+    readonly Port<unknown, string>[]
+  >,
 ] {
   const port = createPort<TName, TService>(name);
 
-  // Apply defaults - safe casts at boundary since we control the runtime values
-  const requires = (config.requires ?? []) as TRequires;
-  const lifetime = (config.lifetime ?? "singleton") as TLifetime;
-  const clonable = (config.clonable ?? false) as TClonable;
+  // Determine defaults using literal values
+  const requires = config.requires ?? EMPTY_REQUIRES;
+  const lifetime = config.lifetime ?? SINGLETON;
 
-  const adapterConfig = {
+  // Build adapter config - createAdapter handles clonable default via its overloads
+  const baseConfig = {
     provides: port,
     requires,
     lifetime,
-    clonable,
-    factory: config.factory as (deps: ResolvedDeps<TupleToUnion<TRequires>>) => TService,
+    factory: config.factory,
   };
 
+  // Branch based on clonable to leverage createAdapter's overloads correctly
+  if (config.clonable !== undefined) {
+    const adapterConfig = { ...baseConfig, clonable: config.clonable };
+    const adapter =
+      config.finalizer !== undefined
+        ? createAdapter({ ...adapterConfig, finalizer: config.finalizer })
+        : createAdapter(adapterConfig);
+    return createServiceTuple(port, adapter);
+  }
+
+  // clonable is undefined - createAdapter will default to false
   const adapter =
     config.finalizer !== undefined
-      ? createAdapter({ ...adapterConfig, finalizer: config.finalizer })
-      : createAdapter(adapterConfig);
-
-  return Object.freeze([port, adapter]) as readonly [
-    Port<TService, TName>,
-    Adapter<
-      Port<TService, TName>,
-      TupleToUnion<TRequires>,
-      TLifetime,
-      "sync",
-      TClonable,
-      TRequires
-    >,
-  ];
+      ? createAdapter({ ...baseConfig, finalizer: config.finalizer })
+      : createAdapter(baseConfig);
+  return createServiceTuple(port, adapter);
 }
 
 // =============================================================================
@@ -282,7 +389,6 @@ export function defineService<
  *
  * @typeParam TName - The literal string type for the port name
  * @typeParam TService - The service interface type
- * @typeParam TClonable - Whether the service is clonable for forked inheritance
  *
  * @param name - Unique port name
  * @param config - Service configuration with async factory
@@ -295,21 +401,37 @@ export function defineService<
  * });
  * ```
  */
+export function defineAsyncService<const TName extends string, TService>(
+  name: TName,
+  config: {
+    factory: (deps: Record<string, unknown>) => Promise<TService>;
+    initPriority?: number;
+    clonable?: undefined;
+    finalizer?: (instance: TService) => void | Promise<void>;
+  }
+): readonly [
+  Port<TService, TName>,
+  Adapter<Port<TService, TName>, never, Singleton, "async", false, EmptyRequires>,
+];
+
+/**
+ * Defines an async service with clonable option.
+ */
 export function defineAsyncService<
   const TName extends string,
   TService,
-  const TClonable extends boolean = false,
+  const TClonable extends boolean,
 >(
   name: TName,
   config: {
     factory: (deps: Record<string, unknown>) => Promise<TService>;
     initPriority?: number;
-    clonable?: TClonable;
+    clonable: TClonable;
     finalizer?: (instance: TService) => void | Promise<void>;
   }
 ): readonly [
   Port<TService, TName>,
-  Adapter<Port<TService, TName>, never, "singleton", "async", TClonable, readonly []>,
+  Adapter<Port<TService, TName>, never, Singleton, "async", TClonable, EmptyRequires>,
 ];
 
 /**
@@ -320,7 +442,6 @@ export function defineAsyncService<
  * @typeParam TName - The literal string type for the port name
  * @typeParam TService - The service interface type
  * @typeParam TRequires - Tuple of required port dependencies
- * @typeParam TClonable - Whether the service is clonable for forked inheritance
  *
  * @param name - Unique port name
  * @param config - Service configuration with async factory and dependencies
@@ -342,80 +463,89 @@ export function defineAsyncService<
   const TName extends string,
   TService,
   const TRequires extends readonly Port<unknown, string>[],
-  const TClonable extends boolean = false,
 >(
   name: TName,
   config: {
     requires: TRequires;
     factory: (deps: ResolvedDeps<TupleToUnion<TRequires>>) => Promise<TService>;
     initPriority?: number;
-    clonable?: TClonable;
+    clonable?: undefined;
     finalizer?: (instance: TService) => void | Promise<void>;
   }
 ): readonly [
   Port<TService, TName>,
-  Adapter<
-    Port<TService, TName>,
-    TupleToUnion<TRequires>,
-    "singleton",
-    "async",
-    TClonable,
-    TRequires
-  >,
+  Adapter<Port<TService, TName>, TupleToUnion<TRequires>, Singleton, "async", false, TRequires>,
 ];
 
-// Implementation
+/**
+ * Defines an async service with dependencies and clonable.
+ */
 export function defineAsyncService<
   const TName extends string,
   TService,
   const TRequires extends readonly Port<unknown, string>[],
-  const TClonable extends boolean = false,
+  const TClonable extends boolean,
 >(
   name: TName,
   config: {
-    requires?: TRequires;
+    requires: TRequires;
     factory: (deps: ResolvedDeps<TupleToUnion<TRequires>>) => Promise<TService>;
     initPriority?: number;
-    clonable?: TClonable;
+    clonable: TClonable;
+    finalizer?: (instance: TService) => void | Promise<void>;
+  }
+): readonly [
+  Port<TService, TName>,
+  Adapter<Port<TService, TName>, TupleToUnion<TRequires>, Singleton, "async", TClonable, TRequires>,
+];
+
+/**
+ * Implementation that handles all defineAsyncService overload cases.
+ *
+ * The implementation uses a wide signature to accept all overload variants.
+ * Type safety is ensured by the public overload signatures.
+ */
+export function defineAsyncService<const TName extends string, TService>(
+  name: TName,
+  config: {
+    requires?: readonly Port<unknown, string>[];
+    factory: (deps: Record<string, unknown>) => Promise<TService>;
+    initPriority?: number;
+    clonable?: boolean;
     finalizer?: (instance: TService) => void | Promise<void>;
   }
 ): readonly [
   Port<TService, TName>,
   Adapter<
     Port<TService, TName>,
-    TupleToUnion<TRequires>,
-    "singleton",
+    unknown,
+    Singleton,
     "async",
-    TClonable,
-    TRequires
+    boolean,
+    readonly Port<unknown, string>[]
   >,
 ] {
   const port = createPort<TName, TService>(name);
 
-  // Apply defaults - safe cast at boundary since we control the runtime value
-  const requires = (config.requires ?? []) as TRequires;
-  const clonable = (config.clonable ?? false) as TClonable;
+  // Determine defaults using literal values
+  const requires = config.requires ?? EMPTY_REQUIRES;
 
-  const adapterConfig = {
+  // Build adapter config - createAsyncAdapter handles clonable default via its overloads
+  const baseConfig = {
     provides: port,
     requires,
-    clonable,
-    factory: config.factory as (deps: ResolvedDeps<TupleToUnion<TRequires>>) => Promise<TService>,
+    factory: config.factory,
     ...(config.initPriority !== undefined && { initPriority: config.initPriority }),
     ...(config.finalizer !== undefined && { finalizer: config.finalizer }),
   };
 
-  const adapter = createAsyncAdapter(adapterConfig);
+  // Branch based on clonable to leverage createAsyncAdapter's overloads correctly
+  if (config.clonable !== undefined) {
+    const adapter = createAsyncAdapter({ ...baseConfig, clonable: config.clonable });
+    return createServiceTuple(port, adapter);
+  }
 
-  return Object.freeze([port, adapter]) as readonly [
-    Port<TService, TName>,
-    Adapter<
-      Port<TService, TName>,
-      TupleToUnion<TRequires>,
-      "singleton",
-      "async",
-      TClonable,
-      TRequires
-    >,
-  ];
+  // clonable is undefined - createAsyncAdapter will default to false
+  const adapter = createAsyncAdapter(baseConfig);
+  return createServiceTuple(port, adapter);
 }

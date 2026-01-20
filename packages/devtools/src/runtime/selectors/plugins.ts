@@ -4,12 +4,16 @@
  * Selectors for deriving plugin-related state from the runtime.
  * These selectors are used by the tab navigation and plugin rendering.
  *
+ * ## Architecture Note
+ *
+ * This module is now framework-agnostic. The `TabConfig` type uses
+ * the plugin's icon type directly without importing React types.
+ *
  * @packageDocumentation
  */
 
-import type { ReactElement } from "react";
-import type { DevToolsRuntimeState, DevToolsPlugin } from "../types.js";
-import type { TabConfigCore } from "../plugin-types-core.js";
+import type { DevToolsRuntimeState } from "../types.js";
+import type { TabConfigCore, PluginMetadata } from "../plugin-types-core.js";
 import { createSelector } from "./utils.js";
 
 // Re-export TabConfigCore for framework-agnostic use cases
@@ -18,14 +22,23 @@ export type { TabConfigCore } from "../plugin-types-core.js";
 /**
  * Tab configuration for rendering in the tab navigation.
  *
- * Extends the framework-agnostic `TabConfigCore` with React-specific
- * icon property.
+ * Extends the framework-agnostic `TabConfigCore` with an optional icon.
+ * The icon type is `unknown` to remain framework-agnostic - consumers
+ * should cast to their framework's element type when rendering.
  *
  * This is a minimal projection of plugin properties needed for tab rendering.
  */
 export interface TabConfig extends TabConfigCore {
-  /** Optional icon element (React-specific) */
-  readonly icon?: ReactElement;
+  /** Optional icon element (framework-specific type) */
+  readonly icon?: unknown;
+}
+
+/**
+ * Plugin type with optional icon for accessing the icon property.
+ * This is a structural type that works with any plugin that has an optional icon.
+ */
+interface PluginWithOptionalIcon extends PluginMetadata {
+  readonly icon?: unknown;
 }
 
 /**
@@ -44,7 +57,7 @@ export interface TabConfig extends TabConfigCore {
  * @returns Readonly array of registered plugins
  */
 export const selectPlugins = createSelector(
-  (state: DevToolsRuntimeState): readonly DevToolsPlugin[] => state.plugins
+  (state: DevToolsRuntimeState): readonly PluginMetadata[] => state.plugins
 );
 
 /**
@@ -66,7 +79,7 @@ export const selectPlugins = createSelector(
  * @returns The active plugin or undefined
  */
 export const selectActivePlugin = createSelector(
-  (state: DevToolsRuntimeState): DevToolsPlugin | undefined => {
+  (state: DevToolsRuntimeState): PluginMetadata | undefined => {
     return state.plugins.find(plugin => plugin.id === state.activeTabId);
   }
 );
@@ -95,7 +108,7 @@ export const selectActivePlugin = createSelector(
 export function selectPluginById(
   state: DevToolsRuntimeState,
   id: string
-): DevToolsPlugin | undefined {
+): PluginMetadata | undefined {
   return state.plugins.find(plugin => plugin.id === id);
 }
 
@@ -106,6 +119,8 @@ export function selectPluginById(
  * The order matches plugin registration order.
  *
  * This is memoized to prevent unnecessary re-renders of the tab navigation.
+ * The icon property is accessed via structural typing to support
+ * both framework-agnostic PluginMetadata and framework-specific types.
  *
  * @example
  * ```typescript
@@ -117,7 +132,9 @@ export function selectPluginById(
  * @returns Readonly array of tab configurations
  */
 export const selectTabList = createSelector((state: DevToolsRuntimeState): readonly TabConfig[] => {
-  return state.plugins.map(plugin => ({
+  // Cast to PluginWithOptionalIcon to access optional icon property
+  const plugins = state.plugins as readonly PluginWithOptionalIcon[];
+  return plugins.map(plugin => ({
     id: plugin.id,
     label: plugin.label,
     icon: plugin.icon,

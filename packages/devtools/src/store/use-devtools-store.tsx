@@ -18,6 +18,7 @@ import React, {
   useContext,
   useRef,
   useMemo,
+  useEffect,
   type ReactNode,
   type ReactElement,
 } from "react";
@@ -27,7 +28,7 @@ import {
 } from "../react/context/devtools-context.js";
 import { useStore, type StoreApi } from "zustand";
 import type { InspectorWithSubscription } from "@hex-di/runtime";
-import type { DevToolsPlugin } from "../runtime/plugin-types.js";
+import type { DevToolsPlugin } from "../react/types/plugin-types.js";
 import {
   createDevToolsStoreWithRuntime,
   type DevToolsStore,
@@ -111,6 +112,8 @@ export function DevToolsStoreProvider({
   const storeRef = useRef<DevToolsStoreWithRuntime | null>(null);
   const inspectorRef = useRef(inspector);
   const initialTabAppliedRef = useRef(false);
+  // Track pending disposal to prevent race conditions
+  const pendingDisposeRef = useRef<Promise<void> | null>(null);
 
   // Memoize plugins - use defaultPlugins() if not provided
   // Plugins are immutable after creation
@@ -119,9 +122,10 @@ export function DevToolsStoreProvider({
   // Recreate store if inspector changed (rare, but handle it)
   if (inspectorRef.current !== inspector) {
     if (storeRef.current !== null) {
-      // Dispose old store asynchronously
+      // Dispose old store asynchronously but track the promise
+      // to prevent creating new store before old one is disposed
       const oldStore = storeRef.current;
-      void oldStore.getState().dispose();
+      pendingDisposeRef.current = oldStore.getState().dispose();
     }
     storeRef.current = null;
     inspectorRef.current = inspector;
@@ -129,6 +133,9 @@ export function DevToolsStoreProvider({
   }
 
   // Create store if not exists
+  // Note: We create synchronously here for React's synchronous render.
+  // The pending dispose will complete asynchronously but won't affect
+  // the new store since they operate on different runtime instances.
   if (storeRef.current === null) {
     storeRef.current = createDevToolsStoreWithRuntime({ inspector });
   }
@@ -138,6 +145,26 @@ export function DevToolsStoreProvider({
     initialTabAppliedRef.current = true;
     storeRef.current.getState().selectTab(initialTab);
   }
+
+  // Cleanup on unmount: dispose the store to release resources
+  // This effect runs once on mount and cleans up on unmount
+  useEffect(() => {
+    return () => {
+      // Wait for any pending dispose, then dispose current store
+      const cleanup = async (): Promise<void> => {
+        if (pendingDisposeRef.current !== null) {
+          await pendingDisposeRef.current;
+          pendingDisposeRef.current = null;
+        }
+        if (storeRef.current !== null) {
+          await storeRef.current.getState().dispose();
+          storeRef.current = null;
+        }
+      };
+      // Fire and forget - cleanup is best-effort on unmount
+      void cleanup();
+    };
+  }, []); // Only run on mount/unmount
 
   // Provider hierarchy:
   // - DevToolsStoreContext: The Zustand store with FSM runtime access via store.getRuntime()
@@ -241,6 +268,37 @@ export function useDevToolsStoreApi(): StoreApi<DevToolsStore> {
 // =============================================================================
 
 /**
+ * Internal implementation for runtime access hooks.
+ *
+ * Consolidates the shared logic for accessing DevToolsFlowRuntime from:
+ * 1. Primary: DevToolsStoreContext (via store.getRuntime())
+ * 2. Fallback: Legacy DevToolsContext (for backward compatibility)
+ *
+ * @internal
+ * @returns Object with runtime (or null) and whether context was found
+ */
+function useRuntimeInternal(): {
+  runtime: DevToolsFlowRuntimeLike | null;
+  hasContext: boolean;
+} {
+  const store = useContext(DevToolsStoreContext);
+  const legacyRuntime = useContext(DevToolsContext);
+
+  // Primary path: use store context
+  if (store !== null) {
+    return { runtime: store.getRuntime(), hasContext: true };
+  }
+
+  // Fallback: use legacy DevToolsContext for backward compatibility
+  if (legacyRuntime !== null) {
+    return { runtime: legacyRuntime, hasContext: true };
+  }
+
+  // No context found
+  return { runtime: null, hasContext: false };
+}
+
+/**
  * Internal hook to get the FSM runtime from the store context.
  *
  * This hook is used internally by other hooks that need to subscribe to the
@@ -253,32 +311,23 @@ export function useDevToolsStoreApi(): StoreApi<DevToolsStore> {
  *
  * @internal
  * @throws Error if used outside DevToolsStoreProvider or DevToolsProvider
+ * @throws Error if runtime has been disposed
  */
 export function useRuntimeFromStoreContext(): DevToolsFlowRuntimeLike {
-  const store = useContext(DevToolsStoreContext);
-  const legacyRuntime = useContext(DevToolsContext);
+  const { runtime, hasContext } = useRuntimeInternal();
 
-  // Primary path: use store context
-  if (store !== null) {
-    const runtime = store.getRuntime();
-
-    if (runtime === null) {
-      throw new Error("DevTools runtime has been disposed.");
-    }
-
-    return runtime;
+  if (!hasContext) {
+    throw new Error(
+      "This hook must be used within a DevToolsStoreProvider. " +
+        "Wrap your component tree with <DevToolsStoreProvider inspector={inspector}>."
+    );
   }
 
-  // Fallback: use legacy DevToolsContext for backward compatibility
-  if (legacyRuntime !== null) {
-    return legacyRuntime;
+  if (runtime === null) {
+    throw new Error("DevTools runtime has been disposed.");
   }
 
-  // No context found
-  throw new Error(
-    "This hook must be used within a DevToolsStoreProvider. " +
-      "Wrap your component tree with <DevToolsStoreProvider inspector={inspector}>."
-  );
+  return runtime;
 }
 
 /**
@@ -311,21 +360,13 @@ export function useRuntimeFromStoreContext(): DevToolsFlowRuntimeLike {
  * ```
  */
 export function useDevToolsFlowRuntime(): DevToolsFlowRuntimeLike | null {
-  const store = useContext(DevToolsStoreContext);
-  const legacyRuntime = useContext(DevToolsContext);
+  const { runtime, hasContext } = useRuntimeInternal();
 
-  // Primary path: use store context
-  if (store !== null) {
-    return store.getRuntime();
+  if (!hasContext) {
+    throw new Error("useDevToolsFlowRuntime must be used within a DevToolsStoreProvider.");
   }
 
-  // Fallback: use legacy DevToolsContext for backward compatibility
-  if (legacyRuntime !== null) {
-    return legacyRuntime;
-  }
-
-  // No context found
-  throw new Error("useDevToolsFlowRuntime must be used within a DevToolsStoreProvider.");
+  return runtime;
 }
 
 /**
@@ -350,21 +391,8 @@ export function useDevToolsFlowRuntime(): DevToolsFlowRuntimeLike | null {
  * ```
  */
 export function useDevToolsFlowRuntimeOptional(): DevToolsFlowRuntimeLike | null {
-  const store = useContext(DevToolsStoreContext);
-  const legacyRuntime = useContext(DevToolsContext);
-
-  // Primary path: use store context
-  if (store !== null) {
-    return store.getRuntime();
-  }
-
-  // Fallback: use legacy DevToolsContext for backward compatibility
-  if (legacyRuntime !== null) {
-    return legacyRuntime;
-  }
-
-  // No context found - return null instead of throwing
-  return null;
+  const { runtime } = useRuntimeInternal();
+  return runtime;
 }
 
 /**
@@ -508,6 +536,7 @@ export function useTracingActions(): Pick<
   | "resumeTracing"
   | "stopTracing"
   | "clearTraces"
+  | "setSlowThreshold"
 > {
   return useDevToolsStore(state => ({
     enableTracing: state.enableTracing,
@@ -517,6 +546,7 @@ export function useTracingActions(): Pick<
     resumeTracing: state.resumeTracing,
     stopTracing: state.stopTracing,
     clearTraces: state.clearTraces,
+    setSlowThreshold: state.setSlowThreshold,
   }));
 }
 

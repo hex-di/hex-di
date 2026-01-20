@@ -12,38 +12,18 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { Port, createPort } from "@hex-di/ports";
+import { Port } from "@hex-di/ports";
 import { Adapter, defineService, defineAsyncService } from "../src/index.js";
-
-// =============================================================================
-// Test Service Interfaces
-// =============================================================================
-
-interface Logger {
-  log(message: string): void;
-}
-
-interface Database {
-  query(sql: string): Promise<unknown>;
-}
-
-interface UserService {
-  getUser(id: string): Promise<{ id: string; name: string }>;
-}
-
-interface Config {
-  get(key: string): string;
-}
-
-// =============================================================================
-// Dependency Ports for Testing
-// =============================================================================
-
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-
-type LoggerPortType = typeof LoggerPort;
-type DatabasePortType = typeof DatabasePort;
+import {
+  Logger,
+  Database,
+  UserService,
+  ConfigServiceStrict as Config,
+  LoggerPort,
+  DatabasePort,
+  LoggerPortType,
+  DatabasePortType,
+} from "./fixtures.js";
 
 // =============================================================================
 // defineService Type Tests

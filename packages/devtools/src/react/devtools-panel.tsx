@@ -30,7 +30,7 @@ import { panelStyles } from "./styles.js";
 import { TabNavigation } from "./tab-navigation.js";
 import { PluginTabContent } from "./plugin-tab-content.js";
 import { DevToolsStoreProvider, usePlugins, useDevToolsStore } from "../store/index.js";
-import type { DevToolsPlugin } from "../runtime/plugin-types.js";
+import type { DevToolsPlugin } from "./types/plugin-types.js";
 import { defaultPlugins } from "../plugins/presets.js";
 
 // =============================================================================
@@ -137,7 +137,7 @@ interface DevToolsPanelTabsModeProps {
 /**
  * Internal component for tabs mode rendering with plugin architecture.
  *
- * This component must be rendered within a DevToolsRuntimeProvider context.
+ * This component must be rendered within a DevToolsStoreProvider context.
  * Handles keyboard shortcuts for plugin tab switching.
  */
 function DevToolsPanelTabsMode({

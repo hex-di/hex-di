@@ -6,23 +6,8 @@
  */
 
 import { describe, it, expectTypeOf } from "vitest";
-import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "../src/index.js";
-
-// =============================================================================
-// Test Fixtures
-// =============================================================================
-
-interface Logger {
-  log(message: string): void;
-}
-
-interface Database {
-  query(sql: string): Promise<unknown>;
-}
-
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
+import { LoggerPort, DatabasePort } from "./fixtures.js";
 
 // =============================================================================
 // Lifetime Consistency Tests
@@ -55,7 +40,7 @@ describe("Lifetime consistency in merge", () => {
 
     expectTypeOf(
       merged
-    ).toEqualTypeOf<"ERROR: Lifetime inconsistency for 'Logger': Graph A provides Singleton, Graph B provides Scoped">();
+    ).toEqualTypeOf<"ERROR: Lifetime inconsistency for 'Logger': Graph A provides Singleton, Graph B provides Scoped. Fix: Use the same lifetime in both graphs, or remove one adapter before merging.">();
   });
 
   it("detects singleton vs transient inconsistency", () => {
@@ -83,7 +68,7 @@ describe("Lifetime consistency in merge", () => {
 
     expectTypeOf(
       merged
-    ).toEqualTypeOf<"ERROR: Lifetime inconsistency for 'Logger': Graph A provides Singleton, Graph B provides Transient">();
+    ).toEqualTypeOf<"ERROR: Lifetime inconsistency for 'Logger': Graph A provides Singleton, Graph B provides Transient. Fix: Use the same lifetime in both graphs, or remove one adapter before merging.">();
   });
 
   it("detects scoped vs transient inconsistency", () => {
@@ -111,7 +96,7 @@ describe("Lifetime consistency in merge", () => {
 
     expectTypeOf(
       merged
-    ).toEqualTypeOf<"ERROR: Lifetime inconsistency for 'Logger': Graph A provides Scoped, Graph B provides Transient">();
+    ).toEqualTypeOf<"ERROR: Lifetime inconsistency for 'Logger': Graph A provides Scoped, Graph B provides Transient. Fix: Use the same lifetime in both graphs, or remove one adapter before merging.">();
   });
 
   it("shows duplicate error when lifetimes match (same port, same lifetime)", () => {
@@ -138,7 +123,9 @@ describe("Lifetime consistency in merge", () => {
     // Same port with same lifetime should show duplicate error, not lifetime error
     const merged = graphA.merge(graphB);
 
-    expectTypeOf(merged).toEqualTypeOf<"ERROR: Duplicate adapter for Logger. Already provided.">();
+    expectTypeOf(
+      merged
+    ).toEqualTypeOf<"ERROR: Duplicate adapter for 'Logger'. Fix: Remove one .provide() call, or use .override() for child graphs.">();
   });
 
   it("succeeds when different ports are provided", () => {
@@ -195,6 +182,6 @@ describe("Lifetime consistency in merge", () => {
 
     expectTypeOf(
       merged
-    ).toEqualTypeOf<"ERROR: Lifetime inconsistency for 'Logger': Graph A provides Singleton, Graph B provides Scoped">();
+    ).toEqualTypeOf<"ERROR: Lifetime inconsistency for 'Logger': Graph A provides Singleton, Graph B provides Scoped. Fix: Use the same lifetime in both graphs, or remove one adapter before merging.">();
   });
 });

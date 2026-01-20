@@ -18,10 +18,10 @@ export default tseslint.config(
   // Type-definition files use `any` in generic constraints for type inference
   // This is standard TypeScript pattern, different from runtime `any` usage
   {
-    files: ["**/types.ts", "**/inference.ts", "**/builder.ts"],
+    files: ["**/types.ts", "**/inference.ts", "**/builder.ts", "**/builder-types/*.ts"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
-      // builder.ts uses {} for EmptyDependencyGraph and EmptyLifetimeMap
+      // builder-types uses {} for EmptyDependencyGraph and EmptyLifetimeMap
       // because Record<string, never> causes index signature pollution
       // when intersected with specific properties
       "@typescript-eslint/no-empty-object-type": "off",

@@ -9,7 +9,6 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/ports";
 import {
   // Function exports
   createAdapter,
@@ -29,19 +28,7 @@ import {
   type MissingDependencyError,
   type DuplicateProviderError,
 } from "../src/index.js";
-
-// Sample service interfaces for testing
-interface Logger {
-  log(message: string): void;
-}
-
-interface Database {
-  query(sql: string): Promise<unknown>;
-}
-
-// Create test ports
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
+import { type Logger, LoggerPort, DatabasePort } from "./fixtures.js";
 
 describe("Public API exports", () => {
   describe("createAdapter function", () => {

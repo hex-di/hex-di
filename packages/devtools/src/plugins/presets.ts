@@ -31,11 +31,31 @@
  * @packageDocumentation
  */
 
-import type { DevToolsPlugin } from "../runtime/plugin-types.js";
+import type { DevToolsPlugin } from "../react/types/plugin-types.js";
 import { GraphPlugin } from "./graph-plugin.js";
 import { ServicesPlugin } from "./services-plugin.js";
 import { TracingPlugin } from "./tracing-plugin.js";
 import { InspectorTabPlugin } from "./inspector-plugin.js";
+
+// =============================================================================
+// Module-Level Cache
+// =============================================================================
+
+/**
+ * Cached default plugins array.
+ *
+ * Plugins are immutable frozen objects with no mutable state, so it's safe
+ * to cache and reuse them across multiple runtime instances. This avoids
+ * unnecessary object allocations on repeated calls.
+ */
+let cachedDefaultPlugins:
+  | readonly [DevToolsPlugin, DevToolsPlugin, DevToolsPlugin, DevToolsPlugin]
+  | null = null;
+
+/**
+ * Cached minimal plugins array.
+ */
+let cachedMinimalPlugins: readonly [DevToolsPlugin, DevToolsPlugin] | null = null;
 
 // =============================================================================
 // Default Plugins Preset
@@ -50,8 +70,9 @@ import { InspectorTabPlugin } from "./inspector-plugin.js";
  * 3. Tracing - Resolution tracing with timeline, tree, and summary views
  * 4. Inspector - Container inspection with scope hierarchy
  *
- * Each call returns fresh plugin instances, ensuring no shared state between
- * different DevTools runtime instances.
+ * Plugin instances are cached at module level for efficiency. Since plugins
+ * are immutable frozen objects with no mutable state, the same instances
+ * are safely shared across multiple DevTools runtime instances.
  *
  * @returns A frozen readonly array of the four default plugins
  *
@@ -89,7 +110,12 @@ export function defaultPlugins(): readonly [
   DevToolsPlugin,
   DevToolsPlugin,
 ] {
-  // Create fresh plugin instances on each call
+  // Return cached instance if available
+  if (cachedDefaultPlugins !== null) {
+    return cachedDefaultPlugins;
+  }
+
+  // Create and cache plugin instances
   const plugins: [DevToolsPlugin, DevToolsPlugin, DevToolsPlugin, DevToolsPlugin] = [
     GraphPlugin(),
     ServicesPlugin(),
@@ -97,8 +123,9 @@ export function defaultPlugins(): readonly [
     InspectorTabPlugin(),
   ];
 
-  // Freeze the array to enforce immutability
-  return Object.freeze(plugins);
+  // Freeze and cache the array
+  cachedDefaultPlugins = Object.freeze(plugins);
+  return cachedDefaultPlugins;
 }
 
 // =============================================================================
@@ -117,8 +144,9 @@ export function defaultPlugins(): readonly [
  * - Simple applications without complex dependency graphs
  * - Environments where bundle size is a concern
  *
- * Each call returns fresh plugin instances, ensuring no shared state between
- * different DevTools runtime instances.
+ * Plugin instances are cached at module level for efficiency. Since plugins
+ * are immutable frozen objects with no mutable state, the same instances
+ * are safely shared across multiple DevTools runtime instances.
  *
  * @returns A frozen readonly array of the two minimal plugins
  *
@@ -151,9 +179,15 @@ export function defaultPlugins(): readonly [
  * ```
  */
 export function minimalPlugins(): readonly [DevToolsPlugin, DevToolsPlugin] {
-  // Create fresh plugin instances on each call
+  // Return cached instance if available
+  if (cachedMinimalPlugins !== null) {
+    return cachedMinimalPlugins;
+  }
+
+  // Create and cache plugin instances
   const plugins: [DevToolsPlugin, DevToolsPlugin] = [ServicesPlugin(), InspectorTabPlugin()];
 
-  // Freeze the array to enforce immutability
-  return Object.freeze(plugins);
+  // Freeze and cache the array
+  cachedMinimalPlugins = Object.freeze(plugins);
+  return cachedMinimalPlugins;
 }

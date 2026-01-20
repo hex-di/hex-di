@@ -18,18 +18,18 @@ import type {
   PluginProps,
   PluginRuntimeAccess,
   PluginStateSnapshot,
-} from "../../src/runtime/types.js";
-import type { ContainerEntry } from "../../src/runtime/plugin-types.js";
+} from "../../src/react/types/plugin-types.js";
+import type { ContainerEntry } from "../../src/runtime/index.js";
 
 // =============================================================================
 // Test Utilities
 // =============================================================================
 
 /**
- * Create a mock runtime for testing.
+ * Create a mock state for testing.
  */
-function createMockRuntime(overrides: Partial<PluginStateSnapshot> = {}): PluginRuntimeAccess {
-  const state: PluginStateSnapshot = {
+function createMockState(overrides: Partial<PluginStateSnapshot> = {}): PluginStateSnapshot {
+  return {
     activeTabId: "graph",
     selectedContainerIds: new Set<string>(),
     tracingEnabled: false,
@@ -38,10 +38,14 @@ function createMockRuntime(overrides: Partial<PluginStateSnapshot> = {}): Plugin
     plugins: [],
     ...overrides,
   };
+}
 
+/**
+ * Create a mock runtime for testing.
+ */
+function createMockRuntime(): PluginRuntimeAccess {
   return {
     dispatch: vi.fn(),
-    getState: () => state,
   };
 }
 
@@ -54,13 +58,12 @@ function createMockPluginProps(overrides: Partial<PluginProps> = {}): PluginProp
     edges: [],
   };
 
-  const defaultRuntime = createMockRuntime();
-
   return {
-    runtime: defaultRuntime,
-    state: defaultRuntime.getState(),
+    runtime: createMockRuntime(),
+    state: createMockState(),
     graph: emptyGraph,
     containers: [],
+    containerScopeTree: null,
     ...overrides,
   };
 }
@@ -238,13 +241,12 @@ describe("GraphPluginContent", () => {
         createMockContainerEntry("child", "Child Container"),
       ];
 
-      const runtime = createMockRuntime({
+      const state = createMockState({
         selectedContainerIds: new Set(["root"]),
       });
 
       const props = createMockPluginProps({
-        runtime,
-        state: runtime.getState(),
+        state,
         containers,
         graph: createMockGraph(["ServiceA"]),
       });
@@ -262,13 +264,12 @@ describe("GraphPluginContent", () => {
         createMockContainerEntry("child", "Child Container"),
       ];
 
-      const runtime = createMockRuntime({
+      const state = createMockState({
         selectedContainerIds: new Set(["root", "child"]),
       });
 
       const props = createMockPluginProps({
-        runtime,
-        state: runtime.getState(),
+        state,
         containers,
         graph: createMockGraph(["ServiceA", "ServiceB"]),
       });
@@ -309,21 +310,14 @@ describe("GraphPlugin Integration", () => {
     const dispatch = vi.fn();
     const runtime: PluginRuntimeAccess = {
       dispatch,
-      getState: () => ({
-        activeTabId: "graph",
-        selectedContainerIds: new Set<string>(),
-        tracingEnabled: false,
-        tracingPaused: false,
-        tracingThreshold: 100,
-        plugins: [],
-      }),
     };
 
+    const state = createMockState();
     const containers: ContainerEntry[] = [createMockContainerEntry("root", "Root Container")];
 
     const props = createMockPluginProps({
       runtime,
-      state: runtime.getState(),
+      state,
       containers,
       graph: createMockGraph(["ServiceA"]),
     });

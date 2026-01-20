@@ -20,39 +20,13 @@ import {
   HasOverlap,
   InferGraphProvides,
 } from "../src/index.js";
+import { LoggerPort, DatabasePort, UserServicePort, LoggerPortType } from "./fixtures.js";
 
-// =============================================================================
-// Test Service Interfaces
-// =============================================================================
-
-interface Logger {
-  log(message: string): void;
-}
-
-interface Database {
-  query(sql: string): Promise<unknown>;
-}
-
-interface UserService {
-  getUser(id: string): Promise<{ id: string; name: string }>;
-}
-
+// Different port with same interface (but different name)
 interface AnotherLogger {
   log(message: string): void;
 }
-
-// =============================================================================
-// Test Port Tokens
-// =============================================================================
-
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
-
-// Different port with same interface (but different name)
 const AnotherLoggerPort = createPort<"AnotherLogger", AnotherLogger>("AnotherLogger");
-
-type LoggerPortType = typeof LoggerPort;
 type DatabasePortType = typeof DatabasePort;
 type UserServicePortType = typeof UserServicePort;
 type AnotherLoggerPortType = typeof AnotherLoggerPort;
@@ -149,13 +123,13 @@ describe("duplicate provider detection", () => {
 
     // The result should be a template literal error message
     type Result = typeof duplicateBuilder;
-    expectTypeOf<Result>().toEqualTypeOf<"ERROR: Duplicate adapter for Logger. Already provided.">();
+    expectTypeOf<Result>().toEqualTypeOf<"ERROR: Duplicate adapter for 'Logger'. Fix: Remove one .provide() call, or use .override() for child graphs.">();
   });
 
   it("error message includes duplicated port name", () => {
     // Template literal error message directly shows the port name
     type ErrorMessage = DuplicateErrorMessage<LoggerPortType>;
-    expectTypeOf<ErrorMessage>().toEqualTypeOf<"ERROR: Duplicate adapter for Logger. Already provided.">();
+    expectTypeOf<ErrorMessage>().toEqualTypeOf<"ERROR: Duplicate adapter for 'Logger'. Fix: Remove one .provide() call, or use .override() for child graphs.">();
 
     // The branded object type is still available for advanced usage
     type BrandedErrorType = DuplicateProviderError<LoggerPortType>;
@@ -192,7 +166,7 @@ describe("duplicate provider detection", () => {
     type SecondBuilderType = typeof secondBuilder;
 
     // The result should be a template literal error message
-    expectTypeOf<SecondBuilderType>().toEqualTypeOf<"ERROR: Duplicate adapter for Logger. Already provided.">();
+    expectTypeOf<SecondBuilderType>().toEqualTypeOf<"ERROR: Duplicate adapter for 'Logger'. Fix: Remove one .provide() call, or use .override() for child graphs.">();
   });
 
   it("detection works across multiple provide() chains", () => {
@@ -209,7 +183,7 @@ describe("duplicate provider detection", () => {
     type Result = typeof withDuplicate;
 
     // Should be a template literal error message
-    expectTypeOf<Result>().toEqualTypeOf<"ERROR: Duplicate adapter for Logger. Already provided.">();
+    expectTypeOf<Result>().toEqualTypeOf<"ERROR: Duplicate adapter for 'Logger'. Fix: Remove one .provide() call, or use .override() for child graphs.">();
   });
 
   it("non-overlapping ports are allowed in any order", () => {

@@ -8,32 +8,14 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createPort } from "@hex-di/ports";
 import { createAdapter, createAsyncAdapter } from "../src/index.js";
-
-// =============================================================================
-// Test Service Interfaces
-// =============================================================================
-
-interface Logger {
-  log(message: string): void;
-}
-
-interface Database {
-  query(sql: string): Promise<unknown>;
-}
-
-interface UserService {
-  getUser(id: string): Promise<{ id: string; name: string }>;
-}
-
-// =============================================================================
-// Test Port Tokens
-// =============================================================================
-
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
+import {
+  type Logger,
+  type Database,
+  LoggerPort,
+  DatabasePort,
+  UserServicePort,
+} from "./fixtures.js";
 
 // =============================================================================
 // createAdapter Unit Tests

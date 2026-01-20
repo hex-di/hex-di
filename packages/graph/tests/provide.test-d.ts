@@ -13,7 +13,6 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/ports";
 import {
   GraphBuilder,
   InferGraphProvides,
@@ -22,47 +21,18 @@ import {
   InferAdapterProvides,
   InferAdapterRequires,
 } from "../src/index.js";
-
-// =============================================================================
-// Test Service Interfaces
-// =============================================================================
-
-interface Logger {
-  log(message: string): void;
-}
-
-interface Database {
-  query(sql: string): Promise<unknown>;
-}
-
-interface UserService {
-  getUser(id: string): Promise<{ id: string; name: string }>;
-}
-
-interface ConfigService {
-  get(key: string): string;
-}
-
-interface CacheService {
-  get(key: string): unknown;
-  set(key: string, value: unknown): void;
-}
-
-// =============================================================================
-// Test Port Tokens
-// =============================================================================
-
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
-const ConfigPort = createPort<"Config", ConfigService>("Config");
-const CachePort = createPort<"Cache", CacheService>("Cache");
-
-type LoggerPortType = typeof LoggerPort;
-type DatabasePortType = typeof DatabasePort;
-type UserServicePortType = typeof UserServicePort;
-type ConfigPortType = typeof ConfigPort;
-type CachePortType = typeof CachePort;
+import {
+  LoggerPort,
+  DatabasePort,
+  UserServicePort,
+  ConfigPortStrict as ConfigPort,
+  CachePortSimple as CachePort,
+  LoggerPortType,
+  DatabasePortType,
+  UserServicePortType,
+  ConfigPortStrictType as ConfigPortType,
+  CachePortSimpleType as CachePortType,
+} from "./fixtures.js";
 
 // =============================================================================
 // Test Adapters

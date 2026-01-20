@@ -62,7 +62,7 @@ const DEPTH_WARNING_THRESHOLD = 25;
  */
 export interface GraphSuggestion {
   /** Type of suggestion */
-  readonly type: "missing_adapter" | "depth_warning" | "orphan_port";
+  readonly type: "missing_adapter" | "depth_warning" | "orphan_port" | "disposal_warning";
   /** The port name this suggestion relates to */
   readonly portName: string;
   /** Human-readable description of the issue */
@@ -131,6 +131,71 @@ export interface GraphInspection {
    * Use this to audit your graph for unused services.
    */
   readonly orphanPorts: readonly string[];
+
+  /**
+   * Warnings about potential disposal order issues.
+   *
+   * Present when adapters with finalizers depend on adapters without finalizers.
+   * During disposal, services are finalized in reverse dependency order.
+   * If a finalizer depends on a service that may be garbage collected,
+   * use-after-dispose bugs can occur.
+   *
+   * @example
+   * ```typescript
+   * const info = builder.inspect();
+   * if (info.disposalWarnings.length > 0) {
+   *   console.warn('Disposal order warnings:');
+   *   for (const warning of info.disposalWarnings) {
+   *     console.warn(`  - ${warning}`);
+   *   }
+   * }
+   * ```
+   */
+  readonly disposalWarnings: readonly string[];
+
+  /**
+   * Type complexity score (heuristic for type-checking performance).
+   *
+   * Higher values indicate more complex type structures that may impact
+   * IDE responsiveness and type-checking speed. The score is based on:
+   * - Number of adapters
+   * - Dependency chain depth
+   * - Fan-out (average dependencies per adapter)
+   *
+   * Thresholds:
+   * - 0-50: "safe" - No performance concerns
+   * - 51-100: "monitor" - May impact large projects
+   * - 100+: "consider-splitting" - Consider splitting into subgraphs
+   *
+   * @example
+   * ```typescript
+   * const info = builder.inspect();
+   * if (info.typeComplexityScore > 100) {
+   *   console.warn(
+   *     `High type complexity (${info.typeComplexityScore}). ` +
+   *     `Consider splitting into smaller graphs.`
+   *   );
+   * }
+   * ```
+   */
+  readonly typeComplexityScore: number;
+
+  /**
+   * Performance recommendation based on type complexity score.
+   *
+   * - "safe": No performance concerns expected
+   * - "monitor": May impact type-checking in large projects, monitor CI times
+   * - "consider-splitting": Consider restructuring into smaller subgraphs
+   */
+  readonly performanceRecommendation: "safe" | "monitor" | "consider-splitting";
+
+  /**
+   * Ports that have finalizers defined.
+   *
+   * Useful for understanding disposal behavior and debugging
+   * use-after-dispose issues.
+   */
+  readonly portsWithFinalizers: readonly string[];
 }
 
 /**
@@ -178,6 +243,14 @@ export interface GraphInspectionJSON {
   readonly suggestions: readonly GraphSuggestion[];
   /** Ports provided but not required by others */
   readonly orphanPorts: readonly string[];
+  /** Disposal order warnings */
+  readonly disposalWarnings: readonly string[];
+  /** Type complexity score */
+  readonly typeComplexityScore: number;
+  /** Performance recommendation */
+  readonly performanceRecommendation: "safe" | "monitor" | "consider-splitting";
+  /** Ports that have finalizers defined */
+  readonly portsWithFinalizers: readonly string[];
 }
 
 /**
@@ -270,6 +343,113 @@ function computeOrphanPorts(providedSet: Set<string>, allRequires: Set<string>):
 }
 
 /**
+ * Computes disposal warnings for adapters with finalizers.
+ *
+ * Checks if any adapter with a finalizer depends on an adapter without a finalizer.
+ * This can cause use-after-dispose issues when services are disposed in reverse
+ * dependency order.
+ *
+ * @param adapters - All adapters in the graph
+ * @param dependencyMap - Map of port name to its dependencies
+ * @returns Array of warning messages
+ *
+ * @internal
+ */
+function computeDisposalWarnings(
+  adapters: readonly AdapterAny[],
+  dependencyMap: Record<string, readonly string[]>
+): string[] {
+  const warnings: string[] = [];
+
+  // Build a set of ports that have finalizers
+  const portsWithFinalizers = new Set<string>();
+  for (const adapter of adapters) {
+    if (typeof adapter.finalizer === "function") {
+      portsWithFinalizers.add(adapter.provides.__portName);
+    }
+  }
+
+  // Check each adapter with a finalizer
+  for (const adapter of adapters) {
+    if (typeof adapter.finalizer !== "function") continue;
+
+    const portName = adapter.provides.__portName;
+    const deps = dependencyMap[portName] ?? [];
+
+    // Check if any dependency lacks a finalizer
+    for (const dep of deps) {
+      // Only warn if the dependency is in our graph (not external)
+      const depAdapter = adapters.find(a => a.provides.__portName === dep);
+      if (depAdapter && !portsWithFinalizers.has(dep)) {
+        warnings.push(
+          `'${portName}' has a finalizer but depends on '${dep}' which has no finalizer. ` +
+            `During disposal, '${dep}' may be garbage collected before '${portName}' finishes cleanup.`
+        );
+      }
+    }
+  }
+
+  return warnings;
+}
+
+/**
+ * Computes type complexity score for performance monitoring.
+ *
+ * The score is a heuristic based on:
+ * - Number of adapters (linear impact)
+ * - Maximum dependency chain depth (quadratic impact due to type recursion)
+ * - Average fan-out (dependencies per adapter)
+ *
+ * @param adapterCount - Number of adapters
+ * @param maxDepth - Maximum dependency chain depth
+ * @param dependencyMap - Map of port name to its dependencies
+ * @returns Complexity score
+ *
+ * @internal
+ */
+function computeTypeComplexityScore(
+  adapterCount: number,
+  maxDepth: number,
+  dependencyMap: Record<string, readonly string[]>
+): number {
+  if (adapterCount === 0) return 0;
+
+  // Count total edges
+  let totalDeps = 0;
+  for (const deps of Object.values(dependencyMap)) {
+    totalDeps += deps.length;
+  }
+
+  const avgFanOut = totalDeps / adapterCount;
+
+  // Formula: adapters + (depth^2 * 2) + (avgFanOut * adapters / 2)
+  // Depth has quadratic impact because type-level cycle detection is O(depth^2)
+  const score = adapterCount + maxDepth * maxDepth * 2 + avgFanOut * adapterCount * 0.5;
+
+  return Math.round(score);
+}
+
+/**
+ * Determines performance recommendation based on complexity score.
+ *
+ * @internal
+ */
+function getPerformanceRecommendation(score: number): "safe" | "monitor" | "consider-splitting" {
+  if (score <= 50) return "safe";
+  if (score <= 100) return "monitor";
+  return "consider-splitting";
+}
+
+/**
+ * Gets the list of ports that have finalizers.
+ *
+ * @internal
+ */
+function getPortsWithFinalizers(adapters: readonly AdapterAny[]): string[] {
+  return adapters.filter(a => typeof a.finalizer === "function").map(a => a.provides.__portName);
+}
+
+/**
  * Generates actionable suggestions based on the current graph state.
  *
  * @internal
@@ -278,7 +458,8 @@ function generateSuggestions(
   unsatisfiedRequirements: readonly string[],
   orphanPorts: readonly string[],
   maxChainDepth: number,
-  dependencyMap: Record<string, readonly string[]>
+  dependencyMap: Record<string, readonly string[]>,
+  disposalWarnings: readonly string[]
 ): GraphSuggestion[] {
   const suggestions: GraphSuggestion[] = [];
 
@@ -320,6 +501,20 @@ function generateSuggestions(
     }
   }
 
+  // Suggestions for disposal warnings
+  for (const warning of disposalWarnings) {
+    // Extract port name from warning message
+    const match = warning.match(/^'([^']+)'/);
+    const portName = match ? match[1] : "";
+
+    suggestions.push({
+      type: "disposal_warning",
+      portName,
+      message: warning,
+      action: `Add a finalizer to the dependency, or ensure disposal order doesn't matter for this service.`,
+    });
+  }
+
   return suggestions;
 }
 
@@ -348,6 +543,16 @@ export function inspectGraph(graph: InspectableGraph): GraphInspection {
   const maxChainDepth = computeMaxChainDepth(dependencyMap);
   const orphanPorts = computeOrphanPorts(providedSet, allRequires);
 
+  // Compute new disposal and performance metrics
+  const disposalWarnings = computeDisposalWarnings(graph.adapters, dependencyMap);
+  const typeComplexityScore = computeTypeComplexityScore(
+    graph.adapters.length,
+    maxChainDepth,
+    dependencyMap
+  );
+  const performanceRecommendation = getPerformanceRecommendation(typeComplexityScore);
+  const portsWithFinalizers = getPortsWithFinalizers(graph.adapters);
+
   const providedNames = [...providedSet].join(", ");
   const missingPart =
     unsatisfiedRequirements.length > 0 ? `. Missing: ${unsatisfiedRequirements.join(", ")}` : "";
@@ -363,7 +568,8 @@ export function inspectGraph(graph: InspectableGraph): GraphInspection {
     unsatisfiedRequirements,
     orphanPorts,
     maxChainDepth,
-    dependencyMap
+    dependencyMap,
+    disposalWarnings
   );
 
   return Object.freeze({
@@ -378,6 +584,10 @@ export function inspectGraph(graph: InspectableGraph): GraphInspection {
     summary: `Graph(${graph.adapters.length} adapters, ${unsatisfiedRequirements.length} unsatisfied): ${providedNames}${missingPart}`,
     suggestions: Object.freeze(suggestions),
     orphanPorts: Object.freeze(orphanPorts),
+    disposalWarnings: Object.freeze(disposalWarnings),
+    typeComplexityScore,
+    performanceRecommendation,
+    portsWithFinalizers: Object.freeze(portsWithFinalizers),
   });
 }
 
@@ -424,6 +634,10 @@ export function inspectionToJSON(inspection: GraphInspection): GraphInspectionJS
     isComplete: inspection.isComplete,
     suggestions: [...inspection.suggestions],
     orphanPorts: [...inspection.orphanPorts],
+    disposalWarnings: [...inspection.disposalWarnings],
+    typeComplexityScore: inspection.typeComplexityScore,
+    performanceRecommendation: inspection.performanceRecommendation,
+    portsWithFinalizers: [...inspection.portsWithFinalizers],
   };
 }
 
@@ -564,4 +778,173 @@ export function toDotGraph(inspection: GraphInspection, options: DotGraphOptions
  */
 function escapeLabel(str: string): string {
   return str.replace(/"/g, '\\"').replace(/\n/g, "\\n");
+}
+
+/**
+ * Options for Mermaid graph visualization.
+ */
+export interface MermaidGraphOptions {
+  /** Graph title (displayed as a label) */
+  readonly title?: string;
+  /** Include lifetime labels on nodes (default: true) */
+  readonly showLifetimes?: boolean;
+  /** Highlight unsatisfied dependencies in red (default: true) */
+  readonly highlightMissing?: boolean;
+  /** Include orphan port markers (default: false) */
+  readonly showOrphans?: boolean;
+  /** Direction of graph layout: 'TB' (top-bottom), 'LR' (left-right), 'BT', 'RL' (default: 'TB') */
+  readonly direction?: "TB" | "LR" | "BT" | "RL";
+  /** Show ports with finalizers (default: false) */
+  readonly showFinalizers?: boolean;
+}
+
+/**
+ * Converts a graph inspection to Mermaid diagram format.
+ *
+ * Mermaid is a widely-supported diagram format that renders in:
+ * - GitHub/GitLab markdown
+ * - VS Code with Mermaid extension
+ * - Notion, Confluence, and many other tools
+ * - https://mermaid.live/ for live editing
+ *
+ * @example Basic usage
+ * ```typescript
+ * const graph = GraphBuilder.create()
+ *   .provide(LoggerAdapter)
+ *   .provide(DatabaseAdapter)
+ *   .build();
+ *
+ * const mermaid = toMermaidGraph(inspectGraph(graph));
+ * console.log(mermaid);
+ * // graph TD
+ * //   Logger["Logger<br/>(singleton)"]
+ * //   Database["Database<br/>(scoped)"]
+ * //   Database --> Logger
+ * ```
+ *
+ * @example In Markdown
+ * ```markdown
+ * ## Dependency Graph
+ *
+ * \`\`\`mermaid
+ * graph TD
+ *   Logger["Logger<br/>(singleton)"]
+ *   Database["Database<br/>(scoped)"]
+ *   Database --> Logger
+ * \`\`\`
+ * ```
+ *
+ * @example With options
+ * ```typescript
+ * const mermaid = toMermaidGraph(info, {
+ *   title: "My Application",
+ *   direction: "LR",
+ *   showOrphans: true,
+ *   showFinalizers: true,
+ * });
+ * ```
+ *
+ * @param inspection - The graph inspection result from inspectGraph()
+ * @param options - Visualization options
+ * @returns A string in Mermaid diagram format
+ */
+export function toMermaidGraph(
+  inspection: GraphInspection,
+  options: MermaidGraphOptions = {}
+): string {
+  const {
+    title,
+    showLifetimes = true,
+    highlightMissing = true,
+    showOrphans = false,
+    direction = "TB",
+    showFinalizers = false,
+  } = options;
+
+  const lines: string[] = [];
+  lines.push(`graph ${direction}`);
+
+  // Track special port sets for styling
+  const orphanSet = new Set(inspection.orphanPorts);
+  const missingSet = new Set(inspection.unsatisfiedRequirements);
+  const finalizerSet = new Set(inspection.portsWithFinalizers);
+
+  // Create nodes for provided ports
+  for (const portWithLifetime of inspection.provides) {
+    const [portName, lifetimePart] = portWithLifetime.split(" (");
+    const lifetime = lifetimePart?.replace(")", "") ?? "";
+
+    // Build label parts
+    const labelParts: string[] = [escapeMermaid(portName)];
+    if (showLifetimes) {
+      labelParts.push(`<br/>(${lifetime})`);
+    }
+    if (showFinalizers && finalizerSet.has(portName)) {
+      labelParts.push(`<br/>🗑️`);
+    }
+
+    const label = labelParts.join("");
+    const nodeId = sanitizeNodeId(portName);
+
+    // Determine node style
+    let nodeDef = `  ${nodeId}["${label}"]`;
+
+    // Add styling for special nodes
+    if (showOrphans && orphanSet.has(portName)) {
+      nodeDef += `\n  style ${nodeId} stroke-dasharray: 5 5,stroke:#f90`;
+    }
+    if (inspection.overrides.includes(portName)) {
+      nodeDef += `\n  style ${nodeId} stroke:#00f,color:#00f`;
+    }
+
+    lines.push(nodeDef);
+  }
+
+  // Create nodes for missing ports (if highlighting)
+  if (highlightMissing) {
+    for (const missing of inspection.unsatisfiedRequirements) {
+      const nodeId = sanitizeNodeId(missing);
+      lines.push(`  ${nodeId}["${escapeMermaid(missing)}<br/>(MISSING)"]`);
+      lines.push(`  style ${nodeId} stroke-dasharray: 5 5,stroke:#f00,color:#f00`);
+    }
+  }
+
+  // Create edges for dependencies
+  for (const [portName, deps] of Object.entries(inspection.dependencyMap)) {
+    const fromId = sanitizeNodeId(portName);
+    for (const dep of deps) {
+      const toId = sanitizeNodeId(dep);
+
+      // Use dashed line for missing dependencies
+      if (highlightMissing && missingSet.has(dep)) {
+        lines.push(`  ${fromId} -.-> ${toId}`);
+      } else {
+        lines.push(`  ${fromId} --> ${toId}`);
+      }
+    }
+  }
+
+  // Add title as a subgraph label if provided
+  if (title) {
+    return `---\ntitle: ${escapeMermaid(title)}\n---\n${lines.join("\n")}`;
+  }
+
+  return lines.join("\n");
+}
+
+/**
+ * Sanitizes a string for use as a Mermaid node ID.
+ * Node IDs must be alphanumeric (with underscores).
+ * @internal
+ */
+function sanitizeNodeId(str: string): string {
+  return str.replace(/[^a-zA-Z0-9_]/g, "_");
+}
+
+/**
+ * Escapes special characters for Mermaid labels.
+ * @internal
+ */
+function escapeMermaid(str: string): string {
+  return str.replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }

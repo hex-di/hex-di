@@ -11,81 +11,21 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "../src/index.js";
+import {
+  ConfigPort,
+  LoggerAdapter,
+  DatabaseAdapter,
+  CacheAdapter,
+  UserServiceAdapter,
+} from "./fixtures.js";
 
-// =============================================================================
-// Test Service Interfaces
-// =============================================================================
-
-interface Logger {
-  log(message: string): void;
-}
-
-interface Database {
-  query(sql: string): Promise<unknown>;
-}
-
-interface UserService {
-  getUser(id: string): Promise<{ id: string; name: string }>;
-}
-
-interface ConfigService {
-  get(key: string): string;
-}
-
-interface CacheService {
-  get(key: string): unknown;
-  set(key: string, value: unknown): void;
-}
-
-// =============================================================================
-// Test Port Tokens
-// =============================================================================
-
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
-const ConfigPort = createPort<"Config", ConfigService>("Config");
-const CachePort = createPort<"Cache", CacheService>("Cache");
-
-// =============================================================================
-// Test Adapters
-// =============================================================================
-
-const LoggerAdapter = createAdapter({
-  provides: LoggerPort,
-  requires: [],
-  lifetime: "singleton",
-  factory: () => ({ log: () => {} }),
-});
-
-const DatabaseAdapter = createAdapter({
-  provides: DatabasePort,
-  requires: [],
-  lifetime: "singleton",
-  factory: () => ({ query: () => Promise.resolve({}) }),
-});
-
+// Local ConfigAdapter with different factory (no undefined return)
 const ConfigAdapter = createAdapter({
   provides: ConfigPort,
   requires: [],
   lifetime: "singleton",
   factory: () => ({ get: () => "" }),
-});
-
-const CacheAdapter = createAdapter({
-  provides: CachePort,
-  requires: [ConfigPort],
-  lifetime: "singleton",
-  factory: () => ({ get: () => null, set: () => {} }),
-});
-
-const UserServiceAdapter = createAdapter({
-  provides: UserServicePort,
-  requires: [LoggerPort, DatabasePort],
-  lifetime: "scoped",
-  factory: () => ({ getUser: id => Promise.resolve({ id, name: "test" }) }),
 });
 
 // =============================================================================

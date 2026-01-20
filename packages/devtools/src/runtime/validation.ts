@@ -22,10 +22,25 @@
  * @packageDocumentation
  */
 
-import type { PluginConfig } from "./plugin-types.js";
+import type { PluginConfigCore } from "./plugin-types-core.js";
 
 // =============================================================================
-// Error Messages
+// Plugin Config Type for Validation
+// =============================================================================
+
+/**
+ * Plugin configuration type for validation.
+ *
+ * Extends the framework-agnostic PluginConfigCore with the component field.
+ * The component is typed as `unknown` here since validation only checks
+ * that it's a function - the specific function signature is framework-specific.
+ */
+interface PluginConfigForValidation extends PluginConfigCore {
+  readonly component?: unknown;
+}
+
+// =============================================================================
+// Error Classes
 // =============================================================================
 
 /**
@@ -36,6 +51,19 @@ export class PluginValidationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "PluginValidationError";
+  }
+}
+
+/**
+ * Error class for plugin configuration failures.
+ *
+ * Thrown when the plugins array itself is invalid (empty, has duplicates, etc.)
+ * as opposed to individual plugin validation errors.
+ */
+export class PluginConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PluginConfigurationError";
   }
 }
 
@@ -151,7 +179,7 @@ function isFunction(value: unknown): value is (...args: unknown[]) => unknown {
  * }); // Throws: Plugin label must not be empty
  * ```
  */
-export function validatePluginConfig(config: PluginConfig): void {
+export function validatePluginConfig(config: PluginConfigForValidation): void {
   // Validate id presence
   if (!("id" in config) || config.id === undefined || config.id === null) {
     throw new PluginValidationError("Plugin id is required");
@@ -231,7 +259,7 @@ export function validateUniquePluginIds(ids: readonly string[]): void {
  * ]); // OK
  * ```
  */
-export function validatePluginConfigs(configs: readonly PluginConfig[]): void {
+export function validatePluginConfigs(configs: readonly PluginConfigForValidation[]): void {
   // Validate each config individually
   for (let i = 0; i < configs.length; i++) {
     try {

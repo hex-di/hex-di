@@ -7,32 +7,19 @@
  * @packageDocumentation
  */
 
-import type { ExportedGraph, ExportedNode, ExportedEdge } from "@hex-di/devtools-core";
+import type { ExportedGraph } from "@hex-di/devtools-core";
 import type { InheritanceMode, ServiceOrigin } from "@hex-di/plugin";
 import type { Lifetime, FactoryKind } from "@hex-di/graph";
-import type { ContainerEntry } from "../../runtime/plugin-types.js";
-
 // =============================================================================
-// Types
+// Type Guards
 // =============================================================================
 
 /**
- * Extended node type with container membership for unified view.
- *
- * When multiple containers are selected, each unique port appears once
- * with a list of which containers provide it.
+ * Type guard to check if a value is a readonly array of strings.
  */
-export interface UnifiedNode extends ExportedNode {
-  /** All containers that provide this port */
-  readonly containers: readonly string[];
-}
-
-/**
- * Extended graph type with unified nodes.
- */
-export interface UnifiedGraph {
-  readonly nodes: readonly UnifiedNode[];
-  readonly edges: readonly ExportedEdge[];
+function isStringArray(value: unknown): value is readonly string[] {
+  if (!Array.isArray(value)) return false;
+  return value.every((item): item is string => typeof item === "string");
 }
 
 /**
@@ -79,7 +66,8 @@ export function transformNodesToGraphNodes(exportedGraph: ExportedGraph): readon
       origin: node.origin,
       inheritanceMode: node.inheritanceMode,
       // Include containers list for unified graph tooltip if present
-      containers: "containers" in node ? (node.containers as readonly string[]) : undefined,
+      containers:
+        "containers" in node && isStringArray(node.containers) ? node.containers : undefined,
     };
 
     return graphNode;
@@ -94,68 +82,4 @@ export function transformNodesToGraphNodes(exportedGraph: ExportedGraph): readon
  */
 export function isEmptyGraph(graph: ExportedGraph): boolean {
   return graph.nodes.length === 0;
-}
-
-/**
- * Filters containers based on a set of selected IDs.
- *
- * @param containers - All available containers
- * @param selectedIds - Set of IDs to filter by
- * @returns Containers matching the selected IDs
- */
-export function filterSelectedContainers(
-  containers: readonly ContainerEntry[],
-  selectedIds: ReadonlySet<string>
-): readonly ContainerEntry[] {
-  return containers.filter(c => selectedIds.has(c.id));
-}
-
-/**
- * Creates an empty frozen graph.
- *
- * @returns An empty ExportedGraph with no nodes or edges
- */
-export function createEmptyGraph(): ExportedGraph {
-  return Object.freeze({
-    nodes: Object.freeze([]),
-    edges: Object.freeze([]),
-  });
-}
-
-/**
- * Merges multiple graphs into a unified graph.
- *
- * Nodes with the same ID are deduplicated, keeping the first occurrence.
- * Edges are deduplicated by from+to key.
- *
- * @param graphs - Array of graphs to merge
- * @returns Merged graph with deduplicated nodes and edges
- */
-export function mergeGraphs(graphs: readonly ExportedGraph[]): ExportedGraph {
-  const nodeMap = new Map<string, ExportedNode>();
-  const edgeSet = new Set<string>();
-  const edges: ExportedEdge[] = [];
-
-  for (const graph of graphs) {
-    for (const node of graph.nodes) {
-      if (!nodeMap.has(node.id)) {
-        nodeMap.set(node.id, node);
-      }
-    }
-
-    for (const edge of graph.edges) {
-      const key = `${edge.from}->${edge.to}`;
-      if (!edgeSet.has(key)) {
-        edgeSet.add(key);
-        edges.push(edge);
-      }
-    }
-  }
-
-  const nodes = Array.from(nodeMap.values()).sort((a, b) => a.id.localeCompare(b.id));
-
-  return Object.freeze({
-    nodes: Object.freeze(nodes),
-    edges: Object.freeze(edges),
-  });
 }

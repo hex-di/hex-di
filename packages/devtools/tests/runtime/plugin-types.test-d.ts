@@ -24,7 +24,7 @@ import type {
   HasShortcuts,
   StrictPlugin,
   MinimalPlugin,
-} from "../../src/runtime/plugin-types.js";
+} from "../../src/runtime/index.js";
 import type { ExportedGraph } from "@hex-di/devtools-core";
 import type { TracingAPI, ContainerSnapshot } from "@hex-di/plugin";
 import type { ReactElement } from "react";
@@ -164,11 +164,6 @@ describe("PluginProps type includes runtime access", () => {
     type DispatchFn = PluginRuntimeAccess["dispatch"];
     expectTypeOf<DispatchFn>().toBeFunction();
     expectTypeOf<Parameters<DispatchFn>[0]>().toEqualTypeOf<PluginCommand>();
-  });
-
-  it("runtime.getState should return PluginStateSnapshot", () => {
-    type GetStateFn = PluginRuntimeAccess["getState"];
-    expectTypeOf<ReturnType<GetStateFn>>().toEqualTypeOf<PluginStateSnapshot>();
   });
 });
 
@@ -337,6 +332,9 @@ describe("PluginCommand discriminated union", () => {
           return cmd.type;
         case "setThreshold":
           return String(cmd.value);
+        case "pinTrace":
+        case "unpinTrace":
+          return cmd.traceId;
         default: {
           const _exhaustive: never = cmd;
           return _exhaustive;

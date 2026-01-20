@@ -13,7 +13,7 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createPort, Port } from "@hex-di/ports";
+import { Port } from "@hex-di/ports";
 import {
   GraphBuilder,
   Adapter,
@@ -21,37 +21,18 @@ import {
   InferGraphProvides,
   InferGraphRequires,
 } from "../src/index.js";
+import {
+  LoggerPort,
+  DatabasePort,
+  UserServicePort,
+  LoggerPortType,
+  DatabasePortType,
+  UserServicePortType,
+} from "./fixtures.js";
 
-// =============================================================================
-// Test Service Interfaces
-// =============================================================================
-
-interface Logger {
-  log(message: string): void;
-}
-
-interface Database {
-  query(sql: string): Promise<unknown>;
-}
-
-interface UserService {
-  getUser(id: string): Promise<{ id: string; name: string }>;
-}
-
-// =============================================================================
-// Test Port Tokens
-// =============================================================================
-
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
 expect(LoggerPort).toBeDefined();
 expect(DatabasePort).toBeDefined();
 expect(UserServicePort).toBeDefined();
-
-type LoggerPortType = typeof LoggerPort;
-type DatabasePortType = typeof DatabasePort;
-type UserServicePortType = typeof UserServicePort;
 
 // =============================================================================
 // GraphBuilder.create() Tests

@@ -12,12 +12,10 @@
 import { describe, it, expectTypeOf } from "vitest";
 import type {
   DevToolsRuntimeState,
-  DevToolsPlugin,
   DevToolsCommand,
   DevToolsEvent,
   DevToolsRuntime,
   DevToolsRuntimeConfig,
-  PluginProps,
   PluginShortcut,
   ContainerEntry,
   SelectTabCommand,
@@ -38,6 +36,8 @@ import type {
   StateListener,
   EventListener,
 } from "../../src/runtime/types.js";
+import type { DevToolsPlugin, PluginProps } from "../../src/react/types/plugin-types.js";
+import type { PluginMetadata } from "../../src/runtime/plugin-types-core.js";
 import type { ExportedGraph } from "@hex-di/devtools-core";
 import type { TracingAPI, ContainerSnapshot } from "@hex-di/plugin";
 import type { ReactElement } from "react";
@@ -69,8 +69,16 @@ describe("DevToolsRuntimeState type structure", () => {
     expectTypeOf<DevToolsRuntimeState["tracingThreshold"]>().toBeNumber();
   });
 
-  it("should have plugins as readonly DevToolsPlugin array", () => {
-    expectTypeOf<DevToolsRuntimeState["plugins"]>().toEqualTypeOf<readonly DevToolsPlugin[]>();
+  it("should have plugins as readonly PluginMetadata array by default", () => {
+    // DevToolsRuntimeState is generic, defaulting to PluginMetadata
+    // When used with React, pass DevToolsPlugin as the type parameter
+    expectTypeOf<DevToolsRuntimeState["plugins"]>().toEqualTypeOf<readonly PluginMetadata[]>();
+  });
+
+  it("should have plugins as readonly DevToolsPlugin array when parameterized", () => {
+    expectTypeOf<DevToolsRuntimeState<DevToolsPlugin>["plugins"]>().toEqualTypeOf<
+      readonly DevToolsPlugin[]
+    >();
   });
 
   it("should be assignable from valid state object", () => {
@@ -125,7 +133,7 @@ describe("PluginProps type structure", () => {
     // PluginProps uses PluginRuntimeAccess which is a minimal subset of DevToolsRuntime
     // This is intentional for plugin isolation - plugins only get what they need
     expectTypeOf<PluginProps["runtime"]>().toHaveProperty("dispatch");
-    expectTypeOf<PluginProps["runtime"]>().toHaveProperty("getState");
+    // Note: getState was removed from PluginRuntimeAccess - state is now passed as a separate prop
   });
 
   it("should have state as PluginStateSnapshot", () => {
@@ -371,8 +379,15 @@ describe("DevToolsRuntime interface", () => {
 // =============================================================================
 
 describe("DevToolsRuntimeConfig type structure", () => {
-  it("should have required plugins property", () => {
-    expectTypeOf<DevToolsRuntimeConfig["plugins"]>().toEqualTypeOf<readonly DevToolsPlugin[]>();
+  it("should have required plugins property defaulting to PluginMetadata", () => {
+    // DevToolsRuntimeConfig is generic, defaulting to PluginMetadata
+    expectTypeOf<DevToolsRuntimeConfig["plugins"]>().toEqualTypeOf<readonly PluginMetadata[]>();
+  });
+
+  it("should have plugins as DevToolsPlugin when parameterized", () => {
+    expectTypeOf<DevToolsRuntimeConfig<DevToolsPlugin>["plugins"]>().toEqualTypeOf<
+      readonly DevToolsPlugin[]
+    >();
   });
 
   it("should have optional initialTabId", () => {

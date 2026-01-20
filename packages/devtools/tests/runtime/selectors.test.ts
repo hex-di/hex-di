@@ -11,7 +11,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import type { DevToolsPlugin, DevToolsRuntimeState, PluginProps } from "../../src/runtime/types.js";
+import type { DevToolsRuntimeState } from "../../src/runtime/types.js";
+import type { DevToolsPlugin, PluginProps } from "../../src/react/types/plugin-types.js";
 import {
   createSelector,
   selectPlugins,

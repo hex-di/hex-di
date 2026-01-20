@@ -13,7 +13,7 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/ports";
+import type { Port } from "@hex-di/ports";
 import {
   GraphBuilder,
   createAdapter,
@@ -21,48 +21,18 @@ import {
   InferGraphProvides,
   AdapterAny,
 } from "../src/index.js";
-import type { Port } from "@hex-di/ports";
-
-// =============================================================================
-// Test Service Interfaces
-// =============================================================================
-
-interface Logger {
-  log(message: string): void;
-}
-
-interface Database {
-  query(sql: string): Promise<unknown>;
-}
-
-interface UserService {
-  getUser(id: string): Promise<{ id: string; name: string }>;
-}
-
-interface ConfigService {
-  get(key: string): string;
-}
-
-interface CacheService {
-  get(key: string): unknown;
-  set(key: string, value: unknown): void;
-}
-
-// =============================================================================
-// Test Port Tokens
-// =============================================================================
-
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
-const ConfigPort = createPort<"Config", ConfigService>("Config");
-const CachePort = createPort<"Cache", CacheService>("Cache");
-
-type LoggerPortType = typeof LoggerPort;
-type DatabasePortType = typeof DatabasePort;
-type UserServicePortType = typeof UserServicePort;
-type ConfigPortType = typeof ConfigPort;
-type CachePortType = typeof CachePort;
+import {
+  LoggerPort,
+  DatabasePort,
+  UserServicePort,
+  ConfigPortStrict as ConfigPort,
+  CachePortSimple as CachePort,
+  LoggerPortType,
+  DatabasePortType,
+  UserServicePortType,
+  ConfigPortStrictType as ConfigPortType,
+  CachePortSimpleType as CachePortType,
+} from "./fixtures.js";
 
 // =============================================================================
 // Test Adapters
@@ -204,11 +174,8 @@ describe("build() returns error type when deps missing", () => {
 
     type BuildResult = ReturnType<typeof builder.build>;
 
-    // Should return error string for each missing port (as a union)
-    expectTypeOf<BuildResult>().toEqualTypeOf<
-      | "ERROR: Missing adapters for Logger. Call .provide() first."
-      | "ERROR: Missing adapters for Database. Call .provide() first."
-    >();
+    // Should return single error string with all missing ports combined
+    expectTypeOf<BuildResult>().toEqualTypeOf<"ERROR: Missing adapters for Database, Logger. Call .provide() first.">();
   });
 
   it("returns error string when some but not all deps provided", () => {
@@ -255,11 +222,8 @@ describe("error return type shows missing port names", () => {
 
     type BuildResult = ReturnType<typeof builder.build>;
 
-    // Should be a union of error messages for each missing port
-    expectTypeOf<BuildResult>().toEqualTypeOf<
-      | "ERROR: Missing adapters for Logger. Call .provide() first."
-      | "ERROR: Missing adapters for Database. Call .provide() first."
-    >();
+    // Should return single error string with all missing ports combined
+    expectTypeOf<BuildResult>().toEqualTypeOf<"ERROR: Missing adapters for Database, Logger. Call .provide() first.">();
   });
 
   it("error message has correct prefix format", () => {
@@ -512,11 +476,8 @@ describe("error appears when using build() result", () => {
       : false;
     expectTypeOf<IsTemplateLiteral>().toEqualTypeOf<true>();
 
-    // Error is a union of template literals - one for each missing port
-    expectTypeOf<BuildResult>().toEqualTypeOf<
-      | "ERROR: Missing adapters for Logger. Call .provide() first."
-      | "ERROR: Missing adapters for Database. Call .provide() first."
-    >();
+    // Single combined error message with all missing ports
+    expectTypeOf<BuildResult>().toEqualTypeOf<"ERROR: Missing adapters for Database, Logger. Call .provide() first.">();
   });
 
   it("builder type before build() does not show error", () => {

@@ -9,30 +9,12 @@ import { describe, it, expectTypeOf } from "vitest";
 import { createPort } from "@hex-di/ports";
 import { GraphBuilder, createAdapter } from "../src/index.js";
 import type { OrphanPorts } from "../src/validation/index.js";
+import { LoggerPort, DatabasePort, UserServicePort } from "./fixtures.js";
 
-// =============================================================================
-// Test Fixtures
-// =============================================================================
-
-interface Logger {
-  log(message: string): void;
-}
-
-interface Database {
-  query(sql: string): Promise<unknown>;
-}
-
-interface UserService {
-  getUser(id: string): Promise<{ id: string; name: string }>;
-}
-
+// Local Cache interface (different from fixtures.CacheService)
 interface Cache {
   get(key: string): unknown;
 }
-
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
 const CachePort = createPort<"Cache", Cache>("Cache");
 
 // =============================================================================

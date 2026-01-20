@@ -61,6 +61,69 @@ export type ExtractPortNames<TPorts> = [TPorts] extends [never]
     : never;
 
 /**
+ * Helper type that extracts one member from a union (the first in declaration order).
+ * Used internally by JoinPortNames to iterate over union members non-distributively.
+ *
+ * @internal
+ */
+type UnionToIntersectionFn<U> = (U extends unknown ? (k: U) => void : never) extends (
+  k: infer I
+) => void
+  ? I
+  : never;
+
+/**
+ * Extracts the "last" member of a union type.
+ * This is used to pick one member at a time for non-distributive union iteration.
+ *
+ * @internal
+ */
+type LastOfUnion<U> =
+  UnionToIntersectionFn<U extends unknown ? (x: U) => void : never> extends (x: infer L) => void
+    ? L
+    : never;
+
+/**
+ * Joins port names from a union of Port types into a comma-separated string.
+ *
+ * @typeParam T - Union of Port types
+ * @typeParam Acc - Accumulator string (internal use)
+ *
+ * @remarks
+ * Unlike `ExtractPortNames` which returns a union of names, this type produces
+ * a single comma-separated string. This is used in error messages to show all
+ * missing ports at once instead of producing multiple union members.
+ *
+ * Uses the union-to-tuple trick via `LastOfUnion` to iterate over union members
+ * one at a time without distribution.
+ *
+ * @example Single port
+ * ```typescript
+ * type Result = JoinPortNames<LoggerPort>;
+ * // Result: "Logger"
+ * ```
+ *
+ * @example Multiple ports
+ * ```typescript
+ * type Result = JoinPortNames<LoggerPort | DatabasePort>;
+ * // Result: "Logger, Database"  (or "Database, Logger" depending on order)
+ * ```
+ *
+ * @example Never case
+ * ```typescript
+ * type Result = JoinPortNames<never>;
+ * // Result: ""
+ * ```
+ *
+ * @internal
+ */
+export type JoinPortNames<T, Acc extends string = ""> = [T] extends [never]
+  ? Acc
+  : LastOfUnion<T> extends Port<unknown, infer N extends string>
+    ? JoinPortNames<Exclude<T, LastOfUnion<T>>, [Acc] extends [""] ? N : `${Acc}, ${N}`>
+    : Acc;
+
+/**
  * A branded error type that produces a readable compile-time error message
  * when dependencies are missing in the graph.
  *

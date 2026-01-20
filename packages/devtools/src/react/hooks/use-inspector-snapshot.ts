@@ -1,6 +1,19 @@
 /**
  * Hook for getting container snapshots.
  *
+ * ## Architecture Note
+ *
+ * This hook directly accesses `inspector.getSnapshot()` rather than going through
+ * the FSM state layer. This is intentional because:
+ *
+ * 1. **Inspectors are the source of truth** for their own container state
+ * 2. **FSM tracks discovery state**, not container internals
+ * 3. **Direct access avoids unnecessary indirection** and synchronization
+ *
+ * The FSM (ContainerTree machine) tracks which containers exist and their
+ * discovery/subscription status. The inspector holds the live container state
+ * (singletons, phase, etc.). These are complementary, not duplicative.
+ *
  * @packageDocumentation
  */
 
@@ -100,11 +113,20 @@ export function useInspectorSnapshot(): UseInspectorSnapshotResult {
     return inspector.getSnapshot();
   }, [inspector]);
 
-  // refresh is a no-op since snapshot is computed on each render
-  // kept for API compatibility - consumers may call it to express intent
+  /**
+   * Refresh callback - intentionally a no-op.
+   *
+   * The snapshot is derived from the inspector on each render, so there's no
+   * separate "stale" state that needs refreshing. This callback exists for:
+   * 1. API symmetry with other hooks that may need explicit refresh
+   * 2. Forward compatibility if refresh behavior is added later
+   * 3. Consumer code that wants to express "refresh intent" for readability
+   *
+   * Calling refresh() will not cause a re-render - use component state or
+   * inspector subscription changes for that purpose.
+   */
   const refresh = useCallback((): void => {
-    // Snapshot is derived from inspector, which changes when registry changes
-    // This callback exists for API compatibility
+    // Intentional no-op - see JSDoc above
   }, []);
 
   return {

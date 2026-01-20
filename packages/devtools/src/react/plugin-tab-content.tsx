@@ -14,8 +14,10 @@
 import React, { useMemo, useCallback, type ReactElement } from "react";
 import type { ExportedGraph } from "@hex-di/devtools-core";
 import type { TracingAPI } from "@hex-di/plugin";
-import type { PluginProps, PluginCommand, ContainerEntry } from "../runtime/plugin-types.js";
+import type { PluginProps, PluginCommand, ContainerEntry } from "./types/plugin-types.js";
 import { useActivePlugin, usePlugins, useActiveTab, useDevToolsStore } from "../store/index.js";
+import { PluginErrorBoundary } from "./plugin-error-boundary.js";
+import { useContainerScopeTreeOptional } from "./hooks/use-container-scope-tree.js";
 
 // =============================================================================
 // Types
@@ -75,16 +77,16 @@ const EMPTY_CONTAINERS: readonly ContainerEntry[] = [];
  * 3. Renders the plugin's component within a proper tabpanel
  * 4. Only mounts the active plugin (no hidden tabs)
  *
- * Must be used within a DevToolsRuntimeProvider context.
+ * Must be used within a DevToolsStoreProvider context.
  *
  * @example
  * ```tsx
  * function DevToolsPanel() {
  *   return (
- *     <DevToolsRuntimeProvider runtime={runtime}>
+ *     <DevToolsStoreProvider inspector={inspector} plugins={plugins}>
  *       <TabNavigation />
  *       <PluginTabContent />
- *     </DevToolsRuntimeProvider>
+ *     </DevToolsStoreProvider>
  *   );
  * }
  * ```
@@ -100,16 +102,19 @@ export function PluginTabContent(props: PluginTabContentProps = {}): ReactElemen
 
   // Get all store actions needed for command dispatch
   const selectTab = useDevToolsStore(state => state.selectTab);
-  const selectContainer = useDevToolsStore(state => state.selectContainer);
+  const selectContainers = useDevToolsStore(state => state.selectContainers);
   const enableTracing = useDevToolsStore(state => state.enableTracing);
   const disableTracing = useDevToolsStore(state => state.disableTracing);
   const pauseTracing = useDevToolsStore(state => state.pauseTracing);
   const resumeTracing = useDevToolsStore(state => state.resumeTracing);
   const clearTraces = useDevToolsStore(state => state.clearTraces);
+  const setSlowThreshold = useDevToolsStore(state => state.setSlowThreshold);
 
-  // Tracing threshold - currently fixed at 100ms (slow resolution threshold)
-  // TODO: Add setThreshold action to store when threshold configurability is needed
-  const tracingThreshold = 100;
+  // Tracing threshold from store (default: 100ms for slow resolution detection)
+  const tracingThreshold = useDevToolsStore(state => state.tracing.slowThreshold);
+
+  // Get container scope tree for plugins (V7 fix)
+  const containerScopeTree = useContainerScopeTreeOptional();
 
   // Use provided props or fall back to defaults
   const graph = props.graph ?? EMPTY_GRAPH;
@@ -124,12 +129,7 @@ export function PluginTabContent(props: PluginTabContentProps = {}): ReactElemen
           selectTab(command.tabId);
           break;
         case "selectContainers":
-          // Select first container from the set (store supports single selection)
-          // Multi-select could be supported by adding a selectContainers action to store
-          for (const id of command.ids) {
-            selectContainer(id);
-            break; // Select first only for now
-          }
+          selectContainers(command.ids);
           break;
         case "toggleTracing":
           if (tracingEnabled) {
@@ -145,26 +145,37 @@ export function PluginTabContent(props: PluginTabContentProps = {}): ReactElemen
           resumeTracing();
           break;
         case "setThreshold":
-          // TODO: Add setThreshold action to store when threshold configurability is needed
-          // For now, threshold is fixed at 100ms
-          console.warn(
-            `[DevTools] setThreshold command received (value: ${command.value}ms) but threshold configuration is not yet implemented`
-          );
+          // Store-only action - threshold is UI configuration, not FSM state
+          setSlowThreshold(command.value);
           break;
         case "clearTraces":
           clearTraces();
+          break;
+        case "pinTrace":
+          // Pin trace via TracingAPI (V6 fix - commands for trace mutations)
+          if (props.tracingAPI !== undefined) {
+            props.tracingAPI.pin(command.traceId);
+          }
+          break;
+        case "unpinTrace":
+          // Unpin trace via TracingAPI (V6 fix - commands for trace mutations)
+          if (props.tracingAPI !== undefined) {
+            props.tracingAPI.unpin(command.traceId);
+          }
           break;
       }
     },
     [
       selectTab,
-      selectContainer,
+      selectContainers,
       tracingEnabled,
       enableTracing,
       disableTracing,
       pauseTracing,
       resumeTracing,
+      setSlowThreshold,
       clearTraces,
+      props.tracingAPI,
     ]
   );
 
@@ -172,14 +183,6 @@ export function PluginTabContent(props: PluginTabContentProps = {}): ReactElemen
     () => ({
       runtime: {
         dispatch,
-        getState: () => ({
-          activeTabId,
-          selectedContainerIds,
-          tracingEnabled,
-          tracingPaused,
-          tracingThreshold,
-          plugins,
-        }),
       },
       state: {
         activeTabId,
@@ -192,6 +195,7 @@ export function PluginTabContent(props: PluginTabContentProps = {}): ReactElemen
       graph,
       containers,
       tracingAPI: props.tracingAPI,
+      containerScopeTree,
     }),
     [
       dispatch,
@@ -204,6 +208,7 @@ export function PluginTabContent(props: PluginTabContentProps = {}): ReactElemen
       graph,
       containers,
       props.tracingAPI,
+      containerScopeTree,
     ]
   );
 
@@ -228,7 +233,9 @@ export function PluginTabContent(props: PluginTabContentProps = {}): ReactElemen
         overflow: "auto",
       }}
     >
-      <PluginComponent {...pluginProps} />
+      <PluginErrorBoundary pluginId={activePlugin.id} pluginLabel={activePlugin.label}>
+        <PluginComponent {...pluginProps} />
+      </PluginErrorBoundary>
     </div>
   );
 }

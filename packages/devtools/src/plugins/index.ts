@@ -66,27 +66,3 @@ export { InspectorTabPlugin } from "./inspector-plugin.js";
 // =============================================================================
 
 export { defaultPlugins, minimalPlugins } from "./presets.js";
-
-// =============================================================================
-// Plugin Content Components (for advanced usage)
-// =============================================================================
-
-export { GraphPluginContent } from "./graph/graph-content.js";
-export { ServicesPluginContent } from "./services/services-content.js";
-export { TracingPluginContent } from "./tracing/tracing-content.js";
-export { InspectorPluginContent } from "./inspector/inspector-content.js";
-
-// =============================================================================
-// Plugin Utilities
-// =============================================================================
-
-export {
-  transformNodesToGraphNodes,
-  isEmptyGraph,
-  filterSelectedContainers,
-  createEmptyGraph,
-  mergeGraphs,
-  type UnifiedNode,
-  type UnifiedGraph,
-  type GraphNode,
-} from "./graph/utils.js";

@@ -9,8 +9,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import type { PluginProps } from "../../src/runtime/types.js";
-import { defineDevToolsPlugin } from "../../src/runtime/define-plugin.js";
+import type { PluginProps } from "../../src/react/types/plugin-types.js";
+import { defineDevToolsPlugin } from "../../src/react/define-plugin.js";
 import { validatePluginId, validatePluginConfig } from "../../src/runtime/validation.js";
 
 // =============================================================================

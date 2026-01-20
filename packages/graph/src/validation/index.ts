@@ -1,6 +1,16 @@
 export * from "./errors.js";
 export * from "./logic.js";
 
+// Explicit exports from batch-duplicates.ts
+export type {
+  HasDuplicatesInBatch,
+  FindBatchDuplicate,
+  BatchDuplicateErrorMessage,
+} from "./batch-duplicates.js";
+
+// Explicit exports from lazy-transforms.ts
+export type { TransformLazyToOriginal, ExtractLazyPorts, HasLazyPorts } from "./lazy-transforms.js";
+
 // Explicit exports from cycle-detection.ts (excluding @internal types)
 export type {
   DefaultMaxDepth,

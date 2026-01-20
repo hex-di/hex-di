@@ -11,50 +11,25 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/ports";
 import {
   GraphBuilder,
   createAdapter,
   ExtractPortNames,
+  JoinPortNames,
   MissingDependencyError,
-  BuildErrorMessage,
   DuplicateProviderError,
   Graph,
 } from "../src/index.js";
-
-// =============================================================================
-// Test Service Interfaces
-// =============================================================================
-
-interface Logger {
-  log(message: string): void;
-}
-
-interface Database {
-  query(sql: string): Promise<unknown>;
-}
-
-interface UserService {
-  getUser(id: string): Promise<{ id: string; name: string }>;
-}
-
-interface ConfigService {
-  get(key: string): string;
-}
-
-// =============================================================================
-// Test Port Tokens
-// =============================================================================
-
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
-const ConfigPort = createPort<"Config", ConfigService>("Config");
-
-type LoggerPortType = typeof LoggerPort;
-type DatabasePortType = typeof DatabasePort;
-type UserServicePortType = typeof UserServicePort;
-type ConfigPortType = typeof ConfigPort;
+import {
+  LoggerPort,
+  DatabasePort,
+  UserServicePort,
+  ConfigPortStrict as ConfigPort,
+  LoggerPortType,
+  DatabasePortType,
+  UserServicePortType,
+  ConfigPortStrictType as ConfigPortType,
+} from "./fixtures.js";
 
 // =============================================================================
 // Test Adapters
@@ -118,6 +93,53 @@ describe("ExtractPortNames utility type", () => {
 });
 
 // =============================================================================
+// JoinPortNames Tests
+// =============================================================================
+
+describe("JoinPortNames utility type", () => {
+  it("joins single port name from single port", () => {
+    type Names = JoinPortNames<LoggerPortType>;
+    expectTypeOf<Names>().toEqualTypeOf<"Logger">();
+  });
+
+  it("joins two port names with comma separator", () => {
+    type Names = JoinPortNames<LoggerPortType | DatabasePortType>;
+    // Order is determined by TypeScript's internal union ordering
+    expectTypeOf<Names>().toEqualTypeOf<"Database, Logger">();
+  });
+
+  it("joins three port names with comma separators", () => {
+    type Names = JoinPortNames<LoggerPortType | DatabasePortType | ConfigPortType>;
+    // Order is determined by TypeScript's internal union ordering
+    // Verify the result contains all three port names separated by commas
+    type ContainsLogger = Names extends `${string}Logger${string}` ? true : false;
+    type ContainsDatabase = Names extends `${string}Database${string}` ? true : false;
+    type ContainsConfig = Names extends `${string}Config${string}` ? true : false;
+    type HasTwoCommas = Names extends `${string}, ${string}, ${string}` ? true : false;
+    expectTypeOf<ContainsLogger>().toEqualTypeOf<true>();
+    expectTypeOf<ContainsDatabase>().toEqualTypeOf<true>();
+    expectTypeOf<ContainsConfig>().toEqualTypeOf<true>();
+    expectTypeOf<HasTwoCommas>().toEqualTypeOf<true>();
+  });
+
+  it("returns empty string for never input", () => {
+    type Names = JoinPortNames<never>;
+    expectTypeOf<Names>().toEqualTypeOf<"">();
+  });
+
+  it("produces single string, not a union", () => {
+    type Names = JoinPortNames<LoggerPortType | DatabasePortType>;
+    // If this were a union, the extends check would fail
+    type IsSingleString = Names extends string
+      ? string extends Names
+        ? false // It's just `string`, not a literal
+        : true // It's a literal string
+      : false;
+    expectTypeOf<IsSingleString>().toEqualTypeOf<true>();
+  });
+});
+
+// =============================================================================
 // MissingDependencyError Tests
 // =============================================================================
 
@@ -167,35 +189,6 @@ describe("MissingDependencyError template literal type", () => {
 
   it("error for never produces never", () => {
     type ErrorMsg = MissingDependencyError<never>;
-    expectTypeOf<ErrorMsg>().toBeNever();
-  });
-});
-
-// =============================================================================
-// BuildErrorMessage Tests
-// =============================================================================
-
-describe("BuildErrorMessage template literal type", () => {
-  it("produces readable template literal for single missing port", () => {
-    type ErrorMsg = BuildErrorMessage<LoggerPortType>;
-    expectTypeOf<ErrorMsg>().toEqualTypeOf<"Cannot build: Missing adapters for Logger">();
-  });
-
-  it("produces union of template literals for multiple missing ports", () => {
-    type ErrorMsg = BuildErrorMessage<LoggerPortType | DatabasePortType>;
-    expectTypeOf<ErrorMsg>().toEqualTypeOf<
-      "Cannot build: Missing adapters for Logger" | "Cannot build: Missing adapters for Database"
-    >();
-  });
-
-  it("error message has 'Cannot build: Missing adapters for' prefix", () => {
-    type ErrorMsg = BuildErrorMessage<ConfigPortType>;
-    type HasPrefix = ErrorMsg extends `Cannot build: Missing adapters for ${string}` ? true : false;
-    expectTypeOf<HasPrefix>().toEqualTypeOf<true>();
-  });
-
-  it("returns never for never input", () => {
-    type ErrorMsg = BuildErrorMessage<never>;
     expectTypeOf<ErrorMsg>().toBeNever();
   });
 });
@@ -290,11 +283,8 @@ describe("build() returns error type when unsatisfied", () => {
 
     type BuildResult = ReturnType<typeof builder.build>;
 
-    // Message should be a union of template literals for each missing port
-    expectTypeOf<BuildResult>().toEqualTypeOf<
-      | "ERROR: Missing adapters for Logger. Call .provide() first."
-      | "ERROR: Missing adapters for Database. Call .provide() first."
-    >();
+    // Single combined error message with all missing ports
+    expectTypeOf<BuildResult>().toEqualTypeOf<"ERROR: Missing adapters for Database, Logger. Call .provide() first.">();
   });
 
   it("empty graph builds successfully", () => {

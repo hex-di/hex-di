@@ -21,7 +21,8 @@ export type {
   GraphInteractionState,
 } from "@hex-di/graph-viz";
 
-export { createEdgeKey, DEFAULT_TRANSFORM } from "@hex-di/graph-viz";
+// Note: createEdgeKey and DEFAULT_TRANSFORM are available from @hex-di/graph-viz
+// but not re-exported here as they're not used by devtools consumers
 
 // =============================================================================
 // DI-Specific Node Types

@@ -327,11 +327,11 @@ export function renderDINode(props: RenderNodeProps<DINodeMetadata>): ReactEleme
 /**
  * Color mapping for ownership states.
  */
-const OWNERSHIP_COLORS = {
+const OWNERSHIP_COLORS: Record<ServiceOrigin, string> = {
   own: "#a6e3a1", // Green
   inherited: "#a6adc8", // Gray/Muted
   overridden: "#fab387", // Orange
-} as const;
+};
 
 /**
  * Formats ownership state for display.

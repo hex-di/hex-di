@@ -27,7 +27,7 @@ import React, {
 } from "react";
 import { tracingStyles, emptyStyles } from "../../react/styles.js";
 import type { TraceEntry, TraceStats } from "@hex-di/plugin";
-import type { PluginProps } from "../../runtime/plugin-types.js";
+import type { PluginProps } from "../../react/types/plugin-types.js";
 import {
   TracingControlsBar,
   type TracingFilters,
@@ -382,6 +382,17 @@ function EmptyState(): ReactElement {
  * - `setThreshold` for slow resolution threshold
  * - `clearTraces` for clearing all recorded traces
  *
+ * ## Dual-Call Pattern
+ *
+ * Some handlers (clear, pause/resume) dispatch a command AND call the
+ * TracingAPI directly. This is intentional:
+ * - Command dispatch updates FSM state (source of truth)
+ * - Direct API call provides immediate UI responsiveness
+ *
+ * The TracingAPI is also used for read-only operations (getTraces, pin/unpin)
+ * that don't need FSM state tracking. Future versions may add pinTrace/unpinTrace
+ * commands for consistency, but the current pattern is acceptable.
+ *
  * @example
  * ```tsx
  * import { TracingPluginContent } from './tracing-content';
@@ -524,26 +535,26 @@ export function TracingPluginContent(props: PluginProps): ReactElement {
     void traceId;
   }, []);
 
-  // TimelineView handlers
+  // TimelineView handlers - use commands for trace mutations (V6 fix)
   const handleTogglePin = useCallback(
     (traceId: string) => {
-      if (tracingAPI === undefined) {
-        return;
-      }
       // Find the trace to check its current pin status
       const trace = traces.find(t => t.id === traceId);
       if (trace === undefined) {
         return;
       }
+      // Use command dispatch instead of direct tracingAPI call
       if (trace.isPinned) {
-        tracingAPI.unpin(traceId);
+        runtime.dispatch({ type: "unpinTrace", traceId });
       } else {
-        tracingAPI.pin(traceId);
+        runtime.dispatch({ type: "pinTrace", traceId });
       }
-      // Refresh traces to reflect the updated pin status
-      setTraces(tracingAPI.getTraces());
+      // Refresh traces to reflect the updated pin status (still need tracingAPI for reads)
+      if (tracingAPI !== undefined) {
+        setTraces(tracingAPI.getTraces());
+      }
     },
-    [tracingAPI, traces]
+    [runtime, traces, tracingAPI]
   );
 
   const handleViewInTree = useCallback((traceId: string) => {

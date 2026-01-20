@@ -12,7 +12,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, screen, cleanup, act, fireEvent, waitFor } from "@testing-library/react";
 import React from "react";
-import type { DevToolsPlugin } from "../../src/runtime/plugin-types.js";
+import type { DevToolsPlugin } from "../../src/runtime/index.js";
 import { DevToolsStoreProvider, useDevToolsStore } from "../../src/store/index.js";
 import { TabNavigation } from "../../src/react/tab-navigation.js";
 import { PluginTabContent } from "../../src/react/plugin-tab-content.js";

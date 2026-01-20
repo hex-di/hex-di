@@ -18,17 +18,17 @@ import type {
   PluginProps,
   PluginRuntimeAccess,
   PluginStateSnapshot,
-} from "../../src/runtime/types.js";
+} from "../../src/react/types/plugin-types.js";
 
 // =============================================================================
 // Test Utilities
 // =============================================================================
 
 /**
- * Create a mock runtime for testing.
+ * Create a mock state for testing.
  */
-function createMockRuntime(overrides: Partial<PluginStateSnapshot> = {}): PluginRuntimeAccess {
-  const state: PluginStateSnapshot = {
+function createMockState(overrides: Partial<PluginStateSnapshot> = {}): PluginStateSnapshot {
+  return {
     activeTabId: "tracing",
     selectedContainerIds: new Set<string>(),
     tracingEnabled: true,
@@ -37,10 +37,14 @@ function createMockRuntime(overrides: Partial<PluginStateSnapshot> = {}): Plugin
     plugins: [],
     ...overrides,
   };
+}
 
+/**
+ * Create a mock runtime for testing.
+ */
+function createMockRuntime(): PluginRuntimeAccess {
   return {
     dispatch: vi.fn(),
-    getState: () => state,
   };
 }
 
@@ -129,13 +133,12 @@ function createMockTracingAPI(traces: readonly TraceEntry[] = [], isPaused = fal
  * Create mock PluginProps for testing.
  */
 function createMockPluginProps(overrides: Partial<PluginProps> = {}): PluginProps {
-  const defaultRuntime = createMockRuntime();
-
   return {
-    runtime: defaultRuntime,
-    state: defaultRuntime.getState(),
+    runtime: createMockRuntime(),
+    state: createMockState(),
     graph: { nodes: [], edges: [] },
     containers: [],
+    containerScopeTree: null,
     ...overrides,
   };
 }
@@ -259,11 +262,12 @@ describe("TracingPluginContent", () => {
 
   describe("pause/resume via runtime commands", () => {
     it("should dispatch pauseTracing command when pause button is clicked", () => {
-      const runtime = createMockRuntime({ tracingPaused: false });
+      const runtime = createMockRuntime();
+      const state = createMockState({ tracingPaused: false });
       const tracingAPI = createMockTracingAPI([createMockTraceEntry("1", "ServiceA", 10)], false);
       const props = createMockPluginProps({
         runtime,
-        state: runtime.getState(),
+        state,
         tracingAPI,
       });
 
@@ -279,11 +283,12 @@ describe("TracingPluginContent", () => {
     });
 
     it("should dispatch resumeTracing command when resume button is clicked", () => {
-      const runtime = createMockRuntime({ tracingPaused: true });
+      const runtime = createMockRuntime();
+      const state = createMockState({ tracingPaused: true });
       const tracingAPI = createMockTracingAPI([createMockTraceEntry("1", "ServiceA", 10)], true);
       const props = createMockPluginProps({
         runtime,
-        state: runtime.getState(),
+        state,
         tracingAPI,
       });
 
@@ -299,10 +304,11 @@ describe("TracingPluginContent", () => {
 
     it("should dispatch clearTraces command when clear all button is clicked", () => {
       const runtime = createMockRuntime();
+      const state = createMockState();
       const tracingAPI = createMockTracingAPI([createMockTraceEntry("1", "ServiceA", 10)]);
       const props = createMockPluginProps({
         runtime,
-        state: runtime.getState(),
+        state,
         tracingAPI,
       });
 
@@ -327,11 +333,10 @@ describe("TracingPluginContent", () => {
     });
 
     it("should display current threshold value from runtime state", () => {
-      const runtime = createMockRuntime({ tracingThreshold: 75 });
+      const state = createMockState({ tracingThreshold: 75 });
       const tracingAPI = createMockTracingAPI([createMockTraceEntry("1", "ServiceA", 10)]);
       const props = createMockPluginProps({
-        runtime,
-        state: runtime.getState(),
+        state,
         tracingAPI,
       });
 
@@ -342,11 +347,12 @@ describe("TracingPluginContent", () => {
     });
 
     it("should dispatch setThreshold command when slider value changes", () => {
-      const runtime = createMockRuntime({ tracingThreshold: 50 });
+      const runtime = createMockRuntime();
+      const state = createMockState({ tracingThreshold: 50 });
       const tracingAPI = createMockTracingAPI([createMockTraceEntry("1", "ServiceA", 10)]);
       const props = createMockPluginProps({
         runtime,
-        state: runtime.getState(),
+        state,
         tracingAPI,
       });
 
@@ -364,11 +370,10 @@ describe("TracingPluginContent", () => {
 
   describe("recording indicator", () => {
     it("should show recording indicator when not paused", () => {
-      const runtime = createMockRuntime({ tracingPaused: false });
+      const state = createMockState({ tracingPaused: false });
       const tracingAPI = createMockTracingAPI([createMockTraceEntry("1", "ServiceA", 10)], false);
       const props = createMockPluginProps({
-        runtime,
-        state: runtime.getState(),
+        state,
         tracingAPI,
       });
 
@@ -379,11 +384,10 @@ describe("TracingPluginContent", () => {
     });
 
     it("should show paused indicator when paused", () => {
-      const runtime = createMockRuntime({ tracingPaused: true });
+      const state = createMockState({ tracingPaused: true });
       const tracingAPI = createMockTracingAPI([createMockTraceEntry("1", "ServiceA", 10)], true);
       const props = createMockPluginProps({
-        runtime,
-        state: runtime.getState(),
+        state,
         tracingAPI,
       });
 
@@ -449,11 +453,10 @@ describe("TracingPlugin Integration", () => {
   });
 
   it("should use runtime state for tracing paused status", () => {
-    const runtime = createMockRuntime({ tracingPaused: true });
+    const state = createMockState({ tracingPaused: true });
     const tracingAPI = createMockTracingAPI([createMockTraceEntry("1", "ServiceA", 10)], true);
     const props = createMockPluginProps({
-      runtime,
-      state: runtime.getState(),
+      state,
       tracingAPI,
     });
 
@@ -465,11 +468,10 @@ describe("TracingPlugin Integration", () => {
   });
 
   it("should use runtime state for threshold value", () => {
-    const runtime = createMockRuntime({ tracingThreshold: 200 });
+    const state = createMockState({ tracingThreshold: 200 });
     const tracingAPI = createMockTracingAPI([createMockTraceEntry("1", "ServiceA", 10)]);
     const props = createMockPluginProps({
-      runtime,
-      state: runtime.getState(),
+      state,
       tracingAPI,
     });
 

@@ -14,12 +14,11 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect, type ReactElement } from "react";
 import type { ExportedGraph } from "@hex-di/devtools-core";
 import type { ScopeTree } from "@hex-di/plugin";
-import type { PluginProps } from "../../runtime/plugin-types.js";
+import type { PluginProps } from "../../react/types/plugin-types.js";
 import { containerInspectorStyles, emptyStyles } from "../../react/styles.js";
 import { ContainerScopeHierarchy } from "../../react/container-scope-hierarchy.js";
 import { ScopeHierarchy } from "../../react/scope-hierarchy.js";
 import { ResolvedServices, type ServiceInfo } from "../../react/resolved-services.js";
-import { useContainerScopeTreeOptional } from "../../react/hooks/use-container-scope-tree.js";
 
 // =============================================================================
 // Types
@@ -173,11 +172,9 @@ function isEmptyGraph(graph: ExportedGraph): boolean {
  * ```
  */
 export function InspectorPluginContent(props: PluginProps): ReactElement {
-  const { graph } = props;
+  const { graph, containerScopeTree: containerScopeTreeResult } = props;
 
-  // Get container scope tree from DevToolsProvider if available
-  // Falls back to empty tree when used outside DevToolsProvider
-  const containerScopeTreeResult = useContainerScopeTreeOptional();
+  // Get container scope tree from props (V7 fix - data via props not hooks)
   const containerScopeTree = containerScopeTreeResult?.tree ?? [];
   const isRegistryAvailable = containerScopeTreeResult?.isRegistryAvailable ?? false;
   // Stable reference for refreshTree to avoid useCallback dependency issues

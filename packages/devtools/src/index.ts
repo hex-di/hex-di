@@ -207,9 +207,9 @@ export {
 // =============================================================================
 
 export {
-  // Factory
-  createDevToolsRuntime,
+  // Validation Errors
   PluginConfigurationError,
+  PluginValidationError,
   // Plugin Factory Helper
   defineDevToolsPlugin,
   // Selector Utilities

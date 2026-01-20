@@ -11,7 +11,6 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/ports";
 import {
   Adapter,
   GraphBuilder,
@@ -23,40 +22,16 @@ import {
   createAdapter,
   Lifetime,
 } from "../src/index.js";
-
-// =============================================================================
-// Test Service Interfaces
-// =============================================================================
-
-interface Logger {
-  log(message: string): void;
-}
-
-interface Database {
-  query(sql: string): Promise<unknown>;
-}
-
-interface UserService {
-  getUser(id: string): Promise<{ id: string; name: string }>;
-}
-
-interface ConfigService {
-  get(key: string): string;
-}
-
-// =============================================================================
-// Test Port Tokens
-// =============================================================================
-
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
-const ConfigPort = createPort<"Config", ConfigService>("Config");
-
-type LoggerPortType = typeof LoggerPort;
-type DatabasePortType = typeof DatabasePort;
-type UserServicePortType = typeof UserServicePort;
-type ConfigPortType = typeof ConfigPort;
+import {
+  LoggerPort,
+  DatabasePort,
+  UserServicePort,
+  ConfigPortStrict as ConfigPort,
+  LoggerPortType,
+  DatabasePortType,
+  UserServicePortType,
+  ConfigPortStrictType as ConfigPortType,
+} from "./fixtures.js";
 
 // =============================================================================
 // Test Adapters

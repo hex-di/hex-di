@@ -28,8 +28,8 @@
  * @packageDocumentation
  */
 
-import type { DevToolsPlugin, PluginConfig } from "./plugin-types.js";
-import { validatePluginConfig } from "./validation.js";
+import type { DevToolsPlugin, PluginConfig } from "./types/plugin-types.js";
+import { validatePluginConfig } from "../runtime/validation.js";
 
 /**
  * Creates a validated, frozen DevTools plugin instance.
@@ -85,40 +85,4 @@ export function defineDevToolsPlugin(config: PluginConfig): DevToolsPlugin {
 
   // Freeze the plugin object to ensure immutability
   return Object.freeze(plugin);
-}
-
-/**
- * Creates multiple validated, frozen DevTools plugins at once.
- *
- * This is a convenience function for creating multiple plugins
- * with a single call. Each plugin is individually validated
- * and the set is checked for ID uniqueness.
- *
- * @param configs - Array of plugin configurations
- * @returns Array of frozen DevToolsPlugin instances
- * @throws {PluginValidationError} If any validation fails
- *
- * @example
- * ```typescript
- * const [GraphPlugin, ServicesPlugin] = defineDevToolsPlugins([
- *   { id: "graph", label: "Graph", component: GraphContent },
- *   { id: "services", label: "Services", component: ServicesContent },
- * ]);
- * ```
- */
-export function defineDevToolsPlugins(configs: readonly PluginConfig[]): readonly DevToolsPlugin[] {
-  // Check for duplicate IDs before creating plugins
-  const ids = new Set<string>();
-  for (const config of configs) {
-    if (ids.has(config.id)) {
-      throw new Error(`Duplicate plugin id: "${config.id}". Each plugin must have a unique id.`);
-    }
-    ids.add(config.id);
-  }
-
-  // Create and validate each plugin
-  const plugins = configs.map(defineDevToolsPlugin);
-
-  // Return frozen array of plugins
-  return Object.freeze(plugins);
 }
