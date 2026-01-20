@@ -98,7 +98,7 @@ export type IsValidBandOrder<
 /**
  * Type representing an empty init priority map.
  */
-export type EmptyInitPriorityMap = {};
+export type EmptyInitPriorityMap = { [K in never]: never };
 
 /**
  * Adds an init priority entry to the map.
