@@ -11,7 +11,6 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/ports";
 import {
   GraphBuilder,
   createAdapter,
@@ -23,51 +22,18 @@ import {
   GetDirectDeps,
   AdapterProvidesName,
   AdapterRequiresNames,
+  DefaultMaxDepth,
+  ValidateMaxDepth,
 } from "../src/index.js";
-
-// =============================================================================
-// Test Service Interfaces
-// =============================================================================
-
-interface ServiceA {
-  doA(): void;
-}
-
-interface ServiceB {
-  doB(): void;
-}
-
-interface ServiceC {
-  doC(): void;
-}
-
-interface ServiceD {
-  doD(): void;
-}
-
-interface Logger {
-  log(message: string): void;
-}
-
-interface Database {
-  query(sql: string): Promise<unknown>;
-}
-
-interface UserService {
-  getUser(id: string): Promise<{ id: string; name: string }>;
-}
-
-// =============================================================================
-// Test Port Tokens
-// =============================================================================
-
-const PortA = createPort<"A", ServiceA>("A");
-const PortB = createPort<"B", ServiceB>("B");
-const PortC = createPort<"C", ServiceC>("C");
-const PortD = createPort<"D", ServiceD>("D");
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
+import {
+  LoggerPort,
+  DatabasePort,
+  UserServicePort,
+  PortA,
+  PortB,
+  PortC,
+  PortD,
+} from "./fixtures.js";
 
 // =============================================================================
 // Helper Types for Testing
@@ -507,7 +473,7 @@ describe("error messages show cycle path", () => {
   it("CircularErrorMessage returns template literal with cycle path", () => {
     // Template literal error message directly shows the cycle path
     type ErrorMessage = CircularErrorMessage<"A -> B -> A">;
-    expectTypeOf<ErrorMessage>().toEqualTypeOf<"ERROR: Circular dependency: A -> B -> A">();
+    expectTypeOf<ErrorMessage>().toEqualTypeOf<"ERROR: Circular dependency: A -> B -> A. Fix: Break cycle by extracting shared logic, using lazy resolution, or inverting a dependency.">();
   });
 
   it("CircularDependencyError branded type contains cycle path", () => {
@@ -707,5 +673,129 @@ describe("merge detects cross-graph circular dependencies", () => {
     expect(merged).toBeDefined();
 
     expectTypeOf<IsCycleError<typeof merged>>().toEqualTypeOf<false>();
+  });
+});
+
+// =============================================================================
+// WithMaxDepth Configuration Tests
+// =============================================================================
+
+describe("GraphBuilder.withMaxDepth() configuration", () => {
+  it("withMaxDepth<50>() compiles and returns factory", () => {
+    const factory = GraphBuilder.withMaxDepth<50>();
+    expect(factory).toBeDefined();
+    expect(factory.create).toBeDefined();
+    expect(factory.forParent).toBeDefined();
+
+    const builder = factory.create();
+    expect(builder).toBeDefined();
+  });
+
+  it("withMaxDepth<15>() compiles for lower depth limit", () => {
+    const factory = GraphBuilder.withMaxDepth<15>();
+    const builder = factory.create();
+    expect(builder).toBeDefined();
+  });
+
+  it("withMaxDepth<100>() compiles at maximum allowed depth", () => {
+    const factory = GraphBuilder.withMaxDepth<100>();
+    const builder = factory.create();
+    expect(builder).toBeDefined();
+  });
+
+  it("withMaxDepth<1>() compiles at minimum allowed depth", () => {
+    const factory = GraphBuilder.withMaxDepth<1>();
+    const builder = factory.create();
+    expect(builder).toBeDefined();
+  });
+
+  it("withMaxDepth<0>() returns error type", () => {
+    type Result = ReturnType<typeof GraphBuilder.withMaxDepth<0>>;
+    expectTypeOf<Result>().toEqualTypeOf<"ERROR: MaxDepth must be at least 1">();
+  });
+
+  it("custom depth builder can be used with provide()", () => {
+    // A (no deps)
+    const AdapterA = createAdapter({
+      provides: PortA,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ doA: () => {} }),
+    });
+
+    // B -> A
+    const AdapterB = createAdapter({
+      provides: PortB,
+      requires: [PortA],
+      lifetime: "singleton",
+      factory: () => ({ doB: () => {} }),
+    });
+
+    const builder = GraphBuilder.withMaxDepth<50>().create().provide(AdapterA).provide(AdapterB);
+
+    expect(builder).toBeDefined();
+    expectTypeOf<IsCycleError<typeof builder>>().toEqualTypeOf<false>();
+  });
+
+  it("custom depth builder detects cycles just like regular builder", () => {
+    // A depends on B
+    const AdapterA = createAdapter({
+      provides: PortA,
+      requires: [PortB],
+      lifetime: "singleton",
+      factory: () => ({ doA: () => {} }),
+    });
+
+    // B depends on A (creates cycle)
+    const AdapterB = createAdapter({
+      provides: PortB,
+      requires: [PortA],
+      lifetime: "singleton",
+      factory: () => ({ doB: () => {} }),
+    });
+    expect(AdapterB).toBeDefined();
+
+    const builder = GraphBuilder.withMaxDepth<50>().create().provide(AdapterA);
+    expect(builder).toBeDefined();
+    type ResultType = ReturnType<typeof builder.provide<typeof AdapterB>>;
+
+    expectTypeOf<IsCycleError<ResultType>>().toEqualTypeOf<true>();
+  });
+
+  it("withMaxDepth forParent() works with parent graph", () => {
+    // Create a parent graph
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: () => {} }),
+    });
+
+    const parentGraph = GraphBuilder.create().provide(LoggerAdapter).build();
+
+    // Use withMaxDepth forParent
+    const childBuilder = GraphBuilder.withMaxDepth<50>().forParent(parentGraph);
+    expect(childBuilder).toBeDefined();
+  });
+});
+
+// =============================================================================
+// MaxDepth Type Utilities Tests
+// =============================================================================
+
+describe("MaxDepth type utilities", () => {
+  it("DefaultMaxDepth is 30", () => {
+    expectTypeOf<DefaultMaxDepth>().toEqualTypeOf<30>();
+  });
+
+  it("ValidateMaxDepth returns valid depths unchanged", () => {
+    expectTypeOf<ValidateMaxDepth<30>>().toEqualTypeOf<30>();
+    expectTypeOf<ValidateMaxDepth<50>>().toEqualTypeOf<50>();
+    expectTypeOf<ValidateMaxDepth<1>>().toEqualTypeOf<1>();
+    expectTypeOf<ValidateMaxDepth<100>>().toEqualTypeOf<100>();
+  });
+
+  it("ValidateMaxDepth returns error for depth 0", () => {
+    expectTypeOf<ValidateMaxDepth<0>>().toEqualTypeOf<"ERROR: MaxDepth must be at least 1">();
   });
 });

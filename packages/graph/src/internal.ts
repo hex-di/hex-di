@@ -65,7 +65,8 @@ export type { ExtractPortNames, MissingDependencyError } from "./validation/erro
 // =============================================================================
 
 export type {
-  MaxDepth,
+  DefaultMaxDepth,
+  ValidateMaxDepth,
   AdapterProvidesName,
   AdapterRequiresNames,
   AddEdge,

@@ -3,6 +3,8 @@ export * from "./logic.js";
 
 // Explicit exports from cycle-detection.ts (excluding @internal types)
 export type {
+  DefaultMaxDepth,
+  ValidateMaxDepth,
   AdapterProvidesName,
   AdapterRequiresNames,
   AddEdge,

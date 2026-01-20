@@ -161,7 +161,7 @@ export type GetDirectDeps<TMap, TPort extends string> = TPort extends keyof TMap
 //
 
 /**
- * Maximum recursion depth for type-level graph traversal.
+ * Default maximum recursion depth for type-level graph traversal.
  *
  * ## Why 30?
  *
@@ -195,25 +195,91 @@ export type GetDirectDeps<TMap, TPort extends string> = TPort extends keyof TMap
  * 4. **Runtime Monitoring**: Use `builder.inspect()` to check `maxChainDepth`
  *    at runtime. Log warnings when approaching the limit.
  *
+ * 5. **Configure MaxDepth**: Use `GraphBuilder.withMaxDepth<N>()` to create
+ *    a builder with a custom depth limit (1-100).
+ *
  * ## Important Limitation
  *
- * Cycles at depth 31+ will **NOT** be detected at compile time. They pass
- * type validation but are caught at runtime when the container attempts
- * to resolve the cyclic dependency.
+ * Cycles at depth beyond the configured limit will **NOT** be detected at
+ * compile time. They pass type validation but are caught at runtime when
+ * the container attempts to resolve the cyclic dependency.
  *
  * ## Configurability
  *
- * This value cannot be easily changed at the consumer level because TypeScript's
- * type system evaluates types at definition time, not use time. To use a different
- * depth limit, you would need to fork the library and modify this value.
+ * Use `GraphBuilder.withMaxDepth<N>()` to create a builder with a custom
+ * depth limit. Valid values are 1-100.
  *
- * For most use cases, the recommended approach is:
- * - Use `buildFragment()` to skip compile-time validation for deep subgraphs
- * - Let runtime validation catch any cycles
+ * ```typescript
+ * // For deep graphs that need more than 30 levels
+ * const builder = GraphBuilder.withMaxDepth<50>().create();
  *
- * @internal - Exported via `@hex-di/graph/internal` for advanced inspection
+ * // For simpler graphs where faster type checking is preferred
+ * const builder = GraphBuilder.withMaxDepth<15>().create();
+ * ```
+ *
+ * @see ValidateMaxDepth - Type to validate custom depth values
  */
-export type MaxDepth = 30;
+export type DefaultMaxDepth = 30;
+
+/**
+ * Maximum allowed value for configurable MaxDepth.
+ *
+ * Set to 100 to provide a safe upper bound that avoids TypeScript's
+ * recursion limits while allowing deeper graphs than the default.
+ */
+type MaxAllowedDepth = 100;
+
+/**
+ * Helper type to build a tuple of a specific length.
+ * Used by ValidateMaxDepth to check if a number exceeds the maximum.
+ * @internal
+ */
+type BuildTuple<
+  TLength extends number,
+  TAcc extends readonly unknown[] = [],
+> = TAcc["length"] extends TLength ? TAcc : BuildTuple<TLength, [...TAcc, unknown]>;
+
+/**
+ * Helper type that checks if a number is within the valid range (1-100).
+ * @internal
+ */
+type IsValidDepthNumber<TDepth extends number> = TDepth extends 0
+  ? false
+  : BuildTuple<TDepth> extends infer TTuple extends readonly unknown[]
+    ? TTuple["length"] extends TDepth
+      ? TDepth extends MaxAllowedDepth
+        ? true
+        : BuildTuple<MaxAllowedDepth>["length"] extends number
+          ? [TTuple["length"]] extends [never]
+            ? false
+            : TTuple extends BuildTuple<MaxAllowedDepth>
+              ? true
+              : BuildTuple<MaxAllowedDepth> extends [...TTuple, ...infer _Rest]
+                ? true
+                : false
+          : false
+      : false
+    : false;
+
+/**
+ * Validates that a user-provided MaxDepth value is within the valid range (1-100).
+ *
+ * Returns the depth value if valid, or an error message string if invalid.
+ *
+ * @typeParam TDepth - The depth value to validate
+ *
+ * @example
+ * ```typescript
+ * type Valid = ValidateMaxDepth<50>;   // 50
+ * type TooLow = ValidateMaxDepth<0>;   // "ERROR: MaxDepth must be at least 1"
+ * type TooHigh = ValidateMaxDepth<150>; // "ERROR: MaxDepth must be <= 100"
+ * ```
+ */
+export type ValidateMaxDepth<TDepth extends number> = TDepth extends 0
+  ? "ERROR: MaxDepth must be at least 1"
+  : IsValidDepthNumber<TDepth> extends true
+    ? TDepth
+    : `ERROR: MaxDepth must be <= ${MaxAllowedDepth}`;
 
 /**
  * Depth counter using tuple length.
@@ -240,10 +306,14 @@ type IncrementDepth<TDepthCounter extends Depth> = [...TDepthCounter, unknown];
  * Checks if the maximum recursion depth has been exceeded.
  *
  * Uses TypeScript's tuple `length` property which returns a literal number type.
+ *
+ * @typeParam TDepthCounter - Current depth as a tuple
+ * @typeParam TMaxDepth - Maximum allowed depth (default: DefaultMaxDepth)
  */
-type DepthExceeded<TDepthCounter extends Depth> = TDepthCounter["length"] extends MaxDepth
-  ? true
-  : false;
+type DepthExceeded<
+  TDepthCounter extends Depth,
+  TMaxDepth extends number = DefaultMaxDepth,
+> = TDepthCounter["length"] extends TMaxDepth ? true : false;
 
 // =============================================================================
 // Reachability Check (Core Cycle Detection)
@@ -299,6 +369,7 @@ type DepthExceeded<TDepthCounter extends Depth> = TDepthCounter["length"] extend
  * @typeParam TTarget - Target port name we're searching for
  * @typeParam TVisited - Type-level Set of already visited ports (union type)
  * @typeParam TDepth - Current recursion depth (tuple whose length = depth)
+ * @typeParam TMaxDepth - Maximum allowed depth (default: DefaultMaxDepth)
  *
  * @returns `true` if target is reachable from any starting port, `false` otherwise
  *
@@ -320,9 +391,10 @@ export type IsReachable<
   TTarget extends string,
   TVisited extends string = never,
   TDepth extends Depth = [],
+  TMaxDepth extends number = DefaultMaxDepth,
 > =
   // Step 1: Check depth limit first (prevent TS2589)
-  DepthExceeded<TDepth> extends true
+  DepthExceeded<TDepth, TMaxDepth> extends true
     ? false // Assume no cycle if depth exceeded (runtime will catch it)
     : // Step 2: Handle never case explicitly (no more nodes to check)
       IsNever<TFrom> extends true
@@ -337,7 +409,7 @@ export type IsReachable<
             TFrom extends TTarget
             ? true
             : // Step 3c: Recurse with dependencies of current port
-              IsReachableCheckDeps<TMap, TFrom, TTarget, TVisited, TDepth>
+              IsReachableCheckDeps<TMap, TFrom, TTarget, TVisited, TDepth, TMaxDepth>
         : false;
 
 /**
@@ -350,12 +422,13 @@ type IsReachableCheckDeps<
   TTarget extends string,
   TVisited extends string,
   TDepth extends Depth,
+  TMaxDepth extends number = DefaultMaxDepth,
 > =
   GetDirectDeps<TMap, TFrom> extends infer Deps
     ? IsNever<Deps> extends true
       ? false // No dependencies, can't reach target
       : Deps extends string
-        ? IsReachable<TMap, Deps, TTarget, TVisited | TFrom, IncrementDepth<TDepth>>
+        ? IsReachable<TMap, Deps, TTarget, TVisited | TFrom, IncrementDepth<TDepth>, TMaxDepth>
         : false
     : false;
 
@@ -368,6 +441,7 @@ type IsReachableCheckDeps<
  * @typeParam TMap - The current dependency graph (before adding the new adapter)
  * @typeParam TProvides - The port name the new adapter provides
  * @typeParam TRequires - Union of port names the new adapter requires
+ * @typeParam TMaxDepth - Maximum allowed depth (default: DefaultMaxDepth)
  *
  * @returns `true` if adding this adapter would create a cycle, `false` otherwise
  *
@@ -378,7 +452,12 @@ type IsReachableCheckDeps<
  * type HasCycle = WouldCreateCycle<{ A: 'B', B: 'C' }, 'C', 'A'>; // true
  * ```
  */
-export type WouldCreateCycle<TMap, TProvides extends string, TRequires extends string> =
+export type WouldCreateCycle<
+  TMap,
+  TProvides extends string,
+  TRequires extends string,
+  TMaxDepth extends number = DefaultMaxDepth,
+> =
   // No requirements means no cycle possible
   IsNever<TRequires> extends true
     ? false
@@ -388,7 +467,7 @@ export type WouldCreateCycle<TMap, TProvides extends string, TRequires extends s
       : // Check if TProvides is reachable from TRequires through existing graph
         // Note: We check the EXISTING graph, not the one with the new edge
         // because the new edge goes FROM TProvides TO TRequires, not the reverse
-        IsReachable<TMap, TRequires, TProvides>;
+        IsReachable<TMap, TRequires, TProvides, never, [], TMaxDepth>;
 
 // =============================================================================
 // Cycle Path Extraction for Error Messages
@@ -403,12 +482,17 @@ export type WouldCreateCycle<TMap, TProvides extends string, TRequires extends s
  *
  * @typeParam TPath - The accumulated path so far
  * @typeParam TFrom - The current node where depth was exceeded
+ * @typeParam TMaxDepth - Maximum allowed depth
  *
  * @internal
  */
-type CyclePathDepthExceeded<TPath extends string, TFrom extends string> = TPath extends ""
-  ? `${TFrom} -> ... (cycle too deep to display, depth ${MaxDepth}+)`
-  : `${TPath} -> ${TFrom} -> ... (cycle too deep to display, depth ${MaxDepth}+)`;
+type CyclePathDepthExceeded<
+  TPath extends string,
+  TFrom extends string,
+  TMaxDepth extends number = DefaultMaxDepth,
+> = TPath extends ""
+  ? `${TFrom} -> ... (cycle too deep to display, depth ${TMaxDepth}+)`
+  : `${TPath} -> ${TFrom} -> ... (cycle too deep to display, depth ${TMaxDepth}+)`;
 
 /**
  * Formats the message when the cycle target is found.
@@ -446,6 +530,7 @@ type CyclePathRecurse<
   TPath extends string,
   TVisited extends string,
   TDepth extends Depth,
+  TMaxDepth extends number = DefaultMaxDepth,
 > =
   GetDirectDeps<TMap, TFrom> extends infer Deps
     ? Deps extends string
@@ -455,7 +540,8 @@ type CyclePathRecurse<
           TTarget,
           CyclePathNextSegment<TPath, TFrom>,
           TVisited | TFrom,
-          IncrementDepth<TDepth>
+          IncrementDepth<TDepth>,
+          TMaxDepth
         >
       : never
     : never;
@@ -480,6 +566,7 @@ type CyclePathRecurse<
  * @typeParam TPath - Accumulated path string
  * @typeParam TVisited - Set of visited ports
  * @typeParam TDepth - Recursion depth counter
+ * @typeParam TMaxDepth - Maximum allowed depth (default: DefaultMaxDepth)
  */
 export type FindCyclePath<
   TMap,
@@ -488,10 +575,11 @@ export type FindCyclePath<
   TPath extends string = "",
   TVisited extends string = never,
   TDepth extends Depth = [],
+  TMaxDepth extends number = DefaultMaxDepth,
 > =
   // Step 1: Check depth limit
-  DepthExceeded<TDepth> extends true
-    ? CyclePathDepthExceeded<TPath, TFrom>
+  DepthExceeded<TDepth, TMaxDepth> extends true
+    ? CyclePathDepthExceeded<TPath, TFrom, TMaxDepth>
     : // Step 2: Skip if already visited
       TFrom extends TVisited
       ? never
@@ -500,7 +588,7 @@ export type FindCyclePath<
         ? CyclePathFound<TPath, TTarget>
         : // Step 4: Recurse through dependencies
           TFrom extends string
-          ? CyclePathRecurse<TMap, TFrom, TTarget, TPath, TVisited, TDepth>
+          ? CyclePathRecurse<TMap, TFrom, TTarget, TPath, TVisited, TDepth, TMaxDepth>
           : never;
 
 /**
@@ -509,12 +597,14 @@ export type FindCyclePath<
  * @typeParam TMap - The dependency graph (with new edge added)
  * @typeParam TProvides - The port that completes the cycle
  * @typeParam TRequires - The first required port(s) to start traversal
+ * @typeParam TMaxDepth - Maximum allowed depth (default: DefaultMaxDepth)
  */
 export type BuildCyclePath<
   TMap,
   TProvides extends string,
   TRequires extends string,
-> = FindCyclePath<TMap, TRequires, TProvides, TProvides>;
+  TMaxDepth extends number = DefaultMaxDepth,
+> = FindCyclePath<TMap, TRequires, TProvides, TProvides, never, [], TMaxDepth>;
 
 // =============================================================================
 // CircularDependencyError Type
@@ -586,22 +676,31 @@ export type AddManyEdges<TMap, TAdapters extends readonly unknown[]> = TAdapters
  *
  * @typeParam TMap - Current dependency map
  * @typeParam TAdapters - Adapters to check
+ * @typeParam TMaxDepth - Maximum allowed depth (default: DefaultMaxDepth)
  */
 export type WouldAnyCreateCycle<
   TMap,
   TAdapters extends readonly unknown[],
+  TMaxDepth extends number = DefaultMaxDepth,
 > = TAdapters extends readonly [infer First, ...infer Rest]
-  ? WouldCreateCycle<TMap, AdapterProvidesName<First>, AdapterRequiresNames<First>> extends true
+  ? WouldCreateCycle<
+      TMap,
+      AdapterProvidesName<First>,
+      AdapterRequiresNames<First>,
+      TMaxDepth
+    > extends true
     ? CircularDependencyError<
         BuildCyclePath<
           AddEdge<TMap, AdapterProvidesName<First>, AdapterRequiresNames<First>>,
           AdapterProvidesName<First>,
-          AdapterRequiresNames<First>
+          AdapterRequiresNames<First>,
+          TMaxDepth
         >
       >
     : WouldAnyCreateCycle<
         AddEdge<TMap, AdapterProvidesName<First>, AdapterRequiresNames<First>>,
-        Rest
+        Rest,
+        TMaxDepth
       >
   : false;
 
@@ -614,9 +713,11 @@ export type WouldAnyCreateCycle<
  * Uses distributive conditional to check each key individually.
  * @internal
  */
-type CheckEachKeyForCycle<TMap, TKey extends string> = TKey extends string
-  ? CheckPortForCycle<TMap, TKey>
-  : never;
+type CheckEachKeyForCycle<
+  TMap,
+  TKey extends string,
+  TMaxDepth extends number = DefaultMaxDepth,
+> = TKey extends string ? CheckPortForCycle<TMap, TKey, TMaxDepth> : never;
 
 /**
  * Detects cycles in a merged dependency graph.
@@ -631,30 +732,32 @@ type CheckEachKeyForCycle<TMap, TKey extends string> = TKey extends string
  * any port is reachable from its own dependencies.
  *
  * @typeParam TMap - The merged dependency map
+ * @typeParam TMaxDepth - Maximum allowed depth (default: DefaultMaxDepth)
  *
  * @returns CircularDependencyError if a cycle exists, or never if no cycles
  */
-export type DetectCycleInMergedGraph<TMap> = CheckEachKeyForCycle<
+export type DetectCycleInMergedGraph<
   TMap,
-  Extract<keyof TMap, string>
->;
+  TMaxDepth extends number = DefaultMaxDepth,
+> = CheckEachKeyForCycle<TMap, Extract<keyof TMap, string>, TMaxDepth>;
 
 /**
  * Checks if a specific port creates a cycle in the dependency graph.
  *
  * @typeParam TMap - The dependency map
  * @typeParam TPort - The port name to check
+ * @typeParam TMaxDepth - Maximum allowed depth (default: DefaultMaxDepth)
  *
  * @returns CircularDependencyError if this port creates a cycle, or never otherwise
  * @internal
  */
-type CheckPortForCycle<TMap, TPort extends string> =
+type CheckPortForCycle<TMap, TPort extends string, TMaxDepth extends number = DefaultMaxDepth> =
   GetDirectDeps<TMap, TPort> extends infer Deps
     ? IsNever<Deps> extends true
       ? never // No dependencies, no cycle possible
       : Deps extends string
-        ? IsReachable<TMap, Deps, TPort> extends true
-          ? CircularDependencyError<BuildCyclePath<TMap, TPort, Deps>>
+        ? IsReachable<TMap, Deps, TPort, never, [], TMaxDepth> extends true
+          ? CircularDependencyError<BuildCyclePath<TMap, TPort, Deps, TMaxDepth>>
           : never
         : never
     : never;
