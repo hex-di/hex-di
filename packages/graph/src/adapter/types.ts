@@ -3,9 +3,32 @@ import type { InferService, InferPortName, Port } from "@hex-di/ports";
 // =============================================================================
 // Brand Symbols
 // =============================================================================
+//
+// ## Symbol Naming Convention
+//
+// This codebase uses two distinct naming conventions for symbols:
+//
+// - **`__brandName`** (double underscore, camelCase): Type-level phantom brands
+//   - Declared with `declare const`, never assigned at runtime
+//   - Used for nominal typing at compile-time only
+//   - Examples: `__adapterBrand`, `__graphBuilderBrand`
+//
+// - **`BRAND_NAME`** (SCREAMING_SNAKE_CASE): Runtime symbol constants
+//   - Assigned with `Symbol()`, used at runtime for instance checks
+//   - Examples: `GRAPH_BUILDER_BRAND`
+//
+// This distinction makes it clear whether a symbol exists only at the type
+// level (no runtime footprint) or is an actual runtime value.
+//
 
 /**
  * Unique symbol used for nominal typing of Adapter types.
+ *
+ * This is a **phantom brand** - it exists only at the type level and has no
+ * runtime representation. The `declare const` ensures TypeScript treats it
+ * as a unique symbol type without generating any JavaScript code.
+ *
+ * @see Adapter - Uses this brand for nominal typing
  */
 declare const __adapterBrand: unique symbol;
 
@@ -37,7 +60,7 @@ export type Lifetime = "singleton" | "scoped" | "transient";
 export type ResolvedDeps<TRequires> = [TRequires] extends [never]
   ? Record<string, unknown>
   : {
-      [P in TRequires as InferPortName<P> & string]: InferService<P>;
+      [TPort in TRequires as InferPortName<TPort> & string]: InferService<TPort>;
     };
 
 // =============================================================================
@@ -48,12 +71,12 @@ export type ResolvedDeps<TRequires> = [TRequires] extends [never]
  * A branded adapter type that captures the complete contract for a service implementation.
  */
 export type Adapter<
-  TProvides,
+  out TProvides,
   TRequires,
   TLifetime extends Lifetime,
-  TFactoryKind extends FactoryKind = "sync",
-  TClonable extends boolean = false,
-  TRequiresTuple extends readonly unknown[] = [TRequires] extends [never]
+  out TFactoryKind extends FactoryKind = "sync",
+  out TClonable extends boolean = false,
+  out TRequiresTuple extends readonly unknown[] = [TRequires] extends [never]
     ? readonly []
     : readonly TRequires[],
 > = {
@@ -202,27 +225,6 @@ export interface AdapterAny {
   finalizer?(instance: never): void | Promise<void>;
 }
 
-// =============================================================================
-// Adapter Type Inference Utilities
-// =============================================================================
-
-/**
- * Extracts the clonable status from an adapter type.
- *
- * @example
- * ```typescript
- * type IsClonable = InferClonable<typeof LoggerAdapter>; // true | false
- * ```
- */
-export type InferClonable<A extends AdapterAny> =
-  A extends Adapter<infer _P, infer _R, infer _L, infer _F, infer C, infer _T> ? C : false;
-
-/**
- * Type predicate that checks if an adapter is clonable at the type level.
- *
- * @example
- * ```typescript
- * type Check = IsClonableAdapter<typeof LoggerAdapter>; // true | false
- * ```
- */
-export type IsClonableAdapter<A extends AdapterAny> = InferClonable<A> extends true ? true : false;
+// Note: InferClonable and IsClonableAdapter are now in ./inference.ts
+// for consistency with other inference utilities. They are re-exported
+// via ./index.ts.
