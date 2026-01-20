@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { AdapterAny } from "../adapter";
+import type { AdapterAny } from "../adapter/index.js";
 
 /**
  * Structural type for graph-like objects that can be inspected.
@@ -130,6 +130,53 @@ export interface GraphInspection {
    *
    * Use this to audit your graph for unused services.
    */
+  readonly orphanPorts: readonly string[];
+}
+
+/**
+ * JSON-serializable version of GraphInspection for logging and debugging.
+ *
+ * This type is returned by `inspectionToJSON()` and can be safely passed to
+ * `JSON.stringify()`, stored in files, or sent over network protocols.
+ *
+ * @example
+ * ```typescript
+ * const info = builder.inspect();
+ * const json = inspectionToJSON(info);
+ *
+ * // Log as structured JSON
+ * console.log(JSON.stringify(json, null, 2));
+ *
+ * // Store for later analysis
+ * fs.writeFileSync('graph-debug.json', JSON.stringify(json));
+ * ```
+ */
+export interface GraphInspectionJSON {
+  /** Schema version for forward compatibility */
+  readonly version: 1;
+  /** ISO timestamp when inspection was serialized */
+  readonly timestamp: string;
+  /** Number of adapters in the graph */
+  readonly adapterCount: number;
+  /** List of provided ports with their lifetimes */
+  readonly provides: readonly string[];
+  /** Port names that are required but not yet provided */
+  readonly unsatisfiedRequirements: readonly string[];
+  /** Map of port name to its direct dependency port names */
+  readonly dependencyMap: Record<string, readonly string[]>;
+  /** Port names marked as overrides */
+  readonly overrides: readonly string[];
+  /** Maximum dependency chain depth */
+  readonly maxChainDepth: number;
+  /** Depth warning message if present */
+  readonly depthWarning: string | null;
+  /** Human-readable summary */
+  readonly summary: string;
+  /** Whether all requirements are satisfied */
+  readonly isComplete: boolean;
+  /** Actionable suggestions */
+  readonly suggestions: readonly GraphSuggestion[];
+  /** Ports provided but not required by others */
   readonly orphanPorts: readonly string[];
 }
 
@@ -332,6 +379,52 @@ export function inspectGraph(graph: InspectableGraph): GraphInspection {
     suggestions: Object.freeze(suggestions),
     orphanPorts: Object.freeze(orphanPorts),
   });
+}
+
+/**
+ * Converts a GraphInspection to a JSON-serializable format.
+ *
+ * Use this when you need to:
+ * - Log graph state as structured JSON
+ * - Store inspection results for later analysis
+ * - Send graph diagnostics over a network
+ * - Compare graph states across builds
+ *
+ * @example Basic usage
+ * ```typescript
+ * const info = builder.inspect();
+ * const json = inspectionToJSON(info);
+ * console.log(JSON.stringify(json, null, 2));
+ * ```
+ *
+ * @example Storing for analysis
+ * ```typescript
+ * import { writeFileSync } from 'fs';
+ *
+ * const info = builder.inspect();
+ * const json = inspectionToJSON(info);
+ * writeFileSync('graph-debug.json', JSON.stringify(json, null, 2));
+ * ```
+ *
+ * @param inspection - The graph inspection result from inspectGraph() or builder.inspect()
+ * @returns A plain object that can be safely passed to JSON.stringify()
+ */
+export function inspectionToJSON(inspection: GraphInspection): GraphInspectionJSON {
+  return {
+    version: 1,
+    timestamp: new Date().toISOString(),
+    adapterCount: inspection.adapterCount,
+    provides: [...inspection.provides],
+    unsatisfiedRequirements: [...inspection.unsatisfiedRequirements],
+    dependencyMap: { ...inspection.dependencyMap },
+    overrides: [...inspection.overrides],
+    maxChainDepth: inspection.maxChainDepth,
+    depthWarning: inspection.depthWarning ?? null,
+    summary: inspection.summary,
+    isComplete: inspection.isComplete,
+    suggestions: [...inspection.suggestions],
+    orphanPorts: [...inspection.orphanPorts],
+  };
 }
 
 /**

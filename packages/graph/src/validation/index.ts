@@ -1,4 +1,35 @@
-export * from "./errors";
-export * from "./logic";
-export * from "./cycle-detection";
-export * from "./captive-dependency";
+export * from "./errors.js";
+export * from "./logic.js";
+
+// Explicit exports from cycle-detection.ts (excluding @internal types)
+export type {
+  AdapterProvidesName,
+  AdapterRequiresNames,
+  AddEdge,
+  GetDirectDeps,
+  IsReachable,
+  WouldCreateCycle,
+  FindCyclePath,
+  BuildCyclePath,
+  CircularDependencyError,
+  MergeDependencyMaps,
+  AddManyEdges,
+  WouldAnyCreateCycle,
+  DetectCycleInMergedGraph,
+} from "./cycle-detection.js";
+
+// Explicit exports from captive-dependency.ts (excluding @internal types)
+export type {
+  LifetimeLevel,
+  AddLifetime,
+  GetLifetimeLevel,
+  IsCaptiveDependency,
+  LifetimeName,
+  CaptiveDependencyError,
+  FindAnyCaptiveDependency,
+  MergeLifetimeMaps,
+  AddManyLifetimes,
+  WouldAnyBeCaptive,
+  DetectCaptiveInMergedGraph,
+  FindLifetimeInconsistency,
+} from "./captive-dependency.js";

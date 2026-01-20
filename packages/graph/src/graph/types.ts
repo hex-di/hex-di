@@ -1,4 +1,4 @@
-import type { AdapterAny } from "../adapter";
+import type { AdapterAny } from "../adapter/index.js";
 
 /**
  * The validated dependency graph returned by `GraphBuilder.build()`.
@@ -16,7 +16,7 @@ import type { AdapterAny } from "../adapter";
  * - **Overrides**: Adapters that replace parent's adapter for the same port
  * - **Extensions**: New adapters that extend the container with new ports
  */
-export interface Graph<TProvides = never, TAsyncPorts = never, TOverrides = never> {
+export interface Graph<out TProvides = never, out TAsyncPorts = never, out TOverrides = never> {
   /**
    * All adapters in the graph (both new provides and overrides).
    * Uses AdapterAny for structural compatibility.

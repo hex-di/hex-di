@@ -61,7 +61,7 @@ import type {
   InferManyProvides,
   InferManyRequires,
   InferManyAsyncPorts,
-} from "../adapter";
+} from "../adapter/index.js";
 import type {
   ExtractPortNames,
   UnsatisfiedDependencies,
@@ -94,23 +94,27 @@ import type {
   LifetimeInconsistencyErrorMessage,
   FilterNever,
   MultiErrorMessage,
-} from "../validation";
+} from "../validation/index.js";
 
-import type { Graph } from "./types";
-import type { IsNever } from "../common";
+import type { Graph } from "./types.js";
+import type { IsNever } from "../common/index.js";
 import {
   inspectGraph,
+  inspectionToJSON,
   toDotGraph,
   type GraphInspection,
+  type GraphInspectionJSON,
   type GraphSuggestion,
   type DotGraphOptions,
-} from "./builder-inspection";
+} from "./builder-inspection.js";
 
 // Re-export inspection utilities
 export {
   inspectGraph,
+  inspectionToJSON,
   toDotGraph,
   type GraphInspection,
+  type GraphInspectionJSON,
   type GraphSuggestion,
   type DotGraphOptions,
 };

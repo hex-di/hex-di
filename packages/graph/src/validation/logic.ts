@@ -107,7 +107,7 @@ export type IsSatisfied<TProvides, TRequires> = [
  *
  * @internal
  */
-export type OverlappingPorts<A, B> = Extract<A, B>;
+export type OverlappingPorts<TPortsA, TPortsB> = Extract<TPortsA, TPortsB>;
 
 /**
  * Checks if two unions of Port types have any overlap.
@@ -132,7 +132,9 @@ export type OverlappingPorts<A, B> = Extract<A, B>;
  *
  * @internal
  */
-export type HasOverlap<A, B> = [OverlappingPorts<A, B>] extends [never] ? false : true;
+export type HasOverlap<TPortsA, TPortsB> = [OverlappingPorts<TPortsA, TPortsB>] extends [never]
+  ? false
+  : true;
 
 /**
  * Conditional type that evaluates to a valid graph representation when dependencies

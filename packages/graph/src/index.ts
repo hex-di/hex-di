@@ -13,6 +13,12 @@
 export type { Port, InferService, InferPortName } from "@hex-di/ports";
 
 // Export everything from the new modular structure
-export * from "./validation";
-export * from "./adapter";
-export * from "./graph";
+export * from "./validation/index.js";
+export * from "./adapter/index.js";
+export * from "./graph/index.js";
+
+// Export runtime type guards
+export { isLifetime, isFactoryKind, isAdapter, isGraphBuilder, isGraph } from "./guards.js";
+
+// Export utility types from common
+export type { IsNever, TupleToUnion, Prettify } from "./common/index.js";

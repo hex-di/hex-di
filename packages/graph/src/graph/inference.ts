@@ -1,4 +1,4 @@
-import type { Graph } from "./types";
+import type { Graph } from "./types.js";
 
 /**
  * Extracts the provided ports from a Graph or GraphBuilder.
@@ -8,10 +8,10 @@ import type { Graph } from "./types";
  * @typeParam G - The Graph or GraphBuilder type to extract from
  * @returns The union of provided Port types, or never if none or not a valid type
  */
-export type InferGraphProvides<G> = G extends { __provides: infer P }
-  ? P
-  : G extends Graph<infer P, infer _A, infer _O>
-    ? P
+export type InferGraphProvides<TGraph> = TGraph extends { __provides: infer TProvides }
+  ? TProvides
+  : TGraph extends Graph<infer TProvides, infer _TAsync, infer _TOverrides>
+    ? TProvides
     : never;
 
 /**
@@ -23,7 +23,9 @@ export type InferGraphProvides<G> = G extends { __provides: infer P }
  * @returns The union of required Port types, or never if none or not a valid type
  * @remarks Compiled Graphs do not track requirements as they are validated and satisfied.
  */
-export type InferGraphRequires<G> = G extends { __requires: infer R } ? R : never;
+export type InferGraphRequires<TGraph> = TGraph extends { __requires: infer TRequires }
+  ? TRequires
+  : never;
 
 /**
  * Extracts the async ports from a Graph or GraphBuilder.
@@ -31,10 +33,10 @@ export type InferGraphRequires<G> = G extends { __requires: infer R } ? R : neve
  * @typeParam G - The Graph or GraphBuilder type to extract from
  * @returns The union of async Port types, or never if none
  */
-export type InferGraphAsyncPorts<G> = G extends { __asyncPorts: infer A }
-  ? A
-  : G extends Graph<infer _P, infer A, infer _O>
-    ? A
+export type InferGraphAsyncPorts<TGraph> = TGraph extends { __asyncPorts: infer TAsync }
+  ? TAsync
+  : TGraph extends Graph<infer _TProvides, infer TAsync, infer _TOverrides>
+    ? TAsync
     : never;
 
 /**
@@ -46,8 +48,8 @@ export type InferGraphAsyncPorts<G> = G extends { __asyncPorts: infer A }
  * @typeParam G - The Graph or GraphBuilder type to extract from
  * @returns The union of override Port types, or never if none
  */
-export type InferGraphOverrides<G> = G extends { __overrides: infer O }
-  ? O
-  : G extends Graph<infer _P, infer _A, infer O>
-    ? O
+export type InferGraphOverrides<TGraph> = TGraph extends { __overrides: infer TOverrides }
+  ? TOverrides
+  : TGraph extends Graph<infer _TProvides, infer _TAsync, infer TOverrides>
+    ? TOverrides
     : never;

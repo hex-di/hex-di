@@ -45,11 +45,35 @@
  */
 
 import type { Lifetime } from "../adapter/types.js";
-import type { IsNever } from "../common";
+import type { IsNever, Prettify } from "../common/index.js";
 
 // =============================================================================
-// LifetimeLevel Phantom Type
+// Lifetime Type System
 // =============================================================================
+//
+// There are THREE distinct "Lifetime" types in this codebase:
+//
+// | Type          | Example Value    | Purpose                              |
+// |---------------|------------------|--------------------------------------|
+// | Lifetime      | "singleton"      | Runtime string literal type          |
+// | LifetimeLevel | 1                | Numeric level for type-level compare |
+// | LifetimeName  | "Singleton"      | Capitalized name for error messages  |
+//
+// WHY THREE TYPES?
+//
+// 1. `Lifetime` - Used in Adapter types and runtime code
+//    - Defined in `adapter/types.ts`
+//    - Values: "singleton" | "scoped" | "transient"
+//
+// 2. `LifetimeLevel` - Used for type-level comparison
+//    - TypeScript cannot do `"singleton" > "scoped"` at type level
+//    - We map to numbers: 1, 2, 3 (lower = longer lived)
+//    - Allows `IsGreaterThan<3, 1>` pattern matching
+//
+// 3. `LifetimeName` - Used in error messages
+//    - Capitalized for readability: "Singleton", "Scoped", "Transient"
+//    - Maps back from numeric level to display name
+//
 
 /**
  * Maps a Lifetime string literal to its numeric level for comparison.
@@ -73,11 +97,11 @@ import type { IsNever } from "../common";
  * type TransientLevel = LifetimeLevel<'transient'>; // 3
  * ```
  */
-export type LifetimeLevel<L extends Lifetime> = L extends "singleton"
+export type LifetimeLevel<TLifetime extends Lifetime> = TLifetime extends "singleton"
   ? 1
-  : L extends "scoped"
+  : TLifetime extends "scoped"
     ? 2
-    : L extends "transient"
+    : TLifetime extends "transient"
       ? 3
       : never;
 
@@ -106,13 +130,6 @@ export type LifetimeLevel<L extends Lifetime> = L extends "singleton"
 export type AddLifetime<TMap, TPortName extends string, TLifetime extends Lifetime> = Prettify<
   TMap & { [K in TPortName]: LifetimeLevel<TLifetime> }
 >;
-
-/**
- * Utility type to flatten intersection types for better type display and indexing.
- * This forces TypeScript to evaluate the intersection and create a single object type.
- * @internal
- */
-type Prettify<T> = { [K in keyof T]: T[K] } & {};
 
 /**
  * Gets the lifetime level for a port from the lifetime map.
@@ -188,14 +205,14 @@ export type GetLifetimeLevel<TMap, TPortName extends string> = TPortName extends
  *
  * @internal
  */
-type IsGreaterThan<A extends number, B extends number> = A extends 1
+type IsGreaterThan<TLevelA extends number, TLevelB extends number> = TLevelA extends 1
   ? false // 1 is never greater than anything (Singleton = longest lived)
-  : A extends 2
-    ? B extends 1
+  : TLevelA extends 2
+    ? TLevelB extends 1
       ? true // 2 > 1: Scoped > Singleton
       : false // 2 <= 2, 2 <= 3
-    : A extends 3
-      ? B extends 1 | 2
+    : TLevelA extends 3
+      ? TLevelB extends 1 | 2
         ? true // 3 > 1, 3 > 2: Transient > Singleton, Transient > Scoped
         : false // 3 <= 3
       : false;
@@ -366,9 +383,11 @@ export type AddManyLifetimes<
  * Extracts the provides port name from an adapter for lifetime map operations.
  * @internal
  */
-type AdapterProvidesNameForLifetime<A> = A extends { provides: { __name: infer Name } }
-  ? Name extends string
-    ? Name
+type AdapterProvidesNameForLifetime<TAdapter> = TAdapter extends {
+  provides: { __name: infer TName };
+}
+  ? TName extends string
+    ? TName
     : never
   : never;
 
@@ -376,9 +395,9 @@ type AdapterProvidesNameForLifetime<A> = A extends { provides: { __name: infer N
  * Extracts the lifetime from an adapter for lifetime map operations.
  * @internal
  */
-type AdapterLifetimeForMap<A> = A extends { lifetime: infer L }
-  ? L extends Lifetime
-    ? L
+type AdapterLifetimeForMap<TAdapter> = TAdapter extends { lifetime: infer TLifetime }
+  ? TLifetime extends Lifetime
+    ? TLifetime
     : "singleton"
   : "singleton";
 
@@ -418,10 +437,12 @@ export type WouldAnyBeCaptive<
  * Extracts the requires port names from an adapter for lifetime map operations.
  * @internal
  */
-type AdapterRequiresNamesForLifetime<A> = A extends { requires: readonly (infer R)[] }
-  ? R extends { __name: infer Name }
-    ? Name extends string
-      ? Name
+type AdapterRequiresNamesForLifetime<TAdapter> = TAdapter extends {
+  requires: readonly (infer TRequired)[];
+}
+  ? TRequired extends { __name: infer TName }
+    ? TName extends string
+      ? TName
       : never
     : never
   : never;
@@ -470,8 +491,69 @@ export type DetectCaptiveInMergedGraph<TDepGraph, TLifetimeMap> = CheckEachKeyFo
   Extract<keyof TLifetimeMap, string>
 >;
 
+// =============================================================================
+// CheckPortForCaptive Decomposition
+// =============================================================================
+//
+// The following types decompose captive checking into smaller, more readable
+// units. This improves maintainability without changing behavior.
+//
+
+/**
+ * Builds the CaptiveDependencyError for a detected captive dependency.
+ *
+ * @typeParam TLifetimeMap - The lifetime map
+ * @typeParam TPort - The port that has the captive dependency
+ * @typeParam TLevel - The port's lifetime level
+ * @typeParam TCaptive - The captured port name
+ *
+ * @internal
+ */
+type BuildCaptiveError<
+  TLifetimeMap,
+  TPort extends string,
+  TLevel extends number,
+  TCaptive extends string,
+> = CaptiveDependencyError<
+  TPort,
+  LifetimeName<TLevel>,
+  TCaptive,
+  LifetimeName<GetLifetimeLevel<TLifetimeMap, TCaptive>>
+>;
+
+/**
+ * Checks dependencies for captive issues after lifetime level is known.
+ *
+ * @typeParam TDepGraph - The dependency graph
+ * @typeParam TLifetimeMap - The lifetime map
+ * @typeParam TPort - The port to check
+ * @typeParam TLevel - The port's lifetime level
+ *
+ * @internal
+ */
+type CheckDepsForCaptive<TDepGraph, TLifetimeMap, TPort extends string, TLevel extends number> =
+  GetDirectDepsForCaptive<TDepGraph, TPort> extends infer Deps
+    ? IsNever<Deps> extends true
+      ? never // No dependencies, no captive possible
+      : Deps extends string
+        ? FindAnyCaptiveDependency<TLifetimeMap, TLevel, Deps> extends infer Captive
+          ? IsNever<Captive> extends true
+            ? never
+            : Captive extends string
+              ? BuildCaptiveError<TLifetimeMap, TPort, TLevel, Captive>
+              : never
+          : never
+        : never
+    : never;
+
 /**
  * Checks if a specific port has a captive dependency in the merged graph.
+ *
+ * ## Decomposition
+ *
+ * This type delegates to smaller helper types for clarity:
+ * - `CheckDepsForCaptive` - Checks dependencies after lifetime is determined
+ * - `BuildCaptiveError` - Constructs the error type
  *
  * @typeParam TDepGraph - The merged dependency map
  * @typeParam TLifetimeMap - The merged lifetime map
@@ -483,36 +565,8 @@ export type DetectCaptiveInMergedGraph<TDepGraph, TLifetimeMap> = CheckEachKeyFo
 type CheckPortForCaptive<TDepGraph, TLifetimeMap, TPort extends string> =
   GetLifetimeLevel<TLifetimeMap, TPort> extends infer Level
     ? Level extends number
-      ? GetDirectDepsForCaptive<TDepGraph, TPort> extends infer Deps
-        ? IsNever<Deps> extends true
-          ? never // No dependencies, no captive possible
-          : Deps extends string
-            ? FindAnyCaptiveDependency<TLifetimeMap, Level, Deps> extends infer Captive
-              ? IsNever<Captive> extends true
-                ? never
-                : Captive extends string
-                  ? CaptiveDependencyError<
-                      TPort,
-                      LifetimeName<Level>,
-                      Captive,
-                      LifetimeName<GetLifetimeLevel<TLifetimeMap, Captive>>
-                    >
-                  : never
-              : never
-            : never
-        : never
+      ? CheckDepsForCaptive<TDepGraph, TLifetimeMap, TPort, Level>
       : never
-    : never;
-
-/**
- * Extracts the first captive error from a union of errors.
- * Used to consolidate multiple potential captive errors into one.
- * @internal
- */
-export type FirstCaptiveError<T> = [T] extends [never]
-  ? never
-  : T extends CaptiveDependencyError<infer DN, infer DL, infer CP, infer CL>
-    ? CaptiveDependencyError<DN, DL, CP, CL>
     : never;
 
 // =============================================================================
@@ -554,12 +608,3 @@ export type FindLifetimeInconsistency<TMapA, TMapB> = CheckEachKeyForInconsisten
   TMapB,
   Extract<keyof TMapA & keyof TMapB, string>
 >;
-
-/**
- * Gets lifetime information for both maps for error reporting.
- * @internal
- */
-export type GetInconsistentLifetimes<TMapA, TMapB, TPort extends string> = {
-  levelA: GetLifetimeLevel<TMapA, TPort>;
-  levelB: GetLifetimeLevel<TMapB, TPort>;
-};

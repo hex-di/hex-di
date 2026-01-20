@@ -31,9 +31,9 @@
  */
 
 import { createPort, type Port } from "@hex-di/ports";
-import { createAdapter, createAsyncAdapter } from "./factory";
-import type { Adapter, Lifetime, ResolvedDeps } from "./types";
-import type { TupleToUnion } from "../common";
+import { createAdapter, createAsyncAdapter } from "./factory.js";
+import type { Adapter, Lifetime, ResolvedDeps } from "./types.js";
+import type { TupleToUnion } from "../common/index.js";
 
 // =============================================================================
 // defineService - Overloads

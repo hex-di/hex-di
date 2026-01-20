@@ -1,6 +1,6 @@
 import type { Port, InferService } from "@hex-di/ports";
-import type { TupleToUnion } from "../common";
-import type { Adapter, Lifetime, ResolvedDeps } from "./types";
+import type { TupleToUnion } from "../common/index.js";
+import type { Adapter, Lifetime, ResolvedDeps } from "./types.js";
 
 /**
  * Configuration object for creating an adapter.

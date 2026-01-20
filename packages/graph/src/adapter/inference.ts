@@ -1,5 +1,5 @@
 import type { Port } from "@hex-di/ports";
-import type { Adapter, Lifetime, FactoryKind } from "./types";
+import type { Adapter, Lifetime, FactoryKind } from "./types.js";
 
 // =============================================================================
 // Type Inference Utilities

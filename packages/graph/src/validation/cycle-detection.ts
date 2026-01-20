@@ -36,7 +36,7 @@
  */
 
 import type { Port } from "@hex-di/ports";
-import type { IsNever } from "../common";
+import type { IsNever } from "../common/index.js";
 
 // =============================================================================
 // Adapter Name Extraction
@@ -62,8 +62,10 @@ import type { IsNever } from "../common";
  * type Name = AdapterProvidesName<typeof LoggerAdapter>; // "Logger"
  * ```
  */
-export type AdapterProvidesName<A> = A extends { provides: Port<unknown, infer Name> }
-  ? Name
+export type AdapterProvidesName<TAdapter> = TAdapter extends {
+  provides: Port<unknown, infer TName>;
+}
+  ? TName
   : never;
 
 /**
@@ -82,9 +84,11 @@ export type AdapterProvidesName<A> = A extends { provides: Port<unknown, infer N
  * type Names = AdapterRequiresNames<typeof ServiceAdapter>; // "Logger" | "Config"
  * ```
  */
-export type AdapterRequiresNames<A> = A extends { requires: readonly (infer R)[] }
-  ? R extends Port<unknown, infer Name>
-    ? Name
+export type AdapterRequiresNames<TAdapter> = TAdapter extends {
+  requires: readonly (infer TRequired)[];
+}
+  ? TRequired extends Port<unknown, infer TName>
+    ? TName
     : never
   : never;
 
@@ -230,14 +234,16 @@ type Depth = readonly unknown[];
  * type D2 = IncrementDepth<D1>;    // [unknown, unknown], length = 2
  * ```
  */
-type IncrementDepth<D extends Depth> = [...D, unknown];
+type IncrementDepth<TDepthCounter extends Depth> = [...TDepthCounter, unknown];
 
 /**
  * Checks if the maximum recursion depth has been exceeded.
  *
  * Uses TypeScript's tuple `length` property which returns a literal number type.
  */
-type DepthExceeded<D extends Depth> = D["length"] extends MaxDepth ? true : false;
+type DepthExceeded<TDepthCounter extends Depth> = TDepthCounter["length"] extends MaxDepth
+  ? true
+  : false;
 
 // =============================================================================
 // Reachability Check (Core Cycle Detection)
@@ -387,12 +393,86 @@ export type WouldCreateCycle<TMap, TProvides extends string, TRequires extends s
 // =============================================================================
 // Cycle Path Extraction for Error Messages
 // =============================================================================
+//
+// The following types decompose the cycle path construction into smaller,
+// more readable units. This improves maintainability without changing behavior.
+//
+
+/**
+ * Formats the message when cycle detection exceeds the maximum depth.
+ *
+ * @typeParam TPath - The accumulated path so far
+ * @typeParam TFrom - The current node where depth was exceeded
+ *
+ * @internal
+ */
+type CyclePathDepthExceeded<TPath extends string, TFrom extends string> = TPath extends ""
+  ? `${TFrom} -> ... (cycle too deep to display, depth ${MaxDepth}+)`
+  : `${TPath} -> ${TFrom} -> ... (cycle too deep to display, depth ${MaxDepth}+)`;
+
+/**
+ * Formats the message when the cycle target is found.
+ *
+ * @typeParam TPath - The accumulated path so far
+ * @typeParam TTarget - The target node that completes the cycle
+ *
+ * @internal
+ */
+type CyclePathFound<TPath extends string, TTarget extends string> = TPath extends ""
+  ? TTarget
+  : `${TPath} -> ${TTarget}`;
+
+/**
+ * Builds the next path segment by appending a node.
+ *
+ * @typeParam TPath - The accumulated path so far
+ * @typeParam TFrom - The node to append
+ *
+ * @internal
+ */
+type CyclePathNextSegment<TPath extends string, TFrom extends string> = TPath extends ""
+  ? TFrom
+  : `${TPath} -> ${TFrom}`;
+
+/**
+ * Recursively continues the path search through dependencies.
+ *
+ * @internal
+ */
+type CyclePathRecurse<
+  TMap,
+  TFrom extends string,
+  TTarget extends string,
+  TPath extends string,
+  TVisited extends string,
+  TDepth extends Depth,
+> =
+  GetDirectDeps<TMap, TFrom> extends infer Deps
+    ? Deps extends string
+      ? FindCyclePath<
+          TMap,
+          Deps,
+          TTarget,
+          CyclePathNextSegment<TPath, TFrom>,
+          TVisited | TFrom,
+          IncrementDepth<TDepth>
+        >
+      : never
+    : never;
 
 /**
  * Finds and formats the cycle path for error messages.
  *
  * This type traverses the dependency graph to build a human-readable
  * string showing the cycle path (e.g., "A -> B -> C -> A").
+ *
+ * ## Decomposition
+ *
+ * This type delegates to smaller helper types for clarity:
+ * - `CyclePathDepthExceeded` - Handles depth limit exceeded case
+ * - `CyclePathFound` - Handles target found case (cycle complete)
+ * - `CyclePathNextSegment` - Builds path segments
+ * - `CyclePathRecurse` - Continues recursion through dependencies
  *
  * @typeParam TMap - The dependency graph map (with the new edge added)
  * @typeParam TFrom - Starting port name
@@ -409,29 +489,18 @@ export type FindCyclePath<
   TVisited extends string = never,
   TDepth extends Depth = [],
 > =
+  // Step 1: Check depth limit
   DepthExceeded<TDepth> extends true
-    ? TPath extends ""
-      ? `${TFrom} -> ... (cycle too deep to display, depth ${MaxDepth}+)`
-      : `${TPath} -> ${TFrom} -> ... (cycle too deep to display, depth ${MaxDepth}+)`
-    : TFrom extends TVisited
+    ? CyclePathDepthExceeded<TPath, TFrom>
+    : // Step 2: Skip if already visited
+      TFrom extends TVisited
       ? never
-      : TFrom extends TTarget
-        ? TPath extends ""
-          ? TTarget
-          : `${TPath} -> ${TTarget}`
-        : TFrom extends string
-          ? GetDirectDeps<TMap, TFrom> extends infer Deps
-            ? Deps extends string
-              ? FindCyclePath<
-                  TMap,
-                  Deps,
-                  TTarget,
-                  TPath extends "" ? TFrom : `${TPath} -> ${TFrom}`,
-                  TVisited | TFrom,
-                  IncrementDepth<TDepth>
-                >
-              : never
-            : never
+      : // Step 3: Check if target found
+        TFrom extends TTarget
+        ? CyclePathFound<TPath, TTarget>
+        : // Step 4: Recurse through dependencies
+          TFrom extends string
+          ? CyclePathRecurse<TMap, TFrom, TTarget, TPath, TVisited, TDepth>
           : never;
 
 /**
