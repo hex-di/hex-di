@@ -48,16 +48,59 @@
  * This makes errors immediately visible in IDE tooltips without
  * expanding complex type structures.
  *
- * @see ./builder-types.ts - Type-level validation types
- * @see ./validation/cycle-detection.ts - DFS algorithm for cycles
- * @see ./validation/captive-dependency.ts - Lifetime hierarchy checks
- * @see ./validation/errors.ts - Template literal error types
+ * ## Registration Order and Forward References
+ *
+ * GraphBuilder supports **any registration order** - you can register adapters
+ * before or after their dependencies. This is called "forward reference" support:
+ *
+ * ```typescript
+ * // Both orderings work identically:
+ *
+ * // 1. Leaf-to-root (dependencies first)
+ * const graph1 = GraphBuilder.create()
+ *   .provide(LoggerAdapter)      // Logger has no dependencies
+ *   .provide(DatabaseAdapter)    // Database depends on Logger
+ *   .provide(UserServiceAdapter) // UserService depends on Database
+ *   .build();
+ *
+ * // 2. Root-to-leaf (consumers first) - forward references
+ * const graph2 = GraphBuilder.create()
+ *   .provide(UserServiceAdapter) // Logger, Database not yet provided
+ *   .provide(DatabaseAdapter)    // Logger still not provided
+ *   .provide(LoggerAdapter)      // Now everything is satisfied
+ *   .build();
+ * ```
+ *
+ * **How it works**: Each `.provide()` call tracks required ports as "pending"
+ * rather than immediately failing. The `.build()` method validates that all
+ * requirements are satisfied. This enables flexible composition:
+ *
+ * ```typescript
+ * // Build partial graphs and merge them later
+ * const infrastructureGraph = GraphBuilder.create()
+ *   .provide(LoggerAdapter)
+ *   .provide(ConfigAdapter);
+ *
+ * const applicationGraph = GraphBuilder.create()
+ *   .provide(UserServiceAdapter)   // Requires Logger from infrastructure
+ *   .provide(OrderServiceAdapter); // Requires Config from infrastructure
+ *
+ * // Merge resolves all forward references
+ * const fullGraph = infrastructureGraph
+ *   .merge(applicationGraph)
+ *   .build();
+ * ```
+ *
+ * @see ../builder-types/index.ts - Type-level validation types
+ * @see ../validation/cycle-detection.ts - DFS algorithm for cycles
+ * @see ../validation/captive-dependency.ts - Lifetime hierarchy checks
+ * @see ../validation/errors.ts - Template literal error types
  * @packageDocumentation
  */
 
 import type { AdapterAny } from "../adapter/index.js";
 import type {
-  ExtractPortNames,
+  JoinPortNames,
   UnsatisfiedDependencies,
   DefaultMaxDepth,
   ValidateMaxDepth,
@@ -67,10 +110,12 @@ import {
   inspectGraph,
   inspectionToJSON,
   toDotGraph,
+  toMermaidGraph,
   type GraphInspection,
   type GraphInspectionJSON,
   type GraphSuggestion,
   type DotGraphOptions,
+  type MermaidGraphOptions,
 } from "./builder-inspection.js";
 
 // Import all type-level validation types from the dedicated module
@@ -83,17 +128,20 @@ import type {
   ProvideManyResult,
   MergeResult,
   OverrideResult,
-} from "./builder-types.js";
+  PrettyBuilder,
+} from "../builder-types/index.js";
 
 // Re-export inspection utilities
 export {
   inspectGraph,
   inspectionToJSON,
   toDotGraph,
+  toMermaidGraph,
   type GraphInspection,
   type GraphInspectionJSON,
   type GraphSuggestion,
   type DotGraphOptions,
+  type MermaidGraphOptions,
 };
 
 // Re-export type utilities for external use
@@ -112,7 +160,12 @@ export type {
   SimplifiedView,
   InferBuilderProvides,
   InferBuilderUnsatisfied,
-} from "./builder-types.js";
+  PrettyBuilder,
+  SimplifiedBuilder,
+  // Grouped internals types
+  BuilderInternals,
+  DefaultInternals,
+} from "../builder-types/index.js";
 
 // =============================================================================
 // Brand Symbols
@@ -137,6 +190,30 @@ export type {
  * as a unique symbol type without generating any JavaScript code.
  */
 declare const __graphBuilderBrand: unique symbol;
+
+/**
+ * Unique symbol used for the IDE tooltip helper property.
+ *
+ * This is exported so users can access `builder[__prettyView]` in their IDE
+ * to see a simplified view of the builder's type parameters.
+ *
+ * @internal
+ */
+declare const __prettyView: unique symbol;
+
+/**
+ * Symbol type for accessing the pretty view phantom property.
+ *
+ * @example
+ * ```typescript
+ * import { __prettyViewSymbol } from "@hex-di/graph";
+ *
+ * const builder = GraphBuilder.create().provide(LoggerAdapter);
+ * type View = typeof builder[typeof __prettyViewSymbol];
+ * // { provides: LoggerPort; unsatisfied: never; asyncPorts: never; overrides: never }
+ * ```
+ */
+export type { __prettyView as __prettyViewSymbol };
 
 /**
  * Factory interface returned by `GraphBuilder.withMaxDepth<N>()`.
@@ -458,6 +535,33 @@ export class GraphBuilder<
   declare readonly $unsatisfied: UnsatisfiedDependencies<TProvides, TRequires>;
 
   /**
+   * IDE tooltip helper - shows simplified view.
+   *
+   * Hover over this property in your IDE to see a clean summary of the
+   * builder's state, hiding internal type parameters like TDepGraph and TLifetimeMap.
+   *
+   * **Note**: This property exists only at the type level for IDE tooltips.
+   * It has no runtime value.
+   *
+   * @example
+   * ```typescript
+   * const builder = GraphBuilder.create()
+   *   .provide(LoggerAdapter)
+   *   .provide(UserServiceAdapter); // Requires DatabasePort
+   *
+   * // Hover over [__prettyView] to see:
+   * // {
+   * //   provides: LoggerPort | UserServicePort;
+   * //   unsatisfied: DatabasePort;
+   * //   asyncPorts: never;
+   * //   overrides: never;
+   * // }
+   * type View = typeof builder[typeof __prettyView];
+   * ```
+   */
+  declare readonly [__prettyView]: PrettyBuilder<this>;
+
+  /**
    * The readonly array of registered adapters.
    * Uses AdapterAny for structural compatibility with all adapter types.
    */
@@ -608,11 +712,23 @@ export class GraphBuilder<
    * This provides better developer experience by showing the full picture
    * of what's wrong with a graph configuration.
    *
+   * **Registration Order**: Adapters can be registered in any order. Dependencies
+   * are tracked as "pending" and validated when `.build()` is called. This allows
+   * forward references where you register a consumer before its dependencies.
+   *
    * @example Single adapter
    * ```typescript
    * const builder = GraphBuilder.create()
    *   .provide(LoggerAdapter)
    *   .provide(DatabaseAdapter);
+   * ```
+   *
+   * @example Forward references (any order works)
+   * ```typescript
+   * const builder = GraphBuilder.create()
+   *   .provide(UserServiceAdapter)  // Requires Logger, Database
+   *   .provide(LoggerAdapter)       // Satisfies Logger requirement
+   *   .provide(DatabaseAdapter);    // Satisfies Database requirement
    * ```
    *
    * @example Multiple errors shown at once
@@ -975,7 +1091,7 @@ export class GraphBuilder<
    */
   build(): [UnsatisfiedDependencies<TProvides, TRequires>] extends [never]
     ? Graph<TProvides, TAsyncPorts, TOverrides>
-    : `ERROR: Missing adapters for ${ExtractPortNames<UnsatisfiedDependencies<TProvides, TRequires>>}. Call .provide() first.` {
+    : `ERROR: Missing adapters for ${JoinPortNames<UnsatisfiedDependencies<TProvides, TRequires>>}. Call .provide() first.` {
     // Phantom type properties (__provides, __asyncPorts, __overrides) exist only at compile-time.
     // The runtime object needs the adapters array and overridePortNames set.
     // The conditional return type is only for compile-time validation.
@@ -985,7 +1101,7 @@ export class GraphBuilder<
       overridePortNames: this.overridePortNames,
     }) as [UnsatisfiedDependencies<TProvides, TRequires>] extends [never]
       ? Graph<TProvides, TAsyncPorts, TOverrides>
-      : `ERROR: Missing adapters for ${ExtractPortNames<UnsatisfiedDependencies<TProvides, TRequires>>}. Call .provide() first.`;
+      : `ERROR: Missing adapters for ${JoinPortNames<UnsatisfiedDependencies<TProvides, TRequires>>}. Call .provide() first.`;
   }
 
   /**
