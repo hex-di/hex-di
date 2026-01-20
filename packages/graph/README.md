@@ -287,6 +287,12 @@ const [DbPort, DbAdapter] = defineService<"Database", Database>("Database", {
 
 Creates a port and async adapter in a single step. Async services are always singletons.
 
+> **Why are async services singleton-only?**
+>
+> Async services typically involve expensive initialization (database connections, file loading, external API authentication). Running async initialization per-request would be inefficient and could exhaust resources. The `initialize()` method in `@hex-di/runtime` runs all async adapters at container startup in priority order, which relies on singleton semantics.
+>
+> For per-request async operations, use a singleton service that exposes async methods rather than an async factory.
+
 #### Parameters
 
 | Parameter | Type     | Description                       |
@@ -354,6 +360,56 @@ const CacheAdapter = createAdapter({
 });
 ```
 
+#### Adapter Clonability (`clonable`)
+
+The `clonable` flag controls whether an adapter's instances can be used with forked inheritance mode in child containers.
+
+| Property   | Type      | Default | Description                                    |
+| ---------- | --------- | ------- | ---------------------------------------------- |
+| `clonable` | `boolean` | `false` | Whether instances can be safely shallow-cloned |
+
+When `clonable: true`, the adapter's instances can be used with forked inheritance mode, which creates a shallow clone for child containers. When `false` (default), forked mode will fail at compile time.
+
+**Mark as clonable only for services that:**
+
+- Have no resource handles (sockets, file handles, connections)
+- Have no external references that would become shared
+- Are value-like objects where shallow cloning produces valid instances
+
+```typescript
+// Value object - safe to clone
+const ConfigAdapter = createAdapter({
+  provides: ConfigPort,
+  requires: [],
+  lifetime: "singleton",
+  clonable: true, // Safe: pure data, no handles
+  factory: () => ({
+    get: key => process.env[key],
+  }),
+});
+
+// Resource holder - NOT safe to clone
+const DatabaseAdapter = createAdapter({
+  provides: DatabasePort,
+  requires: [ConfigPort],
+  lifetime: "singleton",
+  clonable: false, // Unsafe: holds connection pool
+  factory: deps => {
+    const pool = createPool(deps.Config.get("DB_URL"));
+    return { query: sql => pool.query(sql) };
+  },
+});
+```
+
+**Type Inference:**
+
+```typescript
+import { InferClonable, IsClonableAdapter } from "@hex-di/graph";
+
+type IsClonable = InferClonable<typeof ConfigAdapter>; // true
+type Check = IsClonableAdapter<typeof DatabaseAdapter>; // false
+```
+
 ### `GraphBuilder.create()`
 
 Creates a new empty GraphBuilder.
@@ -408,6 +464,53 @@ const graph = GraphBuilder.create()
   .build();
 ```
 
+### `GraphBuilder.override(adapter)`
+
+Registers an adapter as an override for a parent container's adapter. Use this when building child graphs that need to replace a parent's adapter (e.g., test mocks, environment-specific implementations).
+
+#### Parameters
+
+| Parameter | Type      | Description                        |
+| --------- | --------- | ---------------------------------- |
+| `adapter` | `Adapter` | The adapter to mark as an override |
+
+#### Returns
+
+- On success: `GraphBuilder<TProvides | AdapterProvides, TRequires | AdapterRequires>` with override tracking
+- On duplicate: `DuplicateProviderError<DuplicatePort>`
+
+#### Important Limitation
+
+Override validation is performed at **runtime**, not compile time. The type system does not verify that the overridden port exists in the parent container.
+
+#### Example
+
+```typescript
+// Parent provides production Logger
+const parentGraph = GraphBuilder.create()
+  .provide(ProductionLoggerAdapter)
+  .provide(DatabaseAdapter)
+  .build();
+
+// Child overrides Logger with mock for testing
+const MockLoggerAdapter = createAdapter({
+  provides: LoggerPort,
+  requires: [],
+  lifetime: "singleton",
+  factory: () => ({
+    log: vi.fn(),
+  }),
+});
+
+const childFragment = GraphBuilder.create()
+  .override(MockLoggerAdapter) // Replaces parent's Logger
+  .provide(CacheAdapter) // Adds new Cache port
+  .buildFragment();
+
+// Create child container with overrides
+const childContainer = parentContainer.createChild(childFragment);
+```
+
 ### `GraphBuilder.build()`
 
 Validates and builds the dependency graph.
@@ -416,6 +519,64 @@ Validates and builds the dependency graph.
 
 - On success: `Graph<TProvides>` - The validated graph
 - On missing deps: `MissingDependencyError<MissingPorts>` - Error type
+
+### `GraphBuilder.buildFragment()`
+
+Builds a graph fragment for child containers **without** validating that all dependencies are satisfied internally.
+
+#### Returns
+
+`Graph<TProvides, TAsyncPorts, TOverrides>` - Always returns a Graph (no error type)
+
+#### When to Use
+
+| Method            | Use When                        | Validates Dependencies |
+| ----------------- | ------------------------------- | ---------------------- |
+| `build()`         | Creating root container graphs  | Yes                    |
+| `buildFragment()` | Creating child container graphs | No                     |
+
+#### Example
+
+```typescript
+// ConfigAdapter requires LoggerPort which parent provides
+const ConfigAdapter = createAdapter({
+  provides: ConfigPort,
+  requires: [LoggerPort], // Will come from parent
+  lifetime: "scoped",
+  factory: deps => ({
+    getValue: key => {
+      deps.Logger.log(`Getting config: ${key}`);
+      return process.env[key];
+    },
+  }),
+});
+
+// Use buildFragment() when dependencies come from parent
+const childGraph = GraphBuilder.create().provide(ConfigAdapter).buildFragment(); // No error about missing Logger
+
+// build() would produce error:
+// "ERROR: Missing adapters for Logger. Call .provide() first."
+```
+
+#### Root vs Child Graph Pattern
+
+```typescript
+// Root graph - all dependencies must be satisfied
+const rootGraph = GraphBuilder.create()
+  .provide(LoggerAdapter)
+  .provide(DatabaseAdapter)
+  .provide(UserServiceAdapter)
+  .build(); // Validates completeness
+
+// Child graph - can depend on parent's adapters
+const childGraph = GraphBuilder.create()
+  .override(MockDatabaseAdapter) // Override parent's Database
+  .provide(CacheAdapter) // Add new service
+  .buildFragment(); // Skip validation
+
+const rootContainer = Container.create(rootGraph);
+const childContainer = rootContainer.createChild(childGraph);
+```
 
 ### Type Utilities
 
@@ -533,6 +694,95 @@ type Error = DuplicateProviderError<typeof LoggerPort>;
 // { __message: "Duplicate provider for: Logger"; ... }
 ```
 
+### Advanced Type Utilities
+
+These utilities are for debugging and advanced use cases.
+
+#### `InspectValidation<B>`
+
+Extracts detailed validation state from a GraphBuilder for debugging. Useful for understanding which validations pass vs fail before calling `build()`.
+
+```typescript
+const builder = GraphBuilder.create().provide(LoggerAdapter).provide(UserServiceAdapter); // Requires Database, Logger
+
+type State = InspectValidation<typeof builder>;
+// {
+//   provides: typeof LoggerPort | typeof UserServicePort,
+//   requires: typeof LoggerPort | typeof DatabasePort,
+//   unsatisfiedDeps: typeof DatabasePort,  // Missing!
+//   depGraph: { Logger: never, UserService: "Logger" | "Database" },
+//   lifetimeMap: { Logger: 1, UserService: 2 }
+// }
+```
+
+#### `InferGraphAsyncPorts<G>`
+
+Extracts the async ports from a Graph or GraphBuilder.
+
+```typescript
+type AsyncPorts = InferGraphAsyncPorts<typeof graph>;
+// typeof ConfigPort | typeof DatabasePort (if both are async)
+```
+
+#### `InferGraphOverrides<G>`
+
+Extracts the override ports from a Graph or GraphBuilder. Override ports are those added via `override()` method in child graphs.
+
+```typescript
+type Overrides = InferGraphOverrides<typeof childGraph>;
+// typeof LoggerPort (if Logger was overridden)
+```
+
+#### `InferClonable<A>`
+
+Extracts the clonable flag from an adapter.
+
+```typescript
+type IsClonable = InferClonable<typeof ConfigAdapter>;
+// true | false
+```
+
+#### `IsClonableAdapter<A>`
+
+Type predicate for checking if an adapter is clonable.
+
+```typescript
+type CanClone = IsClonableAdapter<typeof ConfigAdapter>;
+// true
+```
+
+#### Cycle Detection Types
+
+##### `WouldCreateCycle<DepGraph, Provides, Requires>`
+
+Type-level predicate that checks if adding an adapter would create a circular dependency.
+
+```typescript
+type WouldCycle = WouldCreateCycle<ExistingGraph, "UserService", "Logger" | "Database">;
+// true | false
+```
+
+##### `CircularDependencyError<Path>`
+
+Error type returned when a cycle is detected during `provide()`.
+
+```typescript
+// When detected:
+type Error = CircularDependencyError<"A -> B -> C -> A">;
+// { __errorBrand: "CircularDependencyError", __cyclePath: "A -> B -> C -> A" }
+```
+
+#### Captive Dependency Types
+
+##### `CaptiveDependencyError<Dependent, DepLifetime, Captive, CaptiveLifetime>`
+
+Error type returned when a longer-lived service tries to depend on a shorter-lived one.
+
+```typescript
+type Error = CaptiveDependencyError<"UserCache", "Singleton", "RequestContext", "Scoped">;
+// Error message: Singleton 'UserCache' cannot depend on Scoped 'RequestContext'
+```
+
 ## Type-Level Patterns
 
 ### Union Subtraction for Dependency Tracking
@@ -594,6 +844,48 @@ type Adapter<P, R, L> = {
 ```
 
 This ensures two adapters with different type parameters are never compatible, even if structurally similar.
+
+## Limitations
+
+### Compile-Time Cycle Detection Depth Limit
+
+The type-level cycle detection algorithm has a **maximum depth of 30 levels**. This is a conservative limit due to TypeScript's recursion constraints.
+
+**What this means:**
+
+- Cycles at depth 1-30 are detected at compile time with actionable error messages
+- Cycles at depth 31+ will **NOT** be detected at compile time (they pass type validation)
+- Deep cycles are still caught at runtime when the container attempts resolution
+
+**Why 30?**
+
+| Value       | Pros                                  | Cons                            |
+| ----------- | ------------------------------------- | ------------------------------- |
+| Lower (20)  | Faster type checking                  | May miss legitimate deep graphs |
+| **30**      | Catches most cycles safely (balanced) | Very deep graphs need runtime   |
+| Higher (50) | Catches deeper cycles                 | Risks TS2589 errors             |
+
+**If your graph is deeper than 30 levels:**
+
+1. **Architectural Review**: Deep chains often indicate design issues. Consider flattening the hierarchy.
+
+2. **Use `buildFragment()`**: Skip compile-time validation for deep subgraphs, deferring to runtime checks.
+
+3. **Split Graphs**: Build smaller subgraphs independently, then merge at runtime.
+
+4. **Runtime Monitoring**: Use `builder.inspect()` to check `maxChainDepth`:
+
+```typescript
+const info = builder.inspect();
+if (info.maxChainDepth > 25) {
+  console.warn(
+    `Deep dependency chain (${info.maxChainDepth}). ` +
+      `Cycles beyond depth 30 won't be caught at compile time.`
+  );
+}
+```
+
+> **Note**: Production dependency graphs rarely exceed 15 levels. If you're hitting the 30-level limit, it's worth reconsidering your architecture.
 
 ## Integration with HexDI
 
