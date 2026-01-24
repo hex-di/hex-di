@@ -107,15 +107,15 @@ describe("override() with forParent() validation", () => {
     expectTypeOf<typeof result>().toBeString();
   });
 
-  it("error message includes port name", () => {
+  it("error message includes port name and available ports", () => {
     const parentGraph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     const result = GraphBuilder.forParent(parentGraph).override(CacheAdapter);
 
-    // The error message should mention 'Cache'
+    // The error message should mention 'Cache' and show available ports
     expectTypeOf<
       typeof result
-    >().toEqualTypeOf<`ERROR: Cannot override 'Cache' - port not provided by parent graph. Fix: Use .provide() to add new ports, or ensure parent provides 'Cache'.`>();
+    >().toEqualTypeOf<`ERROR[HEX006]: Cannot override 'Cache' - not in parent. Available: Logger. Fix: Use .provide() for new ports.`>();
   });
 });
 

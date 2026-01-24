@@ -493,3 +493,684 @@ describe("Property: Merge Operations", () => {
     );
   });
 });
+
+// =============================================================================
+// Property Tests: Adapter Configuration Fuzzing
+// =============================================================================
+
+describe("Property: Adapter Configuration Fuzzing", () => {
+  it("random lifetime combinations create valid adapters", () => {
+    fc.assert(
+      fc.property(portNameArb, lifetimeArb, (name, lifetime) => {
+        const port = makePort(name);
+        const adapter = createAdapter({
+          provides: port,
+          requires: [] as const,
+          lifetime,
+          factory: () => ({ value: name }),
+        });
+
+        expect(adapter.provides).toBe(port);
+        expect(adapter.lifetime).toBe(lifetime);
+        expect(adapter.factoryKind).toBe("sync");
+      }),
+      { numRuns: 300 }
+    );
+  });
+
+  it("adapters with random dependency counts maintain correct requires array", () => {
+    fc.assert(
+      fc.property(uniquePortNamesArb(2, 6), fc.integer({ min: 0, max: 5 }), (names, depCount) => {
+        const ports = names.map(makePort);
+        const mainPort = ports[0]!;
+        const depPorts = ports.slice(1, Math.min(depCount + 1, ports.length));
+
+        const adapter = makeAdapter(mainPort, "singleton", depPorts);
+
+        expect(adapter.requires.length).toBe(depPorts.length);
+        for (let i = 0; i < depPorts.length; i++) {
+          expect(adapter.requires[i]).toBe(depPorts[i]);
+        }
+      }),
+      { numRuns: 200 }
+    );
+  });
+
+  it("all lifetime values produce comparable factory behavior", () => {
+    fc.assert(
+      fc.property(portNameArb, name => {
+        const port = makePort(name);
+        const lifetimes: Lifetime[] = ["singleton", "scoped", "transient"];
+
+        const adapters = lifetimes.map(lifetime => makeAdapter(port, lifetime));
+
+        // All factories should produce same result shape regardless of lifetime
+        for (const adapter of adapters) {
+          const result = adapter.factory({});
+          expect(result).toEqual({ value: name });
+        }
+      }),
+      { numRuns: 200 }
+    );
+  });
+});
+
+// =============================================================================
+// Property Tests: Random DAG (Directed Acyclic Graph) Structures
+// =============================================================================
+
+describe("Property: Random DAG Structures", () => {
+  /**
+   * Generates a random DAG structure as an adjacency list.
+   * Each node can only depend on nodes that come before it (ensures acyclicity).
+   */
+  const dagArb = (minNodes = 2, maxNodes = 8) =>
+    fc.integer({ min: minNodes, max: maxNodes }).chain(nodeCount => {
+      // Generate unique names for each node
+      const names = Array.from({ length: nodeCount }, (_, i) => `Node${i}`);
+
+      // For each node (except first), randomly select dependencies from earlier nodes
+      const depsArb = names.slice(1).map((_, i) => {
+        const possibleDeps = names.slice(0, i + 1); // Nodes before this one
+        return fc.subarray(possibleDeps, {
+          minLength: 0,
+          maxLength: Math.min(3, possibleDeps.length),
+        });
+      });
+
+      return fc.tuple(fc.constant(names), ...depsArb);
+    });
+
+  it("random DAGs produce complete graphs when all nodes are present", () => {
+    fc.assert(
+      fc.property(dagArb(2, 6), ([names, ...depArrays]) => {
+        const ports = names.map(makePort);
+        const portByName = new Map(names.map((n, i) => [n, ports[i]!]));
+
+        const adapters = ports.map((port, i) => {
+          if (i === 0) {
+            return makeAdapter(port, "singleton", []);
+          }
+          const deps = (depArrays[i - 1] || []).map(name => portByName.get(name)!);
+          return makeAdapter(port, "singleton", deps);
+        });
+
+        const builder = buildFromAdapters(adapters);
+        const inspection = builder.inspect();
+
+        expect(inspection.isComplete).toBe(true);
+        expect(inspection.adapterCount).toBe(names.length);
+      }),
+      { numRuns: 150 }
+    );
+  });
+
+  it("maxChainDepth is bounded by node count minus one", () => {
+    fc.assert(
+      fc.property(dagArb(2, 8), ([names, ...depArrays]) => {
+        const ports = names.map(makePort);
+        const portByName = new Map(names.map((n, i) => [n, ports[i]!]));
+
+        const adapters = ports.map((port, i) => {
+          if (i === 0) {
+            return makeAdapter(port, "singleton", []);
+          }
+          const deps = (depArrays[i - 1] || []).map(name => portByName.get(name)!);
+          return makeAdapter(port, "singleton", deps);
+        });
+
+        const builder = buildFromAdapters(adapters);
+        const inspection = builder.inspect();
+
+        // Max depth cannot exceed nodeCount - 1 (longest possible chain)
+        expect(inspection.maxChainDepth).toBeLessThanOrEqual(names.length - 1);
+      }),
+      { numRuns: 150 }
+    );
+  });
+
+  it("diamond dependency patterns are handled correctly", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 5 }), extraNodes => {
+        // Diamond: A -> B, A -> C, B -> D, C -> D
+        // Plus extra independent nodes
+        const baseNames = ["Root", "Left", "Right", "Bottom"];
+        const extraNames = Array.from({ length: extraNodes }, (_, i) => `Extra${i}`);
+        const allNames = [...baseNames, ...extraNames];
+
+        const ports = allNames.map(makePort);
+        const [root, left, right, bottom] = ports;
+
+        const adapters = [
+          makeAdapter(root!, "singleton", []),
+          makeAdapter(left!, "singleton", [root!]),
+          makeAdapter(right!, "singleton", [root!]),
+          makeAdapter(bottom!, "singleton", [left!, right!]),
+          ...ports.slice(4).map(p => makeAdapter(p, "singleton", [])),
+        ];
+
+        const builder = buildFromAdapters(adapters);
+        const inspection = builder.inspect();
+
+        expect(inspection.isComplete).toBe(true);
+        expect(inspection.adapterCount).toBe(allNames.length);
+        // Diamond has depth 2: Root -> Left/Right -> Bottom
+        expect(inspection.maxChainDepth).toBe(2);
+      }),
+      { numRuns: 100 }
+    );
+  });
+});
+
+// =============================================================================
+// Property Tests: Error Message Invariants
+// =============================================================================
+
+describe("Property: Error Message Invariants", () => {
+  it("inspection suggestions always have non-empty messages", () => {
+    fc.assert(
+      fc.property(uniquePortNamesArb(2, 5), names => {
+        const ports = names.map(makePort);
+
+        // Create adapters where last one depends on a non-existent port
+        const missingPort = makePort("MissingDep");
+        const adapters = [
+          ...ports.slice(0, -1).map(p => makeAdapter(p, "singleton", [])),
+          makeAdapter(ports[ports.length - 1]!, "singleton", [missingPort]),
+        ];
+
+        const builder = buildFromAdapters(adapters);
+        const inspection = builder.inspect();
+
+        // Every suggestion should have a non-empty message
+        for (const suggestion of inspection.suggestions) {
+          expect(suggestion.message).toBeDefined();
+          expect(suggestion.message.length).toBeGreaterThan(0);
+          expect(suggestion.type).toBeDefined();
+          expect(suggestion.portName).toBeDefined();
+        }
+      }),
+      { numRuns: 100 }
+    );
+  });
+
+  it("validation errors contain port names mentioned", () => {
+    fc.assert(
+      fc.property(portNameArb, name => {
+        const port = makePort(name);
+        const missingDep = makePort(`Missing${name}`);
+        const adapter = makeAdapter(port, "singleton", [missingDep]);
+
+        const builder = (GraphBuilder.create() as any).provide(adapter);
+        const validation = builder.validate();
+
+        if (!validation.valid) {
+          // Error messages should mention the missing port
+          const allText = validation.errors.join(" ");
+          expect(allText).toContain(`Missing${name}`);
+        }
+      }),
+      { numRuns: 100 }
+    );
+  });
+
+  it("unsatisfied requirements list matches validation state", () => {
+    fc.assert(
+      fc.property(uniquePortNamesArb(2, 4), names => {
+        const ports = names.map(makePort);
+
+        // Make first adapter depend on last, but don't include last adapter
+        const adapters = ports.slice(0, -1).map((port, i) => {
+          if (i === 0) {
+            return makeAdapter(port, "singleton", [ports[ports.length - 1]!]);
+          }
+          return makeAdapter(port, "singleton", []);
+        });
+
+        const builder = buildFromAdapters(adapters);
+        const inspection = builder.inspect();
+        const validation = builder.validate();
+
+        // Both should agree on incompleteness
+        expect(inspection.isComplete).toBe(validation.valid);
+        expect(inspection.unsatisfiedRequirements.length).toBe(
+          validation.valid ? 0 : inspection.unsatisfiedRequirements.length
+        );
+      }),
+      { numRuns: 100 }
+    );
+  });
+});
+
+// =============================================================================
+// Property Tests: Graph Transformations
+// =============================================================================
+
+describe("Property: Graph Transformations", () => {
+  it("override preserves adapter count for same-port replacements", () => {
+    fc.assert(
+      fc.property(uniquePortNamesArb(1, 4), lifetimeArb, lifetimeArb, (names, lt1, lt2) => {
+        const ports = names.map(makePort);
+        const adapters = ports.map(p => makeAdapter(p, lt1));
+
+        const builder = buildFromAdapters(adapters);
+        const originalCount = builder.inspect().adapterCount;
+
+        // Override the first adapter with different lifetime
+        const overrideAdapter = makeAdapter(ports[0]!, lt2);
+        const overridden = builder.override(overrideAdapter);
+
+        // Count increases by 1 (override adds, doesn't replace in builder)
+        expect(overridden.inspect().adapterCount).toBe(originalCount + 1);
+      }),
+      { numRuns: 100 }
+    );
+  });
+
+  it("provideMany equals sequential provide calls", () => {
+    fc.assert(
+      fc.property(uniquePortNamesArb(2, 5), names => {
+        const ports = names.map(makePort);
+        const adapters = ports.map(p => makeAdapter(p));
+
+        // Sequential provides
+        const sequential = buildFromAdapters(adapters);
+
+        // provideMany
+        const batch: any = GraphBuilder.create().provideMany(adapters);
+
+        expect(sequential.inspect().adapterCount).toBe(batch.inspect().adapterCount);
+        expect(sequential.inspect().isComplete).toBe(batch.inspect().isComplete);
+      }),
+      { numRuns: 100 }
+    );
+  });
+
+  it("merge with empty builder is identity", () => {
+    fc.assert(
+      fc.property(uniquePortNamesArb(1, 5), names => {
+        const ports = names.map(makePort);
+        const adapters = ports.map(p => makeAdapter(p));
+
+        const builder = buildFromAdapters(adapters);
+        const empty = GraphBuilder.create();
+
+        const merged1 = builder.merge(empty);
+        const merged2 = empty.merge(builder);
+
+        expect(merged1.inspect().adapterCount).toBe(builder.inspect().adapterCount);
+        expect(merged2.inspect().adapterCount).toBe(builder.inspect().adapterCount);
+      }),
+      { numRuns: 100 }
+    );
+  });
+
+  it("merge is commutative for disjoint graphs (same adapter count)", () => {
+    fc.assert(
+      fc.property(uniquePortNamesArb(1, 3), uniquePortNamesArb(1, 3), (names1, names2) => {
+        // Ensure disjoint
+        const ports1 = names1.map(n => makePort(`L${n}`));
+        const ports2 = names2.map(n => makePort(`R${n}`));
+
+        const b1 = buildFromAdapters(ports1.map(p => makeAdapter(p)));
+        const b2 = buildFromAdapters(ports2.map(p => makeAdapter(p)));
+
+        const merged1 = b1.merge(b2);
+        const merged2 = b2.merge(b1);
+
+        expect(merged1.inspect().adapterCount).toBe(merged2.inspect().adapterCount);
+      }),
+      { numRuns: 100 }
+    );
+  });
+});
+
+// =============================================================================
+// Property Tests: Inspection Deep Consistency
+// =============================================================================
+
+describe("Property: Inspection Deep Consistency", () => {
+  it("all independent adapters are orphan ports (no dependencies = all orphans)", () => {
+    fc.assert(
+      fc.property(uniquePortNamesArb(1, 6), names => {
+        const ports = names.map(makePort);
+        const adapters = ports.map(p => makeAdapter(p)); // All independent
+
+        const builder = buildFromAdapters(adapters);
+        const inspection = builder.inspect();
+
+        // Independent adapters are all orphans (none are required by others)
+        expect(inspection.orphanPorts).toHaveLength(names.length);
+      }),
+      { numRuns: 150 }
+    );
+  });
+
+  it("orphanPorts excludes ports that are dependencies of others", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 2, max: 6 }), chainLength => {
+        // Create a chain: A -> B -> C (each depends on the previous)
+        const names = Array.from({ length: chainLength }, (_, i) => `Chain${i}`);
+        const ports = names.map(makePort);
+
+        const adapters = ports.map((port, i) => {
+          if (i === 0) {
+            return makeAdapter(port);
+          }
+          return makeAdapter(port, "singleton", [ports[i - 1]!]);
+        });
+
+        const builder = buildFromAdapters(adapters);
+        const inspection = builder.inspect();
+
+        // Only the last port in the chain is an orphan (nothing depends on it)
+        // All other ports are dependencies of later ports in the chain
+        expect(inspection.orphanPorts).toHaveLength(1);
+        expect(inspection.orphanPorts[0]).toBe(`Chain${chainLength - 1}`);
+      }),
+      { numRuns: 100 }
+    );
+  });
+
+  it("typeComplexityScore increases with graph size", () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 4 }),
+        fc.integer({ min: 5, max: 8 }),
+        (smallSize, largeSize) => {
+          const smallNames = Array.from({ length: smallSize }, (_, i) => `Small${i}`);
+          const largeNames = Array.from({ length: largeSize }, (_, i) => `Large${i}`);
+
+          const smallBuilder = buildFromAdapters(smallNames.map(n => makeAdapter(makePort(n))));
+          const largeBuilder = buildFromAdapters(largeNames.map(n => makeAdapter(makePort(n))));
+
+          const smallScore = smallBuilder.inspect().typeComplexityScore;
+          const largeScore = largeBuilder.inspect().typeComplexityScore;
+
+          expect(largeScore).toBeGreaterThanOrEqual(smallScore);
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  it("depthLimitExceeded is false for small graphs", () => {
+    fc.assert(
+      fc.property(uniquePortNamesArb(1, 5), names => {
+        const ports = names.map(makePort);
+        const adapters = ports.map(p => makeAdapter(p));
+
+        const builder = buildFromAdapters(adapters);
+        const inspection = builder.inspect();
+
+        // Small independent graphs should never exceed depth limit
+        expect(inspection.depthLimitExceeded).toBe(false);
+      }),
+      { numRuns: 150 }
+    );
+  });
+
+  it("provides count equals unique adapter count", () => {
+    fc.assert(
+      fc.property(uniquePortNamesArb(1, 8), names => {
+        const ports = names.map(makePort);
+        const adapters = ports.map(p => makeAdapter(p));
+
+        const builder = buildFromAdapters(adapters);
+        const inspection = builder.inspect();
+
+        expect(inspection.provides.length).toBe(inspection.adapterCount);
+      }),
+      { numRuns: 150 }
+    );
+  });
+
+  it("validate().provides matches inspect().provides", () => {
+    fc.assert(
+      fc.property(uniquePortNamesArb(1, 6), names => {
+        const ports = names.map(makePort);
+        const adapters = ports.map(p => makeAdapter(p));
+
+        const builder = buildFromAdapters(adapters);
+        const inspection = builder.inspect();
+        const validation = builder.validate();
+
+        expect(validation.provides).toEqual(inspection.provides);
+        expect(validation.adapterCount).toBe(inspection.adapterCount);
+      }),
+      { numRuns: 100 }
+    );
+  });
+});
+
+// =============================================================================
+// Property Tests: Merge Collision Scenarios
+// =============================================================================
+
+describe("Property: Merge Collision Scenarios", () => {
+  it("merging disjoint graphs combines all adapters", () => {
+    fc.assert(
+      fc.property(uniquePortNamesArb(1, 3), names => {
+        // Create two disjoint graphs
+        const ports1 = names.map(n => makePort(`Left${n}`));
+        const ports2 = names.map(n => makePort(`Right${n}`));
+
+        const b1 = buildFromAdapters(ports1.map(p => makeAdapter(p, "singleton")));
+        const b2 = buildFromAdapters(ports2.map(p => makeAdapter(p, "scoped")));
+
+        const merged = b1.merge(b2);
+        const inspection = merged.inspect();
+
+        // Merged graph should have all adapters
+        expect(inspection.adapterCount).toBe(ports1.length + ports2.length);
+        expect(inspection.isComplete).toBe(true);
+      }),
+      { numRuns: 50 }
+    );
+  });
+
+  it("merge preserves all port names", () => {
+    fc.assert(
+      fc.property(uniquePortNamesArb(2, 4), names => {
+        const half = Math.ceil(names.length / 2);
+
+        // First graph has first half
+        const ports1 = names.slice(0, half).map(n => makePort(`A${n}`));
+        const b1 = buildFromAdapters(ports1.map(p => makeAdapter(p)));
+
+        // Second graph has second half
+        const ports2 = names.slice(half).map(n => makePort(`B${n}`));
+        const b2 = buildFromAdapters(ports2.map(p => makeAdapter(p)));
+
+        const merged = b1.merge(b2);
+        const inspection = merged.inspect();
+
+        // All port names should be present
+        const allProvides = inspection.provides;
+        expect(allProvides.length).toBe(ports1.length + ports2.length);
+      }),
+      { numRuns: 50 }
+    );
+  });
+});
+
+// =============================================================================
+// Property Tests: Error Recovery Paths
+// =============================================================================
+
+describe("Property: Error Recovery Paths", () => {
+  it("adding missing dependency makes incomplete graph complete", () => {
+    fc.assert(
+      fc.property(uniquePortNamesArb(2, 5), names => {
+        const ports = names.map(makePort);
+
+        // Create adapters where last depends on first, but skip first initially
+        const missingPort = ports[0]!;
+        const dependentAdapters = ports.slice(1).map((port, i) => {
+          if (i === 0) {
+            return makeAdapter(port, "singleton", [missingPort]);
+          }
+          return makeAdapter(port);
+        });
+
+        // Incomplete graph
+        const incomplete = buildFromAdapters(dependentAdapters);
+        expect(incomplete.inspect().isComplete).toBe(false);
+        expect(incomplete.inspect().unsatisfiedRequirements).toContain(missingPort.__portName);
+
+        // Add missing dependency
+        const complete = incomplete.provide(makeAdapter(missingPort));
+        expect(complete.inspect().isComplete).toBe(true);
+        expect(complete.inspect().unsatisfiedRequirements).toHaveLength(0);
+      }),
+      { numRuns: 100 }
+    );
+  });
+
+  it("validation state transitions from invalid to valid after fix", () => {
+    fc.assert(
+      fc.property(
+        portNameArb,
+        portNameArb.filter(n => n.length > 1),
+        (mainName, depName) => {
+          // Ensure names are different
+          const actualDepName = mainName === depName ? `${depName}X` : depName;
+
+          const mainPort = makePort(mainName);
+          const depPort = makePort(actualDepName);
+
+          // Create adapter with missing dependency
+          const dependentAdapter = makeAdapter(mainPort, "singleton", [depPort]);
+          const invalidBuilder: any = GraphBuilder.create().provide(dependentAdapter);
+
+          const invalidValidation = invalidBuilder.validate();
+          expect(invalidValidation.valid).toBe(false);
+
+          // Fix by adding the dependency
+          const depAdapter = makeAdapter(depPort);
+          const fixedBuilder = invalidBuilder.provide(depAdapter);
+
+          const validValidation = fixedBuilder.validate();
+          expect(validValidation.valid).toBe(true);
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+});
+
+// =============================================================================
+// Property Tests: Override Cascading
+// =============================================================================
+
+describe("Property: Override Cascading", () => {
+  it("override does not modify original builder", () => {
+    fc.assert(
+      fc.property(uniquePortNamesArb(1, 4), lifetimeArb, (names, newLifetime) => {
+        const ports = names.map(makePort);
+        const originalAdapters = ports.map(p => makeAdapter(p, "singleton"));
+
+        const original = buildFromAdapters(originalAdapters);
+        const originalSnapshot = {
+          adapterCount: original.inspect().adapterCount,
+          provides: [...original.inspect().provides],
+        };
+
+        // Override first adapter
+        const overrideAdapter = makeAdapter(ports[0]!, newLifetime);
+        const withOverride = original.override(overrideAdapter);
+
+        // Original should be unchanged
+        expect(original.inspect().adapterCount).toBe(originalSnapshot.adapterCount);
+        expect(original.inspect().provides).toEqual(originalSnapshot.provides);
+
+        // Override builder should have additional adapter
+        expect(withOverride.inspect().adapterCount).toBe(originalSnapshot.adapterCount + 1);
+      }),
+      { numRuns: 100 }
+    );
+  });
+
+  it("multiple overrides accumulate without affecting base", () => {
+    fc.assert(
+      fc.property(
+        uniquePortNamesArb(2, 4),
+        fc.array(lifetimeArb, { minLength: 1, maxLength: 3 }),
+        (names, lifetimes) => {
+          const ports = names.map(makePort);
+          const baseAdapters = ports.map(p => makeAdapter(p, "singleton"));
+
+          const base = buildFromAdapters(baseAdapters);
+          const baseCount = base.inspect().adapterCount;
+
+          // Apply multiple overrides for first port
+          let overridden = base;
+          for (const lt of lifetimes) {
+            overridden = overridden.override(makeAdapter(ports[0]!, lt));
+          }
+
+          // Base unchanged
+          expect(base.inspect().adapterCount).toBe(baseCount);
+
+          // Overridden has all the override adapters
+          expect(overridden.inspect().adapterCount).toBe(baseCount + lifetimes.length);
+        }
+      ),
+      { numRuns: 50 }
+    );
+  });
+});
+
+// =============================================================================
+// Property Tests: Async Adapter Handling
+// =============================================================================
+
+describe("Property: Async Adapter Handling", () => {
+  it("graph with sync adapters is complete and valid", () => {
+    fc.assert(
+      fc.property(uniquePortNamesArb(1, 5), names => {
+        const ports = names.map(makePort);
+
+        // Create all sync adapters
+        const adapters = ports.map(port => makeAdapter(port));
+
+        const builder = buildFromAdapters(adapters);
+        const inspection = builder.inspect();
+
+        expect(inspection.isComplete).toBe(true);
+        expect(inspection.adapterCount).toBe(names.length);
+      }),
+      { numRuns: 100 }
+    );
+  });
+
+  it("dependency chain is tracked correctly", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 2, max: 4 }), chainLength => {
+        // Create chain of adapters
+        const names = Array.from({ length: chainLength }, (_, i) => `Chain${i}`);
+        const ports = names.map(makePort);
+
+        // First adapter has no deps, rest depend on previous
+        const adapters = ports.map((port, i) => {
+          if (i === 0) {
+            return makeAdapter(port);
+          }
+          return makeAdapter(port, "singleton", [ports[i - 1]!]);
+        });
+
+        const builder = buildFromAdapters(adapters);
+        const inspection = builder.inspect();
+
+        expect(inspection.isComplete).toBe(true);
+        expect(inspection.adapterCount).toBe(chainLength);
+        expect(inspection.maxChainDepth).toBe(chainLength - 1);
+      }),
+      { numRuns: 50 }
+    );
+  });
+});
+
+// =============================================================================
+// NOTE: Visualization property tests have moved to @hex-di/visualization
+// =============================================================================

@@ -27,6 +27,7 @@ export type {
 
 // Re-export internals types (grouped phantom parameters)
 export type {
+  AnyBuilderInternals,
   BuilderInternals,
   DefaultInternals,
   GetDepGraph,
@@ -39,6 +40,7 @@ export type {
   WithParentProvides,
   WithMaxDepth,
   MergeInternals,
+  MergeInternalsWithOptions,
 } from "./internals.js";
 
 // Re-export provide result types
@@ -47,10 +49,18 @@ export type {
   ProvideResultAllErrors,
   ProvideAsyncResult,
   ProvideManyResult,
+  ProvideUncheckedResult,
 } from "./provide-types.js";
 
 // Re-export merge result types
-export type { MergeResult } from "./merge-types.js";
+export type {
+  MergeResult,
+  MergeResultAllErrors,
+  MergeOptions,
+  MergeMaxDepthOption,
+  MergeWithResult,
+  ResolveMaxDepth,
+} from "./merge-types.js";
 
 // Re-export override result types
 export type { OverrideResult, InvalidOverrideErrorMessage } from "./override-types.js";
@@ -64,4 +74,34 @@ export type {
   InferBuilderUnsatisfied,
   PrettyBuilder,
   SimplifiedBuilder,
+  InspectableBuilder,
+  DebugBuilderState,
+  DebugSimplifiedView,
+  DebugInspectableBuilder,
 } from "./inspection-types.js";
+
+// Re-export debug types for validation tracing
+export type {
+  DebugProvideValidation,
+  DebugAdapterInference,
+  DebugProvideResult,
+  DebugMergeValidation,
+  DebugOverrideValidation,
+} from "./debug-types.js";
+
+// Re-export summary types for IDE tooltips
+export type {
+  BuilderSummary,
+  BuilderStatus,
+  IsBuilderComplete,
+  BuilderProvides,
+  BuilderMissing,
+} from "./summary-types.js";
+
+// Re-export initialization order types
+export type {
+  AsyncInitSummary,
+  IsAsyncPort,
+  AsyncPortNames,
+  RequiresInitialization,
+} from "./init-order-types.js";
