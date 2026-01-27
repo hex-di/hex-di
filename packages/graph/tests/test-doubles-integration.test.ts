@@ -114,9 +114,11 @@ describe("test doubles: mock factory integration", () => {
 
   it("creates adapter from mock config with accessed keys tracking", () => {
     const mock = createMockConfig({
-      DATABASE_URL: "postgres://localhost/test",
-      PORT: 3000,
-      DEBUG: "true",
+      values: {
+        DATABASE_URL: "postgres://localhost/test",
+        PORT: 3000,
+        DEBUG: "true",
+      },
     });
 
     const ConfigAdapter = createAdapter({
@@ -374,7 +376,7 @@ describe("test doubles: multi-adapter graphs", () => {
   it("creates graph with multiple mocked adapters", () => {
     const loggerMock = createMockLogger({ captureMessages: true });
     const cacheMock = createMockCache<unknown>();
-    const configMock = createMockConfig({ APP_NAME: "TestApp" });
+    const configMock = createMockConfig({ values: { APP_NAME: "TestApp" } });
 
     const LoggerAdapter = createAdapter({
       provides: LoggerPort,

@@ -306,9 +306,9 @@ describe("Recovery: Duplicate Providers", () => {
       factory: () => ({ log: () => {} }), // Production logger
     });
 
-    const parentBuilder = GraphBuilder.create().provide(ProductionLoggerAdapter);
+    const parentGraph = GraphBuilder.create().provide(ProductionLoggerAdapter).build();
 
-    // Child graph with test logger as override
+    // Child graph with test logger as override using forParent()
     const TestLoggerAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
@@ -316,15 +316,13 @@ describe("Recovery: Duplicate Providers", () => {
       factory: () => ({ log: () => {} }), // No-op for tests
     });
 
-    const childBuilder = GraphBuilder.create().override(TestLoggerAdapter);
+    const childBuilder = GraphBuilder.forParent(parentGraph).override(TestLoggerAdapter);
 
-    // Both are valid graphs
-    const parentGraph = parentBuilder.buildFragment();
-    const childGraph = childBuilder.buildFragment();
+    // Child builder builds a valid fragment with the override
+    const childFragment = childBuilder.buildFragment();
 
-    expect(parentGraph.adapters).toHaveLength(1);
-    expect(childGraph.adapters).toHaveLength(1);
-    expect(childGraph.overridePortNames.has("Logger")).toBe(true);
+    expect(childFragment.adapters).toHaveLength(1);
+    expect(childFragment.overridePortNames.has("Logger")).toBe(true);
   });
 
   it("can branch and take only one adapter when duplicate detected", () => {

@@ -1,63 +1,75 @@
-export * from "./errors.js";
-export * from "./logic.js";
+/**
+ * Validation module - Compile-time graph validation utilities.
+ *
+ * This module re-exports types from src/types/validation/ for compile-time
+ * validation of dependency graphs:
+ *
+ * - **Error types**: Branded error messages for duplicates, cycles, captive deps
+ * - **Cycle detection**: Type-level cycle detection in dependency graphs
+ * - **Captive detection**: Detection of lifetime scope violations
+ * - **Lazy transforms**: Utilities for lazy port handling
+ *
+ * All validation happens at compile-time via TypeScript's type system.
+ *
+ * @packageDocumentation
+ */
 
-// Explicit exports from batch-duplicates.ts
+// Re-export all types from the types/ folder
+export * from "./types/index.js";
+
+// Re-export runtime utilities (error parsing)
+export {
+  GraphErrorNumericCode,
+  GraphErrorCode,
+  isGraphError,
+  parseGraphError,
+} from "./error-parsing.js";
 export type {
-  HasDuplicatesInBatch,
-  FindBatchDuplicate,
-  BatchDuplicateErrorMessage,
-} from "./batch-duplicates.js";
-
-// Explicit exports from lazy-transforms.ts
-export type { TransformLazyToOriginal, ExtractLazyPorts, HasLazyPorts } from "./lazy-transforms.js";
-
-// Explicit exports from cycle-detection.ts (excluding @internal types)
-export type {
-  DefaultMaxDepth,
-  ValidateMaxDepth,
-  AdapterProvidesName,
-  AdapterRequiresNames,
-  AddEdge,
-  GetDirectDeps,
-  IsReachable,
-  WouldCreateCycle,
-  FindCyclePath,
-  BuildCyclePath,
-  CircularDependencyError,
-  MergeDependencyMaps,
-  AddManyEdges,
-  WouldAnyCreateCycle,
-  DetectCycleInMergedGraph,
-} from "./cycle-detection.js";
-
-// Explicit exports from captive-dependency.ts (excluding @internal types)
-export type {
-  LifetimeLevel,
-  AddLifetime,
-  GetLifetimeLevel,
-  IsCaptiveDependency,
-  LifetimeName,
-  CaptiveDependencyError,
-  FindAnyCaptiveDependency,
-  MergeLifetimeMaps,
-  AddManyLifetimes,
-  WouldAnyBeCaptive,
-  DetectCaptiveInMergedGraph,
-  FindLifetimeInconsistency,
-} from "./captive-dependency.js";
-
-// Init priority types (infrastructure for future compile-time validation)
-export type {
-  PriorityBand,
-  PriorityBandLevel,
-  GetBandLevel,
-  IsValidBandOrder,
-  EmptyInitPriorityMap,
-  AddInitPriority,
-  GetInitPriority,
-  DefaultInitPriority,
-  InferAdapterInitPriority,
-  InitPriorityErrorMessage,
-  MergeInitPriorityMaps,
-  AddManyInitPriorities,
-} from "./init-priority.js";
+  GraphErrorNumericCodeType,
+  GraphErrorCodeType,
+  ParsedGraphError,
+  // Error detail types for discriminated union narrowing
+  DuplicateAdapterDetails,
+  CircularDependencyDetails,
+  CaptiveDependencyDetails,
+  ReverseCaptiveDependencyDetails,
+  LifetimeInconsistencyDetails,
+  SelfDependencyDetails,
+  DepthLimitExceededDetails,
+  MissingDependencyDetails,
+  OverrideWithoutParentDetails,
+  MissingProvidesDetails,
+  InvalidProvidesDetails,
+  InvalidRequiresTypeDetails,
+  InvalidRequiresElementDetails,
+  InvalidLifetimeTypeDetails,
+  InvalidLifetimeValueDetails,
+  InvalidFactoryDetails,
+  DuplicateRequiresDetails,
+  InvalidFinalizerDetails,
+  InvalidLazyPortDetails,
+  MultipleErrorsDetails,
+  UnknownErrorDetails,
+  // Parsed error types for discriminated unions
+  ParsedDuplicateAdapterError,
+  ParsedCircularDependencyError,
+  ParsedCaptiveDependencyError,
+  ParsedReverseCaptiveDependencyError,
+  ParsedLifetimeInconsistencyError,
+  ParsedSelfDependencyError,
+  ParsedDepthLimitExceededError,
+  ParsedMissingDependencyError,
+  ParsedOverrideWithoutParentError,
+  ParsedMissingProvidesError,
+  ParsedInvalidProvidesError,
+  ParsedInvalidRequiresTypeError,
+  ParsedInvalidRequiresElementError,
+  ParsedInvalidLifetimeTypeError,
+  ParsedInvalidLifetimeValueError,
+  ParsedInvalidFactoryError,
+  ParsedDuplicateRequiresError,
+  ParsedInvalidFinalizerError,
+  ParsedInvalidLazyPortError,
+  ParsedMultipleErrorsError,
+  ParsedUnknownErrorError,
+} from "./error-parsing.js";

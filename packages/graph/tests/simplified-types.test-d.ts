@@ -7,21 +7,47 @@
  */
 
 import { describe, expectTypeOf, it, expect } from "vitest";
-import {
-  GraphBuilder,
+import { GraphBuilder, PrettyBuilder, createAdapter } from "../src/index.js";
+import type {
   SimplifiedView,
   InferBuilderProvides,
   InferBuilderUnsatisfied,
-  PrettyBuilder,
-} from "../src/index.js";
+} from "../src/internal.js";
 import {
-  LoggerAdapter,
-  DatabaseAdapter,
-  UserServiceAdapter,
+  LoggerPort,
+  DatabasePort,
+  UserServicePort,
   type LoggerPortType,
   type DatabasePortType,
   type UserServicePortType,
 } from "./fixtures.js";
+
+// =============================================================================
+// Test Adapters (created locally for proper type inference)
+// =============================================================================
+
+const LoggerAdapter = createAdapter({
+  provides: LoggerPort,
+  requires: [] as const,
+  lifetime: "singleton",
+  factory: () => ({ log: () => {} }),
+});
+
+const DatabaseAdapter = createAdapter({
+  provides: DatabasePort,
+  requires: [LoggerPort] as const,
+  lifetime: "singleton",
+  factory: () => ({ query: async () => ({}) }),
+});
+
+const UserServiceAdapter = createAdapter({
+  provides: UserServicePort,
+  requires: [DatabasePort, LoggerPort] as const,
+  lifetime: "scoped",
+  factory: () => ({
+    getUser: async (id: string) => ({ id, name: "Test User" }),
+  }),
+});
 
 describe("SimplifiedView type utility", () => {
   it("extracts provides from builder", () => {
@@ -62,8 +88,19 @@ describe("SimplifiedView type utility", () => {
     >();
   });
 
-  it("tracks override ports", () => {
-    const builder = GraphBuilder.create().override(LoggerAdapter);
+  it("tracks override ports with forParent()", () => {
+    // Create a parent graph that provides Logger
+    const parentGraph = GraphBuilder.create().provide(LoggerAdapter).build();
+
+    // Override the Logger in child builder
+    const MockLoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [] as const,
+      lifetime: "singleton",
+      factory: () => ({ log: () => {} }),
+    });
+
+    const builder = GraphBuilder.forParent(parentGraph).override(MockLoggerAdapter);
     expect(builder).toBeDefined();
 
     type View = SimplifiedView<typeof builder>;
@@ -245,8 +282,19 @@ describe("PrettyBuilder type utility", () => {
     expectTypeOf<View["unsatisfied"]>().toEqualTypeOf<LoggerPortType | DatabasePortType>();
   });
 
-  it("tracks overrides", () => {
-    const builder = GraphBuilder.create().override(LoggerAdapter);
+  it("tracks overrides with forParent()", () => {
+    // Create a parent graph that provides Logger
+    const parentGraph = GraphBuilder.create().provide(LoggerAdapter).build();
+
+    // Override the Logger in child builder
+    const MockLoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [] as const,
+      lifetime: "singleton",
+      factory: () => ({ log: () => {} }),
+    });
+
+    const builder = GraphBuilder.forParent(parentGraph).override(MockLoggerAdapter);
     expect(builder).toBeDefined();
 
     type View = PrettyBuilder<typeof builder>;
@@ -282,5 +330,43 @@ describe("PrettyBuilder type utility", () => {
     type NotABuilder = { someProperty: string };
     type View = PrettyBuilder<NotABuilder>;
     expectTypeOf<View>().toEqualTypeOf<never>();
+  });
+});
+
+// =============================================================================
+// DebugBuilderInternals Tests
+// =============================================================================
+
+describe("DebugBuilderInternals type utility", () => {
+  it("exposes internal state from empty builder", () => {
+    const builder = GraphBuilder.create();
+    expect(builder).toBeDefined();
+
+    type Internals = import("../src/internal.js").DebugBuilderInternals<typeof builder>;
+
+    // Default maxDepth should be 50
+    expectTypeOf<Internals["maxDepth"]>().toEqualTypeOf<50>();
+
+    // Default unsafeDepthOverride should be false
+    expectTypeOf<Internals["unsafeDepthOverride"]>().toEqualTypeOf<false>();
+
+    // No parent by default
+    expectTypeOf<Internals["parentProvides"]>().toEqualTypeOf<unknown>();
+  });
+
+  it("tracks lifetimeMap after providing adapters", () => {
+    const builder = GraphBuilder.create().provide(LoggerAdapter);
+    expect(builder).toBeDefined();
+
+    type Internals = import("../src/internal.js").DebugBuilderInternals<typeof builder>;
+
+    // lifetimeMap should have Logger with level 1 (singleton)
+    type LoggerLevel = Internals["lifetimeMap"]["Logger"];
+    expectTypeOf<LoggerLevel>().toEqualTypeOf<1>();
+  });
+
+  it("returns never for non-builder types", () => {
+    type Internals = import("../src/internal.js").DebugBuilderInternals<{ someProperty: string }>;
+    expectTypeOf<Internals>().toBeNever();
   });
 });

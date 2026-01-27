@@ -8,7 +8,8 @@
  */
 import { describe, it, expect } from "vitest";
 import { createPort } from "@hex-di/ports";
-import { lazyPort, getOriginalPort, isLazyPort } from "../src/index.js";
+import { lazyPort, isLazyPort } from "../src/index.js";
+import { getOriginalPort } from "../src/internal.js";
 
 // =============================================================================
 // Test Fixtures

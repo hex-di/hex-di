@@ -161,65 +161,44 @@ describe("createAsyncAdapter function", () => {
     expect(Object.isFrozen(adapter)).toBe(true);
   });
 
-  it("defaults initPriority to 100", () => {
+  it("sets factoryKind to async", () => {
     const adapter = createAsyncAdapter({
       provides: LoggerPort,
       requires: [],
       factory: async () => ({ log: () => {} }),
     });
 
-    expect(adapter.initPriority).toBe(100);
+    expect(adapter.factoryKind).toBe("async");
   });
 
-  it("accepts valid initPriority values", () => {
-    const lowPriority = createAsyncAdapter({
+  it("sets lifetime to singleton", () => {
+    const adapter = createAsyncAdapter({
       provides: LoggerPort,
       requires: [],
       factory: async () => ({ log: () => {} }),
-      initPriority: 0,
     });
 
-    const highPriority = createAsyncAdapter({
+    expect(adapter.lifetime).toBe("singleton");
+  });
+
+  it("defaults clonable to false", () => {
+    const adapter = createAsyncAdapter({
       provides: LoggerPort,
       requires: [],
       factory: async () => ({ log: () => {} }),
-      initPriority: 1000,
     });
 
-    expect(lowPriority.initPriority).toBe(0);
-    expect(highPriority.initPriority).toBe(1000);
+    expect(adapter.clonable).toBe(false);
   });
 
-  it("throws RangeError for negative initPriority", () => {
-    expect(() =>
-      createAsyncAdapter({
-        provides: LoggerPort,
-        requires: [],
-        factory: async () => ({ log: () => {} }),
-        initPriority: -1,
-      })
-    ).toThrow(RangeError);
-  });
+  it("accepts clonable option", () => {
+    const adapter = createAsyncAdapter({
+      provides: LoggerPort,
+      requires: [],
+      factory: async () => ({ log: () => {} }),
+      clonable: true,
+    });
 
-  it("throws RangeError for initPriority above maximum", () => {
-    expect(() =>
-      createAsyncAdapter({
-        provides: LoggerPort,
-        requires: [],
-        factory: async () => ({ log: () => {} }),
-        initPriority: 1001,
-      })
-    ).toThrow(RangeError);
-  });
-
-  it("error message includes the invalid priority value", () => {
-    expect(() =>
-      createAsyncAdapter({
-        provides: LoggerPort,
-        requires: [],
-        factory: async () => ({ log: () => {} }),
-        initPriority: 9999,
-      })
-    ).toThrow(/9999/);
+    expect(adapter.clonable).toBe(true);
   });
 });

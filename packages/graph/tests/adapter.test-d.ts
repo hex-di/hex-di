@@ -14,7 +14,7 @@
 
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { Port } from "@hex-di/ports";
-import { Adapter, Lifetime, ResolvedDeps } from "../src/index.js";
+import { Adapter, Lifetime, ResolvedDeps, EmptyDeps } from "../src/index.js";
 import {
   type Logger,
   type Database,
@@ -163,12 +163,13 @@ describe("Adapter type", () => {
 // =============================================================================
 
 describe("ResolvedDeps utility type", () => {
-  it("maps never to empty object", () => {
-    type EmptyDeps = ResolvedDeps<never>;
+  it("maps never to branded empty type (prevents arbitrary key access)", () => {
+    type NoDeps = ResolvedDeps<never>;
 
-    // Record<string, unknown> allows adapters with no dependencies to be
-    // compatible with GraphBuilder.provide() under function contravariance
-    expectTypeOf<EmptyDeps>().toEqualTypeOf<Record<string, unknown>>();
+    // EmptyDeps is a branded empty type that:
+    // - IS assignable from empty object literals
+    // - PREVENTS arbitrary key access (type error if you try)
+    expectTypeOf<NoDeps>().toEqualTypeOf<EmptyDeps>();
   });
 
   it("maps single Port to object with port name as key", () => {

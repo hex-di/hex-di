@@ -61,18 +61,16 @@ export class RootContainerImpl<
 
   private initializeFromGraph(config: RootContainerConfig<TProvides, TAsyncPorts>): void {
     const { graph } = config;
-    let adapterIndex = 0;
 
     for (const adapter of graph.adapters) {
       // Root containers don't use "local" tracking - all adapters are root-level
       this.adapterRegistry.register(adapter.provides, adapter, false);
       if (adapter.factoryKind === "async") {
-        this.asyncInitializer.registerAdapter(adapter, adapterIndex);
+        this.asyncInitializer.registerAdapter(adapter);
       }
-      adapterIndex++;
     }
 
-    // Finalize adapter registration (sorts by priority)
+    // Finalize adapter registration (computes topological initialization levels)
     this.asyncInitializer.finalizeRegistration();
   }
 

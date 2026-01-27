@@ -169,6 +169,16 @@ describe("@hex-di/runtime exports", () => {
         "getTracingAPI",
         // Re-exports from @hex-di/plugin
         "DEFAULT_RETENTION_POLICY",
+        // Graph inspection re-exports from @hex-di/graph
+        "inspectGraph",
+        "INSPECTION_CONFIG",
+        "detectCycleAtRuntime",
+        "inspectionToJSON",
+        "formatCycleError",
+        "formatMissingDepsError",
+        "formatCaptiveError",
+        "formatDuplicateError",
+        "toStructuredLogs",
       ];
 
       // Verify all expected exports exist

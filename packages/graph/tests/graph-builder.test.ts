@@ -10,14 +10,29 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { GraphBuilder, createAdapter, inspectGraph, toDotGraph } from "../src/index.js";
+import { GraphBuilder, createAdapter, inspectGraph } from "../src/index.js";
 import {
   LoggerPort,
   DatabasePort,
   UserServicePort,
-  LoggerAdapter,
-  DatabaseAdapter,
+  createLoggerAdapter,
+  createDatabaseAdapter,
 } from "./fixtures.js";
+
+// =============================================================================
+// Test Adapter Instances (Module Scope)
+// =============================================================================
+//
+// These adapters are created at module scope intentionally. This is safe because:
+// 1. Adapters are immutable (frozen by createAdapter)
+// 2. Adapters contain no mutable state
+// 3. The factory functions inside return new service instances each time
+//
+// This pattern trades "perfect isolation" for test readability and performance.
+// If you need fresh adapters per-test, use the factory functions directly.
+
+const LoggerAdapter = createLoggerAdapter();
+const DatabaseAdapter = createDatabaseAdapter();
 
 const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
@@ -319,81 +334,5 @@ describe("inspectGraph()", () => {
 });
 
 // =============================================================================
-// toDotGraph() Tests
+// NOTE: toDotGraph() tests have moved to @hex-di/visualization package
 // =============================================================================
-
-describe("toDotGraph()", () => {
-  it("generates valid DOT format for simple graph", () => {
-    const builder = GraphBuilder.create().provide(LoggerAdapter);
-    const inspection = builder.inspect();
-    const dot = toDotGraph(inspection);
-
-    expect(dot).toContain("digraph G {");
-    expect(dot).toContain("}");
-    expect(dot).toContain("Logger");
-    expect(dot).toContain("singleton");
-  });
-
-  it("generates edges for dependencies", () => {
-    const builder = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapter)
-      .provide(UserServiceAdapter);
-
-    const inspection = builder.inspect();
-    const dot = toDotGraph(inspection);
-
-    // UserService depends on Logger and Database
-    expect(dot).toContain('"UserService" -> "Logger"');
-    expect(dot).toContain('"UserService" -> "Database"');
-  });
-
-  it("highlights missing dependencies when enabled", () => {
-    const builder = GraphBuilder.create().provide(UserServiceAdapter);
-    const inspection = builder.inspect();
-    const dot = toDotGraph(inspection, { highlightMissing: true });
-
-    // Missing ports should be shown in red
-    expect(dot).toContain("MISSING");
-    expect(dot).toContain('color="red"');
-  });
-
-  it("respects direction option", () => {
-    const builder = GraphBuilder.create().provide(LoggerAdapter);
-    const inspection = builder.inspect();
-
-    const dotLR = toDotGraph(inspection, { direction: "LR" });
-    expect(dotLR).toContain("rankdir=LR");
-
-    const dotTB = toDotGraph(inspection, { direction: "TB" });
-    expect(dotTB).toContain("rankdir=TB");
-  });
-
-  it("includes title when provided", () => {
-    const builder = GraphBuilder.create().provide(LoggerAdapter);
-    const inspection = builder.inspect();
-    const dot = toDotGraph(inspection, { title: "My App Graph" });
-
-    expect(dot).toContain('label="My App Graph"');
-  });
-
-  it("can hide lifetimes", () => {
-    const builder = GraphBuilder.create().provide(LoggerAdapter);
-    const inspection = builder.inspect();
-    const dot = toDotGraph(inspection, { showLifetimes: false });
-
-    // Should have Logger but not the lifetime annotation in label
-    expect(dot).toContain("Logger");
-    expect(dot).not.toContain("(singleton)");
-  });
-
-  it("shows orphan ports when enabled", () => {
-    const builder = GraphBuilder.create().provide(LoggerAdapter);
-    const inspection = builder.inspect();
-    const dot = toDotGraph(inspection, { showOrphans: true });
-
-    // Logger is orphan (not required by anyone)
-    expect(dot).toContain('color="orange"');
-    expect(dot).toContain("dashed");
-  });
-});

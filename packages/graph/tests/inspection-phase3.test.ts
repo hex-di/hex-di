@@ -2,11 +2,18 @@
  * Tests for Phase 3 inspection features:
  * - Disposal order validation
  * - Performance monitoring utilities
- * - Mermaid graph export
+ *
+ * NOTE: Visualization tests (Mermaid/DOT) have moved to @hex-di/visualization package.
  */
 import { describe, it, expect } from "vitest";
 import { createPort } from "@hex-di/ports";
-import { createAdapter, GraphBuilder, toMermaidGraph, inspectionToJSON } from "../src/index.js";
+import {
+  createAdapter,
+  GraphBuilder,
+  inspectionToJSON,
+  detectCycleAtRuntime,
+  type AdapterConstraint,
+} from "../src/index.js";
 
 // =============================================================================
 // Test Fixtures
@@ -155,108 +162,8 @@ describe("Performance monitoring", () => {
 });
 
 // =============================================================================
-// Mermaid Graph Export Tests
+// NOTE: Visualization tests (Mermaid/DOT) have moved to @hex-di/visualization
 // =============================================================================
-
-describe("toMermaidGraph", () => {
-  it("generates basic Mermaid diagram", () => {
-    const builder = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapterWithFinalizer);
-
-    const inspection = builder.inspect();
-    const mermaid = toMermaidGraph(inspection);
-
-    expect(mermaid).toContain("graph TB");
-    expect(mermaid).toContain("Logger");
-    expect(mermaid).toContain("Database");
-    expect(mermaid).toContain("-->");
-  });
-
-  it("shows lifetimes by default", () => {
-    const builder = GraphBuilder.create().provide(LoggerAdapter);
-    const inspection = builder.inspect();
-    const mermaid = toMermaidGraph(inspection);
-
-    expect(mermaid).toContain("singleton");
-  });
-
-  it("can hide lifetimes", () => {
-    const builder = GraphBuilder.create().provide(LoggerAdapter);
-    const inspection = builder.inspect();
-    const mermaid = toMermaidGraph(inspection, { showLifetimes: false });
-
-    expect(mermaid).not.toContain("singleton");
-  });
-
-  it("supports different directions", () => {
-    const builder = GraphBuilder.create().provide(LoggerAdapter);
-    const inspection = builder.inspect();
-
-    expect(toMermaidGraph(inspection, { direction: "LR" })).toContain("graph LR");
-    expect(toMermaidGraph(inspection, { direction: "BT" })).toContain("graph BT");
-    expect(toMermaidGraph(inspection, { direction: "RL" })).toContain("graph RL");
-  });
-
-  it("highlights missing dependencies with dashed arrows", () => {
-    const builder = GraphBuilder.create().provide(DatabaseAdapterWithFinalizer);
-    // Database requires Logger which is not provided
-    const inspection = builder.inspect();
-    const mermaid = toMermaidGraph(inspection);
-
-    expect(mermaid).toContain("Logger");
-    expect(mermaid).toContain("MISSING");
-    expect(mermaid).toContain("-.->"); // Dashed arrow for missing deps
-  });
-
-  it("can disable missing dependency highlighting", () => {
-    const builder = GraphBuilder.create().provide(DatabaseAdapterWithFinalizer);
-    const inspection = builder.inspect();
-    const mermaid = toMermaidGraph(inspection, { highlightMissing: false });
-
-    expect(mermaid).not.toContain("MISSING");
-  });
-
-  it("adds title when provided", () => {
-    const builder = GraphBuilder.create().provide(LoggerAdapter);
-    const inspection = builder.inspect();
-    const mermaid = toMermaidGraph(inspection, { title: "My Application" });
-
-    expect(mermaid).toContain("title: My Application");
-  });
-
-  it("shows finalizer emoji when enabled", () => {
-    const builder = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provide(DatabaseAdapterWithFinalizer);
-
-    const inspection = builder.inspect();
-    const mermaid = toMermaidGraph(inspection, { showFinalizers: true });
-
-    // Database has a finalizer
-    expect(mermaid).toContain("🗑️");
-  });
-
-  it("sanitizes node IDs for Mermaid compatibility", () => {
-    // Port names with special characters should be sanitized
-    const SpecialPort = createPort<"Special:Port", { value: number }>("Special:Port");
-    const SpecialAdapter = createAdapter({
-      provides: SpecialPort,
-      requires: [] as const,
-      lifetime: "singleton",
-      factory: () => ({ value: 42 }),
-    });
-
-    const builder = GraphBuilder.create().provide(SpecialAdapter);
-    const inspection = builder.inspect();
-    const mermaid = toMermaidGraph(inspection);
-
-    // The node ID should be sanitized (: replaced with _)
-    expect(mermaid).toContain("Special_Port");
-    // But the label should show the original name
-    expect(mermaid).toContain("Special:Port");
-  });
-});
 
 // =============================================================================
 // Integration Tests
@@ -294,5 +201,153 @@ describe("Phase 3 integration", () => {
     expect(json).toHaveProperty("typeComplexityScore");
     expect(json).toHaveProperty("performanceRecommendation");
     expect(json).toHaveProperty("portsWithFinalizers");
+  });
+});
+
+// =============================================================================
+// Depth Limit Detection Tests
+// =============================================================================
+
+describe("Depth limit detection", () => {
+  describe("depthLimitExceeded flag", () => {
+    it("is false for simple graphs with depth below 50", () => {
+      const builder = GraphBuilder.create()
+        .provide(LoggerAdapter)
+        .provide(DatabaseAdapterWithFinalizer)
+        .provide(UserServiceAdapter);
+
+      const inspection = builder.inspect();
+
+      expect(inspection.depthLimitExceeded).toBe(false);
+      expect(inspection.maxChainDepth).toBeLessThan(50);
+    });
+
+    it("is included in JSON serialization", () => {
+      const builder = GraphBuilder.create().provide(LoggerAdapter);
+
+      const inspection = builder.inspect();
+      const json = inspectionToJSON(inspection);
+
+      expect(json).toHaveProperty("depthLimitExceeded");
+      expect(json.depthLimitExceeded).toBe(inspection.depthLimitExceeded);
+    });
+  });
+
+  describe("detectCycleAtRuntime", () => {
+    it("returns null for acyclic graph", () => {
+      const adapters: AdapterConstraint[] = [
+        createAdapter({
+          provides: LoggerPort,
+          requires: [] as const,
+          lifetime: "singleton",
+          factory: () => ({ log: () => {} }),
+        }),
+        createAdapter({
+          provides: DatabasePort,
+          requires: [LoggerPort] as const,
+          lifetime: "singleton",
+          factory: () => ({ query: () => "result" }),
+        }),
+      ];
+
+      const cycle = detectCycleAtRuntime(adapters);
+      expect(cycle).toBeNull();
+    });
+
+    it("detects simple two-node cycle", () => {
+      // Create two ports that depend on each other
+      const PortA = createPort<"PortA", { value: string }>("PortA");
+      const PortB = createPort<"PortB", { value: string }>("PortB");
+
+      const adapters: AdapterConstraint[] = [
+        createAdapter({
+          provides: PortA,
+          requires: [PortB] as const,
+          lifetime: "singleton",
+          factory: () => ({ value: "a" }),
+        }),
+        createAdapter({
+          provides: PortB,
+          requires: [PortA] as const,
+          lifetime: "singleton",
+          factory: () => ({ value: "b" }),
+        }),
+      ];
+
+      const cycle = detectCycleAtRuntime(adapters);
+      expect(cycle).not.toBeNull();
+      expect(cycle).toContain("PortA");
+      expect(cycle).toContain("PortB");
+    });
+
+    it("detects longer cycle chain", () => {
+      // Create A -> B -> C -> A cycle
+      const PortA = createPort<"A", { value: string }>("A");
+      const PortB = createPort<"B", { value: string }>("B");
+      const PortC = createPort<"C", { value: string }>("C");
+
+      const adapters: AdapterConstraint[] = [
+        createAdapter({
+          provides: PortA,
+          requires: [PortC] as const,
+          lifetime: "singleton",
+          factory: () => ({ value: "a" }),
+        }),
+        createAdapter({
+          provides: PortB,
+          requires: [PortA] as const,
+          lifetime: "singleton",
+          factory: () => ({ value: "b" }),
+        }),
+        createAdapter({
+          provides: PortC,
+          requires: [PortB] as const,
+          lifetime: "singleton",
+          factory: () => ({ value: "c" }),
+        }),
+      ];
+
+      const cycle = detectCycleAtRuntime(adapters);
+      expect(cycle).not.toBeNull();
+      // Cycle should contain all three ports
+      expect(cycle!.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it("ignores external dependencies not in the graph", () => {
+      // Create adapter that depends on a port not in the graph
+      const ExternalPort = createPort<"External", { value: string }>("External");
+      const InternalPort = createPort<"Internal", { value: string }>("Internal");
+
+      const adapters: AdapterConstraint[] = [
+        createAdapter({
+          provides: InternalPort,
+          requires: [ExternalPort] as const, // External is not in graph
+          lifetime: "singleton",
+          factory: () => ({ value: "internal" }),
+        }),
+      ];
+
+      const cycle = detectCycleAtRuntime(adapters);
+      expect(cycle).toBeNull(); // Should not fail due to missing external dep
+    });
+
+    it("handles empty adapter list", () => {
+      const cycle = detectCycleAtRuntime([]);
+      expect(cycle).toBeNull();
+    });
+
+    it("handles single adapter with no dependencies", () => {
+      const adapters: AdapterConstraint[] = [
+        createAdapter({
+          provides: LoggerPort,
+          requires: [] as const,
+          lifetime: "singleton",
+          factory: () => ({ log: () => {} }),
+        }),
+      ];
+
+      const cycle = detectCycleAtRuntime(adapters);
+      expect(cycle).toBeNull();
+    });
   });
 });

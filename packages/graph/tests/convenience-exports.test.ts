@@ -69,12 +69,10 @@ describe("@hex-di/graph/convenience exports", () => {
         Database
       >("Async", {
         factory: async () => ({ query: async () => ({}) }),
-        initPriority: 5,
       });
 
       const [mainPort, mainAdapter] = defineAsyncService<"Async", Database>("Async", {
         factory: async () => ({ query: async () => ({}) }),
-        initPriority: 5,
       });
 
       // Ports should have same structure
@@ -82,7 +80,6 @@ describe("@hex-di/graph/convenience exports", () => {
 
       // Adapters should have same configuration
       expect(convenienceAdapter.lifetime).toBe(mainAdapter.lifetime);
-      expect(convenienceAdapter.initPriority).toBe(mainAdapter.initPriority);
       expect(convenienceAdapter.factoryKind).toBe(mainAdapter.factoryKind);
     });
   });

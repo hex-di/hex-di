@@ -115,7 +115,7 @@ describe("override() with forParent() validation", () => {
     // The error message should mention 'Cache' and show available ports
     expectTypeOf<
       typeof result
-    >().toEqualTypeOf<`ERROR[HEX006]: Cannot override 'Cache' - not in parent. Available: Logger. Fix: Use .provide() for new ports.`>();
+    >().toEqualTypeOf<`ERROR[HEX008]: Cannot override 'Cache' - not in parent graph. Available for override: Logger. Fix: Use .provide() to add new ports.`>();
   });
 });
 
@@ -154,20 +154,20 @@ describe("provide() on forParent() builders", () => {
 // =============================================================================
 
 describe("forParent() vs create() override behavior", () => {
-  it("create() allows any override without compile-time validation", () => {
-    // Without forParent - no compile-time validation of parent
-    // This should compile and return a GraphBuilder (no error string)
-    const childBuilder = GraphBuilder.create().override(CacheAdapter);
+  it("returns error when override() called without forParent()", () => {
+    // Without forParent - override() should return an error
+    const result = GraphBuilder.create().override(CacheAdapter);
 
-    // Should be a GraphBuilder, not a string error
-    expectTypeOf<typeof childBuilder>().not.toBeString();
+    // Should be a string error message (HEX009)
+    expectTypeOf<typeof result>().toBeString();
+    expectTypeOf<typeof result>().toMatchTypeOf<`ERROR[HEX009]: Cannot use override()${string}`>();
   });
 
   it("forParent() provides compile-time override validation", () => {
     const parentGraph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     // With forParent - compile-time validation
-    // Invalid override returns error string
+    // Invalid override returns error string (HEX008 - port not in parent)
     const result = GraphBuilder.forParent(parentGraph).override(CacheAdapter);
 
     // Should be a string error message

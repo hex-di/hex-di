@@ -53,7 +53,7 @@ const PluginServiceAdapter = createAdapter({
 
 function createParentContainer() {
   const graph = GraphBuilder.create().provide(TestServiceAdapter).build();
-  return createContainer(graph);
+  return createContainer(graph, { name: "ParentContainer" });
 }
 
 function createPluginGraph() {
@@ -108,7 +108,9 @@ describe("HexDiLazyContainerProvider", () => {
   describe("auto loading (autoLoad=true)", () => {
     test("loads automatically on mount", async () => {
       const pluginGraph = createPluginGraph();
-      const lazyPlugin = parentContainer.createLazyChild(() => Promise.resolve(pluginGraph));
+      const lazyPlugin = parentContainer.createLazyChild(() => Promise.resolve(pluginGraph), {
+        name: "PluginContainer",
+      });
 
       render(
         <HexDiContainerProvider container={parentContainer}>
@@ -136,8 +138,9 @@ describe("HexDiLazyContainerProvider", () => {
     });
 
     test("shows error state on load failure", async () => {
-      const lazyPlugin = parentContainer.createLazyChild(() =>
-        Promise.reject(new Error("Failed to load plugin"))
+      const lazyPlugin = parentContainer.createLazyChild(
+        () => Promise.reject(new Error("Failed to load plugin")),
+        { name: "PluginContainer" }
       );
 
       render(
@@ -169,7 +172,9 @@ describe("HexDiLazyContainerProvider", () => {
   describe("manual loading (autoLoad=false)", () => {
     test("waits in pending state until load is triggered", async () => {
       const pluginGraph = createPluginGraph();
-      const lazyPlugin = parentContainer.createLazyChild(() => Promise.resolve(pluginGraph));
+      const lazyPlugin = parentContainer.createLazyChild(() => Promise.resolve(pluginGraph), {
+        name: "PluginContainer",
+      });
 
       render(
         <HexDiContainerProvider container={parentContainer}>
@@ -201,7 +206,9 @@ describe("HexDiLazyContainerProvider", () => {
 
     test("useLazyContainerState provides correct state", async () => {
       const pluginGraph = createPluginGraph();
-      const lazyPlugin = parentContainer.createLazyChild(() => Promise.resolve(pluginGraph));
+      const lazyPlugin = parentContainer.createLazyChild(() => Promise.resolve(pluginGraph), {
+        name: "PluginContainer",
+      });
 
       const states: string[] = [];
 
@@ -254,7 +261,9 @@ describe("HexDiLazyContainerProvider", () => {
   describe("simple mode (fallback props)", () => {
     test("uses loadingFallback prop", async () => {
       const pluginGraph = createPluginGraph();
-      const lazyPlugin = parentContainer.createLazyChild(() => Promise.resolve(pluginGraph));
+      const lazyPlugin = parentContainer.createLazyChild(() => Promise.resolve(pluginGraph), {
+        name: "PluginContainer",
+      });
 
       render(
         <HexDiContainerProvider container={parentContainer}>
@@ -277,8 +286,9 @@ describe("HexDiLazyContainerProvider", () => {
     });
 
     test("uses errorFallback prop", async () => {
-      const lazyPlugin = parentContainer.createLazyChild(() =>
-        Promise.reject(new Error("Load failed"))
+      const lazyPlugin = parentContainer.createLazyChild(
+        () => Promise.reject(new Error("Load failed")),
+        { name: "PluginContainer" }
       );
 
       render(
@@ -304,7 +314,9 @@ describe("HexDiLazyContainerProvider", () => {
       const pluginGraph = createPluginGraph();
       // Add delay to see loading state
       const lazyPlugin = parentContainer.createLazyChild(
-        () => new Promise<typeof pluginGraph>(resolve => setTimeout(() => resolve(pluginGraph), 50))
+        () =>
+          new Promise<typeof pluginGraph>(resolve => setTimeout(() => resolve(pluginGraph), 50)),
+        { name: "PluginContainer" }
       );
 
       render(
@@ -328,7 +340,9 @@ describe("HexDiLazyContainerProvider", () => {
   describe("pre-loaded container", () => {
     test("renders immediately when already loaded", async () => {
       const pluginGraph = createPluginGraph();
-      const lazyPlugin = parentContainer.createLazyChild(() => Promise.resolve(pluginGraph));
+      const lazyPlugin = parentContainer.createLazyChild(() => Promise.resolve(pluginGraph), {
+        name: "PluginContainer",
+      });
 
       // Pre-load
       await lazyPlugin.load();
@@ -358,7 +372,9 @@ describe("HexDiLazyContainerProvider", () => {
   describe("disposed container", () => {
     test("shows error when lazy container is disposed", async () => {
       const pluginGraph = createPluginGraph();
-      const lazyPlugin = parentContainer.createLazyChild(() => Promise.resolve(pluginGraph));
+      const lazyPlugin = parentContainer.createLazyChild(() => Promise.resolve(pluginGraph), {
+        name: "PluginContainer",
+      });
 
       // Dispose before render
       await lazyPlugin.dispose();
@@ -386,7 +402,9 @@ describe("HexDiLazyContainerProvider", () => {
   describe("hook access after load", () => {
     test("usePort works after lazy container loads", async () => {
       const pluginGraph = createPluginGraph();
-      const lazyPlugin = parentContainer.createLazyChild(() => Promise.resolve(pluginGraph));
+      const lazyPlugin = parentContainer.createLazyChild(() => Promise.resolve(pluginGraph), {
+        name: "PluginContainer",
+      });
 
       function PluginWithHook() {
         const plugin = usePort(PluginServicePort);
@@ -412,7 +430,9 @@ describe("HexDiLazyContainerProvider", () => {
 
     test("parent ports are accessible through lazy container", async () => {
       const pluginGraph = createPluginGraph();
-      const lazyPlugin = parentContainer.createLazyChild(() => Promise.resolve(pluginGraph));
+      const lazyPlugin = parentContainer.createLazyChild(() => Promise.resolve(pluginGraph), {
+        name: "PluginContainer",
+      });
 
       function ParentServiceAccess() {
         const testService = usePort(TestServicePort);

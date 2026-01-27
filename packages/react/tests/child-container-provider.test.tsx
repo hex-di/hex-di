@@ -115,11 +115,14 @@ function createMockContainer(): TestContainer {
 
   const mockInternalState: ContainerInternalState = {
     containerId: "root",
+    containerName: "TestContainer",
     disposed: false,
     singletonMemo: { size: 0, entries: [] },
     childScopes: [],
     childContainers: [],
     adapterMap: new Map(),
+    overridePorts: new Set(),
+    isOverride: () => false,
   };
 
   const mockContainer: TestContainer = {
@@ -185,11 +188,14 @@ function createMockChildContainer(
   // Child containers have containerId != "root" to be detected as child containers
   const mockInternalState: ContainerInternalState = {
     containerId: "child-container",
+    containerName: "ChildContainer",
     disposed: false,
     singletonMemo: { size: 0, entries: [] },
     childScopes: [],
     childContainers: [],
     adapterMap: new Map(),
+    overridePorts: new Set(),
+    isOverride: () => false,
   };
 
   const mockChildContainer = {
@@ -283,11 +289,14 @@ function createMockUninitializedChildContainer(
   // Child containers have containerId != "root" to be detected as child containers
   const mockInternalState: ContainerInternalState = {
     containerId: "child-container",
+    containerName: "ChildContainer",
     disposed: false,
     singletonMemo: { size: 0, entries: [] },
     childScopes: [],
     childContainers: [],
     adapterMap: new Map(),
+    overridePorts: new Set(),
+    isOverride: () => false,
   };
 
   return {

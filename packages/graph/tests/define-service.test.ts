@@ -9,7 +9,6 @@
  * 5. Custom requires and lifetime work
  * 6. Finalizer option is passed through
  * 7. defineAsyncService enforces singleton lifetime
- * 8. defineAsyncService respects initPriority
  */
 
 import { describe, expect, it, vi } from "vitest";
@@ -232,23 +231,6 @@ describe("defineAsyncService function", () => {
     });
 
     expect(adapter.requires).toEqual([LoggerPort]);
-  });
-
-  it("defaults initPriority to 100", () => {
-    const [, adapter] = defineAsyncService<"Config", Config>("Config", {
-      factory: async () => ({ get: () => "" }),
-    });
-
-    expect(adapter.initPriority).toBe(100);
-  });
-
-  it("accepts custom initPriority", () => {
-    const [, adapter] = defineAsyncService<"Config", Config>("Config", {
-      factory: async () => ({ get: () => "" }),
-      initPriority: 10,
-    });
-
-    expect(adapter.initPriority).toBe(10);
   });
 
   it("passes through finalizer", () => {

@@ -13,8 +13,13 @@
 
 import { describe, expectTypeOf, it, expect } from "vitest";
 import { createPort } from "@hex-di/ports";
-import { createAdapter, GraphBuilder, FilterNever, MultiErrorMessage } from "../src/index.js";
-import { LoggerAdapter, LoggerPort, DatabasePort } from "./fixtures.js";
+import { createAdapter, GraphBuilder } from "../src/index.js";
+import type { FilterNever, MultiErrorMessage } from "../src/internal.js";
+import type { MergeResultAllErrors, AnyBuilderInternals } from "../src/builder/types/index.js";
+import { createLoggerAdapter, LoggerPort, DatabasePort } from "./fixtures.js";
+
+// Create adapter instance for tests
+const LoggerAdapter = createLoggerAdapter();
 import type { ServiceA, ServiceB, ServiceC } from "./fixtures.js";
 
 // =============================================================================
@@ -109,7 +114,7 @@ describe("provide() single error", () => {
     type Result = ReturnType<typeof builder.provide<typeof LoggerAdapter>>;
 
     // Should be an error string containing "Duplicate"
-    expectTypeOf<Result>().toMatchTypeOf<`ERROR: Duplicate adapter for 'Logger'.${string}`>();
+    expectTypeOf<Result>().toMatchTypeOf<`ERROR[HEX001]: Duplicate adapter for 'Logger'.${string}`>();
   });
 
   it("returns circular error message", () => {
@@ -137,7 +142,7 @@ describe("provide() single error", () => {
     type Result = ReturnType<typeof builder.provide<typeof AdapterB>>;
 
     // Should be an error string containing "Circular"
-    expectTypeOf<Result>().toMatchTypeOf<`ERROR: Circular dependency:${string}`>();
+    expectTypeOf<Result>().toMatchTypeOf<`ERROR[HEX002]: Circular dependency:${string}`>();
   });
 
   it("returns captive error message", () => {
@@ -165,7 +170,7 @@ describe("provide() single error", () => {
     type Result = ReturnType<typeof builder.provide<typeof SingletonAdapter>>;
 
     // Should be an error string containing "Captive"
-    expectTypeOf<Result>().toMatchTypeOf<`ERROR: Captive dependency:${string}`>();
+    expectTypeOf<Result>().toMatchTypeOf<`ERROR[HEX003]: Captive dependency:${string}`>();
   });
 });
 
@@ -276,20 +281,20 @@ describe("provide() multiple errors", () => {
 
     // AdapterY creates cycle with X
     type CycleResult = ReturnType<typeof builder.provide<typeof AdapterY>>;
-    expectTypeOf<CycleResult>().toMatchTypeOf<`ERROR: Circular dependency:${string}`>();
+    expectTypeOf<CycleResult>().toMatchTypeOf<`ERROR[HEX002]: Circular dependency:${string}`>();
   });
 });
 
 // =============================================================================
-// provide() vs provideFast() Comparison
+// provide() vs provideFirstError() Comparison
 // =============================================================================
 
-describe("provide() vs provideFast() behavior", () => {
+describe("provide() vs provideFirstError() behavior", () => {
   it("both succeed for valid adapters", () => {
     const builder = GraphBuilder.create();
 
     const multiErrorResult = builder.provide(LoggerAdapter);
-    const singleErrorResult = builder.provideFast(LoggerAdapter);
+    const singleErrorResult = builder.provideFirstError(LoggerAdapter);
 
     // Both should be valid builders
     expectTypeOf(multiErrorResult).toHaveProperty("provide");
@@ -300,10 +305,93 @@ describe("provide() vs provideFast() behavior", () => {
     const builder = GraphBuilder.create().provide(LoggerAdapter);
 
     type MultiErrorResult = ReturnType<typeof builder.provide<typeof LoggerAdapter>>;
-    type SingleErrorResult = ReturnType<typeof builder.provideFast<typeof LoggerAdapter>>;
+    type SingleErrorResult = ReturnType<typeof builder.provideFirstError<typeof LoggerAdapter>>;
 
     // Both should be error strings (not GraphBuilder)
     expectTypeOf<MultiErrorResult>().toMatchTypeOf<string>();
     expectTypeOf<SingleErrorResult>().toMatchTypeOf<string>();
+  });
+});
+
+// =============================================================================
+// MergeResultAllErrors Tests
+// =============================================================================
+
+describe("MergeResultAllErrors type", () => {
+  it("returns GraphBuilder when no errors", () => {
+    const builder1 = GraphBuilder.create().provide(LoggerAdapter);
+    const builder2 = GraphBuilder.create().provide(
+      createAdapter({
+        provides: DatabasePort,
+        requires: [LoggerPort],
+        lifetime: "singleton",
+        factory: () => ({ query: async () => ({}) }),
+      })
+    );
+
+    // Valid merge should succeed
+    const result = builder1.merge(builder2);
+    expectTypeOf(result).toHaveProperty("build");
+  });
+
+  it("detects duplicate port errors", () => {
+    const builder1 = GraphBuilder.create().provide(LoggerAdapter);
+    const builder2 = GraphBuilder.create().provide(LoggerAdapter);
+
+    // Both provide Logger - should be duplicate error
+    const result = builder1.merge(builder2);
+
+    // Should be an error string (not GraphBuilder)
+    expectTypeOf(result).toMatchTypeOf<string>();
+  });
+
+  it("detects cycle errors when merging creates cycle", () => {
+    // Create two graphs that form a cycle when merged
+    const PortM = createPort<"M", ServiceA>("M");
+    const PortN = createPort<"N", ServiceB>("N");
+
+    // Builder 1: M depends on N
+    const AdapterM = createAdapter({
+      provides: PortM,
+      requires: [PortN],
+      lifetime: "singleton",
+      factory: () => ({ doA: () => {} }),
+    });
+
+    // Builder 2: N depends on M
+    const AdapterN = createAdapter({
+      provides: PortN,
+      requires: [PortM],
+      lifetime: "singleton",
+      factory: () => ({ doB: () => {} }),
+    });
+
+    const builder1 = GraphBuilder.create().provide(AdapterM);
+    const builder2 = GraphBuilder.create().provide(AdapterN);
+
+    // Merging creates cycle: M -> N -> M
+    const result = builder1.merge(builder2);
+
+    // Should be circular dependency error
+    expectTypeOf(result).toMatchTypeOf<`ERROR[HEX002]: Circular dependency:${string}`>();
+  });
+
+  it("MergeResultAllErrors type exists and is exported", () => {
+    // Verify the type is accessible
+    type TestMergeResultAllErrors = MergeResultAllErrors<
+      never,
+      never,
+      never,
+      never,
+      AnyBuilderInternals,
+      never,
+      never,
+      never,
+      never,
+      AnyBuilderInternals
+    >;
+
+    // With no provides, should succeed (returns a GraphBuilder)
+    expectTypeOf<TestMergeResultAllErrors>().toHaveProperty("provide");
   });
 });

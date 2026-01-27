@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expectTypeOf } from "vitest";
-import type { InferenceError } from "../src/common/index.js";
+import type { InferenceError } from "../src/types/type-utilities.js";
 import type {
   InferAdapterProvides,
   InferAdapterRequires,
@@ -18,7 +18,7 @@ import type {
   DebugInferAdapterLifetime,
   DebugInferManyProvides,
   DebugInferManyRequires,
-} from "../src/adapter/inference.js";
+} from "../src/adapter/types/adapter-inference.js";
 import { createPort } from "@hex-di/ports";
 import { createAdapter } from "../src/index.js";
 

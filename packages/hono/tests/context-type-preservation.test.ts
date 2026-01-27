@@ -65,7 +65,7 @@ function buildTestContainer() {
   });
 
   const graph = GraphBuilder.create().provide(testServiceAdapter).build();
-  return createContainer(graph);
+  return createContainer(graph, { name: "TestContainer" });
 }
 
 // =============================================================================

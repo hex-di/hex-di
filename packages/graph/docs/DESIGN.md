@@ -332,6 +332,40 @@ src/
 └── convenience.ts              # Simplified API
 ```
 
+### Why builder.ts Stays as One File
+
+The `GraphBuilder` class in `builder.ts` appears large (~1000 lines) but this is by design:
+
+**What's Already Extracted:**
+
+- **Type-level validation**: `builder-types/` contains all validation types (provide-types.ts, merge-types.ts, etc.)
+- **Inspection logic**: `builder-inspection.ts` handles inspect(), toDotGraph(), toMermaidGraph()
+- **Validation algorithms**: `validation/` contains cycle detection, captive dependency checks, etc.
+
+**What Remains in builder.ts:**
+
+- Class definition with 9 methods (provide, provideFast, provideAsync, provideMany, merge, override, inspect, build, buildFragment)
+- 3 static factory methods (create, withMaxDepth, forParent)
+- Phantom type property declarations
+- Extensive JSDoc documentation (~50% of lines)
+
+**Why Not Decompose Further:**
+
+1. **TypeScript limitation**: Classes cannot be split across files (no partial classes)
+2. **Minimal actual code**: The runtime implementation is trivial (array manipulation)
+3. **Methods share state**: All methods need access to `this.adapters` and `this.overridePortNames`
+4. **Overload pattern**: Each method needs adjacent overload + implementation signatures
+
+**Line Count Breakdown:**
+| Content Type | Lines | % |
+|--------------|-------|---|
+| JSDoc comments | ~500 | 48% |
+| Type declarations | ~200 | 19% |
+| Method signatures (overloads) | ~200 | 19% |
+| Actual implementation | ~145 | 14% |
+
+The file is well-organized with clear section comments. Further decomposition would add complexity without improving maintainability.
+
 ### Module Dependency Flow
 
 ```

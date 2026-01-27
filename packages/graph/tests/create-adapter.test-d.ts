@@ -13,7 +13,13 @@
 
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { Port } from "@hex-di/ports";
-import { Adapter, createAdapter, InferClonable, IsClonableAdapter } from "../src/index.js";
+import {
+  Adapter,
+  createAdapter,
+  InferClonable,
+  IsClonableAdapter,
+  EmptyDeps,
+} from "../src/index.js";
 import {
   type Logger,
   type Database,
@@ -120,8 +126,8 @@ describe("createAdapter function", () => {
       requires: [],
       lifetime: "singleton",
       factory: deps => {
-        // deps should be Record<string, unknown> for compatibility with other adapters
-        expectTypeOf(deps).toEqualTypeOf<Record<string, unknown>>();
+        // deps should be EmptyDeps (branded empty type that prevents arbitrary key access)
+        expectTypeOf(deps).toEqualTypeOf<EmptyDeps>();
         return { log: () => {} };
       },
     });

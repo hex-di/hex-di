@@ -307,14 +307,13 @@ describe("Container initialization", () => {
       await container.dispose();
     });
 
-    it("should initialize in priority order", async () => {
+    it("should initialize in topological order based on dependencies", async () => {
       const initOrder: string[] = [];
 
+      // Database has no dependencies
       const DatabaseAdapter = createAsyncAdapter({
         provides: DatabasePort,
         requires: [],
-
-        initPriority: 1, // Lower = earlier
         factory: async () => {
           initOrder.push("Database");
           await new Promise(resolve => setTimeout(resolve, 5));
@@ -325,11 +324,10 @@ describe("Container initialization", () => {
         },
       });
 
+      // Cache depends on Database
       const CacheAdapter = createAsyncAdapter({
         provides: CachePort,
-        requires: [],
-
-        initPriority: 2, // Higher = later
+        requires: [DatabasePort],
         factory: async () => {
           initOrder.push("Cache");
           await new Promise(resolve => setTimeout(resolve, 5));
@@ -341,14 +339,14 @@ describe("Container initialization", () => {
       });
 
       const graph = GraphBuilder.create()
-        .provideAsync(CacheAdapter) // Added second but has higher priority
-        .provideAsync(DatabaseAdapter) // Added first but has lower priority
+        .provideAsync(CacheAdapter) // Added first but depends on Database
+        .provideAsync(DatabaseAdapter) // Added second but has no dependencies
         .build();
 
       const container = createContainer(graph, { name: "Test" });
       await container.initialize();
 
-      // Initialization should respect initPriority (lower numbers resolve first)
+      // Initialization should follow dependency order (Database first since Cache depends on it)
       expect(initOrder).toEqual(["Database", "Cache"]);
 
       await container.dispose();

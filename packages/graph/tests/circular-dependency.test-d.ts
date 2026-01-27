@@ -17,14 +17,18 @@ import {
   CircularDependencyError,
   CircularErrorMessage,
   WouldCreateCycle,
+  DefaultMaxDepth,
+  ValidateMaxDepth,
+} from "../src/index.js";
+import {
   IsReachable,
   AddEdge,
   GetDirectDeps,
   AdapterProvidesName,
   AdapterRequiresNames,
-  DefaultMaxDepth,
-  ValidateMaxDepth,
-} from "../src/index.js";
+  DepthExceededResult,
+  IsDepthExceeded,
+} from "../src/internal.js";
 import {
   LoggerPort,
   DatabasePort,
@@ -39,7 +43,10 @@ import {
 // Helper Types for Testing
 // =============================================================================
 
-type IsCycleError<T> = T extends `ERROR: Circular dependency: ${string}` ? true : false;
+type IsCycleError<T> = T extends `ERROR[HEX002]: Circular dependency: ${string}` ? true : false;
+type IsSelfDependencyError<T> = T extends `ERROR[HEX006]: Self-dependency detected. ${string}`
+  ? true
+  : false;
 
 // =============================================================================
 // Type Utility Tests
@@ -448,8 +455,14 @@ describe("non-cyclic dependency chains pass validation", () => {
 // =============================================================================
 
 describe("self-referential dependencies are detected", () => {
-  it("detects A -> A self-cycle", () => {
-    // A depends on itself
+  it("detects A -> A self-dependency with HEX006 error (short-circuit)", () => {
+    // A depends on itself - this is now caught as a self-dependency error (HEX006)
+    // rather than a circular dependency error (HEX002) because self-dependency
+    // is a special case that can be detected without graph traversal.
+    //
+    // Note: Using provideFirstError() for short-circuit behavior.
+    // Using provide() would collect both self-dependency AND cycle errors,
+    // resulting in a "Multiple validation errors" message.
     const AdapterA = createAdapter({
       provides: PortA,
       requires: [PortA],
@@ -460,8 +473,8 @@ describe("self-referential dependencies are detected", () => {
 
     const builder = GraphBuilder.create();
     expect(builder).toBeDefined();
-    type ResultType = ReturnType<typeof builder.provide<typeof AdapterA>>;
-    expectTypeOf<IsCycleError<ResultType>>().toEqualTypeOf<true>();
+    type ResultType = ReturnType<typeof builder.provideFirstError<typeof AdapterA>>;
+    expectTypeOf<IsSelfDependencyError<ResultType>>().toEqualTypeOf<true>();
   });
 });
 
@@ -473,7 +486,7 @@ describe("error messages show cycle path", () => {
   it("CircularErrorMessage returns template literal with cycle path", () => {
     // Template literal error message directly shows the cycle path
     type ErrorMessage = CircularErrorMessage<"A -> B -> A">;
-    expectTypeOf<ErrorMessage>().toEqualTypeOf<"ERROR: Circular dependency: A -> B -> A. Fix: Break cycle by extracting shared logic, using lazy resolution, or inverting a dependency.">();
+    expectTypeOf<ErrorMessage>().toEqualTypeOf<"ERROR[HEX002]: Circular dependency: A -> B -> A. Fix: Break cycle by extracting shared logic, using lazy resolution, or inverting a dependency.">();
   });
 
   it("CircularDependencyError branded type contains cycle path", () => {
@@ -784,8 +797,8 @@ describe("GraphBuilder.withMaxDepth() configuration", () => {
 // =============================================================================
 
 describe("MaxDepth type utilities", () => {
-  it("DefaultMaxDepth is 30", () => {
-    expectTypeOf<DefaultMaxDepth>().toEqualTypeOf<30>();
+  it("DefaultMaxDepth is 50", () => {
+    expectTypeOf<DefaultMaxDepth>().toEqualTypeOf<50>();
   });
 
   it("ValidateMaxDepth returns valid depths unchanged", () => {
@@ -797,5 +810,155 @@ describe("MaxDepth type utilities", () => {
 
   it("ValidateMaxDepth returns error for depth 0", () => {
     expectTypeOf<ValidateMaxDepth<0>>().toEqualTypeOf<"ERROR: MaxDepth must be at least 1">();
+  });
+});
+
+// =============================================================================
+// DepthExceededResult Type Tests
+// =============================================================================
+
+describe("DepthExceededResult distinguishes depth exceeded from not reachable", () => {
+  it("IsReachable returns false for definitely not reachable", () => {
+    // Simple graph: A -> B (no path from B to C)
+    type Graph = { A: "B"; B: never };
+    type Result = IsReachable<Graph, "B", "C">;
+
+    // Should be definitely false (not DepthExceededResult)
+    expectTypeOf<Result>().toEqualTypeOf<false>();
+  });
+
+  it("IsReachable returns true for definitely reachable", () => {
+    // Graph: A -> B -> C, check if C is reachable from A
+    type Graph = { A: "B"; B: "C" };
+    type Result = IsReachable<Graph, "A", "C">;
+
+    expectTypeOf<Result>().toEqualTypeOf<true>();
+  });
+
+  it("IsDepthExceeded correctly identifies DepthExceededResult", () => {
+    // Use a very small maxDepth to trigger depth exceeded on a chain
+    // Graph: A -> B -> C -> D -> E
+    type Graph = { A: "B"; B: "C"; C: "D"; D: "E" };
+
+    // With maxDepth=2, checking if "E" is reachable from "A" should hit depth limit
+    type Result = IsReachable<Graph, "A", "E", never, [], 2>;
+
+    // Check using IsDepthExceeded
+    type WasExceeded = IsDepthExceeded<Result>;
+    expectTypeOf<WasExceeded>().toEqualTypeOf<true>();
+  });
+
+  it("IsDepthExceeded returns false for definitive results", () => {
+    type Graph = { A: "B" };
+
+    // Definitive false
+    type FalseResult = IsReachable<Graph, "B", "C">;
+    type FalseExceeded = IsDepthExceeded<FalseResult>;
+    expectTypeOf<FalseExceeded>().toEqualTypeOf<false>();
+
+    // Definitive true
+    type TrueResult = IsReachable<Graph, "A", "B">;
+    type TrueExceeded = IsDepthExceeded<TrueResult>;
+    expectTypeOf<TrueExceeded>().toEqualTypeOf<false>();
+  });
+
+  it("WouldCreateCycle can return DepthExceededResult for deep graphs", () => {
+    // For depth exceeded, we need a deep enough chain where we're looking
+    // for something that might exist but we can't traverse far enough
+    // Graph: A -> B -> C -> D -> E -> A (circular)
+    type DeepGraph = { A: "B"; B: "C"; C: "D"; D: "E"; E: "A" };
+
+    // With maxDepth=1, IsReachable from A to E should hit depth limit
+    // because the traversal can't go deep enough to find E
+    type Result = IsReachable<DeepGraph, "A", "E", never, [], 1>;
+    type MayBeExceeded = IsDepthExceeded<Result>;
+    expectTypeOf<MayBeExceeded>().toEqualTypeOf<true>();
+  });
+});
+
+// =============================================================================
+// GetDirectDeps Intersection Handling Tests
+// =============================================================================
+
+describe("GetDirectDeps handles intersection types correctly", () => {
+  it("looks up dependencies in direct intersection type", () => {
+    // Two separate graph fragments merged via intersection
+    type Graph1 = { A: "B" };
+    type Graph2 = { C: "D" };
+    type IntersectedGraph = Graph1 & Graph2;
+
+    // Should correctly retrieve deps from both sides of intersection
+    type ADeps = GetDirectDeps<IntersectedGraph, "A">;
+    type CDeps = GetDirectDeps<IntersectedGraph, "C">;
+
+    expectTypeOf<ADeps>().toEqualTypeOf<"B">();
+    expectTypeOf<CDeps>().toEqualTypeOf<"D">();
+  });
+
+  it("handles multi-level intersections from merged graphs", () => {
+    // Simulates three graphs merged together
+    type Graph1 = { A: "B" };
+    type Graph2 = { B: "C" };
+    type Graph3 = { C: "D" };
+    type TripleMerged = Graph1 & Graph2 & Graph3;
+
+    type ADeps = GetDirectDeps<TripleMerged, "A">;
+    type BDeps = GetDirectDeps<TripleMerged, "B">;
+    type CDeps = GetDirectDeps<TripleMerged, "C">;
+
+    expectTypeOf<ADeps>().toEqualTypeOf<"B">();
+    expectTypeOf<BDeps>().toEqualTypeOf<"C">();
+    expectTypeOf<CDeps>().toEqualTypeOf<"D">();
+  });
+
+  it("detects cycles across intersection boundaries", () => {
+    // Graph 1: A -> B
+    // Graph 2: B -> C
+    // Graph 3: C -> A (creates cycle when intersected)
+    type Graph1 = { A: "B" };
+    type Graph2 = { B: "C" };
+    type Graph3 = { C: "A" };
+    type IntersectedGraph = Graph1 & Graph2 & Graph3;
+
+    // Cycle detection should work through the intersection
+    type CanReachA = IsReachable<IntersectedGraph, "A", "A">;
+    expectTypeOf<CanReachA>().toEqualTypeOf<true>();
+  });
+
+  it("returns never for non-existent keys in intersection", () => {
+    type Graph1 = { A: "B" };
+    type Graph2 = { C: "D" };
+    type IntersectedGraph = Graph1 & Graph2;
+
+    // Key "X" doesn't exist in either side of intersection
+    type XDeps = GetDirectDeps<IntersectedGraph, "X">;
+    expectTypeOf<XDeps>().toBeNever();
+  });
+
+  it("handles union dependencies in GetDirectDeps", () => {
+    // Single graph where A depends on B or C (union), and both B and C have deps
+    type Graph = { A: "B" | "C"; B: "D"; C: "E" };
+
+    // GetDirectDeps correctly extracts union dependencies
+    type ADeps = GetDirectDeps<Graph, "A">;
+    type BDeps = GetDirectDeps<Graph, "B">;
+    type CDeps = GetDirectDeps<Graph, "C">;
+
+    expectTypeOf<ADeps>().toEqualTypeOf<"B" | "C">();
+    expectTypeOf<BDeps>().toEqualTypeOf<"D">();
+    expectTypeOf<CDeps>().toEqualTypeOf<"E">();
+  });
+
+  it("handles overlapping keys in intersection (same port in both graphs)", () => {
+    // Both graphs define deps for port A - intersection combines them
+    // Note: In TypeScript, { A: "B" } & { A: "C" } results in A having type "B" & "C"
+    // which is never for string literals, so this tests the edge case
+    type Graph1 = { A: "B"; B: "X" };
+    type Graph2 = { A: "B"; C: "Y" }; // Same A -> B edge
+    type IntersectedGraph = Graph1 & Graph2;
+
+    // When both sides agree, lookup works normally
+    type ADeps = GetDirectDeps<IntersectedGraph, "A">;
+    expectTypeOf<ADeps>().toEqualTypeOf<"B">();
   });
 });

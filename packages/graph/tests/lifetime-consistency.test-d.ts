@@ -40,7 +40,7 @@ describe("Lifetime consistency in merge", () => {
 
     expectTypeOf(
       merged
-    ).toEqualTypeOf<"ERROR: Lifetime inconsistency for 'Logger': Graph A provides Singleton, Graph B provides Scoped. Fix: Use the same lifetime in both graphs, or remove one adapter before merging.">();
+    ).toEqualTypeOf<"ERROR[HEX005]: Lifetime inconsistency for 'Logger': Graph A provides Singleton, Graph B provides Scoped. Fix: Use the same lifetime in both graphs, or remove one adapter before merging.">();
   });
 
   it("detects singleton vs transient inconsistency", () => {
@@ -68,7 +68,7 @@ describe("Lifetime consistency in merge", () => {
 
     expectTypeOf(
       merged
-    ).toEqualTypeOf<"ERROR: Lifetime inconsistency for 'Logger': Graph A provides Singleton, Graph B provides Transient. Fix: Use the same lifetime in both graphs, or remove one adapter before merging.">();
+    ).toEqualTypeOf<"ERROR[HEX005]: Lifetime inconsistency for 'Logger': Graph A provides Singleton, Graph B provides Transient. Fix: Use the same lifetime in both graphs, or remove one adapter before merging.">();
   });
 
   it("detects scoped vs transient inconsistency", () => {
@@ -96,7 +96,7 @@ describe("Lifetime consistency in merge", () => {
 
     expectTypeOf(
       merged
-    ).toEqualTypeOf<"ERROR: Lifetime inconsistency for 'Logger': Graph A provides Scoped, Graph B provides Transient. Fix: Use the same lifetime in both graphs, or remove one adapter before merging.">();
+    ).toEqualTypeOf<"ERROR[HEX005]: Lifetime inconsistency for 'Logger': Graph A provides Scoped, Graph B provides Transient. Fix: Use the same lifetime in both graphs, or remove one adapter before merging.">();
   });
 
   it("shows duplicate error when lifetimes match (same port, same lifetime)", () => {
@@ -125,7 +125,7 @@ describe("Lifetime consistency in merge", () => {
 
     expectTypeOf(
       merged
-    ).toEqualTypeOf<"ERROR: Duplicate adapter for 'Logger'. Fix: Remove one .provide() call, or use .override() for child graphs.">();
+    ).toEqualTypeOf<"ERROR[HEX001]: Duplicate adapter for 'Logger'. Fix: Remove one .provide() call, or use .override() for child graphs.">();
   });
 
   it("succeeds when different ports are provided", () => {
@@ -182,6 +182,6 @@ describe("Lifetime consistency in merge", () => {
 
     expectTypeOf(
       merged
-    ).toEqualTypeOf<"ERROR: Lifetime inconsistency for 'Logger': Graph A provides Singleton, Graph B provides Scoped. Fix: Use the same lifetime in both graphs, or remove one adapter before merging.">();
+    ).toEqualTypeOf<"ERROR[HEX005]: Lifetime inconsistency for 'Logger': Graph A provides Singleton, Graph B provides Scoped. Fix: Use the same lifetime in both graphs, or remove one adapter before merging.">();
   });
 });

@@ -13,14 +13,16 @@ import {
   GraphBuilder,
   createAdapter,
   LifetimeLevel,
-  LifetimeName,
   CaptiveDependencyError,
+  IsCaptiveDependency,
+} from "../src/index.js";
+import type {
   CaptiveErrorMessage,
   AddLifetime,
   GetLifetimeLevel,
   FindAnyCaptiveDependency,
-  IsCaptiveDependency,
-} from "../src/index.js";
+  LifetimeName,
+} from "../src/internal.js";
 import {
   LoggerPort,
   DatabasePort,
@@ -33,7 +35,7 @@ import {
 // Test Helper Type
 // =============================================================================
 
-type IsCaptiveError<T> = T extends `ERROR: Captive dependency: ${string}` ? true : false;
+type IsCaptiveError<T> = T extends `ERROR[HEX003]: Captive dependency: ${string}` ? true : false;
 
 // =============================================================================
 // LifetimeLevel Type Tests
@@ -70,6 +72,21 @@ describe("LifetimeName type", () => {
   it("level 3 maps to Transient", () => {
     type Name = LifetimeName<3>;
     expectTypeOf<Name>().toEqualTypeOf<"Transient">();
+  });
+
+  it("returns never for never input (error propagation)", () => {
+    type Name = LifetimeName<never>;
+    expectTypeOf<Name>().toBeNever();
+  });
+
+  it("returns never for invalid level (error propagation)", () => {
+    type Name = LifetimeName<99>;
+    expectTypeOf<Name>().toBeNever();
+  });
+
+  it("returns never for unknown input (error propagation)", () => {
+    type Name = LifetimeName<unknown>;
+    expectTypeOf<Name>().toBeNever();
   });
 });
 
@@ -368,7 +385,7 @@ describe("CaptiveDependencyError and CaptiveErrorMessage types", () => {
   it("CaptiveErrorMessage returns template literal with all details", () => {
     // Template literal error message directly shows the lifetime conflict
     type ErrorMessage = CaptiveErrorMessage<"UserService", "Singleton", "Database", "Scoped">;
-    expectTypeOf<ErrorMessage>().toEqualTypeOf<"ERROR: Captive dependency: Singleton 'UserService' cannot depend on Scoped 'Database'. Fix: Change 'UserService' to Scoped/Transient, or change 'Database' to Singleton.">();
+    expectTypeOf<ErrorMessage>().toEqualTypeOf<"ERROR[HEX003]: Captive dependency: Singleton 'UserService' cannot depend on Scoped 'Database'. Fix: Change 'UserService' to Scoped/Transient, or change 'Database' to Singleton.">();
   });
 
   it("CaptiveDependencyError branded type has correct structure", () => {
@@ -463,5 +480,202 @@ describe("complex lifetime scenarios", () => {
     expect(builder).toBeDefined();
 
     expectTypeOf<IsCaptiveError<typeof builder>>().toEqualTypeOf<false>();
+  });
+});
+
+// =============================================================================
+// Reverse Captive Dependency Detection Tests
+// =============================================================================
+
+type IsReverseCaptiveError<T> = T extends `ERROR[HEX004]: Reverse captive dependency: ${string}`
+  ? true
+  : false;
+
+describe("Reverse captive dependency detection (forward reference scenario)", () => {
+  it("detects singleton depending on port later provided as scoped", () => {
+    // Singleton CacheAdapter requires SessionPort, but SessionPort isn't provided yet
+    const SessionPort = RequestContextPort; // Reuse existing port
+
+    const CacheAdapter = createAdapter({
+      provides: CachePort,
+      requires: [SessionPort], // Forward reference
+      lifetime: "singleton",
+      factory: () => ({ get: () => undefined, set: () => {} }),
+    });
+
+    // Now provide SessionPort as scoped - this should error!
+    const SessionAdapter = createAdapter({
+      provides: SessionPort,
+      requires: [],
+      lifetime: "scoped",
+      factory: () => ({ requestId: "test", userId: null }),
+    });
+
+    const builder = GraphBuilder.create().provide(CacheAdapter);
+    const result = builder.provide(SessionAdapter);
+    expect(result).toBeDefined();
+
+    // Should be a reverse captive error
+    type Result = typeof result;
+    expectTypeOf<IsReverseCaptiveError<Result>>().toEqualTypeOf<true>();
+  });
+
+  it("detects singleton depending on port later provided as transient", () => {
+    const TransientPort = RequestContextPort;
+
+    const SingletonAdapter = createAdapter({
+      provides: CachePort,
+      requires: [TransientPort], // Forward reference
+      lifetime: "singleton",
+      factory: () => ({ get: () => undefined, set: () => {} }),
+    });
+
+    const TransientAdapter = createAdapter({
+      provides: TransientPort,
+      requires: [],
+      lifetime: "transient",
+      factory: () => ({ requestId: "test", userId: null }),
+    });
+
+    const builder = GraphBuilder.create().provide(SingletonAdapter);
+    const result = builder.provide(TransientAdapter);
+
+    type Result = typeof result;
+    expectTypeOf<IsReverseCaptiveError<Result>>().toEqualTypeOf<true>();
+  });
+
+  it("detects scoped depending on port later provided as transient", () => {
+    const TransientPort = RequestContextPort;
+
+    const ScopedAdapter = createAdapter({
+      provides: CachePort,
+      requires: [TransientPort], // Forward reference
+      lifetime: "scoped",
+      factory: () => ({ get: () => undefined, set: () => {} }),
+    });
+
+    const TransientAdapter = createAdapter({
+      provides: TransientPort,
+      requires: [],
+      lifetime: "transient",
+      factory: () => ({ requestId: "test", userId: null }),
+    });
+
+    const builder = GraphBuilder.create().provide(ScopedAdapter);
+    const result = builder.provide(TransientAdapter);
+
+    type Result = typeof result;
+    expectTypeOf<IsReverseCaptiveError<Result>>().toEqualTypeOf<true>();
+  });
+
+  it("allows singleton depending on port later provided as singleton", () => {
+    const SingletonDep = RequestContextPort;
+
+    const ConsumerAdapter = createAdapter({
+      provides: CachePort,
+      requires: [SingletonDep], // Forward reference
+      lifetime: "singleton",
+      factory: () => ({ get: () => undefined, set: () => {} }),
+    });
+
+    const ProviderAdapter = createAdapter({
+      provides: SingletonDep,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ requestId: "test", userId: null }),
+    });
+
+    const builder = GraphBuilder.create().provide(ConsumerAdapter);
+    const result = builder.provide(ProviderAdapter);
+
+    // Should succeed - both are singletons
+    type Result = typeof result;
+    expectTypeOf<IsReverseCaptiveError<Result>>().toEqualTypeOf<false>();
+  });
+
+  it("allows scoped depending on port later provided as singleton", () => {
+    const SingletonDep = RequestContextPort;
+
+    const ScopedAdapter = createAdapter({
+      provides: CachePort,
+      requires: [SingletonDep], // Forward reference
+      lifetime: "scoped",
+      factory: () => ({ get: () => undefined, set: () => {} }),
+    });
+
+    const SingletonAdapter = createAdapter({
+      provides: SingletonDep,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ requestId: "test", userId: null }),
+    });
+
+    const builder = GraphBuilder.create().provide(ScopedAdapter);
+    const result = builder.provide(SingletonAdapter);
+
+    // Should succeed - singleton dependency is fine for scoped
+    type Result = typeof result;
+    expectTypeOf<IsReverseCaptiveError<Result>>().toEqualTypeOf<false>();
+  });
+
+  it("allows transient depending on port later provided as any lifetime", () => {
+    const Dependency = RequestContextPort;
+
+    const TransientAdapter = createAdapter({
+      provides: CachePort,
+      requires: [Dependency], // Forward reference
+      lifetime: "transient",
+      factory: () => ({ get: () => undefined, set: () => {} }),
+    });
+
+    // Even providing as scoped or transient is fine for transient consumers
+    const ScopedAdapter = createAdapter({
+      provides: Dependency,
+      requires: [],
+      lifetime: "scoped",
+      factory: () => ({ requestId: "test", userId: null }),
+    });
+
+    const builder = GraphBuilder.create().provide(TransientAdapter);
+    const result = builder.provide(ScopedAdapter);
+
+    type Result = typeof result;
+    expectTypeOf<IsReverseCaptiveError<Result>>().toEqualTypeOf<false>();
+  });
+
+  it("does not trigger for already-provided ports (duplicate scenario)", () => {
+    // First provide Logger as singleton
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: () => {} }),
+    });
+
+    // Then UserService depends on Logger
+    const UserServiceAdapter = createAdapter({
+      provides: UserServicePort,
+      requires: [LoggerPort],
+      lifetime: "scoped",
+      factory: () => ({ getUser: () => Promise.resolve({ id: "1", name: "test" }) }),
+    });
+
+    // Try to provide duplicate Logger as transient
+    const DuplicateLoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "transient",
+      factory: () => ({ log: () => {} }),
+    });
+
+    const builder = GraphBuilder.create().provide(LoggerAdapter).provide(UserServiceAdapter);
+
+    const result = builder.provide(DuplicateLoggerAdapter);
+
+    // Should be a duplicate error, NOT a reverse captive error
+    type Result = typeof result;
+    type IsDuplicate = Result extends `ERROR[HEX001]: Duplicate${string}` ? true : false;
+    expectTypeOf<IsDuplicate>().toEqualTypeOf<true>();
+    expectTypeOf<IsReverseCaptiveError<Result>>().toEqualTypeOf<false>();
   });
 });

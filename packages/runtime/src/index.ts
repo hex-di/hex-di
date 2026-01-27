@@ -577,3 +577,74 @@ export type {
 } from "@hex-di/plugin";
 
 export { DEFAULT_RETENTION_POLICY } from "@hex-di/plugin";
+
+// =============================================================================
+// Graph Inspection Utilities (re-exported from @hex-di/graph)
+// =============================================================================
+
+/**
+ * Graph inspection utilities for runtime analysis of dependency graphs.
+ *
+ * These utilities complement the compile-time validation in @hex-di/graph
+ * with runtime introspection capabilities. They are re-exported here for
+ * convenience, as graph inspection is commonly used alongside container
+ * operations.
+ *
+ * @example Inspecting a graph
+ * ```typescript
+ * import { inspectGraph } from '@hex-di/runtime';
+ *
+ * const inspection = inspectGraph(graph);
+ * if (inspection.hasCycles) {
+ *   console.error('Cycle detected:', inspection.cycles);
+ * }
+ * if (inspection.depthLimitExceeded) {
+ *   console.warn('Graph depth exceeds configured limit');
+ * }
+ * ```
+ *
+ * @example Formatting errors
+ * ```typescript
+ * import { formatCycleError, formatMissingDepsError } from '@hex-di/runtime';
+ *
+ * if (inspection.hasCycles) {
+ *   console.error(formatCycleError(inspection.cycles[0]));
+ * }
+ * if (inspection.missingDependencies.length > 0) {
+ *   console.error(formatMissingDepsError(inspection.missingDependencies));
+ * }
+ * ```
+ *
+ * @example Converting to JSON for logging/serialization
+ * ```typescript
+ * import { inspectionToJSON, toStructuredLogs } from '@hex-di/runtime';
+ *
+ * const json = inspectionToJSON(inspection);
+ * const logs = toStructuredLogs(inspection);
+ * ```
+ */
+
+// Core graph inspection
+export { inspectGraph, INSPECTION_CONFIG, detectCycleAtRuntime } from "@hex-di/graph";
+export type {
+  InspectOptions,
+  GraphInspection,
+  ValidationResult,
+  GraphSuggestion,
+} from "@hex-di/graph";
+
+// Serialization
+export { inspectionToJSON } from "@hex-di/graph";
+export type { GraphInspectionJSON, InspectionToJSONOptions } from "@hex-di/graph";
+
+// Error formatting
+export {
+  formatCycleError,
+  formatMissingDepsError,
+  formatCaptiveError,
+  formatDuplicateError,
+} from "@hex-di/graph";
+
+// Structured logging
+export { toStructuredLogs } from "@hex-di/graph";
+export type { LogLevel, StructuredLogEntry, StructuredLogOptions } from "@hex-di/graph";

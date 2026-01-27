@@ -129,6 +129,18 @@ export type NotAPortError<T> = {
 // =============================================================================
 
 /**
+ * Runtime representation of a Port object.
+ *
+ * At runtime, Port objects only contain `__portName`. The `__brand` property
+ * exists only at the type level for nominal typing (phantom type pattern).
+ *
+ * @internal
+ */
+interface PortRuntime<TName extends string> {
+  readonly __portName: TName;
+}
+
+/**
  * Creates a Port value with phantom type parameters.
  *
  * ## SAFETY DOCUMENTATION
@@ -150,10 +162,21 @@ export type NotAPortError<T> = {
  *    pattern where type parameters carry compile-time information without
  *    runtime representation. See: https://wiki.haskell.org/Phantom_type
  *
+ * ## Type Safety via Overloads
+ *
+ * This function uses overloads to bridge the phantom type gap:
+ * - The public signature returns `Port<TService, TName>` (phantom-branded type)
+ * - The implementation signature returns `PortRuntime<TName>` (runtime structure)
+ *
+ * This is type-safe because:
+ * - `PortRuntime` structurally contains all runtime properties
+ * - The phantom brand is only used for compile-time discrimination
+ * - No runtime code accesses the `__brand` property
+ *
  * @internal - Not part of public API. Use createPort() or port() instead.
  */
-function unsafeCreatePort<TService, TName extends string>(name: TName): Port<TService, TName> {
-  // @ts-expect-error - Intentional phantom type gap: __brand exists only at type level for nominal typing
+function unsafeCreatePort<TService, TName extends string>(name: TName): Port<TService, TName>;
+function unsafeCreatePort<TName extends string>(name: TName): PortRuntime<TName> {
   return Object.freeze({ __portName: name });
 }
 

@@ -14,12 +14,11 @@ import {
   GraphBuilder,
   lazyPort,
   type LazyPort,
-  type IsLazyPort,
-  type UnwrapLazyPort,
   type TransformLazyToOriginal,
   type ExtractLazyPorts,
   type HasLazyPorts,
 } from "../src/index.js";
+import type { IsLazyPort, UnwrapLazyPort } from "../src/internal.js";
 
 // =============================================================================
 // Test Fixtures

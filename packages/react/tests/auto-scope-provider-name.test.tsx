@@ -38,7 +38,7 @@ describe("AutoScopeProvider name prop", () => {
       factory: () => ({ value: "test" }),
     });
     const graph = GraphBuilder.create().provide(testAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "TestContainer" });
 
     // Render with named AutoScopeProvider
     function TestComponent() {
@@ -74,7 +74,7 @@ describe("AutoScopeProvider name prop", () => {
       factory: () => ({ value: "test" }),
     });
     const graph = GraphBuilder.create().provide(testAdapter).build();
-    const container = createContainer(graph);
+    const container = createContainer(graph, { name: "TestContainer" });
 
     // Render without name prop
     function TestComponent() {

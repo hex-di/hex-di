@@ -141,7 +141,7 @@ describe("FindBatchDuplicate", () => {
 describe("BatchDuplicateErrorMessage", () => {
   it("formats error message with port name", () => {
     type Msg = BatchDuplicateErrorMessage<typeof LoggerPort>;
-    expectTypeOf<Msg>().toEqualTypeOf<"ERROR: Duplicate adapter in batch for 'Logger'. Fix: Remove one adapter from the provideMany() array.">();
+    expectTypeOf<Msg>().toEqualTypeOf<"ERROR[HEX001]: Duplicate adapter in batch for 'Logger'. Fix: Remove one adapter from the provideMany() array.">();
   });
 });
 
@@ -157,7 +157,7 @@ describe("provideMany with intra-batch duplicates", () => {
     >;
 
     // Should be an error message, not a GraphBuilder
-    expectTypeOf<Result>().toEqualTypeOf<"ERROR: Duplicate adapter in batch for 'Logger'. Fix: Remove one adapter from the provideMany() array.">();
+    expectTypeOf<Result>().toEqualTypeOf<"ERROR[HEX001]: Duplicate adapter in batch for 'Logger'. Fix: Remove one adapter from the provideMany() array.">();
   });
 
   it("allows unique adapters in batch", () => {
@@ -177,7 +177,7 @@ describe("provideMany with intra-batch duplicates", () => {
     >;
 
     // This should be caught by the batch-vs-graph check
-    expectTypeOf<Result>().toEqualTypeOf<"ERROR: Duplicate adapter for 'Logger'. Fix: Remove one .provide() call, or use .override() for child graphs.">();
+    expectTypeOf<Result>().toEqualTypeOf<"ERROR[HEX001]: Duplicate adapter for 'Logger'. Fix: Remove one .provide() call, or use .override() for child graphs.">();
   });
 
   it("detects intra-batch before batch-vs-graph when both exist", () => {
@@ -189,6 +189,6 @@ describe("provideMany with intra-batch duplicates", () => {
     >;
 
     // Intra-batch error should win
-    expectTypeOf<Result>().toEqualTypeOf<"ERROR: Duplicate adapter in batch for 'Logger'. Fix: Remove one adapter from the provideMany() array.">();
+    expectTypeOf<Result>().toEqualTypeOf<"ERROR[HEX001]: Duplicate adapter in batch for 'Logger'. Fix: Remove one adapter from the provideMany() array.">();
   });
 });

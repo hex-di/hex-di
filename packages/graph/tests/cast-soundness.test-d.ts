@@ -20,10 +20,15 @@ import {
   LoggerPort,
   DatabasePort,
   UserServicePort,
-  LoggerAdapter,
-  DatabaseAdapter,
-  UserServiceAdapter,
+  createLoggerAdapter,
+  createDatabaseAdapter,
+  createUserServiceAdapter,
 } from "./fixtures.js";
+
+// Create adapter instances for tests
+const LoggerAdapter = createLoggerAdapter();
+const DatabaseAdapter = createDatabaseAdapter();
+const UserServiceAdapter = createUserServiceAdapter();
 
 // =============================================================================
 // Cast Soundness Tests: provide() Method
@@ -37,9 +42,7 @@ describe("provide() cast soundness", () => {
     // The result should be a GraphBuilder, not a string error
     type Result = typeof result;
     type IsGraphBuilder =
-      Result extends GraphBuilder<infer _1, infer _2, infer _3, infer _4, infer _5, infer _6>
-        ? true
-        : false;
+      Result extends GraphBuilder<infer _1, infer _2, infer _3, infer _4, infer _5> ? true : false;
 
     expectTypeOf<IsGraphBuilder>().toEqualTypeOf<true>();
 
@@ -55,15 +58,15 @@ describe("provide() cast soundness", () => {
 
     // All steps should be GraphBuilder
     type Step1IsBuilder =
-      typeof step1 extends GraphBuilder<infer _1, infer _2, infer _3, infer _4, infer _5, infer _6>
+      typeof step1 extends GraphBuilder<infer _1, infer _2, infer _3, infer _4, infer _5>
         ? true
         : false;
     type Step2IsBuilder =
-      typeof step2 extends GraphBuilder<infer _1, infer _2, infer _3, infer _4, infer _5, infer _6>
+      typeof step2 extends GraphBuilder<infer _1, infer _2, infer _3, infer _4, infer _5>
         ? true
         : false;
     type Step3IsBuilder =
-      typeof step3 extends GraphBuilder<infer _1, infer _2, infer _3, infer _4, infer _5, infer _6>
+      typeof step3 extends GraphBuilder<infer _1, infer _2, infer _3, infer _4, infer _5>
         ? true
         : false;
 
@@ -87,9 +90,7 @@ describe("provideMany() cast soundness", () => {
 
     type Result = typeof result;
     type IsGraphBuilder =
-      Result extends GraphBuilder<infer _1, infer _2, infer _3, infer _4, infer _5, infer _6>
-        ? true
-        : false;
+      Result extends GraphBuilder<infer _1, infer _2, infer _3, infer _4, infer _5> ? true : false;
 
     expectTypeOf<IsGraphBuilder>().toEqualTypeOf<true>();
   });
@@ -99,9 +100,7 @@ describe("provideMany() cast soundness", () => {
 
     type Result = typeof result;
     type IsGraphBuilder =
-      Result extends GraphBuilder<infer _1, infer _2, infer _3, infer _4, infer _5, infer _6>
-        ? true
-        : false;
+      Result extends GraphBuilder<infer _1, infer _2, infer _3, infer _4, infer _5> ? true : false;
 
     expectTypeOf<IsGraphBuilder>().toEqualTypeOf<true>();
   });
@@ -120,9 +119,7 @@ describe("merge() cast soundness", () => {
 
     type Result = typeof result;
     type IsGraphBuilder =
-      Result extends GraphBuilder<infer _1, infer _2, infer _3, infer _4, infer _5, infer _6>
-        ? true
-        : false;
+      Result extends GraphBuilder<infer _1, infer _2, infer _3, infer _4, infer _5> ? true : false;
 
     expectTypeOf<IsGraphBuilder>().toEqualTypeOf<true>();
   });
@@ -135,25 +132,11 @@ describe("merge() cast soundness", () => {
     const result2 = emptyGraph.merge(graphA);
 
     type Result1IsBuilder =
-      typeof result1 extends GraphBuilder<
-        infer _1,
-        infer _2,
-        infer _3,
-        infer _4,
-        infer _5,
-        infer _6
-      >
+      typeof result1 extends GraphBuilder<infer _1, infer _2, infer _3, infer _4, infer _5>
         ? true
         : false;
     type Result2IsBuilder =
-      typeof result2 extends GraphBuilder<
-        infer _1,
-        infer _2,
-        infer _3,
-        infer _4,
-        infer _5,
-        infer _6
-      >
+      typeof result2 extends GraphBuilder<infer _1, infer _2, infer _3, infer _4, infer _5>
         ? true
         : false;
 
@@ -216,16 +199,35 @@ describe("buildFragment() cast soundness", () => {
 // =============================================================================
 
 describe("override() cast soundness", () => {
-  it("valid override produces GraphBuilder", () => {
-    const result = GraphBuilder.create().override(LoggerAdapter);
+  it("valid override with forParent() produces GraphBuilder", () => {
+    // Create a parent graph that provides Logger
+    const parentGraph = GraphBuilder.create().provide(LoggerAdapter).build();
+
+    // Create a mock logger for override
+    const MockLoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: () => {} }),
+    });
+
+    // Override with forParent() should produce a GraphBuilder
+    const result = GraphBuilder.forParent(parentGraph).override(MockLoggerAdapter);
 
     type Result = typeof result;
     type IsGraphBuilder =
-      Result extends GraphBuilder<infer _1, infer _2, infer _3, infer _4, infer _5, infer _6>
-        ? true
-        : false;
+      Result extends GraphBuilder<infer _1, infer _2, infer _3, infer _4, infer _5> ? true : false;
 
     expectTypeOf<IsGraphBuilder>().toEqualTypeOf<true>();
+  });
+
+  it("override without forParent() returns error string", () => {
+    const result = GraphBuilder.create().override(LoggerAdapter);
+
+    type Result = typeof result;
+    type IsErrorString = Result extends string ? true : false;
+
+    expectTypeOf<IsErrorString>().toEqualTypeOf<true>();
   });
 });
 
@@ -235,17 +237,7 @@ describe("override() cast soundness", () => {
 
 describe("error types are distinguishable from success types", () => {
   it("GraphBuilder is not assignable to string", () => {
-    type BuilderExtendsString =
-      GraphBuilder<
-        never,
-        never,
-        never,
-        Record<string, never>,
-        Record<string, never>,
-        never
-      > extends string
-        ? true
-        : false;
+    type BuilderExtendsString = GraphBuilder extends string ? true : false;
 
     expectTypeOf<BuilderExtendsString>().toEqualTypeOf<false>();
   });
@@ -258,11 +250,8 @@ describe("error types are distinguishable from success types", () => {
 
   it("error strings are not assignable to GraphBuilder", () => {
     type ErrorString =
-      "ERROR: Duplicate adapter for 'Logger'. Fix: Remove one .provide() call, or use .override() for child graphs.";
-    type ErrorExtendsBuilder =
-      ErrorString extends GraphBuilder<infer _1, infer _2, infer _3, infer _4, infer _5, infer _6>
-        ? true
-        : false;
+      "ERROR[HEX001]: Duplicate adapter for 'Logger'. Fix: Remove one .provide() call, or use .override() for child graphs.";
+    type ErrorExtendsBuilder = ErrorString extends GraphBuilder ? true : false;
 
     expectTypeOf<ErrorExtendsBuilder>().toEqualTypeOf<false>();
   });

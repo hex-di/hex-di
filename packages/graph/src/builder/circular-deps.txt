@@ -1,0 +1,102 @@
+CIRCULAR IMPORT ANALYSIS
+=======================
+
+CYCLE CHAIN 1: builder.ts -> types/index.ts -> inspection.ts -> builder.ts
+═════════════════════════════════════════════════════════════════════════
+
+Path:
+  src/builder/builder.ts (line 68)
+    └─> imports from "./types/index.js"
+        ├─> src/builder/types/index.ts (line 98)
+        │   └─> re-exports from "./inspection.js"
+        │       └─> src/builder/types/inspection.ts (line 30)
+        │           └─> imports GraphBuilder from "../builder.js"
+        │               └─> src/builder/builder.ts (CYCLE DETECTED)
+
+CYCLE CHAIN 2: builder.ts -> types/index.ts -> provide.ts -> builder.ts
+════════════════════════════════════════════════════════════════════════
+
+Path:
+  src/builder/builder.ts (line 68)
+    └─> imports from "./types/index.js"
+        ├─> src/builder/types/index.ts (line 53)
+        │   └─> re-exports from "./provide.js"
+        │       └─> src/builder/types/provide.ts (line 63)
+        │           └─> imports GraphBuilder from "../builder.js"
+        │               └─> src/builder/builder.ts (CYCLE DETECTED)
+
+CYCLE CHAIN 3: builder.ts -> types/index.ts -> merge.ts -> builder.ts
+══════════════════════════════════════════════════════════════════════
+
+Path:
+  src/builder/builder.ts (line 68)
+    └─> imports from "./types/index.js"
+        ├─> src/builder/types/index.ts (line 69)
+        │   └─> re-exports from "./merge.js"
+        │       └─> src/builder/types/merge.ts (line 57)
+        │           └─> imports GraphBuilder from "../builder.js"
+        │               └─> src/builder/builder.ts (CYCLE DETECTED)
+
+CYCLE CHAIN 4: builder.ts -> types/index.ts -> init-order-types.ts -> builder.ts
+══════════════════════════════════════════════════════════════════════════════════
+
+Path:
+  src/builder/builder.ts (line 68)
+    └─> imports from "./types/index.js"
+        ├─> src/builder/types/index.ts (line 106)
+        │   └─> re-exports from "./init-order-types.js"
+        │       └─> src/builder/types/init-order-types.ts (line 21)
+        │           └─> imports GraphBuilder from "../builder.js"
+        │               └─> src/builder/builder.ts (CYCLE DETECTED)
+
+IMPORT PATTERN
+==============
+
+4 parallel type modules need GraphBuilder:
+  - inspection.ts
+  - provide.ts
+  - merge.ts
+  - init-order-types.ts
+
+All 4 import from builder.ts (as "../builder.js")
+
+builder.ts imports types/index.ts which re-exports from all 4 modules.
+
+Result: 4 separate circular import chains converging at types/index.ts
+
+STATUS: 2 of 4 Cycles Fixed via GraphBuilderSignature
+═════════════════════════════════════════════════════
+
+FIXED (using GraphBuilderSignature pattern):
+  - inspection.ts - Uses GraphBuilderSignature for pattern matching only
+  - init-order-types.ts - Uses GraphBuilderSignature for pattern matching only
+
+CANNOT BE EASILY FIXED:
+  - provide.ts - Needs GraphBuilder as RETURN TYPE (not pattern matching)
+  - merge.ts - Needs GraphBuilder as RETURN TYPE (not pattern matching)
+
+Why these 2 remain unfixed:
+  - ProvideResult and MergeResult return GraphBuilder<...> as the type
+  - GraphBuilderSignature lacks methods like .provide(), .build(), etc.
+  - Using GraphBuilderSignature as return type would break method chaining
+  - The provide() method's return needs to support further .provide() calls
+
+TypeScript Tolerance:
+These remaining imports are TYPE-ONLY (using "import type" syntax), which
+TypeScript handles specially:
+
+1. Type-only imports are erased at compile time
+2. No actual code execution creates cycles
+3. TypeScript's declaration merging allows these patterns
+4. The cycles do NOT cause runtime errors
+
+HOWEVER, Consider:
+  - IDE performance may suffer with complex type cycles
+  - Type-checking speed could slow with deep cycles
+  - Some bundlers or other tools may struggle
+
+Potential Future Fix:
+One approach would be to make GraphBuilderSignature include method signatures
+that return `this` type, but this would create additional complexity and
+potentially new circular dependencies.
+

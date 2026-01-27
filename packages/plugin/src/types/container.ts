@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { Lifetime as GraphLifetime, FactoryKind } from "@hex-di/graph";
+import type { Lifetime as GraphLifetime } from "@hex-di/graph";
 
 // Re-export from graph
 export type { FactoryKind } from "@hex-di/graph";

@@ -18,87 +18,158 @@
  * ## Import
  *
  * ```typescript
- * import type { ProvideResult, InferAdapterProvides } from "@hex-di/graph/internal";
+ * import type { DebugProvideValidation } from "@hex-di/graph/internal";
  * ```
  *
  * @packageDocumentation
  */
 
 // =============================================================================
-// Common Utilities
+// Re-export Everything from Main Module
 // =============================================================================
+//
+// The internal module re-exports everything from the main module plus
+// additional internal types. This ensures users don't need to maintain
+// two import sources.
 
-export type { IsNever, TupleToUnion, Prettify, InferenceError } from "./common/index.js";
-
-// =============================================================================
-// Adapter Inference Types
-// =============================================================================
-
-export type {
-  InferAdapterProvides,
-  InferAdapterRequires,
-  InferManyProvides,
-  InferManyRequires,
-  InferManyAsyncPorts,
-  InferAdapterLifetime,
-} from "./adapter/inference.js";
+export * from "./index.js";
 
 // =============================================================================
-// Validation Logic Types
+// Debug Types (for troubleshooting type-level validation)
 // =============================================================================
 
 export type {
-  UnsatisfiedDependencies,
+  // Builder inspection debug types
+  DebugProvideValidation,
+  DebugAdapterInference,
+  ProvideValidationTrace,
+  DebugBuilderState,
+  DebugSimplifiedView,
+  DebugInspectableBuilder,
+  DebugMergeValidation,
+  DebugProvideResult,
+  DebugOverrideValidation,
+} from "./builder/types/inspection.js";
+
+// Adapter inference debug types
+export type {
+  DebugInferAdapterProvides,
+  DebugInferAdapterRequires,
+  DebugInferAdapterLifetime,
+  DebugInferManyProvides,
+  DebugInferManyRequires,
+} from "./adapter/types/adapter-inference.js";
+
+// Graph inference debug types
+export type {
+  DebugInferGraphProvides,
+  DebugInferGraphRequires,
+  DebugInferGraphAsyncPorts,
+  DebugInferGraphOverrides,
+} from "./graph/types/graph-inference.js";
+
+// =============================================================================
+// Builder Internals (for advanced type-level programming)
+// =============================================================================
+
+export type {
+  GetDepGraph,
+  GetLifetimeMap,
+  GetParentProvides,
+  GetMaxDepth,
+  GetUnsafeDepthOverride,
+} from "./builder/types/state.js";
+
+// =============================================================================
+// Lazy Port Types (for type-level lazy handling)
+// =============================================================================
+
+export type { IsLazyPort, UnwrapLazyPort } from "./adapter/lazy.js";
+export { getOriginalPort } from "./adapter/lazy.js";
+
+// =============================================================================
+// Validation Types (for type-level validation)
+// =============================================================================
+
+export type { FilterNever, MultiErrorMessage } from "./validation/types/error-aggregation.js";
+
+export type {
   IsSatisfied,
-  OverlappingPorts,
   HasOverlap,
-} from "./validation/logic.js";
+  ValidGraph,
+} from "./validation/types/dependency-satisfaction.js";
+
+export type {
+  ExtractPortNames,
+  DuplicateErrorMessage,
+  CaptiveErrorMessage,
+} from "./validation/types/error-messages.js";
 
 // =============================================================================
-// Error Types
-// =============================================================================
-
-export type { ExtractPortNames, MissingDependencyError } from "./validation/errors.js";
-
-// =============================================================================
-// Cycle Detection Internals
+// Builder Types (for type-level builder inspection)
 // =============================================================================
 
 export type {
-  DefaultMaxDepth,
-  ValidateMaxDepth,
+  SimplifiedView,
+  InferBuilderProvides,
+  InferBuilderUnsatisfied,
+  DebugBuilderInternals,
+} from "./builder/types/inspection.js";
+
+export type { MergeOptions, ResolveMaxDepth } from "./builder/types/merge.js";
+
+// =============================================================================
+// Cycle Detection Internals (for custom validation tooling)
+// =============================================================================
+
+export type {
+  Depth,
+  IncrementDepth,
+  DepthExceeded,
+  DepthExceededResult,
+  IsDepthExceeded,
+  ExtractDepthExceededPort,
   AdapterProvidesName,
   AdapterRequiresNames,
   AddEdge,
   GetDirectDeps,
-  IsReachable,
-  WouldCreateCycle,
-  FindCyclePath,
-  BuildCyclePath,
-  CircularDependencyError,
+  DebugGetDirectDeps,
   MergeDependencyMaps,
   AddManyEdges,
+  IsReachable,
+  WouldExceedDepthLimit,
+  FindCyclePath,
+  BuildCyclePath,
+  FormatLazySuggestion,
+  LazySuggestions,
   WouldAnyCreateCycle,
   DetectCycleInMergedGraph,
-} from "./validation/cycle-detection.js";
+  CompareNumbers,
+  MaxNumber,
+  MinNumber,
+} from "./validation/types/cycle/index.js";
 
 // =============================================================================
-// Builder Internal Types
+// Captive Detection Internals (for custom validation tooling)
 // =============================================================================
-//
-// Note: The following builder types are not exported because they reference
-// private type parameters that are internal to GraphBuilder:
-//
-// - DirectAdapterLifetime
-// - ProvideResult
-// - ProvideAsyncResult
-// - BatchHasOverlap
-// - ProvideManyResult
-// - MergeResult
-// - MergeResultAfterLifetimeCheck
-// - MergeResultAfterCycleCheck
-// - EmptyDependencyGraph
-// - EmptyLifetimeMap
-//
-// These are true implementation details that would be meaningless outside
-// the GraphBuilder context.
+
+export type {
+  LifetimeName,
+  AddLifetime,
+  GetLifetimeLevel,
+  MergeLifetimeMaps,
+  FindAnyCaptiveDependency,
+  AddManyLifetimes,
+  WouldAnyBeCaptive,
+  DetectCaptiveInMergedGraph,
+  FindLifetimeInconsistency,
+  FindReverseCaptiveDependency,
+  MalformedAdapterError,
+  DebugCaptiveCheck,
+} from "./validation/types/captive/index.js";
+
+// =============================================================================
+// Async Detection (for custom initialization patterns)
+// =============================================================================
+
+export type { IsAsyncAdapter } from "./validation/types/init-priority.js";

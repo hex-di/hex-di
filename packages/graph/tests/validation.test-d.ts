@@ -20,9 +20,8 @@ import {
   InferGraphProvides,
   InferGraphRequires,
   UnsatisfiedDependencies,
-  IsSatisfied,
-  ValidGraph,
 } from "../src/index.js";
+import type { IsSatisfied, ValidGraph } from "../src/internal.js";
 
 // =============================================================================
 // Test Service Interfaces

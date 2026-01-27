@@ -29,18 +29,18 @@ import type { Port, InferPortName } from "@hex-di/ports";
 import type { Adapter, Lifetime, InferAdapterProvides, InferAdapterLifetime } from "@hex-di/graph";
 
 // Re-export core types from @hex-di/graph for convenience
+export type { LifetimeLevel, IsCaptiveDependency, CaptiveDependencyError } from "@hex-di/graph";
+
+// Import internal types from @hex-di/graph/internal
 export type {
-  LifetimeLevel,
   LifetimeName,
-  IsCaptiveDependency,
   AddLifetime,
   GetLifetimeLevel,
   FindAnyCaptiveDependency,
   MergeLifetimeMaps,
   AddManyLifetimes,
   WouldAnyBeCaptive,
-  CaptiveDependencyError,
-} from "@hex-di/graph";
+} from "@hex-di/graph/internal";
 
 // Import LifetimeLevel for use in this module
 import type { LifetimeLevel as GraphLifetimeLevel } from "@hex-di/graph";

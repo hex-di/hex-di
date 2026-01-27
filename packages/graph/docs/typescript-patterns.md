@@ -16,6 +16,8 @@ This document explains the advanced TypeScript patterns used throughout the `@he
 8. [Conditional Type Chains](#8-conditional-type-chains)
 9. [Inference with `infer` Keyword](#9-inference-with-infer-keyword)
 10. [Union-to-Tuple Iteration](#10-union-to-tuple-iteration)
+11. [Function Overloads for Conditional Return Types](#11-function-overloads-for-conditional-return-types)
+12. [Dual Semantics of `never`](#12-dual-semantics-of-never)
 
 ---
 
@@ -743,6 +745,251 @@ type Joined = JoinPortNames<LoggerPort | DatabasePort>;
 
 ---
 
+## 11. Function Overloads for Conditional Return Types
+
+### The Problem
+
+TypeScript's conditional types work great for type-level computation, but implementing
+functions that return conditional types is challenging:
+
+```typescript
+// Type definition: returns success OR error string
+type ProvideResult<A> = IsValid<A> extends true ? GraphBuilder<...> : ErrorMessage<A>;
+
+// ❌ Implementation problem: TypeScript can't narrow the return type
+provide<A>(adapter: A): ProvideResult<A> {
+  if (isValid(adapter)) {
+    return new GraphBuilder(...);  // Error: Can't assign to conditional type
+  }
+  return `Error: ${adapter}`;      // Error: Can't assign to conditional type
+}
+```
+
+The issue is that TypeScript cannot resolve the conditional type inside the function
+body because `A` is still generic.
+
+### The Solution: Function Overloads
+
+Use function overloads to separate the caller-facing signature (conditional type)
+from the implementation signature (union type):
+
+```typescript
+class GraphBuilder {
+  // Overload signature (what callers see): precise conditional return type
+  provide<A extends AdapterAny>(adapter: A): ProvideResultAllErrors<A>;
+
+  // Implementation signature (hidden): returns union of all possibilities
+  provide<A extends AdapterAny>(adapter: A): GraphBuilder<...> | string {
+    if (this.wouldCreateError(adapter)) {
+      return this.getErrorMessage(adapter);
+    }
+    return new GraphBuilder(...);
+  }
+}
+```
+
+### Why This Works
+
+1. **Callers see the overload signature**: The conditional type provides precise
+   compile-time feedback:
+
+   ```typescript
+   const result = builder.provide(validAdapter);
+   // Type: GraphBuilder<...> (the conditional type resolves)
+
+   const error = builder.provide(duplicateAdapter);
+   // Type: "ERROR: Duplicate adapter for 'Logger'." (string literal)
+   ```
+
+2. **Implementation uses union type**: Inside the method body, TypeScript accepts
+   the union `GraphBuilder<...> | string` because any branch matches it.
+
+3. **Runtime behavior is correct**: The implementation validates and returns the
+   appropriate type, which matches what the overload signature would compute.
+
+### Pattern Template
+
+```typescript
+class Builder<TProvides, TRequires, TState> {
+  // === Overload Signatures (public API) ===
+
+  // Signature 1: Returns conditional type based on validation
+  methodName<A extends SomeConstraint>(
+    param: A
+  ): ConditionalResult<TProvides, TRequires, TState, A>;
+
+  // === Implementation Signature (private to callers) ===
+
+  // Returns union of success type and all possible error types
+  methodName<A extends SomeConstraint>(
+    param: A
+  ): SuccessType<...> | string {
+    // Validation logic
+    if (hasError(param)) {
+      return getErrorMessage(param);
+    }
+    // Success logic
+    return new Builder(...);
+  }
+}
+```
+
+### Complete Example from @hex-di/graph
+
+```typescript
+// From src/graph/builder.ts
+
+export class GraphBuilder<TProvides, TRequires, TAsyncPorts, TOverrides, TState> {
+  // ---------------------------------------------------------------------------
+  // Overload: Returns conditional type (what callers see)
+  // ---------------------------------------------------------------------------
+  /**
+   * Adds an adapter to the graph with full validation.
+   * Returns a new GraphBuilder on success, or an error message string on failure.
+   */
+  provide<A extends AdapterAny>(
+    adapter: A
+  ): ProvideResultAllErrors<TProvides, TRequires, TAsyncPorts, TOverrides, TState, A>;
+
+  // ---------------------------------------------------------------------------
+  // Implementation: Returns union type (hidden from callers)
+  // ---------------------------------------------------------------------------
+  provide<A extends AdapterAny>(
+    adapter: A
+  ):
+    | GraphBuilder<
+        TProvides | InferAdapterProvides<A>,
+        TRequires | InferAdapterRequires<A>,
+        TAsyncPorts,
+        TOverrides,
+        UpdatedState<TState, A>
+      >
+    | string {
+    // Runtime validation (mirrors compile-time validation)
+    if (this.hasDuplicatePort(adapter)) {
+      return `ERROR: Duplicate adapter for '${adapter.provides.__portName}'.`;
+    }
+
+    // Success: return new builder
+    const nextAdapters = Object.freeze([...this.adapters, adapter]);
+    return new GraphBuilder(nextAdapters, this.overridePortNames);
+  }
+}
+```
+
+### Why Not Type Assertions?
+
+You might think to cast the return value:
+
+```typescript
+// ❌ BAD: Uses type assertion
+provide<A>(adapter: A): ProvideResult<A> {
+  return new GraphBuilder(...) as ProvideResult<A>;  // Unsafe cast!
+}
+```
+
+This is dangerous because:
+
+1. The cast bypasses TypeScript's type checking entirely
+2. If `ProvideResult<A>` resolves to an error string, you're lying about the type
+3. Callers could get a `GraphBuilder` when they expect a string error
+
+The overload pattern is type-safe because:
+
+1. The implementation must return something that satisfies the union
+2. TypeScript verifies both signatures are compatible
+3. No `as` casts or `@ts-expect-error` comments needed
+
+### When to Use This Pattern
+
+Use function overloads when:
+
+- A method's return type is a conditional type that depends on generic parameters
+- The method has validation logic that can fail with an error type
+- You want precise error types at call sites (not just `string | Builder`)
+
+### Related Patterns
+
+- **Conditional Type Chains** (Section 8): The conditional types in the overload signature
+- **Template Literal Errors** (Section 6): The error messages returned
+- **Phantom Types** (Section 2): State tracked in type parameters
+
+### Where It's Used
+
+- `src/graph/builder.ts`: `provide()`, `provideFast()`, `provideAsync()`, `merge()`, `override()`
+- Every method that can return either a success type or an error message
+
+---
+
+## 12. Dual Semantics of `never`
+
+### The Problem
+
+In TypeScript's type system, `never` has two distinct meanings that can be confusing:
+
+1. **Empty Set / Empty Union**: "No values satisfy this type"
+2. **Error / Invalid State**: "This type indicates a failure"
+
+Without clear conventions, code reviewers can't tell which meaning is intended.
+
+### The Solution
+
+Use explicit patterns to distinguish between the two meanings:
+
+```typescript
+// ✅ GOOD: Use InferenceError for error cases
+type ExtractName<T> = T extends { name: infer N }
+  ? N
+  : InferenceError<"ExtractName", "Input must have a 'name' property", T>;
+
+// ✅ GOOD: Check explicitly for empty set case
+type HasDependencies<TDeps> =
+  IsNever<TDeps> extends true
+    ? false // Empty set = no dependencies
+    : true;
+
+// ⚠️ RISKY: Ambiguous - is this an error or empty?
+type RequiredPorts<T> = T extends { requires: infer R } ? R : never;
+```
+
+### Context Determines Meaning
+
+| Context                            | `never` Meaning                | Example                     |
+| ---------------------------------- | ------------------------------ | --------------------------- |
+| `TRequires = never`                | Empty set (no dependencies)    | Adapter with `requires: []` |
+| `UnsatisfiedDeps = never`          | Success (all deps satisfied)   | Graph ready to build        |
+| `{ Logger: never }`                | Empty set (no deps for Logger) | Leaf node in graph          |
+| `GetLifetimeLevel<Map, "Unknown">` | Error (port not found)         | Forward reference           |
+| `LifetimeName<99>`                 | Error (invalid level)          | Programming error           |
+| `AdapterProvidesName<{}>`          | Error (not an adapter)         | Type mismatch               |
+
+### When to Use `InferenceError`
+
+Use `InferenceError` when:
+
+1. `never` would be ambiguous (could mean error or empty)
+2. You need to debug inference chains
+3. IDE tooltips should show error context
+
+```typescript
+import type { InferenceError } from "@hex-di/graph";
+
+type SafeExtract<T> = T extends { value: infer V }
+  ? V
+  : InferenceError<"SafeExtract", "Type must have 'value' property", T>;
+
+// IDE shows: { __inferenceError: true; __source: "SafeExtract"; __message: "..."; __input: {...} }
+// Instead of just: never
+```
+
+### Related
+
+- `src/types/type-utilities.ts`: Full documentation of `never` semantics
+- `IsNever<T>`: Utility to check for `never` explicitly
+- `InferenceError<Source, Message, Input>`: Error type for debugging
+
+---
+
 ## Quick Reference Table
 
 | Pattern                   | Problem                          | Solution                           | Example Location     |
@@ -757,6 +1004,7 @@ type Joined = JoinPortNames<LoggerPort | DatabasePort>;
 | Conditional Chains        | Sequential validation            | Nested ternaries                   | `provide-types.ts`   |
 | `infer` Keyword           | Extract type parts               | `infer` in conditionals            | `inference.ts`       |
 | Union Iteration           | Process union one-by-one         | `LastOfUnion` trick                | `errors.ts`          |
+| Function Overloads        | Conditional return types         | Overload + union implementation    | `graph/builder.ts`   |
 
 ---
 

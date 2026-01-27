@@ -15,7 +15,7 @@
 
 import { describe, expect, it } from "vitest";
 import { createPort, type Port } from "@hex-di/ports";
-import { GraphBuilder, createAdapter, type Graph, type AdapterAny } from "../src/index.js";
+import { GraphBuilder, createAdapter, type Graph, type AdapterConstraint } from "../src/index.js";
 
 // =============================================================================
 // Shared Types
@@ -39,7 +39,7 @@ function makePort(name: string): Port<Service, string> {
 /**
  * Creates an independent adapter (no dependencies).
  */
-function makeIndependentAdapter(name: string): AdapterAny {
+function makeIndependentAdapter(name: string): AdapterConstraint {
   const port = makePort(name);
   return createAdapter({
     provides: port,
@@ -58,10 +58,10 @@ function makeChain(
   prefix: string
 ): {
   ports: Port<Service, string>[];
-  adapters: AdapterAny[];
+  adapters: AdapterConstraint[];
 } {
   const ports: Port<Service, string>[] = [];
-  const adapters: AdapterAny[] = [];
+  const adapters: AdapterConstraint[] = [];
 
   for (let i = 0; i < length; i++) {
     const port = makePort(`${prefix}${i}`);
@@ -182,7 +182,9 @@ describe("stress: deep dependency chains", () => {
 
     // Verify ports are correctly linked
     for (let i = 0; i < ports.length; i++) {
-      const adapter = graph.adapters.find((a: AdapterAny) => a.provides.__portName === `Order${i}`);
+      const adapter = graph.adapters.find(
+        (a: AdapterConstraint) => a.provides.__portName === `Order${i}`
+      );
       expect(adapter).toBeDefined();
 
       if (i > 0) {
@@ -246,7 +248,7 @@ describe("stress: complex topologies", () => {
     expect(graph.adapters).toHaveLength(12); // Root + 10 intermediates + Sink
 
     // Verify Sink has 10 dependencies
-    const sink = graph.adapters.find((a: AdapterAny) => a.provides.__portName === "Sink");
+    const sink = graph.adapters.find((a: AdapterConstraint) => a.provides.__portName === "Sink");
     expect(sink?.requires.length).toBe(10);
   });
 
@@ -312,17 +314,17 @@ describe("stress: complex topologies", () => {
     expect(graph.adapters).toHaveLength(7);
 
     // Verify D has 2 dependencies (B, C)
-    const d = graph.adapters.find((a: AdapterAny) => a.provides.__portName === "D");
+    const d = graph.adapters.find((a: AdapterConstraint) => a.provides.__portName === "D");
     expect(d?.requires.length).toBe(2);
 
     // Verify G has 2 dependencies (E, F)
-    const g = graph.adapters.find((a: AdapterAny) => a.provides.__portName === "G");
+    const g = graph.adapters.find((a: AdapterConstraint) => a.provides.__portName === "G");
     expect(g?.requires.length).toBe(2);
   });
 
   it("handles parallel independent chains", () => {
     // Create 5 parallel chains of length 10
-    const allAdapters: AdapterAny[] = [];
+    const allAdapters: AdapterConstraint[] = [];
 
     for (let chain = 0; chain < 5; chain++) {
       const { adapters } = makeChain(10, `Chain${chain}_`);
@@ -358,9 +360,9 @@ describe("stress: mixed lifetimes at scale", () => {
     expect(graph.adapters).toHaveLength(30);
 
     // Count lifetimes
-    const singletons = graph.adapters.filter((a: AdapterAny) => a.lifetime === "singleton");
-    const scoped = graph.adapters.filter((a: AdapterAny) => a.lifetime === "scoped");
-    const transient = graph.adapters.filter((a: AdapterAny) => a.lifetime === "transient");
+    const singletons = graph.adapters.filter((a: AdapterConstraint) => a.lifetime === "singleton");
+    const scoped = graph.adapters.filter((a: AdapterConstraint) => a.lifetime === "scoped");
+    const transient = graph.adapters.filter((a: AdapterConstraint) => a.lifetime === "transient");
 
     expect(singletons).toHaveLength(10);
     expect(scoped).toHaveLength(10);

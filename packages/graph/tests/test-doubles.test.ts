@@ -312,8 +312,10 @@ describe("test-doubles utilities", () => {
   describe("createMockConfig", () => {
     it("returns preset string values", () => {
       const mock = createMockConfig({
-        DATABASE_URL: "postgres://localhost/test",
-        APP_NAME: "TestApp",
+        values: {
+          DATABASE_URL: "postgres://localhost/test",
+          APP_NAME: "TestApp",
+        },
       });
 
       expect(mock.implementation.get("DATABASE_URL")).toBe("postgres://localhost/test");
@@ -321,15 +323,17 @@ describe("test-doubles utilities", () => {
     });
 
     it("returns empty string for missing keys", () => {
-      const mock = createMockConfig({});
+      const mock = createMockConfig();
 
       expect(mock.implementation.get("MISSING")).toBe("");
     });
 
     it("returns preset number values", () => {
       const mock = createMockConfig({
-        PORT: 3000,
-        TIMEOUT: 5000,
+        values: {
+          PORT: 3000,
+          TIMEOUT: 5000,
+        },
       });
 
       expect(mock.implementation.getNumber("PORT")).toBe(3000);
@@ -337,22 +341,24 @@ describe("test-doubles utilities", () => {
     });
 
     it("returns 0 for missing numeric keys", () => {
-      const mock = createMockConfig({});
+      const mock = createMockConfig();
 
       expect(mock.implementation.getNumber("MISSING")).toBe(0);
     });
 
     it("converts numbers to strings for get()", () => {
-      const mock = createMockConfig({ PORT: 3000 });
+      const mock = createMockConfig({ values: { PORT: 3000 } });
 
       expect(mock.implementation.get("PORT")).toBe("3000");
     });
 
     it("tracks accessed keys", () => {
       const mock = createMockConfig({
-        A: "1",
-        B: "2",
-        C: 3,
+        values: {
+          A: "1",
+          B: "2",
+          C: 3,
+        },
       });
 
       mock.implementation.get("A");
@@ -364,7 +370,7 @@ describe("test-doubles utilities", () => {
     });
 
     it("can be cleared", () => {
-      const mock = createMockConfig({ KEY: "value" });
+      const mock = createMockConfig({ values: { KEY: "value" } });
 
       mock.implementation.get("KEY");
       expect(mock.getAccessedKeys()).toHaveLength(1);

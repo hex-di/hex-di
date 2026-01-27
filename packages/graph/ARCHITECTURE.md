@@ -2,6 +2,100 @@
 
 This document explains the architectural decisions and patterns used in the `@hex-di/graph` package.
 
+## Hexagonal Architecture Position
+
+`@hex-di/graph` sits in the **Graph Layer** of the HexDI ecosystem, between the foundational Ports layer and the Runtime layer. Dependencies flow strictly inward.
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         HexDI Ecosystem                              │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │               PRESENTATION LAYER (Outermost)                 │    │
+│  │   @hex-di/react      React hooks & context providers         │    │
+│  │   @hex-di/hono       Hono framework integration              │    │
+│  │   @hex-di/devtools   Browser DevTools extension              │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│                              │                                       │
+│                              ▼                                       │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │                    RUNTIME LAYER                             │    │
+│  │   @hex-di/runtime    Container, resolution, lifecycle        │    │
+│  │   @hex-di/testing    Test utilities, mock helpers            │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│                              │                                       │
+│                              ▼                                       │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │                 GRAPH LAYER (This Package)                   │    │◄── YOU ARE HERE
+│  │   @hex-di/graph      Compile-time validation, graph builder  │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│                              │                                       │
+│                              ▼                                       │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │                  PORTS LAYER (Innermost)                     │    │
+│  │   @hex-di/ports      Port tokens, zero runtime dependencies  │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Layer Responsibilities
+
+| Layer            | Package               | Responsibility                                                                    |
+| ---------------- | --------------------- | --------------------------------------------------------------------------------- |
+| **Ports**        | `@hex-di/ports`       | Port tokens, `createPort()`, type inference utilities. Zero dependencies.         |
+| **Graph**        | `@hex-di/graph`       | Compile-time validation, `GraphBuilder`, `Adapter` type, cycle/captive detection. |
+| **Runtime**      | `@hex-di/runtime`     | Container implementation, service resolution, lifetime management.                |
+| **Presentation** | `@hex-di/react`, etc. | Framework-specific integrations (hooks, providers).                               |
+
+### Dependency Rules
+
+1. **This package depends on `@hex-di/ports`**
+   - **Type-level**: Most imports use `import type` for Port types and inference utilities
+   - **Runtime**: The `defineService()` and `defineAsyncService()` convenience functions import `createPort` at runtime (see `src/adapter/service.ts`)
+2. **No runtime imports from outer layers** - no `@hex-di/runtime`, no `@hex-di/react`
+3. **Framework-agnostic** - no React, Hono, or other framework dependencies
+
+#### Runtime Dependency on @hex-di/ports
+
+The `defineService()` family of functions provides a convenience API that creates both a port and adapter in a single call. This requires a runtime import of `createPort` from `@hex-di/ports`:
+
+```typescript
+// src/adapter/service.ts
+import { createPort, type Port } from "@hex-di/ports";
+
+// createPort is called at runtime when defineService is invoked
+export function defineService<TName extends string, TService>(name: TName, config: {...}) {
+  const port = createPort<TName, TService>(name);  // Runtime call
+  const adapter = createAdapter({ provides: port, ... });
+  return [port, adapter] as const;
+}
+```
+
+**Why this is acceptable:**
+
+- `@hex-di/ports` is a zero-dependency package designed to be lightweight
+- The runtime import is isolated to convenience functions, not core graph validation
+- Users who don't use `defineService` only incur type-level dependencies
+- The dependency is explicit in `package.json` and tree-shakeable
+
+### Why Inspection Lives in Graph Layer (Not Runtime)
+
+The `inspectGraph()` function and related inspection utilities are deliberately placed in the Graph layer rather than Runtime:
+
+1. **Build-time tooling** - Inspection enables IDE plugins, static analysis tools, and build-time graph visualization without requiring a running container.
+
+2. **Zero runtime overhead** - Graph inspection examines adapter metadata only; no services are instantiated during inspection. This makes it safe to call in performance-sensitive contexts.
+
+3. **Framework-agnostic** - Inspection works without container instantiation, meaning it can be used in CLI tools, build scripts, and documentation generators that don't need the full runtime.
+
+4. **Separation of concerns** - The Runtime layer focuses on service lifecycle (resolution, caching, disposal). The Graph layer focuses on structure (dependencies, validation, visualization). Inspection is purely structural analysis.
+
+5. **Testing utilities** - Test frameworks can inspect graphs to verify structure without creating containers, enabling faster unit tests for graph configuration.
+
+---
+
 ## Overview
 
 `@hex-di/graph` provides compile-time validation for dependency injection graphs using advanced TypeScript type-level programming. All validations happen at compile time with **zero runtime overhead**.
@@ -165,6 +259,43 @@ type IsGreaterThan<A extends number, B extends number> = A extends 1
 ```
 
 This is efficient because there are only 9 possible comparisons (3×3).
+
+#### Forward Reference Captive Validation Gap
+
+**Problem:** Type-level captive detection relies on knowing the lifetime of dependencies at `.provide()` time. When an adapter references a port that hasn't been registered yet (forward reference), the type system cannot detect captive violations.
+
+```typescript
+// Forward reference scenario - type system misses the captive dependency
+const graph = GraphBuilder.create()
+  .provide(SingletonAdapter) // Depends on ScopedPort (not yet registered)
+  .provide(ScopedAdapter); // Registers ScopedPort AFTER the singleton
+
+// Type-level check at SingletonAdapter: "ScopedPort not in lifetime map, skip check"
+// Result: Captive dependency passes type checking!
+```
+
+**Why this exists:** To allow order-independent adapter registration. Users shouldn't need to register dependencies before dependents.
+
+**The Gap:**
+
+1. When `SingletonAdapter` is added, `ScopedPort` isn't in the lifetime map yet
+2. Type-level captive check returns `never` (no violation found)
+3. When `ScopedAdapter` is added later, we only check ITS dependencies, not what depends on IT
+4. The captive dependency goes undetected at compile time
+
+**Defense-in-Depth Fix:** The `build()` and `buildFragment()` functions **always** run runtime captive detection via `detectCaptiveAtRuntime()`, regardless of whether the type-level depth limit was exceeded. This ensures:
+
+- Forward reference captive dependencies are caught at build time
+- Type system bypasses (testing utilities, dynamic construction) don't create silent failures
+- The error message (HEX003) is identical whether caught at compile time or runtime
+
+**When runtime detection triggers:**
+
+- Forward references in adapter registration order
+- Direct `buildGraph()` calls bypassing `GraphBuilder` (e.g., in tests)
+- Dynamic adapter construction outside the type system
+
+See `src/builder/builder-build.ts` for the implementation and `tests/forward-ref-validation-gap.test.ts` for test coverage.
 
 ## Design Decisions
 
@@ -419,135 +550,70 @@ For extremely large graphs (100+ adapters), consider:
 
 ## Async Initialization Order
 
-### Background
+### Automatic Topological Sort
 
-Async adapters have an `initPriority` property (0-1000, default 100) that determines initialization order. **Lower values initialize first.**
+Async adapter initialization order is automatically determined using topological sort based on the dependency graph. This eliminates the need for manual priority configuration while ensuring correct initialization order.
 
 ```typescript
 const [ConfigPort, ConfigAdapter] = defineAsyncService("Config", {
   factory: async () => loadConfig(),
-  initPriority: 10, // Initialize early
+  // No dependencies - initializes first
 });
 
 const [DatabasePort, DatabaseAdapter] = defineAsyncService("Database", {
   requires: [ConfigPort],
   factory: async ({ Config }) => connectToDb(Config.dbUrl),
-  initPriority: 20, // After config
+  // Depends on Config - initializes after Config
+});
+
+const [CachePort, CacheAdapter] = defineAsyncService("Cache", {
+  requires: [ConfigPort],
+  factory: async ({ Config }) => connectToRedis(Config.redisUrl),
+  // Also depends on Config - initializes in parallel with Database
 });
 ```
 
-### Dependency vs Priority Relationship
+### How It Works
 
-The **correct** ordering is:
+The runtime uses Kahn's algorithm to compute initialization levels:
 
-- If A depends on B, then A's initPriority **must be ≥** B's initPriority
-- This ensures B is initialized before A
+1. **Level 0**: Adapters with no async dependencies (e.g., Config)
+2. **Level 1**: Adapters whose async dependencies are all at lower levels (e.g., Database, Cache)
+3. **Level 2+**: And so on...
 
-| Scenario | Config.priority | Database.priority | Valid?                         |
-| -------- | --------------- | ----------------- | ------------------------------ |
-| Correct  | 10              | 20                | ✅ Database (20) ≥ Config (10) |
-| Equal    | 10              | 10                | ✅ Equal priorities allowed    |
-| Inverted | 20              | 10                | ❌ Database (10) < Config (20) |
-
-### Current Validation: Runtime Only
-
-Currently, initPriority ordering is validated **at runtime** during container initialization:
+Within each level, adapters are initialized **in parallel** using `Promise.all()` for maximum performance.
 
 ```typescript
-// In @hex-di/runtime - container.ts
-async function initializeAsync(graph: Graph) {
-  const sorted = topologicalSortByPriority(graph.adapters);
-  for (const adapter of sorted) {
-    await adapter.factory(resolvedDeps);
+// In @hex-di/runtime - async-initializer.ts
+async function executeInitialization(resolveAsync) {
+  for (const level of this.initLevels) {
+    // All adapters in this level can be initialized in parallel
+    const levelPromises = level.map(async adapter => {
+      await resolveAsync(adapter.provides);
+    });
+    await Promise.all(levelPromises);
   }
 }
 ```
 
-### Future: Compile-Time Validation (Design)
+### Benefits
 
-Type-level initPriority validation is desirable but challenging due to TypeScript limitations.
-
-#### Challenge: No Numeric Comparison at Type Level
-
-TypeScript cannot directly compare numbers:
-
-```typescript
-// This is NOT possible in TypeScript's type system:
-type IsGreater<A extends number, B extends number> = A > B;  // ❌ Syntax error
-```
-
-#### Potential Approach: Priority Bands
-
-Instead of exact numeric comparison, use **priority bands**:
-
-```typescript
-type PriorityBand = "early" | "normal" | "late";
-
-// Band ordering: early (0-33) < normal (34-66) < late (67-100)
-type BandOrder = {
-  early: 0;
-  normal: 1;
-  late: 2;
-};
-
-type IsValidOrder<
-  DependencyBand extends PriorityBand,
-  DependentBand extends PriorityBand,
-> = BandOrder[DependentBand] extends BandOrder[DependencyBand]
-  ? true
-  : BandOrder[DependentBand] extends 0
-    ? false
-    : true;
-```
-
-**Trade-offs:**
-
-- ✅ Compile-time validation possible
-- ✅ Simple API: `initPriority: 'early'`
-- ❌ Less granular than numeric priorities
-- ❌ Breaking change to existing API
-
-#### Alternative: Peano Arithmetic
-
-For exact numeric comparison, use Peano-style counting:
-
-```typescript
-type Peano<N extends number, Acc extends unknown[] = []> = Acc["length"] extends N
-  ? Acc
-  : Peano<N, [...Acc, unknown]>;
-
-type IsGreaterOrEqual<A extends number, B extends number> =
-  Peano<B> extends [...Peano<A>, ...unknown[]]
-    ? false // B > A
-    : true; // A >= B
-```
-
-**Trade-offs:**
-
-- ✅ Exact numeric comparison
-- ✅ No API changes
-- ❌ Extremely slow type-checking (O(n²) for n=1000)
-- ❌ Would hit TS2589 recursion limits
-
-#### Current Recommendation
-
-Keep **runtime validation** for initPriority ordering. The compile-time cost of full validation outweighs the benefits because:
-
-1. InitPriority errors are rare in practice
-2. Runtime errors are caught immediately during startup
-3. The error messages are clear and actionable
-
-If compile-time validation becomes necessary, the **Priority Bands** approach is recommended for a balance of safety and performance.
+| Approach                | Manual Priority | Automatic Topological |
+| ----------------------- | --------------- | --------------------- |
+| Configuration required  | Yes             | No                    |
+| Correct by construction | No              | Yes                   |
+| Parallel initialization | Limited         | Optimal               |
+| Configuration errors    | Possible        | Impossible            |
 
 ### Implementation Status
 
-| Feature                   | Status                | Location             |
-| ------------------------- | --------------------- | -------------------- |
-| initPriority property     | ✅ Implemented        | `adapter/types.ts`   |
-| Default value (100)       | ✅ Implemented        | `adapter/factory.ts` |
-| Range validation (0-1000) | ✅ Implemented        | `adapter/factory.ts` |
-| Runtime ordering          | ⏳ In @hex-di/runtime | `container.ts`       |
-| Compile-time ordering     | ❌ Not implemented    | Future work          |
+| Feature                   | Status                | Location                       |
+| ------------------------- | --------------------- | ------------------------------ |
+| Topological sort          | ✅ Implemented        | `runtime/async-initializer.ts` |
+| Parallel initialization   | ✅ Implemented        | `runtime/async-initializer.ts` |
+| Dependency-based ordering | ✅ Implemented        | Automatically from `requires`  |
+| Runtime ordering          | ⏳ In @hex-di/runtime | `container.ts`                 |
+| Compile-time ordering     | ❌ Not implemented    | Future work                    |
 
 ## References
 

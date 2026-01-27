@@ -44,3 +44,14 @@ This is a monorepo using pnpm workspaces and Turborepo. Each package:
 - Has its own `eslint.config.js` extending the root shared config
 - Has its own `tsconfig.json` extending the root config
 - Can be linted independently with `pnpm --filter @hex-di/<package> lint`
+
+## Breaking Changes
+
+- **No backward compatibility** - Always implement the cleanest solution without worrying about backward compatibility
+- **Break and change freely** - Remove deprecated code, rename APIs, restructure modules as needed
+- **No compatibility shims** - Don't add re-exports, aliases, or wrappers for old APIs
+- **Delete over deprecate** - Remove unused/redundant code instead of marking it deprecated
+
+## Git Commits
+
+- **No Co-Authored-By signature** - Do not add the "Co-Authored-By: Claude" line to commit messages

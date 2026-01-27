@@ -7,6 +7,9 @@
  * @packageDocumentation
  */
 
+import { createPort } from "@hex-di/ports";
+import { createAdapter, createAsyncAdapter, type Lifetime } from "../src/index.js";
+
 // =============================================================================
 // Type Definitions
 // =============================================================================
@@ -48,6 +51,8 @@ export interface MockLoggerOptions {
   onLog?: (message: string) => void;
   /** Callback invoked on error() calls */
   onError?: (message: string, error?: Error) => void;
+  /** Override specific methods while keeping defaults for others */
+  methodOverrides?: MethodOverrides<MockLoggerResult["implementation"]>;
 }
 
 /**
@@ -60,6 +65,26 @@ export interface MockDatabaseOptions<T> {
   shouldFail?: boolean;
   /** Custom error message when shouldFail is true */
   errorMessage?: string;
+  /** Override specific methods while keeping defaults for others */
+  methodOverrides?: MethodOverrides<MockDatabaseResult<T>["implementation"]>;
+}
+
+/**
+ * Options for creating a mock cache.
+ */
+export interface MockCacheOptions<T> {
+  /** Override specific methods while keeping defaults for others */
+  methodOverrides?: MethodOverrides<MockCacheResult<T>["implementation"]>;
+}
+
+/**
+ * Options for creating a mock config.
+ */
+export interface MockConfigOptions {
+  /** Preset config values */
+  values?: Record<string, string | number>;
+  /** Override specific methods while keeping defaults for others */
+  methodOverrides?: MethodOverrides<MockConfigResult["implementation"]>;
 }
 
 /**
@@ -93,6 +118,209 @@ export interface SequencedCall {
   readonly service: string;
   readonly method: string;
   readonly timestamp: number;
+}
+
+// =============================================================================
+// Mock Factory Return Types
+// =============================================================================
+//
+// These interfaces define the explicit return types for mock factory functions.
+// Having explicit types improves:
+// - IDE autocompletion and hover documentation
+// - Type inference when assigning to variables
+// - AI tooling comprehension of the API surface
+//
+
+/**
+ * Return type for `createMockLogger`.
+ */
+export interface MockLoggerResult {
+  /** The mock logger implementation */
+  readonly implementation: {
+    readonly log: (message: string) => void;
+    readonly error: (message: string, error?: Error) => void;
+  };
+  /** Get all captured messages (if captureMessages was enabled) */
+  getMessages(): readonly CapturedMessage[];
+  /** Get count of log-level messages */
+  getLogCount(): number;
+  /** Get count of error-level messages */
+  getErrorCount(): number;
+  /** Clear all captured messages */
+  clear(): void;
+}
+
+/**
+ * Return type for `createMockDatabase`.
+ */
+export interface MockDatabaseResult<T> {
+  /** The mock database implementation */
+  readonly implementation: {
+    readonly query: (sql: string, params?: unknown[]) => Promise<T>;
+    readonly execute: (sql: string, params?: unknown[]) => Promise<void>;
+  };
+  /** Get all tracked queries */
+  getQueries(): readonly TrackedQuery[];
+  /** Get the number of queries executed */
+  getQueryCount(): number;
+  /** Clear all tracked queries */
+  clear(): void;
+}
+
+/**
+ * Return type for `createMockCache`.
+ */
+export interface MockCacheResult<T> {
+  /** The mock cache implementation */
+  readonly implementation: {
+    readonly get: (key: string) => T | undefined;
+    readonly set: (key: string, value: T) => void;
+    readonly invalidate: (key: string) => void;
+  };
+  /** Get the current state of the cache as a plain object */
+  getState(): Record<string, T>;
+  /** Get all tracked operations */
+  getOperations(): readonly TrackedCacheOperation[];
+  /** Clear both state and tracked operations */
+  clear(): void;
+}
+
+/**
+ * Return type for `createMockConfig`.
+ */
+export interface MockConfigResult {
+  /** The mock config implementation */
+  readonly implementation: {
+    readonly get: (key: string) => string;
+    readonly getNumber: (key: string) => number;
+  };
+  /** Get all keys that have been accessed */
+  getAccessedKeys(): readonly string[];
+  /** Clear accessed keys tracking */
+  clear(): void;
+}
+
+/**
+ * Return type for `createCallSequenceTracker`.
+ */
+export interface CallSequenceTrackerResult {
+  /** Manually track a call */
+  track(service: string, method: string): void;
+  /** Wrap a service to automatically track all method calls */
+  createTracker<T extends Record<string, unknown>>(name: string, service: T): T;
+  /** Get the full call sequence */
+  getSequence(): readonly SequencedCall[];
+  /**
+   * Assert that calls occurred in the exact order specified.
+   * @throws Error if the order doesn't match
+   */
+  assertOrder(expected: readonly string[]): void;
+  /**
+   * Assert that one call occurred before another.
+   * @throws Error if the ordering is wrong or either call wasn't made
+   */
+  assertCalledBefore(first: string, second: string): void;
+  /** Clear the call sequence */
+  clear(): void;
+}
+
+// =============================================================================
+// Partial Override Support
+// =============================================================================
+
+/**
+ * Extracts method names from a type (functions only).
+ */
+type MethodNames<T> = {
+  [K in keyof T]: T[K] extends (...args: never[]) => unknown ? K : never;
+}[keyof T];
+
+/**
+ * Partial method overrides - only allows overriding existing methods.
+ */
+export type MethodOverrides<T> = {
+  [K in MethodNames<T>]?: T[K];
+};
+
+// =============================================================================
+// Deep Equality Utility
+// =============================================================================
+
+/**
+ * Performs deep equality comparison between two values.
+ *
+ * Handles:
+ * - Primitives (strict equality)
+ * - Arrays (element-wise comparison)
+ * - Objects (property-wise comparison)
+ * - null/undefined
+ * - Circular references (via seen Set)
+ * - Functions (reference equality)
+ *
+ * @internal
+ */
+function deepEqual(a: unknown, b: unknown, seen = new Set<object>()): boolean {
+  // Handle primitives and strict equality
+  if (a === b) return true;
+
+  // Handle null/undefined
+  if (a === null || b === null || a === undefined || b === undefined) {
+    return a === b;
+  }
+
+  // Handle different types
+  if (typeof a !== typeof b) return false;
+
+  // Handle functions (reference equality)
+  if (typeof a === "function") return a === b;
+
+  // Handle non-objects (primitives that aren't strictly equal)
+  if (typeof a !== "object") return false;
+
+  // Both are objects at this point
+  const objA = a as object;
+  const objB = b as object;
+
+  // Handle circular references
+  if (seen.has(objA) || seen.has(objB)) {
+    // If we've seen either, treat them as equal if same reference
+    return objA === objB;
+  }
+  seen.add(objA);
+  seen.add(objB);
+
+  // Handle arrays
+  if (Array.isArray(objA) && Array.isArray(objB)) {
+    if (objA.length !== objB.length) return false;
+    for (let i = 0; i < objA.length; i++) {
+      if (!deepEqual(objA[i], objB[i], seen)) return false;
+    }
+    return true;
+  }
+
+  // Handle array vs non-array mismatch
+  if (Array.isArray(objA) !== Array.isArray(objB)) return false;
+
+  // Handle plain objects
+  const keysA = Object.keys(objA);
+  const keysB = Object.keys(objB);
+
+  if (keysA.length !== keysB.length) return false;
+
+  for (const key of keysA) {
+    if (!Object.prototype.hasOwnProperty.call(objB, key)) return false;
+    if (
+      !deepEqual(
+        (objA as Record<string, unknown>)[key],
+        (objB as Record<string, unknown>)[key],
+        seen
+      )
+    ) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 // =============================================================================
@@ -141,9 +369,7 @@ export function createCallTracker<T extends Record<string, unknown>>(
     getCallsFor: (method: string) => calls.filter(c => c.method === method),
     getCallCount: (method: string) => calls.filter(c => c.method === method).length,
     wasCalledWith: (method: string, ...expectedArgs: unknown[]) =>
-      calls.some(
-        c => c.method === method && JSON.stringify(c.args) === JSON.stringify(expectedArgs)
-      ),
+      calls.some(c => c.method === method && deepEqual([...c.args], expectedArgs)),
     reset: () => {
       calls.length = 0;
     },
@@ -169,23 +395,27 @@ export function createCallTracker<T extends Record<string, unknown>>(
  * expect(mock.getMessages()).toHaveLength(2);
  * ```
  */
-export function createMockLogger(options: MockLoggerOptions = {}) {
+export function createMockLogger(options: MockLoggerOptions = {}): MockLoggerResult {
   const messages: CapturedMessage[] = [];
+
+  const defaultLog = (message: string) => {
+    if (options.captureMessages) {
+      messages.push({ level: "log", message });
+    }
+    options.onLog?.(message);
+  };
+
+  const defaultError = (message: string, error?: Error) => {
+    if (options.captureMessages) {
+      messages.push({ level: "error", message });
+    }
+    options.onError?.(message, error);
+  };
 
   return {
     implementation: {
-      log: (message: string) => {
-        if (options.captureMessages) {
-          messages.push({ level: "log", message });
-        }
-        options.onLog?.(message);
-      },
-      error: (message: string, error?: Error) => {
-        if (options.captureMessages) {
-          messages.push({ level: "error", message });
-        }
-        options.onError?.(message, error);
-      },
+      log: options.methodOverrides?.log ?? defaultLog,
+      error: options.methodOverrides?.error ?? defaultError,
     },
     /** Get all captured messages */
     getMessages: (): readonly CapturedMessage[] => [...messages],
@@ -220,24 +450,30 @@ export function createMockLogger(options: MockLoggerOptions = {}) {
  * await expect(failMock.implementation.query("SELECT 1")).rejects.toThrow("DB offline");
  * ```
  */
-export function createMockDatabase<T = unknown>(options: MockDatabaseOptions<T> = {}) {
+export function createMockDatabase<T = unknown>(
+  options: MockDatabaseOptions<T> = {}
+): MockDatabaseResult<T> {
   const queries: TrackedQuery[] = [];
+
+  const defaultQuery = async (sql: string, params?: unknown[]): Promise<T> => {
+    queries.push({ sql, params });
+    if (options.shouldFail) {
+      throw new Error(options.errorMessage ?? "Query failed");
+    }
+    return (options.queryResult ?? {}) as T;
+  };
+
+  const defaultExecute = async (sql: string, params?: unknown[]): Promise<void> => {
+    queries.push({ sql, params });
+    if (options.shouldFail) {
+      throw new Error(options.errorMessage ?? "Execute failed");
+    }
+  };
 
   return {
     implementation: {
-      query: async (sql: string, params?: unknown[]): Promise<T> => {
-        queries.push({ sql, params });
-        if (options.shouldFail) {
-          throw new Error(options.errorMessage ?? "Query failed");
-        }
-        return (options.queryResult ?? {}) as T;
-      },
-      execute: async (sql: string, params?: unknown[]): Promise<void> => {
-        queries.push({ sql, params });
-        if (options.shouldFail) {
-          throw new Error(options.errorMessage ?? "Execute failed");
-        }
-      },
+      query: options.methodOverrides?.query ?? defaultQuery,
+      execute: options.methodOverrides?.execute ?? defaultExecute,
     },
     /** Get all tracked queries */
     getQueries: (): readonly TrackedQuery[] => [...queries],
@@ -270,24 +506,32 @@ export function createMockDatabase<T = unknown>(options: MockDatabaseOptions<T> 
  * expect(mock.getOperations()).toHaveLength(3);
  * ```
  */
-export function createMockCache<T = unknown>() {
+export function createMockCache<T = unknown>(
+  options: MockCacheOptions<T> = {}
+): MockCacheResult<T> {
   const store = new Map<string, T>();
   const operations: TrackedCacheOperation[] = [];
 
+  const defaultGet = (key: string): T | undefined => {
+    operations.push({ op: "get", key });
+    return store.get(key);
+  };
+
+  const defaultSet = (key: string, value: T): void => {
+    operations.push({ op: "set", key });
+    store.set(key, value);
+  };
+
+  const defaultInvalidate = (key: string): void => {
+    operations.push({ op: "invalidate", key });
+    store.delete(key);
+  };
+
   return {
     implementation: {
-      get: (key: string): T | undefined => {
-        operations.push({ op: "get", key });
-        return store.get(key);
-      },
-      set: (key: string, value: T): void => {
-        operations.push({ op: "set", key });
-        store.set(key, value);
-      },
-      invalidate: (key: string): void => {
-        operations.push({ op: "invalidate", key });
-        store.delete(key);
-      },
+      get: options.methodOverrides?.get ?? defaultGet,
+      set: options.methodOverrides?.set ?? defaultSet,
+      invalidate: options.methodOverrides?.invalidate ?? defaultInvalidate,
     },
     /** Get the current state of the cache as a plain object */
     getState: (): Record<string, T> => Object.fromEntries(store),
@@ -311,8 +555,10 @@ export function createMockCache<T = unknown>() {
  * @example
  * ```typescript
  * const mock = createMockConfig({
- *   DATABASE_URL: "postgres://localhost/test",
- *   PORT: 3000,
+ *   values: {
+ *     DATABASE_URL: "postgres://localhost/test",
+ *     PORT: 3000,
+ *   },
  * });
  *
  * expect(mock.implementation.get("DATABASE_URL")).toBe("postgres://localhost/test");
@@ -320,21 +566,26 @@ export function createMockCache<T = unknown>() {
  * expect(mock.getAccessedKeys()).toContain("DATABASE_URL");
  * ```
  */
-export function createMockConfig(values: Record<string, string | number> = {}) {
+export function createMockConfig(options: MockConfigOptions = {}): MockConfigResult {
+  const values = options.values ?? {};
   const accessed: string[] = [];
+
+  const defaultGet = (key: string): string => {
+    accessed.push(key);
+    const value = values[key];
+    return value !== undefined ? String(value) : "";
+  };
+
+  const defaultGetNumber = (key: string): number => {
+    accessed.push(key);
+    const value = values[key];
+    return value !== undefined ? Number(value) : 0;
+  };
 
   return {
     implementation: {
-      get: (key: string): string => {
-        accessed.push(key);
-        const value = values[key];
-        return value !== undefined ? String(value) : "";
-      },
-      getNumber: (key: string): number => {
-        accessed.push(key);
-        const value = values[key];
-        return value !== undefined ? Number(value) : 0;
-      },
+      get: options.methodOverrides?.get ?? defaultGet,
+      getNumber: options.methodOverrides?.getNumber ?? defaultGetNumber,
     },
     /** Get all keys that have been accessed */
     getAccessedKeys: (): readonly string[] => [...accessed],
@@ -366,7 +617,7 @@ export function createMockConfig(values: Record<string, string | number> = {}) {
  * tracker.assertOrder(["Logger.log", "Database.query"]);
  * ```
  */
-export function createCallSequenceTracker() {
+export function createCallSequenceTracker(): CallSequenceTrackerResult {
   const sequence: SequencedCall[] = [];
 
   return {
@@ -433,4 +684,93 @@ export function createCallSequenceTracker() {
       sequence.length = 0;
     },
   };
+}
+
+// =============================================================================
+// Mock Adapter Factory
+// =============================================================================
+
+/**
+ * Configuration options for createMockAdapter.
+ */
+export interface MockAdapterOptions<TPort> {
+  /** Lifetime scope (default: "singleton") */
+  lifetime?: Lifetime;
+  /** Whether the adapter is clonable for forked inheritance (default: false) */
+  clonable?: boolean;
+  /** Whether to use async factory (default: false) */
+  async?: boolean;
+  /** Custom implementation to merge with default stub */
+  implementation?: Partial<TPort>;
+}
+
+/**
+ * Creates a mock adapter for any port with configurable options.
+ *
+ * This is the primary factory function for creating test adapters. It provides
+ * sensible defaults while allowing full customization when needed.
+ *
+ * @typeParam TService - The service interface type
+ * @typeParam TName - The port name literal type
+ *
+ * @param port - The port to create an adapter for
+ * @param options - Configuration options
+ * @returns A configured adapter (sync or async based on options)
+ *
+ * @example Basic usage
+ * ```typescript
+ * const adapter = createMockAdapter(LoggerPort);
+ * ```
+ *
+ * @example With custom lifetime
+ * ```typescript
+ * const adapter = createMockAdapter(DatabasePort, { lifetime: "scoped" });
+ * ```
+ *
+ * @example With custom implementation
+ * ```typescript
+ * const adapter = createMockAdapter(LoggerPort, {
+ *   implementation: { log: (msg) => console.log(`[TEST] ${msg}`) }
+ * });
+ * ```
+ *
+ * @example Async adapter
+ * ```typescript
+ * const adapter = createMockAdapter(ConfigPort, { async: true });
+ * ```
+ */
+export function createMockAdapter<TService extends object, TName extends string>(
+  port: ReturnType<typeof createPort<TName, TService>>,
+  options: MockAdapterOptions<TService> = {}
+) {
+  const { lifetime = "singleton", clonable = false, async: isAsync = false } = options;
+
+  // Create a stub implementation that returns empty/noop values
+  const stubImplementation = new Proxy({} as TService, {
+    get(_target, prop) {
+      // If custom implementation provided, use it
+      if (options.implementation && prop in options.implementation) {
+        return (options.implementation as Record<string | symbol, unknown>)[prop];
+      }
+      // Default: return a no-op function for any method call
+      return () => {};
+    },
+  });
+
+  if (isAsync) {
+    return createAsyncAdapter({
+      provides: port,
+      requires: [],
+      clonable,
+      factory: async () => stubImplementation,
+    });
+  }
+
+  return createAdapter({
+    provides: port,
+    requires: [],
+    lifetime,
+    clonable,
+    factory: () => stubImplementation,
+  });
 }

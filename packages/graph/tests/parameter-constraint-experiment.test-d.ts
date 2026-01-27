@@ -29,7 +29,7 @@
 
 import { describe, expectTypeOf, it } from "vitest";
 import type { Port } from "@hex-di/ports";
-import type { AdapterAny, Lifetime, FactoryKind } from "../src/index.js";
+import type { AdapterConstraint, Lifetime, FactoryKind } from "../src/index.js";
 
 // =============================================================================
 // Experimental Types
@@ -49,9 +49,9 @@ type HasOverlap<A extends string, B extends string> = [A] extends [never]
         : false;
 
 type DuplicateError<PortName extends string> =
-  `ERROR: Duplicate adapter for '${PortName}'. Fix: Remove one .provide() call, or use .override() for child graphs.`;
+  `ERROR[HEX001]: Duplicate adapter for '${PortName}'. Fix: Remove one .provide() call, or use .override() for child graphs.`;
 
-type ValidateAdapter<TProvides extends string, A extends AdapterAny> =
+type ValidateAdapter<TProvides extends string, A extends AdapterConstraint> =
   HasOverlap<InferAdapterPortName<A>, TProvides> extends true
     ? DuplicateError<InferAdapterPortName<A>>
     : A;
@@ -97,7 +97,7 @@ describe("Parameter Constraint Pattern - ValidateAdapter Logic", () => {
 
   it("returns error string when duplicate detected", () => {
     type Result = ValidateAdapter<"Logger", MockLoggerAdapter>;
-    expectTypeOf<Result>().toEqualTypeOf<"ERROR: Duplicate adapter for 'Logger'. Fix: Remove one .provide() call, or use .override() for child graphs.">();
+    expectTypeOf<Result>().toEqualTypeOf<"ERROR[HEX001]: Duplicate adapter for 'Logger'. Fix: Remove one .provide() call, or use .override() for child graphs.">();
   });
 
   it("returns adapter type for different port names", () => {

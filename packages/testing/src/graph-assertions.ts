@@ -9,7 +9,7 @@
  */
 
 import type { Port } from "@hex-di/ports";
-import type { Graph, AdapterAny, Lifetime } from "@hex-di/graph";
+import type { Graph, AdapterConstraint, Lifetime } from "@hex-di/graph";
 
 // V8-specific Error.captureStackTrace type
 // We use a type alias to type the V8-specific static method without conflicts
@@ -117,7 +117,7 @@ function getPortName(port: Port<unknown, string>): string {
 function findAdapterForPort(
   graph: Graph<Port<unknown, string>, Port<unknown, string> | never>,
   port: Port<unknown, string>
-): AdapterAny | undefined {
+): AdapterConstraint | undefined {
   const portName = getPortName(port);
   return graph.adapters.find(adapter => getPortName(adapter.provides) === portName);
 }

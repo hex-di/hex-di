@@ -2,7 +2,7 @@
  * Type-level tests for error message format consistency.
  *
  * These tests ensure all error message types follow a consistent format:
- * - Start with "ERROR:"
+ * - Start with "ERROR[HEXxxx]:" where xxx is a 3-digit code
  * - Include contextual information (port names, paths, lifetimes)
  * - End with "Fix:" suggestion
  *
@@ -17,7 +17,7 @@ import type {
   CircularErrorMessage,
   CaptiveErrorMessage,
   LifetimeInconsistencyErrorMessage,
-} from "../src/validation/errors.js";
+} from "../src/validation/types/errors.js";
 
 // =============================================================================
 // Test Fixtures
@@ -39,9 +39,9 @@ const DatabasePort = createPort<"Database", Database>("Database");
 
 describe("Error message format consistency", () => {
   describe("DuplicateErrorMessage", () => {
-    it("starts with ERROR:", () => {
+    it("starts with ERROR[HEX...]:", () => {
       type Msg = DuplicateErrorMessage<typeof LoggerPort>;
-      expectTypeOf<Msg>().toMatchTypeOf<`ERROR:${string}`>();
+      expectTypeOf<Msg>().toMatchTypeOf<`ERROR[HEX${string}`>();
     });
 
     it("includes port name in quotes", () => {
@@ -61,9 +61,9 @@ describe("Error message format consistency", () => {
   });
 
   describe("CircularErrorMessage", () => {
-    it("starts with ERROR:", () => {
+    it("starts with ERROR[HEX...]:", () => {
       type Msg = CircularErrorMessage<"A -> B -> A">;
-      expectTypeOf<Msg>().toMatchTypeOf<`ERROR:${string}`>();
+      expectTypeOf<Msg>().toMatchTypeOf<`ERROR[HEX${string}`>();
     });
 
     it("includes cycle path", () => {
@@ -83,9 +83,9 @@ describe("Error message format consistency", () => {
   });
 
   describe("CaptiveErrorMessage", () => {
-    it("starts with ERROR:", () => {
+    it("starts with ERROR[HEX...]:", () => {
       type Msg = CaptiveErrorMessage<"UserCache", "Singleton", "RequestContext", "Scoped">;
-      expectTypeOf<Msg>().toMatchTypeOf<`ERROR:${string}`>();
+      expectTypeOf<Msg>().toMatchTypeOf<`ERROR[HEX${string}`>();
     });
 
     it("includes dependent name in quotes", () => {
@@ -110,9 +110,9 @@ describe("Error message format consistency", () => {
   });
 
   describe("LifetimeInconsistencyErrorMessage", () => {
-    it("starts with ERROR:", () => {
+    it("starts with ERROR[HEX...]:", () => {
       type Msg = LifetimeInconsistencyErrorMessage<"Logger", "Singleton", "Scoped">;
-      expectTypeOf<Msg>().toMatchTypeOf<`ERROR:${string}`>();
+      expectTypeOf<Msg>().toMatchTypeOf<`ERROR[HEX${string}`>();
     });
 
     it("includes port name in quotes", () => {
@@ -154,7 +154,7 @@ describe("GraphBuilder produces consistent errors", () => {
     type Result = ReturnType<typeof builder.provide<typeof LoggerAdapter>>;
 
     // Must start with ERROR:
-    expectTypeOf<Result>().toMatchTypeOf<`ERROR:${string}`>();
+    expectTypeOf<Result>().toMatchTypeOf<`ERROR[HEX${string}`>();
     // Must include Fix:
     expectTypeOf<Result>().toMatchTypeOf<`${string}Fix:${string}`>();
   });
@@ -181,7 +181,7 @@ describe("GraphBuilder produces consistent errors", () => {
     type Result = ReturnType<typeof builder.provide<typeof AdapterB>>;
 
     // Must start with ERROR:
-    expectTypeOf<Result>().toMatchTypeOf<`ERROR:${string}`>();
+    expectTypeOf<Result>().toMatchTypeOf<`ERROR[HEX${string}`>();
     // Must include Fix:
     expectTypeOf<Result>().toMatchTypeOf<`${string}Fix:${string}`>();
   });
@@ -208,7 +208,7 @@ describe("GraphBuilder produces consistent errors", () => {
     type Result = ReturnType<typeof builder.provide<typeof SingletonAdapter>>;
 
     // Must start with ERROR:
-    expectTypeOf<Result>().toMatchTypeOf<`ERROR:${string}`>();
+    expectTypeOf<Result>().toMatchTypeOf<`ERROR[HEX${string}`>();
     // Must include Fix:
     expectTypeOf<Result>().toMatchTypeOf<`${string}Fix:${string}`>();
   });
@@ -251,6 +251,6 @@ describe("Multi-error messages follow format", () => {
     // Multi-error format
     expectTypeOf<Result>().toMatchTypeOf<`Multiple validation errors:\n${string}`>();
     // Each error line is numbered
-    expectTypeOf<Result>().toMatchTypeOf<`${string}1.${string}ERROR:${string}`>();
+    expectTypeOf<Result>().toMatchTypeOf<`${string}1.${string}ERROR[HEX${string}`>();
   });
 });

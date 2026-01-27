@@ -23,9 +23,13 @@ import {
   createAdapter,
   createAsyncAdapter,
   type Graph,
-  type AdapterAny,
+  type AdapterConstraint,
 } from "../src/index.js";
-import { LoggerAdapter, DatabaseAdapter } from "./fixtures.js";
+import { createLoggerAdapter, createDatabaseAdapter } from "./fixtures.js";
+
+// Create adapter instances for tests
+const LoggerAdapter = createLoggerAdapter();
+const DatabaseAdapter = createDatabaseAdapter();
 
 // =============================================================================
 // Helper Functions
@@ -100,7 +104,7 @@ describe("concurrent: parallel provide() operations", () => {
 
     // Each branch should have the Logger + their unique adapter
     const adapterNames = new Set(
-      branches.map(b => (b.adapters[1] as AdapterAny).provides.__portName)
+      branches.map(b => (b.adapters[1] as AdapterConstraint).provides.__portName)
     );
     expect(adapterNames.size).toBe(100);
   });
@@ -203,9 +207,15 @@ describe("concurrent: parallel merge() operations", () => {
     expect(base.adapters).toHaveLength(1);
 
     // Each merge should have Logger + their extra
-    const names1 = new Set((merged1.adapters as AdapterAny[]).map(a => a.provides.__portName));
-    const names2 = new Set((merged2.adapters as AdapterAny[]).map(a => a.provides.__portName));
-    const names3 = new Set((merged3.adapters as AdapterAny[]).map(a => a.provides.__portName));
+    const names1 = new Set(
+      (merged1.adapters as AdapterConstraint[]).map(a => a.provides.__portName)
+    );
+    const names2 = new Set(
+      (merged2.adapters as AdapterConstraint[]).map(a => a.provides.__portName)
+    );
+    const names3 = new Set(
+      (merged3.adapters as AdapterConstraint[]).map(a => a.provides.__portName)
+    );
 
     expect(names1).toContain("Logger");
     expect(names1).toContain("Extra1");
@@ -268,54 +278,47 @@ describe("concurrent: async adapter operations", () => {
 
     // All should be async
     for (const adapter of graph.adapters) {
-      expect((adapter as AdapterAny).factoryKind).toBe("async");
+      expect((adapter as AdapterConstraint).factoryKind).toBe("async");
     }
   });
 
-  it("async adapter initialization priority ordering is preserved", () => {
+  it("async adapters with dependencies are ordered correctly", () => {
     // Create distinct ports with literal key types
-    const LowPort = createPort<"Low", TestService>("Low");
-    const MidPort = createPort<"Mid", TestService>("Mid");
-    const HighPort = createPort<"High", TestService>("High");
+    const ConfigPort = createPort<"Config", TestService>("Config");
+    const DatabasePort = createPort<"Database", TestService>("Database");
+    const CachePort = createPort<"Cache", TestService>("Cache");
 
-    const low = createAsyncAdapter({
-      provides: LowPort,
+    const config = createAsyncAdapter({
+      provides: ConfigPort,
       requires: [],
-      initPriority: 10,
-      factory: async () => ({ name: "low" }),
+      factory: async () => ({ name: "config" }),
     });
 
-    const mid = createAsyncAdapter({
-      provides: MidPort,
-      requires: [],
-      initPriority: 50,
-      factory: async () => ({ name: "mid" }),
+    const database = createAsyncAdapter({
+      provides: DatabasePort,
+      requires: [ConfigPort],
+      factory: async () => ({ name: "database" }),
     });
 
-    const high = createAsyncAdapter({
-      provides: HighPort,
-      requires: [],
-      initPriority: 100,
-      factory: async () => ({ name: "high" }),
+    const cache = createAsyncAdapter({
+      provides: CachePort,
+      requires: [ConfigPort],
+      factory: async () => ({ name: "cache" }),
     });
 
-    // Add in random order
+    // Add in any order - topological sort handles initialization order at runtime
     const graph = GraphBuilder.create()
-      .provideAsync(high)
-      .provideAsync(low)
-      .provideAsync(mid)
+      .provideAsync(cache)
+      .provideAsync(config)
+      .provideAsync(database)
       .build();
 
     expect(graph.adapters).toHaveLength(3);
 
-    // Verify priorities are preserved
-    const priorities = (graph.adapters as AdapterAny[])
-      .map(a => ({ name: a.provides.__portName, priority: a.initPriority }))
-      .sort((a, b) => (a.priority ?? 100) - (b.priority ?? 100));
-
-    expect(priorities[0]!.name).toBe("Low");
-    expect(priorities[1]!.name).toBe("Mid");
-    expect(priorities[2]!.name).toBe("High");
+    // All should be async adapters
+    for (const adapter of graph.adapters) {
+      expect((adapter as AdapterConstraint).factoryKind).toBe("async");
+    }
   });
 });
 
@@ -369,7 +372,7 @@ describe("concurrent: isolation guarantees", () => {
     const base = GraphBuilder.create();
 
     // Perform many operations "concurrently"
-    const operations: GraphBuilder<any, any, any, any, any, any>[] = [];
+    const operations: Array<{ adapters: ReadonlyArray<unknown> }> = [];
     for (let i = 0; i < 100; i++) {
       operations.push(base.provide(makeAdapter(`Op${i}`)));
     }

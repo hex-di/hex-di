@@ -34,10 +34,10 @@ export const LocalStorageMessageStoreAdapter = createAsyncAdapter({
   provides: MessageStorePort,
   requires: [LoggerPort],
   // No lifetime - async adapters are always singletons
-  initPriority: 2, // Initialize after Logger (default is 100)
+  // Initialization order is automatic via topological sort based on dependencies
   factory: async (deps): Promise<MessageStore> => {
     // Simulate async storage access
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    await new Promise(resolve => setTimeout(resolve, 150));
 
     // Load persisted messages from localStorage
     let messages: Message[] = [];
@@ -52,7 +52,7 @@ export const LocalStorageMessageStoreAdapter = createAsyncAdapter({
           timestamp: string;
         }>;
         // Convert timestamp strings back to Date objects
-        messages = parsed.map((m) => ({
+        messages = parsed.map(m => ({
           ...m,
           timestamp: new Date(m.timestamp),
         }));
@@ -66,7 +66,7 @@ export const LocalStorageMessageStoreAdapter = createAsyncAdapter({
 
     const notifyListeners = (): void => {
       const frozenMessages = Object.freeze([...messages]) as readonly Message[];
-      listeners.forEach((listener) => listener(frozenMessages));
+      listeners.forEach(listener => listener(frozenMessages));
     };
 
     const persistMessages = (): void => {

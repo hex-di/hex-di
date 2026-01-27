@@ -15,7 +15,7 @@ export function createAppContainer() {
     .provide(TodoServiceAdapter)
     .build();
 
-  return createContainer(graph);
+  return createContainer(graph, { name: "HonoTodoApp" });
 }
 
 export type AppContainer = ReturnType<typeof createAppContainer>;

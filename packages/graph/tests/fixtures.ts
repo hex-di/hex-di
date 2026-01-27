@@ -4,11 +4,54 @@
  * Consolidates common service interfaces, port definitions, and type aliases
  * to reduce duplication across test files.
  *
+ * ## Fixture Selection Guide
+ *
+ * ### Testing Scenario → Recommended Fixtures
+ *
+ * | Scenario                    | Recommended Fixtures                           |
+ * |-----------------------------|------------------------------------------------|
+ * | Basic adapter tests         | LoggerPort, LoggerAdapter, ConsoleLogger       |
+ * | Dependency chain tests      | DatabasePort, UserServicePort + their adapters |
+ * | Cycle detection tests       | CycleA/B/C ports and adapters                  |
+ * | Lifetime tests              | Adapters with different lifetimes              |
+ * | Async adapter tests         | AsyncDbAdapter, AsyncConfigAdapter             |
+ * | Multi-adapter tests         | Use createTestAdapter() for custom needs       |
+ *
+ * ### Scenario Pattern → TestGraphBuilder Method
+ *
+ * | Pattern                     | Method                                         |
+ * |-----------------------------|------------------------------------------------|
+ * | Empty graph                 | TestGraphBuilder.create()                      |
+ * | Pre-populated graph         | TestGraphBuilder.withAdapters([...])           |
+ * | Error scenario              | TestGraphBuilder.expectError()                 |
+ * | Type-level test             | Use .test-d.ts files with expectTypeOf         |
+ *
+ * ### Behavioral Need → test-doubles Function
+ *
+ * | Need                        | Function                                       |
+ * |-----------------------------|------------------------------------------------|
+ * | Mock adapter                | createMockAdapter()                            |
+ * | Spy on factory calls        | createSpyAdapter()                             |
+ * | Override in child           | createOverrideAdapter()                        |
+ * | Async initialization        | createAsyncTestAdapter()                       |
+ *
  * @packageDocumentation
  */
 
 import { createPort } from "@hex-di/ports";
-import { createAdapter, createAsyncAdapter, GraphBuilder, type Lifetime } from "../src/index.js";
+import {
+  createAdapter,
+  createAsyncAdapter,
+  GraphBuilder,
+  __emptyDepGraphBrand,
+  __emptyLifetimeMapBrand,
+  type Lifetime,
+} from "../src/index.js";
+
+// These imports are needed for TypeScript to name the symbol types in return type declarations.
+// The symbols are used in EmptyDependencyGraph/EmptyLifetimeMap which appear in GraphBuilder types.
+void __emptyDepGraphBrand;
+void __emptyLifetimeMapBrand;
 
 // =============================================================================
 // Service Interfaces
@@ -96,6 +139,49 @@ export interface ConfigWithTypes {
   getNumber(key: string): number;
 }
 
+/**
+ * User repository interface for integration tests.
+ */
+export interface UserRepository {
+  findById(id: string): Promise<{ id: string; name: string; email: string } | null>;
+  save(user: { name: string; email: string }): Promise<{ id: string }>;
+}
+
+/**
+ * Notification service interface for integration tests.
+ */
+export interface NotificationService {
+  notify(userId: string, message: string): Promise<void>;
+}
+
+/**
+ * Full database interface for integration tests.
+ * Includes query with type parameter and execute method.
+ */
+export interface DatabaseFull {
+  query<T>(sql: string, params?: unknown[]): Promise<T[]>;
+  execute(sql: string, params?: unknown[]): Promise<void>;
+}
+
+/**
+ * Full user service interface for integration tests.
+ * Returns email and can return null.
+ */
+export interface UserServiceFull {
+  getUser(id: string): Promise<{ id: string; name: string; email: string } | null>;
+  createUser(name: string, email: string): Promise<{ id: string }>;
+}
+
+/**
+ * Full cache service interface for integration tests.
+ * Includes ttl and invalidate.
+ */
+export interface CacheServiceFull {
+  get<T>(key: string): T | undefined;
+  set<T>(key: string, value: T, ttl?: number): void;
+  invalidate(key: string): void;
+}
+
 // =============================================================================
 // Cycle Testing Interfaces
 // =============================================================================
@@ -166,6 +252,11 @@ export const CachePort = createPort<"Cache", CacheService>("Cache");
 export const EmailPort = createPort<"Email", EmailService>("Email");
 
 /**
+ * Alias for EmailPort - used by integration tests.
+ */
+export const EmailServicePort = EmailPort;
+
+/**
  * Config port (strict) for testing - always returns a value.
  */
 export const ConfigPortStrict = createPort<"Config", ConfigServiceStrict>("Config");
@@ -184,6 +275,33 @@ export const LoggerWithErrorPort = createPort<"Logger", LoggerWithError>("Logger
  * Config port (with typed getters) for integration tests.
  */
 export const ConfigWithTypesPort = createPort<"Config", ConfigWithTypes>("Config");
+
+/**
+ * User repository port for integration tests.
+ */
+export const UserRepositoryPort = createPort<"UserRepository", UserRepository>("UserRepository");
+
+/**
+ * Notification service port for integration tests.
+ */
+export const NotificationServicePort = createPort<"NotificationService", NotificationService>(
+  "NotificationService"
+);
+
+/**
+ * Full database port for integration tests.
+ */
+export const DatabaseFullPort = createPort<"Database", DatabaseFull>("Database");
+
+/**
+ * Full user service port for integration tests.
+ */
+export const UserServiceFullPort = createPort<"UserService", UserServiceFull>("UserService");
+
+/**
+ * Full cache port for integration tests.
+ */
+export const CacheFullPort = createPort<"Cache", CacheServiceFull>("Cache");
 
 // =============================================================================
 // Cycle Testing Ports
@@ -208,6 +326,20 @@ export const PortD = createPort<"D", ServiceD>("D");
 export const RequestContextPort = createPort<"RequestContext", RequestContext>("RequestContext");
 
 // =============================================================================
+// Interface Aliases (for integration test compatibility)
+// =============================================================================
+
+/**
+ * Alias for CacheService - used by integration tests.
+ */
+export type Cache = CacheService;
+
+/**
+ * Alias for ConfigWithTypes - used by integration tests.
+ */
+export type Config = ConfigWithTypes;
+
+// =============================================================================
 // Port Type Aliases
 // =============================================================================
 
@@ -221,6 +353,8 @@ export type ConfigPortStrictType = typeof ConfigPortStrict;
 export type CachePortSimpleType = typeof CachePortSimple;
 export type LoggerWithErrorPortType = typeof LoggerWithErrorPort;
 export type ConfigWithTypesPortType = typeof ConfigWithTypesPort;
+export type UserRepositoryPortType = typeof UserRepositoryPort;
+export type NotificationServicePortType = typeof NotificationServicePort;
 export type PortAType = typeof PortA;
 export type PortBType = typeof PortB;
 export type PortCType = typeof PortC;
@@ -228,35 +362,47 @@ export type PortDType = typeof PortD;
 export type RequestContextPortType = typeof RequestContextPort;
 
 // =============================================================================
-// Sample Adapters
+// Standard Adapter Constants
 // =============================================================================
+//
+// These constant adapters are exported for:
+// 1. Type-level tests (.test-d.ts files) that need stable type inference
+// 2. Tests that verify adapter identity (same reference)
+// 3. Backward compatibility with existing test code
+//
+// For tests that need fresh adapter instances each time, use the factory
+// functions below (e.g., createLoggerAdapter(), createDatabaseAdapter()).
+//
 
 /**
- * Logger adapter with no dependencies for testing.
+ * Standard logger adapter constant - singleton with no dependencies.
+ * Use this when you need a stable adapter reference or for type-level tests.
  */
 export const LoggerAdapter = createAdapter({
   provides: LoggerPort,
-  requires: [],
+  requires: [] as const,
   lifetime: "singleton",
   factory: () => ({ log: () => {} }),
 });
 
 /**
- * Database adapter that depends on Logger for testing.
+ * Standard database adapter constant - singleton that depends on Logger.
+ * Use this when you need a stable adapter reference or for type-level tests.
  */
 export const DatabaseAdapter = createAdapter({
   provides: DatabasePort,
-  requires: [LoggerPort],
+  requires: [LoggerPort] as const,
   lifetime: "singleton",
   factory: () => ({ query: async () => ({}) }),
 });
 
 /**
- * UserService adapter that depends on Database and Logger for testing.
+ * Standard user service adapter constant - scoped that depends on Logger and Database.
+ * Use this when you need a stable adapter reference or for type-level tests.
  */
 export const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
-  requires: [DatabasePort, LoggerPort],
+  requires: [DatabasePort, LoggerPort] as const,
   lifetime: "scoped",
   factory: () => ({
     getUser: async (id: string) => ({ id, name: "Test User" }),
@@ -264,23 +410,24 @@ export const UserServiceAdapter = createAdapter({
 });
 
 /**
- * Config adapter (async) for testing.
+ * Standard config adapter constant - async adapter.
+ * Use this when you need a stable adapter reference or for type-level tests.
  */
 export const ConfigAdapter = createAsyncAdapter({
   provides: ConfigPort,
-  requires: [],
+  requires: [] as const,
   factory: async () => ({
     get: () => undefined,
   }),
-  initPriority: 10,
 });
 
 /**
- * Cache adapter for testing.
+ * Standard cache adapter constant - singleton with no dependencies.
+ * Use this when you need a stable adapter reference or for type-level tests.
  */
 export const CacheAdapter = createAdapter({
   provides: CachePort,
-  requires: [],
+  requires: [] as const,
   lifetime: "singleton",
   factory: () => {
     const store = new Map<string, unknown>();
@@ -293,116 +440,135 @@ export const CacheAdapter = createAdapter({
   },
 });
 
-// =============================================================================
-// Lifetime Testing Adapters
-// =============================================================================
-
 /**
- * Request context adapter (transient) for captive dependency testing.
+ * Standard request context adapter constant - transient lifetime.
+ * Use for captive dependency testing.
  */
 export const RequestContextAdapterTransient = createAdapter({
   provides: RequestContextPort,
-  requires: [],
+  requires: [] as const,
   lifetime: "transient",
   factory: () => ({ requestId: `req-${Date.now()}` }),
 });
 
 /**
- * Request context adapter (scoped) for captive dependency testing.
+ * Standard request context adapter constant - scoped lifetime.
+ * Use for captive dependency testing.
  */
 export const RequestContextAdapterScoped = createAdapter({
   provides: RequestContextPort,
-  requires: [],
+  requires: [] as const,
   lifetime: "scoped",
   factory: () => ({ requestId: `req-${Date.now()}` }),
 });
 
 // =============================================================================
-// Generic Adapter Factory
+// Sample Adapter Factory Functions
 // =============================================================================
 
 /**
- * Configuration options for createMockAdapter.
+ * Creates a logger adapter with no dependencies for testing.
+ * Each call returns a fresh adapter instance.
  */
-export interface MockAdapterOptions<TPort> {
-  /** Lifetime scope (default: "singleton") */
-  lifetime?: Lifetime;
-  /** Whether the adapter is clonable for forked inheritance (default: false) */
-  clonable?: boolean;
-  /** Whether to use async factory (default: false) */
-  async?: boolean;
-  /** Custom implementation to merge with default stub */
-  implementation?: Partial<TPort>;
+export function createLoggerAdapter() {
+  return createAdapter({
+    provides: LoggerPort,
+    requires: [],
+    lifetime: "singleton",
+    factory: () => ({ log: () => {} }),
+  });
 }
 
 /**
- * Creates a mock adapter for any port with configurable options.
- *
- * This is the primary factory function for creating test adapters. It provides
- * sensible defaults while allowing full customization when needed.
- *
- * @typeParam TService - The service interface type
- * @typeParam TName - The port name literal type
- *
- * @param port - The port to create an adapter for
- * @param options - Configuration options
- * @returns A configured adapter (sync or async based on options)
- *
- * @example Basic usage
- * ```typescript
- * const adapter = createMockAdapter(LoggerPort);
- * ```
- *
- * @example With custom lifetime
- * ```typescript
- * const adapter = createMockAdapter(DatabasePort, { lifetime: "scoped" });
- * ```
- *
- * @example With custom implementation
- * ```typescript
- * const adapter = createMockAdapter(LoggerPort, {
- *   implementation: { log: (msg) => console.log(`[TEST] ${msg}`) }
- * });
- * ```
- *
- * @example Async adapter
- * ```typescript
- * const adapter = createMockAdapter(ConfigPort, { async: true });
- * ```
+ * Creates a database adapter that depends on Logger for testing.
+ * Each call returns a fresh adapter instance.
  */
-export function createMockAdapter<TService extends object, TName extends string>(
-  port: ReturnType<typeof createPort<TName, TService>>,
-  options: MockAdapterOptions<TService> = {}
-) {
-  const { lifetime = "singleton", clonable = false, async: isAsync = false } = options;
+export function createDatabaseAdapter() {
+  return createAdapter({
+    provides: DatabasePort,
+    requires: [LoggerPort],
+    lifetime: "singleton",
+    factory: () => ({ query: async () => ({}) }),
+  });
+}
 
-  // Create a stub implementation that returns empty/noop values
-  const stubImplementation = new Proxy({} as TService, {
-    get(_target, prop) {
-      // If custom implementation provided, use it
-      if (options.implementation && prop in options.implementation) {
-        return (options.implementation as Record<string | symbol, unknown>)[prop];
-      }
-      // Default: return a no-op function for any method call
-      return () => {};
+/**
+ * Creates a UserService adapter that depends on Database and Logger for testing.
+ * Each call returns a fresh adapter instance.
+ */
+export function createUserServiceAdapter() {
+  return createAdapter({
+    provides: UserServicePort,
+    requires: [DatabasePort, LoggerPort],
+    lifetime: "scoped",
+    factory: () => ({
+      getUser: async (id: string) => ({ id, name: "Test User" }),
+    }),
+  });
+}
+
+/**
+ * Creates a Config adapter (async) for testing.
+ * Each call returns a fresh adapter instance.
+ */
+export function createConfigAdapter() {
+  return createAsyncAdapter({
+    provides: ConfigPort,
+    requires: [],
+    factory: async () => ({
+      get: () => undefined,
+    }),
+  });
+}
+
+/**
+ * Creates a Cache adapter for testing.
+ * Each call returns a fresh adapter instance with its own isolated store.
+ */
+export function createCacheAdapter() {
+  return createAdapter({
+    provides: CachePort,
+    requires: [],
+    lifetime: "singleton",
+    factory: () => {
+      const store = new Map<string, unknown>();
+      return {
+        get: <T>(key: string) => store.get(key) as T | undefined,
+        set: <T>(key: string, value: T) => {
+          store.set(key, value);
+        },
+      };
     },
   });
+}
 
-  if (isAsync) {
-    return createAsyncAdapter({
-      provides: port,
-      requires: [],
-      clonable,
-      factory: async () => stubImplementation,
-    });
-  }
+// =============================================================================
+// Lifetime Testing Adapter Factory Functions
+// =============================================================================
 
+/**
+ * Creates a request context adapter (transient) for captive dependency testing.
+ * Each call returns a fresh adapter instance.
+ */
+export function createRequestContextAdapterTransient() {
   return createAdapter({
-    provides: port,
+    provides: RequestContextPort,
     requires: [],
-    lifetime,
-    clonable,
-    factory: () => stubImplementation,
+    lifetime: "transient",
+    factory: () => ({ requestId: `req-${Date.now()}` }),
+  });
+}
+
+/**
+ * Creates a request context adapter (scoped) for captive dependency testing.
+ * Each call returns a fresh adapter instance.
+ */
+export function createRequestContextAdapterScoped() {
+  return createAdapter({
+    provides: RequestContextPort,
+    requires: [],
+    lifetime: "scoped",
+    factory: () => ({ requestId: `req-${Date.now()}` }),
   });
 }
 
@@ -470,98 +636,17 @@ export function createUserServiceAdapterWith(
 }
 
 // =============================================================================
-// Pre-built Graph Scenarios
-// =============================================================================
-
-/**
- * Simple two-adapter graph: Logger <- Database
- */
-export function createSimpleGraph() {
-  return GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter);
-}
-
-/**
- * Three-level dependency chain: Logger <- Database <- UserService
- */
-export function createThreeLevelGraph() {
-  return GraphBuilder.create()
-    .provide(LoggerAdapter)
-    .provide(DatabaseAdapter)
-    .provide(UserServiceAdapter);
-}
-
-/**
- * Diamond dependency pattern for complex testing.
- * A <- B, C; B, C <- D
- */
-export function createDiamondGraph() {
-  const AdapterA = createAdapter({
-    provides: PortA,
-    requires: [],
-    lifetime: "singleton",
-    factory: () => ({ doA: () => {} }),
-  });
-
-  const AdapterB = createAdapter({
-    provides: PortB,
-    requires: [PortA],
-    lifetime: "singleton",
-    factory: () => ({ doB: () => {} }),
-  });
-
-  const AdapterC = createAdapter({
-    provides: PortC,
-    requires: [PortA],
-    lifetime: "singleton",
-    factory: () => ({ doC: () => {} }),
-  });
-
-  const AdapterD = createAdapter({
-    provides: PortD,
-    requires: [PortB, PortC],
-    lifetime: "singleton",
-    factory: () => ({ doD: () => {} }),
-  });
-
-  const graph = GraphBuilder.create()
-    .provide(AdapterA)
-    .provide(AdapterB)
-    .provide(AdapterC)
-    .provide(AdapterD);
-
-  return { AdapterA, AdapterB, AdapterC, AdapterD, graph };
-}
-
-// =============================================================================
 // Advanced Test Scenario Builders
 // =============================================================================
-
-/**
- * Creates a large graph with many independent adapters.
- * Each adapter has no dependencies, allowing parallel resolution.
- *
- * @param count - Number of adapters (default: 20)
- */
-export function createLargeGraph(count = 20) {
-  type IndependentService = { execute(): void };
-
-  const adapters: Array<ReturnType<typeof createAdapter>> = [];
-
-  for (let i = 0; i < count; i++) {
-    const port = createPort<`S${number}`, IndependentService>(`S${i}`);
-    const adapter = createAdapter({
-      provides: port,
-      requires: [],
-      lifetime: "singleton",
-      factory: () => ({ execute: () => {} }),
-    });
-    adapters.push(adapter);
-  }
-
-  const builder = GraphBuilder.create().provideMany(adapters);
-
-  return { adapters, builder, build: () => builder.build() };
-}
+//
+// Note: Simple graph builders (createSimpleGraph, createThreeLevelGraph,
+// createDiamondGraph, createLargeGraph) have been consolidated into
+// TestGraphBuilder static methods:
+//   - TestGraphBuilder.chain(2)   -> simple graph
+//   - TestGraphBuilder.chain(3)   -> three-level graph
+//   - TestGraphBuilder.diamond()  -> diamond pattern
+//   - TestGraphBuilder.flat(n)    -> large graph with independent adapters
+//
 
 /**
  * Creates a multi-merge scenario with multiple independent graphs.
@@ -569,16 +654,16 @@ export function createLargeGraph(count = 20) {
  */
 export function createMultiMergeScenario() {
   // Graph 1: Logger
-  const graph1 = GraphBuilder.create().provide(LoggerAdapter);
+  const graph1 = GraphBuilder.create().provide(createLoggerAdapter());
 
   // Graph 2: Database (depends on Logger)
-  const graph2 = GraphBuilder.create().provide(DatabaseAdapter);
+  const graph2 = GraphBuilder.create().provide(createDatabaseAdapter());
 
   // Graph 3: UserService (depends on both)
-  const graph3 = GraphBuilder.create().provide(UserServiceAdapter);
+  const graph3 = GraphBuilder.create().provide(createUserServiceAdapter());
 
   // Graph 4: Config (independent)
-  const graph4 = GraphBuilder.create().provide(ConfigAdapter);
+  const graph4 = GraphBuilder.create().provideAsync(createConfigAdapter());
 
   return {
     graph1,
@@ -627,6 +712,45 @@ export function createMixedLifetimeGraph() {
     builder,
     build: () => builder.build(),
   };
+}
+
+// =============================================================================
+// Parent-Child Testing Utilities
+// =============================================================================
+
+/**
+ * Validates whether an adapter is a valid override for a parent graph.
+ *
+ * An override is valid if the parent graph provides an adapter for the same port.
+ * This helper catches invalid overrides at test time rather than at runtime.
+ *
+ * @param parent - The parent graph or builder with adapters
+ * @param adapter - The adapter to validate as an override
+ * @returns Validation result with error message if invalid
+ *
+ * @example
+ * ```typescript
+ * const result = validateOverride(parentGraph, LoggerOverrideAdapter);
+ * if (!result.valid) {
+ *   console.error(result.error); // "Port 'Logger' is not provided by parent graph"
+ * }
+ * ```
+ */
+export function validateOverride(
+  parent: { adapters: readonly { provides: { __portName: string } }[] },
+  adapter: { provides: { __portName: string } }
+): { valid: boolean; error?: string } {
+  const overridePortName = adapter.provides.__portName;
+  const parentPortNames = new Set(parent.adapters.map(a => a.provides.__portName));
+
+  if (!parentPortNames.has(overridePortName)) {
+    return {
+      valid: false,
+      error: `Port '${overridePortName}' is not provided by parent graph. Available ports: ${[...parentPortNames].join(", ") || "(none)"}`,
+    };
+  }
+
+  return { valid: true };
 }
 
 // =============================================================================

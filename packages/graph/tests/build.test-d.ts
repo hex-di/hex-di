@@ -19,7 +19,7 @@ import {
   createAdapter,
   Graph,
   InferGraphProvides,
-  AdapterAny,
+  AdapterConstraint,
 } from "../src/index.js";
 import {
   LoggerPort,
@@ -165,7 +165,7 @@ describe("build() returns error type when deps missing", () => {
     type BuildResult = ReturnType<typeof builder.build>;
 
     // The return type should be an error template literal
-    expectTypeOf<BuildResult>().toEqualTypeOf<"ERROR: Missing adapters for Config. Call .provide() first.">();
+    expectTypeOf<BuildResult>().toEqualTypeOf<"ERROR[HEX008]: Missing adapters for Config. Call .provide() first.">();
   });
 
   it("returns error string when multiple dependencies missing", () => {
@@ -175,7 +175,17 @@ describe("build() returns error type when deps missing", () => {
     type BuildResult = ReturnType<typeof builder.build>;
 
     // Should return single error string with all missing ports combined
-    expectTypeOf<BuildResult>().toEqualTypeOf<"ERROR: Missing adapters for Database, Logger. Call .provide() first.">();
+    // Note: Union ordering is TypeScript implementation-dependent, so we verify pattern
+    type HasErrorPrefix = BuildResult extends `ERROR[HEX008]: Missing adapters for ${string}`
+      ? true
+      : false;
+    type ContainsLogger = BuildResult extends `${string}Logger${string}` ? true : false;
+    type ContainsDatabase = BuildResult extends `${string}Database${string}` ? true : false;
+    type HasSuffix = BuildResult extends `${string}. Call .provide() first.` ? true : false;
+    expectTypeOf<HasErrorPrefix>().toEqualTypeOf<true>();
+    expectTypeOf<ContainsLogger>().toEqualTypeOf<true>();
+    expectTypeOf<ContainsDatabase>().toEqualTypeOf<true>();
+    expectTypeOf<HasSuffix>().toEqualTypeOf<true>();
   });
 
   it("returns error string when some but not all deps provided", () => {
@@ -186,7 +196,7 @@ describe("build() returns error type when deps missing", () => {
     type BuildResult = ReturnType<typeof builder.build>;
 
     // Should return error with just Database missing
-    expectTypeOf<BuildResult>().toEqualTypeOf<"ERROR: Missing adapters for Database. Call .provide() first.">();
+    expectTypeOf<BuildResult>().toEqualTypeOf<"ERROR[HEX008]: Missing adapters for Database. Call .provide() first.">();
   });
 
   it("error message is a readable template literal", () => {
@@ -195,8 +205,10 @@ describe("build() returns error type when deps missing", () => {
 
     type BuildResult = ReturnType<typeof builder.build>;
 
-    // Should be a template literal with "ERROR: Missing adapters for" prefix
-    type HasPrefix = BuildResult extends `ERROR: Missing adapters for ${string}` ? true : false;
+    // Should be a template literal with "ERROR[HEX008]: Missing adapters for" prefix
+    type HasPrefix = BuildResult extends `ERROR[HEX008]: Missing adapters for ${string}`
+      ? true
+      : false;
     expectTypeOf<HasPrefix>().toEqualTypeOf<true>();
   });
 });
@@ -213,7 +225,7 @@ describe("error return type shows missing port names", () => {
     type BuildResult = ReturnType<typeof builder.build>;
 
     // The return type IS the error message (a template literal string)
-    expectTypeOf<BuildResult>().toEqualTypeOf<"ERROR: Missing adapters for Config. Call .provide() first.">();
+    expectTypeOf<BuildResult>().toEqualTypeOf<"ERROR[HEX008]: Missing adapters for Config. Call .provide() first.">();
   });
 
   it("error message includes multiple missing port names", () => {
@@ -223,7 +235,15 @@ describe("error return type shows missing port names", () => {
     type BuildResult = ReturnType<typeof builder.build>;
 
     // Should return single error string with all missing ports combined
-    expectTypeOf<BuildResult>().toEqualTypeOf<"ERROR: Missing adapters for Database, Logger. Call .provide() first.">();
+    // Note: Union ordering is TypeScript implementation-dependent, so we verify pattern
+    type HasErrorPrefix = BuildResult extends `ERROR[HEX008]: Missing adapters for ${string}`
+      ? true
+      : false;
+    type ContainsLogger = BuildResult extends `${string}Logger${string}` ? true : false;
+    type ContainsDatabase = BuildResult extends `${string}Database${string}` ? true : false;
+    expectTypeOf<HasErrorPrefix>().toEqualTypeOf<true>();
+    expectTypeOf<ContainsLogger>().toEqualTypeOf<true>();
+    expectTypeOf<ContainsDatabase>().toEqualTypeOf<true>();
   });
 
   it("error message has correct prefix format", () => {
@@ -233,7 +253,9 @@ describe("error return type shows missing port names", () => {
     type BuildResult = ReturnType<typeof builder.build>;
 
     // Verify the message starts with the expected prefix
-    type HasPrefix = BuildResult extends `ERROR: Missing adapters for ${string}` ? true : false;
+    type HasPrefix = BuildResult extends `ERROR[HEX008]: Missing adapters for ${string}`
+      ? true
+      : false;
     expectTypeOf<HasPrefix>().toEqualTypeOf<true>();
   });
 
@@ -377,7 +399,7 @@ describe("build() returns Graph with correct type information", () => {
 
     // Invalid builder returns error string - check return type is a template literal
     type InvalidResult = ReturnType<typeof invalidBuilder.build>;
-    type IsTemplateLiteral = InvalidResult extends `ERROR: Missing adapters for ${string}`
+    type IsTemplateLiteral = InvalidResult extends `ERROR[HEX008]: Missing adapters for ${string}`
       ? true
       : false;
     expectTypeOf<IsTemplateLiteral>().toEqualTypeOf<true>();
@@ -393,7 +415,7 @@ describe("built graph is immutable (type-level readonly)", () => {
     type GraphAdapters = Graph<LoggerPortType>["adapters"];
 
     // Verify it's a readonly array at type level
-    type IsReadonly = GraphAdapters extends readonly AdapterAny[] ? true : false;
+    type IsReadonly = GraphAdapters extends readonly AdapterConstraint[] ? true : false;
     expectTypeOf<IsReadonly>().toEqualTypeOf<true>();
   });
 
@@ -433,8 +455,8 @@ describe("built graph contains all registered adapters", () => {
     type AdaptersType = (typeof graph)["adapters"];
     type ElementType = AdaptersType[number];
 
-    // Element type should be compatible with AdapterAny
-    type IsAdapter = ElementType extends AdapterAny ? true : false;
+    // Element type should be compatible with AdapterConstraint
+    type IsAdapter = ElementType extends AdapterConstraint ? true : false;
     expectTypeOf<IsAdapter>().toEqualTypeOf<true>();
   });
 
@@ -471,13 +493,16 @@ describe("error appears when using build() result", () => {
     type BuildResult = ReturnType<typeof incompleteBuilder.build>;
 
     // Error should be a template literal string with the missing port names
-    type IsTemplateLiteral = BuildResult extends `ERROR: Missing adapters for ${string}`
+    type IsTemplateLiteral = BuildResult extends `ERROR[HEX008]: Missing adapters for ${string}`
       ? true
       : false;
     expectTypeOf<IsTemplateLiteral>().toEqualTypeOf<true>();
 
-    // Single combined error message with all missing ports
-    expectTypeOf<BuildResult>().toEqualTypeOf<"ERROR: Missing adapters for Database, Logger. Call .provide() first.">();
+    // Verify error contains both missing port names (order is implementation-dependent)
+    type ContainsLogger = BuildResult extends `${string}Logger${string}` ? true : false;
+    type ContainsDatabase = BuildResult extends `${string}Database${string}` ? true : false;
+    expectTypeOf<ContainsLogger>().toEqualTypeOf<true>();
+    expectTypeOf<ContainsDatabase>().toEqualTypeOf<true>();
   });
 
   it("builder type before build() does not show error", () => {
@@ -508,7 +533,7 @@ describe("error appears when using build() result", () => {
 
     // Return type is error message, not Graph
     type BuildResult = ReturnType<typeof builder.build>;
-    type IsErrorMessage = BuildResult extends `ERROR: Missing adapters for ${string}`
+    type IsErrorMessage = BuildResult extends `ERROR[HEX008]: Missing adapters for ${string}`
       ? true
       : false;
     expectTypeOf<IsErrorMessage>().toEqualTypeOf<true>();

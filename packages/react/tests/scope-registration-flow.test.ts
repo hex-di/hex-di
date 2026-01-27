@@ -60,7 +60,7 @@ describe("React Scope Registration Flow (toRuntimeContainer)", () => {
   test("scope created via RuntimeResolver should appear in original container inspector", async () => {
     // Step 1: Create container with plugin (like in App.tsx)
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = pipe(createContainer(graph), withTestPlugin);
+    const container = pipe(createContainer(graph, { name: "TestContainer" }), withTestPlugin);
 
     // Step 2: Wrap in toRuntimeContainerWithInit (what AsyncContainerProvider does)
     const runtimeContainer = toRuntimeContainerWithInit(container);
@@ -90,7 +90,7 @@ describe("React Scope Registration Flow (toRuntimeContainer)", () => {
 
   test("multiple scopes created via RuntimeResolver should all appear in inspector", async () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = pipe(createContainer(graph), withTestPlugin);
+    const container = pipe(createContainer(graph, { name: "TestContainer" }), withTestPlugin);
     const runtimeContainer = toRuntimeContainerWithInit(container);
     const initializedResolver = await runtimeContainer.initialize();
 
@@ -118,7 +118,7 @@ describe("React Scope Registration Flow (toRuntimeContainer)", () => {
 
   test("nested scopes via RuntimeResolver should appear hierarchically", async () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = pipe(createContainer(graph), withTestPlugin);
+    const container = pipe(createContainer(graph, { name: "TestContainer" }), withTestPlugin);
     const runtimeContainer = toRuntimeContainerWithInit(container);
     const initializedResolver = await runtimeContainer.initialize();
 
@@ -146,7 +146,7 @@ describe("React Scope Registration Flow (toRuntimeContainer)", () => {
 
   test("scope created via RuntimeContainer.createScope (before initialize) should appear in inspector", async () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = pipe(createContainer(graph), withTestPlugin);
+    const container = pipe(createContainer(graph, { name: "TestContainer" }), withTestPlugin);
     const runtimeContainer = toRuntimeContainerWithInit(container);
 
     // Create scope BEFORE initializing (via RuntimeContainer, not RuntimeResolver)
@@ -175,7 +175,7 @@ describe("React Scope Registration Flow (toRuntimeContainer)", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
     // Step 1: Container created at module level (like App.tsx line 49)
-    const container = pipe(createContainer(graph), withTestPlugin);
+    const container = pipe(createContainer(graph, { name: "TestContainer" }), withTestPlugin);
 
     // Step 2: DevTools creates inspector FIRST (like useContainerScopeTree does)
     // This happens when DevTools mounts, which may be before scopes are created

@@ -100,11 +100,14 @@ function createMockContainer(): TestContainer {
 
   const mockInternalState: ContainerInternalState = {
     containerId: "root",
+    containerName: "TestContainer",
     disposed: false,
     singletonMemo: { size: 0, entries: [] },
     childScopes: [],
     childContainers: [],
     adapterMap: new Map(),
+    overridePorts: new Set(),
+    isOverride: () => false,
   };
 
   const mockContainer: TestContainer = {

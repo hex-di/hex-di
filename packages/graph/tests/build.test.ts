@@ -14,11 +14,28 @@ import { describe, expect, it } from "vitest";
 import { GraphBuilder, createAdapter } from "../src/index.js";
 import {
   ConfigPort,
-  LoggerAdapter,
-  DatabaseAdapter,
-  CacheAdapter,
-  UserServiceAdapter,
+  createLoggerAdapter,
+  createDatabaseAdapter,
+  createCacheAdapter,
+  createUserServiceAdapter,
 } from "./fixtures.js";
+
+// =============================================================================
+// Test Adapter Instances (Module Scope)
+// =============================================================================
+//
+// These adapters are created at module scope intentionally. This is safe because:
+// 1. Adapters are immutable (frozen by createAdapter)
+// 2. Adapters contain no mutable state
+// 3. The factory functions inside return new service instances each time
+//
+// This pattern trades "perfect isolation" for test readability and performance.
+// If you need fresh adapters per-test, use the factory functions directly.
+
+const LoggerAdapter = createLoggerAdapter();
+const DatabaseAdapter = createDatabaseAdapter();
+const CacheAdapter = createCacheAdapter();
+const UserServiceAdapter = createUserServiceAdapter();
 
 // Local ConfigAdapter with different factory (no undefined return)
 const ConfigAdapter = createAdapter({
