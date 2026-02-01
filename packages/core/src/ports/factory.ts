@@ -7,7 +7,14 @@
  * @packageDocumentation
  */
 
-import type { Port, PortDirection, PortMetadata, DirectedPort, CreatePortConfig } from "./types.js";
+import type {
+  Port,
+  PortDirection,
+  PortMetadata,
+  DirectedPort,
+  CreatePortConfig,
+  SuggestedCategory,
+} from "./types.js";
 import { DIRECTION_BRAND, METADATA_KEY, createDirectedPortImpl } from "./directed.js";
 import type { DirectedPortRuntime } from "./directed.js";
 
@@ -110,21 +117,34 @@ function unsafeCreatePort<TName extends string>(name: TName): PortRuntime<TName>
  * ```
  */
 
-// Overload 1: NEW API - Object config, direction NOT provided - defaults to 'outbound'
-export function createPort<TService, const TName extends string>(
-  config: Omit<CreatePortConfig<TName, "outbound">, "direction"> & { direction?: undefined }
-): DirectedPort<TService, TName, "outbound">;
+/**
+ * Configuration for createPort with inferred name type.
+ * @internal
+ */
+interface CreatePortConfigWithName<TName extends string> {
+  readonly name: TName;
+  readonly direction?: PortDirection;
+  readonly description?: string;
+  readonly category?: SuggestedCategory;
+  readonly tags?: readonly string[];
+}
 
-// Overload 2: NEW API - Object config, direction IS provided - uses literal type
+/**
+ * Infers direction from config, defaulting to 'outbound'.
+ * @internal
+ */
+type InferDirection<TConfig> = TConfig extends { direction: infer D extends PortDirection }
+  ? D
+  : "outbound";
+
+// Overload 1: NEW API - Object config (name and direction inferred from config)
+// Default for TConfig enables calling with single type param: createPort<Service>({ name: 'X' })
 export function createPort<
   TService,
-  const TName extends string,
-  const TDirection extends PortDirection,
->(
-  config: CreatePortConfig<TName, TDirection> & { direction: TDirection }
-): DirectedPort<TService, TName, TDirection>;
+  const TConfig extends CreatePortConfigWithName<string> = CreatePortConfigWithName<string>,
+>(config: TConfig): DirectedPort<TService, TConfig["name"], InferDirection<TConfig>>;
 
-// Overload 3: LEGACY API - String-based (deprecated)
+// Overload 2: LEGACY API - String-based (deprecated)
 /**
  * @deprecated Use `createPort({ name: 'X' })` instead.
  */
@@ -133,12 +153,12 @@ export function createPort<const TName extends string, TService>(
 ): Port<TService, TName>;
 
 // Implementation
-export function createPort<TService, const TName extends string>(
-  configOrName: CreatePortConfig<TName, PortDirection> | TName
-): DirectedPort<TService, TName, PortDirection> | Port<TService, TName> {
+export function createPort<TService>(
+  configOrName: CreatePortConfigWithName<string> | string
+): DirectedPort<TService, string, PortDirection> | Port<TService, string> {
   // Legacy string-based API
   if (typeof configOrName === "string") {
-    return unsafeCreatePort<TService, TName>(configOrName);
+    return unsafeCreatePort<TService, string>(configOrName);
   }
 
   // New object config API
@@ -150,13 +170,13 @@ export function createPort<TService, const TName extends string>(
     tags: config.tags ?? [], // Return empty array when not specified
   });
 
-  const runtime: DirectedPortRuntime<TName> = Object.freeze({
+  const runtime: DirectedPortRuntime<string> = Object.freeze({
     __portName: config.name,
     [DIRECTION_BRAND]: direction,
     [METADATA_KEY]: metadata,
   });
 
-  return createDirectedPortImpl<TService, TName, PortDirection>(runtime);
+  return createDirectedPortImpl<TService, string, PortDirection>(runtime);
 }
 
 // =============================================================================

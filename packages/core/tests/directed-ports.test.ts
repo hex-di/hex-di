@@ -610,30 +610,38 @@ describe("integration with adapters", () => {
 
 describe("Unified createPort() with object config", () => {
   describe("Direction defaults to outbound", () => {
-    it("returns outbound direction when not specified", () => {
+    it("returns outbound direction when not specified (full inference)", () => {
+      // Full inference - TService is unknown, but name is literal
+      const LoggerPort = createPort({ name: "Logger" });
+
+      expect(getPortDirection(LoggerPort)).toBe("outbound");
+      expectTypeOf<InferPortDirection<typeof LoggerPort>>().toEqualTypeOf<"outbound">();
+      expectTypeOf(LoggerPort.__portName).toEqualTypeOf<"Logger">();
+    });
+
+    it("returns outbound direction when not specified (with service type)", () => {
+      // With service type - TName becomes string (TypeScript limitation)
       const LoggerPort = createPort<Logger>({ name: "Logger" });
 
       expect(getPortDirection(LoggerPort)).toBe("outbound");
+      expect(LoggerPort.__portName).toBe("Logger");
+      // Note: When providing single type param, name type is widened to string
+      // This is a TypeScript limitation with partial type argument inference
     });
 
-    it("infers outbound literal type when not specified", () => {
-      const LoggerPort = createPort<Logger>({ name: "Logger" });
-
-      expectTypeOf<InferPortDirection<typeof LoggerPort>>().toEqualTypeOf<"outbound">();
-    });
-
-    it("preserves inbound literal type when specified", () => {
-      const ServicePort = createPort<UserService>({
+    it("preserves inbound literal type when specified (full inference)", () => {
+      const ServicePort = createPort({
         name: "UserService",
         direction: "inbound",
       });
 
       expect(getPortDirection(ServicePort)).toBe("inbound");
       expectTypeOf<InferPortDirection<typeof ServicePort>>().toEqualTypeOf<"inbound">();
+      expectTypeOf(ServicePort.__portName).toEqualTypeOf<"UserService">();
     });
 
-    it("preserves outbound literal type when explicitly specified", () => {
-      const RepoPort = createPort<UserRepository>({
+    it("preserves outbound literal type when explicitly specified (full inference)", () => {
+      const RepoPort = createPort({
         name: "UserRepository",
         direction: "outbound",
       });
@@ -643,16 +651,17 @@ describe("Unified createPort() with object config", () => {
     });
   });
 
-  describe("Name literal type preserved", () => {
-    it("infers name as literal type", () => {
-      const LoggerPort = createPort<Logger>({ name: "Logger" });
+  describe("Name literal type preserved with full inference", () => {
+    it("infers name as literal type when no type params provided", () => {
+      const LoggerPort = createPort({ name: "Logger" });
 
       expect(LoggerPort.__portName).toBe("Logger");
+      // Full inference preserves literal type
       expectTypeOf(LoggerPort.__portName).toEqualTypeOf<"Logger">();
     });
 
-    it("works with InferPortName", () => {
-      const LoggerPort = createPort<Logger>({ name: "MyLogger" });
+    it("works with InferPortName (full inference)", () => {
+      const LoggerPort = createPort({ name: "MyLogger" });
 
       expectTypeOf<InferPortName<typeof LoggerPort>>().toEqualTypeOf<"MyLogger">();
     });
@@ -697,20 +706,21 @@ describe("Unified createPort() with object config", () => {
   });
 
   describe("Type compatibility", () => {
-    it("is assignable to DirectedPort", () => {
-      const LoggerPort = createPort<Logger>({ name: "Logger" });
+    it("is assignable to DirectedPort (full inference)", () => {
+      const LoggerPort = createPort({ name: "Logger" });
 
-      expectTypeOf(LoggerPort).toMatchTypeOf<DirectedPort<Logger, "Logger", "outbound">>();
+      // With full inference, TService is unknown but name literal is preserved
+      expectTypeOf(LoggerPort).toMatchTypeOf<DirectedPort<unknown, "Logger", "outbound">>();
     });
 
-    it("is assignable to base Port", () => {
-      const LoggerPort = createPort<Logger>({ name: "Logger" });
+    it("is assignable to base Port (full inference)", () => {
+      const LoggerPort = createPort({ name: "Logger" });
 
       // DirectedPort extends Port, so this should work
-      expectTypeOf(LoggerPort).toMatchTypeOf<Port<Logger, "Logger">>();
+      expectTypeOf(LoggerPort).toMatchTypeOf<Port<unknown, "Logger">>();
     });
 
-    it("works with InferService", () => {
+    it("works with InferService when service type provided", () => {
       const LoggerPort = createPort<Logger>({ name: "Logger" });
 
       expectTypeOf<InferService<typeof LoggerPort>>().toEqualTypeOf<Logger>();

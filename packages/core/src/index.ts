@@ -41,6 +41,8 @@ export type {
   IsDirectedPort,
   InferPortDirection,
   InferPortMetadata,
+  CreatePortConfig,
+  SuggestedCategory,
 } from "./ports/types.js";
 
 // =============================================================================
