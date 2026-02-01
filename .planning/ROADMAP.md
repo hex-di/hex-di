@@ -33,11 +33,11 @@ Decimal phases appear between their surrounding integers in numeric order.
 3. Runtime validation catches forward references that escape compile-time detection
 4. Type-level validation remains primary defense, runtime acts as safety net
 
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
 
-- [ ] 01-01: TBD during plan-phase
+- [ ] 01-01-PLAN.md — Verify BUILD-01 implementation and mark phase complete
 
 ### Phase 2: Merge Type Fixes
 
@@ -67,5 +67,5 @@ Phases execute in numeric order: 1 → 2
 
 | Phase               | Plans Complete | Status      | Completed |
 | ------------------- | -------------- | ----------- | --------- |
-| 1. Build Validation | 0/TBD          | Not started | -         |
+| 1. Build Validation | 0/1            | Not started | -         |
 | 2. Merge Type Fixes | 0/TBD          | Not started | -         |
