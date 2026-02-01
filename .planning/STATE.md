@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-01)
 
 **Core value:** Catch dependency graph errors at compile time, not runtime
-**Current focus:** Planning next milestone
+**Current focus:** v1.2 Developer Experience
 
 ## Current Position
 
-Phase: Milestone v1.1 shipped
-Plan: N/A
-Status: Ready for next milestone
-Last activity: 2026-02-01 — v1.1 milestone archived
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-01 — Milestone v1.2 started
 
-Progress: [██████████] 100% (v1.1 complete)
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -43,7 +43,16 @@ _Updated after each plan completion_
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
-v1.1 milestone decisions archived — see milestones/v1.1-ROADMAP.md
+
+### Analysis Results (v1.2 Planning)
+
+Expert analysis (10 agents) scored HexDI 177.5/200 (8.88/10). Priority improvements:
+
+| Area             | Current | Target | Priority |
+| ---------------- | ------- | ------ | -------- |
+| Scoped Overrides | 7.0     | 9.0    | High     |
+| API Ergonomics   | 8.0     | 9.5    | High     |
+| Port System      | 8.5     | 9.5    | Medium   |
 
 ### Pending Todos
 
@@ -56,10 +65,10 @@ None identified.
 ## Session Continuity
 
 Last session: 2026-02-01
-Stopped at: v1.1 milestone archived, ready for next milestone
+Stopped at: Milestone v1.2 initialized
 Resume file: None
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-01 after v1.1 milestone archived_
+_Last updated: 2026-02-01 after v1.2 milestone started_

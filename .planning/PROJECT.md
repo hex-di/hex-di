@@ -8,6 +8,16 @@ A TypeScript dependency injection library implementing Hexagonal Architecture (P
 
 Catch dependency graph errors at compile time, not runtime — invalid graphs should fail to typecheck.
 
+## Current Milestone: v1.2 Developer Experience
+
+**Goal:** Improve developer experience through better override patterns, ergonomic APIs, and enhanced port system clarity.
+
+**Target features:**
+
+- Scoped override patterns (`withOverrides()`, request-scoped lifetime)
+- Enhanced API ergonomics (`defineService()` builder, `fromClass()` helper)
+- Port direction types for hexagonal clarity (`createInboundPort()`, `createOutboundPort()`)
+
 ## Requirements
 
 ### Validated
@@ -25,32 +35,38 @@ Catch dependency graph errors at compile time, not runtime — invalid graphs sh
 - Hono integration (per-request scopes)
 - Flow state machine runtime
 - Testing utilities
-- ✓ Runtime captive detection as defense-in-depth — v1.1
-- ✓ Merge operations preserve parentProvides union — v1.1
-- ✓ Merge operations preserve UnsafeDepthOverride flag — v1.1
+- Runtime captive detection as defense-in-depth — v1.1
+- Merge operations preserve parentProvides union — v1.1
+- Merge operations preserve UnsafeDepthOverride flag — v1.1
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-(None — ready for next milestone planning)
+- [ ] Scoped overrides with `withOverrides()` pattern
+- [ ] Request-scoped lifetime as first-class concept
+- [ ] Enhanced `defineService()` with builder pattern
+- [ ] `fromClass()` helper for class-based services
+- [ ] Port direction types (`createInboundPort()`, `createOutboundPort()`)
+- [ ] Port metadata for documentation and visualization
 
 ### Out of Scope
 
 <!-- Explicit boundaries. Includes reasoning to prevent re-adding. -->
 
-- Performance optimization for type checking — address after v1.1 shipped
-- New features — focus on stability first
+- Decorator-based registration — Optional future package, not core v1.2
+- Convention-based auto-wiring — Too implicit for core library philosophy
+- Performance optimization for type checking — address in dedicated milestone
 
 ## Current State
 
-**Shipped:** v1.1 Bug Fixes (2026-02-01)
+**In Progress:** v1.2 Developer Experience
 
-v1.1 verified and documented 3 bug fixes that were already implemented:
+Based on comprehensive analysis (8.88/10 overall score from expert review), prioritizing:
 
-- BUILD-01: Runtime captive detection runs unconditionally
-- MERGE-01: `UnifiedMergeInternals` merges `parentProvides` correctly
-- MERGE-02: `UnsafeDepthOverride` preserved with OR semantics
+1. **Scoped Overrides** (7.0 → 9.0) — Highest impact improvement
+2. **API Ergonomics** (8.0 → 9.5) — High developer value
+3. **Port System** (8.5 → 9.5) — Architectural clarity
 
 All 1844 type tests and 1498 runtime tests pass.
 
@@ -59,12 +75,13 @@ All 1844 type tests and 1498 runtime tests pass.
 - Monorepo with 10 packages under `@hex-di/*` scope
 - Type-level validation is complex (1,250 line provide.ts, 810 line merge.ts)
 - Graph builder validation is now complete and verified
+- Expert analysis identified scoped overrides as weakest area (7.0/10)
 
 ## Constraints
 
 - **Type safety**: No `any` types — per project rules
 - **No casting**: Fix underlying type issues, don't cast around them
-- **Backward compatible**: Changes should not break public API
+- **Backward compatible**: All improvements are additive, existing API unchanged
 
 ## Key Decisions
 
@@ -75,7 +92,9 @@ All 1844 type tests and 1498 runtime tests pass.
 | Fix all 3 bugs in single milestone | They're related (all in merge/build logic)   | ✓ Good (v1.1) |
 | Verification-only milestone        | Bugs were already fixed in prior refactoring | ✓ Good (v1.1) |
 | Defense-in-depth validation        | Runtime backs up compile-time checks         | ✓ Good (v1.1) |
+| Focus v1.2 on DX improvements      | Expert analysis shows clear priority areas   | — Pending     |
+| Additive-only changes for v1.2     | Maintains backward compatibility             | — Pending     |
 
 ---
 
-_Last updated: 2026-02-01 after v1.1 milestone shipped_
+_Last updated: 2026-02-01 after v1.2 milestone started_
