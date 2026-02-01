@@ -44,19 +44,19 @@ Explicitly excluded. Documented to prevent scope creep.
 
 Which phases cover which requirements. Updated during roadmap creation.
 
-| Requirement | Phase | Status  |
-| ----------- | ----- | ------- |
-| BUILD-01    | —     | Pending |
-| MERGE-01    | —     | Pending |
-| MERGE-02    | —     | Pending |
+| Requirement | Phase   | Status  |
+| ----------- | ------- | ------- |
+| BUILD-01    | Phase 1 | Pending |
+| MERGE-01    | Phase 2 | Pending |
+| MERGE-02    | Phase 2 | Pending |
 
 **Coverage:**
 
 - v1.1 requirements: 3 total
-- Mapped to phases: 0
-- Unmapped: 3 (roadmap pending)
+- Mapped to phases: 3
+- Unmapped: 0
 
 ---
 
 _Requirements defined: 2026-02-01_
-_Last updated: 2026-02-01 after initial definition_
+_Last updated: 2026-02-01 after roadmap creation_
