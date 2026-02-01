@@ -69,6 +69,9 @@ export { defineService, defineAsyncService, createClassAdapter } from "./adapter
 // Fluent builder
 export { ServiceBuilder } from "./adapters/builder.js";
 
+// Class-based builder
+export { fromClass, ClassAdapterBuilder, ClassServiceBuilder } from "./adapters/from-class.js";
+
 // Lazy ports
 export { lazyPort, isLazyPort, getOriginalPort } from "./adapters/lazy.js";
 export type { LazyPort, IsLazyPort, UnwrapLazyPort } from "./adapters/lazy.js";
