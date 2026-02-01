@@ -419,6 +419,46 @@ export type InferPortDirection<P> = P extends {
 export type InferPortMetadata<P> = P extends { readonly [__metadataKey]: infer M } ? M : never;
 
 // =============================================================================
+// Port Direction Filter Utilities
+// =============================================================================
+
+/**
+ * Filters a union of ports to only those with 'inbound' direction.
+ *
+ * @typeParam P - A union of DirectedPort types
+ * @returns Only the ports from the union that have direction 'inbound'
+ *
+ * @example
+ * ```typescript
+ * type AllPorts = LoggerPort | RequestPort | ResponsePort;
+ * // Where RequestPort is inbound, others are outbound
+ *
+ * type Inbound = InboundPorts<AllPorts>;
+ * // Inbound = RequestPort
+ * ```
+ */
+export type InboundPorts<P> =
+  P extends DirectedPort<infer S, infer N, "inbound"> ? DirectedPort<S, N, "inbound"> : never;
+
+/**
+ * Filters a union of ports to only those with 'outbound' direction.
+ *
+ * @typeParam P - A union of DirectedPort types
+ * @returns Only the ports from the union that have direction 'outbound'
+ *
+ * @example
+ * ```typescript
+ * type AllPorts = LoggerPort | RequestPort | ResponsePort;
+ * // Where LoggerPort and ResponsePort are outbound
+ *
+ * type Outbound = OutboundPorts<AllPorts>;
+ * // Outbound = LoggerPort | ResponsePort
+ * ```
+ */
+export type OutboundPorts<P> =
+  P extends DirectedPort<infer S, infer N, "outbound"> ? DirectedPort<S, N, "outbound"> : never;
+
+// =============================================================================
 // createPort() Configuration Types
 // =============================================================================
 

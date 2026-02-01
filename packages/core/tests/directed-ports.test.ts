@@ -32,6 +32,8 @@ import type {
   InferPortDirection,
   InferPortMetadata,
   IsDirectedPort,
+  InboundPorts,
+  OutboundPorts,
 } from "../src/index.js";
 
 // =============================================================================
@@ -847,5 +849,64 @@ describe("port() builder for service-typed ports", () => {
 
     expectTypeOf(ConsoleLogger.__portName).toEqualTypeOf<"ConsoleLogger">();
     expectTypeOf(FileLogger.__portName).toEqualTypeOf<"FileLogger">();
+  });
+});
+
+// =============================================================================
+// InboundPorts and OutboundPorts Filter Utilities
+// =============================================================================
+
+describe("InboundPorts and OutboundPorts filter utilities", () => {
+  it("InboundPorts filters to only inbound ports", () => {
+    const InboundPort1 = port<{ a: string }>()({ name: "Inbound1", direction: "inbound" });
+    const OutboundPort1 = port<{ b: string }>()({ name: "Outbound1" });
+    const InboundPort2 = port<{ c: string }>()({ name: "Inbound2", direction: "inbound" });
+
+    type AllPorts = typeof InboundPort1 | typeof OutboundPort1 | typeof InboundPort2;
+    type Filtered = InboundPorts<AllPorts>;
+
+    // Should only include inbound ports
+    expectTypeOf<Filtered>().toEqualTypeOf<typeof InboundPort1 | typeof InboundPort2>();
+  });
+
+  it("OutboundPorts filters to only outbound ports", () => {
+    const InboundPort1 = port<{ a: string }>()({ name: "Inbound1", direction: "inbound" });
+    const OutboundPort1 = port<{ b: string }>()({ name: "Outbound1" });
+    const OutboundPort2 = port<{ c: string }>()({ name: "Outbound2" });
+
+    type AllPorts = typeof InboundPort1 | typeof OutboundPort1 | typeof OutboundPort2;
+    type Filtered = OutboundPorts<AllPorts>;
+
+    // Should only include outbound ports
+    expectTypeOf<Filtered>().toEqualTypeOf<typeof OutboundPort1 | typeof OutboundPort2>();
+  });
+
+  it("InboundPorts returns never for outbound-only union", () => {
+    const OutboundOnly = port<{ a: string }>()({ name: "OutboundOnly" });
+
+    type Filtered = InboundPorts<typeof OutboundOnly>;
+
+    expectTypeOf<Filtered>().toEqualTypeOf<never>();
+  });
+
+  it("OutboundPorts returns never for inbound-only union", () => {
+    const InboundOnly = port<{ a: string }>()({ name: "InboundOnly", direction: "inbound" });
+
+    type Filtered = OutboundPorts<typeof InboundOnly>;
+
+    expectTypeOf<Filtered>().toEqualTypeOf<never>();
+  });
+
+  it("preserves full DirectedPort type including service and name", () => {
+    const LoggerPort = port<Logger>()({ name: "Logger" });
+    const RequestPort = port<UserService>()({ name: "Request", direction: "inbound" });
+
+    type AllPorts = typeof LoggerPort | typeof RequestPort;
+    type FilteredInbound = InboundPorts<AllPorts>;
+    type FilteredOutbound = OutboundPorts<AllPorts>;
+
+    // Verify filtered types maintain full type information
+    expectTypeOf<FilteredInbound>().toEqualTypeOf<typeof RequestPort>();
+    expectTypeOf<FilteredOutbound>().toEqualTypeOf<typeof LoggerPort>();
   });
 });
