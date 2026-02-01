@@ -243,6 +243,15 @@ export abstract class BaseContainerImpl<
     scopeId: string | null = null
   ): unknown {
     const portName = port.__portName;
+
+    // Check for active override context first.
+    // This is critical for nested dependency resolution: when resolving dependencies
+    // of a non-overridden service, we must still check if each dependency is overridden.
+    const overrideContext = getActiveOverrideContext();
+    if (overrideContext !== undefined && overrideContext.isOverridden(port)) {
+      return overrideContext.resolve(port);
+    }
+
     const adapter = this.getAdapter(port);
 
     if (adapter === undefined || !isAdapterForPort(adapter, port)) {

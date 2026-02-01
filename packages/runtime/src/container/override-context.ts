@@ -203,9 +203,10 @@ export class OverrideContext<TProvides extends Port<unknown, string>> {
       throw new Error(`Override factory not found for port '${portName}'`);
     }
 
-    // Use the override memo to cache the override instance
-    // This ensures the same override instance is returned for multiple resolves
-    return this.overrideMemo.getOrElseMemoize(port, () => factory() as InferService<P>);
+    // Use memoizeOwn to cache the override instance in our own memo only.
+    // This is critical: we must NOT check the parent memo because we want
+    // the override to take precedence even if the original is already cached.
+    return this.overrideMemo.memoizeOwn(port, () => factory() as InferService<P>);
   }
 
   /**

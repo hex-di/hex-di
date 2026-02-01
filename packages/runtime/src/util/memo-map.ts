@@ -202,6 +202,57 @@ export class MemoMap {
   }
 
   /**
+   * Memoizes in own cache only, ignoring parent cache entirely.
+   *
+   * This method is specifically for override contexts where we want to
+   * cache override instances locally without checking or delegating to
+   * the parent memo map. This ensures overrides work even when the
+   * original service is already cached in the parent.
+   *
+   * @typeParam P - The port type being cached
+   * @param port - The port to use as cache key
+   * @param factory - Function to create the instance if not cached locally
+   * @param finalizer - Optional cleanup function called during disposal
+   * @returns The cached or newly created instance
+   *
+   * @example
+   * ```typescript
+   * // Used by OverrideContext to ensure overrides don't inherit from parent
+   * const mockLogger = overrideMemo.memoizeOwn(
+   *   LoggerPort,
+   *   () => new MockLogger()
+   * );
+   * ```
+   */
+  memoizeOwn<P extends Port<unknown, string>>(
+    port: P,
+    factory: () => InferService<P>,
+    finalizer?: Finalizer<InferService<P>>
+  ): InferService<P> {
+    // Check own cache only - do NOT check parent
+    const cached = this.cache.get(port);
+    if (cached !== undefined && isEntryForPort(cached, port)) {
+      return cached.instance;
+    }
+
+    // Create new instance
+    const instance = factory();
+
+    // Cache the instance in own cache
+    const entry: CacheEntry<P> = {
+      port,
+      instance,
+      finalizer,
+      resolvedAt: Date.now(),
+      resolutionOrder: this.resolutionCounter++,
+    };
+    this.cache.set(port, entry);
+    this.creationOrder.push(entry);
+
+    return instance;
+  }
+
+  /**
    * Gets a cached instance or asynchronously creates and caches a new one.
    *
    * Similar to getOrElseMemoize but supports async factory functions.
