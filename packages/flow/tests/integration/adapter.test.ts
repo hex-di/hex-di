@@ -44,8 +44,8 @@ interface Logger {
   warn(message: string, meta?: Record<string, unknown>): void;
 }
 
-const ApiPort = createPort<ApiService>({ name: "Api" });
-const LoggerPort = createPort<Logger>({ name: "Logger" });
+const ApiPort = createPort<ApiService, "Api">({ name: "Api" });
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
 
 // Activity definitions
 const TaskActivityPort = activityPort<{ taskId: string }, { result: string }>()("TaskActivity");

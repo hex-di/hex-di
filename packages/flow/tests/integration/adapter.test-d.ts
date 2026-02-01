@@ -49,10 +49,10 @@ interface CacheService {
   set(key: string, value: unknown): void;
 }
 
-const ApiPort = createPort<ApiService>({ name: "Api" });
-const LoggerPort = createPort<Logger>({ name: "Logger" });
-const MetricsPort = createPort<MetricsService>({ name: "Metrics" });
-const CachePort = createPort<CacheService>({ name: "Cache" });
+const ApiPort = createPort<ApiService, "Api">({ name: "Api" });
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const MetricsPort = createPort<MetricsService, "Metrics">({ name: "Metrics" });
+const CachePort = createPort<CacheService, "Cache">({ name: "Cache" });
 
 const TaskActivityPort = activityPort<{ taskId: string }, { result: string }>()("TaskActivity");
 const FetchActivityPort = activityPort<{ url: string }, Response>()("FetchActivity");
