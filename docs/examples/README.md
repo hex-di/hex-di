@@ -22,14 +22,14 @@ You can find the example at `examples/react-showcase` in the repository.
 
 ### Key Files
 
-| File | Description |
-|------|-------------|
-| `src/di/ports.ts` | Port definitions |
+| File                 | Description             |
+| -------------------- | ----------------------- |
+| `src/di/ports.ts`    | Port definitions        |
 | `src/di/adapters.ts` | Adapter implementations |
-| `src/di/graph.ts` | Graph composition |
-| `src/di/hooks.ts` | React typed hooks |
-| `src/App.tsx` | Main application |
-| `tests/` | Testing patterns |
+| `src/di/graph.ts`    | Graph composition       |
+| `src/di/hooks.ts`    | React typed hooks       |
+| `src/App.tsx`        | Main application        |
+| `tests/`             | Testing patterns        |
 
 ### Running the Showcase
 
@@ -45,7 +45,7 @@ pnpm dev
 
 ```typescript
 // ports.ts
-import { createPort } from '@hex-di/ports';
+import { createPort } from "@hex-di/ports";
 
 interface Logger {
   log(message: string): void;
@@ -58,55 +58,52 @@ interface Config {
   debug: boolean;
 }
 
-export const LoggerPort = createPort<'Logger', Logger>('Logger');
-export const ConfigPort = createPort<'Config', Config>('Config');
+export const LoggerPort = createPort<"Logger", Logger>("Logger");
+export const ConfigPort = createPort<"Config", Config>("Config");
 
 export type AppPorts = typeof LoggerPort | typeof ConfigPort;
 ```
 
 ```typescript
 // adapters.ts
-import { createAdapter } from '@hex-di/graph';
-import { LoggerPort, ConfigPort } from './ports';
+import { createAdapter } from "@hex-di/graph";
+import { LoggerPort, ConfigPort } from "./ports";
 
 export const LoggerAdapter = createAdapter({
   provides: LoggerPort,
   requires: [],
-  lifetime: 'singleton',
+  lifetime: "singleton",
   factory: () => ({
-    log: (msg) => console.log(`[INFO] ${msg}`),
-    warn: (msg) => console.warn(`[WARN] ${msg}`),
-    error: (msg) => console.error(`[ERROR] ${msg}`)
-  })
+    log: msg => console.log(`[INFO] ${msg}`),
+    warn: msg => console.warn(`[WARN] ${msg}`),
+    error: msg => console.error(`[ERROR] ${msg}`),
+  }),
 });
 
 export const ConfigAdapter = createAdapter({
   provides: ConfigPort,
   requires: [],
-  lifetime: 'singleton',
+  lifetime: "singleton",
   factory: () => ({
-    apiUrl: process.env.API_URL || 'http://localhost:3000',
-    debug: process.env.NODE_ENV !== 'production'
-  })
+    apiUrl: process.env.API_URL || "http://localhost:3000",
+    debug: process.env.NODE_ENV !== "production",
+  }),
 });
 ```
 
 ```typescript
 // graph.ts
-import { GraphBuilder } from '@hex-di/graph';
-import { LoggerAdapter, ConfigAdapter } from './adapters';
+import { GraphBuilder } from "@hex-di/graph";
+import { LoggerAdapter, ConfigAdapter } from "./adapters";
 
-export const appGraph = GraphBuilder.create()
-  .provide(LoggerAdapter)
-  .provide(ConfigAdapter)
-  .build();
+export const appGraph = GraphBuilder.create().provide(LoggerAdapter).provide(ConfigAdapter).build();
 ```
 
 ```typescript
 // main.ts
-import { createContainer } from '@hex-di/runtime';
-import { appGraph } from './graph';
-import { LoggerPort, ConfigPort } from './ports';
+import { createContainer } from "@hex-di/runtime";
+import { appGraph } from "./graph";
+import { LoggerPort, ConfigPort } from "./ports";
 
 const container = createContainer(appGraph);
 
@@ -165,44 +162,42 @@ function ChatRoom() {
 
 ```typescript
 // tests/chat-service.test.ts
-import { describe, it, expect, vi } from 'vitest';
-import { createAdapterTest, createMockAdapter, TestGraphBuilder } from '@hex-di/testing';
-import { createContainer } from '@hex-di/runtime';
+import { describe, it, expect, vi } from "vitest";
+import { createAdapterTest, createMockAdapter, TestGraphBuilder } from "@hex-di/testing";
+import { createContainer } from "@hex-di/runtime";
 
-describe('ChatService', () => {
+describe("ChatService", () => {
   // Unit test adapter
-  it('sends message with user info', () => {
+  it("sends message with user info", () => {
     const mockLogger = { log: vi.fn(), warn: vi.fn(), error: vi.fn() };
-    const mockSession = { userId: 'test-user', startedAt: new Date() };
+    const mockSession = { userId: "test-user", startedAt: new Date() };
 
     const harness = createAdapterTest(ChatServiceAdapter, {
       Logger: mockLogger,
-      UserSession: mockSession
+      UserSession: mockSession,
     });
 
     const chat = harness.invoke();
-    chat.sendMessage('Hello!');
+    chat.sendMessage("Hello!");
 
-    expect(mockLogger.log).toHaveBeenCalledWith('test-user: Hello!');
+    expect(mockLogger.log).toHaveBeenCalledWith("test-user: Hello!");
   });
 
   // Integration test with overrides
-  it('integrates with message store', () => {
+  it("integrates with message store", () => {
     const mockLogger = createMockAdapter(LoggerPort, {
       log: vi.fn(),
       warn: vi.fn(),
-      error: vi.fn()
+      error: vi.fn(),
     });
 
-    const testGraph = TestGraphBuilder.from(appGraph)
-      .override(mockLogger)
-      .build();
+    const testGraph = TestGraphBuilder.from(appGraph).override(mockLogger).build();
 
     const container = createContainer(testGraph);
     const scope = container.createScope();
 
     const chat = scope.resolve(ChatServicePort);
-    chat.sendMessage('Test message');
+    chat.sendMessage("Test message");
 
     // Assertions...
   });
@@ -213,42 +208,45 @@ describe('ChatService', () => {
 
 ```typescript
 // scripts/generate-docs.ts
-import { toMermaid, toDOT } from '@hex-di/devtools';
-import { appGraph } from '../src/di/graph';
-import { writeFileSync } from 'fs';
+import { toMermaid, toDOT } from "@hex-di/devtools";
+import { appGraph } from "../src/di/graph";
+import { writeFileSync } from "fs";
 
 // Generate Mermaid diagram
 const mermaid = toMermaid(appGraph, {
-  direction: 'TB',
-  showLifetime: true
+  direction: "TB",
+  showLifetime: true,
 });
 
-writeFileSync('docs/graph.md', `
+writeFileSync(
+  "docs/graph.md",
+  `
 # Dependency Graph
 
 \`\`\`mermaid
 ${mermaid}
 \`\`\`
-`);
+`
+);
 
 // Generate Graphviz DOT
 const dot = toDOT(appGraph, {
-  title: 'Application Dependencies',
-  rankdir: 'LR'
+  title: "Application Dependencies",
+  rankdir: "LR",
 });
 
-writeFileSync('graph.dot', dot);
-console.log('Run: dot -Tpng graph.dot -o docs/images/graph.png');
+writeFileSync("graph.dot", dot);
+console.log("Run: dot -Tpng graph.dot -o docs/images/graph.png");
 ```
 
 ### Express.js Integration
 
 ```typescript
 // server.ts
-import express from 'express';
-import { createContainer } from '@hex-di/runtime';
-import { appGraph } from './di/graph';
-import { UserServicePort, RequestContextPort } from './di/ports';
+import express from "express";
+import { createContainer } from "@hex-di/runtime";
+import { appGraph } from "./di/graph";
+import { UserServicePort, RequestContextPort } from "./di/ports";
 
 const container = createContainer(appGraph);
 
@@ -261,22 +259,22 @@ app.use((req, res, next) => {
 
   // Initialize request context
   const context = scope.resolve(RequestContextPort);
-  context.requestId = req.headers['x-request-id'] as string || generateId();
+  context.requestId = (req.headers["x-request-id"] as string) || generateId();
   context.userId = req.user?.id;
 
-  res.on('finish', () => scope.dispose());
+  res.on("finish", () => scope.dispose());
   next();
 });
 
 // Route handler
-app.get('/users/:id', async (req, res) => {
+app.get("/users/:id", async (req, res) => {
   const userService = req.scope.resolve(UserServicePort);
   const user = await userService.getUser(req.params.id);
   res.json(user);
 });
 
 // Graceful shutdown
-process.on('SIGTERM', async () => {
+process.on("SIGTERM", async () => {
   server.close();
   await container.dispose();
   process.exit(0);
@@ -290,22 +288,23 @@ process.on('SIGTERM', async () => {
 export const ConsoleLoggerAdapter = createAdapter({
   provides: LoggerPort,
   requires: [],
-  lifetime: 'singleton',
+  lifetime: "singleton",
   factory: () => ({
-    log: (msg) => console.log(msg),
-    warn: (msg) => console.warn(msg),
-    error: (msg) => console.error(msg)
-  })
+    log: msg => console.log(msg),
+    warn: msg => console.warn(msg),
+    error: msg => console.error(msg),
+  }),
 });
 
 export const CloudLoggerAdapter = createAdapter({
   provides: LoggerPort,
   requires: [ConfigPort],
-  lifetime: 'singleton',
-  factory: (deps) => new CloudWatchLogger({
-    region: deps.Config.awsRegion,
-    logGroup: deps.Config.logGroup
-  })
+  lifetime: "singleton",
+  factory: deps =>
+    new CloudWatchLogger({
+      region: deps.Config.awsRegion,
+      logGroup: deps.Config.logGroup,
+    }),
 });
 
 // graph.ts
@@ -319,14 +318,9 @@ export const devGraph = baseBuilder
   .provide(InMemoryCacheAdapter)
   .build();
 
-export const prodGraph = baseBuilder
-  .provide(CloudLoggerAdapter)
-  .provide(RedisCacheAdapter)
-  .build();
+export const prodGraph = baseBuilder.provide(CloudLoggerAdapter).provide(RedisCacheAdapter).build();
 
-export const appGraph = process.env.NODE_ENV === 'production'
-  ? prodGraph
-  : devGraph;
+export const appGraph = process.env.NODE_ENV === "production" ? prodGraph : devGraph;
 ```
 
 ## Learning Resources
@@ -341,15 +335,14 @@ export const appGraph = process.env.NODE_ENV === 'production'
 
 ### Quick Reference
 
-| Task | Documentation |
-|------|---------------|
-| Create a port | [Ports API](../api/ports.md) |
-| Create an adapter | [Graph API](../api/graph.md) |
-| Build a graph | [Graph API](../api/graph.md#graphbuildertprovides-trequires) |
-| Create a container | [Runtime API](../api/runtime.md) |
-| Use in React | [React Guide](../guides/react-integration.md) |
-| Write tests | [Testing Guide](../guides/testing-strategies.md) |
-| Visualize graph | [DevTools Guide](../guides/devtools-usage.md) |
+| Task               | Documentation                                                |
+| ------------------ | ------------------------------------------------------------ |
+| Create a port      | [Ports API](../api/ports.md)                                 |
+| Create an adapter  | [Graph API](../api/graph.md)                                 |
+| Build a graph      | [Graph API](../api/graph.md#graphbuildertprovides-trequires) |
+| Create a container | [Runtime API](../api/runtime.md)                             |
+| Use in React       | [React Guide](../guides/react-integration.md)                |
+| Write tests        | [Testing Guide](../guides/testing-strategies.md)             |
 
 ## Community Examples
 

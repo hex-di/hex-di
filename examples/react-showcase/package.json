@@ -26,9 +26,6 @@
     "zustand": "^5.0.0"
   },
   "devDependencies": {
-    "@hex-di/devtools": "workspace:*",
-    "@hex-di/devtools-core": "workspace:*",
-    "@hex-di/devtools-network": "workspace:*",
     "@hex-di/testing": "workspace:*",
     "@testing-library/dom": "^10.0.0",
     "@testing-library/jest-dom": "^6.6.3",

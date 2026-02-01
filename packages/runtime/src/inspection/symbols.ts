@@ -80,11 +80,10 @@ export const INTERNAL_ACCESS = Symbol.for("hex-di/internal-access");
  *
  * @example
  * ```typescript
- * import { createTracingContainer } from '@hex-di/devtools/tracing';
- * import { TRACING_ACCESS } from '@hex-di/runtime';
+ * import { createContainer, TRACING_ACCESS } from '@hex-di/runtime';
  *
- * const tracingContainer = createTracingContainer(container);
- * const tracingAPI = tracingContainer[TRACING_ACCESS];
+ * const container = createContainer(graph);
+ * const tracingAPI = container.tracer;
  *
  * const traces = tracingAPI.getTraces();
  * const stats = tracingAPI.getStats();

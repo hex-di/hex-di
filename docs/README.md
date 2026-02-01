@@ -27,7 +27,6 @@ In-depth guides for specific use cases:
 
 - [React Integration](./guides/react-integration.md) - Hooks, providers, and scope management
 - [Testing Strategies](./guides/testing-strategies.md) - Mocking, overrides, and test patterns
-- [DevTools Usage](./guides/devtools-usage.md) - Visualization and tracing
 - [Error Handling](./guides/error-handling.md) - Error hierarchy and recovery patterns
 
 ### Patterns
@@ -47,7 +46,6 @@ Complete API documentation for each package:
 - [@hex-di/graph](./api/graph.md) - GraphBuilder and adapters
 - [@hex-di/runtime](./api/runtime.md) - Container and scopes
 - [@hex-di/react](./api/react.md) - React integration
-- [@hex-di/devtools](./api/devtools.md) - Visualization and tracing
 - [@hex-di/testing](./api/testing.md) - Testing utilities
 
 ### Examples
@@ -94,7 +92,7 @@ If you're building a React application:
        │                       │                       │
        ▼                       ▼                       ▼
 ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│ @hex-di/react│    │@hex-di/devtools   │@hex-di/testing
+│ @hex-di/react│    │@hex-di/testing    │  @hex-di/hono│
 │  (optional)  │    │  (optional)  │    │  (optional)  │
 └──────┬───────┘    └──────┬───────┘    └──────┬───────┘
        │                   │                   │
@@ -140,11 +138,13 @@ No explicit type annotations needed - TypeScript infers everything:
 const adapter = createAdapter({
   provides: UserPort,
   requires: [LoggerPort, DatabasePort],
-  lifetime: 'scoped',
-  factory: (deps) => {
+  lifetime: "scoped",
+  factory: deps => {
     // deps is automatically typed as { Logger: Logger; Database: Database }
-    return { /* ... */ };
-  }
+    return {
+      /* ... */
+    };
+  },
 });
 ```
 
@@ -153,8 +153,7 @@ const adapter = createAdapter({
 Each `provide()` returns a new builder, enabling safe composition:
 
 ```typescript
-const base = GraphBuilder.create()
-  .provide(LoggerAdapter);
+const base = GraphBuilder.create().provide(LoggerAdapter);
 
 // Branch A - doesn't modify base
 const withUsers = base.provide(UserServiceAdapter);
@@ -168,7 +167,7 @@ const withOrders = base.provide(OrderServiceAdapter);
 Phantom types and optional features add no cost when unused:
 
 - Port types carry service information at compile-time only
-- DevTools tracing is opt-in
+- Tracing is opt-in via container.tracer
 - React hooks only exist if you import them
 
 ## Getting Help

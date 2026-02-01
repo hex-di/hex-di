@@ -111,36 +111,36 @@ function createMockContainer(): TestContainer {
   };
 
   const mockInspector: InspectorAPI = {
-    getSnapshot: vi
-      .fn()
-      .mockReturnValue({
-        kind: "root",
-        containerId: "root",
-        containerName: "TestContainer",
-        phase: "uninitialized",
-        singletons: [],
-        scopes: [],
-        children: [],
-      }),
+    getSnapshot: vi.fn().mockReturnValue({
+      kind: "root",
+      containerId: "root",
+      containerName: "TestContainer",
+      phase: "uninitialized",
+      singletons: [],
+      scopes: [],
+      children: [],
+    }),
     getScopeTree: vi.fn().mockReturnValue({ rootId: "root", name: "TestContainer", children: [] }),
     listPorts: vi.fn().mockReturnValue([]),
     isResolved: vi.fn().mockReturnValue(false),
     getContainerKind: vi.fn().mockReturnValue("root"),
     getPhase: vi.fn().mockReturnValue("uninitialized"),
+    subscribe: vi.fn().mockReturnValue(() => {}),
+    getChildContainers: vi.fn().mockReturnValue([]),
+    getAdapterInfo: vi.fn().mockReturnValue(undefined),
+    getGraphData: vi.fn().mockReturnValue({ nodes: [], edges: [] }),
     isDisposed: false,
   };
 
   const mockTracer: TracingAPI = {
     getTraces: vi.fn().mockReturnValue([]),
-    getStats: vi
-      .fn()
-      .mockReturnValue({
-        totalResolutions: 0,
-        cacheHits: 0,
-        cacheMisses: 0,
-        avgResolutionMs: 0,
-        portStats: new Map(),
-      }),
+    getStats: vi.fn().mockReturnValue({
+      totalResolutions: 0,
+      cacheHits: 0,
+      cacheMisses: 0,
+      avgResolutionMs: 0,
+      portStats: new Map(),
+    }),
     pause: vi.fn(),
     resume: vi.fn(),
     clear: vi.fn(),

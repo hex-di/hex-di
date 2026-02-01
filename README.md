@@ -11,15 +11,15 @@ HexDI is a modern dependency injection framework designed for TypeScript applica
 - **Three Lifetime Scopes** - Singleton, scoped, and transient lifetimes with proper isolation
 - **Immutable Builder Pattern** - Effect-TS inspired composition that enables graph branching
 - **React Integration** - Typed hooks and providers with automatic scope lifecycle
-- **DevTools** - Visualize dependency graphs and trace service resolution
+- **Built-in Tracing & Inspection** - Access via container.tracer and container.inspector
 - **Zero Runtime Overhead** - Phantom types and optional features add no cost when unused
 
 ## Quick Start
 
 ```typescript
-import { createPort } from '@hex-di/ports';
-import { createAdapter, GraphBuilder } from '@hex-di/graph';
-import { createContainer } from '@hex-di/runtime';
+import { createPort } from "@hex-di/ports";
+import { createAdapter, GraphBuilder } from "@hex-di/graph";
+import { createContainer } from "@hex-di/runtime";
 
 // 1. Define your service interface
 interface Logger {
@@ -27,27 +27,25 @@ interface Logger {
 }
 
 // 2. Create a port (contract + runtime token)
-const LoggerPort = createPort<'Logger', Logger>('Logger');
+const LoggerPort = createPort<"Logger", Logger>("Logger");
 
 // 3. Create an adapter (implementation)
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,
   requires: [],
-  lifetime: 'singleton',
+  lifetime: "singleton",
   factory: () => ({
-    log: (msg) => console.log(`[App] ${msg}`)
-  })
+    log: msg => console.log(`[App] ${msg}`),
+  }),
 });
 
 // 4. Build the graph (validated at compile time)
-const graph = GraphBuilder.create()
-  .provide(LoggerAdapter)
-  .build();
+const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
 // 5. Create container and resolve services
 const container = createContainer(graph);
 const logger = container.resolve(LoggerPort);
-logger.log('Hello, HexDI!');
+logger.log("Hello, HexDI!");
 ```
 
 ## Installation
@@ -74,9 +72,6 @@ pnpm add @hex-di/react
 # Hono integration
 pnpm add @hex-di/hono
 
-# DevTools for visualization
-pnpm add @hex-di/devtools
-
 # Testing utilities
 pnpm add -D @hex-di/testing
 ```
@@ -84,22 +79,20 @@ pnpm add -D @hex-di/testing
 ### All Packages
 
 ```bash
-pnpm add @hex-di/ports @hex-di/graph @hex-di/runtime @hex-di/react @hex-di/devtools
+pnpm add @hex-di/ports @hex-di/graph @hex-di/runtime @hex-di/react @hex-di/hono
 pnpm add -D @hex-di/testing
-pnpm add @hex-di/hono
 ```
 
 ## Packages Overview
 
-| Package | Description | Required |
-|---------|-------------|----------|
-| [`@hex-di/ports`](./packages/ports) | Port token system - define service contracts | Yes |
-| [`@hex-di/graph`](./packages/graph) | GraphBuilder with compile-time dependency validation | Yes |
-| [`@hex-di/runtime`](./packages/runtime) | Container creation and service resolution | Yes |
-| [`@hex-di/react`](./packages/react) | React hooks and providers | No |
-| [`@hex-di/hono`](./packages/hono) | Hono middleware, helpers, and Env utilities | No |
-| [`@hex-di/devtools`](./packages/devtools) | Graph visualization and tracing | No |
-| [`@hex-di/testing`](./packages/testing) | Mocking, overrides, and test utilities | No |
+| Package                                 | Description                                          | Required |
+| --------------------------------------- | ---------------------------------------------------- | -------- |
+| [`@hex-di/ports`](./packages/ports)     | Port token system - define service contracts         | Yes      |
+| [`@hex-di/graph`](./packages/graph)     | GraphBuilder with compile-time dependency validation | Yes      |
+| [`@hex-di/runtime`](./packages/runtime) | Container creation and service resolution            | Yes      |
+| [`@hex-di/react`](./packages/react)     | React hooks and providers                            | No       |
+| [`@hex-di/hono`](./packages/hono)       | Hono middleware, helpers, and Env utilities          | No       |
+| [`@hex-di/testing`](./packages/testing) | Mocking, overrides, and test utilities               | No       |
 
 ## Core Concepts
 
@@ -108,14 +101,14 @@ pnpm add @hex-di/hono
 Ports are typed tokens that represent service contracts. They serve as both runtime identifiers and compile-time type carriers.
 
 ```typescript
-import { createPort } from '@hex-di/ports';
+import { createPort } from "@hex-di/ports";
 
 interface UserService {
   getUser(id: string): Promise<User>;
 }
 
 // createPort<'PortName', ServiceInterface>('PortName')
-const UserServicePort = createPort<'UserService', UserService>('UserService');
+const UserServicePort = createPort<"UserService", UserService>("UserService");
 ```
 
 ### Adapters
@@ -123,21 +116,21 @@ const UserServicePort = createPort<'UserService', UserService>('UserService');
 Adapters implement ports and declare their dependencies. The factory function receives typed dependencies automatically.
 
 ```typescript
-import { createAdapter } from '@hex-di/graph';
+import { createAdapter } from "@hex-di/graph";
 
 const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
-  requires: [LoggerPort, DatabasePort],  // Dependencies
-  lifetime: 'scoped',
-  factory: (deps) => {
+  requires: [LoggerPort, DatabasePort], // Dependencies
+  lifetime: "scoped",
+  factory: deps => {
     // deps is typed as { Logger: Logger; Database: Database }
     return {
-      getUser: async (id) => {
+      getUser: async id => {
         deps.Logger.log(`Fetching user ${id}`);
-        return deps.Database.query('SELECT * FROM users WHERE id = ?', [id]);
-      }
+        return deps.Database.query("SELECT * FROM users WHERE id = ?", [id]);
+      },
     };
-  }
+  },
 });
 ```
 
@@ -146,11 +139,11 @@ const UserServiceAdapter = createAdapter({
 GraphBuilder composes adapters into a validated dependency graph using an immutable, fluent API.
 
 ```typescript
-import { GraphBuilder } from '@hex-di/graph';
+import { GraphBuilder } from "@hex-di/graph";
 
 const graph = GraphBuilder.create()
-  .provide(LoggerAdapter)      // singleton, no deps
-  .provide(DatabaseAdapter)    // singleton, no deps
+  .provide(LoggerAdapter) // singleton, no deps
+  .provide(DatabaseAdapter) // singleton, no deps
   .provide(UserServiceAdapter) // scoped, requires Logger & Database
   .build(); // Compile error if dependencies are missing!
 ```
@@ -160,7 +153,7 @@ const graph = GraphBuilder.create()
 Containers resolve services from the graph. Scopes provide isolation for scoped services.
 
 ```typescript
-import { createContainer } from '@hex-di/runtime';
+import { createContainer } from "@hex-di/runtime";
 
 const container = createContainer(graph);
 
@@ -178,35 +171,35 @@ await container.dispose();
 
 ## Lifetime Scopes
 
-| Lifetime | Instance Creation | Use Case |
-|----------|-------------------|----------|
+| Lifetime    | Instance Creation  | Use Case                             |
+| ----------- | ------------------ | ------------------------------------ |
 | `singleton` | Once per container | Stateless services, shared resources |
-| `scoped` | Once per scope | Request context, user sessions |
-| `transient` | Every resolution | Fresh instances, isolation |
+| `scoped`    | Once per scope     | Request context, user sessions       |
+| `transient` | Every resolution   | Fresh instances, isolation           |
 
 ```typescript
 // Singleton - shared across entire app
 const ConfigAdapter = createAdapter({
   provides: ConfigPort,
   requires: [],
-  lifetime: 'singleton',
-  factory: () => ({ apiUrl: 'https://api.example.com' })
+  lifetime: "singleton",
+  factory: () => ({ apiUrl: "https://api.example.com" }),
 });
 
 // Scoped - one per scope (e.g., per HTTP request)
 const UserSessionAdapter = createAdapter({
   provides: UserSessionPort,
   requires: [],
-  lifetime: 'scoped',
-  factory: () => ({ userId: getCurrentUserId() })
+  lifetime: "scoped",
+  factory: () => ({ userId: getCurrentUserId() }),
 });
 
 // Transient - new instance every time
 const NotificationAdapter = createAdapter({
   provides: NotificationPort,
   requires: [],
-  lifetime: 'transient',
-  factory: () => ({ id: generateId(), createdAt: new Date() })
+  lifetime: "transient",
+  factory: () => ({ id: generateId(), createdAt: new Date() }),
 });
 ```
 
@@ -279,44 +272,24 @@ container.resolve(UnknownPort);
 // Error: Argument of type 'typeof UnknownPort' is not assignable...
 ```
 
-## DevTools
+## Tracing & Inspection
 
-Visualize your dependency graph and trace service resolution:
-
-```typescript
-import { DevToolsFloating, createTracingContainer } from '@hex-di/devtools';
-
-// Create a tracing container for detailed insights
-const container = createTracingContainer(graph);
-
-// Add DevTools to your app
-function App() {
-  return (
-    <ContainerProvider container={container}>
-      <MyApp />
-      <DevToolsFloating
-        graph={graph}
-        container={container}
-        position="bottom-right"
-      />
-    </ContainerProvider>
-  );
-}
-```
-
-Export graphs for documentation:
+Access built-in tracing and inspection via container properties:
 
 ```typescript
-import { toMermaid, toDOT, toJSON } from '@hex-di/devtools';
+import { createContainer } from "@hex-di/runtime";
 
-// Generate Mermaid diagram
-console.log(toMermaid(graph));
+const container = createContainer(graph);
 
-// Generate Graphviz DOT
-console.log(toDOT(graph));
+// Access tracer for resolution traces
+const tracer = container.tracer;
+const stats = tracer.getStats();
+console.log(`Total resolutions: ${stats.totalResolutions}`);
 
-// Export as JSON
-console.log(JSON.stringify(toJSON(graph), null, 2));
+// Access inspector for container metadata
+const inspector = container.inspector;
+const graphData = inspector.getGraphData();
+console.log(`Services: ${graphData.nodes.length}`);
 ```
 
 ## Testing
@@ -324,29 +297,27 @@ console.log(JSON.stringify(toJSON(graph), null, 2));
 Override adapters for testing without touching production code:
 
 ```typescript
-import { TestGraphBuilder, createMockAdapter } from '@hex-di/testing';
-import { createContainer } from '@hex-di/runtime';
+import { TestGraphBuilder, createMockAdapter } from "@hex-di/testing";
+import { createContainer } from "@hex-di/runtime";
 
 // Create mock adapters
 const mockLogger = createMockAdapter(LoggerPort, {
   log: vi.fn(),
   warn: vi.fn(),
-  error: vi.fn()
+  error: vi.fn(),
 });
 
 // Build test graph with overrides
-const testGraph = TestGraphBuilder.from(productionGraph)
-  .override(mockLogger)
-  .build();
+const testGraph = TestGraphBuilder.from(productionGraph).override(mockLogger).build();
 
 // Create test container
 const container = createContainer(testGraph);
 
 // Test your services
 const userService = container.resolve(UserServicePort);
-await userService.getUser('123');
+await userService.getUser("123");
 
-expect(mockLogger.log).toHaveBeenCalledWith('Fetching user 123');
+expect(mockLogger.log).toHaveBeenCalledWith("Fetching user 123");
 ```
 
 ## Error Handling
@@ -359,22 +330,22 @@ import {
   CircularDependencyError,
   FactoryError,
   DisposedScopeError,
-  ScopeRequiredError
-} from '@hex-di/runtime';
+  ScopeRequiredError,
+} from "@hex-di/runtime";
 
 try {
   const service = container.resolve(SomePort);
 } catch (error) {
   if (error instanceof CircularDependencyError) {
-    console.error('Circular dependency detected:', error.dependencyChain);
-    console.error('Code:', error.code); // 'CIRCULAR_DEPENDENCY'
+    console.error("Circular dependency detected:", error.dependencyChain);
+    console.error("Code:", error.code); // 'CIRCULAR_DEPENDENCY'
   } else if (error instanceof FactoryError) {
-    console.error('Factory failed for:', error.portName);
-    console.error('Original error:', error.cause);
+    console.error("Factory failed for:", error.portName);
+    console.error("Original error:", error.cause);
   } else if (error instanceof ScopeRequiredError) {
-    console.error('Must resolve from scope:', error.portName);
+    console.error("Must resolve from scope:", error.portName);
   } else if (error instanceof DisposedScopeError) {
-    console.error('Cannot resolve from disposed scope');
+    console.error("Cannot resolve from disposed scope");
   }
 }
 ```
@@ -383,7 +354,7 @@ try {
 
 - [Getting Started Guide](./docs/getting-started/README.md) - Installation, core concepts, first application
 - [API Reference](./docs/api/README.md) - Complete API documentation for all packages
-- [Guides](./docs/guides/README.md) - React integration, testing strategies, DevTools usage
+- [Guides](./docs/guides/README.md) - React integration, testing strategies, error handling
 - [Patterns](./docs/patterns/README.md) - Project structure, composing graphs, best practices
 - [Examples](./docs/examples/README.md) - Real-world examples and code snippets
 
@@ -394,7 +365,7 @@ See the [React Showcase](./examples/react-showcase) for a complete example demon
 - All three lifetime scopes (singleton, scoped, transient)
 - React integration with typed hooks
 - Automatic scope lifecycle management
-- DevTools integration
+- Container inheritance patterns
 - Reactive updates with subscriptions
 
 ## TypeScript Configuration

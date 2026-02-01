@@ -613,13 +613,6 @@ const PACKAGES = {
       link: "/docs/api/react",
     },
     {
-      name: "@hex-di/devtools",
-      badge: "Optional" as const,
-      description: "Graph visualization and service tracing",
-      features: ["Dependency graph viewer", "Service call tracing", "Runtime inspection"],
-      link: "/docs/api/devtools",
-    },
-    {
       name: "@hex-di/testing",
       badge: "Optional" as const,
       description: "Testing utilities and mock helpers",

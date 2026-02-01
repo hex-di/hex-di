@@ -12,14 +12,13 @@ This guide covers installing HexDI packages and configuring your TypeScript proj
 
 HexDI is split into multiple packages so you only install what you need:
 
-| Package | Purpose | Required |
-|---------|---------|----------|
-| `@hex-di/ports` | Port token system | Yes |
-| `@hex-di/graph` | GraphBuilder and adapters | Yes |
-| `@hex-di/runtime` | Container and scopes | Yes |
-| `@hex-di/react` | React hooks and providers | No |
-| `@hex-di/devtools` | Visualization and tracing | No |
-| `@hex-di/testing` | Testing utilities | No |
+| Package           | Purpose                   | Required |
+| ----------------- | ------------------------- | -------- |
+| `@hex-di/ports`   | Port token system         | Yes      |
+| `@hex-di/graph`   | GraphBuilder and adapters | Yes      |
+| `@hex-di/runtime` | Container and scopes      | Yes      |
+| `@hex-di/react`   | React hooks and providers | No       |
+| `@hex-di/testing` | Testing utilities         | No       |
 
 ## Installing Core Packages
 
@@ -46,14 +45,6 @@ For React applications:
 pnpm add @hex-di/react
 ```
 
-### DevTools
-
-For development visualization and debugging:
-
-```bash
-pnpm add @hex-di/devtools
-```
-
 ### Testing Utilities
 
 For testing (install as dev dependency):
@@ -68,7 +59,7 @@ Install everything at once:
 
 ```bash
 # Production dependencies
-pnpm add @hex-di/ports @hex-di/graph @hex-di/runtime @hex-di/react @hex-di/devtools
+pnpm add @hex-di/ports @hex-di/graph @hex-di/runtime @hex-di/react
 
 # Development dependencies
 pnpm add -D @hex-di/testing
@@ -113,11 +104,11 @@ HexDI requires TypeScript 5.0+ with strict mode enabled.
 
 ### Important Settings
 
-| Setting | Required | Purpose |
-|---------|----------|---------|
-| `strict` | Yes | Enables strict type checking |
-| `moduleResolution: "bundler"` | Recommended | Modern module resolution |
-| `target: "ES2022"` | Recommended | Modern JavaScript features |
+| Setting                       | Required    | Purpose                      |
+| ----------------------------- | ----------- | ---------------------------- |
+| `strict`                      | Yes         | Enables strict type checking |
+| `moduleResolution: "bundler"` | Recommended | Modern module resolution     |
+| `target: "ES2022"`            | Recommended | Modern JavaScript features   |
 
 ## Verify Installation
 
@@ -125,33 +116,31 @@ Create a simple test file to verify everything works:
 
 ```typescript
 // verify-hexdi.ts
-import { createPort } from '@hex-di/ports';
-import { createAdapter, GraphBuilder } from '@hex-di/graph';
-import { createContainer } from '@hex-di/runtime';
+import { createPort } from "@hex-di/ports";
+import { createAdapter, GraphBuilder } from "@hex-di/graph";
+import { createContainer } from "@hex-di/runtime";
 
 interface Logger {
   log(message: string): void;
 }
 
-const LoggerPort = createPort<'Logger', Logger>('Logger');
+const LoggerPort = createPort<"Logger", Logger>("Logger");
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,
   requires: [],
-  lifetime: 'singleton',
+  lifetime: "singleton",
   factory: () => ({
-    log: (msg) => console.log(`[Test] ${msg}`)
-  })
+    log: msg => console.log(`[Test] ${msg}`),
+  }),
 });
 
-const graph = GraphBuilder.create()
-  .provide(LoggerAdapter)
-  .build();
+const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
 const container = createContainer(graph);
 const logger = container.resolve(LoggerPort);
 
-logger.log('HexDI is working!');
+logger.log("HexDI is working!");
 ```
 
 Run with:
@@ -171,14 +160,14 @@ The `@hex-di/runtime` package re-exports common types from sibling packages:
 ```typescript
 // Import everything from runtime (convenient)
 import {
-  createPort,           // from @hex-di/ports
-  createAdapter,        // from @hex-di/graph
-  GraphBuilder,         // from @hex-di/graph
-  createContainer,      // from @hex-di/runtime
-  type Container,       // from @hex-di/runtime
-  type Port,            // from @hex-di/ports
-  type Adapter,         // from @hex-di/graph
-} from '@hex-di/runtime';
+  createPort, // from @hex-di/ports
+  createAdapter, // from @hex-di/graph
+  GraphBuilder, // from @hex-di/graph
+  createContainer, // from @hex-di/runtime
+  type Container, // from @hex-di/runtime
+  type Port, // from @hex-di/ports
+  type Adapter, // from @hex-di/graph
+} from "@hex-di/runtime";
 ```
 
 ### Alternative: Import from Individual Packages
@@ -186,9 +175,9 @@ import {
 For explicit imports or tree-shaking:
 
 ```typescript
-import { createPort } from '@hex-di/ports';
-import { createAdapter, GraphBuilder } from '@hex-di/graph';
-import { createContainer } from '@hex-di/runtime';
+import { createPort } from "@hex-di/ports";
+import { createAdapter, GraphBuilder } from "@hex-di/graph";
+import { createContainer } from "@hex-di/runtime";
 ```
 
 ## Troubleshooting

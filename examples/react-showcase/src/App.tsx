@@ -2,10 +2,9 @@
  * App component - Root component for the React Showcase.
  *
  * Architecture:
- * - Unified root container with TracingPlugin and InspectorPlugin
+ * - Unified root container with built-in tracing and inspection
  * - Chat Dashboard as child container (loads immediately)
  * - TaskFlow as lazy container (loads on navigation)
- * - Single HexDiDevTools panel for all containers
  *
  * Container Hierarchy:
  * ```
@@ -17,22 +16,12 @@
  * └── TaskFlowContainer [LAZY] (TaskApi, TaskCache, FilterStore, etc.)
  * ```
  *
- * @example Usage
- * ```tsx
- * import { HexDiDevTools } from '@hex-di/devtools/react';
- * <HexDiDevTools container={rootContainer} />
- * ```
- *
- * The graph is automatically extracted from the container via InspectorPlugin.
- *
  * @packageDocumentation
  */
 
 import { BrowserRouter, Routes, Route, NavLink, useRoutes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-// DevTools imports
-import { HexDiDevTools } from "@hex-di/devtools/react";
 import { createContainer } from "@hex-di/runtime";
 
 // React package imports for providers
@@ -128,12 +117,6 @@ const lazyTaskflowContainer = rootContainer.createLazyChild(
 );
 
 // =============================================================================
-// NOTE: Manual container registration is no longer needed!
-// HexDiDevTools now automatically discovers all child containers via
-// InspectorPlugin's getChildContainers() method.
-// =============================================================================
-
-// =============================================================================
 // Navigation Component
 // =============================================================================
 
@@ -209,9 +192,6 @@ function GlobalErrorDisplay({ error }: { readonly error: Error }) {
 /**
  * Chat Dashboard demo component.
  * Demonstrates DI container inheritance patterns (shared, forked, isolated).
- *
- * NOTE: No manual registration needed! HexDiDevTools auto-discovers all
- * child containers via InspectorPlugin's getChildContainers() method.
  */
 function ChatDashboardDemo() {
   return (
@@ -299,8 +279,7 @@ function ChatDashboardDemo() {
               (fresh instances).
             </p>
             <p className="mt-2 text-xs text-gray-400">
-              Use DevTools to inspect each container. The graph view shows inheritance mode badges
-              and distinguishes own vs inherited services with dashed borders.
+              Access container.inspector to inspect each container programmatically.
             </p>
           </footer>
         </div>
@@ -316,9 +295,6 @@ function ChatDashboardDemo() {
 /**
  * TaskFlow demo component with lazy loading.
  * Graph only loads when navigating to /taskflow.
- *
- * NOTE: No manual registration needed! HexDiDevTools auto-discovers
- * lazy containers via InspectorPlugin's getChildContainers() method.
  */
 function TaskFlowDemo() {
   const element = useRoutes(taskflowRoutes);
@@ -367,14 +343,9 @@ function TaskFlowDemo() {
  * Root application component.
  *
  * Features:
- * - Unified root container with TracingPlugin and InspectorPlugin
- * - HexDiDevTools auto-discovers all child containers via InspectorPlugin
- * - Single HexDiDevTools panel visible on all routes
+ * - Unified root container with built-in tracing and inspection
  * - AsyncContainerProvider for root initialization
  * - Chat Dashboard (/) and TaskFlow (/taskflow/*) demos
- *
- * Just pass the root container to HexDiDevTools and it discovers all children.
- * The graph is automatically extracted from the container via InspectorPlugin.
  */
 export function App() {
   return (
@@ -399,9 +370,6 @@ export function App() {
           </Routes>
         </HexDiAsyncContainerProvider.Ready>
       </HexDiAsyncContainerProvider>
-
-      {/* Single DevTools panel - auto-discovers all child containers */}
-      <HexDiDevTools container={rootContainer} position="bottom-right" />
     </BrowserRouter>
   );
 }

@@ -1,6 +1,6 @@
 ---
 title: API Reference
-description: Complete API documentation for all HexDI packages including ports, graph, runtime, react, devtools, and testing.
+description: Complete API documentation for all HexDI packages including ports, graph, runtime, react, and testing.
 sidebar_position: 4
 ---
 
@@ -19,7 +19,6 @@ Complete API documentation for all HexDI packages.
 ### Optional Packages
 
 - **[@hex-di/react](./react.md)** - React integration
-- **[@hex-di/devtools](./devtools.md)** - Visualization and tracing
 - **[@hex-di/testing](./testing.md)** - Testing utilities
 
 ## Quick Reference
@@ -28,20 +27,18 @@ Complete API documentation for all HexDI packages.
 
 ```typescript
 // 1. Create a port
-const LoggerPort = createPort<'Logger', Logger>('Logger');
+const LoggerPort = createPort<"Logger", Logger>("Logger");
 
 // 2. Create an adapter
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,
   requires: [],
-  lifetime: 'singleton',
-  factory: () => ({ log: console.log })
+  lifetime: "singleton",
+  factory: () => ({ log: console.log }),
 });
 
 // 3. Build graph
-const graph = GraphBuilder.create()
-  .provide(LoggerAdapter)
-  .build();
+const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
 // 4. Create container
 const container = createContainer(graph);
@@ -52,23 +49,23 @@ const logger = container.resolve(LoggerPort);
 
 ### Type Utilities
 
-| Utility | Package | Purpose |
-|---------|---------|---------|
-| `InferService<P>` | ports | Extract service type from port |
-| `InferPortName<P>` | ports | Extract port name |
-| `InferAdapterProvides<A>` | graph | Extract provided port from adapter |
-| `InferAdapterRequires<A>` | graph | Extract required ports from adapter |
-| `InferContainerProvides<C>` | runtime | Extract ports from container |
-| `ServiceFromContainer<C, P>` | runtime | Get service type for port |
+| Utility                      | Package | Purpose                             |
+| ---------------------------- | ------- | ----------------------------------- |
+| `InferService<P>`            | ports   | Extract service type from port      |
+| `InferPortName<P>`           | ports   | Extract port name                   |
+| `InferAdapterProvides<A>`    | graph   | Extract provided port from adapter  |
+| `InferAdapterRequires<A>`    | graph   | Extract required ports from adapter |
+| `InferContainerProvides<C>`  | runtime | Extract ports from container        |
+| `ServiceFromContainer<C, P>` | runtime | Get service type for port           |
 
 ### Error Classes
 
-| Error | Code | Programming Error |
-|-------|------|-------------------|
-| `CircularDependencyError` | `CIRCULAR_DEPENDENCY` | Yes |
-| `FactoryError` | `FACTORY_FAILED` | No |
-| `DisposedScopeError` | `SCOPE_DISPOSED` | Yes |
-| `ScopeRequiredError` | `SCOPE_REQUIRED` | Yes |
+| Error                     | Code                  | Programming Error |
+| ------------------------- | --------------------- | ----------------- |
+| `CircularDependencyError` | `CIRCULAR_DEPENDENCY` | Yes               |
+| `FactoryError`            | `FACTORY_FAILED`      | No                |
+| `DisposedScopeError`      | `SCOPE_DISPOSED`      | Yes               |
+| `ScopeRequiredError`      | `SCOPE_REQUIRED`      | Yes               |
 
 ## Package Dependencies
 
@@ -80,6 +77,5 @@ const logger = container.resolve(LoggerPort);
 @hex-di/runtime (depends on ports, graph)
     ↑
 ├── @hex-di/react (depends on ports, runtime)
-├── @hex-di/devtools (depends on ports, graph, runtime)
 └── @hex-di/testing (depends on ports, graph, runtime)
 ```

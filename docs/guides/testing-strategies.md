@@ -29,51 +29,51 @@ HexDI enables three levels of testing:
 Test an adapter's factory function in isolation:
 
 ```typescript
-import { describe, it, expect, vi } from 'vitest';
-import { createAdapterTest } from '@hex-di/testing';
-import { UserServiceAdapter } from '../src/di/adapters';
-import type { Logger, Database } from '../src/types';
+import { describe, it, expect, vi } from "vitest";
+import { createAdapterTest } from "@hex-di/testing";
+import { UserServiceAdapter } from "../src/di/adapters";
+import type { Logger, Database } from "../src/types";
 
-describe('UserServiceAdapter', () => {
-  it('logs when fetching a user', async () => {
+describe("UserServiceAdapter", () => {
+  it("logs when fetching a user", async () => {
     // Create mock dependencies
     const mockLogger: Logger = {
       log: vi.fn(),
       warn: vi.fn(),
-      error: vi.fn()
+      error: vi.fn(),
     };
 
     const mockDatabase: Database = {
-      query: vi.fn().mockResolvedValue({ id: '123', name: 'Alice' })
+      query: vi.fn().mockResolvedValue({ id: "123", name: "Alice" }),
     };
 
     // Create test harness
     const harness = createAdapterTest(UserServiceAdapter, {
       Logger: mockLogger,
-      Database: mockDatabase
+      Database: mockDatabase,
     });
 
     // Invoke the factory to get the service
     const userService = harness.invoke();
 
     // Test the service
-    const user = await userService.getUser('123');
+    const user = await userService.getUser("123");
 
     // Verify behavior
-    expect(mockLogger.log).toHaveBeenCalledWith('Fetching user 123');
+    expect(mockLogger.log).toHaveBeenCalledWith("Fetching user 123");
     expect(mockDatabase.query).toHaveBeenCalled();
-    expect(user.name).toBe('Alice');
+    expect(user.name).toBe("Alice");
   });
 
-  it('throws on invalid user ID', async () => {
+  it("throws on invalid user ID", async () => {
     const harness = createAdapterTest(UserServiceAdapter, {
       Logger: { log: vi.fn(), warn: vi.fn(), error: vi.fn() },
-      Database: { query: vi.fn().mockResolvedValue(null) }
+      Database: { query: vi.fn().mockResolvedValue(null) },
     });
 
     const userService = harness.invoke();
 
-    await expect(userService.getUser('')).rejects.toThrow('Invalid user ID');
+    await expect(userService.getUser("")).rejects.toThrow("Invalid user ID");
   });
 });
 ```
@@ -84,15 +84,15 @@ describe('UserServiceAdapter', () => {
 const harness = createAdapterTest(ChatServiceAdapter, {
   Logger: mockLogger,
   UserSession: mockUserSession,
-  MessageStore: mockMessageStore
+  MessageStore: mockMessageStore,
 });
 
 const chatService = harness.invoke();
-chatService.sendMessage('Hello!');
+chatService.sendMessage("Hello!");
 
 // Access the mocks for assertions
 const deps = harness.getDeps();
-expect(deps.Logger.log).toHaveBeenCalledWith(expect.stringContaining('Hello!'));
+expect(deps.Logger.log).toHaveBeenCalledWith(expect.stringContaining("Hello!"));
 expect(deps.MessageStore.addMessage).toHaveBeenCalled();
 ```
 
@@ -103,23 +103,23 @@ expect(deps.MessageStore.addMessage).toHaveBeenCalled();
 Override specific adapters while keeping the rest of the production graph:
 
 ```typescript
-import { TestGraphBuilder, createMockAdapter } from '@hex-di/testing';
-import { createContainer } from '@hex-di/runtime';
-import { appGraph } from '../src/di/graph';
-import { LoggerPort, DatabasePort } from '../src/di/ports';
+import { TestGraphBuilder, createMockAdapter } from "@hex-di/testing";
+import { createContainer } from "@hex-di/runtime";
+import { appGraph } from "../src/di/graph";
+import { LoggerPort, DatabasePort } from "../src/di/ports";
 
-describe('UserService integration', () => {
-  it('creates users correctly', async () => {
+describe("UserService integration", () => {
+  it("creates users correctly", async () => {
     // Create mock adapters
     const mockLogger = createMockAdapter(LoggerPort, {
       log: vi.fn(),
       warn: vi.fn(),
-      error: vi.fn()
+      error: vi.fn(),
     });
 
     const mockDatabase = createMockAdapter(DatabasePort, {
-      query: vi.fn().mockResolvedValue({ id: '1', name: 'Test' }),
-      insert: vi.fn().mockResolvedValue({ id: '2' })
+      query: vi.fn().mockResolvedValue({ id: "1", name: "Test" }),
+      insert: vi.fn().mockResolvedValue({ id: "2" }),
     });
 
     // Build test graph with overrides
@@ -133,9 +133,9 @@ describe('UserService integration', () => {
 
     try {
       const userService = container.resolve(UserServicePort);
-      const user = await userService.createUser('Test User');
+      const user = await userService.createUser("Test User");
 
-      expect(user.id).toBe('2');
+      expect(user.id).toBe("2");
     } finally {
       await container.dispose();
     }
@@ -171,12 +171,12 @@ const testGraph = TestGraphBuilder.from(appGraph)
 ### Creating Mock Adapters
 
 ```typescript
-import { createMockAdapter } from '@hex-di/testing';
+import { createMockAdapter } from "@hex-di/testing";
 
 const mockLogger = createMockAdapter(LoggerPort, {
   log: vi.fn(),
   warn: vi.fn(),
-  error: vi.fn()
+  error: vi.fn(),
 });
 ```
 
@@ -185,7 +185,7 @@ const mockLogger = createMockAdapter(LoggerPort, {
 ```typescript
 // Only implement methods you need
 const partialMock = createMockAdapter(UserServicePort, {
-  getUser: vi.fn().mockResolvedValue({ id: '1', name: 'Mock User' })
+  getUser: vi.fn().mockResolvedValue({ id: "1", name: "Mock User" }),
   // createUser, deleteUser will throw "not implemented"
 });
 ```
@@ -195,8 +195,8 @@ const partialMock = createMockAdapter(UserServicePort, {
 ```typescript
 const scopedMock = createMockAdapter(
   UserSessionPort,
-  { user: { id: '1', name: 'Test' } },
-  { lifetime: 'scoped' } // Override lifetime for testing
+  { user: { id: "1", name: "Test" } },
+  { lifetime: "scoped" } // Override lifetime for testing
 );
 ```
 
@@ -205,9 +205,9 @@ const scopedMock = createMockAdapter(
 ```typescript
 // Keep real implementation but spy on calls
 const spyAdapter = createMockAdapter(LoggerPort, {
-  log: vi.fn((msg) => console.log(`[SPY] ${msg}`)),
-  warn: vi.fn((msg) => console.warn(`[SPY] ${msg}`)),
-  error: vi.fn((msg) => console.error(`[SPY] ${msg}`))
+  log: vi.fn(msg => console.log(`[SPY] ${msg}`)),
+  warn: vi.fn(msg => console.warn(`[SPY] ${msg}`)),
+  error: vi.fn(msg => console.error(`[SPY] ${msg}`)),
 });
 ```
 
@@ -218,10 +218,10 @@ const spyAdapter = createMockAdapter(LoggerPort, {
 Verify all dependencies are satisfied:
 
 ```typescript
-import { assertGraphComplete } from '@hex-di/testing';
+import { assertGraphComplete } from "@hex-di/testing";
 
-describe('appGraph', () => {
-  it('has all dependencies satisfied', () => {
+describe("appGraph", () => {
+  it("has all dependencies satisfied", () => {
     // Throws if any dependencies are missing
     assertGraphComplete(appGraph);
   });
@@ -233,14 +233,14 @@ describe('appGraph', () => {
 Check that a specific port is in the graph:
 
 ```typescript
-import { assertPortProvided } from '@hex-di/testing';
+import { assertPortProvided } from "@hex-di/testing";
 
-describe('appGraph', () => {
-  it('provides Logger', () => {
+describe("appGraph", () => {
+  it("provides Logger", () => {
     assertPortProvided(appGraph, LoggerPort);
   });
 
-  it('provides UserService', () => {
+  it("provides UserService", () => {
     assertPortProvided(appGraph, UserServicePort);
   });
 });
@@ -251,15 +251,15 @@ describe('appGraph', () => {
 Verify a port's lifetime:
 
 ```typescript
-import { assertLifetime } from '@hex-di/testing';
+import { assertLifetime } from "@hex-di/testing";
 
-describe('adapter lifetimes', () => {
-  it('Logger is singleton', () => {
-    assertLifetime(appGraph, LoggerPort, 'singleton');
+describe("adapter lifetimes", () => {
+  it("Logger is singleton", () => {
+    assertLifetime(appGraph, LoggerPort, "singleton");
   });
 
-  it('UserSession is scoped', () => {
-    assertLifetime(appGraph, UserSessionPort, 'scoped');
+  it("UserSession is scoped", () => {
+    assertLifetime(appGraph, UserSessionPort, "scoped");
   });
 });
 ```
@@ -271,10 +271,10 @@ describe('adapter lifetimes', () => {
 Create deterministic snapshots for testing:
 
 ```typescript
-import { serializeGraph } from '@hex-di/testing';
+import { serializeGraph } from "@hex-di/testing";
 
-describe('graph structure', () => {
-  it('matches snapshot', () => {
+describe("graph structure", () => {
+  it("matches snapshot", () => {
     const snapshot = serializeGraph(appGraph);
     expect(snapshot).toMatchSnapshot();
   });
@@ -308,18 +308,18 @@ const snapshot = serializeGraph(appGraph);
 Automatic container lifecycle management:
 
 ```typescript
-import { useTestContainer } from '@hex-di/testing';
-import { appGraph } from '../src/di/graph';
+import { useTestContainer } from "@hex-di/testing";
+import { appGraph } from "../src/di/graph";
 
-describe('UserService', () => {
+describe("UserService", () => {
   const { container, scope } = useTestContainer(() => appGraph);
 
-  it('resolves services', () => {
+  it("resolves services", () => {
     const logger = container.resolve(LoggerPort);
     expect(logger).toBeDefined();
   });
 
-  it('creates scoped services', () => {
+  it("creates scoped services", () => {
     const session = scope.resolve(UserSessionPort);
     expect(session).toBeDefined();
   });
@@ -331,20 +331,18 @@ describe('UserService', () => {
 ### Custom Test Graph per Test
 
 ```typescript
-import { useTestContainer } from '@hex-di/testing';
+import { useTestContainer } from "@hex-di/testing";
 
-describe('UserService with mock database', () => {
+describe("UserService with mock database", () => {
   const mockDatabase = createMockAdapter(DatabasePort, {
-    query: vi.fn().mockResolvedValue([])
+    query: vi.fn().mockResolvedValue([]),
   });
 
   const { container } = useTestContainer(() =>
-    TestGraphBuilder.from(appGraph)
-      .override(mockDatabase)
-      .build()
+    TestGraphBuilder.from(appGraph).override(mockDatabase).build()
   );
 
-  it('handles empty results', async () => {
+  it("handles empty results", async () => {
     const userService = container.resolve(UserServicePort);
     const users = await userService.listUsers();
     expect(users).toEqual([]);
@@ -463,9 +461,7 @@ Keep production graph structure, just swap implementations:
 
 ```typescript
 // Good - preserves graph structure
-const testGraph = TestGraphBuilder.from(productionGraph)
-  .override(mockAdapter)
-  .build();
+const testGraph = TestGraphBuilder.from(productionGraph).override(mockAdapter).build();
 
 // Avoid - rebuilding entire graph
 const testGraph = GraphBuilder.create()
@@ -481,8 +477,12 @@ Mock external boundaries, not internal services:
 
 ```typescript
 // Good - mock external dependencies
-const mockDatabase = createMockAdapter(DatabasePort, { /* ... */ });
-const mockHttpClient = createMockAdapter(HttpClientPort, { /* ... */ });
+const mockDatabase = createMockAdapter(DatabasePort, {
+  /* ... */
+});
+const mockHttpClient = createMockAdapter(HttpClientPort, {
+  /* ... */
+});
 
 // Avoid - mocking internal services
 // Let UserService use real Logger, mock the Database instead
@@ -507,8 +507,8 @@ afterEach(async () => {
 Add a test to ensure your graph is complete:
 
 ```typescript
-describe('production graph', () => {
-  it('is complete and valid', () => {
+describe("production graph", () => {
+  it("is complete and valid", () => {
     assertGraphComplete(appGraph);
   });
 });
@@ -518,61 +518,64 @@ describe('production graph', () => {
 
 ```typescript
 // tests/chat-service.test.ts
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createAdapterTest, TestGraphBuilder, createMockAdapter, useTestContainer } from '@hex-di/testing';
-import { ChatServiceAdapter } from '../src/di/adapters';
-import { appGraph } from '../src/di/graph';
-import { LoggerPort, UserSessionPort, MessageStorePort, ChatServicePort } from '../src/di/ports';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import {
+  createAdapterTest,
+  TestGraphBuilder,
+  createMockAdapter,
+  useTestContainer,
+} from "@hex-di/testing";
+import { ChatServiceAdapter } from "../src/di/adapters";
+import { appGraph } from "../src/di/graph";
+import { LoggerPort, UserSessionPort, MessageStorePort, ChatServicePort } from "../src/di/ports";
 
-describe('ChatService', () => {
+describe("ChatService", () => {
   // Unit test
-  describe('adapter unit test', () => {
-    it('sends message with user info', () => {
+  describe("adapter unit test", () => {
+    it("sends message with user info", () => {
       const mockLogger = { log: vi.fn(), warn: vi.fn(), error: vi.fn() };
-      const mockSession = { user: { id: '1', name: 'Alice', avatar: 'A' } };
+      const mockSession = { user: { id: "1", name: "Alice", avatar: "A" } };
       const mockStore = { addMessage: vi.fn(), getMessages: vi.fn(), subscribe: vi.fn() };
 
       const harness = createAdapterTest(ChatServiceAdapter, {
         Logger: mockLogger,
         UserSession: mockSession,
-        MessageStore: mockStore
+        MessageStore: mockStore,
       });
 
       const chatService = harness.invoke();
-      chatService.sendMessage('Hello!');
+      chatService.sendMessage("Hello!");
 
       expect(mockStore.addMessage).toHaveBeenCalledWith(
         expect.objectContaining({
-          senderName: 'Alice',
-          content: 'Hello!'
+          senderName: "Alice",
+          content: "Hello!",
         })
       );
     });
   });
 
   // Integration test
-  describe('integration test', () => {
+  describe("integration test", () => {
     const mockLogger = createMockAdapter(LoggerPort, {
       log: vi.fn(),
       warn: vi.fn(),
-      error: vi.fn()
+      error: vi.fn(),
     });
 
     const { scope } = useTestContainer(() =>
-      TestGraphBuilder.from(appGraph)
-        .override(mockLogger)
-        .build()
+      TestGraphBuilder.from(appGraph).override(mockLogger).build()
     );
 
-    it('integrates with message store', () => {
+    it("integrates with message store", () => {
       const chatService = scope.resolve(ChatServicePort);
       const messageStore = scope.resolve(MessageStorePort);
 
-      chatService.sendMessage('Test message');
+      chatService.sendMessage("Test message");
 
       const messages = messageStore.getMessages();
       expect(messages).toHaveLength(1);
-      expect(messages[0].content).toBe('Test message');
+      expect(messages[0].content).toBe("Test message");
     });
   });
 });
@@ -580,6 +583,5 @@ describe('ChatService', () => {
 
 ## Next Steps
 
-- Learn [DevTools Usage](./devtools-usage.md) for debugging tests
 - Explore [Error Handling](./error-handling.md) for testing error cases
 - See [React Integration](./react-integration.md) for component testing patterns

@@ -173,7 +173,6 @@ describe("@hex-di/runtime exports", () => {
         "createInspectorAPI",
         "hasInspector",
         "getInspectorAPI",
-        "hasSubscription",
         "detectContainerKind",
         "detectPhase",
         "buildTypedSnapshot",

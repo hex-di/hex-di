@@ -28,6 +28,7 @@ ContainerError (base class)
 ```
 
 All errors extend `ContainerError` which provides:
+
 - `code` - Stable string constant for programmatic handling
 - `message` - Human-readable description
 - `isProgrammingError` - Whether this indicates a code bug
@@ -39,15 +40,15 @@ All errors extend `ContainerError` which provides:
 Base class for all container errors.
 
 ```typescript
-import { ContainerError } from '@hex-di/runtime';
+import { ContainerError } from "@hex-di/runtime";
 
 try {
   container.resolve(SomePort);
 } catch (error) {
   if (error instanceof ContainerError) {
-    console.log('Code:', error.code);
-    console.log('Message:', error.message);
-    console.log('Is programming error:', error.isProgrammingError);
+    console.log("Code:", error.code);
+    console.log("Message:", error.message);
+    console.log("Is programming error:", error.isProgrammingError);
   }
 }
 ```
@@ -57,27 +58,29 @@ try {
 Thrown when services depend on each other in a cycle.
 
 ```typescript
-import { CircularDependencyError } from '@hex-di/runtime';
+import { CircularDependencyError } from "@hex-di/runtime";
 
 // Example: A depends on B, B depends on A
 try {
   container.resolve(ServiceAPort);
 } catch (error) {
   if (error instanceof CircularDependencyError) {
-    console.log('Code:', error.code); // 'CIRCULAR_DEPENDENCY'
-    console.log('Chain:', error.dependencyChain);
+    console.log("Code:", error.code); // 'CIRCULAR_DEPENDENCY'
+    console.log("Chain:", error.dependencyChain);
     // ['ServiceA', 'ServiceB', 'ServiceA']
-    console.log('Is programming error:', error.isProgrammingError); // true
+    console.log("Is programming error:", error.isProgrammingError); // true
   }
 }
 ```
 
 **Properties:**
+
 - `code: 'CIRCULAR_DEPENDENCY'`
 - `dependencyChain: string[]` - The ports forming the cycle
 - `isProgrammingError: true`
 
 **How to Fix:**
+
 1. Review the dependency chain to understand the cycle
 2. Break the cycle by:
    - Extracting shared logic into a new service
@@ -89,27 +92,29 @@ try {
 Thrown when an adapter's factory function throws an exception.
 
 ```typescript
-import { FactoryError } from '@hex-di/runtime';
+import { FactoryError } from "@hex-di/runtime";
 
 try {
   container.resolve(DatabasePort);
 } catch (error) {
   if (error instanceof FactoryError) {
-    console.log('Code:', error.code); // 'FACTORY_FAILED'
-    console.log('Port:', error.portName); // 'Database'
-    console.log('Original error:', error.cause);
-    console.log('Is programming error:', error.isProgrammingError); // false
+    console.log("Code:", error.code); // 'FACTORY_FAILED'
+    console.log("Port:", error.portName); // 'Database'
+    console.log("Original error:", error.cause);
+    console.log("Is programming error:", error.isProgrammingError); // false
   }
 }
 ```
 
 **Properties:**
+
 - `code: 'FACTORY_FAILED'`
 - `portName: string` - Which port's factory failed
 - `cause: Error` - The original error thrown by the factory
 - `isProgrammingError: false`
 
 **How to Handle:**
+
 - This is typically an external failure (database unavailable, etc.)
 - May warrant retry logic or fallback behavior
 - Log the original error for debugging
@@ -119,7 +124,7 @@ try {
 Thrown when trying to resolve from a disposed scope.
 
 ```typescript
-import { DisposedScopeError } from '@hex-di/runtime';
+import { DisposedScopeError } from "@hex-di/runtime";
 
 const scope = container.createScope();
 await scope.dispose();
@@ -128,17 +133,19 @@ try {
   scope.resolve(UserSessionPort); // Scope is already disposed!
 } catch (error) {
   if (error instanceof DisposedScopeError) {
-    console.log('Code:', error.code); // 'SCOPE_DISPOSED'
-    console.log('Is programming error:', error.isProgrammingError); // true
+    console.log("Code:", error.code); // 'SCOPE_DISPOSED'
+    console.log("Is programming error:", error.isProgrammingError); // true
   }
 }
 ```
 
 **Properties:**
+
 - `code: 'SCOPE_DISPOSED'`
 - `isProgrammingError: true`
 
 **How to Fix:**
+
 - Don't use scopes after disposing them
 - Check scope lifecycle in async code
 - Use proper cleanup patterns in React (useEffect cleanup)
@@ -148,63 +155,65 @@ try {
 Thrown when trying to resolve a scoped service from the root container.
 
 ```typescript
-import { ScopeRequiredError } from '@hex-di/runtime';
+import { ScopeRequiredError } from "@hex-di/runtime";
 
 // UserSession is scoped, but we're resolving from root container
 try {
   container.resolve(UserSessionPort);
 } catch (error) {
   if (error instanceof ScopeRequiredError) {
-    console.log('Code:', error.code); // 'SCOPE_REQUIRED'
-    console.log('Port:', error.portName); // 'UserSession'
-    console.log('Is programming error:', error.isProgrammingError); // true
+    console.log("Code:", error.code); // 'SCOPE_REQUIRED'
+    console.log("Port:", error.portName); // 'UserSession'
+    console.log("Is programming error:", error.isProgrammingError); // true
   }
 }
 ```
 
 **Properties:**
+
 - `code: 'SCOPE_REQUIRED'`
 - `portName: string` - Which scoped port was requested
 - `isProgrammingError: true`
 
 **How to Fix:**
+
 - Create a scope: `const scope = container.createScope()`
 - Resolve from the scope: `scope.resolve(UserSessionPort)`
 - In React, use `AutoScopeProvider` or `ScopeProvider`
 
 ## Error Codes
 
-| Error Type | Code | Programming Error |
-|------------|------|-------------------|
-| CircularDependencyError | `CIRCULAR_DEPENDENCY` | Yes |
-| FactoryError | `FACTORY_FAILED` | No |
-| DisposedScopeError | `SCOPE_DISPOSED` | Yes |
-| ScopeRequiredError | `SCOPE_REQUIRED` | Yes |
+| Error Type              | Code                  | Programming Error |
+| ----------------------- | --------------------- | ----------------- |
+| CircularDependencyError | `CIRCULAR_DEPENDENCY` | Yes               |
+| FactoryError            | `FACTORY_FAILED`      | No                |
+| DisposedScopeError      | `SCOPE_DISPOSED`      | Yes               |
+| ScopeRequiredError      | `SCOPE_REQUIRED`      | Yes               |
 
 ## Handling Patterns
 
 ### Pattern 1: Switch on Error Code
 
 ```typescript
-import { ContainerError } from '@hex-di/runtime';
+import { ContainerError } from "@hex-di/runtime";
 
 try {
   const service = container.resolve(SomePort);
 } catch (error) {
   if (error instanceof ContainerError) {
     switch (error.code) {
-      case 'CIRCULAR_DEPENDENCY':
-        console.error('Fix your dependency graph!');
+      case "CIRCULAR_DEPENDENCY":
+        console.error("Fix your dependency graph!");
         throw error; // Re-throw programming errors
-      case 'FACTORY_FAILED':
-        console.error('Service creation failed:', error.cause);
+      case "FACTORY_FAILED":
+        console.error("Service creation failed:", error.cause);
         // Maybe retry or use fallback
         break;
-      case 'SCOPE_REQUIRED':
-        console.error('Need a scope for this service');
+      case "SCOPE_REQUIRED":
+        console.error("Need a scope for this service");
         throw error;
-      case 'SCOPE_DISPOSED':
-        console.error('Scope was already disposed');
+      case "SCOPE_DISPOSED":
+        console.error("Scope was already disposed");
         throw error;
     }
   }
@@ -215,7 +224,7 @@ try {
 ### Pattern 2: Handle Programming vs Runtime Errors
 
 ```typescript
-import { ContainerError } from '@hex-di/runtime';
+import { ContainerError } from "@hex-di/runtime";
 
 function resolveService(port) {
   try {
@@ -224,11 +233,11 @@ function resolveService(port) {
     if (error instanceof ContainerError) {
       if (error.isProgrammingError) {
         // Log and re-throw - this is a bug
-        console.error('Programming error:', error.message);
+        console.error("Programming error:", error.message);
         throw error;
       } else {
         // Handle gracefully - this is an external failure
-        console.warn('Service unavailable:', error.message);
+        console.warn("Service unavailable:", error.message);
         return null; // Or fallback value
       }
     }
@@ -240,7 +249,7 @@ function resolveService(port) {
 ### Pattern 3: Factory with Retry
 
 ```typescript
-import { FactoryError } from '@hex-di/runtime';
+import { FactoryError } from "@hex-di/runtime";
 
 async function resolveWithRetry(port, maxRetries = 3) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -317,6 +326,7 @@ const graph = GraphBuilder.create()
 ```
 
 **How to Read:**
+
 - The error type tells you exactly which ports are missing
 - Add the missing adapters to your graph
 
@@ -331,6 +341,7 @@ const graph = GraphBuilder.create()
 ```
 
 **How to Fix:**
+
 - Remove the duplicate provider
 - Or use different ports for different implementations
 
@@ -342,6 +353,7 @@ container.resolve(UnregisteredPort);
 ```
 
 **How to Fix:**
+
 - Add the adapter to your graph
 - Or check you're using the correct port
 
@@ -360,9 +372,9 @@ if (error.isProgrammingError) {
 
 ```typescript
 if (error instanceof FactoryError) {
-  console.error('Factory failed:', {
+  console.error("Factory failed:", {
     port: error.portName,
-    originalError: error.cause
+    originalError: error.cause,
   });
 }
 ```
@@ -389,25 +401,22 @@ function getDatabase() {
 ### 5. Test Error Scenarios
 
 ```typescript
-describe('error handling', () => {
-  it('handles factory errors gracefully', () => {
+describe("error handling", () => {
+  it("handles factory errors gracefully", () => {
     const badAdapter = createAdapter({
       provides: TestPort,
       requires: [],
-      lifetime: 'singleton',
+      lifetime: "singleton",
       factory: () => {
-        throw new Error('Connection failed');
-      }
+        throw new Error("Connection failed");
+      },
     });
 
-    const graph = GraphBuilder.create()
-      .provide(badAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(badAdapter).build();
 
     const container = createContainer(graph);
 
-    expect(() => container.resolve(TestPort))
-      .toThrow(FactoryError);
+    expect(() => container.resolve(TestPort)).toThrow(FactoryError);
   });
 });
 ```
@@ -417,12 +426,14 @@ describe('error handling', () => {
 ### "Maximum call stack size exceeded"
 
 Usually indicates a circular dependency that wasn't detected. Check your adapter factories for:
+
 - Self-references
 - Indirect cycles through multiple services
 
 ### "Cannot read property of undefined"
 
 Check that:
+
 - All required ports are in the graph
 - You're resolving from the correct container/scope
 - The factory function returns the correct type
@@ -436,5 +447,4 @@ Check that:
 ## Next Steps
 
 - Learn about [Testing Strategies](./testing-strategies.md) for error testing
-- See [DevTools Usage](./devtools-usage.md) for debugging
 - Review the [Runtime API Reference](../api/runtime.md)

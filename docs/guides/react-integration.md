@@ -17,6 +17,7 @@ pnpm add @hex-di/react
 ## Overview
 
 `@hex-di/react` provides:
+
 - **ContainerProvider** - Makes container available to components
 - **ScopeProvider** - Manual scope management
 - **AutoScopeProvider** - Automatic scope lifecycle
@@ -32,8 +33,8 @@ First, create typed hooks for your application's ports:
 
 ```typescript
 // src/di/hooks.ts
-import { createTypedHooks } from '@hex-di/react';
-import type { AppPorts } from './ports';
+import { createTypedHooks } from "@hex-di/react";
+import type { AppPorts } from "./ports";
 
 // Create hooks typed to your ports
 const typedHooks = createTypedHooks<AppPorts>();
@@ -50,8 +51,8 @@ export const useScope = typedHooks.useScope;
 
 ```typescript
 // src/di/container.ts
-import { createContainer } from '@hex-di/runtime';
-import { appGraph } from './graph';
+import { createContainer } from "@hex-di/runtime";
+import { appGraph } from "./graph";
 
 export const container = createContainer(appGraph);
 ```
@@ -111,6 +112,7 @@ function App() {
 ```
 
 **Props:**
+
 - `container` (required) - The container instance created from your graph
 
 ### ScopeProvider
@@ -139,6 +141,7 @@ function RequestHandler() {
 ```
 
 **Props:**
+
 - `scope` (required) - A scope instance created from the container
 
 ### AutoScopeProvider
@@ -160,9 +163,11 @@ function UserDashboard() {
 ```
 
 **Props:**
+
 - `children` - React children
 
 **Behavior:**
+
 - Creates a new scope when the component mounts
 - Disposes the scope when the component unmounts
 - Children can resolve scoped services
@@ -178,7 +183,7 @@ function MyComponent() {
   const logger = usePort(LoggerPort);
 
   // logger is typed as Logger
-  logger.log('Hello!');
+  logger.log("Hello!");
 }
 ```
 
@@ -220,7 +225,7 @@ function ScopedComponent() {
   const scope = useScope();
 
   useEffect(() => {
-    console.log('Inside scope:', scope);
+    console.log("Inside scope:", scope);
   }, [scope]);
 }
 ```
@@ -600,5 +605,4 @@ export function ChatRoom() {
 ## Next Steps
 
 - Learn [Testing Strategies](./testing-strategies.md) for React components
-- Explore [DevTools Usage](./devtools-usage.md) for debugging
 - See [Scoped Services](../patterns/scoped-services.md) patterns

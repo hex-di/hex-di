@@ -314,13 +314,3 @@ export {
   type ContainerHierarchyEntry,
   type ContainerKind,
 } from "./components/index.js";
-
-// =============================================================================
-// Complete Application with DevTools
-// =============================================================================
-
-export {
-  TaskFlowWithDevTools,
-  taskFlowWithDevToolsRoutes,
-  useContainers,
-} from "./TaskFlowWithDevTools.js";
