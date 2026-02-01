@@ -26,8 +26,8 @@ import { detectCaptiveAtRuntime } from "../src/advanced.js";
 // Test Fixtures
 // =============================================================================
 
-const ScopedPort = createPort<"ScopedService", { getData(): string }>("ScopedService");
-const SingletonPort = createPort<"SingletonService", { process(): void }>("SingletonService");
+const ScopedPort = createPort<{ getData(): string }>({ name: "ScopedService" });
+const SingletonPort = createPort<{ process(): void }>({ name: "SingletonService" });
 
 const ScopedAdapter = createAdapter({
   provides: ScopedPort,

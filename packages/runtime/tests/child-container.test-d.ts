@@ -42,10 +42,10 @@ interface Cache {
 // Test Port Tokens
 // =============================================================================
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const ConfigPort = createPort<"Config", Config>("Config");
-const CachePort = createPort<"Cache", Cache>("Cache");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<Database, "Database">({ name: "Database" });
+const ConfigPort = createPort<Config, "Config">({ name: "Config" });
+const CachePort = createPort<Cache, "Cache">({ name: "Cache" });
 
 type LoggerPortType = typeof LoggerPort;
 type ConfigPortType = typeof ConfigPort;

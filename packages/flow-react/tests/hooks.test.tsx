@@ -65,7 +65,7 @@ type TestFlowService = FlowService<TestState, TestEvent, TestContext>;
 /**
  * Port for test FlowService
  */
-const TestFlowPort = createPort<"TestFlow", TestFlowService>("TestFlow");
+const TestFlowPort = createPort<TestFlowService, "TestFlow">({ name: "TestFlow" });
 
 /**
  * Creates a mock FlowService with configurable behavior.

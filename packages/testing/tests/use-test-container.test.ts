@@ -39,9 +39,9 @@ interface Counter {
 // Test Port Tokens
 // =============================================================================
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const CounterPort = createPort<"Counter", Counter>("Counter");
+const LoggerPort = createPort<Logger>({ name: "Logger" });
+const DatabasePort = createPort<Database>({ name: "Database" });
+const CounterPort = createPort<Counter>({ name: "Counter" });
 
 // =============================================================================
 // Test Adapters

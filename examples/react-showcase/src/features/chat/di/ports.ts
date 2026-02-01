@@ -13,14 +13,14 @@ import type { MessageStore, ChatService } from "../types.js";
  * Provides message persistence and subscription.
  * Uses async factory for localStorage initialization.
  */
-export const MessageStorePort = createPort<"MessageStore", MessageStore>("MessageStore");
+export const MessageStorePort = createPort<MessageStore, "MessageStore">({ name: "MessageStore" });
 
 /**
  * Port for the chat service.
  *
  * Provides message sending functionality tied to current user session.
  */
-export const ChatServicePort = createPort<"ChatService", ChatService>("ChatService");
+export const ChatServicePort = createPort<ChatService, "ChatService">({ name: "ChatService" });
 
 /**
  * Union of all ports in the chat feature.

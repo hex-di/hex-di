@@ -16,7 +16,7 @@ import { LoggerPort, DatabasePort, UserServicePort } from "./fixtures.js";
 interface Cache {
   get(key: string): unknown;
 }
-const CachePort = createPort<"Cache", Cache>("Cache");
+const CachePort = createPort<Cache>({ name: "Cache" });
 
 // =============================================================================
 // OrphanPorts Tests

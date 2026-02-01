@@ -27,7 +27,7 @@ interface ServiceA {
   doA(): void;
 }
 
-const PortA = createPort<"PortA", ServiceA>("PortA");
+const PortA = createPort<ServiceA>({ name: "PortA" });
 type PortAType = typeof PortA;
 
 // =============================================================================

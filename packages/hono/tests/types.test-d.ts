@@ -8,7 +8,7 @@ interface Logger {
   log(message: string): void;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
 
 type Env = HexHonoEnv<typeof LoggerPort>;
 declare const context: Context<Env>;

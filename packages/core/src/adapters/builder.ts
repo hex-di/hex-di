@@ -32,7 +32,7 @@
  * @packageDocumentation
  */
 
-import type { Port } from "../ports/types.js";
+import type { Port, DirectedPort } from "../ports/types.js";
 import { createPort } from "../ports/factory.js";
 import { createAdapter } from "./factory.js";
 import type { Adapter, Lifetime, ResolvedDeps } from "./types.js";
@@ -251,10 +251,17 @@ export class ServiceBuilder<
   factory(
     fn: (deps: ResolvedDeps<TupleToUnion<TRequires>>) => TService
   ): readonly [
-    Port<TService, TName>,
-    Adapter<Port<TService, TName>, TupleToUnion<TRequires>, TLifetime, "sync", False, TRequires>,
+    DirectedPort<TService, TName, "outbound">,
+    Adapter<
+      DirectedPort<TService, TName, "outbound">,
+      TupleToUnion<TRequires>,
+      TLifetime,
+      "sync",
+      False,
+      TRequires
+    >,
   ] {
-    const port = createPort<TName, TService>(this._name);
+    const port = createPort<TService, TName>({ name: this._name });
 
     const adapter = createAdapter({
       provides: port,

@@ -34,9 +34,9 @@ interface SessionStore {
   sessionId: string;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const RequestContextPort = createPort<"RequestContext", RequestContext>("RequestContext");
-const SessionStorePort = createPort<"SessionStore", SessionStore>("SessionStore");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const RequestContextPort = createPort<RequestContext, "RequestContext">({ name: "RequestContext" });
+const SessionStorePort = createPort<SessionStore, "SessionStore">({ name: "SessionStore" });
 
 // =============================================================================
 // Scope Creation Tests

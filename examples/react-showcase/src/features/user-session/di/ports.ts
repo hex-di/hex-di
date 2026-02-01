@@ -12,7 +12,7 @@ import type { UserSession } from "../types.js";
  *
  * Provides the current user's identity for the scope.
  */
-export const UserSessionPort = createPort<"UserSession", UserSession>("UserSession");
+export const UserSessionPort = createPort<UserSession, "UserSession">({ name: "UserSession" });
 
 /**
  * Union of all ports in the user session feature.

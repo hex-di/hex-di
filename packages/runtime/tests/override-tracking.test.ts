@@ -31,9 +31,9 @@ interface Config {
   getValue(key: string): string;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const ConfigPort = createPort<"Config", Config>("Config");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<Database, "Database">({ name: "Database" });
+const ConfigPort = createPort<Config, "Config">({ name: "Config" });
 
 // =============================================================================
 // Override Tracking Tests

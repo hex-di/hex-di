@@ -31,9 +31,9 @@ interface Config {
   getValue(key: string): string;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const ConfigPort = createPort<"Config", Config>("Config");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<Database, "Database">({ name: "Database" });
+const ConfigPort = createPort<Config, "Config">({ name: "Config" });
 
 // =============================================================================
 // Child Container Creation Tests
@@ -421,7 +421,7 @@ describe("ChildContainer.extend()", () => {
     interface Cache {
       get(key: string): unknown;
     }
-    const CachePort = createPort<"Cache", Cache>("Cache");
+    const CachePort = createPort<Cache, "Cache">({ name: "Cache" });
 
     const LoggerAdapter = createAdapter({
       provides: LoggerPort,
@@ -469,7 +469,7 @@ describe("Inheritance Modes", () => {
     increment(): void;
   }
 
-  const CounterPort = createPort<"Counter", Counter>("Counter");
+  const CounterPort = createPort<Counter, "Counter">({ name: "Counter" });
 
   const createCounterAdapter = () =>
     createAdapter({
@@ -694,7 +694,7 @@ describe("Inheritance Modes", () => {
       interface State {
         data: string;
       }
-      const StatePort = createPort<"State", State>("State");
+      const StatePort = createPort<State, "State">({ name: "State" });
 
       const CounterAdapter = createCounterAdapter();
       const StateAdapter = createAdapter({
@@ -1340,7 +1340,7 @@ describe("Child Container Integration Tests", () => {
       value: number;
       increment(): void;
     }
-    const CounterPort = createPort<"Counter", Counter>("Counter");
+    const CounterPort = createPort<Counter, "Counter">({ name: "Counter" });
 
     const CounterAdapter = createAdapter({
       provides: CounterPort,
@@ -1486,7 +1486,7 @@ describe("Child Container Integration Tests", () => {
       value: number;
       increment(): void;
     }
-    const CounterPort = createPort<"Counter", Counter>("Counter");
+    const CounterPort = createPort<Counter, "Counter">({ name: "Counter" });
 
     const CounterAdapter = createAdapter({
       provides: CounterPort,

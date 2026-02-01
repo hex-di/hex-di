@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { port } from "@hex-di/core";
+import { createPort } from "@hex-di/core";
 import { activityPort } from "../../src/activities/port.js";
 import { defineEvents } from "../../src/activities/events.js";
 import { activity } from "../../src/activities/factory.js";
@@ -39,9 +39,9 @@ interface MetricsService {
   recordDuration(name: string, ms: number): void;
 }
 
-const ApiPort = port<ApiService>()("Api");
-const LoggerPort = port<Logger>()("Logger");
-const MetricsPort = port<MetricsService>()("Metrics");
+const ApiPort = createPort<ApiService>({ name: "Api" });
+const LoggerPort = createPort<Logger>({ name: "Logger" });
+const MetricsPort = createPort<MetricsService>({ name: "Metrics" });
 
 const TaskActivityPort = activityPort<{ taskId: string }, TaskResult>()("TaskActivity");
 const SimpleActivityPort = activityPort<number, string>()("SimpleActivity");

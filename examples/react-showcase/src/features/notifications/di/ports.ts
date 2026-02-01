@@ -13,9 +13,9 @@ import type { NotificationService } from "../types.js";
  * Provides notification display functionality.
  * Uses transient lifetime for unique instances per resolution.
  */
-export const NotificationServicePort = createPort<"NotificationService", NotificationService>(
-  "NotificationService"
-);
+export const NotificationServicePort = createPort<NotificationService, "NotificationService">({
+  name: "NotificationService",
+});
 
 /**
  * Union of all ports in the notifications feature.

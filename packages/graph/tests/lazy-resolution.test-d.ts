@@ -37,11 +37,11 @@ interface NotificationService {
   send(userId: string, message: string): void;
 }
 
-const UserServicePort = createPort<"UserService", UserService>("UserService");
-const NotificationServicePort = createPort<"NotificationService", NotificationService>(
-  "NotificationService"
-);
-const LoggerPort = createPort<"Logger", { log: (msg: string) => void }>("Logger");
+const UserServicePort = createPort<UserService>({ name: "UserService" });
+const NotificationServicePort = createPort<NotificationService, "NotificationService">({
+  name: "NotificationService",
+});
+const LoggerPort = createPort<{ log: (msg: string) => void }, "Logger">({ name: "Logger" });
 
 // =============================================================================
 // LazyPort Type Tests
@@ -245,8 +245,8 @@ describe("Adapter with lazy requirements", () => {
 
   it("bidirectional dependency compiles without cycle error", () => {
     // A depends on B, B depends on lazy A
-    const PortA = createPort<"A", { getValue(): number }>("A");
-    const PortB = createPort<"B", { getDoubled(): number }>("B");
+    const PortA = createPort<{ getValue(): number }>({ name: "A" });
+    const PortB = createPort<{ getDoubled(): number }>({ name: "B" });
 
     const LazyA = lazyPort(PortA);
 

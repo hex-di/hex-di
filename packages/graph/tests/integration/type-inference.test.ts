@@ -23,7 +23,7 @@ describe("Integration: Complex generic type inference", () => {
       name: string;
     }
 
-    const UserRepoPort = createPort<"UserRepo", Repository<User>>("UserRepo");
+    const UserRepoPort = createPort<Repository<User>, "UserRepo">({ name: "UserRepo" });
 
     const userRepoAdapter = createAdapter({
       provides: UserRepoPort,
@@ -113,8 +113,8 @@ describe("Integration: Self-referential adapter (edge case)", () => {
       b(): void;
     }
 
-    const PortA = createPort<"A", ServiceA>("A");
-    const PortB = createPort<"B", ServiceB>("B");
+    const PortA = createPort<ServiceA>({ name: "A" });
+    const PortB = createPort<ServiceB>({ name: "B" });
 
     const adapterA = createAdapter({
       provides: PortA,

@@ -19,8 +19,8 @@ import type { IsNever } from "@hex-di/core";
 // Test Fixtures
 // =============================================================================
 
-const LoggerPort = createPort<"Logger", { log(msg: string): void }>("Logger");
-const DatabasePort = createPort<"Database", { query(): void }>("Database");
+const LoggerPort = createPort<{ log(msg: string): void }>({ name: "Logger" });
+const DatabasePort = createPort<{ query(): void }>({ name: "Database" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,

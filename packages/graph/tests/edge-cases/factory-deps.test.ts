@@ -53,7 +53,7 @@ describe("factory deps edge cases", () => {
   });
 
   it("factory receives correctly keyed deps", () => {
-    const ServicePort = createPort<"Service", Service>("Service");
+    const ServicePort = createPort<Service>({ name: "Service" });
 
     let receivedDeps: unknown;
 

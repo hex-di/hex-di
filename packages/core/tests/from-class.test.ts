@@ -88,8 +88,8 @@ class UserServiceImpl implements UserService {
 // Test Ports
 // =============================================================================
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<Database, "Database">({ name: "Database" });
 
 // =============================================================================
 // fromClass() Entry Point Tests

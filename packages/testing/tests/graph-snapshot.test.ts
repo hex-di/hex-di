@@ -30,10 +30,10 @@ interface Config {
   get(key: string): string;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
-const ConfigPort = createPort<"Config", Config>("Config");
+const LoggerPort = createPort<Logger>({ name: "Logger" });
+const DatabasePort = createPort<Database>({ name: "Database" });
+const UserServicePort = createPort<UserService>({ name: "UserService" });
+const ConfigPort = createPort<Config>({ name: "Config" });
 
 // =============================================================================
 // serializeGraph Tests

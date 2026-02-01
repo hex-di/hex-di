@@ -35,9 +35,9 @@ interface UserService {
 // Test Port Tokens
 // =============================================================================
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
+const LoggerPort = createPort<Logger>({ name: "Logger" });
+const DatabasePort = createPort<Database>({ name: "Database" });
+const UserServicePort = createPort<UserService>({ name: "UserService" });
 
 // =============================================================================
 // Test Adapters (Production)

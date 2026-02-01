@@ -41,8 +41,8 @@ export type NavigationFlowService = FlowService<NavState, NavEventType, NavConte
  * }
  * ```
  */
-export const NavigationFlowServicePort = createPort<"NavigationFlowService", NavigationFlowService>(
-  "NavigationFlowService"
+export const NavigationFlowServicePort = createPort<NavigationFlowService, "NavigationFlowService">(
+  { name: "NavigationFlowService" }
 );
 
 // =============================================================================
@@ -140,7 +140,9 @@ export interface RouterService {
  * router.navigate('/tasks/new');
  * ```
  */
-export const RouterServicePort = createPort<"RouterService", RouterService>("RouterService");
+export const RouterServicePort = createPort<RouterService, "RouterService">({
+  name: "RouterService",
+});
 
 // =============================================================================
 // Navigation Guard Service Port
@@ -199,6 +201,8 @@ export interface NavigationGuardService {
  * This port provides access to route guard evaluation.
  */
 export const NavigationGuardServicePort = createPort<
-  "NavigationGuardService",
-  NavigationGuardService
->("NavigationGuardService");
+  NavigationGuardService,
+  "NavigationGuardService"
+>({
+  name: "NavigationGuardService",
+});

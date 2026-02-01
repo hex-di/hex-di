@@ -14,7 +14,7 @@ interface Service {
 
 describe("port name edge cases", () => {
   it("handles simple ASCII port names", () => {
-    const SimplePort = createPort<"Simple", Service>("Simple");
+    const SimplePort = createPort<Service>({ name: "Simple" });
     const adapter = createAdapter({
       provides: SimplePort,
       requires: [],
@@ -28,9 +28,9 @@ describe("port name edge cases", () => {
   });
 
   it("handles port names with numbers", () => {
-    const Service123Port = createPort<"Service123", Service>("Service123");
-    const V2ApiPort = createPort<"V2Api", Service>("V2Api");
-    const Port2024Port = createPort<"Port2024", Service>("Port2024");
+    const Service123Port = createPort<Service>({ name: "Service123" });
+    const V2ApiPort = createPort<Service>({ name: "V2Api" });
+    const Port2024Port = createPort<Service>({ name: "Port2024" });
 
     const graph = GraphBuilder.create()
       .provide(
@@ -66,9 +66,9 @@ describe("port name edge cases", () => {
   });
 
   it("handles port names with underscores", () => {
-    const User_ServicePort = createPort<"User_Service", Service>("User_Service");
-    const DB_ConnectionPort = createPort<"DB_Connection", Service>("DB_Connection");
-    const _InternalPort = createPort<"_Internal", Service>("_Internal");
+    const User_ServicePort = createPort<Service>({ name: "User_Service" });
+    const DB_ConnectionPort = createPort<Service>({ name: "DB_Connection" });
+    const _InternalPort = createPort<Service>({ name: "_Internal" });
 
     const graph = GraphBuilder.create()
       .provide(
@@ -104,9 +104,9 @@ describe("port name edge cases", () => {
   });
 
   it("handles CamelCase port names", () => {
-    const UserAuthServicePort = createPort<"UserAuthService", Service>("UserAuthService");
-    const HTTPClientAdapterPort = createPort<"HTTPClientAdapter", Service>("HTTPClientAdapter");
-    const XMLParserImplPort = createPort<"XMLParserImpl", Service>("XMLParserImpl");
+    const UserAuthServicePort = createPort<Service>({ name: "UserAuthService" });
+    const HTTPClientAdapterPort = createPort<Service>({ name: "HTTPClientAdapter" });
+    const XMLParserImplPort = createPort<Service>({ name: "XMLParserImpl" });
 
     const graph = GraphBuilder.create()
       .provide(
@@ -142,9 +142,9 @@ describe("port name edge cases", () => {
   });
 
   it("handles single-character port names", () => {
-    const APort = createPort<"A", Service>("A");
-    const BPort = createPort<"B", Service>("B");
-    const CPort = createPort<"C", Service>("C");
+    const APort = createPort<Service>({ name: "A" });
+    const BPort = createPort<Service>({ name: "B" });
+    const CPort = createPort<Service>({ name: "C" });
 
     const graph = GraphBuilder.create()
       .provide(
@@ -181,9 +181,9 @@ describe("port name edge cases", () => {
 
   it("handles port names in dependency chains", () => {
     // Create a dependency chain with various name styles
-    const BasePort = createPort<"Base", Service>("Base");
-    const Service_ImplPort = createPort<"Service_Impl", Service>("Service_Impl");
-    const V2WrapperPort = createPort<"V2Wrapper", Service>("V2Wrapper");
+    const BasePort = createPort<Service>({ name: "Base" });
+    const Service_ImplPort = createPort<Service>({ name: "Service_Impl" });
+    const V2WrapperPort = createPort<Service>({ name: "V2Wrapper" });
 
     const baseAdapter = createAdapter({
       provides: BasePort,

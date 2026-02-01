@@ -24,8 +24,8 @@ interface Config {
   apiUrl: string;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const ConfigPort = createPort<"Config", Config>("Config");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const ConfigPort = createPort<Config, "Config">({ name: "Config" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,

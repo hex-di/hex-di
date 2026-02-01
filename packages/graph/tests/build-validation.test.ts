@@ -19,8 +19,8 @@ import { buildGraph, buildGraphFragment, validateBuildable } from "../src/builde
 // Test Fixtures
 // =============================================================================
 
-const LoggerPort = createPort<"Logger", { log: (msg: string) => void }>("Logger");
-const DbPort = createPort<"Db", { query: () => string }>("Db");
+const LoggerPort = createPort<{ log: (msg: string) => void }, "Logger">({ name: "Logger" });
+const DbPort = createPort<{ query: () => string }, "Db">({ name: "Db" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,
@@ -37,10 +37,10 @@ const DbAdapter = createAdapter({
 });
 
 // Captive dependency: singleton depends on scoped
-const ScopedPort = createPort<"Scoped", { getData: () => string }>("Scoped");
-const CaptiveSingletonPort = createPort<"CaptiveSingleton", { process: () => void }>(
-  "CaptiveSingleton"
-);
+const ScopedPort = createPort<{ getData: () => string }, "Scoped">({ name: "Scoped" });
+const CaptiveSingletonPort = createPort<{ process: () => void }, "CaptiveSingleton">({
+  name: "CaptiveSingleton",
+});
 
 const ScopedAdapter = createAdapter({
   provides: ScopedPort,

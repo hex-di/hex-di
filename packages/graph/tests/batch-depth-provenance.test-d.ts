@@ -43,8 +43,8 @@ import type {
 // 1. A pre-built graph with deep dependencies
 // 2. Adding an adapter whose requirements ARE in the graph
 // 3. The traversal through existing edges exceeds maxDepth
-const PortA = createPort<"A", { a: () => void }>("A");
-const PortB = createPort<"B", { b: () => void }>("B");
+const PortA = createPort<{ a: () => void }, "A">({ name: "A" });
+const PortB = createPort<{ b: () => void }, "B">({ name: "B" });
 
 const AdapterA = createAdapter({
   provides: PortA,

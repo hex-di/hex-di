@@ -49,7 +49,7 @@ interface TestService {
   value: number;
 }
 
-const TestServicePort = createPort<"TestService", TestService>("TestService");
+const TestServicePort = createPort<TestService, "TestService">({ name: "TestService" });
 
 type AppPorts = typeof TestServicePort;
 type DefaultEnv = HexHonoEnv<AppPorts>;

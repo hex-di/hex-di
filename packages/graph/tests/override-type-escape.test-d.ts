@@ -39,9 +39,9 @@ interface CompletelyDifferentService {
 }
 
 // All these ports have the same NAME but different SERVICE TYPES
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const ExtendedLoggerPort = createPort<"Logger", ExtendedLogger>("Logger");
-const DifferentServicePort = createPort<"Logger", CompletelyDifferentService>("Logger");
+const LoggerPort = createPort<Logger>({ name: "Logger" });
+const ExtendedLoggerPort = createPort<ExtendedLogger>({ name: "Logger" });
+const DifferentServicePort = createPort<CompletelyDifferentService>({ name: "Logger" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,

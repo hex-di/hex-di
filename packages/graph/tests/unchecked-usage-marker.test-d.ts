@@ -26,8 +26,8 @@ import type { GetUncheckedUsed } from "../src/builder/types/state.js";
 // Test Fixtures
 // =============================================================================
 
-const PortA = createPort<"A", { a: () => void }>("A");
-const PortB = createPort<"B", { b: () => void }>("B");
+const PortA = createPort<{ a: () => void }, "A">({ name: "A" });
+const PortB = createPort<{ b: () => void }, "B">({ name: "B" });
 
 const AdapterA = createAdapter({
   provides: PortA,

@@ -25,7 +25,7 @@ import { createAdapter } from "@hex-di/core";
 // Test Fixtures
 // =============================================================================
 
-const LoggerPort = createPort<"Logger", { log: (msg: string) => void }>("Logger");
+const LoggerPort = createPort<{ log: (msg: string) => void }, "Logger">({ name: "Logger" });
 
 // =============================================================================
 // Factory Contract Validation Tests
@@ -144,7 +144,9 @@ describe("Factory contract validation at compile-time", () => {
         name: string;
       }
 
-      const UserRepositoryPort = createPort<"UserRepository", Repository<User>>("UserRepository");
+      const UserRepositoryPort = createPort<Repository<User>, "UserRepository">({
+        name: "UserRepository",
+      });
 
       // Valid
       const goodAdapter = createAdapter({

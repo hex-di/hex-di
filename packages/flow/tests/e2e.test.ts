@@ -36,7 +36,7 @@ interface CounterService {
   getCount(): number;
 }
 
-const CounterServicePort = createPort<"CounterService", CounterService>("CounterService");
+const CounterServicePort = createPort<CounterService, "CounterService">({ name: "CounterService" });
 
 function createCounterService(): CounterService {
   let count = 0;

@@ -121,7 +121,7 @@ describe("Current inference behavior (documents where InferenceError could help)
     });
 
     it("returns port type for valid adapters", () => {
-      const LoggerPort = createPort<"Logger", { log: () => void }>("Logger");
+      const LoggerPort = createPort<{ log: () => void }>({ name: "Logger" });
       const LoggerAdapter = createAdapter({
         provides: LoggerPort,
         requires: [],
@@ -145,7 +145,7 @@ describe("Current inference behavior (documents where InferenceError could help)
     });
 
     it("returns never for adapters with no requirements (intentional)", () => {
-      const LoggerPort = createPort<"Logger", { log: () => void }>("Logger");
+      const LoggerPort = createPort<{ log: () => void }>({ name: "Logger" });
       const LoggerAdapter = createAdapter({
         provides: LoggerPort,
         requires: [],

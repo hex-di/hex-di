@@ -58,10 +58,10 @@ interface RequestContext {
 // Test Port Tokens
 // =============================================================================
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
-const RequestContextPort = createPort<"RequestContext", RequestContext>("RequestContext");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<Database, "Database">({ name: "Database" });
+const UserServicePort = createPort<UserService, "UserService">({ name: "UserService" });
+const RequestContextPort = createPort<RequestContext, "RequestContext">({ name: "RequestContext" });
 
 // Use ports to suppress unused variable warnings
 expect(LoggerPort).toBeDefined();

@@ -37,9 +37,9 @@ interface UserService {
 // Test Ports
 // =============================================================================
 
-const ConfigPort = createPort<"Config", Config>("Config");
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
+const ConfigPort = createPort<Config, "Config">({ name: "Config" });
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<Database, "Database">({ name: "Database" });
 
 // =============================================================================
 // ServiceBuilder.create() Tests

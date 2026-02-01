@@ -33,8 +33,8 @@ interface UserContext {
   userName: string;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<Database, "Database">({ name: "Database" });
 
 function createMockContext(): TypeSafeContext {
   const store = new Map<ContextVariableKey<any>, any>();

@@ -65,8 +65,8 @@ interface RequestContext {
   requestId: string;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const RequestContextPort = createPort<"RequestContext", RequestContext>("RequestContext");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const RequestContextPort = createPort<RequestContext, "RequestContext">({ name: "RequestContext" });
 
 // =============================================================================
 // Internal Access Protocol Tests

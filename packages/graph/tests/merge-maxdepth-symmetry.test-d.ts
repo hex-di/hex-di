@@ -29,8 +29,8 @@ import type { GetMaxDepth } from "../src/builder/types/state.js";
 // Test Fixtures
 // =============================================================================
 
-const PortA = createPort<"ServiceA", { a: () => void }>("ServiceA");
-const PortB = createPort<"ServiceB", { b: () => void }>("ServiceB");
+const PortA = createPort<{ a: () => void }, "ServiceA">({ name: "ServiceA" });
+const PortB = createPort<{ b: () => void }, "ServiceB">({ name: "ServiceB" });
 
 const AdapterA = createAdapter({
   provides: PortA,

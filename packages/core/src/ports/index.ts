@@ -8,4 +8,4 @@
  */
 
 export type { Port, NotAPortError, InferService, InferPortName } from "./types.js";
-export { createPort, port } from "./factory.js";
+export { createPort } from "./factory.js";

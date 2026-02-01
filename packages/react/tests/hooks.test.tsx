@@ -44,7 +44,7 @@ interface TestService {
 /**
  * Port for testing resolution.
  */
-const TestServicePort = createPort<"TestService", TestService>("TestService");
+const TestServicePort = createPort<TestService, "TestService">({ name: "TestService" });
 
 /**
  * Type alias for test containers.

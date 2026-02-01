@@ -28,7 +28,7 @@
  */
 
 import { createPort } from "../ports/factory.js";
-import type { Port } from "../ports/types.js";
+import type { Port, DirectedPort } from "../ports/types.js";
 import { createAdapter } from "./factory.js";
 import type { Adapter, Lifetime, ResolvedDeps } from "./types.js";
 import type { TupleToUnion } from "../utils/type-utilities.js";
@@ -235,10 +235,17 @@ export class ClassServiceBuilder<
    * @returns Frozen tuple of [Port, Adapter] with correct types
    */
   build(): readonly [
-    Port<TService, TName>,
-    Adapter<Port<TService, TName>, TupleToUnion<TRequires>, TLifetime, "sync", False, TRequires>,
+    DirectedPort<TService, TName, "outbound">,
+    Adapter<
+      DirectedPort<TService, TName, "outbound">,
+      TupleToUnion<TRequires>,
+      TLifetime,
+      "sync",
+      False,
+      TRequires
+    >,
   ] {
-    const port = createPort<TName, TService>(this._name);
+    const port = createPort<TService, TName>({ name: this._name });
 
     // Create a factory function that instantiates the class with constructor injection.
     // The createClassFactory helper uses overloads to bridge the type gap.

@@ -39,7 +39,7 @@ interface TestService {
 }
 
 function makePort(name: string) {
-  return createPort<string, TestService>(name);
+  return createPort<TestService>({ name });
 }
 
 function makeAdapter(name: string) {
@@ -283,9 +283,9 @@ describe("concurrent: async adapter operations", () => {
 
   it("async adapters with dependencies are ordered correctly", () => {
     // Create distinct ports with literal key types
-    const ConfigPort = createPort<"Config", TestService>("Config");
-    const DatabasePort = createPort<"Database", TestService>("Database");
-    const CachePort = createPort<"Cache", TestService>("Cache");
+    const ConfigPort = createPort<TestService>({ name: "Config" });
+    const DatabasePort = createPort<TestService>({ name: "Database" });
+    const CachePort = createPort<TestService>({ name: "Cache" });
 
     const config = createAsyncAdapter({
       provides: ConfigPort,
@@ -409,12 +409,12 @@ describe("concurrent: stress patterns", () => {
 
   it("complex branching and merging pattern", () => {
     // Create a tree of builders using specific ports
-    const ServiceAPort = createPort<"ServiceA", TestService>("ServiceA");
-    const ServiceBPort = createPort<"ServiceB", TestService>("ServiceB");
-    const ServiceA1Port = createPort<"ServiceA1", TestService>("ServiceA1");
-    const ServiceA2Port = createPort<"ServiceA2", TestService>("ServiceA2");
-    const ServiceB1Port = createPort<"ServiceB1", TestService>("ServiceB1");
-    const ServiceB2Port = createPort<"ServiceB2", TestService>("ServiceB2");
+    const ServiceAPort = createPort<TestService>({ name: "ServiceA" });
+    const ServiceBPort = createPort<TestService>({ name: "ServiceB" });
+    const ServiceA1Port = createPort<TestService>({ name: "ServiceA1" });
+    const ServiceA2Port = createPort<TestService>({ name: "ServiceA2" });
+    const ServiceB1Port = createPort<TestService>({ name: "ServiceB1" });
+    const ServiceB2Port = createPort<TestService>({ name: "ServiceB2" });
 
     const root = GraphBuilder.create().provide(LoggerAdapter);
 

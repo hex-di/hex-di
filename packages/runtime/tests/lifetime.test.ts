@@ -58,9 +58,9 @@ interface AuditServiceWithLoggerId extends AuditService {
   loggerId: string;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const RequestContextPort = createPort<"RequestContext", RequestContext>("RequestContext");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<Database, "Database">({ name: "Database" });
+const RequestContextPort = createPort<RequestContext, "RequestContext">({ name: "RequestContext" });
 
 // Helper to generate unique instance IDs
 let instanceCounter = 0;
@@ -295,9 +295,9 @@ describe("mixed lifetimes in dependency chain", () => {
     }));
 
     // Create port for extended type that includes loggerId for testing
-    const UserServiceWithLoggerIdPort = createPort<"UserService", UserServiceWithLoggerId>(
-      "UserService"
-    );
+    const UserServiceWithLoggerIdPort = createPort<UserServiceWithLoggerId, "UserService">({
+      name: "UserService",
+    });
 
     const userServiceFactory = vi.fn(
       (deps: { Logger: Logger }): UserServiceWithLoggerId => ({
@@ -349,9 +349,9 @@ describe("mixed lifetimes in dependency chain", () => {
     }));
 
     // Create port for extended type that includes loggerId for testing
-    const AuditServiceWithLoggerIdPort = createPort<"AuditService", AuditServiceWithLoggerId>(
-      "AuditService"
-    );
+    const AuditServiceWithLoggerIdPort = createPort<AuditServiceWithLoggerId, "AuditService">({
+      name: "AuditService",
+    });
 
     const auditFactory = vi.fn(
       (deps: { Logger: Logger }): AuditServiceWithLoggerId => ({
@@ -405,9 +405,9 @@ describe("mixed lifetimes in dependency chain", () => {
     }));
 
     // Create port for extended type that includes contextId for testing
-    const UserServiceWithContextIdPort = createPort<"UserService", UserServiceWithContextId>(
-      "UserService"
-    );
+    const UserServiceWithContextIdPort = createPort<UserServiceWithContextId, "UserService">({
+      name: "UserService",
+    });
 
     const userServiceFactory = vi.fn(
       (deps: { RequestContext: RequestContext }): UserServiceWithContextId => ({

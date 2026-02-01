@@ -35,8 +35,8 @@ interface PluginService {
   pluginName: string;
 }
 
-const TestServicePort = createPort<"TestService", TestService>("TestService");
-const PluginServicePort = createPort<"PluginService", PluginService>("PluginService");
+const TestServicePort = createPort<TestService, "TestService">({ name: "TestService" });
+const PluginServicePort = createPort<PluginService, "PluginService">({ name: "PluginService" });
 
 const TestServiceAdapter = createAdapter({
   provides: TestServicePort,

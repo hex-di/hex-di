@@ -20,7 +20,7 @@ import { GraphBuilder } from "@hex-di/graph";
 // =============================================================================
 
 // Create a simple port for testing
-const TestPort = createPort<"Test", { value: string }>("Test");
+const TestPort = createPort<{ value: string }, "Test">({ name: "Test" });
 
 // Create typed hooks
 const { ContainerProvider, AutoScopeProvider, usePort } = createTypedHooks<typeof TestPort>();

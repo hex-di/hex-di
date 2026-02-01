@@ -19,8 +19,8 @@ import { createAdapter } from "@hex-di/core";
 // Test Fixtures
 // =============================================================================
 
-const LoggerPort = createPort<"Logger", { log: () => void }>("Logger");
-const DatabasePort = createPort<"Database", { query: () => void }>("Database");
+const LoggerPort = createPort<{ log: () => void }>({ name: "Logger" });
+const DatabasePort = createPort<{ query: () => void }>({ name: "Database" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,

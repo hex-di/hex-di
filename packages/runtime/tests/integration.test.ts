@@ -106,16 +106,16 @@ interface NotificationService {
 // Port Definitions
 // =============================================================================
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const ConfigPort = createPort<"Config", Config>("Config");
-const DatabasePort = createPort<"Database", Database>("Database");
-const CachePort = createPort<"Cache", Cache>("Cache");
-const UserRepositoryPort = createPort<"UserRepository", UserRepository>("UserRepository");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
-const RequestContextPort = createPort<"RequestContext", RequestContext>("RequestContext");
-const NotificationServicePort = createPort<"NotificationService", NotificationService>(
-  "NotificationService"
-);
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const ConfigPort = createPort<Config, "Config">({ name: "Config" });
+const DatabasePort = createPort<Database, "Database">({ name: "Database" });
+const CachePort = createPort<Cache, "Cache">({ name: "Cache" });
+const UserRepositoryPort = createPort<UserRepository, "UserRepository">({ name: "UserRepository" });
+const UserServicePort = createPort<UserService, "UserService">({ name: "UserService" });
+const RequestContextPort = createPort<RequestContext, "RequestContext">({ name: "RequestContext" });
+const NotificationServicePort = createPort<NotificationService, "NotificationService">({
+  name: "NotificationService",
+});
 
 // Use ports to suppress unused variable warnings
 expect(LoggerPort).toBeDefined();
@@ -906,8 +906,8 @@ describe("Integration: Error Scenarios", () => {
       name: string;
     }
 
-    const ServiceAPort = createPort<"ServiceA", ServiceA>("ServiceA");
-    const ServiceBPort = createPort<"ServiceB", ServiceB>("ServiceB");
+    const ServiceAPort = createPort<ServiceA, "ServiceA">({ name: "ServiceA" });
+    const ServiceBPort = createPort<ServiceB, "ServiceB">({ name: "ServiceB" });
 
     const ServiceAAdapter = createAdapter({
       provides: ServiceAPort,
@@ -1459,9 +1459,9 @@ describe("Integration: Edge Cases and Gap Coverage", () => {
       name: string;
     }
 
-    const ServiceAPort = createPort<"ServiceA", ServiceA>("ServiceA");
-    const ServiceBPort = createPort<"ServiceB", ServiceB>("ServiceB");
-    const ServiceCPort = createPort<"ServiceC", ServiceC>("ServiceC");
+    const ServiceAPort = createPort<ServiceA, "ServiceA">({ name: "ServiceA" });
+    const ServiceBPort = createPort<ServiceB, "ServiceB">({ name: "ServiceB" });
+    const ServiceCPort = createPort<ServiceC, "ServiceC">({ name: "ServiceC" });
 
     const ServiceAAdapter = createAdapter({
       provides: ServiceAPort,

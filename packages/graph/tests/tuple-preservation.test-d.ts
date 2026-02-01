@@ -28,10 +28,10 @@ import { createAdapter } from "@hex-di/core";
 // Test Fixtures
 // =============================================================================
 
-const LoggerPort = createPort<"Logger", { log: () => void }>("Logger");
-const DatabasePort = createPort<"Database", { query: () => void }>("Database");
-const CachePort = createPort<"Cache", { get: () => void }>("Cache");
-const UserPort = createPort<"User", { getUser: () => void }>("User");
+const LoggerPort = createPort<{ log: () => void }, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<{ query: () => void }, "Database">({ name: "Database" });
+const CachePort = createPort<{ get: () => void }, "Cache">({ name: "Cache" });
+const UserPort = createPort<{ getUser: () => void }, "User">({ name: "User" });
 
 // =============================================================================
 // Tuple Preservation Tests

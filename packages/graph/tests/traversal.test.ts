@@ -13,14 +13,16 @@ import {
 } from "../src/advanced.js";
 
 // Test fixtures
-const ConfigPort = createPort<"Config", { dbUrl: string }>("Config");
-const LoggerPort = createPort<"Logger", { log: (msg: string) => void }>("Logger");
-const DatabasePort = createPort<"Database", { query: (sql: string) => void }>("Database");
-const CachePort = createPort<"Cache", { get: (key: string) => unknown }>("Cache");
-const UserRepoPort = createPort<"UserRepo", { find: (id: string) => unknown }>("UserRepo");
-const UserServicePort = createPort<"UserService", { getUser: (id: string) => unknown }>(
-  "UserService"
-);
+const ConfigPort = createPort<{ dbUrl: string }>({ name: "Config" });
+const LoggerPort = createPort<{ log: (msg: string) => void }, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<{ query: (sql: string) => void }, "Database">({ name: "Database" });
+const CachePort = createPort<{ get: (key: string) => unknown }, "Cache">({ name: "Cache" });
+const UserRepoPort = createPort<{ find: (id: string) => unknown }, "UserRepo">({
+  name: "UserRepo",
+});
+const UserServicePort = createPort<{ getUser: (id: string) => unknown }, "UserService">({
+  name: "UserService",
+});
 
 const ConfigAdapter = createAdapter({
   provides: ConfigPort,
@@ -136,8 +138,8 @@ describe("Graph Traversal Utilities", () => {
 
     it("returns null for cyclic graphs", () => {
       // Create circular dependency for testing
-      const APort = createPort<"A", { a: true }>("A");
-      const BPort = createPort<"B", { b: true }>("B");
+      const APort = createPort<{ a: true }>({ name: "A" });
+      const BPort = createPort<{ b: true }>({ name: "B" });
 
       // These would normally fail at compile time, but we test runtime behavior
       const adapters = [

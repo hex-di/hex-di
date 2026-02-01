@@ -29,8 +29,8 @@ describe("depth-limited cycle detection soundness", () => {
       const { detectCycleAtRuntime } = await import("../src/advanced.js");
 
       // Create a simple cycle: A -> B -> A
-      const PortA = createPort<"A", { a: () => void }>("A");
-      const PortB = createPort<"B", { b: () => void }>("B");
+      const PortA = createPort<{ a: () => void }, "A">({ name: "A" });
+      const PortB = createPort<{ b: () => void }, "B">({ name: "B" });
 
       const AdapterA = createAdapter({
         provides: PortA,
@@ -71,8 +71,8 @@ describe("depth-limited cycle detection soundness", () => {
       // - provideUnchecked users are explicitly opting out of validation
 
       // Create ports for a cycle
-      const PortX = createPort<"X", { x: () => void }>("X");
-      const PortY = createPort<"Y", { y: () => void }>("Y");
+      const PortX = createPort<{ x: () => void }, "X">({ name: "X" });
+      const PortY = createPort<{ y: () => void }, "Y">({ name: "Y" });
 
       const AdapterX = createAdapter({
         provides: PortX,
@@ -126,9 +126,9 @@ describe("depth-limited cycle detection soundness", () => {
       // Import the function directly for testing
       const { detectCycleAtRuntime } = await import("../src/advanced.js");
 
-      const PortA = createPort<"A", object>("A");
-      const PortB = createPort<"B", object>("B");
-      const PortC = createPort<"C", object>("C");
+      const PortA = createPort<object>({ name: "A" });
+      const PortB = createPort<object>({ name: "B" });
+      const PortC = createPort<object>({ name: "C" });
 
       // A -> B -> C -> A (cycle)
       const AdapterA = createAdapter({
@@ -160,9 +160,9 @@ describe("depth-limited cycle detection soundness", () => {
     it("detectCycleAtRuntime returns null for acyclic graphs", async () => {
       const { detectCycleAtRuntime } = await import("../src/advanced.js");
 
-      const PortA = createPort<"A", object>("A");
-      const PortB = createPort<"B", object>("B");
-      const PortC = createPort<"C", object>("C");
+      const PortA = createPort<object>({ name: "A" });
+      const PortB = createPort<object>({ name: "B" });
+      const PortC = createPort<object>({ name: "C" });
 
       // A -> B -> C (no cycle)
       const AdapterA = createAdapter({

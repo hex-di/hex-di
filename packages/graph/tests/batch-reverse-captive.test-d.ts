@@ -34,9 +34,9 @@ interface ServiceC {
   doC(): void;
 }
 
-const PortA = createPort<"PortA", ServiceA>("PortA");
-const PortB = createPort<"PortB", ServiceB>("PortB");
-const PortC = createPort<"PortC", ServiceC>("PortC");
+const PortA = createPort<ServiceA>({ name: "PortA" });
+const PortB = createPort<ServiceB>({ name: "PortB" });
+const PortC = createPort<ServiceC>({ name: "PortC" });
 
 // =============================================================================
 // Scenario 1: Existing singleton requires port, batch provides scoped

@@ -42,10 +42,10 @@ interface Cache {
   set(key: string, value: string): Promise<void>;
 }
 
-const ConfigPort = createPort<"Config", Config>("Config");
-const DatabasePort = createPort<"Database", Database>("Database");
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const CachePort = createPort<"Cache", Cache>("Cache");
+const ConfigPort = createPort<Config, "Config">({ name: "Config" });
+const DatabasePort = createPort<Database, "Database">({ name: "Database" });
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const CachePort = createPort<Cache, "Cache">({ name: "Cache" });
 
 // =============================================================================
 // Basic Async Resolution Tests

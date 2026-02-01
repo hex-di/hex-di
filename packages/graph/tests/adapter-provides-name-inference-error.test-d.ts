@@ -33,8 +33,8 @@ interface Config {
   get(key: string): string;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const ConfigPort = createPort<"Config", Config>("Config");
+const LoggerPort = createPort<Logger>({ name: "Logger" });
+const ConfigPort = createPort<Config>({ name: "Config" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,

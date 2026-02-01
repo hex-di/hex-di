@@ -32,10 +32,10 @@ interface DepthServiceD {
 }
 
 // Create a chain of ports with unique names for this test
-const DepthTestPortA = createPort<"DepthTestA", DepthServiceA>("DepthTestA");
-const DepthTestPortB = createPort<"DepthTestB", DepthServiceB>("DepthTestB");
-const DepthTestPortC = createPort<"DepthTestC", DepthServiceC>("DepthTestC");
-const DepthTestPortD = createPort<"DepthTestD", DepthServiceD>("DepthTestD");
+const DepthTestPortA = createPort<DepthServiceA>({ name: "DepthTestA" });
+const DepthTestPortB = createPort<DepthServiceB>({ name: "DepthTestB" });
+const DepthTestPortC = createPort<DepthServiceC>({ name: "DepthTestC" });
+const DepthTestPortD = createPort<DepthServiceD>({ name: "DepthTestD" });
 
 // Chain: A -> B -> C -> D (depth 3)
 const DepthTestAdapterA = createAdapter({

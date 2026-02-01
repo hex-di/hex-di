@@ -25,9 +25,9 @@ interface ScopedResource {
   disposed: boolean;
 }
 
-const RequestIdPort = createPort<"RequestId", RequestId>("RequestId");
-const AsyncValuePort = createPort<"AsyncValue", AsyncValue>("AsyncValue");
-const ScopedResourcePort = createPort<"ScopedResource", ScopedResource>("ScopedResource");
+const RequestIdPort = createPort<RequestId, "RequestId">({ name: "RequestId" });
+const AsyncValuePort = createPort<AsyncValue, "AsyncValue">({ name: "AsyncValue" });
+const ScopedResourcePort = createPort<ScopedResource, "ScopedResource">({ name: "ScopedResource" });
 
 type AppPorts = typeof RequestIdPort | typeof AsyncValuePort | typeof ScopedResourcePort;
 type DefaultEnv = HexHonoEnv<AppPorts>;

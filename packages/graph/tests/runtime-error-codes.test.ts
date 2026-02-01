@@ -38,7 +38,7 @@ describe("adapter factory runtime error codes", () => {
     });
 
     it("should include HEX012 for invalid requires type", () => {
-      const Port = createPort("TestPort");
+      const Port = createPort({ name: "TestPort" });
       const invalidConfig = {
         provides: Port,
         requires: "not-an-array",
@@ -52,7 +52,7 @@ describe("adapter factory runtime error codes", () => {
     });
 
     it("should include HEX013 for invalid requires element", () => {
-      const Port = createPort("TestPort");
+      const Port = createPort({ name: "TestPort" });
       const invalidConfig = {
         provides: Port,
         requires: ["not-a-port"],
@@ -66,7 +66,7 @@ describe("adapter factory runtime error codes", () => {
     });
 
     it("should include HEX014 for invalid lifetime type", () => {
-      const Port = createPort("TestPort");
+      const Port = createPort({ name: "TestPort" });
       const invalidConfig = {
         provides: Port,
         requires: [] as const,
@@ -80,7 +80,7 @@ describe("adapter factory runtime error codes", () => {
     });
 
     it("should include HEX015 for invalid lifetime value", () => {
-      const Port = createPort("TestPort");
+      const Port = createPort({ name: "TestPort" });
       const invalidConfig = {
         provides: Port,
         requires: [] as const,
@@ -94,7 +94,7 @@ describe("adapter factory runtime error codes", () => {
     });
 
     it("should include HEX016 for invalid factory", () => {
-      const Port = createPort("TestPort");
+      const Port = createPort({ name: "TestPort" });
       const invalidConfig = {
         provides: Port,
         requires: [] as const,
@@ -108,8 +108,8 @@ describe("adapter factory runtime error codes", () => {
     });
 
     it("should include HEX017 for duplicate requires", () => {
-      const PortA = createPort("PortA");
-      const PortB = createPort("PortB");
+      const PortA = createPort({ name: "PortA" });
+      const PortB = createPort({ name: "PortB" });
       // TypeScript allows duplicate ports structurally, but runtime validation catches it
       expect(() => {
         createAdapter({
@@ -122,7 +122,7 @@ describe("adapter factory runtime error codes", () => {
     });
 
     it("should include HEX018 for invalid finalizer", () => {
-      const Port = createPort("TestPort");
+      const Port = createPort({ name: "TestPort" });
       // Use indirect object to bypass TypeScript's overload resolution
       const invalidConfig = {
         provides: Port,
@@ -150,7 +150,7 @@ describe("adapter factory runtime error codes", () => {
     });
 
     it("should include HEX016 for invalid factory (async)", () => {
-      const Port = createPort("TestPort");
+      const Port = createPort({ name: "TestPort" });
       // Use indirect object to bypass TypeScript's overload resolution
       const invalidConfig = {
         provides: Port,

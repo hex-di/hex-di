@@ -17,9 +17,9 @@ import {
 // Test Fixtures
 // =============================================================================
 
-const LoggerPort = createPort<"Logger", { log: (msg: string) => void }>("Logger");
-const DatabasePort = createPort<"Database", { query: () => string }>("Database");
-const CachePort = createPort<"Cache", { get: (key: string) => string }>("Cache");
+const LoggerPort = createPort<{ log: (msg: string) => void }, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<{ query: () => string }, "Database">({ name: "Database" });
+const CachePort = createPort<{ get: (key: string) => string }, "Cache">({ name: "Cache" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,

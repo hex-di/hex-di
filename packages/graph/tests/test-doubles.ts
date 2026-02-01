@@ -7,7 +7,13 @@
  * @packageDocumentation
  */
 
-import { createPort, createAdapter, createAsyncAdapter, type Lifetime } from "@hex-di/core";
+import {
+  createPort,
+  createAdapter,
+  createAsyncAdapter,
+  type Lifetime,
+  type Port,
+} from "@hex-di/core";
 import { nextSequence } from "./utils/sequence.js";
 
 // =============================================================================
@@ -740,7 +746,7 @@ export interface MockAdapterOptions<TPort> {
  * ```
  */
 export function createMockAdapter<TService extends object, TName extends string>(
-  port: ReturnType<typeof createPort<TName, TService>>,
+  port: Port<TService, TName>,
   options: MockAdapterOptions<TService> = {}
 ) {
   const { lifetime = "singleton", clonable = false, async: isAsync = false } = options;

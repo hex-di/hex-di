@@ -34,8 +34,8 @@ interface DatabaseService {
   query(sql: string): Promise<unknown>;
 }
 
-const LoggerPort = createPort<"Logger", LoggerService>("Logger");
-const DatabasePort = createPort<"Database", DatabaseService>("Database");
+const LoggerPort = createPort<LoggerService, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<DatabaseService, "Database">({ name: "Database" });
 
 type TestProvides = typeof LoggerPort | typeof DatabasePort;
 type TestContainer = Container<TestProvides>;

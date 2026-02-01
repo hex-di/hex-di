@@ -61,11 +61,11 @@ interface UserService {
 // Test Port Tokens
 // =============================================================================
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserRepositoryPort = createPort<"UserRepository", UserRepository>("UserRepository");
-const EmailServicePort = createPort<"EmailService", EmailService>("EmailService");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
+const LoggerPort = createPort<Logger>({ name: "Logger" });
+const DatabasePort = createPort<Database>({ name: "Database" });
+const UserRepositoryPort = createPort<UserRepository>({ name: "UserRepository" });
+const EmailServicePort = createPort<EmailService>({ name: "EmailService" });
+const UserServicePort = createPort<UserService>({ name: "UserService" });
 
 // =============================================================================
 // Production Adapters

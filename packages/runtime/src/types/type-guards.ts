@@ -25,7 +25,7 @@ import type { Port } from "@hex-di/core";
  *
  * @example
  * ```typescript
- * const LoggerPort = createPort<'Logger', Logger>('Logger');
+ * const LoggerPort = createPort<Logger>({ name: 'Logger' });
  *
  * if (isPort(value)) {
  *   // value is now typed as Port<unknown, string>
@@ -57,7 +57,7 @@ export function isPort(value: unknown): value is Port<unknown, string> {
  *
  * @example
  * ```typescript
- * const LoggerPort = createPort<'Logger', Logger>('Logger');
+ * const LoggerPort = createPort<Logger>({ name: 'Logger' });
  *
  * if (isPortNamed(value, 'Logger')) {
  *   // value is now typed as Port<unknown, 'Logger'>

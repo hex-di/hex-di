@@ -19,11 +19,11 @@ import type { WouldAnyCreateCycle, DepthExceededResult, IsDepthExceeded } from "
 // =============================================================================
 
 // Create a chain: A1 -> A2 -> A3 -> ... -> A5
-const Port1 = createPort<"P1", { v: 1 }>("P1");
-const Port2 = createPort<"P2", { v: 2 }>("P2");
-const Port3 = createPort<"P3", { v: 3 }>("P3");
-const Port4 = createPort<"P4", { v: 4 }>("P4");
-const Port5 = createPort<"P5", { v: 5 }>("P5");
+const Port1 = createPort<{ v: 1 }>({ name: "P1" });
+const Port2 = createPort<{ v: 2 }>({ name: "P2" });
+const Port3 = createPort<{ v: 3 }>({ name: "P3" });
+const Port4 = createPort<{ v: 4 }>({ name: "P4" });
+const Port5 = createPort<{ v: 5 }>({ name: "P5" });
 
 const Adapter1 = createAdapter({
   provides: Port1,
@@ -147,9 +147,9 @@ describe("Single provide vs provideMany consistency", () => {
 // =============================================================================
 
 // Additional ports and adapters for cycle testing (defined at module level for type inference)
-const CyclePortA = createPort<"CycleA", { cycle: "A" }>("CycleA");
-const CyclePortB = createPort<"CycleB", { cycle: "B" }>("CycleB");
-const Port6 = createPort<"P6", { v: 6 }>("P6");
+const CyclePortA = createPort<{ cycle: "A" }>({ name: "CycleA" });
+const CyclePortB = createPort<{ cycle: "B" }>({ name: "CycleB" });
+const Port6 = createPort<{ v: 6 }>({ name: "P6" });
 
 // Adapter that would exceed depth (deep chain)
 const DeepAdapter = createAdapter({

@@ -36,7 +36,7 @@ import type { GraphBuilderSignature } from "../src/builder/types/builder-signatu
 // =============================================================================
 
 // Graph A: Logger
-const LoggerPort = createPort<"Logger", { log: () => void }>("Logger");
+const LoggerPort = createPort<{ log: () => void }, "Logger">({ name: "Logger" });
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,
   requires: [],
@@ -46,7 +46,7 @@ const LoggerAdapter = createAdapter({
 const graphA = GraphBuilder.create().provide(LoggerAdapter);
 
 // Graph B: Database
-const DatabasePort = createPort<"Database", { query: () => void }>("Database");
+const DatabasePort = createPort<{ query: () => void }, "Database">({ name: "Database" });
 const DatabaseAdapter = createAdapter({
   provides: DatabasePort,
   requires: [],
@@ -56,7 +56,7 @@ const DatabaseAdapter = createAdapter({
 const graphB = GraphBuilder.create().provide(DatabaseAdapter);
 
 // Graph C: Cache
-const CachePort = createPort<"Cache", { get: () => void }>("Cache");
+const CachePort = createPort<{ get: () => void }, "Cache">({ name: "Cache" });
 const CacheAdapter = createAdapter({
   provides: CachePort,
   requires: [],

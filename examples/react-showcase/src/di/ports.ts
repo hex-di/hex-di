@@ -34,7 +34,7 @@ import type {
  * console.log(config.notificationDuration);
  * ```
  */
-export const ConfigPort = createPort<"Config", Config>("Config");
+export const ConfigPort = createPort<Config, "Config">({ name: "Config" });
 
 /**
  * Port for the logging service.
@@ -49,7 +49,7 @@ export const ConfigPort = createPort<"Config", Config>("Config");
  * logger.log("User logged in");
  * ```
  */
-export const LoggerPort = createPort<"Logger", Logger>("Logger");
+export const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
 
 /**
  * Port for the message store service.
@@ -67,7 +67,7 @@ export const LoggerPort = createPort<"Logger", Logger>("Logger");
  * });
  * ```
  */
-export const MessageStorePort = createPort<"MessageStore", MessageStore>("MessageStore");
+export const MessageStorePort = createPort<MessageStore, "MessageStore">({ name: "MessageStore" });
 
 // =============================================================================
 // Scoped Ports
@@ -86,7 +86,7 @@ export const MessageStorePort = createPort<"MessageStore", MessageStore>("Messag
  * console.log(`Logged in as: ${session.user.name}`);
  * ```
  */
-export const UserSessionPort = createPort<"UserSession", UserSession>("UserSession");
+export const UserSessionPort = createPort<UserSession, "UserSession">({ name: "UserSession" });
 
 /**
  * Port for the chat service.
@@ -101,7 +101,7 @@ export const UserSessionPort = createPort<"UserSession", UserSession>("UserSessi
  * chat.sendMessage("Hello, world!");
  * ```
  */
-export const ChatServicePort = createPort<"ChatService", ChatService>("ChatService");
+export const ChatServicePort = createPort<ChatService, "ChatService">({ name: "ChatService" });
 
 // =============================================================================
 // Request-Scoped Ports
@@ -122,9 +122,9 @@ export const ChatServicePort = createPort<"ChatService", ChatService>("ChatServi
  * console.log(notificationA.instanceId !== notificationB.instanceId); // true
  * ```
  */
-export const NotificationServicePort = createPort<"NotificationService", NotificationService>(
-  "NotificationService"
-);
+export const NotificationServicePort = createPort<NotificationService, "NotificationService">({
+  name: "NotificationService",
+});
 
 // =============================================================================
 // Type Exports

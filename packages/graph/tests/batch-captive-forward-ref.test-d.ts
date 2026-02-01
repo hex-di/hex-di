@@ -3,8 +3,8 @@ import { createPort } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 
-const SingletonPort = createPort<"Singleton", { doS(): void }>("Singleton");
-const ScopedPort = createPort<"Scoped", { doScoped(): void }>("Scoped");
+const SingletonPort = createPort<{ doS(): void }>({ name: "Singleton" });
+const ScopedPort = createPort<{ doScoped(): void }>({ name: "Scoped" });
 
 type IsCaptiveError<T> = T extends `ERROR[HEX003]: Captive dependency: ${string}` ? true : false;
 

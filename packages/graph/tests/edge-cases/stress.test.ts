@@ -15,26 +15,26 @@ interface Service {
 describe("large graph stress tests", () => {
   it("handles graph with 20 independent adapters", () => {
     // Create 20 independent ports with explicit names
-    const S0 = createPort<"S0", Service>("S0");
-    const S1 = createPort<"S1", Service>("S1");
-    const S2 = createPort<"S2", Service>("S2");
-    const S3 = createPort<"S3", Service>("S3");
-    const S4 = createPort<"S4", Service>("S4");
-    const S5 = createPort<"S5", Service>("S5");
-    const S6 = createPort<"S6", Service>("S6");
-    const S7 = createPort<"S7", Service>("S7");
-    const S8 = createPort<"S8", Service>("S8");
-    const S9 = createPort<"S9", Service>("S9");
-    const S10 = createPort<"S10", Service>("S10");
-    const S11 = createPort<"S11", Service>("S11");
-    const S12 = createPort<"S12", Service>("S12");
-    const S13 = createPort<"S13", Service>("S13");
-    const S14 = createPort<"S14", Service>("S14");
-    const S15 = createPort<"S15", Service>("S15");
-    const S16 = createPort<"S16", Service>("S16");
-    const S17 = createPort<"S17", Service>("S17");
-    const S18 = createPort<"S18", Service>("S18");
-    const S19 = createPort<"S19", Service>("S19");
+    const S0 = createPort<Service>({ name: "S0" });
+    const S1 = createPort<Service>({ name: "S1" });
+    const S2 = createPort<Service>({ name: "S2" });
+    const S3 = createPort<Service>({ name: "S3" });
+    const S4 = createPort<Service>({ name: "S4" });
+    const S5 = createPort<Service>({ name: "S5" });
+    const S6 = createPort<Service>({ name: "S6" });
+    const S7 = createPort<Service>({ name: "S7" });
+    const S8 = createPort<Service>({ name: "S8" });
+    const S9 = createPort<Service>({ name: "S9" });
+    const S10 = createPort<Service>({ name: "S10" });
+    const S11 = createPort<Service>({ name: "S11" });
+    const S12 = createPort<Service>({ name: "S12" });
+    const S13 = createPort<Service>({ name: "S13" });
+    const S14 = createPort<Service>({ name: "S14" });
+    const S15 = createPort<Service>({ name: "S15" });
+    const S16 = createPort<Service>({ name: "S16" });
+    const S17 = createPort<Service>({ name: "S17" });
+    const S18 = createPort<Service>({ name: "S18" });
+    const S19 = createPort<Service>({ name: "S19" });
 
     // Build graph with all 20 adapters
     const graph = GraphBuilder.create()
@@ -206,21 +206,21 @@ describe("large graph stress tests", () => {
 
   it("handles graph with 15-level deep dependency chain", () => {
     // Create ports with explicit names for deep chain testing
-    const Chain0Port = createPort<"Chain0", Service>("Chain0");
-    const Chain1Port = createPort<"Chain1", Service>("Chain1");
-    const Chain2Port = createPort<"Chain2", Service>("Chain2");
-    const Chain3Port = createPort<"Chain3", Service>("Chain3");
-    const Chain4Port = createPort<"Chain4", Service>("Chain4");
-    const Chain5Port = createPort<"Chain5", Service>("Chain5");
-    const Chain6Port = createPort<"Chain6", Service>("Chain6");
-    const Chain7Port = createPort<"Chain7", Service>("Chain7");
-    const Chain8Port = createPort<"Chain8", Service>("Chain8");
-    const Chain9Port = createPort<"Chain9", Service>("Chain9");
-    const Chain10Port = createPort<"Chain10", Service>("Chain10");
-    const Chain11Port = createPort<"Chain11", Service>("Chain11");
-    const Chain12Port = createPort<"Chain12", Service>("Chain12");
-    const Chain13Port = createPort<"Chain13", Service>("Chain13");
-    const Chain14Port = createPort<"Chain14", Service>("Chain14");
+    const Chain0Port = createPort<Service>({ name: "Chain0" });
+    const Chain1Port = createPort<Service>({ name: "Chain1" });
+    const Chain2Port = createPort<Service>({ name: "Chain2" });
+    const Chain3Port = createPort<Service>({ name: "Chain3" });
+    const Chain4Port = createPort<Service>({ name: "Chain4" });
+    const Chain5Port = createPort<Service>({ name: "Chain5" });
+    const Chain6Port = createPort<Service>({ name: "Chain6" });
+    const Chain7Port = createPort<Service>({ name: "Chain7" });
+    const Chain8Port = createPort<Service>({ name: "Chain8" });
+    const Chain9Port = createPort<Service>({ name: "Chain9" });
+    const Chain10Port = createPort<Service>({ name: "Chain10" });
+    const Chain11Port = createPort<Service>({ name: "Chain11" });
+    const Chain12Port = createPort<Service>({ name: "Chain12" });
+    const Chain13Port = createPort<Service>({ name: "Chain13" });
+    const Chain14Port = createPort<Service>({ name: "Chain14" });
 
     // Build chain: Chain0 <- Chain1 <- Chain2 <- ... <- Chain14
     const adapter0 = createAdapter({
@@ -344,10 +344,10 @@ describe("large graph stress tests", () => {
     //     B   C
     //      \ /
     //       D
-    const PortA = createPort<"DiamondA", Service>("DiamondA");
-    const PortB = createPort<"DiamondB", Service>("DiamondB");
-    const PortC = createPort<"DiamondC", Service>("DiamondC");
-    const PortD = createPort<"DiamondD", Service>("DiamondD");
+    const PortA = createPort<Service>({ name: "DiamondA" });
+    const PortB = createPort<Service>({ name: "DiamondB" });
+    const PortC = createPort<Service>({ name: "DiamondC" });
+    const PortD = createPort<Service>({ name: "DiamondD" });
 
     const adapterA = createAdapter({
       provides: PortA,
@@ -389,11 +389,11 @@ describe("large graph stress tests", () => {
 
   it("handles multiple merges of medium-sized graphs", () => {
     // Create Group A ports and adapters
-    const A0Port = createPort<"A0", Service>("A0");
-    const A1Port = createPort<"A1", Service>("A1");
-    const A2Port = createPort<"A2", Service>("A2");
-    const A3Port = createPort<"A3", Service>("A3");
-    const A4Port = createPort<"A4", Service>("A4");
+    const A0Port = createPort<Service>({ name: "A0" });
+    const A1Port = createPort<Service>({ name: "A1" });
+    const A2Port = createPort<Service>({ name: "A2" });
+    const A3Port = createPort<Service>({ name: "A3" });
+    const A4Port = createPort<Service>({ name: "A4" });
 
     const graphA = GraphBuilder.create()
       .provide(
@@ -438,11 +438,11 @@ describe("large graph stress tests", () => {
       );
 
     // Create Group B ports and adapters
-    const B0Port = createPort<"B0", Service>("B0");
-    const B1Port = createPort<"B1", Service>("B1");
-    const B2Port = createPort<"B2", Service>("B2");
-    const B3Port = createPort<"B3", Service>("B3");
-    const B4Port = createPort<"B4", Service>("B4");
+    const B0Port = createPort<Service>({ name: "B0" });
+    const B1Port = createPort<Service>({ name: "B1" });
+    const B2Port = createPort<Service>({ name: "B2" });
+    const B3Port = createPort<Service>({ name: "B3" });
+    const B4Port = createPort<Service>({ name: "B4" });
 
     const graphB = GraphBuilder.create()
       .provide(
@@ -487,11 +487,11 @@ describe("large graph stress tests", () => {
       );
 
     // Create Group C ports and adapters
-    const C0Port = createPort<"C0", Service>("C0");
-    const C1Port = createPort<"C1", Service>("C1");
-    const C2Port = createPort<"C2", Service>("C2");
-    const C3Port = createPort<"C3", Service>("C3");
-    const C4Port = createPort<"C4", Service>("C4");
+    const C0Port = createPort<Service>({ name: "C0" });
+    const C1Port = createPort<Service>({ name: "C1" });
+    const C2Port = createPort<Service>({ name: "C2" });
+    const C3Port = createPort<Service>({ name: "C3" });
+    const C4Port = createPort<Service>({ name: "C4" });
 
     const graphC = GraphBuilder.create()
       .provide(
@@ -542,15 +542,15 @@ describe("large graph stress tests", () => {
 
   it("handles graph with mixed lifetimes", () => {
     // Create 9 ports with explicit names
-    const M0Port = createPort<"M0", Service>("M0");
-    const M1Port = createPort<"M1", Service>("M1");
-    const M2Port = createPort<"M2", Service>("M2");
-    const M3Port = createPort<"M3", Service>("M3");
-    const M4Port = createPort<"M4", Service>("M4");
-    const M5Port = createPort<"M5", Service>("M5");
-    const M6Port = createPort<"M6", Service>("M6");
-    const M7Port = createPort<"M7", Service>("M7");
-    const M8Port = createPort<"M8", Service>("M8");
+    const M0Port = createPort<Service>({ name: "M0" });
+    const M1Port = createPort<Service>({ name: "M1" });
+    const M2Port = createPort<Service>({ name: "M2" });
+    const M3Port = createPort<Service>({ name: "M3" });
+    const M4Port = createPort<Service>({ name: "M4" });
+    const M5Port = createPort<Service>({ name: "M5" });
+    const M6Port = createPort<Service>({ name: "M6" });
+    const M7Port = createPort<Service>({ name: "M7" });
+    const M8Port = createPort<Service>({ name: "M8" });
 
     // Create adapters with varying lifetimes (no dependencies to avoid captive issues)
     const graph = GraphBuilder.create()

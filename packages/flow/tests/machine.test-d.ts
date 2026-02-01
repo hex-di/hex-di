@@ -398,7 +398,7 @@ describe("machine type encodes full state/event/context information", () => {
 
 describe("StateNode configuration type", () => {
   it("StateNode allows optional entry effects", () => {
-    const logPort = createPort<"Logger", { log(msg: string): void }>("Logger");
+    const logPort = createPort<{ log(msg: string): void }, "Logger">({ name: "Logger" });
 
     const stateNode: StateNode<"idle" | "loading", "FETCH", FetcherContext> = {
       entry: [Effect.invoke(logPort, "log", ["Entering state"])],
@@ -409,7 +409,7 @@ describe("StateNode configuration type", () => {
   });
 
   it("StateNode allows optional exit effects", () => {
-    const logPort = createPort<"Logger", { log(msg: string): void }>("Logger");
+    const logPort = createPort<{ log(msg: string): void }, "Logger">({ name: "Logger" });
 
     const stateNode: StateNode<"idle" | "loading", "FETCH", FetcherContext> = {
       exit: [Effect.invoke(logPort, "log", ["Exiting state"])],

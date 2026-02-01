@@ -39,8 +39,8 @@ type IsInferenceError<T> = [T] extends [never]
 // Test Fixtures
 // =============================================================================
 
-const LoggerPort = createPort<"Logger", { log: () => void }>("Logger");
-const DatabasePort = createPort<"Database", { query: () => void }>("Database");
+const LoggerPort = createPort<{ log: () => void }, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<{ query: () => void }, "Database">({ name: "Database" });
 
 type LoggerPort = typeof LoggerPort;
 type DatabasePort = typeof DatabasePort;

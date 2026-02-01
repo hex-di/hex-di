@@ -41,12 +41,12 @@ interface Cache {
 }
 
 // Different port instances
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const ExtendedLoggerPort = createPort<"Logger", ExtendedLogger>("Logger");
-const NarrowedLoggerPort = createPort<"Logger", NarrowedLogger>("Logger");
-const WidenedLoggerPort = createPort<"Logger", WidenedLogger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const CachePort = createPort<"Cache", Cache>("Cache");
+const LoggerPort = createPort<Logger>({ name: "Logger" });
+const ExtendedLoggerPort = createPort<ExtendedLogger>({ name: "Logger" });
+const NarrowedLoggerPort = createPort<NarrowedLogger>({ name: "Logger" });
+const WidenedLoggerPort = createPort<WidenedLogger>({ name: "Logger" });
+const DatabasePort = createPort<Database>({ name: "Database" });
+const CachePort = createPort<Cache>({ name: "Cache" });
 
 // Adapters
 const LoggerAdapter = createAdapter({
@@ -125,7 +125,7 @@ describe("OverrideResult type compatibility edge cases", () => {
       // Try to override Logger with incompatible type
       const result = GraphBuilder.forParent(parentGraph).override(
         createAdapter({
-          provides: createPort<"Logger", Database>("Logger"), // Same name, wrong service
+          provides: createPort<Database>({ name: "Logger" }), // Same name, wrong service
           requires: [],
           lifetime: "singleton",
           factory: () => ({ query: () => {} }),
@@ -208,7 +208,7 @@ describe("OverrideResult type compatibility edge cases", () => {
 
     it("allows override with structurally equivalent port", () => {
       // Create a "new" LoggerPort that is structurally the same
-      const LoggerPort2 = createPort<"Logger", Logger>("Logger");
+      const LoggerPort2 = createPort<Logger>({ name: "Logger" });
 
       const LoggerAdapter2 = createAdapter({
         provides: LoggerPort2,

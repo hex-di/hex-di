@@ -17,9 +17,9 @@ import { GraphBuilder } from "../src/index.js";
 // Test Fixtures
 // =============================================================================
 
-const ScopedPort = createPort<"Scoped", { scoped: true }>("Scoped");
-const AsyncPort = createPort<"AsyncService", { async: true }>("AsyncService");
-const SingletonPort = createPort<"SingletonService", { singleton: true }>("SingletonService");
+const ScopedPort = createPort<{ scoped: true }>({ name: "Scoped" });
+const AsyncPort = createPort<{ async: true }>({ name: "AsyncService" });
+const SingletonPort = createPort<{ singleton: true }>({ name: "SingletonService" });
 
 // Scoped adapter
 const ScopedAdapter = createAdapter({
@@ -108,7 +108,7 @@ describe("provideMany() async adapter captive detection", () => {
 });
 
 describe("batch with mixed sync and async adapters", () => {
-  const TransientPort = createPort<"Transient", { transient: true }>("Transient");
+  const TransientPort = createPort<{ transient: true }>({ name: "Transient" });
 
   const TransientAdapter = createAdapter({
     provides: TransientPort,

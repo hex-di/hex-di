@@ -26,10 +26,10 @@ import type { IsNever } from "@hex-di/core";
 // Test Fixtures
 // =============================================================================
 
-const PortA = createPort<"A", { a: string }>("A");
-const PortB = createPort<"B", { b: string }>("B");
-const PortC = createPort<"C", { c: string }>("C");
-const PortD = createPort<"D", { d: string }>("D");
+const PortA = createPort<{ a: string }>({ name: "A" });
+const PortB = createPort<{ b: string }>({ name: "B" });
+const PortC = createPort<{ c: string }>({ name: "C" });
+const PortD = createPort<{ d: string }>({ name: "D" });
 
 // Chain: A -> B -> C -> D (A requires B, B requires C, C requires D, D is leaf)
 // This is the same pattern as depth-warning-consistency.test-d.ts

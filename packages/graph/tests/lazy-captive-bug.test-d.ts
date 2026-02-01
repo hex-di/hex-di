@@ -25,8 +25,8 @@ interface SingletonService {
 }
 
 // Ports
-const TransientPort = createPort<"TransientService", TransientService>("TransientService");
-const SingletonPort = createPort<"SingletonService", SingletonService>("SingletonService");
+const TransientPort = createPort<TransientService>({ name: "TransientService" });
+const SingletonPort = createPort<SingletonService>({ name: "SingletonService" });
 
 describe("Lazy port captive dependency detection", () => {
   it("should detect captive dependency: singleton depending on lazy transient", () => {

@@ -15,11 +15,11 @@ interface Service {
 describe("deep dependency chains", () => {
   it("handles dependency chain of 5 levels", () => {
     // Create explicit ports for a 5-level chain: S1 <- S2 <- S3 <- S4 <- S5
-    const S1Port = createPort<"S1", Service>("S1");
-    const S2Port = createPort<"S2", Service>("S2");
-    const S3Port = createPort<"S3", Service>("S3");
-    const S4Port = createPort<"S4", Service>("S4");
-    const S5Port = createPort<"S5", Service>("S5");
+    const S1Port = createPort<Service>({ name: "S1" });
+    const S2Port = createPort<Service>({ name: "S2" });
+    const S3Port = createPort<Service>({ name: "S3" });
+    const S4Port = createPort<Service>({ name: "S4" });
+    const S5Port = createPort<Service>({ name: "S5" });
 
     const adapterS1 = createAdapter({
       provides: S1Port,
@@ -70,9 +70,9 @@ describe("deep dependency chains", () => {
   });
 
   it("preserves adapter order in deep chains", () => {
-    const ServiceAPort = createPort<"ServiceA", Service>("ServiceA");
-    const ServiceBPort = createPort<"ServiceB", Service>("ServiceB");
-    const ServiceCPort = createPort<"ServiceC", Service>("ServiceC");
+    const ServiceAPort = createPort<Service>({ name: "ServiceA" });
+    const ServiceBPort = createPort<Service>({ name: "ServiceB" });
+    const ServiceCPort = createPort<Service>({ name: "ServiceC" });
 
     const adapterA = createAdapter({
       provides: ServiceAPort,

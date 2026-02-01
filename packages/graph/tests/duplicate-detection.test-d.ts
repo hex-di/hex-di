@@ -21,7 +21,7 @@ import { LoggerPort, DatabasePort, UserServicePort, LoggerPortType } from "./fix
 interface AnotherLogger {
   log(message: string): void;
 }
-const AnotherLoggerPort = createPort<"AnotherLogger", AnotherLogger>("AnotherLogger");
+const AnotherLoggerPort = createPort<AnotherLogger>({ name: "AnotherLogger" });
 type DatabasePortType = typeof DatabasePort;
 type UserServicePortType = typeof UserServicePort;
 type AnotherLoggerPortType = typeof AnotherLoggerPort;

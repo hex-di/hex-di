@@ -34,7 +34,7 @@ interface LoggerService {
 /**
  * Port for testing resolution.
  */
-const LoggerPort = createPort<"Logger", LoggerService>("Logger");
+const LoggerPort = createPort<LoggerService, "Logger">({ name: "Logger" });
 
 /**
  * Type alias for test containers.

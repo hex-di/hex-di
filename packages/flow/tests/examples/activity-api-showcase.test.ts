@@ -17,7 +17,7 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { port } from "@hex-di/core";
+import { createPort } from "@hex-di/core";
 import {
   // Activity Ports
   activityPort,
@@ -61,7 +61,7 @@ interface Logger {
   error(message: string, error?: Error): void;
 }
 
-const LoggerPort = port<Logger>()("Logger");
+const LoggerPort = createPort<Logger>({ name: "Logger" });
 
 /**
  * Define the API service interface and port.
@@ -72,7 +72,7 @@ interface ApiService {
   fetchTasks(userId: string): Promise<Task[]>;
 }
 
-const ApiPort = port<ApiService>()("Api");
+const ApiPort = createPort<ApiService>({ name: "Api" });
 
 /**
  * Define the Analytics service for tracking events.
@@ -81,7 +81,7 @@ interface Analytics {
   track(event: string, data: Record<string, unknown>): void;
 }
 
-const AnalyticsPort = port<Analytics>()("Analytics");
+const AnalyticsPort = createPort<Analytics>({ name: "Analytics" });
 
 // =============================================================================
 // STEP 2: Define Domain Types

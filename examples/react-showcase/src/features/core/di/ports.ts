@@ -13,14 +13,14 @@ import type { Config, Logger } from "../../types.js";
  * Provides application-wide configuration values.
  * Uses async factory to simulate loading from API.
  */
-export const ConfigPort = createPort<"Config", Config>("Config");
+export const ConfigPort = createPort<Config, "Config">({ name: "Config" });
 
 /**
  * Port for the logging service.
  *
  * Provides structured logging with different log levels.
  */
-export const LoggerPort = createPort<"Logger", Logger>("Logger");
+export const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
 
 /**
  * Union of all ports in the core feature.

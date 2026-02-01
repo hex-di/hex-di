@@ -37,7 +37,7 @@ interface Service {
 }
 
 function makePort(name: string): Port<Service, string> {
-  return createPort<string, Service>(name);
+  return createPort<Service>({ name });
 }
 
 function makeAdapter(name: string): AdapterConstraint {

@@ -39,10 +39,10 @@ interface Metrics {
   record(): void;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const CachePort = createPort<"Cache", Cache>("Cache");
-const MetricsPort = createPort<"Metrics", Metrics>("Metrics");
+const LoggerPort = createPort<Logger>({ name: "Logger" });
+const DatabasePort = createPort<Database>({ name: "Database" });
+const CachePort = createPort<Cache>({ name: "Cache" });
+const MetricsPort = createPort<Metrics>({ name: "Metrics" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,

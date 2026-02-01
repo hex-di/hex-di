@@ -38,10 +38,10 @@ interface Config {
   timeout: number;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const CachePort = createPort<"Cache", Cache>("Cache");
-const ConfigPort = createPort<"Config", Config>("Config");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<Database, "Database">({ name: "Database" });
+const CachePort = createPort<Cache, "Cache">({ name: "Cache" });
+const ConfigPort = createPort<Config, "Config">({ name: "Config" });
 
 // =============================================================================
 // Port Comparator Tests

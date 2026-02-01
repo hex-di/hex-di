@@ -18,8 +18,8 @@ interface UserService {
   getUser(id: string): { id: string; name: string };
 }
 
-const UserServicePort = createPort<"UserService", UserService>("UserService");
-const LoggerPort = createPort<"Logger", { log: (msg: string) => void }>("Logger");
+const UserServicePort = createPort<UserService>({ name: "UserService" });
+const LoggerPort = createPort<{ log: (msg: string) => void }, "Logger">({ name: "Logger" });
 
 // =============================================================================
 // lazyPort() Tests

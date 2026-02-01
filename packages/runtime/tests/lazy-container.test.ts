@@ -30,9 +30,9 @@ interface ExtensionService {
 // Test Ports
 // =============================================================================
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const PluginPort = createPort<"Plugin", PluginService>("Plugin");
-const ExtensionPort = createPort<"Extension", ExtensionService>("Extension");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const PluginPort = createPort<PluginService, "Plugin">({ name: "Plugin" });
+const ExtensionPort = createPort<ExtensionService, "Extension">({ name: "Extension" });
 
 // =============================================================================
 // Test Fixtures

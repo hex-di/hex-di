@@ -32,10 +32,10 @@ interface UserService {
   getUser(id: string): unknown;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const RequestContextPort = createPort<"RequestContext", RequestContext>("RequestContext");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<Database, "Database">({ name: "Database" });
+const RequestContextPort = createPort<RequestContext, "RequestContext">({ name: "RequestContext" });
+const UserServicePort = createPort<UserService, "UserService">({ name: "UserService" });
 
 // =============================================================================
 // createInspector Factory Tests

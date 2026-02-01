@@ -32,9 +32,9 @@ interface Cache {
   get(key: string): unknown;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const CachePort = createPort<"Cache", Cache>("Cache");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<Database, "Database">({ name: "Database" });
+const CachePort = createPort<Cache, "Cache">({ name: "Cache" });
 
 // =============================================================================
 // getOrElseMemoize Tests

@@ -51,12 +51,12 @@ interface EmailService {
 // Test Port Tokens
 // =============================================================================
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
-const ConfigPort = createPort<"Config", ConfigService>("Config");
-const CachePort = createPort<"Cache", CacheService>("Cache");
-const EmailPort = createPort<"Email", EmailService>("Email");
+const LoggerPort = createPort<Logger>({ name: "Logger" });
+const DatabasePort = createPort<Database>({ name: "Database" });
+const UserServicePort = createPort<UserService>({ name: "UserService" });
+const ConfigPort = createPort<ConfigService>({ name: "Config" });
+const CachePort = createPort<CacheService>({ name: "Cache" });
+const EmailPort = createPort<EmailService>({ name: "Email" });
 
 type LoggerPortType = typeof LoggerPort;
 type DatabasePortType = typeof DatabasePort;

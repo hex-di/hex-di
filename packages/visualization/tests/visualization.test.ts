@@ -30,10 +30,10 @@ interface UserService {
   getUser(id: string): Promise<object>;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const CachePort = createPort<"Cache", Cache>("Cache");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<Database, "Database">({ name: "Database" });
+const CachePort = createPort<Cache, "Cache">({ name: "Cache" });
+const UserServicePort = createPort<UserService, "UserService">({ name: "UserService" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,
@@ -303,7 +303,7 @@ describe("visualization edge cases", () => {
   });
 
   it("handles graph with no dependencies", () => {
-    const IndependentPort = createPort<"Independent", object>("Independent");
+    const IndependentPort = createPort<object, "Independent">({ name: "Independent" });
     const IndependentAdapter = createAdapter({
       provides: IndependentPort,
       requires: [],
@@ -323,7 +323,7 @@ describe("visualization edge cases", () => {
 
   it("escapes special characters in port names", () => {
     // Port names should be alphanumeric, but test escaping just in case
-    const SpecialPort = createPort<"Port<With>Special", object>("Port<With>Special");
+    const SpecialPort = createPort<object, "Port<With>Special">({ name: "Port<With>Special" });
     const SpecialAdapter = createAdapter({
       provides: SpecialPort,
       requires: [],

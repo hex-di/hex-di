@@ -125,8 +125,8 @@ describe("provide() single error", () => {
 
   it("returns circular error message", () => {
     // Set up for circular dependency: A -> B -> A
-    const PortA = createPort<"A", ServiceA>("A");
-    const PortB = createPort<"B", ServiceB>("B");
+    const PortA = createPort<ServiceA>({ name: "A" });
+    const PortB = createPort<ServiceB>({ name: "B" });
 
     const AdapterA = createAdapter({
       provides: PortA,
@@ -153,8 +153,8 @@ describe("provide() single error", () => {
 
   it("returns captive error message", () => {
     // Set up for captive dependency: Singleton depends on Scoped
-    const ScopedPort = createPort<"Scoped", ServiceA>("Scoped");
-    const SingletonPort = createPort<"Singleton", ServiceB>("Singleton");
+    const ScopedPort = createPort<ServiceA>({ name: "Scoped" });
+    const SingletonPort = createPort<ServiceB>({ name: "Singleton" });
 
     const ScopedAdapter = createAdapter({
       provides: ScopedPort,
@@ -187,8 +187,8 @@ describe("provide() single error", () => {
 describe("provide() multiple errors", () => {
   it("returns multi-error for duplicate + circular", () => {
     // Set up: Adapter that provides duplicate AND creates cycle
-    const PortA = createPort<"A", ServiceA>("A");
-    const PortB = createPort<"B", ServiceB>("B");
+    const PortA = createPort<ServiceA>({ name: "A" });
+    const PortB = createPort<ServiceB>({ name: "B" });
 
     // First adapter: A (no deps)
     const AdapterA = createAdapter({
@@ -224,7 +224,7 @@ describe("provide() multiple errors", () => {
   });
 
   it("returns multi-error for duplicate + captive", () => {
-    const ScopedPort = createPort<"Scoped", ServiceA>("Scoped");
+    const ScopedPort = createPort<ServiceA>({ name: "Scoped" });
 
     // Scoped adapter
     const ScopedAdapter = createAdapter({
@@ -255,9 +255,9 @@ describe("provide() multiple errors", () => {
     // This test verifies the mechanism works, even if creating a scenario
     // with all three errors simultaneously is contrived
 
-    const PortX = createPort<"X", ServiceA>("X");
-    const PortY = createPort<"Y", ServiceB>("Y");
-    const PortScoped = createPort<"Scoped", ServiceC>("Scoped");
+    const PortX = createPort<ServiceA>({ name: "X" });
+    const PortY = createPort<ServiceB>({ name: "Y" });
+    const PortScoped = createPort<ServiceC>({ name: "Scoped" });
 
     // Scoped adapter
     const ScopedAdapter = createAdapter({
@@ -353,8 +353,8 @@ describe("MergeResultAllErrors type", () => {
 
   it("detects cycle errors when merging creates cycle", () => {
     // Create two graphs that form a cycle when merged
-    const PortM = createPort<"M", ServiceA>("M");
-    const PortN = createPort<"N", ServiceB>("N");
+    const PortM = createPort<ServiceA>({ name: "M" });
+    const PortN = createPort<ServiceB>({ name: "N" });
 
     // Builder 1: M depends on N
     const AdapterM = createAdapter({

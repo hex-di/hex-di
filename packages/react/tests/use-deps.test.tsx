@@ -39,9 +39,9 @@ interface UserService {
   getUser(id: string): { name: string };
 }
 
-const LoggerPort = createPort<"Logger", LoggerService>("Logger");
-const DatabasePort = createPort<"Database", DatabaseService>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
+const LoggerPort = createPort<LoggerService, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<DatabaseService, "Database">({ name: "Database" });
+const UserServicePort = createPort<UserService, "UserService">({ name: "UserService" });
 
 type TestProvides = typeof LoggerPort | typeof DatabasePort | typeof UserServicePort;
 type TestContainer = Container<TestProvides>;

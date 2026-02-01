@@ -29,7 +29,7 @@ interface TestService {
   name: string;
 }
 
-const TestServicePort = createPort<"TestService", TestService>("TestService");
+const TestServicePort = createPort<TestService, "TestService">({ name: "TestService" });
 type TestProvides = typeof TestServicePort;
 type TestContainer = Container<TestProvides>;
 type TestScope = Scope<TestProvides>;

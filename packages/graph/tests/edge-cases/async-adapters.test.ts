@@ -14,7 +14,7 @@ interface Service {
 
 describe("async adapter edge cases", () => {
   it("async adapter with no dependencies receives empty object", () => {
-    const AsyncServicePort = createPort<"AsyncService", Service>("AsyncService");
+    const AsyncServicePort = createPort<Service>({ name: "AsyncService" });
 
     const receivedDeps: unknown[] = [];
     const asyncAdapter = createAsyncAdapter({
@@ -32,7 +32,7 @@ describe("async adapter edge cases", () => {
   });
 
   it("async adapter is always a singleton", () => {
-    const AsyncServicePort = createPort<"AsyncService", Service>("AsyncService");
+    const AsyncServicePort = createPort<Service>({ name: "AsyncService" });
 
     const asyncAdapter = createAsyncAdapter({
       provides: AsyncServicePort,
@@ -45,9 +45,9 @@ describe("async adapter edge cases", () => {
   });
 
   it("multiple async adapters in same graph", () => {
-    const Async1Port = createPort<"Async1", Service>("Async1");
-    const Async2Port = createPort<"Async2", Service>("Async2");
-    const Async3Port = createPort<"Async3", Service>("Async3");
+    const Async1Port = createPort<Service>({ name: "Async1" });
+    const Async2Port = createPort<Service>({ name: "Async2" });
+    const Async3Port = createPort<Service>({ name: "Async3" });
 
     const graph = GraphBuilder.create()
       .provideAsync(
@@ -79,8 +79,8 @@ describe("async adapter edge cases", () => {
   });
 
   it("async adapter can depend on sync adapter", () => {
-    const SyncPort = createPort<"Sync", Service>("Sync");
-    const AsyncPort = createPort<"Async", Service>("Async");
+    const SyncPort = createPort<Service>({ name: "Sync" });
+    const AsyncPort = createPort<Service>({ name: "Async" });
 
     const syncAdapter = createAdapter({
       provides: SyncPort,
@@ -103,7 +103,7 @@ describe("async adapter edge cases", () => {
   });
 
   it("async adapter factory return type is Promise", () => {
-    const AsyncPort = createPort<"AsyncReturn", Service>("AsyncReturn");
+    const AsyncPort = createPort<Service>({ name: "AsyncReturn" });
 
     const asyncAdapter = createAsyncAdapter({
       provides: AsyncPort,
@@ -121,7 +121,7 @@ describe("async adapter edge cases", () => {
   });
 
   it("async adapter preserves clonable property", () => {
-    const ClonableAsyncPort = createPort<"ClonableAsync", Service>("ClonableAsync");
+    const ClonableAsyncPort = createPort<Service>({ name: "ClonableAsync" });
 
     const clonableAsync = createAsyncAdapter({
       provides: ClonableAsyncPort,
@@ -131,7 +131,7 @@ describe("async adapter edge cases", () => {
     });
 
     const nonClonableAsync = createAsyncAdapter({
-      provides: createPort<"NonClonableAsync", Service>("NonClonableAsync"),
+      provides: createPort<Service>({ name: "NonClonableAsync" }),
       requires: [],
       factory: async () => ({ name: "non-clonable-async" }),
     });

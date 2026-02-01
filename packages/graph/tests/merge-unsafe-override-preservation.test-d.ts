@@ -29,8 +29,8 @@ interface ServiceB {
   doB(): void;
 }
 
-const PortA = createPort<"PortA", ServiceA>("PortA");
-const PortB = createPort<"PortB", ServiceB>("PortB");
+const PortA = createPort<ServiceA>({ name: "PortA" });
+const PortB = createPort<ServiceB>({ name: "PortB" });
 
 const AdapterA = createAdapter({
   provides: PortA,

@@ -17,7 +17,7 @@ import type { AnalyticsService, AnalyticsEvent } from "./types.js";
 /**
  * Port for the analytics service.
  */
-export const AnalyticsPort = createPort<"Analytics", AnalyticsService>("Analytics");
+export const AnalyticsPort = createPort<AnalyticsService, "Analytics">({ name: "Analytics" });
 
 // =============================================================================
 // Adapter

@@ -7,7 +7,7 @@ import {
   type InferAdapterProvides,
 } from "@hex-di/core";
 interface Logger {}
-const LoggerPort = createPort<"Logger", Logger>("Logger");
+const LoggerPort = createPort<Logger>({ name: "Logger" });
 type LoggerPortType = typeof LoggerPort;
 
 const LoggerAdapter = createAdapter({

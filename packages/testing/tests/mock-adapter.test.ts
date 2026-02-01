@@ -32,9 +32,9 @@ interface UserService {
   createUser(name: string): Promise<{ id: string; name: string }>;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
+const LoggerPort = createPort<Logger>({ name: "Logger" });
+const DatabasePort = createPort<Database>({ name: "Database" });
+const UserServicePort = createPort<UserService>({ name: "UserService" });
 
 // =============================================================================
 // createMockAdapter Tests
@@ -211,7 +211,7 @@ describe("createMockAdapter edge cases", () => {
       debug: boolean;
     }
 
-    const ConfigPort = createPort<"Config", Config>("Config");
+    const ConfigPort = createPort<Config>({ name: "Config" });
 
     const mockAdapter = createMockAdapter(ConfigPort, {
       apiUrl: "http://test.com",

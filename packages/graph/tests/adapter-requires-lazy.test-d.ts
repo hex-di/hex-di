@@ -16,9 +16,9 @@ interface ServiceC {
 }
 
 // Ports
-const PortA = createPort<"ServiceA", ServiceA>("ServiceA");
-const PortB = createPort<"ServiceB", ServiceB>("ServiceB");
-const PortC = createPort<"ServiceC", ServiceC>("ServiceC");
+const PortA = createPort<ServiceA>({ name: "ServiceA" });
+const PortB = createPort<ServiceB>({ name: "ServiceB" });
+const PortC = createPort<ServiceC>({ name: "ServiceC" });
 
 describe("AdapterRequiresNames with lazy ports", () => {
   it("should extract lazy port names correctly", () => {

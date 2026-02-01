@@ -53,12 +53,12 @@ export interface ConfigService {
 // Standard Ports
 // =============================================================================
 
-export const LoggerPort = createPort<"Logger", Logger>("Logger");
-export const DatabasePort = createPort<"Database", Database>("Database");
-export const RequestContextPort = createPort<"RequestContext", RequestContext>("RequestContext");
-export const UserServicePort = createPort<"UserService", UserService>("UserService");
-export const CacheServicePort = createPort<"CacheService", CacheService>("CacheService");
-export const ConfigServicePort = createPort<"ConfigService", ConfigService>("ConfigService");
+export const LoggerPort = createPort<Logger>({ name: "Logger" });
+export const DatabasePort = createPort<Database>({ name: "Database" });
+export const RequestContextPort = createPort<RequestContext>({ name: "RequestContext" });
+export const UserServicePort = createPort<UserService>({ name: "UserService" });
+export const CacheServicePort = createPort<CacheService>({ name: "CacheService" });
+export const ConfigServicePort = createPort<ConfigService>({ name: "ConfigService" });
 
 // Type-safe port type
 export type StandardPort =

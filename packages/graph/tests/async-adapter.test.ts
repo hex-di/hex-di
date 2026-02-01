@@ -41,11 +41,11 @@ interface UserService {
   getUser(id: string): Promise<{ id: string; name: string }>;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const ConfigPort = createPort<"Config", Config>("Config");
-const DatabasePort = createPort<"Database", Database>("Database");
-const CachePort = createPort<"Cache", Cache>("Cache");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
+const LoggerPort = createPort<Logger>({ name: "Logger" });
+const ConfigPort = createPort<Config>({ name: "Config" });
+const DatabasePort = createPort<Database>({ name: "Database" });
+const CachePort = createPort<Cache>({ name: "Cache" });
+const UserServicePort = createPort<UserService>({ name: "UserService" });
 
 // =============================================================================
 // Async Adapter Creation Tests

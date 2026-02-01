@@ -21,9 +21,9 @@ interface Cache {
   get(key: string): void;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const CachePort = createPort<"Cache", Cache>("Cache");
+const LoggerPort = createPort<Logger>({ name: "Logger" });
+const DatabasePort = createPort<Database>({ name: "Database" });
+const CachePort = createPort<Cache>({ name: "Cache" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,

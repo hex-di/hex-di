@@ -7,7 +7,13 @@
  * @packageDocumentation
  */
 
-import { createPort, createAdapter, type Port, type Adapter, type Lifetime } from "@hex-di/core";
+import {
+  createPort as coreCreatePort,
+  createAdapter,
+  type Port,
+  type Adapter,
+  type Lifetime,
+} from "@hex-di/core";
 import { GraphBuilder } from "../../src/index.js";
 import { resetSequence, nextSequence } from "./sequence.js";
 
@@ -101,7 +107,7 @@ export class TestContext {
    * Useful for creating test-specific ports.
    */
   createPort<TName extends string, TService extends object>(name: TName): Port<TService, TName> {
-    return createPort<TService>({ name });
+    return coreCreatePort<TService, TName>({ name });
   }
 
   /**

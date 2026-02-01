@@ -14,12 +14,12 @@ import { inspectionToJSON, detectCycleAtRuntime, inspectGraph } from "../src/adv
 // Test Fixtures
 // =============================================================================
 
-const LoggerPort = createPort<"Logger", { log: (msg: string) => void }>("Logger");
-const DatabasePort = createPort<"Database", { query: () => string }>("Database");
-const CachePort = createPort<"Cache", { get: (key: string) => string }>("Cache");
-const UserServicePort = createPort<"UserService", { getUser: (id: string) => object }>(
-  "UserService"
-);
+const LoggerPort = createPort<{ log: (msg: string) => void }, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<{ query: () => string }, "Database">({ name: "Database" });
+const CachePort = createPort<{ get: (key: string) => string }, "Cache">({ name: "Cache" });
+const UserServicePort = createPort<{ getUser: (id: string) => object }, "UserService">({
+  name: "UserService",
+});
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,
@@ -251,8 +251,8 @@ describe("Depth limit detection", () => {
 
     it("detects simple two-node cycle", () => {
       // Create two ports that depend on each other
-      const PortA = createPort<"PortA", { value: string }>("PortA");
-      const PortB = createPort<"PortB", { value: string }>("PortB");
+      const PortA = createPort<{ value: string }>({ name: "PortA" });
+      const PortB = createPort<{ value: string }>({ name: "PortB" });
 
       const adapters: AdapterConstraint[] = [
         createAdapter({
@@ -277,9 +277,9 @@ describe("Depth limit detection", () => {
 
     it("detects longer cycle chain", () => {
       // Create A -> B -> C -> A cycle
-      const PortA = createPort<"A", { value: string }>("A");
-      const PortB = createPort<"B", { value: string }>("B");
-      const PortC = createPort<"C", { value: string }>("C");
+      const PortA = createPort<{ value: string }>({ name: "A" });
+      const PortB = createPort<{ value: string }>({ name: "B" });
+      const PortC = createPort<{ value: string }>({ name: "C" });
 
       const adapters: AdapterConstraint[] = [
         createAdapter({
@@ -310,8 +310,8 @@ describe("Depth limit detection", () => {
 
     it("ignores external dependencies not in the graph", () => {
       // Create adapter that depends on a port not in the graph
-      const ExternalPort = createPort<"External", { value: string }>("External");
-      const InternalPort = createPort<"Internal", { value: string }>("Internal");
+      const ExternalPort = createPort<{ value: string }>({ name: "External" });
+      const InternalPort = createPort<{ value: string }>({ name: "Internal" });
 
       const adapters: AdapterConstraint[] = [
         createAdapter({

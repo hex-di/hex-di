@@ -24,16 +24,16 @@ import { GraphBuilder } from "../src/index.js";
 // =============================================================================
 
 // Pre-create ports for benchmarks
-const Port0 = createPort<"Port0", object>("Port0");
-const Port1 = createPort<"Port1", object>("Port1");
-const Port2 = createPort<"Port2", object>("Port2");
-const Port3 = createPort<"Port3", object>("Port3");
-const Port4 = createPort<"Port4", object>("Port4");
-const Port5 = createPort<"Port5", object>("Port5");
-const Port6 = createPort<"Port6", object>("Port6");
-const Port7 = createPort<"Port7", object>("Port7");
-const Port8 = createPort<"Port8", object>("Port8");
-const Port9 = createPort<"Port9", object>("Port9");
+const Port0 = createPort<object>({ name: "Port0" });
+const Port1 = createPort<object>({ name: "Port1" });
+const Port2 = createPort<object>({ name: "Port2" });
+const Port3 = createPort<object>({ name: "Port3" });
+const Port4 = createPort<object>({ name: "Port4" });
+const Port5 = createPort<object>({ name: "Port5" });
+const Port6 = createPort<object>({ name: "Port6" });
+const Port7 = createPort<object>({ name: "Port7" });
+const Port8 = createPort<object>({ name: "Port8" });
+const Port9 = createPort<object>({ name: "Port9" });
 
 // Pre-create adapters for benchmarks
 const Adapter0 = createAdapter({
@@ -107,11 +107,11 @@ const Adapter9 = createAdapter({
 });
 
 // Chained adapters (each depends on previous)
-const ChainPort0 = createPort<"ChainPort0", object>("ChainPort0");
-const ChainPort1 = createPort<"ChainPort1", object>("ChainPort1");
-const ChainPort2 = createPort<"ChainPort2", object>("ChainPort2");
-const ChainPort3 = createPort<"ChainPort3", object>("ChainPort3");
-const ChainPort4 = createPort<"ChainPort4", object>("ChainPort4");
+const ChainPort0 = createPort<object>({ name: "ChainPort0" });
+const ChainPort1 = createPort<object>({ name: "ChainPort1" });
+const ChainPort2 = createPort<object>({ name: "ChainPort2" });
+const ChainPort3 = createPort<object>({ name: "ChainPort3" });
+const ChainPort4 = createPort<object>({ name: "ChainPort4" });
 
 const ChainAdapter0 = createAdapter({
   provides: ChainPort0,

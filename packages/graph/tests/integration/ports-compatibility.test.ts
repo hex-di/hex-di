@@ -11,7 +11,7 @@ import { GraphBuilder } from "../../src/index.js";
 describe("Integration: @hex-di/ports compatibility", () => {
   it("ports created with createPort work seamlessly with graph", () => {
     // Use types directly from @hex-di/ports
-    const CustomPort = createPort<"Custom", { doSomething(): void }>("Custom");
+    const CustomPort = createPort<{ doSomething(): void }>({ name: "Custom" });
 
     type PortType = typeof CustomPort;
     type ServiceType = InferService<PortType>;
@@ -48,9 +48,9 @@ describe("Integration: @hex-di/ports compatibility", () => {
       methodC(a: ServiceA, b: ServiceB): boolean;
     }
 
-    const PortA = createPort<"ServiceA", ServiceA>("ServiceA");
-    const PortB = createPort<"ServiceB", ServiceB>("ServiceB");
-    const PortC = createPort<"ServiceC", ServiceC>("ServiceC");
+    const PortA = createPort<ServiceA>({ name: "ServiceA" });
+    const PortB = createPort<ServiceB>({ name: "ServiceB" });
+    const PortC = createPort<ServiceC>({ name: "ServiceC" });
 
     const adapterA = createAdapter({
       provides: PortA,

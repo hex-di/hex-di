@@ -18,9 +18,9 @@ import type { MergeOptions } from "../src/advanced.js";
 // Test Fixtures
 // =============================================================================
 
-const LoggerPort = createPort<"Logger", { log: (msg: string) => void }>("Logger");
-const DatabasePort = createPort<"Database", { query: () => string }>("Database");
-const CachePort = createPort<"Cache", { get: (key: string) => string }>("Cache");
+const LoggerPort = createPort<{ log: (msg: string) => void }, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<{ query: () => string }, "Database">({ name: "Database" });
+const CachePort = createPort<{ get: (key: string) => string }, "Cache">({ name: "Cache" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,
@@ -200,8 +200,8 @@ describe("mergeWith() type-level tests", () => {
 
 describe("merge() algebraic properties", () => {
   // Additional ports for algebraic tests
-  const PortE = createPort<"E", { value: number }>("E");
-  const PortF = createPort<"F", { value: number }>("F");
+  const PortE = createPort<{ value: number }>({ name: "E" });
+  const PortF = createPort<{ value: number }>({ name: "F" });
 
   const AdapterE = createAdapter({
     provides: PortE,

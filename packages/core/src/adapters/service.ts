@@ -8,7 +8,7 @@
  */
 
 import { createPort } from "../ports/factory.js";
-import type { Port } from "../ports/types.js";
+import type { Port, DirectedPort } from "../ports/types.js";
 import { createAdapter, createAsyncAdapter } from "./factory.js";
 import type { Adapter, Lifetime, ResolvedDeps } from "./types.js";
 import type { TupleToUnion } from "../utils/type-utilities.js";
@@ -91,8 +91,15 @@ export function defineService<const TName extends string, TService>(
     finalizer?: (instance: TService) => void | Promise<void>;
   }
 ): readonly [
-  Port<TService, TName>,
-  Adapter<Port<TService, TName>, never, Singleton, "sync", false, EmptyRequires>,
+  DirectedPort<TService, TName, "outbound">,
+  Adapter<
+    DirectedPort<TService, TName, "outbound">,
+    never,
+    Singleton,
+    "sync",
+    false,
+    EmptyRequires
+  >,
 ];
 
 /**
@@ -112,8 +119,15 @@ export function defineService<
     finalizer?: (instance: TService) => void | Promise<void>;
   }
 ): readonly [
-  Port<TService, TName>,
-  Adapter<Port<TService, TName>, never, Singleton, "sync", TClonable, EmptyRequires>,
+  DirectedPort<TService, TName, "outbound">,
+  Adapter<
+    DirectedPort<TService, TName, "outbound">,
+    never,
+    Singleton,
+    "sync",
+    TClonable,
+    EmptyRequires
+  >,
 ];
 
 /**
@@ -132,8 +146,15 @@ export function defineService<
     finalizer?: (instance: TService) => void | Promise<void>;
   }
 ): readonly [
-  Port<TService, TName>,
-  Adapter<Port<TService, TName>, never, TLifetime, "sync", false, EmptyRequires>,
+  DirectedPort<TService, TName, "outbound">,
+  Adapter<
+    DirectedPort<TService, TName, "outbound">,
+    never,
+    TLifetime,
+    "sync",
+    false,
+    EmptyRequires
+  >,
 ];
 
 /**
@@ -153,8 +174,15 @@ export function defineService<
     finalizer?: (instance: TService) => void | Promise<void>;
   }
 ): readonly [
-  Port<TService, TName>,
-  Adapter<Port<TService, TName>, never, TLifetime, "sync", TClonable, EmptyRequires>,
+  DirectedPort<TService, TName, "outbound">,
+  Adapter<
+    DirectedPort<TService, TName, "outbound">,
+    never,
+    TLifetime,
+    "sync",
+    TClonable,
+    EmptyRequires
+  >,
 ];
 
 /**
@@ -173,8 +201,15 @@ export function defineService<
     finalizer?: (instance: TService) => void | Promise<void>;
   }
 ): readonly [
-  Port<TService, TName>,
-  Adapter<Port<TService, TName>, TupleToUnion<TRequires>, Singleton, "sync", false, TRequires>,
+  DirectedPort<TService, TName, "outbound">,
+  Adapter<
+    DirectedPort<TService, TName, "outbound">,
+    TupleToUnion<TRequires>,
+    Singleton,
+    "sync",
+    false,
+    TRequires
+  >,
 ];
 
 /**
@@ -194,8 +229,15 @@ export function defineService<
     finalizer?: (instance: TService) => void | Promise<void>;
   }
 ): readonly [
-  Port<TService, TName>,
-  Adapter<Port<TService, TName>, TupleToUnion<TRequires>, Singleton, "sync", TClonable, TRequires>,
+  DirectedPort<TService, TName, "outbound">,
+  Adapter<
+    DirectedPort<TService, TName, "outbound">,
+    TupleToUnion<TRequires>,
+    Singleton,
+    "sync",
+    TClonable,
+    TRequires
+  >,
 ];
 
 /**
@@ -216,8 +258,15 @@ export function defineService<
     finalizer?: (instance: TService) => void | Promise<void>;
   }
 ): readonly [
-  Port<TService, TName>,
-  Adapter<Port<TService, TName>, TupleToUnion<TRequires>, TLifetime, "sync", false, TRequires>,
+  DirectedPort<TService, TName, "outbound">,
+  Adapter<
+    DirectedPort<TService, TName, "outbound">,
+    TupleToUnion<TRequires>,
+    TLifetime,
+    "sync",
+    false,
+    TRequires
+  >,
 ];
 
 /**
@@ -239,8 +288,15 @@ export function defineService<
     finalizer?: (instance: TService) => void | Promise<void>;
   }
 ): readonly [
-  Port<TService, TName>,
-  Adapter<Port<TService, TName>, TupleToUnion<TRequires>, TLifetime, "sync", TClonable, TRequires>,
+  DirectedPort<TService, TName, "outbound">,
+  Adapter<
+    DirectedPort<TService, TName, "outbound">,
+    TupleToUnion<TRequires>,
+    TLifetime,
+    "sync",
+    TClonable,
+    TRequires
+  >,
 ];
 
 /**
@@ -267,7 +323,7 @@ export function defineService<const TName extends string, TService>(
     throw new Error("defineService requires config with factory when name is provided");
   }
 
-  const port = createPort<TName, TService>(name);
+  const port = createPort<TService, TName>({ name });
 
   const requires = config.requires ?? EMPTY_REQUIRES;
   const lifetime = config.lifetime ?? SINGLETON;
@@ -406,7 +462,7 @@ export function defineAsyncService<const TName extends string, TService>(
     readonly Port<unknown, string>[]
   >,
 ] {
-  const port = createPort<TName, TService>(name);
+  const port = createPort<TService, TName>({ name });
 
   const requires = config.requires ?? EMPTY_REQUIRES;
 

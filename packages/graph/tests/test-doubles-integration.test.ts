@@ -241,8 +241,8 @@ describe("test doubles: sequence verification", () => {
     const sequenceTracker = createCallSequenceTracker();
 
     // Create simple ports for this test
-    const InitLoggerPort = createPort<"InitLogger", { init: () => void }>("InitLogger");
-    const InitDbPort = createPort<"InitDb", { init: () => void }>("InitDb");
+    const InitLoggerPort = createPort<{ init: () => void }, "InitLogger">({ name: "InitLogger" });
+    const InitDbPort = createPort<{ init: () => void }, "InitDb">({ name: "InitDb" });
 
     // Create adapters that manually track calls
     const LoggerAdapter = createAdapter({
@@ -427,13 +427,13 @@ describe("test doubles: multi-adapter graphs", () => {
   it("tests dependency chain with tracked initialization", () => {
     const sequenceTracker = createCallSequenceTracker();
 
-    const TrackedLoggerPort = createPort<"TrackedLogger", { log: (msg: string) => void }>(
-      "TrackedLogger"
-    );
-    const TrackedDbPort = createPort<"TrackedDb", { query: () => void }>("TrackedDb");
-    const TrackedUserServicePort = createPort<"TrackedUserService", { getUser: () => void }>(
-      "TrackedUserService"
-    );
+    const TrackedLoggerPort = createPort<{ log: (msg: string) => void }, "TrackedLogger">({
+      name: "TrackedLogger",
+    });
+    const TrackedDbPort = createPort<{ query: () => void }, "TrackedDb">({ name: "TrackedDb" });
+    const TrackedUserServicePort = createPort<{ getUser: () => void }, "TrackedUserService">({
+      name: "TrackedUserService",
+    });
 
     const TrackedLoggerAdapter = createAdapter({
       provides: TrackedLoggerPort,

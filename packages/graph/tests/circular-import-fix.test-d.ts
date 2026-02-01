@@ -44,7 +44,7 @@ import type { GraphBuilderSignature } from "../src/builder/types/builder-signatu
 // Test Fixtures
 // =============================================================================
 
-const LoggerPort = createPort<"Logger", { log(msg: string): void }>("Logger");
+const LoggerPort = createPort<{ log(msg: string): void }>({ name: "Logger" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,

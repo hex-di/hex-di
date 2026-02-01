@@ -148,7 +148,9 @@ export interface TaskApiService {
  * const { tasks } = await apiService.getTasks({ status: 'todo', page: 1, pageSize: 10 });
  * ```
  */
-export const TaskApiServicePort = createPort<"TaskApiService", TaskApiService>("TaskApiService");
+export const TaskApiServicePort = createPort<TaskApiService, "TaskApiService">({
+  name: "TaskApiService",
+});
 
 // =============================================================================
 // Cache Service Interface
@@ -223,9 +225,9 @@ export interface TaskCacheService {
  * ])
  * ```
  */
-export const TaskCacheServicePort = createPort<"TaskCacheService", TaskCacheService>(
-  "TaskCacheService"
-);
+export const TaskCacheServicePort = createPort<TaskCacheService, "TaskCacheService">({
+  name: "TaskCacheService",
+});
 
 // =============================================================================
 // Task Flow Service Types
@@ -310,6 +312,6 @@ export type TaskFlowService = FlowService<TaskFlowState, TaskFlowEvent, TaskFlow
  * }
  * ```
  */
-export const TaskFlowServicePort = createPort<"TaskFlowService", TaskFlowService>(
-  "TaskFlowService"
-);
+export const TaskFlowServicePort = createPort<TaskFlowService, "TaskFlowService">({
+  name: "TaskFlowService",
+});

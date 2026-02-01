@@ -85,18 +85,18 @@ interface SingleFetchService {
 // Ports
 // =============================================================================
 
-const GenericRepoPort = createPort<"Repo", GenericRepository>("Repo");
-const StringRepoPort = createPort<"Repo", StringRepository>("Repo");
+const GenericRepoPort = createPort<GenericRepository>({ name: "Repo" });
+const StringRepoPort = createPort<StringRepository>({ name: "Repo" });
 
-const GenericIdentityPort = createPort<"Identity", GenericIdentity>("Identity");
-const StringIdentityPort = createPort<"Identity", StringIdentity>("Identity");
+const GenericIdentityPort = createPort<GenericIdentity>({ name: "Identity" });
+const StringIdentityPort = createPort<StringIdentity>({ name: "Identity" });
 
-const OptionalParamPort = createPort<"Processor", OptionalParamService>("Processor");
-const RequiredParamPort = createPort<"Processor", RequiredParamService>("Processor");
-const FewerParamPort = createPort<"Processor", FewerParamService>("Processor");
+const OptionalParamPort = createPort<OptionalParamService>({ name: "Processor" });
+const RequiredParamPort = createPort<RequiredParamService>({ name: "Processor" });
+const FewerParamPort = createPort<FewerParamService>({ name: "Processor" });
 
-const OverloadedPort = createPort<"Fetcher", OverloadedService>("Fetcher");
-const SingleFetchPort = createPort<"Fetcher", SingleFetchService>("Fetcher");
+const OverloadedPort = createPort<OverloadedService>({ name: "Fetcher" });
+const SingleFetchPort = createPort<SingleFetchService>({ name: "Fetcher" });
 
 // =============================================================================
 // Adapters

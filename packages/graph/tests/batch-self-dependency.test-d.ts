@@ -21,9 +21,9 @@ import type {
 // Test Fixtures
 // =============================================================================
 
-const PortA = createPort<"A", { a: string }>("A");
-const PortB = createPort<"B", { b: string }>("B");
-const PortC = createPort<"C", { c: string }>("C");
+const PortA = createPort<{ a: string }>({ name: "A" });
+const PortB = createPort<{ b: string }>({ name: "B" });
+const PortC = createPort<{ c: string }>({ name: "C" });
 
 // Normal adapters (no self-dependency)
 const AdapterA = createAdapter({
@@ -101,7 +101,7 @@ describe("FindSelfDependencyPort", () => {
 
   it("returns first self-dependency port when multiple exist", () => {
     // Create another self-referential adapter
-    const PortD = createPort<"D", { d: string }>("D");
+    const PortD = createPort<{ d: string }>({ name: "D" });
     const SelfRefD = createAdapter({
       provides: PortD,
       requires: [PortD],

@@ -34,7 +34,7 @@ interface Service {
  * Creates a port with a given name.
  */
 function makePort(name: string): Port<Service, string> {
-  return createPort<string, Service>(name);
+  return createPort<Service>({ name });
 }
 
 /**

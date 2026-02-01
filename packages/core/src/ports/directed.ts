@@ -108,114 +108,6 @@ export function createDirectedPortImpl<TName extends string>(
 }
 
 // =============================================================================
-// Public Factory Functions
-// =============================================================================
-
-/**
- * Creates an inbound (driving) port for use case interfaces.
- *
- * Inbound ports define the application's primary API - what the outside world
- * can ask the application to do. They're implemented by use case handlers.
- *
- * @typeParam TName - The literal string type for the port name (inferred from options.name)
- * @typeParam TService - The service interface type (phantom type, explicitly provided)
- *
- * @param options - Configuration for the port
- * @returns A frozen InboundPort with the specified type parameters
- *
- * @example Basic usage
- * ```typescript
- * interface UserService {
- *   createUser(data: UserData): Promise<User>;
- *   getUser(id: string): Promise<User>;
- * }
- *
- * const UserServicePort = createInboundPort<'UserService', UserService>({
- *   name: 'UserService',
- * });
- * ```
- *
- * @example With metadata
- * ```typescript
- * const UserServicePort = createInboundPort<'UserService', UserService>({
- *   name: 'UserService',
- *   description: 'User management use cases',
- *   category: 'domain',
- *   tags: ['user', 'crud', 'core'],
- * });
- * ```
- */
-export function createInboundPort<const TName extends string, TService>(
-  options: CreateDirectedPortOptions<TName>
-): InboundPort<TService, TName> {
-  const metadata: PortMetadata = Object.freeze({
-    description: options.description,
-    category: options.category,
-    tags: options.tags,
-  });
-
-  const runtime: DirectedPortRuntime<TName> = Object.freeze({
-    __portName: options.name,
-    [DIRECTION_BRAND]: "inbound" as const,
-    [METADATA_KEY]: metadata,
-  });
-
-  return createDirectedPortImpl<TService, TName, "inbound">(runtime);
-}
-
-/**
- * Creates an outbound (driven) port for infrastructure interfaces.
- *
- * Outbound ports define what the application needs from external systems.
- * They're implemented by infrastructure adapters (databases, APIs, etc.).
- *
- * @typeParam TName - The literal string type for the port name (inferred from options.name)
- * @typeParam TService - The service interface type (phantom type, explicitly provided)
- *
- * @param options - Configuration for the port
- * @returns A frozen OutboundPort with the specified type parameters
- *
- * @example Basic usage
- * ```typescript
- * interface UserRepository {
- *   save(user: User): Promise<void>;
- *   findById(id: string): Promise<User | null>;
- * }
- *
- * const UserRepositoryPort = createOutboundPort<'UserRepository', UserRepository>({
- *   name: 'UserRepository',
- * });
- * ```
- *
- * @example With metadata
- * ```typescript
- * const UserRepositoryPort = createOutboundPort<'UserRepository', UserRepository>({
- *   name: 'UserRepository',
- *   description: 'User persistence operations',
- *   category: 'infrastructure',
- *   tags: ['user', 'database', 'storage'],
- * });
- * ```
- */
-export function createOutboundPort<const TName extends string, TService>(
-  options: CreateDirectedPortOptions<TName>
-): OutboundPort<TService, TName> {
-  const metadata: PortMetadata = Object.freeze({
-    description: options.description,
-    category: options.category,
-    tags: options.tags,
-  });
-
-  const runtime: DirectedPortRuntime<TName> = Object.freeze({
-    __portName: options.name,
-    [DIRECTION_BRAND]: "outbound" as const,
-    [METADATA_KEY]: metadata,
-  });
-
-  return createDirectedPortImpl<TService, TName, "outbound">(runtime);
-}
-
-// =============================================================================
 // Internal Type Guard Helpers
 // =============================================================================
 
@@ -247,11 +139,9 @@ function hasMetadataKey(obj: object): obj is { readonly [METADATA_KEY]: PortMeta
  *
  * @example
  * ```typescript
- * const inbound = createInboundPort<'Logger', Logger>({ name: 'Logger' });
- * const plain = createPort<'Logger', Logger>('Logger');
+ * const inbound = createPort<Logger>({ name: 'Logger', direction: 'inbound' });
  *
  * isDirectedPort(inbound); // true
- * isDirectedPort(plain);   // false
  *
  * if (isDirectedPort(port)) {
  *   // TypeScript narrows: port is DirectedPort<unknown, string, PortDirection>
@@ -276,8 +166,8 @@ export function isDirectedPort(
  *
  * @example
  * ```typescript
- * const inbound = createInboundPort<'UserService', UserService>({ name: 'UserService' });
- * const outbound = createOutboundPort<'UserRepo', UserRepo>({ name: 'UserRepo' });
+ * const inbound = createPort<UserService>({ name: 'UserService', direction: 'inbound' });
+ * const outbound = createPort<UserRepo>({ name: 'UserRepo', direction: 'outbound' });
  *
  * isInboundPort(inbound); // true
  * isInboundPort(outbound); // false
@@ -299,8 +189,8 @@ export function isInboundPort(port: Port<unknown, string>): port is InboundPort<
  *
  * @example
  * ```typescript
- * const inbound = createInboundPort<'UserService', UserService>({ name: 'UserService' });
- * const outbound = createOutboundPort<'UserRepo', UserRepo>({ name: 'UserRepo' });
+ * const inbound = createPort<UserService>({ name: 'UserService', direction: 'inbound' });
+ * const outbound = createPort<UserRepo>({ name: 'UserRepo', direction: 'outbound' });
  *
  * isOutboundPort(outbound); // true
  * isOutboundPort(inbound); // false
@@ -326,11 +216,11 @@ export function isOutboundPort(port: Port<unknown, string>): port is OutboundPor
  *
  * @example
  * ```typescript
- * const inbound = createInboundPort<'Logger', Logger>({ name: 'Logger' });
- * const plain = createPort<'Logger', Logger>('Logger');
+ * const inbound = createPort<Logger>({ name: 'Logger', direction: 'inbound' });
+ * const outbound = createPort<Logger>({ name: 'Logger' }); // defaults to outbound
  *
  * getPortDirection(inbound); // 'inbound'
- * getPortDirection(plain);   // undefined
+ * getPortDirection(outbound); // 'outbound'
  * ```
  */
 export function getPortDirection(port: Port<unknown, string>): PortDirection | undefined {
@@ -348,17 +238,15 @@ export function getPortDirection(port: Port<unknown, string>): PortDirection | u
  *
  * @example
  * ```typescript
- * const port = createInboundPort<'Logger', Logger>({
+ * const port = createPort<Logger>({
  *   name: 'Logger',
+ *   direction: 'inbound',
  *   description: 'Application logging',
  *   category: 'infrastructure',
  * });
  *
  * const meta = getPortMetadata(port);
- * // { description: 'Application logging', category: 'infrastructure', tags: undefined }
- *
- * const plain = createPort<'Logger', Logger>('Logger');
- * getPortMetadata(plain); // undefined
+ * // { description: 'Application logging', category: 'infrastructure', tags: [] }
  * ```
  */
 export function getPortMetadata(port: Port<unknown, string>): PortMetadata | undefined {

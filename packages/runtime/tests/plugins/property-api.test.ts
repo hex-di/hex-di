@@ -28,8 +28,8 @@ interface Database {
   query(sql: string): unknown;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<Database, "Database">({ name: "Database" });
 
 function createTestGraph() {
   const LoggerAdapter = createAdapter({

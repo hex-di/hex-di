@@ -36,10 +36,10 @@ interface EmailService {
   send(to: string, subject: string): void;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
-const EmailServicePort = createPort<"EmailService", EmailService>("EmailService");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<Database, "Database">({ name: "Database" });
+const UserServicePort = createPort<UserService, "UserService">({ name: "UserService" });
+const EmailServicePort = createPort<EmailService, "EmailService">({ name: "EmailService" });
 
 // =============================================================================
 // withOverrides Basic Functionality Tests

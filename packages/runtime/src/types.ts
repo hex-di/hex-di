@@ -1071,7 +1071,7 @@ export type IsResolvable<TContainer, TPort extends Port<unknown, string>> = TPor
  * @example Resolvable port returns service type
  * ```typescript
  * interface Logger { log(msg: string): void; }
- * const LoggerPort = createPort<'Logger', Logger>('Logger');
+ * const LoggerPort = createPort<Logger>({ name: 'Logger' });
  *
  * type MyContainer = Container<typeof LoggerPort>;
  * type LoggerService = ServiceFromContainer<MyContainer, typeof LoggerPort>;

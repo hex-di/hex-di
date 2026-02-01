@@ -21,9 +21,9 @@ import { GraphBuilder } from "../src/index.js";
 // Test Fixtures
 // =============================================================================
 
-const ScopedPort = createPort<"ScopedService", { getData(): string }>("ScopedService");
-const SingletonPort = createPort<"SingletonService", { process(): void }>("SingletonService");
-const TransientPort = createPort<"TransientService", { handle(): void }>("TransientService");
+const ScopedPort = createPort<{ getData(): string }>({ name: "ScopedService" });
+const SingletonPort = createPort<{ process(): void }>({ name: "SingletonService" });
+const TransientPort = createPort<{ handle(): void }>({ name: "TransientService" });
 
 // Singleton that depends on scoped service (CAPTIVE!)
 const CaptiveSingletonAdapter = createAdapter({

@@ -27,7 +27,7 @@ interface TestService {
   name: string;
 }
 
-const TestServicePort = createPort<"TestService", TestService>("TestService");
+const TestServicePort = createPort<TestService, "TestService">({ name: "TestService" });
 
 const TestServiceAdapter = createAdapter({
   provides: TestServicePort,

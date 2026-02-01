@@ -28,7 +28,7 @@
  * import { createTypedHooks } from '@hex-di/react';
  *
  * // Define ports
- * const LoggerPort = createPort<'Logger', Logger>('Logger');
+ * const LoggerPort = createPort<Logger>({ name: 'Logger' });
  * type AppPorts = typeof LoggerPort;
  *
  * // Create typed React integration

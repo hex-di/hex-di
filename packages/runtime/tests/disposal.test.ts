@@ -46,11 +46,11 @@ interface SessionStore {
   sessionId: string;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const CachePort = createPort<"Cache", Cache>("Cache");
-const RequestContextPort = createPort<"RequestContext", RequestContext>("RequestContext");
-const SessionStorePort = createPort<"SessionStore", SessionStore>("SessionStore");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<Database, "Database">({ name: "Database" });
+const CachePort = createPort<Cache, "Cache">({ name: "Cache" });
+const RequestContextPort = createPort<RequestContext, "RequestContext">({ name: "RequestContext" });
+const SessionStorePort = createPort<SessionStore, "SessionStore">({ name: "SessionStore" });
 
 // Use ports to suppress unused variable warnings
 expect(LoggerPort).toBeDefined();

@@ -13,7 +13,7 @@ interface Service {
 
 describe("async factory error handling", () => {
   it("rejecting factory propagates error", async () => {
-    const FailingPort = createPort<"Failing", Service>("Failing");
+    const FailingPort = createPort<Service>({ name: "Failing" });
 
     const failingAdapter = createAsyncAdapter({
       provides: FailingPort,
@@ -38,7 +38,7 @@ describe("async factory error handling", () => {
       }
     }
 
-    const FailingPort = createPort<"FailingCustom", Service>("FailingCustom");
+    const FailingPort = createPort<Service>({ name: "FailingCustom" });
 
     const failingAdapter = createAsyncAdapter({
       provides: FailingPort,
@@ -55,7 +55,7 @@ describe("async factory error handling", () => {
   });
 
   it("slow factory eventually resolves", async () => {
-    const SlowPort = createPort<"Slow", Service>("Slow");
+    const SlowPort = createPort<Service>({ name: "Slow" });
     let resolveCount = 0;
 
     const slowAdapter = createAsyncAdapter({
@@ -78,7 +78,7 @@ describe("async factory error handling", () => {
   });
 
   it("factory can check abort flag pattern", async () => {
-    const AbortablePort = createPort<"Abortable", Service>("Abortable");
+    const AbortablePort = createPort<Service>({ name: "Abortable" });
 
     // Simulate an abort flag (common pattern without AbortController)
     let aborted = false;
@@ -102,7 +102,7 @@ describe("async factory error handling", () => {
   });
 
   it("conditional failure based on environment", async () => {
-    const EnvDependentPort = createPort<"EnvDependent", Service>("EnvDependent");
+    const EnvDependentPort = createPort<Service>({ name: "EnvDependent" });
 
     const createEnvAdapter = (shouldFail: boolean) =>
       createAsyncAdapter({
@@ -129,13 +129,13 @@ describe("async factory error handling", () => {
   });
 
   it("conditional failure based on dependency state", async () => {
-    const HealthCheckPort = createPort<"HealthCheck", Service>("HealthCheck");
+    const HealthCheckPort = createPort<Service>({ name: "HealthCheck" });
 
     interface MockDep {
       isHealthy: () => boolean;
     }
 
-    const DependencyPort = createPort<"Dependency", MockDep>("Dependency");
+    const DependencyPort = createPort<MockDep>({ name: "Dependency" });
 
     const healthCheckAdapter = createAsyncAdapter({
       provides: HealthCheckPort,
@@ -162,7 +162,7 @@ describe("async factory error handling", () => {
   });
 
   it("factory that rejects with non-Error value", async () => {
-    const WeirdRejectPort = createPort<"WeirdReject", Service>("WeirdReject");
+    const WeirdRejectPort = createPort<Service>({ name: "WeirdReject" });
 
     const weirdAdapter = createAsyncAdapter({
       provides: WeirdRejectPort,
@@ -177,7 +177,7 @@ describe("async factory error handling", () => {
   });
 
   it("factory retry pattern", async () => {
-    const RetryPort = createPort<"Retry", Service>("Retry");
+    const RetryPort = createPort<Service>({ name: "Retry" });
     let attemptCount = 0;
     const MAX_RETRIES = 3;
     const SUCCEED_ON_ATTEMPT = 3;
@@ -216,7 +216,7 @@ describe("async factory error handling", () => {
   });
 
   it("factory partial initialization failure with cleanup", async () => {
-    const PartialPort = createPort<"Partial", Service>("Partial");
+    const PartialPort = createPort<Service>({ name: "Partial" });
     let cleanupCalled = false;
     let resourceAllocated = false;
 
@@ -245,13 +245,13 @@ describe("async factory error handling", () => {
   });
 
   it("factory that fails on specific input", async () => {
-    const ValidatingPort = createPort<"Validating", Service>("Validating");
+    const ValidatingPort = createPort<Service>({ name: "Validating" });
 
     interface Config {
       value: number;
     }
 
-    const ConfigPort = createPort<"Config", Config>("Config");
+    const ConfigPort = createPort<Config>({ name: "Config" });
 
     const validatingAdapter = createAsyncAdapter({
       provides: ValidatingPort,

@@ -39,7 +39,7 @@ interface CounterService {
   getCount(): number;
 }
 
-const CounterServicePort = createPort<"CounterService", CounterService>("CounterService");
+const CounterServicePort = createPort<CounterService, "CounterService">({ name: "CounterService" });
 
 /**
  * Creates a counter service implementation
@@ -101,9 +101,9 @@ type SimpleFlowService = FlowService<
 >;
 
 // Create ports using createPort directly with FlowService type
-const SimpleFlowServicePort = createPort<"SimpleFlowService", SimpleFlowService>(
-  "SimpleFlowService"
-);
+const SimpleFlowServicePort = createPort<SimpleFlowService, "SimpleFlowService">({
+  name: "SimpleFlowService",
+});
 
 // Simple machine without effects
 const simpleTestMachine = createMachine({
@@ -306,9 +306,9 @@ describe("HexDI Integration", () => {
     it("should handle DelayEffect correctly", async () => {
       // Define port and adapter inline for this test
       type DelayFlowService = FlowService<"idle" | "waiting", "GO", void>;
-      const DelayFlowServicePort = createPort<"DelayFlowService", DelayFlowService>(
-        "DelayFlowService"
-      );
+      const DelayFlowServicePort = createPort<DelayFlowService, "DelayFlowService">({
+        name: "DelayFlowService",
+      });
 
       const delayMachine = createMachine({
         id: "delay-test",
@@ -384,9 +384,9 @@ describe("HexDI Integration", () => {
 
     it("should handle ParallelEffect correctly", async () => {
       type ParallelFlowService = FlowService<"idle" | "done", "GO", void>;
-      const ParallelFlowServicePort = createPort<"ParallelFlowService", ParallelFlowService>(
-        "ParallelFlowService"
-      );
+      const ParallelFlowServicePort = createPort<ParallelFlowService, "ParallelFlowService">({
+        name: "ParallelFlowService",
+      });
 
       const parallelMachine = createMachine({
         id: "parallel-test",
@@ -458,9 +458,9 @@ describe("HexDI Integration", () => {
 
     it("should handle SequenceEffect correctly", async () => {
       type SequenceFlowService = FlowService<"idle" | "done", "GO", void>;
-      const SequenceFlowServicePort = createPort<"SequenceFlowService", SequenceFlowService>(
-        "SequenceFlowService"
-      );
+      const SequenceFlowServicePort = createPort<SequenceFlowService, "SequenceFlowService">({
+        name: "SequenceFlowService",
+      });
 
       const sequenceMachine = createMachine({
         id: "sequence-test",

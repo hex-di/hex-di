@@ -49,9 +49,9 @@ interface RequestContext {
   instanceId: string;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const RequestContextPort = createPort<"RequestContext", RequestContext>("RequestContext");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<Database, "Database">({ name: "Database" });
+const RequestContextPort = createPort<RequestContext, "RequestContext">({ name: "RequestContext" });
 
 let instanceCounter = 0;
 function generateInstanceId(): string {
@@ -446,7 +446,7 @@ describe("GC eligibility verification", () => {
       id: string;
     }
 
-    const LargeServicePort = createPort<"LargeService", LargeService>("LargeService");
+    const LargeServicePort = createPort<LargeService, "LargeService">({ name: "LargeService" });
 
     const LargeAdapter = createAdapter({
       provides: LargeServicePort,
@@ -486,7 +486,7 @@ describe("GC eligibility verification", () => {
       id: string;
     }
 
-    const LargeContextPort = createPort<"LargeContext", LargeContext>("LargeContext");
+    const LargeContextPort = createPort<LargeContext, "LargeContext">({ name: "LargeContext" });
 
     const LargeContextAdapter = createAdapter({
       provides: LargeContextPort,
@@ -601,7 +601,7 @@ describe("Transient instances (no caching)", () => {
 describe("Stress: many instances cleanup", () => {
   test("disposing container with many singletons completes", async () => {
     const ports = Array.from({ length: 100 }, (_, i) =>
-      createPort<`Service${number}`, { id: string }>(`Service${i}`)
+      createPort<{ id: string }>({ name: `Service${i}` })
     );
 
     const adapters = ports.map(port =>

@@ -33,10 +33,10 @@ import {
 // Test Fixtures
 // =============================================================================
 
-const ZebraPort = createPort<"Zebra", { run(): void }>("Zebra");
-const ApplePort = createPort<"Apple", { grow(): void }>("Apple");
-const MangoPort = createPort<"Mango", { juice(): void }>("Mango");
-const BananaPort = createPort<"Banana", { peel(): void }>("Banana");
+const ZebraPort = createPort<{ run(): void }>({ name: "Zebra" });
+const ApplePort = createPort<{ grow(): void }>({ name: "Apple" });
+const MangoPort = createPort<{ juice(): void }>({ name: "Mango" });
+const BananaPort = createPort<{ peel(): void }>({ name: "Banana" });
 
 // =============================================================================
 // inspectGraph Deterministic Outputs Tests

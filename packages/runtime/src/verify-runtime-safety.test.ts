@@ -9,9 +9,9 @@ describe("Runtime Safety Verification", () => {
     interface Service {
       name: string;
     }
-    const PortA = createPort<"A", Service>("A");
-    const PortB = createPort<"B", Service>("B");
-    const PortScoped = createPort<"Scoped", Service>("Scoped");
+    const PortA = createPort<Service>({ name: "A" });
+    const PortB = createPort<Service>({ name: "B" });
+    const PortScoped = createPort<Service>({ name: "Scoped" });
 
     const AdapterA = createAdapter({
       provides: PortA,

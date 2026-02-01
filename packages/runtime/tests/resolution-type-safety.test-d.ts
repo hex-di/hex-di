@@ -64,14 +64,14 @@ interface EventBus {
 // Test Port Tokens
 // =============================================================================
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
-const ConfigServicePort = createPort<"ConfigService", ConfigService>("ConfigService");
-const CacheServicePort = createPort<"CacheService", CacheService>("CacheService");
-const AuthServicePort = createPort<"AuthService", AuthService>("AuthService");
-const MetricsServicePort = createPort<"MetricsService", MetricsService>("MetricsService");
-const EventBusPort = createPort<"EventBus", EventBus>("EventBus");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const DatabasePort = createPort<Database, "Database">({ name: "Database" });
+const UserServicePort = createPort<UserService, "UserService">({ name: "UserService" });
+const ConfigServicePort = createPort<ConfigService, "ConfigService">({ name: "ConfigService" });
+const CacheServicePort = createPort<CacheService, "CacheService">({ name: "CacheService" });
+const AuthServicePort = createPort<AuthService, "AuthService">({ name: "AuthService" });
+const MetricsServicePort = createPort<MetricsService, "MetricsService">({ name: "MetricsService" });
+const EventBusPort = createPort<EventBus, "EventBus">({ name: "EventBus" });
 
 type LoggerPortType = typeof LoggerPort;
 type DatabasePortType = typeof DatabasePort;
@@ -495,7 +495,9 @@ describe("complex TProvides scenarios", () => {
       fetch(id: string): Promise<{ data: unknown } | { error: string }>;
     }
 
-    const ComplexServicePort = createPort<"ComplexService", ComplexService>("ComplexService");
+    const ComplexServicePort = createPort<ComplexService, "ComplexService">({
+      name: "ComplexService",
+    });
     type ComplexServicePortType = typeof ComplexServicePort;
 
     type TestContainer = Container<ComplexServicePortType>;
@@ -534,10 +536,12 @@ describe("complex TProvides scenarios", () => {
     }
 
     // Create ports for specific repository types
-    const UserRepositoryPort = createPort<"UserRepository", Repository<User>>("UserRepository");
-    const ProductRepositoryPort = createPort<"ProductRepository", Repository<Product>>(
-      "ProductRepository"
-    );
+    const UserRepositoryPort = createPort<Repository<User>, "UserRepository">({
+      name: "UserRepository",
+    });
+    const ProductRepositoryPort = createPort<Repository<Product>, "ProductRepository">({
+      name: "ProductRepository",
+    });
 
     type UserRepositoryPortType = typeof UserRepositoryPort;
     type ProductRepositoryPortType = typeof ProductRepositoryPort;

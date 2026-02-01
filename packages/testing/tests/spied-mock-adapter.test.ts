@@ -32,9 +32,9 @@ interface Calculator {
   multiply(a: number, b: number): number;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const CalculatorPort = createPort<"Calculator", Calculator>("Calculator");
+const LoggerPort = createPort<Logger>({ name: "Logger" });
+const DatabasePort = createPort<Database>({ name: "Database" });
+const CalculatorPort = createPort<Calculator>({ name: "Calculator" });
 
 // =============================================================================
 // createSpiedMockAdapter Tests

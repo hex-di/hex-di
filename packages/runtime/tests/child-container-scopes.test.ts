@@ -26,8 +26,8 @@ interface Plugin {
   execute(): void;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const PluginPort = createPort<"Plugin", Plugin>("Plugin");
+const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const PluginPort = createPort<Plugin, "Plugin">({ name: "Plugin" });
 
 // =============================================================================
 // Child Container Scope Visibility Tests

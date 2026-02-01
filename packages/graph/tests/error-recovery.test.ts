@@ -36,11 +36,11 @@ interface Config {
   getValue(): string;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
-const UserServicePort = createPort<"UserService", UserService>("UserService");
-const CachePort = createPort<"Cache", Cache>("Cache");
-const ConfigPort = createPort<"Config", Config>("Config");
+const LoggerPort = createPort<Logger>({ name: "Logger" });
+const DatabasePort = createPort<Database>({ name: "Database" });
+const UserServicePort = createPort<UserService>({ name: "UserService" });
+const CachePort = createPort<Cache>({ name: "Cache" });
+const ConfigPort = createPort<Config>({ name: "Config" });
 
 // =============================================================================
 // Recovery from Circular Dependencies
@@ -281,7 +281,7 @@ describe("Recovery: Duplicate Providers", () => {
     });
 
     // Instead of providing same port twice, create alternative port
-    const AltLoggerPort = createPort<"AltLogger", Logger>("AltLogger");
+    const AltLoggerPort = createPort<Logger>({ name: "AltLogger" });
     const LoggerAdapter2 = createAdapter({
       provides: AltLoggerPort,
       requires: [],

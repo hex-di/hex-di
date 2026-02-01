@@ -34,9 +34,9 @@ import type { UserSessionStoreInstance } from "./user-session-store.js";
  * store.getState().setTheme('dark');
  * ```
  */
-export const UIPreferencesStorePort = createPort<"UIPreferencesStore", UIPreferencesStoreInstance>(
-  "UIPreferencesStore"
-);
+export const UIPreferencesStorePort = createPort<UIPreferencesStoreInstance, "UIPreferencesStore">({
+  name: "UIPreferencesStore",
+});
 
 // =============================================================================
 // Filter Store Port
@@ -55,7 +55,9 @@ export const UIPreferencesStorePort = createPort<"UIPreferencesStore", UIPrefere
  * store.getState().setStatus('todo');
  * ```
  */
-export const FilterStorePort = createPort<"FilterStore", FilterStoreInstance>("FilterStore");
+export const FilterStorePort = createPort<FilterStoreInstance, "FilterStore">({
+  name: "FilterStore",
+});
 
 // =============================================================================
 // User Session Store Port
@@ -78,6 +80,6 @@ export const FilterStorePort = createPort<"FilterStore", FilterStoreInstance>("F
  * // Check if user is authenticated before allowing navigation
  * ```
  */
-export const UserSessionStorePort = createPort<"UserSessionStore", UserSessionStoreInstance>(
-  "UserSessionStore"
-);
+export const UserSessionStorePort = createPort<UserSessionStoreInstance, "UserSessionStore">({
+  name: "UserSessionStore",
+});

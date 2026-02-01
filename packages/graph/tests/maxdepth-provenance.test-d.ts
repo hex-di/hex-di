@@ -39,8 +39,8 @@ interface Database {
   query(): void;
 }
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const DatabasePort = createPort<"Database", Database>("Database");
+const LoggerPort = createPort<Logger>({ name: "Logger" });
+const DatabasePort = createPort<Database>({ name: "Database" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,

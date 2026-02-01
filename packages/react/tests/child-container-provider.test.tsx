@@ -41,7 +41,7 @@ interface TestService {
 /**
  * Port for testing resolution.
  */
-const TestServicePort = createPort<"TestService", TestService>("TestService");
+const TestServicePort = createPort<TestService, "TestService">({ name: "TestService" });
 
 /**
  * Second port for testing extended ports.
@@ -49,7 +49,9 @@ const TestServicePort = createPort<"TestService", TestService>("TestService");
 interface ExtendedService {
   feature: string;
 }
-const ExtendedServicePort = createPort<"ExtendedService", ExtendedService>("ExtendedService");
+const ExtendedServicePort = createPort<ExtendedService, "ExtendedService">({
+  name: "ExtendedService",
+});
 
 /**
  * Type aliases for test containers.

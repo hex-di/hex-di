@@ -21,7 +21,7 @@ interface TestService {
   name: string;
 }
 
-const TestPort = createPort<"Test", TestService>("Test");
+const TestPort = createPort<TestService, "Test">({ name: "Test" });
 
 const TestAdapter = createAdapter({
   provides: TestPort,
@@ -30,7 +30,7 @@ const TestAdapter = createAdapter({
   factory: () => ({ name: "test" }),
 });
 
-const ScopedPort = createPort<"Scoped", TestService>("Scoped");
+const ScopedPort = createPort<TestService, "Scoped">({ name: "Scoped" });
 
 const ScopedAdapter = createAdapter({
   provides: ScopedPort,

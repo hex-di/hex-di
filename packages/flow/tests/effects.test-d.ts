@@ -50,11 +50,11 @@ interface CalculatorService {
 }
 
 // Create port tokens
-const UserServicePort = createPort<"UserService", UserService>("UserService");
-const LoggerServicePort = createPort<"LoggerService", LoggerService>("LoggerService");
-const CalculatorServicePort = createPort<"CalculatorService", CalculatorService>(
-  "CalculatorService"
-);
+const UserServicePort = createPort<UserService, "UserService">({ name: "UserService" });
+const LoggerServicePort = createPort<LoggerService, "LoggerService">({ name: "LoggerService" });
+const CalculatorServicePort = createPort<CalculatorService, "CalculatorService">({
+  name: "CalculatorService",
+});
 
 // =============================================================================
 // Test 1: Effect.invoke() Infers Port Method Signature
