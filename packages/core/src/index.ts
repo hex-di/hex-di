@@ -19,7 +19,7 @@
 // Ports
 // =============================================================================
 
-export { createPort } from "./ports/factory.js";
+export { createPort, port } from "./ports/factory.js";
 export type { Port, InferService, InferPortName, NotAPortError } from "./ports/types.js";
 
 // Directed ports

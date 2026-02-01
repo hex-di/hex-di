@@ -122,3 +122,48 @@ export function createPort<TService, const TName extends string, TDirection exte
 
   return createDirectedPortImpl<TService, TName, TDirection>(runtime);
 }
+
+// =============================================================================
+// port - Builder for Service-Typed Ports with Full Name Inference
+// =============================================================================
+
+/**
+ * Builder function for creating ports with a specified service type
+ * while preserving literal name inference from the config object.
+ *
+ * Use this when you need to specify the service type and want TypeScript
+ * to infer the port name as a literal type from the config.
+ *
+ * @example
+ * ```typescript
+ * interface Logger {
+ *   log(message: string): void;
+ * }
+ *
+ * // Name "Logger" is inferred as literal type
+ * const LoggerPort = port<Logger>()({ name: "Logger" });
+ * // Type: DirectedPort<Logger, "Logger", "outbound">
+ *
+ * // With direction
+ * const RequestPort = port<Request>()({ name: "Request", direction: "inbound" });
+ * // Type: DirectedPort<Request, "Request", "inbound">
+ * ```
+ *
+ * @typeParam TService - The service interface type
+ * @returns A function that accepts a config and returns a DirectedPort
+ */
+export function port<TService>(): <const TConfig extends PortConfig>(
+  config: TConfig
+) => DirectedPort<
+  TService,
+  TConfig["name"],
+  TConfig extends { direction: infer D extends PortDirection } ? D : "outbound"
+> {
+  return <const TConfig extends PortConfig>(config: TConfig) => {
+    return createPort(config) as DirectedPort<
+      TService,
+      TConfig["name"],
+      TConfig extends { direction: infer D extends PortDirection } ? D : "outbound"
+    >;
+  };
+}

@@ -12,6 +12,7 @@
 import { describe, it, expect, expectTypeOf } from "vitest";
 import {
   createPort,
+  port,
   isDirectedPort,
   isInboundPort,
   isOutboundPort,
@@ -783,5 +784,68 @@ describe("Unified createPort() with object config", () => {
       expect(isDirectedPort(LoggerPort)).toBe(true);
       expect(getPortDirection(LoggerPort)).toBe("outbound");
     });
+  });
+});
+
+// =============================================================================
+// port() Builder - Service-typed ports with full name inference
+// =============================================================================
+
+describe("port() builder for service-typed ports", () => {
+  it("infers literal name when service type is provided", () => {
+    const LoggerPort = port<Logger>()({ name: "Logger" });
+
+    // TName should be "Logger" (literal), not string
+    expectTypeOf(LoggerPort.__portName).toEqualTypeOf<"Logger">();
+    expect(LoggerPort.__portName).toBe("Logger");
+  });
+
+  it("preserves service type", () => {
+    const LoggerPort = port<Logger>()({ name: "Logger" });
+
+    expectTypeOf<InferService<typeof LoggerPort>>().toEqualTypeOf<Logger>();
+  });
+
+  it("defaults direction to outbound", () => {
+    const LoggerPort = port<Logger>()({ name: "Logger" });
+
+    expectTypeOf<InferPortDirection<typeof LoggerPort>>().toEqualTypeOf<"outbound">();
+    expect(getPortDirection(LoggerPort)).toBe("outbound");
+  });
+
+  it("infers literal direction when provided", () => {
+    const RequestPort = port<UserService>()({ name: "Request", direction: "inbound" });
+
+    expectTypeOf<InferPortDirection<typeof RequestPort>>().toEqualTypeOf<"inbound">();
+    expect(getPortDirection(RequestPort)).toBe("inbound");
+  });
+
+  it("supports metadata", () => {
+    const LoggerPort = port<Logger>()({
+      name: "Logger",
+      description: "Application logging",
+      category: "infrastructure",
+      tags: ["logging"],
+    });
+
+    const metadata = getPortMetadata(LoggerPort);
+    expect(metadata?.description).toBe("Application logging");
+    expect(metadata?.category).toBe("infrastructure");
+    expect(metadata?.tags).toEqual(["logging"]);
+  });
+
+  it("returns DirectedPort with correct type parameters", () => {
+    const LoggerPort = port<Logger>()({ name: "Logger" });
+
+    // Full type check
+    expectTypeOf(LoggerPort).toEqualTypeOf<DirectedPort<Logger, "Logger", "outbound">>();
+  });
+
+  it("allows different port names with same service", () => {
+    const ConsoleLogger = port<Logger>()({ name: "ConsoleLogger" });
+    const FileLogger = port<Logger>()({ name: "FileLogger" });
+
+    expectTypeOf(ConsoleLogger.__portName).toEqualTypeOf<"ConsoleLogger">();
+    expectTypeOf(FileLogger.__portName).toEqualTypeOf<"FileLogger">();
   });
 });
