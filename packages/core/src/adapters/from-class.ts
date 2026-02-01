@@ -51,6 +51,14 @@ function extractServicesInOrder(
 }
 
 /**
+ * Runtime representation of a class factory that doesn't carry phantom TService.
+ * @internal
+ */
+interface ClassFactoryRuntime {
+  (deps: Record<string, unknown>): unknown;
+}
+
+/**
  * Creates a factory function that instantiates a class with constructor injection.
  *
  * ## SAFETY DOCUMENTATION
@@ -65,6 +73,14 @@ function extractServicesInOrder(
  * the IMPLEMENTATION works with `unknown` types internally. This is the same
  * pattern used in `ports/factory.ts` for `unsafeCreatePort`.
  *
+ * ## Why This Is Safe
+ *
+ * The TService type parameter is a phantom type - it only exists at compile time.
+ * At runtime, the factory just calls `new classConstructor(...args)` and returns
+ * whatever the constructor returns. The user is responsible for ensuring that:
+ * 1. The class constructor returns something assignable to TService
+ * 2. The ports in requires match the constructor parameter order
+ *
  * @internal
  */
 function createClassFactory<TService, TRequires extends readonly Port<unknown, string>[]>(
@@ -74,7 +90,7 @@ function createClassFactory<TService, TRequires extends readonly Port<unknown, s
 function createClassFactory(
   classConstructor: new (...args: readonly unknown[]) => unknown,
   requires: readonly Port<unknown, string>[]
-): (deps: Record<string, unknown>) => unknown {
+): ClassFactoryRuntime {
   return (deps: Record<string, unknown>): unknown => {
     const args = extractServicesInOrder(deps, requires);
     return new classConstructor(...args);
@@ -288,6 +304,16 @@ export class ClassAdapterBuilder<TInstance> {
   /**
    * Names the service and optionally narrows the interface type.
    *
+   * This method uses the curried overload pattern to enable type narrowing:
+   * - Without type param: TService defaults to TInstance (the class type)
+   * - With type param: TService can be any interface that TInstance implements
+   *
+   * ## Safety
+   *
+   * It's the user's responsibility to ensure that if they specify TService,
+   * the class actually implements that interface. TypeScript enforces this
+   * at the call site through the `TService extends TInstance` constraint.
+   *
    * @typeParam TService - The service interface type (defaults to TInstance)
    * @typeParam TName - The literal string port name
    * @param name - The unique name for this service
@@ -306,15 +332,16 @@ export class ClassAdapterBuilder<TInstance> {
    * fromClass(ConsoleLogger).as<Logger>('Logger')
    * ```
    */
-  as<TService extends TInstance = TInstance, const TName extends string = string>(
+  as<TService extends TInstance, const TName extends string>(
     name: TName
-  ): ClassServiceBuilder<TService, TName, EmptyRequires, Singleton> {
-    return new ClassServiceBuilder<TService, TName, EmptyRequires, Singleton>(
-      name,
-      this._classConstructor,
-      EMPTY_REQUIRES,
-      SINGLETON
-    );
+  ): ClassServiceBuilder<TService, TName, EmptyRequires, Singleton>;
+  as<const TName extends string>(
+    name: TName
+  ): ClassServiceBuilder<TInstance, TName, EmptyRequires, Singleton>;
+  as<const TName extends string>(
+    name: TName
+  ): ClassServiceBuilder<unknown, TName, EmptyRequires, Singleton> {
+    return new ClassServiceBuilder(name, this._classConstructor, EMPTY_REQUIRES, SINGLETON);
   }
 }
 

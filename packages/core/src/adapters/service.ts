@@ -251,7 +251,7 @@ export function defineService<const TName extends string, TService>(
   config?: {
     requires?: readonly Port<unknown, string>[];
     lifetime?: Lifetime;
-    factory: (deps: Record<string, unknown>) => TService;
+    factory?: (deps: Record<string, unknown>) => TService;
     clonable?: boolean;
     finalizer?: (instance: TService) => void | Promise<void>;
   }
@@ -263,20 +263,21 @@ export function defineService<const TName extends string, TService>(
 
   // Config-based overloads: defineService(name, config) returns [Port, Adapter]
   // Config is guaranteed by the overload signatures when name is provided
-  if (config === undefined) {
-    throw new Error("defineService requires config when name is provided");
+  if (config === undefined || config.factory === undefined) {
+    throw new Error("defineService requires config with factory when name is provided");
   }
 
   const port = createPort<TName, TService>(name);
 
   const requires = config.requires ?? EMPTY_REQUIRES;
   const lifetime = config.lifetime ?? SINGLETON;
+  const factory = config.factory;
 
   const baseConfig = {
     provides: port,
     requires,
     lifetime,
-    factory: config.factory,
+    factory,
   };
 
   if (config.clonable !== undefined) {
