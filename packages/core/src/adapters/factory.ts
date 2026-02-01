@@ -22,7 +22,7 @@ import type { Sync, Async, Singleton, False } from "./constants.js";
  * Valid lifetime values for runtime validation.
  * @internal
  */
-const VALID_LIFETIMES = new Set(["singleton", "scoped", "transient"]);
+const VALID_LIFETIMES = new Set(["singleton", "scoped", "transient", "request"]);
 
 // =============================================================================
 // Type Guards for Port Validation
@@ -118,13 +118,13 @@ function assertValidAdapterConfig(
       throw new TypeError(
         "ERROR[HEX014]: Invalid adapter config: 'lifetime' must be a string. " +
           `Got: ${typeof config.lifetime}. ` +
-          'Valid values: "singleton", "scoped", "transient".'
+          'Valid values: "singleton", "scoped", "transient", "request".'
       );
     }
 
     if (!VALID_LIFETIMES.has(config.lifetime)) {
       throw new TypeError(
-        `ERROR[HEX015]: Invalid adapter config: 'lifetime' must be "singleton", "scoped", or "transient". ` +
+        `ERROR[HEX015]: Invalid adapter config: 'lifetime' must be "singleton", "scoped", "transient", or "request". ` +
           `Got: "${config.lifetime}".`
       );
     }
