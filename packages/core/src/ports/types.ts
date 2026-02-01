@@ -197,3 +197,223 @@ export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPo
  * ```
  */
 export type InferPortName<P> = P extends Port<infer _T, infer TName> ? TName : NotAPortError<P>;
+
+// =============================================================================
+// Directed Port Brand Symbols
+// =============================================================================
+
+/**
+ * Unique symbol used for type-level direction branding.
+ *
+ * This symbol enables compile-time discrimination between inbound and outbound
+ * ports while having no runtime presence. Part of the phantom type pattern.
+ *
+ * @internal
+ */
+declare const __directionBrand: unique symbol;
+
+/**
+ * Unique symbol used for type-level metadata association.
+ *
+ * Associates PortMetadata with a port at the type level for IDE extraction.
+ *
+ * @internal
+ */
+declare const __metadataKey: unique symbol;
+
+// =============================================================================
+// Port Direction and Metadata
+// =============================================================================
+
+/**
+ * Discriminator for hexagonal architecture port types.
+ *
+ * - `'inbound'` - Driving ports (use cases, primary adapters)
+ * - `'outbound'` - Driven ports (infrastructure, secondary adapters)
+ *
+ * @see {@link DirectedPort} - The port type that carries direction
+ * @see {@link createInboundPort} - Factory for inbound ports
+ * @see {@link createOutboundPort} - Factory for outbound ports
+ */
+export type PortDirection = "inbound" | "outbound";
+
+/**
+ * Optional metadata for documenting ports.
+ *
+ * Metadata provides human-readable documentation that can be used for:
+ * - IDE tooltips and documentation
+ * - Dependency graph visualization
+ * - API documentation generation
+ *
+ * All properties are optional and readonly.
+ *
+ * @example
+ * ```typescript
+ * const UserServicePort = createInboundPort<'UserService', UserService>({
+ *   name: 'UserService',
+ *   description: 'Handles user CRUD operations',
+ *   category: 'domain',
+ *   tags: ['user', 'crud', 'core'],
+ * });
+ * ```
+ */
+export interface PortMetadata {
+  /** Human-readable description of the port's purpose */
+  readonly description?: string;
+  /** Categorical grouping for organization */
+  readonly category?: string;
+  /** Searchable tags for filtering and discovery */
+  readonly tags?: readonly string[];
+}
+
+// =============================================================================
+// DirectedPort Type
+// =============================================================================
+
+/**
+ * A port with hexagonal architecture direction and optional metadata.
+ *
+ * DirectedPort extends the base Port type with additional type-level branding:
+ * - `TDirection` - Whether this is an inbound (driving) or outbound (driven) port
+ * - Metadata association for documentation purposes
+ *
+ * DirectedPorts are structurally compatible with base Ports, enabling gradual
+ * adoption without breaking existing code.
+ *
+ * @typeParam TService - The service interface type (phantom type)
+ * @typeParam TName - The literal string type for the port name
+ * @typeParam TDirection - 'inbound' or 'outbound'
+ *
+ * @see {@link InboundPort} - Convenience alias for inbound directed ports
+ * @see {@link OutboundPort} - Convenience alias for outbound directed ports
+ * @see {@link createInboundPort} - Factory for creating inbound ports
+ * @see {@link createOutboundPort} - Factory for creating outbound ports
+ *
+ * @example
+ * ```typescript
+ * // DirectedPort is assignable to Port (backward compatible)
+ * const port: DirectedPort<Logger, 'Logger', 'inbound'> = createInboundPort({
+ *   name: 'Logger',
+ * });
+ * const basePort: Port<Logger, 'Logger'> = port; // OK
+ * ```
+ */
+export type DirectedPort<TService, TName extends string, TDirection extends PortDirection> = Port<
+  TService,
+  TName
+> & {
+  readonly [__directionBrand]: TDirection;
+  readonly [__metadataKey]: PortMetadata;
+};
+
+// =============================================================================
+// Convenience Aliases
+// =============================================================================
+
+/**
+ * An inbound (driving) port for use case interfaces.
+ *
+ * Inbound ports define the application's primary API - what the outside world
+ * can ask the application to do. They're implemented by use case handlers.
+ *
+ * @typeParam TService - The service interface type
+ * @typeParam TName - The literal string type for the port name
+ *
+ * @example
+ * ```typescript
+ * interface UserService {
+ *   createUser(data: UserData): Promise<User>;
+ *   getUser(id: string): Promise<User>;
+ * }
+ *
+ * const UserServicePort = createInboundPort<'UserService', UserService>({
+ *   name: 'UserService',
+ *   description: 'User management use cases',
+ *   category: 'domain',
+ * });
+ * ```
+ */
+export type InboundPort<TService, TName extends string> = DirectedPort<TService, TName, "inbound">;
+
+/**
+ * An outbound (driven) port for infrastructure interfaces.
+ *
+ * Outbound ports define what the application needs from external systems.
+ * They're implemented by infrastructure adapters (databases, APIs, etc.).
+ *
+ * @typeParam TService - The service interface type
+ * @typeParam TName - The literal string type for the port name
+ *
+ * @example
+ * ```typescript
+ * interface UserRepository {
+ *   save(user: User): Promise<void>;
+ *   findById(id: string): Promise<User | null>;
+ * }
+ *
+ * const UserRepositoryPort = createOutboundPort<'UserRepository', UserRepository>({
+ *   name: 'UserRepository',
+ *   description: 'User persistence operations',
+ *   category: 'infrastructure',
+ * });
+ * ```
+ */
+export type OutboundPort<TService, TName extends string> = DirectedPort<
+  TService,
+  TName,
+  "outbound"
+>;
+
+// =============================================================================
+// Type Predicates for DirectedPort
+// =============================================================================
+
+/**
+ * Checks if a type is a DirectedPort.
+ *
+ * @typeParam TPort - The type to check
+ * @returns `true` if TPort is a DirectedPort, `false` otherwise
+ *
+ * @example
+ * ```typescript
+ * type A = IsDirectedPort<InboundPort<Logger, 'Logger'>>; // true
+ * type B = IsDirectedPort<Port<Logger, 'Logger'>>;        // false
+ * ```
+ */
+export type IsDirectedPort<TPort> = TPort extends {
+  readonly [__directionBrand]: PortDirection;
+}
+  ? true
+  : false;
+
+/**
+ * Extracts the direction from a DirectedPort.
+ *
+ * @typeParam P - A DirectedPort type
+ * @returns The direction literal ('inbound' or 'outbound'), or `never` if not a DirectedPort
+ *
+ * @example
+ * ```typescript
+ * type Dir = InferPortDirection<InboundPort<Logger, 'Logger'>>;
+ * // Dir = 'inbound'
+ * ```
+ */
+export type InferPortDirection<P> = P extends {
+  readonly [__directionBrand]: infer D;
+}
+  ? D
+  : never;
+
+/**
+ * Extracts the metadata type from a DirectedPort.
+ *
+ * @typeParam P - A DirectedPort type
+ * @returns The PortMetadata type, or `never` if not a DirectedPort
+ *
+ * @example
+ * ```typescript
+ * type Meta = InferPortMetadata<InboundPort<Logger, 'Logger'>>;
+ * // Meta = PortMetadata
+ * ```
+ */
+export type InferPortMetadata<P> = P extends { readonly [__metadataKey]: infer M } ? M : never;
