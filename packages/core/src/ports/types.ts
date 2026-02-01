@@ -417,3 +417,62 @@ export type InferPortDirection<P> = P extends {
  * ```
  */
 export type InferPortMetadata<P> = P extends { readonly [__metadataKey]: infer M } ? M : never;
+
+// =============================================================================
+// createPort() Configuration Types
+// =============================================================================
+
+/**
+ * Suggested category values for port organization with IDE autocomplete.
+ *
+ * Uses the `(string & {})` escape hatch pattern to preserve autocomplete
+ * for suggested values while accepting any string value.
+ *
+ * @example
+ * ```typescript
+ * // IDE suggests: 'persistence', 'messaging', etc.
+ * const category: SuggestedCategory = 'persistence';
+ *
+ * // But any string works
+ * const custom: SuggestedCategory = 'my-custom-category';
+ * ```
+ */
+export type SuggestedCategory =
+  | "persistence"
+  | "messaging"
+  | "external-api"
+  | "logging"
+  | "configuration"
+  | "domain"
+  | "infrastructure"
+  | (string & {}); // Escape hatch - any string works with autocomplete
+
+/**
+ * Configuration object for creating a port with `createPort()`.
+ *
+ * @typeParam TName - The literal string type for the port name
+ * @typeParam TDirection - The direction ('inbound' or 'outbound')
+ *
+ * @example
+ * ```typescript
+ * const config: CreatePortConfig<'Logger', 'outbound'> = {
+ *   name: 'Logger',
+ *   direction: 'outbound',
+ *   description: 'Application logging',
+ *   category: 'infrastructure',
+ *   tags: ['logging', 'core'],
+ * };
+ * ```
+ */
+export interface CreatePortConfig<TName extends string, TDirection extends PortDirection> {
+  /** The unique name for this port */
+  readonly name: TName;
+  /** The direction: 'inbound' (driving) or 'outbound' (driven). Defaults to 'outbound'. */
+  readonly direction?: TDirection;
+  /** Human-readable description of the port's purpose */
+  readonly description?: string;
+  /** Categorical grouping for organization */
+  readonly category?: SuggestedCategory;
+  /** Searchable tags for filtering and discovery */
+  readonly tags?: readonly string[];
+}
