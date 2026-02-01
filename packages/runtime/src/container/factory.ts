@@ -274,6 +274,8 @@ function createUninitializedContainerWrapper<
     },
     createScope: (scopeName?: string) =>
       createRootScope<TProvides, TAsyncPorts, "uninitialized">(impl, scopeName),
+    createRequestScope: (scopeName?: string) =>
+      createRootRequestScope<TProvides, TAsyncPorts, "uninitialized">(impl, scopeName),
     createChild: <
       TChildGraph extends Graph<
         Port<unknown, string>,
@@ -444,6 +446,8 @@ function createInitializedContainerWrapper<
     },
     createScope: (name?: string) =>
       createRootScope<TProvides, TAsyncPorts, "initialized">(impl, name),
+    createRequestScope: (name?: string) =>
+      createRootRequestScope<TProvides, TAsyncPorts, "initialized">(impl, name),
     createChild: <
       TChildGraph extends Graph<
         Port<unknown, string>,
@@ -565,6 +569,7 @@ function createInitializedContainerWrapper<
 
 // Helper to avoid circular dependency issues if possible, or just import ScopeImpl
 import { ScopeImpl, createScopeWrapper } from "../scope/impl.js";
+import { RequestScopeImpl, createRequestScopeWrapper } from "../scope/request-scope.js";
 
 function createRootScope<
   TProvides extends Port<unknown, string>,
@@ -584,6 +589,38 @@ function createRootScope<
   containerImpl.registerChildScope(scopeImpl);
 
   return createScopeWrapper(scopeImpl);
+}
+
+/**
+ * Creates a request scope from a root container.
+ *
+ * Request scopes provide HTTP request isolation where services with 'request'
+ * lifetime are created once per request and cached within that request.
+ *
+ * @param containerImpl - The root container implementation
+ * @param name - Optional name for the request scope
+ * @returns A new request Scope instance
+ *
+ * @internal
+ */
+function createRootRequestScope<
+  TProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string>,
+  TPhase extends "uninitialized" | "initialized",
+>(
+  containerImpl: RootContainerImpl<TProvides, TAsyncPorts>,
+  name?: string
+): Scope<TProvides, TAsyncPorts, TPhase> {
+  const requestScopeImpl = new RequestScopeImpl<TProvides, TAsyncPorts, TPhase>(
+    containerImpl,
+    containerImpl.getSingletonMemo(),
+    null, // parentScope
+    () => containerImpl.unregisterChildScope(requestScopeImpl), // unregister callback for disposal
+    name
+  );
+  containerImpl.registerChildScope(requestScopeImpl);
+
+  return createRequestScopeWrapper(requestScopeImpl);
 }
 
 // =============================================================================

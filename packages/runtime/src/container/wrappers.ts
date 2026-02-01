@@ -22,6 +22,7 @@ import type { ResolutionHooks, HooksInstaller } from "../resolution/hooks.js";
 import { unreachable } from "../util/unreachable.js";
 import { isRecord } from "../util/type-guards.js";
 import { ScopeImpl, createScopeWrapper } from "../scope/impl.js";
+import { RequestScopeImpl, createRequestScopeWrapper } from "../scope/request-scope.js";
 import { ChildContainerImpl, type RuntimeAdapter, type ChildContainerConfig } from "./impl.js";
 import { isInheritanceMode } from "./helpers.js";
 import { LazyContainerImpl, type LazyContainerParent } from "./lazy-impl.js";
@@ -238,6 +239,7 @@ export function createChildContainerWrapper<
     has: (port: Port<unknown, string>): boolean => impl.has(port),
     hasAdapter: (port: Port<unknown, string>): boolean => impl.hasAdapter(port),
     createScope: (name?: string) => createChildContainerScope(impl, name),
+    createRequestScope: (name?: string) => createChildContainerRequestScope(impl, name),
     createChild: <
       TChildGraph extends Graph<
         Port<unknown, string>,
@@ -397,6 +399,36 @@ export function createChildContainerScope<
   );
   impl.registerChildScope(scopeImpl);
   return createScopeWrapper(scopeImpl);
+}
+
+/**
+ * Creates a request scope from a child container implementation.
+ *
+ * Request scopes provide HTTP request isolation where services with 'request'
+ * lifetime are created once per request and cached within that request.
+ *
+ * @param impl - The child container implementation
+ * @param name - Optional name for the request scope
+ * @returns A new request Scope instance
+ * @internal
+ */
+export function createChildContainerRequestScope<
+  TProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string>,
+>(
+  impl: ChildContainerImpl<TProvides, TExtends, TAsyncPorts>,
+  name?: string
+): Scope<TProvides | TExtends, TAsyncPorts, "initialized"> {
+  const requestScopeImpl = new RequestScopeImpl<TProvides | TExtends, TAsyncPorts, "initialized">(
+    impl,
+    impl.getSingletonMemo(),
+    null, // parentScope
+    () => impl.unregisterChildScope(requestScopeImpl), // unregister callback for disposal
+    name // scope name
+  );
+  impl.registerChildScope(requestScopeImpl);
+  return createRequestScopeWrapper(requestScopeImpl);
 }
 
 // =============================================================================

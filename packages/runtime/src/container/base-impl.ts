@@ -8,7 +8,7 @@
 import type { Port, InferService } from "@hex-di/core";
 import { MemoMap } from "../util/memo-map.js";
 import { ResolutionContext } from "../resolution/context.js";
-import { ScopeImpl } from "../scope/impl.js";
+import type { ScopeImpl } from "../scope/impl.js";
 import {
   DisposedScopeError,
   ScopeRequiredError,
@@ -324,15 +324,11 @@ export abstract class BaseContainerImpl<
   // Scope Management
   // ===========================================================================
 
-  registerChildScope(
-    scope: ScopeImpl<TProvides | TExtends, TAsyncPorts, "uninitialized" | "initialized">
-  ): void {
+  registerChildScope(scope: DisposableChild): void {
     this.lifecycleManager.registerChildScope(scope);
   }
 
-  unregisterChildScope(
-    scope: ScopeImpl<TProvides | TExtends, TAsyncPorts, "uninitialized" | "initialized">
-  ): void {
+  unregisterChildScope(scope: DisposableChild): void {
     this.lifecycleManager.unregisterChildScope(scope);
   }
 

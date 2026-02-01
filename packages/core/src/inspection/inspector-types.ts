@@ -47,9 +47,9 @@ export interface AdapterInfo {
   /** Port name (service identifier) */
   readonly portName: string;
   /** Service lifetime */
-  readonly lifetime: "singleton" | "scoped" | "transient";
+  readonly lifetime: Lifetime;
   /** Factory type (sync or async) */
-  readonly factoryKind: "sync" | "async";
+  readonly factoryKind: FactoryKind;
   /** Names of ports this service depends on */
   readonly dependencyNames: readonly string[];
 }

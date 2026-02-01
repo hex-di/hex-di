@@ -33,15 +33,15 @@ import {
 /**
  * Generates a unique request ID.
  *
- * Uses crypto.randomUUID if available, otherwise falls back to
- * timestamp-based ID generation.
+ * Uses timestamp and random values for uniqueness. This approach is simple
+ * and works across all JavaScript environments without relying on
+ * crypto APIs that may not be available.
  *
  * @internal
  */
 function generateRequestId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
+  // Simple but effective ID generation using timestamp and random
+  // Format: req-{timestamp}-{random} gives ~36^9 combinations per millisecond
   return `req-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
