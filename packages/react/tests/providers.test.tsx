@@ -175,6 +175,8 @@ function createMockContainer(): TestContainer {
     kind: "root",
     inspector: mockInspector,
     tracer: mockTracer,
+    withOverrides: vi.fn().mockImplementation((_overrides, fn) => fn()),
+    createRequestScope: vi.fn().mockReturnValue(mockScope),
     get parent(): never {
       throw new Error("Root containers do not have a parent");
     },
