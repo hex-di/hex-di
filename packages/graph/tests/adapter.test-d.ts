@@ -40,19 +40,17 @@ expect(ConfigPort).toBeDefined();
 // =============================================================================
 
 describe("Lifetime type", () => {
-  it("is a union of singleton, scoped, request, and transient literals", () => {
-    expectTypeOf<Lifetime>().toEqualTypeOf<"singleton" | "scoped" | "request" | "transient">();
+  it("is a union of singleton, scoped, and transient literals", () => {
+    expectTypeOf<Lifetime>().toEqualTypeOf<"singleton" | "scoped" | "transient">();
   });
 
   it("accepts valid lifetime values", () => {
     const singleton: Lifetime = "singleton";
     const scoped: Lifetime = "scoped";
-    const request: Lifetime = "request";
     const transient: Lifetime = "transient";
 
     expectTypeOf(singleton).toMatchTypeOf<Lifetime>();
     expectTypeOf(scoped).toMatchTypeOf<Lifetime>();
-    expectTypeOf(request).toMatchTypeOf<Lifetime>();
     expectTypeOf(transient).toMatchTypeOf<Lifetime>();
   });
 
