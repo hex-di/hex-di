@@ -22,6 +22,27 @@
 export { createPort, port } from "./ports/factory.js";
 export type { Port, InferService, InferPortName, NotAPortError } from "./ports/types.js";
 
+// Directed ports
+export {
+  createInboundPort,
+  createOutboundPort,
+  isDirectedPort,
+  isInboundPort,
+  isOutboundPort,
+  getPortDirection,
+  getPortMetadata,
+} from "./ports/directed.js";
+export type {
+  PortDirection,
+  PortMetadata,
+  DirectedPort,
+  InboundPort,
+  OutboundPort,
+  IsDirectedPort,
+  InferPortDirection,
+  InferPortMetadata,
+} from "./ports/types.js";
+
 // =============================================================================
 // Adapters
 // =============================================================================
