@@ -13,7 +13,7 @@ Fix 3 critical bugs in the graph builder type-state machine: forward reference v
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Build Validation** - Add defense-in-depth runtime captive detection
+- [x] **Phase 1: Build Validation** - Add defense-in-depth runtime captive detection
 - [ ] **Phase 2: Merge Type Fixes** - Preserve parentProvides and UnsafeDepthOverride during merges
 
 ## Phase Details
@@ -37,7 +37,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 
-- [ ] 01-01-PLAN.md — Verify BUILD-01 implementation and mark phase complete
+- [x] 01-01-PLAN.md — Verification of BUILD-01
 
 ### Phase 2: Merge Type Fixes
 
@@ -65,7 +65,7 @@ Plans:
 **Execution Order:**
 Phases execute in numeric order: 1 → 2
 
-| Phase               | Plans Complete | Status      | Completed |
-| ------------------- | -------------- | ----------- | --------- |
-| 1. Build Validation | 0/1            | Not started | -         |
-| 2. Merge Type Fixes | 0/TBD          | Not started | -         |
+| Phase               | Plans Complete | Status      | Completed  |
+| ------------------- | -------------- | ----------- | ---------- |
+| 1. Build Validation | 1/1            | Complete    | 2026-02-01 |
+| 2. Merge Type Fixes | 0/TBD          | Not started | -          |

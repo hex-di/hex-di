@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-01)
 
 **Core value:** Catch dependency graph errors at compile time, not runtime
-**Current focus:** Phase 1 - Build Validation
+**Current focus:** Phase 2 - Merge Type Fixes
 
 ## Current Position
 
-Phase: 1 of 2 (Build Validation)
+Phase: 2 of 2 (Merge Type Fixes)
 Plan: Not planned yet
 Status: Ready to plan
-Last activity: 2026-02-01 — Roadmap created
+Last activity: 2026-02-01 — Phase 1 verified complete
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
@@ -43,7 +43,7 @@ _Updated after each plan completion_
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- None yet this milestone
+- BUILD-01 verified complete — Runtime captive detection working as defense-in-depth
 
 ### Pending Todos
 
@@ -56,10 +56,10 @@ None identified.
 ## Session Continuity
 
 Last session: 2026-02-01
-Stopped at: Roadmap created, ready for phase planning
+Stopped at: Phase 1 verified complete, ready for Phase 2 planning
 Resume file: None
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-01 after roadmap creation_
+_Last updated: 2026-02-01 after Phase 1 completion_
