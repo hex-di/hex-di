@@ -79,7 +79,7 @@ describe("Public API exports", () => {
       // Verify Lifetime type works correctly
       const lifetime: Lifetime = "singleton";
       expectTypeOf(lifetime).toMatchTypeOf<Lifetime>();
-      expectTypeOf<Lifetime>().toEqualTypeOf<"singleton" | "scoped" | "transient">();
+      expectTypeOf<Lifetime>().toEqualTypeOf<"singleton" | "scoped" | "request" | "transient">();
 
       // Verify Graph type works correctly
       const graph = GraphBuilder.create().provide(adapter).build();

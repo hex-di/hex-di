@@ -12,7 +12,12 @@
  * Lifetime hierarchy (lower level = longer lived):
  * - Singleton (1): lives for entire application lifetime
  * - Scoped (2): lives for duration of a scope
+ * - Request (2): lives for duration of an HTTP request (same level as scoped)
  * - Transient (3): created fresh for each resolution
+ *
+ * Note: Scoped and Request share the same level because they represent
+ * equivalent lifetime semantics - both are bounded to a context that
+ * eventually ends.
  *
  * Rule: An adapter can only depend on adapters with the same or LOWER
  * (longer-lived) lifetime level. Depending on HIGHER (shorter-lived)

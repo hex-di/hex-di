@@ -27,10 +27,14 @@ export interface CaptiveDependencyResult {
 /**
  * Lifetime levels for comparison.
  * Lower number = longer-lived, higher number = shorter-lived.
+ *
+ * Note: Request has the same level as scoped (level 2) because both
+ * represent bounded contexts with similar duration semantics.
  */
 const LIFETIME_LEVELS: Record<Lifetime, number> = {
   singleton: 1,
   scoped: 2,
+  request: 2,
   transient: 3,
 };
 
