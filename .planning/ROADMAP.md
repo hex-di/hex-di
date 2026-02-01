@@ -54,11 +54,11 @@ Plans:
 3. `UnsafeDepthOverride` flag preserved using OR semantics (flag present if either input has it)
 4. Existing test files pass: `merge-parent-provides.test-d.ts` and `merge-unsafe-override-preservation.test-d.ts`
 
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
 
-- [ ] 02-01: TBD during plan-phase
+- [ ] 02-01-PLAN.md — Verification of MERGE-01 and MERGE-02
 
 ## Progress
 
@@ -68,4 +68,4 @@ Phases execute in numeric order: 1 → 2
 | Phase               | Plans Complete | Status      | Completed  |
 | ------------------- | -------------- | ----------- | ---------- |
 | 1. Build Validation | 1/1            | Complete    | 2026-02-01 |
-| 2. Merge Type Fixes | 0/TBD          | Not started | -          |
+| 2. Merge Type Fixes | 0/1            | Not started | -          |
