@@ -603,3 +603,135 @@ describe("integration with adapters", () => {
     expect(adapter.requires.length).toBe(2);
   });
 });
+
+// =============================================================================
+// Unified createPort() API Tests
+// =============================================================================
+
+describe("Unified createPort() with object config", () => {
+  describe("Direction defaults to outbound", () => {
+    it("returns outbound direction when not specified", () => {
+      const LoggerPort = createPort<Logger>({ name: "Logger" });
+
+      expect(getPortDirection(LoggerPort)).toBe("outbound");
+    });
+
+    it("infers outbound literal type when not specified", () => {
+      const LoggerPort = createPort<Logger>({ name: "Logger" });
+
+      expectTypeOf<InferPortDirection<typeof LoggerPort>>().toEqualTypeOf<"outbound">();
+    });
+
+    it("preserves inbound literal type when specified", () => {
+      const ServicePort = createPort<UserService>({
+        name: "UserService",
+        direction: "inbound",
+      });
+
+      expect(getPortDirection(ServicePort)).toBe("inbound");
+      expectTypeOf<InferPortDirection<typeof ServicePort>>().toEqualTypeOf<"inbound">();
+    });
+
+    it("preserves outbound literal type when explicitly specified", () => {
+      const RepoPort = createPort<UserRepository>({
+        name: "UserRepository",
+        direction: "outbound",
+      });
+
+      expect(getPortDirection(RepoPort)).toBe("outbound");
+      expectTypeOf<InferPortDirection<typeof RepoPort>>().toEqualTypeOf<"outbound">();
+    });
+  });
+
+  describe("Name literal type preserved", () => {
+    it("infers name as literal type", () => {
+      const LoggerPort = createPort<Logger>({ name: "Logger" });
+
+      expect(LoggerPort.__portName).toBe("Logger");
+      expectTypeOf(LoggerPort.__portName).toEqualTypeOf<"Logger">();
+    });
+
+    it("works with InferPortName", () => {
+      const LoggerPort = createPort<Logger>({ name: "MyLogger" });
+
+      expectTypeOf<InferPortName<typeof LoggerPort>>().toEqualTypeOf<"MyLogger">();
+    });
+  });
+
+  describe("Metadata handling", () => {
+    it("returns empty array for tags when not specified", () => {
+      const LoggerPort = createPort<Logger>({ name: "Logger" });
+      const metadata = getPortMetadata(LoggerPort);
+
+      expect(metadata).toBeDefined();
+      expect(metadata?.tags).toEqual([]);
+    });
+
+    it("returns undefined for description when not specified", () => {
+      const LoggerPort = createPort<Logger>({ name: "Logger" });
+      const metadata = getPortMetadata(LoggerPort);
+
+      expect(metadata?.description).toBeUndefined();
+    });
+
+    it("returns undefined for category when not specified", () => {
+      const LoggerPort = createPort<Logger>({ name: "Logger" });
+      const metadata = getPortMetadata(LoggerPort);
+
+      expect(metadata?.category).toBeUndefined();
+    });
+
+    it("preserves full metadata when provided", () => {
+      const LoggerPort = createPort<Logger>({
+        name: "Logger",
+        description: "Application logging",
+        category: "infrastructure",
+        tags: ["logging", "core"],
+      });
+
+      const metadata = getPortMetadata(LoggerPort);
+      expect(metadata?.description).toBe("Application logging");
+      expect(metadata?.category).toBe("infrastructure");
+      expect(metadata?.tags).toEqual(["logging", "core"]);
+    });
+  });
+
+  describe("Type compatibility", () => {
+    it("is assignable to DirectedPort", () => {
+      const LoggerPort = createPort<Logger>({ name: "Logger" });
+
+      expectTypeOf(LoggerPort).toMatchTypeOf<DirectedPort<Logger, "Logger", "outbound">>();
+    });
+
+    it("is assignable to base Port", () => {
+      const LoggerPort = createPort<Logger>({ name: "Logger" });
+
+      // DirectedPort extends Port, so this should work
+      expectTypeOf(LoggerPort).toMatchTypeOf<Port<Logger, "Logger">>();
+    });
+
+    it("works with InferService", () => {
+      const LoggerPort = createPort<Logger>({ name: "Logger" });
+
+      expectTypeOf<InferService<typeof LoggerPort>>().toEqualTypeOf<Logger>();
+    });
+  });
+
+  describe("Legacy string API still works", () => {
+    it("creates port with string argument", () => {
+      // This uses the deprecated string-based API
+      const LoggerPort = createPort<"Logger", Logger>("Logger");
+
+      expect(LoggerPort.__portName).toBe("Logger");
+      expectTypeOf(LoggerPort.__portName).toEqualTypeOf<"Logger">();
+    });
+
+    it("is a regular Port (not DirectedPort)", () => {
+      const LoggerPort = createPort<"Logger", Logger>("Logger");
+
+      // String-based API returns plain Port, not DirectedPort
+      expect(isDirectedPort(LoggerPort)).toBe(false);
+      expect(getPortDirection(LoggerPort)).toBeUndefined();
+    });
+  });
+});

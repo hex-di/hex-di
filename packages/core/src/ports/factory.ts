@@ -1,15 +1,18 @@
 /**
  * Port Factory Module
  *
- * Provides factory functions for creating typed port tokens.
+ * Provides factory functions for creating typed port tokens with direction
+ * and metadata support.
  *
  * @packageDocumentation
  */
 
-import type { Port } from "./types.js";
+import type { Port, PortDirection, PortMetadata, DirectedPort, CreatePortConfig } from "./types.js";
+import { DIRECTION_BRAND, METADATA_KEY, createDirectedPortImpl } from "./directed.js";
+import type { DirectedPortRuntime } from "./directed.js";
 
 // =============================================================================
-// Internal Port Creation Helper
+// Internal Port Creation Helper (for legacy API)
 // =============================================================================
 
 /**
@@ -27,37 +30,8 @@ interface PortRuntime<TName extends string> {
 /**
  * Creates a Port value with phantom type parameters.
  *
- * ## SAFETY DOCUMENTATION
- *
- * The Port type has a branded property `[__brand]: [T, TName]` that exists ONLY
- * at the type level for nominal typing. At runtime, only `__portName` exists.
- *
- * This is safe because:
- * 1. **Brand is never accessed**: The `__brand` symbol is used exclusively for
- *    compile-time type discrimination. No runtime code reads this property.
- *
- * 2. **Immutability guaranteed**: `Object.freeze()` prevents any mutation,
- *    ensuring the runtime object cannot be modified to invalidate type assumptions.
- *
- * 3. **Single creation point**: This is the ONLY location where Port values are
- *    created, ensuring all ports have consistent structure.
- *
- * 4. **Phantom type pattern**: This follows the well-established phantom type
- *    pattern where type parameters carry compile-time information without
- *    runtime representation. See: https://wiki.haskell.org/Phantom_type
- *
- * ## Type Safety via Overloads
- *
- * This function uses overloads to bridge the phantom type gap:
- * - The public signature returns `Port<TService, TName>` (phantom-branded type)
- * - The implementation signature returns `PortRuntime<TName>` (runtime structure)
- *
- * This is type-safe because:
- * - `PortRuntime` structurally contains all runtime properties
- * - The phantom brand is only used for compile-time discrimination
- * - No runtime code accesses the `__brand` property
- *
- * @internal - Not part of public API. Use createPort() or port() instead.
+ * @deprecated Use createPort() with object config instead.
+ * @internal
  */
 function unsafeCreatePort<TService, TName extends string>(name: TName): Port<TService, TName>;
 function unsafeCreatePort<TName extends string>(name: TName): PortRuntime<TName> {
@@ -65,117 +39,143 @@ function unsafeCreatePort<TName extends string>(name: TName): PortRuntime<TName>
 }
 
 // =============================================================================
-// createPort Function
+// createPort - Unified Port Factory
 // =============================================================================
 
 /**
- * Creates a typed port token for a service interface.
+ * Creates a typed port token with direction and optional metadata.
  *
- * This function creates a minimal runtime object that serves as a unique
- * identifier for a service interface. The port can be used both as a value
- * (for registration in containers/graphs) and as a type (via `typeof`).
+ * This is the unified API for creating ports in hexagonal architecture.
+ * Direction defaults to `'outbound'` if not specified, as most ports represent
+ * infrastructure dependencies (driven adapters).
  *
- * @typeParam TName - The literal string type for the port name.
- *   Uses `const` modifier to preserve literal types without explicit annotation.
- * @typeParam TService - The service interface type (phantom type).
- *   This type exists only at compile time and is not used at runtime.
+ * **Best Practice:** Always specify direction explicitly for clarity:
+ * ```typescript
+ * // Explicit direction (recommended)
+ * const LoggerPort = createPort<Logger>({ name: 'Logger', direction: 'outbound' });
+ * const UserServicePort = createPort<UserService>({ name: 'UserService', direction: 'inbound' });
+ * ```
  *
- * @param name - The unique name for this port. Will be preserved as a literal type.
+ * @typeParam TService - The service interface type (phantom type, explicitly provided)
+ * @typeParam TName - The literal string type for the port name (inferred from config.name)
  *
- * @returns A frozen Port object with the `__portName` property set to the provided name.
- *   The returned object is immutable and has minimal runtime footprint.
+ * @param config - Configuration object with name, optional direction, and metadata
+ * @returns A frozen DirectedPort with the specified type parameters
  *
  * @remarks
- * - The `TService` type parameter is a phantom type - it only exists at compile time
- * - The returned object is frozen via `Object.freeze()` for immutability
- * - The brand property exists only at the type level (zero runtime overhead)
- * - Use `typeof PortName` to get the Port type for type annotations
+ * - Direction defaults to 'outbound' at both runtime and type level
+ * - Use the `const` modifier on TName for literal type inference
+ * - Metadata is accessed via `getPortMetadata()` from directed.ts
+ * - `tags` returns `[]` when not specified (not undefined)
+ * - `description` and `category` return `undefined` when not specified
  *
- * @see {@link Port} - The branded port type returned by this function
- * @see {@link InferService} - Utility to extract the service type from a port
- * @see {@link InferPortName} - Utility to extract the name type from a port
- *
- * @example Basic usage
+ * @example Basic usage (defaults to outbound)
  * ```typescript
  * interface Logger {
  *   log(message: string): void;
  * }
  *
- * // Create a port token (value + type duality)
- * const LoggerPort = createPort<'Logger', Logger>('Logger');
+ * // Direction defaults to 'outbound'
+ * const LoggerPort = createPort<Logger>({ name: 'Logger' });
+ * // Type: DirectedPort<Logger, 'Logger', 'outbound'>
  *
- * // Use as value for registration
- * container.register(LoggerPort, consoleLoggerAdapter);
- *
- * // Use typeof for type annotations
- * type LoggerPortType = typeof LoggerPort;
- * function getLogger(port: LoggerPortType): Logger { ... }
+ * getPortDirection(LoggerPort); // 'outbound'
  * ```
  *
- * @example Multiple ports for same interface
+ * @example Inbound port
  * ```typescript
- * // Different adapters for the same service interface
- * const ConsoleLoggerPort = createPort<'ConsoleLogger', Logger>('ConsoleLogger');
- * const FileLoggerPort = createPort<'FileLogger', Logger>('FileLogger');
+ * interface UserService {
+ *   createUser(data: UserData): Promise<User>;
+ * }
  *
- * // These are type-incompatible despite same service interface
- * // ConsoleLoggerPort !== FileLoggerPort at the type level
+ * const UserServicePort = createPort<UserService>({
+ *   name: 'UserService',
+ *   direction: 'inbound',
+ * });
+ * // Type: DirectedPort<UserService, 'UserService', 'inbound'>
  * ```
+ *
+ * @example Full metadata
+ * ```typescript
+ * const UserRepoPort = createPort<UserRepository>({
+ *   name: 'UserRepository',
+ *   direction: 'outbound',
+ *   description: 'User persistence operations',
+ *   category: 'persistence',
+ *   tags: ['user', 'database', 'core'],
+ * });
+ *
+ * const meta = getPortMetadata(UserRepoPort);
+ * // { description: 'User persistence...', category: 'persistence', tags: ['user', ...] }
+ * ```
+ */
+
+// Overload 1: NEW API - Object config, direction NOT provided - defaults to 'outbound'
+export function createPort<TService, const TName extends string>(
+  config: Omit<CreatePortConfig<TName, "outbound">, "direction"> & { direction?: undefined }
+): DirectedPort<TService, TName, "outbound">;
+
+// Overload 2: NEW API - Object config, direction IS provided - uses literal type
+export function createPort<
+  TService,
+  const TName extends string,
+  const TDirection extends PortDirection,
+>(
+  config: CreatePortConfig<TName, TDirection> & { direction: TDirection }
+): DirectedPort<TService, TName, TDirection>;
+
+// Overload 3: LEGACY API - String-based (deprecated)
+/**
+ * @deprecated Use `createPort({ name: 'X' })` instead.
  */
 export function createPort<const TName extends string, TService>(
   name: TName
-): Port<TService, TName> {
-  return unsafeCreatePort<TService, TName>(name);
+): Port<TService, TName>;
+
+// Implementation
+export function createPort<TService, const TName extends string>(
+  configOrName: CreatePortConfig<TName, PortDirection> | TName
+): DirectedPort<TService, TName, PortDirection> | Port<TService, TName> {
+  // Legacy string-based API
+  if (typeof configOrName === "string") {
+    return unsafeCreatePort<TService, TName>(configOrName);
+  }
+
+  // New object config API
+  const config = configOrName;
+  const direction = config.direction ?? "outbound";
+  const metadata: PortMetadata = Object.freeze({
+    description: config.description,
+    category: config.category,
+    tags: config.tags ?? [], // Return empty array when not specified
+  });
+
+  const runtime: DirectedPortRuntime<TName> = Object.freeze({
+    __portName: config.name,
+    [DIRECTION_BRAND]: direction,
+    [METADATA_KEY]: metadata,
+  });
+
+  return createDirectedPortImpl<TService, TName, PortDirection>(runtime);
 }
 
 // =============================================================================
-// port - Curried API for Partial Type Inference
+// Legacy APIs (deprecated)
 // =============================================================================
 
 /**
  * Creates a typed port token with partial type inference.
  *
- * This is a curried version of `createPort` that enables a more ergonomic API:
- * - You explicitly specify the service type `TService`
- * - The port name `TName` is automatically inferred from the string argument
+ * @deprecated Use `createPort({ name: 'X' })` instead.
+ * This curried API will be removed in the next version.
  *
- * @typeParam TService - The service interface type (explicitly provided)
- *
- * @returns A function that accepts the port name and returns a Port
- *
- * @remarks
- * This uses the curried function pattern to work around TypeScript's limitation
- * that prevents partial type argument inference. By splitting the type parameters
- * across two function calls, we can infer `TName` while explicitly specifying `TService`.
- *
- * @see {@link createPort} - The non-curried version requiring both type params
- * @see {@link Port} - The branded port type returned
- *
- * @example Basic usage
+ * @example Migration
  * ```typescript
- * interface Logger {
- *   log(message: string): void;
- * }
+ * // Before (deprecated)
+ * const LoggerPort = port<Logger>()('Logger');
  *
- * // Before: Both type params required, name duplicated
- * const LoggerPort = createPort<"Logger", Logger>("Logger");
- *
- * // After: Only service type needed, name inferred
- * const LoggerPort = port<Logger>()("Logger");
- * ```
- *
- * @example Multiple ports
- * ```typescript
- * interface Database {
- *   query(sql: string): Promise<unknown>;
- * }
- *
- * const LoggerPort = port<Logger>()("Logger");
- * const DatabasePort = port<Database>()("Database");
- *
- * // Names are correctly inferred as literal types
- * type LoggerName = typeof LoggerPort["__portName"];  // "Logger"
- * type DbName = typeof DatabasePort["__portName"];    // "Database"
+ * // After
+ * const LoggerPort = createPort<Logger>({ name: 'Logger' });
  * ```
  */
 export function port<TService>() {

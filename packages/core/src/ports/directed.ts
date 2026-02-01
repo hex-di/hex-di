@@ -24,16 +24,14 @@ import type {
 /**
  * Runtime symbol for direction branding.
  * Uses Symbol.for() to ensure consistent identity across module boundaries.
- * @internal
  */
-const DIRECTION_BRAND = Symbol.for("@hex-di/core/PortDirection");
+export const DIRECTION_BRAND = Symbol.for("@hex-di/core/PortDirection");
 
 /**
  * Runtime symbol for metadata storage.
  * Uses Symbol.for() to ensure consistent identity across module boundaries.
- * @internal
  */
-const METADATA_KEY = Symbol.for("@hex-di/core/PortMetadata");
+export const METADATA_KEY = Symbol.for("@hex-di/core/PortMetadata");
 
 // =============================================================================
 // Runtime Interfaces
@@ -45,11 +43,9 @@ const METADATA_KEY = Symbol.for("@hex-di/core/PortMetadata");
  * At runtime, DirectedPort objects contain:
  * - `__portName`: The port identifier
  * - `[DIRECTION_BRAND]`: The direction ('inbound' or 'outbound')
- * - `[METADATA_KEY]`: Optional metadata object
- *
- * @internal
+ * - `[METADATA_KEY]`: Metadata object
  */
-interface DirectedPortRuntime<TName extends string> {
+export interface DirectedPortRuntime<TName extends string> {
   readonly __portName: TName;
   readonly [DIRECTION_BRAND]: PortDirection;
   readonly [METADATA_KEY]: PortMetadata;
@@ -99,13 +95,15 @@ export interface CreateDirectedPortOptions<TName extends string> {
  * This function uses overloads to bridge the phantom type gap:
  * - The public signature returns `DirectedPort<TService, TName, TDirection>`
  * - The implementation signature returns `object` (the frozen runtime object)
- *
- * @internal - Not part of public API. Use createInboundPort/createOutboundPort.
  */
-function createDirectedPortImpl<TService, TName extends string, TDirection extends PortDirection>(
+export function createDirectedPortImpl<
+  TService,
+  TName extends string,
+  TDirection extends PortDirection,
+>(runtime: DirectedPortRuntime<TName>): DirectedPort<TService, TName, TDirection>;
+export function createDirectedPortImpl<TName extends string>(
   runtime: DirectedPortRuntime<TName>
-): DirectedPort<TService, TName, TDirection>;
-function createDirectedPortImpl<TName extends string>(runtime: DirectedPortRuntime<TName>): object {
+): object {
   return runtime;
 }
 
