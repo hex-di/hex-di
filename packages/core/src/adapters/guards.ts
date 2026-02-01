@@ -17,7 +17,7 @@ import type { AdapterConstraint, FactoryKind, Lifetime } from "./types.js";
  * Checks if a value is a valid Lifetime value.
  *
  * @param value - The value to check
- * @returns `true` if the value is "singleton", "scoped", or "transient"
+ * @returns `true` if the value is "singleton", "scoped", "transient", or "request"
  *
  * @example
  * ```typescript
@@ -28,7 +28,9 @@ import type { AdapterConstraint, FactoryKind, Lifetime } from "./types.js";
  * ```
  */
 export function isLifetime(value: unknown): value is Lifetime {
-  return value === "singleton" || value === "scoped" || value === "transient";
+  return (
+    value === "singleton" || value === "scoped" || value === "transient" || value === "request"
+  );
 }
 
 /**

@@ -57,6 +57,11 @@ export const SCOPED = literal("scoped");
  */
 export const TRANSIENT = literal("transient");
 
+/**
+ * Literal-typed constant for request lifetime.
+ */
+export const REQUEST = literal("request");
+
 // =============================================================================
 // Boolean Constants
 // =============================================================================
@@ -98,6 +103,9 @@ export type Scoped = typeof SCOPED;
 
 /** Literal type for transient lifetime */
 export type Transient = typeof TRANSIENT;
+
+/** Literal type for request lifetime */
+export type Request = typeof REQUEST;
 
 /** Literal type for boolean false */
 export type False = typeof FALSE;
