@@ -40,8 +40,19 @@ export type FactoryKind = "sync" | "async";
 
 /**
  * Lifetime scope for an adapter's service instance.
+ *
+ * | Lifetime    | Description                                                      |
+ * |-------------|------------------------------------------------------------------|
+ * | `singleton` | One instance per container, shared across all resolutions        |
+ * | `scoped`    | One instance per scope, isolated from parent and sibling scopes  |
+ * | `transient` | New instance on every resolution                                 |
+ * | `request`   | One instance per request context, disposed when request ends     |
+ *
+ * **Request lifetime** creates a new instance for each request context. Request-scoped
+ * services are isolated from the parent container and other request contexts. They are
+ * automatically disposed when the request context ends.
  */
-export type Lifetime = "singleton" | "scoped" | "transient";
+export type Lifetime = "singleton" | "scoped" | "transient" | "request";
 
 // =============================================================================
 // ResolvedDeps Helper Type
