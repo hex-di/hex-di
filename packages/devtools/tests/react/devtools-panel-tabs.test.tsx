@@ -10,10 +10,11 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import React from "react";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter } from "@hex-di/graph";
+import { createPort } from "@hex-di/core";
+import { createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import type { Graph } from "@hex-di/graph";
-import type { Port } from "@hex-di/ports";
+import type { Port } from "@hex-di/core";
 import { DevToolsPanel } from "../../src/react/index.js";
 import { defaultPlugins } from "../../src/plugins/presets.js";
 import type { DevToolsPlugin, PluginProps } from "../../src/runtime/index.js";

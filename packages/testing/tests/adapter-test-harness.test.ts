@@ -6,8 +6,7 @@
  */
 
 import { describe, test, expect, vi } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { createAdapter } from "@hex-di/graph";
+import { createPort, createAdapter } from "@hex-di/core";
 import { createAdapterTest } from "../src/adapter-test-harness.js";
 
 // =============================================================================

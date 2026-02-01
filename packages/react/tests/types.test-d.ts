@@ -13,7 +13,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort, type InferService } from "@hex-di/ports";
+import { createPort, type InferService } from "@hex-di/core";
 import type { Container } from "@hex-di/runtime";
 import { createTypedHooks } from "../src/factories/create-typed-hooks.jsx";
 import type {

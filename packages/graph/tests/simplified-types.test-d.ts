@@ -7,12 +7,14 @@
  */
 
 import { describe, expectTypeOf, it, expect } from "vitest";
-import { GraphBuilder, PrettyBuilder, createAdapter } from "../src/index.js";
+import { createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
+import type { PrettyBuilder } from "../src/advanced.js";
 import type {
   SimplifiedView,
   InferBuilderProvides,
   InferBuilderUnsatisfied,
-} from "../src/internal.js";
+} from "../src/advanced.js";
 import {
   LoggerPort,
   DatabasePort,
@@ -342,7 +344,7 @@ describe("DebugBuilderInternals type utility", () => {
     const builder = GraphBuilder.create();
     expect(builder).toBeDefined();
 
-    type Internals = import("../src/internal.js").DebugBuilderInternals<typeof builder>;
+    type Internals = import("../src/advanced.js").DebugBuilderInternals<typeof builder>;
 
     // Default maxDepth should be 50
     expectTypeOf<Internals["maxDepth"]>().toEqualTypeOf<50>();
@@ -358,7 +360,7 @@ describe("DebugBuilderInternals type utility", () => {
     const builder = GraphBuilder.create().provide(LoggerAdapter);
     expect(builder).toBeDefined();
 
-    type Internals = import("../src/internal.js").DebugBuilderInternals<typeof builder>;
+    type Internals = import("../src/advanced.js").DebugBuilderInternals<typeof builder>;
 
     // lifetimeMap should have Logger with level 1 (singleton)
     type LoggerLevel = Internals["lifetimeMap"]["Logger"];
@@ -366,7 +368,7 @@ describe("DebugBuilderInternals type utility", () => {
   });
 
   it("returns never for non-builder types", () => {
-    type Internals = import("../src/internal.js").DebugBuilderInternals<{ someProperty: string }>;
+    type Internals = import("../src/advanced.js").DebugBuilderInternals<{ someProperty: string }>;
     expectTypeOf<Internals>().toBeNever();
   });
 });

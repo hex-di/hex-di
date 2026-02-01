@@ -17,7 +17,7 @@ import React, {
   type ReactNode,
   type Context,
 } from "react";
-import type { Port, InferService } from "@hex-di/ports";
+import type { Port, InferService } from "@hex-di/core";
 import type { ContainerInternalState } from "@hex-di/runtime";
 import { INTERNAL_ACCESS } from "@hex-di/runtime";
 import type {

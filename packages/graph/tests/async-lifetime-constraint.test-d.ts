@@ -17,8 +17,7 @@
  */
 
 import { describe, it, expectTypeOf } from "vitest";
-import { createPort } from "@hex-di/ports";
-import type { Adapter } from "../src/index.js";
+import { createPort, type Adapter } from "@hex-di/core";
 
 // =============================================================================
 // Test Fixtures

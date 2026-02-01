@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import { createAdapter } from "@hex-di/graph";
+import { createAdapter } from "@hex-di/core";
 import {
   WebSocketPort,
   type WebSocketService,

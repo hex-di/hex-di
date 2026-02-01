@@ -5,11 +5,10 @@
  * @internal
  */
 
-import type { Port, InferService } from "@hex-di/ports";
+import type { Port, InferService } from "@hex-di/core";
 import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
 import type { Container, LazyContainer, CreateChildOptions } from "../types.js";
-import type { AnyPlugin } from "../plugin/types.js";
-import { DisposedScopeError } from "../common/errors.js";
+import { DisposedScopeError } from "../errors/index.js";
 
 /**
  * Internal container-like interface needed for lazy container operations.
@@ -18,7 +17,6 @@ import { DisposedScopeError } from "../common/errors.js";
 export interface LazyContainerParent<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string> = never,
-  TPlugins extends readonly AnyPlugin[] = readonly [],
 > {
   has(port: Port<unknown, string>): boolean;
   createChild<
@@ -30,8 +28,7 @@ export interface LazyContainerParent<
     TProvides,
     Exclude<InferGraphProvides<TChildGraph>, TProvides>,
     TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
-    "initialized",
-    TPlugins
+    "initialized"
   >;
 }
 
@@ -47,19 +44,16 @@ export class LazyContainerImpl<
   TProvides extends Port<unknown, string>,
   TExtends extends Port<unknown, string> = never,
   TAsyncPorts extends Port<unknown, string> = never,
-  TPlugins extends readonly AnyPlugin[] = readonly [],
   TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>> =
     Graph<TExtends, Port<unknown, string>, Port<unknown, string>>,
-> implements LazyContainer<TProvides, TExtends, TAsyncPorts, TPlugins> {
-  private container: Container<TProvides, TExtends, TAsyncPorts, "initialized", TPlugins> | null =
+> implements LazyContainer<TProvides, TExtends, TAsyncPorts> {
+  private container: Container<TProvides, TExtends, TAsyncPorts, "initialized"> | null = null;
+  private loadPromise: Promise<Container<TProvides, TExtends, TAsyncPorts, "initialized">> | null =
     null;
-  private loadPromise: Promise<
-    Container<TProvides, TExtends, TAsyncPorts, "initialized", TPlugins>
-  > | null = null;
   private _isDisposed = false;
 
   constructor(
-    private readonly parent: LazyContainerParent<TProvides, TAsyncPorts, TPlugins>,
+    private readonly parent: LazyContainerParent<TProvides, TAsyncPorts>,
     private readonly graphLoader: () => Promise<TChildGraph>,
     private readonly options: CreateChildOptions<TProvides>
   ) {}
@@ -83,7 +77,7 @@ export class LazyContainerImpl<
    *
    * Concurrent calls share the same loading promise (deduplication).
    */
-  async load(): Promise<Container<TProvides, TExtends, TAsyncPorts, "initialized", TPlugins>> {
+  async load(): Promise<Container<TProvides, TExtends, TAsyncPorts, "initialized">> {
     if (this._isDisposed) {
       throw new DisposedScopeError("LazyContainer");
     }
@@ -105,9 +99,7 @@ export class LazyContainerImpl<
    * Internal load implementation.
    * @internal
    */
-  private async performLoad(): Promise<
-    Container<TProvides, TExtends, TAsyncPorts, "initialized", TPlugins>
-  > {
+  private async performLoad(): Promise<Container<TProvides, TExtends, TAsyncPorts, "initialized">> {
     try {
       const graph = await this.graphLoader();
 
@@ -118,13 +110,12 @@ export class LazyContainerImpl<
 
       // Create child container using parent's createChild
       // SAFETY: Type assertion needed because createChild returns a computed type
-      // based on the graph, but we know it produces Container<TProvides, TExtends, TAsyncPorts, "initialized", TPlugins>
+      // based on the graph, but we know it produces Container<TProvides, TExtends, TAsyncPorts, "initialized">
       this.container = this.parent.createChild(graph, this.options) as unknown as Container<
         TProvides,
         TExtends,
         TAsyncPorts,
-        "initialized",
-        TPlugins
+        "initialized"
       >;
 
       return this.container;

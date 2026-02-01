@@ -50,15 +50,15 @@ importers:
 
   examples/hono-todo:
     dependencies:
+      '@hex-di/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@hex-di/graph':
         specifier: workspace:*
         version: link:../../packages/graph
       '@hex-di/hono':
         specifier: workspace:*
         version: link:../../packages/hono
-      '@hex-di/ports':
-        specifier: workspace:*
-        version: link:../../packages/ports
       '@hex-di/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
@@ -90,6 +90,9 @@ importers:
 
   examples/react-showcase:
     dependencies:
+      '@hex-di/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@hex-di/flow':
         specifier: workspace:*
         version: link:../../packages/flow
@@ -99,9 +102,6 @@ importers:
       '@hex-di/graph':
         specifier: workspace:*
         version: link:../../packages/graph
-      '@hex-di/ports':
-        specifier: workspace:*
-        version: link:../../packages/ports
       '@hex-di/react':
         specifier: workspace:*
         version: link:../../packages/react
@@ -179,8 +179,17 @@ importers:
         specifier: ^4.0.16
         version: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@25.0.3)(jiti@1.21.7)(jsdom@24.1.3)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
 
+  packages/core:
+    dependencies:
+      typescript:
+        specifier: '>=5.0'
+        version: 5.6.3
+
   packages/devtools:
     dependencies:
+      '@hex-di/core':
+        specifier: workspace:*
+        version: link:../core
       '@hex-di/devtools-core':
         specifier: workspace:*
         version: link:../devtools-core
@@ -199,12 +208,6 @@ importers:
       '@hex-di/graph-viz':
         specifier: workspace:*
         version: link:../graph-viz
-      '@hex-di/plugin':
-        specifier: workspace:*
-        version: link:../plugin
-      '@hex-di/ports':
-        specifier: workspace:*
-        version: link:../ports
       '@hex-di/runtime':
         specifier: workspace:*
         version: link:../runtime
@@ -266,18 +269,15 @@ importers:
 
   packages/devtools-core:
     dependencies:
+      '@hex-di/core':
+        specifier: workspace:*
+        version: link:../core
       '@hex-di/flow':
         specifier: workspace:*
         version: link:../flow
       '@hex-di/graph':
         specifier: workspace:*
         version: link:../graph
-      '@hex-di/plugin':
-        specifier: workspace:*
-        version: link:../plugin
-      '@hex-di/ports':
-        specifier: workspace:*
-        version: link:../ports
       '@hex-di/runtime':
         specifier: workspace:*
         version: link:../runtime
@@ -318,18 +318,15 @@ importers:
 
   packages/devtools-network:
     dependencies:
+      '@hex-di/core':
+        specifier: workspace:*
+        version: link:../core
       '@hex-di/devtools-core':
         specifier: workspace:*
         version: link:../devtools-core
       '@hex-di/graph':
         specifier: workspace:*
         version: link:../graph
-      '@hex-di/plugin':
-        specifier: workspace:*
-        version: link:../plugin
-      '@hex-di/ports':
-        specifier: workspace:*
-        version: link:../ports
       express:
         specifier: ^4.18.0 || ^5.0.0
         version: 5.2.1
@@ -358,12 +355,12 @@ importers:
 
   packages/flow:
     dependencies:
+      '@hex-di/core':
+        specifier: workspace:*
+        version: link:../core
       '@hex-di/graph':
         specifier: workspace:*
         version: link:../graph
-      '@hex-di/ports':
-        specifier: workspace:*
-        version: link:../ports
       '@hex-di/runtime':
         specifier: workspace:*
         version: link:../runtime
@@ -373,12 +370,12 @@ importers:
 
   packages/flow-react:
     dependencies:
+      '@hex-di/core':
+        specifier: workspace:*
+        version: link:../core
       '@hex-di/flow':
         specifier: workspace:*
         version: link:../flow
-      '@hex-di/ports':
-        specifier: workspace:*
-        version: link:../ports
       '@hex-di/react':
         specifier: workspace:*
         version: link:../react
@@ -407,9 +404,9 @@ importers:
 
   packages/graph:
     dependencies:
-      '@hex-di/ports':
+      '@hex-di/core':
         specifier: workspace:*
-        version: link:../ports
+        version: link:../core
       typescript:
         specifier: '>=5.0'
         version: 5.9.3
@@ -466,9 +463,9 @@ importers:
 
   packages/hono:
     dependencies:
-      '@hex-di/ports':
+      '@hex-di/core':
         specifier: workspace:*
-        version: link:../ports
+        version: link:../core
       '@hex-di/runtime':
         specifier: workspace:*
         version: link:../runtime
@@ -483,29 +480,14 @@ importers:
         specifier: ^4.11.1
         version: 4.11.1
 
-  packages/plugin:
-    dependencies:
-      '@hex-di/graph':
-        specifier: workspace:*
-        version: link:../graph
-      typescript:
-        specifier: '>=5.0'
-        version: 5.6.3
-
-  packages/ports:
-    dependencies:
-      typescript:
-        specifier: '>=5.0'
-        version: 5.9.3
-
   packages/react:
     dependencies:
+      '@hex-di/core':
+        specifier: workspace:*
+        version: link:../core
       '@hex-di/graph':
         specifier: workspace:*
         version: link:../graph
-      '@hex-di/ports':
-        specifier: workspace:*
-        version: link:../ports
       '@hex-di/runtime':
         specifier: workspace:*
         version: link:../runtime
@@ -534,27 +516,24 @@ importers:
 
   packages/runtime:
     dependencies:
+      '@hex-di/core':
+        specifier: workspace:*
+        version: link:../core
       '@hex-di/graph':
         specifier: workspace:*
         version: link:../graph
-      '@hex-di/plugin':
-        specifier: workspace:*
-        version: link:../plugin
-      '@hex-di/ports':
-        specifier: workspace:*
-        version: link:../ports
       typescript:
         specifier: '>=5.0'
         version: 5.9.3
 
   packages/testing:
     dependencies:
+      '@hex-di/core':
+        specifier: workspace:*
+        version: link:../core
       '@hex-di/graph':
         specifier: workspace:*
         version: link:../graph
-      '@hex-di/ports':
-        specifier: workspace:*
-        version: link:../ports
       '@hex-di/react':
         specifier: workspace:*
         version: link:../react
@@ -596,9 +575,9 @@ importers:
         specifier: '>=5.0'
         version: 5.6.3
     devDependencies:
-      '@hex-di/ports':
+      '@hex-di/core':
         specifier: workspace:*
-        version: link:../ports
+        version: link:../core
       vitest:
         specifier: 4.0.16
         version: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@25.0.3)(jiti@1.21.7)(jsdom@25.0.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)

@@ -1,4 +1,4 @@
-import type { Port, InferService } from "@hex-di/ports";
+import type { Port, InferService } from "@hex-di/core";
 import type { Container, ContainerPhase, Scope } from "@hex-di/runtime";
 import type { Context } from "hono";
 import { getContextVariable, createContextVariableKey } from "@hex-di/runtime";

@@ -15,7 +15,7 @@
 
 import React, { useCallback, type ReactElement, type CSSProperties } from "react";
 import { formatDuration } from "@hex-di/devtools-core";
-import type { TraceEntry } from "@hex-di/plugin";
+import type { TraceEntry } from "@hex-di/core";
 import {
   timelineStyles,
   getLifetimeBadgeStyle,

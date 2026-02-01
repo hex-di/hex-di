@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { createAdapter, GraphBuilder } from "../src/index.js";
+import { createPort, createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
 import {
   buildDependencyMap,
   topologicalSort,
@@ -10,7 +10,7 @@ import {
   findCommonDependencies,
   computeDependencyLayers,
   getPortsByLayer,
-} from "../src/graph/inspection/traversal.js";
+} from "../src/advanced.js";
 
 // Test fixtures
 const ConfigPort = createPort<"Config", { dbUrl: string }>("Config");

@@ -14,7 +14,7 @@
  */
 
 import { createStore, type StoreApi } from "zustand/vanilla";
-import type { InspectorWithSubscription } from "@hex-di/runtime";
+import type { InspectorAPI } from "@hex-di/core";
 import type {
   ContainerTreeEntry,
   DevToolsUIState,
@@ -513,24 +513,40 @@ export function createDevToolsStore(config: CreateDevToolsStoreConfig): StoreApi
 
       // Lifecycle
       dispose: async () => {
+        // IMPORTANT: Set isDisposed and nullify runtime SYNCHRONOUSLY first.
+        // This ensures React StrictMode's immediate remount sees the disposed
+        // state and creates a new store, rather than reusing the disposing store.
+        //
+        // Without this synchronous update, there's a race condition:
+        // 1. StrictMode cleanup calls dispose()
+        // 2. dispose() starts awaiting runtime.dispose()
+        // 3. StrictMode remounts immediately (doesn't wait for async cleanup)
+        // 4. storeRef.current !== null && !isDisposed, so old store is reused
+        // 5. But context.runtime is about to become null, causing dispatch failures
+
+        // Capture runtime reference before nullifying
+        const runtimeToDispose = context.runtime;
+
         // Unsubscribe from FSM
         if (context.unsubscribe !== null) {
           context.unsubscribe();
           context.unsubscribe = null;
         }
 
-        // Dispose runtime
-        if (context.runtime !== null) {
-          await context.runtime.dispose();
-          context.runtime = null;
-        }
+        // Nullify runtime SYNCHRONOUSLY to prevent any new dispatches
+        context.runtime = null;
 
-        // Update state
+        // Update state SYNCHRONOUSLY so isDisposed check works immediately
         set({
           ...getInitialState(),
           isInitialized: false,
           isDisposed: true,
         });
+
+        // Now dispose the runtime asynchronously (cleanup resources)
+        if (runtimeToDispose !== null) {
+          await runtimeToDispose.dispose();
+        }
       },
     };
   });
@@ -638,7 +654,7 @@ export interface CreateDevToolsStoreWithRuntimeConfig {
    * The root inspector for the container hierarchy.
    * Used to create the underlying DevToolsFlowRuntime.
    */
-  readonly inspector: InspectorWithSubscription;
+  readonly inspector: InspectorAPI;
 }
 
 /**

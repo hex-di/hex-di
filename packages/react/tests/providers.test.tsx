@@ -13,7 +13,7 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import React, { useContext } from "react";
-import { createPort } from "@hex-di/ports";
+import { createPort, type InspectorAPI, type TracingAPI } from "@hex-di/core";
 import { ContainerBrand, ScopeBrand, INTERNAL_ACCESS } from "@hex-di/runtime";
 import type { Container, Scope, ContainerInternalState, ScopeInternalState } from "@hex-di/runtime";
 import { MissingProviderError } from "../src/errors.js";
@@ -110,6 +110,46 @@ function createMockContainer(): TestContainer {
     isOverride: () => false,
   };
 
+  const mockInspector: InspectorAPI = {
+    getSnapshot: vi
+      .fn()
+      .mockReturnValue({
+        kind: "root",
+        containerId: "root",
+        containerName: "TestContainer",
+        phase: "uninitialized",
+        singletons: [],
+        scopes: [],
+        children: [],
+      }),
+    getScopeTree: vi.fn().mockReturnValue({ rootId: "root", name: "TestContainer", children: [] }),
+    listPorts: vi.fn().mockReturnValue([]),
+    isResolved: vi.fn().mockReturnValue(false),
+    getContainerKind: vi.fn().mockReturnValue("root"),
+    getPhase: vi.fn().mockReturnValue("uninitialized"),
+    isDisposed: false,
+  };
+
+  const mockTracer: TracingAPI = {
+    getTraces: vi.fn().mockReturnValue([]),
+    getStats: vi
+      .fn()
+      .mockReturnValue({
+        totalResolutions: 0,
+        cacheHits: 0,
+        cacheMisses: 0,
+        avgResolutionMs: 0,
+        portStats: new Map(),
+      }),
+    pause: vi.fn(),
+    resume: vi.fn(),
+    clear: vi.fn(),
+    subscribe: vi.fn().mockReturnValue(() => {}),
+    isPaused: vi.fn().mockReturnValue(false),
+    pin: vi.fn(),
+    unpin: vi.fn(),
+  };
+
   const mockContainer: TestContainer = {
     resolve: mockResolve,
     resolveAsync: mockResolveAsync,
@@ -130,6 +170,11 @@ function createMockContainer(): TestContainer {
     initialize: mockInitialize,
     isInitialized: false,
     isDisposed: false,
+    name: "TestContainer",
+    parentName: null,
+    kind: "root",
+    inspector: mockInspector,
+    tracer: mockTracer,
     get parent(): never {
       throw new Error("Root containers do not have a parent");
     },

@@ -20,11 +20,14 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter, inspectGraph } from "../src/index.js";
-import { detectCycleAtRuntime } from "../src/graph/inspection/runtime-cycle-detection.js";
-import { parseGraphError, GraphErrorCode } from "../src/validation/error-parsing.js";
-import type { AdapterConstraint } from "../src/adapter/index.js";
+import { createAdapter, createPort, type AdapterConstraint } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
+import {
+  inspectGraph,
+  GraphErrorCode,
+  detectCycleAtRuntime,
+  parseGraphError,
+} from "../src/advanced.js";
 
 // =============================================================================
 // Test Fixtures

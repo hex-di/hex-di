@@ -6,7 +6,7 @@
  */
 
 import { describe, test, expect, vi } from "vitest";
-import { createPort } from "@hex-di/ports";
+import { createPort } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "@hex-di/runtime";
 import { createSpiedMockAdapter, type SpiedService } from "../src/vitest/spied-mock-adapter.js";

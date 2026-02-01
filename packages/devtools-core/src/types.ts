@@ -2,26 +2,25 @@
  * Core types for @hex-di/devtools-core.
  *
  * This module defines visualization-layer types for the DevTools ecosystem.
- * Container and tracing types are defined in @hex-di/plugin and should be
+ * Container and tracing types are defined in @hex-di/core and should be
  * imported directly from there.
  *
  * @packageDocumentation
  */
 
-import type { FactoryKind } from "@hex-di/graph";
-
-// Import types from plugin for internal use (NOT re-exported)
+// Import types from core
 import type {
+  FactoryKind,
   Lifetime,
   InheritanceMode,
   ServiceOrigin,
   TraceEntry,
   TraceStats,
   ContainerSnapshot,
-} from "@hex-di/plugin";
+} from "@hex-di/core";
 
-// Re-export from graph (visualization layer needs these)
-export type { FactoryKind } from "@hex-di/graph";
+// Re-export types visualization layer needs
+export type { FactoryKind } from "@hex-di/core";
 
 // =============================================================================
 // Container Ownership Metadata

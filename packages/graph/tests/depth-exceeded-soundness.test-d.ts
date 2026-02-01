@@ -9,7 +9,7 @@
  */
 import { describe, it, expectTypeOf } from "vitest";
 import { GraphBuilder } from "../src/index.js";
-import type { DepthLimitError, DepthLimitWarning, BuilderInternals } from "../src/index.js";
+import type { DepthLimitError, DepthLimitWarning, BuilderInternals } from "../src/advanced.js";
 
 // =============================================================================
 // Test: Default Behavior (Error)

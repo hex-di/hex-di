@@ -13,7 +13,7 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import React from "react";
-import { createPort } from "@hex-di/ports";
+import { createPort } from "@hex-di/core";
 import { ContainerBrand, ScopeBrand } from "@hex-di/runtime";
 import type { Container, Scope } from "@hex-di/runtime";
 import { MissingProviderError } from "../src/errors.js";

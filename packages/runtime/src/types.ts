@@ -10,18 +10,20 @@
  * @packageDocumentation
  */
 
-import type { Port, InferService } from "@hex-di/ports";
+import type { Port, InferService } from "@hex-di/core";
 import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
-import type { TracingAPI } from "@hex-di/plugin";
-import { INTERNAL_ACCESS } from "./inspector/symbols.js";
-import type { ContainerInternalState, ScopeInternalState } from "./inspector/types.js";
-import type { InspectorAPI } from "./plugins/inspector/types.js";
+import type { TracingAPI } from "@hex-di/core";
+import { INTERNAL_ACCESS } from "./inspection/symbols.js";
+import type {
+  ContainerInternalState,
+  ScopeInternalState,
+} from "./inspection/internal-state-types.js";
+import type { InspectorAPI } from "@hex-di/core";
 import type {
   ScopeLifecycleListener,
   ScopeSubscription,
   ScopeDisposalState,
 } from "./scope/lifecycle-events.js";
-import type { AnyPlugin, PluginApiMap } from "./plugin/types.js";
 
 // =============================================================================
 // Container Phase Type
@@ -253,12 +255,11 @@ export type Container<
   TExtends extends Port<unknown, string> = never,
   TAsyncPorts extends Port<unknown, string> = never,
   TPhase extends ContainerPhase = "uninitialized",
-  TPlugins extends readonly AnyPlugin[] = readonly [],
-> = ContainerMembers<TProvides, TExtends, TAsyncPorts, TPhase, TPlugins> & PluginApiMap<TPlugins>;
+> = ContainerMembers<TProvides, TExtends, TAsyncPorts, TPhase>;
 
 /**
- * Internal type containing Container method definitions without plugin API intersection.
- * Exported for use in factory.ts where plugin APIs are added via Object.defineProperty.
+ * Internal type containing Container method definitions.
+ * Exported for use in factory.ts where container objects are created.
  * @internal
  */
 export type ContainerMembers<
@@ -266,7 +267,6 @@ export type ContainerMembers<
   TExtends extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
   TPhase extends ContainerPhase,
-  TPlugins extends readonly AnyPlugin[],
 > = {
   /**
    * Resolves a service instance for the given port synchronously.
@@ -331,7 +331,7 @@ export type ContainerMembers<
   // Plain `T extends never` returns never when T=never due to conditional type distribution.
   initialize: [TExtends] extends [never]
     ? TPhase extends "uninitialized"
-      ? () => Promise<Container<TProvides, never, TAsyncPorts, "initialized", TPlugins>>
+      ? () => Promise<Container<TProvides, never, TAsyncPorts, "initialized">>
       : never
     : never;
 
@@ -352,7 +352,7 @@ export type ContainerMembers<
    * @param name - Optional custom name for the scope (for DevTools identification)
    * @returns A new Scope instance
    */
-  createScope(name?: string): Scope<TProvides | TExtends, TAsyncPorts, TPhase, TPlugins>;
+  createScope(name?: string): Scope<TProvides | TExtends, TAsyncPorts, TPhase>;
 
   /**
    * Creates a child container from a child graph.
@@ -389,8 +389,7 @@ export type ContainerMembers<
     TProvides | TExtends,
     Exclude<InferGraphProvides<TChildGraph>, TProvides | TExtends>,
     TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
-    "initialized",
-    TPlugins
+    "initialized"
   >;
 
   /**
@@ -426,8 +425,7 @@ export type ContainerMembers<
       TProvides | TExtends,
       Exclude<InferGraphProvides<TChildGraph>, TProvides | TExtends>,
       TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
-      "initialized",
-      TPlugins
+      "initialized"
     >
   >;
 
@@ -466,8 +464,7 @@ export type ContainerMembers<
   ): LazyContainer<
     TProvides | TExtends,
     Exclude<InferGraphProvides<TChildGraph>, TProvides | TExtends>,
-    TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
-    TPlugins
+    TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
   >;
 
   /**
@@ -526,7 +523,7 @@ export type ContainerMembers<
   // NOTE: Using [T] extends [never] to prevent distribution over the never type.
   readonly parent: [TExtends] extends [never]
     ? never
-    : Container<TProvides, Port<unknown, string>, TAsyncPorts, TPhase, TPlugins>;
+    : Container<TProvides, Port<unknown, string>, TAsyncPorts, TPhase>;
 
   // =========================================================================
   // Built-in Plugin APIs (always present, zero ceremony access)
@@ -644,24 +641,21 @@ export type ContainerMembers<
  * ```
  */
 // Note: Scopes don't have plugin APIs. They're pure resolution contexts.
-// The TPlugins parameter is kept for type consistency with nested createScope().
 export type Scope<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string> = never,
   TPhase extends ContainerPhase = "uninitialized",
-  TPlugins extends readonly AnyPlugin[] = readonly [],
-> = ScopeMembers<TProvides, TAsyncPorts, TPhase, TPlugins>;
+> = ScopeMembers<TProvides, TAsyncPorts, TPhase>;
 
 /**
- * Internal type containing Scope method definitions without plugin API intersection.
- * Exported for use in scope/impl.ts where plugin APIs are added separately.
+ * Internal type containing Scope method definitions.
+ * Exported for use in scope/impl.ts where scope objects are created.
  * @internal
  */
 export type ScopeMembers<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
   TPhase extends ContainerPhase,
-  TPlugins extends readonly AnyPlugin[],
 > = {
   /**
    * Resolves a service instance for the given port synchronously.
@@ -711,7 +705,7 @@ export type ScopeMembers<
    * @param name - Optional custom name for the scope (for DevTools identification)
    * @returns A new Scope instance
    */
-  createScope(name?: string): Scope<TProvides, TAsyncPorts, TPhase, TPlugins>;
+  createScope(name?: string): Scope<TProvides, TAsyncPorts, TPhase>;
 
   /**
    * Disposes the scope and all scoped instances.
@@ -911,7 +905,7 @@ export type InheritanceModeConfig<TProvides extends Port<unknown, string>> = {
  * ```
  */
 export type InferContainerProvides<T> =
-  T extends Container<infer P, infer _E, infer _A, infer _Ph, readonly AnyPlugin[]> ? P : never;
+  T extends Container<infer P, infer _E, infer _A, infer _Ph> ? P : never;
 
 /**
  * Extracts the effective provides (TProvides | TExtends) from a Container type.
@@ -922,24 +916,7 @@ export type InferContainerProvides<T> =
  * @typeParam T - The Container type to extract from
  */
 export type InferContainerEffectiveProvides<T> =
-  T extends Container<infer P, infer E, infer _A, infer _Ph, readonly AnyPlugin[]> ? P | E : never;
-
-/**
- * Extracts the TPlugins type parameter from a Container type.
- *
- * @typeParam T - The Container type to extract from
- * @returns The TPlugins tuple, or `readonly []` if not a Container
- */
-export type InferContainerPlugins<T> =
-  T extends Container<
-    Port<unknown, string>,
-    Port<unknown, string>,
-    Port<unknown, string>,
-    ContainerPhase,
-    infer P
-  >
-    ? P
-    : readonly [];
+  T extends Container<infer P, infer E, infer _A, infer _Ph> ? P | E : never;
 
 /**
  * Extracts the TProvides type parameter from a Scope type.
@@ -1075,7 +1052,7 @@ export type ServiceFromContainer<TContainer, TPort extends Port<unknown, string>
  */
 // NOTE: Using [E] extends [never] to prevent distribution over the never type.
 export type IsRootContainer<T> =
-  T extends Container<infer _P, infer E, infer _A, infer _Ph, readonly AnyPlugin[]>
+  T extends Container<infer _P, infer E, infer _A, infer _Ph>
     ? [E] extends [never]
       ? true
       : false
@@ -1089,7 +1066,7 @@ export type IsRootContainer<T> =
  */
 // NOTE: Using [E] extends [never] to prevent distribution over the never type.
 export type IsChildContainer<T> =
-  T extends Container<infer _P, infer E, infer _A, infer _Ph, readonly AnyPlugin[]>
+  T extends Container<infer _P, infer E, infer _A, infer _Ph>
     ? [E] extends [never]
       ? false
       : true
@@ -1146,23 +1123,20 @@ export type IsChildContainer<T> =
  * @see {@link Container.createChildAsync} - Alternative that returns Promise<Container>
  */
 // Note: LazyContainers don't have plugin APIs. They delegate to the loaded Container.
-// The TPlugins parameter is kept so load() returns Container<..., TPlugins>.
 export type LazyContainer<
   TProvides extends Port<unknown, string>,
   TExtends extends Port<unknown, string> = never,
   TAsyncPorts extends Port<unknown, string> = never,
-  TPlugins extends readonly AnyPlugin[] = readonly [],
-> = LazyContainerMembers<TProvides, TExtends, TAsyncPorts, TPlugins>;
+> = LazyContainerMembers<TProvides, TExtends, TAsyncPorts>;
 
 /**
- * Internal type containing LazyContainer method definitions without plugin API intersection.
+ * Internal type containing LazyContainer method definitions.
  * @internal
  */
 type LazyContainerMembers<
   TProvides extends Port<unknown, string>,
   TExtends extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
-  TPlugins extends readonly AnyPlugin[],
 > = {
   /**
    * Resolves a service instance for the given port asynchronously.
@@ -1206,7 +1180,7 @@ type LazyContainerMembers<
    *
    * @throws {DisposedScopeError} If the lazy container has been disposed
    */
-  load(): Promise<Container<TProvides, TExtends, TAsyncPorts, "initialized", TPlugins>>;
+  load(): Promise<Container<TProvides, TExtends, TAsyncPorts, "initialized">>;
 
   /**
    * Whether the graph has been loaded and the container is ready.

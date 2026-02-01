@@ -19,16 +19,10 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import type { Port } from "@hex-di/ports";
-import {
-  GraphBuilder,
-  createAdapter,
-  type Adapter,
-  type AdapterConstraint,
-  type ResolvedDeps,
-  type EmptyDeps,
-  type DefaultInternals,
-} from "../src/index.js";
+import type { Port, Adapter, AdapterConstraint, ResolvedDeps, EmptyDeps } from "@hex-di/core";
+import { createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
+import type { DefaultInternals } from "../src/advanced.js";
 import {
   LoggerPort,
   DatabasePort,

@@ -5,7 +5,8 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createAdapter, GraphBuilder, Graph, InferAdapterRequires } from "../../src/index.js";
+import { createAdapter, type InferAdapterRequires } from "@hex-di/core";
+import { GraphBuilder, type Graph } from "../../src/index.js";
 import {
   Logger,
   Database,

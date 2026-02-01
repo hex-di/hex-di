@@ -13,10 +13,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@hex-di/core": "workspace:*",
     "@hex-di/flow": "workspace:*",
     "@hex-di/flow-react": "workspace:*",
     "@hex-di/graph": "workspace:*",
-    "@hex-di/ports": "workspace:*",
     "@hex-di/react": "workspace:*",
     "@hex-di/runtime": "workspace:*",
     "@tanstack/react-query": "^5.0.0",

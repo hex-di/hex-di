@@ -20,7 +20,7 @@ import React, {
   type CSSProperties,
 } from "react";
 import { formatDuration } from "@hex-di/devtools-core";
-import type { TraceEntry } from "@hex-di/plugin";
+import type { TraceEntry } from "@hex-di/core";
 import { TimeRuler } from "./time-ruler.js";
 import { TimelineRow } from "./timeline-row.js";
 import { timelineStyles, emptyStyles, containerInspectorStyles } from "./styles.js";

@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@hex-di/ports": "workspace:*",
+    "@hex-di/core": "workspace:*",
     "@hex-di/graph": "workspace:*",
     "@hex-di/runtime": "workspace:*",
     "@hex-di/hono": "workspace:*",

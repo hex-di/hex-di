@@ -7,8 +7,7 @@
  * @packageDocumentation
  */
 
-import type { Port, InferService } from "@hex-di/ports";
-import type { Adapter, Lifetime, ResolvedDeps } from "@hex-di/graph";
+import type { Port, InferService, Adapter, Lifetime, ResolvedDeps } from "@hex-di/core";
 import type { Machine } from "../machine/types.js";
 import { createMachineRunner } from "../runner/create-runner.js";
 import { createActivityManager } from "../activities/manager.js";

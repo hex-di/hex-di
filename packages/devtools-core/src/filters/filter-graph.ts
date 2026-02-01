@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import type { Lifetime } from "@hex-di/graph";
+import type { Lifetime } from "@hex-di/core";
 import type { ExportedGraph, ExportedNode, NodePredicate } from "../types.js";
 
 // =============================================================================
@@ -58,20 +58,15 @@ import type { ExportedGraph, ExportedNode, NodePredicate } from "../types.js";
  * );
  * ```
  */
-export function filterGraph(
-  exportedGraph: ExportedGraph,
-  predicate: NodePredicate
-): ExportedGraph {
+export function filterGraph(exportedGraph: ExportedGraph, predicate: NodePredicate): ExportedGraph {
   // Filter nodes by predicate
   const nodes = exportedGraph.nodes.filter(predicate);
 
   // Create set of remaining node IDs for efficient edge filtering
-  const nodeIds = new Set(nodes.map((n) => n.id));
+  const nodeIds = new Set(nodes.map(n => n.id));
 
   // Filter edges to only include those where both endpoints exist
-  const edges = exportedGraph.edges.filter(
-    (edge) => nodeIds.has(edge.from) && nodeIds.has(edge.to)
-  );
+  const edges = exportedGraph.edges.filter(edge => nodeIds.has(edge.from) && nodeIds.has(edge.to));
 
   // Return frozen immutable structure
   return Object.freeze({

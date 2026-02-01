@@ -7,22 +7,22 @@
  * @packageDocumentation
  */
 
-import type { Port } from "@hex-di/ports";
+import type {
+  Port,
+  TracingAPI,
+  TraceEntry,
+  TraceStats,
+  ContainerSnapshot,
+  InspectorAPI,
+} from "@hex-di/core";
 import type { Graph } from "@hex-di/graph";
 import type { Container, ContainerPhase } from "@hex-di/runtime";
-import {
-  createInspector,
-  getTracingAPI,
-  getInspectorAPI,
-  type TracingAPI,
-  type InspectorAPI,
-} from "@hex-di/runtime";
+import { createInspector, getTracingAPI, getInspectorAPI } from "@hex-di/runtime";
 import {
   toJSON,
   type ExportedGraph,
   type PresenterDataSourceContract,
 } from "@hex-di/devtools-core";
-import type { TraceEntry, TraceStats, ContainerSnapshot } from "@hex-di/plugin";
 import type {
   DataSource,
   DataSourceConnectionState,

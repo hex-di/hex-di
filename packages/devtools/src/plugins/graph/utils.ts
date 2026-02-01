@@ -8,8 +8,7 @@
  */
 
 import type { ExportedGraph } from "@hex-di/devtools-core";
-import type { InheritanceMode, ServiceOrigin } from "@hex-di/plugin";
-import type { Lifetime, FactoryKind } from "@hex-di/graph";
+import type { InheritanceMode, ServiceOrigin, Lifetime, FactoryKind } from "@hex-di/core";
 // =============================================================================
 // Type Guards
 // =============================================================================

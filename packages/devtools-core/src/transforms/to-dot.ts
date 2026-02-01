@@ -8,7 +8,7 @@
  */
 
 import type { Graph } from "@hex-di/graph";
-import type { Port } from "@hex-di/ports";
+import type { Port } from "@hex-di/core";
 import type { DOTOptions, ExportedGraph, ExportedNode } from "../types.js";
 import { toJSON } from "./to-json.js";
 

@@ -11,15 +11,14 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
+import { createAdapter, createPort } from "@hex-di/core";
+import { GraphBuilder, type Graph } from "../src/index.js";
 import {
-  GraphBuilder,
-  createAdapter,
-  JoinPortNames,
   MissingDependencyError,
   DuplicateProviderError,
-  Graph,
-} from "../src/index.js";
-import type { ExtractPortNames } from "../src/internal.js";
+  type JoinPortNames,
+} from "../src/advanced.js";
+import type { ExtractPortNames } from "../src/advanced.js";
 import {
   LoggerPort,
   DatabasePort,

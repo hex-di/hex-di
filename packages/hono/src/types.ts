@@ -1,4 +1,4 @@
-import type { Port } from "@hex-di/ports";
+import type { Port } from "@hex-di/core";
 import type { Container, ContainerPhase, Scope } from "@hex-di/runtime";
 import type { Bindings, Env, Variables } from "hono/types";
 import { DEFAULT_CONTAINER_KEY, DEFAULT_SCOPE_KEY } from "./constants.js";

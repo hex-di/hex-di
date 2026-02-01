@@ -16,7 +16,7 @@
  * @packageDocumentation
  */
 
-import type { AdapterConstraint } from "../adapter/index.js";
+import type { AdapterConstraint } from "@hex-di/core";
 import type { BuildableGraph } from "./builder-types.js";
 import {
   inspectGraph,

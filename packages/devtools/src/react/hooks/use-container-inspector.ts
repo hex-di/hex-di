@@ -7,20 +7,20 @@
  * @packageDocumentation
  */
 
-import type { InspectorWithSubscription } from "@hex-di/runtime";
+import type { InspectorAPI } from "@hex-di/core";
 import { useDevToolsStore, useDevToolsFlowRuntimeOptional } from "../../store/index.js";
 
 /**
  * Access a RuntimeInspector for the currently selected container.
  *
- * Returns `InspectorWithSubscription | null` for native null checks.
+ * Returns `InspectorAPI | null` for native null checks.
  * Use `!== null` to check if a container is selected and access the inspector.
  *
  * This hook integrates with the DevToolsFlowRuntime to:
  * 1. Get the first selected container ID from UI state
  * 2. Look up the corresponding inspector via `runtime.getInspector()`
  *
- * @returns InspectorWithSubscription if container is selected, null otherwise
+ * @returns InspectorAPI if container is selected, null otherwise
  *
  * @example Basic usage
  * ```typescript
@@ -42,7 +42,7 @@ import { useDevToolsStore, useDevToolsFlowRuntimeOptional } from "../../store/in
  * }
  * ```
  */
-export function useContainerInspector(): InspectorWithSubscription | null {
+export function useContainerInspector(): InspectorAPI | null {
   const selectedIds = useDevToolsStore(state => state.ui.selectedIds);
   const runtime = useDevToolsFlowRuntimeOptional();
 
@@ -67,7 +67,7 @@ export function useContainerInspector(): InspectorWithSubscription | null {
  * @returns ContainerInspector for the selected container
  * @throws Error if no container is selected or runtime unavailable
  */
-export function useContainerInspectorStrict(): InspectorWithSubscription {
+export function useContainerInspectorStrict(): InspectorAPI {
   const inspector = useContainerInspector();
 
   if (inspector === null) {

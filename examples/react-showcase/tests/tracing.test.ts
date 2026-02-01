@@ -1,16 +1,16 @@
 /**
- * Tracing Integration Tests - Verify TracingPlugin captures service resolutions.
+ * Tracing Integration Tests - Verify built-in tracing captures service resolutions.
  *
  * These tests verify that:
- * 1. TracingPlugin properly instruments container resolutions via wrapper pattern
+ * 1. Container has built-in tracing via the `tracer` property
  * 2. Service resolutions are captured as trace entries
- * 3. TracingAPI provides type-safe access to trace data via TRACING symbol
+ * 3. TracingAPI provides type-safe access to trace data
  *
  * @packageDocumentation
  */
 
 import { describe, it, expect, beforeEach } from "./setup.js";
-import { createContainer, pipe, TRACING, withTracing } from "@hex-di/runtime";
+import { createContainer } from "@hex-di/runtime";
 import { appGraph } from "../src/di/app-graph.js";
 import { UserSessionPort } from "../src/di/ports.js";
 import { setCurrentUserSelection } from "../src/di/adapters.js";
@@ -25,23 +25,21 @@ describe("Tracing Integration", () => {
     setCurrentUserSelection("alice");
   });
 
-  describe("TracingPlugin via wrapper pattern", () => {
-    it("should add TRACING Symbol to container with withTracing wrapper", () => {
-      const tracingContainer = pipe(createContainer(appGraph, { name: "Test" }), withTracing);
+  describe("Built-in tracer property", () => {
+    it("should have tracer property on container", () => {
+      const container = createContainer(appGraph, { name: "Test" });
 
-      // Container should have TRACING Symbol
-      expect(TRACING in tracingContainer).toBe(true);
+      // Container should have tracer property
+      expect(container.tracer).toBeDefined();
 
       // Clean up
-      void tracingContainer.dispose();
+      void container.dispose();
     });
 
-    it("should provide type-safe TracingAPI via wrapper pattern", () => {
-      // Using wrapper pattern for compile-time type safety
-      const tracingContainer = pipe(createContainer(appGraph, { name: "Test" }), withTracing);
+    it("should provide type-safe TracingAPI via tracer property", () => {
+      const container = createContainer(appGraph, { name: "Test" });
 
-      // TypeScript knows container[TRACING] exists - no cast needed!
-      const tracingAPI = tracingContainer[TRACING];
+      const tracingAPI = container.tracer;
 
       // TracingAPI should have expected methods
       expect(tracingAPI).toBeDefined();
@@ -53,17 +51,17 @@ describe("Tracing Integration", () => {
       expect(typeof tracingAPI.resume).toBe("function");
 
       // Clean up
-      void tracingContainer.dispose();
+      void container.dispose();
     });
   });
 
   describe("trace recording", () => {
     it("should record traces when services are resolved", () => {
-      const tracingContainer = pipe(createContainer(appGraph, { name: "Test" }), withTracing);
-      const scope = tracingContainer.createScope("tracing-test-scope");
+      const container = createContainer(appGraph, { name: "Test" });
+      const scope = container.createScope("tracing-test-scope");
 
       // Initially no traces
-      const tracingAPI = tracingContainer[TRACING];
+      const tracingAPI = container.tracer;
       expect(tracingAPI.getTraces()).toHaveLength(0);
 
       // Resolve a service
@@ -81,16 +79,16 @@ describe("Tracing Integration", () => {
 
       // Clean up
       void scope.dispose();
-      void tracingContainer.dispose();
+      void container.dispose();
     });
 
     it("should capture trace metadata correctly", () => {
-      const tracingContainer = pipe(createContainer(appGraph, { name: "Test" }), withTracing);
-      const scope = tracingContainer.createScope("metadata-test-scope");
+      const container = createContainer(appGraph, { name: "Test" });
+      const scope = container.createScope("metadata-test-scope");
 
       scope.resolve(UserSessionPort);
 
-      const tracingAPI = tracingContainer[TRACING];
+      const tracingAPI = container.tracer;
       const traces = tracingAPI.getTraces();
       const trace = traces[0];
 
@@ -104,7 +102,7 @@ describe("Tracing Integration", () => {
 
       // Clean up
       void scope.dispose();
-      void tracingContainer.dispose();
+      void container.dispose();
     });
   });
 });

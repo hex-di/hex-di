@@ -8,8 +8,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter } from "@hex-di/graph";
+import { createPort, createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import type { ExportedGraph } from "@hex-di/devtools-core";
 import {
   LocalDataSource,
@@ -91,9 +91,7 @@ describe("LocalDataSource", () => {
     expect(callback).toHaveBeenCalledTimes(1);
     expect(callback).toHaveBeenCalledWith(
       expect.objectContaining({
-        nodes: expect.arrayContaining([
-          expect.objectContaining({ id: "Logger" }),
-        ]),
+        nodes: expect.arrayContaining([expect.objectContaining({ id: "Logger" })]),
       })
     );
 
@@ -114,7 +112,7 @@ describe("LocalDataSource", () => {
 
     // Listen for events
     const events: string[] = [];
-    dataSource.on((event) => events.push(event.type));
+    dataSource.on(event => events.push(event.type));
 
     // Connect
     await dataSource.connect();
@@ -154,18 +152,24 @@ describe("RemoteDataSource", () => {
 
     // Capture handlers when they're set
     Object.defineProperty(mockSocket, "onopen", {
-      set: (fn) => { openHandler = fn; },
+      set: fn => {
+        openHandler = fn;
+      },
       get: () => openHandler,
     });
     Object.defineProperty(mockSocket, "onmessage", {
-      set: (fn) => { messageHandler = fn; },
+      set: fn => {
+        messageHandler = fn;
+      },
       get: () => messageHandler,
     });
   });
 
   it("connects via WebSocket and fetches initial data", async () => {
     const mockGraph: ExportedGraph = {
-      nodes: [{ id: "TestService", label: "TestService", lifetime: "singleton", factoryKind: "sync" }],
+      nodes: [
+        { id: "TestService", label: "TestService", lifetime: "singleton", factoryKind: "sync" },
+      ],
       edges: [],
     };
 
@@ -184,7 +188,7 @@ describe("RemoteDataSource", () => {
     openHandler?.();
 
     // Wait for connection state to update
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise(resolve => setTimeout(resolve, 0));
 
     // Simulate responses to initial data requests
     // GET_GRAPH response
@@ -204,14 +208,18 @@ describe("RemoteDataSource", () => {
     // GET_STATS response
     setTimeout(() => {
       messageHandler?.({
-        data: JSON.stringify(createSuccessResponse(3, { stats: {
-          totalResolutions: 0,
-          averageDuration: 0,
-          cacheHitRate: 0,
-          slowCount: 0,
-          sessionStart: Date.now(),
-          totalDuration: 0,
-        }})),
+        data: JSON.stringify(
+          createSuccessResponse(3, {
+            stats: {
+              totalResolutions: 0,
+              averageDuration: 0,
+              cacheHitRate: 0,
+              slowCount: 0,
+              sessionStart: Date.now(),
+              totalDuration: 0,
+            },
+          })
+        ),
       });
     }, 20);
 
@@ -249,7 +257,7 @@ describe("RemoteDataSource", () => {
 
     // Track events
     const events: string[] = [];
-    dataSource.on((event) => events.push(event.type));
+    dataSource.on(event => events.push(event.type));
 
     // Connect
     const connectPromise = dataSource.connect();
@@ -264,10 +272,18 @@ describe("RemoteDataSource", () => {
         data: JSON.stringify(createSuccessResponse(2, { traces: [] })),
       });
       messageHandler?.({
-        data: JSON.stringify(createSuccessResponse(3, { stats: {
-          totalResolutions: 0, averageDuration: 0, cacheHitRate: 0,
-          slowCount: 0, sessionStart: Date.now(), totalDuration: 0,
-        }})),
+        data: JSON.stringify(
+          createSuccessResponse(3, {
+            stats: {
+              totalResolutions: 0,
+              averageDuration: 0,
+              cacheHitRate: 0,
+              slowCount: 0,
+              sessionStart: Date.now(),
+              totalDuration: 0,
+            },
+          })
+        ),
       });
       messageHandler?.({
         data: JSON.stringify(createSuccessResponse(4, { snapshot: null })),
@@ -310,9 +326,9 @@ describe("ClientRegistry", () => {
     // List all apps
     const apps = registry.listApps();
     expect(apps).toHaveLength(3);
-    expect(apps.map((a) => a.appId)).toContain("app-1");
-    expect(apps.map((a) => a.appId)).toContain("app-2");
-    expect(apps.map((a) => a.appId)).toContain("app-3");
+    expect(apps.map(a => a.appId)).toContain("app-1");
+    expect(apps.map(a => a.appId)).toContain("app-2");
+    expect(apps.map(a => a.appId)).toContain("app-3");
 
     // Get specific app
     const app1 = registry.getApp("app-1");
@@ -338,18 +354,24 @@ describe("ClientRegistry", () => {
     registry.registerApp(socket, "app-1", "App One", "1.0.0", "0.1.0");
 
     // Should notify on connect
-    expect(listener).toHaveBeenCalledWith("connected", expect.objectContaining({
-      appId: "app-1",
-      appName: "App One",
-    }));
+    expect(listener).toHaveBeenCalledWith(
+      "connected",
+      expect.objectContaining({
+        appId: "app-1",
+        appName: "App One",
+      })
+    );
 
     // Unregister by socket
     registry.unregisterBySocket(socket);
 
     // Should notify on disconnect
-    expect(listener).toHaveBeenCalledWith("disconnected", expect.objectContaining({
-      appId: "app-1",
-    }));
+    expect(listener).toHaveBeenCalledWith(
+      "disconnected",
+      expect.objectContaining({
+        appId: "app-1",
+      })
+    );
 
     expect(registry.size).toBe(0);
   });
@@ -435,7 +457,9 @@ describe("Protocol message serialization", () => {
   });
 
   it("creates and serializes error responses", () => {
-    const error = createErrorResponse(1, ErrorCodes.APP_NOT_FOUND, "App not found", { appId: "unknown" });
+    const error = createErrorResponse(1, ErrorCodes.APP_NOT_FOUND, "App not found", {
+      appId: "unknown",
+    });
 
     expect(error.jsonrpc).toBe("2.0");
     expect(error.id).toBe(1);
@@ -491,7 +515,13 @@ describe("Protocol message serialization", () => {
 
     expect(errorResult.success).toBe(true);
     if (errorResult.success) {
-      expect(isErrorResponse(errorResult.message as ReturnType<typeof createSuccessResponse> | ReturnType<typeof createErrorResponse>)).toBe(true);
+      expect(
+        isErrorResponse(
+          errorResult.message as
+            | ReturnType<typeof createSuccessResponse>
+            | ReturnType<typeof createErrorResponse>
+        )
+      ).toBe(true);
     }
 
     // Valid notification

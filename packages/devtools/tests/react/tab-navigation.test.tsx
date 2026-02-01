@@ -16,16 +16,16 @@ import type { DevToolsPlugin } from "../../src/runtime/index.js";
 import { DevToolsStoreProvider, useDevToolsStore } from "../../src/store/index.js";
 import { TabNavigation } from "../../src/react/tab-navigation.js";
 import { PluginTabContent } from "../../src/react/plugin-tab-content.js";
-import type { InspectorWithSubscription } from "@hex-di/runtime";
+import type { InspectorAPI } from "@hex-di/core";
 
 // =============================================================================
 // Mock Inspector
 // =============================================================================
 
 /**
- * Creates a mock InspectorWithSubscription for testing.
+ * Creates a mock InspectorAPI for testing.
  */
-function createMockInspector(): InspectorWithSubscription {
+function createMockInspector(): InspectorAPI {
   return {
     getSnapshot: () => ({
       kind: "root" as const,

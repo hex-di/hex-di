@@ -27,8 +27,8 @@
  * @packageDocumentation
  */
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { createAdapter, GraphBuilder, lazyPort } from "../src/index.js";
+import { createPort, createAdapter, lazyPort } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
 
 const PortA = createPort<"A", { doA(): void }>("A");
 const PortB = createPort<"B", { doB(): void }>("B");

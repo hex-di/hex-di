@@ -8,7 +8,7 @@
  */
 
 import type { ExportedGraph } from "@hex-di/devtools-core";
-import type { TraceEntry } from "@hex-di/plugin";
+import type { TraceEntry } from "@hex-di/core";
 
 // =============================================================================
 // DataSource Interface

@@ -9,8 +9,7 @@
  */
 
 import { vi, type MockedFunction } from "vitest";
-import type { Port, InferService } from "@hex-di/ports";
-import { createAdapter, type Adapter } from "@hex-di/graph";
+import { createAdapter, type Port, type InferService, type Adapter } from "@hex-di/core";
 
 // =============================================================================
 // Types

@@ -10,7 +10,7 @@
  * @packageDocumentation
  */
 
-import type { ContainerKind, InheritanceMode } from "@hex-di/plugin";
+import type { ContainerKind, InheritanceMode } from "@hex-di/core";
 
 // =============================================================================
 // Core Metadata Types

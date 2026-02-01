@@ -6,8 +6,8 @@
  */
 
 import { describe, test, expect } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter } from "@hex-di/graph";
+import { createPort, createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import { serializeGraph, type GraphSnapshot, type AdapterSnapshot } from "../src/graph-snapshot.js";
 
 // =============================================================================

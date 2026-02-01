@@ -5,7 +5,7 @@
  */
 
 import React, { type ReactElement } from "react";
-import type { ServiceOrigin } from "@hex-di/plugin";
+import type { ServiceOrigin } from "@hex-di/core";
 import type { PositionedNode, ContainerOwnershipEntry } from "./types.js";
 import { tooltipStyles, getLifetimeStrokeVar } from "./graph-styles.js";
 

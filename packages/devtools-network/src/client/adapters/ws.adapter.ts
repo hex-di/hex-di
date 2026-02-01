@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import { createAdapter } from "@hex-di/graph";
+import { createAdapter } from "@hex-di/core";
 import WebSocket from "ws";
 import {
   WebSocketPort,
@@ -50,7 +50,7 @@ class WsWebSocketService implements WebSocketService {
         resolve();
       });
 
-      this.ws.on("message", (data) => {
+      this.ws.on("message", data => {
         handlers.onMessage(data.toString());
       });
 
@@ -60,7 +60,7 @@ class WsWebSocketService implements WebSocketService {
         handlers.onClose();
       });
 
-      this.ws.on("error", (error) => {
+      this.ws.on("error", error => {
         const err = error instanceof Error ? error : new Error(String(error));
         handlers.onError(err);
         if (this.currentState === "connecting") {

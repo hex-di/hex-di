@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createAdapter, createAsyncAdapter } from "../../src/index.js";
+import { createAdapter, createAsyncAdapter } from "@hex-di/core";
 import { LoggerPort } from "../fixtures.js";
 
 describe("adapter immutability", () => {

@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
-import { createAdapter } from "../../src/index.js";
+import { createAdapter } from "@hex-di/core";
 import {
   fcConfig,
   portNameArb,

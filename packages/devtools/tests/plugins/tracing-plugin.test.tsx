@@ -11,7 +11,7 @@
 import React from "react";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
-import type { TracingAPI, TraceEntry, TraceStats } from "@hex-di/plugin";
+import type { TracingAPI, TraceEntry, TraceStats } from "@hex-di/core";
 import { TracingPlugin } from "../../src/plugins/tracing-plugin.js";
 import { TracingPluginContent } from "../../src/plugins/tracing/tracing-content.js";
 import type {

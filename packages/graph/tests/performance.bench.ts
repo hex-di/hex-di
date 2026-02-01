@@ -15,8 +15,9 @@
  */
 
 import { bench, describe } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter } from "../src/index.js";
+import { createPort } from "@hex-di/core";
+import { createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
 
 // =============================================================================
 // Fixture Ports and Adapters (created once, reused in benchmarks)

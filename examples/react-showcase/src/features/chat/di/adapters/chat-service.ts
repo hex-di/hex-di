@@ -4,7 +4,7 @@
  * @packageDocumentation
  */
 
-import { createAdapter } from "@hex-di/graph";
+import { createAdapter } from "@hex-di/core";
 import { ChatServicePort, MessageStorePort } from "../ports.js";
 import { LoggerPort } from "../../../core/di/ports.js";
 import { UserSessionPort } from "../../../user-session/di/ports.js";

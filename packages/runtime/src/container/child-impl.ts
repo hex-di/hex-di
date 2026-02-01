@@ -5,10 +5,10 @@
  * @internal
  */
 
-import type { Port, InferService } from "@hex-di/ports";
+import type { Port, InferService } from "@hex-di/core";
 import type { InheritanceMode } from "../types.js";
 import type { ResolutionHooks } from "../resolution/hooks.js";
-import { FactoryError } from "../common/errors.js";
+import { FactoryError } from "../errors/index.js";
 import type {
   RuntimeAdapterFor,
   DisposableChild,
@@ -16,15 +16,14 @@ import type {
   ChildContainerConfig,
 } from "./internal-types.js";
 import { assertSyncAdapter } from "./internal-types.js";
-import { InheritanceResolver } from "./inheritance-resolver.js";
-import { AdapterRegistry } from "./adapter-registry.js";
+import { InheritanceResolver } from "./internal/inheritance-resolver.js";
+import { AdapterRegistry } from "./internal/adapter-registry.js";
 import { BaseContainerImpl } from "./base-impl.js";
-import type { MemoMap } from "../common/memo-map.js";
-import { HooksRunner, type ContainerMetadata } from "./hooks-runner.js";
+import type { MemoMap } from "../util/memo-map.js";
+import { HooksRunner, type ContainerMetadata } from "../resolution/hooks-runner.js";
 import { isDisposableChild } from "./helpers.js";
-import { ADAPTER_ACCESS, INTERNAL_ACCESS } from "../inspector/symbols.js";
-import type { AdapterInfo, ContainerInternalState } from "../inspector/types.js";
-import { isRecord } from "../common/type-guards.js";
+import { ADAPTER_ACCESS } from "../inspection/symbols.js";
+import type { AdapterInfo, ContainerInternalState } from "../inspection/internal-state-types.js";
 
 /**
  * Child container created from a parent with overrides/extensions.
@@ -53,7 +52,7 @@ export class ChildContainerImpl<
 
   /**
    * Array of dynamically installed hook sources.
-   * Hooks are installed via wrappers (withTracing, etc.) using installHooks().
+   * Hooks are installed dynamically using installHooks().
    */
   private readonly dynamicHookSources: ResolutionHooks[] = [];
 
@@ -121,12 +120,12 @@ export class ChildContainerImpl<
   }
 
   // ===========================================================================
-  // Dynamic Hooks Installation (for wrapper pattern)
+  // Dynamic Hooks Installation
   // ===========================================================================
 
   /**
-   * Installs hooks for dynamic plugin wrapper support.
-   * Called by wrapper pattern (withTracing, etc.) to add hooks to child containers.
+   * Installs hooks for dynamic hook support.
+   * Called to add hooks to child containers after creation.
    */
   installHooks(hooks: ResolutionHooks): void {
     this.dynamicHookSources.push(hooks);

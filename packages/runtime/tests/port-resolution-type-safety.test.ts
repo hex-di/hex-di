@@ -10,8 +10,8 @@
  */
 
 import { describe, test, expect } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { createAdapter, createAsyncAdapter, GraphBuilder } from "@hex-di/graph";
+import { createPort, createAdapter, createAsyncAdapter } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/index.js";
 import { portComparator } from "../src/types/helpers.js";
 

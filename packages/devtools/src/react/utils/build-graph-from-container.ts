@@ -8,11 +8,11 @@
  */
 
 import type { ExportedGraph, ExportedNode, ExportedEdge } from "@hex-di/devtools-core";
-import type { InheritanceMode, ServiceOrigin } from "@hex-di/plugin";
+import type { InheritanceMode, ServiceOrigin } from "@hex-di/core";
 import {
   INTERNAL_ACCESS,
   type InspectorAdapterInfo,
-  type InspectorWithSubscription,
+  type InspectorAPI,
   type VisualizableAdapter,
 } from "@hex-di/runtime";
 import type { InspectableContainer } from "../types/inspectable-container.js";
@@ -274,7 +274,7 @@ export function buildExportedGraphFromVisualizableAdapters(
 export function buildMergedGraphFromAdapterInfo(
   childGraph: ExportedGraph,
   parentGraph: ExportedGraph,
-  childInspector: InspectorWithSubscription
+  childInspector: InspectorAPI
 ): ExportedGraph {
   // Get inheritance modes from child inspector's snapshot
   const snapshot = childInspector.getSnapshot();

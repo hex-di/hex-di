@@ -7,8 +7,8 @@
  * @packageDocumentation
  */
 
-import { createPort } from "@hex-di/ports";
-import { createAdapter, createAsyncAdapter, type Lifetime } from "../src/index.js";
+import { createPort, createAdapter, createAsyncAdapter, type Lifetime } from "@hex-di/core";
+import { nextSequence } from "./utils/sequence.js";
 
 // =============================================================================
 // Type Definitions
@@ -177,9 +177,9 @@ export interface MockCacheResult<T> {
     readonly set: (key: string, value: T) => void;
     readonly invalidate: (key: string) => void;
   };
-  /** Get the current state of the cache as a plain object */
-  getState(): Record<string, T>;
-  /** Get all tracked operations */
+  /** Get the current state of the cache as a plain object (immutable) */
+  getState(): Readonly<Record<string, T>>;
+  /** Get all tracked operations (immutable) */
   getOperations(): readonly TrackedCacheOperation[];
   /** Clear both state and tracked operations */
   clear(): void;
@@ -355,7 +355,7 @@ export function createCallTracker<T extends Record<string, unknown>>(
     const value = service[key];
     if (typeof value === "function") {
       tracked[key] = (...args: unknown[]) => {
-        calls.push({ method: key, args, timestamp: Date.now() });
+        calls.push({ method: key, args, timestamp: nextSequence() });
         return (value as (...args: unknown[]) => unknown)(...args);
       };
     } else {
@@ -365,8 +365,8 @@ export function createCallTracker<T extends Record<string, unknown>>(
 
   return {
     service: tracked as T,
-    getCalls: () => [...calls],
-    getCallsFor: (method: string) => calls.filter(c => c.method === method),
+    getCalls: () => Object.freeze([...calls]),
+    getCallsFor: (method: string) => Object.freeze(calls.filter(c => c.method === method)),
     getCallCount: (method: string) => calls.filter(c => c.method === method).length,
     wasCalledWith: (method: string, ...expectedArgs: unknown[]) =>
       calls.some(c => c.method === method && deepEqual([...c.args], expectedArgs)),
@@ -417,8 +417,8 @@ export function createMockLogger(options: MockLoggerOptions = {}): MockLoggerRes
       log: options.methodOverrides?.log ?? defaultLog,
       error: options.methodOverrides?.error ?? defaultError,
     },
-    /** Get all captured messages */
-    getMessages: (): readonly CapturedMessage[] => [...messages],
+    /** Get all captured messages (immutable) */
+    getMessages: (): readonly CapturedMessage[] => Object.freeze([...messages]),
     /** Get count of log-level messages */
     getLogCount: () => messages.filter(m => m.level === "log").length,
     /** Get count of error-level messages */
@@ -475,8 +475,8 @@ export function createMockDatabase<T = unknown>(
       query: options.methodOverrides?.query ?? defaultQuery,
       execute: options.methodOverrides?.execute ?? defaultExecute,
     },
-    /** Get all tracked queries */
-    getQueries: (): readonly TrackedQuery[] => [...queries],
+    /** Get all tracked queries (immutable) */
+    getQueries: (): readonly TrackedQuery[] => Object.freeze([...queries]),
     /** Get the number of queries executed */
     getQueryCount: () => queries.length,
     /** Clear all tracked queries */
@@ -533,10 +533,10 @@ export function createMockCache<T = unknown>(
       set: options.methodOverrides?.set ?? defaultSet,
       invalidate: options.methodOverrides?.invalidate ?? defaultInvalidate,
     },
-    /** Get the current state of the cache as a plain object */
-    getState: (): Record<string, T> => Object.fromEntries(store),
-    /** Get all tracked operations */
-    getOperations: (): readonly TrackedCacheOperation[] => [...operations],
+    /** Get the current state of the cache as a plain object (immutable) */
+    getState: (): Readonly<Record<string, T>> => Object.freeze(Object.fromEntries(store)),
+    /** Get all tracked operations (immutable) */
+    getOperations: (): readonly TrackedCacheOperation[] => Object.freeze([...operations]),
     /** Clear both state and tracked operations */
     clear: () => {
       store.clear();
@@ -587,8 +587,8 @@ export function createMockConfig(options: MockConfigOptions = {}): MockConfigRes
       get: options.methodOverrides?.get ?? defaultGet,
       getNumber: options.methodOverrides?.getNumber ?? defaultGetNumber,
     },
-    /** Get all keys that have been accessed */
-    getAccessedKeys: (): readonly string[] => [...accessed],
+    /** Get all keys that have been accessed (immutable) */
+    getAccessedKeys: (): readonly string[] => Object.freeze([...accessed]),
     /** Clear accessed keys tracking */
     clear: () => {
       accessed.length = 0;
@@ -623,7 +623,7 @@ export function createCallSequenceTracker(): CallSequenceTrackerResult {
   return {
     /** Manually track a call */
     track: (service: string, method: string) => {
-      sequence.push({ service, method, timestamp: Date.now() });
+      sequence.push({ service, method, timestamp: nextSequence() });
     },
 
     /**
@@ -635,7 +635,7 @@ export function createCallSequenceTracker(): CallSequenceTrackerResult {
         const value = service[key];
         if (typeof value === "function") {
           tracked[key] = (...args: unknown[]) => {
-            sequence.push({ service: name, method: key, timestamp: Date.now() });
+            sequence.push({ service: name, method: key, timestamp: nextSequence() });
             return (value as (...args: unknown[]) => unknown)(...args);
           };
         } else {
@@ -645,8 +645,8 @@ export function createCallSequenceTracker(): CallSequenceTrackerResult {
       return tracked as T;
     },
 
-    /** Get the full call sequence */
-    getSequence: (): readonly SequencedCall[] => [...sequence],
+    /** Get the full call sequence (immutable) */
+    getSequence: (): readonly SequencedCall[] => Object.freeze([...sequence]),
 
     /**
      * Assert that calls occurred in the exact order specified.

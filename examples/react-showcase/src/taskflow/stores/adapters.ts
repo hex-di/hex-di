@@ -9,7 +9,7 @@
  * @packageDocumentation
  */
 
-import { createAdapter } from "@hex-di/graph";
+import { createAdapter } from "@hex-di/core";
 import { UIPreferencesStorePort, FilterStorePort, UserSessionStorePort } from "./ports.js";
 import {
   createUIPreferencesStore,

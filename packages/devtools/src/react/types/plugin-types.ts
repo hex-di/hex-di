@@ -9,7 +9,7 @@
 
 import type { ReactElement, ComponentType } from "react";
 import type { ExportedGraph } from "@hex-di/devtools-core";
-import type { TracingAPI, ContainerSnapshot } from "@hex-di/plugin";
+import type { TracingAPI, ContainerSnapshot } from "@hex-di/core";
 import type { PluginShortcut, PluginMetadata } from "../../runtime/plugin-types-core.js";
 import type { ContainerDiscoveryState } from "../../runtime/types.js";
 import type { UseContainerScopeTreeResult } from "../hooks/use-container-scope-tree.js";

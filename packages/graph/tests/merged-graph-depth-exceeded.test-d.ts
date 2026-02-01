@@ -21,8 +21,8 @@ import type {
   IsDepthExceeded,
   DepthExceededResult,
   CircularDependencyError,
-} from "../src/internal.js";
-import type { IsNever } from "../src/types/type-utilities.js";
+} from "../src/advanced.js";
+import type { IsNever } from "@hex-di/core";
 
 // =============================================================================
 // Test Fixtures - Dependency Graphs

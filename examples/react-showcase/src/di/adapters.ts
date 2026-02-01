@@ -11,7 +11,7 @@
  * @packageDocumentation
  */
 
-import { createAdapter, createAsyncAdapter } from "@hex-di/graph";
+import { createAdapter, createAsyncAdapter } from "@hex-di/core";
 import {
   ConfigPort,
   LoggerPort,

@@ -7,8 +7,7 @@
  * @packageDocumentation
  */
 
-import type { Lifetime } from "../../../adapter/types/adapter-types.js";
-import type { IsNever, Prettify } from "../../../types/type-utilities.js";
+import type { Lifetime, IsNever, Prettify } from "@hex-di/core";
 import type { LifetimeLevel, LifetimeName } from "./lifetime-level.js";
 import type { AddLifetime, GetLifetimeLevel } from "./lifetime-map.js";
 import type { IsCaptiveDependency } from "./comparison.js";

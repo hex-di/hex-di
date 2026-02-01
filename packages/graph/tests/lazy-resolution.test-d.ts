@@ -8,17 +8,22 @@
  * 4. Adapters requiring lazy ports have their requirements transformed
  */
 import { expectTypeOf, describe, it } from "vitest";
-import { createPort, type Port, type InferService } from "@hex-di/ports";
 import {
+  createPort,
   createAdapter,
-  GraphBuilder,
   lazyPort,
+  type Port,
+  type InferService,
   type LazyPort,
-  type TransformLazyToOriginal,
-  type ExtractLazyPorts,
-  type HasLazyPorts,
-} from "../src/index.js";
-import type { IsLazyPort, UnwrapLazyPort } from "../src/internal.js";
+} from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
+import type {
+  IsLazyPort,
+  UnwrapLazyPort,
+  TransformLazyToOriginal,
+  ExtractLazyPorts,
+  HasLazyPorts,
+} from "../src/advanced.js";
 
 // =============================================================================
 // Test Fixtures

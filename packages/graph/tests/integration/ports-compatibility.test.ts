@@ -5,8 +5,8 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createPort, type InferService } from "@hex-di/ports";
-import { createAdapter, GraphBuilder } from "../../src/index.js";
+import { createAdapter, createPort, type InferService } from "@hex-di/core";
+import { GraphBuilder } from "../../src/index.js";
 
 describe("Integration: @hex-di/ports compatibility", () => {
   it("ports created with createPort work seamlessly with graph", () => {

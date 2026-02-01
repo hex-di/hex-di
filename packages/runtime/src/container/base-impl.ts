@@ -5,25 +5,25 @@
  * @internal
  */
 
-import type { Port, InferService } from "@hex-di/ports";
-import { MemoMap } from "../common/memo-map.js";
+import type { Port, InferService } from "@hex-di/core";
+import { MemoMap } from "../util/memo-map.js";
 import { ResolutionContext } from "../resolution/context.js";
 import { ScopeImpl } from "../scope/impl.js";
 import {
   DisposedScopeError,
   ScopeRequiredError,
   AsyncInitializationRequiredError,
-} from "../common/errors.js";
-import type { ContainerInternalState, InternalAccessible } from "../inspector/types.js";
-import { INTERNAL_ACCESS } from "../inspector/symbols.js";
+} from "../errors/index.js";
+import type { ContainerInternalState } from "../inspection/internal-state-types.js";
+import { INTERNAL_ACCESS } from "../inspection/symbols.js";
 import type { RuntimeAdapter, RuntimeAdapterFor, DisposableChild } from "./internal-types.js";
-import { isAdapterForPort } from "./internal-types.js";
-import { HooksRunner } from "./hooks-runner.js";
-import { LifecycleManager } from "./lifecycle-manager.js";
-import { ResolutionEngine } from "./resolution-engine.js";
-import { AsyncResolutionEngine } from "./async-resolution-engine.js";
-import { AsyncInitializer } from "./async-initializer.js";
-import { AdapterRegistry } from "./adapter-registry.js";
+import { isAdapterForPort, asInternalAccessible } from "./internal-types.js";
+import { HooksRunner } from "../resolution/hooks-runner.js";
+import { LifecycleManager } from "./internal/lifecycle-manager.js";
+import { ResolutionEngine } from "../resolution/engine.js";
+import { AsyncResolutionEngine } from "../resolution/async-engine.js";
+import { AsyncInitializer } from "./internal/async-initializer.js";
+import { AdapterRegistry } from "./internal/adapter-registry.js";
 import { createMemoMapSnapshot } from "./helpers.js";
 
 /**
@@ -357,12 +357,8 @@ export abstract class BaseContainerImpl<
     const childContainerSnapshots = this.lifecycleManager.getChildContainerSnapshots(container => {
       // Child containers are stored as wrapper objects, not impl instances.
       // Access internal state via INTERNAL_ACCESS symbol protocol.
-      const accessible = container as unknown as InternalAccessible;
-      const accessor = accessible[INTERNAL_ACCESS];
-      if (typeof accessor !== "function") {
-        throw new Error("Child container does not expose INTERNAL_ACCESS accessor");
-      }
-      const state = accessor();
+      const accessible = asInternalAccessible(container, "getInternalState");
+      const state = accessible[INTERNAL_ACCESS]();
       // Include wrapper reference so InspectorPlugin can access INSPECTOR API directly
       return { ...state, wrapper: container };
     });
@@ -395,9 +391,12 @@ export abstract class BaseContainerImpl<
    */
   protected createAdapterMapSnapshot(): ReadonlyMap<
     Port<unknown, string>,
-    import("../inspector/types.js").AdapterInfo
+    import("../inspection/internal-state-types.js").AdapterInfo
   > {
-    const map = new Map<Port<unknown, string>, import("../inspector/types.js").AdapterInfo>();
+    const map = new Map<
+      Port<unknown, string>,
+      import("../inspection/internal-state-types.js").AdapterInfo
+    >();
     for (const [port, adapter] of this.adapterRegistry.entries()) {
       map.set(port, {
         portName: port.__portName,

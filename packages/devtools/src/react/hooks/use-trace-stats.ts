@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import type { TraceStats, TracingAPI } from "@hex-di/plugin";
+import type { TraceStats, TracingAPI } from "@hex-di/core";
 
 /**
  * Empty stats object returned when tracing is not available.

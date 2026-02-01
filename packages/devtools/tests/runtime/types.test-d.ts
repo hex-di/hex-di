@@ -39,7 +39,7 @@ import type {
 import type { DevToolsPlugin, PluginProps } from "../../src/react/types/plugin-types.js";
 import type { PluginMetadata } from "../../src/runtime/plugin-types-core.js";
 import type { ExportedGraph } from "@hex-di/devtools-core";
-import type { TracingAPI, ContainerSnapshot } from "@hex-di/plugin";
+import type { TracingAPI, ContainerSnapshot } from "@hex-di/core";
 import type { ReactElement } from "react";
 
 // =============================================================================

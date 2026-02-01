@@ -13,15 +13,13 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import {
   Adapter,
-  GraphBuilder,
   InferAdapterProvides,
   InferAdapterRequires,
   InferAdapterLifetime,
-  InferGraphProvides,
-  InferGraphRequires,
   createAdapter,
   Lifetime,
-} from "../src/index.js";
+} from "@hex-di/core";
+import { GraphBuilder, InferGraphProvides, InferGraphRequires } from "../src/index.js";
 import {
   LoggerPort,
   DatabasePort,

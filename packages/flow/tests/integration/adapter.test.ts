@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { port } from "@hex-di/ports";
+import { port } from "@hex-di/core";
 import { activityPort } from "../../src/activities/port.js";
 import { defineEvents } from "../../src/activities/events.js";
 import { activity } from "../../src/activities/factory.js";
@@ -130,7 +130,7 @@ function createTestFlowService(
 
   // Create a type-unsafe scope resolver (test code only)
   const scopeResolver = {
-    resolve: <P extends import("@hex-di/ports").Port<unknown, string>>(p: P) => {
+    resolve: <P extends import("@hex-di/core").Port<unknown, string>>(p: P) => {
       if (p.__portName === "Api") return deps.Api;
       if (p.__portName === "Logger") return deps.Logger;
       throw new Error(`Unknown port: ${p.__portName}`);
@@ -138,7 +138,7 @@ function createTestFlowService(
   };
 
   // Create activity deps resolver (test code only)
-  const activityDepsResolver = (reqs: readonly import("@hex-di/ports").Port<unknown, string>[]) => {
+  const activityDepsResolver = (reqs: readonly import("@hex-di/core").Port<unknown, string>[]) => {
     const result: Record<string, unknown> = {};
     for (const req of reqs) {
       if (req.__portName === "Api") result.Api = deps.Api;
@@ -507,7 +507,7 @@ describe("FlowAdapter with activities", () => {
 
       // Create a type-unsafe scope resolver (test code only)
       const scopeResolver = {
-        resolve: <P extends import("@hex-di/ports").Port<unknown, string>>(p: P) => {
+        resolve: <P extends import("@hex-di/core").Port<unknown, string>>(p: P) => {
           if (p.__portName === "Api") return mockApi;
           if (p.__portName === "Logger") return mockLogger;
           throw new Error(`Unknown port: ${p.__portName}`);
@@ -516,7 +516,7 @@ describe("FlowAdapter with activities", () => {
 
       // Create activity deps resolver (test code only)
       const activityDepsResolver = (
-        reqs: readonly import("@hex-di/ports").Port<unknown, string>[]
+        reqs: readonly import("@hex-di/core").Port<unknown, string>[]
       ) => {
         const result: Record<string, unknown> = {};
         for (const req of reqs) {

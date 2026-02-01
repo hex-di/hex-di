@@ -12,14 +12,14 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { Port } from "@hex-di/ports";
 import {
-  Adapter,
   createAdapter,
-  InferClonable,
-  IsClonableAdapter,
-  EmptyDeps,
-} from "../src/index.js";
+  type Adapter,
+  type Port,
+  type EmptyDeps,
+  type InferClonable,
+  type IsClonableAdapter,
+} from "@hex-di/core";
 import {
   type Logger,
   type Database,

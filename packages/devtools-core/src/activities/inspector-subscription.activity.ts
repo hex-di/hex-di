@@ -12,7 +12,7 @@
  */
 
 import { defineEvents, activity, activityPort } from "@hex-di/flow";
-import type { InspectorWithSubscription, InspectorEvent } from "@hex-di/runtime";
+import type { InspectorAPI, InspectorEvent } from "@hex-di/core";
 
 // =============================================================================
 // Activity Events
@@ -83,7 +83,7 @@ export const InspectorSubscriptionEvents = defineEvents({
  */
 export interface InspectorSubscriptionInput {
   /** The inspector to subscribe to */
-  readonly inspector: InspectorWithSubscription;
+  readonly inspector: InspectorAPI;
 }
 
 /**

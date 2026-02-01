@@ -15,8 +15,7 @@
  * @packageDocumentation
  */
 
-import type { ContainerKind } from "@hex-di/plugin";
-import type { InspectorWithSubscription, InspectorEvent } from "@hex-di/runtime";
+import type { ContainerKind, InspectorAPI, InspectorEvent } from "@hex-di/core";
 
 // =============================================================================
 // Framework-Agnostic Plugin Types (from core)
@@ -60,7 +59,7 @@ export interface ContainerNode {
   /** Parent container ID, or null for root containers */
   readonly parentId: string | null;
   /** Inspector for this container */
-  readonly inspector: InspectorWithSubscription;
+  readonly inspector: InspectorAPI;
 }
 
 // =============================================================================

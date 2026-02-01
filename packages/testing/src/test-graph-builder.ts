@@ -8,8 +8,8 @@
  * @packageDocumentation
  */
 
-import type { Port, InferPortName } from "@hex-di/ports";
-import type { Graph, Adapter, Lifetime } from "@hex-di/graph";
+import type { Port, InferPortName, Adapter, Lifetime } from "@hex-di/core";
+import type { Graph } from "@hex-di/graph";
 
 // =============================================================================
 // Brand Symbol

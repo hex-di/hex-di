@@ -13,13 +13,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { TraceEntry, TraceFilter } from "@hex-di/plugin";
-import {
-  MemoryCollector,
-  NoOpCollector,
-  CompositeCollector,
-  type TraceCollector,
-} from "../../../src/index.js";
+import type { TraceEntry, TraceFilter, TraceCollector } from "@hex-di/core";
+import { MemoryCollector, NoOpCollector, CompositeCollector } from "@hex-di/core";
 
 // =============================================================================
 // Test Fixtures

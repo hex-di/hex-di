@@ -5,8 +5,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { createAsyncAdapter } from "../../src/index.js";
+import { createPort, createAsyncAdapter } from "@hex-di/core";
 
 interface Service {
   name: string;

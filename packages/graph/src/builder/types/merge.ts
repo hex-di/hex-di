@@ -20,7 +20,7 @@
  * @packageDocumentation
  */
 
-import type { AdapterConstraint, InferAdapterProvides } from "../../adapter/types/index.js";
+import type { AdapterConstraint, InferAdapterProvides } from "@hex-di/core";
 import type {
   HasOverlap,
   OverlappingPorts,
@@ -48,7 +48,7 @@ import type {
   DepthLimitError,
   OverrideWithoutParentErrorMessage,
 } from "../../validation/types/index.js";
-import type { IsNever } from "../../types/type-utilities.js";
+import type { IsNever } from "@hex-di/core";
 import type { GraphBuilder } from "../builder.js";
 import type {
   AnyBuilderInternals,

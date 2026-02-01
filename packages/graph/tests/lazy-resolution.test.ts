@@ -7,9 +7,8 @@
  * 3. isLazyPort() runtime check works correctly
  */
 import { describe, it, expect } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { lazyPort, isLazyPort } from "../src/index.js";
-import { getOriginalPort } from "../src/internal.js";
+import { createPort, getOriginalPort } from "@hex-di/core";
+import { lazyPort, isLazyPort } from "@hex-di/core";
 
 // =============================================================================
 // Test Fixtures

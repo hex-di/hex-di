@@ -14,7 +14,7 @@
 
 import { describe, test, expect } from "vitest";
 import { ResolutionContext } from "../src/resolution/context.js";
-import { CircularDependencyError } from "../src/common/errors.js";
+import { CircularDependencyError } from "../src/errors/index.js";
 
 function assertCircularDependencyError(error: unknown): CircularDependencyError {
   if (!(error instanceof CircularDependencyError)) {

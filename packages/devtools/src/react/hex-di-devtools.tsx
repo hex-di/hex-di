@@ -23,12 +23,8 @@ import React, {
   type ReactElement,
   type CSSProperties,
 } from "react";
-import {
-  INSPECTOR,
-  type InspectorWithSubscription,
-  type VisualizableAdapter,
-} from "@hex-di/runtime";
-import type { TracingAPI } from "@hex-di/plugin";
+import type { InspectorAPI, VisualizableAdapter } from "@hex-di/runtime";
+import type { TracingAPI } from "@hex-di/core";
 import type { ExportedGraph } from "@hex-di/devtools-core";
 import type { DevToolsPlugin } from "./types/plugin-types.js";
 import { defaultPlugins } from "../plugins/presets.js";
@@ -194,63 +190,13 @@ function getResizeHandlePosition(position: DevToolsPosition): CSSProperties {
 }
 
 /**
- * Type alias for container with full inspector functionality via INSPECTOR symbol.
+ * Extracts the InspectorAPI from a container.
+ *
+ * All containers have a built-in `inspector` property that provides the full
+ * InspectorAPI with all functionality needed by DevTools.
  */
-type ContainerWithFullInspector = InspectableContainer & {
-  readonly [INSPECTOR]: InspectorWithSubscription;
-};
-
-/**
- * Type guard to check if a container has the full InspectorPlugin installed
- * with subscription support (InspectorWithSubscription).
- *
- * The InspectorPlugin provides InspectorWithSubscription which includes:
- * - subscribe() for push-based event notifications
- * - getChildContainers() for hierarchy traversal
- * - getGraphData() for visualization
- * - getAdapterInfo() for adapter metadata
- *
- * Note: All containers have basic `container.inspector` property (InspectorAPI),
- * but full DevTools functionality requires the InspectorPlugin.
- *
- * Uses the hasInspector type guard from @hex-di/runtime which checks for the
- * INSPECTOR symbol. When the symbol is present, the container has
- * InspectorWithSubscription available via container[INSPECTOR].
- *
- * @param container - Container to check
- * @returns true if container has InspectorPlugin installed
- */
-function hasFullInspectorPlugin(
-  container: InspectableContainer
-): container is ContainerWithFullInspector {
-  // Direct symbol check - hasInspector type guard expects full Container type
-  // but InspectableContainer is a simplified structural type
-  return INSPECTOR in container;
-}
-
-/**
- * Extracts the InspectorWithSubscription from a container.
- *
- * Accesses the INSPECTOR symbol property which is added by the withInspector
- * wrapper and contains the full InspectorWithSubscription interface.
- *
- * @throws Error if the container doesn't have InspectorPlugin installed
- */
-function extractInspector(container: InspectableContainer): InspectorWithSubscription {
-  // Check if container has the INSPECTOR symbol (full InspectorPlugin)
-  if (hasFullInspectorPlugin(container)) {
-    // Access via INSPECTOR symbol which provides InspectorWithSubscription
-    return container[INSPECTOR];
-  }
-
-  // The built-in container.inspector provides InspectorAPI but not InspectorWithSubscription
-  // DevTools requires the full InspectorWithSubscription for child discovery, subscriptions, etc.
-  throw new Error(
-    "HexDiDevTools requires a container with InspectorPlugin installed. " +
-      "Use pipe(createContainer(graph, options), withInspector) to create a container with the inspector. " +
-      "The built-in container.inspector property provides basic InspectorAPI, but DevTools needs " +
-      "InspectorWithSubscription for full functionality (child discovery, graph data, subscriptions)."
-  );
+function extractInspector(container: InspectableContainer): InspectorAPI {
+  return container.inspector;
 }
 
 // =============================================================================

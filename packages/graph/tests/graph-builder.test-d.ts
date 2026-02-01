@@ -13,14 +13,8 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { Port } from "@hex-di/ports";
-import {
-  GraphBuilder,
-  Adapter,
-  AdapterConstraint,
-  InferGraphProvides,
-  InferGraphRequires,
-} from "../src/index.js";
+import { Port, Adapter, AdapterConstraint } from "@hex-di/core";
+import { GraphBuilder, InferGraphProvides, InferGraphRequires } from "../src/index.js";
 import {
   LoggerPort,
   DatabasePort,

@@ -9,7 +9,7 @@
  */
 
 import { createMachine, type Machine } from "@hex-di/flow";
-import type { ContainerKind, ContainerPhase, ScopeTree } from "@hex-di/plugin";
+import type { ContainerKind, ContainerPhase, ScopeTree } from "@hex-di/core";
 import type { ContainerGraphData } from "@hex-di/runtime";
 
 // =============================================================================

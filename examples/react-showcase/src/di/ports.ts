@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import { createPort } from "@hex-di/ports";
+import { createPort } from "@hex-di/core";
 import type {
   Config,
   Logger,
@@ -67,9 +67,7 @@ export const LoggerPort = createPort<"Logger", Logger>("Logger");
  * });
  * ```
  */
-export const MessageStorePort = createPort<"MessageStore", MessageStore>(
-  "MessageStore"
-);
+export const MessageStorePort = createPort<"MessageStore", MessageStore>("MessageStore");
 
 // =============================================================================
 // Scoped Ports
@@ -88,9 +86,7 @@ export const MessageStorePort = createPort<"MessageStore", MessageStore>(
  * console.log(`Logged in as: ${session.user.name}`);
  * ```
  */
-export const UserSessionPort = createPort<"UserSession", UserSession>(
-  "UserSession"
-);
+export const UserSessionPort = createPort<"UserSession", UserSession>("UserSession");
 
 /**
  * Port for the chat service.
@@ -105,9 +101,7 @@ export const UserSessionPort = createPort<"UserSession", UserSession>(
  * chat.sendMessage("Hello, world!");
  * ```
  */
-export const ChatServicePort = createPort<"ChatService", ChatService>(
-  "ChatService"
-);
+export const ChatServicePort = createPort<"ChatService", ChatService>("ChatService");
 
 // =============================================================================
 // Request-Scoped Ports
@@ -128,10 +122,9 @@ export const ChatServicePort = createPort<"ChatService", ChatService>(
  * console.log(notificationA.instanceId !== notificationB.instanceId); // true
  * ```
  */
-export const NotificationServicePort = createPort<
-  "NotificationService",
-  NotificationService
->("NotificationService");
+export const NotificationServicePort = createPort<"NotificationService", NotificationService>(
+  "NotificationService"
+);
 
 // =============================================================================
 // Type Exports

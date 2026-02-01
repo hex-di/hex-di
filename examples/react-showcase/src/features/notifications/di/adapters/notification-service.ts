@@ -4,7 +4,7 @@
  * @packageDocumentation
  */
 
-import { createAdapter } from "@hex-di/graph";
+import { createAdapter } from "@hex-di/core";
 import { NotificationServicePort } from "../ports.js";
 import { LoggerPort, ConfigPort } from "../../../core/di/ports.js";
 import type { NotificationService } from "../../types.js";

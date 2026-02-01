@@ -17,14 +17,13 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createPort } from "@hex-di/ports";
 import {
-  GraphBuilder,
+  createPort,
   createAdapter,
   createAsyncAdapter,
-  type Graph,
   type AdapterConstraint,
-} from "../src/index.js";
+} from "@hex-di/core";
+import { GraphBuilder, type Graph } from "../src/index.js";
 import { createLoggerAdapter, createDatabaseAdapter } from "./fixtures.js";
 
 // Create adapter instances for tests

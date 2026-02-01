@@ -24,7 +24,7 @@ import type {
   ResolvedActivityDeps,
   ActivityContext,
 } from "./types.js";
-import type { Port } from "@hex-di/ports";
+import type { Port } from "@hex-di/core";
 import type { TypedEventSink } from "./events.js";
 import type { ActivityPort, ActivityInput } from "./port.js";
 

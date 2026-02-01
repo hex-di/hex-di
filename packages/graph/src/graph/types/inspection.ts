@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { AdapterConstraint } from "../../adapter/types/adapter-types.js";
+import type { AdapterConstraint } from "@hex-di/core";
 
 /**
  * Structural type for graph-like objects that can be inspected.

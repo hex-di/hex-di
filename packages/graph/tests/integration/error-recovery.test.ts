@@ -5,7 +5,8 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createAdapter, GraphBuilder, Graph } from "../../src/index.js";
+import { createAdapter } from "@hex-di/core";
+import { GraphBuilder, type Graph } from "../../src/index.js";
 import { LoggerPort, DatabasePort, UserServicePort } from "./shared-fixtures.js";
 
 describe("Integration: Error recovery", () => {

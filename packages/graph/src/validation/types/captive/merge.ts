@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { IsNever } from "../../../types/type-utilities.js";
+import type { IsNever } from "@hex-di/core";
 // GetDirectDeps is a shared graph utility defined in cycle/detection.ts
 // It's used here for traversing the dependency graph during captive detection
 import type { GetDirectDeps } from "../cycle/detection.js";

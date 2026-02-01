@@ -53,8 +53,7 @@
   "dependencies": {
     "@hex-di/devtools-core": "workspace:*",
     "@hex-di/graph": "workspace:*",
-    "@hex-di/plugin": "workspace:*",
-    "@hex-di/ports": "workspace:*",
+    "@hex-di/core": "workspace:*",
     "ws": "^8.18.0"
   },
   "devDependencies": {

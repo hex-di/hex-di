@@ -8,8 +8,14 @@
  * @module
  */
 
-import type { Port, InferService, InferPortName } from "@hex-di/ports";
-import { createAdapter, type Adapter, type Lifetime } from "@hex-di/graph";
+import {
+  createAdapter,
+  type Port,
+  type InferService,
+  type InferPortName,
+  type Adapter,
+  type Lifetime,
+} from "@hex-di/core";
 
 // =============================================================================
 // Types
@@ -35,12 +41,12 @@ import { createAdapter, type Adapter, type Lifetime } from "@hex-di/graph";
  */
 export interface MockAdapterOptions {
   /**
- * The lifetime scope for the mock adapter.
- *
- * - `'transient'` (default): Fresh instance for every resolution. Best for test isolation.
- * - `'singleton'`: One instance shared across all resolutions in the container.
- * - `'scoped'`: One instance per scope.
- */
+   * The lifetime scope for the mock adapter.
+   *
+   * - `'transient'` (default): Fresh instance for every resolution. Best for test isolation.
+   * - `'singleton'`: One instance shared across all resolutions in the container.
+   * - `'scoped'`: One instance per scope.
+   */
   lifetime?: Lifetime;
 }
 
@@ -80,9 +86,7 @@ function createMockProxyHandler<T extends object>(
 
       // Return a throwing function for unimplemented methods
       return function notImplemented() {
-        throw new Error(
-          `Method '${propName}' not implemented on mock for port '${portName}'`
-        );
+        throw new Error(`Method '${propName}' not implemented on mock for port '${portName}'`);
       };
     },
 
@@ -188,10 +192,7 @@ function createMockImplementation<T extends object>(
  * @see {@link MockAdapterOptions} for configuration options
  * @see TestGraphBuilder for overriding adapters in tests
  */
-export function createMockAdapter<
-  P extends Port<object, string>,
-  L extends Lifetime = "transient",
->(
+export function createMockAdapter<P extends Port<object, string>, L extends Lifetime = "transient">(
   port: P,
   implementation: Partial<InferService<P>>,
   options?: MockAdapterOptions & { lifetime?: L }

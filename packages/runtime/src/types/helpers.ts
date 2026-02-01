@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import type { Port } from "@hex-di/ports";
+import type { Port } from "@hex-di/core";
 import type { ContextVariableKey } from "./branded-types.js";
 
 /**

@@ -1,6 +1,5 @@
 import { describe, it, expectTypeOf } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { createAdapter, lazyPort } from "../src/index.js";
+import { createPort, createAdapter, lazyPort } from "@hex-di/core";
 import type { AdapterRequiresNames } from "../src/validation/types/adapter-extraction.js";
 
 // Test services

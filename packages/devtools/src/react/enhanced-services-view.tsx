@@ -17,9 +17,9 @@ import React, {
   type ReactElement,
   type CSSProperties,
 } from "react";
-import type { Lifetime } from "@hex-di/graph";
+import type { Lifetime } from "@hex-di/core";
 import type { ExportedGraph } from "@hex-di/devtools-core";
-import type { TracingAPI } from "@hex-di/plugin";
+import type { TracingAPI } from "@hex-di/core";
 import type { ServiceInfo } from "./resolved-services.js";
 import { enrichServicesWithRelations, buildDependencyTree } from "./services-tree.js";
 import { EnhancedServiceItem } from "./enhanced-service-item.js";

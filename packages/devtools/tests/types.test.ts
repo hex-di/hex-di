@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, expectTypeOf } from "vitest";
-import type { Lifetime, FactoryKind } from "@hex-di/graph";
+import type { Lifetime, FactoryKind } from "@hex-di/core";
 import type {
   ExportedNode,
   ExportedEdge,
@@ -245,7 +245,7 @@ describe("MermaidOptions", () => {
 
 describe("NodePredicate", () => {
   it("is a function that takes ExportedNode and returns boolean", () => {
-    const predicate: NodePredicate = (node) => node.lifetime === "singleton";
+    const predicate: NodePredicate = node => node.lifetime === "singleton";
 
     const singletonNode: ExportedNode = {
       id: "Logger",
@@ -266,7 +266,7 @@ describe("NodePredicate", () => {
   });
 
   it("can be used for pattern matching on node id", () => {
-    const serviceFilter: NodePredicate = (node) => node.id.endsWith("Service");
+    const serviceFilter: NodePredicate = node => node.id.endsWith("Service");
 
     const serviceNode: ExportedNode = {
       id: "UserService",
@@ -289,7 +289,7 @@ describe("NodePredicate", () => {
 
 describe("LabelTransform", () => {
   it("is a function that takes ExportedNode and returns string", () => {
-    const transform: LabelTransform = (node) => `${node.label} [${node.lifetime}]`;
+    const transform: LabelTransform = node => `${node.label} [${node.lifetime}]`;
 
     const node: ExportedNode = {
       id: "Logger",
@@ -302,7 +302,7 @@ describe("LabelTransform", () => {
   });
 
   it("can access all node properties for transformation", () => {
-    const detailedTransform: LabelTransform = (node) =>
+    const detailedTransform: LabelTransform = node =>
       `ID: ${node.id}, Label: ${node.label}, Lifetime: ${node.lifetime}`;
 
     const node: ExportedNode = {

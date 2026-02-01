@@ -27,7 +27,7 @@ import {
   type DevToolsFlowRuntimeLike,
 } from "../react/context/devtools-context.js";
 import { useStore, type StoreApi } from "zustand";
-import type { InspectorWithSubscription } from "@hex-di/runtime";
+import type { InspectorAPI } from "@hex-di/core";
 import type { DevToolsPlugin } from "../react/types/plugin-types.js";
 import {
   createDevToolsStoreWithRuntime,
@@ -69,7 +69,7 @@ const DevToolsPluginsContext = createContext<readonly DevToolsPlugin[]>([]);
  */
 export interface DevToolsStoreProviderProps {
   /** The root inspector for the container hierarchy */
-  readonly inspector: InspectorWithSubscription;
+  readonly inspector: InspectorAPI;
   /** DevTools plugins to use. Defaults to defaultPlugins() */
   readonly plugins?: readonly DevToolsPlugin[];
   /** Initial active tab. Defaults to "graph" */
@@ -132,11 +132,19 @@ export function DevToolsStoreProvider({
     initialTabAppliedRef.current = false;
   }
 
-  // Create store if not exists
+  // Create store if not exists or if the current store has been disposed
   // Note: We create synchronously here for React's synchronous render.
   // The pending dispose will complete asynchronously but won't affect
   // the new store since they operate on different runtime instances.
-  if (storeRef.current === null) {
+  //
+  // IMPORTANT: We must also check isDisposed because React StrictMode
+  // calls cleanup effects between the two mount cycles. This means:
+  // 1. First mount: store created
+  // 2. StrictMode cleanup: store disposed (runtime set to null)
+  // 3. Second mount: storeRef.current is NOT null but store is disposed
+  // Without this check, the disposed store would be reused and all
+  // dispatches would fail with "runtime is not available" warning.
+  if (storeRef.current === null || storeRef.current.getState().isDisposed) {
     storeRef.current = createDevToolsStoreWithRuntime({ inspector });
   }
 

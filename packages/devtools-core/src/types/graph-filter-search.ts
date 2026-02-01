@@ -15,7 +15,7 @@
  */
 
 import type { FactoryKind } from "../types.js";
-import type { Lifetime } from "@hex-di/plugin";
+import type { Lifetime } from "@hex-di/core";
 import type { ContainerId, PortId, UnifiedGraphNode, UnifiedGraphEdge } from "./unified-graph.js";
 import type { OwnershipState } from "./ownership-visualization.js";
 

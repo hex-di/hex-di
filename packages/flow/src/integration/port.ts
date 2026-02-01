@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import { createPort, type Port } from "@hex-di/ports";
+import { createPort, type Port } from "@hex-di/core";
 import type { FlowService } from "./types.js";
 
 // =============================================================================

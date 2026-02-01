@@ -20,12 +20,8 @@
  * @packageDocumentation
  */
 
-import {
-  INTERNAL_ACCESS,
-  type ContainerInternalState,
-  type InspectorAPI,
-  type TracingAPI,
-} from "@hex-di/runtime";
+import { INTERNAL_ACCESS, type ContainerInternalState } from "@hex-di/runtime";
+import type { TracingAPI, InspectorAPI } from "@hex-di/core";
 
 // Re-export for consumers
 export { INTERNAL_ACCESS };
@@ -79,12 +75,13 @@ export interface InspectableContainer {
   /**
    * Built-in inspector API for container state inspection.
    *
-   * Provides pull-based queries for container state, scope trees, and port resolution status.
-   * Always available on containers - no plugin configuration required.
+   * Provides all inspection functionality including:
+   * - Pull-based queries (getSnapshot, getScopeTree, listPorts, isResolved)
+   * - Push-based subscriptions (subscribe)
+   * - Hierarchy traversal (getChildContainers)
+   * - Graph data for DevTools (getAdapterInfo, getGraphData)
    *
-   * For full DevTools functionality (subscriptions, child discovery, graph data),
-   * containers need the InspectorPlugin via `withInspector` wrapper which provides
-   * InspectorWithSubscription via the INSPECTOR symbol.
+   * Always available on containers - no plugin configuration required.
    */
   readonly inspector: InspectorAPI;
 

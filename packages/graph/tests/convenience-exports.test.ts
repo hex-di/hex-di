@@ -8,13 +8,14 @@
 import { describe, expect, it } from "vitest";
 
 // Import from convenience subpath
-import {
-  defineService as defineServiceConvenience,
-  defineAsyncService as defineAsyncServiceConvenience,
-} from "../src/convenience.js";
 
 // Import from main entry for comparison
-import { defineService, defineAsyncService } from "../src/index.js";
+import {
+  defineService,
+  defineAsyncService,
+  defineService as defineServiceConvenience,
+  defineAsyncService as defineAsyncServiceConvenience,
+} from "@hex-di/core";
 
 import type { Logger, Database } from "./fixtures.js";
 

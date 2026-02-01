@@ -52,8 +52,8 @@
   },
   "homepage": "https://github.com/hex-di/hex-di/tree/main/packages/react#readme",
   "dependencies": {
+    "@hex-di/core": "workspace:*",
     "@hex-di/graph": "workspace:*",
-    "@hex-di/ports": "workspace:*",
     "@hex-di/runtime": "workspace:*"
   },
   "peerDependencies": {

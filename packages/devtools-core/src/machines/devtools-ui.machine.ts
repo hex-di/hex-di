@@ -12,7 +12,7 @@
  */
 
 import { createMachine, type Machine } from "@hex-di/flow";
-import type { ContainerKind } from "@hex-di/plugin";
+import type { ContainerKind } from "@hex-di/core";
 
 // =============================================================================
 // Tab Types

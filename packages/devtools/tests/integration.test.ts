@@ -11,8 +11,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter } from "@hex-di/graph";
+import { createPort, createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import {
   toJSON,
   toDOT,
@@ -150,7 +150,10 @@ describe("Integration: Full Pipelines", () => {
     // Full pipeline: add prefix to labels, then export to Mermaid
     // Using parentheses instead of brackets to avoid Mermaid escaping
     const exported = toJSON(graph);
-    const relabeled = relabelPorts(exported, (node) => `(${getLifetimeIndicator(node)}) ${node.label}`);
+    const relabeled = relabelPorts(
+      exported,
+      node => `(${getLifetimeIndicator(node)}) ${node.label}`
+    );
     const mermaid = toMermaid(relabeled);
 
     // Should have relabeled nodes with lifetime prefix
@@ -173,13 +176,8 @@ describe("Integration: Full Pipelines", () => {
 
     // Chain: filter to scoped/transient -> relabel -> export to Mermaid
     const exported = toJSON(graph);
-    const nonSingletons = filterGraph(
-      exported,
-      (node) => node.lifetime !== "singleton"
-    );
-    const relabeled = relabelPorts(nonSingletons, (node) =>
-      node.label.toUpperCase()
-    );
+    const nonSingletons = filterGraph(exported, node => node.lifetime !== "singleton");
+    const relabeled = relabelPorts(nonSingletons, node => node.label.toUpperCase());
     const mermaid = toMermaid(relabeled);
 
     // Should only have non-singleton nodes with uppercase labels
@@ -255,9 +253,7 @@ describe("Integration: Export functions accept ExportedGraph directly", () => {
 
   it("toMermaid with ExportedGraph supports all options", () => {
     const exportedGraph: ExportedGraph = {
-      nodes: [
-        { id: "A", label: "A", lifetime: "singleton", factoryKind: "sync" },
-      ],
+      nodes: [{ id: "A", label: "A", lifetime: "singleton", factoryKind: "sync" }],
       edges: [],
     };
 
@@ -321,13 +317,13 @@ describe("Integration: Pure functions (no side effects)", () => {
   it("relabelPorts is pure - does not modify input", () => {
     const graph = createTestGraph();
     const exported = toJSON(graph);
-    const originalLabels = exported.nodes.map((n) => n.label);
+    const originalLabels = exported.nodes.map(n => n.label);
 
     // Apply relabel
-    relabelPorts(exported, (node) => `PREFIX_${node.label}`);
+    relabelPorts(exported, node => `PREFIX_${node.label}`);
 
     // Original labels should be unchanged
-    expect(exported.nodes.map((n) => n.label)).toEqual(originalLabels);
+    expect(exported.nodes.map(n => n.label)).toEqual(originalLabels);
   });
 
   it("chained transforms are pure - intermediate results unchanged", () => {
@@ -340,7 +336,7 @@ describe("Integration: Pure functions (no side effects)", () => {
     const step2 = filterGraph(step1, byLifetime("singleton"));
     const step2Copy = { ...step2, nodes: [...step2.nodes], edges: [...step2.edges] };
 
-    const step3 = relabelPorts(step2, (n) => n.label.toUpperCase());
+    const step3 = relabelPorts(step2, n => n.label.toUpperCase());
 
     // Verify intermediate results unchanged
     expect(step1.nodes).toEqual(step1Copy.nodes);
@@ -349,7 +345,7 @@ describe("Integration: Pure functions (no side effects)", () => {
     expect(step2.edges).toEqual(step2Copy.edges);
 
     // Final result should be different from intermediates
-    expect(step3.nodes.map((n) => n.label)).not.toEqual(step2.nodes.map((n) => n.label));
+    expect(step3.nodes.map(n => n.label)).not.toEqual(step2.nodes.map(n => n.label));
   });
 });
 
@@ -365,10 +361,10 @@ describe("Integration: Transform composability", () => {
     // Filter to singleton OR scoped (not request)
     const filtered = filterGraph(
       exported,
-      (node) => node.lifetime === "singleton" || node.lifetime === "scoped"
+      node => node.lifetime === "singleton" || node.lifetime === "scoped"
     );
 
-    const nodeIds = filtered.nodes.map((n) => n.id);
+    const nodeIds = filtered.nodes.map(n => n.id);
     expect(nodeIds).toContain("Logger");
     expect(nodeIds).toContain("Config");
     expect(nodeIds).toContain("Database");
@@ -396,23 +392,21 @@ describe("Integration: Transform composability", () => {
     // Order 1: filter then relabel (using parentheses to avoid escaping issues)
     const order1 = relabelPorts(
       filterGraph(exported, byLifetime("singleton")),
-      (n) => `(S) ${n.label}`
+      n => `(S) ${n.label}`
     );
 
     // Order 2: relabel then filter (should give same nodes but relabeled first)
     const order2 = filterGraph(
-      relabelPorts(exported, (n) => `(${getLifetimeIndicator(n)}) ${n.label}`),
+      relabelPorts(exported, n => `(${getLifetimeIndicator(n)}) ${n.label}`),
       byLifetime("singleton")
     );
 
     // Both should have same node IDs
-    expect(order1.nodes.map((n) => n.id).sort()).toEqual(
-      order2.nodes.map((n) => n.id).sort()
-    );
+    expect(order1.nodes.map(n => n.id).sort()).toEqual(order2.nodes.map(n => n.id).sort());
 
     // Both should have singleton labels with (S) prefix
-    order1.nodes.forEach((n) => expect(n.label).toMatch(/^\(S\)/));
-    order2.nodes.forEach((n) => expect(n.label).toMatch(/^\(S\)/));
+    order1.nodes.forEach(n => expect(n.label).toMatch(/^\(S\)/));
+    order2.nodes.forEach(n => expect(n.label).toMatch(/^\(S\)/));
   });
 
   it("empty graph exports produce valid but empty output", () => {

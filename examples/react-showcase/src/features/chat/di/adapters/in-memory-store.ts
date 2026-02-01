@@ -4,7 +4,7 @@
  * @packageDocumentation
  */
 
-import { createAdapter } from "@hex-di/graph";
+import { createAdapter } from "@hex-di/core";
 import { MessageStorePort } from "../ports.js";
 import { LoggerPort } from "../../../core/di/ports.js";
 import type { Message, MessageStore, MessageListener, Unsubscribe } from "../../types.js";
@@ -35,7 +35,7 @@ export const InMemoryMessageStoreAdapter = createAdapter({
 
     const notifyListeners = (): void => {
       const frozenMessages = Object.freeze([...messages]) as readonly Message[];
-      listeners.forEach((listener) => listener(frozenMessages));
+      listeners.forEach(listener => listener(frozenMessages));
     };
 
     deps.Logger.log("MessageStore initialized with in-memory storage (no persistence)");

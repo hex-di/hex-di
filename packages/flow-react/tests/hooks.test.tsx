@@ -14,7 +14,7 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen, cleanup, act } from "@testing-library/react";
 import React, { useEffect } from "react";
-import { createPort, type Port } from "@hex-di/ports";
+import { createPort, type Port } from "@hex-di/core";
 import { HexDiContainerProvider } from "@hex-di/react";
 import type {
   FlowService,

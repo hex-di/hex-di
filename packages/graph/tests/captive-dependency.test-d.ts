@@ -9,20 +9,16 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import {
-  GraphBuilder,
-  createAdapter,
-  LifetimeLevel,
-  CaptiveDependencyError,
-  IsCaptiveDependency,
-} from "../src/index.js";
+import { createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
+import { CaptiveDependencyError, LifetimeLevel, IsCaptiveDependency } from "../src/advanced.js";
 import type {
   CaptiveErrorMessage,
   AddLifetime,
   GetLifetimeLevel,
   FindAnyCaptiveDependency,
   LifetimeName,
-} from "../src/internal.js";
+} from "../src/advanced.js";
 import {
   LoggerPort,
   DatabasePort,

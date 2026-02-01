@@ -22,7 +22,7 @@ import type {
   DiagnosticLifetimeLevel,
   DiagnosticLifetimeName,
 } from "../src/validation/types/captive/lifetime-level.js";
-import type { InferenceError, IsNever } from "../src/types/type-utilities.js";
+import type { InferenceError, IsNever } from "@hex-di/core";
 import type {
   SINGLETON_LEVEL,
   SCOPED_LEVEL,

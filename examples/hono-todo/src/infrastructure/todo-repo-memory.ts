@@ -1,4 +1,4 @@
-import { createAdapter } from "@hex-di/graph";
+import { createAdapter } from "@hex-di/core";
 import { TodoNotFoundError } from "../domain/errors.js";
 import { TodoRepositoryPort } from "../domain/ports.js";
 import type { Todo } from "../domain/entities.js";
@@ -22,7 +22,7 @@ export const InMemoryTodoRepositoryAdapter = createAdapter({
       },
       async toggle(userId, id) {
         const todos = store.get(userId) ?? [];
-        const todo = todos.find((item) => item.id === id);
+        const todo = todos.find(item => item.id === id);
         if (!todo) {
           throw new TodoNotFoundError(id);
         }

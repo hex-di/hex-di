@@ -53,7 +53,7 @@
   },
   "homepage": "https://github.com/hex-di/hex-di/tree/main/packages/flow#readme",
   "dependencies": {
-    "@hex-di/ports": "workspace:*",
+    "@hex-di/core": "workspace:*",
     "@hex-di/graph": "workspace:*",
     "@hex-di/runtime": "workspace:*"
   },

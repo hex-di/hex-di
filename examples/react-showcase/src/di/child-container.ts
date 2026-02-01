@@ -10,9 +10,11 @@
  * touching the root container.
  */
 
-import { createAdapter, GraphBuilder } from "@hex-di/graph";
+import { createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import type { Message, MessageListener, MessageStore, ChatService } from "../types.js";
 import { ChatServicePort, LoggerPort, MessageStorePort, UserSessionPort } from "./ports.js";
+import { chatGraphFragment } from "./chat-graph.js";
 
 /**
  * In-memory message store used only inside the child container.
@@ -93,10 +95,11 @@ const PluginChatServiceAdapter = createAdapter({
  * Child graph containing the overrides for the plugin container.
  * Overrides are declared in the graph, then applied when creating the child container.
  *
- * Uses buildFragment() instead of build() because the dependencies (LoggerPort,
- * UserSessionPort, MessageStorePort) will be satisfied by the parent container.
+ * Uses forParent() to properly declare overrides, and buildFragment() because
+ * the dependencies (LoggerPort, UserSessionPort, MessageStorePort) will be
+ * satisfied by the parent container.
  */
-export const PluginChildGraph = GraphBuilder.create()
+export const PluginChildGraph = GraphBuilder.forParent(chatGraphFragment)
   .override(PluginMessageStoreAdapter)
   .override(PluginChatServiceAdapter)
   .buildFragment();

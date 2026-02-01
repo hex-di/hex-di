@@ -6,8 +6,8 @@
  */
 
 import { describe, test, expect, vi } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { MemoMap } from "../src/common/memo-map.js";
+import { createPort } from "@hex-di/core";
+import { MemoMap } from "../src/util/memo-map.js";
 
 // =============================================================================
 // Test Fixtures

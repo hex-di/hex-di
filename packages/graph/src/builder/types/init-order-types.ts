@@ -21,7 +21,7 @@
 import type { GraphBuilderSignature } from "./builder-signature.js";
 import type { AnyBuilderInternals, GetDepGraph } from "./state.js";
 import type { GetDirectDeps } from "../../validation/types/index.js";
-import type { IsNever, Prettify } from "../../types/type-utilities.js";
+import type { IsNever, Prettify } from "@hex-di/core";
 
 /**
  * Checks if a port has any async dependencies in the dependency graph.

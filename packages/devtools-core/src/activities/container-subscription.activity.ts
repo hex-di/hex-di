@@ -12,8 +12,13 @@
  */
 
 import { defineEvents, activity, activityPort } from "@hex-di/flow";
-import type { InspectorWithSubscription, ContainerGraphData } from "@hex-di/runtime";
-import type { ScopeTree, ContainerPhase, ContainerKind } from "@hex-di/plugin";
+import type {
+  InspectorAPI,
+  ContainerGraphData,
+  ScopeTree,
+  ContainerPhase,
+  ContainerKind,
+} from "@hex-di/core";
 import type { ContainerTreeEntry } from "../machines/container-tree.machine.js";
 
 // =============================================================================
@@ -45,7 +50,7 @@ export const ContainerSubscriptionEvents = defineEvents({
  * Inspector reference with container ID for tracking.
  */
 export interface InspectorRef {
-  readonly inspector: InspectorWithSubscription;
+  readonly inspector: InspectorAPI;
   readonly containerId: string;
 }
 
@@ -86,7 +91,7 @@ export const ContainerSubscriptionPort = activityPort<
  * Same logic as ContainerDiscoveryActivity.createContainerEntry.
  */
 function createCompleteContainerEntry(
-  inspector: InspectorWithSubscription,
+  inspector: InspectorAPI,
   parentId: string | null
 ): ContainerTreeEntry {
   const snapshot = inspector.getSnapshot();
@@ -121,7 +126,7 @@ function createCompleteContainerEntry(
  * This is needed when creating entries for dynamically discovered children.
  */
 function findParentId(
-  childInspector: InspectorWithSubscription,
+  childInspector: InspectorAPI,
   allRefs: readonly InspectorRef[]
 ): string | null {
   const childName = childInspector.getSnapshot().containerName;

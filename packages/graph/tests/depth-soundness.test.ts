@@ -15,9 +15,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter } from "../src/index.js";
-import type { AdapterConstraint } from "../src/index.js";
+import { createPort, createAdapter, type AdapterConstraint } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
 
 // =============================================================================
 // Test: Runtime catches cycles when compile-time validation is incomplete
@@ -27,7 +26,7 @@ describe("depth-limited cycle detection soundness", () => {
   describe("runtime validation catches cycles when depth limit exceeded", () => {
     it("detectCycleAtRuntime is called when inspection.depthLimitExceeded is true", async () => {
       // Import runtime cycle detection
-      const { detectCycleAtRuntime } = await import("../src/index.js");
+      const { detectCycleAtRuntime } = await import("../src/advanced.js");
 
       // Create a simple cycle: A -> B -> A
       const PortA = createPort<"A", { a: () => void }>("A");
@@ -125,7 +124,7 @@ describe("depth-limited cycle detection soundness", () => {
   describe("runtime cycle detection algorithm correctness", () => {
     it("detectCycleAtRuntime correctly identifies cycles", async () => {
       // Import the function directly for testing
-      const { detectCycleAtRuntime } = await import("../src/index.js");
+      const { detectCycleAtRuntime } = await import("../src/advanced.js");
 
       const PortA = createPort<"A", object>("A");
       const PortB = createPort<"B", object>("B");
@@ -159,7 +158,7 @@ describe("depth-limited cycle detection soundness", () => {
     });
 
     it("detectCycleAtRuntime returns null for acyclic graphs", async () => {
-      const { detectCycleAtRuntime } = await import("../src/index.js");
+      const { detectCycleAtRuntime } = await import("../src/advanced.js");
 
       const PortA = createPort<"A", object>("A");
       const PortB = createPort<"B", object>("B");

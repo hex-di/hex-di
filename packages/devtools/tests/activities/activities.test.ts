@@ -12,11 +12,11 @@
 import { describe, it, expect, vi } from "vitest";
 import { testActivity, createTestEventSink, createTestSignal } from "@hex-di/flow";
 import type {
-  InspectorWithSubscription,
+  InspectorAPI,
   InspectorEvent,
   InspectorContainerSnapshot as ContainerSnapshot,
 } from "@hex-di/runtime";
-import type { TracingAPI, TraceEntry, TraceFilter, Lifetime, ScopeTree } from "@hex-di/plugin";
+import type { TracingAPI, TraceEntry, TraceFilter, Lifetime, ScopeTree } from "@hex-di/core";
 
 import {
   ContainerDiscoveryActivity,
@@ -81,10 +81,10 @@ function createMockInspector(
     id?: string;
     name?: string;
     kind?: "root" | "child" | "lazy";
-    children?: readonly InspectorWithSubscription[];
+    children?: readonly InspectorAPI[];
     onSubscribe?: (listener: (event: InspectorEvent) => void) => () => void;
   } = {}
-): InspectorWithSubscription {
+): InspectorAPI {
   const {
     name = "TestContainer",
     kind = "root",

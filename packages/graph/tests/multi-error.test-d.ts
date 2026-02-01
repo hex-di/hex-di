@@ -12,15 +12,21 @@
  */
 
 import { describe, expectTypeOf, it, expect } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { createAdapter, GraphBuilder } from "../src/index.js";
-import type { FilterNever, MultiErrorMessage } from "../src/internal.js";
+import { createPort, createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
+import type { FilterNever, MultiErrorMessage } from "../src/advanced.js";
 import type { MergeResultAllErrors, AnyBuilderInternals } from "../src/builder/types/index.js";
-import { createLoggerAdapter, LoggerPort, DatabasePort } from "./fixtures.js";
+import {
+  createLoggerAdapter,
+  LoggerPort,
+  DatabasePort,
+  type ServiceA,
+  type ServiceB,
+  type ServiceC,
+} from "./fixtures.js";
 
 // Create adapter instance for tests
 const LoggerAdapter = createLoggerAdapter();
-import type { ServiceA, ServiceB, ServiceC } from "./fixtures.js";
 
 // =============================================================================
 // FilterNever Utility Tests

@@ -10,7 +10,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/ports";
+import { createPort } from "@hex-di/core";
 import type { FC } from "react";
 import { createComponent } from "../src/factories/create-component.js";
 

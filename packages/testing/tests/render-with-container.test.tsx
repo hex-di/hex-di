@@ -13,8 +13,8 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { screen, cleanup } from "@testing-library/react";
 import React from "react";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter } from "@hex-di/graph";
+import { createPort, createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import { usePort } from "@hex-di/react";
 import { TestGraphBuilder } from "../src/test-graph-builder.js";
 import { renderWithContainer } from "../src/render-with-container.js";
@@ -57,8 +57,8 @@ const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort],
   lifetime: "transient",
-  factory: (deps) => ({
-    getUser: (id) => {
+  factory: deps => ({
+    getUser: (id: string) => {
       deps.Logger.log(`Getting user ${id}`);
       return { id, name: "Test User" };
     },
@@ -99,9 +99,7 @@ afterEach(() => {
 describe("renderWithContainer", () => {
   describe("basic rendering", () => {
     it("renders element with ContainerProvider wrapping", () => {
-      const graph = GraphBuilder.create()
-        .provide(LoggerAdapter)
-        .build();
+      const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
       renderWithContainer(<LoggerNameComponent />, graph);
 
@@ -110,9 +108,7 @@ describe("renderWithContainer", () => {
     });
 
     it("returns RTL render result with standard methods", () => {
-      const graph = GraphBuilder.create()
-        .provide(LoggerAdapter)
-        .build();
+      const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
       const result = renderWithContainer(<LoggerNameComponent />, graph);
 
@@ -125,9 +121,7 @@ describe("renderWithContainer", () => {
     });
 
     it("returns DI container reference as diContainer", () => {
-      const graph = GraphBuilder.create()
-        .provide(LoggerAdapter)
-        .build();
+      const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
       const result = renderWithContainer(<LoggerNameComponent />, graph);
 
@@ -141,9 +135,7 @@ describe("renderWithContainer", () => {
 
   describe("usePort integration", () => {
     it("usePort resolves services in rendered components", () => {
-      const graph = GraphBuilder.create()
-        .provide(LoggerAdapter)
-        .build();
+      const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
       renderWithContainer(<LoggerNameComponent />, graph);
 
@@ -190,9 +182,7 @@ describe("renderWithContainer", () => {
 
   describe("render options", () => {
     it("custom render options are passed through to RTL render", () => {
-      const graph = GraphBuilder.create()
-        .provide(LoggerAdapter)
-        .build();
+      const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
       // Create a custom wrapper div
       const customContainer = document.createElement("div");
@@ -215,9 +205,7 @@ describe("renderWithContainer", () => {
 
   describe("TestGraphBuilder integration", () => {
     it("works with graphs created from TestGraphBuilder", () => {
-      const productionGraph = GraphBuilder.create()
-        .provide(LoggerAdapter)
-        .build();
+      const productionGraph = GraphBuilder.create().provide(LoggerAdapter).build();
 
       const mockLoggerAdapter = createAdapter({
         provides: LoggerPort,
@@ -229,9 +217,7 @@ describe("renderWithContainer", () => {
         }),
       });
 
-      const testGraph = TestGraphBuilder.from(productionGraph)
-        .override(mockLoggerAdapter)
-        .build();
+      const testGraph = TestGraphBuilder.from(productionGraph).override(mockLoggerAdapter).build();
 
       renderWithContainer(<LoggerNameComponent />, testGraph);
 
@@ -260,8 +246,8 @@ describe("renderWithContainer", () => {
         provides: UserServicePort,
         requires: [LoggerPort],
         lifetime: "transient",
-        factory: (deps) => ({
-          getUser: (id) => {
+        factory: deps => ({
+          getUser: (id: string) => {
             deps.Logger.log(`Mock getting user ${id}`);
             return { id, name: "Mocked User" };
           },

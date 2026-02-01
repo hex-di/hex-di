@@ -18,10 +18,9 @@
  * @packageDocumentation
  */
 import { describe, expect, it } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { createAdapter } from "../src/index.js";
+import { createPort, createAdapter } from "@hex-di/core";
 import { buildGraph, buildGraphFragment } from "../src/builder/builder-build.js";
-import { detectCaptiveAtRuntime } from "../src/graph/inspection/runtime-captive-detection.js";
+import { detectCaptiveAtRuntime } from "../src/advanced.js";
 
 // =============================================================================
 // Test Fixtures

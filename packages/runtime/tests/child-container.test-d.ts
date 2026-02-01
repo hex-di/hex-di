@@ -13,8 +13,8 @@
  */
 
 import { describe, expectTypeOf, it, expect } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter } from "@hex-di/graph";
+import { createPort, createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
 import type { Container, InheritanceMode } from "../src/types.js";
 
@@ -148,7 +148,7 @@ describe("createChild() type validation", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
     const container = createContainer(graph, { name: "Test" });
 
-    const childGraph = GraphBuilder.create().override(AlternativeLoggerAdapter).build();
+    const childGraph = GraphBuilder.forParent(graph).override(AlternativeLoggerAdapter).build();
     const childContainer = container.createChild(childGraph, { name: "Child" });
 
     // Child should be able to resolve overridden port
@@ -298,7 +298,7 @@ describe("Inheritance mode types", () => {
     const container = createContainer(graph, { name: "Test" });
 
     // Child graph with override and extension
-    const childGraph = GraphBuilder.create()
+    const childGraph = GraphBuilder.forParent(graph)
       .override(AlternativeLoggerAdapter)
       .provide(ConfigAdapter)
       .build();

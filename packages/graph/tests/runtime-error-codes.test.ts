@@ -8,14 +8,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createPort } from "@hex-di/ports";
-import {
-  createAdapter,
-  createAsyncAdapter,
-  parseGraphError,
-  GraphErrorCode,
-  isGraphError,
-} from "../src/index.js";
+import { createPort, createAdapter, createAsyncAdapter } from "@hex-di/core";
+import { parseGraphError, isGraphError, GraphErrorCode } from "../src/advanced.js";
 
 describe("adapter factory runtime error codes", () => {
   describe("createAdapter validation errors", () => {

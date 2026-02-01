@@ -16,7 +16,7 @@ import {
   type TypedEventSink,
   type EventOf,
 } from "@hex-di/flow";
-import type { InspectorWithSubscription } from "@hex-di/runtime";
+import type { InspectorAPI } from "@hex-di/core";
 import {
   devToolsUIMachine,
   type DevToolsUIState,
@@ -54,7 +54,7 @@ export interface DevToolsFlowRuntimeConfig {
    * - Traverse the container tree via getChildContainers()
    * - Look up inspectors by container ID
    */
-  readonly inspector: InspectorWithSubscription;
+  readonly inspector: InspectorAPI;
 }
 
 // =============================================================================
@@ -376,7 +376,7 @@ export class DevToolsFlowRuntime {
   private cachedSnapshot: DevToolsSnapshot | null;
   private disposed: boolean;
 
-  private readonly rootInspector: InspectorWithSubscription;
+  private readonly rootInspector: InspectorAPI;
   private discoveryAbortController: AbortController | null;
   private subscriptionAbortController: AbortController | null;
   private lastContainerTreeState: ContainerTreeState;
@@ -569,9 +569,9 @@ export class DevToolsFlowRuntime {
   /**
    * Gets the root inspector for the container hierarchy.
    *
-   * @returns The root InspectorWithSubscription
+   * @returns The root InspectorAPI
    */
-  getRootInspector(): InspectorWithSubscription {
+  getRootInspector(): InspectorAPI {
     return this.rootInspector;
   }
 
@@ -592,7 +592,7 @@ export class DevToolsFlowRuntime {
    * }
    * ```
    */
-  getInspector(containerId: string): InspectorWithSubscription | null {
+  getInspector(containerId: string): InspectorAPI | null {
     debugLog("[getInspector] Looking for containerId:", containerId);
     const result = this.findInspectorById(this.rootInspector, containerId);
     debugLog("[getInspector] Result:", result ? "FOUND" : "NOT FOUND");
@@ -622,14 +622,14 @@ export class DevToolsFlowRuntime {
    * }
    * ```
    */
-  getAncestorChain(containerId: string): readonly InspectorWithSubscription[] {
+  getAncestorChain(containerId: string): readonly InspectorAPI[] {
     debugLog("[getAncestorChain] Looking for containerId:", containerId);
 
     function walk(
-      inspector: InspectorWithSubscription,
+      inspector: InspectorAPI,
       targetId: string,
-      currentPath: InspectorWithSubscription[]
-    ): InspectorWithSubscription[] | null {
+      currentPath: InspectorAPI[]
+    ): InspectorAPI[] | null {
       const snapshot = inspector.getSnapshot();
       const newPath = [...currentPath, inspector];
 
@@ -762,10 +762,7 @@ export class DevToolsFlowRuntime {
   /**
    * Recursively finds an inspector by container ID.
    */
-  private findInspectorById(
-    inspector: InspectorWithSubscription,
-    targetId: string
-  ): InspectorWithSubscription | null {
+  private findInspectorById(inspector: InspectorAPI, targetId: string): InspectorAPI | null {
     const snapshot = inspector.getSnapshot();
     debugLog("[findInspectorById] Checking:", snapshot.containerName, "vs", targetId);
 
@@ -934,15 +931,12 @@ export class DevToolsFlowRuntime {
  *
  * @example
  * ```typescript
- * import { pipe, withInspector } from "@hex-di/runtime";
+ * import { createContainer } from "@hex-di/runtime";
  *
- * // Create container with InspectorPlugin via wrapper
- * const container = pipe(
- *   createContainer(graph, { name: "App" }),
- *   withInspector
- * );
+ * // Create container - inspector is built-in
+ * const container = createContainer(graph, { name: "App" });
  *
- * // Access inspector via property-based API
+ * // Access inspector via built-in property
  * const inspector = container.inspector;
  * const runtime = createDevToolsFlowRuntime({ inspector });
  *

@@ -11,8 +11,9 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter, createAsyncAdapter, inspectGraph } from "../src/index.js";
+import { createAdapter, createAsyncAdapter, createPort } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
+import { inspectGraph } from "../src/advanced.js";
 
 // =============================================================================
 // Test Fixtures

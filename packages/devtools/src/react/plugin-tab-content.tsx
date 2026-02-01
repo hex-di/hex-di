@@ -13,7 +13,7 @@
 
 import React, { useMemo, useCallback, type ReactElement } from "react";
 import type { ExportedGraph } from "@hex-di/devtools-core";
-import type { TracingAPI } from "@hex-di/plugin";
+import type { TracingAPI } from "@hex-di/core";
 import type { PluginProps, PluginCommand, ContainerEntry } from "./types/plugin-types.js";
 import { useActivePlugin, usePlugins, useActiveTab, useDevToolsStore } from "../store/index.js";
 import { PluginErrorBoundary } from "./plugin-error-boundary.js";

@@ -32,8 +32,8 @@
 // Core Types (Visualization Layer)
 // =============================================================================
 
-// Note: Container snapshot and tracing types are now in @hex-di/plugin.
-// Import directly from @hex-di/plugin for those types.
+// Note: Container snapshot and tracing types are now in @hex-di/core.
+// Import directly from @hex-di/core for those types.
 
 export type {
   // Re-exported from @hex-di/graph
@@ -167,8 +167,8 @@ export {
   type WebSocketEventHandlers,
 } from "./ports/websocket.port.js";
 
-// Re-export from @hex-di/ports for convenience
-export { createPort, type Port, type InferService, type InferPortName } from "@hex-di/ports";
+// Re-export from @hex-di/core for convenience
+export { createPort, type Port, type InferService, type InferPortName } from "@hex-di/core";
 
 // =============================================================================
 // Container Node Metadata Types (Tree View)

@@ -12,7 +12,7 @@
  */
 
 import { defineEvents, activity, activityPort } from "@hex-di/flow";
-import type { TracingAPI, TraceEntry, TraceFilter } from "@hex-di/plugin";
+import type { TracingAPI, TraceEntry, TraceFilter } from "@hex-di/core";
 import type { TracingEvent } from "../machines/tracing.machine.js";
 
 // =============================================================================

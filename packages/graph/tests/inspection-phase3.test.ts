@@ -6,14 +6,9 @@
  * NOTE: Visualization tests (Mermaid/DOT) have moved to @hex-di/visualization package.
  */
 import { describe, it, expect } from "vitest";
-import { createPort } from "@hex-di/ports";
-import {
-  createAdapter,
-  GraphBuilder,
-  inspectionToJSON,
-  detectCycleAtRuntime,
-  type AdapterConstraint,
-} from "../src/index.js";
+import { createPort, createAdapter, type AdapterConstraint } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
+import { inspectionToJSON, detectCycleAtRuntime, inspectGraph } from "../src/advanced.js";
 
 // =============================================================================
 // Test Fixtures

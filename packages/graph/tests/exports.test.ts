@@ -10,24 +10,21 @@
 
 import { describe, expect, expectTypeOf, it } from "vitest";
 import {
-  // Function exports
   createAdapter,
-  GraphBuilder,
-  // Type exports
   type Adapter,
-  type Graph,
   type Lifetime,
   type ResolvedDeps,
-  // Utility type exports
   type InferAdapterProvides,
   type InferAdapterRequires,
   type InferAdapterLifetime,
+} from "@hex-di/core";
+import {
+  GraphBuilder,
+  type Graph,
   type InferGraphProvides,
   type InferGraphRequires,
-  // Error type exports
-  type MissingDependencyError,
-  type DuplicateProviderError,
 } from "../src/index.js";
+import { type DuplicateProviderError, type MissingDependencyError } from "../src/advanced.js";
 import { type Logger, LoggerPort, DatabasePort } from "./fixtures.js";
 
 describe("Public API exports", () => {
@@ -66,7 +63,7 @@ describe("Public API exports", () => {
   });
 
   describe("Type exports", () => {
-    it("Adapter, Graph, and Lifetime types are exported and usable", () => {
+    it("Graph, and Lifetime types are exported and usable", () => {
       // Create an adapter with explicit type annotation
       const adapter: Adapter<typeof LoggerPort, never, "singleton"> = createAdapter({
         provides: LoggerPort,

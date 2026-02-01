@@ -5,11 +5,11 @@
  * @internal
  */
 
-import type { Port, InferService } from "@hex-di/ports";
-import { DisposedScopeError } from "../common/errors.js";
+import type { Port, InferService } from "@hex-di/core";
+import { DisposedScopeError } from "../errors/index.js";
 import type { RootContainerConfig } from "./internal-types.js";
-import { HooksRunner, type ContainerMetadata } from "./hooks-runner.js";
-import { AdapterRegistry } from "./adapter-registry.js";
+import { HooksRunner, type ContainerMetadata } from "../resolution/hooks-runner.js";
+import { AdapterRegistry } from "./internal/adapter-registry.js";
 import { BaseContainerImpl } from "./base-impl.js";
 
 /**

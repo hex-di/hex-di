@@ -4,7 +4,7 @@
  * @packageDocumentation
  */
 
-import { createAdapter } from "@hex-di/graph";
+import { createAdapter } from "@hex-di/core";
 import { LoggerPort } from "../ports.js";
 import type { Logger } from "../../../types.js";
 

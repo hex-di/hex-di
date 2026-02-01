@@ -10,7 +10,7 @@
  */
 
 import { beforeEach, afterEach } from "vitest";
-import type { Port } from "@hex-di/ports";
+import type { Port } from "@hex-di/core";
 import type { Graph } from "@hex-di/graph";
 import type { Container, Scope } from "@hex-di/runtime";
 import { createContainer } from "@hex-di/runtime";

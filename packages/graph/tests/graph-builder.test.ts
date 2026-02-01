@@ -10,7 +10,9 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { GraphBuilder, createAdapter, inspectGraph } from "../src/index.js";
+import { createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
+import { inspectGraph } from "../src/advanced.js";
 import {
   LoggerPort,
   DatabasePort,

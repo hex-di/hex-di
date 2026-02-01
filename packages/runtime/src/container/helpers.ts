@@ -3,12 +3,12 @@
  * @packageDocumentation
  */
 
-import type { Port } from "@hex-di/ports";
-import type { MemoMap } from "../common/memo-map.js";
-import type { MemoMapSnapshot, MemoEntrySnapshot } from "../inspector/types.js";
+import type { Port } from "@hex-di/core";
+import type { MemoMap } from "../util/memo-map.js";
+import type { MemoMapSnapshot, MemoEntrySnapshot } from "../inspection/internal-state-types.js";
 import type { InheritanceMode } from "../types.js";
 import type { DisposableChild, ParentContainerLike, RuntimeAdapter } from "./internal-types.js";
-import { ADAPTER_ACCESS } from "../inspector/symbols.js";
+import { ADAPTER_ACCESS } from "../inspection/symbols.js";
 
 // =============================================================================
 // Type Guards

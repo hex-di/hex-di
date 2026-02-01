@@ -21,14 +21,12 @@ import { useMemo, useCallback } from "react";
 import { useContainerInspector } from "./use-container-inspector.js";
 
 /**
- * Runtime snapshot from InspectorWithSubscription.
+ * Runtime snapshot from InspectorAPI.
  *
  * This is the raw snapshot type from @hex-di/runtime inspector API,
  * not the typed ContainerSnapshot from @hex-di/devtools-core.
  */
-type RuntimeSnapshot = ReturnType<
-  import("@hex-di/runtime").InspectorWithSubscription["getSnapshot"]
->;
+type RuntimeSnapshot = ReturnType<import("@hex-di/runtime").InspectorAPI["getSnapshot"]>;
 
 /**
  * Result of useInspectorSnapshot hook.

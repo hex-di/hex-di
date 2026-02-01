@@ -8,7 +8,7 @@
  * @remarks
  * The `unique symbol` type guarantees that these brands cannot be
  * accidentally recreated elsewhere, providing true nominal typing.
- * This follows the same pattern used in `@hex-di/ports` for Port branding.
+ * This follows the same pattern used in `@hex-di/core` for Port branding.
  *
  * @packageDocumentation
  */

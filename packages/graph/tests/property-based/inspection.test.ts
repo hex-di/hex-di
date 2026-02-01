@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
-import { inspectGraph } from "../../src/index.js";
+import { inspectGraph } from "../../src/advanced.js";
 import {
   fcConfig,
   uniquePortNamesArb,

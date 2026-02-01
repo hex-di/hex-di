@@ -12,7 +12,7 @@
  */
 
 import { defineEvents, activity, activityPort } from "@hex-di/flow";
-import type { InspectorWithSubscription } from "@hex-di/runtime";
+import type { InspectorAPI } from "@hex-di/core";
 import type { ContainerTreeEntry } from "../machines/container-tree.machine.js";
 
 // Debug logging helper
@@ -49,7 +49,7 @@ export const ContainerDiscoveryEvents = defineEvents({
  */
 export interface ContainerDiscoveryInput {
   /** The root inspector to start discovery from */
-  readonly inspector: InspectorWithSubscription;
+  readonly inspector: InspectorAPI;
 }
 
 /**
@@ -80,7 +80,7 @@ export const ContainerDiscoveryPort = activityPort<
  * Extracts container ID from inspector snapshot.
  * Uses containerName as a fallback since containerId may not be exposed.
  */
-function getContainerId(inspector: InspectorWithSubscription): string {
+function getContainerId(inspector: InspectorAPI): string {
   const snapshot = inspector.getSnapshot();
   // Try to get a unique identifier - containerName should be unique per container
   return snapshot.containerName;
@@ -93,7 +93,7 @@ function getContainerId(inspector: InspectorWithSubscription): string {
  * components don't need direct inspector access.
  */
 function createContainerEntry(
-  inspector: InspectorWithSubscription,
+  inspector: InspectorAPI,
   parentId: string | null
 ): ContainerTreeEntry {
   const snapshot = inspector.getSnapshot();
@@ -136,7 +136,7 @@ function createContainerEntry(
  * Uses a visited set to prevent infinite loops from circular references.
  */
 function discoverContainers(
-  inspector: InspectorWithSubscription,
+  inspector: InspectorAPI,
   parentId: string | null,
   discovered: ContainerTreeEntry[],
   signal: AbortSignal,

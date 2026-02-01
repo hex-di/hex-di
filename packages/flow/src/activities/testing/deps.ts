@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { Port, InferPortName, InferService } from "@hex-di/ports";
+import type { Port, InferPortName, InferService } from "@hex-di/core";
 import type { ResolvedActivityDeps } from "../types.js";
 
 // =============================================================================

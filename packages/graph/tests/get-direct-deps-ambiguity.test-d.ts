@@ -12,7 +12,7 @@
 
 import { describe, it, expectTypeOf } from "vitest";
 import type { GetDirectDeps, DebugGetDirectDeps } from "../src/validation/types/cycle/detection.js";
-import type { IsNever } from "../src/types/type-utilities.js";
+import type { IsNever } from "@hex-di/core";
 
 // =============================================================================
 // Test Fixtures

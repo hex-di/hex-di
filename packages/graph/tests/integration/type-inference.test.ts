@@ -5,14 +5,9 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createPort, type InferService } from "@hex-di/ports";
-import {
-  createAdapter,
-  GraphBuilder,
-  InferGraphProvides,
-  InferGraphRequires,
-  UnsatisfiedDependencies,
-} from "../../src/index.js";
+import { createPort, type InferService, createAdapter } from "@hex-di/core";
+import { GraphBuilder, InferGraphProvides, InferGraphRequires } from "../../src/index.js";
+import type { UnsatisfiedDependencies } from "../../src/advanced.js";
 import { LoggerPort, DatabasePort } from "./shared-fixtures.js";
 
 describe("Integration: Complex generic type inference", () => {

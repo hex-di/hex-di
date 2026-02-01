@@ -7,7 +7,7 @@
  */
 
 import type { CSSProperties } from "react";
-import type { ServiceOrigin } from "@hex-di/plugin";
+import type { ServiceOrigin } from "@hex-di/core";
 
 // =============================================================================
 // Style Type Definitions

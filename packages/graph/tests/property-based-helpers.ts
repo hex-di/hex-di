@@ -29,8 +29,8 @@
  */
 
 import fc from "fast-check";
-import { createPort, type Port } from "@hex-di/ports";
-import { createAdapter, GraphBuilder, type Lifetime } from "../src/index.js";
+import { createPort, createAdapter, type Port, type Lifetime } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
 
 // =============================================================================
 // Seed Configuration for Reproducibility

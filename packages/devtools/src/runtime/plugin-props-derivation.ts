@@ -9,7 +9,7 @@
  */
 
 import type { ExportedGraph, ExportedNode, ExportedEdge } from "@hex-di/devtools-core";
-import type { ContainerKind } from "@hex-di/plugin";
+import type { ContainerKind } from "@hex-di/core";
 import type { DevToolsRuntimeSnapshot } from "./types.js";
 import type { ContainerEntry } from "./plugin-types-core.js";
 import type { ContainerNode } from "./types.js";

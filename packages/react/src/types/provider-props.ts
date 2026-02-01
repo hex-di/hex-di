@@ -8,7 +8,7 @@
  */
 
 import type { ReactNode, ComponentType } from "react";
-import type { Port } from "@hex-di/ports";
+import type { Port } from "@hex-di/core";
 import type { Container } from "@hex-di/runtime";
 import type { Resolver } from "./core.js";
 

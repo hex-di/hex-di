@@ -10,8 +10,8 @@
  * with the semantic intent of a "warning" vs an "error".
  */
 import { describe, it, expectTypeOf } from "vitest";
-import { GraphBuilder, createAdapter, Graph } from "../src/index.js";
-import { createPort } from "@hex-di/ports";
+import { GraphBuilder, type Graph } from "../src/index.js";
+import { createAdapter, createPort } from "@hex-di/core";
 
 // =============================================================================
 // Test Fixtures - Deep chain to trigger depth exceeded

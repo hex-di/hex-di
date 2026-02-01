@@ -23,7 +23,7 @@
  *
  * @example Basic usage
  * ```typescript
- * import { createPort } from '@hex-di/ports';
+ * import { createPort } from '@hex-di/core';
  * import { createContainer } from '@hex-di/runtime';
  * import { createTypedHooks } from '@hex-di/react';
  *
@@ -232,15 +232,15 @@ export { useDeps } from "./hooks/index.js";
 export { MissingProviderError } from "./errors.js";
 
 // =============================================================================
-// Re-exports from @hex-di/ports
+// Re-exports from @hex-di/core
 // =============================================================================
 
 /**
- * Re-export types from @hex-di/ports for consumer convenience.
+ * Re-export types from @hex-di/core for consumer convenience.
  *
  * These types are commonly used alongside React integration types.
  */
-export type { Port, InferService, InferPortName } from "@hex-di/ports";
+export type { Port, InferService, InferPortName } from "@hex-di/core";
 
 // =============================================================================
 // Re-exports from @hex-di/runtime

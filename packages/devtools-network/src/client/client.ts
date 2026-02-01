@@ -15,7 +15,7 @@ import type {
   MethodResult,
   MethodMap,
 } from "@hex-di/devtools-core";
-import type { TraceEntry, TraceStats, ContainerSnapshot } from "@hex-di/plugin";
+import type { TraceEntry, TraceStats, ContainerSnapshot } from "@hex-di/core";
 import { Methods, createRequest, isResponse, isErrorResponse } from "@hex-di/devtools-core";
 import type { WebSocketService } from "./ports/websocket.port.js";
 

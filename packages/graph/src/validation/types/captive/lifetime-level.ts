@@ -29,7 +29,7 @@
  */
 
 import type { SINGLETON_LEVEL, SCOPED_LEVEL, TRANSIENT_LEVEL } from "./lifetime-constants.js";
-import type { InferenceError } from "../../../types/type-utilities.js";
+import type { InferenceError } from "@hex-di/core";
 
 /**
  * Maps a Lifetime string literal to its numeric level for comparison.

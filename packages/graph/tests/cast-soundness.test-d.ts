@@ -15,7 +15,8 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createAdapter, GraphBuilder, Graph } from "../src/index.js";
+import { createAdapter } from "@hex-di/core";
+import { GraphBuilder, Graph } from "../src/index.js";
 import {
   LoggerPort,
   DatabasePort,

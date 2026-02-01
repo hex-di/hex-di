@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import type { AdapterConstraint } from "../../adapter/index.js";
+import type { AdapterConstraint } from "@hex-di/core";
 
 /**
  * Adjacency map representing the dependency graph structure.

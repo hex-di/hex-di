@@ -242,6 +242,10 @@ export interface SelfDependencyDetails {
  */
 export interface DepthLimitExceededDetails {
   readonly maxDepth: string;
+  /** The port where validation started (if present in message) */
+  readonly startPort?: string;
+  /** The last port visited when depth limit was hit (if present in message) */
+  readonly lastPort?: string;
 }
 
 /**
@@ -771,14 +775,26 @@ export function parseGraphError(message: string): ParsedGraphError | undefined {
   }
 
   // Depth limit warning (HEX007)
+  // Format may include: "for port 'X'" and/or "Last port visited: 'Y'"
   const depthLimitMatch = message.match(
     /WARNING\[HEX007\]: Type-level depth limit \((?<maxDepth>\d+)\) exceeded/
   );
   if (depthLimitMatch?.groups) {
+    // Extract optional startPort: "for port 'X'"
+    const startPortMatch = message.match(/exceeded for port '(?<startPort>[^']+)'/);
+    // Extract optional lastPort: "Last port visited: 'Y'"
+    const lastPortMatch = message.match(/Last port visited: '(?<lastPort>[^']+)'/);
+
+    const details: DepthLimitExceededDetails = {
+      maxDepth: depthLimitMatch.groups.maxDepth,
+      ...(startPortMatch?.groups?.startPort && { startPort: startPortMatch.groups.startPort }),
+      ...(lastPortMatch?.groups?.lastPort && { lastPort: lastPortMatch.groups.lastPort }),
+    };
+
     return {
       code: GraphErrorCode.DEPTH_LIMIT_EXCEEDED,
       message,
-      details: { maxDepth: depthLimitMatch.groups.maxDepth },
+      details,
     };
   }
 

@@ -10,7 +10,7 @@
 import React, { type ReactElement, type CSSProperties, useCallback } from "react";
 import { useDevToolsStore, useSelectedContainerId, useContainers } from "../store/index.js";
 import { getInheritanceModeBadgeStyle } from "./styles.js";
-import type { ContainerKind, InheritanceMode } from "@hex-di/plugin";
+import type { ContainerKind, InheritanceMode } from "@hex-di/core";
 
 // =============================================================================
 // Props

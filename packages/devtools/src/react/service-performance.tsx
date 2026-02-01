@@ -9,7 +9,7 @@
 
 import React, { useMemo, type ReactElement, type CSSProperties } from "react";
 import { formatDuration } from "@hex-di/devtools-core";
-import type { TracingAPI, TraceEntry } from "@hex-di/plugin";
+import type { TracingAPI, TraceEntry } from "@hex-di/core";
 
 // =============================================================================
 // Types

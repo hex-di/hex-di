@@ -12,8 +12,8 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter } from "@hex-di/graph";
+import { createPort, createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import { TestGraphBuilder } from "../src/test-graph-builder.js";
 import { useTestContainer, createTestContainer } from "../src/vitest/use-test-container.js";
 

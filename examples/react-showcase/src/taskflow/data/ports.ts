@@ -9,7 +9,7 @@
  * @packageDocumentation
  */
 
-import { createPort } from "@hex-di/ports";
+import { createPort } from "@hex-di/core";
 import type { QueryClient } from "@tanstack/react-query";
 import type { FlowService } from "@hex-di/flow";
 import type {

@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { Port } from "@hex-di/ports";
+import type { Port } from "@hex-di/core";
 
 /**
  * Type guard to check if a value is a valid Port.

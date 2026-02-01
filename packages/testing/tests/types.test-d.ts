@@ -12,8 +12,8 @@
  */
 
 import { describe, expectTypeOf, it, expect } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter, type Adapter, type Lifetime } from "@hex-di/graph";
+import { createPort, createAdapter, type Adapter, type Lifetime } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import type { MockedFunction } from "vitest";
 
 // Import testing utilities

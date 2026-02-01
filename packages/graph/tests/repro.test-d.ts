@@ -1,7 +1,11 @@
 import { expect, expectTypeOf, it } from "vitest";
-import { createPort, type Port } from "@hex-di/ports";
-import { createAdapter, type InferAdapterProvides, type Adapter } from "../src/index.js";
-
+import {
+  createPort,
+  createAdapter,
+  type Port,
+  type Adapter,
+  type InferAdapterProvides,
+} from "@hex-di/core";
 interface Logger {}
 const LoggerPort = createPort<"Logger", Logger>("Logger");
 type LoggerPortType = typeof LoggerPort;

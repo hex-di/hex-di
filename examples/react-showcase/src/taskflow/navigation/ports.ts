@@ -6,7 +6,7 @@
  * @packageDocumentation
  */
 
-import { createPort } from "@hex-di/ports";
+import { createPort } from "@hex-di/core";
 import type { FlowService } from "@hex-di/flow";
 import type { NavState, NavEventType, NavContext } from "./machine.js";
 import type { RoutePath } from "../types.js";

@@ -4,8 +4,8 @@
  * @packageDocumentation
  */
 
-import type { Port } from "@hex-di/ports";
-import { GraphBuilder, type Adapter, type Lifetime, type FactoryKind } from "@hex-di/graph";
+import type { Port, Adapter, Lifetime, FactoryKind } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import type { FeatureBundle, Plugin } from "./types.js";
 
 // =============================================================================

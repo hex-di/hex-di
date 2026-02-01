@@ -26,8 +26,8 @@
  */
 
 import { describe, expectTypeOf, it, expect } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { createAdapter } from "@hex-di/graph";
+import { createPort, createAdapter } from "@hex-di/core";
+
 import type {
   LifetimeLevel,
   ValidateCaptiveDependency,

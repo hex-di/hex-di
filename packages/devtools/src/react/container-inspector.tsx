@@ -9,12 +9,12 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback, useRef, type ReactElement } from "react";
-import type { Port } from "@hex-di/ports";
+import type { Port } from "@hex-di/core";
 import type { Container, ContainerPhase } from "@hex-di/runtime";
 import { createInspector } from "../index.js";
 import type { ContainerInspector as RuntimeInspector } from "../index.js";
 import type { ExportedGraph } from "@hex-di/devtools-core";
-import type { TracingAPI, ScopeTree, ContainerKind, TraceEntry } from "@hex-di/plugin";
+import type { TracingAPI, ScopeTree, ContainerKind, TraceEntry } from "@hex-di/core";
 import { containerInspectorStyles } from "./styles.js";
 import { ContainerScopeHierarchy } from "./container-scope-hierarchy.js";
 import { ScopeHierarchy } from "./scope-hierarchy.js";

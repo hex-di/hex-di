@@ -14,14 +14,7 @@ import * as React from "react";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useLocation, Outlet } from "react-router-dom";
 import { GraphBuilder } from "@hex-di/graph";
-import {
-  createContainer,
-  pipe,
-  createPluginWrapper,
-  TracingPlugin,
-  InspectorPlugin,
-  type Container,
-} from "@hex-di/runtime";
+import { createContainer, type Container } from "@hex-di/runtime";
 import { HexDiDevTools } from "@hex-di/devtools/react";
 
 import { TaskFlowProviders } from "./providers.js";
@@ -50,17 +43,14 @@ const rootGraph = GraphBuilder.create()
   .build();
 
 // =============================================================================
-// Container Creation with Plugins
+// Container Creation (built-in tracing and inspection)
 // =============================================================================
 
-const withTracing = createPluginWrapper(TracingPlugin);
-const withInspector = createPluginWrapper(InspectorPlugin);
-
 /**
- * Create root container with tracing and inspector plugins.
+ * Create root container with built-in tracing and inspection.
  */
 function createRootContainer() {
-  return pipe(createContainer(rootGraph, { name: "Root Container" }), withTracing, withInspector);
+  return createContainer(rootGraph, { name: "Root Container" });
 }
 
 // Type for the initialized root container

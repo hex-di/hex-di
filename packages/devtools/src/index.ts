@@ -53,17 +53,19 @@
 // Re-exports from Sibling Packages
 // =============================================================================
 
-export type { Port, InferService, InferPortName } from "@hex-di/ports";
-
 export type {
-  Graph,
+  Port,
+  InferService,
+  InferPortName,
   Adapter,
   Lifetime,
   InferAdapterProvides,
   InferAdapterRequires,
   InferAdapterLifetime,
   ResolvedDeps,
-} from "@hex-di/graph";
+} from "@hex-di/core";
+
+export type { Graph } from "@hex-di/graph";
 
 export type {
   Container,

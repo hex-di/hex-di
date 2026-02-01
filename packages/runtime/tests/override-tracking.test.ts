@@ -11,8 +11,8 @@
  */
 
 import { describe, test, expect, vi } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter } from "@hex-di/graph";
+import { createPort, createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import { createContainer, INTERNAL_ACCESS } from "../src/index.js";
 
 // =============================================================================
@@ -60,7 +60,7 @@ describe("Override Tracking", () => {
       const container = createContainer(graph, { name: "Parent" });
 
       // Create child with override
-      const childGraph = GraphBuilder.create().override(ChildLoggerAdapter).build();
+      const childGraph = GraphBuilder.forParent(graph).override(ChildLoggerAdapter).build();
       const childContainer = container.createChild(childGraph, { name: "Child" });
 
       // Access internal state to verify overridePorts
@@ -118,7 +118,7 @@ describe("Override Tracking", () => {
       const container = createContainer(graph, { name: "Parent" });
 
       // Create child with override AND extension
-      const childGraph = GraphBuilder.create()
+      const childGraph = GraphBuilder.forParent(graph)
         .override(ChildLoggerAdapter)
         .provide(ConfigAdapter)
         .build();
@@ -152,7 +152,7 @@ describe("Override Tracking", () => {
       const graph = GraphBuilder.create().provide(ParentLoggerAdapter).build();
       const container = createContainer(graph, { name: "Parent" });
 
-      const childGraph = GraphBuilder.create().override(ChildLoggerAdapter).build();
+      const childGraph = GraphBuilder.forParent(graph).override(ChildLoggerAdapter).build();
       const childContainer = container.createChild(childGraph, { name: "Child" });
 
       const internalState = childContainer[INTERNAL_ACCESS]();
@@ -186,7 +186,7 @@ describe("Override Tracking", () => {
         factory: () => ({ log: vi.fn() }),
       });
 
-      const childGraph = GraphBuilder.create().override(ChildLoggerAdapter).build();
+      const childGraph = GraphBuilder.forParent(graph).override(ChildLoggerAdapter).build();
       const childContainer = container.createChild(childGraph, { name: "Child" });
 
       const internalState = childContainer[INTERNAL_ACCESS]();
@@ -254,11 +254,13 @@ describe("Override Tracking", () => {
       const rootContainer = createContainer(rootGraph, { name: "Root" });
 
       // Child container overrides Logger
-      const childGraph = GraphBuilder.create().override(ChildLoggerAdapter).build();
+      const childGraph = GraphBuilder.forParent(rootGraph).override(ChildLoggerAdapter).build();
       const childContainer = rootContainer.createChild(childGraph, { name: "Child" });
 
       // Grandchild container overrides Logger (from child)
-      const grandchildGraph = GraphBuilder.create().override(GrandchildLoggerAdapter).build();
+      const grandchildGraph = GraphBuilder.forParent(childGraph)
+        .override(GrandchildLoggerAdapter)
+        .build();
       const grandchildContainer = childContainer.createChild(grandchildGraph, {
         name: "Grandchild",
       });
@@ -309,11 +311,13 @@ describe("Override Tracking", () => {
       const rootContainer = createContainer(rootGraph, { name: "Root" });
 
       // Child: overrides Logger only
-      const childGraph = GraphBuilder.create().override(ChildLoggerAdapter).build();
+      const childGraph = GraphBuilder.forParent(rootGraph).override(ChildLoggerAdapter).build();
       const childContainer = rootContainer.createChild(childGraph, { name: "Child" });
 
       // Grandchild: overrides Database only (inherits child's Logger override)
-      const grandchildGraph = GraphBuilder.create().override(GrandchildDatabaseAdapter).build();
+      const grandchildGraph = GraphBuilder.forParent(rootGraph)
+        .override(GrandchildDatabaseAdapter)
+        .build();
       const grandchildContainer = childContainer.createChild(grandchildGraph, {
         name: "Grandchild",
       });

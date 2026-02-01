@@ -11,8 +11,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createPort, type InferService } from "@hex-di/ports";
-import { createAdapter, GraphBuilder } from "@hex-di/graph";
+import { createPort, createAdapter, type InferService } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "@hex-di/runtime";
 import { createMachine } from "../src/machine/create-machine.js";
 import { event } from "../src/machine/factories.js";

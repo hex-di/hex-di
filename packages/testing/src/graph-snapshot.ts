@@ -7,8 +7,8 @@
  * @packageDocumentation
  */
 
-import type { Graph, Lifetime } from "@hex-di/graph";
-import type { Port } from "@hex-di/ports";
+import type { Port, Lifetime } from "@hex-di/core";
+import type { Graph } from "@hex-di/graph";
 
 // =============================================================================
 // Types

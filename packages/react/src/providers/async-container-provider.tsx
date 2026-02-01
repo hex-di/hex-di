@@ -16,7 +16,7 @@ import React, {
   useMemo,
   type ReactNode,
 } from "react";
-import type { Port } from "@hex-di/ports";
+import type { Port } from "@hex-di/core";
 import type { Container } from "@hex-di/runtime";
 import { ContainerContext } from "../context/container-context.js";
 import { ResolverContext } from "../context/resolver-context.js";

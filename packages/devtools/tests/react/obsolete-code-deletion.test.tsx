@@ -31,7 +31,7 @@ import type { ContainerTreeContext } from "@hex-di/devtools-core";
 // =============================================================================
 
 /**
- * Mock InspectorWithSubscription for testing.
+ * Mock InspectorAPI for testing.
  */
 const mockInspector = {
   getSnapshot: () => ({

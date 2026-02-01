@@ -9,7 +9,7 @@
  */
 
 import { useContext } from "react";
-import type { Port, InferService } from "@hex-di/ports";
+import type { Port, InferService } from "@hex-di/core";
 import { ResolverContext } from "../context/resolver-context.js";
 import { MissingProviderError } from "../errors.js";
 

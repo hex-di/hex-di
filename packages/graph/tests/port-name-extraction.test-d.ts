@@ -19,7 +19,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import type { Port } from "@hex-di/ports";
+import type { Port } from "@hex-di/core";
 import type {
   AdapterProvidesName,
   AdapterRequiresNames,

@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import type { AdapterConstraint } from "../../adapter/types/adapter-types.js";
+import type { AdapterConstraint } from "@hex-di/core";
 
 /**
  * Unique symbol for nominal typing of Graph.

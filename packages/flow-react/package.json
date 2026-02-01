@@ -54,7 +54,7 @@
   "dependencies": {
     "@hex-di/flow": "workspace:*",
     "@hex-di/react": "workspace:*",
-    "@hex-di/ports": "workspace:*"
+    "@hex-di/core": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=19.0.0",

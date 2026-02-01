@@ -14,7 +14,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import React from "react";
 import { TreeView, type TreeViewProps } from "../../src/react/tree-view.js";
-import type { TraceEntry } from "@hex-di/plugin";
+import type { TraceEntry } from "@hex-di/core";
 
 // =============================================================================
 // Test Fixtures

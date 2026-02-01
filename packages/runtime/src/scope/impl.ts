@@ -3,16 +3,19 @@
  * @packageDocumentation
  */
 
-import type { Port, InferService } from "@hex-di/ports";
+import type { Port, InferService } from "@hex-di/core";
 import type { Scope } from "../types.js";
 import { ScopeBrand } from "../types.js";
-import type { AnyPlugin } from "../plugin/types.js";
-import { MemoMap } from "../common/memo-map.js";
-import { INTERNAL_ACCESS } from "../inspector/symbols.js";
-import type { ScopeInternalState, MemoMapSnapshot, MemoEntrySnapshot } from "../inspector/types.js";
-import { DisposedScopeError } from "../common/errors.js";
+import { MemoMap } from "../util/memo-map.js";
+import { INTERNAL_ACCESS } from "../inspection/symbols.js";
+import type {
+  ScopeInternalState,
+  MemoMapSnapshot,
+  MemoEntrySnapshot,
+} from "../inspection/internal-state-types.js";
+import { DisposedScopeError } from "../errors/index.js";
 import type { ScopeContainerAccess } from "../container/impl.js";
-import { unreachable } from "../common/unreachable.js";
+import { unreachable } from "../util/unreachable.js";
 import {
   ScopeLifecycleEmitter,
   type ScopeLifecycleListener,
@@ -266,17 +269,14 @@ export function createScopeWrapper<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string> = never,
   TPhase extends "uninitialized" | "initialized" = "uninitialized",
-  TPlugins extends readonly AnyPlugin[] = readonly [],
->(
-  impl: ScopeImpl<TProvides, TAsyncPorts, TPhase>
-): Scope<TProvides, TAsyncPorts, TPhase, TPlugins> {
+>(impl: ScopeImpl<TProvides, TAsyncPorts, TPhase>): Scope<TProvides, TAsyncPorts, TPhase> {
   function resolve<
     P extends TPhase extends "initialized" ? TProvides : Exclude<TProvides, TAsyncPorts>,
   >(port: P): InferService<P> {
     return impl.resolve(port);
   }
 
-  const scope: Scope<TProvides, TAsyncPorts, TPhase, TPlugins> = {
+  const scope: Scope<TProvides, TAsyncPorts, TPhase> = {
     resolve,
     resolveAsync: port => impl.resolveAsync(port),
     createScope: (name?: string) => impl.createScope(name),

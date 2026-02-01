@@ -12,8 +12,8 @@
 import { describe, test, expect } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter } from "@hex-di/graph";
+import { createPort, createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "@hex-di/runtime";
 import {
   createContextVariableKey,

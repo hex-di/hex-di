@@ -88,28 +88,29 @@
 // =============================================================================
 
 /**
- * Re-export types from @hex-di/ports for consumer convenience.
+ * Re-export types from @hex-di/core for consumer convenience.
  *
  * These types are commonly used alongside testing utilities for creating
  * mock adapters and type-safe test fixtures.
  */
-export type { Port, InferService, InferPortName } from "@hex-di/ports";
+export type { Port, InferService, InferPortName } from "@hex-di/core";
 
 /**
- * Re-export types from @hex-di/graph for consumer convenience.
- *
- * These types are commonly used alongside testing utilities for building
- * test graphs and creating mock adapters.
+ * Re-export types from @hex-di/core for adapter types.
  */
 export type {
-  Graph,
   Adapter,
   Lifetime,
   InferAdapterProvides,
   InferAdapterRequires,
   InferAdapterLifetime,
   ResolvedDeps,
-} from "@hex-di/graph";
+} from "@hex-di/core";
+
+/**
+ * Re-export types from @hex-di/graph for Graph type.
+ */
+export type { Graph } from "@hex-di/graph";
 
 /**
  * Re-export types from @hex-di/runtime for consumer convenience.
@@ -352,11 +353,7 @@ export { serializeGraph } from "./graph-snapshot.js";
  * - `AdapterSnapshot` - Individual adapter metadata
  * - `SerializeGraphOptions` - Options for the serializeGraph function
  */
-export type {
-  GraphSnapshot,
-  AdapterSnapshot,
-  SerializeGraphOptions,
-} from "./graph-snapshot.js";
+export type { GraphSnapshot, AdapterSnapshot, SerializeGraphOptions } from "./graph-snapshot.js";
 
 // =============================================================================
 // React Testing Library Integration (Task Group 9)

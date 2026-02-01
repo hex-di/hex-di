@@ -17,7 +17,7 @@ import {
   SummaryStatsView,
   type SummaryStatsViewProps,
 } from "../../src/react/summary-stats-view.js";
-import type { TraceEntry, TraceStats } from "@hex-di/plugin";
+import type { TraceEntry, TraceStats } from "@hex-di/core";
 
 // =============================================================================
 // Test Fixtures

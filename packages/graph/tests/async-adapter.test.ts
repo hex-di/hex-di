@@ -12,13 +12,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createPort } from "@hex-di/ports";
-import {
-  GraphBuilder,
-  createAdapter,
-  createAsyncAdapter,
-  defineAsyncService,
-} from "../src/index.js";
+import { createPort, createAdapter, createAsyncAdapter, defineAsyncService } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
 
 // =============================================================================
 // Test Fixtures
@@ -434,7 +429,7 @@ describe("async adapter edge cases", () => {
 
 describe("error utility integration", () => {
   it("parseGraphError handles missing dependency errors", async () => {
-    const { isGraphError, parseGraphError, GraphErrorCode } = await import("../src/index.js");
+    const { isGraphError, parseGraphError, GraphErrorCode } = await import("../src/advanced.js");
 
     const errorMsg = "ERROR[HEX008]: Missing adapters for Logger, Database.";
     expect(isGraphError(errorMsg)).toBe(true);
@@ -448,7 +443,7 @@ describe("error utility integration", () => {
   });
 
   it("parseGraphError handles circular dependency errors", async () => {
-    const { isGraphError, parseGraphError, GraphErrorCode } = await import("../src/index.js");
+    const { isGraphError, parseGraphError, GraphErrorCode } = await import("../src/advanced.js");
 
     const errorMsg =
       "ERROR[HEX002]: Circular dependency: UserService -> Database -> UserService. Fix: Break cycle by extracting shared logic, using lazy resolution, or inverting a dependency.";
@@ -463,7 +458,7 @@ describe("error utility integration", () => {
   });
 
   it("parseGraphError handles duplicate adapter errors", async () => {
-    const { isGraphError, parseGraphError, GraphErrorCode } = await import("../src/index.js");
+    const { isGraphError, parseGraphError, GraphErrorCode } = await import("../src/advanced.js");
 
     const errorMsg =
       "ERROR[HEX001]: Duplicate adapter for 'Logger'. Fix: Remove one .provide() call, or use .override() for child graphs.";
@@ -478,7 +473,7 @@ describe("error utility integration", () => {
   });
 
   it("parseGraphError handles captive dependency errors", async () => {
-    const { isGraphError, parseGraphError, GraphErrorCode } = await import("../src/index.js");
+    const { isGraphError, parseGraphError, GraphErrorCode } = await import("../src/advanced.js");
 
     const errorMsg =
       "ERROR[HEX003]: Captive dependency: Singleton 'UserCache' cannot depend on Scoped 'RequestContext'. Fix: Change 'UserCache' to Scoped/Transient, or change 'RequestContext' to Singleton.";
@@ -496,7 +491,7 @@ describe("error utility integration", () => {
   });
 
   it("parseGraphError handles lifetime inconsistency errors", async () => {
-    const { isGraphError, parseGraphError, GraphErrorCode } = await import("../src/index.js");
+    const { isGraphError, parseGraphError, GraphErrorCode } = await import("../src/advanced.js");
 
     const errorMsg =
       "ERROR[HEX005]: Lifetime inconsistency for 'Logger': Graph A provides Singleton, Graph B provides Scoped. Fix: Use the same lifetime in both graphs, or remove one adapter before merging.";
@@ -513,7 +508,7 @@ describe("error utility integration", () => {
   });
 
   it("parseGraphError handles multiple errors", async () => {
-    const { isGraphError, parseGraphError, GraphErrorCode } = await import("../src/index.js");
+    const { isGraphError, parseGraphError, GraphErrorCode } = await import("../src/advanced.js");
 
     const errorMsg = "Multiple validation errors:\n  1. Error one\n  2. Error two";
     expect(isGraphError(errorMsg)).toBe(true);
@@ -524,14 +519,14 @@ describe("error utility integration", () => {
   });
 
   it("parseGraphError returns undefined for non-errors", async () => {
-    const { isGraphError, parseGraphError } = await import("../src/index.js");
+    const { isGraphError, parseGraphError } = await import("../src/advanced.js");
 
     expect(isGraphError("This is not an error")).toBe(false);
     expect(parseGraphError("This is not an error")).toBeUndefined();
   });
 
   it("GraphErrorCode contains all expected error codes", async () => {
-    const { GraphErrorCode } = await import("../src/index.js");
+    const { GraphErrorCode } = await import("../src/advanced.js");
 
     expect(GraphErrorCode.DUPLICATE_ADAPTER).toBe("DUPLICATE_ADAPTER");
     expect(GraphErrorCode.CIRCULAR_DEPENDENCY).toBe("CIRCULAR_DEPENDENCY");

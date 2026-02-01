@@ -4,8 +4,8 @@
  * @packageDocumentation
  */
 
-import type { Port } from "@hex-di/ports";
-import type { Adapter, Lifetime, FactoryKind } from "@hex-di/graph";
+import type { Port } from "@hex-di/core";
+import type { Adapter, Lifetime, FactoryKind } from "@hex-di/core";
 
 // =============================================================================
 // FeatureBundle Types

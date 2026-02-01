@@ -8,15 +8,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createPort } from "@hex-di/ports";
-import {
-  GraphBuilder,
-  createAdapter,
-  createAsyncAdapter,
-  isAdapter,
-  isGraphBuilder,
-  isGraph,
-} from "../src/index.js";
+import { createPort, createAdapter, createAsyncAdapter, isAdapter } from "@hex-di/core";
+import { GraphBuilder, isGraphBuilder, isGraph } from "../src/index.js";
 
 // =============================================================================
 // Test Fixtures

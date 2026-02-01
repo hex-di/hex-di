@@ -17,8 +17,8 @@
  */
 
 import { describe, it, expectTypeOf } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { createAdapter } from "../src/index.js";
+import { createPort } from "@hex-di/core";
+import { createAdapter } from "@hex-di/core";
 import type { AdapterRequiresNames } from "../src/validation/types/adapter-extraction.js";
 import type { MalformedAdapterError } from "../src/validation/types/captive/errors.js";
 

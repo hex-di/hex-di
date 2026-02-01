@@ -12,7 +12,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createAdapter } from "../src/index.js";
+import { createAdapter } from "@hex-di/core";
 import type {
   ProvideManyResultAllErrors,
   CollectBatchErrors,

@@ -28,8 +28,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import type { Port } from "@hex-di/ports";
-import type { AdapterConstraint, Lifetime, FactoryKind } from "../src/index.js";
+import type { Port, AdapterConstraint, Lifetime, FactoryKind } from "@hex-di/core";
 
 // =============================================================================
 // Experimental Types

@@ -1,4 +1,4 @@
-import type { Port } from "@hex-di/ports";
+import type { Port } from "@hex-di/core";
 import type { Container, ContainerPhase } from "@hex-di/runtime";
 import type { MiddlewareHandler } from "hono";
 import { setContextVariable, createContextVariableKey } from "@hex-di/runtime";

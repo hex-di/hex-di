@@ -13,7 +13,7 @@
 
 import React, { useState, useMemo, useCallback, useRef, useEffect, type ReactElement } from "react";
 import type { ExportedGraph } from "@hex-di/devtools-core";
-import type { ScopeTree } from "@hex-di/plugin";
+import type { ScopeTree } from "@hex-di/core";
 import type { PluginProps } from "../../react/types/plugin-types.js";
 import { containerInspectorStyles, emptyStyles } from "../../react/styles.js";
 import { ContainerScopeHierarchy } from "../../react/container-scope-hierarchy.js";

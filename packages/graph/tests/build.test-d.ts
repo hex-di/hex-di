@@ -13,14 +13,9 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import type { Port } from "@hex-di/ports";
-import {
-  GraphBuilder,
-  createAdapter,
-  Graph,
-  InferGraphProvides,
-  AdapterConstraint,
-} from "../src/index.js";
+import type { Port } from "@hex-di/core";
+import { createAdapter, AdapterConstraint } from "@hex-di/core";
+import { GraphBuilder, Graph, InferGraphProvides } from "../src/index.js";
 import {
   LoggerPort,
   DatabasePort,

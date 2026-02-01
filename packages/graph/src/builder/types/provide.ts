@@ -29,7 +29,7 @@ import type {
   InferManyProvides,
   InferManyRequires,
   InferManyAsyncPorts,
-} from "../../adapter/types/index.js";
+} from "@hex-di/core";
 import type {
   HasOverlap,
   OverlappingPorts,
@@ -72,7 +72,7 @@ import type {
   HandleForwardCaptiveResult,
   HandleReverseCaptiveResult,
 } from "../../validation/types/index.js";
-import type { IsNever } from "../../types/type-utilities.js";
+import type { IsNever } from "@hex-di/core";
 import type { GraphBuilder } from "../builder.js";
 import type {
   DirectAdapterLifetime,

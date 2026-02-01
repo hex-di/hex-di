@@ -19,7 +19,7 @@ import React, {
   type KeyboardEvent,
 } from "react";
 import { formatDuration } from "@hex-di/devtools-core";
-import type { TraceEntry } from "@hex-di/plugin";
+import type { TraceEntry } from "@hex-di/core";
 import { treeViewStyles, emptyStyles, getLifetimeBadgeStyle } from "./styles.js";
 
 // =============================================================================

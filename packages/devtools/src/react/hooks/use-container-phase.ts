@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { ContainerKind, ContainerPhase } from "@hex-di/plugin";
+import type { ContainerKind, ContainerPhase } from "@hex-di/core";
 
 /**
  * Result of useContainerPhase hook.

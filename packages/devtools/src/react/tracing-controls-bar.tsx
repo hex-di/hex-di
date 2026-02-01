@@ -18,7 +18,7 @@ import React, {
   type CSSProperties,
   type ChangeEvent,
 } from "react";
-import type { Lifetime } from "@hex-di/graph";
+import type { Lifetime } from "@hex-di/core";
 import { formatDuration } from "@hex-di/devtools-core";
 import { controlsStyles, serviceListStyles, containerInspectorStyles } from "./styles.js";
 

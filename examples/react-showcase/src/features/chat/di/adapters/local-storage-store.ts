@@ -4,7 +4,7 @@
  * @packageDocumentation
  */
 
-import { createAsyncAdapter } from "@hex-di/graph";
+import { createAsyncAdapter } from "@hex-di/core";
 import { MessageStorePort } from "../ports.js";
 import { LoggerPort } from "../../../core/di/ports.js";
 import type { Message, MessageStore, MessageListener, Unsubscribe } from "../../types.js";

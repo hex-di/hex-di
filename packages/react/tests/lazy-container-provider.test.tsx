@@ -16,8 +16,9 @@
 import React from "react";
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { render, screen, act, cleanup, waitFor } from "@testing-library/react";
-import { createPort } from "@hex-di/ports";
-import { createAdapter, GraphBuilder } from "@hex-di/graph";
+import { createPort } from "@hex-di/core";
+import { createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "@hex-di/runtime";
 import { HexDiLazyContainerProvider, useLazyContainerState, usePort } from "../src/index.js";
 import { HexDiContainerProvider } from "../src/providers/container-provider.js";

@@ -1,4 +1,4 @@
-import { createPort } from "@hex-di/ports";
+import { createPort } from "@hex-di/core";
 import type { Todo } from "./entities.js";
 
 export interface TodoRepository {

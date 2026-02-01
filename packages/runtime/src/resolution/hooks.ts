@@ -11,8 +11,8 @@
  * @packageDocumentation
  */
 
-import type { Port } from "@hex-di/ports";
-import type { Lifetime } from "@hex-di/graph";
+import type { Port } from "@hex-di/core";
+import type { Lifetime } from "@hex-di/core";
 import type { InheritanceMode } from "../types.js";
 
 // =============================================================================
@@ -236,9 +236,8 @@ export interface ResolutionHooks {
 /**
  * Interface for installing hooks dynamically after container creation.
  *
- * Used by the wrapper pattern (withTracing, withInspector) to install
- * plugin hooks when a wrapper is applied. Hooks are composed in order
- * of installation for beforeResolve, and reverse order for afterResolve.
+ * Hooks are composed in order of installation for beforeResolve,
+ * and reverse order for afterResolve.
  *
  * @example
  * ```typescript
@@ -263,6 +262,78 @@ export interface HooksInstaller {
 }
 
 // =============================================================================
+// Immutable Hooks
+// =============================================================================
+
+/**
+ * Configuration for sealed (immutable) resolution hooks.
+ *
+ * Once hooks are sealed, they cannot be modified. This prevents accidental
+ * mutation of hooks after container creation and ensures predictable behavior.
+ *
+ * Use `sealHooks()` to create an immutable hooks configuration.
+ *
+ * @example
+ * ```typescript
+ * const hooks = sealHooks({
+ *   beforeResolve: (ctx) => console.log(`Resolving ${ctx.portName}`),
+ *   afterResolve: (ctx) => console.log(`Done in ${ctx.duration}ms`),
+ * });
+ *
+ * // hooks.sealed is true - these hooks are immutable
+ * const container = createContainer(graph, { hooks });
+ * ```
+ */
+export interface ImmutableHooksConfig extends ResolutionHooks {
+  /**
+   * Indicates these hooks are sealed and cannot be modified.
+   * Always true for ImmutableHooksConfig.
+   */
+  readonly sealed: true;
+}
+
+/**
+ * Seals resolution hooks to prevent modification.
+ *
+ * Creates a frozen copy of the hooks that cannot be modified. Use this when
+ * you want to ensure hooks remain unchanged after container creation.
+ *
+ * @param hooks - The hooks to seal
+ * @returns A sealed, frozen hooks configuration
+ *
+ * @example
+ * ```typescript
+ * const hooks = sealHooks({
+ *   beforeResolve: (ctx) => console.log(`Resolving ${ctx.portName}`),
+ * });
+ *
+ * // TypeScript knows hooks.sealed is true
+ * console.log(hooks.sealed); // true
+ *
+ * // Attempting to modify will throw at runtime (Object.freeze)
+ * // and fail at compile time (readonly)
+ * ```
+ */
+export function sealHooks(hooks: ResolutionHooks): ImmutableHooksConfig {
+  const sealed: ImmutableHooksConfig = {
+    beforeResolve: hooks.beforeResolve,
+    afterResolve: hooks.afterResolve,
+    sealed: true,
+  };
+  return Object.freeze(sealed);
+}
+
+/**
+ * Type guard to check if hooks are sealed.
+ *
+ * @param hooks - The hooks to check
+ * @returns True if hooks are sealed (immutable)
+ */
+export function isSealed(hooks: ResolutionHooks): hooks is ImmutableHooksConfig {
+  return (hooks as ImmutableHooksConfig).sealed === true;
+}
+
+// =============================================================================
 // Container Options
 // =============================================================================
 
@@ -278,17 +349,6 @@ export interface HooksInstaller {
  *   },
  * });
  * ```
- *
- * @example Using wrapper pattern for plugins
- * ```typescript
- * import { pipe, createPluginWrapper, TracingPlugin, TRACING } from '@hex-di/runtime';
- *
- * const withTracing = createPluginWrapper(TracingPlugin);
- * const container = pipe(createContainer(graph), withTracing);
- *
- * const tracing = container[TRACING];
- * tracing.getTraces();
- * ```
  */
 export interface ContainerOptions {
   /**
@@ -297,9 +357,6 @@ export interface ContainerOptions {
    * When provided, hooks are called for every resolution including
    * nested dependency resolutions. When not provided, there is zero
    * overhead - the hooks code path is not executed.
-   *
-   * For plugins with type-safe API access, use the wrapper pattern with
-   * `createPluginWrapper` and `pipe`.
    */
   readonly hooks?: ResolutionHooks;
 }

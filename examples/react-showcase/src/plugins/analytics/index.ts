@@ -4,8 +4,8 @@
  * @packageDocumentation
  */
 
-import { createPort } from "@hex-di/ports";
-import { createAdapter } from "@hex-di/graph";
+import { createPort } from "@hex-di/core";
+import { createAdapter } from "@hex-di/core";
 import { createPlugin } from "../types.js";
 import { LoggerPort } from "../../features/core/di/ports.js";
 import type { AnalyticsService, AnalyticsEvent } from "./types.js";

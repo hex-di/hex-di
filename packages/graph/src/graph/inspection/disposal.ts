@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { AdapterConstraint } from "../../adapter/index.js";
+import type { AdapterConstraint } from "@hex-di/core";
 
 /**
  * Computes disposal warnings for adapters with finalizers.

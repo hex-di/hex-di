@@ -26,8 +26,9 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter } from "../src/index.js";
+import { createPort } from "@hex-di/core";
+import { createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
 import type { GraphBuilderSignature } from "../src/builder/types/builder-signature.js";
 
 // =============================================================================

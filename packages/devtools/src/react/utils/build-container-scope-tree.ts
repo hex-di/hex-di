@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import type { ScopeTree, ContainerKind } from "@hex-di/plugin";
+import type { ScopeTree, ContainerKind } from "@hex-di/core";
 import { createInspector } from "@hex-di/runtime";
 import type { InspectableContainer } from "../types/inspectable-container.js";
 import type {

@@ -6,11 +6,14 @@
  */
 
 import { describe, test, expect, vi } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter } from "@hex-di/graph";
+import { createPort, createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
-import { INTERNAL_ACCESS } from "../src/inspector/symbols.js";
-import type { ContainerInternalState, ScopeInternalState } from "../src/inspector/types.js";
+import { INTERNAL_ACCESS } from "../src/inspection/symbols.js";
+import type {
+  ContainerInternalState,
+  ScopeInternalState,
+} from "../src/inspection/internal-state-types.js";
 
 function isRecord(value: unknown): value is Record<PropertyKey, unknown> {
   return typeof value === "object" && value !== null;

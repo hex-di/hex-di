@@ -15,7 +15,7 @@
  */
 
 import { createMachine, type Machine } from "@hex-di/flow";
-import type { TraceEntry, TraceFilter } from "@hex-di/plugin";
+import type { TraceEntry, TraceFilter } from "@hex-di/core";
 
 // =============================================================================
 // Sort Order Types

@@ -5,7 +5,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createAdapter, GraphBuilder } from "../../src/index.js";
+import { createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "../../src/index.js";
 import { LoggerPort, ConfigPort, CachePort } from "./shared-fixtures.js";
 
 describe("Integration: Graph with mixed lifetime adapters", () => {

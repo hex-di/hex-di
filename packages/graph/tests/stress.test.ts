@@ -14,8 +14,9 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createPort, type Port } from "@hex-di/ports";
-import { GraphBuilder, createAdapter, type Graph, type AdapterConstraint } from "../src/index.js";
+import { createAdapter, createPort, type Port, type AdapterConstraint } from "@hex-di/core";
+import { type Graph } from "../src/index.js";
+import { GraphBuilder } from "../src/index.js";
 
 // =============================================================================
 // Shared Types

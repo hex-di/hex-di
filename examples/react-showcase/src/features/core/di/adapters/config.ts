@@ -4,7 +4,7 @@
  * @packageDocumentation
  */
 
-import { createAsyncAdapter } from "@hex-di/graph";
+import { createAsyncAdapter } from "@hex-di/core";
 import { ConfigPort } from "../ports.js";
 import type { Config } from "../../../types.js";
 
@@ -26,7 +26,7 @@ export const ConfigAdapter = createAsyncAdapter({
   // No lifetime - async adapters are always singletons
   factory: async (): Promise<Config> => {
     // Simulate loading config from API
-    await new Promise((resolve) => setTimeout(resolve, 10000));
+    await new Promise(resolve => setTimeout(resolve, 10000));
     return {
       notificationDuration: 3000,
       maxMessages: 100,

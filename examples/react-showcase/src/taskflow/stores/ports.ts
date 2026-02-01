@@ -10,7 +10,7 @@
  * @packageDocumentation
  */
 
-import { createPort } from "@hex-di/ports";
+import { createPort } from "@hex-di/core";
 import type { UIPreferencesStoreInstance } from "./ui-preferences-store.js";
 import type { FilterStoreInstance } from "./filter-store.js";
 import type { UserSessionStoreInstance } from "./user-session-store.js";

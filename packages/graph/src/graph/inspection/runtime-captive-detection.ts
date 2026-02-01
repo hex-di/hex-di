@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import type { AdapterConstraint, Lifetime } from "../../adapter/index.js";
+import type { AdapterConstraint, Lifetime } from "@hex-di/core";
 
 /**
  * Result of a captive dependency detection.

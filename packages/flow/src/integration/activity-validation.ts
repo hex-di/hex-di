@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import type { Port, InferPortName } from "@hex-di/ports";
+import type { Port, InferPortName } from "@hex-di/core";
 import type { ConfiguredActivityAny } from "../activities/types.js";
 
 // =============================================================================

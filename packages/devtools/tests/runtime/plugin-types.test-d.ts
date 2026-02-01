@@ -26,7 +26,7 @@ import type {
   MinimalPlugin,
 } from "../../src/runtime/index.js";
 import type { ExportedGraph } from "@hex-di/devtools-core";
-import type { TracingAPI, ContainerSnapshot } from "@hex-di/plugin";
+import type { TracingAPI, ContainerSnapshot } from "@hex-di/core";
 import type { ReactElement } from "react";
 
 // =============================================================================

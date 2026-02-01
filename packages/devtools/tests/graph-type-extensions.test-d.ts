@@ -11,7 +11,7 @@
 
 import { describe, expectTypeOf, it } from "vitest";
 import type { ContainerOwnershipEntry, ExportedNode } from "@hex-di/devtools-core";
-import type { ServiceOrigin } from "@hex-di/plugin";
+import type { ServiceOrigin } from "@hex-di/core";
 import type {
   PositionedNode,
   DependencyGraphProps,

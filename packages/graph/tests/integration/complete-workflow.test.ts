@@ -5,13 +5,8 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import {
-  createAdapter,
-  GraphBuilder,
-  Graph,
-  InferGraphProvides,
-  InferAdapterProvides,
-} from "../../src/index.js";
+import { createAdapter, InferAdapterProvides } from "@hex-di/core";
+import { GraphBuilder, Graph, InferGraphProvides } from "../../src/index.js";
 import { LoggerPort, ConfigPort } from "./shared-fixtures.js";
 
 describe("Integration: Complete workflow", () => {

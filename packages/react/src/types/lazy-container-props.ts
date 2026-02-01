@@ -8,7 +8,7 @@
  */
 
 import type { ReactNode } from "react";
-import type { Port } from "@hex-di/ports";
+import type { Port } from "@hex-di/core";
 import type { LazyContainer } from "@hex-di/runtime";
 
 // =============================================================================

@@ -6,7 +6,7 @@
  */
 
 import { describe, test, expect } from "vitest";
-import { createPort } from "@hex-di/ports";
+import { createPort } from "@hex-di/core";
 import { isPort, isPortNamed } from "../src/types/type-guards.js";
 import { createContextVariableKey, type ContextVariableKey } from "../src/types/branded-types.js";
 import {

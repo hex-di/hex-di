@@ -9,7 +9,7 @@
  */
 
 import { useContext } from "react";
-import type { Port } from "@hex-di/ports";
+import type { Port } from "@hex-di/core";
 import { ContainerContext } from "../context/container-context.js";
 import { MissingProviderError } from "../errors.js";
 import type { Resolver } from "../types/core.js";

@@ -30,7 +30,7 @@
  * @packageDocumentation
  */
 
-import type { IsNever } from "../../types/type-utilities.js";
+import type { IsNever } from "@hex-di/core";
 
 // =============================================================================
 // Utility Types

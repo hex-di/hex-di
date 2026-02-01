@@ -9,7 +9,7 @@
  */
 
 import type { ExportedGraph, PresenterDataSourceContract } from "@hex-di/devtools-core";
-import type { TraceEntry, TraceStats, ContainerSnapshot } from "@hex-di/plugin";
+import type { TraceEntry, TraceStats, ContainerSnapshot } from "@hex-di/core";
 import {
   Methods,
   createRequest,

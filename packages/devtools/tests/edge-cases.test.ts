@@ -9,17 +9,9 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter, type Adapter, type Lifetime } from "@hex-di/graph";
-import type { Port } from "@hex-di/ports";
-import {
-  toJSON,
-  toDOT,
-  toMermaid,
-  filterGraph,
-  relabelPorts,
-  byLifetime,
-} from "../src/index.js";
+import { createPort, createAdapter, type Adapter, type Lifetime, type Port } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
+import { toJSON, toDOT, toMermaid, filterGraph, relabelPorts, byLifetime } from "../src/index.js";
 
 // =============================================================================
 // Empty Graph Tests
@@ -66,7 +58,7 @@ describe("Edge case: Empty graph handling", () => {
   it("relabelPorts returns empty graph when relabeling empty graph", () => {
     const emptyGraph = GraphBuilder.create().build();
     const exported = toJSON(emptyGraph);
-    const relabeled = relabelPorts(exported, (n) => n.label.toUpperCase());
+    const relabeled = relabelPorts(exported, n => n.label.toUpperCase());
 
     expect(relabeled.nodes).toHaveLength(0);
     expect(relabeled.edges).toHaveLength(0);
@@ -242,7 +234,7 @@ describe("Edge case: Special characters in port names", () => {
     interface Service {
       run(): void;
     }
-    const port = createPort<"My\"Service", Service>('My"Service');
+    const port = createPort<'My"Service', Service>('My"Service');
     const adapter = createAdapter({
       provides: port,
       requires: [],
@@ -437,7 +429,7 @@ describe("Edge case: Edge cleanup when filtering", () => {
     expect(exported.edges).toHaveLength(1);
 
     // Filter out UserService (the source of the edge)
-    const filtered = filterGraph(exported, (n) => n.id === "Logger");
+    const filtered = filterGraph(exported, n => n.id === "Logger");
 
     expect(filtered.nodes).toHaveLength(1);
     expect(filtered.edges).toHaveLength(0);
@@ -476,7 +468,7 @@ describe("Edge case: Edge cleanup when filtering", () => {
     const exported = toJSON(graph);
 
     // Filter out Logger (the target of the edge)
-    const filtered = filterGraph(exported, (n) => n.id === "UserService");
+    const filtered = filterGraph(exported, n => n.id === "UserService");
 
     expect(filtered.nodes).toHaveLength(1);
     expect(filtered.edges).toHaveLength(0);

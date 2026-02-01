@@ -6,7 +6,7 @@
  */
 
 import type { ExportedGraph, PresenterDataSourceContract } from "../types.js";
-import type { TraceEntry, TraceStats, ContainerSnapshot } from "@hex-di/plugin";
+import type { TraceEntry, TraceStats, ContainerSnapshot } from "@hex-di/core";
 
 // =============================================================================
 // Mock Configuration

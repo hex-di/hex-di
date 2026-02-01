@@ -11,8 +11,9 @@ import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
 import { createContainer, INTERNAL_ACCESS } from "@hex-di/runtime";
 import { createTypedHooks } from "../src/index.js";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter } from "@hex-di/graph";
+import { createPort } from "@hex-di/core";
+import { createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 
 // =============================================================================
 // Test Setup

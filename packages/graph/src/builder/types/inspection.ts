@@ -11,11 +11,7 @@
  * @packageDocumentation
  */
 
-import type {
-  AdapterConstraint,
-  InferAdapterProvides,
-  InferAdapterRequires,
-} from "../../adapter/types/index.js";
+import type { AdapterConstraint, InferAdapterProvides, InferAdapterRequires } from "@hex-di/core";
 import type {
   HasOverlap,
   OverlappingPorts,
@@ -32,7 +28,7 @@ import type {
   ExtractPortNames,
 } from "../../validation/types/index.js";
 import type { GraphBuilderSignature } from "./builder-signature.js";
-import type { IsNever, Prettify } from "../../types/type-utilities.js";
+import type { IsNever, Prettify } from "@hex-di/core";
 import type {
   DirectAdapterLifetime,
   AnyBuilderInternals,

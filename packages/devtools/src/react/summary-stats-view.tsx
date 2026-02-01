@@ -13,9 +13,9 @@
  */
 
 import React, { useMemo, useCallback, type ReactElement, type CSSProperties } from "react";
-import type { Lifetime } from "@hex-di/graph";
+import type { Lifetime } from "@hex-di/core";
 import { formatDuration } from "@hex-di/devtools-core";
-import type { TraceEntry, TraceStats } from "@hex-di/plugin";
+import type { TraceEntry, TraceStats } from "@hex-di/core";
 import type { TracingExportFormat } from "./tracing-controls-bar.js";
 import { summaryStyles, emptyStyles, nodeStyles } from "./styles.js";
 

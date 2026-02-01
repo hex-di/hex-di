@@ -6,8 +6,8 @@
  * @packageDocumentation
  */
 
-import { createPort } from "@hex-di/ports";
-import type { TraceEntry, TraceFilter, TraceStats, Lifetime } from "@hex-di/plugin";
+import { createPort } from "@hex-di/core";
+import type { TraceEntry, TraceFilter, TraceStats, Lifetime } from "@hex-di/core";
 
 // =============================================================================
 // Service Interface

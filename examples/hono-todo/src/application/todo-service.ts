@@ -1,4 +1,4 @@
-import { createAdapter } from "@hex-di/graph";
+import { createAdapter } from "@hex-di/core";
 import { TodoRepositoryPort } from "../domain/ports.js";
 import { LoggerPort, TodoServicePort } from "./ports.js";
 
@@ -10,7 +10,7 @@ export const TodoServiceAdapter = createAdapter({
   provides: TodoServicePort,
   requires: [TodoRepositoryPort, LoggerPort],
   lifetime: "scoped",
-  factory: (deps) => ({
+  factory: deps => ({
     async list(user) {
       deps.Logger.info("Listing todos", { user: user.id });
       return deps.TodoRepository.list(user.id);

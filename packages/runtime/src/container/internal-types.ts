@@ -3,13 +3,14 @@
  * @packageDocumentation
  */
 
-import type { Port, InferService } from "@hex-di/ports";
-import type { Adapter, Lifetime, FactoryKind, AdapterConstraint, Graph } from "@hex-di/graph";
+import type { Port, InferService } from "@hex-di/core";
+import type { Adapter, Lifetime, FactoryKind, AdapterConstraint } from "@hex-di/core";
+import type { Graph } from "@hex-di/graph";
 import type { ContainerOptions, ResolutionHooks } from "../resolution/hooks.js";
-import type { MemoMap } from "../common/memo-map.js";
+import type { MemoMap } from "../util/memo-map.js";
 import type { InheritanceMode } from "../types.js";
-import { AsyncInitializationRequiredError } from "../common/errors.js";
-import { ADAPTER_ACCESS } from "../inspector/symbols.js";
+import { AsyncInitializationRequiredError } from "../errors/index.js";
+import { ADAPTER_ACCESS } from "../inspection/symbols.js";
 
 // =============================================================================
 // Runtime Adapter Types
@@ -83,6 +84,60 @@ export function isForkedEntryForPort<P extends Port<unknown, string>>(
   port: P
 ): entry is ForkedEntry<P> {
   return entry.port === port;
+}
+
+// =============================================================================
+// Internal Access Type Guard
+// =============================================================================
+
+import type { InternalAccessible } from "../inspection/internal-state-types.js";
+import { INTERNAL_ACCESS } from "../inspection/symbols.js";
+
+/**
+ * Type guard to check if a value is InternalAccessible.
+ *
+ * Used for runtime validation before type-safe casts when:
+ * - Converting unknown containers to InternalAccessible in wrapper pattern
+ * - Validating container types at runtime boundaries
+ *
+ * @param value - Value to check
+ * @returns True if value has INTERNAL_ACCESS as a function
+ *
+ * @example
+ * ```typescript
+ * function getState(container: unknown): ContainerInternalState {
+ *   if (!isInternalAccessible(container)) {
+ *     throw new Error('Not a valid container');
+ *   }
+ *   return container[INTERNAL_ACCESS]();
+ * }
+ * ```
+ */
+export function isInternalAccessible(value: unknown): value is InternalAccessible {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    INTERNAL_ACCESS in value &&
+    typeof (value as Record<symbol, unknown>)[INTERNAL_ACCESS] === "function"
+  );
+}
+
+/**
+ * Safely casts a value to InternalAccessible after runtime validation.
+ *
+ * This consolidates the InternalAccessible cast pattern used in wrapper code.
+ * Throws if the value is not a valid InternalAccessible container.
+ *
+ * @param value - Value to convert
+ * @param context - Context string for error messages
+ * @returns The value typed as InternalAccessible
+ * @throws Error if value is not InternalAccessible
+ */
+export function asInternalAccessible(value: unknown, context: string): InternalAccessible {
+  if (!isInternalAccessible(value)) {
+    throw new Error(`${context}: Expected InternalAccessible container`);
+  }
+  return value;
 }
 
 // =============================================================================

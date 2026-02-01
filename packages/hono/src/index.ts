@@ -42,10 +42,10 @@ export { MissingScopeError, MissingContainerError } from "./errors.js";
 export type { HexHonoVariables, HexHonoEnv, WithHexDi } from "./types.js";
 
 // =============================================================================
-// Re-exports from @hex-di/ports
+// Re-exports from @hex-di/core
 // =============================================================================
 
-export type { Port, InferService, InferPortName } from "@hex-di/ports";
+export type { Port, InferService, InferPortName } from "@hex-di/core";
 
 // =============================================================================
 // Re-exports from @hex-di/runtime

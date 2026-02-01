@@ -8,8 +8,8 @@
  * @packageDocumentation
  */
 
-import type { Port } from "@hex-di/ports";
-import type { Graph, AdapterConstraint, Lifetime } from "@hex-di/graph";
+import type { Port, AdapterConstraint, Lifetime } from "@hex-di/core";
+import type { Graph } from "@hex-di/graph";
 
 // V8-specific Error.captureStackTrace type
 // We use a type alias to type the V8-specific static method without conflicts

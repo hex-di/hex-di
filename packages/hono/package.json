@@ -50,7 +50,7 @@
   },
   "homepage": "https://github.com/hex-di/hex-di/tree/main/packages/hono#readme",
   "dependencies": {
-    "@hex-di/ports": "workspace:*",
+    "@hex-di/core": "workspace:*",
     "@hex-di/runtime": "workspace:*"
   },
   "devDependencies": {

@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { GraphInspection } from "@hex-di/graph";
+import type { GraphInspection } from "@hex-di/core";
 
 /**
  * Options for toDotGraph visualization.

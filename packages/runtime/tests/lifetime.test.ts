@@ -12,8 +12,8 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter } from "@hex-di/graph";
+import { createPort, createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
 
 // =============================================================================

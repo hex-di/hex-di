@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { IsNever } from "../../../types/type-utilities.js";
+import type { IsNever } from "@hex-di/core";
 import type { MalformedAdapterError } from "../captive/errors.js";
 import type { DefaultMaxDepth } from "./depth.js";
 import type {

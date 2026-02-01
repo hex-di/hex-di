@@ -44,7 +44,7 @@
  */
 
 import type { MalformedAdapterError } from "./captive/errors.js";
-import type { InferenceError, IsNever } from "../../types/type-utilities.js";
+import type { InferenceError, IsNever } from "@hex-di/core";
 
 // =============================================================================
 // Branded Port Name Types

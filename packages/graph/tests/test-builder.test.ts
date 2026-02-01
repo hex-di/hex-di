@@ -9,7 +9,7 @@
 
 import { describe, it, expect } from "vitest";
 import { TestGraphBuilder } from "./test-builder.js";
-import { createAdapter } from "../src/index.js";
+import { createAdapter } from "@hex-di/core";
 import { LoggerPort, DatabasePort, type Logger, type Database } from "./fixtures.js";
 
 describe("TestGraphBuilder Immutability", () => {

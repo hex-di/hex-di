@@ -10,15 +10,10 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createPort } from "@hex-di/ports";
-import {
-  GraphBuilder,
-  createAdapter,
-  createAsyncAdapter,
-  inspectGraph,
-  parseGraphError,
-  GraphErrorCode,
-} from "../src/index.js";
+import { createPort, createAdapter, createAsyncAdapter } from "@hex-di/core";
+import { parseGraphError } from "../src/advanced.js";
+import { GraphBuilder } from "../src/index.js";
+import { inspectGraph, GraphErrorCode } from "../src/advanced.js";
 
 // =============================================================================
 // Test Fixtures

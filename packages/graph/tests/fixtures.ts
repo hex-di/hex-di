@@ -10,11 +10,11 @@
  *
  * | Scenario                    | Recommended Fixtures                           |
  * |-----------------------------|------------------------------------------------|
- * | Basic adapter tests         | LoggerPort, LoggerAdapter, ConsoleLogger       |
+ * | Basic adapter tests         | LoggerPort, LoggerConsoleLogger       |
  * | Dependency chain tests      | DatabasePort, UserServicePort + their adapters |
  * | Cycle detection tests       | CycleA/B/C ports and adapters                  |
  * | Lifetime tests              | Adapters with different lifetimes              |
- * | Async adapter tests         | AsyncDbAdapter, AsyncConfigAdapter             |
+ * | Async adapter tests         | AsyncDbAsyncConfigAdapter             |
  * | Multi-adapter tests         | Use createTestAdapter() for custom needs       |
  *
  * ### Scenario Pattern → TestGraphBuilder Method
@@ -38,15 +38,10 @@
  * @packageDocumentation
  */
 
-import { createPort } from "@hex-di/ports";
-import {
-  createAdapter,
-  createAsyncAdapter,
-  GraphBuilder,
-  __emptyDepGraphBrand,
-  __emptyLifetimeMapBrand,
-  type Lifetime,
-} from "../src/index.js";
+import { createPort, createAdapter, createAsyncAdapter, type Lifetime } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
+import { __emptyDepGraphBrand, __emptyLifetimeMapBrand } from "../src/advanced.js";
+import { nextSequence } from "./utils/sequence.js";
 
 // These imports are needed for TypeScript to name the symbol types in return type declarations.
 // The symbols are used in EmptyDependencyGraph/EmptyLifetimeMap which appear in GraphBuilder types.
@@ -448,7 +443,7 @@ export const RequestContextAdapterTransient = createAdapter({
   provides: RequestContextPort,
   requires: [] as const,
   lifetime: "transient",
-  factory: () => ({ requestId: `req-${Date.now()}` }),
+  factory: () => ({ requestId: `req-${nextSequence()}` }),
 });
 
 /**
@@ -459,7 +454,7 @@ export const RequestContextAdapterScoped = createAdapter({
   provides: RequestContextPort,
   requires: [] as const,
   lifetime: "scoped",
-  factory: () => ({ requestId: `req-${Date.now()}` }),
+  factory: () => ({ requestId: `req-${nextSequence()}` }),
 });
 
 // =============================================================================
@@ -555,7 +550,7 @@ export function createRequestContextAdapterTransient() {
     provides: RequestContextPort,
     requires: [],
     lifetime: "transient",
-    factory: () => ({ requestId: `req-${Date.now()}` }),
+    factory: () => ({ requestId: `req-${nextSequence()}` }),
   });
 }
 
@@ -568,7 +563,7 @@ export function createRequestContextAdapterScoped() {
     provides: RequestContextPort,
     requires: [],
     lifetime: "scoped",
-    factory: () => ({ requestId: `req-${Date.now()}` }),
+    factory: () => ({ requestId: `req-${nextSequence()}` }),
   });
 }
 

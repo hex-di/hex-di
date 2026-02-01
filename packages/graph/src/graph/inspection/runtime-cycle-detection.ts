@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { AdapterConstraint } from "../../adapter/index.js";
+import type { AdapterConstraint } from "@hex-di/core";
 
 /**
  * Normalizes a cycle path to start from the lexicographically smallest node.

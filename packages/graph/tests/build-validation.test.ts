@@ -12,8 +12,7 @@
  * runs unconditionally.
  */
 import { describe, expect, it } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { createAdapter } from "../src/index.js";
+import { createPort, createAdapter } from "@hex-di/core";
 import { buildGraph, buildGraphFragment, validateBuildable } from "../src/builder/builder-build.js";
 
 // =============================================================================

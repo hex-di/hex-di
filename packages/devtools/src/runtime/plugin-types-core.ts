@@ -12,7 +12,7 @@
  * @packageDocumentation
  */
 
-import type { ContainerSnapshot } from "@hex-di/plugin";
+import type { ContainerSnapshot } from "@hex-di/core";
 
 // =============================================================================
 // Plugin Shortcut (Framework-Agnostic)

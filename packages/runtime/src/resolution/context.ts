@@ -13,7 +13,7 @@
  * @internal
  */
 
-import { CircularDependencyError } from "../common/errors.js";
+import { CircularDependencyError } from "../errors/index.js";
 
 /**
  * Internal class for tracking the resolution path and detecting circular dependencies.

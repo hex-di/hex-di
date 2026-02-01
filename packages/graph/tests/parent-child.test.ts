@@ -11,7 +11,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createAdapter, GraphBuilder } from "../src/index.js";
+import { createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
 import { LoggerPort, DatabasePort, CachePort, validateOverride } from "./fixtures.js";
 import { TestGraphBuilder, createChildGraphBuilder } from "./test-builder.js";
 

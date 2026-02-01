@@ -17,7 +17,7 @@ import React, {
   type CSSProperties,
   type KeyboardEvent,
 } from "react";
-import type { TracingAPI } from "@hex-di/plugin";
+import type { TracingAPI } from "@hex-di/core";
 import type { ServiceTreeNode } from "./services-tree.js";
 import { getVisibleServiceIds, getAllExpandableIds, findParentServiceId } from "./services-tree.js";
 import { getLifetimeBadgeStyle } from "./styles.js";

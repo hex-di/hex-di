@@ -1,6 +1,7 @@
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { createAdapter, GraphBuilder } from "../src/index.js";
+import { createPort } from "@hex-di/core";
+import { createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
 
 const SingletonPort = createPort<"Singleton", { doS(): void }>("Singleton");
 const ScopedPort = createPort<"Scoped", { doScoped(): void }>("Scoped");

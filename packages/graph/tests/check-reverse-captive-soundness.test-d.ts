@@ -14,7 +14,7 @@ import type {
   GetLifetimeLevel,
   AddLifetime,
   FindReverseCaptiveDependency,
-} from "../src/internal.js";
+} from "../src/advanced.js";
 
 // =============================================================================
 // GetLifetimeLevel Behavior Tests

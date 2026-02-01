@@ -10,8 +10,8 @@
  * @packageDocumentation
  */
 
-import type { Lifetime, FactoryKind } from "@hex-di/graph";
-import type { InheritanceMode, ServiceOrigin } from "@hex-di/plugin";
+import type { Lifetime, FactoryKind } from "@hex-di/core";
+import type { InheritanceMode, ServiceOrigin } from "@hex-di/core";
 
 // Re-export generic types from @hex-di/graph-viz
 export type {

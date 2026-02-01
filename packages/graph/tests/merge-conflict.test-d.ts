@@ -17,7 +17,8 @@
  */
 
 import { describe, it, expectTypeOf } from "vitest";
-import { GraphBuilder, createAdapter } from "../src/index.js";
+import { createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
 import type {
   DetectMergeConflict,
   MergeConflictError,

@@ -21,7 +21,7 @@ import { render, type RenderOptions, type RenderResult } from "@testing-library/
 import { HexDiContainerProvider } from "@hex-di/react";
 import { createContainer, type Container } from "@hex-di/runtime";
 import type { Graph } from "@hex-di/graph";
-import type { Port } from "@hex-di/ports";
+import type { Port } from "@hex-di/core";
 
 // =============================================================================
 // Types

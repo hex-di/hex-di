@@ -26,7 +26,7 @@ import React, {
   type CSSProperties,
 } from "react";
 import { tracingStyles, emptyStyles } from "../../react/styles.js";
-import type { TraceEntry, TraceStats } from "@hex-di/plugin";
+import type { TraceEntry, TraceStats } from "@hex-di/core";
 import type { PluginProps } from "../../react/types/plugin-types.js";
 import {
   TracingControlsBar,

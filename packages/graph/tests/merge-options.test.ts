@@ -10,9 +10,9 @@
  */
 
 import { describe, it, expect, expectTypeOf } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { createAdapter, GraphBuilder } from "../src/index.js";
-import type { MergeOptions } from "../src/internal.js";
+import { createPort, createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
+import type { MergeOptions } from "../src/advanced.js";
 
 // =============================================================================
 // Test Fixtures

@@ -1,4 +1,4 @@
-import { createAdapter } from "@hex-di/graph";
+import { createAdapter } from "@hex-di/core";
 import { AuthServicePort, LoggerPort } from "../application/ports.js";
 import { UnauthorizedError } from "../application/errors.js";
 import type { User } from "../domain/entities.js";
@@ -12,7 +12,7 @@ export const AuthAdapter = createAdapter({
   provides: AuthServicePort,
   requires: [LoggerPort],
   lifetime: "scoped",
-  factory: (deps) => {
+  factory: deps => {
     const authenticate = async (token: string | null | undefined) => {
       if (!token) {
         deps.Logger.info("Anonymous request");

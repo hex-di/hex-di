@@ -8,8 +8,7 @@
  * @packageDocumentation
  */
 
-import type { Lifetime } from "../../../adapter/types/adapter-types.js";
-import type { Prettify } from "../../../types/type-utilities.js";
+import type { Lifetime, Prettify } from "@hex-di/core";
 import type { LifetimeLevel } from "./lifetime-level.js";
 
 /**

@@ -17,7 +17,7 @@
  * @packageDocumentation
  */
 
-import type { IsLazyPort, UnwrapLazyPort } from "../../adapter/lazy.js";
+import type { IsLazyPort, UnwrapLazyPort } from "@hex-di/core";
 
 /**
  * Transforms lazy ports in a requires union to their original ports.

@@ -15,7 +15,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { port } from "@hex-di/ports";
+import { port } from "@hex-di/core";
 import { activityPort } from "../../src/activities/port.js";
 import { defineEvents, type TypedEventSink } from "../../src/activities/events.js";
 import { activity } from "../../src/activities/factory.js";

@@ -6,8 +6,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter, type Graph, type Port } from "@hex-di/graph";
+import { createPort, createAdapter, type Port } from "@hex-di/core";
+import { GraphBuilder, type Graph } from "@hex-di/graph";
 import {
   assertGraphComplete,
   assertPortProvided,

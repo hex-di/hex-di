@@ -7,7 +7,9 @@
 
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
-import { GraphBuilder, inspectGraph, type Lifetime } from "../../src/index.js";
+import type { Lifetime } from "@hex-di/core";
+import { GraphBuilder } from "../../src/index.js";
+import { inspectGraph } from "../../src/advanced.js";
 import {
   fcConfig,
   portNameArb,
@@ -162,7 +164,7 @@ describe("Property: Lifetime Consistency", () => {
 
           if (uniqueConfigs.length === 0) return;
 
-          const adapters = uniqueConfigs.map(([name, lifetime]) => {
+          const adapters = uniqueConfigs.map(([name, lifetime]: [string, Lifetime]) => {
             const port = makePort(name);
             return makeAdapter(port, lifetime);
           });

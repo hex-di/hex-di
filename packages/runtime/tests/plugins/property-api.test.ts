@@ -9,12 +9,12 @@
  */
 
 import { describe, it, expect, vi, expectTypeOf } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter } from "@hex-di/graph";
+import { createPort, createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../../src/container/factory.js";
 import type { Container, InferContainerProvides } from "../../src/types.js";
-import type { InspectorAPI } from "../../src/plugins/inspector/types.js";
-import type { TracingAPI } from "@hex-di/plugin";
+import type { InspectorAPI } from "../../src/inspection/types.js";
+import type { TracingAPI } from "@hex-di/core";
 
 // =============================================================================
 // Test Fixtures
@@ -49,7 +49,7 @@ function createTestGraph() {
   return GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
 }
 
-function createChildGraph() {
+function createChildGraph(parentGraph: ReturnType<typeof createTestGraph>) {
   const LoggerOverride = createAdapter({
     provides: LoggerPort,
     requires: [],
@@ -57,7 +57,7 @@ function createChildGraph() {
     factory: () => ({ log: vi.fn() }),
   });
 
-  return GraphBuilder.create().override(LoggerOverride).build();
+  return GraphBuilder.forParent(parentGraph).override(LoggerOverride).build();
 }
 
 // =============================================================================
@@ -143,7 +143,7 @@ describe("Property-Based API", () => {
     it("child containers have inspector property", () => {
       const graph = createTestGraph();
       const container = createContainer(graph, { name: "ParentContainer" });
-      const childGraph = createChildGraph();
+      const childGraph = createChildGraph(graph);
       const child = container.createChild(childGraph, { name: "ChildContainer" });
 
       expect(child.inspector).toBeDefined();
@@ -157,7 +157,7 @@ describe("Property-Based API", () => {
     it("child containers have tracer property", () => {
       const graph = createTestGraph();
       const container = createContainer(graph, { name: "ParentContainer" });
-      const childGraph = createChildGraph();
+      const childGraph = createChildGraph(graph);
       const child = container.createChild(childGraph, { name: "ChildContainer" });
 
       expect(child.tracer).toBeDefined();
@@ -168,7 +168,7 @@ describe("Property-Based API", () => {
     it("child container properties are non-enumerable and frozen", () => {
       const graph = createTestGraph();
       const container = createContainer(graph, { name: "ParentContainer" });
-      const childGraph = createChildGraph();
+      const childGraph = createChildGraph(graph);
       const child = container.createChild(childGraph, { name: "ChildContainer" });
 
       // Inspector
@@ -238,7 +238,7 @@ describe("Type-Level Property API Tests", () => {
   it("child container types include inspector and tracer properties", () => {
     const graph = createTestGraph();
     const container = createContainer(graph, { name: "ParentContainer" });
-    const childGraph = createChildGraph();
+    const childGraph = createChildGraph(graph);
     const child = container.createChild(childGraph, { name: "ChildContainer" });
 
     expectTypeOf(child.inspector).toMatchTypeOf<InspectorAPI>();

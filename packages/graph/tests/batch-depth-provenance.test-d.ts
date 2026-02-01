@@ -24,8 +24,8 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { createAdapter } from "../src/index.js";
+import { createPort } from "@hex-di/core";
+import { createAdapter } from "@hex-di/core";
 import type { WouldAnyCreateCycle } from "../src/validation/types/cycle/batch.js";
 import type {
   ExtractDepthExceededPort,

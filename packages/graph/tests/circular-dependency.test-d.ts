@@ -11,16 +11,16 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
+import { createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
 import {
-  GraphBuilder,
-  createAdapter,
   CircularDependencyError,
   CircularErrorMessage,
   WouldCreateCycle,
   DefaultMaxDepth,
   ValidateMaxDepth,
-} from "../src/index.js";
-import {
+} from "../src/advanced.js";
+import type {
   IsReachable,
   AddEdge,
   GetDirectDeps,
@@ -28,7 +28,7 @@ import {
   AdapterRequiresNames,
   DepthExceededResult,
   IsDepthExceeded,
-} from "../src/internal.js";
+} from "../src/advanced.js";
 import {
   LoggerPort,
   DatabasePort,

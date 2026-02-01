@@ -16,7 +16,7 @@
  */
 
 import type { ReactNode, ComponentType } from "react";
-import type { Port, InferService } from "@hex-di/ports";
+import type { Port, InferService } from "@hex-di/core";
 import type { Container, InheritanceMode } from "@hex-di/runtime";
 import type { Graph, InferGraphProvides, InferGraphOverrides } from "@hex-di/graph";
 import type { Resolver } from "./core.js";

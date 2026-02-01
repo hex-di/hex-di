@@ -3,7 +3,7 @@
  * @packageDocumentation
  */
 
-import type { Port, InferService } from "@hex-di/ports";
+import type { Port, InferService } from "@hex-di/core";
 import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
 import type { ContainerOptions, HooksInstaller } from "../resolution/hooks.js";
 import type {
@@ -27,8 +27,8 @@ import {
   type RuntimeAdapter,
 } from "./impl.js";
 import type { InternalContainerMethods } from "./internal-types.js";
-import { INTERNAL_ACCESS, ADAPTER_ACCESS, HOOKS_ACCESS } from "../inspector/symbols.js";
-import { unreachable } from "../common/unreachable.js";
+import { INTERNAL_ACCESS, ADAPTER_ACCESS, HOOKS_ACCESS } from "../inspection/symbols.js";
+import { unreachable } from "../util/unreachable.js";
 import { createChildContainerWrapper } from "./wrappers.js";
 import { isInheritanceMode } from "./helpers.js";
 import type {
@@ -36,10 +36,10 @@ import type {
   ResolutionHookContext,
   ResolutionResultContext,
 } from "../resolution/hooks.js";
-import { createBuiltinInspectorAPI, createBuiltinTracerAPI } from "../plugins/builtin-api.js";
-import type { InspectorAPI } from "../plugins/inspector/types.js";
-import type { TracingAPI } from "@hex-di/plugin";
-import type { InternalAccessible } from "../inspector/creation.js";
+import { createBuiltinInspectorAPI, createBuiltinTracerAPI } from "../inspection/builtin-api.js";
+import type { InspectorAPI } from "../inspection/types.js";
+import type { TracingAPI } from "@hex-di/core";
+import type { InternalAccessible } from "../inspection/creation.js";
 
 // =============================================================================
 // Builtin API Attachment Helper
@@ -47,8 +47,7 @@ import type { InternalAccessible } from "../inspector/creation.js";
 
 /**
  * Type for container objects that support INTERNAL_ACCESS and can have
- * inspector/tracer attached. After calling attachBuiltinAPIs, the container
- * will have these properties defined as non-enumerable, readonly values.
+ * inspector/tracer attached.
  *
  * @internal
  */
@@ -71,8 +70,6 @@ interface ContainerWithBuiltinAPIs extends InternalAccessible {
  * Attaches built-in inspector and tracer APIs to a container object.
  *
  * Uses Object.defineProperty to make properties non-enumerable and readonly.
- * The container is mutated in place. After this function returns, the container
- * is guaranteed to have both `inspector` and `tracer` properties defined.
  *
  * @param container - Container object that implements INTERNAL_ACCESS
  *
@@ -165,18 +162,6 @@ function createLateBindingHooks(holder: HooksHolder): ResolutionHooks {
  *   },
  * });
  * ```
- *
- * @example With wrapper pattern for plugins
- * ```typescript
- * import { pipe, createPluginWrapper, TracingPlugin, TRACING } from '@hex-di/runtime';
- *
- * const withTracing = createPluginWrapper(TracingPlugin);
- * const container = pipe(createContainer(graph), withTracing);
- *
- * // Type-safe plugin API access
- * const tracing = container[TRACING];
- * tracing.getTraces();
- * ```
  */
 export function createContainer<
   TProvides extends Port<unknown, string>,
@@ -185,7 +170,7 @@ export function createContainer<
   graph: Graph<TProvides, Port<unknown, string>>,
   containerOptions: CreateContainerOptions,
   hookOptions?: ContainerOptions
-): Container<TProvides, never, TAsyncPorts, "uninitialized", readonly []> {
+): Container<TProvides, never, TAsyncPorts, "uninitialized"> {
   // Create late-binding hooks holder with array for dynamic composition
   // This allows hooks to be installed AFTER container creation via wrappers
   const hooksHolder: HooksHolder = { hookSources: [] };
@@ -213,8 +198,6 @@ export function createContainer<
 
 /**
  * Internal type for uninitialized root container.
- * Uses readonly [] for TPlugins because plugin APIs are added via wrappers (withInspector, etc.)
- * which provide compile-time type safety through intersection types.
  *
  * Note: "inspector" and "tracer" are initially optional placeholders.
  * They are set via Object.defineProperty for non-enumerability via attachBuiltinAPIs().
@@ -223,11 +206,11 @@ type UninitializedContainerInternals<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
 > = Omit<
-  ContainerMembers<TProvides, never, TAsyncPorts, "uninitialized", readonly []>,
+  ContainerMembers<TProvides, never, TAsyncPorts, "uninitialized">,
   "initialize" | "inspector" | "tracer"
 > &
   InternalContainerMethods<TProvides> & {
-    initialize: () => Promise<Container<TProvides, never, TAsyncPorts, "initialized", readonly []>>;
+    initialize: () => Promise<Container<TProvides, never, TAsyncPorts, "initialized">>;
     // Placeholders - will be set by attachBuiltinAPIs before freeze
     inspector?: InspectorAPI;
     tracer?: TracingAPI;
@@ -235,8 +218,6 @@ type UninitializedContainerInternals<
 
 /**
  * Internal type for initialized root container.
- * Uses readonly [] for TPlugins because plugin APIs are added via wrappers (withInspector, etc.)
- * which provide compile-time type safety through intersection types.
  *
  * Note: "inspector" and "tracer" are initially optional placeholders.
  * They are set via Object.defineProperty for non-enumerability via attachBuiltinAPIs().
@@ -245,7 +226,7 @@ type InitializedContainerInternals<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
 > = Omit<
-  ContainerMembers<TProvides, never, TAsyncPorts, "initialized", readonly []>,
+  ContainerMembers<TProvides, never, TAsyncPorts, "initialized">,
   "initialize" | "inspector" | "tracer"
 > &
   InternalContainerMethods<TProvides> & {
@@ -263,14 +244,8 @@ function createUninitializedContainerWrapper<
   containerName: string,
   userHooks: ResolutionHooks | undefined,
   hooksHolder: HooksHolder
-): Container<TProvides, never, TAsyncPorts, "uninitialized", readonly []> {
-  let initializedContainer: Container<
-    TProvides,
-    never,
-    TAsyncPorts,
-    "initialized",
-    readonly []
-  > | null = null;
+): Container<TProvides, never, TAsyncPorts, "uninitialized"> {
+  let initializedContainer: Container<TProvides, never, TAsyncPorts, "initialized"> | null = null;
 
   function resolve<P extends Exclude<TProvides, TAsyncPorts>>(port: P): InferService<P> {
     return impl.resolve(port);
@@ -312,8 +287,7 @@ function createUninitializedContainerWrapper<
       TProvides,
       Exclude<InferGraphProvides<TChildGraph>, TProvides>,
       TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
-      "initialized",
-      readonly []
+      "initialized"
     > => {
       const parentLike: ParentContainerLike<TProvides, TAsyncPorts> = {
         resolveInternal: <P extends TProvides>(port: P) => impl.resolve(port),
@@ -347,8 +321,7 @@ function createUninitializedContainerWrapper<
         TProvides,
         Exclude<InferGraphProvides<TChildGraph>, TProvides>,
         TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
-        "initialized",
-        readonly []
+        "initialized"
       >
     > => createChildContainerAsync(container, containerName, graphLoader, options),
     createLazyChild: <
@@ -363,8 +336,7 @@ function createUninitializedContainerWrapper<
     ): LazyContainer<
       TProvides,
       Exclude<InferGraphProvides<TChildGraph>, TProvides>,
-      TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
-      readonly []
+      TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
     > => createLazyChildContainer(container, containerName, graphLoader, options),
     dispose: async () => {
       await impl.dispose();
@@ -447,7 +419,7 @@ function createInitializedContainerWrapper<
 >(
   impl: RootContainerImpl<TProvides, TAsyncPorts>,
   containerName: string
-): Container<TProvides, never, TAsyncPorts, "initialized", readonly []> {
+): Container<TProvides, never, TAsyncPorts, "initialized"> {
   function resolve<P extends TProvides>(port: P): InferService<P> {
     return impl.resolve(port);
   }
@@ -481,8 +453,7 @@ function createInitializedContainerWrapper<
       TProvides,
       Exclude<InferGraphProvides<TChildGraph>, TProvides>,
       TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
-      "initialized",
-      readonly []
+      "initialized"
     > => {
       const parentLike: ParentContainerLike<TProvides, TAsyncPorts> = {
         resolveInternal: <P extends TProvides>(port: P) => impl.resolve(port),
@@ -516,8 +487,7 @@ function createInitializedContainerWrapper<
         TProvides,
         Exclude<InferGraphProvides<TChildGraph>, TProvides>,
         TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
-        "initialized",
-        readonly []
+        "initialized"
       >
     > => createChildContainerAsync(container, containerName, graphLoader, options),
     createLazyChild: <
@@ -532,8 +502,7 @@ function createInitializedContainerWrapper<
     ): LazyContainer<
       TProvides,
       Exclude<InferGraphProvides<TChildGraph>, TProvides>,
-      TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
-      readonly []
+      TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
     > => createLazyChildContainer(container, containerName, graphLoader, options),
     dispose: async () => {
       await impl.dispose();
@@ -596,7 +565,7 @@ function createRootScope<
 >(
   containerImpl: RootContainerImpl<TProvides, TAsyncPorts>,
   name?: string
-): Scope<TProvides, TAsyncPorts, TPhase, readonly []> {
+): Scope<TProvides, TAsyncPorts, TPhase> {
   const scopeImpl = new ScopeImpl<TProvides, TAsyncPorts, TPhase>(
     containerImpl,
     containerImpl.getSingletonMemo(),
@@ -647,8 +616,7 @@ function createChildFromGraph<
   TParentProvides,
   Exclude<InferGraphProvides<TChildGraph>, TParentProvides>,
   TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
-  "initialized",
-  readonly []
+  "initialized"
 > {
   // Generate unique ID for this child container (used internally)
   const containerId = generateChildContainerId();
@@ -743,7 +711,7 @@ export async function createChildContainerAsync<
 >(
   // Using Pick to accept ContainerMembers (used by internal wrappers) as well as Container
   parent: Pick<
-    ContainerMembers<TParentProvides, TParentExtends, TAsyncPorts, "initialized", readonly []>,
+    ContainerMembers<TParentProvides, TParentExtends, TAsyncPorts, "initialized">,
     "createChild"
   >,
   _parentName: string,
@@ -754,8 +722,7 @@ export async function createChildContainerAsync<
     TParentProvides | TParentExtends,
     Exclude<InferGraphProvides<TChildGraph>, TParentProvides | TParentExtends>,
     TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
-    "initialized",
-    readonly []
+    "initialized"
   >
 > {
   const graph = await graphLoader();
@@ -802,7 +769,7 @@ export function createLazyChildContainer<
 >(
   // Using Pick to accept ContainerMembers (used by internal wrappers) as well as Container
   parent: Pick<
-    ContainerMembers<TParentProvides, TParentExtends, TAsyncPorts, "initialized", readonly []>,
+    ContainerMembers<TParentProvides, TParentExtends, TAsyncPorts, "initialized">,
     "has" | "createChild"
   >,
   _parentName: string,
@@ -811,15 +778,10 @@ export function createLazyChildContainer<
 ): LazyContainer<
   TParentProvides | TParentExtends,
   Exclude<InferGraphProvides<TChildGraph>, TParentProvides | TParentExtends>,
-  TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
-  readonly []
+  TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
 > {
   // Parent implements LazyContainerParent interface via its has() and createChild() methods
-  const parentLike: LazyContainerParent<
-    TParentProvides | TParentExtends,
-    TAsyncPorts,
-    readonly []
-  > = {
+  const parentLike: LazyContainerParent<TParentProvides | TParentExtends, TAsyncPorts> = {
     has: port => parent.has(port),
     createChild: (graph, opts) => parent.createChild(graph, opts),
   };
@@ -828,7 +790,6 @@ export function createLazyChildContainer<
     TParentProvides | TParentExtends,
     Exclude<InferGraphProvides<TChildGraph>, TParentProvides | TParentExtends>,
     TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
-    readonly [],
     TChildGraph
   >(parentLike, graphLoader, options);
 }

@@ -11,7 +11,7 @@
 
 import { describe, expectTypeOf, it } from "vitest";
 import type { JoinPortNames } from "../src/validation/types/error-messages.js";
-import type { Port } from "@hex-di/ports";
+import type { Port } from "@hex-di/core";
 
 // Create a union of 10 ports (realistic large case)
 type Port1 = Port<{ test: () => void }, "Port1">;

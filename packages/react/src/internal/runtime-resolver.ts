@@ -57,7 +57,7 @@
  * @packageDocumentation
  */
 
-import type { Port, InferService } from "@hex-di/ports";
+import type { Port, InferService } from "@hex-di/core";
 import { isRecord } from "@hex-di/runtime";
 
 // =============================================================================

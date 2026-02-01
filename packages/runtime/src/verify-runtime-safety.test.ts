@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { createAdapter, GraphBuilder } from "@hex-di/graph";
+import { createPort, createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "./index.js";
 
 describe("Runtime Safety Verification", () => {

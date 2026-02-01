@@ -5,7 +5,7 @@
  * @packageDocumentation
  */
 
-import type { TraceEntry, TraceStats } from "@hex-di/plugin";
+import type { TraceEntry, TraceStats } from "@hex-di/core";
 
 // =============================================================================
 // Trace Entry Factory

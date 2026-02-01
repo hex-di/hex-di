@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import type { AdapterConstraint } from "../adapter/index.js";
+import type { AdapterConstraint } from "@hex-di/core";
 
 // Re-export brand symbols from the shared symbols module for backward compatibility
 export type { __graphBuilderBrand, __prettyView, __prettyViewSymbol } from "../symbols/index.js";

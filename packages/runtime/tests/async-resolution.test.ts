@@ -11,8 +11,8 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createPort, type Port } from "@hex-di/ports";
-import { GraphBuilder, createAdapter, createAsyncAdapter } from "@hex-di/graph";
+import { createPort, type Port, createAdapter, createAsyncAdapter } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import {
   createContainer,
   AsyncFactoryError,

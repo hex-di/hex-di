@@ -53,7 +53,7 @@
     "@hex-di/graph": "workspace:*"
   },
   "devDependencies": {
-    "@hex-di/ports": "workspace:*",
+    "@hex-di/core": "workspace:*",
     "vitest": "4.0.16"
   },
   "peerDependencies": {

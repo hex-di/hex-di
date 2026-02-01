@@ -6,6 +6,9 @@
  * 2. Internal implementation classes are NOT exported
  * 3. Exports have the expected types
  *
+ * NOTE: @hex-di/runtime does NOT re-export from @hex-di/core or @hex-di/graph.
+ * Users should import directly from those packages.
+ *
  * @packageDocumentation
  */
 
@@ -92,14 +95,47 @@ describe("@hex-di/runtime exports", () => {
     it("should NOT export ScopeImpl", () => {
       expect(runtimeExports["ScopeImpl"]).toBeUndefined();
     });
+
+    it("should NOT export plugin system (removed)", () => {
+      expect(runtimeExports["definePlugin"]).toBeUndefined();
+      expect(runtimeExports["PluginManager"]).toBeUndefined();
+      expect(runtimeExports["pipe"]).toBeUndefined();
+      expect(runtimeExports["withInspector"]).toBeUndefined();
+      expect(runtimeExports["withTracing"]).toBeUndefined();
+    });
+  });
+
+  describe("Should NOT re-export from other packages", () => {
+    it("should NOT re-export MemoryCollector (use @hex-di/core)", () => {
+      expect(runtimeExports["MemoryCollector"]).toBeUndefined();
+    });
+
+    it("should NOT re-export NoOpCollector (use @hex-di/core)", () => {
+      expect(runtimeExports["NoOpCollector"]).toBeUndefined();
+    });
+
+    it("should NOT re-export CompositeCollector (use @hex-di/core)", () => {
+      expect(runtimeExports["CompositeCollector"]).toBeUndefined();
+    });
+
+    it("should NOT re-export inspectGraph (use @hex-di/graph/advanced)", () => {
+      expect(runtimeExports["inspectGraph"]).toBeUndefined();
+    });
+
+    it("should NOT re-export createPort (use @hex-di/core)", () => {
+      expect(runtimeExports["createPort"]).toBeUndefined();
+    });
+
+    it("should NOT re-export createAdapter (use @hex-di/core)", () => {
+      expect(runtimeExports["createAdapter"]).toBeUndefined();
+    });
   });
 
   describe("Expected export count", () => {
     it("should have the expected runtime exports", () => {
       // List of expected runtime value exports (not type-only exports)
       const expectedRuntimeExports = [
-        "createContainer",
-        "createInspector",
+        // Error classes
         "ContainerError",
         "CircularDependencyError",
         "FactoryError",
@@ -108,77 +144,42 @@ describe("@hex-di/runtime exports", () => {
         "AsyncFactoryError",
         "AsyncInitializationRequiredError",
         "NonClonableForkedError",
-        "HOOKS_ACCESS",
-        "INTERNAL_ACCESS",
-        "TRACING_ACCESS",
-        "getInternalAccessor",
+        // Container brands
         "ContainerBrand",
         "ScopeBrand",
-        // Type utilities for context variables and ports
+        // Context variable utilities
         "createContextVariableKey",
         "getContextVariable",
         "setContextVariable",
         "getContextVariableOrDefault",
+        "portComparator",
+        // Type guards
         "isPort",
         "isPortNamed",
         "isRecord",
-        "portComparator",
-        // Plugin system exports
-        "definePlugin",
-        "requires",
-        "optionallyRequires",
-        "PluginError",
-        "PluginDependencyMissingError",
-        "PluginCircularDependencyError",
-        "PluginInitializationError",
-        "PluginNotFoundError",
-        "PluginAlreadyRegisteredError",
-        "PluginManager",
-        // Plugin wrapper utilities (Zustand/Redux-style enhancement pattern)
-        "createPluginWrapper",
-        "getAppliedWrappers",
-        "getEnhancedWrapper",
-        "getDisposalCallbacks",
-        "APPLIED_WRAPPERS",
-        // Composition utilities
-        "pipe",
-        "compose2",
-        "compose3",
-        "compose4",
-        "compose5",
-        // Inspector plugin exports
+        "isSealed",
+        // Container factory
+        "createContainer",
+        // Hooks utilities
+        "sealHooks",
+        // Inspection symbols
+        "INTERNAL_ACCESS",
+        "TRACING_ACCESS",
+        "HOOKS_ACCESS",
+        // Inspector exports
+        "createInspector",
+        "getInternalAccessor",
         "INSPECTOR",
-        "InspectorPlugin",
         "createInspectorAPI",
-        "withInspector",
         "hasInspector",
         "getInspectorAPI",
         "hasSubscription",
         "detectContainerKind",
         "detectPhase",
         "buildTypedSnapshot",
-        // Tracing plugin exports
-        "TRACING",
-        "TracingPlugin",
-        "createTracingPlugin",
-        "withTracing",
-        "MemoryCollector",
-        "NoOpCollector",
-        "CompositeCollector",
+        // Tracing exports
         "hasTracing",
         "getTracingAPI",
-        // Re-exports from @hex-di/plugin
-        "DEFAULT_RETENTION_POLICY",
-        // Graph inspection re-exports from @hex-di/graph
-        "inspectGraph",
-        "INSPECTION_CONFIG",
-        "detectCycleAtRuntime",
-        "inspectionToJSON",
-        "formatCycleError",
-        "formatMissingDepsError",
-        "formatCaptiveError",
-        "formatDuplicateError",
-        "toStructuredLogs",
       ];
 
       // Verify all expected exports exist
@@ -210,114 +211,42 @@ describe("Type exports (compile-time verification)", () => {
    */
 
   it("should export Container type", () => {
-    // Type-level verification - this compiles only if Container is exported
     type _Container = RuntimeExports.Container<never>;
     expect(true).toBe(true);
   });
 
   it("should export Scope type", () => {
-    // Type-level verification - this compiles only if Scope is exported
     type _Scope = RuntimeExports.Scope<never>;
     expect(true).toBe(true);
   });
 
   it("should export InferContainerProvides type", () => {
-    // Type-level verification
     type _InferContainerProvides = RuntimeExports.InferContainerProvides<never>;
     expect(true).toBe(true);
   });
 
   it("should export InferScopeProvides type", () => {
-    // Type-level verification
     type _InferScopeProvides = RuntimeExports.InferScopeProvides<never>;
     expect(true).toBe(true);
   });
 
   it("should export IsResolvable type", () => {
-    // Type-level verification
     type _IsResolvable = RuntimeExports.IsResolvable<never, never>;
     expect(true).toBe(true);
   });
 
   it("should export ServiceFromContainer type", () => {
-    // Type-level verification
     type _ServiceFromContainer = RuntimeExports.ServiceFromContainer<never, never>;
     expect(true).toBe(true);
   });
 
-  it("should export LifetimeLevel type", () => {
-    // Type-level verification
-    type _LifetimeLevel = RuntimeExports.LifetimeLevel<"singleton">;
+  it("should export ContainerInternalState type", () => {
+    type _ContainerInternalState = RuntimeExports.ContainerInternalState;
     expect(true).toBe(true);
   });
 
-  it("should export CaptiveDependencyError type", () => {
-    // Type-level verification
-    type _CaptiveDependencyError = RuntimeExports.CaptiveDependencyError<"A", "B", "C", "D">;
-    expect(true).toBe(true);
-  });
-
-  it("should export ValidateCaptiveDependency type", () => {
-    // Type-level verification - verify export exists using never (subtype of all types)
-    type _ValidateCaptiveDependency = RuntimeExports.ValidateCaptiveDependency<never, never>;
-    expect(true).toBe(true);
-  });
-
-  it("should export ValidateAllDependencies type", () => {
-    // Type-level verification - verify export exists using never (subtype of all types)
-    type _ValidateAllDependencies = RuntimeExports.ValidateAllDependencies<never, []>;
-    expect(true).toBe(true);
-  });
-
-  // Re-exports from @hex-di/ports
-  it("should re-export Port type from @hex-di/ports", () => {
-    type _Port = RuntimeExports.Port<string, "test">;
-    expect(true).toBe(true);
-  });
-
-  it("should re-export InferService type from @hex-di/ports", () => {
-    type _InferService = RuntimeExports.InferService<never>;
-    expect(true).toBe(true);
-  });
-
-  it("should re-export InferPortName type from @hex-di/ports", () => {
-    type _InferPortName = RuntimeExports.InferPortName<never>;
-    expect(true).toBe(true);
-  });
-
-  // Re-exports from @hex-di/graph
-  it("should re-export Graph type from @hex-di/graph", () => {
-    type _Graph = RuntimeExports.Graph<never>;
-    expect(true).toBe(true);
-  });
-
-  it("should re-export Adapter type from @hex-di/graph", () => {
-    type _Adapter = RuntimeExports.Adapter<never, never, "singleton">;
-    expect(true).toBe(true);
-  });
-
-  it("should re-export Lifetime type from @hex-di/graph", () => {
-    type _Lifetime = RuntimeExports.Lifetime;
-    expect(true).toBe(true);
-  });
-
-  it("should re-export InferAdapterProvides type from @hex-di/graph", () => {
-    type _InferAdapterProvides = RuntimeExports.InferAdapterProvides<never>;
-    expect(true).toBe(true);
-  });
-
-  it("should re-export InferAdapterRequires type from @hex-di/graph", () => {
-    type _InferAdapterRequires = RuntimeExports.InferAdapterRequires<never>;
-    expect(true).toBe(true);
-  });
-
-  it("should re-export InferAdapterLifetime type from @hex-di/graph", () => {
-    type _InferAdapterLifetime = RuntimeExports.InferAdapterLifetime<never>;
-    expect(true).toBe(true);
-  });
-
-  it("should re-export ResolvedDeps type from @hex-di/graph", () => {
-    type _ResolvedDeps = RuntimeExports.ResolvedDeps<never>;
+  it("should export ScopeInternalState type", () => {
+    type _ScopeInternalState = RuntimeExports.ScopeInternalState;
     expect(true).toBe(true);
   });
 

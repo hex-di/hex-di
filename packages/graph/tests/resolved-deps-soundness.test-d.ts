@@ -15,7 +15,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createAdapter, ResolvedDeps } from "../src/index.js";
+import { createAdapter, ResolvedDeps } from "@hex-di/core";
 import { Logger, LoggerPort, LoggerPortType } from "./fixtures.js";
 
 // =============================================================================

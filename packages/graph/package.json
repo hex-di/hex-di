@@ -16,74 +16,14 @@
         "default": "./dist/index.cjs"
       }
     },
-    "./internal": {
+    "./advanced": {
       "import": {
-        "types": "./dist/internal.d.ts",
-        "default": "./dist/internal.js"
+        "types": "./dist/advanced.d.ts",
+        "default": "./dist/advanced.js"
       },
       "require": {
-        "types": "./dist/internal.d.cts",
-        "default": "./dist/internal.cjs"
-      }
-    },
-    "./convenience": {
-      "import": {
-        "types": "./dist/convenience.d.ts",
-        "default": "./dist/convenience.js"
-      },
-      "require": {
-        "types": "./dist/convenience.d.cts",
-        "default": "./dist/convenience.cjs"
-      }
-    },
-    "./types": {
-      "import": {
-        "types": "./dist/types.d.ts",
-        "default": "./dist/types.js"
-      },
-      "require": {
-        "types": "./dist/types.d.cts",
-        "default": "./dist/types.cjs"
-      }
-    },
-    "./adapters": {
-      "import": {
-        "types": "./dist/adapters.d.ts",
-        "default": "./dist/adapters.js"
-      },
-      "require": {
-        "types": "./dist/adapters.d.cts",
-        "default": "./dist/adapters.cjs"
-      }
-    },
-    "./builder": {
-      "import": {
-        "types": "./dist/builder.d.ts",
-        "default": "./dist/builder.js"
-      },
-      "require": {
-        "types": "./dist/builder.d.cts",
-        "default": "./dist/builder.cjs"
-      }
-    },
-    "./inspection": {
-      "import": {
-        "types": "./dist/inspection.d.ts",
-        "default": "./dist/inspection.js"
-      },
-      "require": {
-        "types": "./dist/inspection.d.cts",
-        "default": "./dist/inspection.cjs"
-      }
-    },
-    "./validation": {
-      "import": {
-        "types": "./dist/validation.d.ts",
-        "default": "./dist/validation.js"
-      },
-      "require": {
-        "types": "./dist/validation.d.cts",
-        "default": "./dist/validation.cjs"
+        "types": "./dist/advanced.d.cts",
+        "default": "./dist/advanced.cjs"
       }
     }
   },
@@ -124,7 +64,7 @@
   },
   "homepage": "https://github.com/hex-di/hex-di/tree/main/packages/graph#readme",
   "dependencies": {
-    "@hex-di/ports": "workspace:*"
+    "@hex-di/core": "workspace:*"
   },
   "peerDependencies": {
     "typescript": ">=5.0"

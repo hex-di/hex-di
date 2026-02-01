@@ -1,27 +1,26 @@
-import type { ReactNode } from 'react';
-import { useState, useCallback } from 'react';
-import Link from '@docusaurus/Link';
-import Layout from '@theme/Layout';
-import Heading from '@theme/Heading';
-import CodeBlock from '@theme/CodeBlock';
+import type { ReactNode } from "react";
+import { useState, useCallback } from "react";
+import Link from "@docusaurus/Link";
+import Layout from "@theme/Layout";
+import Heading from "@theme/Heading";
+import CodeBlock from "@theme/CodeBlock";
 
-import FeatureCard from '@site/src/components/FeatureCard';
-import FeatureGrid from '@site/src/components/FeatureGrid';
-import PackageCard from '@site/src/components/PackageCard';
-import LifetimeBadge from '@site/src/components/LifetimeBadge';
-import styles from './index.module.css';
+import FeatureCard from "@site/src/components/FeatureCard";
+import FeatureGrid from "@site/src/components/FeatureGrid";
+import PackageCard from "@site/src/components/PackageCard";
+import LifetimeBadge from "@site/src/components/LifetimeBadge";
+import styles from "./index.module.css";
 
 /**
  * NPM install command to copy
  */
-const NPM_INSTALL_COMMAND =
-  'npm install @hex-di/ports @hex-di/graph @hex-di/runtime';
+const NPM_INSTALL_COMMAND = "npm install @hex-di/ports @hex-di/graph @hex-di/runtime";
 
 /**
  * Quick start code example
  * Demonstrates HexDI's core concepts in a concise, readable format
  */
-const QUICK_START_CODE = `import { createPort } from '@hex-di/ports';
+const QUICK_START_CODE = `import { createPort } from '@hex-di/core';
 import { createAdapter, GraphBuilder } from '@hex-di/graph';
 import { createContainer } from '@hex-di/runtime';
 
@@ -268,25 +267,13 @@ function HeroVisual(): ReactNode {
     >
       <defs>
         {/* Main gradient for outer hexagon */}
-        <linearGradient
-          id="heroHexGradient"
-          x1="0%"
-          y1="0%"
-          x2="100%"
-          y2="100%"
-        >
+        <linearGradient id="heroHexGradient" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#7E57C2" />
           <stop offset="50%" stopColor="#5E35B1" />
           <stop offset="100%" stopColor="#4527A0" />
         </linearGradient>
         {/* TypeScript blue gradient for inner hexagon */}
-        <linearGradient
-          id="heroInnerGradient"
-          x1="0%"
-          y1="100%"
-          x2="100%"
-          y2="0%"
-        >
+        <linearGradient id="heroInnerGradient" x1="0%" y1="100%" x2="100%" y2="0%">
           <stop offset="0%" stopColor="#1976D2" />
           <stop offset="50%" stopColor="#2196F3" />
           <stop offset="100%" stopColor="#64B5F6" />
@@ -301,13 +288,7 @@ function HeroVisual(): ReactNode {
         </filter>
         {/* Subtle shadow for depth */}
         <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow
-            dx="0"
-            dy="4"
-            stdDeviation="8"
-            floodColor="#5E35B1"
-            floodOpacity="0.3"
-          />
+          <feDropShadow dx="0" dy="4" stdDeviation="8" floodColor="#5E35B1" floodOpacity="0.3" />
         </filter>
       </defs>
 
@@ -352,12 +333,7 @@ function HeroVisual(): ReactNode {
       </g>
 
       {/* Connection lines */}
-      <g
-        stroke="white"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        opacity="0.9"
-      >
+      <g stroke="white" strokeWidth="2.5" strokeLinecap="round" opacity="0.9">
         {/* Container to Port */}
         <path d="M150 132L108 188" strokeDasharray="4 4" />
         {/* Container to Adapter */}
@@ -422,18 +398,18 @@ function NpmInstallCommand(): ReactNode {
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       // Fallback for older browsers
-      const textArea = document.createElement('textarea');
+      const textArea = document.createElement("textarea");
       textArea.value = NPM_INSTALL_COMMAND;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-9999px';
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
       document.body.appendChild(textArea);
       textArea.select();
       try {
-        document.execCommand('copy');
+        document.execCommand("copy");
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       } catch (e) {
-        console.error('Failed to copy:', e);
+        console.error("Failed to copy:", e);
       }
       document.body.removeChild(textArea);
     }
@@ -441,17 +417,19 @@ function NpmInstallCommand(): ReactNode {
 
   return (
     <div className={styles.npmCommand} role="group" aria-label="NPM install command">
-      <span className={styles.npmPrefix} aria-hidden="true">$</span>
+      <span className={styles.npmPrefix} aria-hidden="true">
+        $
+      </span>
       <code className={styles.npmText}>{NPM_INSTALL_COMMAND}</code>
       <button
         type="button"
-        className={`${styles.npmCopyButton} ${copied ? styles.copied : ''}`}
+        className={`${styles.npmCopyButton} ${copied ? styles.copied : ""}`}
         onClick={handleCopy}
-        aria-label={copied ? 'Copied to clipboard' : 'Copy install command to clipboard'}
+        aria-label={copied ? "Copied to clipboard" : "Copy install command to clipboard"}
         aria-live="polite"
       >
         {copied ? <CheckIcon /> : <CopyIcon />}
-        <span className="sr-only">{copied ? 'Copied!' : 'Copy'}</span>
+        <span className="sr-only">{copied ? "Copied!" : "Copy"}</span>
       </button>
     </div>
   );
@@ -475,9 +453,8 @@ function HeroSection(): ReactNode {
 
         {/* Subtitle */}
         <p className={styles.heroSubtitle}>
-          Catch dependency errors at compile time, not at runtime. Build
-          robust applications with full type inference and zero runtime
-          overhead.
+          Catch dependency errors at compile time, not at runtime. Build robust applications with
+          full type inference and zero runtime overhead.
         </p>
 
         {/* CTA Buttons */}
@@ -503,35 +480,33 @@ function HeroSection(): ReactNode {
 const FEATURES = [
   {
     icon: <ShieldCheckIcon />,
-    title: 'Compile-Time Validation',
-    description:
-      'Missing dependencies cause TypeScript errors, not runtime crashes.',
+    title: "Compile-Time Validation",
+    description: "Missing dependencies cause TypeScript errors, not runtime crashes.",
   },
   {
     icon: <ZapIcon />,
-    title: 'Zero Runtime Overhead',
-    description: 'Phantom types and optional features add no cost.',
+    title: "Zero Runtime Overhead",
+    description: "Phantom types and optional features add no cost.",
   },
   {
     icon: <LayersIcon />,
-    title: 'Type-Safe Resolution',
-    description: 'Full type inference, no explicit annotations needed.',
+    title: "Type-Safe Resolution",
+    description: "Full type inference, no explicit annotations needed.",
   },
   {
     icon: <ReactIcon />,
-    title: 'React Integration',
-    description:
-      'Typed hooks and providers with automatic scope lifecycle.',
+    title: "React Integration",
+    description: "Typed hooks and providers with automatic scope lifecycle.",
   },
   {
     icon: <WrenchIcon />,
-    title: 'DevTools Integration',
-    description: 'Visualize dependency graphs and trace services.',
+    title: "DevTools Integration",
+    description: "Visualize dependency graphs and trace services.",
   },
   {
     icon: <HexagonIcon />,
-    title: 'Three Lifetime Scopes',
-    description: 'Singleton, scoped, and request with proper isolation.',
+    title: "Three Lifetime Scopes",
+    description: "Singleton, scoped, and request with proper isolation.",
   },
 ];
 
@@ -550,7 +525,7 @@ function FeaturesSection(): ReactNode {
           Everything you need for type-safe dependency injection in TypeScript
         </p>
         <FeatureGrid>
-          {FEATURES.map((feature) => (
+          {FEATURES.map(feature => (
             <FeatureCard
               key={feature.title}
               icon={feature.icon}
@@ -575,25 +550,16 @@ function CodeExampleSection(): ReactNode {
         <Heading as="h2" id="code-example-heading" className={styles.sectionTitle}>
           See It In Action
         </Heading>
-        <p className={styles.sectionSubtitle}>
-          A simple example showing HexDI's core concepts
-        </p>
+        <p className={styles.sectionSubtitle}>A simple example showing HexDI's core concepts</p>
 
         <div className={styles.codeBlockWrapper}>
-          <CodeBlock
-            language="typescript"
-            title="quick-start.ts"
-            showLineNumbers
-          >
+          <CodeBlock language="typescript" title="quick-start.ts" showLineNumbers>
             {QUICK_START_CODE}
           </CodeBlock>
         </div>
 
         <div className={styles.codeExampleCta}>
-          <Link
-            to="/docs/getting-started/first-application"
-            className={styles.ctaPrimary}
-          >
+          <Link to="/docs/getting-started/first-application" className={styles.ctaPrimary}>
             Explore Full Tutorial
           </Link>
         </div>
@@ -609,72 +575,56 @@ function CodeExampleSection(): ReactNode {
 const PACKAGES = {
   core: [
     {
-      name: '@hex-di/ports',
-      badge: 'Core' as const,
-      description: 'Port token system for defining service contracts',
+      name: "@hex-di/ports",
+      badge: "Core" as const,
+      description: "Port token system for defining service contracts",
       features: [
-        'Type-safe port definitions',
-        'Branded types for uniqueness',
-        'Zero runtime overhead',
+        "Type-safe port definitions",
+        "Branded types for uniqueness",
+        "Zero runtime overhead",
       ],
-      link: '/docs/api/ports',
+      link: "/docs/api/ports",
     },
     {
-      name: '@hex-di/graph',
-      badge: 'Core' as const,
-      description: 'GraphBuilder with compile-time dependency validation',
-      features: [
-        'Immutable builder pattern',
-        'Type-safe composition',
-        'Compile-time validation',
-      ],
-      link: '/docs/api/graph',
+      name: "@hex-di/graph",
+      badge: "Core" as const,
+      description: "GraphBuilder with compile-time dependency validation",
+      features: ["Immutable builder pattern", "Type-safe composition", "Compile-time validation"],
+      link: "/docs/api/graph",
     },
     {
-      name: '@hex-di/runtime',
-      badge: 'Core' as const,
-      description: 'Container creation and service resolution',
+      name: "@hex-di/runtime",
+      badge: "Core" as const,
+      description: "Container creation and service resolution",
       features: [
-        'Lazy service instantiation',
-        'Lifetime scope management',
-        'Hierarchical containers',
+        "Lazy service instantiation",
+        "Lifetime scope management",
+        "Hierarchical containers",
       ],
-      link: '/docs/api/runtime',
+      link: "/docs/api/runtime",
     },
   ],
   optional: [
     {
-      name: '@hex-di/react',
-      badge: 'Optional' as const,
-      description: 'React hooks and providers with automatic scope lifecycle',
-      features: [
-        'useService hook',
-        'DIProvider component',
-        'Scope-aware context',
-      ],
-      link: '/docs/api/react',
+      name: "@hex-di/react",
+      badge: "Optional" as const,
+      description: "React hooks and providers with automatic scope lifecycle",
+      features: ["useService hook", "DIProvider component", "Scope-aware context"],
+      link: "/docs/api/react",
     },
     {
-      name: '@hex-di/devtools',
-      badge: 'Optional' as const,
-      description: 'Graph visualization and service tracing',
-      features: [
-        'Dependency graph viewer',
-        'Service call tracing',
-        'Runtime inspection',
-      ],
-      link: '/docs/api/devtools',
+      name: "@hex-di/devtools",
+      badge: "Optional" as const,
+      description: "Graph visualization and service tracing",
+      features: ["Dependency graph viewer", "Service call tracing", "Runtime inspection"],
+      link: "/docs/api/devtools",
     },
     {
-      name: '@hex-di/testing',
-      badge: 'Optional' as const,
-      description: 'Testing utilities and mock helpers',
-      features: [
-        'Mock service creation',
-        'Test container setup',
-        'Isolation helpers',
-      ],
-      link: '/docs/api/testing',
+      name: "@hex-di/testing",
+      badge: "Optional" as const,
+      description: "Testing utilities and mock helpers",
+      features: ["Mock service creation", "Test container setup", "Isolation helpers"],
+      link: "/docs/api/testing",
     },
   ],
 };
@@ -706,18 +656,8 @@ function PackageDiagram(): ReactNode {
           <stop offset="100%" stopColor="#1976D2" />
         </linearGradient>
         {/* Arrow marker */}
-        <marker
-          id="arrowhead"
-          markerWidth="10"
-          markerHeight="7"
-          refX="9"
-          refY="3.5"
-          orient="auto"
-        >
-          <polygon
-            points="0 0, 10 3.5, 0 7"
-            fill="var(--hexdi-text-tertiary, #6A737D)"
-          />
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="var(--hexdi-text-tertiary, #6A737D)" />
         </marker>
       </defs>
 
@@ -748,14 +688,7 @@ function PackageDiagram(): ReactNode {
       {/* Core packages column */}
       {/* @hex-di/ports */}
       <g transform="translate(50, 50)">
-        <rect
-          x="0"
-          y="0"
-          width="200"
-          height="60"
-          rx="8"
-          fill="url(#coreGradient)"
-        />
+        <rect x="0" y="0" width="200" height="60" rx="8" fill="url(#coreGradient)" />
         <text
           x="100"
           y="28"
@@ -781,14 +714,7 @@ function PackageDiagram(): ReactNode {
 
       {/* @hex-di/graph */}
       <g transform="translate(50, 130)">
-        <rect
-          x="0"
-          y="0"
-          width="200"
-          height="60"
-          rx="8"
-          fill="url(#coreGradient)"
-        />
+        <rect x="0" y="0" width="200" height="60" rx="8" fill="url(#coreGradient)" />
         <text
           x="100"
           y="28"
@@ -814,14 +740,7 @@ function PackageDiagram(): ReactNode {
 
       {/* @hex-di/runtime */}
       <g transform="translate(50, 210)">
-        <rect
-          x="0"
-          y="0"
-          width="200"
-          height="60"
-          rx="8"
-          fill="url(#coreGradient)"
-        />
+        <rect x="0" y="0" width="200" height="60" rx="8" fill="url(#coreGradient)" />
         <text
           x="100"
           y="28"
@@ -848,14 +767,7 @@ function PackageDiagram(): ReactNode {
       {/* Optional packages column */}
       {/* @hex-di/react */}
       <g transform="translate(350, 50)">
-        <rect
-          x="0"
-          y="0"
-          width="200"
-          height="60"
-          rx="8"
-          fill="url(#optionalGradient)"
-        />
+        <rect x="0" y="0" width="200" height="60" rx="8" fill="url(#optionalGradient)" />
         <text
           x="100"
           y="28"
@@ -881,14 +793,7 @@ function PackageDiagram(): ReactNode {
 
       {/* @hex-di/devtools */}
       <g transform="translate(350, 130)">
-        <rect
-          x="0"
-          y="0"
-          width="200"
-          height="60"
-          rx="8"
-          fill="url(#optionalGradient)"
-        />
+        <rect x="0" y="0" width="200" height="60" rx="8" fill="url(#optionalGradient)" />
         <text
           x="100"
           y="28"
@@ -914,14 +819,7 @@ function PackageDiagram(): ReactNode {
 
       {/* @hex-di/testing */}
       <g transform="translate(350, 210)">
-        <rect
-          x="0"
-          y="0"
-          width="200"
-          height="60"
-          rx="8"
-          fill="url(#optionalGradient)"
-        />
+        <rect x="0" y="0" width="200" height="60" rx="8" fill="url(#optionalGradient)" />
         <text
           x="100"
           y="28"
@@ -1040,9 +938,7 @@ function PackageArchitectureSection(): ReactNode {
         <Heading as="h2" id="packages-heading" className={styles.sectionTitle}>
           Package Architecture
         </Heading>
-        <p className={styles.sectionSubtitle}>
-          HexDI is designed with modularity in mind
-        </p>
+        <p className={styles.sectionSubtitle}>HexDI is designed with modularity in mind</p>
 
         {/* Package Diagram */}
         <div className={styles.packageDiagramWrapper}>
@@ -1052,7 +948,7 @@ function PackageArchitectureSection(): ReactNode {
         {/* Package Cards Grid - 3x2 layout */}
         <div className={styles.packageGrid} role="list" aria-label="HexDI packages">
           {/* Core packages - first row */}
-          {PACKAGES.core.map((pkg) => (
+          {PACKAGES.core.map(pkg => (
             <div key={pkg.name} role="listitem">
               <PackageCard
                 name={pkg.name}
@@ -1064,7 +960,7 @@ function PackageArchitectureSection(): ReactNode {
             </div>
           ))}
           {/* Optional packages - second row */}
-          {PACKAGES.optional.map((pkg) => (
+          {PACKAGES.optional.map(pkg => (
             <div key={pkg.name} role="listitem">
               <PackageCard
                 name={pkg.name}
@@ -1086,14 +982,14 @@ function PackageArchitectureSection(): ReactNode {
  */
 const LIFETIME_SCOPES = [
   {
-    type: 'singleton' as const,
-    title: 'Singleton',
-    description: 'Created once per container',
+    type: "singleton" as const,
+    title: "Singleton",
+    description: "Created once per container",
     useCases: [
-      'Configuration services',
-      'Shared resources',
-      'Stateless services',
-      'Connection pools',
+      "Configuration services",
+      "Shared resources",
+      "Stateless services",
+      "Connection pools",
     ],
     code: `const ConfigAdapter = createAdapter({
   provides: ConfigPort,
@@ -1102,14 +998,14 @@ const LIFETIME_SCOPES = [
 });`,
   },
   {
-    type: 'scoped' as const,
-    title: 'Scoped',
-    description: 'Once per scope context',
+    type: "scoped" as const,
+    title: "Scoped",
+    description: "Once per scope context",
     useCases: [
-      'User sessions',
-      'HTTP request handlers',
-      'Database transactions',
-      'Component-level state',
+      "User sessions",
+      "HTTP request handlers",
+      "Database transactions",
+      "Component-level state",
     ],
     code: `const SessionAdapter = createAdapter({
   provides: SessionPort,
@@ -1118,14 +1014,14 @@ const LIFETIME_SCOPES = [
 });`,
   },
   {
-    type: 'transient' as const,
-    title: 'Request',
-    description: 'Fresh instance every time',
+    type: "transient" as const,
+    title: "Request",
+    description: "Fresh instance every time",
     useCases: [
-      'Notification services',
-      'Ephemeral handlers',
-      'Fresh state per use',
-      'Isolated operations',
+      "Notification services",
+      "Ephemeral handlers",
+      "Fresh state per use",
+      "Isolated operations",
     ],
     code: `const NotificationAdapter = createAdapter({
   provides: NotificationPort,
@@ -1151,14 +1047,14 @@ function LifetimeScopesSection(): ReactNode {
         </p>
 
         <div className={styles.lifetimeGrid} role="list" aria-label="Lifetime scopes">
-          {LIFETIME_SCOPES.map((scope) => (
+          {LIFETIME_SCOPES.map(scope => (
             <article key={scope.type} className={styles.lifetimeCard} role="listitem">
               <div className={styles.lifetimeHeader}>
                 <LifetimeBadge type={scope.type} />
               </div>
               <p className={styles.lifetimeDescription}>{scope.description}</p>
               <ul className={styles.lifetimeUseCases} aria-label={`${scope.title} use cases`}>
-                {scope.useCases.map((useCase) => (
+                {scope.useCases.map(useCase => (
                   <li key={useCase}>{useCase}</li>
                 ))}
               </ul>
@@ -1189,8 +1085,8 @@ function WhyHexDISection(): ReactNode {
           {/* Quote/Callout about compile-time safety */}
           <blockquote className={styles.whyQuote}>
             <p>
-              "Most DI libraries fail at runtime. HexDI catches errors at
-              compile time with TypeScript's type system."
+              "Most DI libraries fail at runtime. HexDI catches errors at compile time with
+              TypeScript's type system."
             </p>
           </blockquote>
 
@@ -1200,15 +1096,13 @@ function WhyHexDISection(): ReactNode {
               <span className={styles.whyCodeLabel}>Compile-Time Error Detection</span>
               <span className={styles.whyCodeBadge}>TypeScript</span>
             </div>
-            <CodeBlock
-              language="typescript"
-              title="missing-dependency.ts"
-              showLineNumbers
-            >
+            <CodeBlock language="typescript" title="missing-dependency.ts" showLineNumbers>
               {COMPILE_TIME_ERROR_CODE}
             </CodeBlock>
             <div className={styles.whyErrorHighlight} role="alert" aria-live="polite">
-              <span className={styles.errorIcon} aria-hidden="true">!</span>
+              <span className={styles.errorIcon} aria-hidden="true">
+                !
+              </span>
               <span className={styles.errorText}>
                 Error: Property 'DatabasePort' is missing in type but required
               </span>
@@ -1220,15 +1114,15 @@ function WhyHexDISection(): ReactNode {
             <article className={styles.whyBenefitCard}>
               <h3>Effect-TS Inspired Design</h3>
               <p>
-                Immutable builder pattern enables safe composition and graph
-                branching without mutation concerns.
+                Immutable builder pattern enables safe composition and graph branching without
+                mutation concerns.
               </p>
             </article>
             <article className={styles.whyBenefitCard}>
               <h3>Framework Agnostic</h3>
               <p>
-                Core packages work anywhere - React is optional, not required.
-                Use HexDI in any TypeScript project.
+                Core packages work anywhere - React is optional, not required. Use HexDI in any
+                TypeScript project.
               </p>
             </article>
           </div>
@@ -1249,9 +1143,7 @@ function CTASection(): ReactNode {
         <Heading as="h2" id="cta-heading" className={styles.ctaSectionTitle}>
           Ready to Get Started?
         </Heading>
-        <p className={styles.ctaSectionSubtitle}>
-          Build type-safe applications today
-        </p>
+        <p className={styles.ctaSectionSubtitle}>Build type-safe applications today</p>
         <nav className={styles.ctaSectionButtons} aria-label="Get started actions">
           <Link to="/docs" className={styles.ctaPrimary}>
             Read Documentation

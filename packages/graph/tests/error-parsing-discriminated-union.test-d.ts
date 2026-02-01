@@ -11,9 +11,9 @@ import {
   type CircularDependencyDetails,
   type MissingDependencyDetails,
   type MultipleErrorsDetails,
-  GraphErrorCode,
   parseGraphError,
-} from "../src/validation/error-parsing.js";
+  GraphErrorCode,
+} from "../src/advanced.js";
 
 test("ParsedGraphError is a proper discriminated union", () => {
   // Test that ParsedGraphError can be narrowed by checking the code field

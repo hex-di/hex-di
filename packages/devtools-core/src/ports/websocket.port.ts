@@ -11,7 +11,7 @@
  * @packageDocumentation
  */
 
-import { createPort } from "@hex-di/ports";
+import { createPort } from "@hex-di/core";
 
 // =============================================================================
 // WebSocket Event Types

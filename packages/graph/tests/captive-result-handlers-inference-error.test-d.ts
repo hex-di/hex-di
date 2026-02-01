@@ -21,7 +21,7 @@ import type {
   CaptiveDependencyError,
   ReverseCaptiveDependencyError,
 } from "../src/validation/types/captive/errors.js";
-import type { InferenceError } from "../src/types/type-utilities.js";
+import type { InferenceError } from "@hex-di/core";
 
 // =============================================================================
 // HandleForwardCaptiveResult: Expected Behavior

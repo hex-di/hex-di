@@ -2,7 +2,7 @@
  * Integration tests for @hex-di/runtime.
  *
  * These tests exercise the full flow from createPort -> createAdapter -> GraphBuilder
- * -> createContainer -> resolve, verifying that all three packages (@hex-di/ports,
+ * -> createContainer -> resolve, verifying that all three packages (@hex-di/core,
  * @hex-di/graph, @hex-di/runtime) work together correctly.
  *
  * @packageDocumentation
@@ -12,9 +12,9 @@
 declare function setTimeout(callback: (...args: unknown[]) => void, ms?: number): unknown;
 
 import { describe, test, expect, vi, expectTypeOf } from "vitest";
-import { createPort } from "@hex-di/ports";
-import type { InferService } from "@hex-di/ports";
-import { GraphBuilder, createAdapter } from "@hex-di/graph";
+import { createPort, createAdapter } from "@hex-di/core";
+import type { InferService } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import {
   createContainer,
   CircularDependencyError,

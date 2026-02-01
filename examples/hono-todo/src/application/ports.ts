@@ -1,4 +1,4 @@
-import { createPort } from "@hex-di/ports";
+import { createPort } from "@hex-di/core";
 import type { Todo, User } from "../domain/entities.js";
 
 export interface Logger {

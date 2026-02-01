@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { Port } from "@hex-di/ports";
+import type { Port } from "@hex-di/core";
 import type { EventOf } from "../events.js";
 import type { ActivityPort, ActivityOutput, ActivityInput } from "../port.js";
 import type { CleanupReason, ResolvedActivityDeps, ConfiguredActivity } from "../types.js";

@@ -17,13 +17,13 @@
  * @module
  */
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/ports";
+import { createPort } from "@hex-di/core";
 import type {
   AdapterProvidesName,
   DiagnosticAdapterProvidesName,
 } from "../src/validation/types/adapter-extraction.js";
-import type { InferenceError, IsNever } from "../src/types/type-utilities.js";
-import { createAdapter } from "../src/index.js";
+import type { InferenceError, IsNever } from "@hex-di/core";
+import { createAdapter } from "@hex-di/core";
 
 // Test fixtures using proper port creation
 interface Logger {

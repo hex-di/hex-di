@@ -9,7 +9,9 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { GraphBuilder, createAdapter, parseGraphError, GraphErrorCode } from "../src/index.js";
+import { createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
+import { parseGraphError, GraphErrorCode } from "../src/advanced.js";
 import { LoggerPort, CachePortSimple as CachePort } from "./fixtures.js";
 
 // =============================================================================

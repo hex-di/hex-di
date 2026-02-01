@@ -33,13 +33,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // DevTools imports
 import { HexDiDevTools } from "@hex-di/devtools/react";
-import {
-  createContainer,
-  pipe,
-  createPluginWrapper,
-  TracingPlugin,
-  InspectorPlugin,
-} from "@hex-di/runtime";
+import { createContainer } from "@hex-di/runtime";
 
 // React package imports for providers
 import {
@@ -64,25 +58,17 @@ import { ModalProvider } from "./taskflow/components/modals/index.js";
 import { ChatRoom } from "./components/ChatRoom.js";
 
 // =============================================================================
-// Plugin Wrappers
-// =============================================================================
-
-const withTracing = createPluginWrapper(TracingPlugin);
-const withInspector = createPluginWrapper(InspectorPlugin);
-
-// =============================================================================
-// Root Container (with plugins)
+// Root Container (with built-in tracing and inspection)
 // =============================================================================
 
 /**
  * Root container with shared infrastructure (Logger, Config).
  * All feature containers are children of this root.
+ *
+ * Note: Tracing and inspection are now built-in features - no plugins needed.
+ * Access via container.tracer and container.inspector properties.
  */
-const rootContainer = pipe(
-  createContainer(rootGraph, { name: "App Root" }),
-  withTracing,
-  withInspector
-);
+const rootContainer = createContainer(rootGraph, { name: "App Root" });
 
 // =============================================================================
 // Chat Container (child of root)
@@ -91,16 +77,12 @@ const rootContainer = pipe(
 /**
  * Chat Dashboard container - child of root.
  * Adds chat-specific services (MessageStore, UserSession, ChatService, NotificationService).
- *
- * Child containers automatically inherit parent's plugins (TracingPlugin, InspectorPlugin).
  */
 const chatContainer = rootContainer.createChild(chatGraphFragment, { name: "Chat Dashboard" });
 
 /**
  * Create grandchild containers for inheritance demo.
  * These demonstrate shared/forked/isolated inheritance modes.
- *
- * Child containers automatically inherit parent's plugins (TracingPlugin, InspectorPlugin).
  */
 const sharedChild = chatContainer.createChild(PluginChildGraph, { name: "Shared Child" });
 const forkedChild = chatContainer.createChild(PluginChildGraph, {

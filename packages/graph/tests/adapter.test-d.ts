@@ -13,8 +13,7 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { Port } from "@hex-di/ports";
-import { Adapter, Lifetime, ResolvedDeps, EmptyDeps } from "../src/index.js";
+import { Adapter, createAdapter, Port, EmptyDeps, ResolvedDeps, Lifetime } from "@hex-di/core";
 import {
   type Logger,
   type Database,

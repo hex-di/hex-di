@@ -23,7 +23,7 @@
  * @packageDocumentation
  */
 
-import type { Port, InferPortName } from "@hex-di/ports";
+import type { Port, InferPortName } from "@hex-di/core";
 import type { FormatLazySuggestionMessage } from "./cycle/errors.js";
 import type {
   CaptiveDependencyError,

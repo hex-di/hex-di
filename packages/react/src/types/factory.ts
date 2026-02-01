@@ -8,7 +8,7 @@
  */
 
 import type { ReactNode } from "react";
-import type { Port, InferService } from "@hex-di/ports";
+import type { Port, InferService } from "@hex-di/core";
 import type { Resolver } from "./core.js";
 import type {
   HexDiContainerProviderProps,

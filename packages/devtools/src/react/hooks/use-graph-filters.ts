@@ -11,9 +11,9 @@
  */
 
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import type { Lifetime } from "@hex-di/graph";
-import type { ServiceOrigin } from "@hex-di/plugin";
-import type { FactoryKind } from "@hex-di/graph";
+import type { Lifetime } from "@hex-di/core";
+import type { ServiceOrigin } from "@hex-di/core";
+import type { FactoryKind } from "@hex-di/core";
 import type { PositionedNode } from "../graph-visualization/types.js";
 
 // =============================================================================

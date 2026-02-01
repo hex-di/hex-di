@@ -9,7 +9,7 @@
  * @packageDocumentation
  */
 
-import { createPort } from "@hex-di/ports";
+import { createPort } from "@hex-di/core";
 
 /**
  * Log level for filtering messages.

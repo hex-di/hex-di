@@ -15,8 +15,8 @@ import type {
   CaptiveDependencyDetails,
   MissingDependencyDetails,
   LifetimeInconsistencyDetails,
-} from "../src/index.js";
-import { GraphErrorCode, parseGraphError } from "../src/index.js";
+} from "../src/advanced.js";
+import { parseGraphError, GraphErrorCode } from "../src/advanced.js";
 
 describe("ParsedGraphError discriminated union", () => {
   describe("type narrowing works correctly", () => {

@@ -18,7 +18,7 @@
  * @packageDocumentation
  */
 
-import type { Lifetime, FactoryKind } from "@hex-di/graph";
+import type { Lifetime, FactoryKind } from "@hex-di/core";
 
 // =============================================================================
 // Core Branded Types for Explicitness

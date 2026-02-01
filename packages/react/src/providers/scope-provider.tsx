@@ -7,7 +7,7 @@
  */
 
 import type { ReactNode } from "react";
-import type { Port } from "@hex-di/ports";
+import type { Port } from "@hex-di/core";
 import type { Scope } from "@hex-di/runtime";
 import { ResolverContext, type RuntimeResolverContextValue } from "../context/resolver-context.js";
 import { toRuntimeScopeRef } from "../internal/runtime-refs.js";

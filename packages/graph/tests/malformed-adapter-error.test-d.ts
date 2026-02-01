@@ -23,16 +23,17 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter } from "../src/index.js";
-import type { Port } from "@hex-di/ports";
+import { createPort } from "@hex-di/core";
+import { createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
+import type { Port } from "@hex-di/core";
 import type {
   WouldAnyBeCaptive,
   CaptiveDependencyError,
   CaptiveErrorMessage,
   MalformedAdapterError,
-} from "../src/internal.js";
-import type { IsNever } from "../src/types/type-utilities.js";
+} from "../src/advanced.js";
+import type { IsNever } from "@hex-di/core";
 
 // =============================================================================
 // Test Fixtures - Malformed Adapters
@@ -41,21 +42,23 @@ import type { IsNever } from "../src/types/type-utilities.js";
 /**
  * An adapter missing the lifetime property entirely.
  */
-type AdapterMissingLifetime = {
+type MissingLifetime = {
   readonly provides: Port<{ test: () => void }, "Test">;
   readonly requires: readonly [];
   readonly factory: () => { test: () => void };
 };
+type AdapterMissingLifetime = MissingLifetime;
 
 /**
  * An adapter with an invalid lifetime value (not 'singleton' | 'scoped' | 'transient').
  */
-type AdapterInvalidLifetime = {
+type InvalidLifetime = {
   readonly provides: Port<{ test: () => void }, "Test">;
   readonly requires: readonly [];
   readonly lifetime: "invalid-lifetime";
   readonly factory: () => { test: () => void };
 };
+type AdapterInvalidLifetime = InvalidLifetime;
 
 /**
  * A completely malformed adapter with no required properties.

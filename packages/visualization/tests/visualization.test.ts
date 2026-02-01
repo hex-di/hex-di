@@ -8,8 +8,9 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter, inspectGraph } from "@hex-di/graph";
+import { createPort, createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
+import { inspectGraph } from "@hex-di/graph/advanced";
 import { toDotGraph, toMermaidGraph } from "../src/index.js";
 
 // =============================================================================

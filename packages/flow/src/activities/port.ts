@@ -2,7 +2,7 @@
  * Activity Port Factory
  *
  * This module provides a port factory for activity definitions, following
- * the same Port pattern used for services in `@hex-di/ports`.
+ * the same Port pattern used for services in `@hex-di/core`.
  *
  * Activity ports allow type-safe references to activities in effect
  * constructors and dependency injection contexts. They extend the base
@@ -11,7 +11,7 @@
  * @packageDocumentation
  */
 
-import { type Port } from "@hex-di/ports";
+import { type Port } from "@hex-di/core";
 import type { Activity } from "./types.js";
 
 // =============================================================================
@@ -182,7 +182,7 @@ function unsafeCreateActivityPort<TInput, TOutput, TName extends string>(
  * The returned ActivityPort:
  * - Is frozen and immutable
  * - Has phantom properties for type extraction
- * - Is compatible with the base Port type from @hex-di/ports
+ * - Is compatible with the base Port type from @hex-di/core
  * - Can be used for activity registration and spawning
  *
  * @see {@link ActivityPort} - The branded port type returned

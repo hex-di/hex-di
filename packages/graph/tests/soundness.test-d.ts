@@ -17,15 +17,10 @@
  */
 
 import { describe, it, expectTypeOf } from "vitest";
-import { createPort } from "@hex-di/ports";
-import {
-  GraphBuilder,
-  createAdapter,
-  UnsatisfiedDependencies,
-  type InferGraphProvides,
-  type InferGraphRequires,
-} from "../src/index.js";
-import type { IsSatisfied } from "../src/internal.js";
+import { createPort, createAdapter } from "@hex-di/core";
+import { GraphBuilder, type InferGraphProvides, type InferGraphRequires } from "../src/index.js";
+import type { UnsatisfiedDependencies } from "../src/advanced.js";
+import type { IsSatisfied } from "../src/advanced.js";
 
 // =============================================================================
 // Test Fixtures

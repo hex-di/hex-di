@@ -10,7 +10,7 @@
  * @packageDocumentation
  */
 
-import type { InferPortName, InferService, Port } from "@hex-di/ports";
+import type { InferPortName, InferService, Port } from "@hex-di/core";
 import type { ActivityPort, ActivityInput, ActivityOutput } from "./port.js";
 import type { TypedEventSink } from "./events.js";
 

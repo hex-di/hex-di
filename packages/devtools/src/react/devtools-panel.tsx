@@ -15,14 +15,9 @@
  */
 
 import React, { useMemo, useEffect, useCallback, type ReactElement } from "react";
-import type { Port } from "@hex-di/ports";
+import type { Port, TracingAPI } from "@hex-di/core";
 import type { Graph } from "@hex-di/graph";
-import type {
-  Container,
-  ContainerPhase,
-  TracingAPI,
-  InspectorWithSubscription,
-} from "@hex-di/runtime";
+import type { Container, InspectorAPI, ContainerPhase } from "@hex-di/runtime";
 import { getTracingAPI } from "@hex-di/runtime";
 import { toJSON } from "@hex-di/devtools-core";
 import type { ExportedGraph } from "@hex-di/devtools-core";
@@ -217,7 +212,7 @@ function DevToolsPanelTabsMode({
  * Creates a minimal mock inspector for graph-only mode.
  * Used when DevToolsPanel is rendered without a container.
  */
-function createMockInspector(): InspectorWithSubscription {
+function createMockInspector(): InspectorAPI {
   return {
     getSnapshot: () => ({
       kind: "root" as const,
@@ -354,7 +349,7 @@ export function DevToolsPanel<
   // ==========================================================================
 
   // Create mock inspector for graph-only mode
-  const inspector = useMemo((): InspectorWithSubscription => {
+  const inspector = useMemo((): InspectorAPI => {
     return createMockInspector();
   }, []);
 

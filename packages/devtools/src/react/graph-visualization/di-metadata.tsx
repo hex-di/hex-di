@@ -9,8 +9,8 @@
  */
 
 import React, { type ReactElement } from "react";
-import type { Lifetime, FactoryKind } from "@hex-di/graph";
-import type { InheritanceMode, ServiceOrigin } from "@hex-di/plugin";
+import type { Lifetime, FactoryKind } from "@hex-di/core";
+import type { InheritanceMode, ServiceOrigin } from "@hex-di/core";
 import type { ContainerOwnershipEntry } from "./types.js";
 import type { RenderNodeProps, RenderEdgeProps, RenderTooltipProps } from "@hex-di/graph-viz";
 import type { PositionedNode } from "./types.js";

@@ -13,6 +13,7 @@ import {
   createMockDatabase,
   createMockLogger,
 } from "./test-doubles.js";
+import { resetSequence } from "./utils/sequence.js";
 
 describe("test-doubles utilities", () => {
   // ===========================================================================
@@ -93,16 +94,17 @@ describe("test-doubles utilities", () => {
     });
 
     it("includes timestamps in tracked calls", () => {
+      resetSequence(); // Reset sequence for deterministic testing
       const service = { log: (_msg: string) => {} };
       const tracker = createCallTracker(service);
 
-      const before = Date.now();
-      tracker.service.log("test");
-      const after = Date.now();
+      tracker.service.log("test1");
+      tracker.service.log("test2");
 
       const calls = tracker.getCalls();
-      expect(calls[0]?.timestamp).toBeGreaterThanOrEqual(before);
-      expect(calls[0]?.timestamp).toBeLessThanOrEqual(after);
+      // Timestamps are now sequential numbers from nextSequence()
+      expect(calls[0]?.timestamp).toBe(1);
+      expect(calls[1]?.timestamp).toBe(2);
     });
   });
 

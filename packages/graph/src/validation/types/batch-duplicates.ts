@@ -19,8 +19,7 @@
  * @packageDocumentation
  */
 
-import type { InferAdapterProvides, InferManyProvides } from "../../adapter/types/index.js";
-import type { InferPortName } from "@hex-di/ports";
+import type { InferAdapterProvides, InferManyProvides, InferPortName } from "@hex-di/core";
 
 /**
  * Checks if an array of adapters contains duplicate provides.

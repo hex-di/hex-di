@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { createAdapter, createAsyncAdapter } from "../../src/index.js";
+import { createAdapter, createAsyncAdapter } from "@hex-di/core";
 import { LoggerPort } from "../fixtures.js";
 
 describe("finalizer handling", () => {

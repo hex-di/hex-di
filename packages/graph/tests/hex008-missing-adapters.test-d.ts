@@ -13,7 +13,8 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { GraphBuilder, createAdapter } from "../src/index.js";
+import { createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
 import {
   LoggerPort,
   DatabasePort,

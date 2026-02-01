@@ -9,7 +9,7 @@
  * @packageDocumentation
  */
 
-import type { IsNever, Prettify } from "../../../types/type-utilities.js";
+import type { IsNever, Prettify } from "@hex-di/core";
 import type { Depth, DefaultMaxDepth, DepthExceeded, IncrementDepth } from "./depth.js";
 
 // Re-export canonical adapter extraction types from consolidated module

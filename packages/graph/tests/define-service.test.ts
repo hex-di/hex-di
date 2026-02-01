@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { defineService, defineAsyncService } from "../src/index.js";
+import { defineService, defineAsyncService } from "@hex-di/core";
 import {
   type Logger,
   type Database,

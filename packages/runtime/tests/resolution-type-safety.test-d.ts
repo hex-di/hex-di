@@ -12,7 +12,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort, InferService } from "@hex-di/ports";
+import { createPort, InferService } from "@hex-di/core";
 import type { Container, Scope } from "../src/index.js";
 
 // =============================================================================

@@ -13,7 +13,7 @@
  */
 
 import { useSyncExternalStore, type ReactNode } from "react";
-import type { Port } from "@hex-di/ports";
+import type { Port } from "@hex-di/core";
 import type { Scope, ScopeLifecycleListener, ScopeDisposalState } from "@hex-di/runtime";
 import { toRuntimeScopeRef, type RuntimeResolverRef } from "../internal/runtime-refs.js";
 import { ResolverContext, type RuntimeResolverContextValue } from "../context/resolver-context.js";

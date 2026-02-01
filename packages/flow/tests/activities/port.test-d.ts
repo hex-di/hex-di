@@ -13,7 +13,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import type { Port } from "@hex-di/ports";
+import type { Port } from "@hex-di/core";
 import type { Activity } from "../../src/activities/types.js";
 import {
   activityPort,

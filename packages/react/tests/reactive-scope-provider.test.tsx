@@ -13,8 +13,9 @@
 import React from "react";
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act, cleanup } from "@testing-library/react";
-import { createPort } from "@hex-di/ports";
-import { createAdapter, GraphBuilder } from "@hex-di/graph";
+import { createPort } from "@hex-di/core";
+import { createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "@hex-di/runtime";
 import { ReactiveScopeProvider } from "../src/providers/reactive-scope-provider.js";
 

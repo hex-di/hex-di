@@ -12,8 +12,8 @@
  * allowing the lifetime map lookup to succeed.
  */
 import { describe, it, expectTypeOf } from "vitest";
-import { createPort } from "@hex-di/ports";
-import { GraphBuilder, createAdapter, lazyPort } from "../src/index.js";
+import { createAdapter, createPort, lazyPort } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
 
 // Test services
 interface TransientService {

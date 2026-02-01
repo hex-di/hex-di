@@ -12,8 +12,8 @@
 import { describe, it, expectTypeOf } from "vitest";
 import type { AddEdge, AddManyEdges } from "../src/validation/types/cycle/detection.js";
 import type { EmptyDependencyGraph } from "../src/builder/types/state.js";
-import { createPort } from "@hex-di/ports";
-import { createAdapter } from "../src/index.js";
+import { createPort } from "@hex-di/core";
+import { createAdapter } from "@hex-di/core";
 
 // =============================================================================
 // Test Fixtures

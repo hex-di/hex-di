@@ -14,7 +14,7 @@
  */
 
 import type { FactoryKind } from "../types.js";
-import type { Lifetime, InheritanceMode } from "@hex-di/plugin";
+import type { Lifetime, InheritanceMode } from "@hex-di/core";
 
 // =============================================================================
 // Container Identity

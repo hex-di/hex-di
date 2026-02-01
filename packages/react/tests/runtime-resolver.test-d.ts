@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expectTypeOf } from "vitest";
-import { createPort } from "@hex-di/ports";
+import { createPort } from "@hex-di/core";
 import type { Container, Scope } from "@hex-di/runtime";
 import type {
   RuntimeResolver,
@@ -268,12 +268,12 @@ describe("edge cases", () => {
     function test(resolver: RuntimeResolver) {
       // resolve accepts any Port
       expectTypeOf(resolver.resolve).toEqualTypeOf<
-        (port: import("@hex-di/ports").Port<unknown, string>) => unknown
+        (port: import("@hex-di/core").Port<unknown, string>) => unknown
       >();
 
       // resolveAsync accepts any Port
       expectTypeOf(resolver.resolveAsync).toEqualTypeOf<
-        (port: import("@hex-di/ports").Port<unknown, string>) => Promise<unknown>
+        (port: import("@hex-di/core").Port<unknown, string>) => Promise<unknown>
       >();
 
       // createScope accepts optional name and returns RuntimeResolver

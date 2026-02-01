@@ -15,7 +15,7 @@
 import { createContext } from "react";
 import type { DevToolsFlowRuntime } from "../../runtime/devtools-flow-runtime.js";
 import type { DevToolsSnapshot, DevToolsFlowEvent } from "../../runtime/devtools-snapshot.js";
-import type { InspectorWithSubscription } from "@hex-di/runtime";
+import type { InspectorAPI } from "@hex-di/core";
 
 // =============================================================================
 // Context Definition
@@ -53,7 +53,7 @@ export interface DevToolsFlowRuntimeLike {
   /**
    * Gets the root inspector for the container hierarchy.
    */
-  getRootInspector(): InspectorWithSubscription;
+  getRootInspector(): InspectorAPI;
 
   /**
    * Finds an inspector by container ID by traversing the container tree.
@@ -61,7 +61,7 @@ export interface DevToolsFlowRuntimeLike {
    * @param containerId - The ID of the container to find
    * @returns The inspector for the container, or null if not found
    */
-  getInspector(containerId: string): InspectorWithSubscription | null;
+  getInspector(containerId: string): InspectorAPI | null;
 
   /**
    * Gets the ancestor chain of inspectors from root to the specified container.
@@ -69,7 +69,7 @@ export interface DevToolsFlowRuntimeLike {
    * @param containerId - The ID of the target container
    * @returns Array of inspectors from root to target, or empty array if not found
    */
-  getAncestorChain(containerId: string): readonly InspectorWithSubscription[];
+  getAncestorChain(containerId: string): readonly InspectorAPI[];
 }
 
 /**

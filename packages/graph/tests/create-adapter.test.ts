@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createAdapter, createAsyncAdapter } from "../src/index.js";
+import { createAdapter, createAsyncAdapter } from "@hex-di/core";
 import {
   type Logger,
   type Database,

@@ -1,7 +1,7 @@
 import { expectTypeOf } from "vitest";
 import type { Context } from "hono";
-import { createPort } from "@hex-di/ports";
-import type { Port } from "@hex-di/ports";
+import { createPort } from "@hex-di/core";
+import type { Port } from "@hex-di/core";
 import { resolvePort, type HexHonoEnv, type WithHexDi } from "../src/index.js";
 
 interface Logger {

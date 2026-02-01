@@ -2,7 +2,7 @@
  * Type-level tests for defineService and defineAsyncService helper functions.
  *
  * These tests verify:
- * 1. Return type is readonly [Port, Adapter]
+ * 1. Return type is readonly [Port]
  * 2. Port has correct TService and TName types
  * 3. Adapter has correct provides, requires, lifetime types
  * 4. Factory receives correctly typed deps
@@ -12,8 +12,7 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { Port } from "@hex-di/ports";
-import { Adapter, defineService, defineAsyncService } from "../src/index.js";
+import { Port, Adapter, defineService, defineAsyncService } from "@hex-di/core";
 import {
   Logger,
   Database,
@@ -30,7 +29,7 @@ import {
 // =============================================================================
 
 describe("defineService type inference", () => {
-  it("returns readonly tuple of [Port, Adapter]", () => {
+  it("returns readonly tuple of [Port]", () => {
     const result = defineService<"Logger", Logger>("Logger", {
       factory: () => ({ log: () => {} }),
     });
@@ -189,7 +188,7 @@ describe("defineService type inference", () => {
 // =============================================================================
 
 describe("defineAsyncService type inference", () => {
-  it("returns readonly tuple of [Port, Adapter]", () => {
+  it("returns readonly tuple of [Port]", () => {
     const result = defineAsyncService<"Config", Config>("Config", {
       factory: async () => ({ get: () => "" }),
     });

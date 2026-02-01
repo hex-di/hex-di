@@ -22,9 +22,18 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/ports";
-import type { InferenceError, IsInferenceError, IsNever } from "../src/types/type-utilities.js";
+import { createPort, type InferenceError, type IsNever } from "@hex-di/core";
 import type { UnsatisfiedDependencies } from "../src/validation/types/dependency-satisfaction.js";
+
+/**
+ * Type guard for InferenceError.
+ * Returns true if T is an InferenceError, false otherwise.
+ */
+type IsInferenceError<T> = [T] extends [never]
+  ? false
+  : T extends InferenceError<string, string, unknown>
+    ? true
+    : false;
 
 // =============================================================================
 // Test Fixtures

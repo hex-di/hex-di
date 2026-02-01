@@ -17,7 +17,7 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { port } from "@hex-di/ports";
+import { port } from "@hex-di/core";
 import {
   // Activity Ports
   activityPort,
@@ -798,7 +798,7 @@ describe("Activity API Showcase", () => {
       }
 
       const scopeResolver = {
-        resolve: <P extends import("@hex-di/ports").Port<unknown, string>>(p: P) => {
+        resolve: <P extends import("@hex-di/core").Port<unknown, string>>(p: P) => {
           if (p.__portName === "Logger") return deps.Logger;
           if (p.__portName === "Api") return deps.Api;
           if (p.__portName === "Analytics") return deps.Analytics;
@@ -807,7 +807,7 @@ describe("Activity API Showcase", () => {
       };
 
       const activityDepsResolver = (
-        reqs: readonly import("@hex-di/ports").Port<unknown, string>[]
+        reqs: readonly import("@hex-di/core").Port<unknown, string>[]
       ) => {
         const result: Record<string, unknown> = {};
         for (const req of reqs) {
@@ -1053,7 +1053,7 @@ describe("Activity API Showcase", () => {
       activityRegistry.set(LongRunningActivity.port.__portName, LongRunningActivity);
 
       const scopeResolver = {
-        resolve: <P extends import("@hex-di/ports").Port<unknown, string>>(p: P) => {
+        resolve: <P extends import("@hex-di/core").Port<unknown, string>>(p: P) => {
           if (p.__portName === "Logger") return mockLogger;
           if (p.__portName === "Api") return mockApi;
           if (p.__portName === "Analytics") return mockAnalytics;
@@ -1062,7 +1062,7 @@ describe("Activity API Showcase", () => {
       };
 
       const activityDepsResolver = (
-        reqs: readonly import("@hex-di/ports").Port<unknown, string>[]
+        reqs: readonly import("@hex-di/core").Port<unknown, string>[]
       ) => {
         const result: Record<string, unknown> = {};
         for (const req of reqs) {

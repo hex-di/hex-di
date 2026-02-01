@@ -5,14 +5,13 @@
  * adapters WITHIN a single batch, not just batch-vs-graph duplicates.
  */
 import { expectTypeOf, describe, it } from "vitest";
-import { createPort } from "@hex-di/ports";
+import { createAdapter, createPort } from "@hex-di/core";
+import { GraphBuilder } from "../src/index.js";
 import {
-  createAdapter,
-  GraphBuilder,
-  HasDuplicatesInBatch,
-  FindBatchDuplicate,
-  BatchDuplicateErrorMessage,
-} from "../src/index.js";
+  type HasDuplicatesInBatch,
+  type FindBatchDuplicate,
+  type BatchDuplicateErrorMessage,
+} from "../src/advanced.js";
 
 // =============================================================================
 // Test Fixtures

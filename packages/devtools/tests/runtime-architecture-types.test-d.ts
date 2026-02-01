@@ -11,9 +11,15 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import type { Lifetime, FactoryKind } from "@hex-di/graph";
-import type { InheritanceMode, ServiceOrigin } from "@hex-di/plugin";
-import type { InspectorEvent, ContainerGraphData, VisualizableAdapter } from "@hex-di/runtime";
+import type {
+  Lifetime,
+  FactoryKind,
+  InheritanceMode,
+  ServiceOrigin,
+  InspectorEvent,
+  ContainerGraphData,
+  VisualizableAdapter,
+} from "@hex-di/core";
 
 import type {
   ContainerDiscoveryState,

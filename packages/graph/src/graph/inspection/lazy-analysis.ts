@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { AdapterConstraint } from "../../adapter/index.js";
+import type { AdapterConstraint } from "@hex-di/core";
 
 /**
  * Checks if there's a path from 'from' to 'to' in the dependency graph.
