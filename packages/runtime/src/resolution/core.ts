@@ -89,11 +89,6 @@ export function getMemoForLifetime(
       return singletonMemo;
     case "scoped":
       return scopedMemo;
-    case "request":
-      // Request-scoped services use the scoped memo, which in a request context
-      // is the request-specific memo. This allows request-scoped services to be
-      // cached per-request, just like scoped services are cached per-scope.
-      return scopedMemo;
     case "transient":
       return null;
     default:

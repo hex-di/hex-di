@@ -393,52 +393,6 @@ export type ContainerMembers<
   createScope(name?: string): Scope<TProvides | TExtends, TAsyncPorts, TPhase>;
 
   /**
-   * Creates a request scope for HTTP request isolation.
-   *
-   * Request scopes provide isolation for services with 'request' lifetime.
-   * Each request scope maintains its own cache of request-scoped instances,
-   * which are automatically disposed when the request ends.
-   *
-   * Request-scoped services are:
-   * - Created once per request and cached within that request
-   * - Isolated from other concurrent requests
-   * - Automatically disposed when the scope is disposed
-   *
-   * @param name - Optional custom name for the request scope
-   * @returns A new request Scope instance
-   *
-   * @example Express middleware
-   * ```typescript
-   * app.use(async (req, res, next) => {
-   *   const requestScope = container.createRequestScope(`req-${req.id}`);
-   *   req.scope = requestScope;
-   *
-   *   try {
-   *     await next();
-   *   } finally {
-   *     await requestScope.dispose();
-   *   }
-   * });
-   * ```
-   *
-   * @example With request-scoped services
-   * ```typescript
-   * // Define a request-scoped adapter
-   * const RequestContextAdapter = createAdapter({
-   *   provides: RequestContextPort,
-   *   factory: () => new RequestContext(),
-   *   lifetime: 'request',
-   * });
-   *
-   * // In middleware
-   * const scope = container.createRequestScope();
-   * const ctx = scope.resolve(RequestContextPort); // Created for this request
-   * const ctx2 = scope.resolve(RequestContextPort); // Same instance
-   * ```
-   */
-  createRequestScope(name?: string): Scope<TProvides | TExtends, TAsyncPorts, TPhase>;
-
-  /**
    * Creates a child container from a child graph.
    *
    * Child containers can:

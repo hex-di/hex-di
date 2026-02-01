@@ -22,7 +22,7 @@ import type { Sync, Async, Singleton, False } from "./constants.js";
  * Valid lifetime values for runtime validation.
  * @internal
  */
-const VALID_LIFETIMES = new Set(["singleton", "scoped", "transient", "request"]);
+const VALID_LIFETIMES = new Set(["singleton", "scoped", "transient"]);
 
 // =============================================================================
 // Type Guards for Port Validation

@@ -2,9 +2,9 @@
  * Lifetime Level Types for Captive Dependency Detection.
  *
  * This module provides types for mapping between:
- * - Lifetime strings ("singleton", "scoped", "request", "transient")
+ * - Lifetime strings ("singleton", "scoped", "transient")
  * - Numeric levels (1, 2, 3) for type-level comparison
- * - Display names ("Singleton", "Scoped", "Request", "Transient") for error messages
+ * - Display names ("Singleton", "Scoped", "Transient") for error messages
  *
  * ## Lifetime Hierarchy
  *
@@ -13,13 +13,8 @@
  * ```
  * Level 1: Singleton  ───────────────────────────────────► (longest)
  * Level 2: Scoped     ─────────────►
- * Level 2: Request    ─────────────► (same as Scoped)
  * Level 3: Transient  ───►                                  (shortest)
  * ```
- *
- * Note: Scoped and Request share the same level because they represent
- * equivalent lifetime semantics - both are bounded to a context that
- * eventually ends.
  *
  * ## Error Handling
  *
@@ -33,12 +28,7 @@
  * @packageDocumentation
  */
 
-import type {
-  SINGLETON_LEVEL,
-  SCOPED_LEVEL,
-  REQUEST_LEVEL,
-  TRANSIENT_LEVEL,
-} from "./lifetime-constants.js";
+import type { SINGLETON_LEVEL, SCOPED_LEVEL, TRANSIENT_LEVEL } from "./lifetime-constants.js";
 import type { InferenceError } from "@hex-di/core";
 
 /**
@@ -47,7 +37,6 @@ import type { InferenceError } from "@hex-di/core";
  * The numeric levels represent the lifetime hierarchy:
  * - Singleton = 1 (longest lived)
  * - Scoped = 2 (medium lived)
- * - Request = 2 (same as scoped - per-request context)
  * - Transient = 3 (shortest lived)
  *
  * Lower numbers indicate longer lifetimes. An adapter can only depend on
@@ -59,12 +48,11 @@ import type { InferenceError } from "@hex-di/core";
  * |-------|--------|--------|
  * | `"singleton"` | `1` | Valid lifetime |
  * | `"scoped"` | `2` | Valid lifetime |
- * | `"request"` | `2` | Valid lifetime (same level as scoped) |
  * | `"transient"` | `3` | Valid lifetime |
  * | `never` | `never` | Preserves empty union semantics |
  * | Other | `never` | Invalid lifetime (use `DiagnosticLifetimeLevel` for error details) |
  *
- * @typeParam TLifetime - The Lifetime literal type ('singleton' | 'scoped' | 'request' | 'transient')
+ * @typeParam TLifetime - The Lifetime literal type ('singleton' | 'scoped' | 'transient')
  *
  * @returns The numeric level (1, 2, or 3), or `never` for invalid/`never` input
  *
@@ -72,7 +60,6 @@ import type { InferenceError } from "@hex-di/core";
  * ```typescript
  * type SingletonLevel = LifetimeLevel<'singleton'>; // 1
  * type ScopedLevel = LifetimeLevel<'scoped'>;       // 2
- * type RequestLevel = LifetimeLevel<'request'>;     // 2
  * type TransientLevel = LifetimeLevel<'transient'>; // 3
  * type Invalid = LifetimeLevel<'invalid'>;          // never
  * ```
@@ -83,11 +70,9 @@ export type LifetimeLevel<TLifetime> = TLifetime extends "singleton"
   ? SINGLETON_LEVEL
   : TLifetime extends "scoped"
     ? SCOPED_LEVEL
-    : TLifetime extends "request"
-      ? REQUEST_LEVEL
-      : TLifetime extends "transient"
-        ? TRANSIENT_LEVEL
-        : never;
+    : TLifetime extends "transient"
+      ? TRANSIENT_LEVEL
+      : never;
 
 /**
  * Converts a lifetime level back to its string name for error messages.
@@ -155,15 +140,13 @@ export type DiagnosticLifetimeLevel<TLifetime> =
       ? SINGLETON_LEVEL
       : TLifetime extends "scoped"
         ? SCOPED_LEVEL
-        : TLifetime extends "request"
-          ? REQUEST_LEVEL
-          : TLifetime extends "transient"
-            ? TRANSIENT_LEVEL
-            : InferenceError<
-                "LifetimeLevel",
-                "Invalid lifetime. Expected 'singleton', 'scoped', 'request', or 'transient'.",
-                TLifetime
-              >;
+        : TLifetime extends "transient"
+          ? TRANSIENT_LEVEL
+          : InferenceError<
+              "LifetimeLevel",
+              "Invalid lifetime. Expected 'singleton', 'scoped', or 'transient'.",
+              TLifetime
+            >;
 
 /**
  * Diagnostic version of `LifetimeName` that returns `InferenceError` for invalid inputs.
