@@ -62,6 +62,9 @@ export { createAdapter, createAsyncAdapter } from "./factory.js";
 // Service helpers
 export { defineService, defineAsyncService, createClassAdapter } from "./service.js";
 
+// Fluent builder
+export { ServiceBuilder } from "./builder.js";
+
 // Lazy port utilities
 export type { LazyPort, IsLazyPort, UnwrapLazyPort } from "./lazy.js";
 export { lazyPort, getOriginalPort, isLazyPort } from "./lazy.js";
