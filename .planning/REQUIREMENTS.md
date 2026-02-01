@@ -13,8 +13,8 @@ Requirements for bug fix milestone. Each maps to roadmap phases.
 
 ### Merge Operations
 
-- [ ] **MERGE-01**: `UnifiedMergeInternals` type merges `parentProvides` from both graphs using union type, enabling override of ports from either parent after merge
-- [ ] **MERGE-02**: Merge operations preserve `UnsafeDepthOverride` flag using OR semantics — if either graph has the flag, merged result has it
+- [x] **MERGE-01**: `UnifiedMergeInternals` type merges `parentProvides` from both graphs using union type, enabling override of ports from either parent after merge
+- [x] **MERGE-02**: Merge operations preserve `UnsafeDepthOverride` flag using OR semantics — if either graph has the flag, merged result has it
 
 ## Future Requirements
 
@@ -47,8 +47,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase   | Status   |
 | ----------- | ------- | -------- |
 | BUILD-01    | Phase 1 | Complete |
-| MERGE-01    | Phase 2 | Pending  |
-| MERGE-02    | Phase 2 | Pending  |
+| MERGE-01    | Phase 2 | Complete |
+| MERGE-02    | Phase 2 | Complete |
 
 **Coverage:**
 
@@ -59,4 +59,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 ---
 
 _Requirements defined: 2026-02-01_
-_Last updated: 2026-02-01 after Phase 1 completion_
+_Last updated: 2026-02-01 after Phase 2 completion_
