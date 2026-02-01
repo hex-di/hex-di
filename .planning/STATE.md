@@ -20,19 +20,19 @@ Progress: [█████░░░░░] 50%
 
 **Velocity:**
 
-- Total plans completed: 0
-- Average duration: — (no data)
-- Total execution time: 0 hours
+- Total plans completed: 1
+- Average duration: 2 min
+- Total execution time: 2 min
 
 **By Phase:**
 
-| Phase | Plans | Total | Avg/Plan |
-| ----- | ----- | ----- | -------- |
-| —     | —     | —     | —        |
+| Phase               | Plans | Total | Avg/Plan |
+| ------------------- | ----- | ----- | -------- |
+| 01-build-validation | 1     | 2 min | 2 min    |
 
 **Recent Trend:**
 
-- No plans completed yet
+- 01-01: 2 min (verification only)
 
 _Updated after each plan completion_
 
