@@ -25,53 +25,57 @@ Catch dependency graph errors at compile time, not runtime — invalid graphs sh
 - Hono integration (per-request scopes)
 - Flow state machine runtime
 - Testing utilities
+- ✓ Runtime captive detection as defense-in-depth — v1.1
+- ✓ Merge operations preserve parentProvides union — v1.1
+- ✓ Merge operations preserve UnsafeDepthOverride flag — v1.1
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Fix forward reference validation gap in `buildGraph()`
-- [ ] Fix parentProvides merge losing second graph's ports
-- [ ] Fix UnsafeDepthOverride flag lost during merge
+(None — ready for next milestone planning)
 
 ### Out of Scope
 
 <!-- Explicit boundaries. Includes reasoning to prevent re-adding. -->
 
-- Performance optimization for type checking — address after correctness bugs fixed
-- New features — focus on fixing existing bugs first
+- Performance optimization for type checking — address after v1.1 shipped
+- New features — focus on stability first
 
-## Current Milestone: v1.1 Bug Fixes
+## Current State
 
-**Goal:** Fix the 3 documented bugs in the graph builder type-state machine.
+**Shipped:** v1.1 Bug Fixes (2026-02-01)
 
-**Target fixes:**
+v1.1 verified and documented 3 bug fixes that were already implemented:
 
-- Forward reference validation gap (High priority)
-- parentProvides merge issue (High priority)
-- UnsafeDepthOverride merge flag loss (Medium priority)
+- BUILD-01: Runtime captive detection runs unconditionally
+- MERGE-01: `UnifiedMergeInternals` merges `parentProvides` correctly
+- MERGE-02: `UnsafeDepthOverride` preserved with OR semantics
+
+All 1844 type tests and 1498 runtime tests pass.
 
 ## Context
 
 - Monorepo with 10 packages under `@hex-di/*` scope
 - Type-level validation is complex (1,250 line provide.ts, 810 line merge.ts)
-- Bugs are in `packages/graph/src/builder/` area
-- Existing test files document expected behavior for each bug
+- Graph builder validation is now complete and verified
 
 ## Constraints
 
-- **Type safety**: No `any` types in fixes — per project rules
+- **Type safety**: No `any` types — per project rules
 - **No casting**: Fix underlying type issues, don't cast around them
-- **Backward compatible**: Fixes should not change public API
+- **Backward compatible**: Changes should not break public API
 
 ## Key Decisions
 
 <!-- Decisions that constrain future work. Add throughout project lifecycle. -->
 
-| Decision                           | Rationale                                  | Outcome   |
-| ---------------------------------- | ------------------------------------------ | --------- |
-| Fix all 3 bugs in single milestone | They're related (all in merge/build logic) | — Pending |
+| Decision                           | Rationale                                    | Outcome       |
+| ---------------------------------- | -------------------------------------------- | ------------- |
+| Fix all 3 bugs in single milestone | They're related (all in merge/build logic)   | ✓ Good (v1.1) |
+| Verification-only milestone        | Bugs were already fixed in prior refactoring | ✓ Good (v1.1) |
+| Defense-in-depth validation        | Runtime backs up compile-time checks         | ✓ Good (v1.1) |
 
 ---
 
-_Last updated: 2026-02-01 after milestone v1.1 started_
+_Last updated: 2026-02-01 after v1.1 milestone shipped_

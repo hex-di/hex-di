@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-01)
 
 **Core value:** Catch dependency graph errors at compile time, not runtime
-**Current focus:** Milestone v1.1 complete
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Phase: All phases complete (2/2)
-Plan: 02-01 complete
-Status: Milestone complete
-Last activity: 2026-02-01 — Phase 2 verified complete, all requirements satisfied
+Phase: Milestone v1.1 shipped
+Plan: N/A
+Status: Ready for next milestone
+Last activity: 2026-02-01 — v1.1 milestone archived
 
-Progress: [██████████] 100%
+Progress: [██████████] 100% (v1.1 complete)
 
 ## Performance Metrics
 
@@ -43,15 +43,11 @@ _Updated after each plan completion_
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- BUILD-01 verified complete — Runtime captive detection working as defense-in-depth
-- MERGE-01 verified complete — parentProvides merging via union type
-- MERGE-02 verified complete — UnsafeDepthOverride OR semantics preservation
+v1.1 milestone decisions archived — see milestones/v1.1-ROADMAP.md
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
@@ -60,10 +56,10 @@ None identified.
 ## Session Continuity
 
 Last session: 2026-02-01
-Stopped at: Milestone v1.1 complete — all requirements verified
+Stopped at: v1.1 milestone archived, ready for next milestone
 Resume file: None
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-01 after Phase 2 completion — milestone complete_
+_Last updated: 2026-02-01 after v1.1 milestone archived_
