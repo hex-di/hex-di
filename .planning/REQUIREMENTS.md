@@ -9,7 +9,7 @@ Requirements for bug fix milestone. Each maps to roadmap phases.
 
 ### Build Validation
 
-- [ ] **BUILD-01**: `buildGraph()` and `buildGraphFragment()` run `detectCaptiveAtRuntime()` unconditionally as defense-in-depth, not just when `depthLimitExceeded=true`
+- [x] **BUILD-01**: `buildGraph()` and `buildGraphFragment()` run `detectCaptiveAtRuntime()` unconditionally as defense-in-depth, not just when `depthLimitExceeded=true`
 
 ### Merge Operations
 
@@ -44,11 +44,11 @@ Explicitly excluded. Documented to prevent scope creep.
 
 Which phases cover which requirements. Updated during roadmap creation.
 
-| Requirement | Phase   | Status  |
-| ----------- | ------- | ------- |
-| BUILD-01    | Phase 1 | Pending |
-| MERGE-01    | Phase 2 | Pending |
-| MERGE-02    | Phase 2 | Pending |
+| Requirement | Phase   | Status   |
+| ----------- | ------- | -------- |
+| BUILD-01    | Phase 1 | Complete |
+| MERGE-01    | Phase 2 | Pending  |
+| MERGE-02    | Phase 2 | Pending  |
 
 **Coverage:**
 
@@ -59,4 +59,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 ---
 
 _Requirements defined: 2026-02-01_
-_Last updated: 2026-02-01 after roadmap creation_
+_Last updated: 2026-02-01 after Phase 1 completion_
