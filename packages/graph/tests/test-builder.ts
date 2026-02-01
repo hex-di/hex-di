@@ -249,12 +249,12 @@ export class TestGraphBuilder {
   static chain(length = 3) {
     type ChainService = { execute(): void };
 
-    const ports: Array<ReturnType<typeof createPort<`Chain${number}`, ChainService>>> = [];
+    const ports: Array<ReturnType<typeof createPort<ChainService>>> = [];
     const adapters: Array<ReturnType<typeof createAdapter>> = [];
 
     // Create ports
     for (let i = 0; i < length; i++) {
-      ports.push(createPort<`Chain${number}`, ChainService>(`Chain${i}`));
+      ports.push(createPort<ChainService>({ name: `Chain${i}` }));
     }
 
     // Create adapters with linear dependencies
@@ -306,7 +306,7 @@ export class TestGraphBuilder {
   static star(spokeCount = 4) {
     type StarService = { execute(): void };
 
-    const centerPort = createPort<"Center", StarService>("Center");
+    const centerPort = createPort<StarService>({ name: "Center" });
     const center = createAdapter({
       provides: centerPort,
       requires: [],
@@ -316,7 +316,7 @@ export class TestGraphBuilder {
 
     const spokes: Array<ReturnType<typeof createAdapter>> = [];
     for (let i = 0; i < spokeCount; i++) {
-      const port = createPort<`Spoke${number}`, StarService>(`Spoke${i}`);
+      const port = createPort<StarService>({ name: `Spoke${i}` });
       spokes.push(
         createAdapter({
           provides: port,
@@ -365,7 +365,7 @@ export class TestGraphBuilder {
     const adapters: Array<ReturnType<typeof createAdapter>> = [];
 
     for (let i = 0; i < count; i++) {
-      const port = createPort<`Flat${number}`, FlatService>(`Flat${i}`);
+      const port = createPort<FlatService>({ name: `Flat${i}` });
       adapters.push(
         createAdapter({
           provides: port,
@@ -481,8 +481,8 @@ export class TestGraphBuilder {
    * @returns Scenario with builder, adapters, and the error-causing adapter
    */
   static withCaptiveDependency() {
-    const ScopedPort = createPort<"Scoped", { getData(): string }>("Scoped");
-    const SingletonPort = createPort<"Singleton", { process(): void }>("Singleton");
+    const ScopedPort = createPort<{ getData(): string }>({ name: "Scoped" });
+    const SingletonPort = createPort<{ process(): void }>({ name: "Singleton" });
 
     const ScopedAdapter = createAdapter({
       provides: ScopedPort,
@@ -524,8 +524,8 @@ export class TestGraphBuilder {
    * @returns Scenario with builder, adapters, and the error-causing adapter
    */
   static withCircularDependency() {
-    const PortX = createPort<"X", { doX(): void }>("X");
-    const PortY = createPort<"Y", { doY(): void }>("Y");
+    const PortX = createPort<{ doX(): void }>({ name: "X" });
+    const PortY = createPort<{ doY(): void }>({ name: "Y" });
 
     const AdapterX = createAdapter({
       provides: PortX,
@@ -564,7 +564,7 @@ export class TestGraphBuilder {
    * @returns Scenario with builder, adapters, and the error-causing adapter
    */
   static withDuplicatePort() {
-    const DuplicatePort = createPort<"Duplicate", { execute(): void }>("Duplicate");
+    const DuplicatePort = createPort<{ execute(): void }>({ name: "Duplicate" });
 
     const AdapterFirst = createAdapter({
       provides: DuplicatePort,
@@ -604,8 +604,8 @@ export class TestGraphBuilder {
    * @returns Scenario with builder, adapters, and the error-causing adapter
    */
   static withMissingDependency() {
-    const MissingPort = createPort<"Missing", { getData(): string }>("Missing");
-    const DependentPort = createPort<"Dependent", { process(): void }>("Dependent");
+    const MissingPort = createPort<{ getData(): string }>({ name: "Missing" });
+    const DependentPort = createPort<{ process(): void }>({ name: "Dependent" });
 
     const DependentAdapter = createAdapter({
       provides: DependentPort,

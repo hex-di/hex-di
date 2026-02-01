@@ -101,7 +101,7 @@ export class TestContext {
    * Useful for creating test-specific ports.
    */
   createPort<TName extends string, TService extends object>(name: TName): Port<TService, TName> {
-    return createPort<TName, TService>(name);
+    return createPort<TService>({ name });
   }
 
   /**

@@ -134,7 +134,7 @@ export const dagArb = (minNodes = 2, maxNodes = 8) =>
  * Creates a port with the given name.
  */
 export function makePort(name: string): TestPort {
-  return createPort(name);
+  return createPort({ name });
 }
 
 /**
