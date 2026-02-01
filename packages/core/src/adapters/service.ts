@@ -13,6 +13,7 @@ import { createAdapter, createAsyncAdapter } from "./factory.js";
 import type { Adapter, Lifetime, ResolvedDeps } from "./types.js";
 import type { TupleToUnion } from "../utils/type-utilities.js";
 import { SINGLETON, EMPTY_REQUIRES, FALSE, SYNC } from "./constants.js";
+import { ServiceBuilder } from "./builder.js";
 import type { Singleton, EmptyRequires } from "./constants.js";
 
 // =============================================================================
@@ -33,6 +34,31 @@ function createServiceTuple<
 // =============================================================================
 // defineService - Overloads
 // =============================================================================
+
+/**
+ * Returns a fluent builder for defining a service.
+ *
+ * This curried overload enables partial type application: specify the service type
+ * explicitly, and the port name is inferred from the argument.
+ *
+ * @typeParam TService - The service interface type (explicitly provided)
+ * @returns A function that accepts the port name and returns a ServiceBuilder
+ *
+ * @example
+ * ```typescript
+ * const [LoggerPort, LoggerAdapter] = defineService<Logger>()('Logger')
+ *   .singleton()
+ *   .factory(() => new ConsoleLogger());
+ *
+ * const [UserServicePort, UserServiceAdapter] = defineService<UserService>()('UserService')
+ *   .scoped()
+ *   .requires(LoggerPort, DatabasePort)
+ *   .factory(({ Logger, Database }) => new UserServiceImpl(Logger, Database));
+ * ```
+ */
+export function defineService<TService>(): <const TName extends string>(
+  name: TName
+) => ServiceBuilder<TService, TName, readonly [], "singleton">;
 
 /**
  * Defines a sync service, creating both a port and adapter in one step.
@@ -221,25 +247,26 @@ export function defineService<
  * Implementation that handles all defineService overload cases.
  */
 export function defineService<const TName extends string, TService>(
-  name: TName,
-  config: {
+  name?: TName,
+  config?: {
     requires?: readonly Port<unknown, string>[];
     lifetime?: Lifetime;
     factory: (deps: Record<string, unknown>) => TService;
     clonable?: boolean;
     finalizer?: (instance: TService) => void | Promise<void>;
   }
-): readonly [
-  Port<TService, TName>,
-  Adapter<
-    Port<TService, TName>,
-    unknown,
-    Lifetime,
-    "sync",
-    boolean,
-    readonly Port<unknown, string>[]
-  >,
-] {
+): unknown {
+  // Builder overload: defineService<TService>() returns a curried builder factory
+  if (name === undefined) {
+    return ServiceBuilder.create<TService>();
+  }
+
+  // Config-based overloads: defineService(name, config) returns [Port, Adapter]
+  // Config is guaranteed by the overload signatures when name is provided
+  if (config === undefined) {
+    throw new Error("defineService requires config when name is provided");
+  }
+
   const port = createPort<TName, TService>(name);
 
   const requires = config.requires ?? EMPTY_REQUIRES;
