@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { LoggerPort, DatabasePort } from "../fixtures.js";
 
 interface Service {
@@ -53,7 +53,7 @@ describe("factory deps edge cases", () => {
   });
 
   it("factory receives correctly keyed deps", () => {
-    const ServicePort = createPort<Service>({ name: "Service" });
+    const ServicePort = port<Service>()({ name: "Service" });
 
     let receivedDeps: unknown;
 

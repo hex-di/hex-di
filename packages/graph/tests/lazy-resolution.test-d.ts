@@ -9,7 +9,7 @@
  */
 import { expectTypeOf, describe, it } from "vitest";
 import {
-  createPort,
+  port,
   createAdapter,
   lazyPort,
   type Port,
@@ -37,11 +37,11 @@ interface NotificationService {
   send(userId: string, message: string): void;
 }
 
-const UserServicePort = createPort<UserService>({ name: "UserService" });
-const NotificationServicePort = createPort<NotificationService, "NotificationService">({
+const UserServicePort = port<UserService>()({ name: "UserService" });
+const NotificationServicePort = port<NotificationService>()({
   name: "NotificationService",
 });
-const LoggerPort = createPort<{ log: (msg: string) => void }, "Logger">({ name: "Logger" });
+const LoggerPort = port<{ log: (msg: string) => void }>()({ name: "Logger" });
 
 // =============================================================================
 // LazyPort Type Tests
@@ -245,8 +245,8 @@ describe("Adapter with lazy requirements", () => {
 
   it("bidirectional dependency compiles without cycle error", () => {
     // A depends on B, B depends on lazy A
-    const PortA = createPort<{ getValue(): number }>({ name: "A" });
-    const PortB = createPort<{ getDoubled(): number }>({ name: "B" });
+    const PortA = port<{ getValue(): number }>()({ name: "A" });
+    const PortB = port<{ getDoubled(): number }>()({ name: "B" });
 
     const LazyA = lazyPort(PortA);
 

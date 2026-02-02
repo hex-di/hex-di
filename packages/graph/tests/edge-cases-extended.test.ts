@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createAdapter, createPort } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 import { inspectGraph } from "../src/advanced.js";
 
@@ -25,7 +25,7 @@ interface Service {
 }
 
 function createServicePort(name: string) {
-  return createPort<Service>({ name });
+  return port<Service>()({ name });
 }
 
 // =============================================================================
@@ -35,7 +35,7 @@ function createServicePort(name: string) {
 describe("finalizer edge cases", () => {
   it("handles adapter with sync finalizer", () => {
     const finalizerCalled = vi.fn();
-    const Port = createPort<Service>({ name: "WithFinalizer" });
+    const Port = port<Service>()({ name: "WithFinalizer" });
 
     const adapter = createAdapter({
       provides: Port,
@@ -55,7 +55,7 @@ describe("finalizer edge cases", () => {
   });
 
   it("handles async adapter with async finalizer", () => {
-    const Port = createPort<Service>({ name: "AsyncWithFinalizer" });
+    const Port = port<Service>()({ name: "AsyncWithFinalizer" });
     const cleanupOrder: string[] = [];
 
     const adapter = createAdapter({
@@ -73,9 +73,9 @@ describe("finalizer edge cases", () => {
   });
 
   it("handles multiple adapters with finalizers in correct order", () => {
-    const LoggerPort = createPort<Service>({ name: "Logger" });
-    const DatabasePort = createPort<Service>({ name: "Database" });
-    const CachePort = createPort<Service>({ name: "Cache" });
+    const LoggerPort = port<Service>()({ name: "Logger" });
+    const DatabasePort = port<Service>()({ name: "Database" });
+    const CachePort = port<Service>()({ name: "Cache" });
 
     const LoggerAdapter = createAdapter({
       provides: LoggerPort,
@@ -110,8 +110,8 @@ describe("finalizer edge cases", () => {
   });
 
   it("inspection warns about disposal order when finalizer depends on non-finalizer", () => {
-    const ConfigPort = createPort<Service>({ name: "Config" });
-    const DatabasePort = createPort<Service>({ name: "Database" });
+    const ConfigPort = port<Service>()({ name: "Config" });
+    const DatabasePort = port<Service>()({ name: "Database" });
 
     // Config has NO finalizer
     const ConfigAdapter = createAdapter({
@@ -140,8 +140,8 @@ describe("finalizer edge cases", () => {
   });
 
   it("handles finalizer that returns void vs Promise<void>", () => {
-    const Port1 = createPort<Service>({ name: "SyncFinalizer" });
-    const Port2 = createPort<Service>({ name: "AsyncFinalizer" });
+    const Port1 = port<Service>()({ name: "SyncFinalizer" });
+    const Port2 = port<Service>()({ name: "AsyncFinalizer" });
 
     const syncAdapter = createAdapter({
       provides: Port1,
@@ -255,10 +255,10 @@ describe("deep nesting boundary tests", () => {
 
   it("handles diamond pattern at depth 2", () => {
     // Create a diamond: DiamondRoot -> [DiamondA, DiamondB] -> DiamondLeaf
-    const DiamondRootPort = createPort<Service>({ name: "DiamondRoot" });
-    const DiamondLeafPort = createPort<Service>({ name: "DiamondLeaf" });
-    const DiamondAPort = createPort<Service>({ name: "DiamondA" });
-    const DiamondBPort = createPort<Service>({ name: "DiamondB" });
+    const DiamondRootPort = port<Service>()({ name: "DiamondRoot" });
+    const DiamondLeafPort = port<Service>()({ name: "DiamondLeaf" });
+    const DiamondAPort = port<Service>()({ name: "DiamondA" });
+    const DiamondBPort = port<Service>()({ name: "DiamondB" });
 
     const rootAdapter = createAdapter({
       provides: DiamondRootPort,
@@ -309,7 +309,7 @@ describe("deep nesting boundary tests", () => {
 describe("boundary value tests", () => {
   describe("requires array boundaries", () => {
     it("handles empty requires array", () => {
-      const Port = createPort<Service>({ name: "NoReqs" });
+      const Port = port<Service>()({ name: "NoReqs" });
 
       const adapter = createAdapter({
         provides: Port,
@@ -322,8 +322,8 @@ describe("boundary value tests", () => {
     });
 
     it("handles single requirement", () => {
-      const DepPort = createPort<Service>({ name: "Dep" });
-      const Port = createPort<Service>({ name: "OneReq" });
+      const DepPort = port<Service>()({ name: "Dep" });
+      const Port = port<Service>()({ name: "OneReq" });
 
       const adapter = createAdapter({
         provides: Port,
@@ -337,7 +337,7 @@ describe("boundary value tests", () => {
 
     it("handles 10 requirements", () => {
       const deps = Array.from({ length: 10 }, (_, i) => createServicePort(`Dep${i}`));
-      const Port = createPort<Service>({ name: "ManyReqs" });
+      const Port = port<Service>()({ name: "ManyReqs" });
 
       const adapter = createAdapter({
         provides: Port,
@@ -360,7 +360,7 @@ describe("boundary value tests", () => {
     });
 
     it("handles graph with 1 adapter", () => {
-      const Port = createPort<Service>({ name: "Single" });
+      const Port = port<Service>()({ name: "Single" });
       const adapter = createAdapter({
         provides: Port,
         requires: [],
@@ -392,7 +392,7 @@ describe("boundary value tests", () => {
 
   describe("lifetime boundaries", () => {
     it("accepts singleton lifetime", () => {
-      const Port = createPort<Service>({ name: "Singleton" });
+      const Port = port<Service>()({ name: "Singleton" });
 
       const adapter = createAdapter({
         provides: Port,
@@ -405,7 +405,7 @@ describe("boundary value tests", () => {
     });
 
     it("accepts scoped lifetime", () => {
-      const Port = createPort<Service>({ name: "Scoped" });
+      const Port = port<Service>()({ name: "Scoped" });
 
       const adapter = createAdapter({
         provides: Port,
@@ -418,7 +418,7 @@ describe("boundary value tests", () => {
     });
 
     it("accepts transient lifetime", () => {
-      const Port = createPort<Service>({ name: "Transient" });
+      const Port = port<Service>()({ name: "Transient" });
 
       const adapter = createAdapter({
         provides: Port,
@@ -438,7 +438,7 @@ describe("boundary value tests", () => {
 
 describe("error path coverage", () => {
   it("factory returning undefined at runtime", () => {
-    const Port = createPort<Service>({ name: "Undefined" });
+    const Port = port<Service>()({ name: "Undefined" });
 
     // TypeScript would catch this, but testing runtime behavior
     const adapter = createAdapter({
@@ -454,7 +454,7 @@ describe("error path coverage", () => {
 
   it("handles port name with special characters", () => {
     // Port names should be alphanumeric, but test edge cases
-    const Port = createPort<Service>({ name: "Port_With_Underscores" });
+    const Port = port<Service>()({ name: "Port_With_Underscores" });
 
     const adapter = createAdapter({
       provides: Port,
@@ -468,7 +468,7 @@ describe("error path coverage", () => {
 
   it("handles very long port name", () => {
     const longName = "A".repeat(100);
-    const Port = createPort<Service>({ name: longName });
+    const Port = port<Service>()({ name: longName });
 
     const adapter = createAdapter({
       provides: Port,
@@ -481,7 +481,7 @@ describe("error path coverage", () => {
   });
 
   it("graph.adapters is frozen (immutable)", () => {
-    const Port = createPort<Service>({ name: "Frozen" });
+    const Port = port<Service>()({ name: "Frozen" });
     const adapter = createAdapter({
       provides: Port,
       requires: [],
@@ -496,8 +496,8 @@ describe("error path coverage", () => {
   });
 
   it("builder is immutable after provide()", () => {
-    const Port1 = createPort<Service>({ name: "First" });
-    const Port2 = createPort<Service>({ name: "Second" });
+    const Port1 = port<Service>()({ name: "First" });
+    const Port2 = port<Service>()({ name: "Second" });
 
     const adapter1 = createAdapter({
       provides: Port1,
@@ -530,7 +530,7 @@ describe("error path coverage", () => {
 
 describe("clonable flag edge cases", () => {
   it("defaults to false when not specified", () => {
-    const Port = createPort<Service>({ name: "DefaultClonable" });
+    const Port = port<Service>()({ name: "DefaultClonable" });
 
     const adapter = createAdapter({
       provides: Port,
@@ -543,7 +543,7 @@ describe("clonable flag edge cases", () => {
   });
 
   it("preserves true when explicitly set", () => {
-    const Port = createPort<Service>({ name: "ExplicitClonable" });
+    const Port = port<Service>()({ name: "ExplicitClonable" });
 
     const adapter = createAdapter({
       provides: Port,
@@ -557,7 +557,7 @@ describe("clonable flag edge cases", () => {
   });
 
   it("preserves false when explicitly set", () => {
-    const Port = createPort<Service>({ name: "ExplicitNotClonable" });
+    const Port = port<Service>()({ name: "ExplicitNotClonable" });
 
     const adapter = createAdapter({
       provides: Port,
@@ -577,7 +577,7 @@ describe("clonable flag edge cases", () => {
 
 describe("GraphBuilder.validate()", () => {
   it("returns valid:true for complete graph", () => {
-    const Port = createPort<Service>({ name: "ValidA" });
+    const Port = port<Service>()({ name: "ValidA" });
 
     const adapter = createAdapter({
       provides: Port,
@@ -596,8 +596,8 @@ describe("GraphBuilder.validate()", () => {
   });
 
   it("returns valid:false for incomplete graph", () => {
-    const Dep = createPort<Service>({ name: "ValidateDep" });
-    const Port = createPort<Service>({ name: "ValidateConsumer" });
+    const Dep = port<Service>()({ name: "ValidateDep" });
+    const Port = port<Service>()({ name: "ValidateConsumer" });
 
     const adapter = createAdapter({
       provides: Port,
@@ -619,7 +619,7 @@ describe("GraphBuilder.validate()", () => {
     // Note: disposal warnings are generated by inspectGraph when a transient
     // depends on a singleton with finalizer, but those are collected via
     // inspection.disposalWarnings. For this test, we verify the structure.
-    const Port = createPort<Service>({ name: "WarnTest" });
+    const Port = port<Service>()({ name: "WarnTest" });
 
     const adapter = createAdapter({
       provides: Port,
@@ -636,8 +636,8 @@ describe("GraphBuilder.validate()", () => {
   });
 
   it("provides suggestions for unsatisfied requirements", () => {
-    const Dep = createPort<Service>({ name: "SuggestDep" });
-    const Port = createPort<Service>({ name: "SuggestConsumer" });
+    const Dep = port<Service>()({ name: "SuggestDep" });
+    const Port = port<Service>()({ name: "SuggestConsumer" });
 
     const adapter = createAdapter({
       provides: Port,
@@ -653,7 +653,7 @@ describe("GraphBuilder.validate()", () => {
   });
 
   it("returns frozen result", () => {
-    const Port = createPort<Service>({ name: "FrozenResult" });
+    const Port = port<Service>()({ name: "FrozenResult" });
 
     const adapter = createAdapter({
       provides: Port,
@@ -670,8 +670,8 @@ describe("GraphBuilder.validate()", () => {
   });
 
   it("does not freeze the builder", () => {
-    const Port1 = createPort<Service>({ name: "NoFreeze1" });
-    const Port2 = createPort<Service>({ name: "NoFreeze2" });
+    const Port1 = port<Service>()({ name: "NoFreeze1" });
+    const Port2 = port<Service>()({ name: "NoFreeze2" });
 
     const adapter1 = createAdapter({
       provides: Port1,
@@ -700,9 +700,9 @@ describe("GraphBuilder.validate()", () => {
   });
 
   it("reports max chain depth", () => {
-    const A = createPort<Service>({ name: "DepthA" });
-    const B = createPort<Service>({ name: "DepthB" });
-    const C = createPort<Service>({ name: "DepthC" });
+    const A = port<Service>()({ name: "DepthA" });
+    const B = port<Service>()({ name: "DepthB" });
+    const C = port<Service>()({ name: "DepthC" });
 
     const adapterA = createAdapter({
       provides: A,

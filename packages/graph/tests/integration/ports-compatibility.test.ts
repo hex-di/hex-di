@@ -5,13 +5,13 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createAdapter, createPort, type InferService } from "@hex-di/core";
+import { port, createAdapter, type InferService } from "@hex-di/core";
 import { GraphBuilder } from "../../src/index.js";
 
 describe("Integration: @hex-di/ports compatibility", () => {
   it("ports created with createPort work seamlessly with graph", () => {
     // Use types directly from @hex-di/ports
-    const CustomPort = createPort<{ doSomething(): void }>({ name: "Custom" });
+    const CustomPort = port<{ doSomething(): void }>()({ name: "Custom" });
 
     type PortType = typeof CustomPort;
     type ServiceType = InferService<PortType>;
@@ -48,9 +48,9 @@ describe("Integration: @hex-di/ports compatibility", () => {
       methodC(a: ServiceA, b: ServiceB): boolean;
     }
 
-    const PortA = createPort<ServiceA>({ name: "ServiceA" });
-    const PortB = createPort<ServiceB>({ name: "ServiceB" });
-    const PortC = createPort<ServiceC>({ name: "ServiceC" });
+    const PortA = port<ServiceA>()({ name: "ServiceA" });
+    const PortB = port<ServiceB>()({ name: "ServiceB" });
+    const PortC = port<ServiceC>()({ name: "ServiceC" });
 
     const adapterA = createAdapter({
       provides: PortA,

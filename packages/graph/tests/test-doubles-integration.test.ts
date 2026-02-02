@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 import {
@@ -241,8 +241,8 @@ describe("test doubles: sequence verification", () => {
     const sequenceTracker = createCallSequenceTracker();
 
     // Create simple ports for this test
-    const InitLoggerPort = createPort<{ init: () => void }, "InitLogger">({ name: "InitLogger" });
-    const InitDbPort = createPort<{ init: () => void }, "InitDb">({ name: "InitDb" });
+    const InitLoggerPort = port<{ init: () => void }>()({ name: "InitLogger" });
+    const InitDbPort = port<{ init: () => void }>()({ name: "InitDb" });
 
     // Create adapters that manually track calls
     const LoggerAdapter = createAdapter({
@@ -427,11 +427,11 @@ describe("test doubles: multi-adapter graphs", () => {
   it("tests dependency chain with tracked initialization", () => {
     const sequenceTracker = createCallSequenceTracker();
 
-    const TrackedLoggerPort = createPort<{ log: (msg: string) => void }, "TrackedLogger">({
+    const TrackedLoggerPort = port<{ log: (msg: string) => void }>()({
       name: "TrackedLogger",
     });
-    const TrackedDbPort = createPort<{ query: () => void }, "TrackedDb">({ name: "TrackedDb" });
-    const TrackedUserServicePort = createPort<{ getUser: () => void }, "TrackedUserService">({
+    const TrackedDbPort = port<{ query: () => void }>()({ name: "TrackedDb" });
+    const TrackedUserServicePort = port<{ getUser: () => void }>()({
       name: "TrackedUserService",
     });
 

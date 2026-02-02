@@ -12,15 +12,15 @@
  * runs unconditionally.
  */
 import { describe, expect, it } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { buildGraph, buildGraphFragment, validateBuildable } from "../src/builder/builder-build.js";
 
 // =============================================================================
 // Test Fixtures
 // =============================================================================
 
-const LoggerPort = createPort<{ log: (msg: string) => void }, "Logger">({ name: "Logger" });
-const DbPort = createPort<{ query: () => string }, "Db">({ name: "Db" });
+const LoggerPort = port<{ log: (msg: string) => void }>()({ name: "Logger" });
+const DbPort = port<{ query: () => string }>()({ name: "Db" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,
@@ -37,8 +37,8 @@ const DbAdapter = createAdapter({
 });
 
 // Captive dependency: singleton depends on scoped
-const ScopedPort = createPort<{ getData: () => string }, "Scoped">({ name: "Scoped" });
-const CaptiveSingletonPort = createPort<{ process: () => void }, "CaptiveSingleton">({
+const ScopedPort = port<{ getData: () => string }>()({ name: "Scoped" });
+const CaptiveSingletonPort = port<{ process: () => void }>()({
   name: "CaptiveSingleton",
 });
 

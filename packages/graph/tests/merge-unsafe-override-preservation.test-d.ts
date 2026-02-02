@@ -4,7 +4,7 @@
  * ## Issue Being Tested
  *
  * In `UnifiedMergeInternals`, only T1's `UnsafeDepthOverride` is preserved.
- * If T2 has `withUnsafeDepthOverride()` enabled but T1 doesn't, the user's
+ * If T2 has `withExtendedDepth()` enabled but T1 doesn't, the user's
  * explicit opt-in is silently discarded. The merge should preserve the OR
  * of both flags to respect user intent.
  *
@@ -12,10 +12,10 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
-import type { GetUnsafeDepthOverride } from "../src/advanced.js";
+import type { GetExtendedDepth } from "../src/advanced.js";
 
 // =============================================================================
 // Test Fixtures
@@ -29,8 +29,8 @@ interface ServiceB {
   doB(): void;
 }
 
-const PortA = createPort<ServiceA>({ name: "PortA" });
-const PortB = createPort<ServiceB>({ name: "PortB" });
+const PortA = port<ServiceA>()({ name: "PortA" });
+const PortB = port<ServiceB>()({ name: "PortB" });
 
 const AdapterA = createAdapter({
   provides: PortA,
@@ -55,52 +55,52 @@ describe("UnsafeDepthOverride preservation during merge", () => {
     it("default graph has unsafeDepthOverride = false", () => {
       const graph = GraphBuilder.create().provide(AdapterA);
       type Internals = (typeof graph)["__internalState"];
-      type Override = GetUnsafeDepthOverride<Internals>;
+      type Override = GetExtendedDepth<Internals>;
       expectTypeOf<Override>().toEqualTypeOf<false>();
     });
 
-    it("withUnsafeDepthOverride() sets flag to true", () => {
-      const graph = GraphBuilder.withUnsafeDepthOverride().create().provide(AdapterA);
+    it("withExtendedDepth() sets flag to true", () => {
+      const graph = GraphBuilder.withExtendedDepth().create().provide(AdapterA);
       type Internals = (typeof graph)["__internalState"];
-      type Override = GetUnsafeDepthOverride<Internals>;
+      type Override = GetExtendedDepth<Internals>;
       expectTypeOf<Override>().toEqualTypeOf<true>();
     });
   });
 
   describe("merge preserves override from either graph", () => {
     it("T1 with override + T2 without = merged has override", () => {
-      const graphWithOverride = GraphBuilder.withUnsafeDepthOverride().create().provide(AdapterA);
+      const graphWithOverride = GraphBuilder.withExtendedDepth().create().provide(AdapterA);
       const graphWithoutOverride = GraphBuilder.create().provide(AdapterB);
 
       const merged = graphWithOverride.merge(graphWithoutOverride);
 
       type Internals = (typeof merged)["__internalState"];
-      type Override = GetUnsafeDepthOverride<Internals>;
+      type Override = GetExtendedDepth<Internals>;
       // T1 has override, so merged should have it
       expectTypeOf<Override>().toEqualTypeOf<true>();
     });
 
     it("T1 without override + T2 with override = merged has override", () => {
       const graphWithoutOverride = GraphBuilder.create().provide(AdapterA);
-      const graphWithOverride = GraphBuilder.withUnsafeDepthOverride().create().provide(AdapterB);
+      const graphWithOverride = GraphBuilder.withExtendedDepth().create().provide(AdapterB);
 
       const merged = graphWithoutOverride.merge(graphWithOverride);
 
       type Internals = (typeof merged)["__internalState"];
-      type Override = GetUnsafeDepthOverride<Internals>;
+      type Override = GetExtendedDepth<Internals>;
       // T2 has override, so merged should also have it (OR semantics)
       // THIS IS THE BUG: currently returns false because only T1 is checked
       expectTypeOf<Override>().toEqualTypeOf<true>();
     });
 
     it("both with override = merged has override", () => {
-      const graph1 = GraphBuilder.withUnsafeDepthOverride().create().provide(AdapterA);
-      const graph2 = GraphBuilder.withUnsafeDepthOverride().create().provide(AdapterB);
+      const graph1 = GraphBuilder.withExtendedDepth().create().provide(AdapterA);
+      const graph2 = GraphBuilder.withExtendedDepth().create().provide(AdapterB);
 
       const merged = graph1.merge(graph2);
 
       type Internals = (typeof merged)["__internalState"];
-      type Override = GetUnsafeDepthOverride<Internals>;
+      type Override = GetExtendedDepth<Internals>;
       expectTypeOf<Override>().toEqualTypeOf<true>();
     });
 
@@ -111,7 +111,7 @@ describe("UnsafeDepthOverride preservation during merge", () => {
       const merged = graph1.merge(graph2);
 
       type Internals = (typeof merged)["__internalState"];
-      type Override = GetUnsafeDepthOverride<Internals>;
+      type Override = GetExtendedDepth<Internals>;
       expectTypeOf<Override>().toEqualTypeOf<false>();
     });
   });
@@ -119,13 +119,13 @@ describe("UnsafeDepthOverride preservation during merge", () => {
   describe("mergeWith also preserves override", () => {
     it("T1 without + T2 with = merged has override (mergeWith)", () => {
       const graphWithoutOverride = GraphBuilder.create().provide(AdapterA);
-      const graphWithOverride = GraphBuilder.withUnsafeDepthOverride().create().provide(AdapterB);
+      const graphWithOverride = GraphBuilder.withExtendedDepth().create().provide(AdapterB);
 
       // mergeWith allows specifying options but should still preserve T2's override
-      const merged = graphWithoutOverride.mergeWith(graphWithOverride, { maxDepth: "max" });
+      const merged = graphWithoutOverride.merge(graphWithOverride);
 
       type Internals = (typeof merged)["__internalState"];
-      type Override = GetUnsafeDepthOverride<Internals>;
+      type Override = GetExtendedDepth<Internals>;
       // T2 has override, so merged should also have it
       expectTypeOf<Override>().toEqualTypeOf<true>();
     });

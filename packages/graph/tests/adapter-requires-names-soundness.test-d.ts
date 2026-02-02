@@ -17,7 +17,7 @@
  */
 
 import { describe, it, expectTypeOf } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import type { AdapterRequiresNames } from "../src/validation/types/adapter-extraction.js";
 import type { MalformedAdapterError } from "../src/validation/types/captive/errors.js";
@@ -33,8 +33,8 @@ interface ServiceB {
   doB(): void;
 }
 
-const PortA = createPort<ServiceA>({ name: "PortA" });
-const PortB = createPort<ServiceB>({ name: "PortB" });
+const PortA = port<ServiceA>()({ name: "PortA" });
+const PortB = port<ServiceB>()({ name: "PortB" });
 
 // Valid adapter with no requirements
 const NoRequiresAdapter = createAdapter({

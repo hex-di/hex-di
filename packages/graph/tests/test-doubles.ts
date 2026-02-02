@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import { createAdapter, type Lifetime, type Port } from "@hex-di/core";
+import { createAdapter, type Adapter, type Lifetime, type Port } from "@hex-di/core";
 import { nextSequence } from "./utils/sequence.js";
 
 // =============================================================================
@@ -742,7 +742,7 @@ export interface MockAdapterOptions<TPort> {
 export function createMockAdapter<TService extends object, TName extends string>(
   port: Port<TService, TName>,
   options: MockAdapterOptions<TService> = {}
-) {
+): Adapter<Port<TService, TName>, never, Lifetime, "sync" | "async", boolean> {
   const { lifetime = "singleton", clonable = false, async: isAsync = false } = options;
 
   // Create a stub implementation that returns empty/noop values
@@ -757,20 +757,24 @@ export function createMockAdapter<TService extends object, TName extends string>
     },
   });
 
+  type ReturnType = Adapter<Port<TService, TName>, never, Lifetime, "sync" | "async", boolean>;
+
   if (isAsync) {
+    // Cast needed because createAdapter returns EnforceAsyncLifetime which is wider than Lifetime
     return createAdapter({
       provides: port,
       requires: [],
       clonable,
       factory: async () => stubImplementation,
-    });
+    }) as ReturnType;
   }
 
+  // Cast needed because createAdapter returns EnforceAsyncLifetime which is wider than Lifetime
   return createAdapter({
     provides: port,
     requires: [],
     lifetime,
     clonable,
     factory: () => stubImplementation,
-  });
+  }) as ReturnType;
 }

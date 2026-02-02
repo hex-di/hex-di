@@ -15,7 +15,7 @@
  */
 
 import { bench, describe } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 
@@ -24,16 +24,16 @@ import { GraphBuilder } from "../src/index.js";
 // =============================================================================
 
 // Pre-create ports for benchmarks
-const Port0 = createPort<object>({ name: "Port0" });
-const Port1 = createPort<object>({ name: "Port1" });
-const Port2 = createPort<object>({ name: "Port2" });
-const Port3 = createPort<object>({ name: "Port3" });
-const Port4 = createPort<object>({ name: "Port4" });
-const Port5 = createPort<object>({ name: "Port5" });
-const Port6 = createPort<object>({ name: "Port6" });
-const Port7 = createPort<object>({ name: "Port7" });
-const Port8 = createPort<object>({ name: "Port8" });
-const Port9 = createPort<object>({ name: "Port9" });
+const Port0 = port<object>()({ name: "Port0" });
+const Port1 = port<object>()({ name: "Port1" });
+const Port2 = port<object>()({ name: "Port2" });
+const Port3 = port<object>()({ name: "Port3" });
+const Port4 = port<object>()({ name: "Port4" });
+const Port5 = port<object>()({ name: "Port5" });
+const Port6 = port<object>()({ name: "Port6" });
+const Port7 = port<object>()({ name: "Port7" });
+const Port8 = port<object>()({ name: "Port8" });
+const Port9 = port<object>()({ name: "Port9" });
 
 // Pre-create adapters for benchmarks
 const Adapter0 = createAdapter({
@@ -107,11 +107,11 @@ const Adapter9 = createAdapter({
 });
 
 // Chained adapters (each depends on previous)
-const ChainPort0 = createPort<object>({ name: "ChainPort0" });
-const ChainPort1 = createPort<object>({ name: "ChainPort1" });
-const ChainPort2 = createPort<object>({ name: "ChainPort2" });
-const ChainPort3 = createPort<object>({ name: "ChainPort3" });
-const ChainPort4 = createPort<object>({ name: "ChainPort4" });
+const ChainPort0 = port<object>()({ name: "ChainPort0" });
+const ChainPort1 = port<object>()({ name: "ChainPort1" });
+const ChainPort2 = port<object>()({ name: "ChainPort2" });
+const ChainPort3 = port<object>()({ name: "ChainPort3" });
+const ChainPort4 = port<object>()({ name: "ChainPort4" });
 
 const ChainAdapter0 = createAdapter({
   provides: ChainPort0,

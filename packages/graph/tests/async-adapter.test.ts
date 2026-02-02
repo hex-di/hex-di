@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 
 // =============================================================================
@@ -41,11 +41,11 @@ interface UserService {
   getUser(id: string): Promise<{ id: string; name: string }>;
 }
 
-const LoggerPort = createPort<Logger>({ name: "Logger" });
-const ConfigPort = createPort<Config>({ name: "Config" });
-const DatabasePort = createPort<Database>({ name: "Database" });
-const CachePort = createPort<Cache>({ name: "Cache" });
-const UserServicePort = createPort<UserService>({ name: "UserService" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const ConfigPort = port<Config>()({ name: "Config" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const CachePort = port<Cache>()({ name: "Cache" });
+const UserServicePort = port<UserService>()({ name: "UserService" });
 
 // =============================================================================
 // Async Adapter Creation Tests
@@ -138,7 +138,7 @@ describe("GraphBuilder with async adapters", () => {
       factory: async () => ({ query: async () => ({}), isConnected: true }),
     });
 
-    const builder = GraphBuilder.create().provide(SyncLogger).provideAsync(AsyncDatabase);
+    const builder = GraphBuilder.create().provide(SyncLogger).provide(AsyncDatabase);
 
     // Verify async adapter is tracked at runtime
     const inspection = builder.inspect();
@@ -167,8 +167,8 @@ describe("GraphBuilder with async adapters", () => {
 
     const graph = GraphBuilder.create()
       .provide(SyncLogger)
-      .provideAsync(AsyncConfig)
-      .provideAsync(AsyncDatabase)
+      .provide(AsyncConfig)
+      .provide(AsyncDatabase)
       .build();
 
     expect(graph.adapters).toHaveLength(3);
@@ -190,7 +190,7 @@ describe("GraphBuilder with async adapters", () => {
     });
 
     // Build should succeed when all dependencies are satisfied
-    const graph = GraphBuilder.create().provide(SyncLogger).provideAsync(AsyncDatabase).build();
+    const graph = GraphBuilder.create().provide(SyncLogger).provide(AsyncDatabase).build();
 
     expect(graph.adapters).toHaveLength(2);
   });
@@ -202,7 +202,7 @@ describe("GraphBuilder with async adapters", () => {
       factory: async () => ({ get: () => "value" }),
     });
 
-    const builder = GraphBuilder.create().provideAsync(AsyncConfig);
+    const builder = GraphBuilder.create().provide(AsyncConfig);
     const inspection = builder.inspect();
 
     expect(inspection.adapterCount).toBe(1);

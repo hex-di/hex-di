@@ -17,7 +17,7 @@
  */
 
 import { describe, it, expectTypeOf } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder, type InferGraphProvides, type InferGraphRequires } from "../src/index.js";
 import type { UnsatisfiedDependencies } from "../src/advanced.js";
 import type { IsSatisfied } from "../src/advanced.js";
@@ -36,9 +36,9 @@ interface Cache {
   get(key: string): unknown;
 }
 
-const LoggerPort = createPort<Logger>({ name: "Logger" });
-const DatabasePort = createPort<Database>({ name: "Database" });
-const CachePort = createPort<Cache>({ name: "Cache" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const CachePort = port<Cache>()({ name: "Cache" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,
@@ -118,7 +118,7 @@ describe("soundness: provide tracks dependencies", () => {
 describe("soundness: cycle detection", () => {
   it("detects self-referential cycle (A -> A)", () => {
     // Create a port that requires itself
-    const SelfPort = createPort<object>({ name: "Self" });
+    const SelfPort = port<object>()({ name: "Self" });
     const SelfAdapter = createAdapter({
       provides: SelfPort,
       requires: [SelfPort],
@@ -134,8 +134,8 @@ describe("soundness: cycle detection", () => {
   });
 
   it("detects transitive cycle (A -> B -> A)", () => {
-    const PortA = createPort<object>({ name: "A" });
-    const PortB = createPort<object>({ name: "B" });
+    const PortA = port<object>()({ name: "A" });
+    const PortB = port<object>()({ name: "B" });
 
     const AdapterA = createAdapter({
       provides: PortA,
@@ -164,8 +164,8 @@ describe("soundness: cycle detection", () => {
 
 describe("soundness: captive dependency detection", () => {
   it("detects singleton depending on scoped", () => {
-    const ScopedPort = createPort<object>({ name: "ScopedService" });
-    const SingletonPort = createPort<object>({ name: "SingletonService" });
+    const ScopedPort = port<object>()({ name: "ScopedService" });
+    const SingletonPort = port<object>()({ name: "SingletonService" });
 
     const ScopedAdapter = createAdapter({
       provides: ScopedPort,
@@ -188,8 +188,8 @@ describe("soundness: captive dependency detection", () => {
   });
 
   it("allows scoped depending on singleton (valid)", () => {
-    const SingletonPort2 = createPort<object>({ name: "SingletonService2" });
-    const ScopedPort2 = createPort<object>({ name: "ScopedService2" });
+    const SingletonPort2 = port<object>()({ name: "SingletonService2" });
+    const ScopedPort2 = port<object>()({ name: "ScopedService2" });
 
     const SingletonAdapter2 = createAdapter({
       provides: SingletonPort2,
@@ -318,8 +318,8 @@ describe("soundness: IsSatisfied predicate", () => {
 describe("soundness: error message format", () => {
   it("self-dependency error starts with ERROR[HEX006]:", () => {
     // Self-dependency is now caught with HEX006 error (more specific than cycle error)
-    // Using provideFirstError() to get single short-circuited error
-    const SelfPort = createPort<object>({ name: "SelfRef" });
+    // provide() reports all errors together
+    const SelfPort = port<object>()({ name: "SelfRef" });
     const SelfAdapter = createAdapter({
       provides: SelfPort,
       requires: [SelfPort],
@@ -327,7 +327,7 @@ describe("soundness: error message format", () => {
       factory: _deps => ({}),
     });
 
-    const result = GraphBuilder.create().provideFirstError(SelfAdapter);
+    const result = GraphBuilder.create().provide(SelfAdapter);
 
     type ResultType = typeof result;
     // Check that it extends a string starting with "ERROR[HEX006]: Self-dependency"
@@ -338,8 +338,8 @@ describe("soundness: error message format", () => {
   });
 
   it("captive dependency error starts with ERROR[HEX003]:", () => {
-    const ScopedPort = createPort<object>({ name: "CaptiveScoped" });
-    const SingletonPort = createPort<object>({ name: "CaptiveSingleton" });
+    const ScopedPort = port<object>()({ name: "CaptiveScoped" });
+    const SingletonPort = port<object>()({ name: "CaptiveSingleton" });
 
     const ScopedAdapter = createAdapter({
       provides: ScopedPort,

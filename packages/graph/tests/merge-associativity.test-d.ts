@@ -26,7 +26,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 import type { GraphBuilderSignature } from "../src/builder/types/builder-signature.js";
@@ -36,7 +36,7 @@ import type { GraphBuilderSignature } from "../src/builder/types/builder-signatu
 // =============================================================================
 
 // Graph A: Logger
-const LoggerPort = createPort<{ log: () => void }, "Logger">({ name: "Logger" });
+const LoggerPort = port<{ log: () => void }>()({ name: "Logger" });
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,
   requires: [],
@@ -46,7 +46,7 @@ const LoggerAdapter = createAdapter({
 const graphA = GraphBuilder.create().provide(LoggerAdapter);
 
 // Graph B: Database
-const DatabasePort = createPort<{ query: () => void }, "Database">({ name: "Database" });
+const DatabasePort = port<{ query: () => void }>()({ name: "Database" });
 const DatabaseAdapter = createAdapter({
   provides: DatabasePort,
   requires: [],
@@ -56,7 +56,7 @@ const DatabaseAdapter = createAdapter({
 const graphB = GraphBuilder.create().provide(DatabaseAdapter);
 
 // Graph C: Cache
-const CachePort = createPort<{ get: () => void }, "Cache">({ name: "Cache" });
+const CachePort = port<{ get: () => void }>()({ name: "Cache" });
 const CacheAdapter = createAdapter({
   provides: CachePort,
   requires: [],

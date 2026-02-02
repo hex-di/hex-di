@@ -1,7 +1,7 @@
 /**
  * Type tests for DepthLimitWarning consistency between short-circuit and multi-error modes.
  *
- * The issue: When using `withUnsafeDepthOverride()`, the user is saying "I accept
+ * The issue: When using `withExtendedDepth()`, the user is saying "I accept
  * incomplete validation, let me proceed". In this case:
  * - DepthLimitError (default) should BLOCK the operation
  * - DepthLimitWarning (with override) should ALLOW the operation to proceed
@@ -11,7 +11,7 @@
  */
 import { describe, it, expectTypeOf } from "vitest";
 import { GraphBuilder, type Graph } from "../src/index.js";
-import { createAdapter, createPort } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 
 // =============================================================================
 // Test Fixtures - Deep chain to trigger depth exceeded
@@ -32,10 +32,10 @@ interface DepthServiceD {
 }
 
 // Create a chain of ports with unique names for this test
-const DepthTestPortA = createPort<DepthServiceA>({ name: "DepthTestA" });
-const DepthTestPortB = createPort<DepthServiceB>({ name: "DepthTestB" });
-const DepthTestPortC = createPort<DepthServiceC>({ name: "DepthTestC" });
-const DepthTestPortD = createPort<DepthServiceD>({ name: "DepthTestD" });
+const DepthTestPortA = port<DepthServiceA>()({ name: "DepthTestA" });
+const DepthTestPortB = port<DepthServiceB>()({ name: "DepthTestB" });
+const DepthTestPortC = port<DepthServiceC>()({ name: "DepthTestC" });
+const DepthTestPortD = port<DepthServiceD>()({ name: "DepthTestD" });
 
 // Chain: A -> B -> C -> D (depth 3)
 const DepthTestAdapterA = createAdapter({
@@ -75,7 +75,7 @@ describe("DepthLimitWarning should allow operation to proceed", () => {
     // With depth 2, checking A->B->C->D will exceed depth limit
     // But with unsafe override, it should proceed (warning, not error)
     const builder = GraphBuilder.withMaxDepth<2>()
-      .withUnsafeDepthOverride()
+      .withExtendedDepth()
       .create()
       .provide(DepthTestAdapterD)
       .provide(DepthTestAdapterC)
@@ -108,12 +108,12 @@ describe("DepthLimitWarning should allow operation to proceed", () => {
 
   it("short-circuit mode (provideFirstError) with unsafe override returns GraphBuilder", () => {
     const builder = GraphBuilder.withMaxDepth<2>()
-      .withUnsafeDepthOverride()
+      .withExtendedDepth()
       .create()
-      .provideFirstError(DepthTestAdapterD)
-      .provideFirstError(DepthTestAdapterC)
-      .provideFirstError(DepthTestAdapterB)
-      .provideFirstError(DepthTestAdapterA);
+      .provide(DepthTestAdapterD)
+      .provide(DepthTestAdapterC)
+      .provide(DepthTestAdapterB)
+      .provide(DepthTestAdapterA);
 
     // Should be a GraphBuilder, not an error/warning string
     type BuilderType = typeof builder;
@@ -127,10 +127,10 @@ describe("DepthLimitWarning should allow operation to proceed", () => {
   it("short-circuit mode WITHOUT unsafe override returns DepthLimitError", () => {
     const builder = GraphBuilder.withMaxDepth<2>()
       .create()
-      .provideFirstError(DepthTestAdapterD)
-      .provideFirstError(DepthTestAdapterC)
-      .provideFirstError(DepthTestAdapterB)
-      .provideFirstError(DepthTestAdapterA);
+      .provide(DepthTestAdapterD)
+      .provide(DepthTestAdapterC)
+      .provide(DepthTestAdapterB)
+      .provide(DepthTestAdapterA);
 
     // Should be an error string containing "ERROR[HEX007]"
     type BuilderType = typeof builder;
@@ -146,7 +146,7 @@ describe("DepthLimitWarning should allow operation to proceed", () => {
 describe("build() succeeds after warning-allowed provide()", () => {
   it("build() returns Graph when unsafe override allowed proceeding", () => {
     const builder = GraphBuilder.withMaxDepth<2>()
-      .withUnsafeDepthOverride()
+      .withExtendedDepth()
       .create()
       .provide(DepthTestAdapterD)
       .provide(DepthTestAdapterC)

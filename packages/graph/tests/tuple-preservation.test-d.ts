@@ -21,17 +21,17 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 
 // =============================================================================
 // Test Fixtures
 // =============================================================================
 
-const LoggerPort = createPort<{ log: () => void }, "Logger">({ name: "Logger" });
-const DatabasePort = createPort<{ query: () => void }, "Database">({ name: "Database" });
-const CachePort = createPort<{ get: () => void }, "Cache">({ name: "Cache" });
-const UserPort = createPort<{ getUser: () => void }, "User">({ name: "User" });
+const LoggerPort = port<{ log: () => void }>()({ name: "Logger" });
+const DatabasePort = port<{ query: () => void }>()({ name: "Database" });
+const CachePort = port<{ get: () => void }>()({ name: "Cache" });
+const UserPort = port<{ getUser: () => void }>()({ name: "User" });
 
 // =============================================================================
 // Tuple Preservation Tests

@@ -1,13 +1,13 @@
 import { expect, expectTypeOf, it } from "vitest";
 import {
-  createPort,
+  port,
   createAdapter,
-  type Port,
+  type DirectedPort,
   type Adapter,
   type InferAdapterProvides,
 } from "@hex-di/core";
 interface Logger {}
-const LoggerPort = createPort<Logger>({ name: "Logger" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
 type LoggerPortType = typeof LoggerPort;
 
 const LoggerAdapter = createAdapter({
@@ -19,7 +19,7 @@ const LoggerAdapter = createAdapter({
 
 it("minimal port check", () => {
   expect(LoggerPort).toBeDefined();
-  expectTypeOf<LoggerPortType>().toEqualTypeOf<Port<Logger, "Logger">>();
+  expectTypeOf<LoggerPortType>().toEqualTypeOf<DirectedPort<Logger, "Logger", "outbound">>();
 });
 
 it("adapter provides check", () => {

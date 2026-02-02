@@ -35,7 +35,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 import type { GraphBuilderSignature } from "../src/builder/types/builder-signature.js";
@@ -44,7 +44,7 @@ import type { GraphBuilderSignature } from "../src/builder/types/builder-signatu
 // Test Fixtures
 // =============================================================================
 
-const LoggerPort = createPort<{ log(msg: string): void }>({ name: "Logger" });
+const LoggerPort = port<{ log(msg: string): void }>()({ name: "Logger" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,

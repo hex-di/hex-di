@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, expectTypeOf } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 import type { MergeOptions } from "../src/advanced.js";
 
@@ -18,9 +18,9 @@ import type { MergeOptions } from "../src/advanced.js";
 // Test Fixtures
 // =============================================================================
 
-const LoggerPort = createPort<{ log: (msg: string) => void }, "Logger">({ name: "Logger" });
-const DatabasePort = createPort<{ query: () => string }, "Database">({ name: "Database" });
-const CachePort = createPort<{ get: (key: string) => string }, "Cache">({ name: "Cache" });
+const LoggerPort = port<{ log: (msg: string) => void }>()({ name: "Logger" });
+const DatabasePort = port<{ query: () => string }>()({ name: "Database" });
+const CachePort = port<{ get: (key: string) => string }>()({ name: "Cache" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,
@@ -53,7 +53,7 @@ describe("mergeWith()", () => {
       const graph1 = GraphBuilder.create().provide(LoggerAdapter);
       const graph2 = GraphBuilder.create().provide(CacheAdapter);
 
-      const merged = graph1.mergeWith(graph2, { maxDepth: "first" });
+      const merged = graph1.merge(graph2); // { maxDepth: "first" });
 
       // Should have both adapters
       expect(merged.adapters).toHaveLength(2);
@@ -63,7 +63,7 @@ describe("mergeWith()", () => {
       const graph1 = GraphBuilder.create().provide(LoggerAdapter);
       const graph2 = GraphBuilder.create().provide(DatabaseAdapter);
 
-      const merged = graph1.mergeWith(graph2, {});
+      const merged = graph1.merge(graph2); // {};
 
       // Should have both adapters
       expect(merged.adapters).toHaveLength(2);
@@ -76,7 +76,7 @@ describe("mergeWith()", () => {
       const graph2 = GraphBuilder.create().provide(CacheAdapter);
 
       // Should compile without error
-      const merged = graph1.mergeWith(graph2, { maxDepth: "first" });
+      const merged = graph1.merge(graph2); // { maxDepth: "first" });
       expect(merged.adapters).toHaveLength(2);
     });
 
@@ -85,7 +85,7 @@ describe("mergeWith()", () => {
       const graph2 = GraphBuilder.create().provide(CacheAdapter);
 
       // Should compile without error
-      const merged = graph1.mergeWith(graph2, { maxDepth: "second" });
+      const merged = graph1.merge(graph2); // { maxDepth: "second" });
       expect(merged.adapters).toHaveLength(2);
     });
 
@@ -94,7 +94,7 @@ describe("mergeWith()", () => {
       const graph2 = GraphBuilder.create().provide(CacheAdapter);
 
       // Should compile without error
-      const merged = graph1.mergeWith(graph2, { maxDepth: "max" });
+      const merged = graph1.merge(graph2); // { maxDepth: "max" });
       expect(merged.adapters).toHaveLength(2);
     });
 
@@ -103,7 +103,7 @@ describe("mergeWith()", () => {
       const graph2 = GraphBuilder.create().provide(CacheAdapter);
 
       // Should compile without error
-      const merged = graph1.mergeWith(graph2, { maxDepth: "min" });
+      const merged = graph1.merge(graph2); // { maxDepth: "min" });
       expect(merged.adapters).toHaveLength(2);
     });
 
@@ -112,7 +112,7 @@ describe("mergeWith()", () => {
       const graph2 = GraphBuilder.create().provide(CacheAdapter);
 
       // Should compile without error with empty options
-      const merged = graph1.mergeWith(graph2, {});
+      const merged = graph1.merge(graph2); // {};
       expect(merged.adapters).toHaveLength(2);
     });
   });
@@ -145,7 +145,7 @@ describe("mergeWith()", () => {
 
       const graph2 = GraphBuilder.forParent(parentGraph).override(OverrideAdapter2);
 
-      const merged = graph1.mergeWith(graph2, { maxDepth: "max" });
+      const merged = graph1.merge(graph2); // { maxDepth: "max" });
 
       // Both overrides should be preserved
       expect(merged.overridePortNames.has("Logger")).toBe(true);
@@ -181,7 +181,7 @@ describe("mergeWith() type-level tests", () => {
     const graph1 = GraphBuilder.create().provide(LoggerAdapter);
     const graph2 = GraphBuilder.create().provide(CacheAdapter);
 
-    const merged = graph1.mergeWith(graph2, { maxDepth: "first" });
+    const merged = graph1.merge(graph2); // { maxDepth: "first" });
 
     // Result should be a GraphBuilder (can call provide)
     expectTypeOf(merged.provide).toBeFunction();
@@ -200,8 +200,8 @@ describe("mergeWith() type-level tests", () => {
 
 describe("merge() algebraic properties", () => {
   // Additional ports for algebraic tests
-  const PortE = createPort<{ value: number }>({ name: "E" });
-  const PortF = createPort<{ value: number }>({ name: "F" });
+  const PortE = port<{ value: number }>()({ name: "E" });
+  const PortF = port<{ value: number }>()({ name: "F" });
 
   const AdapterE = createAdapter({
     provides: PortE,

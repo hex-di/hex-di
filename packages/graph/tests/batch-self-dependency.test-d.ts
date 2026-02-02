@@ -9,7 +9,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 import type {
@@ -21,9 +21,9 @@ import type {
 // Test Fixtures
 // =============================================================================
 
-const PortA = createPort<{ a: string }>({ name: "A" });
-const PortB = createPort<{ b: string }>({ name: "B" });
-const PortC = createPort<{ c: string }>({ name: "C" });
+const PortA = port<{ a: string }>()({ name: "A" });
+const PortB = port<{ b: string }>()({ name: "B" });
+const PortC = port<{ c: string }>()({ name: "C" });
 
 // Normal adapters (no self-dependency)
 const AdapterA = createAdapter({
@@ -101,7 +101,7 @@ describe("FindSelfDependencyPort", () => {
 
   it("returns first self-dependency port when multiple exist", () => {
     // Create another self-referential adapter
-    const PortD = createPort<{ d: string }>({ name: "D" });
+    const PortD = port<{ d: string }>()({ name: "D" });
     const SelfRefD = createAdapter({
       provides: PortD,
       requires: [PortD],

@@ -10,7 +10,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 import type {
@@ -31,8 +31,8 @@ interface Database {
   query(sql: string): Promise<unknown>;
 }
 
-const LoggerPort = createPort<Logger>({ name: "Logger" });
-const DatabasePort = createPort<Database>({ name: "Database" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
 
 // =============================================================================
 // Error Message Format Tests
@@ -161,8 +161,8 @@ describe("GraphBuilder produces consistent errors", () => {
   });
 
   it("circular error follows format", () => {
-    const PortA = createPort<{ doA(): void }>({ name: "A" });
-    const PortB = createPort<{ doB(): void }>({ name: "B" });
+    const PortA = port<{ doA(): void }>()({ name: "A" });
+    const PortB = port<{ doB(): void }>()({ name: "B" });
 
     const AdapterA = createAdapter({
       provides: PortA,
@@ -188,8 +188,8 @@ describe("GraphBuilder produces consistent errors", () => {
   });
 
   it("captive error follows format", () => {
-    const ScopedPort = createPort<{ doScoped(): void }>({ name: "Scoped" });
-    const SingletonPort = createPort<{ doSingleton(): void }>({ name: "Singleton" });
+    const ScopedPort = port<{ doScoped(): void }>()({ name: "Scoped" });
+    const SingletonPort = port<{ doSingleton(): void }>()({ name: "Singleton" });
 
     const ScopedAdapter = createAdapter({
       provides: ScopedPort,
@@ -221,8 +221,8 @@ describe("GraphBuilder produces consistent errors", () => {
 
 describe("Multi-error messages follow format", () => {
   it("multi-error starts with 'Multiple validation errors:'", () => {
-    const PortA = createPort<{ doA(): void }>({ name: "A" });
-    const PortB = createPort<{ doB(): void }>({ name: "B" });
+    const PortA = port<{ doA(): void }>()({ name: "A" });
+    const PortB = port<{ doB(): void }>()({ name: "B" });
 
     const AdapterA = createAdapter({
       provides: PortA,

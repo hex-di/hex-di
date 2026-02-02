@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 
 interface Service {
   name: string;
@@ -13,7 +13,7 @@ interface Service {
 
 describe("async factory error handling", () => {
   it("rejecting factory propagates error", async () => {
-    const FailingPort = createPort<Service>({ name: "Failing" });
+    const FailingPort = port<Service>()({ name: "Failing" });
 
     const failingAdapter = createAdapter({
       provides: FailingPort,
@@ -38,7 +38,7 @@ describe("async factory error handling", () => {
       }
     }
 
-    const FailingPort = createPort<Service>({ name: "FailingCustom" });
+    const FailingPort = port<Service>()({ name: "FailingCustom" });
 
     const failingAdapter = createAdapter({
       provides: FailingPort,
@@ -55,7 +55,7 @@ describe("async factory error handling", () => {
   });
 
   it("slow factory eventually resolves", async () => {
-    const SlowPort = createPort<Service>({ name: "Slow" });
+    const SlowPort = port<Service>()({ name: "Slow" });
     let resolveCount = 0;
 
     const slowAdapter = createAdapter({
@@ -78,7 +78,7 @@ describe("async factory error handling", () => {
   });
 
   it("factory can check abort flag pattern", async () => {
-    const AbortablePort = createPort<Service>({ name: "Abortable" });
+    const AbortablePort = port<Service>()({ name: "Abortable" });
 
     // Simulate an abort flag (common pattern without AbortController)
     let aborted = false;
@@ -102,7 +102,7 @@ describe("async factory error handling", () => {
   });
 
   it("conditional failure based on environment", async () => {
-    const EnvDependentPort = createPort<Service>({ name: "EnvDependent" });
+    const EnvDependentPort = port<Service>()({ name: "EnvDependent" });
 
     const createEnvAdapter = (shouldFail: boolean) =>
       createAdapter({
@@ -129,13 +129,13 @@ describe("async factory error handling", () => {
   });
 
   it("conditional failure based on dependency state", async () => {
-    const HealthCheckPort = createPort<Service>({ name: "HealthCheck" });
+    const HealthCheckPort = port<Service>()({ name: "HealthCheck" });
 
     interface MockDep {
       isHealthy: () => boolean;
     }
 
-    const DependencyPort = createPort<MockDep>({ name: "Dependency" });
+    const DependencyPort = port<MockDep>()({ name: "Dependency" });
 
     const healthCheckAdapter = createAdapter({
       provides: HealthCheckPort,
@@ -162,7 +162,7 @@ describe("async factory error handling", () => {
   });
 
   it("factory that rejects with non-Error value", async () => {
-    const WeirdRejectPort = createPort<Service>({ name: "WeirdReject" });
+    const WeirdRejectPort = port<Service>()({ name: "WeirdReject" });
 
     const weirdAdapter = createAdapter({
       provides: WeirdRejectPort,
@@ -177,7 +177,7 @@ describe("async factory error handling", () => {
   });
 
   it("factory retry pattern", async () => {
-    const RetryPort = createPort<Service>({ name: "Retry" });
+    const RetryPort = port<Service>()({ name: "Retry" });
     let attemptCount = 0;
     const MAX_RETRIES = 3;
     const SUCCEED_ON_ATTEMPT = 3;
@@ -216,7 +216,7 @@ describe("async factory error handling", () => {
   });
 
   it("factory partial initialization failure with cleanup", async () => {
-    const PartialPort = createPort<Service>({ name: "Partial" });
+    const PartialPort = port<Service>()({ name: "Partial" });
     let cleanupCalled = false;
     let resourceAllocated = false;
 
@@ -245,13 +245,13 @@ describe("async factory error handling", () => {
   });
 
   it("factory that fails on specific input", async () => {
-    const ValidatingPort = createPort<Service>({ name: "Validating" });
+    const ValidatingPort = port<Service>()({ name: "Validating" });
 
     interface Config {
       value: number;
     }
 
-    const ConfigPort = createPort<Config>({ name: "Config" });
+    const ConfigPort = port<Config>()({ name: "Config" });
 
     const validatingAdapter = createAdapter({
       provides: ValidatingPort,

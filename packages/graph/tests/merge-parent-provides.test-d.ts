@@ -18,7 +18,7 @@
  */
 
 import { describe, it, expectTypeOf } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 
@@ -39,10 +39,10 @@ interface Metrics {
   record(): void;
 }
 
-const LoggerPort = createPort<Logger>({ name: "Logger" });
-const DatabasePort = createPort<Database>({ name: "Database" });
-const CachePort = createPort<Cache>({ name: "Cache" });
-const MetricsPort = createPort<Metrics>({ name: "Metrics" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const CachePort = port<Cache>()({ name: "Cache" });
+const MetricsPort = port<Metrics>()({ name: "Metrics" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,

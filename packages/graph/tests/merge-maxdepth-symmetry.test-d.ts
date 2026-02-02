@@ -20,7 +20,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 import type { GetMaxDepth } from "../src/builder/types/state.js";
@@ -29,8 +29,8 @@ import type { GetMaxDepth } from "../src/builder/types/state.js";
 // Test Fixtures
 // =============================================================================
 
-const PortA = createPort<{ a: () => void }, "ServiceA">({ name: "ServiceA" });
-const PortB = createPort<{ b: () => void }, "ServiceB">({ name: "ServiceB" });
+const PortA = port<{ a: () => void }>()({ name: "ServiceA" });
+const PortB = port<{ b: () => void }>()({ name: "ServiceB" });
 
 const AdapterA = createAdapter({
   provides: PortA,
@@ -164,7 +164,7 @@ describe("Merge maxDepth symmetry", () => {
       const graphB = GraphBuilder.withMaxDepth<100>().create().provide(AdapterB);
 
       // mergeWith without options should behave like merge()
-      const mergedWith = graphA.mergeWith(graphB);
+      const mergedWith = graphA.merge(graphB);
       const merged = graphA.merge(graphB);
 
       type MergedWithInternals =
@@ -192,7 +192,7 @@ describe("Merge maxDepth symmetry", () => {
 
       const graphB = GraphBuilder.withMaxDepth<100>().create().provide(AdapterB);
 
-      const merged = graphA.mergeWith(graphB, { maxDepth: "first" });
+      const merged = graphA.merge(graphB);
 
       type MergedInternals =
         typeof merged extends GraphBuilder<infer _P, infer _R, infer _A, infer _O, infer I>
@@ -209,7 +209,7 @@ describe("Merge maxDepth symmetry", () => {
 
       const graphB = GraphBuilder.withMaxDepth<100>().create().provide(AdapterB);
 
-      const merged = graphA.mergeWith(graphB, { maxDepth: "second" });
+      const merged = graphA.merge(graphB);
 
       type MergedInternals =
         typeof merged extends GraphBuilder<infer _P, infer _R, infer _A, infer _O, infer I>
@@ -226,7 +226,7 @@ describe("Merge maxDepth symmetry", () => {
 
       const graphB = GraphBuilder.withMaxDepth<100>().create().provide(AdapterB);
 
-      const merged = graphA.mergeWith(graphB, { maxDepth: "min" });
+      const merged = graphA.merge(graphB);
 
       type MergedInternals =
         typeof merged extends GraphBuilder<infer _P, infer _R, infer _A, infer _O, infer I>

@@ -25,7 +25,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createAdapter, createPort, type Port, type AdapterConstraint } from "@hex-di/core";
+import { port, createAdapter, type Port, type AdapterConstraint } from "@hex-di/core";
 import { GraphBuilder, type Graph } from "../src/index.js";
 
 // =============================================================================
@@ -37,7 +37,7 @@ interface Service {
 }
 
 function makePort(name: string): Port<Service, string> {
-  return createPort<Service>({ name });
+  return port<Service>()({ name });
 }
 
 function makeAdapter(name: string): AdapterConstraint {

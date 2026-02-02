@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 import {
   buildDependencyMap,
@@ -13,14 +13,14 @@ import {
 } from "../src/advanced.js";
 
 // Test fixtures
-const ConfigPort = createPort<{ dbUrl: string }>({ name: "Config" });
-const LoggerPort = createPort<{ log: (msg: string) => void }, "Logger">({ name: "Logger" });
-const DatabasePort = createPort<{ query: (sql: string) => void }, "Database">({ name: "Database" });
-const CachePort = createPort<{ get: (key: string) => unknown }, "Cache">({ name: "Cache" });
-const UserRepoPort = createPort<{ find: (id: string) => unknown }, "UserRepo">({
+const ConfigPort = port<{ dbUrl: string }>()({ name: "Config" });
+const LoggerPort = port<{ log: (msg: string) => void }>()({ name: "Logger" });
+const DatabasePort = port<{ query: (sql: string) => void }>()({ name: "Database" });
+const CachePort = port<{ get: (key: string) => unknown }>()({ name: "Cache" });
+const UserRepoPort = port<{ find: (id: string) => unknown }>()({
   name: "UserRepo",
 });
-const UserServicePort = createPort<{ getUser: (id: string) => unknown }, "UserService">({
+const UserServicePort = port<{ getUser: (id: string) => unknown }>()({
   name: "UserService",
 });
 
@@ -138,8 +138,8 @@ describe("Graph Traversal Utilities", () => {
 
     it("returns null for cyclic graphs", () => {
       // Create circular dependency for testing
-      const APort = createPort<{ a: true }>({ name: "A" });
-      const BPort = createPort<{ b: true }>({ name: "B" });
+      const APort = port<{ a: true }>()({ name: "A" });
+      const BPort = port<{ b: true }>()({ name: "B" });
 
       // These would normally fail at compile time, but we test runtime behavior
       const adapters = [

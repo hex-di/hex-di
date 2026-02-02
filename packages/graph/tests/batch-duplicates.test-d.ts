@@ -5,7 +5,7 @@
  * adapters WITHIN a single batch, not just batch-vs-graph duplicates.
  */
 import { expectTypeOf, describe, it } from "vitest";
-import { createAdapter, createPort } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 import {
   type HasDuplicatesInBatch,
@@ -17,9 +17,9 @@ import {
 // Test Fixtures
 // =============================================================================
 
-const LoggerPort = createPort<{ log: (msg: string) => void }, "Logger">({ name: "Logger" });
-const DatabasePort = createPort<{ query: () => string }, "Database">({ name: "Database" });
-const CachePort = createPort<{ get: (key: string) => string }, "Cache">({ name: "Cache" });
+const LoggerPort = port<{ log: (msg: string) => void }>()({ name: "Logger" });
+const DatabasePort = port<{ query: () => string }>()({ name: "Database" });
+const CachePort = port<{ get: (key: string) => string }>()({ name: "Cache" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,

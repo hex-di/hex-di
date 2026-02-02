@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { parseGraphError } from "../src/advanced.js";
 import { GraphBuilder } from "../src/index.js";
 import { inspectGraph, GraphErrorCode } from "../src/advanced.js";
@@ -35,11 +35,11 @@ interface Config {
   get(key: string): string;
 }
 
-const LoggerPort = createPort<Logger>({ name: "Logger" });
-const DatabasePort = createPort<Database>({ name: "Database" });
-const CachePort = createPort<Cache>({ name: "Cache" });
-const UserServicePort = createPort<UserService>({ name: "UserService" });
-const ConfigPort = createPort<Config>({ name: "Config" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const CachePort = port<Cache>()({ name: "Cache" });
+const UserServicePort = port<UserService>()({ name: "UserService" });
+const ConfigPort = port<Config>()({ name: "Config" });
 
 // =============================================================================
 // GraphInspection Output Snapshots

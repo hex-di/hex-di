@@ -38,7 +38,7 @@
  * @packageDocumentation
  */
 
-import { createPort, createAdapter, type Lifetime } from "@hex-di/core";
+import { createAdapter, port, type Lifetime } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 import { __emptyDepGraphBrand, __emptyLifetimeMapBrand } from "../src/advanced.js";
 import { nextSequence } from "./utils/sequence.js";
@@ -219,32 +219,32 @@ export interface RequestContext {
 /**
  * Logger port for testing.
  */
-export const LoggerPort = createPort<Logger>({ name: "Logger" });
+export const LoggerPort = port<Logger>()({ name: "Logger" });
 
 /**
  * Database port for testing.
  */
-export const DatabasePort = createPort<Database>({ name: "Database" });
+export const DatabasePort = port<Database>()({ name: "Database" });
 
 /**
  * User service port for testing.
  */
-export const UserServicePort = createPort<UserService>({ name: "UserService" });
+export const UserServicePort = port<UserService>()({ name: "UserService" });
 
 /**
  * Configuration port for testing.
  */
-export const ConfigPort = createPort<ConfigService>({ name: "Config" });
+export const ConfigPort = port<ConfigService>()({ name: "Config" });
 
 /**
  * Cache port for testing.
  */
-export const CachePort = createPort<CacheService>({ name: "Cache" });
+export const CachePort = port<CacheService>()({ name: "Cache" });
 
 /**
  * Email port for testing.
  */
-export const EmailPort = createPort<EmailService>({ name: "Email" });
+export const EmailPort = port<EmailService>()({ name: "Email" });
 
 /**
  * Alias for EmailPort - used by integration tests.
@@ -254,49 +254,49 @@ export const EmailServicePort = EmailPort;
 /**
  * Config port (strict) for testing - always returns a value.
  */
-export const ConfigPortStrict = createPort<ConfigServiceStrict>({ name: "Config" });
+export const ConfigPortStrict = port<ConfigServiceStrict>()({ name: "Config" });
 
 /**
  * Cache port (simple) for testing - non-generic signatures.
  */
-export const CachePortSimple = createPort<CacheServiceSimple>({ name: "Cache" });
+export const CachePortSimple = port<CacheServiceSimple>()({ name: "Cache" });
 
 /**
  * Logger port (with error) for integration tests.
  */
-export const LoggerWithErrorPort = createPort<LoggerWithError>({ name: "Logger" });
+export const LoggerWithErrorPort = port<LoggerWithError>()({ name: "Logger" });
 
 /**
  * Config port (with typed getters) for integration tests.
  */
-export const ConfigWithTypesPort = createPort<ConfigWithTypes>({ name: "Config" });
+export const ConfigWithTypesPort = port<ConfigWithTypes>()({ name: "Config" });
 
 /**
  * User repository port for integration tests.
  */
-export const UserRepositoryPort = createPort<UserRepository>({ name: "UserRepository" });
+export const UserRepositoryPort = port<UserRepository>()({ name: "UserRepository" });
 
 /**
  * Notification service port for integration tests.
  */
-export const NotificationServicePort = createPort<NotificationService>({
+export const NotificationServicePort = port<NotificationService>()({
   name: "NotificationService",
 });
 
 /**
  * Full database port for integration tests.
  */
-export const DatabaseFullPort = createPort<DatabaseFull>({ name: "Database" });
+export const DatabaseFullPort = port<DatabaseFull>()({ name: "Database" });
 
 /**
  * Full user service port for integration tests.
  */
-export const UserServiceFullPort = createPort<UserServiceFull>({ name: "UserService" });
+export const UserServiceFullPort = port<UserServiceFull>()({ name: "UserService" });
 
 /**
  * Full cache port for integration tests.
  */
-export const CacheFullPort = createPort<CacheServiceFull>({ name: "Cache" });
+export const CacheFullPort = port<CacheServiceFull>()({ name: "Cache" });
 
 // =============================================================================
 // Cycle Testing Ports
@@ -306,10 +306,10 @@ export const CacheFullPort = createPort<CacheServiceFull>({ name: "Cache" });
  * Generic ports for cycle detection tests.
  * Named A/B/C/D to clearly show dependency chains.
  */
-export const PortA = createPort<ServiceA>({ name: "A" });
-export const PortB = createPort<ServiceB>({ name: "B" });
-export const PortC = createPort<ServiceC>({ name: "C" });
-export const PortD = createPort<ServiceD>({ name: "D" });
+export const PortA = port<ServiceA>()({ name: "A" });
+export const PortB = port<ServiceB>()({ name: "B" });
+export const PortC = port<ServiceC>()({ name: "C" });
+export const PortD = port<ServiceD>()({ name: "D" });
 
 // =============================================================================
 // Lifetime Testing Ports
@@ -318,7 +318,7 @@ export const PortD = createPort<ServiceD>({ name: "D" });
 /**
  * Request context port for scoped lifetime testing.
  */
-export const RequestContextPort = createPort<RequestContext>({ name: "RequestContext" });
+export const RequestContextPort = port<RequestContext>()({ name: "RequestContext" });
 
 // =============================================================================
 // Interface Aliases (for integration test compatibility)
@@ -658,7 +658,7 @@ export function createMultiMergeScenario() {
   const graph3 = GraphBuilder.create().provide(createUserServiceAdapter());
 
   // Graph 4: Config (independent)
-  const graph4 = GraphBuilder.create().provideAsync(createConfigAdapter());
+  const graph4 = GraphBuilder.create().provide(createConfigAdapter());
 
   return {
     graph1,

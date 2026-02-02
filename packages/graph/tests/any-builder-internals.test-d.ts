@@ -25,7 +25,7 @@ import type {
   GetLifetimeMap,
   GetParentProvides,
   GetMaxDepth,
-  GetUnsafeDepthOverride,
+  GetExtendedDepth,
   GetDepthExceededWarning,
   GetUncheckedUsed,
   WithDepGraph,
@@ -167,14 +167,14 @@ describe("Get* extractors using indexed access", () => {
     });
   });
 
-  describe("GetUnsafeDepthOverride", () => {
+  describe("GetExtendedDepth", () => {
     it("extracts TUnsafeDepthOverride correctly", () => {
-      type Result = GetUnsafeDepthOverride<CustomInternals>;
+      type Result = GetExtendedDepth<CustomInternals>;
       expectTypeOf<Result>().toEqualTypeOf<true>();
     });
 
     it("extracts false from DefaultInternals", () => {
-      type Result = GetUnsafeDepthOverride<DefaultInternals>;
+      type Result = GetExtendedDepth<DefaultInternals>;
       expectTypeOf<Result>().toEqualTypeOf<false>();
     });
   });
@@ -219,7 +219,7 @@ describe("With* transformers", () => {
       // Everything else should remain unchanged
       expectTypeOf<GetLifetimeMap<Result>>().toEqualTypeOf<EmptyLifetimeMap>();
       expectTypeOf<GetMaxDepth<Result>>().toEqualTypeOf<50>();
-      expectTypeOf<GetUnsafeDepthOverride<Result>>().toEqualTypeOf<false>();
+      expectTypeOf<GetExtendedDepth<Result>>().toEqualTypeOf<false>();
     });
   });
 
@@ -246,7 +246,7 @@ describe("With* transformers", () => {
 
       // Everything else should remain unchanged
       expectTypeOf<GetMaxDepth<Result>>().toEqualTypeOf<50>();
-      expectTypeOf<GetUnsafeDepthOverride<Result>>().toEqualTypeOf<false>();
+      expectTypeOf<GetExtendedDepth<Result>>().toEqualTypeOf<false>();
     });
   });
 });

@@ -3,7 +3,7 @@
  *
  * ## Problem (FIXED)
  *
- * When depth is exceeded with `withUnsafeDepthOverride()` enabled, the warning
+ * When depth is exceeded with `withExtendedDepth()` enabled, the warning
  * is tracked in `TInternalState.depthExceededWarning`, but this is buried in
  * internal state and not visible in IDE tooltips.
  *
@@ -17,7 +17,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 import type { IsNever } from "@hex-di/core";
@@ -26,10 +26,10 @@ import type { IsNever } from "@hex-di/core";
 // Test Fixtures
 // =============================================================================
 
-const PortA = createPort<{ a: string }>({ name: "A" });
-const PortB = createPort<{ b: string }>({ name: "B" });
-const PortC = createPort<{ c: string }>({ name: "C" });
-const PortD = createPort<{ d: string }>({ name: "D" });
+const PortA = port<{ a: string }>()({ name: "A" });
+const PortB = port<{ b: string }>()({ name: "B" });
+const PortC = port<{ c: string }>()({ name: "C" });
+const PortD = port<{ d: string }>()({ name: "D" });
 
 // Chain: A -> B -> C -> D (A requires B, B requires C, C requires D, D is leaf)
 // This is the same pattern as depth-warning-consistency.test-d.ts
@@ -102,7 +102,7 @@ describe("$depthWarnings phantom property", () => {
       // traverses A's deps (B) -> B's deps (C) -> C's deps (D) = depth 3
       // With maxDepth=2, this exceeds the limit
       const builder = GraphBuilder.withMaxDepth<2>()
-        .withUnsafeDepthOverride()
+        .withExtendedDepth()
         .create()
         .provide(AdapterD)
         .provide(AdapterC)
@@ -132,25 +132,5 @@ describe("$depthWarnings phantom property", () => {
         : false;
       expectTypeOf<AreEqual>().toEqualTypeOf<true>();
     });
-  });
-});
-
-// =============================================================================
-// $uncheckedUsed Visibility Tests
-// =============================================================================
-
-describe("$uncheckedUsed phantom property", () => {
-  it("should be false for normal provide()", () => {
-    const builder = GraphBuilder.create().provide(AdapterA);
-
-    type UncheckedUsed = (typeof builder)["$uncheckedUsed"];
-    expectTypeOf<UncheckedUsed>().toEqualTypeOf<false>();
-  });
-
-  it("should be true after provideUnchecked()", () => {
-    const builder = GraphBuilder.create().provideUnchecked(AdapterA);
-
-    type UncheckedUsed = (typeof builder)["$uncheckedUsed"];
-    expectTypeOf<UncheckedUsed>().toEqualTypeOf<true>();
   });
 });

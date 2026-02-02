@@ -10,6 +10,7 @@
 import {
   createPort as coreCreatePort,
   createAdapter,
+  port,
   type Port,
   type Adapter,
   type Lifetime,
@@ -107,7 +108,7 @@ export class TestContext {
    * Useful for creating test-specific ports.
    */
   createPort<TName extends string, TService extends object>(name: TName): Port<TService, TName> {
-    return coreCreatePort<TService, TName>({ name });
+    return coreCreatePort<TName, TService>({ name });
   }
 
   /**
@@ -142,7 +143,11 @@ export class TestContext {
     });
 
     // Track the adapter by port name for inspection
-    this.adapters.set(port.__portName, adapter);
+    // Cast needed because EnforceAsyncLifetime is a conditional type that doesn't simplify for generic TService
+    this.adapters.set(
+      port.__portName,
+      adapter as Adapter<Port<TService, TName>, never, Lifetime, "sync", false>
+    );
 
     // Return type needs assertion due to requires type complexity
     return adapter as Adapter<Port<TService, TName>, never, Lifetime, "sync", false>;

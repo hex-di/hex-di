@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createAdapter, createPort } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder, type Graph } from "../src/index.js";
 import {
   MissingDependencyError,

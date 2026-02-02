@@ -18,14 +18,14 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort, InferService } from "@hex-di/core";
+import { port, InferService } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 
 // =============================================================================
 // Test Fixtures
 // =============================================================================
 
-const LoggerPort = createPort<{ log: (msg: string) => void }, "Logger">({ name: "Logger" });
+const LoggerPort = port<{ log: (msg: string) => void }>()({ name: "Logger" });
 
 // =============================================================================
 // Factory Contract Validation Tests
@@ -111,13 +111,10 @@ describe("Factory contract validation at compile-time", () => {
 
   describe("Complex service types", () => {
     it("validates nested object types", () => {
-      const ComplexPort = createPort<
-        "Complex",
-        {
-          nested: { value: number };
-          method: () => string;
-        }
-      >("Complex");
+      const ComplexPort = port<{
+        nested: { value: number };
+        method: () => string;
+      }>()({ name: "Complex" });
 
       // Valid
       const goodAdapter = createAdapter({
@@ -144,7 +141,7 @@ describe("Factory contract validation at compile-time", () => {
         name: string;
       }
 
-      const UserRepositoryPort = createPort<Repository<User>, "UserRepository">({
+      const UserRepositoryPort = port<Repository<User>>()({
         name: "UserRepository",
       });
 

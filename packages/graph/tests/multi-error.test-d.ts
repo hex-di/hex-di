@@ -12,7 +12,7 @@
  */
 
 import { describe, expectTypeOf, it, expect } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 import type { FilterNever, MultiErrorMessage } from "../src/advanced.js";
 import type { MergeResultAllErrors, AnyBuilderInternals } from "../src/builder/types/index.js";
@@ -125,8 +125,8 @@ describe("provide() single error", () => {
 
   it("returns circular error message", () => {
     // Set up for circular dependency: A -> B -> A
-    const PortA = createPort<ServiceA>({ name: "A" });
-    const PortB = createPort<ServiceB>({ name: "B" });
+    const PortA = port<ServiceA>()({ name: "A" });
+    const PortB = port<ServiceB>()({ name: "B" });
 
     const AdapterA = createAdapter({
       provides: PortA,
@@ -153,8 +153,8 @@ describe("provide() single error", () => {
 
   it("returns captive error message", () => {
     // Set up for captive dependency: Singleton depends on Scoped
-    const ScopedPort = createPort<ServiceA>({ name: "Scoped" });
-    const SingletonPort = createPort<ServiceB>({ name: "Singleton" });
+    const ScopedPort = port<ServiceA>()({ name: "Scoped" });
+    const SingletonPort = port<ServiceB>()({ name: "Singleton" });
 
     const ScopedAdapter = createAdapter({
       provides: ScopedPort,
@@ -187,8 +187,8 @@ describe("provide() single error", () => {
 describe("provide() multiple errors", () => {
   it("returns multi-error for duplicate + circular", () => {
     // Set up: Adapter that provides duplicate AND creates cycle
-    const PortA = createPort<ServiceA>({ name: "A" });
-    const PortB = createPort<ServiceB>({ name: "B" });
+    const PortA = port<ServiceA>()({ name: "A" });
+    const PortB = port<ServiceB>()({ name: "B" });
 
     // First adapter: A (no deps)
     const AdapterA = createAdapter({
@@ -224,7 +224,7 @@ describe("provide() multiple errors", () => {
   });
 
   it("returns multi-error for duplicate + captive", () => {
-    const ScopedPort = createPort<ServiceA>({ name: "Scoped" });
+    const ScopedPort = port<ServiceA>()({ name: "Scoped" });
 
     // Scoped adapter
     const ScopedAdapter = createAdapter({
@@ -255,9 +255,9 @@ describe("provide() multiple errors", () => {
     // This test verifies the mechanism works, even if creating a scenario
     // with all three errors simultaneously is contrived
 
-    const PortX = createPort<ServiceA>({ name: "X" });
-    const PortY = createPort<ServiceB>({ name: "Y" });
-    const PortScoped = createPort<ServiceC>({ name: "Scoped" });
+    const PortX = port<ServiceA>()({ name: "X" });
+    const PortY = port<ServiceB>()({ name: "Y" });
+    const PortScoped = port<ServiceC>()({ name: "Scoped" });
 
     // Scoped adapter
     const ScopedAdapter = createAdapter({
@@ -292,30 +292,26 @@ describe("provide() multiple errors", () => {
 });
 
 // =============================================================================
-// provide() vs provideFirstError() Comparison
+// provide() behavior with all errors
 // =============================================================================
 
-describe("provide() vs provideFirstError() behavior", () => {
-  it("both succeed for valid adapters", () => {
+describe("provide() reports all errors", () => {
+  it("succeeds for valid adapters", () => {
     const builder = GraphBuilder.create();
 
-    const multiErrorResult = builder.provide(LoggerAdapter);
-    const singleErrorResult = builder.provideFirstError(LoggerAdapter);
+    const result = builder.provide(LoggerAdapter);
 
-    // Both should be valid builders
-    expectTypeOf(multiErrorResult).toHaveProperty("provide");
-    expectTypeOf(singleErrorResult).toHaveProperty("provide");
+    // Should be a valid builder
+    expectTypeOf(result).toHaveProperty("provide");
   });
 
-  it("both report duplicate errors", () => {
+  it("reports duplicate errors", () => {
     const builder = GraphBuilder.create().provide(LoggerAdapter);
 
-    type MultiErrorResult = ReturnType<typeof builder.provide<typeof LoggerAdapter>>;
-    type SingleErrorResult = ReturnType<typeof builder.provideFirstError<typeof LoggerAdapter>>;
+    type Result = ReturnType<typeof builder.provide<typeof LoggerAdapter>>;
 
-    // Both should be error strings (not GraphBuilder)
-    expectTypeOf<MultiErrorResult>().toMatchTypeOf<string>();
-    expectTypeOf<SingleErrorResult>().toMatchTypeOf<string>();
+    // Should be error string (not GraphBuilder)
+    expectTypeOf<Result>().toMatchTypeOf<string>();
   });
 });
 
@@ -353,8 +349,8 @@ describe("MergeResultAllErrors type", () => {
 
   it("detects cycle errors when merging creates cycle", () => {
     // Create two graphs that form a cycle when merged
-    const PortM = createPort<ServiceA>({ name: "M" });
-    const PortN = createPort<ServiceB>({ name: "N" });
+    const PortM = port<ServiceA>()({ name: "M" });
+    const PortN = port<ServiceB>()({ name: "N" });
 
     // Builder 1: M depends on N
     const AdapterM = createAdapter({

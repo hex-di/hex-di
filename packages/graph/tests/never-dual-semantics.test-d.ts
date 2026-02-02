@@ -22,7 +22,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort, type InferenceError, type IsNever } from "@hex-di/core";
+import { port, type InferenceError, type IsNever } from "@hex-di/core";
 import type { UnsatisfiedDependencies } from "../src/validation/types/dependency-satisfaction.js";
 
 /**
@@ -39,8 +39,8 @@ type IsInferenceError<T> = [T] extends [never]
 // Test Fixtures
 // =============================================================================
 
-const LoggerPort = createPort<{ log: () => void }, "Logger">({ name: "Logger" });
-const DatabasePort = createPort<{ query: () => void }, "Database">({ name: "Database" });
+const LoggerPort = port<{ log: () => void }>()({ name: "Logger" });
+const DatabasePort = port<{ query: () => void }>()({ name: "Database" });
 
 type LoggerPort = typeof LoggerPort;
 type DatabasePort = typeof DatabasePort;

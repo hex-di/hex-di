@@ -217,11 +217,8 @@ export type {
 export type {
   ProvideResult,
   ProvideResultAllErrors,
-  ProvideAsyncResult,
   ProvideManyResult,
-  ProvideUncheckedResult,
   MergeResult,
-  MergeWithResult,
   OverrideResult,
   PrettyBuilder,
 } from "./builder/types/index.js";
@@ -268,7 +265,7 @@ export type {
   GetLifetimeMap,
   GetParentProvides,
   GetMaxDepth,
-  GetUnsafeDepthOverride,
+  GetExtendedDepth,
 } from "./builder/types/state.js";
 
 // =============================================================================

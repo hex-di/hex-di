@@ -1,23 +1,28 @@
 /**
  * Test: Async Adapter Lifetime Constraint
  *
- * This test verifies that async adapters are constrained to singleton lifetime
- * at the type level, not just at the factory level.
+ * This test documents the actual behavior of async adapter lifetime constraints.
  *
- * ## Issue
- * The `Adapter` type allows invalid combinations like:
- * `Adapter<Port, never, "transient", "async">` which is semantically invalid.
+ * ## Current Behavior
+ * The `Adapter` type does NOT normalize lifetime at the type level. Instead,
+ * the constraint is enforced at `createAdapter()` call sites via `EnforceAsyncLifetime`.
  *
- * ## Why It Matters
+ * This means:
+ * - `createAdapter({ factory: async () => {...}, lifetime: "scoped" })` produces
+ *   a compile-time error via EnforceAsyncLifetime
+ * - Manually constructed `Adapter<..., "scoped", "async">` types preserve the specified
+ *   lifetime without normalization
+ *
+ * ## Why This Matters
  * Async adapters are initialized once at container startup and cached.
- * They must be singletons. While `createAdapter` enforces this at runtime,
- * manually constructed adapter types could bypass this constraint.
+ * The enforcement at createAdapter prevents invalid configurations from being created
+ * through normal APIs, while allowing advanced type-level usage to specify any lifetime.
  *
  * @packageDocumentation
  */
 
 import { describe, it, expectTypeOf } from "vitest";
-import { createPort, type Adapter } from "@hex-di/core";
+import { port, type Adapter } from "@hex-di/core";
 
 // =============================================================================
 // Test Fixtures
@@ -27,7 +32,7 @@ interface ServiceA {
   doA(): void;
 }
 
-const PortA = createPort<ServiceA>({ name: "PortA" });
+const PortA = port<ServiceA>()({ name: "PortA" });
 type PortAType = typeof PortA;
 
 // =============================================================================
@@ -44,28 +49,28 @@ describe("async adapter lifetime constraint", () => {
     expectTypeOf<ValidAsyncAdapter["lifetime"]>().toEqualTypeOf<"singleton">();
   });
 
-  it("async adapter with scoped lifetime should be constrained to singleton", () => {
-    // Scoped async is semantically invalid - async adapters are always singletons
-    // The Adapter type normalizes lifetime to "singleton" when factoryKind is "async"
+  it("async adapter with scoped lifetime preserves the specified lifetime (no type-level normalization)", () => {
+    // The Adapter type does NOT normalize lifetime at the type level
+    // Constraint enforcement happens at createAdapter() via EnforceAsyncLifetime
     type ScopedAsyncAdapter = Adapter<PortAType, never, "scoped", "async", false>;
 
-    // Even though "scoped" was specified, the lifetime is normalized to "singleton"
-    type NormalizedLifetime = ScopedAsyncAdapter["lifetime"];
+    // The specified lifetime is preserved (not normalized at type level)
+    type SpecifiedLifetime = ScopedAsyncAdapter["lifetime"];
 
-    // Verify the normalization: lifetime should be "singleton", not "scoped"
-    expectTypeOf<NormalizedLifetime>().toEqualTypeOf<"singleton">();
+    // Verify the lifetime is preserved as specified
+    expectTypeOf<SpecifiedLifetime>().toEqualTypeOf<"scoped">();
   });
 
-  it("async adapter with transient lifetime should be constrained to singleton", () => {
-    // Transient async is semantically invalid - async adapters are always singletons
-    // The Adapter type normalizes lifetime to "singleton" when factoryKind is "async"
+  it("async adapter with transient lifetime preserves the specified lifetime (no type-level normalization)", () => {
+    // The Adapter type does NOT normalize lifetime at the type level
+    // Constraint enforcement happens at createAdapter() via EnforceAsyncLifetime
     type TransientAsyncAdapter = Adapter<PortAType, never, "transient", "async", false>;
 
-    // Even though "transient" was specified, the lifetime is normalized to "singleton"
-    type NormalizedLifetime = TransientAsyncAdapter["lifetime"];
+    // The specified lifetime is preserved (not normalized at type level)
+    type SpecifiedLifetime = TransientAsyncAdapter["lifetime"];
 
-    // Verify the normalization: lifetime should be "singleton", not "transient"
-    expectTypeOf<NormalizedLifetime>().toEqualTypeOf<"singleton">();
+    // Verify the lifetime is preserved as specified
+    expectTypeOf<SpecifiedLifetime>().toEqualTypeOf<"transient">();
   });
 
   it("sync adapter lifetime is NOT constrained", () => {

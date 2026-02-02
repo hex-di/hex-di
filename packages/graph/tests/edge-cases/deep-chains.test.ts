@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../../src/index.js";
 
 interface Service {
@@ -15,11 +15,11 @@ interface Service {
 describe("deep dependency chains", () => {
   it("handles dependency chain of 5 levels", () => {
     // Create explicit ports for a 5-level chain: S1 <- S2 <- S3 <- S4 <- S5
-    const S1Port = createPort<Service>({ name: "S1" });
-    const S2Port = createPort<Service>({ name: "S2" });
-    const S3Port = createPort<Service>({ name: "S3" });
-    const S4Port = createPort<Service>({ name: "S4" });
-    const S5Port = createPort<Service>({ name: "S5" });
+    const S1Port = port<Service>()({ name: "S1" });
+    const S2Port = port<Service>()({ name: "S2" });
+    const S3Port = port<Service>()({ name: "S3" });
+    const S4Port = port<Service>()({ name: "S4" });
+    const S5Port = port<Service>()({ name: "S5" });
 
     const adapterS1 = createAdapter({
       provides: S1Port,
@@ -70,9 +70,9 @@ describe("deep dependency chains", () => {
   });
 
   it("preserves adapter order in deep chains", () => {
-    const ServiceAPort = createPort<Service>({ name: "ServiceA" });
-    const ServiceBPort = createPort<Service>({ name: "ServiceB" });
-    const ServiceCPort = createPort<Service>({ name: "ServiceC" });
+    const ServiceAPort = port<Service>()({ name: "ServiceA" });
+    const ServiceBPort = port<Service>()({ name: "ServiceB" });
+    const ServiceCPort = port<Service>()({ name: "ServiceC" });
 
     const adapterA = createAdapter({
       provides: ServiceAPort,

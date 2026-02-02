@@ -17,7 +17,7 @@
  * @module
  */
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import type {
   AdapterProvidesName,
   DiagnosticAdapterProvidesName,
@@ -33,8 +33,8 @@ interface Config {
   get(key: string): string;
 }
 
-const LoggerPort = createPort<Logger>({ name: "Logger" });
-const ConfigPort = createPort<Config>({ name: "Config" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const ConfigPort = port<Config>()({ name: "Config" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,

@@ -12,7 +12,7 @@
  * allowing the lifetime map lookup to succeed.
  */
 import { describe, it, expectTypeOf } from "vitest";
-import { createAdapter, createPort, lazyPort } from "@hex-di/core";
+import { port, createAdapter, lazyPort } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 
 // Test services
@@ -25,8 +25,8 @@ interface SingletonService {
 }
 
 // Ports
-const TransientPort = createPort<TransientService>({ name: "TransientService" });
-const SingletonPort = createPort<SingletonService>({ name: "SingletonService" });
+const TransientPort = port<TransientService>()({ name: "TransientService" });
+const SingletonPort = port<SingletonService>()({ name: "SingletonService" });
 
 describe("Lazy port captive dependency detection", () => {
   it("should detect captive dependency: singleton depending on lazy transient", () => {

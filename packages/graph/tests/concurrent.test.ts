@@ -17,7 +17,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createPort, createAdapter, createAdapter, type AdapterConstraint } from "@hex-di/core";
+import { port, createAdapter, type AdapterConstraint } from "@hex-di/core";
 import { GraphBuilder, type Graph } from "../src/index.js";
 import { createLoggerAdapter, createDatabaseAdapter } from "./fixtures.js";
 
@@ -34,7 +34,7 @@ interface TestService {
 }
 
 function makePort(name: string) {
-  return createPort<TestService>({ name });
+  return port<TestService>()({ name });
 }
 
 function makeAdapter(name: string) {
@@ -278,9 +278,9 @@ describe("concurrent: async adapter operations", () => {
 
   it("async adapters with dependencies are ordered correctly", () => {
     // Create distinct ports with literal key types
-    const ConfigPort = createPort<TestService>({ name: "Config" });
-    const DatabasePort = createPort<TestService>({ name: "Database" });
-    const CachePort = createPort<TestService>({ name: "Cache" });
+    const ConfigPort = port<TestService>()({ name: "Config" });
+    const DatabasePort = port<TestService>()({ name: "Database" });
+    const CachePort = port<TestService>()({ name: "Cache" });
 
     const config = createAdapter({
       provides: ConfigPort,
@@ -301,11 +301,7 @@ describe("concurrent: async adapter operations", () => {
     });
 
     // Add in any order - topological sort handles initialization order at runtime
-    const graph = GraphBuilder.create()
-      .provideAsync(cache)
-      .provideAsync(config)
-      .provideAsync(database)
-      .build();
+    const graph = GraphBuilder.create().provide(cache).provide(config).provide(database).build();
 
     expect(graph.adapters).toHaveLength(3);
 
@@ -404,12 +400,12 @@ describe("concurrent: stress patterns", () => {
 
   it("complex branching and merging pattern", () => {
     // Create a tree of builders using specific ports
-    const ServiceAPort = createPort<TestService>({ name: "ServiceA" });
-    const ServiceBPort = createPort<TestService>({ name: "ServiceB" });
-    const ServiceA1Port = createPort<TestService>({ name: "ServiceA1" });
-    const ServiceA2Port = createPort<TestService>({ name: "ServiceA2" });
-    const ServiceB1Port = createPort<TestService>({ name: "ServiceB1" });
-    const ServiceB2Port = createPort<TestService>({ name: "ServiceB2" });
+    const ServiceAPort = port<TestService>()({ name: "ServiceA" });
+    const ServiceBPort = port<TestService>()({ name: "ServiceB" });
+    const ServiceA1Port = port<TestService>()({ name: "ServiceA1" });
+    const ServiceA2Port = port<TestService>()({ name: "ServiceA2" });
+    const ServiceB1Port = port<TestService>()({ name: "ServiceB1" });
+    const ServiceB2Port = port<TestService>()({ name: "ServiceB2" });
 
     const root = GraphBuilder.create().provide(LoggerAdapter);
 

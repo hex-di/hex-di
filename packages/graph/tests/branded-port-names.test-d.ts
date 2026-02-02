@@ -23,7 +23,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import type {
   AdapterProvidesName,
@@ -37,8 +37,8 @@ import type {
 // Test Fixtures
 // =============================================================================
 
-const LoggerPort = createPort<{ log: () => void }, "Logger">({ name: "Logger" });
-const DatabasePort = createPort<{ query: () => void }, "Database">({ name: "Database" });
+const LoggerPort = port<{ log: () => void }>()({ name: "Logger" });
+const DatabasePort = port<{ query: () => void }>()({ name: "Database" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,

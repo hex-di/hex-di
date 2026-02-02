@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createPort, createAdapter, isAdapter } from "@hex-di/core";
+import { port, createAdapter, isAdapter } from "@hex-di/core";
 import { GraphBuilder, isGraphBuilder, isGraph } from "../src/index.js";
 
 // =============================================================================
@@ -26,7 +26,7 @@ interface Service {
 describe("createAdapter validation", () => {
   describe("valid configurations", () => {
     it("accepts minimal valid configuration", () => {
-      const Port = createPort<Service>({ name: "Minimal" });
+      const Port = port<Service>()({ name: "Minimal" });
 
       const adapter = createAdapter({
         provides: Port,
@@ -39,9 +39,9 @@ describe("createAdapter validation", () => {
     });
 
     it("accepts all lifetime values", () => {
-      const Port1 = createPort<Service>({ name: "Singleton" });
-      const Port2 = createPort<Service>({ name: "Scoped" });
-      const Port3 = createPort<Service>({ name: "Transient" });
+      const Port1 = port<Service>()({ name: "Singleton" });
+      const Port2 = port<Service>()({ name: "Scoped" });
+      const Port3 = port<Service>()({ name: "Transient" });
 
       expect(
         createAdapter({
@@ -74,7 +74,7 @@ describe("createAdapter validation", () => {
 
   describe("adapter with optional fields", () => {
     it("accepts finalizer function", () => {
-      const Port = createPort<Service>({ name: "WithFinalizer" });
+      const Port = port<Service>()({ name: "WithFinalizer" });
 
       const adapter = createAdapter({
         provides: Port,
@@ -88,7 +88,7 @@ describe("createAdapter validation", () => {
     });
 
     it("accepts clonable flag", () => {
-      const Port = createPort<Service>({ name: "Clonable" });
+      const Port = port<Service>()({ name: "Clonable" });
 
       const adapter = createAdapter({
         provides: Port,
@@ -109,7 +109,7 @@ describe("createAdapter validation", () => {
 
 describe("createAdapter validation", () => {
   it("sets factoryKind to async", () => {
-    const Port = createPort<Service>({ name: "AsyncKind" });
+    const Port = port<Service>()({ name: "AsyncKind" });
 
     const adapter = createAdapter({
       provides: Port,
@@ -121,7 +121,7 @@ describe("createAdapter validation", () => {
   });
 
   it("sets lifetime to singleton", () => {
-    const Port = createPort<Service>({ name: "AsyncLifetime" });
+    const Port = port<Service>()({ name: "AsyncLifetime" });
 
     const adapter = createAdapter({
       provides: Port,
@@ -133,7 +133,7 @@ describe("createAdapter validation", () => {
   });
 
   it("accepts clonable option", () => {
-    const Port = createPort<Service>({ name: "AsyncClonable" });
+    const Port = port<Service>()({ name: "AsyncClonable" });
 
     const adapter = createAdapter({
       provides: Port,
@@ -153,7 +153,7 @@ describe("createAdapter validation", () => {
 describe("GraphBuilder configurations", () => {
   describe("provide() with valid adapters", () => {
     it("accepts a valid adapter", () => {
-      const Port = createPort<Service>({ name: "ValidProvide" });
+      const Port = port<Service>()({ name: "ValidProvide" });
       const adapter = createAdapter({
         provides: Port,
         requires: [],
@@ -173,8 +173,8 @@ describe("GraphBuilder configurations", () => {
     });
 
     it("accepts array of valid adapters", () => {
-      const Port1 = createPort<Service>({ name: "Many1" });
-      const Port2 = createPort<Service>({ name: "Many2" });
+      const Port1 = port<Service>()({ name: "Many1" });
+      const Port2 = port<Service>()({ name: "Many2" });
 
       const adapter1 = createAdapter({
         provides: Port1,
@@ -197,8 +197,8 @@ describe("GraphBuilder configurations", () => {
 
   describe("merge() behavior", () => {
     it("merges two valid builders", () => {
-      const Port1 = createPort<Service>({ name: "Merge1" });
-      const Port2 = createPort<Service>({ name: "Merge2" });
+      const Port1 = port<Service>()({ name: "Merge1" });
+      const Port2 = port<Service>()({ name: "Merge2" });
 
       const adapter1 = createAdapter({
         provides: Port1,
@@ -224,7 +224,7 @@ describe("GraphBuilder configurations", () => {
 
   describe("override() behavior", () => {
     it("marks adapter as override when used with forParent()", () => {
-      const Port = createPort<Service>({ name: "OverrideTest" });
+      const Port = port<Service>()({ name: "OverrideTest" });
 
       const originalAdapter = createAdapter({
         provides: Port,
@@ -251,7 +251,7 @@ describe("GraphBuilder configurations", () => {
     });
 
     it("override without forParent() still creates builder at runtime (type error is compile-time only)", () => {
-      const Port = createPort<Service>({ name: "OverrideTest" });
+      const Port = port<Service>()({ name: "OverrideTest" });
 
       const adapter = createAdapter({
         provides: Port,
@@ -308,7 +308,7 @@ describe("type guard edge cases", () => {
     });
 
     it("returns true for valid adapter", () => {
-      const Port = createPort<Service>({ name: "ValidAdapter" });
+      const Port = port<Service>()({ name: "ValidAdapter" });
       const adapter = createAdapter({
         provides: Port,
         requires: [],
@@ -372,8 +372,8 @@ describe("type guard edge cases", () => {
 
 describe("port validation edge cases", () => {
   it("handles duplicate ports in requires array", () => {
-    const Dep = createPort<Service>({ name: "DupDep" });
-    const Port = createPort<Service>({ name: "DupReqs" });
+    const Dep = port<Service>()({ name: "DupDep" });
+    const Port = port<Service>()({ name: "DupReqs" });
 
     // Duplicate in requires - now throws a runtime error at adapter creation
     expect(() =>
@@ -387,10 +387,10 @@ describe("port validation edge cases", () => {
   });
 
   it("adapter can reference multiple different ports", () => {
-    const Dep1 = createPort<Service>({ name: "MultiDep1" });
-    const Dep2 = createPort<Service>({ name: "MultiDep2" });
-    const Dep3 = createPort<Service>({ name: "MultiDep3" });
-    const Port = createPort<Service>({ name: "MultiReqs" });
+    const Dep1 = port<Service>()({ name: "MultiDep1" });
+    const Dep2 = port<Service>()({ name: "MultiDep2" });
+    const Dep3 = port<Service>()({ name: "MultiDep3" });
+    const Port = port<Service>()({ name: "MultiReqs" });
 
     const adapter = createAdapter({
       provides: Port,
@@ -411,8 +411,8 @@ describe("port validation edge cases", () => {
 
 describe("graph building edge cases", () => {
   it("validates incomplete graph before build", () => {
-    const Dep = createPort<Service>({ name: "MissingDepValidate" });
-    const Port = createPort<Service>({ name: "NeedsDepValidate" });
+    const Dep = port<Service>()({ name: "MissingDepValidate" });
+    const Port = port<Service>()({ name: "NeedsDepValidate" });
 
     const adapter = createAdapter({
       provides: Port,
@@ -431,7 +431,7 @@ describe("graph building edge cases", () => {
 
   it("handles very long port names", () => {
     const longName = "A".repeat(1000);
-    const Port = createPort<Service>({ name: longName });
+    const Port = port<Service>()({ name: longName });
 
     const adapter = createAdapter({
       provides: Port,
@@ -449,7 +449,7 @@ describe("graph building edge cases", () => {
     // Note: Port names should generally be valid identifiers,
     // but we test edge cases for robustness
     const specialName = "Port-With_Special.Chars$123";
-    const Port = createPort<Service>({ name: specialName });
+    const Port = port<Service>()({ name: specialName });
 
     const adapter = createAdapter({
       provides: Port,
@@ -464,8 +464,8 @@ describe("graph building edge cases", () => {
   });
 
   it("complete graph builds successfully", () => {
-    const Dep = createPort<Service>({ name: "CompleteDep" });
-    const Port = createPort<Service>({ name: "CompleteConsumer" });
+    const Dep = port<Service>()({ name: "CompleteDep" });
+    const Port = port<Service>()({ name: "CompleteConsumer" });
 
     const depAdapter = createAdapter({
       provides: Dep,
@@ -493,7 +493,7 @@ describe("graph building edge cases", () => {
 
 describe("frozen object mutation attempts", () => {
   it("adapter is frozen and cannot be mutated", () => {
-    const Port = createPort<Service>({ name: "Frozen" });
+    const Port = port<Service>()({ name: "Frozen" });
 
     const adapter = createAdapter({
       provides: Port,
@@ -512,7 +512,7 @@ describe("frozen object mutation attempts", () => {
   });
 
   it("graph is frozen and cannot be mutated", () => {
-    const Port = createPort<Service>({ name: "FrozenGraph" });
+    const Port = port<Service>()({ name: "FrozenGraph" });
 
     const adapter = createAdapter({
       provides: Port,

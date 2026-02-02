@@ -455,14 +455,12 @@ describe("non-cyclic dependency chains pass validation", () => {
 // =============================================================================
 
 describe("self-referential dependencies are detected", () => {
-  it("detects A -> A self-dependency with HEX006 error (short-circuit)", () => {
+  it("detects A -> A self-dependency with HEX006 error", () => {
     // A depends on itself - this is now caught as a self-dependency error (HEX006)
     // rather than a circular dependency error (HEX002) because self-dependency
     // is a special case that can be detected without graph traversal.
     //
-    // Note: Using provideFirstError() for short-circuit behavior.
-    // Using provide() would collect both self-dependency AND cycle errors,
-    // resulting in a "Multiple validation errors" message.
+    // Note: provide() reports all errors together now.
     const AdapterA = createAdapter({
       provides: PortA,
       requires: [PortA],
@@ -473,7 +471,7 @@ describe("self-referential dependencies are detected", () => {
 
     const builder = GraphBuilder.create();
     expect(builder).toBeDefined();
-    type ResultType = ReturnType<typeof builder.provideFirstError<typeof AdapterA>>;
+    type ResultType = ReturnType<typeof builder.provide<typeof AdapterA>>;
     expectTypeOf<IsSelfDependencyError<ResultType>>().toEqualTypeOf<true>();
   });
 });

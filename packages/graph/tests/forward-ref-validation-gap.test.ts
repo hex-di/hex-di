@@ -18,7 +18,7 @@
  * @packageDocumentation
  */
 import { describe, expect, it } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { buildGraph, buildGraphFragment } from "../src/builder/builder-build.js";
 import { detectCaptiveAtRuntime } from "../src/advanced.js";
 
@@ -26,8 +26,8 @@ import { detectCaptiveAtRuntime } from "../src/advanced.js";
 // Test Fixtures
 // =============================================================================
 
-const ScopedPort = createPort<{ getData(): string }>({ name: "ScopedService" });
-const SingletonPort = createPort<{ process(): void }>({ name: "SingletonService" });
+const ScopedPort = port<{ getData(): string }>()({ name: "ScopedService" });
+const SingletonPort = port<{ process(): void }>()({ name: "SingletonService" });
 
 const ScopedAdapter = createAdapter({
   provides: ScopedPort,

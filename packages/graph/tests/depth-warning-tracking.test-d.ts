@@ -1,7 +1,7 @@
 /**
  * Type-level tests to verify depth-exceeded warning tracking.
  *
- * When users enable `withUnsafeDepthOverride()` and depth is exceeded,
+ * When users enable `withExtendedDepth()` and depth is exceeded,
  * the warning should be recorded in the builder's internal state so
  * tooling can detect and display it.
  *
@@ -9,7 +9,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 import type { GetDepthExceededWarning } from "../src/builder/types/state.js";
@@ -19,8 +19,8 @@ import type { IsNever } from "@hex-di/core";
 // Test Fixtures
 // =============================================================================
 
-const LoggerPort = createPort<{ log(msg: string): void }>({ name: "Logger" });
-const DatabasePort = createPort<{ query(): void }>({ name: "Database" });
+const LoggerPort = port<{ log(msg: string): void }>()({ name: "Logger" });
+const DatabasePort = port<{ query(): void }>()({ name: "Database" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,
@@ -55,8 +55,8 @@ describe("GetDepthExceededWarning with normal graphs", () => {
     expectTypeOf<IsWarningNever>().toEqualTypeOf<true>();
   });
 
-  it("should be never for withUnsafeDepthOverride when no depth exceeded", () => {
-    const builder = GraphBuilder.withUnsafeDepthOverride().create().provide(LoggerAdapter);
+  it("should be never for withExtendedDepth when no depth exceeded", () => {
+    const builder = GraphBuilder.withExtendedDepth().create().provide(LoggerAdapter);
     type Warning = GetDepthExceededWarning<(typeof builder)["__internalState"]>;
     type IsWarningNever = IsNever<Warning>;
     expectTypeOf<IsWarningNever>().toEqualTypeOf<true>();

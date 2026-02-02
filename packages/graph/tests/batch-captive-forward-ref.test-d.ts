@@ -1,10 +1,10 @@
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 
-const SingletonPort = createPort<{ doS(): void }>({ name: "Singleton" });
-const ScopedPort = createPort<{ doScoped(): void }>({ name: "Scoped" });
+const SingletonPort = port<{ doS(): void }>()({ name: "Singleton" });
+const ScopedPort = port<{ doScoped(): void }>()({ name: "Scoped" });
 
 type IsCaptiveError<T> = T extends `ERROR[HEX003]: Captive dependency: ${string}` ? true : false;
 

@@ -6,7 +6,7 @@
  * NOTE: Visualization tests (Mermaid/DOT) have moved to @hex-di/visualization package.
  */
 import { describe, it, expect } from "vitest";
-import { createPort, createAdapter, type AdapterConstraint } from "@hex-di/core";
+import { port, createAdapter, type AdapterConstraint } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 import { inspectionToJSON, detectCycleAtRuntime, inspectGraph } from "../src/advanced.js";
 
@@ -14,10 +14,10 @@ import { inspectionToJSON, detectCycleAtRuntime, inspectGraph } from "../src/adv
 // Test Fixtures
 // =============================================================================
 
-const LoggerPort = createPort<{ log: (msg: string) => void }, "Logger">({ name: "Logger" });
-const DatabasePort = createPort<{ query: () => string }, "Database">({ name: "Database" });
-const CachePort = createPort<{ get: (key: string) => string }, "Cache">({ name: "Cache" });
-const UserServicePort = createPort<{ getUser: (id: string) => object }, "UserService">({
+const LoggerPort = port<{ log: (msg: string) => void }>()({ name: "Logger" });
+const DatabasePort = port<{ query: () => string }>()({ name: "Database" });
+const CachePort = port<{ get: (key: string) => string }>()({ name: "Cache" });
+const UserServicePort = port<{ getUser: (id: string) => object }>()({
   name: "UserService",
 });
 
@@ -251,8 +251,8 @@ describe("Depth limit detection", () => {
 
     it("detects simple two-node cycle", () => {
       // Create two ports that depend on each other
-      const PortA = createPort<{ value: string }>({ name: "PortA" });
-      const PortB = createPort<{ value: string }>({ name: "PortB" });
+      const PortA = port<{ value: string }>()({ name: "PortA" });
+      const PortB = port<{ value: string }>()({ name: "PortB" });
 
       const adapters: AdapterConstraint[] = [
         createAdapter({
@@ -277,9 +277,9 @@ describe("Depth limit detection", () => {
 
     it("detects longer cycle chain", () => {
       // Create A -> B -> C -> A cycle
-      const PortA = createPort<{ value: string }>({ name: "A" });
-      const PortB = createPort<{ value: string }>({ name: "B" });
-      const PortC = createPort<{ value: string }>({ name: "C" });
+      const PortA = port<{ value: string }>()({ name: "A" });
+      const PortB = port<{ value: string }>()({ name: "B" });
+      const PortC = port<{ value: string }>()({ name: "C" });
 
       const adapters: AdapterConstraint[] = [
         createAdapter({
@@ -310,8 +310,8 @@ describe("Depth limit detection", () => {
 
     it("ignores external dependencies not in the graph", () => {
       // Create adapter that depends on a port not in the graph
-      const ExternalPort = createPort<{ value: string }>({ name: "External" });
-      const InternalPort = createPort<{ value: string }>({ name: "Internal" });
+      const ExternalPort = port<{ value: string }>()({ name: "External" });
+      const InternalPort = port<{ value: string }>()({ name: "Internal" });
 
       const adapters: AdapterConstraint[] = [
         createAdapter({

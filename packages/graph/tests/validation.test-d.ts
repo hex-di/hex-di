@@ -13,7 +13,7 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder, InferGraphProvides, InferGraphRequires } from "../src/index.js";
 import type { UnsatisfiedDependencies } from "../src/advanced.js";
 import type { IsSatisfied, ValidGraph } from "../src/advanced.js";
@@ -51,12 +51,12 @@ interface EmailService {
 // Test Port Tokens
 // =============================================================================
 
-const LoggerPort = createPort<Logger>({ name: "Logger" });
-const DatabasePort = createPort<Database>({ name: "Database" });
-const UserServicePort = createPort<UserService>({ name: "UserService" });
-const ConfigPort = createPort<ConfigService>({ name: "Config" });
-const CachePort = createPort<CacheService>({ name: "Cache" });
-const EmailPort = createPort<EmailService>({ name: "Email" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const UserServicePort = port<UserService>()({ name: "UserService" });
+const ConfigPort = port<ConfigService>()({ name: "Config" });
+const CachePort = port<CacheService>()({ name: "Cache" });
+const EmailPort = port<EmailService>()({ name: "Email" });
 
 type LoggerPortType = typeof LoggerPort;
 type DatabasePortType = typeof DatabasePort;

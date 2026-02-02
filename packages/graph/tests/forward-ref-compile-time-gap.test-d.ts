@@ -13,7 +13,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 
@@ -21,9 +21,9 @@ import { GraphBuilder } from "../src/index.js";
 // Test Fixtures
 // =============================================================================
 
-const ScopedPort = createPort<{ getData(): string }>({ name: "ScopedService" });
-const SingletonPort = createPort<{ process(): void }>({ name: "SingletonService" });
-const TransientPort = createPort<{ handle(): void }>({ name: "TransientService" });
+const ScopedPort = port<{ getData(): string }>()({ name: "ScopedService" });
+const SingletonPort = port<{ process(): void }>()({ name: "SingletonService" });
+const TransientPort = port<{ handle(): void }>()({ name: "TransientService" });
 
 // Singleton that depends on scoped service (CAPTIVE!)
 const CaptiveSingletonAdapter = createAdapter({

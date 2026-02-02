@@ -7,7 +7,7 @@
  * 3. isLazyPort() runtime check works correctly
  */
 import { describe, it, expect } from "vitest";
-import { createPort, getOriginalPort } from "@hex-di/core";
+import { port, getOriginalPort } from "@hex-di/core";
 import { lazyPort, isLazyPort } from "@hex-di/core";
 
 // =============================================================================
@@ -18,8 +18,8 @@ interface UserService {
   getUser(id: string): { id: string; name: string };
 }
 
-const UserServicePort = createPort<UserService>({ name: "UserService" });
-const LoggerPort = createPort<{ log: (msg: string) => void }, "Logger">({ name: "Logger" });
+const UserServicePort = port<UserService>()({ name: "UserService" });
+const LoggerPort = port<{ log: (msg: string) => void }>()({ name: "Logger" });
 
 // =============================================================================
 // lazyPort() Tests

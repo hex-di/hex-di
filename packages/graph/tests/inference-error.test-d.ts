@@ -14,7 +14,7 @@ import type {
   InferAdapterRequires,
   InferAdapterLifetime,
 } from "@hex-di/core";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 // NOTE: Debug* types were not migrated to core - tests using them are disabled below
 import { createAdapter } from "@hex-di/core";
 
@@ -121,7 +121,7 @@ describe("Current inference behavior (documents where InferenceError could help)
     });
 
     it("returns port type for valid adapters", () => {
-      const LoggerPort = createPort<{ log: () => void }>({ name: "Logger" });
+      const LoggerPort = port<{ log: () => void }>()({ name: "Logger" });
       const LoggerAdapter = createAdapter({
         provides: LoggerPort,
         requires: [],
@@ -145,7 +145,7 @@ describe("Current inference behavior (documents where InferenceError could help)
     });
 
     it("returns never for adapters with no requirements (intentional)", () => {
-      const LoggerPort = createPort<{ log: () => void }>({ name: "Logger" });
+      const LoggerPort = port<{ log: () => void }>()({ name: "Logger" });
       const LoggerAdapter = createAdapter({
         provides: LoggerPort,
         requires: [],

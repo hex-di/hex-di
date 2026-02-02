@@ -16,7 +16,7 @@
  */
 
 import { describe, it, expectTypeOf } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 
@@ -34,9 +34,9 @@ interface ServiceC {
   doC(): void;
 }
 
-const PortA = createPort<ServiceA>({ name: "PortA" });
-const PortB = createPort<ServiceB>({ name: "PortB" });
-const PortC = createPort<ServiceC>({ name: "PortC" });
+const PortA = port<ServiceA>()({ name: "PortA" });
+const PortB = port<ServiceB>()({ name: "PortB" });
+const PortC = port<ServiceC>()({ name: "PortC" });
 
 // =============================================================================
 // Scenario 1: Existing singleton requires port, batch provides scoped

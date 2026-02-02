@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createAdapter, createPort } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder, type InferGraphProvides } from "../src/index.js";
 import { DuplicateProviderError } from "../src/advanced.js";
 import type { DuplicateErrorMessage, HasOverlap } from "../src/advanced.js";
@@ -21,7 +21,7 @@ import { LoggerPort, DatabasePort, UserServicePort, LoggerPortType } from "./fix
 interface AnotherLogger {
   log(message: string): void;
 }
-const AnotherLoggerPort = createPort<AnotherLogger>({ name: "AnotherLogger" });
+const AnotherLoggerPort = port<AnotherLogger>()({ name: "AnotherLogger" });
 type DatabasePortType = typeof DatabasePort;
 type UserServicePortType = typeof UserServicePort;
 type AnotherLoggerPortType = typeof AnotherLoggerPort;

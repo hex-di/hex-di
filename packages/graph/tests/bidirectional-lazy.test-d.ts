@@ -24,12 +24,12 @@
  * @packageDocumentation
  */
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort, createAdapter, lazyPort } from "@hex-di/core";
+import { port, createAdapter, lazyPort } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 
-const PortA = createPort<{ doA(): void }>({ name: "A" });
-const PortB = createPort<{ doB(): void }>({ name: "B" });
-const PortC = createPort<{ doC(): void }>({ name: "C" });
+const PortA = port<{ doA(): void }>()({ name: "A" });
+const PortB = port<{ doB(): void }>()({ name: "B" });
+const PortC = port<{ doC(): void }>()({ name: "C" });
 
 describe("Bidirectional lazy dependencies", () => {
   it("allows A->lazy(B), B->lazy(A) - both sides lazy", () => {

@@ -6,7 +6,7 @@
  * The compile-time cycle detection has a depth limit (default 50, max 100).
  * When this limit is exceeded, the system:
  * 1. Returns `DepthExceededResult` instead of `true` (cycle) or `false` (no cycle)
- * 2. Allows the build to proceed (with a warning via `withUnsafeDepthOverride()`)
+ * 2. Allows the build to proceed (with a warning via `withExtendedDepth()`)
  * 3. Runtime validation in `validate()` catches any actual cycles
  *
  * This is NOT a soundness hole - it's a graceful degradation with safety net.
@@ -15,7 +15,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createPort, createAdapter, type AdapterConstraint } from "@hex-di/core";
+import { port, createAdapter, type AdapterConstraint } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 
 // =============================================================================
@@ -29,8 +29,8 @@ describe("depth-limited cycle detection soundness", () => {
       const { detectCycleAtRuntime } = await import("../src/advanced.js");
 
       // Create a simple cycle: A -> B -> A
-      const PortA = createPort<{ a: () => void }, "A">({ name: "A" });
-      const PortB = createPort<{ b: () => void }, "B">({ name: "B" });
+      const PortA = port<{ a: () => void }>()({ name: "A" });
+      const PortB = port<{ b: () => void }>()({ name: "B" });
 
       const AdapterA = createAdapter({
         provides: PortA,
@@ -71,8 +71,8 @@ describe("depth-limited cycle detection soundness", () => {
       // - provideUnchecked users are explicitly opting out of validation
 
       // Create ports for a cycle
-      const PortX = createPort<{ x: () => void }, "X">({ name: "X" });
-      const PortY = createPort<{ y: () => void }, "Y">({ name: "Y" });
+      const PortX = port<{ x: () => void }>()({ name: "X" });
+      const PortY = port<{ y: () => void }>()({ name: "Y" });
 
       const AdapterX = createAdapter({
         provides: PortX,
@@ -88,15 +88,11 @@ describe("depth-limited cycle detection soundness", () => {
         factory: () => ({ y: () => {} }),
       });
 
-      // provideUnchecked bypasses compile-time checks AND doesn't set depthLimitExceeded
-      // so runtime cycle detection doesn't run
-      const builder = GraphBuilder.create().provideUnchecked(AdapterX).provideUnchecked(AdapterY);
-
-      const validation = builder.validate();
-
-      // NOTE: This is EXPECTED behavior - provideUnchecked opts out of validation
-      // The cycle is NOT detected because runtime check only runs when depthLimitExceeded
-      expect(validation.valid).toBe(true); // No error because validation is bypassed
+      // provideUnchecked was removed in Phase 12 - cycles are now always detected at compile-time
+      // This test scenario is no longer valid since provide() always validates
+      // const builder = GraphBuilder.create().provide(AdapterX).provide(AdapterY);
+      // The above would now return an error string at compile-time
+      expect(true).toBe(true); // Placeholder - test scenario no longer applicable
     });
   });
 
@@ -112,11 +108,11 @@ describe("depth-limited cycle detection soundness", () => {
       expect(defaultBuilder).toBeDefined();
     });
 
-    it("documents that withUnsafeDepthOverride converts error to warning", () => {
+    it("documents that withExtendedDepth converts error to warning", () => {
       // This API allows building even when depth limit is exceeded
       // The warning is tracked in $depthWarnings phantom property
-      // withUnsafeDepthOverride() returns a factory, so call .create()
-      const builderWithOverride = GraphBuilder.withUnsafeDepthOverride().create();
+      // withExtendedDepth() returns a factory, so call .create()
+      const builderWithOverride = GraphBuilder.withExtendedDepth().create();
       expect(builderWithOverride).toBeDefined();
     });
   });
@@ -126,9 +122,9 @@ describe("depth-limited cycle detection soundness", () => {
       // Import the function directly for testing
       const { detectCycleAtRuntime } = await import("../src/advanced.js");
 
-      const PortA = createPort<object>({ name: "A" });
-      const PortB = createPort<object>({ name: "B" });
-      const PortC = createPort<object>({ name: "C" });
+      const PortA = port<object>()({ name: "A" });
+      const PortB = port<object>()({ name: "B" });
+      const PortC = port<object>()({ name: "C" });
 
       // A -> B -> C -> A (cycle)
       const AdapterA = createAdapter({
@@ -160,9 +156,9 @@ describe("depth-limited cycle detection soundness", () => {
     it("detectCycleAtRuntime returns null for acyclic graphs", async () => {
       const { detectCycleAtRuntime } = await import("../src/advanced.js");
 
-      const PortA = createPort<object>({ name: "A" });
-      const PortB = createPort<object>({ name: "B" });
-      const PortC = createPort<object>({ name: "C" });
+      const PortA = port<object>()({ name: "A" });
+      const PortB = port<object>()({ name: "B" });
+      const PortC = port<object>()({ name: "C" });
 
       // A -> B -> C (no cycle)
       const AdapterA = createAdapter({

@@ -35,7 +35,7 @@
  * @packageDocumentation
  */
 
-import { createPort, createAdapter, type AdapterConstraint, type Lifetime } from "@hex-di/core";
+import { port, createAdapter, type AdapterConstraint, type Lifetime } from "@hex-di/core";
 import { GraphBuilder, type Graph } from "../src/index.js";
 import { __emptyDepGraphBrand, __emptyLifetimeMapBrand } from "../src/advanced.js";
 
@@ -249,12 +249,12 @@ export class TestGraphBuilder {
   static chain(length = 3) {
     type ChainService = { execute(): void };
 
-    const ports: Array<ReturnType<typeof createPort<ChainService>>> = [];
+    const ports: Array<ReturnType<ReturnType<typeof port<ChainService>>>> = [];
     const adapters: Array<ReturnType<typeof createAdapter>> = [];
 
     // Create ports
     for (let i = 0; i < length; i++) {
-      ports.push(createPort<ChainService>({ name: `Chain${i}` }));
+      ports.push(port<ChainService>()({ name: `Chain${i}` }));
     }
 
     // Create adapters with linear dependencies
@@ -306,7 +306,7 @@ export class TestGraphBuilder {
   static star(spokeCount = 4) {
     type StarService = { execute(): void };
 
-    const centerPort = createPort<StarService>({ name: "Center" });
+    const centerPort = port<StarService>()({ name: "Center" });
     const center = createAdapter({
       provides: centerPort,
       requires: [],
@@ -316,10 +316,10 @@ export class TestGraphBuilder {
 
     const spokes: Array<ReturnType<typeof createAdapter>> = [];
     for (let i = 0; i < spokeCount; i++) {
-      const port = createPort<StarService>({ name: `Spoke${i}` });
+      const spokePort = port<StarService>()({ name: `Spoke${i}` });
       spokes.push(
         createAdapter({
-          provides: port,
+          provides: spokePort,
           requires: [centerPort],
           lifetime: "singleton",
           factory: () => ({ execute: () => {} }),
@@ -365,10 +365,10 @@ export class TestGraphBuilder {
     const adapters: Array<ReturnType<typeof createAdapter>> = [];
 
     for (let i = 0; i < count; i++) {
-      const port = createPort<FlatService>({ name: `Flat${i}` });
+      const flatPort = port<FlatService>()({ name: `Flat${i}` });
       adapters.push(
         createAdapter({
-          provides: port,
+          provides: flatPort,
           requires: [],
           lifetime: "singleton",
           factory: () => ({ execute: () => {} }),
@@ -481,8 +481,8 @@ export class TestGraphBuilder {
    * @returns Scenario with builder, adapters, and the error-causing adapter
    */
   static withCaptiveDependency() {
-    const ScopedPort = createPort<{ getData(): string }>({ name: "Scoped" });
-    const SingletonPort = createPort<{ process(): void }>({ name: "Singleton" });
+    const ScopedPort = port<{ getData(): string }>()({ name: "Scoped" });
+    const SingletonPort = port<{ process(): void }>()({ name: "Singleton" });
 
     const ScopedAdapter = createAdapter({
       provides: ScopedPort,
@@ -524,8 +524,8 @@ export class TestGraphBuilder {
    * @returns Scenario with builder, adapters, and the error-causing adapter
    */
   static withCircularDependency() {
-    const PortX = createPort<{ doX(): void }>({ name: "X" });
-    const PortY = createPort<{ doY(): void }>({ name: "Y" });
+    const PortX = port<{ doX(): void }>()({ name: "X" });
+    const PortY = port<{ doY(): void }>()({ name: "Y" });
 
     const AdapterX = createAdapter({
       provides: PortX,
@@ -564,7 +564,7 @@ export class TestGraphBuilder {
    * @returns Scenario with builder, adapters, and the error-causing adapter
    */
   static withDuplicatePort() {
-    const DuplicatePort = createPort<{ execute(): void }>({ name: "Duplicate" });
+    const DuplicatePort = port<{ execute(): void }>()({ name: "Duplicate" });
 
     const AdapterFirst = createAdapter({
       provides: DuplicatePort,
@@ -604,8 +604,8 @@ export class TestGraphBuilder {
    * @returns Scenario with builder, adapters, and the error-causing adapter
    */
   static withMissingDependency() {
-    const MissingPort = createPort<{ getData(): string }>({ name: "Missing" });
-    const DependentPort = createPort<{ process(): void }>({ name: "Dependent" });
+    const MissingPort = port<{ getData(): string }>()({ name: "Missing" });
+    const DependentPort = port<{ process(): void }>()({ name: "Dependent" });
 
     const DependentAdapter = createAdapter({
       provides: DependentPort,
@@ -711,7 +711,7 @@ export class TestGraphBuilder {
       provides: LoggerPort,
       requires: [],
       lifetime: options.lifetime ?? "singleton",
-      clonable: options.clonable,
+      clonable: options.clonable ?? false,
       factory: () => mock.implementation,
     });
 
@@ -731,7 +731,7 @@ export class TestGraphBuilder {
       provides: DatabasePort,
       requires: [LoggerPort],
       lifetime: options.lifetime ?? "singleton",
-      clonable: options.clonable,
+      clonable: options.clonable ?? false,
       factory: () => mock.implementation,
     });
 
@@ -751,7 +751,7 @@ export class TestGraphBuilder {
       provides: DatabasePort,
       requires: [],
       lifetime: options.lifetime ?? "singleton",
-      clonable: options.clonable,
+      clonable: options.clonable ?? false,
       factory: () => mock.implementation,
     });
 
@@ -769,7 +769,7 @@ export class TestGraphBuilder {
       provides: CachePort,
       requires: [],
       lifetime: config.lifetime ?? "singleton",
-      clonable: config.clonable,
+      clonable: config.clonable ?? false,
       factory: () => mock.implementation as CacheService,
     });
 
@@ -790,7 +790,7 @@ export class TestGraphBuilder {
       provides: ConfigPort,
       requires: [],
       lifetime: config.lifetime ?? "singleton",
-      clonable: config.clonable,
+      clonable: config.clonable ?? false,
       factory: () => mock.implementation as ConfigService,
     });
 
@@ -806,7 +806,7 @@ export class TestGraphBuilder {
       provides: UserServicePort,
       requires: [DatabasePort, LoggerPort],
       lifetime: config.lifetime ?? "scoped",
-      clonable: config.clonable,
+      clonable: config.clonable ?? false,
       factory: () => ({
         getUser: async (id: string) => ({ id, name: "Test User" }),
       }),

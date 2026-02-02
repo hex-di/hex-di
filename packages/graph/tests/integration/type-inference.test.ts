@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { createPort, type InferService, createAdapter } from "@hex-di/core";
+import { port, type InferService, createAdapter } from "@hex-di/core";
 import { GraphBuilder, InferGraphProvides, InferGraphRequires } from "../../src/index.js";
 import type { UnsatisfiedDependencies } from "../../src/advanced.js";
 import { LoggerPort, DatabasePort } from "./shared-fixtures.js";
@@ -23,7 +23,7 @@ describe("Integration: Complex generic type inference", () => {
       name: string;
     }
 
-    const UserRepoPort = createPort<Repository<User>, "UserRepo">({ name: "UserRepo" });
+    const UserRepoPort = port<Repository<User>>()({ name: "UserRepo" });
 
     const userRepoAdapter = createAdapter({
       provides: UserRepoPort,
@@ -113,8 +113,8 @@ describe("Integration: Self-referential adapter (edge case)", () => {
       b(): void;
     }
 
-    const PortA = createPort<ServiceA>({ name: "A" });
-    const PortB = createPort<ServiceB>({ name: "B" });
+    const PortA = port<ServiceA>()({ name: "A" });
+    const PortB = port<ServiceB>()({ name: "B" });
 
     const adapterA = createAdapter({
       provides: PortA,

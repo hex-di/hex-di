@@ -12,15 +12,15 @@
 import { describe, it, expectTypeOf } from "vitest";
 import type { AddEdge, AddManyEdges } from "../src/validation/types/cycle/detection.js";
 import type { EmptyDependencyGraph } from "../src/builder/types/state.js";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 
 // =============================================================================
 // Test Fixtures
 // =============================================================================
 
-const LoggerPort = createPort<{ log: () => void }>({ name: "Logger" });
-const DatabasePort = createPort<{ query: () => void }>({ name: "Database" });
+const LoggerPort = port<{ log: () => void }>()({ name: "Logger" });
+const DatabasePort = port<{ query: () => void }>()({ name: "Database" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,

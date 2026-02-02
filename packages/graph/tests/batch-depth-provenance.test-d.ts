@@ -24,7 +24,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import type { WouldAnyCreateCycle } from "../src/validation/types/cycle/batch.js";
 import type {
@@ -43,8 +43,8 @@ import type {
 // 1. A pre-built graph with deep dependencies
 // 2. Adding an adapter whose requirements ARE in the graph
 // 3. The traversal through existing edges exceeds maxDepth
-const PortA = createPort<{ a: () => void }, "A">({ name: "A" });
-const PortB = createPort<{ b: () => void }, "B">({ name: "B" });
+const PortA = port<{ a: () => void }>()({ name: "A" });
+const PortB = port<{ b: () => void }>()({ name: "B" });
 
 const AdapterA = createAdapter({
   provides: PortA,

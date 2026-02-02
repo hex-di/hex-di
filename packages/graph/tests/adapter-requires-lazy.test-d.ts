@@ -1,5 +1,5 @@
 import { describe, it, expectTypeOf } from "vitest";
-import { createPort, createAdapter, lazyPort } from "@hex-di/core";
+import { port, createAdapter, lazyPort } from "@hex-di/core";
 import type { AdapterRequiresNames } from "../src/validation/types/adapter-extraction.js";
 
 // Test services
@@ -16,9 +16,9 @@ interface ServiceC {
 }
 
 // Ports
-const PortA = createPort<ServiceA>({ name: "ServiceA" });
-const PortB = createPort<ServiceB>({ name: "ServiceB" });
-const PortC = createPort<ServiceC>({ name: "ServiceC" });
+const PortA = port<ServiceA>()({ name: "ServiceA" });
+const PortB = port<ServiceB>()({ name: "ServiceB" });
+const PortC = port<ServiceC>()({ name: "ServiceC" });
 
 describe("AdapterRequiresNames with lazy ports", () => {
   it("should extract lazy port names correctly", () => {

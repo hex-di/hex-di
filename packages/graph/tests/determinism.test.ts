@@ -20,7 +20,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createAdapter, createPort, type AdapterConstraint } from "@hex-di/core";
+import { port, createAdapter, type AdapterConstraint } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 import {
   inspectGraph,
@@ -33,10 +33,10 @@ import {
 // Test Fixtures
 // =============================================================================
 
-const ZebraPort = createPort<{ run(): void }>({ name: "Zebra" });
-const ApplePort = createPort<{ grow(): void }>({ name: "Apple" });
-const MangoPort = createPort<{ juice(): void }>({ name: "Mango" });
-const BananaPort = createPort<{ peel(): void }>({ name: "Banana" });
+const ZebraPort = port<{ run(): void }>()({ name: "Zebra" });
+const ApplePort = port<{ grow(): void }>()({ name: "Apple" });
+const MangoPort = port<{ juice(): void }>()({ name: "Mango" });
+const BananaPort = port<{ peel(): void }>()({ name: "Banana" });
 
 // =============================================================================
 // inspectGraph Deterministic Outputs Tests

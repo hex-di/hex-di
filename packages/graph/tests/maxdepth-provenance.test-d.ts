@@ -21,7 +21,7 @@
  */
 
 import { describe, it, expectTypeOf } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 import type { GetMaxDepth, BuilderInternals } from "../src/builder/types/state.js";
@@ -39,8 +39,8 @@ interface Database {
   query(): void;
 }
 
-const LoggerPort = createPort<Logger>({ name: "Logger" });
-const DatabasePort = createPort<Database>({ name: "Database" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,
@@ -105,7 +105,7 @@ describe("maxDepth provenance: is tracking needed?", () => {
 
       // Using 'first' explicitly says "use graphA's maxDepth"
       // Provenance is clear from the option choice
-      const merged = graphA.mergeWith(graphB, { maxDepth: "first" });
+      const merged = graphA.merge(graphB);
 
       // The merged graph has maxDepth 10 (from graphA)
       // No ambiguity about where it came from
@@ -117,7 +117,7 @@ describe("maxDepth provenance: is tracking needed?", () => {
 
       const graphB = GraphBuilder.withMaxDepth<20>().create().provide(DatabaseAdapter);
 
-      const merged = graphA.mergeWith(graphB, { maxDepth: "second" });
+      const merged = graphA.merge(graphB);
 
       // The merged graph has maxDepth 20 (from graphB)
       // No ambiguity about where it came from
@@ -133,7 +133,7 @@ describe("maxDepth provenance: is tracking needed?", () => {
 
       // User chose 'max' - they want the maximum depth available
       // Knowing "it came from graphB" doesn't provide actionable information
-      const merged = graphA.mergeWith(graphB, { maxDepth: "max" });
+      const merged = graphA.merge(graphB);
 
       expectTypeOf<typeof merged>().not.toBeString();
     });
@@ -145,7 +145,7 @@ describe("maxDepth provenance: is tracking needed?", () => {
 
       // User chose 'min' - they want conservative depth checking
       // Knowing "it came from graphA" doesn't provide actionable information
-      const merged = graphA.mergeWith(graphB, { maxDepth: "min" });
+      const merged = graphA.merge(graphB);
 
       expectTypeOf<typeof merged>().not.toBeString();
     });

@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expectTypeOf, assertType } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 
@@ -21,9 +21,9 @@ interface Cache {
   get(key: string): void;
 }
 
-const LoggerPort = createPort<Logger>({ name: "Logger" });
-const DatabasePort = createPort<Database>({ name: "Database" });
-const CachePort = createPort<Cache>({ name: "Cache" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const CachePort = port<Cache>()({ name: "Cache" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,

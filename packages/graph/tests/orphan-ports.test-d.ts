@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expectTypeOf } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 import type { OrphanPorts } from "../src/validation/index.js";
@@ -16,7 +16,7 @@ import { LoggerPort, DatabasePort, UserServicePort } from "./fixtures.js";
 interface Cache {
   get(key: string): unknown;
 }
-const CachePort = createPort<Cache>({ name: "Cache" });
+const CachePort = port<Cache>()({ name: "Cache" });
 
 // =============================================================================
 // OrphanPorts Tests

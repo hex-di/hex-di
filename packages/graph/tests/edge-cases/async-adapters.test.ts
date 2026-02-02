@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../../src/index.js";
 
 interface Service {
@@ -14,7 +14,7 @@ interface Service {
 
 describe("async adapter edge cases", () => {
   it("async adapter with no dependencies receives empty object", () => {
-    const AsyncServicePort = createPort<Service>({ name: "AsyncService" });
+    const AsyncServicePort = port<Service>()({ name: "AsyncService" });
 
     const receivedDeps: unknown[] = [];
     const asyncAdapter = createAdapter({
@@ -32,7 +32,7 @@ describe("async adapter edge cases", () => {
   });
 
   it("async adapter is always a singleton", () => {
-    const AsyncServicePort = createPort<Service>({ name: "AsyncService" });
+    const AsyncServicePort = port<Service>()({ name: "AsyncService" });
 
     const asyncAdapter = createAdapter({
       provides: AsyncServicePort,
@@ -45,26 +45,26 @@ describe("async adapter edge cases", () => {
   });
 
   it("multiple async adapters in same graph", () => {
-    const Async1Port = createPort<Service>({ name: "Async1" });
-    const Async2Port = createPort<Service>({ name: "Async2" });
-    const Async3Port = createPort<Service>({ name: "Async3" });
+    const Async1Port = port<Service>()({ name: "Async1" });
+    const Async2Port = port<Service>()({ name: "Async2" });
+    const Async3Port = port<Service>()({ name: "Async3" });
 
     const graph = GraphBuilder.create()
-      .provideAsync(
+      .provide(
         createAdapter({
           provides: Async1Port,
           requires: [],
           factory: async () => ({ name: "async1" }),
         })
       )
-      .provideAsync(
+      .provide(
         createAdapter({
           provides: Async2Port,
           requires: [Async1Port],
           factory: async () => ({ name: "async2" }),
         })
       )
-      .provideAsync(
+      .provide(
         createAdapter({
           provides: Async3Port,
           requires: [Async1Port, Async2Port],
@@ -79,8 +79,8 @@ describe("async adapter edge cases", () => {
   });
 
   it("async adapter can depend on sync adapter", () => {
-    const SyncPort = createPort<Service>({ name: "Sync" });
-    const AsyncPort = createPort<Service>({ name: "Async" });
+    const SyncPort = port<Service>()({ name: "Sync" });
+    const AsyncPort = port<Service>()({ name: "Async" });
 
     const syncAdapter = createAdapter({
       provides: SyncPort,
@@ -95,7 +95,7 @@ describe("async adapter edge cases", () => {
       factory: async () => ({ name: "async" }),
     });
 
-    const graph = GraphBuilder.create().provide(syncAdapter).provideAsync(asyncAdapter).build();
+    const graph = GraphBuilder.create().provide(syncAdapter).provide(asyncAdapter).build();
 
     expect(graph.adapters.length).toBe(2);
     expect(graph.adapters[0].factoryKind).toBe("sync");
@@ -103,7 +103,7 @@ describe("async adapter edge cases", () => {
   });
 
   it("async adapter factory return type is Promise", () => {
-    const AsyncPort = createPort<Service>({ name: "AsyncReturn" });
+    const AsyncPort = port<Service>()({ name: "AsyncReturn" });
 
     const asyncAdapter = createAdapter({
       provides: AsyncPort,
@@ -121,7 +121,7 @@ describe("async adapter edge cases", () => {
   });
 
   it("async adapter preserves clonable property", () => {
-    const ClonableAsyncPort = createPort<Service>({ name: "ClonableAsync" });
+    const ClonableAsyncPort = port<Service>()({ name: "ClonableAsync" });
 
     const clonableAsync = createAdapter({
       provides: ClonableAsyncPort,
@@ -131,7 +131,7 @@ describe("async adapter edge cases", () => {
     });
 
     const nonClonableAsync = createAdapter({
-      provides: createPort<Service>({ name: "NonClonableAsync" }),
+      provides: port<Service>()({ name: "NonClonableAsync" }),
       requires: [],
       factory: async () => ({ name: "non-clonable-async" }),
     });

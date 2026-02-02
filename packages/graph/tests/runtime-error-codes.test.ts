@@ -14,13 +14,15 @@ import { parseGraphError, isGraphError, GraphErrorCode } from "../src/advanced.j
 describe("adapter factory runtime error codes", () => {
   describe("createAdapter validation errors", () => {
     it("should include HEX010 for missing provides", () => {
+      // Use indirect object to bypass TypeScript's overload resolution
+      const invalidConfig = {
+        requires: [] as const,
+        lifetime: "singleton" as const,
+        factory: () => ({}),
+      };
       expect(() => {
-        // @ts-expect-error Testing runtime validation
-        createAdapter({
-          requires: [],
-          lifetime: "singleton",
-          factory: () => ({}),
-        });
+        // @ts-expect-error Testing runtime validation - missing 'provides'
+        createAdapter(invalidConfig);
       }).toThrow(/ERROR\[HEX010\]/);
     });
 
@@ -140,12 +142,14 @@ describe("adapter factory runtime error codes", () => {
 
   describe("createAdapter validation errors", () => {
     it("should include HEX010 for missing provides (async)", () => {
+      // Use indirect object to bypass TypeScript's overload resolution
+      const invalidConfig = {
+        requires: [] as const,
+        factory: async () => ({}),
+      };
       expect(() => {
-        // @ts-expect-error Testing runtime validation
-        createAdapter({
-          requires: [],
-          factory: async () => ({}),
-        });
+        // @ts-expect-error Testing runtime validation - missing 'provides'
+        createAdapter(invalidConfig);
       }).toThrow(/ERROR\[HEX010\]/);
     });
 

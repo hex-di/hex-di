@@ -8,18 +8,16 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/core";
-import { createAdapter } from "@hex-di/core";
-import { createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 
 // =============================================================================
 // Test Fixtures
 // =============================================================================
 
-const ScopedPort = createPort<{ scoped: true }>({ name: "Scoped" });
-const AsyncPort = createPort<{ async: true }>({ name: "AsyncService" });
-const SingletonPort = createPort<{ singleton: true }>({ name: "SingletonService" });
+const ScopedPort = port<{ scoped: true }>()({ name: "Scoped" });
+const AsyncPort = port<{ async: true }>()({ name: "AsyncService" });
+const SingletonPort = port<{ singleton: true }>()({ name: "SingletonService" });
 
 // Scoped adapter
 const ScopedAdapter = createAdapter({
@@ -74,7 +72,7 @@ describe("provideMany() async adapter captive detection", () => {
     // Reference: provideAsync() correctly detects captive
     const withProvideAsync = GraphBuilder.create()
       .provide(ScopedAdapter)
-      .provideAsync(AsyncAdapterWithScopedDep);
+      .provide(AsyncAdapterWithScopedDep);
 
     type ProvideAsyncResult = typeof withProvideAsync;
     type ProvideAsyncHasProvide = ProvideAsyncResult extends { provide: unknown } ? true : false;
@@ -108,7 +106,7 @@ describe("provideMany() async adapter captive detection", () => {
 });
 
 describe("batch with mixed sync and async adapters", () => {
-  const TransientPort = createPort<{ transient: true }>({ name: "Transient" });
+  const TransientPort = port<{ transient: true }>()({ name: "Transient" });
 
   const TransientAdapter = createAdapter({
     provides: TransientPort,
