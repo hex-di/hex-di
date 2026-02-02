@@ -9,7 +9,6 @@
  */
 
 import {
-  createAdapter,
   type Port,
   type InferService,
   type InferPortName,
@@ -65,7 +64,7 @@ export interface MockAdapterOptions {
  * @internal
  */
 function createMockProxyHandler<T extends object>(
-  implementation: Partial<T>,
+  _implementation: Partial<T>,
   portName: string
 ): ProxyHandler<Partial<T>> {
   return {
@@ -196,16 +195,25 @@ export function createMockAdapter<P extends Port<object, string>, L extends Life
   port: P,
   implementation: Partial<InferService<P>>,
   options?: MockAdapterOptions & { lifetime?: L }
-): Adapter<P, never, L> {
+): Adapter<P, never, L, "sync", false, readonly []> {
   const lifetime = (options?.lifetime ?? "transient") as L;
   const portName = port.__portName as InferPortName<P>;
 
-  return createAdapter({
+  // Build adapter object directly to avoid conditional type issues with createAdapter
+  // The unified createAdapter returns IsAsyncFactory<TFactory> conditionals that don't
+  // simplify when TFactory is generic, so we construct the adapter manually
+  const mockFactory = (): InferService<P> => {
+    return createMockImplementation(implementation, portName);
+  };
+
+  const adapter: Adapter<P, never, L, "sync", false, readonly []> = Object.freeze({
     provides: port,
-    requires: [],
+    requires: [] as const,
     lifetime,
-    factory: () => {
-      return createMockImplementation(implementation, portName);
-    },
+    factoryKind: "sync" as const,
+    factory: mockFactory,
+    clonable: false as const,
   });
+
+  return adapter;
 }

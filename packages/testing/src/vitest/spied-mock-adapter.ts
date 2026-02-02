@@ -9,7 +9,7 @@
  */
 
 import { vi, type MockedFunction } from "vitest";
-import { createAdapter, type Port, type InferService, type Adapter } from "@hex-di/core";
+import { type Port, type InferService, type Adapter } from "@hex-di/core";
 
 // =============================================================================
 // Types
@@ -68,7 +68,14 @@ export type SpiedService<T> = {
  * expect(spiedLogger.log.mock.calls).toEqual([['test']]);
  * ```
  */
-export type SpiedAdapter<P extends Port<object, string>> = Adapter<P, never, "transient">;
+export type SpiedAdapter<P extends Port<object, string>> = Adapter<
+  P,
+  never,
+  "transient",
+  "sync",
+  false,
+  readonly []
+>;
 
 // =============================================================================
 // Implementation
@@ -151,14 +158,23 @@ export function createSpiedMockAdapter<P extends Port<object, string>>(
   port: P,
   defaults?: Partial<InferService<P>>
 ): SpiedAdapter<P> {
-  // Create the adapter using createAdapter
-  // The factory returns a Proxy where all methods are vi.fn() spies
-  return createAdapter({
+  // Build adapter object directly to avoid conditional type issues with createAdapter
+  // The unified createAdapter returns IsAsyncFactory<TFactory> conditionals that don't
+  // simplify when TFactory is generic, so we construct the adapter manually
+  const spiedFactory = (): InferService<P> => {
+    return createSpiedImplementation<InferService<P>>(defaults);
+  };
+
+  const adapter: SpiedAdapter<P> = Object.freeze({
     provides: port,
-    requires: [],
-    lifetime: "transient",
-    factory: () => createSpiedImplementation<InferService<P>>(defaults),
+    requires: [] as const,
+    lifetime: "transient" as const,
+    factoryKind: "sync" as const,
+    factory: spiedFactory,
+    clonable: false as const,
   });
+
+  return adapter;
 }
 
 /**
