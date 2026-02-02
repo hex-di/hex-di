@@ -9,33 +9,34 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 
 ## Current Position
 
-Phase: 9 - Unified createAdapter
-Plan: Not started
-Status: Ready for planning
-Last activity: 2026-02-02 — Roadmap created for v3.0
+Phase: 9 of 13 (Unified createAdapter)
+Plan: 1 of 6 complete
+Status: In progress
+Last activity: 2026-02-02 — Completed 09-01-PLAN.md
 
-Progress: [----------] 0% (v3.0 starting)
+Progress: [█---------] 8% (1/13 plans complete)
 
 ## Performance Metrics
 
-**Velocity (v1.1 + v1.2 + v2.0):**
+**Velocity (v1.1 + v1.2 + v2.0 + v3.0):**
 
-- Total plans completed: 15
-- Average duration: 5.2 min
-- Total execution time: 78 min
+- Total plans completed: 16
+- Average duration: 5.1 min
+- Total execution time: 80 min
 
 **By Phase:**
 
-| Phase               | Plans | Total  | Avg/Plan |
-| ------------------- | ----- | ------ | -------- |
-| 01-build-validation | 1     | 2 min  | 2 min    |
-| 02-merge-type-fixes | 1     | 2 min  | 2 min    |
-| 03-scoped-overrides | 4     | 36 min | 9 min    |
-| 04-api-ergonomics   | 3     | 14 min | 4.7 min  |
-| 05-port-directions  | 2     | 9 min  | 4.5 min  |
-| 06-core-port-api    | 1     | 7 min  | 7 min    |
-| 07-type-helpers     | 1     | 3 min  | 3 min    |
-| 08-graph-inspection | 1     | 5 min  | 5 min    |
+| Phase                    | Plans | Total  | Avg/Plan |
+| ------------------------ | ----- | ------ | -------- |
+| 01-build-validation      | 1     | 2 min  | 2 min    |
+| 02-merge-type-fixes      | 1     | 2 min  | 2 min    |
+| 03-scoped-overrides      | 4     | 36 min | 9 min    |
+| 04-api-ergonomics        | 3     | 14 min | 4.7 min  |
+| 05-port-directions       | 2     | 9 min  | 4.5 min  |
+| 06-core-port-api         | 1     | 7 min  | 7 min    |
+| 07-type-helpers          | 1     | 3 min  | 3 min    |
+| 08-graph-inspection      | 1     | 5 min  | 5 min    |
+| 09-unified-createadapter | 1     | 2 min  | 2 min    |
 
 ## Accumulated Context
 
@@ -48,6 +49,8 @@ Recent for v3.0:
 - Unified adapter API (1 function instead of 7)
 - Auto-detect async from factory return type
 - Compile-time enforcement for async lifetime constraint
+- Mutual exclusion: factory and class properties via `?: never` pattern (09-01)
+- Branded error types with `__error` and `__hint` for config validation (09-01)
 
 ### Pending Todos
 
@@ -62,10 +65,10 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Roadmap created for v3.0, ready to plan Phase 9
+Stopped at: Completed 09-01-PLAN.md (config types and branded errors)
 Resume file: None
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-02 after v3.0 roadmap created_
+_Last updated: 2026-02-02 after completing plan 09-01_
