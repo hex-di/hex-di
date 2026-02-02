@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 ## Current Position
 
 Phase: 9 of 13 (Unified createAdapter)
-Plan: 3 of 6 complete
-Status: In progress
-Last activity: 2026-02-02 — Completed 09-05-PLAN.md
+Plan: 6 of 6 complete
+Status: Phase complete
+Last activity: 2026-02-02 — Completed 09-06-PLAN.md
 
-Progress: [██--------] 18% (18/25 plans complete, includes v1-v3)
+Progress: [███-------] 24% (19/25 plans complete, includes v1-v3)
 
 ## Performance Metrics
 
 **Velocity (v1.1 + v1.2 + v2.0 + v3.0):**
 
-- Total plans completed: 18
-- Average duration: 4.7 min
-- Total execution time: 85 min
+- Total plans completed: 19
+- Average duration: 4.5 min
+- Total execution time: 86 min
 
 **By Phase:**
 
@@ -36,7 +36,7 @@ Progress: [██--------] 18% (18/25 plans complete, includes v1-v3)
 | 06-core-port-api         | 1     | 7 min  | 7 min    |
 | 07-type-helpers          | 1     | 3 min  | 3 min    |
 | 08-graph-inspection      | 1     | 5 min  | 5 min    |
-| 09-unified-createadapter | 3     | 7 min  | 2.3 min  |
+| 09-unified-createadapter | 6     | 8 min  | 1.3 min  |
 
 ## Accumulated Context
 
@@ -54,6 +54,8 @@ Recent for v3.0:
 - Async detection at type level only - runtime always uses SYNC (09-02)
 - 5 factory overloads for type-safe defaults (09-02)
 - Export unified createAdapter as primary API (09-05)
+- Dual export strategy: createAdapter and createUnifiedAdapter aliases (09-06)
+- Export all unified config types for advanced users (09-06)
 
 ### Pending Todos
 
@@ -68,10 +70,10 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 09-05-PLAN.md (runtime tests for unified createAdapter)
+Stopped at: Completed 09-06-PLAN.md (export unified createAdapter from package public API)
 Resume file: None
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-02 after completing plan 09-05_
+_Last updated: 2026-02-02 after completing plan 09-06_
