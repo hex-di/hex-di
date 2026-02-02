@@ -84,7 +84,15 @@ export type {
 } from "./adapters/inference.js";
 
 // Factory functions
-export { createAdapter, createAsyncAdapter } from "./adapters/factory.js";
+export {
+  createAdapter,
+  type BothFactoryAndClassError,
+  type NeitherFactoryNorClassError,
+  type BaseUnifiedConfig,
+  type FactoryConfig,
+  type ClassConfig,
+} from "./adapters/unified.js";
+export { createAsyncAdapter } from "./adapters/factory.js";
 
 // Service definition
 export { defineService, defineAsyncService, createClassAdapter } from "./adapters/service.js";
