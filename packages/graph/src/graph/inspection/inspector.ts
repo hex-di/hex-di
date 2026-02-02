@@ -18,7 +18,7 @@ import type {
 } from "../types/inspection.js";
 
 import { getPortDirection, getPortMetadata, ASYNC } from "@hex-di/core";
-import { createCorrelationIdGenerator, type CorrelationIdGenerator } from "./correlation.js";
+import { createCorrelationIdGenerator } from "./correlation.js";
 import {
   computeMaxChainDepth,
   computeOrphanPorts,
