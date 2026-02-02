@@ -5,15 +5,15 @@
 See: .planning/PROJECT.md (updated 2026-02-02)
 
 **Core value:** Catch dependency graph errors at compile time, not runtime
-**Current focus:** No active milestone
+**Current focus:** v4.0 GraphBuilder Improvements
 
 ## Current Position
 
-Phase: None (between milestones)
-Status: v3.0 shipped and archived
-Last activity: 2026-02-02 — Completed v3.0 Milestone
+Phase: Not started (defining requirements)
+Status: Defining requirements
+Last activity: 2026-02-02 — Milestone v4.0 started
 
-Progress: [██████████] 100% (v3.0 shipped)
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -78,4 +78,4 @@ Resume file: None
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-02 (v3.0 shipped and archived)_
+_Last updated: 2026-02-02 (v4.0 milestone started)_

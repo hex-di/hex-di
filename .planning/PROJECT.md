@@ -53,7 +53,14 @@ Catch dependency graph errors at compile time, not runtime — invalid graphs sh
 
 <!-- Current scope. Building toward these. -->
 
-(No active milestone)
+**v4.0 GraphBuilder Improvements:**
+
+- Unified `provide()` with type-level async detection
+- Override lifetime validation (HEX022)
+- Bidirectional captive validation
+- Inspection summary mode
+- Disposal lifecycle
+- API cleanup (remove deprecated methods, rename `withUnsafeDepthOverride`)
 
 ### Out of Scope
 
@@ -97,4 +104,4 @@ Catch dependency graph errors at compile time, not runtime — invalid graphs sh
 
 ---
 
-_Last updated: 2026-02-02 after v3.0 milestone completed_
+_Last updated: 2026-02-02 after v4.0 milestone started_
