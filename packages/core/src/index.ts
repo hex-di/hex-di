@@ -86,6 +86,8 @@ export type {
 // Factory functions
 export {
   createAdapter,
+  createAdapter as createUnifiedAdapter,
+  type PortsToServices,
   type BothFactoryAndClassError,
   type NeitherFactoryNorClassError,
   type BaseUnifiedConfig,
