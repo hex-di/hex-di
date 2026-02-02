@@ -20,6 +20,17 @@
 
 **Requirements:** API-01, API-02, API-03, API-04, API-05, API-06, API-07, CLASS-01, CLASS-02, CLASS-03
 
+**Plans:** 6 plans
+
+Plans:
+
+- [ ] 09-01-PLAN.md - Config types and branded error types
+- [ ] 09-02-PLAN.md - Factory-based createAdapter overloads
+- [ ] 09-03-PLAN.md - Class-based createAdapter overloads
+- [ ] 09-04-PLAN.md - Type tests for compile-time validation
+- [ ] 09-05-PLAN.md - Runtime tests for behavior verification
+- [ ] 09-06-PLAN.md - Export and integration
+
 **Success Criteria:**
 
 1. User can create sync adapter with `createAdapter({ provides: port, factory: deps => ... })`
@@ -104,7 +115,7 @@ See git history for details.
 
 | Phase | Name                       | Status  | Requirements |
 | ----- | -------------------------- | ------- | ------------ |
-| 9     | Unified createAdapter      | Pending | 10           |
+| 9     | Unified createAdapter      | Planned | 10           |
 | 10    | Async Lifetime Enforcement | Pending | 5            |
 | 11    | API Removal                | Pending | 6            |
 | 12    | Migration                  | Pending | 2            |
@@ -114,4 +125,4 @@ See git history for details.
 ---
 
 _Roadmap created: 2026-02-01_
-_Last updated: 2026-02-02 (v3.0 phases added)_
+_Last updated: 2026-02-02 (Phase 9 plans created)_
