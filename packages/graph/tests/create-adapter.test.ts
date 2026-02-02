@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createAdapter, createAsyncAdapter } from "@hex-di/core";
+import { createAdapter } from "@hex-di/core";
 import {
   type Logger,
   type Database,
@@ -147,12 +147,12 @@ describe("createAdapter function", () => {
 });
 
 // =============================================================================
-// createAsyncAdapter Unit Tests
+// createAdapter with async factory Unit Tests
 // =============================================================================
 
-describe("createAsyncAdapter function", () => {
+describe("createAdapter with async factory", () => {
   it("returns a frozen/immutable object", () => {
-    const adapter = createAsyncAdapter({
+    const adapter = createAdapter({
       provides: LoggerPort,
       requires: [],
       factory: async () => ({ log: () => {} }),
@@ -161,8 +161,8 @@ describe("createAsyncAdapter function", () => {
     expect(Object.isFrozen(adapter)).toBe(true);
   });
 
-  it("sets factoryKind to async", () => {
-    const adapter = createAsyncAdapter({
+  it("auto-detects async factory and sets factoryKind to async", () => {
+    const adapter = createAdapter({
       provides: LoggerPort,
       requires: [],
       factory: async () => ({ log: () => {} }),
@@ -171,8 +171,8 @@ describe("createAsyncAdapter function", () => {
     expect(adapter.factoryKind).toBe("async");
   });
 
-  it("sets lifetime to singleton", () => {
-    const adapter = createAsyncAdapter({
+  it("defaults lifetime to singleton for async factories", () => {
+    const adapter = createAdapter({
       provides: LoggerPort,
       requires: [],
       factory: async () => ({ log: () => {} }),
@@ -182,7 +182,7 @@ describe("createAsyncAdapter function", () => {
   });
 
   it("defaults clonable to false", () => {
-    const adapter = createAsyncAdapter({
+    const adapter = createAdapter({
       provides: LoggerPort,
       requires: [],
       factory: async () => ({ log: () => {} }),
@@ -192,7 +192,7 @@ describe("createAsyncAdapter function", () => {
   });
 
   it("accepts clonable option", () => {
-    const adapter = createAsyncAdapter({
+    const adapter = createAdapter({
       provides: LoggerPort,
       requires: [],
       factory: async () => ({ log: () => {} }),

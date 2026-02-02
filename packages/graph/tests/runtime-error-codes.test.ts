@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createPort, createAdapter, createAsyncAdapter } from "@hex-di/core";
+import { createPort, createAdapter } from "@hex-di/core";
 import { parseGraphError, isGraphError, GraphErrorCode } from "../src/advanced.js";
 
 describe("adapter factory runtime error codes", () => {
@@ -138,11 +138,11 @@ describe("adapter factory runtime error codes", () => {
     });
   });
 
-  describe("createAsyncAdapter validation errors", () => {
+  describe("createAdapter validation errors", () => {
     it("should include HEX010 for missing provides (async)", () => {
       expect(() => {
         // @ts-expect-error Testing runtime validation
-        createAsyncAdapter({
+        createAdapter({
           requires: [],
           factory: async () => ({}),
         });
@@ -159,7 +159,7 @@ describe("adapter factory runtime error codes", () => {
       };
       expect(() => {
         // @ts-expect-error Testing runtime validation with invalid factory type
-        createAsyncAdapter(invalidConfig);
+        createAdapter(invalidConfig);
       }).toThrow(/ERROR\[HEX016\]/);
     });
   });

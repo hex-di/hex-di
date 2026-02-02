@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createAdapter, createAsyncAdapter } from "@hex-di/core";
+import { createAdapter } from "@hex-di/core";
 import { LoggerPort } from "../fixtures.js";
 
 describe("adapter immutability", () => {
@@ -21,7 +21,7 @@ describe("adapter immutability", () => {
   });
 
   it("async adapter is frozen", () => {
-    const adapter = createAsyncAdapter({
+    const adapter = createAdapter({
       provides: LoggerPort,
       requires: [],
       factory: async () => ({ log: () => {} }),

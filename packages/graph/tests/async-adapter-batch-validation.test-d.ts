@@ -10,7 +10,7 @@
 import { describe, expectTypeOf, it } from "vitest";
 import { createPort } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
-import { createAsyncAdapter } from "@hex-di/core";
+import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 
 // =============================================================================
@@ -31,7 +31,7 @@ const ScopedAdapter = createAdapter({
 
 // Async adapter that depends on scoped port - should trigger captive error
 // Note: Async adapters are ALWAYS singletons at runtime
-const AsyncAdapterWithScopedDep = createAsyncAdapter({
+const AsyncAdapterWithScopedDep = createAdapter({
   provides: AsyncPort,
   requires: [ScopedPort] as const,
   factory: async () => ({ async: true as const }),
@@ -118,7 +118,7 @@ describe("batch with mixed sync and async adapters", () => {
   });
 
   // Async adapter requiring transient - also captive!
-  const AsyncWithTransient = createAsyncAdapter({
+  const AsyncWithTransient = createAdapter({
     provides: AsyncPort,
     requires: [TransientPort] as const,
     factory: async () => ({ async: true as const }),

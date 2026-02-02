@@ -263,7 +263,7 @@ export class AsyncFactoryError extends ContainerError {
 /**
  * Error thrown when attempting to synchronously resolve an async port before initialization.
  *
- * Async ports (those created with createAsyncAdapter) require either:
+ * Async ports (those with async factories) require either:
  * - Async resolution via resolveAsync(), or
  * - Container initialization via initialize() before sync resolve
  *

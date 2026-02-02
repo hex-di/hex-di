@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { createPort, createAdapter, createAsyncAdapter } from "@hex-di/core";
+import { createPort, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "@hex-di/runtime";
 import {
@@ -53,7 +53,7 @@ function buildContainer(disposalLog: string[]) {
     },
   });
 
-  const asyncValueAdapter = createAsyncAdapter({
+  const asyncValueAdapter = createAdapter({
     provides: AsyncValuePort,
     requires: [],
     factory: () => Promise.resolve({ value: "async-value" }),

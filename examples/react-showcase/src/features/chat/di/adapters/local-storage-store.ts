@@ -4,7 +4,7 @@
  * @packageDocumentation
  */
 
-import { createAsyncAdapter } from "@hex-di/core";
+import { createAdapter } from "@hex-di/core";
 import { MessageStorePort } from "../ports.js";
 import { LoggerPort } from "../../../core/di/ports.js";
 import type { Message, MessageStore, MessageListener, Unsubscribe } from "../../types.js";
@@ -30,7 +30,7 @@ const MESSAGES_STORAGE_KEY = "hex-di-chat-messages";
  * - Dependencies: LoggerPort - for logging message operations
  * - Async: Simulates async storage access with delay
  */
-export const LocalStorageMessageStoreAdapter = createAsyncAdapter({
+export const LocalStorageMessageStoreAdapter = createAdapter({
   provides: MessageStorePort,
   requires: [LoggerPort],
   // No lifetime - async adapters are always singletons

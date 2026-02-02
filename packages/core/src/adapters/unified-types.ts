@@ -86,9 +86,18 @@ export type AsyncLifetimeError<L extends string> =
  *
  * @typeParam TFactory - The factory function type to check
  * @returns `true` if factory returns Promise, `false` otherwise
+ *
+ * @remarks
+ * Special handling for `never` return type: Functions that always throw
+ * return `never`, which is a subtype of everything including Promise.
+ * We exclude `never` explicitly to avoid treating throwing factories as async.
  */
-export type IsAsyncFactory<TFactory> = TFactory extends (...args: never[]) => Promise<unknown>
-  ? true
+export type IsAsyncFactory<TFactory> = TFactory extends (...args: never[]) => infer R
+  ? [R] extends [never]
+    ? false // Throwing factories (return never) are not async
+    : R extends Promise<unknown>
+      ? true
+      : false
   : false;
 
 /**

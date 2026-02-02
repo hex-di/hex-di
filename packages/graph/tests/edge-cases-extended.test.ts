@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createAdapter, createAsyncAdapter, createPort } from "@hex-di/core";
+import { createAdapter, createPort } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 import { inspectGraph } from "../src/advanced.js";
 
@@ -58,7 +58,7 @@ describe("finalizer edge cases", () => {
     const Port = createPort<Service>({ name: "AsyncWithFinalizer" });
     const cleanupOrder: string[] = [];
 
-    const adapter = createAsyncAdapter({
+    const adapter = createAdapter({
       provides: Port,
       requires: [],
       factory: async () => ({ name: "async-service" }),
@@ -77,21 +77,21 @@ describe("finalizer edge cases", () => {
     const DatabasePort = createPort<Service>({ name: "Database" });
     const CachePort = createPort<Service>({ name: "Cache" });
 
-    const LoggerAdapter = createAsyncAdapter({
+    const LoggerAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
       factory: async () => ({ name: "logger" }),
       finalizer: async () => {},
     });
 
-    const DatabaseAdapter = createAsyncAdapter({
+    const DatabaseAdapter = createAdapter({
       provides: DatabasePort,
       requires: [LoggerPort],
       factory: async () => ({ name: "database" }),
       finalizer: async () => {},
     });
 
-    const CacheAdapter = createAsyncAdapter({
+    const CacheAdapter = createAdapter({
       provides: CachePort,
       requires: [LoggerPort],
       factory: async () => ({ name: "cache" }),
@@ -123,7 +123,7 @@ describe("finalizer edge cases", () => {
     });
 
     // Database HAS finalizer and depends on Config
-    const DatabaseAdapter = createAsyncAdapter({
+    const DatabaseAdapter = createAdapter({
       provides: DatabasePort,
       requires: [ConfigPort],
       factory: async () => ({ name: "database" }),
@@ -153,7 +153,7 @@ describe("finalizer edge cases", () => {
       },
     });
 
-    const asyncAdapter = createAsyncAdapter({
+    const asyncAdapter = createAdapter({
       provides: Port2,
       requires: [],
       factory: async () => ({ name: "async" }),

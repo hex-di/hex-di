@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createPort, createAdapter, createAsyncAdapter, isAdapter } from "@hex-di/core";
+import { createPort, createAdapter, isAdapter } from "@hex-di/core";
 import { GraphBuilder, isGraphBuilder, isGraph } from "../src/index.js";
 
 // =============================================================================
@@ -104,14 +104,14 @@ describe("createAdapter validation", () => {
 });
 
 // =============================================================================
-// createAsyncAdapter Validation
+// createAdapter Validation
 // =============================================================================
 
-describe("createAsyncAdapter validation", () => {
+describe("createAdapter validation", () => {
   it("sets factoryKind to async", () => {
     const Port = createPort<Service>({ name: "AsyncKind" });
 
-    const adapter = createAsyncAdapter({
+    const adapter = createAdapter({
       provides: Port,
       requires: [],
       factory: async () => ({ name: "test" }),
@@ -123,7 +123,7 @@ describe("createAsyncAdapter validation", () => {
   it("sets lifetime to singleton", () => {
     const Port = createPort<Service>({ name: "AsyncLifetime" });
 
-    const adapter = createAsyncAdapter({
+    const adapter = createAdapter({
       provides: Port,
       requires: [],
       factory: async () => ({ name: "test" }),
@@ -135,7 +135,7 @@ describe("createAsyncAdapter validation", () => {
   it("accepts clonable option", () => {
     const Port = createPort<Service>({ name: "AsyncClonable" });
 
-    const adapter = createAsyncAdapter({
+    const adapter = createAdapter({
       provides: Port,
       requires: [],
       factory: async () => ({ name: "test" }),

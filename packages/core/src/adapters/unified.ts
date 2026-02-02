@@ -10,7 +10,7 @@
 import type { Port, InferService } from "../ports/types.js";
 import type { Adapter, Lifetime, ResolvedDeps } from "./types.js";
 import type { TupleToUnion } from "../utils/type-utilities.js";
-import type { ClassConfig, IsAsyncFactory, EnforceAsyncLifetime } from "./unified-types.js";
+import type { IsAsyncFactory, EnforceAsyncLifetime } from "./unified-types.js";
 import {
   SYNC,
   ASYNC,
@@ -136,6 +136,7 @@ function assertValidAdapterConfig(
     requires?: unknown;
     lifetime?: unknown;
     factory?: unknown;
+    finalizer?: unknown;
   },
   isAsync: boolean
 ): void {
@@ -223,6 +224,15 @@ function assertValidAdapterConfig(
     throw new TypeError(
       `ERROR[HEX006]: Invalid adapter config: Adapter cannot require its own port '${providesPort.__portName}'. ` +
         "This would create a circular dependency."
+    );
+  }
+
+  // Validate 'finalizer' - must be a function if provided
+  if (config.finalizer !== undefined && typeof config.finalizer !== "function") {
+    throw new TypeError(
+      "ERROR[HEX018]: Invalid adapter config: 'finalizer' must be a function. " +
+        `Got: ${typeof config.finalizer}. ` +
+        "The finalizer function is called with the service instance when the container is disposed."
     );
   }
 }
@@ -650,11 +660,13 @@ export function createAdapter(config: {
   const lifetime = config.lifetime ?? SINGLETON;
   const clonable = config.clonable ?? FALSE;
 
-  // Determine factory function
+  // Determine factory function and factoryKind
   let factory: (deps: Record<string, unknown>) => unknown | Promise<unknown>;
-  const factoryKind = SYNC; // Class instantiation is always sync; for factories, type system handles async detection
+  let factoryKind: typeof SYNC | typeof ASYNC;
 
   if (config.class !== undefined) {
+    // Class instantiation is always sync
+    factoryKind = SYNC;
     // Class variant: create factory that instantiates class with constructor injection
     const ClassConstructor = config.class;
     factory = (deps: Record<string, unknown>): unknown => {
@@ -664,27 +676,38 @@ export function createAdapter(config: {
   } else if (config.factory !== undefined) {
     // Factory variant: use provided factory
     factory = config.factory;
+    // Detect async factories at runtime by checking constructor name
+    // Note: This detects `async () => {}` but not `() => Promise.resolve()`
+    // For the latter, users should use provideAsync() on GraphBuilder
+    factoryKind = config.factory.constructor.name === "AsyncFunction" ? ASYNC : SYNC;
   } else {
     // This should never happen due to validation above, but TypeScript needs exhaustiveness
     throw new TypeError("Unreachable: either factory or class must be defined");
   }
+
+  // Determine if this is an async adapter (for validation and lifetime enforcement)
+  const isAsync = factoryKind === ASYNC;
+
+  // Enforce singleton lifetime for async factories
+  const effectiveLifetime = isAsync ? SINGLETON : lifetime;
 
   // Call validation
   assertValidAdapterConfig(
     {
       provides: config.provides,
       requires,
-      lifetime,
+      lifetime: effectiveLifetime,
       factory,
+      finalizer: config.finalizer,
     },
-    false
+    isAsync
   );
 
   // Build the adapter object
   const baseAdapter = {
     provides: config.provides,
     requires,
-    lifetime,
+    lifetime: effectiveLifetime,
     factoryKind,
     factory,
     clonable,

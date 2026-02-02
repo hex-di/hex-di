@@ -7,13 +7,7 @@
  * @packageDocumentation
  */
 
-import {
-  createPort,
-  createAdapter,
-  createAsyncAdapter,
-  type Lifetime,
-  type Port,
-} from "@hex-di/core";
+import { createAdapter, type Lifetime, type Port } from "@hex-di/core";
 import { nextSequence } from "./utils/sequence.js";
 
 // =============================================================================
@@ -764,7 +758,7 @@ export function createMockAdapter<TService extends object, TName extends string>
   });
 
   if (isAsync) {
-    return createAsyncAdapter({
+    return createAdapter({
       provides: port,
       requires: [],
       clonable,

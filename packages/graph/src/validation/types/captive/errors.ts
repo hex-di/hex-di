@@ -134,7 +134,7 @@ export type MalformedAdapterError<TReason extends string = "unknown"> = {
   readonly __valid: false;
   readonly __errorBrand: "MalformedAdapterError";
   readonly reason: TReason;
-  readonly __message: `ERROR[HEX020]: Malformed adapter configuration. Reason: ${TReason}. Verify the adapter was created using createAdapter() or createAsyncAdapter() with all required properties.`;
+  readonly __message: `ERROR[HEX020]: Malformed adapter configuration. Reason: ${TReason}. Verify the adapter was created using createAdapter() with all required properties.`;
 };
 
 /**

@@ -10,7 +10,7 @@
  *
  * ## Why It Matters
  * Async adapters are initialized once at container startup and cached.
- * They must be singletons. While `createAsyncAdapter` enforces this at runtime,
+ * They must be singletons. While `createAdapter` enforces this at runtime,
  * manually constructed adapter types could bypass this constraint.
  *
  * @packageDocumentation

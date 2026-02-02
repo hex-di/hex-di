@@ -57,25 +57,21 @@ export type {
 } from "./constants.js";
 
 // Factory functions
-export { createAdapter, createAsyncAdapter } from "./factory.js";
+export {
+  createAdapter,
+  createAdapter as createUnifiedAdapter,
+  type PortsToServices,
+} from "./unified.js";
 
-// Unified adapter API
-export { createAdapter as createUnifiedAdapter, type PortsToServices } from "./unified.js";
-
-// Unified adapter types (for advanced users)
+// Unified adapter types
 export type {
   BaseUnifiedConfig,
   FactoryConfig,
   ClassConfig,
   BothFactoryAndClassError,
   NeitherFactoryNorClassError,
+  AsyncLifetimeError,
 } from "./unified-types.js";
-
-// Service helpers
-export { defineService, defineAsyncService, createClassAdapter } from "./service.js";
-
-// Fluent builder
-export { ServiceBuilder } from "./builder.js";
 
 // Lazy port utilities
 export type { LazyPort, IsLazyPort, UnwrapLazyPort } from "./lazy.js";

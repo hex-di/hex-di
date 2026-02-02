@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createPort, type Port, createAdapter, createAsyncAdapter } from "@hex-di/core";
+import { createPort, type Port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import {
   createContainer,
@@ -61,7 +61,7 @@ describe("Async Factory Resolution", () => {
         factory: () => ({ connectionString: "postgres://localhost:5432" }),
       });
 
-      const DatabaseAdapter = createAsyncAdapter({
+      const DatabaseAdapter = createAdapter({
         provides: DatabasePort,
         requires: [ConfigPort],
 
@@ -115,7 +115,7 @@ describe("Async Factory Resolution", () => {
     it("should cache async singleton instances", async () => {
       let factoryCallCount = 0;
 
-      const DatabaseAdapter = createAsyncAdapter({
+      const DatabaseAdapter = createAdapter({
         provides: DatabasePort,
         requires: [],
 
@@ -149,7 +149,7 @@ describe("Async Factory Resolution", () => {
     it("should share promise for concurrent resolutions of same port", async () => {
       let factoryCallCount = 0;
 
-      const DatabaseAdapter = createAsyncAdapter({
+      const DatabaseAdapter = createAdapter({
         provides: DatabasePort,
         requires: [],
 
@@ -210,7 +210,7 @@ describe("Async Factory Resolution", () => {
         },
       });
 
-      const DatabaseAdapter = createAsyncAdapter({
+      const DatabaseAdapter = createAdapter({
         provides: DatabasePort,
         requires: [ConfigPort, LoggerPort],
 
@@ -260,7 +260,7 @@ describe("Container initialization", () => {
       let dbInitialized = false;
       let cacheInitialized = false;
 
-      const DatabaseAdapter = createAsyncAdapter({
+      const DatabaseAdapter = createAdapter({
         provides: DatabasePort,
         requires: [],
 
@@ -274,7 +274,7 @@ describe("Container initialization", () => {
         },
       });
 
-      const CacheAdapter = createAsyncAdapter({
+      const CacheAdapter = createAdapter({
         provides: CachePort,
         requires: [],
 
@@ -311,7 +311,7 @@ describe("Container initialization", () => {
       const initOrder: string[] = [];
 
       // Database has no dependencies
-      const DatabaseAdapter = createAsyncAdapter({
+      const DatabaseAdapter = createAdapter({
         provides: DatabasePort,
         requires: [],
         factory: async () => {
@@ -325,7 +325,7 @@ describe("Container initialization", () => {
       });
 
       // Cache depends on Database
-      const CacheAdapter = createAsyncAdapter({
+      const CacheAdapter = createAdapter({
         provides: CachePort,
         requires: [DatabasePort],
         factory: async () => {
@@ -353,7 +353,7 @@ describe("Container initialization", () => {
     });
 
     it("should allow sync resolve after initialization", async () => {
-      const DatabaseAdapter = createAsyncAdapter({
+      const DatabaseAdapter = createAdapter({
         provides: DatabasePort,
         requires: [],
 
@@ -382,16 +382,16 @@ describe("Container initialization", () => {
     it("should be idempotent", async () => {
       let factoryCallCount = 0;
 
-      const DatabaseAdapter = createAsyncAdapter({
+      const DatabaseAdapter = createAdapter({
         provides: DatabasePort,
         requires: [],
 
-        factory: () => {
+        factory: async () => {
           factoryCallCount++;
-          return Promise.resolve({
+          return {
             query: (sql: string) => Promise.resolve(`Result: ${sql}`),
             close: () => Promise.resolve(),
-          });
+          };
         },
       });
 
@@ -418,7 +418,7 @@ describe("Container initialization", () => {
 describe("Async error handling", () => {
   describe("AsyncFactoryError", () => {
     it("should throw AsyncFactoryError when async factory throws", async () => {
-      const DatabaseAdapter = createAsyncAdapter({
+      const DatabaseAdapter = createAdapter({
         provides: DatabasePort,
         requires: [],
 
@@ -455,12 +455,12 @@ describe("Async error handling", () => {
     });
 
     it("should propagate async factory errors during initialization", async () => {
-      const DatabaseAdapter = createAsyncAdapter({
+      const DatabaseAdapter = createAdapter({
         provides: DatabasePort,
         requires: [],
 
-        factory: () => {
-          return Promise.reject(new Error("Init failed"));
+        factory: async () => {
+          throw new Error("Init failed");
         },
       });
 
@@ -478,15 +478,14 @@ describe("Async error handling", () => {
 
   describe("AsyncInitializationRequiredError", () => {
     it("should throw when sync-resolving async port before initialization", async () => {
-      const DatabaseAdapter = createAsyncAdapter({
+      const DatabaseAdapter = createAdapter({
         provides: DatabasePort,
         requires: [],
 
-        factory: () =>
-          Promise.resolve({
-            query: (sql: string) => Promise.resolve(`Result: ${sql}`),
-            close: () => Promise.resolve(),
-          }),
+        factory: async () => ({
+          query: (sql: string) => Promise.resolve(`Result: ${sql}`),
+          close: () => Promise.resolve(),
+        }),
       });
 
       const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
@@ -505,7 +504,7 @@ describe("Async error handling", () => {
 
   describe("DisposedScopeError for async resolution", () => {
     it("should throw DisposedScopeError when resolving async from disposed container", async () => {
-      const DatabaseAdapter = createAsyncAdapter({
+      const DatabaseAdapter = createAdapter({
         provides: DatabasePort,
         requires: [],
 
@@ -532,7 +531,7 @@ describe("Async error handling", () => {
 
 describe("Scope async resolution", () => {
   it("should resolve async adapters in scope", async () => {
-    const DatabaseAdapter = createAsyncAdapter({
+    const DatabaseAdapter = createAdapter({
       provides: DatabasePort,
       requires: [],
 
@@ -562,7 +561,7 @@ describe("Scope async resolution", () => {
   it("should share singleton async instances between scopes", async () => {
     let factoryCallCount = 0;
 
-    const DatabaseAdapter = createAsyncAdapter({
+    const DatabaseAdapter = createAdapter({
       provides: DatabasePort,
       requires: [],
 
@@ -601,7 +600,7 @@ describe("Async adapter finalizers", () => {
   it("should call finalizer on dispose for async adapters", async () => {
     const closeCalled = vi.fn();
 
-    const DatabaseAdapter = createAsyncAdapter({
+    const DatabaseAdapter = createAdapter({
       provides: DatabasePort,
       requires: [],
 
@@ -635,7 +634,7 @@ describe("Resolution hooks for async adapters", () => {
     const beforeResolveCalls: string[] = [];
     const afterResolveCalls: { portName: string; duration: number; error: Error | null }[] = [];
 
-    const DatabaseAdapter = createAsyncAdapter({
+    const DatabaseAdapter = createAdapter({
       provides: DatabasePort,
       requires: [],
       factory: async () => {
@@ -683,7 +682,7 @@ describe("Resolution hooks for async adapters", () => {
   it("should emit hooks with isCacheHit=true for cached async adapters", async () => {
     const hookCalls: { portName: string; isCacheHit: boolean }[] = [];
 
-    const DatabaseAdapter = createAsyncAdapter({
+    const DatabaseAdapter = createAdapter({
       provides: DatabasePort,
       requires: [],
       factory: () =>
@@ -729,7 +728,7 @@ describe("Resolution hooks for async adapters", () => {
       factory: () => ({ connectionString: "postgres://localhost" }),
     });
 
-    const DatabaseAdapter = createAsyncAdapter({
+    const DatabaseAdapter = createAdapter({
       provides: DatabasePort,
       requires: [ConfigPort],
       factory: () =>
@@ -780,7 +779,7 @@ describe("Resolution hooks for async adapters", () => {
   it("should emit hooks with error for failed async factories", async () => {
     const afterResolveCalls: { portName: string; error: Error | null }[] = [];
 
-    const DatabaseAdapter = createAsyncAdapter({
+    const DatabaseAdapter = createAdapter({
       provides: DatabasePort,
       requires: [],
       factory: () => {
@@ -822,7 +821,7 @@ describe("Resolution hooks for async adapters", () => {
     let beforeResolveCount = 0;
     let afterResolveCount = 0;
 
-    const DatabaseAdapter = createAsyncAdapter({
+    const DatabaseAdapter = createAdapter({
       provides: DatabasePort,
       requires: [],
       factory: async () => {

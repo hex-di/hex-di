@@ -10,7 +10,7 @@
  */
 
 import { describe, test, expect } from "vitest";
-import { createPort, createAdapter, createAsyncAdapter } from "@hex-di/core";
+import { createPort, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/index.js";
 import { portComparator } from "../src/types/helpers.js";
@@ -103,27 +103,27 @@ describe("Port Resolution Type Safety", () => {
       }),
     });
 
-    const DatabaseAdapter = createAsyncAdapter({
+    const DatabaseAdapter = createAdapter({
       provides: DatabasePort,
       requires: [],
-      factory: () => {
+      factory: async () => {
         resolutionOrder.push("Database");
-        return Promise.resolve({
+        return {
           query: () => Promise.resolve(null),
           close: () => Promise.resolve(),
-        });
+        };
       },
     });
 
-    const CacheAdapter = createAsyncAdapter({
+    const CacheAdapter = createAdapter({
       provides: CachePort,
       requires: [],
-      factory: () => {
+      factory: async () => {
         resolutionOrder.push("Cache");
-        return Promise.resolve({
+        return {
           get: () => Promise.resolve(null),
           set: () => Promise.resolve(),
-        });
+        };
       },
     });
 
@@ -165,7 +165,7 @@ describe("Port Resolution Type Safety", () => {
       }),
     });
 
-    const DatabaseAdapter = createAsyncAdapter({
+    const DatabaseAdapter = createAdapter({
       provides: DatabasePort,
       requires: [],
       factory: () =>
@@ -221,7 +221,7 @@ describe("Port Resolution Type Safety", () => {
   });
 
   test("handles multiple async ports with correct type preservation", async () => {
-    const DatabaseAdapter = createAsyncAdapter({
+    const DatabaseAdapter = createAdapter({
       provides: DatabasePort,
       requires: [],
       factory: () =>
@@ -231,7 +231,7 @@ describe("Port Resolution Type Safety", () => {
         }),
     });
 
-    const CacheAdapter = createAsyncAdapter({
+    const CacheAdapter = createAdapter({
       provides: CachePort,
       requires: [],
       factory: () =>
@@ -271,7 +271,7 @@ describe("Port Resolution Type Safety", () => {
     for (let i = 0; i < 3; i++) {
       const resolutionOrder: string[] = [];
 
-      const DatabaseAdapter = createAsyncAdapter({
+      const DatabaseAdapter = createAdapter({
         provides: DatabasePort,
         requires: [],
         factory: () => {
@@ -283,7 +283,7 @@ describe("Port Resolution Type Safety", () => {
         },
       });
 
-      const CacheAdapter = createAsyncAdapter({
+      const CacheAdapter = createAdapter({
         provides: CachePort,
         requires: [],
         factory: () => {

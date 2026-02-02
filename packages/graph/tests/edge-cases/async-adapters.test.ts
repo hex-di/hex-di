@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createPort, createAdapter, createAsyncAdapter } from "@hex-di/core";
+import { createPort, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../../src/index.js";
 
 interface Service {
@@ -17,7 +17,7 @@ describe("async adapter edge cases", () => {
     const AsyncServicePort = createPort<Service>({ name: "AsyncService" });
 
     const receivedDeps: unknown[] = [];
-    const asyncAdapter = createAsyncAdapter({
+    const asyncAdapter = createAdapter({
       provides: AsyncServicePort,
       requires: [],
       factory: async deps => {
@@ -34,7 +34,7 @@ describe("async adapter edge cases", () => {
   it("async adapter is always a singleton", () => {
     const AsyncServicePort = createPort<Service>({ name: "AsyncService" });
 
-    const asyncAdapter = createAsyncAdapter({
+    const asyncAdapter = createAdapter({
       provides: AsyncServicePort,
       requires: [],
       factory: async () => ({ name: "async-service" }),
@@ -51,21 +51,21 @@ describe("async adapter edge cases", () => {
 
     const graph = GraphBuilder.create()
       .provideAsync(
-        createAsyncAdapter({
+        createAdapter({
           provides: Async1Port,
           requires: [],
           factory: async () => ({ name: "async1" }),
         })
       )
       .provideAsync(
-        createAsyncAdapter({
+        createAdapter({
           provides: Async2Port,
           requires: [Async1Port],
           factory: async () => ({ name: "async2" }),
         })
       )
       .provideAsync(
-        createAsyncAdapter({
+        createAdapter({
           provides: Async3Port,
           requires: [Async1Port, Async2Port],
           factory: async () => ({ name: "async3" }),
@@ -89,7 +89,7 @@ describe("async adapter edge cases", () => {
       factory: () => ({ name: "sync" }),
     });
 
-    const asyncAdapter = createAsyncAdapter({
+    const asyncAdapter = createAdapter({
       provides: AsyncPort,
       requires: [SyncPort],
       factory: async () => ({ name: "async" }),
@@ -105,7 +105,7 @@ describe("async adapter edge cases", () => {
   it("async adapter factory return type is Promise", () => {
     const AsyncPort = createPort<Service>({ name: "AsyncReturn" });
 
-    const asyncAdapter = createAsyncAdapter({
+    const asyncAdapter = createAdapter({
       provides: AsyncPort,
       requires: [],
       factory: async () => {
@@ -123,14 +123,14 @@ describe("async adapter edge cases", () => {
   it("async adapter preserves clonable property", () => {
     const ClonableAsyncPort = createPort<Service>({ name: "ClonableAsync" });
 
-    const clonableAsync = createAsyncAdapter({
+    const clonableAsync = createAdapter({
       provides: ClonableAsyncPort,
       requires: [],
       clonable: true,
       factory: async () => ({ name: "clonable-async" }),
     });
 
-    const nonClonableAsync = createAsyncAdapter({
+    const nonClonableAsync = createAdapter({
       provides: createPort<Service>({ name: "NonClonableAsync" }),
       requires: [],
       factory: async () => ({ name: "non-clonable-async" }),

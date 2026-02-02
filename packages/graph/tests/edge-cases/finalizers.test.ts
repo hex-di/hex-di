@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { createAdapter, createAsyncAdapter } from "@hex-di/core";
+import { createAdapter } from "@hex-di/core";
 import { LoggerPort } from "../fixtures.js";
 
 describe("finalizer handling", () => {
@@ -26,7 +26,7 @@ describe("finalizer handling", () => {
   it("adapter preserves async finalizer", () => {
     const finalizerFn = vi.fn().mockResolvedValue(undefined);
 
-    const adapter = createAsyncAdapter({
+    const adapter = createAdapter({
       provides: LoggerPort,
       requires: [],
       factory: async () => ({ log: () => {} }),

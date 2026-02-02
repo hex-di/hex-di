@@ -38,7 +38,7 @@
  * @packageDocumentation
  */
 
-import { createPort, createAdapter, createAsyncAdapter, type Lifetime } from "@hex-di/core";
+import { createPort, createAdapter, type Lifetime } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 import { __emptyDepGraphBrand, __emptyLifetimeMapBrand } from "../src/advanced.js";
 import { nextSequence } from "./utils/sequence.js";
@@ -408,7 +408,7 @@ export const UserServiceAdapter = createAdapter({
  * Standard config adapter constant - async adapter.
  * Use this when you need a stable adapter reference or for type-level tests.
  */
-export const ConfigAdapter = createAsyncAdapter({
+export const ConfigAdapter = createAdapter({
   provides: ConfigPort,
   requires: [] as const,
   factory: async () => ({
@@ -507,7 +507,7 @@ export function createUserServiceAdapter() {
  * Each call returns a fresh adapter instance.
  */
 export function createConfigAdapter() {
-  return createAsyncAdapter({
+  return createAdapter({
     provides: ConfigPort,
     requires: [],
     factory: async () => ({

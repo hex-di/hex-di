@@ -4,7 +4,7 @@
  * @packageDocumentation
  */
 
-import { createAsyncAdapter } from "@hex-di/core";
+import { createAdapter } from "@hex-di/core";
 import { ConfigPort } from "../ports.js";
 import type { Config } from "../../../types.js";
 
@@ -20,7 +20,7 @@ import type { Config } from "../../../types.js";
  * - Dependencies: none
  * - Async: Simulates API call with delay
  */
-export const ConfigAdapter = createAsyncAdapter({
+export const ConfigAdapter = createAdapter({
   provides: ConfigPort,
   requires: [],
   // No lifetime - async adapters are always singletons

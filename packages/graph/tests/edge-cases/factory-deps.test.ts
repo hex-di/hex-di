@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createPort, createAdapter, createAsyncAdapter } from "@hex-di/core";
+import { createPort, createAdapter } from "@hex-di/core";
 import { LoggerPort, DatabasePort } from "../fixtures.js";
 
 interface Service {
@@ -36,7 +36,7 @@ describe("factory deps edge cases", () => {
   it("async factory receives empty object when no dependencies", async () => {
     let receivedDeps: unknown;
 
-    const adapter = createAsyncAdapter({
+    const adapter = createAdapter({
       provides: LoggerPort,
       requires: [],
       factory: async deps => {

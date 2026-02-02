@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createPort, createAdapter, createAsyncAdapter } from "@hex-di/core";
+import { createPort, createAdapter } from "@hex-di/core";
 import { parseGraphError } from "../src/advanced.js";
 import { GraphBuilder } from "../src/index.js";
 import { inspectGraph, GraphErrorCode } from "../src/advanced.js";
@@ -330,13 +330,13 @@ describe("GraphInspection output snapshots", () => {
   });
 
   it("snapshot: graph with async adapters inspection", () => {
-    const AsyncConfigAdapter = createAsyncAdapter({
+    const AsyncConfigAdapter = createAdapter({
       provides: ConfigPort,
       requires: [],
       factory: async () => ({ get: () => "" }),
     });
 
-    const AsyncDatabaseAdapter = createAsyncAdapter({
+    const AsyncDatabaseAdapter = createAdapter({
       provides: DatabasePort,
       requires: [ConfigPort],
       factory: async () => ({ query: async () => ({}) }),
@@ -721,7 +721,7 @@ describe("adapter structure snapshots", () => {
   });
 
   it("snapshot: async adapter structure", () => {
-    const adapter = createAsyncAdapter({
+    const adapter = createAdapter({
       provides: DatabasePort,
       requires: [LoggerPort],
       factory: async () => ({ query: async () => ({}) }),
@@ -748,7 +748,7 @@ describe("adapter structure snapshots", () => {
   });
 
   it("snapshot: adapter with finalizer structure", () => {
-    const adapter = createAsyncAdapter({
+    const adapter = createAdapter({
       provides: DatabasePort,
       requires: [],
       factory: async () => ({ query: async () => ({}) }),

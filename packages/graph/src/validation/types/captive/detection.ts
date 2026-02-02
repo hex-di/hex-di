@@ -405,7 +405,7 @@ export type FindReverseCaptiveDependency<
  * field says. This is because:
  * 1. Async initialization happens once at container startup
  * 2. The resulting instance is cached and reused for all resolutions
- * 3. `createAsyncAdapter()` already sets `lifetime: "singleton"` but this
+ * 3. `createAdapter()` with async factory already sets `lifetime: "singleton"` but this
  *    check provides defense-in-depth
  *
  * Returns an error message for invalid or missing lifetime values.

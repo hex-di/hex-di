@@ -11,7 +11,7 @@
  * @packageDocumentation
  */
 
-import { createAdapter, createAsyncAdapter } from "@hex-di/core";
+import { createAdapter } from "@hex-di/core";
 import {
   ConfigPort,
   LoggerPort,
@@ -104,7 +104,7 @@ let notificationInstanceCounter = 0;
  * - Dependencies: none
  * - Async: Simulates API call with delay
  */
-export const ConfigAdapter = createAsyncAdapter({
+export const ConfigAdapter = createAdapter({
   provides: ConfigPort,
   requires: [],
   // No lifetime field - async adapters are always singletons

@@ -507,7 +507,7 @@ export type InvalidLifetimeErrorMessage =
  * @example
  * When an adapter is missing the lifetime property:
  * ```
- * "ERROR[HEX020]: Malformed adapter configuration. Missing or invalid 'lifetime' property. Verify the adapter was created using createAdapter() or createAsyncAdapter()."
+ * "ERROR[HEX020]: Malformed adapter configuration. Missing or invalid 'lifetime' property. Verify the adapter was created using createAdapter()."
  * ```
  */
 /**
@@ -517,8 +517,8 @@ export type InvalidLifetimeErrorMessage =
  */
 export type MalformedAdapterErrorMessage<TPortName extends string = "unknown"> =
   TPortName extends "unknown"
-    ? `ERROR[HEX020]: Malformed adapter configuration. Missing or invalid 'lifetime' property. Verify the adapter was created using createAdapter() or createAsyncAdapter().`
-    : `ERROR[HEX020]: Malformed adapter for '${TPortName}'. Missing or invalid 'lifetime' property. Verify the adapter was created using createAdapter() or createAsyncAdapter().`;
+    ? `ERROR[HEX020]: Malformed adapter configuration. Missing or invalid 'lifetime' property. Verify the adapter was created using createAdapter().`
+    : `ERROR[HEX020]: Malformed adapter for '${TPortName}'. Missing or invalid 'lifetime' property. Verify the adapter was created using createAdapter().`;
 
 /**
  * Template literal error message for unexpected internal errors.

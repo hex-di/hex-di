@@ -95,16 +95,6 @@ export {
   type FactoryConfig,
   type ClassConfig,
 } from "./adapters/unified.js";
-export { createAsyncAdapter } from "./adapters/factory.js";
-
-// Service definition
-export { defineService, defineAsyncService, createClassAdapter } from "./adapters/service.js";
-
-// Fluent builder
-export { ServiceBuilder } from "./adapters/builder.js";
-
-// Class-based builder
-export { fromClass, ClassAdapterBuilder, ClassServiceBuilder } from "./adapters/from-class.js";
 
 // Lazy ports
 export { lazyPort, isLazyPort, getOriginalPort } from "./adapters/lazy.js";

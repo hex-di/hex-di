@@ -17,12 +17,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import {
-  createPort,
-  createAdapter,
-  createAsyncAdapter,
-  type AdapterConstraint,
-} from "@hex-di/core";
+import { createPort, createAdapter, createAdapter, type AdapterConstraint } from "@hex-di/core";
 import { GraphBuilder, type Graph } from "../src/index.js";
 import { createLoggerAdapter, createDatabaseAdapter } from "./fixtures.js";
 
@@ -52,7 +47,7 @@ function makeAdapter(name: string) {
 }
 
 function makeAsyncAdapter(name: string) {
-  return createAsyncAdapter({
+  return createAdapter({
     provides: makePort(name),
     requires: [],
     factory: async () => ({ name }),
@@ -287,19 +282,19 @@ describe("concurrent: async adapter operations", () => {
     const DatabasePort = createPort<TestService>({ name: "Database" });
     const CachePort = createPort<TestService>({ name: "Cache" });
 
-    const config = createAsyncAdapter({
+    const config = createAdapter({
       provides: ConfigPort,
       requires: [],
       factory: async () => ({ name: "config" }),
     });
 
-    const database = createAsyncAdapter({
+    const database = createAdapter({
       provides: DatabasePort,
       requires: [ConfigPort],
       factory: async () => ({ name: "database" }),
     });
 
-    const cache = createAsyncAdapter({
+    const cache = createAdapter({
       provides: CachePort,
       requires: [ConfigPort],
       factory: async () => ({ name: "cache" }),
