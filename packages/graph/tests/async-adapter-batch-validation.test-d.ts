@@ -2,7 +2,7 @@
  * Type-level tests for async adapter singleton validation in batch operations.
  *
  * Verifies that `provideMany()` correctly treats async adapters as singletons
- * for captive dependency detection, consistent with `provideAsync()` behavior.
+ * for captive dependency detection, consistent with `provide()` behavior.
  *
  * @packageDocumentation
  */
@@ -49,7 +49,7 @@ const SingletonWithScopedDep = createAdapter({
 
 describe("provideMany() async adapter captive detection", () => {
   it("should detect captive dependency when async adapter requires scoped", () => {
-    // With provideAsync(), this DOES detect the captive dependency
+    // With provide(), this DOES detect the captive dependency
     // provideMany() should behave consistently
     const builder = GraphBuilder.create().provide(ScopedAdapter);
 
@@ -68,17 +68,17 @@ describe("provideMany() async adapter captive detection", () => {
     expectTypeOf<HasProvide>().toEqualTypeOf<false>();
   });
 
-  it("should match provideAsync() behavior for consistency", () => {
-    // Reference: provideAsync() correctly detects captive
-    const withProvideAsync = GraphBuilder.create()
+  it("should match provide() behavior for consistency", () => {
+    // Reference: provide() correctly detects captive
+    const withProvide = GraphBuilder.create()
       .provide(ScopedAdapter)
       .provide(AsyncAdapterWithScopedDep);
 
-    type ProvideAsyncResult = typeof withProvideAsync;
-    type ProvideAsyncHasProvide = ProvideAsyncResult extends { provide: unknown } ? true : false;
+    type ProvideResult = typeof withProvide;
+    type ProvideHasProvide = ProvideResult extends { provide: unknown } ? true : false;
 
-    // provideAsync() should detect captive (no provide method on error)
-    expectTypeOf<ProvideAsyncHasProvide>().toEqualTypeOf<false>();
+    // provide() should detect captive (no provide method on error)
+    expectTypeOf<ProvideHasProvide>().toEqualTypeOf<false>();
 
     // provideMany() should behave the same
     const withProvideMany = GraphBuilder.create()
