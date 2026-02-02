@@ -24,12 +24,12 @@
 
 Plans:
 
-- [ ] 09-01-PLAN.md - Config types and branded error types
-- [ ] 09-02-PLAN.md - Factory-based createAdapter overloads
-- [ ] 09-03-PLAN.md - Class-based createAdapter overloads
-- [ ] 09-04-PLAN.md - Type tests for compile-time validation
-- [ ] 09-05-PLAN.md - Runtime tests for behavior verification
-- [ ] 09-06-PLAN.md - Export and integration
+- [x] 09-01-PLAN.md - Config types and branded error types
+- [x] 09-02-PLAN.md - Factory-based createAdapter overloads
+- [x] 09-03-PLAN.md - Class-based createAdapter overloads
+- [x] 09-04-PLAN.md - Type tests for compile-time validation
+- [x] 09-05-PLAN.md - Runtime tests for behavior verification
+- [x] 09-06-PLAN.md - Export and integration
 
 **Success Criteria:**
 
@@ -48,6 +48,13 @@ Plans:
 **Dependencies:** Phase 9 (requires unified createAdapter)
 
 **Requirements:** ASYNC-01, ASYNC-02, ASYNC-03, ASYNC-04, ASYNC-05
+
+**Plans:** 2 plans
+
+Plans:
+
+- [ ] 10-01-PLAN.md - Async lifetime error types and overload updates
+- [ ] 10-02-PLAN.md - Type tests for compile-time enforcement
 
 **Success Criteria:**
 
@@ -113,16 +120,16 @@ See git history for details.
 
 ## Progress
 
-| Phase | Name                       | Status  | Requirements |
-| ----- | -------------------------- | ------- | ------------ |
-| 9     | Unified createAdapter      | Planned | 10           |
-| 10    | Async Lifetime Enforcement | Pending | 5            |
-| 11    | API Removal                | Pending | 6            |
-| 12    | Migration                  | Pending | 2            |
+| Phase | Name                       | Status   | Requirements |
+| ----- | -------------------------- | -------- | ------------ |
+| 9     | Unified createAdapter      | Complete | 10           |
+| 10    | Async Lifetime Enforcement | Pending  | 5            |
+| 11    | API Removal                | Pending  | 6            |
+| 12    | Migration                  | Pending  | 2            |
 
 **v3.0 Coverage:** 23/23 requirements mapped
 
 ---
 
 _Roadmap created: 2026-02-01_
-_Last updated: 2026-02-02 (Phase 9 plans created)_
+_Last updated: 2026-02-02 (Phase 9 complete)_

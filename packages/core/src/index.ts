@@ -90,6 +90,7 @@ export {
   type PortsToServices,
   type BothFactoryAndClassError,
   type NeitherFactoryNorClassError,
+  type AsyncLifetimeError,
   type BaseUnifiedConfig,
   type FactoryConfig,
   type ClassConfig,

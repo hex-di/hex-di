@@ -9,13 +9,13 @@ Requirements for the unified Adapter API. Each maps to roadmap phases.
 
 ### Unified API
 
-- [ ] **API-01**: Single `createAdapter()` function accepts object config
-- [ ] **API-02**: `factory` property accepts sync or async factory function
-- [ ] **API-03**: `class` property accepts class constructor for class-based injection
-- [ ] **API-04**: Either `factory` or `class` required (mutually exclusive)
-- [ ] **API-05**: `requires` defaults to empty array when not specified
-- [ ] **API-06**: `lifetime` defaults to `'singleton'` when not specified
-- [ ] **API-07**: Auto-detect async from factory return type (no separate function)
+- [x] **API-01**: Single `createAdapter()` function accepts object config
+- [x] **API-02**: `factory` property accepts sync or async factory function
+- [x] **API-03**: `class` property accepts class constructor for class-based injection
+- [x] **API-04**: Either `factory` or `class` required (mutually exclusive)
+- [x] **API-05**: `requires` defaults to empty array when not specified
+- [x] **API-06**: `lifetime` defaults to `'singleton'` when not specified
+- [x] **API-07**: Auto-detect async from factory return type (no separate function)
 
 ### Async Lifetime Enforcement
 
@@ -27,9 +27,9 @@ Requirements for the unified Adapter API. Each maps to roadmap phases.
 
 ### Class-Based Injection
 
-- [ ] **CLASS-01**: `class` property accepts constructor function
-- [ ] **CLASS-02**: Constructor params injected in `requires` array order
-- [ ] **CLASS-03**: Class-based adapter supports all lifetimes (sync instantiation)
+- [x] **CLASS-01**: `class` property accepts constructor function
+- [x] **CLASS-02**: Constructor params injected in `requires` array order
+- [x] **CLASS-03**: Class-based adapter supports all lifetimes (sync instantiation)
 
 ### API Removal
 
@@ -69,31 +69,31 @@ Explicitly excluded. Documented to prevent scope creep.
 
 Which phases cover which requirements. Updated during roadmap creation.
 
-| Requirement | Phase | Status  |
-| ----------- | ----- | ------- |
-| API-01      | 9     | Pending |
-| API-02      | 9     | Pending |
-| API-03      | 9     | Pending |
-| API-04      | 9     | Pending |
-| API-05      | 9     | Pending |
-| API-06      | 9     | Pending |
-| API-07      | 9     | Pending |
-| ASYNC-01    | 10    | Pending |
-| ASYNC-02    | 10    | Pending |
-| ASYNC-03    | 10    | Pending |
-| ASYNC-04    | 10    | Pending |
-| ASYNC-05    | 10    | Pending |
-| CLASS-01    | 9     | Pending |
-| CLASS-02    | 9     | Pending |
-| CLASS-03    | 9     | Pending |
-| REM-01      | 11    | Pending |
-| REM-02      | 11    | Pending |
-| REM-03      | 11    | Pending |
-| REM-04      | 11    | Pending |
-| REM-05      | 11    | Pending |
-| REM-06      | 11    | Pending |
-| MIG-01      | 12    | Pending |
-| MIG-02      | 12    | Pending |
+| Requirement | Phase | Status    |
+| ----------- | ----- | --------- |
+| API-01      | 9     | Delivered |
+| API-02      | 9     | Delivered |
+| API-03      | 9     | Delivered |
+| API-04      | 9     | Delivered |
+| API-05      | 9     | Delivered |
+| API-06      | 9     | Delivered |
+| API-07      | 9     | Delivered |
+| ASYNC-01    | 10    | Pending   |
+| ASYNC-02    | 10    | Pending   |
+| ASYNC-03    | 10    | Pending   |
+| ASYNC-04    | 10    | Pending   |
+| ASYNC-05    | 10    | Pending   |
+| CLASS-01    | 9     | Delivered |
+| CLASS-02    | 9     | Delivered |
+| CLASS-03    | 9     | Delivered |
+| REM-01      | 11    | Pending   |
+| REM-02      | 11    | Pending   |
+| REM-03      | 11    | Pending   |
+| REM-04      | 11    | Pending   |
+| REM-05      | 11    | Pending   |
+| REM-06      | 11    | Pending   |
+| MIG-01      | 12    | Pending   |
+| MIG-02      | 12    | Pending   |
 
 **Coverage:**
 
@@ -104,4 +104,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 ---
 
 _Requirements defined: 2026-02-02_
-_Last updated: 2026-02-02 after roadmap creation (traceability filled)_
+_Last updated: 2026-02-02 Phase 9 delivered (10/23 requirements)_

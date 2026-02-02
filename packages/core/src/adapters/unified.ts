@@ -10,7 +10,7 @@
 import type { Port, InferService } from "../ports/types.js";
 import type { Adapter, Lifetime, ResolvedDeps } from "./types.js";
 import type { TupleToUnion } from "../utils/type-utilities.js";
-import type { ClassConfig } from "./unified-types.js";
+import type { ClassConfig, IsAsyncFactory, EnforceAsyncLifetime } from "./unified-types.js";
 import {
   SYNC,
   ASYNC,
@@ -28,6 +28,7 @@ import {
 export type {
   BothFactoryAndClassError,
   NeitherFactoryNorClassError,
+  AsyncLifetimeError,
   BaseUnifiedConfig,
   FactoryConfig,
   ClassConfig,
@@ -58,17 +59,7 @@ export type PortsToServices<T extends readonly Port<unknown, string>[]> = {
   [K in keyof T]: T[K] extends Port<infer S, string> ? S : never;
 };
 
-/**
- * Detects if a factory function returns a Promise (async factory).
- *
- * @typeParam TFactory - The factory function type to check
- * @returns `true` if factory returns Promise, `false` otherwise
- *
- * @internal
- */
-type IsAsyncFactory<TFactory> = TFactory extends (...args: never[]) => Promise<unknown>
-  ? true
-  : false;
+// IsAsyncFactory is imported from unified-types.ts
 
 // =============================================================================
 // Runtime Helpers
@@ -315,8 +306,10 @@ export function createAdapter<
  * Factory with explicit lifetime (no clonable).
  * Defaults: `requires: []`, `clonable: false`
  *
- * Note: If factory is async (returns Promise), lifetime is forced to "singleton"
- * regardless of the input value.
+ * **Async Constraint:** If lifetime is "scoped" or "transient" but the factory
+ * is async (returns Promise), the adapter's lifetime type will be an error
+ * message string instead of a valid Lifetime. This makes the adapter unusable
+ * with GraphBuilder, producing a compile-time error.
  *
  * @typeParam TProvides - The port being implemented
  * @typeParam TRequires - Tuple of required port dependencies (optional, defaults to [])
@@ -340,7 +333,7 @@ export function createAdapter<
 }): Adapter<
   TProvides,
   TupleToUnion<TRequires>,
-  IsAsyncFactory<TFactory> extends true ? Singleton : TLifetime,
+  EnforceAsyncLifetime<TFactory, TLifetime>,
   IsAsyncFactory<TFactory> extends true ? Async : Sync,
   False,
   TRequires extends readonly Port<unknown, string>[] ? TRequires : EmptyRequires
@@ -387,8 +380,10 @@ export function createAdapter<
  * @overload
  * Factory with explicit requires, lifetime, and clonable - full control.
  *
- * Note: If factory is async (returns Promise), lifetime is forced to "singleton"
- * regardless of the input value.
+ * **Async Constraint:** If lifetime is "scoped" or "transient" but the factory
+ * is async (returns Promise), the adapter's lifetime type will be an error
+ * message string instead of a valid Lifetime. This makes the adapter unusable
+ * with GraphBuilder, producing a compile-time error.
  *
  * @typeParam TProvides - The port being implemented
  * @typeParam TRequires - Tuple of required port dependencies
@@ -414,7 +409,7 @@ export function createAdapter<
 }): Adapter<
   TProvides,
   TupleToUnion<TRequires>,
-  IsAsyncFactory<TFactory> extends true ? Singleton : TLifetime,
+  EnforceAsyncLifetime<TFactory, TLifetime>,
   IsAsyncFactory<TFactory> extends true ? Async : Sync,
   TClonable,
   TRequires

@@ -54,6 +54,86 @@ export type NeitherFactoryNorClassError = {
   readonly __hint: "Must provide either 'factory' (function that creates instance) or 'class' (constructor for dependency injection).";
 };
 
+/**
+ * Branded error type for async factories with non-singleton lifetime.
+ *
+ * This type is returned in the lifetime position when an async factory
+ * attempts to use 'scoped' or 'transient' lifetime, producing a compile error.
+ * The error message is a template literal that includes the problematic lifetime.
+ *
+ * @typeParam L - The invalid lifetime that was specified
+ *
+ * @example
+ * ```typescript
+ * // This produces a compile error with a clear message:
+ * createAdapter({
+ *   provides: MyPort,
+ *   lifetime: 'scoped',  // Error!
+ *   factory: async () => new MyService()
+ * });
+ * // adapter.lifetime is: "Async factories must use 'singleton' lifetime. Got: 'scoped'. ..."
+ * ```
+ */
+export type AsyncLifetimeError<L extends string> =
+  `Async factories must use 'singleton' lifetime. Got: '${L}'. Hint: Remove the lifetime property to use the default, or make the factory synchronous.`;
+
+// =============================================================================
+// Type Utilities
+// =============================================================================
+
+/**
+ * Detects if a factory function returns a Promise (async factory).
+ *
+ * @typeParam TFactory - The factory function type to check
+ * @returns `true` if factory returns Promise, `false` otherwise
+ */
+export type IsAsyncFactory<TFactory> = TFactory extends (...args: never[]) => Promise<unknown>
+  ? true
+  : false;
+
+/**
+ * Computes the allowed return type for a factory based on lifetime.
+ *
+ * When TLifetime is "singleton", allows both sync and async factories.
+ * When TLifetime is "scoped" or "transient", only allows sync factories.
+ *
+ * This is used to constrain the factory type parameter in createAdapter
+ * overloads that accept explicit lifetime.
+ *
+ * @typeParam TService - The service type to return
+ * @typeParam TLifetime - The specified lifetime
+ *
+ * @remarks
+ * By constraining the factory return type, TypeScript produces an error
+ * at the config level when trying to use async factory with non-singleton.
+ */
+export type AllowedFactoryReturn<TService, TLifetime extends string> = TLifetime extends "singleton"
+  ? TService | Promise<TService>
+  : TService; // No Promise for scoped/transient
+
+/**
+ * Enforces singleton lifetime for async factories at compile time.
+ *
+ * When TFactory is async (returns Promise), this type:
+ * - Returns TLifetime if it's "singleton"
+ * - Returns AsyncLifetimeError<TLifetime> otherwise
+ *
+ * When TFactory is sync, returns TLifetime unchanged.
+ *
+ * @typeParam TFactory - The factory function type
+ * @typeParam TLifetime - The specified lifetime
+ *
+ * @remarks
+ * This is used in situations where the error needs to appear in the return type.
+ * For most cases, prefer using AllowedFactoryReturn to constrain the factory parameter.
+ */
+export type EnforceAsyncLifetime<TFactory, TLifetime extends string> =
+  IsAsyncFactory<TFactory> extends true
+    ? TLifetime extends "singleton"
+      ? TLifetime
+      : AsyncLifetimeError<TLifetime>
+    : TLifetime;
+
 // =============================================================================
 // Imports
 // =============================================================================

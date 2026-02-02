@@ -147,7 +147,7 @@ export type ResolvedDeps<TRequires> = [TRequires] extends [never]
 export type Adapter<
   out TProvides,
   TRequires,
-  TLifetime extends Lifetime,
+  TLifetime extends string, // Widened to accept error message strings
   out TFactoryKind extends FactoryKind = "sync",
   out TClonable extends boolean = false,
   out TRequiresTuple extends readonly unknown[] = [TRequires] extends [never]
@@ -172,14 +172,14 @@ export type Adapter<
   /**
    * The lifetime scope for this adapter's service instances.
    *
-   * **Normalization Rule**: Async adapters are always singletons regardless of
-   * the declared `TLifetime`. This is because async initialization (returning
-   * a Promise) implies the instance must be cached to avoid re-initializing
-   * on each resolution. The type reflects this constraint:
-   * - `TFactoryKind extends "async"` → `lifetime: "singleton"`
-   * - `TFactoryKind extends "sync"` → `lifetime: TLifetime` (as declared)
+   * For sync factories, this is the declared lifetime.
+   * For async factories, this is either "singleton" (valid) or an error message
+   * string (invalid - when non-singleton lifetime was specified with async factory).
+   *
+   * The error string makes the adapter unusable with GraphBuilder, producing
+   * a compile-time error.
    */
-  readonly lifetime: TFactoryKind extends "async" ? "singleton" : TLifetime;
+  readonly lifetime: TLifetime;
 
   /**
    * The factory kind discriminator.

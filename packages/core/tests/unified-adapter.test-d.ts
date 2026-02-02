@@ -254,17 +254,46 @@ describe("unified createAdapter - async factory detection", () => {
     expectTypeOf(adapter.lifetime).toEqualTypeOf<"singleton">();
   });
 
-  it("overrides explicit lifetime for async factory", () => {
-    const adapter = createAdapter({
+  it("produces error type in lifetime for async factory with non-singleton lifetime", () => {
+    // Async factory with scoped lifetime produces error type in lifetime position
+    const scopedAsyncAdapter = createAdapter({
       provides: DatabasePort,
-      lifetime: "scoped", // This will be overridden
+      lifetime: "scoped",
       factory: async () => ({
         query: async () => ({}),
       }),
     });
 
-    // Even with explicit "scoped", async forces singleton
+    // The lifetime is an error message string, not a valid Lifetime
+    expectTypeOf(
+      scopedAsyncAdapter.lifetime
+    ).toEqualTypeOf<"Async factories must use 'singleton' lifetime. Got: 'scoped'. Hint: Remove the lifetime property to use the default, or make the factory synchronous.">();
+
+    // Async factory with transient lifetime produces error type in lifetime position
+    const transientAsyncAdapter = createAdapter({
+      provides: DatabasePort,
+      lifetime: "transient",
+      factory: async () => ({
+        query: async () => ({}),
+      }),
+    });
+
+    expectTypeOf(
+      transientAsyncAdapter.lifetime
+    ).toEqualTypeOf<"Async factories must use 'singleton' lifetime. Got: 'transient'. Hint: Remove the lifetime property to use the default, or make the factory synchronous.">();
+  });
+
+  it("allows async factory with explicit singleton lifetime", () => {
+    const adapter = createAdapter({
+      provides: DatabasePort,
+      lifetime: "singleton",
+      factory: async () => ({
+        query: async () => ({}),
+      }),
+    });
+
     expectTypeOf(adapter.lifetime).toEqualTypeOf<"singleton">();
+    expectTypeOf(adapter.factoryKind).toEqualTypeOf<"async">();
   });
 
   it("keeps async factoryKind for Promise-returning sync factory", () => {
