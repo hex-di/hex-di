@@ -53,8 +53,8 @@ Plans:
 
 Plans:
 
-- [ ] 10-01-PLAN.md - Async lifetime error types and overload updates
-- [ ] 10-02-PLAN.md - Type tests for compile-time enforcement
+- [x] 10-01-PLAN.md - Async lifetime error types and overload updates
+- [x] 10-02-PLAN.md - Type tests for compile-time enforcement
 
 **Success Criteria:**
 
@@ -123,7 +123,7 @@ See git history for details.
 | Phase | Name                       | Status   | Requirements |
 | ----- | -------------------------- | -------- | ------------ |
 | 9     | Unified createAdapter      | Complete | 10           |
-| 10    | Async Lifetime Enforcement | Pending  | 5            |
+| 10    | Async Lifetime Enforcement | Complete | 5            |
 | 11    | API Removal                | Pending  | 6            |
 | 12    | Migration                  | Pending  | 2            |
 
@@ -132,4 +132,4 @@ See git history for details.
 ---
 
 _Roadmap created: 2026-02-01_
-_Last updated: 2026-02-02 (Phase 9 complete)_
+_Last updated: 2026-02-02 (Phase 10 complete)_

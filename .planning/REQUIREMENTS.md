@@ -19,11 +19,11 @@ Requirements for the unified Adapter API. Each maps to roadmap phases.
 
 ### Async Lifetime Enforcement
 
-- [ ] **ASYNC-01**: Async factory with `lifetime: 'scoped'` produces compile error
-- [ ] **ASYNC-02**: Async factory with `lifetime: 'transient'` produces compile error
-- [ ] **ASYNC-03**: Async factory with `lifetime: 'singleton'` compiles successfully
-- [ ] **ASYNC-04**: Async factory with lifetime omitted compiles (defaults to singleton)
-- [ ] **ASYNC-05**: Error type includes helpful message and hint
+- [x] **ASYNC-01**: Async factory with `lifetime: 'scoped'` produces compile error
+- [x] **ASYNC-02**: Async factory with `lifetime: 'transient'` produces compile error
+- [x] **ASYNC-03**: Async factory with `lifetime: 'singleton'` compiles successfully
+- [x] **ASYNC-04**: Async factory with lifetime omitted compiles (defaults to singleton)
+- [x] **ASYNC-05**: Error type includes helpful message and hint
 
 ### Class-Based Injection
 
@@ -78,11 +78,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | API-05      | 9     | Delivered |
 | API-06      | 9     | Delivered |
 | API-07      | 9     | Delivered |
-| ASYNC-01    | 10    | Pending   |
-| ASYNC-02    | 10    | Pending   |
-| ASYNC-03    | 10    | Pending   |
-| ASYNC-04    | 10    | Pending   |
-| ASYNC-05    | 10    | Pending   |
+| ASYNC-01    | 10    | Delivered |
+| ASYNC-02    | 10    | Delivered |
+| ASYNC-03    | 10    | Delivered |
+| ASYNC-04    | 10    | Delivered |
+| ASYNC-05    | 10    | Delivered |
 | CLASS-01    | 9     | Delivered |
 | CLASS-02    | 9     | Delivered |
 | CLASS-03    | 9     | Delivered |
@@ -104,4 +104,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 ---
 
 _Requirements defined: 2026-02-02_
-_Last updated: 2026-02-02 Phase 9 delivered (10/23 requirements)_
+_Last updated: 2026-02-02 Phase 10 delivered (15/23 requirements)_
