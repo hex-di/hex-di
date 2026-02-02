@@ -51,7 +51,12 @@ import type {
   GetUncheckedUsed,
 } from "./types/state.js";
 import { inspectGraph, detectCycleAtRuntime } from "../graph/inspection/index.js";
-import type { GraphInspection, ValidationResult } from "../graph/types/inspection.js";
+import type {
+  GraphInspection,
+  GraphSummary,
+  InspectOptions,
+  ValidationResult,
+} from "../graph/types/inspection.js";
 
 // Import all type-level validation types from the dedicated module
 import type {
@@ -608,12 +613,30 @@ export class GraphBuilder<
    * Returns a runtime snapshot of the current graph state for debugging.
    *
    * @pure Returns new frozen inspection object; builder unchanged.
+   *
+   * @example Full inspection (default)
+   * ```typescript
+   * const inspection = builder.inspect();
+   * console.log(inspection.summary);
+   * ```
+   *
+   * @example Summary mode (lightweight, 7 fields)
+   * ```typescript
+   * const summary = builder.inspect({ summary: true });
+   * console.log(`${summary.adapterCount} adapters, ${summary.asyncAdapterCount} async`);
+   * console.log(`Valid: ${summary.isValid}`);
+   * ```
    */
-  inspect(): GraphInspection {
-    return inspectGraph({
-      adapters: this.adapters,
-      overridePortNames: this.overridePortNames,
-    });
+  inspect(options: InspectOptions & { summary: true }): GraphSummary;
+  inspect(options?: InspectOptions): GraphInspection;
+  inspect(options: InspectOptions = {}): GraphInspection | GraphSummary {
+    return inspectGraph(
+      {
+        adapters: this.adapters,
+        overridePortNames: this.overridePortNames,
+      },
+      options
+    );
   }
 
   /**
