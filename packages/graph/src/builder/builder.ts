@@ -129,11 +129,11 @@ export type {
  * with the specified maximum cycle detection depth.
  *
  * @typeParam TMaxDepth - The maximum cycle detection depth configured for this factory
- * @typeParam TUnsafeDepthOverride - Whether depth-exceeded is a warning (true) or error (false)
+ * @typeParam TExtendedDepth - Whether depth-exceeded is a warning (true) or error (false)
  */
 export interface GraphBuilderFactory<
   TMaxDepth extends number,
-  TUnsafeDepthOverride extends boolean = false,
+  TExtendedDepth extends boolean = false,
 > {
   /**
    * Creates a new empty GraphBuilder with custom max depth.
@@ -143,13 +143,7 @@ export interface GraphBuilderFactory<
     never,
     never,
     never,
-    BuilderInternals<
-      EmptyDependencyGraph,
-      EmptyLifetimeMap,
-      unknown,
-      TMaxDepth,
-      TUnsafeDepthOverride
-    > &
+    BuilderInternals<EmptyDependencyGraph, EmptyLifetimeMap, unknown, TMaxDepth, TExtendedDepth> &
       AnyBuilderInternals
   >;
 
@@ -170,22 +164,22 @@ export interface GraphBuilderFactory<
       EmptyLifetimeMap,
       TParentProvides,
       TMaxDepth,
-      TUnsafeDepthOverride
+      TExtendedDepth
     > &
       AnyBuilderInternals
   >;
 
   /**
-   * Enables unsafe depth override mode on this factory.
+   * Extends the depth limit for type-level cycle detection.
    *
    * When depth-exceeded occurs during type-level cycle detection, it will be
    * a WARNING instead of an ERROR.
    */
-  withUnsafeDepthOverride(): GraphBuilderFactory<TMaxDepth, true>;
+  withExtendedDepth(): GraphBuilderFactory<TMaxDepth, true>;
 }
 
 /**
- * Factory type returned by `GraphBuilder.withUnsafeDepthOverride()`.
+ * Factory type returned by `GraphBuilder.withExtendedDepth()`.
  *
  * This is equivalent to `GraphBuilderFactory<DefaultMaxDepth, true>`.
  *
@@ -197,18 +191,18 @@ export interface GraphBuilderFactory<
  *
  * ## Combining with Custom Depth
  *
- * To use both custom depth AND unsafe override, chain the methods:
+ * To use both custom depth AND extended depth, chain the methods:
  * ```typescript
- * const builder = GraphBuilder.withMaxDepth<100>().withUnsafeDepthOverride().create();
+ * const builder = GraphBuilder.withMaxDepth<100>().withExtendedDepth().create();
  * ```
  *
  * @example
  * ```typescript
  * // Explicitly acknowledge incomplete compile-time validation
- * const builder = GraphBuilder.withUnsafeDepthOverride().create();
+ * const builder = GraphBuilder.withExtendedDepth().create();
  * ```
  */
-export type UnsafeDepthOverrideFactory = GraphBuilderFactory<DefaultMaxDepth, true>;
+export type ExtendedDepthFactory = GraphBuilderFactory<DefaultMaxDepth, true>;
 
 /**
  * An immutable builder for constructing dependency graphs with compile-time validation.
@@ -370,7 +364,7 @@ export class GraphBuilder<
   /**
    * Phantom property exposing depth-exceeded warnings.
    *
-   * When `withUnsafeDepthOverride()` is enabled and depth limit is exceeded
+   * When `withExtendedDepth()` is enabled and depth limit is exceeded
    * during cycle detection, this property exposes the affected port names.
    * Useful for tooling and IDE integration to detect incomplete validation.
    *
@@ -381,7 +375,7 @@ export class GraphBuilder<
    * @example
    * ```typescript
    * const graph = GraphBuilder.withMaxDepth<2>()
-   *   .withUnsafeDepthOverride()
+   *   .withExtendedDepth()
    *   .create()
    *   .provide(...)
    *   .provide(...);
@@ -467,16 +461,19 @@ export class GraphBuilder<
     ? GraphBuilderFactory<TDepth>
     : ValidateMaxDepth<TDepth>;
   static withMaxDepth<TDepth extends number>(): GraphBuilderFactory<TDepth> | string {
-    const createFactory = <TUnsafe extends boolean>(): GraphBuilderFactory<TDepth, TUnsafe> => ({
+    const createFactory = <TExtended extends boolean>(): GraphBuilderFactory<
+      TDepth,
+      TExtended
+    > => ({
       create: () => new GraphBuilder([], new Set()),
       forParent: () => new GraphBuilder([], new Set()),
-      withUnsafeDepthOverride: () => createFactory<true>(),
+      withExtendedDepth: () => createFactory<true>(),
     });
     return createFactory<false>();
   }
 
   /**
-   * Creates a factory for building graphs with unsafe depth override enabled.
+   * Creates a factory for building graphs with extended depth mode enabled.
    *
    * When depth-exceeded occurs during type-level cycle detection, it will be
    * a WARNING instead of an ERROR. Use this when your dependency graph
@@ -486,19 +483,19 @@ export class GraphBuilder<
    * @example
    * ```typescript
    * // Explicitly acknowledge incomplete compile-time validation
-   * const builder = GraphBuilder.withUnsafeDepthOverride().create();
+   * const builder = GraphBuilder.withExtendedDepth().create();
    *
    * // Can combine with custom depth (preferred order)
-   * const customBuilder = GraphBuilder.withMaxDepth<100>().withUnsafeDepthOverride().create();
+   * const customBuilder = GraphBuilder.withMaxDepth<100>().withExtendedDepth().create();
    * ```
    *
    * @pure Returns new factory; no side effects.
    */
-  static withUnsafeDepthOverride(): UnsafeDepthOverrideFactory {
+  static withExtendedDepth(): ExtendedDepthFactory {
     return {
       create: () => new GraphBuilder([], new Set()),
       forParent: () => new GraphBuilder([], new Set()),
-      withUnsafeDepthOverride: () => GraphBuilder.withUnsafeDepthOverride(),
+      withExtendedDepth: () => GraphBuilder.withExtendedDepth(),
     };
   }
 
