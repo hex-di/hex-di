@@ -36,8 +36,18 @@ export {
   detectCaptiveAtRuntime,
   detectAllCaptivesAtRuntime,
   computeTypeComplexity,
+  filterPorts,
+  getInboundPorts,
+  getOutboundPorts,
+  getPortsByCategory,
+  getPortsByTags,
 } from "./graph/inspection/index.js";
-export type { CaptiveDependencyResult, ComplexityBreakdown } from "./graph/inspection/index.js";
+export type {
+  CaptiveDependencyResult,
+  ComplexityBreakdown,
+  PortFilter,
+  FilteredPorts,
+} from "./graph/inspection/index.js";
 export { INSPECTION_CONFIG } from "./graph/inspection/complexity.js";
 export type { InspectOptions } from "./graph/inspection/inspector.js";
 
@@ -51,6 +61,9 @@ export type {
   ValidationResult,
   GraphInspectionJSON,
   InspectionToJSONOptions,
+  PortInfo,
+  DirectionSummary,
+  PortDirection,
 } from "./graph/types/inspection.js";
 
 // =============================================================================

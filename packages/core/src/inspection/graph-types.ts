@@ -24,6 +24,43 @@ export interface InspectableGraph {
 }
 
 /**
+ * Port direction in hexagonal architecture.
+ *
+ * - `'inbound'` - Driving ports (use cases, primary adapters)
+ * - `'outbound'` - Driven ports (infrastructure, secondary adapters)
+ */
+export type PortDirection = "inbound" | "outbound";
+
+/**
+ * Detailed information about a registered port.
+ *
+ * Includes the port name, lifetime, direction, and optional metadata
+ * (category and tags) for filtering and organization.
+ */
+export interface PortInfo {
+  /** The port name */
+  readonly name: string;
+  /** The adapter lifetime (singleton, scoped, transient) */
+  readonly lifetime: string;
+  /** Port direction (inbound for driving ports, outbound for driven ports) */
+  readonly direction: PortDirection;
+  /** Optional category for organization */
+  readonly category?: string;
+  /** Tags for filtering and discovery */
+  readonly tags: readonly string[];
+}
+
+/**
+ * Summary counts of ports by direction.
+ */
+export interface DirectionSummary {
+  /** Count of inbound (driving) ports */
+  readonly inbound: number;
+  /** Count of outbound (driven) ports */
+  readonly outbound: number;
+}
+
+/**
  * A suggestion for resolving a graph configuration issue.
  *
  * Suggestions are generated based on the current graph state and provide
@@ -298,6 +335,21 @@ export interface GraphInspection {
    * ```
    */
   readonly correlationId: string;
+
+  /**
+   * Detailed information about each registered port.
+   *
+   * Includes direction, category, and tags for each port.
+   * Use `filterPorts()` to filter this list by criteria.
+   *
+   * **Order**: Adapter registration order (same as `provides`).
+   */
+  readonly ports: readonly PortInfo[];
+
+  /**
+   * Summary counts of ports by direction.
+   */
+  readonly directionSummary: DirectionSummary;
 }
 
 /**
@@ -412,6 +464,10 @@ export interface GraphInspectionJSON {
   readonly unnecessaryLazyPorts: readonly string[];
   /** Unique correlation ID for tracing */
   readonly correlationId: string;
+  /** Detailed information about each registered port */
+  readonly ports: readonly PortInfo[];
+  /** Summary counts of ports by direction */
+  readonly directionSummary: DirectionSummary;
 }
 
 /**

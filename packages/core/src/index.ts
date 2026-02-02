@@ -213,6 +213,9 @@ export type {
   ValidationResult,
   GraphInspectionJSON,
   InspectionToJSONOptions,
+  PortInfo,
+  DirectionSummary,
+  PortDirection as GraphPortDirection,
 } from "./inspection/graph-types.js";
 
 // Inspector API types

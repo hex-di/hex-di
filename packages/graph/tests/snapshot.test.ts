@@ -58,12 +58,17 @@ describe("GraphInspection output snapshots", () => {
         "dependencyMap": {},
         "depthLimitExceeded": false,
         "depthWarning": undefined,
+        "directionSummary": {
+          "inbound": 0,
+          "outbound": 0,
+        },
         "disposalWarnings": [],
         "isComplete": true,
         "maxChainDepth": 0,
         "orphanPorts": [],
         "overrides": [],
         "performanceRecommendation": "safe",
+        "ports": [],
         "portsWithFinalizers": [],
         "provides": [],
         "suggestions": [],
@@ -97,6 +102,10 @@ describe("GraphInspection output snapshots", () => {
         },
         "depthLimitExceeded": false,
         "depthWarning": undefined,
+        "directionSummary": {
+          "inbound": 0,
+          "outbound": 1,
+        },
         "disposalWarnings": [],
         "isComplete": true,
         "maxChainDepth": 0,
@@ -105,6 +114,15 @@ describe("GraphInspection output snapshots", () => {
         ],
         "overrides": [],
         "performanceRecommendation": "safe",
+        "ports": [
+          {
+            "category": undefined,
+            "direction": "outbound",
+            "lifetime": "singleton",
+            "name": "Logger",
+            "tags": [],
+          },
+        ],
         "portsWithFinalizers": [],
         "provides": [
           "Logger (singleton)",
@@ -147,6 +165,10 @@ describe("GraphInspection output snapshots", () => {
         },
         "depthLimitExceeded": false,
         "depthWarning": undefined,
+        "directionSummary": {
+          "inbound": 0,
+          "outbound": 1,
+        },
         "disposalWarnings": [],
         "isComplete": false,
         "maxChainDepth": 1,
@@ -155,6 +177,15 @@ describe("GraphInspection output snapshots", () => {
         ],
         "overrides": [],
         "performanceRecommendation": "safe",
+        "ports": [
+          {
+            "category": undefined,
+            "direction": "outbound",
+            "lifetime": "scoped",
+            "name": "Database",
+            "tags": [],
+          },
+        ],
         "portsWithFinalizers": [],
         "provides": [
           "Database (scoped)",
@@ -233,6 +264,10 @@ describe("GraphInspection output snapshots", () => {
         },
         "depthLimitExceeded": false,
         "depthWarning": undefined,
+        "directionSummary": {
+          "inbound": 0,
+          "outbound": 4,
+        },
         "disposalWarnings": [],
         "isComplete": true,
         "maxChainDepth": 2,
@@ -241,6 +276,36 @@ describe("GraphInspection output snapshots", () => {
         ],
         "overrides": [],
         "performanceRecommendation": "safe",
+        "ports": [
+          {
+            "category": undefined,
+            "direction": "outbound",
+            "lifetime": "singleton",
+            "name": "Logger",
+            "tags": [],
+          },
+          {
+            "category": undefined,
+            "direction": "outbound",
+            "lifetime": "scoped",
+            "name": "Database",
+            "tags": [],
+          },
+          {
+            "category": undefined,
+            "direction": "outbound",
+            "lifetime": "singleton",
+            "name": "Cache",
+            "tags": [],
+          },
+          {
+            "category": undefined,
+            "direction": "outbound",
+            "lifetime": "transient",
+            "name": "UserService",
+            "tags": [],
+          },
+        ],
         "portsWithFinalizers": [],
         "provides": [
           "Logger (singleton)",
@@ -295,6 +360,10 @@ describe("GraphInspection output snapshots", () => {
         },
         "depthLimitExceeded": false,
         "depthWarning": undefined,
+        "directionSummary": {
+          "inbound": 0,
+          "outbound": 2,
+        },
         "disposalWarnings": [],
         "isComplete": true,
         "maxChainDepth": 1,
@@ -303,6 +372,22 @@ describe("GraphInspection output snapshots", () => {
         ],
         "overrides": [],
         "performanceRecommendation": "safe",
+        "ports": [
+          {
+            "category": undefined,
+            "direction": "outbound",
+            "lifetime": "singleton",
+            "name": "Config",
+            "tags": [],
+          },
+          {
+            "category": undefined,
+            "direction": "outbound",
+            "lifetime": "singleton",
+            "name": "Database",
+            "tags": [],
+          },
+        ],
         "portsWithFinalizers": [],
         "provides": [
           "Config (singleton)",
@@ -362,6 +447,10 @@ describe("inspectGraph() output snapshots", () => {
         },
         "depthLimitExceeded": false,
         "depthWarning": undefined,
+        "directionSummary": {
+          "inbound": 0,
+          "outbound": 2,
+        },
         "disposalWarnings": [],
         "isComplete": true,
         "maxChainDepth": 1,
@@ -370,6 +459,22 @@ describe("inspectGraph() output snapshots", () => {
         ],
         "overrides": [],
         "performanceRecommendation": "safe",
+        "ports": [
+          {
+            "category": undefined,
+            "direction": "outbound",
+            "lifetime": "singleton",
+            "name": "Logger",
+            "tags": [],
+          },
+          {
+            "category": undefined,
+            "direction": "outbound",
+            "lifetime": "scoped",
+            "name": "Database",
+            "tags": [],
+          },
+        ],
         "portsWithFinalizers": [],
         "provides": [
           "Logger (singleton)",
@@ -416,6 +521,10 @@ describe("inspectGraph() output snapshots", () => {
         },
         "depthLimitExceeded": false,
         "depthWarning": undefined,
+        "directionSummary": {
+          "inbound": 0,
+          "outbound": 1,
+        },
         "disposalWarnings": [],
         "isComplete": false,
         "maxChainDepth": 1,
@@ -424,6 +533,15 @@ describe("inspectGraph() output snapshots", () => {
         ],
         "overrides": [],
         "performanceRecommendation": "safe",
+        "ports": [
+          {
+            "category": undefined,
+            "direction": "outbound",
+            "lifetime": "transient",
+            "name": "UserService",
+            "tags": [],
+          },
+        ],
         "portsWithFinalizers": [],
         "provides": [
           "UserService (transient)",

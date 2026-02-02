@@ -77,5 +77,7 @@ export function inspectionToJSON(
     depthLimitExceeded: inspection.depthLimitExceeded,
     unnecessaryLazyPorts: [...inspection.unnecessaryLazyPorts],
     correlationId: inspection.correlationId,
+    ports: [...inspection.ports],
+    directionSummary: { ...inspection.directionSummary },
   };
 }

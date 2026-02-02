@@ -7,8 +7,15 @@
  * @packageDocumentation
  */
 
-import type { GraphInspection, InspectableGraph } from "../types/inspection.js";
+import type {
+  GraphInspection,
+  InspectableGraph,
+  PortInfo,
+  DirectionSummary,
+  PortDirection,
+} from "../types/inspection.js";
 
+import { getPortDirection, getPortMetadata } from "@hex-di/core";
 import { createCorrelationIdGenerator, type CorrelationIdGenerator } from "./correlation.js";
 import {
   computeMaxChainDepth,
@@ -117,9 +124,37 @@ export function inspectGraph(
   const providedSet = new Set<string>();
   const dependencyMap: Record<string, string[]> = {};
 
+  // Build ports array with metadata
+  const ports: PortInfo[] = [];
+  let inboundCount = 0;
+  let outboundCount = 0;
+
   for (const adapter of graph.adapters) {
-    const portName = adapter.provides.__portName;
+    const port = adapter.provides;
+    const portName = port.__portName;
     const lifetime = adapter.lifetime;
+
+    // Get direction and metadata from the port
+    const direction: PortDirection = getPortDirection(port) ?? "outbound";
+    const metadata = getPortMetadata(port);
+
+    // Build port info
+    ports.push({
+      name: portName,
+      lifetime,
+      direction,
+      category: metadata?.category,
+      tags: metadata?.tags ?? [],
+    });
+
+    // Track direction counts
+    if (direction === "inbound") {
+      inboundCount++;
+    } else {
+      outboundCount++;
+    }
+
+    // Existing provides logic
     provides.push(`${portName} (${lifetime})`);
     providedSet.add(portName);
 
@@ -130,6 +165,11 @@ export function inspectGraph(
     }
     dependencyMap[portName] = requires;
   }
+
+  const directionSummary: DirectionSummary = {
+    inbound: inboundCount,
+    outbound: outboundCount,
+  };
 
   const unsatisfiedRequirements = [...allRequires].filter(r => !providedSet.has(r)).sort();
   const overrides = [...graph.overridePortNames].sort();
@@ -193,5 +233,7 @@ export function inspectGraph(
     depthLimitExceeded,
     unnecessaryLazyPorts: Object.freeze(unnecessaryLazyPorts),
     correlationId,
+    ports: Object.freeze(ports.map(p => Object.freeze(p))),
+    directionSummary: Object.freeze(directionSummary),
   });
 }

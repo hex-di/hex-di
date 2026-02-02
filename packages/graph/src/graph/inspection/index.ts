@@ -14,6 +14,9 @@ export type {
   ValidationResult,
   GraphInspectionJSON,
   InspectionToJSONOptions,
+  PortInfo,
+  DirectionSummary,
+  PortDirection,
 } from "../types/inspection.js";
 
 // Core inspection
@@ -62,3 +65,13 @@ export {
   computeDependencyLayers,
   getPortsByLayer,
 } from "./traversal.js";
+
+// Port filtering utilities
+export {
+  filterPorts,
+  getInboundPorts,
+  getOutboundPorts,
+  getPortsByCategory,
+  getPortsByTags,
+} from "./filter.js";
+export type { PortFilter, FilteredPorts } from "./filter.js";
