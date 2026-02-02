@@ -71,6 +71,30 @@ type IsAsyncFactory<TFactory> = TFactory extends (...args: never[]) => Promise<u
   : false;
 
 // =============================================================================
+// Runtime Helpers
+// =============================================================================
+
+/**
+ * Extracts service instances from dependency object in port array order.
+ *
+ * This helper maps the requires tuple to an array of service instances
+ * in the same order as the ports appear in the tuple. Used for class
+ * constructor injection where parameters must match requires array order.
+ *
+ * @param deps - Object with port names as keys, service instances as values
+ * @param requires - Tuple of required ports
+ * @returns Array of service instances in requires array order
+ *
+ * @internal
+ */
+function extractServicesInOrder(
+  deps: Record<string, unknown>,
+  requires: readonly Port<unknown, string>[]
+): unknown[] {
+  return requires.map(port => deps[port.__portName]);
+}
+
+// =============================================================================
 // Runtime Validation
 // =============================================================================
 
@@ -601,18 +625,21 @@ export function createAdapter(config: {
   boolean,
   readonly Port<unknown, string>[]
 > {
-  // Class variant not yet implemented (will be added in Plan 09-03)
-  if (config.class !== undefined) {
-    throw new Error(
-      "Class-based createAdapter not yet implemented. This will be available in Plan 09-03."
+  // Validate mutual exclusion: exactly one of factory or class must be provided
+  const hasFactory = config.factory !== undefined;
+  const hasClass = config.class !== undefined;
+
+  if (hasFactory && hasClass) {
+    throw new TypeError(
+      "ERROR[HEX020]: Invalid adapter config: Cannot provide both 'factory' and 'class'. " +
+        "Use 'factory' for custom instantiation logic, or 'class' for constructor injection."
     );
   }
 
-  // Factory is required for now
-  if (config.factory === undefined) {
+  if (!hasFactory && !hasClass) {
     throw new TypeError(
-      "ERROR[HEX019]: Invalid adapter config: 'factory' is required. " +
-        "Provide a factory function that creates the service instance."
+      "ERROR[HEX019]: Invalid adapter config: Must provide either 'factory' or 'class'. " +
+        "Provide a factory function that creates the instance, or a class constructor for dependency injection."
     );
   }
 
@@ -620,7 +647,25 @@ export function createAdapter(config: {
   const requires = config.requires ?? EMPTY_REQUIRES;
   const lifetime = config.lifetime ?? SINGLETON;
   const clonable = config.clonable ?? FALSE;
-  const factoryKind = SYNC; // For v1, always use SYNC at runtime (type system handles async detection)
+
+  // Determine factory function
+  let factory: (deps: Record<string, unknown>) => unknown | Promise<unknown>;
+  const factoryKind = SYNC; // Class instantiation is always sync; for factories, type system handles async detection
+
+  if (config.class !== undefined) {
+    // Class variant: create factory that instantiates class with constructor injection
+    const ClassConstructor = config.class;
+    factory = (deps: Record<string, unknown>): unknown => {
+      const args = extractServicesInOrder(deps, requires);
+      return new ClassConstructor(...args);
+    };
+  } else if (config.factory !== undefined) {
+    // Factory variant: use provided factory
+    factory = config.factory;
+  } else {
+    // This should never happen due to validation above, but TypeScript needs exhaustiveness
+    throw new TypeError("Unreachable: either factory or class must be defined");
+  }
 
   // Call validation
   assertValidAdapterConfig(
@@ -628,7 +673,7 @@ export function createAdapter(config: {
       provides: config.provides,
       requires,
       lifetime,
-      factory: config.factory,
+      factory,
     },
     false
   );
@@ -639,7 +684,7 @@ export function createAdapter(config: {
     requires,
     lifetime,
     factoryKind,
-    factory: config.factory,
+    factory,
     clonable,
   };
 
