@@ -263,6 +263,9 @@ export function createAdapter<
   readonly provides: TProvides;
   readonly factory: TFactory;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  requires?: undefined;
+  lifetime?: undefined;
+  clonable?: undefined;
 }): Adapter<
   TProvides,
   never,
@@ -294,6 +297,8 @@ export function createAdapter<
   readonly requires: TRequires;
   readonly factory: TFactory;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  lifetime?: undefined;
+  clonable?: undefined;
 }): Adapter<
   TProvides,
   TupleToUnion<TRequires>,
@@ -331,6 +336,7 @@ export function createAdapter<
   readonly lifetime: TLifetime;
   readonly factory: TFactory;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  clonable?: undefined;
 }): Adapter<
   TProvides,
   TupleToUnion<TRequires>,
@@ -365,6 +371,7 @@ export function createAdapter<
   readonly clonable: TClonable;
   readonly factory: TFactory;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  lifetime?: undefined;
 }): Adapter<
   TProvides,
   TupleToUnion<TRequires>,
