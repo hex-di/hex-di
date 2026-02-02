@@ -8,7 +8,7 @@
  *
  * ```typescript
  * import { GraphBuilder } from "@hex-di/graph";
- * import { createPort, createAdapter } from "@hex-di/core";
+ * import { port, createAdapter } from "@hex-di/core";
  *
  * // Define ports
  * const LoggerPort = createPort<"Logger", Logger>("Logger");

@@ -355,7 +355,7 @@ export type SelfDependencyErrorMessage<TPortName extends string> =
  * @remarks
  * This warning is generated when the type-level cycle detection algorithm
  * exceeds its configured maximum depth AND the user has opted into unsafe
- * depth override mode via `GraphBuilder.withUnsafeDepthOverride()`.
+ * depth override mode via `GraphBuilder.withExtendedDepth()`.
  *
  * In this mode, depth-exceeded is a warning because the user has explicitly
  * acknowledged that they accept incomplete validation.
@@ -392,7 +392,7 @@ export type DepthLimitWarning<
  * "if types say valid, it is valid".
  *
  * To suppress this error and allow builds to proceed with incomplete
- * validation, use `GraphBuilder.withUnsafeDepthOverride()` which converts
+ * validation, use `GraphBuilder.withExtendedDepth()` which converts
  * this error to a warning.
  *
  * ## Port Provenance (TLastPort)
@@ -406,13 +406,13 @@ export type DepthLimitWarning<
  * @example
  * When depth limit is exceeded (default behavior):
  * ```
- * "ERROR[HEX007]: Type-level depth limit (50) exceeded at 'DeepService' - cycle detection incomplete. Fix: Use GraphBuilder.withMaxDepth<N>() to increase limit (max 100), restructure graph, or use GraphBuilder.withUnsafeDepthOverride() to acknowledge incomplete validation."
+ * "ERROR[HEX007]: Type-level depth limit (50) exceeded at 'DeepService' - cycle detection incomplete. Fix: Use GraphBuilder.withMaxDepth<N>() to increase limit (max 100), restructure graph, or use GraphBuilder.withExtendedDepth() to acknowledge incomplete validation."
  * ```
  */
 export type DepthLimitError<
   TMaxDepth extends number = 50,
   TLastPort extends string = "unknown",
-> = `ERROR[HEX007]: Type-level depth limit (${TMaxDepth}) exceeded at '${TLastPort}' - cycle detection incomplete. Fix: Use GraphBuilder.withMaxDepth<N>() to increase limit (max 100), restructure graph, or use GraphBuilder.withUnsafeDepthOverride() to acknowledge incomplete validation.`;
+> = `ERROR[HEX007]: Type-level depth limit (${TMaxDepth}) exceeded at '${TLastPort}' - cycle detection incomplete. Fix: Use GraphBuilder.withMaxDepth<N>() to increase limit (max 100), restructure graph, or use GraphBuilder.withExtendedDepth() to acknowledge incomplete validation.`;
 
 /**
  * Branded type that indicates the depth limit was exceeded during validation.
