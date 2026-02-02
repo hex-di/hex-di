@@ -386,6 +386,25 @@ export abstract class BaseContainerImpl<
   // Disposal
   // ===========================================================================
 
+  /**
+   * Disposes the container, all child scopes, and child containers.
+   *
+   * Disposal behavior (per RUN-02 requirements):
+   * - **Idempotent**: Subsequent calls return immediately without effect
+   * - **Cascade**: Child containers and scopes disposed before this container
+   * - **LIFO Order**: Services disposed in reverse creation order
+   * - **Async Support**: Async finalizers are properly awaited
+   * - **Error Aggregation**: All finalizers called even if some throw
+   *
+   * Disposal order:
+   * 1. Child containers (LIFO - last created first)
+   * 2. Child scopes
+   * 3. Singleton services (LIFO)
+   * 4. Unregister from parent (for child containers)
+   *
+   * @returns Promise that resolves when disposal is complete
+   * @throws {AggregateError} If one or more finalizers threw errors
+   */
   async dispose(): Promise<void> {
     await this.lifecycleManager.dispose(this.singletonMemo, this.getParentUnregisterCallback());
   }

@@ -170,6 +170,23 @@ export class ScopeImpl<
     return createScopeWrapper(child);
   }
 
+  /**
+   * Disposes this scope and all child scopes.
+   *
+   * Disposal behavior (per RUN-02 requirements):
+   * - **Idempotent**: Subsequent calls return immediately without effect
+   * - **Cascade**: Disposes all child scopes first (deepest first)
+   * - **LIFO Order**: Scoped services disposed in reverse creation order
+   * - **Scoped Only**: Does not dispose singleton services
+   * - **Error Aggregation**: All finalizers called even if some throw
+   *
+   * Lifecycle events:
+   * - 'disposing' emitted synchronously before async disposal begins
+   * - 'disposed' emitted after all finalizers complete
+   *
+   * @returns Promise that resolves when disposal is complete
+   * @throws {AggregateError} If one or more finalizers threw errors
+   */
   async dispose(): Promise<void> {
     if (this.disposed) {
       return;
