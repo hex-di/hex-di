@@ -49,7 +49,7 @@ import { ConfigAdapter, LoggerAdapter } from "./adapters.js";
  */
 export const rootGraph = GraphBuilder.create()
   .provide(LoggerAdapter) // Sync singleton - no dependencies
-  .provideAsync(ConfigAdapter) // Async singleton - simulates API config loading
+  .provide(ConfigAdapter) // Async singleton - simulates API config loading
   .build();
 
 /**

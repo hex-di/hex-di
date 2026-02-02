@@ -54,7 +54,7 @@ import {
 export const appGraph = GraphBuilder.create()
   // Root infrastructure
   .provide(LoggerAdapter)
-  .provideAsync(ConfigAdapter)
+  .provide(ConfigAdapter)
   // Chat services
   .provide(MessageStoreAdapter)
   .provide(UserSessionAdapter)

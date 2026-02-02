@@ -49,7 +49,7 @@ export interface FeatureBundle<
     "sync"
   >[];
 
-  /** Async adapters that need provideAsync() */
+  /** Async adapters (auto-detected by provide()) */
   readonly asyncAdapters: readonly Adapter<
     Port<unknown, string>,
     Port<unknown, string> | never,
