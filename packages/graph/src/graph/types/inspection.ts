@@ -573,5 +573,5 @@ export interface InspectOptions {
    * - Testing: Pass a mock generator for predictable IDs
    * - Shared context: Reuse a generator across multiple inspections
    */
-  readonly generator?: unknown;
+  readonly generator?: (seed?: string) => string;
 }

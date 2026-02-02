@@ -49,7 +49,7 @@ export type {
   FilteredPorts,
 } from "./graph/inspection/index.js";
 export { INSPECTION_CONFIG } from "./graph/inspection/complexity.js";
-export type { InspectOptions } from "./graph/inspection/inspector.js";
+export type { InspectOptions, GraphSummary } from "./graph/types/inspection.js";
 
 // =============================================================================
 // Inspection Types

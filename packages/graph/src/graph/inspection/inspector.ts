@@ -9,13 +9,15 @@
 
 import type {
   GraphInspection,
+  GraphSummary,
+  InspectOptions,
   InspectableGraph,
   PortInfo,
   DirectionSummary,
   PortDirection,
 } from "../types/inspection.js";
 
-import { getPortDirection, getPortMetadata } from "@hex-di/core";
+import { getPortDirection, getPortMetadata, ASYNC } from "@hex-di/core";
 import { createCorrelationIdGenerator, type CorrelationIdGenerator } from "./correlation.js";
 import {
   computeMaxChainDepth,
@@ -27,33 +29,7 @@ import { computeDisposalWarnings, getPortsWithFinalizers } from "./disposal.js";
 import { computeTypeComplexityScore, getPerformanceRecommendation } from "./complexity.js";
 import { detectUnnecessaryLazyPorts } from "./lazy-analysis.js";
 import { generateSuggestions } from "./suggestions.js";
-
-/**
- * Options for graph inspection.
- */
-export interface InspectOptions {
-  /**
-   * Optional seed for deterministic correlation IDs (for testing/reproducibility).
-   */
-  seed?: string;
-
-  /**
-   * Optional correlation ID generator for dependency injection.
-   *
-   * When provided, this generator will be used instead of creating a new one.
-   * Useful for:
-   * - Testing: Pass a mock generator for predictable IDs
-   * - Shared context: Reuse a generator across multiple inspections
-   *
-   * @example
-   * ```typescript
-   * const generator = createCorrelationIdGenerator();
-   * const info1 = inspectGraph(graph1, { generator });
-   * const info2 = inspectGraph(graph2, { generator }); // Continues from same counter
-   * ```
-   */
-  generator?: CorrelationIdGenerator;
-}
+import { detectCycleAtRuntime } from "./runtime-cycle-detection.js";
 
 /**
  * Inspects a built Graph and returns detailed runtime information.
@@ -113,12 +89,34 @@ export interface InspectOptions {
  *
  * @param graph - The built graph to inspect (or any graph-like object with adapters and overridePortNames)
  * @param options - Optional configuration for inspection
- * @returns A frozen GraphInspection object with all inspection data
+ * @returns A frozen GraphInspection or GraphSummary object based on options
+ *
+ * @example Summary mode
+ * ```typescript
+ * // Get lightweight summary (7 fields)
+ * const summary = inspectGraph(graph, { summary: true });
+ * console.log(`${summary.adapterCount} adapters, ${summary.asyncAdapterCount} async`);
+ * console.log(`Valid: ${summary.isValid}`);
+ * ```
  */
+// Overload: summary mode returns GraphSummary
+export function inspectGraph(
+  graph: InspectableGraph,
+  options: InspectOptions & { summary: true }
+): GraphSummary;
+// Overload: default mode returns GraphInspection
+export function inspectGraph(graph: InspectableGraph, options?: InspectOptions): GraphInspection;
+// Implementation
 export function inspectGraph(
   graph: InspectableGraph,
   options: InspectOptions = {}
-): GraphInspection {
+): GraphInspection | GraphSummary {
+  // Summary mode: return lightweight GraphSummary
+  if (options.summary) {
+    return buildGraphSummary(graph);
+  }
+
+  // Full inspection mode
   const provides: string[] = [];
   const allRequires = new Set<string>();
   const providedSet = new Set<string>();
@@ -235,5 +233,70 @@ export function inspectGraph(
     correlationId,
     ports: Object.freeze(ports.map(p => Object.freeze(p))),
     directionSummary: Object.freeze(directionSummary),
+  });
+}
+
+/**
+ * Builds a lightweight GraphSummary for quick health checks.
+ *
+ * @internal
+ */
+function buildGraphSummary(graph: InspectableGraph): GraphSummary {
+  const provides: string[] = [];
+  const allRequires = new Set<string>();
+  const providedSet = new Set<string>();
+  const dependencyMap: Record<string, string[]> = {};
+  let asyncAdapterCount = 0;
+
+  // Extract port names and count async adapters
+  for (const adapter of graph.adapters) {
+    const portName = adapter.provides.__portName;
+    provides.push(portName);
+    providedSet.add(portName);
+
+    // Count async adapters
+    if (adapter.factoryKind === ASYNC) {
+      asyncAdapterCount++;
+    }
+
+    // Build dependency map for cycle detection
+    const requires: string[] = [];
+    for (const req of adapter.requires) {
+      requires.push(req.__portName);
+      allRequires.add(req.__portName);
+    }
+    dependencyMap[portName] = requires;
+  }
+
+  // Compute missing ports
+  const missingPorts = [...allRequires].filter(r => !providedSet.has(r)).sort();
+  const isComplete = missingPorts.length === 0;
+
+  // Build errors array
+  const errors: string[] = [];
+
+  if (missingPorts.length > 0) {
+    errors.push(`Missing adapters for: ${missingPorts.join(", ")}`);
+  }
+
+  // Check for cycles (only if depth limit might be exceeded)
+  const maxChainDepth = computeMaxChainDepth(dependencyMap);
+  if (isDepthLimitExceeded(maxChainDepth)) {
+    const cycle = detectCycleAtRuntime(graph.adapters);
+    if (cycle) {
+      errors.push(`Circular dependency: ${cycle.join(" -> ")}`);
+    }
+  }
+
+  const isValid = isComplete && errors.length === 0;
+
+  return Object.freeze({
+    adapterCount: graph.adapters.length,
+    asyncAdapterCount,
+    isComplete,
+    missingPorts: Object.freeze(missingPorts),
+    isValid,
+    errors: Object.freeze(errors),
+    provides: Object.freeze(provides),
   });
 }
