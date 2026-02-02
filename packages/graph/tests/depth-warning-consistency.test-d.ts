@@ -67,13 +67,13 @@ const DepthTestAdapterD = createAdapter({
 });
 
 // =============================================================================
-// Test: With unsafe override, warnings should allow proceeding
+// Test: With extended depth, warnings should allow proceeding
 // =============================================================================
 
 describe("DepthLimitWarning should allow operation to proceed", () => {
-  it("multi-error mode with unsafe override returns GraphBuilder, not error", () => {
+  it("multi-error mode with extended depth returns GraphBuilder, not error", () => {
     // With depth 2, checking A->B->C->D will exceed depth limit
-    // But with unsafe override, it should proceed (warning, not error)
+    // But with extended depth, it should proceed (warning, not error)
     const builder = GraphBuilder.withMaxDepth<2>()
       .withExtendedDepth()
       .create()
@@ -91,8 +91,8 @@ describe("DepthLimitWarning should allow operation to proceed", () => {
     expectTypeOf<IsGraphBuilder>().toEqualTypeOf<true>();
   });
 
-  it("multi-error mode WITHOUT unsafe override returns DepthLimitError", () => {
-    // Without unsafe override, depth exceeded should return error
+  it("multi-error mode WITHOUT extended depth returns DepthLimitError", () => {
+    // Without extended depth, depth exceeded should return error
     const builder = GraphBuilder.withMaxDepth<2>()
       .create()
       .provide(DepthTestAdapterD)
@@ -106,7 +106,7 @@ describe("DepthLimitWarning should allow operation to proceed", () => {
     expectTypeOf<IsDepthError>().toEqualTypeOf<true>();
   });
 
-  it("short-circuit mode (provideFirstError) with unsafe override returns GraphBuilder", () => {
+  it("with extended depth returns GraphBuilder", () => {
     const builder = GraphBuilder.withMaxDepth<2>()
       .withExtendedDepth()
       .create()
@@ -124,7 +124,7 @@ describe("DepthLimitWarning should allow operation to proceed", () => {
     expectTypeOf<IsGraphBuilder>().toEqualTypeOf<true>();
   });
 
-  it("short-circuit mode WITHOUT unsafe override returns DepthLimitError", () => {
+  it("WITHOUT extended depth returns DepthLimitError", () => {
     const builder = GraphBuilder.withMaxDepth<2>()
       .create()
       .provide(DepthTestAdapterD)
@@ -144,7 +144,7 @@ describe("DepthLimitWarning should allow operation to proceed", () => {
 // =============================================================================
 
 describe("build() succeeds after warning-allowed provide()", () => {
-  it("build() returns Graph when unsafe override allowed proceeding", () => {
+  it("build() returns Graph when extended depth allowed proceeding", () => {
     const builder = GraphBuilder.withMaxDepth<2>()
       .withExtendedDepth()
       .create()

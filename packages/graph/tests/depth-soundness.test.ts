@@ -62,13 +62,11 @@ describe("depth-limited cycle detection soundness", () => {
       //
       // Implications:
       // 1. If compile-time validation passes → no runtime cycle check
-      // 2. If compile-time validation is bypassed via provideUnchecked → no runtime cycle check
-      // 3. Only if depth limit is exceeded → runtime cycle check runs
+      // 2. Only if depth limit is exceeded → runtime cycle check runs
       //
       // This is acceptable because:
       // - Cycles within depth limit ARE caught at compile-time
       // - Cycles beyond depth limit trigger depthLimitExceeded → runtime check runs
-      // - provideUnchecked users are explicitly opting out of validation
 
       // Create ports for a cycle
       const PortX = port<{ x: () => void }>()({ name: "X" });
@@ -88,8 +86,8 @@ describe("depth-limited cycle detection soundness", () => {
         factory: () => ({ y: () => {} }),
       });
 
-      // provideUnchecked was removed in Phase 12 - cycles are now always detected at compile-time
-      // This test scenario is no longer valid since provide() always validates
+      // Cycles are now always detected at compile-time with provide()
+      // This test scenario is no longer applicable since provide() always validates
       // const builder = GraphBuilder.create().provide(AdapterX).provide(AdapterY);
       // The above would now return an error string at compile-time
       expect(true).toBe(true); // Placeholder - test scenario no longer applicable

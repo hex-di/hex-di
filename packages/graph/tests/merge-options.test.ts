@@ -1,5 +1,5 @@
 /**
- * Tests for mergeWith() method with configurable options.
+ * Tests for merge() method and algebraic properties.
  *
  * Also includes algebraic property tests for merge operations:
  * - Associativity: (A.merge(B)).merge(C) ≡ A.merge(B.merge(C))
@@ -44,10 +44,10 @@ const CacheAdapter = createAdapter({
 });
 
 // =============================================================================
-// mergeWith() Method Tests
+// merge() Method Tests
 // =============================================================================
 
-describe("mergeWith()", () => {
+describe("merge()", () => {
   describe("basic functionality", () => {
     it("merges two graphs with options", () => {
       const graph1 = GraphBuilder.create().provide(LoggerAdapter);
@@ -158,7 +158,7 @@ describe("mergeWith()", () => {
 // Type-Level Tests
 // =============================================================================
 
-describe("mergeWith() type-level tests", () => {
+describe("merge() type-level tests", () => {
   it("MergeOptions interface is correctly typed", () => {
     // MergeOptions should accept all valid maxDepth values
     const options1: MergeOptions = { maxDepth: "first" };

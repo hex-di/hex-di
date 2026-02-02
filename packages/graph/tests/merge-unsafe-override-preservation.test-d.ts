@@ -1,9 +1,9 @@
 /**
- * Type-level tests for UnsafeDepthOverride preservation during graph merges.
+ * Type-level tests for ExtendedDepth preservation during graph merges.
  *
  * ## Issue Being Tested
  *
- * In `UnifiedMergeInternals`, only T1's `UnsafeDepthOverride` is preserved.
+ * In `UnifiedMergeInternals`, only T1's `ExtendedDepth` is preserved.
  * If T2 has `withExtendedDepth()` enabled but T1 doesn't, the user's
  * explicit opt-in is silently discarded. The merge should preserve the OR
  * of both flags to respect user intent.
@@ -47,12 +47,12 @@ const AdapterB = createAdapter({
 });
 
 // =============================================================================
-// UnsafeDepthOverride Preservation Tests
+// ExtendedDepth Preservation Tests
 // =============================================================================
 
-describe("UnsafeDepthOverride preservation during merge", () => {
+describe("ExtendedDepth preservation during merge", () => {
   describe("single graph baseline", () => {
-    it("default graph has unsafeDepthOverride = false", () => {
+    it("default graph has extendedDepth = false", () => {
       const graph = GraphBuilder.create().provide(AdapterA);
       type Internals = (typeof graph)["__internalState"];
       type Override = GetExtendedDepth<Internals>;
@@ -116,12 +116,12 @@ describe("UnsafeDepthOverride preservation during merge", () => {
     });
   });
 
-  describe("mergeWith also preserves override", () => {
-    it("T1 without + T2 with = merged has override (mergeWith)", () => {
+  describe("merge also preserves override", () => {
+    it("T1 without + T2 with = merged has override (merge)", () => {
       const graphWithoutOverride = GraphBuilder.create().provide(AdapterA);
       const graphWithOverride = GraphBuilder.withExtendedDepth().create().provide(AdapterB);
 
-      // mergeWith allows specifying options but should still preserve T2's override
+      // merge should preserve T2's override
       const merged = graphWithoutOverride.merge(graphWithOverride);
 
       type Internals = (typeof merged)["__internalState"];

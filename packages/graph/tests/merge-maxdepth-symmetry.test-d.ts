@@ -158,36 +158,36 @@ describe("Merge maxDepth symmetry", () => {
       expectTypeOf<MergedMaxDepth>().toEqualTypeOf<50>();
     });
 
-    it("mergeWith without options should match merge() behavior (use max)", () => {
+    it("merge uses max of both graphs' maxDepth", () => {
       const graphA = GraphBuilder.withMaxDepth<30>().create().provide(AdapterA);
 
       const graphB = GraphBuilder.withMaxDepth<100>().create().provide(AdapterB);
 
-      // mergeWith without options should behave like merge()
-      const mergedWith = graphA.merge(graphB);
-      const merged = graphA.merge(graphB);
+      // merge should use max of both
+      const merged1 = graphA.merge(graphB);
+      const merged2 = graphA.merge(graphB);
 
-      type MergedWithInternals =
-        typeof mergedWith extends GraphBuilder<infer _P, infer _R, infer _A, infer _O, infer I>
+      type Merged1Internals =
+        typeof merged1 extends GraphBuilder<infer _P, infer _R, infer _A, infer _O, infer I>
           ? I
           : never;
-      type MergedInternals =
-        typeof merged extends GraphBuilder<infer _P, infer _R, infer _A, infer _O, infer I>
+      type Merged2Internals =
+        typeof merged2 extends GraphBuilder<infer _P, infer _R, infer _A, infer _O, infer I>
           ? I
           : never;
 
-      type MergedWithMaxDepth = GetMaxDepth<MergedWithInternals>;
-      type MergedMaxDepth = GetMaxDepth<MergedInternals>;
+      type Merged1MaxDepth = GetMaxDepth<Merged1Internals>;
+      type Merged2MaxDepth = GetMaxDepth<Merged2Internals>;
 
       // Both should use max(30, 100) = 100
-      expectTypeOf<MergedWithMaxDepth>().toEqualTypeOf<100>();
-      expectTypeOf<MergedMaxDepth>().toEqualTypeOf<100>();
-      expectTypeOf<MergedWithMaxDepth>().toEqualTypeOf<MergedMaxDepth>();
+      expectTypeOf<Merged1MaxDepth>().toEqualTypeOf<100>();
+      expectTypeOf<Merged2MaxDepth>().toEqualTypeOf<100>();
+      expectTypeOf<Merged1MaxDepth>().toEqualTypeOf<Merged2MaxDepth>();
     });
   });
 
-  describe("mergeWith explicit options still work", () => {
-    it("mergeWith({ maxDepth: 'first' }) uses first graph's maxDepth", () => {
+  describe("merge behavior", () => {
+    it("merge uses max of both graphs' maxDepth", () => {
       const graphA = GraphBuilder.withMaxDepth<30>().create().provide(AdapterA);
 
       const graphB = GraphBuilder.withMaxDepth<100>().create().provide(AdapterB);
