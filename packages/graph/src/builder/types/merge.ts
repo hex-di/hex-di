@@ -57,7 +57,7 @@ import type {
   GetLifetimeMap,
   GetMaxDepth,
   GetParentProvides,
-  GetUnsafeDepthOverride,
+  GetExtendedDepth,
   UnifiedMergeInternals,
 } from "./state.js";
 import type { ProvideResult } from "./provide.js";
@@ -192,10 +192,7 @@ type UnifiedMergeCheckCycle<
       ? TCycleResult extends CircularDependencyError<infer Path>
         ? CircularErrorMessage<Path>
         : IsDepthExceeded<TCycleResult> extends true
-          ? BoolOr<
-              GetUnsafeDepthOverride<TInternalState>,
-              GetUnsafeDepthOverride<OInternals>
-            > extends true
+          ? BoolOr<GetExtendedDepth<TInternalState>, GetExtendedDepth<OInternals>> extends true
             ? DepthLimitWarning<TResolvedMaxDepth, ExtractDepthExceededPort<TCycleResult>>
             : DepthLimitError<TResolvedMaxDepth, ExtractDepthExceededPort<TCycleResult>>
           : UnifiedMergeCheckCaptive<
@@ -425,7 +422,7 @@ export type CollectMergeErrors<
       ? DuplicateErrorMessage<OverlappingPorts<OProvides, TProvides>>
       : never,
     // Error 3: Circular dependencies in merged graph (with depth exceeded handling)
-    // CONSISTENCY: Must respect GetUnsafeDepthOverride same as short-circuit path
+    // CONSISTENCY: Must respect GetExtendedDepth same as short-circuit path
     DetectCycleInMergedGraph<
       MergeDependencyMaps<GetDepGraph<TInternalState>, GetDepGraph<OInternals>>,
       TResolvedMaxDepth
@@ -436,10 +433,7 @@ export type CollectMergeErrors<
           ? CircularErrorMessage<Path>
           : IsDepthExceeded<TCycleResult> extends true
             ? // Return warning or error based on unsafeDepthOverride flag from EITHER graph
-              BoolOr<
-                GetUnsafeDepthOverride<TInternalState>,
-                GetUnsafeDepthOverride<OInternals>
-              > extends true
+              BoolOr<GetExtendedDepth<TInternalState>, GetExtendedDepth<OInternals>> extends true
               ? DepthLimitWarning<TResolvedMaxDepth, ExtractDepthExceededPort<TCycleResult>>
               : DepthLimitError<TResolvedMaxDepth, ExtractDepthExceededPort<TCycleResult>>
             : never

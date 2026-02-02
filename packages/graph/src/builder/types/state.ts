@@ -324,11 +324,11 @@ export type GetParentProvides<T extends AnyBuilderInternals> = T["parentProvides
 export type GetMaxDepth<T extends AnyBuilderInternals> = T["maxDepth"];
 
 /**
- * Extracts the unsafe depth override flag from BuilderInternals.
+ * Extracts the extended depth flag from BuilderInternals.
  *
  * @internal
  */
-export type GetUnsafeDepthOverride<T extends AnyBuilderInternals> = T["unsafeDepthOverride"];
+export type GetExtendedDepth<T extends AnyBuilderInternals> = T["unsafeDepthOverride"];
 
 /**
  * Extracts the depth-exceeded warning ports from BuilderInternals.
@@ -438,19 +438,19 @@ export type WithMaxDepth<
 >;
 
 /**
- * Creates a new BuilderInternals with a specified unsafe depth override flag.
+ * Creates a new BuilderInternals with a specified extended depth flag.
  *
  * @internal
  */
-export type WithUnsafeDepthOverride<
+export type WithExtendedDepth<
   T extends AnyBuilderInternals,
-  TNewUnsafeDepthOverride extends boolean,
+  TNewExtendedDepth extends boolean,
 > = BuilderInternals<
   T["depGraph"],
   T["lifetimeMap"],
   T["parentProvides"],
   T["maxDepth"],
-  TNewUnsafeDepthOverride,
+  TNewExtendedDepth,
   T["depthExceededWarning"],
   T["uncheckedUsed"]
 >;
@@ -611,7 +611,7 @@ export type UnifiedMergeInternals<
   TMergedLifetimeMap,
   MergeParentProvides<GetParentProvides<T1>, GetParentProvides<T2>>,
   TResolvedMaxDepth,
-  BoolOr<GetUnsafeDepthOverride<T1>, GetUnsafeDepthOverride<T2>>,
+  BoolOr<GetExtendedDepth<T1>, GetExtendedDepth<T2>>,
   GetDepthExceededWarning<T1> | GetDepthExceededWarning<T2>,
   BoolOr<GetUncheckedUsed<T1>, GetUncheckedUsed<T2>>
 >;

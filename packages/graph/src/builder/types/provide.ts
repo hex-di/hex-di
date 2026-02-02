@@ -80,7 +80,7 @@ import type {
   GetDepGraph,
   GetLifetimeMap,
   GetMaxDepth,
-  GetUnsafeDepthOverride,
+  GetExtendedDepth,
   WithDepGraphAndLifetimeMap,
   WithDepGraphLifetimeAndWarning,
   WithUncheckedUsed,
@@ -424,7 +424,7 @@ export type CheckCycleDependency<
           >
         >
       : IsDepthExceeded<TCycleResult> extends true
-        ? GetUnsafeDepthOverride<TInternalState> extends true
+        ? GetExtendedDepth<TInternalState> extends true
           ? // With unsafe override: proceed with validation BUT record the warning
             // The user has acknowledged incomplete cycle detection via withUnsafeDepthOverride()
             // The warning is tracked in internal state so tooling can detect it
@@ -639,7 +639,7 @@ export type CollectAdapterErrors<
             >
           >
         : IsDepthExceeded<TCycleResult> extends true
-          ? GetUnsafeDepthOverride<TInternalState> extends true
+          ? GetExtendedDepth<TInternalState> extends true
             ? // With unsafe override: don't add to error tuple (warning is implicit)
               // The user has acknowledged incomplete validation via withUnsafeDepthOverride()
               never
@@ -917,7 +917,7 @@ type CheckAsyncCycleDependency<
           >
         >
       : IsDepthExceeded<TCycleResult> extends true
-        ? GetUnsafeDepthOverride<TInternalState> extends true
+        ? GetExtendedDepth<TInternalState> extends true
           ? // With unsafe override: proceed with validation BUT record the warning
             CheckAsyncCaptiveDependencyWithWarning<
               TProvides,
@@ -1087,7 +1087,7 @@ export type ProvideManyResult<
           ? TCycleResult extends CircularDependencyError<infer Path>
             ? CircularErrorMessage<Path>
             : IsDepthExceeded<TCycleResult> extends true
-              ? GetUnsafeDepthOverride<TInternalState> extends true
+              ? GetExtendedDepth<TInternalState> extends true
                 ? // With unsafe override: proceed with captive validation
                   // The user has acknowledged incomplete cycle detection via withUnsafeDepthOverride()
                   CheckBatchCaptiveDependencies<
@@ -1178,7 +1178,7 @@ export type CollectBatchErrors<
         ? CircularErrorMessage<Path>
         : // Check for depth exceeded using IsDepthExceeded (not string brand)
           IsDepthExceeded<CycleResult> extends true
-          ? GetUnsafeDepthOverride<TInternalState> extends true
+          ? GetExtendedDepth<TInternalState> extends true
             ? never // User acknowledged incomplete validation
             : DepthLimitError<GetMaxDepth<TInternalState>, ExtractDepthExceededPort<CycleResult>>
           : never

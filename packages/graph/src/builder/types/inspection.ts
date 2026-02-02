@@ -37,7 +37,7 @@ import type {
   GetLifetimeMap,
   GetMaxDepth,
   GetParentProvides,
-  GetUnsafeDepthOverride,
+  GetExtendedDepth,
 } from "./state.js";
 import type { ProvideResultAllErrors } from "./provide.js";
 import type { MergeResult } from "./merge.js";
@@ -218,7 +218,7 @@ export type DebugBuilderState<B> =
         readonly lifetimeMap: GetLifetimeMap<TInternalState>;
         readonly parentProvides: GetParentProvides<TInternalState>;
         readonly maxDepth: GetMaxDepth<TInternalState>;
-        readonly unsafeDepthOverride: GetUnsafeDepthOverride<TInternalState>;
+        readonly unsafeDepthOverride: GetExtendedDepth<TInternalState>;
         readonly isComplete: [UnsatisfiedDependencies<TProvides, TRequires>] extends [never]
           ? true
           : false;
@@ -274,7 +274,7 @@ export type DebugBuilderInternals<B> =
         readonly lifetimeMap: GetLifetimeMap<TInternalState>;
         readonly parentProvides: GetParentProvides<TInternalState>;
         readonly maxDepth: GetMaxDepth<TInternalState>;
-        readonly unsafeDepthOverride: GetUnsafeDepthOverride<TInternalState>;
+        readonly unsafeDepthOverride: GetExtendedDepth<TInternalState>;
       }>
     : never;
 
