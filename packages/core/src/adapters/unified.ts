@@ -9,7 +9,9 @@
  */
 
 import type { Port } from "../ports/types.js";
-import type {
+
+// Re-export types for use by consumers
+export type {
   BothFactoryAndClassError,
   NeitherFactoryNorClassError,
   BaseUnifiedConfig,
