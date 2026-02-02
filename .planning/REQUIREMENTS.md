@@ -71,37 +71,37 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status  |
 | ----------- | ----- | ------- |
-| API-01      | TBD   | Pending |
-| API-02      | TBD   | Pending |
-| API-03      | TBD   | Pending |
-| API-04      | TBD   | Pending |
-| API-05      | TBD   | Pending |
-| API-06      | TBD   | Pending |
-| API-07      | TBD   | Pending |
-| ASYNC-01    | TBD   | Pending |
-| ASYNC-02    | TBD   | Pending |
-| ASYNC-03    | TBD   | Pending |
-| ASYNC-04    | TBD   | Pending |
-| ASYNC-05    | TBD   | Pending |
-| CLASS-01    | TBD   | Pending |
-| CLASS-02    | TBD   | Pending |
-| CLASS-03    | TBD   | Pending |
-| REM-01      | TBD   | Pending |
-| REM-02      | TBD   | Pending |
-| REM-03      | TBD   | Pending |
-| REM-04      | TBD   | Pending |
-| REM-05      | TBD   | Pending |
-| REM-06      | TBD   | Pending |
-| MIG-01      | TBD   | Pending |
-| MIG-02      | TBD   | Pending |
+| API-01      | 9     | Pending |
+| API-02      | 9     | Pending |
+| API-03      | 9     | Pending |
+| API-04      | 9     | Pending |
+| API-05      | 9     | Pending |
+| API-06      | 9     | Pending |
+| API-07      | 9     | Pending |
+| ASYNC-01    | 10    | Pending |
+| ASYNC-02    | 10    | Pending |
+| ASYNC-03    | 10    | Pending |
+| ASYNC-04    | 10    | Pending |
+| ASYNC-05    | 10    | Pending |
+| CLASS-01    | 9     | Pending |
+| CLASS-02    | 9     | Pending |
+| CLASS-03    | 9     | Pending |
+| REM-01      | 11    | Pending |
+| REM-02      | 11    | Pending |
+| REM-03      | 11    | Pending |
+| REM-04      | 11    | Pending |
+| REM-05      | 11    | Pending |
+| REM-06      | 11    | Pending |
+| MIG-01      | 12    | Pending |
+| MIG-02      | 12    | Pending |
 
 **Coverage:**
 
 - v3.0 requirements: 23 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 23
+- Mapped to phases: 23
+- Unmapped: 0
 
 ---
 
 _Requirements defined: 2026-02-02_
-_Last updated: 2026-02-02 after initial definition_
+_Last updated: 2026-02-02 after roadmap creation (traceability filled)_
