@@ -490,3 +490,88 @@ export interface InspectionToJSONOptions {
    */
   readonly timestamp?: string;
 }
+
+/**
+ * Lightweight summary of graph health for quick checks.
+ *
+ * Use `builder.inspect({ summary: true })` to get this instead of the full
+ * GraphInspection when you only need basic health information.
+ *
+ * Contains 7 fields vs 15+ fields in full GraphInspection, making it ideal for:
+ * - Health checks in monitoring/observability systems
+ * - Quick validation before expensive operations
+ * - Logging graph state without verbose output
+ *
+ * @example
+ * ```typescript
+ * const summary = builder.inspect({ summary: true });
+ *
+ * if (!summary.isValid) {
+ *   console.error('Graph invalid:', summary.errors.join(', '));
+ * }
+ *
+ * console.log(`Graph: ${summary.adapterCount} adapters, ${summary.asyncAdapterCount} async`);
+ * ```
+ */
+export interface GraphSummary {
+  /** Number of adapters registered in this builder */
+  readonly adapterCount: number;
+
+  /** Number of adapters with async factories (returning Promise) */
+  readonly asyncAdapterCount: number;
+
+  /** True if all required ports have adapters (no missing dependencies) */
+  readonly isComplete: boolean;
+
+  /** Port names that are required but not yet provided */
+  readonly missingPorts: readonly string[];
+
+  /** True if graph is complete and has no validation errors */
+  readonly isValid: boolean;
+
+  /** Validation errors (empty for valid graphs) */
+  readonly errors: readonly string[];
+
+  /** List of provided port names (without lifetime info) */
+  readonly provides: readonly string[];
+}
+
+/**
+ * Options for graph inspection.
+ */
+export interface InspectOptions {
+  /**
+   * When true, returns a lightweight GraphSummary instead of full GraphInspection.
+   *
+   * Summary contains 7 essential fields for health checks:
+   * - adapterCount, asyncAdapterCount
+   * - isComplete, missingPorts
+   * - isValid, errors
+   * - provides
+   *
+   * @example
+   * ```typescript
+   * // Get full inspection (default)
+   * const full = builder.inspect();
+   *
+   * // Get lightweight summary
+   * const summary = builder.inspect({ summary: true });
+   * ```
+   */
+  readonly summary?: boolean;
+
+  /**
+   * Optional seed for deterministic correlation IDs (for testing/reproducibility).
+   */
+  readonly seed?: string;
+
+  /**
+   * Optional correlation ID generator for dependency injection.
+   *
+   * When provided, this generator will be used instead of creating a new one.
+   * Useful for:
+   * - Testing: Pass a mock generator for predictable IDs
+   * - Shared context: Reuse a generator across multiple inspections
+   */
+  readonly generator?: unknown;
+}

@@ -17,11 +17,12 @@ export type {
   PortInfo,
   DirectionSummary,
   PortDirection,
+  GraphSummary,
+  InspectOptions,
 } from "../types/inspection.js";
 
 // Core inspection
 export { inspectGraph } from "./inspector.js";
-export type { InspectOptions } from "./inspector.js";
 
 // Inspection configuration and complexity analysis
 export { INSPECTION_CONFIG, computeTypeComplexity } from "./complexity.js";
