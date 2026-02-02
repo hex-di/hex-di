@@ -33,17 +33,17 @@ Requirements for the unified Adapter API. Each maps to roadmap phases.
 
 ### API Removal
 
-- [ ] **REM-01**: Remove `createAsyncAdapter()` function
-- [ ] **REM-02**: Remove `defineService()` function (all overloads)
-- [ ] **REM-03**: Remove `defineAsyncService()` function
-- [ ] **REM-04**: Remove `ServiceBuilder` class
-- [ ] **REM-05**: Remove `fromClass()` function
-- [ ] **REM-06**: Remove `createClassAdapter()` function
+- [x] **REM-01**: Remove `createAsyncAdapter()` function
+- [x] **REM-02**: Remove `defineService()` function (all overloads)
+- [x] **REM-03**: Remove `defineAsyncService()` function
+- [x] **REM-04**: Remove `ServiceBuilder` class
+- [x] **REM-05**: Remove `fromClass()` function
+- [x] **REM-06**: Remove `createClassAdapter()` function
 
 ### Migration
 
-- [ ] **MIG-01**: All existing tests migrated to new `createAdapter()` API
-- [ ] **MIG-02**: Documentation updated with new API
+- [x] **MIG-01**: All existing tests migrated to new `createAdapter()` API
+- [x] **MIG-02**: Documentation updated with new API
 
 ## Future Requirements
 
@@ -86,22 +86,22 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CLASS-01    | 9     | Delivered |
 | CLASS-02    | 9     | Delivered |
 | CLASS-03    | 9     | Delivered |
-| REM-01      | 11    | Pending   |
-| REM-02      | 11    | Pending   |
-| REM-03      | 11    | Pending   |
-| REM-04      | 11    | Pending   |
-| REM-05      | 11    | Pending   |
-| REM-06      | 11    | Pending   |
-| MIG-01      | 12    | Pending   |
-| MIG-02      | 12    | Pending   |
+| REM-01      | 11    | Delivered |
+| REM-02      | 11    | Delivered |
+| REM-03      | 11    | Delivered |
+| REM-04      | 11    | Delivered |
+| REM-05      | 11    | Delivered |
+| REM-06      | 11    | Delivered |
+| MIG-01      | 12    | Delivered |
+| MIG-02      | 12    | Delivered |
 
 **Coverage:**
 
 - v3.0 requirements: 23 total
-- Mapped to phases: 23
-- Unmapped: 0
+- Delivered: 23
+- Pending: 0
 
 ---
 
 _Requirements defined: 2026-02-02_
-_Last updated: 2026-02-02 Phase 10 delivered (15/23 requirements)_
+_Last updated: 2026-02-02 All 23/23 requirements delivered_

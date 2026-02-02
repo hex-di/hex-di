@@ -10,11 +10,11 @@ Catch dependency graph errors at compile time, not runtime — invalid graphs sh
 
 ## Current State
 
-**Latest:** v2.0 Unified Port API (shipped 2026-02-02)
+**Latest:** v3.0 Unified Adapter API (shipped 2026-02-02)
 
 - 10 packages under `@hex-di/*` scope
-- 1699 tests passing
-- Unified `createPort()` with metadata support
+- 1634 tests passing
+- Unified `createAdapter()` with auto-detect async
 
 ## Requirements
 
@@ -44,22 +44,16 @@ Catch dependency graph errors at compile time, not runtime — invalid graphs sh
 - Unified `createPort()` with object config — v2.0
 - `InboundPorts`/`OutboundPorts` type utilities — v2.0
 - Graph inspection filtering by direction/category/tags — v2.0
+- Unified `createAdapter()` function replacing 7 adapter creation patterns — v3.0
+- Auto-detect async from factory return type — v3.0
+- Compile-time enforcement: async factories require singleton lifetime — v3.0
+- Smart defaults (lifetime: singleton, requires: []) — v3.0
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-## Current Milestone: v3.0 Unified Adapter API
-
-**Goal:** Unify Adapter API from 7 functions to 1, with compile-time async/lifetime enforcement.
-
-**Target features:**
-
-- Single `createAdapter()` function replacing all adapter creation patterns
-- Auto-detect async from factory return type
-- Compile-time enforcement: async factories require singleton lifetime
-- Smart defaults (lifetime: singleton, requires: [])
-- Remove: `createAsyncAdapter()`, `defineService()`, `defineAsyncService()`, `ServiceBuilder`, `fromClass()`, `createClassAdapter()`
+(No active milestone)
 
 ### Out of Scope
 
@@ -98,7 +92,9 @@ Catch dependency graph errors at compile time, not runtime — invalid graphs sh
 | Curried create<TService>()(name) for ServiceBuilder | Enables partial type application             | ✓ Good (v1.2) |
 | DirectedPort as intersection with Port              | Backward compatible, gradual adoption        | ✓ Good (v1.2) |
 | Unified createPort() with object config             | Single entry point, rich metadata            | ✓ Good (v2.0) |
+| Unified createAdapter() with auto-detect async      | 7 functions → 1, clean API surface           | ✓ Good (v3.0) |
+| Compile-time async lifetime enforcement             | Catch invalid patterns before runtime        | ✓ Good (v3.0) |
 
 ---
 
-_Last updated: 2026-02-02 after v3.0 milestone started_
+_Last updated: 2026-02-02 after v3.0 milestone completed_

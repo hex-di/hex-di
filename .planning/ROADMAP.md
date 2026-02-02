@@ -6,7 +6,7 @@
 - [x] **v1.1 Scoped Overrides** - Phases 3-4 (shipped 2026-01-xx)
 - [x] **v1.2 Port Directions** - Phase 5 (shipped 2026-02-01)
 - [x] **v2.0 Unified Port API** - Phases 6-8 (shipped 2026-02-02)
-- [ ] **v3.0 Unified Adapter API** - Phases 9-12 (in progress)
+- [x] **v3.0 Unified Adapter API** - Phases 9-12 (shipped 2026-02-02)
 
 ## v3.0 Unified Adapter API
 
@@ -65,7 +65,7 @@ Plans:
 
 ---
 
-### Phase 11: API Removal
+### Phase 11: API Removal ✅
 
 **Goal:** Users have a clean API surface with only `createAdapter()` for adapter creation.
 
@@ -73,15 +73,21 @@ Plans:
 
 **Requirements:** REM-01, REM-02, REM-03, REM-04, REM-05, REM-06
 
+**Plans:**
+
+- [x] Delete deprecated source files (factory.ts, service.ts, builder.ts, from-class.ts)
+- [x] Remove deprecated exports from index.ts
+- [x] Update tests to use createAdapter exclusively
+
 **Success Criteria:**
 
-1. User cannot import `createAsyncAdapter`, `defineService`, `defineAsyncService`, `ServiceBuilder`, `fromClass`, or `createClassAdapter`
-2. Attempting to import removed functions produces clear "not exported" error
-3. Package exports only the unified `createAdapter()` for adapter creation
+1. ✓ User cannot import `createAsyncAdapter`, `defineService`, `defineAsyncService`, `ServiceBuilder`, `fromClass`, or `createClassAdapter`
+2. ✓ Attempting to import removed functions produces clear "not exported" error
+3. ✓ Package exports only the unified `createAdapter()` for adapter creation
 
 ---
 
-### Phase 12: Migration
+### Phase 12: Migration ✅
 
 **Goal:** All existing tests and documentation use the new `createAdapter()` API.
 
@@ -91,9 +97,9 @@ Plans:
 
 **Success Criteria:**
 
-1. All test files use `createAdapter()` API exclusively
-2. All tests pass with new API
-3. Documentation shows `createAdapter()` as the single entry point
+1. ✓ All test files use `createAdapter()` API exclusively
+2. ✓ All tests pass with new API (1634 tests)
+3. ✓ Documentation shows `createAdapter()` as the single entry point
 
 ---
 
@@ -124,12 +130,12 @@ See git history for details.
 | ----- | -------------------------- | -------- | ------------ |
 | 9     | Unified createAdapter      | Complete | 10           |
 | 10    | Async Lifetime Enforcement | Complete | 5            |
-| 11    | API Removal                | Pending  | 6            |
-| 12    | Migration                  | Pending  | 2            |
+| 11    | API Removal                | Complete | 6            |
+| 12    | Migration                  | Complete | 2            |
 
-**v3.0 Coverage:** 23/23 requirements mapped
+**v3.0 Coverage:** 23/23 requirements delivered ✓
 
 ---
 
 _Roadmap created: 2026-02-01_
-_Last updated: 2026-02-02 (Phase 10 complete)_
+_Last updated: 2026-02-02 (v3.0 Milestone complete)_
