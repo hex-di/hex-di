@@ -59,12 +59,8 @@ import type {
   EmptyLifetimeMap,
   ProvideResult,
   ProvideResultAllErrors,
-  ProvideAsyncResult,
   ProvideManyResult,
-  ProvideUncheckedResult,
   MergeResult,
-  MergeMaxDepthOption,
-  MergeWithResult,
   OverrideResult,
   PrettyBuilder,
 } from "./types/index.js";
@@ -93,13 +89,9 @@ export type {
   EmptyLifetimeMap,
   ProvideResult,
   ProvideResultAllErrors,
-  ProvideAsyncResult,
   ProvideManyResult,
-  ProvideUncheckedResult,
   MergeResult,
   MergeOptions,
-  MergeMaxDepthOption,
-  MergeWithResult,
   OverrideResult,
   // Inspection types
   ValidationState,
@@ -237,8 +229,7 @@ export type UnsafeDepthOverrideFactory = GraphBuilderFactory<DefaultMaxDepth, tr
  * | Method                | TProvides Effect           | TRequires Effect             | TAsyncPorts Effect      | TInternalState Effect                   |
  * |-----------------------|---------------------------|------------------------------|-------------------------|----------------------------------------|
  * | `create()`            | `never`                   | `never`                      | `never`                 | Empty (default)                        |
- * | `provide(adapter)`    | `\| InferProvides<A>`     | `\| InferRequires<A>`        | unchanged               | + depGraph edge, + lifetime entry      |
- * | `provideAsync(adapter)`| `\| InferProvides<A>`    | `\| InferRequires<A>`        | `\| InferProvides<A>`   | + depGraph edge, + lifetime(singleton) |
+ * | `provide(adapter)`    | `\| InferProvides<A>`     | `\| InferRequires<A>`        | `\| InferAsync<A>`      | + depGraph edge, + lifetime entry      |
  * | `provideMany(adapters)`| `\| InferManyProvides<As>`| `\| InferManyRequires<As>`  | `\| InferManyAsync<As>` | + all edges, + all lifetimes           |
  * | `merge(other)`        | `\| OtherProvides`        | `\| OtherRequires`           | `\| OtherAsync`         | Merged depGraph, merged lifetimeMap    |
  * | `override(adapter)`   | unchanged                 | unchanged                    | unchanged               | + depGraph edge (replaces parent)      |
@@ -401,28 +392,6 @@ export class GraphBuilder<
   declare readonly $depthWarnings: GetDepthExceededWarning<TInternalState>;
 
   /**
-   * Phantom property indicating whether `provideUnchecked()` was used.
-   *
-   * When `provideUnchecked()` is called, compile-time validation is bypassed.
-   * This property tracks whether any unchecked adapters exist in the graph,
-   * useful for tooling to warn about incomplete type-level guarantees.
-   *
-   * - Returns `false` for graphs using only `provide()`
-   * - Returns `true` if `provideUnchecked()` was used anywhere
-   *
-   * @phantom No runtime representation - use for type extraction only
-   * @example
-   * ```typescript
-   * const graph = GraphBuilder.create()
-   *   .provide(AdapterA)
-   *   .provideUnchecked(AdapterB);
-   *
-   * type IsUnsafe = typeof graph.$uncheckedUsed; // true
-   * ```
-   */
-  declare readonly $uncheckedUsed: GetUncheckedUsed<TInternalState>;
-
-  /**
    * IDE tooltip helper - shows simplified view of the graph state.
    * @phantom No runtime representation - hover over in IDE for debugging
    */
@@ -579,47 +548,6 @@ export class GraphBuilder<
   }
 
   /**
-   * Registers an adapter with first-error-only reporting (short-circuit).
-   *
-   * @pure Returns new GraphBuilder instance; original unchanged.
-   */
-  provideFirstError<A extends AdapterConstraint>(
-    adapter: A
-  ): ProvideResult<TProvides, TRequires, TAsyncPorts, TOverrides, TInternalState, A>;
-  provideFirstError<A extends AdapterConstraint>(adapter: A): unknown {
-    const state = addAdapter(this, adapter);
-    return GraphBuilder.fromState(state);
-  }
-
-  /**
-   * Registers an adapter WITHOUT compile-time validation.
-   *
-   * @pure Returns new GraphBuilder instance; original unchanged.
-   */
-  provideUnchecked<A extends AdapterConstraint>(
-    adapter: A
-  ): ProvideUncheckedResult<TProvides, TRequires, TAsyncPorts, TOverrides, TInternalState, A>;
-  provideUnchecked<A extends AdapterConstraint>(adapter: A): unknown {
-    const state = addAdapter(this, adapter);
-    return GraphBuilder.fromState(state);
-  }
-
-  /**
-   * Registers an async adapter with the graph.
-   *
-   * @pure Returns new GraphBuilder instance; original unchanged.
-   */
-  provideAsync<A extends AdapterConstraint & { readonly factoryKind: "async" }>(
-    adapter: A
-  ): ProvideAsyncResult<TProvides, TRequires, TAsyncPorts, TOverrides, TInternalState, A>;
-  provideAsync<A extends AdapterConstraint & { readonly factoryKind: "async" }>(
-    adapter: A
-  ): unknown {
-    const state = addAdapter(this, adapter);
-    return GraphBuilder.fromState(state);
-  }
-
-  /**
    * Registers multiple adapters with the graph in a batch.
    *
    * @pure Returns new GraphBuilder instance; original unchanged.
@@ -672,42 +600,6 @@ export class GraphBuilder<
     other: GraphBuilder<OProvides, ORequires, OAsyncPorts, OOverrides, OInternals>
   ): unknown {
     const state = mergeGraphs(this, other);
-    return GraphBuilder.fromState(state);
-  }
-
-  /**
-   * Merges another GraphBuilder into this one with configurable options.
-   *
-   * @pure Returns new GraphBuilder instance; both originals unchanged.
-   */
-  mergeWith<
-    OProvides,
-    ORequires,
-    OAsyncPorts,
-    OOverrides,
-    OInternals extends AnyBuilderInternals,
-    TMaxDepthOption extends MergeMaxDepthOption = "max",
-  >(
-    other: GraphBuilder<OProvides, ORequires, OAsyncPorts, OOverrides, OInternals>,
-    options?: { maxDepth?: TMaxDepthOption }
-  ): MergeWithResult<
-    TProvides,
-    TRequires,
-    TAsyncPorts,
-    TOverrides,
-    TInternalState,
-    OProvides,
-    ORequires,
-    OAsyncPorts,
-    OOverrides,
-    OInternals,
-    TMaxDepthOption
-  >;
-  mergeWith<OProvides, ORequires, OAsyncPorts, OOverrides, OInternals extends AnyBuilderInternals>(
-    other: GraphBuilder<OProvides, ORequires, OAsyncPorts, OOverrides, OInternals>,
-    options?: MergeGraphOptions
-  ): unknown {
-    const state = mergeGraphsWithOptions(this, other, options ?? {});
     return GraphBuilder.fromState(state);
   }
 
