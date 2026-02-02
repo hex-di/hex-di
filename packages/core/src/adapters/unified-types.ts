@@ -53,3 +53,121 @@ export type NeitherFactoryNorClassError = {
   readonly __error: "NeitherFactoryNorClassError";
   readonly __hint: "Must provide either 'factory' (function that creates instance) or 'class' (constructor for dependency injection).";
 };
+
+// =============================================================================
+// Imports
+// =============================================================================
+
+import type { Port, InferService } from "../ports/types.js";
+import type { Lifetime, ResolvedDeps } from "./types.js";
+import type { TupleToUnion } from "../utils/type-utilities.js";
+
+// =============================================================================
+// Config Types
+// =============================================================================
+
+/**
+ * Base config properties shared by both factory and class adapter variants.
+ *
+ * @typeParam TProvides - The port being implemented
+ * @typeParam TRequires - Tuple of required port dependencies
+ */
+export interface BaseUnifiedConfig<
+  TProvides extends Port<unknown, string>,
+  TRequires extends readonly Port<unknown, string>[],
+> {
+  /**
+   * The port this adapter provides/implements.
+   */
+  readonly provides: TProvides;
+
+  /**
+   * Optional tuple of ports this adapter depends on.
+   * Defaults to empty array `[]` at runtime if omitted.
+   */
+  readonly requires?: TRequires;
+
+  /**
+   * Optional lifetime scope for service instances.
+   * Defaults to `'singleton'` at runtime if omitted.
+   *
+   * @remarks
+   * For async adapters, lifetime is automatically coerced to 'singleton'
+   * regardless of this value (enforced in Phase 10).
+   */
+  readonly lifetime?: Lifetime;
+
+  /**
+   * Optional flag indicating if the service can be safely shallow-cloned.
+   * Defaults to `false` at runtime if omitted.
+   *
+   * @remarks
+   * Only mark as true for value-like services with no resource handles
+   * (sockets, file handles, etc.) or external references.
+   */
+  readonly clonable?: boolean;
+
+  /**
+   * Optional cleanup function called during disposal.
+   *
+   * @param instance - The service instance being disposed
+   */
+  readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+}
+
+/**
+ * Factory variant config with factory function.
+ *
+ * @typeParam TProvides - The port being implemented
+ * @typeParam TRequires - Tuple of required port dependencies
+ * @typeParam TFactory - The factory function type
+ */
+export interface FactoryConfig<
+  TProvides extends Port<unknown, string>,
+  TRequires extends readonly Port<unknown, string>[],
+  TFactory extends (
+    deps: ResolvedDeps<TupleToUnion<TRequires>>
+  ) => InferService<TProvides> | Promise<InferService<TProvides>>,
+> extends BaseUnifiedConfig<TProvides, TRequires> {
+  /**
+   * Factory function that creates the service instance.
+   *
+   * @param deps - Object with port names as keys, service instances as values
+   * @returns Service instance (sync) or Promise<Service> (async)
+   */
+  readonly factory: TFactory;
+
+  /**
+   * Class constructor is explicitly disallowed in factory variant.
+   * This enables mutual exclusion at compile time.
+   */
+  readonly class?: never;
+}
+
+/**
+ * Class variant config with class constructor.
+ *
+ * @typeParam TProvides - The port being implemented
+ * @typeParam TRequires - Tuple of required port dependencies
+ * @typeParam TClass - The class constructor type
+ */
+export interface ClassConfig<
+  TProvides extends Port<unknown, string>,
+  TRequires extends readonly Port<unknown, string>[],
+  TClass extends new (...args: unknown[]) => InferService<TProvides>,
+> extends BaseUnifiedConfig<TProvides, TRequires> {
+  /**
+   * Class constructor for dependency injection.
+   *
+   * @remarks
+   * Constructor parameters must match the order of ports in `requires` array.
+   * TypeScript cannot verify this ordering - it's the user's responsibility.
+   */
+  readonly class: TClass;
+
+  /**
+   * Factory function is explicitly disallowed in class variant.
+   * This enables mutual exclusion at compile time.
+   */
+  readonly factory?: never;
+}
