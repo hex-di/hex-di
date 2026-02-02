@@ -59,6 +59,18 @@ export type {
 // Factory functions
 export { createAdapter, createAsyncAdapter } from "./factory.js";
 
+// Unified adapter API
+export { createAdapter as createUnifiedAdapter, type PortsToServices } from "./unified.js";
+
+// Unified adapter types (for advanced users)
+export type {
+  BaseUnifiedConfig,
+  FactoryConfig,
+  ClassConfig,
+  BothFactoryAndClassError,
+  NeitherFactoryNorClassError,
+} from "./unified-types.js";
+
 // Service helpers
 export { defineService, defineAsyncService, createClassAdapter } from "./service.js";
 
