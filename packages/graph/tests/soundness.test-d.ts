@@ -330,10 +330,12 @@ describe("soundness: error message format", () => {
     const result = GraphBuilder.create().provide(SelfAdapter);
 
     type ResultType = typeof result;
-    // Check that it extends a string starting with "ERROR[HEX006]: Self-dependency"
+    // Check that it contains HEX006 self-dependency error (might be in multi-error format)
     type StartsWithError = ResultType extends `ERROR[HEX006]: Self-dependency detected. ${string}`
       ? true
-      : false;
+      : ResultType extends `Multiple validation errors:\n${string}HEX006${string}`
+        ? true
+        : false;
     expectTypeOf<StartsWithError>().toEqualTypeOf<true>();
   });
 

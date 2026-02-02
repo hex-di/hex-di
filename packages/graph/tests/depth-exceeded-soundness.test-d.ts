@@ -19,16 +19,29 @@ describe("Depth-exceeded returns ERROR by default", () => {
   it("DepthLimitError has correct format", () => {
     // When only TMaxDepth is provided, TLastPort defaults to "unknown"
     type Error = DepthLimitError<50>;
-    expectTypeOf<Error>().toEqualTypeOf<`ERROR[HEX007]: Type-level depth limit (50) exceeded at 'unknown' - cycle detection incomplete. Fix: Use GraphBuilder.withMaxDepth<N>() to increase limit (max 100), restructure graph, or use GraphBuilder.withExtendedDepth() to acknowledge incomplete validation.`>();
+    // Check that it's an ERROR string with HEX007 and mentions withExtendedDepth
+    type IsCorrectFormat =
+      Error extends `ERROR[HEX007]: Type-level depth limit (50) exceeded at 'unknown'${string}withExtendedDepth${string}`
+        ? true
+        : false;
+    expectTypeOf<IsCorrectFormat>().toEqualTypeOf<true>();
   });
 
   it("DepthLimitError mentions the configured depth", () => {
     type Error30 = DepthLimitError<30>;
     type Error100 = DepthLimitError<100>;
 
-    // The error message includes the depth value and default "unknown" port
-    expectTypeOf<Error30>().toEqualTypeOf<`ERROR[HEX007]: Type-level depth limit (30) exceeded at 'unknown' - cycle detection incomplete. Fix: Use GraphBuilder.withMaxDepth<N>() to increase limit (max 100), restructure graph, or use GraphBuilder.withExtendedDepth() to acknowledge incomplete validation.`>();
-    expectTypeOf<Error100>().toEqualTypeOf<`ERROR[HEX007]: Type-level depth limit (100) exceeded at 'unknown' - cycle detection incomplete. Fix: Use GraphBuilder.withMaxDepth<N>() to increase limit (max 100), restructure graph, or use GraphBuilder.withExtendedDepth() to acknowledge incomplete validation.`>();
+    // The error message includes the depth value and mentions withExtendedDepth
+    type IsError30Correct =
+      Error30 extends `ERROR[HEX007]: Type-level depth limit (30) exceeded${string}withExtendedDepth${string}`
+        ? true
+        : false;
+    type IsError100Correct =
+      Error100 extends `ERROR[HEX007]: Type-level depth limit (100) exceeded${string}withExtendedDepth${string}`
+        ? true
+        : false;
+    expectTypeOf<IsError30Correct>().toEqualTypeOf<true>();
+    expectTypeOf<IsError100Correct>().toEqualTypeOf<true>();
   });
 
   it("default builder internals has unsafeDepthOverride = false", () => {

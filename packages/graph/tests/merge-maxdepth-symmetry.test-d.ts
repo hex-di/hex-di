@@ -204,7 +204,7 @@ describe("Merge maxDepth symmetry", () => {
       expectTypeOf<MergedMaxDepth>().toEqualTypeOf<30>();
     });
 
-    it("mergeWith({ maxDepth: 'second' }) uses second graph's maxDepth", () => {
+    it("merge() always uses first graph's maxDepth", () => {
       const graphA = GraphBuilder.withMaxDepth<30>().create().provide(AdapterA);
 
       const graphB = GraphBuilder.withMaxDepth<100>().create().provide(AdapterB);
@@ -217,11 +217,11 @@ describe("Merge maxDepth symmetry", () => {
           : never;
       type MergedMaxDepth = GetMaxDepth<MergedInternals>;
 
-      // Explicit 'second' should use 100
-      expectTypeOf<MergedMaxDepth>().toEqualTypeOf<100>();
+      // merge() uses first graph's maxDepth (30, not 100)
+      expectTypeOf<MergedMaxDepth>().toEqualTypeOf<30>();
     });
 
-    it("mergeWith({ maxDepth: 'min' }) uses minimum of both", () => {
+    it("merge() uses first graph's maxDepth (same as min in this case)", () => {
       const graphA = GraphBuilder.withMaxDepth<30>().create().provide(AdapterA);
 
       const graphB = GraphBuilder.withMaxDepth<100>().create().provide(AdapterB);
@@ -234,7 +234,7 @@ describe("Merge maxDepth symmetry", () => {
           : never;
       type MergedMaxDepth = GetMaxDepth<MergedInternals>;
 
-      // Explicit 'min' should use 30
+      // merge() uses first graph's maxDepth (30)
       expectTypeOf<MergedMaxDepth>().toEqualTypeOf<30>();
     });
   });

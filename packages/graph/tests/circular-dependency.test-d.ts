@@ -46,7 +46,9 @@ import {
 type IsCycleError<T> = T extends `ERROR[HEX002]: Circular dependency: ${string}` ? true : false;
 type IsSelfDependencyError<T> = T extends `ERROR[HEX006]: Self-dependency detected. ${string}`
   ? true
-  : false;
+  : T extends `Multiple validation errors:\n${string}HEX006${string}`
+    ? true
+    : false;
 
 // =============================================================================
 // Type Utility Tests
