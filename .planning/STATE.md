@@ -5,13 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-02)
 
 **Core value:** Catch dependency graph errors at compile time, not runtime
-**Current focus:** v4.0 GraphBuilder Improvements
+**Current focus:** Phase 12 - API Cleanup (v4.0)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Status: Defining requirements
-Last activity: 2026-02-02 — Milestone v4.0 started
+Phase: 12 of 14 (API Cleanup)
+Plan: None yet (roadmap just created)
+Status: Ready to plan
+Last activity: 2026-02-02 - v4.0 roadmap created
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -19,9 +20,9 @@ Progress: [░░░░░░░░░░] 0%
 
 **Velocity (v1.1 + v1.2 + v2.0 + v3.0):**
 
-- Total plans completed: 19+
-- Average duration: 4.5 min
-- Total execution time: ~90 min
+- Total plans completed: 23
+- Average duration: 4.3 min
+- Total execution time: ~99 min
 
 **By Phase:**
 
@@ -38,7 +39,11 @@ Progress: [░░░░░░░░░░] 0%
 | 09-unified-createadapter | 6     | 8 min  | 1.3 min  |
 | 10-async-enforcement     | 2     | 5 min  | 2.5 min  |
 | 11-api-removal           | 1     | 3 min  | 3 min    |
-| 12-migration             | 1     | 2 min  | 2 min    |
+
+**Recent Trend:**
+
+- Last 5 plans: [3m, 2m, 2m, 1m, 3m]
+- Trend: Stable
 
 ## Accumulated Context
 
@@ -46,20 +51,12 @@ Progress: [░░░░░░░░░░] 0%
 
 Key decisions captured in PROJECT.md.
 
-Recent for v3.0:
+Recent for v4.0:
 
-- Unified adapter API (1 function instead of 7)
-- Auto-detect async from factory return type (09-02)
-- Compile-time enforcement for async lifetime constraint
-- Mutual exclusion: factory and class properties via `?: never` pattern (09-01)
-- Branded error types with `__error` and `__hint` for config validation (09-01)
-- Async detection at type level only - runtime always uses SYNC (09-02)
-- 5 factory overloads for type-safe defaults (09-02)
-- Export unified createAdapter as primary API (09-05)
-- Dual export strategy: createAdapter and createUnifiedAdapter aliases (09-06)
-- Export all unified config types for advanced users (09-06)
-- Removed deprecated APIs: createAsyncAdapter, defineService, defineAsyncService, ServiceBuilder, fromClass, createClassAdapter (Phase 11)
-- createPort parameter order: `<TName, TService>` (name first) for consistency
+- 3-phase roadmap: API Cleanup, Runtime Features, Bidirectional Captive Validation
+- Phase 12 consolidates all API removals (provideAsync, provideFirstError, provideUnchecked, mergeWith) plus rename (withUnsafeDepthOverride → withExtendedDepth)
+- Phase 13 groups low-medium complexity runtime features (inspection summary, disposal lifecycle)
+- Phase 14 isolates high-complexity validation (bidirectional captive) - may defer to v4.1 per research recommendation
 
 ### Pending Todos
 
@@ -67,15 +64,15 @@ None.
 
 ### Blockers/Concerns
 
-**TypeScript Partial Type Arg Inference:** When providing single type param to createPort<Service>, TName widens to string. Full inference works perfectly. This is a fundamental TypeScript limitation, documented in tests and SUMMARY.
+**Phase 14 Complexity Risk:** Research flags bidirectional captive validation as high complexity (new TPendingConstraints state parameter, TS2589 risk). Recommend evaluating during phase planning to confirm v4.0 scope vs deferral to v4.1.
 
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: v3.0 milestone archived
+Stopped at: v4.0 roadmap created, ready for Phase 12 planning
 Resume file: None
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-02 (v4.0 milestone started)_
+_Last updated: 2026-02-02 (v4.0 roadmap created)_
