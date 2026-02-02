@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createPort, type Port, createAdapter } from "@hex-di/core";
+import { port, type Port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import {
   createContainer,
@@ -42,10 +42,10 @@ interface Cache {
   set(key: string, value: string): Promise<void>;
 }
 
-const ConfigPort = createPort<Config, "Config">({ name: "Config" });
-const DatabasePort = createPort<Database, "Database">({ name: "Database" });
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
-const CachePort = createPort<Cache, "Cache">({ name: "Cache" });
+const ConfigPort = port<Config>()({ name: "Config" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const CachePort = port<Cache>()({ name: "Cache" });
 
 // =============================================================================
 // Basic Async Resolution Tests
@@ -75,10 +75,7 @@ describe("Async Factory Resolution", () => {
         },
       });
 
-      const graph = GraphBuilder.create()
-        .provide(ConfigAdapter)
-        .provideAsync(DatabaseAdapter)
-        .build();
+      const graph = GraphBuilder.create().provide(ConfigAdapter).provide(DatabaseAdapter).build();
 
       const container = createContainer(graph, { name: "Test" });
 
@@ -129,7 +126,7 @@ describe("Async Factory Resolution", () => {
         },
       });
 
-      const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
+      const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
       const container = createContainer(graph, { name: "Test" });
 
@@ -164,7 +161,7 @@ describe("Async Factory Resolution", () => {
         },
       });
 
-      const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
+      const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
       const container = createContainer(graph, { name: "Test" });
 
@@ -228,7 +225,7 @@ describe("Async Factory Resolution", () => {
       const graph = GraphBuilder.create()
         .provide(ConfigAdapter)
         .provide(LoggerAdapter)
-        .provideAsync(DatabaseAdapter)
+        .provide(DatabaseAdapter)
         .build();
 
       const container = createContainer(graph, { name: "Test" });
@@ -288,10 +285,7 @@ describe("Container initialization", () => {
         },
       });
 
-      const graph = GraphBuilder.create()
-        .provideAsync(DatabaseAdapter)
-        .provideAsync(CacheAdapter)
-        .build();
+      const graph = GraphBuilder.create().provide(DatabaseAdapter).provide(CacheAdapter).build();
 
       const container = createContainer(graph, { name: "Test" });
 
@@ -339,8 +333,8 @@ describe("Container initialization", () => {
       });
 
       const graph = GraphBuilder.create()
-        .provideAsync(CacheAdapter) // Added first but depends on Database
-        .provideAsync(DatabaseAdapter) // Added second but has no dependencies
+        .provide(CacheAdapter) // Added first but depends on Database
+        .provide(DatabaseAdapter) // Added second but has no dependencies
         .build();
 
       const container = createContainer(graph, { name: "Test" });
@@ -366,7 +360,7 @@ describe("Container initialization", () => {
         },
       });
 
-      const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
+      const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
       const container = createContainer(graph, { name: "Test" });
       const initialized = await container.initialize();
@@ -395,7 +389,7 @@ describe("Container initialization", () => {
         },
       });
 
-      const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
+      const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
       const container = createContainer(graph, { name: "Test" });
 
@@ -428,7 +422,7 @@ describe("Async error handling", () => {
         },
       });
 
-      const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
+      const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
       const container = createContainer(graph, { name: "Test" });
 
@@ -464,7 +458,7 @@ describe("Async error handling", () => {
         },
       });
 
-      const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
+      const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
       const container = createContainer(graph, { name: "Test" });
 
@@ -488,7 +482,7 @@ describe("Async error handling", () => {
         }),
       });
 
-      const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
+      const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
       const container = createContainer(graph, { name: "Test" });
 
@@ -515,7 +509,7 @@ describe("Async error handling", () => {
           }),
       });
 
-      const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
+      const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
       const container = createContainer(graph, { name: "Test" });
       await container.dispose();
@@ -542,7 +536,7 @@ describe("Scope async resolution", () => {
         }),
     });
 
-    const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
+    const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
     const container = createContainer(graph, { name: "Test" });
     const scope = container.createScope();
@@ -574,7 +568,7 @@ describe("Scope async resolution", () => {
       },
     });
 
-    const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
+    const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
     const container = createContainer(graph, { name: "Test" });
     const scope1 = container.createScope();
@@ -615,7 +609,7 @@ describe("Async adapter finalizers", () => {
       },
     });
 
-    const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
+    const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
     const container = createContainer(graph, { name: "Test" });
     await container.resolveAsync(DatabasePort);
@@ -646,7 +640,7 @@ describe("Resolution hooks for async adapters", () => {
       },
     });
 
-    const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
+    const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
     const container = createContainer(
       graph,
@@ -692,7 +686,7 @@ describe("Resolution hooks for async adapters", () => {
         }),
     });
 
-    const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
+    const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
     const container = createContainer(
       graph,
@@ -738,10 +732,7 @@ describe("Resolution hooks for async adapters", () => {
         }),
     });
 
-    const graph = GraphBuilder.create()
-      .provide(ConfigAdapter)
-      .provideAsync(DatabaseAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(ConfigAdapter).provide(DatabaseAdapter).build();
 
     const container = createContainer(
       graph,
@@ -787,7 +778,7 @@ describe("Resolution hooks for async adapters", () => {
       },
     });
 
-    const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
+    const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
     const container = createContainer(
       graph,
@@ -833,7 +824,7 @@ describe("Resolution hooks for async adapters", () => {
       },
     });
 
-    const graph = GraphBuilder.create().provideAsync(DatabaseAdapter).build();
+    const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
     const container = createContainer(
       graph,

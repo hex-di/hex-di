@@ -10,7 +10,7 @@
  */
 
 import { describe, test, expect } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/index.js";
 import { portComparator } from "../src/types/helpers.js";
@@ -38,10 +38,10 @@ interface Config {
   timeout: number;
 }
 
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
-const DatabasePort = createPort<Database, "Database">({ name: "Database" });
-const CachePort = createPort<Cache, "Cache">({ name: "Cache" });
-const ConfigPort = createPort<Config, "Config">({ name: "Config" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const CachePort = port<Cache>()({ name: "Cache" });
+const ConfigPort = port<Config>()({ name: "Config" });
 
 // =============================================================================
 // Port Comparator Tests
@@ -139,8 +139,8 @@ describe("Port Resolution Type Safety", () => {
 
     const graph = GraphBuilder.create()
       .provide(LoggerAdapter)
-      .provideAsync(DatabaseAdapter)
-      .provideAsync(CacheAdapter)
+      .provide(DatabaseAdapter)
+      .provide(CacheAdapter)
       .provide(ConfigAdapter)
       .build();
 
@@ -175,10 +175,7 @@ describe("Port Resolution Type Safety", () => {
         }),
     });
 
-    const graph = GraphBuilder.create()
-      .provide(LoggerAdapter)
-      .provideAsync(DatabaseAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
 
     const container = createContainer(graph, { name: "Test" });
 
@@ -241,10 +238,7 @@ describe("Port Resolution Type Safety", () => {
         }),
     });
 
-    const graph = GraphBuilder.create()
-      .provideAsync(DatabaseAdapter)
-      .provideAsync(CacheAdapter)
-      .build();
+    const graph = GraphBuilder.create().provide(DatabaseAdapter).provide(CacheAdapter).build();
 
     const container = createContainer(graph, { name: "Test" });
     await container.initialize();
@@ -295,10 +289,7 @@ describe("Port Resolution Type Safety", () => {
         },
       });
 
-      const graph = GraphBuilder.create()
-        .provideAsync(DatabaseAdapter)
-        .provideAsync(CacheAdapter)
-        .build();
+      const graph = GraphBuilder.create().provide(DatabaseAdapter).provide(CacheAdapter).build();
 
       const container = createContainer(graph, { name: "Test" });
       await container.initialize();
