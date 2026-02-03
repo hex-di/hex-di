@@ -1,107 +1,119 @@
-# Requirements: HexDI v3.0
+# Requirements: HexDI v5.0
 
-**Defined:** 2026-02-02
+**Defined:** 2026-02-03
 **Core Value:** Catch dependency graph errors at compile time, not runtime
 
-## v3.0 Requirements
+## v5.0 Requirements
 
-Requirements for the unified Adapter API. Each maps to roadmap phases.
+Requirements for runtime package improvements (8.7/10 → 9.5/10). Each maps to roadmap phases.
 
-### Unified API
+### Code Quality
 
-- [x] **API-01**: Single `createAdapter()` function accepts object config
-- [x] **API-02**: `factory` property accepts sync or async factory function
-- [x] **API-03**: `class` property accepts class constructor for class-based injection
-- [x] **API-04**: Either `factory` or `class` required (mutually exclusive)
-- [x] **API-05**: `requires` defaults to empty array when not specified
-- [x] **API-06**: `lifetime` defaults to `'singleton'` when not specified
-- [x] **API-07**: Auto-detect async from factory return type (no separate function)
+- [ ] **QUAL-01**: Extract shared wrapper logic to `wrapper-utils.ts` (~200 LOC reduction)
+- [ ] **QUAL-02**: Split `types.ts` (1,271 lines) into 6 files (<400 lines each)
+- [ ] **QUAL-03**: Consolidate inspector exports to single `createInspector` function
+- [ ] **QUAL-04**: Split `inspection/helpers.ts` (546 lines) into focused modules
+- [ ] **QUAL-05**: Add explicit return types to internal functions
 
-### Async Lifetime Enforcement
+### API Design
 
-- [x] **ASYNC-01**: Async factory with `lifetime: 'scoped'` produces compile error
-- [x] **ASYNC-02**: Async factory with `lifetime: 'transient'` produces compile error
-- [x] **ASYNC-03**: Async factory with `lifetime: 'singleton'` compiles successfully
-- [x] **ASYNC-04**: Async factory with lifetime omitted compiles (defaults to singleton)
-- [x] **ASYNC-05**: Error type includes helpful message and hint
+- [ ] **API-01**: Type-safe `withOverrides()` API using port objects as keys
+- [ ] **API-02**: Override builder pattern with fluent `.override(adapter, config)` method
+- [ ] **API-03**: Merge `createContainer` options into single object parameter
+- [ ] **API-04**: Backward compatible overload for existing string-based overrides (deprecated)
+- [ ] **API-05**: Remove legacy type exports (`CaptiveDependencyErrorLegacy`, etc.)
 
-### Class-Based Injection
+### Performance
 
-- [x] **CLASS-01**: `class` property accepts constructor function
-- [x] **CLASS-02**: Constructor params injected in `requires` array order
-- [x] **CLASS-03**: Class-based adapter supports all lifetimes (sync instantiation)
+- [ ] **PERF-01**: O(1) child container unregistration (Map instead of Array)
+- [ ] **PERF-02**: Configurable timestamp capture (disable in production)
+- [ ] **PERF-03**: Performance benchmarks for resolution, scopes, and disposal
 
-### API Removal
+### Testing
 
-- [x] **REM-01**: Remove `createAsyncAdapter()` function
-- [x] **REM-02**: Remove `defineService()` function (all overloads)
-- [x] **REM-03**: Remove `defineAsyncService()` function
-- [x] **REM-04**: Remove `ServiceBuilder` class
-- [x] **REM-05**: Remove `fromClass()` function
-- [x] **REM-06**: Remove `createClassAdapter()` function
+- [ ] **TEST-01**: Comprehensive resolution hook tests (20+ tests)
+- [ ] **TEST-02**: Hook composition tests (10+ tests)
+- [ ] **TEST-03**: Plugin system tests for HOOKS_ACCESS (15+ tests)
+- [ ] **TEST-04**: Inspector API tests
+- [ ] **TEST-05**: Tracer API tests
 
-### Migration
+### Error Experience
 
-- [x] **MIG-01**: All existing tests migrated to new `createAdapter()` API
-- [x] **MIG-02**: Documentation updated with new API
+- [ ] **ERR-01**: Error messages include `suggestion` property with actionable guidance
+- [ ] **ERR-02**: Error messages include code examples for common mistakes
+- [ ] **ERR-03**: "Did you mean?" suggestions for mistyped port names
+
+### Documentation
+
+- [ ] **DOC-01**: Architecture documentation (`runtime-architecture.md`)
+- [ ] **DOC-02**: Container lifecycle state machine diagram
+- [ ] **DOC-03**: `@typeParam` documentation for Container type
+- [ ] **DOC-04**: Design decisions documentation (branded types, phase-dependent resolution, etc.)
+
+### Type Safety
+
+- [ ] **TYPE-01**: Compile-time circular dependency detection (type-level DFS)
+- [ ] **TYPE-02**: Move context variable helpers to `@hex-di/core` or dedicated package
 
 ## Future Requirements
 
 Deferred to later milestones. Tracked but not in current roadmap.
 
-### Enhanced Validation
-
-- **VAL-01**: Runtime validation that class constructor arity matches requires length
-- **VAL-02**: Warning when class has more constructor params than requires
+None for v5.0 — all 20 improvements in scope.
 
 ## Out of Scope
 
 Explicitly excluded. Documented to prevent scope creep.
 
-| Feature                             | Reason                                                                |
-| ----------------------------------- | --------------------------------------------------------------------- |
-| Constructor order type verification | TypeScript limitation - can't verify param types match requires order |
-| Decorator-based injection           | Different paradigm, would be separate package                         |
-| Named parameter injection           | Too implicit, requires order is explicit                              |
-| Backward compatibility shims        | v3.0 is clean break                                                   |
+| Feature                          | Reason                                           |
+| -------------------------------- | ------------------------------------------------ |
+| Decorator-based registration     | Optional future package, not core                |
+| Convention-based auto-wiring     | Too implicit for core library philosophy         |
+| Runtime override factory caching | Adds complexity, overrides should be lightweight |
+| Async override factories         | Complicates override context lifecycle           |
+| Mutable hook lists after sealing | Violates hook immutability guarantee             |
 
 ## Traceability
 
 Which phases cover which requirements. Updated during roadmap creation.
 
-| Requirement | Phase | Status    |
-| ----------- | ----- | --------- |
-| API-01      | 9     | Delivered |
-| API-02      | 9     | Delivered |
-| API-03      | 9     | Delivered |
-| API-04      | 9     | Delivered |
-| API-05      | 9     | Delivered |
-| API-06      | 9     | Delivered |
-| API-07      | 9     | Delivered |
-| ASYNC-01    | 10    | Delivered |
-| ASYNC-02    | 10    | Delivered |
-| ASYNC-03    | 10    | Delivered |
-| ASYNC-04    | 10    | Delivered |
-| ASYNC-05    | 10    | Delivered |
-| CLASS-01    | 9     | Delivered |
-| CLASS-02    | 9     | Delivered |
-| CLASS-03    | 9     | Delivered |
-| REM-01      | 11    | Delivered |
-| REM-02      | 11    | Delivered |
-| REM-03      | 11    | Delivered |
-| REM-04      | 11    | Delivered |
-| REM-05      | 11    | Delivered |
-| REM-06      | 11    | Delivered |
-| MIG-01      | 12    | Delivered |
-| MIG-02      | 12    | Delivered |
+| Requirement | Phase | Status  |
+| ----------- | ----- | ------- |
+| QUAL-01     | TBD   | Pending |
+| QUAL-02     | TBD   | Pending |
+| QUAL-03     | TBD   | Pending |
+| QUAL-04     | TBD   | Pending |
+| QUAL-05     | TBD   | Pending |
+| API-01      | TBD   | Pending |
+| API-02      | TBD   | Pending |
+| API-03      | TBD   | Pending |
+| API-04      | TBD   | Pending |
+| API-05      | TBD   | Pending |
+| PERF-01     | TBD   | Pending |
+| PERF-02     | TBD   | Pending |
+| PERF-03     | TBD   | Pending |
+| TEST-01     | TBD   | Pending |
+| TEST-02     | TBD   | Pending |
+| TEST-03     | TBD   | Pending |
+| TEST-04     | TBD   | Pending |
+| TEST-05     | TBD   | Pending |
+| ERR-01      | TBD   | Pending |
+| ERR-02      | TBD   | Pending |
+| ERR-03      | TBD   | Pending |
+| DOC-01      | TBD   | Pending |
+| DOC-02      | TBD   | Pending |
+| DOC-03      | TBD   | Pending |
+| DOC-04      | TBD   | Pending |
+| TYPE-01     | TBD   | Pending |
+| TYPE-02     | TBD   | Pending |
 
 **Coverage:**
 
-- v3.0 requirements: 23 total
-- Delivered: 23
-- Pending: 0
+- v5.0 requirements: 27 total
+- Mapped to phases: 0
+- Unmapped: 27 ⚠️
 
 ---
 
-_Requirements defined: 2026-02-02_
-_Last updated: 2026-02-02 All 23/23 requirements delivered_
+_Requirements defined: 2026-02-03_
+_Last updated: 2026-02-03 after initial definition_
