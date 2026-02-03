@@ -119,6 +119,83 @@ export type DebugCaptiveCheck<
 }>;
 
 /**
+ * Debug type to expose dependency graph contents.
+ *
+ * Use this to inspect the internal structure of the dependency graph
+ * to understand which ports depend on which other ports.
+ *
+ * @typeParam TDepGraph - The dependency graph to inspect
+ *
+ * @example
+ * ```typescript
+ * type Graph = DebugDepGraph<typeof builder._depGraph>;
+ * // Hover to see: { PortA: "PortB" | "PortC", PortB: never, ... }
+ * ```
+ */
+export type DebugDepGraph<TDepGraph> = TDepGraph;
+
+/**
+ * Debug type to show which ports depend on a target port.
+ *
+ * This is a wrapper around the internal `FindDependentsOf` type,
+ * exposing it for debugging purposes.
+ *
+ * @typeParam TDepGraph - The dependency graph
+ * @typeParam TPort - The port to find dependents of
+ *
+ * @example
+ * ```typescript
+ * type WhoNeedsLogger = DebugFindDependentsOf<MyGraph, "Logger">;
+ * // Result: "UserService" | "ApiGateway" (ports that require Logger)
+ * ```
+ */
+export type DebugFindDependentsOf<TDepGraph, TPort extends string> = FindDependentsOf<
+  TDepGraph,
+  TPort
+>;
+
+/**
+ * Debug type to trace the reverse captive detection flow.
+ *
+ * Shows all intermediate steps when checking if adding a new port
+ * would create a reverse captive dependency.
+ *
+ * @typeParam TDepGraph - The dependency graph
+ * @typeParam TLifetimeMap - The lifetime map
+ * @typeParam TNewPortName - The port being added
+ * @typeParam TNewPortLevel - The lifetime level of the new port
+ *
+ * @example
+ * ```typescript
+ * type Debug = DebugReverseCaptive<Graph, Map, "ScopedPort", 2>;
+ * // Hover to see:
+ * // {
+ * //   dependents: "SingletonService";  // Who requires ScopedPort?
+ * //   hasLifetime: false;               // Is ScopedPort already in map?
+ * //   result: "SingletonService";       // Would this create a captive?
+ * // }
+ * ```
+ */
+export type DebugReverseCaptive<
+  TDepGraph,
+  TLifetimeMap,
+  TNewPortName extends string,
+  TNewPortLevel extends number,
+> = {
+  /** Ports that require the new port */
+  readonly dependents: FindDependentsOf<TDepGraph, TNewPortName>;
+  /** Whether the new port already has a lifetime in the map */
+  readonly hasLifetime: HasLifetimeInMap<TLifetimeMap, TNewPortName>;
+  /** The result of FindReverseCaptiveDependency */
+  readonly result: FindReverseCaptiveDependency<
+    TDepGraph,
+    TLifetimeMap,
+    TNewPortName,
+    TNewPortLevel
+  >;
+};
+
+/**
  * Finds a captive dependency for a single required port.
  *
  * ## Return Values
