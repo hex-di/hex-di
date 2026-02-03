@@ -12,9 +12,9 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 Phase: 15 - Foundation
 Plan: 02 of 7 complete
 Status: In progress
-Last activity: 2026-02-03 - Completed 15-02-PLAN.md (Extract Wrapper Utils)
+Last activity: 2026-02-03 - Completed 15-01-PLAN.md (Split types.ts)
 
-Progress: [## ] 2/7 plans in Phase 15
+Progress: [## ] 2/7 plans in Phase 15 (15-01, 15-02 complete)
 
 ## v5.0 Phase Status
 
@@ -73,6 +73,7 @@ Recent for v5.0:
 - Phase 16 parallel-safe with Phase 15 (no dependencies)
 - Phase 17 depends on Phase 15 (needs consolidated runtime before new patterns)
 - 15-02: Created wrapper-utils.ts for shared container creation utilities
+- 15-01: Split types.ts (1,271 LOC) into 8 focused files in types/ subdirectory
 
 ### Pending Todos
 
@@ -88,11 +89,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 15-02-PLAN.md (Extract Wrapper Utils)
+Stopped at: Completed 15-01-PLAN.md (Split types.ts)
 Resume file: None
 Next: Continue with 15-03-PLAN.md or next available plan
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-03 (15-02 completed)_
+_Last updated: 2026-02-03 (15-01 completed)_
