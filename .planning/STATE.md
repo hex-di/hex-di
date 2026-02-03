@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 15 - Foundation
-Plan: 02 of 7 complete
+Plan: 05 of 7 complete
 Status: In progress
-Last activity: 2026-02-03 - Completed 15-01-PLAN.md (Split types.ts)
+Last activity: 2026-02-03 - Completed 15-05-PLAN.md (Legacy export removal)
 
-Progress: [## ] 2/7 plans in Phase 15 (15-01, 15-02 complete)
+Progress: [##### ] 5/7 plans in Phase 15 (15-01, 15-02, 15-03, 15-04, 15-05 complete)
 
 ## v5.0 Phase Status
 
@@ -74,6 +74,7 @@ Recent for v5.0:
 - Phase 17 depends on Phase 15 (needs consolidated runtime before new patterns)
 - 15-02: Created wrapper-utils.ts for shared container creation utilities
 - 15-01: Split types.ts (1,271 LOC) into 8 focused files in types/ subdirectory
+- 15-05: Removed CaptiveDependencyErrorLegacy from public exports, marked as @internal
 
 ### Pending Todos
 
@@ -89,11 +90,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 15-01-PLAN.md (Split types.ts)
+Stopped at: Completed 15-05-PLAN.md (Legacy export removal)
 Resume file: None
-Next: Continue with 15-03-PLAN.md or next available plan
+Next: Continue with 15-06-PLAN.md or next available plan
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-03 (15-01 completed)_
+_Last updated: 2026-02-03 (15-05 completed)_
