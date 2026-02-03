@@ -59,3 +59,15 @@ export type {
   IsRootContainer,
   IsChildContainer,
 } from "./inference.js";
+
+// =============================================================================
+// Override Builder Types
+// =============================================================================
+
+export type {
+  ValidateOverrideAdapter,
+  ValidateAdapterDependencies,
+  OverrideBuilderState,
+} from "./override-types.js";
+
+export type { PortNotInGraphError, MissingDependenciesError } from "./validation-errors.js";

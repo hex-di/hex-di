@@ -95,6 +95,17 @@ export { isRecord } from "./util/type-guards.js";
 export { createContainer } from "./container/factory.js";
 
 // =============================================================================
+// Override Builder
+// =============================================================================
+
+export { OverrideBuilder } from "./container/override-builder.js";
+export type {
+  ValidateOverrideAdapter,
+  PortNotInGraphError,
+  MissingDependenciesError,
+} from "./types.js";
+
+// =============================================================================
 // Resolution Hooks
 // =============================================================================
 
