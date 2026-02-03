@@ -9,43 +9,44 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 
 ## Current Position
 
-Phase: 13 of 14 (Runtime Features) - COMPLETE
-Plan: 2 of 2 complete
-Status: Phase 13 complete, Phase 14 pending
-Last activity: 2026-02-02 - Completed 13-02-PLAN.md
+Phase: 14 of 14 (Bidirectional Captive Validation) - COMPLETE
+Plan: 1 of 1 complete (Plan 14-02 skipped - gap does not exist)
+Status: Phase 14 complete - v4.0 milestone COMPLETE
+Last activity: 2026-02-03 - Completed 14-01-PLAN.md
 
-Progress: [██████░░░░] 58% (28/48 plans across all milestones)
+Progress: [██████░░░░] 60% (29/48 plans across all milestones)
 
 ## Performance Metrics
 
 **Velocity (v1.1 + v1.2 + v2.0 + v3.0 + v4.0):**
 
-- Total plans completed: 28
-- Average duration: 4.4 min
-- Total execution time: ~125 min
+- Total plans completed: 29
+- Average duration: 4.6 min
+- Total execution time: ~133 min
 
 **By Phase:**
 
-| Phase                    | Plans | Total  | Avg/Plan |
-| ------------------------ | ----- | ------ | -------- |
-| 01-build-validation      | 1     | 2 min  | 2 min    |
-| 02-merge-type-fixes      | 1     | 2 min  | 2 min    |
-| 03-scoped-overrides      | 4     | 36 min | 9 min    |
-| 04-api-ergonomics        | 3     | 14 min | 4.7 min  |
-| 05-port-directions       | 2     | 9 min  | 4.5 min  |
-| 06-core-port-api         | 1     | 7 min  | 7 min    |
-| 07-type-helpers          | 1     | 3 min  | 3 min    |
-| 08-graph-inspection      | 1     | 5 min  | 5 min    |
-| 09-unified-createadapter | 6     | 8 min  | 1.3 min  |
-| 10-async-enforcement     | 2     | 5 min  | 2.5 min  |
-| 11-api-removal           | 1     | 3 min  | 3 min    |
-| 12-api-cleanup           | 3     | 17 min | 5.7 min  |
-| 13-runtime-features      | 2     | 9 min  | 4.5 min  |
+| Phase                               | Plans | Total  | Avg/Plan |
+| ----------------------------------- | ----- | ------ | -------- |
+| 01-build-validation                 | 1     | 2 min  | 2 min    |
+| 02-merge-type-fixes                 | 1     | 2 min  | 2 min    |
+| 03-scoped-overrides                 | 4     | 36 min | 9 min    |
+| 04-api-ergonomics                   | 3     | 14 min | 4.7 min  |
+| 05-port-directions                  | 2     | 9 min  | 4.5 min  |
+| 06-core-port-api                    | 1     | 7 min  | 7 min    |
+| 07-type-helpers                     | 1     | 3 min  | 3 min    |
+| 08-graph-inspection                 | 1     | 5 min  | 5 min    |
+| 09-unified-createadapter            | 6     | 8 min  | 1.3 min  |
+| 10-async-enforcement                | 2     | 5 min  | 2.5 min  |
+| 11-api-removal                      | 1     | 3 min  | 3 min    |
+| 12-api-cleanup                      | 3     | 17 min | 5.7 min  |
+| 13-runtime-features                 | 2     | 9 min  | 4.5 min  |
+| 14-bidirectional-captive-validation | 1     | 8 min  | 8 min    |
 
 **Recent Trend:**
 
-- Last 5 plans: [11m, 3m, 3m, 6m, 3m]
-- Trend: Stable (avg ~5.2min per plan)
+- Last 5 plans: [3m, 3m, 6m, 3m, 8m]
+- Trend: Stable (avg ~4.6min per plan)
 
 ## Accumulated Context
 
@@ -58,7 +59,9 @@ Recent for v4.0:
 - 3-phase roadmap: API Cleanup, Runtime Features, Bidirectional Captive Validation
 - Phase 12 (COMPLETE): Removed provideAsync, provideFirstError, provideUnchecked, mergeWith + renamed withUnsafeDepthOverride → withExtendedDepth
 - Phase 13 (COMPLETE): Inspection summary mode, disposal lifecycle verification
-- Phase 14 isolates high-complexity validation (bidirectional captive) - may defer to v4.1 per research recommendation
+- Phase 14 (COMPLETE): Verified existing reverse captive detection handles forward references - no implementation needed
+
+**v4.0 MILESTONE COMPLETE**
 
 From Phase 13:
 
@@ -67,21 +70,28 @@ From Phase 13:
 - Summary provides field contains port names only (no lifetime info) for lightweight footprint
 - Disposal lifecycle implementation verified complete (LIFO, async, error aggregation, idempotency, cascade, scoped-only)
 
+From Phase 14:
+
+- Existing FindReverseCaptiveDependency already catches forward reference captive dependencies
+- When singleton requires unregistered scoped port, then scoped port is added, type system produces error
+- Debug types pattern established for compile-time inspection (DebugDepGraph, DebugFindDependentsOf, DebugReverseCaptive)
+- Plan 14-02 skipped - bidirectional validation gap hypothesis disproven
+
 ### Pending Todos
 
 None.
 
 ### Blockers/Concerns
 
-**Phase 14 Complexity Risk:** Research flags bidirectional captive validation as high complexity (new TPendingConstraints state parameter, TS2589 risk). Recommend evaluating during phase planning to confirm v4.0 scope vs deferral to v4.1.
+None - v4.0 milestone complete.
 
 ## Session Continuity
 
-Last session: 2026-02-02
-Stopped at: Completed 13-02-PLAN.md (Disposal Lifecycle Verification)
+Last session: 2026-02-03
+Stopped at: Completed 14-01-PLAN.md (Verify Gap Existence) - v4.0 milestone complete
 Resume file: None
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-02 (Phase 13 complete)_
+_Last updated: 2026-02-03 (Phase 14 complete - v4.0 milestone COMPLETE)_
