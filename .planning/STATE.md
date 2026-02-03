@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 17 - Type-Safe API
-Plan: 01 of 6 complete
+Plan: 03 of 6 complete
 Status: In progress
-Last activity: 2026-02-04 - Completed 17-01-PLAN.md (override builder)
+Last activity: 2026-02-04 - Completed 17-03-PLAN.md (unified createContainer API)
 
-Progress: [█░░░░░] 1/6 plans in Phase 17
+Progress: [███░░░] 3/6 plans in Phase 17
 
 ## v5.0 Phase Status
 
@@ -30,9 +30,9 @@ Progress: [█░░░░░] 1/6 plans in Phase 17
 
 **Velocity (v1.1 + v1.2 + v2.0 + v3.0 + v4.0 + v5.0):**
 
-- Total plans completed: 33
-- Average duration: 4.4 min
-- Total execution time: ~145 min
+- Total plans completed: 35
+- Average duration: 4.3 min
+- Total execution time: ~150 min
 
 **By Phase:**
 
@@ -53,12 +53,12 @@ Progress: [█░░░░░] 1/6 plans in Phase 17
 | 13-runtime-features                 | 2     | 9 min  | 4.5 min  |
 | 14-bidirectional-captive-validation | 1     | 8 min  | 8 min    |
 | 16-performance                      | 3     | 11 min | 3.7 min  |
-| 17-type-safe-api                    | 1     | 3 min  | 3 min    |
+| 17-type-safe-api                    | 3     | 13 min | 4.3 min  |
 
 **Recent Trend:**
 
-- Last 5 plans: [2m, 4m, 5m, 2m, 3m]
-- Trend: Stable (avg ~3.2min per plan)
+- Last 5 plans: [4m, 5m, 2m, 3m, 5m]
+- Trend: Stable (avg ~3.8min per plan)
 
 ## Accumulated Context
 
@@ -95,6 +95,8 @@ Recent for v5.0:
 - 17-01: Two-phase validation for override builder: port exists + deps satisfied
 - 17-01: OverrideBuilder uses GraphBuilder.forParent() to create override graph fragments
 - 17-01: Template literal error types provide ERROR[TYPE-XX] codes with fix suggestions
+- 17-03: Single options object pattern for createContainer (graph, name, hooks, devtools, performance)
+- 17-03: No backward compatibility - breaking change with old API removed entirely
 
 ### Pending Todos
 
@@ -111,11 +113,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-04
-Stopped at: Completed 17-01 (override builder implementation)
+Stopped at: Completed 17-03 (unified createContainer API)
 Resume file: None
-Next: Continue Phase 17 with remaining plans (17-02, 17-03, 17-04)
+Next: Continue Phase 17 with remaining plans (17-04, 17-05, 17-06)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-04 (Phase 17 in progress - 17-01 complete)_
+_Last updated: 2026-02-04 (Phase 17 in progress - 17-03 complete)_
