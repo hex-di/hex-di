@@ -8,7 +8,9 @@
  */
 
 import type { Port } from "@hex-di/core";
+import type { Graph } from "@hex-di/graph";
 import type { InheritanceModeConfig } from "./inheritance.js";
+import type { ResolutionHooks } from "../resolution/hooks.js";
 
 // =============================================================================
 // Container Phase Type
@@ -174,6 +176,65 @@ export interface CreateChildOptions<TProvides extends Port<unknown, string> = ne
 
   /** Optional per-port inheritance mode configuration */
   readonly inheritanceModes?: InheritanceModeConfig<TProvides>;
+
+  /** DevTools-specific options for visibility and display */
+  readonly devtools?: ContainerDevToolsOptions;
+
+  /** Performance-related options */
+  readonly performance?: RuntimePerformanceOptions;
+}
+
+// =============================================================================
+// Unified Container Configuration
+// =============================================================================
+
+/**
+ * Unified configuration for creating a root container.
+ *
+ * This interface combines all container creation options into a single object
+ * for a cleaner, more extensible API.
+ *
+ * @example Basic usage
+ * ```typescript
+ * const container = createContainer({
+ *   graph,
+ *   name: "App",
+ * });
+ * ```
+ *
+ * @example With hooks
+ * ```typescript
+ * const container = createContainer({
+ *   graph,
+ *   name: "App",
+ *   hooks: {
+ *     beforeResolve: (ctx) => console.log(`Resolving ${ctx.portName}`),
+ *     afterResolve: (ctx) => console.log(`Resolved in ${ctx.duration}ms`),
+ *   },
+ * });
+ * ```
+ *
+ * @example With performance options
+ * ```typescript
+ * const container = createContainer({
+ *   graph,
+ *   name: "App",
+ *   performance: { disableTimestamps: true },
+ * });
+ * ```
+ */
+export interface CreateContainerConfig<
+  TProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string> = never,
+> {
+  /** The validated ServiceGraph containing all adapters */
+  readonly graph: Graph<TProvides, Port<unknown, string>>;
+
+  /** Container name - serves as both identifier and display label */
+  readonly name: string;
+
+  /** Optional resolution lifecycle hooks */
+  readonly hooks?: ResolutionHooks;
 
   /** DevTools-specific options for visibility and display */
   readonly devtools?: ContainerDevToolsOptions;
