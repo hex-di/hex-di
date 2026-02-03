@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-03)
 
 **Core value:** Catch dependency graph errors at compile time, not runtime
-**Current focus:** None — v4.0 shipped, no active milestone
+**Current focus:** v5.0 Runtime Package Improvements
 
 ## Current Position
 
-Phase: No active phase
-Plan: No active plan
-Status: v4.0 milestone SHIPPED and ARCHIVED
-Last activity: 2026-02-03 - Archived v4.0 milestone
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-03 — Milestone v5.0 started
 
 Progress: [██████░░░░] 60% (29/48 plans across milestones v1.0-v4.0)
 
@@ -54,28 +54,10 @@ Progress: [██████░░░░] 60% (29/48 plans across milestones v1
 
 Key decisions captured in PROJECT.md.
 
-Recent for v4.0:
+Recent for v5.0:
 
-- 3-phase roadmap: API Cleanup, Runtime Features, Bidirectional Captive Validation
-- Phase 12 (COMPLETE): Removed provideAsync, provideFirstError, provideUnchecked, mergeWith + renamed withUnsafeDepthOverride → withExtendedDepth
-- Phase 13 (COMPLETE): Inspection summary mode, disposal lifecycle verification
-- Phase 14 (COMPLETE): Verified existing reverse captive detection handles forward references - no implementation needed
-
-**v4.0 MILESTONE COMPLETE**
-
-From Phase 13:
-
-- GraphSummary has 7 fields matching RUN-01 spec (adapterCount, asyncAdapterCount, isComplete, missingPorts, isValid, errors, provides)
-- Async detection uses factoryKind === ASYNC comparison (consistent with core)
-- Summary provides field contains port names only (no lifetime info) for lightweight footprint
-- Disposal lifecycle implementation verified complete (LIFO, async, error aggregation, idempotency, cascade, scoped-only)
-
-From Phase 14:
-
-- Existing FindReverseCaptiveDependency already catches forward reference captive dependencies
-- When singleton requires unregistered scoped port, then scoped port is added, type system produces error
-- Debug types pattern established for compile-time inspection (DebugDepGraph, DebugFindDependentsOf, DebugReverseCaptive)
-- Plan 14-02 skipped - bidirectional validation gap hypothesis disproven
+- Full scope: all 20 improvements from runtime-package-improvement-spec.md
+- Major version: v5.0 (includes breaking changes)
 
 ### Pending Todos
 
@@ -83,16 +65,16 @@ None.
 
 ### Blockers/Concerns
 
-None - v4.0 milestone complete.
+None.
 
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: v4.0 milestone archived
+Stopped at: Defining requirements for v5.0
 Resume file: None
-Next: `/gsd:new-milestone` to define v5.0
+Next: Define REQUIREMENTS.md, then ROADMAP.md
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-03 (v4.0 milestone SHIPPED and ARCHIVED)_
+_Last updated: 2026-02-03 (v5.0 milestone started)_

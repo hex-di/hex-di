@@ -18,6 +18,41 @@ Catch dependency graph errors at compile time, not runtime — invalid graphs sh
 - GraphSummary inspection mode
 - Bidirectional captive validation verified complete
 
+## Current Milestone: v5.0 Runtime Package Improvements
+
+**Goal:** Elevate `@hex-di/runtime` from 8.7/10 to 9.5/10 through code quality, API design, testing, and documentation improvements.
+
+**Target features:**
+
+**High Priority:**
+
+- Extract shared wrapper logic (~200 LOC reduction)
+- Type-safe `withOverrides()` API (port-keyed instead of string-keyed)
+- Comprehensive resolution hook testing (30+ new tests)
+- Split `types.ts` (1,271 lines → 6 files <400 each)
+- Consolidate inspector exports (remove duplicates)
+
+**Medium Priority:**
+
+- O(1) child container unregistration (Map vs Array)
+- Remove legacy type exports
+- Plugin system tests (15+ new tests)
+- Error message context improvements (suggestions, examples)
+- Timestamp capture optimization (configurable)
+- Architecture documentation
+- Merge createContainer options API
+
+**Low Priority:**
+
+- Compile-time circular dependency detection
+- "Did you mean?" suggestions for port names
+- Split inspection/helpers.ts
+- Performance benchmarks
+- Move context variables to core
+- Add explicit return types
+- Enhance type documentation
+- State machine documentation
+
 ## Requirements
 
 ### Validated
@@ -61,7 +96,7 @@ Catch dependency graph errors at compile time, not runtime — invalid graphs sh
 
 <!-- Current scope. Building toward these. -->
 
-No active milestone. Define next via `/gsd:new-milestone`.
+See "Current Milestone: v5.0" section above for full feature list.
 
 ### Out of Scope
 
@@ -107,4 +142,4 @@ No active milestone. Define next via `/gsd:new-milestone`.
 
 ---
 
-_Last updated: 2026-02-03 after v4.0 milestone completed_
+_Last updated: 2026-02-03 after v5.0 milestone started_
