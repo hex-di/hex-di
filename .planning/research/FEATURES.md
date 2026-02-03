@@ -1,18 +1,19 @@
-# Feature Landscape: GraphBuilder Improvements
+# Feature Landscape: Runtime DI Improvements
 
-**Domain:** Compile-time DI container with graph building
-**Researched:** 2026-02-02
+**Domain:** Runtime DI container improvements (override API, errors, plugins, options)
+**Researched:** 2026-02-03
+**Focus:** Improving @hex-di/runtime from 8.7/10 to 9.5/10
 
 ## Overview
 
-This research focuses on four specific feature categories for GraphBuilder improvements:
+This research focuses on four specific feature categories for runtime improvements:
 
-1. Type-level async detection (auto-detect Promise return types)
-2. Override lifetime validation (same lifetime required)
-3. Disposal ordering guarantees
-4. Graph inspection/introspection APIs (summary mode)
+1. **Type-safe override APIs** - `withOverrides()` improvements
+2. **Error message enhancements** - Actionable errors with suggestions
+3. **Plugin system robustness** - Extensibility without pollution
+4. **Container options ergonomics** - Merged createContainer options
 
-These are **subsequent milestone features** — the codebase already has a working GraphBuilder with `provide()`, `merge()`, `inspect()`, `build()`, etc. This research evaluates how similar features work in other DI systems and what users expect.
+These are **subsequent milestone features** - the codebase already has working override, error, and plugin systems. This research evaluates expected behaviors and competitive patterns.
 
 ---
 
@@ -20,158 +21,243 @@ These are **subsequent milestone features** — the codebase already has a worki
 
 Features users expect. Missing = product feels incomplete.
 
-| Feature                       | Why Expected                                                      | Complexity  | Notes                                                                         |
-| ----------------------------- | ----------------------------------------------------------------- | ----------- | ----------------------------------------------------------------------------- |
-| Async/sync factory detection  | DI containers in 2026 should handle async factories automatically | Medium      | TypeScript's type system enables compile-time detection via conditional types |
-| Disposal lifecycle            | Modern DI containers provide cleanup hooks                        | Medium-High | Must support async disposal, LIFO ordering                                    |
-| Lifecycle ordering guarantees | Disposal order is critical for correctness                        | Medium      | Reverse dependency order prevents use-after-dispose bugs                      |
-| Basic introspection           | Debugging requires visibility into container state                | Low-Medium  | List ports, check completeness, get port metadata                             |
+| Feature                   | Why Expected                                                | Complexity | Existing State                                  |
+| ------------------------- | ----------------------------------------------------------- | ---------- | ----------------------------------------------- |
+| Type-safe override API    | Overrides should be type-checked                            | Medium     | Partial - port names are strings, not validated |
+| Actionable error messages | Modern DI containers explain what went wrong and how to fix | Low-Medium | Partial - has error codes but no suggestions    |
+| Plugin system testing     | Extensions need documented test patterns                    | Low        | Missing - no official testing guidance          |
+| Single options object     | Ergonomic API design                                        | Low        | Split into `containerOptions` + `hookOptions`   |
 
-### Feature 1: Type-Level Async Detection
+### Feature 1: Type-Safe Override API
 
-**Expectation:** DI containers should detect async factories automatically without requiring explicit registration.
+**Current state:** The `withOverrides()` method accepts `Record<string, () => unknown>`:
+
+```typescript
+// Current API - port names as strings, no type validation
+container.withOverrides(
+  { Logger: () => new MockLogger() }, // "Logger" is just a string
+  () => {
+    /* test code */
+  }
+);
+```
+
+**Expected behavior:** Override keys should be validated against container's provided ports:
+
+```typescript
+// Expected - compile error if "Loger" typo
+container.withOverrides(
+  { Loger: () => new MockLogger() }, // TS error: "Loger" not in provided ports
+  () => {
+    /* test code */
+  }
+);
+```
 
 **Industry patterns:**
 
-- **.NET**: Uses `Task<T>` return types to detect async factories automatically
-- **TSyringe**: No automatic detection; users must manually await
-- **InversifyJS**: Supports async but requires explicit registration
-
-**User mental model:**
-
-```typescript
-// User writes this:
-const adapter = createAdapter({
-  provides: DatabasePort,
-  factory: async () => await connectToDatabase(),
-});
-
-// Container should KNOW it's async without:
-builder.provideAsync(adapter); // ❌ Extra ceremony
-
-// Preferred:
-builder.provide(adapter); // ✅ Auto-detects async
-```
+| Framework    | Override Mechanism                     | Type Safety                                                       |
+| ------------ | -------------------------------------- | ----------------------------------------------------------------- |
+| InversifyJS  | `rebind()` method                      | Uses service identifier (Symbol/string) - runtime validation only |
+| TSyringe     | `registerInstance()` before resolve    | No override concept; uses registration order                      |
+| typed-inject | `provideValue()` in injector chain     | Type-safe via token matching                                      |
+| .NET DI      | Child container with new registrations | Runtime validation via IServiceCollection                         |
 
 **Why table stakes:**
 
-- TypeScript's type system makes this trivially detectable
-- Manual async/sync distinction creates error-prone ceremony
-- Users expect type-level features in a compile-time DI system
+- HexDI is a compile-time DI system - override should leverage type system
+- Typos in port names cause silent failures (override not applied)
+- Current API accepts any string, including non-existent ports
 
 **Implementation complexity: MEDIUM**
 
-- Type-level: `TReturn extends Promise<any>` detection (simple)
-- Runtime: Already handled by existing async resolution logic
-- Challenge: Union types that include Promise (`string | Promise<string>`)
+- Type-level: Extract port names from `TProvides | TExtends` union
+- Use mapped type for override shape: `{ [K in PortNames]?: () => ServiceType<K> }`
+- Runtime: Already validates port existence
 
-### Feature 2: Override Lifetime Validation
-
-**Expectation:** Overrides must use the same lifetime as the parent adapter.
-
-**Industry patterns:**
-
-- **.NET**: Throws runtime exception if child container changes lifetime
-- **InversifyJS**: Allows lifetime changes (footgun: child scoped, parent singleton)
-- **TSyringe**: No override concept; uses registration order
-
-**Why footgun exists:**
+**Existing codebase support:**
 
 ```typescript
-// Parent container:
-const LoggerAdapter = createAdapter({
-  provides: LoggerPort,
-  lifetime: "singleton", // Shared state
-});
+// packages/runtime/src/types.ts already has:
+type ExtractPortNames<T extends Port<unknown, string>> =
+  T extends Port<infer _S, infer TName> ? TName : never;
 
-// Child container override:
-const MockLoggerAdapter = createAdapter({
-  provides: LoggerPort,
-  lifetime: "scoped", // ❌ Different lifetime!
-});
-
-// Problem: Parent expects singleton semantics, child breaks that contract
+type InferServiceByName<TPorts extends Port<unknown, string>, TName extends string> =
+  TPorts extends Port<infer TService, TName> ? TService : never;
 ```
 
-**Why table stakes:**
+### Feature 2: Actionable Error Messages
 
-- Lifetime mismatch causes subtle bugs (state not shared as expected)
-- Compile-time validation prevents runtime confusion
-- Child containers inherit contracts, not just implementations
-
-**Implementation complexity: MEDIUM**
-
-- Type-level: Compare parent's lifetime map with override adapter lifetime
-- Requires: `_lifetimeMap` lookup, error message type
-- Runtime: No changes needed (already validated)
-
-### Feature 3: Disposal Ordering Guarantees
-
-**Expectation:** Services are disposed in reverse dependency order (LIFO).
-
-**Industry patterns:**
-
-- **.NET**: Scoped/Singleton services disposed in reverse creation order
-- **NestJS**: `onModuleDestroy` called in reverse dependency order
-- **Angular**: `ngOnDestroy` called bottom-up (children before parents)
-
-**Ordering semantics:**
-
-```
-Creation order:    Logger → Database → UserService
-Disposal order:    UserService → Database → Logger
-                   (reverse)
-
-Rationale: UserService may call Database.close() in finalizer,
-           Database may call Logger.log() in finalizer.
-           Disposing Logger first breaks Database finalizer.
-```
-
-**Why table stakes:**
-
-- Incorrect disposal order causes use-after-dispose bugs
-- Standard pattern across all DI systems
-- Already partially implemented in HexDI (LIFO for container instances)
-
-**Implementation complexity: MEDIUM-HIGH**
-
-- Runtime disposal logic: Already exists (LifecycleManager)
-- Challenge: Adapter-level finalizers (currently container tracks instances, not adapter metadata)
-- Need: Associate finalizer with adapter, track dependency order
-
-### Feature 4: Graph Introspection (Summary Mode)
-
-**Expectation:** Inspect API should provide quick health check without full details.
-
-**Industry patterns:**
-
-- **.NET**: `IServiceProvider.GetService()` for probing, no batch introspection
-- **InversifyJS**: Container metadata API for querying registered types
-- **Angular**: No direct introspection; uses module metadata reflection
-
-**Use case distinction:**
+**Current state:** Errors have structured fields but messages are basic:
 
 ```typescript
-// Full inspection: Debugging, graph visualization
-const full = builder.inspect();
-// Returns: 20+ fields including dependencyMap, orphanPorts, suggestions
-
-// Summary: Health check, CI validation, quick status
-const summary = builder.inspect({ summary: true });
-// Returns: 7 fields — adapterCount, asyncAdapterCount, isComplete, errors
+// Current error message
+"Cannot resolve scoped port 'UserContext' from the root container.
+Scoped ports must be resolved from a scope created via createScope()."
 ```
+
+**Expected behavior:** Errors should include:
+
+1. What went wrong (already present)
+2. Why it went wrong (context)
+3. How to fix it (actionable suggestion with code example)
+
+**Example enhanced error:**
+
+```typescript
+"Cannot resolve scoped port 'UserContext' from the root container.
+
+Why: Scoped ports have per-request lifetime and require a scope context.
+
+Fix: Create a scope before resolving:
+
+  const scope = container.createScope();
+  const userContext = scope.resolve(UserContextPort);
+  // Use userContext...
+  await scope.dispose();
+
+See: https://hexdi.dev/docs/scopes"
+```
+
+**Industry patterns:**
+
+| Framework    | Error Quality                            | Example                                            |
+| ------------ | ---------------------------------------- | -------------------------------------------------- |
+| Rust (cargo) | Excellent - includes fix suggestions     | "Did you mean `crate::Logger`?"                    |
+| TypeScript   | Good - structured with error codes       | TS2304: Cannot find name 'X'                       |
+| Angular DI   | Good - NullInjectorError with token path | Shows injection hierarchy                          |
+| InversifyJS  | Basic - just error message               | "No matching bindings found for serviceIdentifier" |
 
 **Why table stakes:**
 
-- Full inspection is verbose for simple checks
-- CI pipelines need fast validation ("is graph complete?")
-- DevTools need incremental queries (don't fetch all data upfront)
+- DI errors are notoriously confusing (circular deps, missing bindings)
+- Modern tooling sets high expectations for error quality
+- HexDI already has error codes (HEX001-HEX021) - foundation exists
 
 **Implementation complexity: LOW-MEDIUM**
 
-- Type-level: Conditional return type based on options parameter
-- Runtime: Filter existing inspection fields, no new computation
-- Already have: All data needed for summary exists in GraphInspection
+- Each error class gets an enhanced message template
+- Add optional `suggestion` property to ContainerError base
+- Include code snippets in messages (multi-line)
+
+**Existing error types to enhance:**
+
+| Error                            | Current Message                           | Enhancement Priority                |
+| -------------------------------- | ----------------------------------------- | ----------------------------------- |
+| ScopeRequiredError               | "Cannot resolve scoped port from root"    | HIGH - common mistake               |
+| CircularDependencyError          | "Circular dependency: A -> B -> A"        | HIGH - add resolution suggestions   |
+| DisposedScopeError               | "Cannot resolve from disposed scope"      | MEDIUM - add lifecycle context      |
+| FactoryError                     | "Factory for port 'X' threw"              | MEDIUM - add factory debugging tips |
+| AsyncInitializationRequiredError | "Cannot resolve async port synchronously" | HIGH - common mistake               |
+
+### Feature 3: Plugin System Testing Patterns
+
+**Current state:** Plugin system exists with resolution hooks but no testing guidance:
+
+```typescript
+// packages/runtime/src/resolution/hooks.ts
+export interface ResolutionHooks {
+  beforeResolve?: (context: ResolutionHookContext) => void;
+  afterResolve?: (context: ResolutionResultContext) => void;
+}
+```
+
+**Expected behavior:** Clear patterns for:
+
+1. Testing plugins in isolation
+2. Verifying hook calls
+3. Testing hook ordering/composition
+
+**Industry patterns:**
+
+| Framework          | Plugin Testing                  | Pattern                        |
+| ------------------ | ------------------------------- | ------------------------------ |
+| Express middleware | Supertest + mock req/res        | Integration testing            |
+| React hooks        | @testing-library/react-hooks    | Isolated hook testing          |
+| Vite plugins       | vitest + mock transform context | Unit testing with mock context |
+| Webpack plugins    | compiler.run() with memfs       | Full compilation testing       |
+
+**Why table stakes:**
+
+- Users building custom plugins need guidance
+- Plugin bugs are hard to debug without good tests
+- HexDI already has good test infrastructure
+
+**Implementation complexity: LOW**
+
+- Document patterns in @hex-di/testing README
+- Add helper functions for hook verification
+- Provide example test files
+
+**Suggested testing utilities:**
+
+```typescript
+// Could add to @hex-di/testing
+export function createMockHookContext(
+  overrides?: Partial<ResolutionHookContext>
+): ResolutionHookContext;
+export function createHookSpy(): { hooks: ResolutionHooks; getCalls(): ResolutionHookContext[] };
+```
+
+### Feature 4: Merged Container Options
+
+**Current state:** `createContainer()` has split parameters:
+
+```typescript
+// Current API - two separate options objects
+createContainer(
+  graph,
+  { name: "App" },           // containerOptions
+  { hooks: { ... } }         // hookOptions (optional)
+);
+```
+
+**Expected behavior:** Single merged options object:
+
+```typescript
+// Expected - single options object
+createContainer(graph, {
+  name: "App",
+  hooks: { ... },
+  devtools: { ... },
+});
+```
+
+**Industry patterns:**
+
+| Framework             | Options Pattern         | Example                           |
+| --------------------- | ----------------------- | --------------------------------- |
+| React.createContext   | Single options object   | `createContext(defaultValue)`     |
+| Express               | Single options object   | `express({ strict: true })`       |
+| Vite createServer     | Single config object    | `createServer({ root, plugins })` |
+| InversifyJS Container | Single ContainerOptions | `new Container({ defaultScope })` |
+
+**Why table stakes:**
+
+- Two parameters is awkward - users must remember what goes where
+- Single object is standard JavaScript pattern
+- Easier to extend in future (just add properties)
+
+**Implementation complexity: LOW**
+
+- Merge `CreateContainerOptions` and `ContainerOptions` interfaces
+- Update `createContainer()` signature
+- Backward-compatible: old signature still works (with deprecation)
+
+**Proposed merged interface:**
+
+```typescript
+export interface CreateContainerOptions {
+  // Container identity (from current CreateContainerOptions)
+  readonly name: string;
+
+  // DevTools settings (from current CreateContainerOptions)
+  readonly devtools?: ContainerDevToolsOptions;
+
+  // Resolution hooks (from current ContainerOptions)
+  readonly hooks?: ResolutionHooks;
+}
+```
 
 ---
 
@@ -179,116 +265,106 @@ const summary = builder.inspect({ summary: true });
 
 Features that set product apart. Not expected, but valued.
 
-| Feature                          | Value Proposition                                | Complexity | Notes                                                       |
-| -------------------------------- | ------------------------------------------------ | ---------- | ----------------------------------------------------------- |
-| Compile-time Promise detection   | Competitors do this at runtime                   | Low        | Leverage TypeScript's type system for zero-cost abstraction |
-| Compile-time override validation | Most DI containers throw runtime errors          | Medium     | Catch lifetime mismatches before code runs                  |
-| Bidirectional captive validation | Competitors only validate forward references     | High       | Validate pending constraints when ports are registered      |
-| Disposal warnings in inspect()   | Most containers don't warn about disposal issues | Low        | Surface potential use-after-dispose bugs early              |
+| Feature                              | Value Proposition                             | Complexity | Notes                                         |
+| ------------------------------------ | --------------------------------------------- | ---------- | --------------------------------------------- |
+| Type-safe override with inference    | Override factories get correct return type    | Medium     | Most DI containers don't type-check overrides |
+| Error suggestions with code snippets | Errors include copy-paste-ready fix           | Low        | Only Rust-quality tooling does this well      |
+| Hook composition order guarantees    | beforeResolve in order, afterResolve reversed | Low        | Already implemented, needs documentation      |
+| Override scope isolation             | Override instances isolated from parent memo  | Low        | Already implemented, unique to HexDI          |
 
-### Feature 1: Compile-Time Promise Detection
-
-**Why differentiator:**
-
-- Most JavaScript DI containers detect async at runtime or require explicit marking
-- HexDI can leverage TypeScript to make this zero-cost (no runtime overhead)
-- Users never think about async/sync distinction — it's automatic
-
-**Implementation:**
-
-```typescript
-type IsAsyncFactory<TFactory> = TFactory extends (...args: any[]) => infer TReturn
-  ? [TReturn] extends [Promise<any>]
-    ? true
-    : Promise<any> extends TReturn
-      ? "partial" // Union includes Promise
-      : false
-  : false;
-```
-
-**Competitive advantage:**
-
-- Zero runtime overhead (pure type-level)
-- Impossible to forget `provideAsync()` (no such method exists)
-- Better DX than manual async/sync distinction
-
-### Feature 2: Compile-Time Override Validation
+### Feature 1: Type-Safe Override with Return Type Inference
 
 **Why differentiator:**
 
-- .NET throws **runtime** exception when lifetime mismatches
-- InversifyJS allows lifetime changes (silent footgun)
-- HexDI can catch this at **compile time** with actionable error
+- Most JavaScript DI containers don't validate override types at all
+- HexDI can infer the expected return type from the port definition
+- Catches return type mismatches at compile time
 
-**Implementation:**
+**Example:**
 
 ```typescript
-type OverrideResult<TAdapter, TParentGraph> =
-  InferProvides<TAdapter> extends keyof TParentGraph['_lifetimeMap']
-    ? TAdapter['lifetime'] extends TParentGraph['_lifetimeMap'][InferProvides<TAdapter>]
-      ? GraphBuilder<...>  // OK
-      : OverrideLifetimeError<...>  // Compile error
-    : OverridePortNotFoundError<...>;
+interface Logger { log(msg: string): void }
+const LoggerPort = port<Logger>()({ name: "Logger" });
+
+container.withOverrides({
+  Logger: () => ({ log: (x) => console.log(x) }),  // TS infers Logger type
+}, () => { ... });
+
+// Error case:
+container.withOverrides({
+  Logger: () => ({ wrong: "shape" }),  // TS error: missing 'log' method
+}, () => { ... });
 ```
 
-**Competitive advantage:**
-
-- Errors surface in IDE, not at runtime
-- Error message includes both lifetimes and explanation
-- Prevents entire class of bugs
-
-### Feature 3: Bidirectional Captive Validation
+### Feature 2: Error Suggestions with Code Snippets
 
 **Why differentiator:**
 
-- Most DI containers only validate captive dependencies during resolution (runtime)
-- HexDI validates at graph build time
-- **Bidirectional** means it validates regardless of registration order
+- No JavaScript DI container provides this level of error UX
+- Reduces time-to-fix for common mistakes
+- Makes HexDI approachable for DI newcomers
 
-**Forward reference problem:**
+**Example enhanced error:**
 
 ```typescript
-// Registration order 1:
-builder
-  .provide(SingletonAdapter) // requires ScopedPort (not yet registered)
-  .provide(ScopedAdapter); // provides ScopedPort
+// CircularDependencyError enhancement
+throw new CircularDependencyError(chain, {
+  suggestion: `
+To break this cycle, consider one of:
 
-// Registration order 2:
-builder
-  .provide(ScopedAdapter) // provides ScopedPort
-  .provide(SingletonAdapter); // requires ScopedPort (already registered)
+1. Use a factory function to defer resolution:
+   factory: (deps) => new UserService(() => deps.AuthService)
 
-// Both should catch the captive dependency violation!
+2. Split the circular dependency:
+   UserService -> UserRepository -> AuthService (no back-reference)
+
+3. Use event-based communication instead of direct dependency.
+`,
+  learnMoreUrl: "https://hexdi.dev/docs/circular-deps",
+});
 ```
 
-**Competitive advantage:**
-
-- Order-independent validation
-- Compile-time detection (with pending constraints)
-- Clear error messages with dependency chain
-
-### Feature 4: Disposal Warnings in inspect()
+### Feature 3: Hook Composition with Documented Order
 
 **Why differentiator:**
 
-- No other DI container surfaces disposal order issues proactively
-- Prevents debugging "why did my finalizer crash?" at runtime
+- Hook composition order is critical for tracing/logging plugins
+- Most frameworks don't document middleware-like composition order
+- HexDI already implements this correctly (just needs documentation)
 
-**Warning pattern:**
+**Current implementation (already correct):**
 
 ```typescript
-const info = builder.inspect();
-if (info.disposalWarnings.length > 0) {
-  // "UserService finalizer may use Logger, but Logger has no finalizer.
-  //  If Logger is garbage collected before disposal, UserService finalizer may fail."
-}
+// packages/runtime/src/container/factory.ts:125-137
+beforeResolve(ctx: ResolutionHookContext): void {
+  // Called in order of installation
+  for (const source of holder.hookSources) {
+    source.beforeResolve?.(ctx);
+  }
+},
+afterResolve(ctx: ResolutionResultContext): void {
+  // Called in reverse order (middleware pattern)
+  for (let i = holder.hookSources.length - 1; i >= 0; i--) {
+    holder.hookSources[i].afterResolve?.(ctx);
+  }
+},
 ```
 
-**Competitive advantage:**
+### Feature 4: Override Scope Isolation
 
-- Proactive issue detection
-- Actionable suggestions (add finalizer to dependency)
-- Surfaces architectural issues early
+**Why differentiator:**
+
+- `withOverrides()` creates isolated memoization context
+- Instances created during override don't pollute parent container
+- Enables safe testing without container state leakage
+
+**Already implemented:**
+
+```typescript
+// packages/runtime/src/container/override-context.ts:141
+// Fork from parent's singleton memo to inherit existing singletons
+this.overrideMemo = container.getSingletonMemo().fork();
+```
 
 ---
 
@@ -296,167 +372,183 @@ if (info.disposalWarnings.length > 0) {
 
 Features to explicitly NOT build. Common mistakes in this domain.
 
-| Anti-Feature                         | Why Avoid                                                     | What to Do Instead                                   |
-| ------------------------------------ | ------------------------------------------------------------- | ---------------------------------------------------- |
-| Dynamic lifetime changes             | Breaks container contracts, causes state bugs                 | Validate lifetime immutability at compile time       |
-| Manual async marking after detection | Creates ceremony and forgetting-to-mark bugs                  | Auto-detect always; no `provideAsync()` method       |
-| Async detection at runtime only      | Misses optimization opportunities, slower startup             | Detect at type level; runtime can assume correctness |
-| String-based error codes in types    | Pollutes type space, hard to parse                            | Use discriminated unions with structured error types |
-| Optional disposal ordering           | Use-after-dispose bugs are too common                         | Always enforce reverse dependency order, no opt-out  |
-| Sync disposal forcing                | Modern apps need async cleanup (DB connections, file handles) | Support both sync and async finalizers               |
+| Anti-Feature                | Why Avoid                                  | What to Do Instead                            |
+| --------------------------- | ------------------------------------------ | --------------------------------------------- |
+| Global override registry    | Pollutes container state, hard to clean up | Use `withOverrides()` scoped pattern          |
+| Async override factories    | Complicates API, rare use case             | Keep override factories sync                  |
+| Override by instance        | Can't guarantee cleanup/disposal           | Use factory pattern for fresh instances       |
+| Mutable hook lists          | Hard to reason about hook order            | Return unsubscribe function from installHooks |
+| Multiple options signatures | Confusing which parameter is which         | Single options object                         |
+| Custom error formatting     | Breaks structured logging                  | Keep structured properties, enhance message   |
 
-### Anti-Feature 1: Dynamic Lifetime Changes
-
-**Why avoid:**
-
-- Singleton → Scoped means parent sees shared state, child sees per-request state
-- Breaks Liskov Substitution Principle (child violates parent's contract)
-- Causes subtle bugs that are hard to debug
-
-**Real-world footgun:**
-
-```typescript
-// Parent container
-const CacheAdapter = createAdapter({
-  provides: CachePort,
-  lifetime: "singleton",
-  factory: () => new InMemoryCache(),
-});
-
-// Child container (testing)
-const MockCacheAdapter = createAdapter({
-  provides: CachePort,
-  lifetime: "scoped", // ❌ Different lifetime
-  factory: () => new MockCache(),
-});
-
-// Problem: Tests pass (scoped cache works), production fails (singleton cache expected)
-```
-
-**What to do instead:**
-
-- Validate lifetime matches parent at compile time
-- Error message: "Override lifetime mismatch: CachePort parent=singleton, override=scoped"
-
-### Anti-Feature 2: Manual Async Marking
+### Anti-Feature 1: Global Override Registry
 
 **Why avoid:**
 
-- Forgetting `provideAsync()` causes runtime errors
-- Extra ceremony for something the type system knows
-- Creates divergence between type and implementation
-
-**Footgun example:**
-
-```typescript
-// User forgets provideAsync():
-builder.provide(DatabaseAdapter); // ❌ Should be provideAsync()
-
-// Runtime error during build():
-// "Async factory detected but registered with provide(). Use provideAsync()."
-```
-
-**What to do instead:**
-
-- Auto-detect Promise return types
-- Single `provide()` method handles both
-- Runtime uses type information to decide resolution strategy
-
-### Anti-Feature 3: Runtime-Only Async Detection
-
-**Why avoid:**
-
-- Slower startup (must check every factory at runtime)
-- Missed optimization (type system already knows)
-- Can't enforce async initialization order at compile time
-
-**What to do instead:**
-
-- Type-level detection with `IsAsyncFactory<TFactory>`
-- Build time: Construct `TAsyncPorts` type parameter
-- Runtime: Use pre-computed async port set (no dynamic checks)
-
-### Anti-Feature 4: String Error Codes in Types
-
-**Why avoid:**
-
-- Error code strings pollute autocomplete
-- Hard to parse programmatically
-- Doesn't compose with discriminated unions
+- State leakage between tests
+- Hard to track what's overridden
+- `withOverrides()` scoped pattern is cleaner
 
 **Bad pattern:**
 
 ```typescript
-type Result = GraphBuilder<...> | "HEX022: Override lifetime mismatch";
-// ❌ String literal, no structure
+// DON'T: Global override registration
+container.registerOverride(LoggerPort, mockLogger);
+// ... tests run ...
+container.clearOverrides(); // Easy to forget!
 ```
 
-**What to do instead:**
+**Good pattern (already implemented):**
 
 ```typescript
-type Result = GraphBuilder<...> | OverrideLifetimeError<{
-  port: "CachePort",
-  parentLifetime: "singleton",
-  overrideLifetime: "scoped"
-}>;
-// ✅ Structured, parseable, compositional
+// DO: Scoped override with automatic cleanup
+container.withOverrides({ Logger: () => mockLogger }, () => {
+  // Override active only in this callback
+});
+// Automatically cleaned up
 ```
 
-### Anti-Feature 5: Optional Disposal Ordering
+### Anti-Feature 2: Async Override Factories
 
 **Why avoid:**
 
-- Use-after-dispose bugs are too common and too hard to debug
-- No valid use case for "dispose in random order"
-- Opt-in complexity for zero benefit
+- Complicates `withOverrides()` API (would need to return Promise)
+- Rare use case - mocks are typically sync
+- Can use `resolveAsync()` if needed
 
 **What to do instead:**
 
-- Always dispose in reverse dependency order
-- No configuration option
-- Document guarantee in Container.dispose() JSDoc
+- Keep override factories sync
+- If async setup needed, do it before withOverrides:
 
-### Anti-Feature 6: Sync-Only Disposal
+```typescript
+const mockDb = await createMockDatabase();
+container.withOverrides({ Database: () => mockDb }, () => {
+  // Use pre-created async mock
+});
+```
+
+### Anti-Feature 3: Override by Instance
 
 **Why avoid:**
 
-- Modern apps need async cleanup (DB connections, file handles, network sockets)
-- Forcing sync disposal leads to incomplete cleanup or blocking operations
+- Can't control instance lifecycle
+- Disposal issues (who owns the instance?)
+- Factory pattern ensures fresh instances
+
+**Bad pattern:**
+
+```typescript
+// DON'T: Pass instance directly
+container.withOverrides({ Logger: mockLoggerInstance }, fn);
+// Problem: mockLoggerInstance might be mutated between tests
+```
+
+**Good pattern (current):**
+
+```typescript
+// DO: Factory returns fresh instance
+container.withOverrides({ Logger: () => createMockLogger() }, fn);
+// Each override context gets fresh instance
+```
+
+### Anti-Feature 4: Mutable Hook Lists
+
+**Why avoid:**
+
+- Hard to reason about hook execution order
+- Race conditions if hooks modified during resolution
+- Memory leaks if unsubscribe forgotten
+
+**Current implementation is correct:**
+
+```typescript
+// packages/runtime/src/container/factory.ts:398-407
+installHooks(hooks: ResolutionHooks): () => void {
+  hooksHolder.hookSources.push(hooks);
+  return () => {  // Returns unsubscribe function
+    const idx = hooksHolder.hookSources.indexOf(hooks);
+    if (idx !== -1) {
+      hooksHolder.hookSources.splice(idx, 1);
+    }
+  };
+}
+```
+
+### Anti-Feature 5: Multiple Options Signatures
+
+**Why avoid:**
+
+- `createContainer(graph, naming, hooks)` is confusing
+- Easy to pass arguments in wrong order
+- Hard to extend (adding new option means new parameter?)
+
+**Current (problematic):**
+
+```typescript
+createContainer(graph, { name: "App" }, { hooks });
+// Which object gets devtools? hooks? name?
+```
+
+**Proposed (cleaner):**
+
+```typescript
+createContainer(graph, { name: "App", hooks, devtools });
+// All options in one place
+```
+
+### Anti-Feature 6: Custom Error Formatting
+
+**Why avoid:**
+
+- Breaks JSON logging (structured loggers expect Error.message to be plain)
+- Breaks error tracking services (Sentry, Datadog)
+- Multi-line messages work fine in console
 
 **What to do instead:**
 
-- Support both sync and async finalizers: `(instance) => void | Promise<void>`
-- Container.dispose() always returns Promise
-- Sequential async disposal (await each finalizer)
+- Keep structured properties (`error.code`, `error.portName`, etc.)
+- Enhance `error.message` with multi-line text
+- Add optional `error.suggestion` property for programmatic access
 
 ---
 
 ## Feature Dependencies
 
 ```
-Type-Level Async Detection
-  ↓
-Override Lifetime Validation (needs async port info for parent graph)
-  ↓
-Bidirectional Captive Validation (needs lifetime constraints)
+Type-Safe Override API
+  |
+  +-- Already has type infrastructure (ExtractPortNames, InferServiceByName)
+  |
+  +-- Independent of other features
 
-Disposal Ordering Guarantees (independent)
-  ↓
-Disposal Warnings in inspect() (needs disposal order algorithm)
+Error Message Enhancements
+  |
+  +-- Independent of other features
+  |
+  +-- Can enhance incrementally per error type
 
-Inspection Summary Mode (independent, uses existing GraphInspection)
+Plugin Testing Patterns
+  |
+  +-- Depends on: existing hook system (already implemented)
+  |
+  +-- Documentation + test utilities in @hex-di/testing
+
+Merged Container Options
+  |
+  +-- Independent of other features
+  |
+  +-- Breaking change (needs migration path)
 ```
 
-**Critical path:**
-
-1. Type-level async detection (foundation for override validation)
-2. Override lifetime validation (needed before bidirectional captive)
-3. Bidirectional captive validation (most complex, depends on 1+2)
+**Critical path:** None - all features are independent.
 
 **Parallel workstreams:**
 
-- Disposal features (independent of async detection)
-- Inspection improvements (independent of all others)
+1. Type-safe override API
+2. Error message enhancements (can do per-error-class)
+3. Plugin testing patterns
+4. Merged container options
 
 ---
 
@@ -464,22 +556,21 @@ Inspection Summary Mode (independent, uses existing GraphInspection)
 
 For this milestone, prioritize:
 
-1. **Type-level async detection** (foundation, low complexity)
-2. **Override lifetime validation** (high value, medium complexity)
-3. **Inspection summary mode** (low complexity, high utility)
+1. **Merged container options** (LOW complexity, immediate ergonomic win)
+2. **Type-safe override API** (MEDIUM complexity, high value for testing DX)
+3. **Error message enhancements** (LOW-MEDIUM complexity, incremental per error)
 
 Defer to post-milestone:
 
-- **Bidirectional captive validation**: High complexity, lower priority than override validation
-- **Disposal ordering at adapter level**: Requires runtime architecture changes
+- **Plugin testing patterns**: Documentation task, not code change
+- **Hook composition documentation**: Already implemented correctly
 
 **Rationale:**
 
-- Async detection unblocks override validation
-- Override validation delivers immediate value (catches bugs)
-- Summary mode is low-hanging fruit for DevTools/CI
-- Bidirectional captive is ambitious for a single milestone (already have forward-ref validation)
-- Disposal ordering exists at container level; adapter-level is enhancement
+- Merged options is trivial and improves API immediately
+- Type-safe overrides addresses real pain point (typos in override keys)
+- Error enhancements can be incremental (enhance one error at a time)
+- Plugin testing is documentation, not blocking code changes
 
 ---
 
@@ -487,58 +578,55 @@ Defer to post-milestone:
 
 Already built:
 
-- ✅ `GraphBuilder.create()`, `withMaxDepth()`, `forParent()`
-- ✅ `provide()`, `provideMany()` (no auto-async detection yet)
-- ✅ `merge()`, `build()`, `buildFragment()`
-- ✅ `inspect()` (full mode only)
-- ✅ Container/Scope disposal with LIFO ordering (instance level)
-- ✅ Error codes HEX001-HEX021
-- ✅ Forward reference captive validation (runtime defense-in-depth)
+- `withOverrides()` with callback pattern and isolated memoization
+- Error hierarchy with codes (ContainerError base, 7 error subclasses)
+- Resolution hooks system (beforeResolve, afterResolve)
+- Hook installation API (installHooks returns unsubscribe)
+- Container options split into naming + hooks
 
 What's new in this milestone:
 
-- ⏳ Auto-detect async from return type (remove `provideAsync()`)
-- ⏳ Override lifetime validation (new error HEX022)
-- ⏳ Inspection summary mode (`{ summary: true }`)
-- ⏳ Bidirectional captive validation (type-level pending constraints)
-- ⏳ Disposal at adapter level (currently container/scope level only)
+- Type-safe override API (restrict keys to port names)
+- Enhanced error messages with suggestions
+- Plugin testing utilities/documentation
+- Merged container options interface
 
 ---
 
 ## Research Confidence
 
-| Feature                      | Confidence | Sources                                                                  |
-| ---------------------------- | ---------- | ------------------------------------------------------------------------ |
-| Async detection patterns     | HIGH       | Existing codebase, TypeScript handbook (conditional types)               |
-| Override lifetime validation | HIGH       | .NET DI documentation, existing HexDI override implementation            |
-| Disposal ordering            | HIGH       | .NET IDisposable docs, NestJS lifecycle, existing HexDI LifecycleManager |
-| Inspection APIs              | HIGH       | Existing GraphInspection interface, InversifyJS metadata API             |
+| Feature                 | Confidence | Sources                                                   |
+| ----------------------- | ---------- | --------------------------------------------------------- |
+| Override API patterns   | HIGH       | Existing codebase, InversifyJS/TSyringe comparison        |
+| Error message patterns  | HIGH       | Rust/TypeScript error conventions, existing HexDI errors  |
+| Plugin testing patterns | MEDIUM     | Express/React testing conventions (not DI-specific)       |
+| Options ergonomics      | HIGH       | JavaScript API conventions, existing split implementation |
 
 **Low confidence areas:**
 
-- None — all features align with existing codebase patterns and industry standards
+- Plugin testing patterns: No DI-specific prior art, adapting from middleware testing
 
 **Verification needed:**
 
-- None — research is based on authoritative sources (existing code, official docs)
+- None - all features align with existing codebase patterns
 
 ---
 
 ## Competitive Analysis
 
-| Feature                          | HexDI        | InversifyJS       | TSyringe    | .NET DI      | NestJS         |
-| -------------------------------- | ------------ | ----------------- | ----------- | ------------ | -------------- |
-| Compile-time async detection     | ⏳ (planned) | ❌ (runtime)      | ❌ (manual) | ❌ (runtime) | ❌ (decorator) |
-| Override lifetime validation     | ⏳ (planned) | ❌                | N/A         | ✅ (runtime) | ❌             |
-| Disposal ordering guarantees     | ✅ (LIFO)    | ✅ (deactivation) | ❌          | ✅ (LIFO)    | ✅ (reverse)   |
-| Inspection summary mode          | ⏳ (planned) | ✅ (partial)      | ❌          | ❌           | ❌             |
-| Bidirectional captive validation | ⏳ (planned) | ❌                | ❌          | ❌ (runtime) | ❌             |
+| Feature                 | HexDI   | InversifyJS           | TSyringe | typed-inject      | .NET DI |
+| ----------------------- | ------- | --------------------- | -------- | ----------------- | ------- |
+| Type-safe overrides     | Planned | No                    | No       | Yes (token-based) | No      |
+| Actionable errors       | Planned | No                    | No       | No                | No      |
+| Scoped override context | Yes     | No (rebind is global) | No       | Yes               | Yes     |
+| Hook system             | Yes     | Yes (activation)      | No       | No                | No      |
+| Single options object   | Planned | Yes                   | N/A      | Yes               | Yes     |
 
-**Key differentiators:**
+**Key differentiators after improvements:**
 
-- Compile-time validation (most competitors do runtime)
-- Order-independent validation (bidirectional captive)
-- Structured error types (not just runtime exceptions)
+- Compile-time override validation (unique)
+- Error messages with fix suggestions (unique)
+- Scoped override isolation (shared with typed-inject, .NET)
 
 ---
 
@@ -546,33 +634,38 @@ What's new in this milestone:
 
 **Authoritative (HIGH confidence):**
 
-- HexDI codebase: `packages/graph/src`, `packages/runtime/src` (disposal implementation, inspection types)
-- TypeScript Handbook: Conditional types, type inference
-- .NET DI documentation: IDisposable semantics, scoped service disposal
-- Existing GraphInspection interface: `.planning/research/FEATURES.md`
+- HexDI codebase: `packages/runtime/src` (override-context.ts, errors/index.ts, hooks.ts)
+- TypeScript Handbook: Mapped types, conditional types
+- Existing test files: `packages/runtime/tests/override.test.ts`, `errors.test.ts`
 
 **Community sources (MEDIUM confidence):**
 
-- TSyringe README: Lifecycle scopes, disposal patterns
-- InversifyJS landing page: Container features (disposal details not found)
+- InversifyJS documentation: rebind() semantics
+- TSyringe README: Registration patterns
+- typed-inject README: provideValue() pattern
 
 **Not verified (LOW confidence):**
 
-- None — all findings are based on authoritative sources or existing code
+- None - all findings are based on authoritative sources or existing code
 
 ---
 
 ## Open Questions
 
-None. All features have clear patterns from existing codebase or industry standards.
+1. **Should enhanced error messages be opt-in?**
+   - Concern: Multi-line messages may break some logging setups
+   - Recommendation: Always include suggestion in message; add `suggestion` property for programmatic access
 
-**Why no open questions:**
+2. **Should override type validation be strict or permissive?**
+   - Strict: Only exact port names allowed (catches typos)
+   - Permissive: Allow any string, validate at runtime (current behavior)
+   - Recommendation: Strict by default - the whole point is type safety
 
-- Type-level async detection: TypeScript handbook + existing GraphBuilder patterns
-- Override validation: Existing override implementation provides foundation
-- Disposal: Existing LifecycleManager shows LIFO pattern works
-- Inspection: Existing GraphInspection shows all data is available
+3. **Migration path for merged options?**
+   - Option A: Breaking change (v5.0)
+   - Option B: Deprecation warning in v4.x, remove in v5.0
+   - Recommendation: Option B - add overload signature, warn on old usage
 
 ---
 
-_Research completed: 2026-02-02_
+_Research completed: 2026-02-03_

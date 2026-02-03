@@ -1,294 +1,384 @@
-# Domain Pitfalls: GraphBuilder Type-Level Improvements
+# Domain Pitfalls: @hex-di/runtime Improvements
 
-**Domain:** Type-level DI system enhancements
-**Researched:** 2026-02-02
+**Domain:** DI runtime package refactoring (v5.0)
+**Researched:** 2026-02-03
+**Scope:** Elevating `@hex-di/runtime` from 8.7/10 to 9.5/10
 
 ## Critical Pitfalls
 
-Mistakes that cause rewrites, unsoundness, or major breaking changes.
+Mistakes that cause rewrites, breaking changes, or data loss.
 
-### Pitfall 1: Async Detection False Negatives with Promise-like Types
+### Pitfall 1: Circular Import Cycles When Splitting types.ts
 
-**What goes wrong:** Type-level Promise detection using `ReturnType<Factory> extends Promise<any>` produces false negatives when factory returns promise-like objects (thenables) or wrapped promises.
+**What goes wrong:** Splitting the 1,271-line `types.ts` into 6 files introduces circular imports when Container types reference Scope types and vice versa.
 
-**Why it happens:** TypeScript's structural typing means any object with a `.then()` method matches `Promise<T>`. Custom promise implementations, async iterators, or wrapper types may not extend `Promise` but are still async.
+**Why it happens:** The current `types.ts` contains deeply coupled types:
+
+- `ContainerMembers` references `Scope<TProvides, TAsyncPorts, TPhase>` (line 393)
+- `ScopeMembers` references no Container types but shares brand symbols
+- `InferContainerProvides` and `InferScopeProvides` are used together in `IsResolvable`
+- Utility types (`ExtractPortNames`, `InferServiceByName`) span both domains
 
 **Consequences:**
 
-- Async factories marked as sync at compile time
-- Runtime race conditions when container assumes synchronous instantiation
-- Violation of lifetime constraints (async scoped/transient not caught)
-- Memory leaks if async cleanup not registered
+- TypeScript emits "Cannot access X before initialization" runtime errors
+- Circular import causes undefined symbols at runtime
+- Build fails silently in some bundlers (Vite, esbuild)
+- Package consumers see cryptic "X is not a function" errors
+
+**Warning signs:**
+
+- `npm pack` produces different file sizes than expected
+- Jest/Vitest tests pass but integration tests fail
+- VSCode shows types as `any` in certain files
+- `tsc --declaration` produces empty or incomplete `.d.ts` files
 
 **Prevention:**
 
-1. Use `Awaited<ReturnType<Factory>>` instead of `Promise` check
-2. Test with custom promise implementations (Bluebird, Q, native Promise subclasses)
-3. Add runtime validation in `createAdapter` that checks `factory.constructor.name === "AsyncFunction"`
-4. Document that factory must be `async function`, not function returning Promise
+1. **Topological ordering:** Map dependencies before splitting:
+   ```
+   brands.ts         → (no deps)
+   container-phase.ts → (no deps)
+   inheritance.ts    → (no deps)
+   scope-types.ts    → brands.ts
+   container-types.ts → brands.ts, scope-types.ts, inheritance.ts
+   utilities.ts      → container-types.ts, scope-types.ts
+   ```
+2. **Type-only imports:** Use `import type` exclusively between split files
+3. **Index barrel:** Re-export from single `types/index.ts` to preserve external API
+4. **Integration test:** Run `npm pack && npm install ../hex-di-runtime-x.y.z.tgz` in test project
+5. **No runtime dependencies between type files:** Types are compile-time only
 
 **Detection:**
 
-- Type tests show sync lifetime accepted for async factory
-- Runtime tests show concurrent initialization when expecting serial
-- Missing finalizer registration for async services
+- Run `madge --circular packages/runtime/src/types/*.ts` after split
+- Watch for `ReferenceError: Cannot access 'X' before initialization`
+- Check `.d.ts` files have all expected exports
 
-**Phase warning:** Phase implementing async detection (unified `provide()`) must test extensively with promise-like edge cases.
+**Phase:** Address in Phase 1 (Type File Split)
 
 **References:**
 
-- `/packages/core/tests/async-lifetime-enforcement.test-d.ts` (lines 1-294) - Current implementation
-- `/packages/graph/tests/async-adapter.test.ts` (lines 54-120) - Async adapter creation tests
+- `/packages/runtime/src/types.ts` (1,271 lines) - Current monolithic file
+- `/packages/runtime/src/index.ts` (lines 33-71) - Current type exports
 
 ---
 
-### Pitfall 2: Bidirectional Captive Validation Performance Explosion
+### Pitfall 2: Export Breakage When Consolidating Inspector APIs
 
-**What goes wrong:** Bidirectional captive validation (checking both forward and reverse captive dependencies) causes O(n²) type computation where n is the number of adapters, leading to "Type instantiation is excessively deep" (TS2589) errors in graphs with >50 adapters.
+**What goes wrong:** Removing "duplicate" inspector exports breaks downstream packages that import from specific paths.
 
-**Why it happens:** Each `provide()` must:
+**Why it happens:** Current exports span multiple locations:
 
-1. Check if new adapter captures existing ports (forward captive)
-2. Check if existing adapters would capture new port (reverse captive)
-3. Both checks iterate over all existing adapters and their dependencies
+- `/packages/runtime/src/index.ts` exports `createInspector` (line 146)
+- `/packages/runtime/src/index.ts` exports `createInspector as createInspectorAPI` (line 156)
+- `/packages/runtime/src/inspection/index.ts` re-exports same symbols
+- Other packages may import from `@hex-di/runtime/inspection` (subpath export)
+
+Removing what appears to be a duplicate actually breaks:
+
+- `@hex-di/testing` if it imports from inspection submodule
+- `@hex-di/visualization` if it depends on internal paths
+- User code using deep imports
 
 **Consequences:**
 
-- TypeScript compilation hangs or fails with TS2589
-- IDE becomes unresponsive when hovering over builder methods
-- Validation becomes unsound if depth limit hit before validation completes
-- Users forced to use `withUnsafeDepthOverride()`, losing safety
+- Downstream packages fail to build after update
+- Users must change import paths (breaking change)
+- Monorepo CI passes but external consumers break
+
+**Warning signs:**
+
+- Two symbols with same name but different paths in index.ts
+- Package.json `exports` field has subpath exports
+- Other workspace packages import from subpaths
 
 **Prevention:**
 
-1. **Lazy validation:** Only validate captive on `build()`, not on each `provide()`
-2. **Batch validation:** Use `provideMany()` to amortize validation cost
-3. **Depth budgeting:** Reserve depth budget for validation (e.g., max 25 levels for cycle check, 25 for captive)
-4. **Progressive validation:** Fast path for common cases (no dependencies, singleton lifetime), deep validation only when needed
-5. **Memoization:** Cache validation results using mapped types
+1. **Grep all workspaces first:**
+   ```bash
+   grep -r "from '@hex-di/runtime/inspection'" packages/
+   grep -r "from '../runtime/src/inspection'" packages/
+   ```
+2. **Preserve subpath exports:** If `exports` field has subpaths, keep them
+3. **Deprecation cycle:** Mark duplicates as `@deprecated` in v5.0, remove in v6.0
+4. **Workspace integration test:** Build all packages after changes
 
 **Detection:**
 
-- TS2589 errors in user code with >30 adapters
-- Type checking time >5 seconds for graph operations
-- `typeComplexityScore > 100` in inspection
-- IDE shows "Computing..." for extended periods
+- `pnpm -r typecheck` fails in another package
+- `exports` field in package.json has unused paths after consolidation
 
-**Phase warning:** Any phase adding bidirectional validation must implement depth limiting and provide escape hatches before release.
+**Phase:** Address in Phase 2 (Export Consolidation)
 
 **References:**
 
-- `/packages/graph/src/validation/types/cycle/depth.ts` (lines 1-150) - Depth limiting implementation
-- `/packages/graph/tests/batch-reverse-captive.test-d.ts` (lines 1-100) - Reverse captive detection tests
-- `/.planning/codebase/CONCERNS.md` (lines 71-107) - Type complexity concerns
+- `/packages/runtime/src/index.ts` (lines 146-173) - Inspector exports
+- `/packages/runtime/package.json` (lines 7-18) - exports field
 
 ---
 
-### Pitfall 3: Disposal Ordering Violations with Async Finalizers
+### Pitfall 3: Type Inference Regression with Port-Keyed Override API
 
-**What goes wrong:** Async finalizers don't maintain LIFO disposal order when multiple finalizers run concurrently, causing services to access disposed dependencies.
+**What goes wrong:** Changing `withOverrides({ Logger: () => mock })` to `withOverrides(new Map([[LoggerPort, () => mock]]))` breaks type inference for override return types.
 
-**Why it happens:** Without explicit sequencing, `await Promise.all(finalizers)` runs all finalizers in parallel. If ServiceA depends on ServiceB and both have async finalizers, ServiceB may dispose before ServiceA finishes cleanup.
+**Why it happens:** Current string-keyed approach:
 
-**Consequences:**
+```typescript
+withOverrides<
+  TOverrides extends {
+    [K in ExtractPortNames<TProvides>]?: () => InferServiceByName<TProvides, K>;
+  },
+  R,
+>(overrides: TOverrides, fn: () => R): R;
+```
 
-- Dangling references to disposed services
-- "Cannot read property of undefined" errors during disposal
-- Resource leaks (connections not closed, files not flushed)
-- Difficult-to-reproduce bugs (timing-dependent)
+Port-keyed approach creates inference challenges:
 
-**Prevention:**
-
-1. **Sequential disposal:** Await each finalizer before starting next (current implementation in `/packages/runtime/tests/disposal.test.ts` lines 579-619)
-2. **Dependency-aware disposal:** Dispose in reverse topological order, respecting adapter dependencies
-3. **Timeout enforcement:** Kill finalizers that exceed timeout (default 5s)
-4. **Error aggregation:** Collect all finalizer errors, don't stop on first failure
-
-**Detection:**
-
-- Finalizer ordering tests fail (`disposal.test.ts` lines 84-177)
-- AggregateError not thrown when multiple finalizers fail
-- Disposal order tests show non-LIFO behavior
-- Integration tests show services accessing disposed dependencies
-
-**Phase warning:** Phase implementing disposal lifecycle must test async finalizers extensively, including error cases and timeout scenarios.
-
-**References:**
-
-- `/packages/runtime/tests/disposal.test.ts` (lines 540-646) - Async finalizer tests
-- `/packages/runtime/tests/disposal.test.ts` (lines 84-177) - LIFO ordering tests
-
----
-
-### Pitfall 4: Override Lifetime Validation Breaking Existing Tests
-
-**What goes wrong:** Adding compile-time validation that overrides must have compatible lifetimes breaks existing test code that uses runtime override for mocking purposes.
-
-**Why it happens:** Tests often override singleton services with transient mocks. This is technically a captive dependency violation, but acceptable in test environments.
+- Map generic parameters don't distribute over union types well
+- Port → Service type mapping requires conditional types at call site
+- TypeScript may infer `Map<Port<unknown, string>, () => unknown>`
 
 **Consequences:**
 
-- 100+ test files fail after adding validation
-- Users can't upgrade without rewriting test infrastructure
-- Feature rollback or long migration period required
-- Lost trust in breaking changes
+- Overrides lose type checking (mock doesn't match service type)
+- IDE autocomplete shows `unknown` instead of specific service
+- Runtime errors when mock shape doesn't match expected interface
+- Type tests that were passing start failing
+
+**Warning signs:**
+
+- `expectTypeOf<typeof mock>().toEqualTypeOf<Logger>()` fails
+- IDE shows `() => unknown` instead of `() => Logger`
+- Need to add explicit type annotation at call site
 
 **Prevention:**
 
-1. **Test-specific escape hatch:** Add `unsafeOverride()` method that skips validation
-2. **Warning-only mode:** Emit TypeScript warnings, not errors, for first major version
-3. **Gradual enforcement:** Add validation behind feature flag, enable by default in next major
-4. **Compatibility shim:** Keep old `override()` behavior, add `safeOverride()` with validation
-5. **Clear migration path:** Document test patterns and provide codemod
+1. **Discriminated overload:**
+   ```typescript
+   // String-keyed (existing)
+   withOverrides(overrides: { [K in ...]: ... }, fn: () => R): R;
+   // Port-keyed (new)
+   withOverrides<P extends TProvides>(port: P, factory: () => InferService<P>, fn: () => R): R;
+   // Multi-port (builder pattern)
+   override(): OverrideBuilder<TProvides>;
+   ```
+2. **Builder pattern instead of Map:**
+   ```typescript
+   container
+     .override(LoggerPort, () => mockLogger)
+     .override(DatabasePort, () => mockDb)
+     .run(() => test());
+   ```
+3. **Type tests first:** Write `.test-d.ts` file before implementation
+4. **Preserve backward compatibility:** Keep string-keyed API, add port-keyed as alternative
 
 **Detection:**
 
-- Test suite failures after adding validation
-- User reports of breaking changes in minor versions
-- GitHub issues requesting opt-out mechanism
-- High percentage of `@ts-expect-error` comments in user code
+- Type test shows `InferService<P>` resolving to `unknown`
+- Need explicit type annotations in tests
+- `expectTypeOf` tests fail for override return type
 
-**Phase warning:** Any phase adding override validation must audit test suite first and provide escape hatch for test environments.
+**Phase:** Address in Phase 3 (Type-Safe Override API)
 
 **References:**
 
-- `/packages/testing/src/mock-adapter.ts` - Test mocking infrastructure
-- `/packages/testing/tests/mock-adapter.test.ts` - Mock adapter tests
-- `CLAUDE.md` (lines 52-55) - Breaking changes policy
+- `/packages/runtime/src/types.ts` (lines 341-352) - Current withOverrides signature
+- `/packages/runtime/src/container/override-context.ts` - Override implementation
+- `/packages/runtime/tests/override.test.ts` - Override test cases
 
 ---
 
 ## Moderate Pitfalls
 
-Mistakes that cause delays, technical debt, or partial soundness violations.
+Mistakes that cause delays, technical debt, or partial functionality loss.
 
-### Pitfall 5: Port Direction Migration Complexity
+### Pitfall 4: Performance Regression with Map-Based Child Container Tracking
 
-**What goes wrong:** Removing `createInboundPort()` and `createOutboundPort()` in favor of unified `createPort({ direction })` requires updating all port definitions across codebase and examples.
+**What goes wrong:** Switching child container tracking from `Array<DisposableChild>` to `Map<string, DisposableChild>` for O(1) unregistration introduces memory overhead and GC pressure.
 
-**Why it happens:** Port creation is scattered throughout:
-
-- All test files (100+ files)
-- Documentation examples (50+ examples)
-- Example projects (react-showcase, hono-todo)
-- User codebases depending on library
-
-**Prevention:**
-
-1. **Deprecation period:** Mark old functions deprecated in v4.0, remove in v5.0
-2. **Codemod script:** Provide automated migration tool
-3. **Runtime compatibility:** Keep old functions as thin wrappers
-4. **Clear migration guide:** Step-by-step instructions with before/after
-5. **Version-gated docs:** Show both APIs until removal
-
-**Migration script:**
+**Why it happens:** Current implementation in `LifecycleManager`:
 
 ```typescript
-// packages/core/scripts/migrate-ports.ts
-export function migratePortCreation(code: string): string {
-  return code
-    .replace(
-      /createInboundPort<(['"])(\w+)\1,\s*(\w+)>\(\{\s*name:\s*\1\2\1\s*\}\)/g,
-      'createPort<$2, $3>({ name: $2, direction: "inbound" })'
-    )
-    .replace(
-      /createOutboundPort<(['"])(\w+)\1,\s*(\w+)>\(\{\s*name:\s*\1\2\1\s*\}\)/g,
-      "createPort<$2, $3>({ name: $2 })" // outbound is default
-    );
+private childContainers: DisposableChild[] = [];
+unregisterChildContainer(child: DisposableChild): void {
+  const index = this.childContainers.indexOf(child);
+  if (index !== -1) {
+    this.childContainers.splice(index, 1);  // O(n)
+  }
 }
 ```
 
-**Phase warning:** Port API redesign phase must include migration tooling before removing old APIs.
+Map replacement seems straightforward but:
 
-**References:**
+- Map entries require string keys (container IDs) - additional memory per container
+- Map iteration order differs from Array (insertion order in ES6+, but semantics differ)
+- Frequent container creation/disposal may trigger more GC than Array mutation
+- Set might be better fit than Map (no values needed)
 
-- `/docs/improvements.md` (lines 1-337) - Port API redesign proposal
-- Project policy: "No compatibility shims" but reasonable migration path required
+**Consequences:**
 
----
+- Memory usage increases in long-running apps with many child containers
+- GC pauses become more frequent
+- Disposal order subtly changes (Map iteration vs Array reverse)
+- Benchmark shows unexpected performance drop
 
-### Pitfall 6: Merge Type Complexity with Multiple Graphs
+**Warning signs:**
 
-**What goes wrong:** `merge()` and `mergeWith()` operations duplicate validation logic, making them diverge over time. Adding new validation (async ports, overrides) requires updating multiple code paths.
-
-**Why it happens:** Type-level merge has three implementations:
-
-1. `merge(other)` - replaces conflicts with other's adapter
-2. `mergeWith(other)` - preserves this graph's adapter on conflict
-3. `mergeMany([g1, g2, g3])` - variadic merge with configurable strategy
-
-Each has separate validation logic for duplicates, captives, cycles.
+- Memory profiling shows increased heap usage
+- GC events more frequent in DevTools
+- Disposal tests fail due to ordering changes
+- Container ID generation becomes bottleneck
 
 **Prevention:**
 
-1. **Unified merge type:** Single `MergeOperation<G1, G2, Strategy>` type with strategy parameter
-2. **Shared validation:** Extract common validation into reusable utilities
-3. **Property-based tests:** Test that `merge` and `mergeWith` are inverses
-4. **Type-level tests:** Verify all merge variants produce same validation errors
+1. **Use Set instead of Map:** No values needed, just membership check
+   ```typescript
+   private childContainers: Set<DisposableChild> = new Set();
+   unregisterChildContainer(child: DisposableChild): void {
+     this.childContainers.delete(child);  // O(1)
+   }
+   ```
+2. **Benchmark before/after:** Create micro-benchmark for 1000 child container ops
+3. **Preserve disposal order:** Convert Set to Array for reverse iteration during disposal
+4. **Lazy initialization:** Only create Set when first child registered
 
 **Detection:**
 
-- Merge operations accept invalid graphs in one variant but reject in another
-- Test coverage differs between merge variants
-- Bug fixes applied to one variant but not others
+- `vitest bench` shows regression in container creation/disposal
+- Memory snapshots show more objects per container
+- Disposal order tests fail
 
-**Phase warning:** Any phase modifying merge behavior must update all three variants consistently.
+**Phase:** Address in Phase 4 (O(1) Child Container Operations)
 
 **References:**
 
-- `/packages/graph/src/builder/types/merge.ts` (810 lines) - Merge type implementations
-- `/.planning/codebase/CONCERNS.md` (lines 21-46) - parentProvides merge bug
+- `/packages/runtime/src/container/internal/lifecycle-manager.ts` - Current implementation
+- `/packages/runtime/tests/child-container.test.ts` - Child container tests
+- `/packages/runtime/tests/disposal.test.ts` - Disposal ordering tests
 
 ---
 
-### Pitfall 7: Type Error Message Quality Degradation
+### Pitfall 5: Test Brittleness from Implementation Coupling
 
-**What goes wrong:** As type-level validation complexity increases, TypeScript error messages become cryptic, showing internal type names instead of user-facing errors.
+**What goes wrong:** New tests for hooks and plugins couple tightly to internal implementation details, breaking when refactoring internals even if behavior is preserved.
 
-**Why it happens:** Deep generic type hierarchies cause TypeScript to show intermediate types in error messages:
+**Why it happens:** Testing hooks and plugins requires accessing internal state:
 
-```
-Type 'GraphBuilder<{ provides: Port<Logger, "Logger", 1> | Port<Database, "Database", 2>, ... }>'
-is not assignable to type 'GraphBuilder<{ ... }>'
-```
+- Hook tests spy on internal method calls
+- Plugin tests check internal data structures
+- Tests verify internal memoization details
 
-Instead of:
+When internals change:
 
-```
-ERROR[HEX003]: Captive dependency: Singleton 'UserService' cannot depend on Scoped 'Database'
-```
+- `vi.spyOn(container, 'resolveInternal')` fails if method renamed
+- Tests checking `MemoMap` structure break if caching changes
+- Tests depending on specific error messages break
+
+**Consequences:**
+
+- 45+ new tests become maintenance burden
+- Simple refactoring triggers cascade of test fixes
+- Tests pass but don't actually verify correct behavior
+- False confidence from high test count
+
+**Warning signs:**
+
+- Tests use `vi.spyOn` on internal methods
+- Tests access properties via `INTERNAL_ACCESS` symbol
+- Tests assert on specific call counts or orderings
+- Tests break when fixing unrelated bugs
 
 **Prevention:**
 
-1. **Error types return string literals:** Use template literal types for user-facing messages
-2. **Type-level result wrappers:** Return `{ error: string } | { success: Builder }` instead of raw builder
-3. **Branded error types:** Mark error types with `{ __error: true, message: string }`
-4. **Documentation examples:** Show actual error messages in docs
-5. **IDE integration:** Consider custom TypeScript Language Service plugin for better errors
+1. **Behavior over implementation:** Test observable outcomes, not internal calls
 
-**Example structure:**
+   ```typescript
+   // Bad: Tests implementation
+   const spy = vi.spyOn(engine, 'resolveWithAdapter');
+   container.resolve(LoggerPort);
+   expect(spy).toHaveBeenCalledWith(LoggerPort, expect.any(Object), ...);
+
+   // Good: Tests behavior
+   const logger = container.resolve(LoggerPort);
+   expect(logger).toBeInstanceOf(ConsoleLogger);
+   ```
+
+2. **Public API surface only:** Test through Container/Scope methods
+3. **Integration-style hook tests:** Verify hooks affect resolution, not that they're called
+4. **Snapshot for internal state:** Use `getInternalState()` for DevTools tests only
+
+**Detection:**
+
+- Tests break when renaming internal methods
+- Test descriptions mention "should call X internally"
+- Tests import from internal paths (`../src/container/internal/`)
+
+**Phase:** Address in all test-related work (Phases 5-6)
+
+**References:**
+
+- `/packages/runtime/tests/` - Existing test patterns
+- `/packages/testing/src/mock-adapter.ts` - Test utility patterns
+
+---
+
+### Pitfall 6: Builder Pattern Type Complexity with Override API
+
+**What goes wrong:** Implementing a fluent builder pattern for type-safe overrides exhausts TypeScript's recursion depth, causing TS2589 errors.
+
+**Why it happens:** Fluent builders accumulate type state:
 
 ```typescript
-type ProvideResult<B, A> =
-  ValidateDuplicate<B, A> extends infer Error extends string
-    ? Error
-    : ValidateCaptive<B, A> extends infer Error extends string
-      ? Error
-      : UpdateBuilderState<B, A>;
+class OverrideBuilder<TProvides, TOverridden = never> {
+  override<P extends Exclude<TProvides, TOverridden>>(
+    port: P, factory: () => InferService<P>
+  ): OverrideBuilder<TProvides, TOverridden | P> { ... }
+}
 ```
+
+Each `override()` call adds to `TOverridden` union:
+
+- 10 overrides = 10-level deep type
+- Type checking each call validates against all previous
+- `Exclude<TProvides, TOverridden>` grows exponentially
+
+**Consequences:**
+
+- TS2589 "Type instantiation is excessively deep" with many overrides
+- IDE becomes unresponsive when chaining override calls
+- Users can't use feature for realistic scenarios (>5 overrides)
+
+**Warning signs:**
+
+- Type tests with 5+ chained overrides cause TS2589
+- IDE hover shows "..." or "any" for builder type
+- Build time increases significantly with override usage
+
+**Prevention:**
+
+1. **Non-accumulating type:** Reset TOverridden on terminal method
+   ```typescript
+   override<P>(...): OverrideBuilder<TProvides, P> // Not |
+   run<R>(fn: () => R): R; // Terminal, validates all at once
+   ```
+2. **Separate validation:** Validate on `run()`, not on each `override()`
+3. **Max override limit:** Document limit of 10 overrides in single builder
+4. **Non-builder alternative:** Provide Map-based API for many overrides
+5. **Type tests with realistic counts:** Test with 1, 5, 10, 20 overrides
 
 **Detection:**
 
-- User bug reports mention "confusing type errors"
-- Error messages reference internal types like `BuilderInternals`
-- Stack Overflow questions asking how to interpret errors
+- `packages/runtime/tests/override.test-d.ts` fails with TS2589
+- Type checking time >5s for override builder usage
+- Builder type shows as `any` in IDE
 
-**Phase warning:** Every phase adding validation must test that error messages are actionable.
+**Phase:** Address in Phase 3 (Type-Safe Override API)
 
 **References:**
 
-- `/packages/graph/src/validation/types/error-messages.ts` (644 lines) - Error message definitions
-- `/.planning/codebase/CONCERNS.md` (lines 318-324) - Limited debugging support
+- `/packages/graph/src/builder/types/provide.ts` - Similar accumulating pattern
+- `/.planning/codebase/CONCERNS.md` (lines 154-187) - Type complexity concerns
 
 ---
 
@@ -296,193 +386,227 @@ type ProvideResult<B, A> =
 
 Mistakes that cause annoyance but are easily fixable.
 
-### Pitfall 8: Inconsistent API Naming After Removal
+### Pitfall 7: Inconsistent File Naming After Type Split
 
-**What goes wrong:** Removing deprecated APIs (`provideAsync`, `provideFirstError`, `provideUnchecked`) leaves naming inconsistencies in remaining APIs.
+**What goes wrong:** Split type files use inconsistent naming conventions, making navigation confusing.
 
-**Why it happens:** When designing parallel APIs (sync/async variants), naming conventions emerge organically. Removing one variant makes the naming of the remaining variant look odd.
+**Why it happens:** No established convention for split files:
 
-Example:
-
-- Before: `provide()` (sync) and `provideAsync()` (async)
-- After: `provide()` handles both → why not `provideSync()` for symmetry?
+- `container-types.ts` vs `container.types.ts` vs `ContainerTypes.ts`
+- `scope-members.ts` vs `scope/members.ts` vs `scopeMembers.ts`
+- Mixing `kebab-case.ts`, `camelCase.ts`, and `PascalCase.ts`
 
 **Prevention:**
 
-1. **Naming audit:** Review all API methods after removals
-2. **Consistency check:** Ensure verb/noun patterns match across API surface
-3. **Documentation update:** Explain why certain names were chosen
-4. **Deprecation aliases:** Keep old names as deprecated exports temporarily
+1. **Follow existing convention:** Check existing src/types/ folder patterns
+2. **Kebab-case files:** `container-types.ts`, `scope-types.ts`, `type-utilities.ts`
+3. **Flat over nested:** Keep in single `types/` folder, don't create `types/container/`
+4. **Document in CLAUDE.md:** Add file naming convention
 
-**Phase warning:** API removal phase should include naming consistency review.
+**Phase:** Address in Phase 1 (Type File Split)
 
 ---
 
-### Pitfall 9: Test Doubles Drift from Production Types
+### Pitfall 8: Stale Internal State Snapshots After Refactoring
 
-**What goes wrong:** Mock adapters in test utilities don't keep up with validation changes, causing test-only type errors that don't reflect real usage.
+**What goes wrong:** `getInternalState()` returns outdated structure after refactoring internals, breaking DevTools integration.
 
-**Why it happens:** Test utilities like `createMockAdapter()` may not enforce the same constraints as production `createAdapter()`, allowing invalid configurations in tests.
+**Why it happens:** Internal state snapshot interface is frozen but implementation changes:
+
+```typescript
+interface ContainerInternalState {
+  singletonMemo: MemoMapSnapshot;
+  // ... other fields
+}
+```
+
+If implementation changes from `MemoMap` to different structure:
+
+- Snapshot creation code silently produces incorrect data
+- DevTools shows stale or wrong information
+- No type error since snapshot interface unchanged
 
 **Prevention:**
 
-1. **Shared test fixtures:** Use real adapter creation in tests, not simplified mocks
-2. **Type-level test utilities:** Provide `createTestAdapter()` that mirrors production constraints
-3. **Integration test coverage:** Test with production APIs, not just unit tests with mocks
-4. **Mock adapter validation tests:** Test that mocks respect same constraints as production
+1. **Snapshot type derives from implementation:** Use mapped types
+2. **Integration tests with DevTools:** Verify snapshot contents match actual state
+3. **Document snapshot contract:** Which fields are stable vs internal
 
-**Detection:**
+**Phase:** Address in Phase 2 (Export Consolidation)
 
-- Tests pass but production code fails type checking
-- Tests use `any` or type assertions to work around constraints
-- Mock factories accept invalid configurations
+---
 
-**Phase warning:** Test infrastructure must be updated alongside production validation.
+### Pitfall 9: Missing Return Types After Extracting Shared Wrapper Logic
+
+**What goes wrong:** Extracted wrapper functions lose explicit return types, causing type inference to widen unexpectedly.
+
+**Why it happens:** TypeScript infers return types, but inference may be wider than intended:
+
+```typescript
+// Before: Inline in wrapper, types explicit
+function createContainer<...>(...): Container<...> { ... }
+
+// After: Shared function, types inferred
+function createWrapper(impl, exposedMethods) {  // Return type: ???
+  return Object.freeze({ ...exposedMethods });
+}
+```
+
+**Prevention:**
+
+1. **Explicit return types on extracted functions:** Per CLAUDE.md requirement
+2. **Generic constraints preserve narrowness:**
+   ```typescript
+   function createWrapper<T extends ContainerMembers<...>>(impl, ...): T { ... }
+   ```
+3. **Type test for wrapper return types:** Verify Container type preserved
+
+**Phase:** Address in Phase 7 (Extract Shared Wrapper Logic)
+
+---
+
+## Integration Pitfalls
+
+### Pitfall 10: React Integration Breaking with Type Changes
+
+**What goes wrong:** Changes to Container/Scope types break `@hex-di/react` hooks due to type incompatibility.
+
+**Why it happens:** React package depends on runtime package types:
+
+- `useContainer()` returns `Container<...>`
+- `useScope()` returns `Scope<...>`
+- Type parameter changes propagate to React
+
+If Container type signature changes:
+
+```typescript
+// Before
+type Container<TProvides, TExtends, TAsyncPorts, TPhase>
+
+// After (hypothetical parameter reorder)
+type Container<TProvides, TPhase, TExtends, TAsyncPorts>
+```
+
+All React hooks break without code changes.
+
+**Warning signs:**
+
+- React package typecheck fails after runtime changes
+- Hook return types show wrong generic parameters
+- `@hex-di/react` tests fail with type errors
+
+**Prevention:**
+
+1. **Type stability audit:** Document which type parameters are public API
+2. **Cross-package type tests:** Test React hooks after runtime type changes
+3. **Re-export preservation:** Keep same export signature even if internals change
+4. **Workspace-wide typecheck:** Run `pnpm -r typecheck` before commit
+
+**Phase:** Verify after all type changes (all phases)
+
+**References:**
+
+- `/packages/react/src/index.ts` - React exports depending on runtime types
+- `/packages/react/tests/types.test-d.ts` - React type tests
+
+---
+
+### Pitfall 11: Testing Package Mock Adapter Drift
+
+**What goes wrong:** `@hex-di/testing` mock adapter creation doesn't keep up with runtime changes, causing test utilities to produce invalid mocks.
+
+**Why it happens:** Mock adapter has simplified type constraints:
+
+```typescript
+// Testing package - simplified
+function createMockAdapter<P extends Port<unknown, string>>(port: P, mock: InferService<P>): ...
+
+// Runtime package - full constraints
+type RuntimeAdapter = Adapter<P, Deps, Lifetime, FactoryKind, HasFinalizer>
+```
+
+If runtime adds new required adapter fields, mocks missing them cause runtime errors.
+
+**Warning signs:**
+
+- Tests pass in isolation but fail in integration
+- Mock adapters missing new required properties
+- Type errors when using mock with real container
+
+**Prevention:**
+
+1. **Shared adapter type:** Import RuntimeAdapter type in testing package
+2. **Mock adapter validation:** Runtime check mock shape matches real adapter
+3. **Integration tests:** Test mock adapters with real containers
+
+**Phase:** Verify after runtime adapter type changes
 
 **References:**
 
 - `/packages/testing/src/mock-adapter.ts` - Mock adapter implementation
-- `/packages/testing/tests/mock-adapter.test.ts` - Mock adapter tests
+- `/packages/runtime/src/container/internal-types.ts` - RuntimeAdapter type
 
 ---
 
 ## Phase-Specific Warnings
 
-| Phase Topic                              | Likely Pitfall                                      | Mitigation                                                                 |
-| ---------------------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------- |
-| Unified `provide()` with async detection | False negatives with promise-like types (Pitfall 1) | Test with Awaited<>, runtime validation, custom promise types              |
-| Disposal lifecycle                       | Async finalizer ordering violations (Pitfall 3)     | Sequential disposal, dependency-aware ordering, timeout enforcement        |
-| Override validation                      | Breaking existing test mocks (Pitfall 4)            | Add `unsafeOverride()`, warning-only mode, test-specific escape hatch      |
-| Bidirectional captive validation         | Performance explosion (Pitfall 2)                   | Lazy validation, batch operations, depth budgeting, progressive validation |
-| API removal (provideAsync, etc.)         | Migration pain, inconsistent naming (Pitfall 5, 8)  | Codemod script, deprecation period, naming audit                           |
-| Port API unification                     | Direction migration complexity (Pitfall 5)          | Automated migration tool, runtime compatibility layer                      |
-| Merge operations                         | Type duplication divergence (Pitfall 6)             | Unified merge type, shared validation utilities                            |
+| Phase | Description            | Likely Pitfall                                                   | Mitigation                              |
+| ----- | ---------------------- | ---------------------------------------------------------------- | --------------------------------------- |
+| 1     | Type File Split        | Circular imports (Pitfall 1)                                     | Topological ordering, type-only imports |
+| 2     | Export Consolidation   | Breaking subpath exports (Pitfall 2)                             | Grep workspace first, preserve exports  |
+| 3     | Type-Safe Override API | Inference regression (Pitfall 3), Builder complexity (Pitfall 6) | Type tests first, builder limits        |
+| 4     | O(1) Child Operations  | Memory/GC regression (Pitfall 4)                                 | Use Set, benchmark before/after         |
+| 5-6   | Hook/Plugin Tests      | Implementation coupling (Pitfall 5)                              | Behavior-based tests, public API only   |
+| 7     | Shared Wrapper Logic   | Missing return types (Pitfall 9)                                 | Explicit types, type tests              |
+| All   | -                      | React integration break (Pitfall 10)                             | Workspace-wide typecheck                |
 
 ---
 
-## Integration Pitfalls with Existing System
+## Testing Each Pitfall
 
-### Pitfall 10: Type Complexity Budget Exhaustion
-
-**Problem:** Each new validation dimension (async, override, bidirectional captive) consumes part of TypeScript's recursion depth budget. Adding all improvements may exceed budget.
-
-**Detection:**
-
-- TS2589 errors appear in graphs that previously worked
-- Type checking time exceeds 10 seconds
-- `typeComplexityScore` jumps from 50 to 150+
-
-**Prevention:**
-
-1. **Measure before adding:** Benchmark type checking time for representative graphs
-2. **Budget allocation:** Reserve depth budget per validation type
-3. **Incremental delivery:** Ship high-value validations first, defer others
-4. **Runtime fallback:** Switch to runtime validation if depth exceeded
-
-**References:**
-
-- `/packages/graph/src/validation/types/cycle/depth.ts` (lines 1-150) - Depth management
-- `/.planning/codebase/CONCERNS.md` (lines 154-187) - Type checking performance
+| Pitfall              | Test Type           | Test Location                                       |
+| -------------------- | ------------------- | --------------------------------------------------- |
+| Circular imports     | Build + runtime     | `npm pack && npm install` in test project           |
+| Export breakage      | Workspace typecheck | `pnpm -r typecheck`                                 |
+| Override inference   | Type-level          | `packages/runtime/tests/override.test-d.ts`         |
+| Map performance      | Benchmark           | `packages/runtime/tests/performance.bench.ts`       |
+| Test brittleness     | Refactoring         | Rename internal method, run tests                   |
+| Builder complexity   | Type-level          | `packages/runtime/tests/override-builder.test-d.ts` |
+| File naming          | Manual review       | Checklist                                           |
+| Stale snapshots      | Integration         | DevTools manual test                                |
+| Missing return types | Type-level          | `packages/runtime/tests/wrapper.test-d.ts`          |
+| React integration    | Cross-package       | `pnpm -r typecheck`                                 |
+| Mock adapter drift   | Integration         | `packages/testing/tests/integration.test.ts`        |
 
 ---
 
-### Pitfall 11: Phased Delivery Requires Validation Flags
-
-**Problem:** Shipping validation improvements incrementally (e.g., async detection in v4.1, bidirectional captive in v4.2) means validation behavior changes across minor versions, confusing users.
-
-**Prevention:**
-
-1. **Feature flags:** Allow opting into new validations before they're default
-2. **Validation versioning:** `GraphBuilder.withValidation({ version: "4.2" })`
-3. **Progressive enhancement:** New validations start as warnings, become errors in next major
-4. **Clear changelog:** Document which validations added in which version
-
-**Example:**
-
-```typescript
-// v4.1: Async detection available but opt-in
-const builder = GraphBuilder.create({ validation: { asyncDetection: true } });
-
-// v4.2: Async detection becomes default
-const builder = GraphBuilder.create(); // includes async detection
-```
-
----
-
-### Pitfall 12: Disposal + Async Init Race Condition
-
-**Problem:** If container is disposed while async initialization is in progress, finalizers may not be registered yet, causing cleanup leaks.
-
-**Prevention:**
-
-1. **Initialization state machine:** Track `INITIALIZING | INITIALIZED | DISPOSING | DISPOSED`
-2. **Block disposal during init:** `dispose()` waits for init to complete first
-3. **Cleanup promise tracking:** Register cleanup promises during init, not after
-4. **Timeout on disposal:** If init takes >X seconds, force disposal
-
-**Detection:**
-
-- Finalizers not called after disposal
-- Memory leaks in integration tests with concurrent init/dispose
-- Race condition appears intermittently
-
-**References:**
-
-- `/packages/runtime/tests/async-resolution.test.ts` (871 lines) - Async resolution tests
-- `/.planning/codebase/CONCERNS.md` (lines 265-289) - Lazy resolution fragility
-
----
-
-## Validation and Testing Strategies
-
-### Testing Each Pitfall
-
-| Pitfall                 | Test Type                 | Test Location                                                  |
-| ----------------------- | ------------------------- | -------------------------------------------------------------- |
-| Async false negatives   | Type-level + runtime      | `packages/core/tests/async-lifetime-enforcement.test-d.ts`     |
-| Captive performance     | Benchmark + edge case     | `packages/graph/tests/performance.test.ts`                     |
-| Disposal ordering       | Integration               | `packages/runtime/tests/disposal.test.ts`                      |
-| Override breaking tests | Migration + compatibility | `packages/testing/tests/mock-adapter.test.ts`                  |
-| Port migration          | Codemod + regression      | `packages/core/tests/create-port.test.ts`                      |
-| Merge divergence        | Property-based            | `packages/graph/tests/property-based/merge-operations.test.ts` |
-| Type error quality      | Documentation + snapshots | `packages/graph/tests/error-messages.test-d.ts`                |
-| Naming inconsistency    | API audit                 | Manual review checklist                                        |
-| Test doubles drift      | Integration               | `packages/testing/tests/integration.test.ts`                   |
-| Complexity budget       | Performance benchmark     | `packages/graph/tests/performance.bench.ts`                    |
-| Phased delivery flags   | Feature flag              | `packages/graph/tests/validation-flags.test.ts`                |
-| Disposal race           | Concurrent                | `packages/runtime/tests/concurrent.test.ts`                    |
-
-### Warning Signs by Phase
-
-**Research Phase:**
-
-- [ ] Insufficient edge case analysis for promise detection
-- [ ] No performance benchmarks for bidirectional validation
-- [ ] Missing disposal ordering specification
+## Warning Signs by Phase
 
 **Planning Phase:**
 
-- [ ] No escape hatch for breaking validations
-- [ ] Migration tooling not planned
-- [ ] Type complexity budget not calculated
+- [ ] No circular import analysis for type split
+- [ ] No export inventory before consolidation
+- [ ] No type tests planned for override API
+- [ ] No performance baseline for child container ops
 
 **Implementation Phase:**
 
-- [ ] TS2589 errors in test suite
-- [ ] Test mocks require `any` or type assertions
-- [ ] Type checking time >5 seconds
+- [ ] `madge --circular` shows cycles after split
+- [ ] Other packages fail typecheck after export changes
+- [ ] Override return type shows `unknown`
+- [ ] Tests spy on internal methods
 
 **Testing Phase:**
 
-- [ ] Property-based tests missing for merge operations
-- [ ] No concurrent disposal tests
-- [ ] Missing error message snapshot tests
+- [ ] Tests break when renaming internals
+- [ ] Benchmark shows performance regression
+- [ ] Type tests fail with TS2589
 
-**Release Phase:**
+**Integration Phase:**
 
-- [ ] Breaking changes in minor version
-- [ ] No migration guide
-- [ ] Inconsistent API naming after removal
+- [ ] React package fails typecheck
+- [ ] Testing package mocks invalid
+- [ ] DevTools shows stale data
 
 ---
 
@@ -490,26 +614,26 @@ const builder = GraphBuilder.create(); // includes async detection
 
 **HIGH Confidence:**
 
-- `/packages/core/tests/async-lifetime-enforcement.test-d.ts` - Async detection implementation
-- `/packages/runtime/tests/disposal.test.ts` - Disposal lifecycle behavior
-- `/packages/graph/tests/batch-reverse-captive.test-d.ts` - Captive validation complexity
-- `/.planning/codebase/CONCERNS.md` - Known technical debt and fragile areas
-- `/packages/graph/src/validation/types/cycle/depth.ts` - Depth limiting strategy
+- `/packages/runtime/src/types.ts` (1,271 lines) - Monolithic file to split
+- `/packages/runtime/src/index.ts` (180 lines) - Current export structure
+- `/packages/runtime/src/container/internal/lifecycle-manager.ts` - Child container tracking
+- `/packages/runtime/src/container/override-context.ts` - Current override implementation
+- `/packages/runtime/tests/override.test.ts` - Override test patterns
 
 **MEDIUM Confidence:**
 
-- `/docs/improvements.md` - Port API redesign proposal (not yet implemented)
-- `/packages/graph/ROADMAP_TO_10.md` - Future improvements (planning stage)
-- `CLAUDE.md` - Project breaking changes policy
+- TypeScript circular import behavior (well-documented)
+- Map vs Set performance characteristics (documented in MDN)
+- Builder pattern type accumulation (observed in GraphBuilder)
 
 **LOW Confidence:**
 
-- Custom promise implementations behavior (requires testing)
-- User adoption patterns for escape hatches (requires data collection)
-- IDE performance impact of type complexity (requires profiling)
+- Specific performance regression magnitude (requires benchmarking)
+- Exact recursion depth limits for override builder (requires testing)
+- DevTools integration impact (requires manual testing)
 
 ---
 
-_Research completed: 2026-02-02_
-_Confidence: HIGH for critical pitfalls, MEDIUM for moderate pitfalls_
-_Gaps: Need real-world user feedback on breaking changes, performance profiling data for type complexity_
+_Research completed: 2026-02-03_
+_Confidence: HIGH for pitfalls derived from codebase analysis, MEDIUM for performance predictions_
+_Gaps: Need actual benchmarks for Map vs Array performance, need to test override builder depth limits_
