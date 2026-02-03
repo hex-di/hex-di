@@ -83,6 +83,35 @@ export interface ContainerDevToolsOptions {
 }
 
 /**
+ * Performance-related options for container runtime behavior.
+ *
+ * These options allow disabling certain features for production
+ * builds where debugging information is not needed.
+ *
+ * @example
+ * ```typescript
+ * const container = createContainer(graph, {
+ *   name: "App",
+ *   performance: {
+ *     disableTimestamps: process.env.NODE_ENV === "production",
+ *   },
+ * });
+ * ```
+ */
+export interface RuntimePerformanceOptions {
+  /**
+   * Disable timestamp capture for production builds.
+   *
+   * When true, `resolvedAt` will be 0 and no Date.now() calls
+   * will be made during resolution. This reduces overhead in
+   * high-throughput scenarios.
+   *
+   * @default false
+   */
+  readonly disableTimestamps?: boolean;
+}
+
+/**
  * Options for creating a root container.
  *
  * @example
@@ -107,6 +136,9 @@ export interface CreateContainerOptions {
 
   /** DevTools-specific options for visibility and display */
   readonly devtools?: ContainerDevToolsOptions;
+
+  /** Performance-related options */
+  readonly performance?: RuntimePerformanceOptions;
 }
 
 /**
@@ -145,4 +177,7 @@ export interface CreateChildOptions<TProvides extends Port<unknown, string> = ne
 
   /** DevTools-specific options for visibility and display */
   readonly devtools?: ContainerDevToolsOptions;
+
+  /** Performance-related options */
+  readonly performance?: RuntimePerformanceOptions;
 }
