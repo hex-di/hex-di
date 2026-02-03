@@ -9,30 +9,30 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 
 ## Current Position
 
-Phase: 15 - Foundation
-Plan: 05 of 5 complete
-Status: Complete
-Last activity: 2026-02-03 - Completed Phase 15 (All plans executed)
+Phase: 16 - Performance
+Plan: 01 of 3 complete
+Status: In progress
+Last activity: 2026-02-03 - Completed 16-01-PLAN.md
 
-Progress: [#####] 5/5 plans in Phase 15 (15-01, 15-02, 15-03, 15-04, 15-05 complete)
+Progress: [█ ] 1/3 plans in Phase 16 (16-02, 16-03 remaining)
 
 ## v5.0 Phase Status
 
-| Phase | Name          | Requirements | Status   |
-| ----- | ------------- | ------------ | -------- |
-| 15    | Foundation    | 5            | Complete |
-| 16    | Performance   | 3            | Pending  |
-| 17    | Type-Safe API | 6            | Pending  |
-| 18    | Testing       | 4            | Pending  |
-| 19    | Polish        | 7            | Pending  |
+| Phase | Name          | Requirements | Status      |
+| ----- | ------------- | ------------ | ----------- |
+| 15    | Foundation    | 5            | Complete    |
+| 16    | Performance   | 3            | In progress |
+| 17    | Type-Safe API | 6            | Pending     |
+| 18    | Testing       | 4            | Pending     |
+| 19    | Polish        | 7            | Pending     |
 
 ## Performance Metrics
 
-**Velocity (v1.1 + v1.2 + v2.0 + v3.0 + v4.0):**
+**Velocity (v1.1 + v1.2 + v2.0 + v3.0 + v4.0 + v5.0):**
 
-- Total plans completed: 29
-- Average duration: 4.6 min
-- Total execution time: ~133 min
+- Total plans completed: 30
+- Average duration: 4.5 min
+- Total execution time: ~135 min
 
 **By Phase:**
 
@@ -52,10 +52,11 @@ Progress: [#####] 5/5 plans in Phase 15 (15-01, 15-02, 15-03, 15-04, 15-05 compl
 | 12-api-cleanup                      | 3     | 17 min | 5.7 min  |
 | 13-runtime-features                 | 2     | 9 min  | 4.5 min  |
 | 14-bidirectional-captive-validation | 1     | 8 min  | 8 min    |
+| 16-performance                      | 1     | 2 min  | 2 min    |
 
 **Recent Trend:**
 
-- Last 5 plans: [3m, 6m, 3m, 8m, 5m]
+- Last 5 plans: [6m, 3m, 8m, 5m, 2m]
 - Trend: Stable (avg ~5min per plan)
 
 ## Accumulated Context
@@ -77,6 +78,9 @@ Recent for v5.0:
 - 15-03: Added public addHook/removeHook API to Container, removed HOOKS_ACCESS from public exports
 - 15-04: Added standalone inspect(), trace(), enableTracing() functions as primary API
 - 15-05: Removed CaptiveDependencyErrorLegacy from public exports, marked as @internal
+- 16-01: Use Symbol property for internal ID storage to avoid API changes
+- 16-01: Convert Map to Array for LIFO disposal iteration
+- 16-01: Map<number, T> with Symbol ID pattern for O(1) unregistration while preserving insertion order
 
 ### Pending Todos
 
@@ -92,11 +96,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed Phase 15 Foundation
+Stopped at: Completed 16-01-PLAN.md
 Resume file: None
-Next: Plan Phase 16 (Performance) or Phase 17 (Type-Safe API)
+Next: Execute 16-02 or 16-03 (16-02 recommended next)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-03 (Phase 15 complete)_
+_Last updated: 2026-02-03 (16-01 complete)_
