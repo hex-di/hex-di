@@ -31,6 +31,7 @@ export type {
   ContainerDevToolsOptions,
   CreateContainerOptions,
   CreateChildOptions,
+  RuntimePerformanceOptions,
 } from "./options.js";
 
 // =============================================================================
