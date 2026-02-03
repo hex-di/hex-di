@@ -75,6 +75,7 @@ Recent for v5.0:
 - 15-02: Created wrapper-utils.ts for shared container creation utilities
 - 15-01: Split types.ts (1,271 LOC) into 8 focused files in types/ subdirectory
 - 15-03: Added public addHook/removeHook API to Container, removed HOOKS_ACCESS from public exports
+- 15-04: Added standalone inspect(), trace(), enableTracing() functions as primary API
 - 15-05: Removed CaptiveDependencyErrorLegacy from public exports, marked as @internal
 
 ### Pending Todos
@@ -91,11 +92,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 15-05-PLAN.md (Legacy export removal)
+Stopped at: Completed 15-04-PLAN.md (Standalone inspection/tracing functions)
 Resume file: None
 Next: Continue with 15-06-PLAN.md or next available plan
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-03 (15-05 completed)_
+_Last updated: 2026-02-03 (15-04 completed)_
