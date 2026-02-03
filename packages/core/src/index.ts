@@ -254,3 +254,10 @@ export { MetricsCollector, fromTraceStats } from "./span/metrics.js";
 
 export type { IsNever, TupleToUnion, Prettify, InferenceError } from "./utils/type-utilities.js";
 export { generateCorrelationId } from "./utils/correlation.js";
+
+// =============================================================================
+// Context
+// =============================================================================
+
+export { createContextVariable, withContext, getContext } from "./context/index.js";
+export type { ContextVariable } from "./context/index.js";
