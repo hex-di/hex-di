@@ -16,6 +16,7 @@ import { ContainerBrand } from "./brands.js";
 import type { LazyContainer } from "./lazy-container.js";
 import type { Scope } from "./scope.js";
 import type { ExtractPortNames } from "./inheritance.js";
+import type { HookType, HookHandler } from "../resolution/hooks.js";
 
 // =============================================================================
 // Internal Utility Types
@@ -442,6 +443,55 @@ export type ContainerMembers<
    * ```
    */
   readonly tracer: TracingAPI;
+
+  // =========================================================================
+  // Hook Management API
+  // =========================================================================
+
+  /**
+   * Adds a resolution hook to this container.
+   *
+   * Hooks are called during service resolution:
+   * - `beforeResolve`: Called before resolving, receives port name and lifetime
+   * - `afterResolve`: Called after resolving, receives result and duration
+   *
+   * Multiple hooks can be installed. beforeResolve hooks fire in installation order,
+   * afterResolve hooks fire in reverse order (middleware pattern).
+   *
+   * @param type - The hook type: 'beforeResolve' or 'afterResolve'
+   * @param handler - The hook handler function
+   *
+   * @example
+   * ```typescript
+   * container.addHook('beforeResolve', (ctx) => {
+   *   console.log(`Resolving ${ctx.portName}`);
+   * });
+   *
+   * container.addHook('afterResolve', (ctx) => {
+   *   console.log(`Resolved ${ctx.portName} in ${ctx.duration}ms`);
+   * });
+   * ```
+   */
+  addHook<T extends HookType>(type: T, handler: HookHandler<T>): void;
+
+  /**
+   * Removes a previously installed resolution hook.
+   *
+   * The handler must be the same function reference that was passed to addHook.
+   * If the handler was not installed, this is a no-op.
+   *
+   * @param type - The hook type: 'beforeResolve' or 'afterResolve'
+   * @param handler - The hook handler function to remove
+   *
+   * @example
+   * ```typescript
+   * const handler = (ctx) => console.log(ctx.portName);
+   * container.addHook('beforeResolve', handler);
+   * // Later...
+   * container.removeHook('beforeResolve', handler);
+   * ```
+   */
+  removeHook<T extends HookType>(type: T, handler: HookHandler<T>): void;
 
   /**
    * Brand property for nominal typing.

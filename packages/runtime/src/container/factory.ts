@@ -5,7 +5,15 @@
 
 import type { Port, InferService } from "@hex-di/core";
 import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
-import type { ContainerOptions, HooksInstaller } from "../resolution/hooks.js";
+import type {
+  ContainerOptions,
+  HooksInstaller,
+  HookType,
+  HookHandler,
+  ResolutionHooks,
+  ResolutionHookContext,
+  ResolutionResultContext,
+} from "../resolution/hooks.js";
 import type {
   Container,
   ContainerMembers,
@@ -27,11 +35,6 @@ import type { InternalContainerMethods } from "./internal-types.js";
 import { INTERNAL_ACCESS, ADAPTER_ACCESS, HOOKS_ACCESS } from "../inspection/symbols.js";
 import { unreachable } from "../util/unreachable.js";
 import { createChildContainerWrapper } from "./wrappers.js";
-import type {
-  ResolutionHooks,
-  ResolutionHookContext,
-  ResolutionResultContext,
-} from "../resolution/hooks.js";
 import type { InspectorAPI } from "../inspection/types.js";
 import type { TracingAPI } from "@hex-di/core";
 import {
@@ -58,6 +61,13 @@ interface HooksHolder {
   /** Array of installed hook sources */
   readonly hookSources: ResolutionHooks[];
 }
+
+/**
+ * Union type for hook handlers (beforeResolve or afterResolve).
+ * Used as WeakMap key type for handler-to-uninstall mapping.
+ * @internal
+ */
+type AnyHookHandler = HookHandler<"beforeResolve"> | HookHandler<"afterResolve">;
 
 /**
  * Creates placeholder hooks that delegate to all installed hook sources.
@@ -191,6 +201,10 @@ function createUninitializedContainerWrapper<
 ): Container<TProvides, never, TAsyncPorts, "uninitialized"> {
   let initializedContainer: Container<TProvides, never, TAsyncPorts, "initialized"> | null = null;
 
+  // Map from individual handlers to their uninstall functions
+  // Using WeakMap to avoid memory leaks if handlers are garbage collected
+  const handlerToUninstall = new WeakMap<AnyHookHandler, () => void>();
+
   function resolve<P extends Exclude<TProvides, TAsyncPorts>>(port: P): InferService<P> {
     return impl.resolve(port);
   }
@@ -211,7 +225,9 @@ function createUninitializedContainerWrapper<
       if (initializedContainer === null) {
         initializedContainer = createInitializedContainerWrapper<TProvides, TAsyncPorts>(
           impl,
-          containerName
+          containerName,
+          hooksHolder,
+          handlerToUninstall
         );
       }
       return initializedContainer;
@@ -297,6 +313,30 @@ function createUninitializedContainerWrapper<
     },
     has: (port): port is TProvides => impl.has(port),
     hasAdapter: port => impl.hasAdapter(port),
+    addHook: <T extends HookType>(type: T, handler: HookHandler<T>): void => {
+      // Create a ResolutionHooks object with just this handler
+      const hooks: ResolutionHooks =
+        type === "beforeResolve"
+          ? { beforeResolve: handler as (ctx: ResolutionHookContext) => void }
+          : { afterResolve: handler as (ctx: ResolutionResultContext) => void };
+
+      // Store uninstall function for later removal
+      const uninstall = (): void => {
+        const idx = hooksHolder.hookSources.indexOf(hooks);
+        if (idx !== -1) {
+          hooksHolder.hookSources.splice(idx, 1);
+        }
+      };
+      handlerToUninstall.set(handler, uninstall);
+      hooksHolder.hookSources.push(hooks);
+    },
+    removeHook: <T extends HookType>(_type: T, handler: HookHandler<T>): void => {
+      const uninstall = handlerToUninstall.get(handler);
+      if (uninstall) {
+        uninstall();
+        handlerToUninstall.delete(handler);
+      }
+    },
     // Placeholder getter - will be replaced with non-enumerable version below
     get parent(): never {
       return unreachable("Root containers do not have a parent");
@@ -366,7 +406,9 @@ function createInitializedContainerWrapper<
   TAsyncPorts extends Port<unknown, string> = never,
 >(
   impl: RootContainerImpl<TProvides, TAsyncPorts>,
-  containerName: string
+  containerName: string,
+  hooksHolder: HooksHolder,
+  handlerToUninstall: WeakMap<AnyHookHandler, () => void>
 ): Container<TProvides, never, TAsyncPorts, "initialized"> {
   function resolve<P extends TProvides>(port: P): InferService<P> {
     return impl.resolve(port);
@@ -467,6 +509,30 @@ function createInitializedContainerWrapper<
     },
     has: (port): port is TProvides => impl.has(port),
     hasAdapter: port => impl.hasAdapter(port),
+    addHook: <T extends HookType>(type: T, handler: HookHandler<T>): void => {
+      // Create a ResolutionHooks object with just this handler
+      const hooks: ResolutionHooks =
+        type === "beforeResolve"
+          ? { beforeResolve: handler as (ctx: ResolutionHookContext) => void }
+          : { afterResolve: handler as (ctx: ResolutionResultContext) => void };
+
+      // Store uninstall function for later removal
+      const uninstall = (): void => {
+        const idx = hooksHolder.hookSources.indexOf(hooks);
+        if (idx !== -1) {
+          hooksHolder.hookSources.splice(idx, 1);
+        }
+      };
+      handlerToUninstall.set(handler, uninstall);
+      hooksHolder.hookSources.push(hooks);
+    },
+    removeHook: <T extends HookType>(_type: T, handler: HookHandler<T>): void => {
+      const uninstall = handlerToUninstall.get(handler);
+      if (uninstall) {
+        uninstall();
+        handlerToUninstall.delete(handler);
+      }
+    },
     // Placeholder getter - will be replaced with non-enumerable version below
     get parent(): never {
       return unreachable("Root containers do not have a parent");

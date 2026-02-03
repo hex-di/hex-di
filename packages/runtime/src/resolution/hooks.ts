@@ -5,15 +5,34 @@
  * These hooks enable instrumentation (like tracing) without modifying
  * core resolution logic. When hooks are not provided, there is zero overhead.
  *
- * For richer lifecycle support including scope events and plugin dependencies,
- * use the plugin system via ContainerOptions.plugins.
- *
  * @packageDocumentation
  */
 
 import type { Port } from "@hex-di/core";
 import type { Lifetime } from "@hex-di/core";
 import type { InheritanceMode } from "../types.js";
+
+// =============================================================================
+// Hook Type Definitions
+// =============================================================================
+
+/**
+ * Hook type for resolution events.
+ *
+ * - `'beforeResolve'`: Called before resolving a port
+ * - `'afterResolve'`: Called after resolving a port (with result/duration)
+ */
+export type HookType = "beforeResolve" | "afterResolve";
+
+/**
+ * Hook handler type based on hook type.
+ *
+ * - For `'beforeResolve'`: Receives {@link ResolutionHookContext}
+ * - For `'afterResolve'`: Receives {@link ResolutionResultContext}
+ */
+export type HookHandler<T extends HookType> = T extends "beforeResolve"
+  ? (context: ResolutionHookContext) => void
+  : (context: ResolutionResultContext) => void;
 
 // =============================================================================
 // Container Kind Type

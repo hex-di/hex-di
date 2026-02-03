@@ -17,7 +17,21 @@ import type {
 } from "../types.js";
 import { ContainerBrand } from "../types.js";
 import { ADAPTER_ACCESS, INTERNAL_ACCESS, HOOKS_ACCESS } from "../inspection/symbols.js";
-import type { ResolutionHooks, HooksInstaller } from "../resolution/hooks.js";
+import type {
+  ResolutionHooks,
+  HooksInstaller,
+  HookType,
+  HookHandler,
+  ResolutionHookContext,
+  ResolutionResultContext,
+} from "../resolution/hooks.js";
+
+/**
+ * Union type for hook handlers (beforeResolve or afterResolve).
+ * Used as WeakMap key type for handler-to-uninstall mapping.
+ * @internal
+ */
+type AnyHookHandler = HookHandler<"beforeResolve"> | HookHandler<"afterResolve">;
 import { unreachable } from "../util/unreachable.js";
 import { isRecord } from "../util/type-guards.js";
 import { ScopeImpl, createScopeWrapper } from "../scope/impl.js";
@@ -169,6 +183,13 @@ export function createChildContainerWrapper<
     return impl.resolve(port);
   }
 
+  // Map from individual handlers to their uninstall functions
+  // Using WeakMap to avoid memory leaks if handlers are garbage collected
+  const handlerToUninstall = new WeakMap<AnyHookHandler, () => void>();
+
+  // Hook sources for HOOKS_ACCESS (legacy) and addHook/removeHook (new)
+  const hookSources: ResolutionHooks[] = [];
+
   const childContainer: ChildContainerInternals = {
     resolve,
     resolveAsync: <P extends TProvides | TExtends>(port: P): Promise<InferService<P>> =>
@@ -273,6 +294,32 @@ export function createChildContainerWrapper<
       }
       return parent;
     },
+    addHook: <T extends HookType>(type: T, handler: HookHandler<T>): void => {
+      // Create a ResolutionHooks object with just this handler
+      const hooks: ResolutionHooks =
+        type === "beforeResolve"
+          ? { beforeResolve: handler as (ctx: ResolutionHookContext) => void }
+          : { afterResolve: handler as (ctx: ResolutionResultContext) => void };
+
+      // Store uninstall function for later removal
+      const uninstall = (): void => {
+        const idx = hookSources.indexOf(hooks);
+        if (idx !== -1) {
+          hookSources.splice(idx, 1);
+        }
+        impl.uninstallHooks(hooks);
+      };
+      handlerToUninstall.set(handler, uninstall);
+      hookSources.push(hooks);
+      impl.installHooks(hooks);
+    },
+    removeHook: <T extends HookType>(_type: T, handler: HookHandler<T>): void => {
+      const uninstall = handlerToUninstall.get(handler);
+      if (uninstall) {
+        uninstall();
+        handlerToUninstall.delete(handler);
+      }
+    },
     [INTERNAL_ACCESS]: () => impl.getInternalState(),
     [ADAPTER_ACCESS]: (port: Port<unknown, string>) => impl.getAdapter(port),
     registerChildContainer: (child: DisposableChild) => impl.registerChildContainer(child),
@@ -284,9 +331,7 @@ export function createChildContainerWrapper<
     },
   };
 
-  // Add HOOKS_ACCESS for dynamic hook installation via wrappers
-  // Child containers need this to support plugin wrappers
-  const hookSources: ResolutionHooks[] = [];
+  // HOOKS_ACCESS installer for legacy support
   const hooksInstaller: HooksInstaller = {
     installHooks(hooks: ResolutionHooks): () => void {
       hookSources.push(hooks);
