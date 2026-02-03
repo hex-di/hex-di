@@ -178,6 +178,10 @@ describe("@hex-di/runtime exports", () => {
         // Tracing exports
         "hasTracing",
         "getTracingAPI",
+        // Standalone inspection and tracing functions
+        "inspect",
+        "trace",
+        "enableTracing",
       ];
 
       // Verify all expected exports exist

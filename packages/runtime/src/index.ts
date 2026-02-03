@@ -177,3 +177,10 @@ export type {
 // =============================================================================
 
 export { hasTracing, getTracingAPI, type ContainerWithTracing } from "./tracing/index.js";
+
+// =============================================================================
+// Standalone Inspection and Tracing Functions
+// =============================================================================
+
+export { inspect } from "./inspect.js";
+export { trace, enableTracing, type TraceResult, type TraceCallback } from "./trace.js";
