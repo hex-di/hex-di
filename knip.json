@@ -1,0 +1,30 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["*.config.{js,ts,mjs}", "*.mjs"],
+      "project": ["*.{js,ts,mjs}"],
+      "ignore": ["**/*.d.ts"]
+    },
+    "packages/*": {
+      "entry": [
+        "src/index.ts",
+        "src/advanced.ts",
+        "src/**/index.ts",
+        "tests/**/*.test.{ts,tsx}",
+        "tests/**/*.test-d.ts",
+        "tests/**/*.bench.ts"
+      ],
+      "project": ["src/**/*.ts", "tests/**/*.ts"],
+      "ignore": ["**/dist/**", "**/*.d.ts", "**/CONCEPT-*.ts"]
+    },
+    "examples/*": {
+      "entry": ["src/index.{ts,tsx}", "src/main.{ts,tsx}"],
+      "project": ["src/**/*.{ts,tsx}"],
+      "ignore": ["**/dist/**", "**/*.d.ts"]
+    }
+  },
+  "ignoreWorkspaces": ["website"],
+  "ignoreDependencies": ["@types/*"],
+  "ignore": ["**/dist/**", "**/*.d.ts", "**/node_modules/**"]
+}

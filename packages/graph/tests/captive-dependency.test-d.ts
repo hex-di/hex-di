@@ -11,14 +11,14 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
-import { CaptiveDependencyError, LifetimeLevel, IsCaptiveDependency } from "../src/advanced.js";
+import { CaptiveDependencyError, LifetimeLevel, IsCaptiveDependency } from "./test-types.js";
 import type {
   CaptiveErrorMessage,
   AddLifetime,
   GetLifetimeLevel,
   FindAnyCaptiveDependency,
   LifetimeName,
-} from "../src/advanced.js";
+} from "./test-types.js";
 import {
   LoggerPort,
   DatabasePort,

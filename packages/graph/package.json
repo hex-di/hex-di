@@ -25,6 +25,26 @@
         "types": "./dist/advanced.d.cts",
         "default": "./dist/advanced.cjs"
       }
+    },
+    "./inspection": {
+      "import": {
+        "types": "./dist/inspection.d.ts",
+        "default": "./dist/inspection.js"
+      },
+      "require": {
+        "types": "./dist/inspection.d.cts",
+        "default": "./dist/inspection.cjs"
+      }
+    },
+    "./internal": {
+      "import": {
+        "types": "./dist/internal.d.ts",
+        "default": "./dist/internal.js"
+      },
+      "require": {
+        "types": "./dist/internal.d.cts",
+        "default": "./dist/internal.cjs"
+      }
     }
   },
   "files": [

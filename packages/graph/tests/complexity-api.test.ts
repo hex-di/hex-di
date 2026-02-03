@@ -5,8 +5,8 @@
  * and provides actionable debugging information for AI agents.
  */
 import { describe, it, expect } from "vitest";
-import { computeTypeComplexity, INSPECTION_CONFIG } from "../src/advanced.js";
-import type { ComplexityBreakdown } from "../src/advanced.js";
+import { computeTypeComplexity, INSPECTION_CONFIG } from "./test-types.js";
+import type { ComplexityBreakdown } from "./test-types.js";
 
 describe("Complexity Breakdown API", () => {
   it("is exported from package main index", () => {

@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expectTypeOf } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import type { Container, Scope } from "@hex-di/runtime";
 import type {
   RuntimeResolver,
@@ -36,8 +36,8 @@ interface Database {
   query(sql: string): Promise<unknown[]>;
 }
 
-const LoggerPort = createPort<Logger>({ name: "Logger" });
-const DatabasePort = createPort<Database>({ name: "Database" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
 
 type TestPorts = typeof LoggerPort | typeof DatabasePort;
 

@@ -21,7 +21,7 @@ import type {
   IsDepthExceeded,
   DepthExceededResult,
   CircularDependencyError,
-} from "../src/advanced.js";
+} from "./test-types.js";
 import type { IsNever } from "@hex-di/core";
 
 // =============================================================================

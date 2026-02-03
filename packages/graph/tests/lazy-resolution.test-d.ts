@@ -23,7 +23,7 @@ import type {
   TransformLazyToOriginal,
   ExtractLazyPorts,
   HasLazyPorts,
-} from "../src/advanced.js";
+} from "./test-types.js";
 
 // =============================================================================
 // Test Fixtures

@@ -16,7 +16,7 @@
  * @see src/builder/types/state.ts for the constraint documentation
  */
 import { describe, it, expectTypeOf } from "vitest";
-import type { EmptyDependencyGraph, EmptyLifetimeMap } from "../src/advanced.js";
+import type { EmptyDependencyGraph, EmptyLifetimeMap } from "./test-types.js";
 import type { __emptyDepGraphBrand, __emptyLifetimeMapBrand } from "../src/builder/types/state.js";
 
 // =============================================================================

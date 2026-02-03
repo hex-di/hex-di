@@ -10,7 +10,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort, InferService } from "@hex-di/core";
+import { port, InferService } from "@hex-di/core";
 import type { Container, Scope } from "../src/index.js";
 
 // =============================================================================
@@ -33,9 +33,9 @@ interface UserService {
 // Test Port Tokens
 // =============================================================================
 
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
-const DatabasePort = createPort<Database, "Database">({ name: "Database" });
-const UserServicePort = createPort<UserService, "UserService">({ name: "UserService" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const UserServicePort = port<UserService>()({ name: "UserService" });
 void LoggerPort;
 void DatabasePort;
 void UserServicePort;

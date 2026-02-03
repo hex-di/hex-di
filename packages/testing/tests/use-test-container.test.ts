@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { TestGraphBuilder } from "../src/test-graph-builder.js";
 import { useTestContainer, createTestContainer } from "../src/vitest/use-test-container.js";
@@ -39,9 +39,9 @@ interface Counter {
 // Test Port Tokens
 // =============================================================================
 
-const LoggerPort = createPort<Logger>({ name: "Logger" });
-const DatabasePort = createPort<Database>({ name: "Database" });
-const CounterPort = createPort<Counter>({ name: "Counter" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const CounterPort = port<Counter>()({ name: "Counter" });
 
 // =============================================================================
 // Test Adapters

@@ -77,7 +77,7 @@ describe("Async Factory Resolution", () => {
 
       const graph = GraphBuilder.create().provide(ConfigAdapter).provide(DatabaseAdapter).build();
 
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       // Resolve async adapter
       const db = await container.resolveAsync(DatabasePort);
@@ -99,7 +99,7 @@ describe("Async Factory Resolution", () => {
 
       const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       // resolveAsync should work for sync adapters too
       const logger = await container.resolveAsync(LoggerPort);
@@ -128,7 +128,7 @@ describe("Async Factory Resolution", () => {
 
       const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       // Resolve multiple times
       const db1 = await container.resolveAsync(DatabasePort);
@@ -163,7 +163,7 @@ describe("Async Factory Resolution", () => {
 
       const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       // Start multiple concurrent resolutions
       const promise1 = container.resolveAsync(DatabasePort);
@@ -228,7 +228,7 @@ describe("Async Factory Resolution", () => {
         .provide(DatabaseAdapter)
         .build();
 
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       await container.resolveAsync(DatabasePort);
 
@@ -287,7 +287,7 @@ describe("Container initialization", () => {
 
       const graph = GraphBuilder.create().provide(DatabaseAdapter).provide(CacheAdapter).build();
 
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       expect(dbInitialized).toBe(false);
       expect(cacheInitialized).toBe(false);
@@ -337,7 +337,7 @@ describe("Container initialization", () => {
         .provide(DatabaseAdapter) // Added second but has no dependencies
         .build();
 
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
       await container.initialize();
 
       // Initialization should follow dependency order (Database first since Cache depends on it)
@@ -362,7 +362,7 @@ describe("Container initialization", () => {
 
       const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
       const initialized = await container.initialize();
 
       // Now we can use sync resolve on the initialized container
@@ -391,7 +391,7 @@ describe("Container initialization", () => {
 
       const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       await container.initialize();
       await container.initialize();
@@ -424,7 +424,7 @@ describe("Async error handling", () => {
 
       const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       await expect(container.resolveAsync(DatabasePort)).rejects.toThrow(
         "Async factory for port 'Database' failed: Connection failed"
@@ -460,7 +460,7 @@ describe("Async error handling", () => {
 
       const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       await expect(container.initialize()).rejects.toThrow(
         "Async factory for port 'Database' failed: Init failed"
@@ -484,7 +484,7 @@ describe("Async error handling", () => {
 
       const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       // Type system prevents calling resolve on async ports before initialization
       // At runtime, we also throw an error as a safety net
@@ -511,7 +511,7 @@ describe("Async error handling", () => {
 
       const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
       await container.dispose();
 
       await expect(container.resolveAsync(DatabasePort)).rejects.toThrow(DisposedScopeError);
@@ -538,7 +538,7 @@ describe("Scope async resolution", () => {
 
     const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const scope = container.createScope();
 
     // Resolve async in scope
@@ -570,7 +570,7 @@ describe("Scope async resolution", () => {
 
     const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const scope1 = container.createScope();
     const scope2 = container.createScope();
 
@@ -611,7 +611,7 @@ describe("Async adapter finalizers", () => {
 
     const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     await container.resolveAsync(DatabasePort);
     await container.dispose();
 
@@ -642,24 +642,22 @@ describe("Resolution hooks for async adapters", () => {
 
     const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
-    const container = createContainer(
+    const container = createContainer({
       graph,
-      { name: "Test" },
-      {
-        hooks: {
-          beforeResolve: ctx => {
-            beforeResolveCalls.push(ctx.portName);
-          },
-          afterResolve: ctx => {
-            afterResolveCalls.push({
-              portName: ctx.portName,
-              duration: ctx.duration,
-              error: ctx.error,
-            });
-          },
+      name: "Test",
+      hooks: {
+        beforeResolve: ctx => {
+          beforeResolveCalls.push(ctx.portName);
         },
-      }
-    );
+        afterResolve: ctx => {
+          afterResolveCalls.push({
+            portName: ctx.portName,
+            duration: ctx.duration,
+            error: ctx.error,
+          });
+        },
+      },
+    });
 
     await container.resolveAsync(DatabasePort);
 
@@ -688,17 +686,15 @@ describe("Resolution hooks for async adapters", () => {
 
     const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
-    const container = createContainer(
+    const container = createContainer({
       graph,
-      { name: "Test" },
-      {
-        hooks: {
-          beforeResolve: ctx => {
-            hookCalls.push({ portName: ctx.portName, isCacheHit: ctx.isCacheHit });
-          },
+      name: "Test",
+      hooks: {
+        beforeResolve: ctx => {
+          hookCalls.push({ portName: ctx.portName, isCacheHit: ctx.isCacheHit });
         },
-      }
-    );
+      },
+    });
 
     // First resolution - should not be cache hit
     await container.resolveAsync(DatabasePort);
@@ -734,21 +730,19 @@ describe("Resolution hooks for async adapters", () => {
 
     const graph = GraphBuilder.create().provide(ConfigAdapter).provide(DatabaseAdapter).build();
 
-    const container = createContainer(
+    const container = createContainer({
       graph,
-      { name: "Test" },
-      {
-        hooks: {
-          beforeResolve: ctx => {
-            hookCalls.push({
-              portName: ctx.portName,
-              parentPort: ctx.parentPort?.__portName ?? null,
-              depth: ctx.depth,
-            });
-          },
+      name: "Test",
+      hooks: {
+        beforeResolve: ctx => {
+          hookCalls.push({
+            portName: ctx.portName,
+            parentPort: ctx.parentPort?.__portName ?? null,
+            depth: ctx.depth,
+          });
         },
-      }
-    );
+      },
+    });
 
     await container.resolveAsync(DatabasePort);
 
@@ -780,20 +774,18 @@ describe("Resolution hooks for async adapters", () => {
 
     const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
-    const container = createContainer(
+    const container = createContainer({
       graph,
-      { name: "Test" },
-      {
-        hooks: {
-          afterResolve: ctx => {
-            afterResolveCalls.push({
-              portName: ctx.portName,
-              error: ctx.error,
-            });
-          },
+      name: "Test",
+      hooks: {
+        afterResolve: ctx => {
+          afterResolveCalls.push({
+            portName: ctx.portName,
+            error: ctx.error,
+          });
         },
-      }
-    );
+      },
+    });
 
     await expect(container.resolveAsync(DatabasePort)).rejects.toThrow();
 
@@ -826,20 +818,18 @@ describe("Resolution hooks for async adapters", () => {
 
     const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
 
-    const container = createContainer(
+    const container = createContainer({
       graph,
-      { name: "Test" },
-      {
-        hooks: {
-          beforeResolve: () => {
-            beforeResolveCount++;
-          },
-          afterResolve: () => {
-            afterResolveCount++;
-          },
+      name: "Test",
+      hooks: {
+        beforeResolve: () => {
+          beforeResolveCount++;
         },
-      }
-    );
+        afterResolve: () => {
+          afterResolveCount++;
+        },
+      },
+    });
 
     // Start 3 concurrent resolutions
     const [db1, db2, db3] = await Promise.all([

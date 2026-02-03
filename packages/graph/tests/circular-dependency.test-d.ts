@@ -19,7 +19,7 @@ import {
   WouldCreateCycle,
   DefaultMaxDepth,
   ValidateMaxDepth,
-} from "../src/advanced.js";
+} from "./test-types.js";
 import type {
   IsReachable,
   AddEdge,
@@ -28,7 +28,7 @@ import type {
   AdapterRequiresNames,
   DepthExceededResult,
   IsDepthExceeded,
-} from "../src/advanced.js";
+} from "./test-types.js";
 import {
   LoggerPort,
   DatabasePort,

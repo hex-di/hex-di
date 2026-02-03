@@ -19,8 +19,8 @@
 import { describe, it, expectTypeOf } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder, type InferGraphProvides, type InferGraphRequires } from "../src/index.js";
-import type { UnsatisfiedDependencies } from "../src/advanced.js";
-import type { IsSatisfied } from "../src/advanced.js";
+import type { UnsatisfiedDependencies } from "./test-types.js";
+import type { IsSatisfied } from "./test-types.js";
 
 // =============================================================================
 // Test Fixtures

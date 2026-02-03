@@ -13,8 +13,8 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder, type InferGraphProvides } from "../src/index.js";
-import { DuplicateProviderError } from "../src/advanced.js";
-import type { DuplicateErrorMessage, HasOverlap } from "../src/advanced.js";
+import { DuplicateProviderError } from "./test-types.js";
+import type { DuplicateErrorMessage, HasOverlap } from "./test-types.js";
 import { LoggerPort, DatabasePort, UserServicePort, LoggerPortType } from "./fixtures.js";
 
 // Different port with same interface (but different name)

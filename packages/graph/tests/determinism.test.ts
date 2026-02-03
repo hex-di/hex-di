@@ -27,7 +27,7 @@ import {
   GraphErrorCode,
   detectCycleAtRuntime,
   parseGraphError,
-} from "../src/advanced.js";
+} from "./test-types.js";
 
 // =============================================================================
 // Test Fixtures

@@ -32,7 +32,7 @@ import type {
   CaptiveDependencyError,
   CaptiveErrorMessage,
   MalformedAdapterError,
-} from "../src/advanced.js";
+} from "./test-types.js";
 import type { IsNever } from "@hex-di/core";
 
 // =============================================================================

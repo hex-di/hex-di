@@ -25,6 +25,7 @@
 
 import type { Port, InferPortName } from "@hex-di/core";
 import type { FormatLazySuggestionMessage } from "./cycle/errors.js";
+import type { DefaultMaxDepth } from "./cycle/depth.js";
 import type {
   CaptiveDependencyError,
   ReverseCaptiveDependencyError,
@@ -375,7 +376,7 @@ export type SelfDependencyErrorMessage<TPortName extends string> =
  * ```
  */
 export type DepthLimitWarning<
-  TMaxDepth extends number = 50,
+  TMaxDepth extends number = DefaultMaxDepth,
   TLastPort extends string = "unknown",
 > = `WARNING[HEX007]: Type-level depth limit (${TMaxDepth}) exceeded at '${TLastPort}' during cycle detection. Validation may be incomplete. Fix: Use GraphBuilder.withMaxDepth<N>() to increase limit, or restructure graph to reduce depth.`;
 
@@ -410,7 +411,7 @@ export type DepthLimitWarning<
  * ```
  */
 export type DepthLimitError<
-  TMaxDepth extends number = 50,
+  TMaxDepth extends number = DefaultMaxDepth,
   TLastPort extends string = "unknown",
 > = `ERROR[HEX007]: Type-level depth limit (${TMaxDepth}) exceeded at '${TLastPort}' - cycle detection incomplete. Fix: Use GraphBuilder.withMaxDepth<N>() to increase limit (max 100), restructure graph, or use GraphBuilder.withExtendedDepth() to acknowledge incomplete validation.`;
 
@@ -426,7 +427,7 @@ export type DepthLimitError<
  * @internal
  */
 export type DepthLimitExceededMarker<
-  TMaxDepth extends number = 50,
+  TMaxDepth extends number = DefaultMaxDepth,
   TLastPort extends string = "unknown",
 > = {
   readonly __depthLimitExceeded: true;

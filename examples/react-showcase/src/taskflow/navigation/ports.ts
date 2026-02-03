@@ -6,7 +6,7 @@
  * @packageDocumentation
  */
 
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import type { FlowService } from "@hex-di/flow";
 import type { NavState, NavEventType, NavContext } from "./machine.js";
 import type { RoutePath } from "../types.js";
@@ -41,9 +41,9 @@ export type NavigationFlowService = FlowService<NavState, NavEventType, NavConte
  * }
  * ```
  */
-export const NavigationFlowServicePort = createPort<NavigationFlowService, "NavigationFlowService">(
-  { name: "NavigationFlowService" }
-);
+export const NavigationFlowServicePort = port<NavigationFlowService>()({
+  name: "NavigationFlowService",
+});
 
 // =============================================================================
 // Router Service Port
@@ -140,7 +140,7 @@ export interface RouterService {
  * router.navigate('/tasks/new');
  * ```
  */
-export const RouterServicePort = createPort<RouterService, "RouterService">({
+export const RouterServicePort = port<RouterService>()({
   name: "RouterService",
 });
 
@@ -200,9 +200,6 @@ export interface NavigationGuardService {
  *
  * This port provides access to route guard evaluation.
  */
-export const NavigationGuardServicePort = createPort<
-  NavigationGuardService,
-  "NavigationGuardService"
->({
+export const NavigationGuardServicePort = port<NavigationGuardService>()({
   name: "NavigationGuardService",
 });

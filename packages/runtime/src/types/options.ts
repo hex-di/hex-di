@@ -118,7 +118,7 @@ export interface RuntimePerformanceOptions {
  *
  * @example
  * ```typescript
- * const root = createContainer(graph, { name: "Root Container" });
+ * const root = createContainer({ graph: graph, name: "Root Container"  });
  * root.name       // "Root Container"
  * root.parentName // null
  * root.kind       // "root"

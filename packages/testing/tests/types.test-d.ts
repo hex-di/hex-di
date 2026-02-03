@@ -12,7 +12,7 @@
  */
 
 import { describe, expectTypeOf, it, expect } from "vitest";
-import { createPort, createAdapter, type Adapter, type Lifetime } from "@hex-di/core";
+import { port, createAdapter, type Adapter, type Lifetime } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import type { MockedFunction } from "vitest";
 
@@ -63,10 +63,10 @@ interface Config {
 // Test Port Tokens
 // =============================================================================
 
-const LoggerPort = createPort<Logger>({ name: "Logger" });
-const DatabasePort = createPort<Database>({ name: "Database" });
-const UserServicePort = createPort<UserService>({ name: "UserService" });
-const ConfigPort = createPort<Config>({ name: "Config" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const UserServicePort = port<UserService>()({ name: "UserService" });
+const ConfigPort = port<Config>()({ name: "Config" });
 
 type LoggerPortType = typeof LoggerPort;
 type DatabasePortType = typeof DatabasePort;

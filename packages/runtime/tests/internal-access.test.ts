@@ -6,7 +6,7 @@
  */
 
 import { describe, test, expect, vi } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
 import { INTERNAL_ACCESS } from "../src/inspection/symbols.js";
@@ -65,8 +65,8 @@ interface RequestContext {
   requestId: string;
 }
 
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
-const RequestContextPort = createPort<RequestContext, "RequestContext">({ name: "RequestContext" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const RequestContextPort = port<RequestContext>()({ name: "RequestContext" });
 
 // =============================================================================
 // Internal Access Protocol Tests
@@ -82,7 +82,7 @@ describe("Internal Access Protocol", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Access internal state via Symbol
     const accessor = getContainerAccessor(container);
@@ -105,7 +105,7 @@ describe("Internal Access Protocol", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const accessor = getContainerAccessor(container);
     const state = accessor();
@@ -127,7 +127,7 @@ describe("Internal Access Protocol", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     await container.dispose();
 
@@ -144,7 +144,7 @@ describe("Internal Access Protocol", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const scope = container.createScope();
     const scopeAccessor = getScopeAccessor(scope);
@@ -165,7 +165,7 @@ describe("Internal Access Protocol", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const scope1 = container.createScope();
     const scope2 = container.createScope();
@@ -193,7 +193,7 @@ describe("Internal Access Protocol", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const scope = container.createScope();
     // Resolve to populate scopedMemo

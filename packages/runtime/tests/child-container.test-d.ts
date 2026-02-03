@@ -13,7 +13,7 @@
  */
 
 import { describe, expectTypeOf, it, expect } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
 import type { Container, InheritanceMode } from "../src/types.js";
@@ -42,10 +42,10 @@ interface Cache {
 // Test Port Tokens
 // =============================================================================
 
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
-const DatabasePort = createPort<Database, "Database">({ name: "Database" });
-const ConfigPort = createPort<Config, "Config">({ name: "Config" });
-const CachePort = createPort<Cache, "Cache">({ name: "Cache" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const ConfigPort = port<Config>()({ name: "Config" });
+const CachePort = port<Cache>()({ name: "Cache" });
 
 type LoggerPortType = typeof LoggerPort;
 type ConfigPortType = typeof ConfigPort;
@@ -102,7 +102,7 @@ const CacheAdapter = createAdapter({
 describe("createChild() type validation", () => {
   it("createChild(graph) returns Container", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const childGraph = GraphBuilder.create().build();
     const childContainer = container.createChild(childGraph, { name: "Child" });
@@ -118,7 +118,7 @@ describe("createChild() type validation", () => {
 
   it("child container can resolve parent ports", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const childGraph = GraphBuilder.create().build();
     const childContainer = container.createChild(childGraph, { name: "Child" });
@@ -131,7 +131,7 @@ describe("createChild() type validation", () => {
 
   it("child container can resolve extended ports from graph", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const childGraph = GraphBuilder.create().provide(ConfigAdapter).build();
     const childContainer = container.createChild(childGraph, { name: "Child" });
@@ -146,7 +146,7 @@ describe("createChild() type validation", () => {
 
   it("child container with override can resolve overridden port", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const childGraph = GraphBuilder.forParent(graph).override(AlternativeLoggerAdapter).build();
     const childContainer = container.createChild(childGraph, { name: "Child" });
@@ -158,7 +158,7 @@ describe("createChild() type validation", () => {
 
   it("multiple provides accumulate types correctly", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Extend with multiple new ports
     const childGraph = GraphBuilder.create().provide(ConfigAdapter).provide(CacheAdapter).build();
@@ -182,7 +182,7 @@ describe("createChild() type validation", () => {
 describe("ChildContainer resolution types", () => {
   it("empty child container preserves parent types", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Empty child container
     const childGraph = GraphBuilder.create().build();
@@ -198,7 +198,7 @@ describe("ChildContainer resolution types", () => {
 
   it("resolveAsync() accepts all ports", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const childGraph = GraphBuilder.create().provide(ConfigAdapter).build();
     const childContainer = container.createChild(childGraph, { name: "Child" });
@@ -213,7 +213,7 @@ describe("ChildContainer resolution types", () => {
 
   it("createScope() returns scope with combined port types", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const childGraph = GraphBuilder.create().provide(ConfigAdapter).build();
     const childContainer = container.createChild(childGraph, { name: "Child" });
@@ -229,7 +229,7 @@ describe("ChildContainer resolution types", () => {
 
   it("grandchild container can resolve ports from entire hierarchy", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Child extends with Config
     const childGraph = GraphBuilder.create().provide(ConfigAdapter).build();
@@ -257,7 +257,7 @@ describe("ChildContainer resolution types", () => {
 describe("Inheritance mode types", () => {
   it("inheritance modes accept valid port names", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Valid port name should compile
     const childGraph = GraphBuilder.create().build();
@@ -295,7 +295,7 @@ describe("Inheritance mode types", () => {
 
   it("inheritance modes can be combined with graph overrides and provides", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Child graph with override and extension
     const childGraph = GraphBuilder.forParent(graph)
@@ -327,7 +327,7 @@ describe("Inheritance mode types", () => {
 describe("Child container property types", () => {
   it("parent property has correct type", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const childGraph = GraphBuilder.create().build();
     const childContainer = container.createChild(childGraph, { name: "Child" });
@@ -343,7 +343,7 @@ describe("Child container property types", () => {
 
   it("ChildContainer has correct structure", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const childGraph = GraphBuilder.create().provide(ConfigAdapter).build();
     const childContainer = container.createChild(childGraph, { name: "Child" });
@@ -363,7 +363,7 @@ describe("Child container property types", () => {
 
   it("dispose() returns Promise<void>", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const childGraph = GraphBuilder.create().build();
     const childContainer = container.createChild(childGraph, { name: "Child" });
@@ -374,7 +374,7 @@ describe("Child container property types", () => {
 
   it("isDisposed is readonly boolean", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const childGraph = GraphBuilder.create().build();
     const childContainer = container.createChild(childGraph, { name: "Child" });
@@ -390,7 +390,7 @@ describe("Child container property types", () => {
 describe("Extended ports type validation", () => {
   it("extended ports visible in child's types but not parent", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Extend child with ConfigPort
     const childGraph = GraphBuilder.create().provide(ConfigAdapter).build();
@@ -420,7 +420,7 @@ describe("Extended ports type validation", () => {
 
   it("createChild on child container creates grandchild with combined ports", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create child with extension
     const childGraph = GraphBuilder.create().provide(ConfigAdapter).build();

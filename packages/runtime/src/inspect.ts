@@ -42,7 +42,7 @@ interface HasInternalAccess {
  * ```typescript
  * import { createContainer, inspect } from '@hex-di/runtime';
  *
- * const container = createContainer(graph, { name: 'App' });
+ * const container = createContainer({ graph: graph, name: 'App'  });
  * container.resolve(LoggerPort);
  *
  * const snapshot = inspect(container);

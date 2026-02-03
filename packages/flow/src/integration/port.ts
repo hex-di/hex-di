@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import { createPort, type Port } from "@hex-di/core";
+import { port, type Port } from "@hex-di/core";
 import type { FlowService } from "./types.js";
 
 // =============================================================================
@@ -90,5 +90,5 @@ export function createFlowPort<
   TContext,
   const TName extends string = string,
 >(name: TName): FlowPort<TState, TEvent, TContext, TName> {
-  return createPort<FlowService<TState, TEvent, TContext>, TName>({ name });
+  return port<FlowService<TState, TEvent, TContext>>()({ name });
 }

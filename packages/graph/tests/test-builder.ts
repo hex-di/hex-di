@@ -37,7 +37,7 @@
 
 import { port, createAdapter, type AdapterConstraint, type Lifetime } from "@hex-di/core";
 import { GraphBuilder, type Graph } from "../src/index.js";
-import { __emptyDepGraphBrand, __emptyLifetimeMapBrand } from "../src/advanced.js";
+import { __emptyDepGraphBrand, __emptyLifetimeMapBrand } from "../src/internal.js";
 
 // These imports are needed for TypeScript to name the symbol types in return type declarations.
 // The symbols are used in EmptyDependencyGraph/EmptyLifetimeMap which appear in GraphBuilder types.

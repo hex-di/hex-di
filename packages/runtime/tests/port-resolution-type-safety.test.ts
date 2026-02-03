@@ -144,7 +144,7 @@ describe("Port Resolution Type Safety", () => {
       .provide(ConfigAdapter)
       .build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     await container.initialize();
 
     // Async ports should be resolved in deterministic order (registration order): Database, Cache
@@ -177,7 +177,7 @@ describe("Port Resolution Type Safety", () => {
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Resolve sync port - should not require casting
     const logger = container.resolve(LoggerPort);
@@ -206,7 +206,7 @@ describe("Port Resolution Type Safety", () => {
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const logger = container.resolve(LoggerPort);
 
     // Type information should be preserved - logger should have log method
@@ -240,7 +240,7 @@ describe("Port Resolution Type Safety", () => {
 
     const graph = GraphBuilder.create().provide(DatabaseAdapter).provide(CacheAdapter).build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     await container.initialize();
 
     // Both ports should be resolvable with correct types
@@ -291,7 +291,7 @@ describe("Port Resolution Type Safety", () => {
 
       const graph = GraphBuilder.create().provide(DatabaseAdapter).provide(CacheAdapter).build();
 
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
       await container.initialize();
 
       resolutionOrders.push(resolutionOrder);

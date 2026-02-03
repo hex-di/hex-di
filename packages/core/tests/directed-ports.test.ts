@@ -58,36 +58,36 @@ interface Logger {
 
 describe("createPort() with inbound direction (PORT-01)", () => {
   it("creates port with 'inbound' direction", () => {
-    const port = createPort<UserService, "UserService", "inbound">({
+    const testPort = port<UserService>()({
       name: "UserService",
       direction: "inbound",
     });
 
-    expect(getPortDirection(port)).toBe("inbound");
+    expect(getPortDirection(testPort)).toBe("inbound");
   });
 
   it("preserves port name as literal type", () => {
-    const port = createPort<UserService, "UserService", "inbound">({
+    const testPort = port<UserService>()({
       name: "UserService",
       direction: "inbound",
     });
 
-    expect(port.__portName).toBe("UserService");
-    expectTypeOf(port.__portName).toEqualTypeOf<"UserService">();
+    expect(testPort.__portName).toBe("UserService");
+    expectTypeOf(testPort.__portName).toEqualTypeOf<"UserService">();
   });
 
   it("preserves service type (InferService works)", () => {
-    const port = createPort<UserService, "UserService", "inbound">({
+    const testPort = port<UserService>()({
       name: "UserService",
       direction: "inbound",
     });
 
-    type Extracted = InferService<typeof port>;
+    type Extracted = InferService<typeof testPort>;
     expectTypeOf<Extracted>().toEqualTypeOf<UserService>();
   });
 
   it("includes metadata when provided", () => {
-    const port = createPort<UserService, "UserService", "inbound">({
+    const testPort = port<UserService>()({
       name: "UserService",
       direction: "inbound",
       description: "User management use cases",
@@ -95,7 +95,7 @@ describe("createPort() with inbound direction (PORT-01)", () => {
       tags: ["user", "crud"],
     });
 
-    const metadata = getPortMetadata(port);
+    const metadata = getPortMetadata(testPort);
     expect(metadata).toBeDefined();
     expect(metadata?.description).toBe("User management use cases");
     expect(metadata?.category).toBe("domain");
@@ -103,12 +103,12 @@ describe("createPort() with inbound direction (PORT-01)", () => {
   });
 
   it("works with empty metadata (only name)", () => {
-    const port = createPort<Logger, "SimplePort", "inbound">({
+    const testPort = port<Logger>()({
       name: "SimplePort",
       direction: "inbound",
     });
 
-    const metadata = getPortMetadata(port);
+    const metadata = getPortMetadata(testPort);
     expect(metadata).toBeDefined();
     expect(metadata?.description).toBeUndefined();
     expect(metadata?.category).toBeUndefined();
@@ -117,21 +117,21 @@ describe("createPort() with inbound direction (PORT-01)", () => {
   });
 
   it("port is frozen (Object.isFrozen)", () => {
-    const port = createPort<UserService, "UserService", "inbound">({
+    const testPort = port<UserService>()({
       name: "UserService",
       direction: "inbound",
     });
 
-    expect(Object.isFrozen(port)).toBe(true);
+    expect(Object.isFrozen(testPort)).toBe(true);
   });
 
   it("returns InboundPort type", () => {
-    const port = createPort<UserService, "UserService", "inbound">({
+    const testPort = port<UserService>()({
       name: "UserService",
       direction: "inbound",
     });
 
-    expectTypeOf(port).toMatchTypeOf<InboundPort<UserService, "UserService">>();
+    expectTypeOf(testPort).toMatchTypeOf<InboundPort<UserService, "UserService">>();
   });
 });
 
@@ -141,40 +141,40 @@ describe("createPort() with inbound direction (PORT-01)", () => {
 
 describe("createPort() with outbound direction (PORT-02)", () => {
   it("creates port with 'outbound' direction", () => {
-    const port = createPort<UserRepository, "UserRepository">({
+    const testPort = port<UserRepository>()({
       name: "UserRepository",
     });
 
-    expect(getPortDirection(port)).toBe("outbound");
+    expect(getPortDirection(testPort)).toBe("outbound");
   });
 
   it("preserves port name as literal type", () => {
-    const port = createPort<UserRepository, "UserRepository">({
+    const testPort = port<UserRepository>()({
       name: "UserRepository",
     });
 
-    expect(port.__portName).toBe("UserRepository");
-    expectTypeOf(port.__portName).toEqualTypeOf<"UserRepository">();
+    expect(testPort.__portName).toBe("UserRepository");
+    expectTypeOf(testPort.__portName).toEqualTypeOf<"UserRepository">();
   });
 
   it("preserves service type (InferService works)", () => {
-    const port = createPort<UserRepository, "UserRepository">({
+    const testPort = port<UserRepository>()({
       name: "UserRepository",
     });
 
-    type Extracted = InferService<typeof port>;
+    type Extracted = InferService<typeof testPort>;
     expectTypeOf<Extracted>().toEqualTypeOf<UserRepository>();
   });
 
   it("includes metadata when provided", () => {
-    const port = createPort<UserRepository, "UserRepository">({
+    const testPort = port<UserRepository>()({
       name: "UserRepository",
       description: "User persistence operations",
       category: "infrastructure",
       tags: ["user", "database", "storage"],
     });
 
-    const metadata = getPortMetadata(port);
+    const metadata = getPortMetadata(testPort);
     expect(metadata).toBeDefined();
     expect(metadata?.description).toBe("User persistence operations");
     expect(metadata?.category).toBe("infrastructure");
@@ -182,29 +182,29 @@ describe("createPort() with outbound direction (PORT-02)", () => {
   });
 
   it("works with empty metadata (only name)", () => {
-    const port = createPort<UserRepository, "SimpleRepo">({
+    const testPort = port<UserRepository>()({
       name: "SimpleRepo",
     });
 
-    const metadata = getPortMetadata(port);
+    const metadata = getPortMetadata(testPort);
     expect(metadata).toBeDefined();
     expect(metadata?.description).toBeUndefined();
   });
 
   it("port is frozen (Object.isFrozen)", () => {
-    const port = createPort<UserRepository, "UserRepository">({
+    const testPort = port<UserRepository>()({
       name: "UserRepository",
     });
 
-    expect(Object.isFrozen(port)).toBe(true);
+    expect(Object.isFrozen(testPort)).toBe(true);
   });
 
   it("returns OutboundPort type", () => {
-    const port = createPort<UserRepository, "UserRepository">({
+    const testPort = port<UserRepository>()({
       name: "UserRepository",
     });
 
-    expectTypeOf(port).toMatchTypeOf<OutboundPort<UserRepository, "UserRepository">>();
+    expectTypeOf(testPort).toMatchTypeOf<OutboundPort<UserRepository, "UserRepository">>();
   });
 });
 
@@ -214,35 +214,35 @@ describe("createPort() with outbound direction (PORT-02)", () => {
 
 describe("Port metadata (PORT-03)", () => {
   it("description field accessible via getPortMetadata()", () => {
-    const port = createPort<Logger, "TestPort", "inbound">({
+    const testPort = port<Logger>()({
       name: "TestPort",
       direction: "inbound",
       description: "A test port description",
     });
 
-    const metadata = getPortMetadata(port);
+    const metadata = getPortMetadata(testPort);
     expect(metadata?.description).toBe("A test port description");
   });
 
   it("category field accessible", () => {
-    const port = createPort<Logger, "TestPort", "inbound">({
+    const testPort = port<Logger>()({
       name: "TestPort",
       direction: "inbound",
       category: "infrastructure",
     });
 
-    const metadata = getPortMetadata(port);
+    const metadata = getPortMetadata(testPort);
     expect(metadata?.category).toBe("infrastructure");
   });
 
   it("tags array accessible and readonly", () => {
-    const port = createPort<Logger, "TestPort", "inbound">({
+    const testPort = port<Logger>()({
       name: "TestPort",
       direction: "inbound",
       tags: ["logging", "debug"],
     });
 
-    const metadata = getPortMetadata(port);
+    const metadata = getPortMetadata(testPort);
     expect(metadata?.tags).toEqual(["logging", "debug"]);
 
     // Type should be readonly
@@ -250,34 +250,34 @@ describe("Port metadata (PORT-03)", () => {
   });
 
   it("metadata accessible from port created with createPort", () => {
-    const port = createPort<Logger>({ name: "RegularPort" });
+    const testPort = port<Logger>()({ name: "RegularPort" });
 
-    const metadata = getPortMetadata(port);
+    const metadata = getPortMetadata(testPort);
     // New API: all ports have metadata (tags defaults to [])
     expect(metadata).toBeDefined();
     expect(metadata?.tags).toEqual([]);
   });
 
   it("metadata object is frozen", () => {
-    const port = createPort<Logger, "TestPort", "inbound">({
+    const testPort = port<Logger>()({
       name: "TestPort",
       direction: "inbound",
       description: "Frozen metadata",
     });
 
-    const metadata = getPortMetadata(port);
+    const metadata = getPortMetadata(testPort);
     expect(Object.isFrozen(metadata)).toBe(true);
   });
 
   it("all metadata fields can be provided together", () => {
-    const port = createPort<UserRepository, "FullMetadataPort">({
+    const testPort = port<UserRepository>()({
       name: "FullMetadataPort",
       description: "Full metadata example",
       category: "domain",
       tags: ["test", "example", "full"],
     });
 
-    const metadata = getPortMetadata(port);
+    const metadata = getPortMetadata(testPort);
     expect(metadata).toEqual({
       description: "Full metadata example",
       category: "domain",
@@ -292,42 +292,42 @@ describe("Port metadata (PORT-03)", () => {
 
 describe("isDirectedPort() type guard (PORT-04)", () => {
   it("returns true for inbound ports", () => {
-    const port = createPort<Logger, "TestInbound", "inbound">({
+    const testPort = port<Logger>()({
       name: "TestInbound",
       direction: "inbound",
     });
 
-    expect(isDirectedPort(port)).toBe(true);
+    expect(isDirectedPort(testPort)).toBe(true);
   });
 
   it("returns true for outbound ports", () => {
-    const port = createPort<UserRepository, "TestOutbound">({
+    const testPort = port<UserRepository>()({
       name: "TestOutbound",
     });
 
-    expect(isDirectedPort(port)).toBe(true);
+    expect(isDirectedPort(testPort)).toBe(true);
   });
 
   it("all createPort ports are now directed", () => {
     // In the new unified API, all ports are DirectedPort (default outbound)
-    const port = createPort<Logger>({ name: "RegularPort" });
+    const testPort = port<Logger>()({ name: "RegularPort" });
 
-    expect(isDirectedPort(port)).toBe(true);
-    expect(getPortDirection(port)).toBe("outbound");
+    expect(isDirectedPort(testPort)).toBe(true);
+    expect(getPortDirection(testPort)).toBe("outbound");
   });
 
   it("type narrowing works correctly (expectTypeOf)", () => {
-    const port = createPort<Logger, "TestPort", "inbound">({
+    const testPort = port<Logger>()({
       name: "TestPort",
       direction: "inbound",
     });
 
     // Before narrowing - port is InboundPort
-    expectTypeOf(port).toMatchTypeOf<InboundPort<Logger, "TestPort">>();
+    expectTypeOf(testPort).toMatchTypeOf<InboundPort<Logger, "TestPort">>();
 
-    if (isDirectedPort(port)) {
+    if (isDirectedPort(testPort)) {
       // After narrowing - still DirectedPort
-      expectTypeOf(port).toMatchTypeOf<DirectedPort<unknown, string, PortDirection>>();
+      expectTypeOf(testPort).toMatchTypeOf<DirectedPort<unknown, string, PortDirection>>();
     }
   });
 });
@@ -338,52 +338,52 @@ describe("isDirectedPort() type guard (PORT-04)", () => {
 
 describe("isInboundPort() and isOutboundPort() guards", () => {
   it("isInboundPort returns true only for inbound", () => {
-    const inbound = createPort<Logger, "Inbound", "inbound">({
+    const inbound = port<Logger>()({
       name: "Inbound",
       direction: "inbound",
     });
-    const outbound = createPort<UserRepository, "Outbound">({ name: "Outbound" });
+    const outbound = port<UserRepository>()({ name: "Outbound" });
 
     expect(isInboundPort(inbound)).toBe(true);
     expect(isInboundPort(outbound)).toBe(false);
   });
 
   it("isOutboundPort returns true only for outbound", () => {
-    const inbound = createPort<Logger, "Inbound", "inbound">({
+    const inbound = port<Logger>()({
       name: "Inbound",
       direction: "inbound",
     });
-    const outbound = createPort<UserRepository, "Outbound">({ name: "Outbound" });
+    const outbound = port<UserRepository>()({ name: "Outbound" });
 
     expect(isOutboundPort(inbound)).toBe(false);
     expect(isOutboundPort(outbound)).toBe(true);
   });
 
   it("default direction is outbound", () => {
-    const port = createPort<Logger>({ name: "Regular" });
+    const testPort = port<Logger>()({ name: "Regular" });
 
-    expect(isInboundPort(port)).toBe(false);
-    expect(isOutboundPort(port)).toBe(true);
+    expect(isInboundPort(testPort)).toBe(false);
+    expect(isOutboundPort(testPort)).toBe(true);
   });
 
   it("type narrowing is specific to direction for isInboundPort", () => {
-    const port: Port<Logger, string> = createPort<Logger, "TestPort", "inbound">({
+    const testPort: Port<Logger, string> = port<Logger>()({
       name: "TestPort",
       direction: "inbound",
     });
 
-    if (isInboundPort(port)) {
-      expectTypeOf(port).toMatchTypeOf<InboundPort<unknown, string>>();
+    if (isInboundPort(testPort)) {
+      expectTypeOf(testPort).toMatchTypeOf<InboundPort<unknown, string>>();
     }
   });
 
   it("type narrowing is specific to direction for isOutboundPort", () => {
-    const port: Port<UserRepository, string> = createPort<UserRepository, "TestPort">({
+    const testPort: Port<UserRepository, string> = port<UserRepository>()({
       name: "TestPort",
     });
 
-    if (isOutboundPort(port)) {
-      expectTypeOf(port).toMatchTypeOf<OutboundPort<unknown, string>>();
+    if (isOutboundPort(testPort)) {
+      expectTypeOf(testPort).toMatchTypeOf<OutboundPort<unknown, string>>();
     }
   });
 });
@@ -394,37 +394,37 @@ describe("isInboundPort() and isOutboundPort() guards", () => {
 
 describe("Backward compatibility (PORT-05)", () => {
   it("directed ports have __portName property", () => {
-    const inbound = createPort<Logger, "InboundTest", "inbound">({
+    const inbound = port<Logger>()({
       name: "InboundTest",
       direction: "inbound",
     });
-    const outbound = createPort<UserRepository, "OutboundTest">({ name: "OutboundTest" });
+    const outbound = port<UserRepository>()({ name: "OutboundTest" });
 
     expect(inbound.__portName).toBe("InboundTest");
     expect(outbound.__portName).toBe("OutboundTest");
   });
 
   it("InferService<DirectedPort> returns service type", () => {
-    const port = createPort<UserService, "UserService", "inbound">({
+    const testPort = port<UserService>()({
       name: "UserService",
       direction: "inbound",
     });
 
-    type Service = InferService<typeof port>;
+    type Service = InferService<typeof testPort>;
     expectTypeOf<Service>().toEqualTypeOf<UserService>();
   });
 
   it("InferPortName<DirectedPort> returns name type", () => {
-    const port = createPort<UserRepository, "UserRepository">({
+    const testPort = port<UserRepository>()({
       name: "UserRepository",
     });
 
-    type Name = InferPortName<typeof port>;
+    type Name = InferPortName<typeof testPort>;
     expectTypeOf<Name>().toEqualTypeOf<"UserRepository">();
   });
 
   it("directed port assignable to Port<unknown, string>", () => {
-    const inbound = createPort<Logger, "TestPort", "inbound">({
+    const inbound = port<Logger>()({
       name: "TestPort",
       direction: "inbound",
     });
@@ -435,13 +435,13 @@ describe("Backward compatibility (PORT-05)", () => {
   });
 
   it("createPort() with object config works", () => {
-    const port = createPort<Logger>({ name: "RegularPort" });
+    const testPort = port<Logger>()({ name: "RegularPort" });
 
-    expect(port.__portName).toBe("RegularPort");
+    expect(testPort.__portName).toBe("RegularPort");
     // New API: all ports are directed (default outbound)
-    expect(isDirectedPort(port)).toBe(true);
-    expect(getPortDirection(port)).toBe("outbound");
-    expect(getPortMetadata(port)).toBeDefined();
+    expect(isDirectedPort(testPort)).toBe(true);
+    expect(getPortDirection(testPort)).toBe("outbound");
+    expect(getPortMetadata(testPort)).toBeDefined();
   });
 });
 
@@ -492,43 +492,43 @@ describe("Type-level utilities", () => {
 
 describe("Accessor functions", () => {
   it("getPortDirection() returns direction for inbound directed ports", () => {
-    const port = createPort<Logger, "TestPort", "inbound">({
+    const testPort = port<Logger>()({
       name: "TestPort",
       direction: "inbound",
     });
 
-    expect(getPortDirection(port)).toBe("inbound");
+    expect(getPortDirection(testPort)).toBe("inbound");
   });
 
   it("getPortDirection() returns direction for outbound directed ports", () => {
-    const port = createPort<UserRepository, "TestPort">({ name: "TestPort" });
+    const testPort = port<UserRepository>()({ name: "TestPort" });
 
-    expect(getPortDirection(port)).toBe("outbound");
+    expect(getPortDirection(testPort)).toBe("outbound");
   });
 
   it("getPortDirection() returns outbound by default", () => {
-    const port = createPort<Logger>({ name: "TestPort" });
+    const testPort = port<Logger>()({ name: "TestPort" });
 
     // New API: defaults to outbound
-    expect(getPortDirection(port)).toBe("outbound");
+    expect(getPortDirection(testPort)).toBe("outbound");
   });
 
   it("getPortMetadata() returns metadata for directed ports", () => {
-    const port = createPort<Logger, "TestPort", "inbound">({
+    const testPort = port<Logger>()({
       name: "TestPort",
       direction: "inbound",
       description: "Test description",
     });
 
-    const metadata = getPortMetadata(port);
+    const metadata = getPortMetadata(testPort);
     expect(metadata).toBeDefined();
     expect(metadata?.description).toBe("Test description");
   });
 
   it("getPortMetadata() returns metadata with defaults for ports without explicit metadata", () => {
-    const port = createPort<Logger>({ name: "TestPort" });
+    const testPort = port<Logger>()({ name: "TestPort" });
 
-    const metadata = getPortMetadata(port);
+    const metadata = getPortMetadata(testPort);
     // New API: always has metadata, tags default to []
     expect(metadata).toBeDefined();
     expect(metadata?.tags).toEqual([]);
@@ -541,7 +541,7 @@ describe("Accessor functions", () => {
 
 describe("integration with adapters", () => {
   it("directed ports work as provides target", () => {
-    const UserServicePort = createPort<UserService, "UserService", "inbound">({
+    const UserServicePort = port<UserService>()({
       name: "UserService",
       direction: "inbound",
       description: "User operations",
@@ -564,12 +564,12 @@ describe("integration with adapters", () => {
   });
 
   it("directed ports work in requires array", () => {
-    const LoggerPort = createPort<Logger, "Logger">({
+    const LoggerPort = port<Logger>()({
       name: "Logger",
       category: "infrastructure",
     });
 
-    const UserServicePort = createPort<UserService, "UserService", "inbound">({
+    const UserServicePort = port<UserService>()({
       name: "UserService",
       direction: "inbound",
     });
@@ -591,11 +591,11 @@ describe("integration with adapters", () => {
   });
 
   it("type inference flows correctly through the adapter", () => {
-    const RepoPort = createPort<UserRepository, "Repo">({
+    const RepoPort = port<UserRepository>()({
       name: "Repo",
     });
 
-    const ServicePort = createPort<UserService, "Service", "inbound">({
+    const ServicePort = port<UserService>()({
       name: "Service",
       direction: "inbound",
     });
@@ -620,11 +620,11 @@ describe("integration with adapters", () => {
   });
 
   it("multiple directed ports work together", () => {
-    const ConfigPort = createPort<{ appName: string }, "Config">({ name: "Config" });
-    const LoggerPort = createPort<Logger, "Logger">({
+    const ConfigPort = port<{ appName: string }>()({ name: "Config" });
+    const LoggerPort = port<Logger>()({
       name: "Logger",
     });
-    const ServicePort = createPort<UserService, "AppService", "inbound">({
+    const ServicePort = port<UserService>()({
       name: "AppService",
       direction: "inbound",
     });
@@ -665,7 +665,7 @@ describe("Unified createPort() with object config", () => {
 
     it("returns outbound direction when not specified (with service type)", () => {
       // With service type - TName becomes string (TypeScript limitation)
-      const LoggerPort = createPort<Logger>({ name: "Logger" });
+      const LoggerPort = port<Logger>()({ name: "Logger" });
 
       expect(getPortDirection(LoggerPort)).toBe("outbound");
       expect(LoggerPort.__portName).toBe("Logger");
@@ -713,7 +713,7 @@ describe("Unified createPort() with object config", () => {
 
   describe("Metadata handling", () => {
     it("returns empty array for tags when not specified", () => {
-      const LoggerPort = createPort<Logger>({ name: "Logger" });
+      const LoggerPort = port<Logger>()({ name: "Logger" });
       const metadata = getPortMetadata(LoggerPort);
 
       expect(metadata).toBeDefined();
@@ -721,21 +721,21 @@ describe("Unified createPort() with object config", () => {
     });
 
     it("returns undefined for description when not specified", () => {
-      const LoggerPort = createPort<Logger>({ name: "Logger" });
+      const LoggerPort = port<Logger>()({ name: "Logger" });
       const metadata = getPortMetadata(LoggerPort);
 
       expect(metadata?.description).toBeUndefined();
     });
 
     it("returns undefined for category when not specified", () => {
-      const LoggerPort = createPort<Logger>({ name: "Logger" });
+      const LoggerPort = port<Logger>()({ name: "Logger" });
       const metadata = getPortMetadata(LoggerPort);
 
       expect(metadata?.category).toBeUndefined();
     });
 
     it("preserves full metadata when provided", () => {
-      const LoggerPort = createPort<Logger>({
+      const LoggerPort = port<Logger>()({
         name: "Logger",
         description: "Application logging",
         category: "infrastructure",
@@ -765,7 +765,7 @@ describe("Unified createPort() with object config", () => {
     });
 
     it("works with InferService when service type provided", () => {
-      const LoggerPort = createPort<Logger>({ name: "Logger" });
+      const LoggerPort = port<Logger>()({ name: "Logger" });
 
       expectTypeOf<InferService<typeof LoggerPort>>().toEqualTypeOf<Logger>();
     });
@@ -773,14 +773,14 @@ describe("Unified createPort() with object config", () => {
 
   describe("All createPort() calls return DirectedPort", () => {
     it("object config creates DirectedPort", () => {
-      const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+      const LoggerPort = port<Logger>()({ name: "Logger" });
 
       expect(LoggerPort.__portName).toBe("Logger");
       expectTypeOf(LoggerPort.__portName).toEqualTypeOf<"Logger">();
     });
 
     it("all ports are DirectedPort with default outbound direction", () => {
-      const LoggerPort = createPort<Logger>({ name: "Logger" });
+      const LoggerPort = port<Logger>()({ name: "Logger" });
 
       // All ports created with createPort are now DirectedPort
       expect(isDirectedPort(LoggerPort)).toBe(true);

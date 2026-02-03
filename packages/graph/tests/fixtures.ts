@@ -40,7 +40,7 @@
 
 import { createAdapter, port, type Lifetime } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
-import { __emptyDepGraphBrand, __emptyLifetimeMapBrand } from "../src/advanced.js";
+import { __emptyDepGraphBrand, __emptyLifetimeMapBrand } from "../src/internal.js";
 import { nextSequence } from "./utils/sequence.js";
 
 // These imports are needed for TypeScript to name the symbol types in return type declarations.

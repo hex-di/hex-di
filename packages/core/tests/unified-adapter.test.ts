@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { createAdapter, createPort } from "../src/index.js";
+import { port, createAdapter, createPort } from "../src/index.js";
 
 // =============================================================================
 // Test Interfaces
@@ -31,9 +31,9 @@ interface UserService {
 // Test Ports
 // =============================================================================
 
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
-const DatabasePort = createPort<Database, "Database">({ name: "Database" });
-const UserServicePort = createPort<UserService, "UserService">({ name: "UserService" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const UserServicePort = port<UserService>()({ name: "UserService" });
 
 // =============================================================================
 // Test Classes

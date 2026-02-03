@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { TestGraphBuilder } from "../src/test-graph-builder.js";
 
@@ -35,9 +35,9 @@ interface UserService {
 // Test Port Tokens
 // =============================================================================
 
-const LoggerPort = createPort<Logger>({ name: "Logger" });
-const DatabasePort = createPort<Database>({ name: "Database" });
-const UserServicePort = createPort<UserService>({ name: "UserService" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const UserServicePort = port<UserService>()({ name: "UserService" });
 
 // =============================================================================
 // Test Adapters (Production)

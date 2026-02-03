@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import type {
   Config,
   Logger,
@@ -34,7 +34,7 @@ import type {
  * console.log(config.notificationDuration);
  * ```
  */
-export const ConfigPort = createPort<Config, "Config">({ name: "Config" });
+export const ConfigPort = port<Config>()({ name: "Config" });
 
 /**
  * Port for the logging service.
@@ -49,7 +49,7 @@ export const ConfigPort = createPort<Config, "Config">({ name: "Config" });
  * logger.log("User logged in");
  * ```
  */
-export const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+export const LoggerPort = port<Logger>()({ name: "Logger" });
 
 /**
  * Port for the message store service.
@@ -67,7 +67,7 @@ export const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
  * });
  * ```
  */
-export const MessageStorePort = createPort<MessageStore, "MessageStore">({ name: "MessageStore" });
+export const MessageStorePort = port<MessageStore>()({ name: "MessageStore" });
 
 // =============================================================================
 // Scoped Ports
@@ -86,7 +86,7 @@ export const MessageStorePort = createPort<MessageStore, "MessageStore">({ name:
  * console.log(`Logged in as: ${session.user.name}`);
  * ```
  */
-export const UserSessionPort = createPort<UserSession, "UserSession">({ name: "UserSession" });
+export const UserSessionPort = port<UserSession>()({ name: "UserSession" });
 
 /**
  * Port for the chat service.
@@ -101,7 +101,7 @@ export const UserSessionPort = createPort<UserSession, "UserSession">({ name: "U
  * chat.sendMessage("Hello, world!");
  * ```
  */
-export const ChatServicePort = createPort<ChatService, "ChatService">({ name: "ChatService" });
+export const ChatServicePort = port<ChatService>()({ name: "ChatService" });
 
 // =============================================================================
 // Request-Scoped Ports
@@ -122,7 +122,7 @@ export const ChatServicePort = createPort<ChatService, "ChatService">({ name: "C
  * console.log(notificationA.instanceId !== notificationB.instanceId); // true
  * ```
  */
-export const NotificationServicePort = createPort<NotificationService, "NotificationService">({
+export const NotificationServicePort = port<NotificationService>()({
   name: "NotificationService",
 });
 

@@ -14,7 +14,7 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen, cleanup, act } from "@testing-library/react";
 import React, { useEffect } from "react";
-import { createPort, type Port } from "@hex-di/core";
+import { port, createPort, type Port } from "@hex-di/core";
 import { HexDiContainerProvider } from "@hex-di/react";
 import type {
   FlowService,
@@ -65,7 +65,7 @@ type TestFlowService = FlowService<TestState, TestEvent, TestContext>;
 /**
  * Port for test FlowService
  */
-const TestFlowPort = createPort<TestFlowService, "TestFlow">({ name: "TestFlow" });
+const TestFlowPort = port<TestFlowService>()({ name: "TestFlow" });
 
 /**
  * Creates a mock FlowService with configurable behavior.

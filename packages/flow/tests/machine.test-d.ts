@@ -11,7 +11,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { type State, type Event, type MachineAny } from "../src/machine/index.js";
 import {
   type StateNode,
@@ -398,7 +398,7 @@ describe("machine type encodes full state/event/context information", () => {
 
 describe("StateNode configuration type", () => {
   it("StateNode allows optional entry effects", () => {
-    const logPort = createPort<{ log(msg: string): void }, "Logger">({ name: "Logger" });
+    const logPort = port<{ log(msg: string): void }>()({ name: "Logger" });
 
     const stateNode: StateNode<"idle" | "loading", "FETCH", FetcherContext> = {
       entry: [Effect.invoke(logPort, "log", ["Entering state"])],
@@ -409,7 +409,7 @@ describe("StateNode configuration type", () => {
   });
 
   it("StateNode allows optional exit effects", () => {
-    const logPort = createPort<{ log(msg: string): void }, "Logger">({ name: "Logger" });
+    const logPort = port<{ log(msg: string): void }>()({ name: "Logger" });
 
     const stateNode: StateNode<"idle" | "loading", "FETCH", FetcherContext> = {
       exit: [Effect.invoke(logPort, "log", ["Exiting state"])],

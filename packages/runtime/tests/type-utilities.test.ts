@@ -6,7 +6,7 @@
  */
 
 import { describe, test, expect } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { isPort, isPortNamed } from "../src/types/type-guards.js";
 import { createContextVariableKey, type ContextVariableKey } from "../src/types/branded-types.js";
 import {
@@ -33,8 +33,8 @@ interface UserContext {
   userName: string;
 }
 
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
-const DatabasePort = createPort<Database, "Database">({ name: "Database" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
 
 function createMockContext(): TypeSafeContext {
   const store = new Map<ContextVariableKey<any>, any>();

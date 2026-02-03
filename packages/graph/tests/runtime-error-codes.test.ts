@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from "vitest";
 import { createPort, createAdapter } from "@hex-di/core";
-import { parseGraphError, isGraphError, GraphErrorCode } from "../src/advanced.js";
+import { parseGraphError, isGraphError, GraphErrorCode } from "./test-types.js";
 
 describe("adapter factory runtime error codes", () => {
   describe("createAdapter validation errors", () => {

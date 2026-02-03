@@ -12,7 +12,7 @@ import {
   getOutboundPorts,
   getPortsByCategory,
   getPortsByTags,
-} from "../src/advanced.js";
+} from "./test-types.js";
 
 // Test service interfaces
 interface Logger {

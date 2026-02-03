@@ -17,7 +17,7 @@ All validation happens at the type level - there is zero runtime cost for these 
 ```
 packages/graph/src/
 ├── adapter/
-│   ├── factory.ts          # createAdapter, createAsyncAdapter
+│   ├── factory.ts          # createAdapter (unified API)
 │   ├── inference.ts        # InferAdapterProvides, InferAdapterRequires
 │   └── types.ts            # Adapter, Lifetime, FactoryKind
 │

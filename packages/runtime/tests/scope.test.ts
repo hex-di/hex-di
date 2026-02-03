@@ -12,7 +12,7 @@
  */
 
 import { describe, test, expect, vi } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
 import { createInspector } from "../src/inspection/creation.js";
@@ -34,9 +34,9 @@ interface SessionStore {
   sessionId: string;
 }
 
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
-const RequestContextPort = createPort<RequestContext, "RequestContext">({ name: "RequestContext" });
-const SessionStorePort = createPort<SessionStore, "SessionStore">({ name: "SessionStore" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const RequestContextPort = port<RequestContext>()({ name: "RequestContext" });
+const SessionStorePort = port<SessionStore>()({ name: "SessionStore" });
 
 // =============================================================================
 // Scope Creation Tests
@@ -52,7 +52,7 @@ describe("Scope", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const scope = container.createScope();
 
     expect(Object.isFrozen(scope)).toBe(true);
@@ -67,7 +67,7 @@ describe("Scope", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const scope = container.createScope();
 
     expect(typeof scope.resolve).toBe("function");
@@ -91,7 +91,7 @@ describe("Scope singleton inheritance", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // First resolve from container
     const containerLogger = container.resolve(LoggerPort);
@@ -116,7 +116,7 @@ describe("Scope singleton inheritance", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create scope and resolve singleton (not yet resolved from container)
     const scope = container.createScope();
@@ -145,7 +145,7 @@ describe("Scope scoped instances", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const scope = container.createScope();
 
     // First resolve
@@ -168,7 +168,7 @@ describe("Scope scoped instances", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create parent scope
     const parentScope = container.createScope();
@@ -193,7 +193,7 @@ describe("Scope scoped instances", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create two sibling scopes
     const scope1 = container.createScope();
@@ -236,7 +236,7 @@ describe("Scope nesting", () => {
       .provide(RequestContextAdapter)
       .build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const parentScope = container.createScope();
     const childScope = parentScope.createScope();
     const grandchildScope = childScope.createScope();
@@ -280,7 +280,7 @@ describe("Scope disposal", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const scope = container.createScope();
 
     // Resolve to trigger instance creation
@@ -316,7 +316,7 @@ describe("Scope disposal", () => {
       .provide(RequestContextAdapter)
       .build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Resolve singleton from container
     const logger = container.resolve(LoggerPort);
@@ -348,7 +348,7 @@ describe("Scope disposal", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const scope = container.createScope();
 
     await scope.dispose();
@@ -384,7 +384,7 @@ describe("Scope disposal", () => {
       .provide(SessionAdapter)
       .build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const parentScope = container.createScope();
     const childScope = parentScope.createScope();
 
@@ -415,7 +415,7 @@ describe("Scope custom names", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const scope = container.createScope("my-custom-scope");
 
     // The scope should have the custom name as its ID
@@ -432,7 +432,7 @@ describe("Scope custom names", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     container.createScope("request-handler-scope");
 
     const inspector = createInspector(container);
@@ -451,7 +451,7 @@ describe("Scope custom names", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const parentScope = container.createScope("parent-scope");
     const childScope = parentScope.createScope("child-scope");
@@ -474,7 +474,7 @@ describe("Scope custom names", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create scope without name
     container.createScope();
@@ -496,7 +496,7 @@ describe("Scope custom names", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     container.createScope("named-scope");
     container.createScope(); // auto-named

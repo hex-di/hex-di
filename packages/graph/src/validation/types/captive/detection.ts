@@ -414,7 +414,7 @@ type CheckReverseCaptive<
  *
  * This check ONLY applies when the port being provided is NOT already in the
  * lifetime map. If the port is already provided (duplicate), existing adapters
- * have already been validated against the existing provider's lifetime.
+ * have already been validated against the existing adapter's lifetime.
  *
  * ## Recursion Pattern: Distributive Conditional
  *
@@ -453,8 +453,8 @@ export type FindReverseCaptiveDependency<
   // First check: Is this port already in the lifetime map?
   // Using HasLifetimeInMap for clarity (avoids double-negative with IsNever)
   HasLifetimeInMap<TLifetimeMap, TNewPortName> extends true
-    ? // Port already has a provider - skip the reverse check.
-      // Existing adapters were already validated against the existing provider's
+    ? // Port already has an adapter - skip the reverse check.
+      // Existing adapters were already validated against the existing adapter's
       // lifetime when they were added. This prevents duplicate validation.
       never
     : // Port is new (forward reference) - check for existing adapters that

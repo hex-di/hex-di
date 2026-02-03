@@ -40,21 +40,21 @@ interface PortConfig {
  *
  * ## Type Inference Patterns
  *
- * **Full inference (recommended for simple cases):**
+ * **Full inference (service type is unknown):**
  * ```typescript
  * const LoggerPort = createPort({ name: 'Logger' });
  * // Type: DirectedPort<unknown, 'Logger', 'outbound'>
  * ```
  *
- * **With service type (name widens to string):**
+ * **Service and name explicit (preserves literal name):**
  * ```typescript
- * const LoggerPort = createPort<Logger>({ name: 'Logger' });
- * // Type: DirectedPort<Logger, string, 'outbound'>
+ * const LoggerPort = createPort<'Logger', Logger>({ name: 'Logger' });
+ * // Type: DirectedPort<Logger, 'Logger', 'outbound'>
  * ```
  *
- * **Both explicit (preserves literal name):**
+ * **Using port() builder (recommended - preserves literal name):**
  * ```typescript
- * const LoggerPort = createPort<Logger, 'Logger'>({ name: 'Logger' });
+ * const LoggerPort = port<Logger>()({ name: 'Logger' });
  * // Type: DirectedPort<Logger, 'Logger', 'outbound'>
  * ```
  *
@@ -72,28 +72,22 @@ interface PortConfig {
  */
 
 // Overload 1: All three explicit including direction
-// createPort<Logger, 'Logger', 'inbound'>({ name: 'Logger', direction: 'inbound' })
+// createPort<'Logger', Logger, 'inbound'>({ name: 'Logger', direction: 'inbound' })
 export function createPort<
-  TService,
   const TName extends string,
+  TService,
   const TDirection extends PortDirection,
 >(
   config: PortConfig & { name: TName; direction: TDirection }
 ): DirectedPort<TService, TName, TDirection>;
 
-// Overload 2: Service and name explicit, direction defaults to outbound
-// createPort<Logger, 'Logger'>({ name: 'Logger' })
-export function createPort<TService, const TName extends string>(
+// Overload 2: Name and service explicit, direction defaults to outbound
+// createPort<'Logger', Logger>({ name: 'Logger' })
+export function createPort<const TName extends string, TService>(
   config: PortConfig & { name: TName }
 ): DirectedPort<TService, TName, "outbound">;
 
-// Overload 3: Only service type explicit, name and direction inferred/defaulted
-// createPort<Logger>({ name: 'Logger' })
-export function createPort<TService>(
-  config: PortConfig
-): DirectedPort<TService, string, "outbound">;
-
-// Overload 4: Full inference - TService is unknown, TName inferred from config
+// Overload 3: Full inference - TService is unknown, TName inferred from config
 // createPort({ name: 'Logger' })
 export function createPort<const TConfig extends PortConfig>(
   config: TConfig
@@ -104,7 +98,7 @@ export function createPort<const TConfig extends PortConfig>(
 >;
 
 // Implementation
-export function createPort<TService, const TName extends string, TDirection extends PortDirection>(
+export function createPort<const TName extends string, TService, TDirection extends PortDirection>(
   config: PortConfig & { name: TName }
 ): DirectedPort<TService, TName, TDirection> {
   const direction = (config.direction ?? "outbound") as TDirection;

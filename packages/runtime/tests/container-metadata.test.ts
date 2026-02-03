@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/index.js";
 
@@ -24,8 +24,8 @@ interface Config {
   apiUrl: string;
 }
 
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
-const ConfigPort = createPort<Config, "Config">({ name: "Config" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const ConfigPort = port<Config>()({ name: "Config" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,
@@ -52,7 +52,7 @@ const childGraph = GraphBuilder.create().provide(ConfigAdapter).buildFragment();
 describe("Container Naming", () => {
   describe("Root Container", () => {
     it("should have name and null parentName", () => {
-      const root = createContainer(rootGraph, { name: "Root Container" });
+      const root = createContainer({ graph: rootGraph, name: "Root Container" });
 
       expect(root.name).toBe("Root Container");
       expect(root.parentName).toBeNull();
@@ -60,13 +60,13 @@ describe("Container Naming", () => {
     });
 
     it("should expose name directly", () => {
-      const root = createContainer(rootGraph, { name: "My Root" });
+      const root = createContainer({ graph: rootGraph, name: "My Root" });
 
       expect(root.name).toBe("My Root");
     });
 
     it("should have kind 'root'", () => {
-      const root = createContainer(rootGraph, { name: "Root" });
+      const root = createContainer({ graph: rootGraph, name: "Root" });
 
       expect(root.kind).toBe("root");
     });
@@ -74,7 +74,7 @@ describe("Container Naming", () => {
 
   describe("Child Container", () => {
     it("should derive parentName from parent container", () => {
-      const root = createContainer(rootGraph, { name: "Root" });
+      const root = createContainer({ graph: rootGraph, name: "Root" });
 
       const child = root.createChild(childGraph, { name: "Feature Container" });
 
@@ -84,7 +84,7 @@ describe("Container Naming", () => {
     });
 
     it("should have kind 'child'", () => {
-      const root = createContainer(rootGraph, { name: "Root" });
+      const root = createContainer({ graph: rootGraph, name: "Root" });
 
       const child = root.createChild(childGraph, { name: "Auth Feature" });
 
@@ -92,7 +92,7 @@ describe("Container Naming", () => {
     });
 
     it("should support inheritance modes in options", () => {
-      const root = createContainer(rootGraph, { name: "Root" });
+      const root = createContainer({ graph: rootGraph, name: "Root" });
 
       const child = root.createChild(childGraph, {
         name: "Child",
@@ -105,7 +105,7 @@ describe("Container Naming", () => {
 
   describe("Grandchild Container", () => {
     it("should have correct parent chain", () => {
-      const root = createContainer(rootGraph, { name: "Root" });
+      const root = createContainer({ graph: rootGraph, name: "Root" });
 
       const child = root.createChild(childGraph, { name: "Child" });
 
@@ -116,7 +116,7 @@ describe("Container Naming", () => {
     });
 
     it("should form correct hierarchy", () => {
-      const root = createContainer(rootGraph, { name: "Level 0" });
+      const root = createContainer({ graph: rootGraph, name: "Level 0" });
 
       const level1 = root.createChild(childGraph, { name: "Level 1" });
 

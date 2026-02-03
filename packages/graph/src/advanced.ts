@@ -1,20 +1,16 @@
 /**
- * @hex-di/graph/advanced - Power User & Internal Exports
+ * @hex-di/graph/advanced - Power User Exports
  *
- * This module exports all utilities for power users who need:
+ * This module exports utilities for power users who need:
  * - Graph validation and inspection
  * - Error parsing and debugging
  * - Traversal utilities
  * - Structured logging
- * - Debug types for troubleshooting
- * - Internal types for library authors
+ * - Type-level validation utilities
  *
  * For basic usage, import from "@hex-di/graph" instead.
- *
- * ## Stability Warning
- *
- * Types marked with `Debug*` prefix are NOT covered by semver guarantees.
- * Use at your own risk - breaking changes may occur in minor/patch releases.
+ * For runtime-only inspection, use "@hex-di/graph/inspection".
+ * For internal/unstable types, use "@hex-di/graph/internal".
  *
  * @packageDocumentation
  */
@@ -42,18 +38,15 @@ export {
   getPortsByCategory,
   getPortsByTags,
 } from "./graph/inspection/index.js";
+
 export type {
   CaptiveDependencyResult,
   ComplexityBreakdown,
   PortFilter,
   FilteredPorts,
 } from "./graph/inspection/index.js";
-export { INSPECTION_CONFIG } from "./graph/inspection/complexity.js";
-export type { InspectOptions, GraphSummary } from "./graph/types/inspection.js";
 
-// =============================================================================
-// Inspection Types
-// =============================================================================
+export { INSPECTION_CONFIG } from "./graph/inspection/complexity.js";
 
 export type {
   GraphInspection,
@@ -64,6 +57,8 @@ export type {
   PortInfo,
   DirectionSummary,
   PortDirection,
+  InspectOptions,
+  GraphSummary,
 } from "./graph/types/inspection.js";
 
 // =============================================================================
@@ -71,6 +66,7 @@ export type {
 // =============================================================================
 
 export type { DependencyMap } from "./graph/inspection/traversal.js";
+
 export {
   buildDependencyMap,
   topologicalSort,
@@ -159,11 +155,19 @@ export type {
 // =============================================================================
 
 export { toStructuredLogs } from "./graph/inspection/structured-logging.js";
+
 export type {
   LogLevel,
   StructuredLogEntry,
   StructuredLogOptions,
 } from "./graph/inspection/structured-logging.js";
+
+// =============================================================================
+// Correlation ID Utilities
+// =============================================================================
+
+export type { CorrelationIdGenerator } from "./graph/inspection/correlation.js";
+export { createCorrelationIdGenerator } from "./graph/inspection/correlation.js";
 
 // =============================================================================
 // Compile-time Error Types
@@ -200,75 +204,6 @@ export type {
 } from "./validation/types/index.js";
 
 // =============================================================================
-// Builder State Types (for advanced patterns)
-// =============================================================================
-
-export { __emptyDepGraphBrand, __emptyLifetimeMapBrand } from "./builder/types/index.js";
-
-export type {
-  EmptyDependencyGraph,
-  EmptyLifetimeMap,
-  AnyBuilderInternals,
-  BuilderInternals,
-  DefaultInternals,
-  GetDepthExceededWarning,
-} from "./builder/types/index.js";
-
-export type {
-  ProvideResult,
-  ProvideResultAllErrors,
-  ProvideManyResult,
-  MergeResult,
-  OverrideResult,
-  PrettyBuilder,
-} from "./builder/types/index.js";
-
-// =============================================================================
-// Batch Duplicate Detection
-// =============================================================================
-
-export type {
-  HasDuplicatesInBatch,
-  FindBatchDuplicate,
-  BatchDuplicateErrorMessage,
-} from "./validation/types/batch-duplicates.js";
-
-// =============================================================================
-// Debug Types (for troubleshooting type-level validation)
-// =============================================================================
-
-export type {
-  DebugProvideValidation,
-  DebugAdapterInference,
-  ProvideValidationTrace,
-  DebugBuilderState,
-  DebugSimplifiedView,
-  DebugInspectableBuilder,
-  DebugMergeValidation,
-  DebugProvideResult,
-  DebugOverrideValidation,
-} from "./builder/types/inspection.js";
-
-export type {
-  DebugInferGraphProvides,
-  DebugInferGraphRequires,
-  DebugInferGraphAsyncPorts,
-  DebugInferGraphOverrides,
-} from "./graph/types/graph-inference.js";
-
-// =============================================================================
-// Builder Internals (for advanced type-level programming)
-// =============================================================================
-
-export type {
-  GetDepGraph,
-  GetLifetimeMap,
-  GetParentProvides,
-  GetMaxDepth,
-  GetExtendedDepth,
-} from "./builder/types/state.js";
-
-// =============================================================================
 // Lazy Port Types (re-exported from core for convenience)
 // =============================================================================
 
@@ -276,99 +211,7 @@ export type { IsLazyPort, UnwrapLazyPort } from "@hex-di/core";
 export { getOriginalPort } from "@hex-di/core";
 
 // =============================================================================
-// Validation Internals
-// =============================================================================
-
-export type { FilterNever, MultiErrorMessage } from "./validation/types/error-aggregation.js";
-
-export type {
-  IsSatisfied,
-  HasOverlap,
-  ValidGraph,
-} from "./validation/types/dependency-satisfaction.js";
-
-export type {
-  ExtractPortNames,
-  DuplicateErrorMessage,
-  CaptiveErrorMessage,
-} from "./validation/types/error-messages.js";
-
-// =============================================================================
-// Builder Inspection Types
-// =============================================================================
-
-export type {
-  SimplifiedView,
-  InferBuilderProvides,
-  InferBuilderUnsatisfied,
-  DebugBuilderInternals,
-} from "./builder/types/inspection.js";
-
-export type { MergeOptions, ResolveMaxDepth } from "./builder/types/merge.js";
-
-// =============================================================================
-// Cycle Detection Internals
-// =============================================================================
-
-export type {
-  Depth,
-  IncrementDepth,
-  DepthExceeded,
-  DepthExceededResult,
-  IsDepthExceeded,
-  ExtractDepthExceededPort,
-  AdapterProvidesName,
-  AdapterRequiresNames,
-  AddEdge,
-  GetDirectDeps,
-  DebugGetDirectDeps,
-  MergeDependencyMaps,
-  AddManyEdges,
-  IsReachable,
-  WouldExceedDepthLimit,
-  FindCyclePath,
-  BuildCyclePath,
-  FormatLazySuggestion,
-  LazySuggestions,
-  WouldAnyCreateCycle,
-  DetectCycleInMergedGraph,
-  CompareNumbers,
-  MaxNumber,
-  MinNumber,
-} from "./validation/types/cycle/index.js";
-
-// =============================================================================
-// Captive Detection Internals
-// =============================================================================
-
-export type {
-  LifetimeName,
-  AddLifetime,
-  GetLifetimeLevel,
-  MergeLifetimeMaps,
-  FindAnyCaptiveDependency,
-  AddManyLifetimes,
-  WouldAnyBeCaptive,
-  DetectCaptiveInMergedGraph,
-  FindLifetimeInconsistency,
-  FindReverseCaptiveDependency,
-  MalformedAdapterError,
-  DebugCaptiveCheck,
-} from "./validation/types/captive/index.js";
-
-// =============================================================================
 // Async Detection
 // =============================================================================
 
 export type { IsAsyncAdapter } from "./validation/types/init-priority.js";
-
-// =============================================================================
-// Debug Utilities
-// =============================================================================
-
-export type {
-  DebugWouldCreateCycle,
-  DebugIsReachable,
-  DebugDepthExceeded,
-  DebugValidationPipeline,
-} from "./validation/types/debug/index.js";

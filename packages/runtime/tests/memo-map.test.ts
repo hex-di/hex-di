@@ -6,7 +6,7 @@
  */
 
 import { describe, test, expect, vi } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { MemoMap } from "../src/util/memo-map.js";
 
 // =============================================================================
@@ -32,9 +32,9 @@ interface Cache {
   get(key: string): unknown;
 }
 
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
-const DatabasePort = createPort<Database, "Database">({ name: "Database" });
-const CachePort = createPort<Cache, "Cache">({ name: "Cache" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const CachePort = port<Cache>()({ name: "Cache" });
 
 // =============================================================================
 // getOrElseMemoize Tests

@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createPort, createAdapter, type Port } from "@hex-di/core";
+import { port, createAdapter, type Port } from "@hex-di/core";
 import { GraphBuilder, type Graph } from "@hex-di/graph";
 import {
   assertGraphComplete,
@@ -39,9 +39,9 @@ interface UserService {
   getUser(id: string): Promise<{ id: string; name: string }>;
 }
 
-const LoggerPort = createPort<Logger>({ name: "Logger" });
-const DatabasePort = createPort<Database>({ name: "Database" });
-const UserServicePort = createPort<UserService>({ name: "UserService" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const UserServicePort = port<UserService>()({ name: "UserService" });
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,

@@ -4,7 +4,7 @@
  * @packageDocumentation
  */
 
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { createPlugin } from "../types.js";
 import { LoggerPort } from "../../features/core/di/ports.js";
@@ -17,7 +17,7 @@ import type { AnalyticsService, AnalyticsEvent } from "./types.js";
 /**
  * Port for the analytics service.
  */
-export const AnalyticsPort = createPort<AnalyticsService, "Analytics">({ name: "Analytics" });
+export const AnalyticsPort = port<AnalyticsService>()({ name: "Analytics" });
 
 // =============================================================================
 // Adapter

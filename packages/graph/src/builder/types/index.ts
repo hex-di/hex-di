@@ -90,11 +90,8 @@ export type {
   DebugBuilderInternals,
   DebugSimplifiedView,
   DebugInspectableBuilder,
-  // Debug types for validation tracing
-  DebugProvideValidation,
+  // Debug types that don't depend on merge/provide
   DebugAdapterInference,
-  DebugProvideResult,
-  DebugMergeValidation,
   DebugOverrideValidation,
   ProvideValidationTrace,
   // Summary types for IDE tooltips
@@ -104,6 +101,13 @@ export type {
   BuilderProvides,
   BuilderMissing,
 } from "./inspection.js";
+
+// Re-export debug types that depend on merge/provide (separate file to break import cycle)
+export type {
+  DebugProvideValidation,
+  DebugMergeValidation,
+  DebugProvideResult,
+} from "./inspection-debug.js";
 
 // Re-export initialization order types
 export type {

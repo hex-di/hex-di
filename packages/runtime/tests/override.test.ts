@@ -10,7 +10,7 @@
  */
 
 import { describe, test, expect, vi } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
 import { DisposedScopeError } from "../src/errors/index.js";
@@ -36,10 +36,10 @@ interface EmailService {
   send(to: string, subject: string): void;
 }
 
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
-const DatabasePort = createPort<Database, "Database">({ name: "Database" });
-const UserServicePort = createPort<UserService, "UserService">({ name: "UserService" });
-const EmailServicePort = createPort<EmailService, "EmailService">({ name: "EmailService" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const UserServicePort = port<UserService>()({ name: "UserService" });
+const EmailServicePort = port<EmailService>()({ name: "EmailService" });
 
 // =============================================================================
 // withOverrides Basic Functionality Tests
@@ -58,7 +58,7 @@ describe("withOverrides", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Real logger outside override context
     const realLogger = container.resolve(LoggerPort);
@@ -91,7 +91,7 @@ describe("withOverrides", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Resolve from container first
     const containerLogger = container.resolve(LoggerPort);
@@ -122,7 +122,7 @@ describe("withOverrides", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Resolve before override
     const beforeLogger = container.resolve(LoggerPort);
@@ -151,7 +151,7 @@ describe("withOverrides", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     container.withOverrides({ Logger: mockFactory }, () => {
       const first = container.resolve(LoggerPort);
@@ -174,7 +174,7 @@ describe("withOverrides", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const result = container.withOverrides(
       { Logger: () => ({ log: vi.fn(), name: "MockLogger" }) },
@@ -217,7 +217,7 @@ describe("withOverrides with nested dependencies", () => {
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(UserServiceAdapter).build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // With override, UserService should use mock logger
     container.withOverrides({ Logger: () => ({ log: mockLogFn, name: "MockLogger" }) }, () => {
@@ -266,7 +266,7 @@ describe("withOverrides with nested dependencies", () => {
       .provide(UserServiceAdapter)
       .build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Override only Logger, Database should still be real
     const mockLogFn = vi.fn();
@@ -298,7 +298,7 @@ describe("withOverrides isolation", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     let firstOverrideLogger: Logger | undefined;
     let secondOverrideLogger: Logger | undefined;
@@ -328,7 +328,7 @@ describe("withOverrides isolation", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     let outerLogger: Logger | undefined;
     let innerLogger: Logger | undefined;
@@ -368,7 +368,7 @@ describe("withOverrides isolation", () => {
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const mockQuery = vi.fn().mockReturnValue({ rows: [] });
 
@@ -403,7 +403,7 @@ describe("withOverrides error handling", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     await container.dispose();
 
@@ -423,7 +423,7 @@ describe("withOverrides error handling", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     expect(() => {
       container.withOverrides({ Logger: () => ({ log: vi.fn(), name: "MockLogger" }) }, () => {
@@ -445,7 +445,7 @@ describe("withOverrides error handling", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     try {
       container.withOverrides({ Logger: () => ({ log: vi.fn(), name: "MockLogger" }) }, () => {
@@ -475,7 +475,7 @@ describe("withOverrides with child containers", () => {
     });
 
     const parentGraph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const parent = createContainer(parentGraph, { name: "Parent" });
+    const parent = createContainer({ graph: parentGraph, name: "Parent" });
 
     const EmailAdapter = createAdapter({
       provides: EmailServicePort,
@@ -517,7 +517,7 @@ describe("withOverrides with scopes", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const scope = container.createScope("test-scope");
 
     // Override should work from container, affecting scope resolution too

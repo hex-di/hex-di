@@ -8,7 +8,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import type { DepthExceeded, Depth, IncrementDepth } from "../src/advanced.js";
+import type { DepthExceeded, Depth, IncrementDepth } from "./test-types.js";
 
 // Test alternative: tuple-wrapped version to prevent distribution
 type DepthExceededTupleWrapped<TDepthCounter extends Depth, TMaxDepth extends number> = [

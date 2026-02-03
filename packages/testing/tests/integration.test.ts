@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 
 // Import all testing utilities
@@ -61,11 +61,11 @@ interface UserService {
 // Test Port Tokens
 // =============================================================================
 
-const LoggerPort = createPort<Logger>({ name: "Logger" });
-const DatabasePort = createPort<Database>({ name: "Database" });
-const UserRepositoryPort = createPort<UserRepository>({ name: "UserRepository" });
-const EmailServicePort = createPort<EmailService>({ name: "EmailService" });
-const UserServicePort = createPort<UserService>({ name: "UserService" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const UserRepositoryPort = port<UserRepository>()({ name: "UserRepository" });
+const EmailServicePort = port<EmailService>()({ name: "EmailService" });
+const UserServicePort = port<UserService>()({ name: "UserService" });
 
 // =============================================================================
 // Production Adapters

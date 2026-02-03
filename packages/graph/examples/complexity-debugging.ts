@@ -4,8 +4,8 @@
  * This example demonstrates how the complexity breakdown helps AI agents
  * understand and diagnose performance issues in dependency graphs.
  */
-import { computeTypeComplexity, INSPECTION_CONFIG } from "../src/index.js";
-import type { ComplexityBreakdown } from "../src/index.js";
+import { computeTypeComplexity, INSPECTION_CONFIG } from "@hex-di/graph/inspection";
+import type { ComplexityBreakdown } from "@hex-di/graph/inspection";
 
 /**
  * Analyzes a complexity breakdown and returns actionable recommendations.

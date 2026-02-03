@@ -13,7 +13,7 @@ import type {
   DebugIsReachable,
   DebugDepthExceeded,
   DebugValidationPipeline,
-} from "../src/advanced.js";
+} from "./test-types.js";
 
 // =============================================================================
 // Test Fixtures - Type-Level Adapters

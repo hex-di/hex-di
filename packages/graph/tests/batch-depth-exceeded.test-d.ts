@@ -12,7 +12,7 @@ import { describe, expectTypeOf, it } from "vitest";
 import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
-import type { WouldAnyCreateCycle, DepthExceededResult, IsDepthExceeded } from "../src/advanced.js";
+import type { WouldAnyCreateCycle, DepthExceededResult, IsDepthExceeded } from "./test-types.js";
 
 // =============================================================================
 // Test Fixtures - Deep Chain

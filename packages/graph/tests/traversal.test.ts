@@ -10,7 +10,7 @@ import {
   findCommonDependencies,
   computeDependencyLayers,
   getPortsByLayer,
-} from "../src/advanced.js";
+} from "./test-types.js";
 
 // Test fixtures
 const ConfigPort = port<{ dbUrl: string }>()({ name: "Config" });

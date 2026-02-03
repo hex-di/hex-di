@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import { createPort, createAdapter, type Lifetime } from "@hex-di/core";
+import { createAdapter, port, type Lifetime } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { vi, type Mock } from "vitest";
 import { createContainer } from "../../src/index.js";
@@ -53,12 +53,12 @@ export interface ConfigService {
 // Standard Ports
 // =============================================================================
 
-export const LoggerPort = createPort<Logger>({ name: "Logger" });
-export const DatabasePort = createPort<Database>({ name: "Database" });
-export const RequestContextPort = createPort<RequestContext>({ name: "RequestContext" });
-export const UserServicePort = createPort<UserService>({ name: "UserService" });
-export const CacheServicePort = createPort<CacheService>({ name: "CacheService" });
-export const ConfigServicePort = createPort<ConfigService>({ name: "ConfigService" });
+export const LoggerPort = port<Logger>()({ name: "Logger" });
+export const DatabasePort = port<Database>()({ name: "Database" });
+export const RequestContextPort = port<RequestContext>()({ name: "RequestContext" });
+export const UserServicePort = port<UserService>()({ name: "UserService" });
+export const CacheServicePort = port<CacheService>()({ name: "CacheService" });
+export const ConfigServicePort = port<ConfigService>()({ name: "ConfigService" });
 
 // Type-safe port type
 export type StandardPort =
@@ -257,7 +257,7 @@ export function createMockRequestContext(requestId?: string): RequestContext {
  */
 export function createMinimalContainer() {
   const graph = GraphBuilder.create().provide(createLoggerAdapter()).build();
-  return createContainer(graph, { name: "MinimalContainer" });
+  return createContainer({ graph: graph, name: "MinimalContainer" });
 }
 
 /**
@@ -269,7 +269,7 @@ export function createStandardContainer() {
     .provide(createDatabaseAdapter())
     .provide(createCacheServiceAdapter())
     .build();
-  return createContainer(graph, { name: "StandardContainer" });
+  return createContainer({ graph: graph, name: "StandardContainer" });
 }
 
 /**
@@ -280,7 +280,7 @@ export function createScopedContainer() {
     .provide(createLoggerAdapter())
     .provide(createRequestContextAdapter())
     .build();
-  return createContainer(graph, { name: "ScopedContainer" });
+  return createContainer({ graph: graph, name: "ScopedContainer" });
 }
 
 /**
@@ -291,7 +291,7 @@ export function createUserServiceContainer() {
     .provide(createLoggerAdapter())
     .provide(createUserServiceAdapter())
     .build();
-  return createContainer(graph, { name: "UserServiceContainer" });
+  return createContainer({ graph: graph, name: "UserServiceContainer" });
 }
 
 // =============================================================================

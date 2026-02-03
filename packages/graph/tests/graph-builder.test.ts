@@ -12,7 +12,7 @@
 import { describe, expect, it } from "vitest";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
-import { inspectGraph } from "../src/advanced.js";
+import { inspectGraph } from "./test-types.js";
 import {
   LoggerPort,
   DatabasePort,

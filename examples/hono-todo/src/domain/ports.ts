@@ -1,4 +1,4 @@
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import type { Todo } from "./entities.js";
 
 export interface TodoRepository {
@@ -7,4 +7,4 @@ export interface TodoRepository {
   toggle(userId: string, id: string): Promise<Todo>;
 }
 
-export const TodoRepositoryPort = createPort<"TodoRepository", TodoRepository>("TodoRepository");
+export const TodoRepositoryPort = port<TodoRepository>()({ name: "TodoRepository" });

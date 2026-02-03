@@ -13,7 +13,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort, type InferService } from "@hex-di/core";
+import { port, type InferService } from "@hex-di/core";
 import type { Container } from "@hex-di/runtime";
 import { createTypedHooks } from "../src/factories/create-typed-hooks.jsx";
 import type {
@@ -44,9 +44,9 @@ interface UserService {
 // Test Port Tokens
 // =============================================================================
 
-const LoggerPort = createPort<Logger>({ name: "Logger" });
-const DatabasePort = createPort<Database>({ name: "Database" });
-const UserServicePort = createPort<UserService>({ name: "UserService" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const UserServicePort = port<UserService>()({ name: "UserService" });
 void LoggerPort;
 void DatabasePort;
 void UserServicePort;

@@ -13,7 +13,7 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { screen, cleanup } from "@testing-library/react";
 import React from "react";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { usePort } from "@hex-di/react";
 import { TestGraphBuilder } from "../src/test-graph-builder.js";
@@ -36,8 +36,8 @@ interface UserService {
 // Test Port Tokens
 // =============================================================================
 
-const LoggerPort = createPort<Logger>({ name: "Logger" });
-const UserServicePort = createPort<UserService>({ name: "UserService" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const UserServicePort = port<UserService>()({ name: "UserService" });
 
 // =============================================================================
 // Test Adapters

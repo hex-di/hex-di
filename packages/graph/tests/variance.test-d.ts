@@ -22,7 +22,7 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 import type { Port, Adapter, AdapterConstraint, ResolvedDeps, EmptyDeps } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
-import type { DefaultInternals } from "../src/advanced.js";
+import type { DefaultInternals } from "./test-types.js";
 import {
   LoggerPort,
   DatabasePort,

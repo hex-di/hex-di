@@ -17,7 +17,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port, createPort } from "@hex-di/core";
 import { createMachine } from "../src/machine/create-machine.js";
 import { event } from "../src/machine/factories.js";
 import { Effect } from "../src/effects/constructors.js";
@@ -36,7 +36,7 @@ interface CounterService {
   getCount(): number;
 }
 
-const CounterServicePort = createPort<CounterService, "CounterService">({ name: "CounterService" });
+const CounterServicePort = port<CounterService>()({ name: "CounterService" });
 
 function createCounterService(): CounterService {
   let count = 0;

@@ -310,10 +310,10 @@ export function createAdapter<
 >;
 
 /**
- * Creates an adapter with a factory function and explicit lifetime.
+ * Creates an adapter with a factory function and explicit lifetime (no dependencies).
  *
  * @overload
- * Factory with explicit lifetime (no clonable).
+ * Factory with explicit lifetime, no dependencies.
  * Defaults: `requires: []`, `clonable: false`
  *
  * **Async Constraint:** If lifetime is "scoped" or "transient" but the factory
@@ -322,7 +322,45 @@ export function createAdapter<
  * with GraphBuilder, producing a compile-time error.
  *
  * @typeParam TProvides - The port being implemented
- * @typeParam TRequires - Tuple of required port dependencies (optional, defaults to [])
+ * @typeParam TLifetime - The lifetime scope
+ * @typeParam TFactory - The factory function type
+ */
+export function createAdapter<
+  TProvides extends Port<unknown, string>,
+  const TLifetime extends Lifetime,
+  TFactory extends (
+    deps: ResolvedDeps<never>
+  ) => InferService<TProvides> | Promise<InferService<TProvides>>,
+>(config: {
+  readonly provides: TProvides;
+  readonly lifetime: TLifetime;
+  readonly factory: TFactory;
+  readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  requires?: undefined;
+  clonable?: undefined;
+}): Adapter<
+  TProvides,
+  never,
+  EnforceAsyncLifetime<TFactory, TLifetime>,
+  IsAsyncFactory<TFactory> extends true ? Async : Sync,
+  False,
+  EmptyRequires
+>;
+
+/**
+ * Creates an adapter with a factory function, explicit lifetime and dependencies.
+ *
+ * @overload
+ * Factory with explicit lifetime and requires.
+ * Defaults: `clonable: false`
+ *
+ * **Async Constraint:** If lifetime is "scoped" or "transient" but the factory
+ * is async (returns Promise), the adapter's lifetime type will be an error
+ * message string instead of a valid Lifetime. This makes the adapter unusable
+ * with GraphBuilder, producing a compile-time error.
+ *
+ * @typeParam TProvides - The port being implemented
+ * @typeParam TRequires - Tuple of required port dependencies
  * @typeParam TLifetime - The lifetime scope
  * @typeParam TFactory - The factory function type
  */
@@ -335,7 +373,7 @@ export function createAdapter<
   ) => InferService<TProvides> | Promise<InferService<TProvides>>,
 >(config: {
   readonly provides: TProvides;
-  readonly requires?: TRequires;
+  readonly requires: TRequires;
   readonly lifetime: TLifetime;
   readonly factory: TFactory;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
@@ -346,18 +384,51 @@ export function createAdapter<
   EnforceAsyncLifetime<TFactory, TLifetime>,
   IsAsyncFactory<TFactory> extends true ? Async : Sync,
   False,
-  TRequires extends readonly Port<unknown, string>[] ? TRequires : EmptyRequires
+  TRequires
 >;
 
 /**
- * Creates an adapter with a factory function and explicit clonable.
+ * Creates an adapter with a factory function and explicit clonable (no dependencies).
  *
  * @overload
- * Factory with explicit clonable flag.
+ * Factory with explicit clonable flag, no dependencies.
  * Defaults: `requires: []`, `lifetime: "singleton"`
  *
  * @typeParam TProvides - The port being implemented
- * @typeParam TRequires - Tuple of required port dependencies (optional, defaults to [])
+ * @typeParam TClonable - The clonable flag literal type
+ * @typeParam TFactory - The factory function type
+ */
+export function createAdapter<
+  TProvides extends Port<unknown, string>,
+  const TClonable extends boolean,
+  TFactory extends (
+    deps: ResolvedDeps<never>
+  ) => InferService<TProvides> | Promise<InferService<TProvides>>,
+>(config: {
+  readonly provides: TProvides;
+  readonly clonable: TClonable;
+  readonly factory: TFactory;
+  readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  requires?: undefined;
+  lifetime?: undefined;
+}): Adapter<
+  TProvides,
+  never,
+  Singleton,
+  IsAsyncFactory<TFactory> extends true ? Async : Sync,
+  TClonable,
+  EmptyRequires
+>;
+
+/**
+ * Creates an adapter with a factory function, explicit clonable and dependencies.
+ *
+ * @overload
+ * Factory with explicit clonable flag and requires.
+ * Defaults: `lifetime: "singleton"`
+ *
+ * @typeParam TProvides - The port being implemented
+ * @typeParam TRequires - Tuple of required port dependencies
  * @typeParam TClonable - The clonable flag literal type
  * @typeParam TFactory - The factory function type
  */
@@ -370,7 +441,7 @@ export function createAdapter<
   ) => InferService<TProvides> | Promise<InferService<TProvides>>,
 >(config: {
   readonly provides: TProvides;
-  readonly requires?: TRequires;
+  readonly requires: TRequires;
   readonly clonable: TClonable;
   readonly factory: TFactory;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
@@ -381,7 +452,47 @@ export function createAdapter<
   Singleton,
   IsAsyncFactory<TFactory> extends true ? Async : Sync,
   TClonable,
-  TRequires extends readonly Port<unknown, string>[] ? TRequires : EmptyRequires
+  TRequires
+>;
+
+/**
+ * Creates an adapter with a factory function, explicit lifetime and clonable (no dependencies).
+ *
+ * @overload
+ * Factory with explicit lifetime and clonable, no dependencies.
+ * Defaults: `requires: []`
+ *
+ * **Async Constraint:** If lifetime is "scoped" or "transient" but the factory
+ * is async (returns Promise), the adapter's lifetime type will be an error
+ * message string instead of a valid Lifetime. This makes the adapter unusable
+ * with GraphBuilder, producing a compile-time error.
+ *
+ * @typeParam TProvides - The port being implemented
+ * @typeParam TLifetime - The lifetime scope
+ * @typeParam TClonable - The clonable flag literal type
+ * @typeParam TFactory - The factory function type
+ */
+export function createAdapter<
+  TProvides extends Port<unknown, string>,
+  const TLifetime extends Lifetime,
+  const TClonable extends boolean,
+  TFactory extends (
+    deps: ResolvedDeps<never>
+  ) => InferService<TProvides> | Promise<InferService<TProvides>>,
+>(config: {
+  readonly provides: TProvides;
+  readonly lifetime: TLifetime;
+  readonly clonable: TClonable;
+  readonly factory: TFactory;
+  readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  requires?: undefined;
+}): Adapter<
+  TProvides,
+  never,
+  EnforceAsyncLifetime<TFactory, TLifetime>,
+  IsAsyncFactory<TFactory> extends true ? Async : Sync,
+  TClonable,
+  EmptyRequires
 >;
 
 /**
@@ -495,14 +606,47 @@ export function createAdapter<
 }): Adapter<TProvides, TupleToUnion<TRequires>, Singleton, Sync, False, TRequires>;
 
 /**
- * Creates an adapter from a class constructor with explicit lifetime.
+ * Creates an adapter from a class constructor with explicit lifetime (no dependencies).
  *
  * - `requires` defaults to `[]`
  * - `clonable` defaults to `false`
  * - Class instantiation is always synchronous (factoryKind: "sync")
  *
  * @typeParam TProvides - The port being implemented
- * @typeParam TRequires - Tuple of required port dependencies (may be empty)
+ * @typeParam TLifetime - The lifetime literal type
+ * @typeParam TClass - The class constructor type
+ *
+ * @example
+ * ```typescript
+ * const ConfigAdapter = createAdapter({
+ *   provides: ConfigPort,
+ *   lifetime: "singleton",
+ *   class: ConfigImpl
+ * });
+ * ```
+ */
+export function createAdapter<
+  TProvides extends Port<unknown, string>,
+  const TLifetime extends Lifetime,
+  TClass extends new () => InferService<TProvides>,
+>(config: {
+  readonly provides: TProvides;
+  readonly class: TClass;
+  readonly lifetime: TLifetime;
+  readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  requires?: undefined;
+  clonable?: undefined;
+}): Adapter<TProvides, never, TLifetime, Sync, False, EmptyRequires>;
+
+/**
+ * Creates an adapter from a class constructor with explicit lifetime and dependencies.
+ *
+ * - `clonable` defaults to `false`
+ * - Constructor parameters must match the order of ports in `requires` array
+ * - Class instantiation is always synchronous (factoryKind: "sync")
+ *
+ * @typeParam TProvides - The port being implemented
+ * @typeParam TRequires - Tuple of required port dependencies
  * @typeParam TLifetime - The lifetime literal type
  * @typeParam TClass - The class constructor type
  *
@@ -523,29 +667,21 @@ export function createAdapter<
   TClass extends new (...args: PortsToServices<TRequires>) => InferService<TProvides>,
 >(config: {
   readonly provides: TProvides;
-  readonly requires?: TRequires;
+  readonly requires: TRequires;
   readonly class: TClass;
   readonly lifetime: TLifetime;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
   clonable?: undefined;
-}): Adapter<
-  TProvides,
-  TupleToUnion<TRequires>,
-  TLifetime,
-  Sync,
-  False,
-  TRequires extends readonly [] ? EmptyRequires : TRequires
->;
+}): Adapter<TProvides, TupleToUnion<TRequires>, TLifetime, Sync, False, TRequires>;
 
 /**
- * Creates an adapter from a class constructor with explicit clonable flag.
+ * Creates an adapter from a class constructor with explicit clonable flag (no dependencies).
  *
  * - `requires` defaults to `[]`
  * - `lifetime` defaults to `"singleton"`
  * - Class instantiation is always synchronous (factoryKind: "sync")
  *
  * @typeParam TProvides - The port being implemented
- * @typeParam TRequires - Tuple of required port dependencies (may be empty)
  * @typeParam TClonable - The clonable literal type (true or false)
  * @typeParam TClass - The class constructor type
  *
@@ -560,24 +696,87 @@ export function createAdapter<
  */
 export function createAdapter<
   TProvides extends Port<unknown, string>,
+  const TClonable extends boolean,
+  TClass extends new () => InferService<TProvides>,
+>(config: {
+  readonly provides: TProvides;
+  readonly class: TClass;
+  readonly clonable: TClonable;
+  readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  requires?: undefined;
+  lifetime?: undefined;
+}): Adapter<TProvides, never, Singleton, Sync, TClonable, EmptyRequires>;
+
+/**
+ * Creates an adapter from a class constructor with explicit clonable flag and dependencies.
+ *
+ * - `lifetime` defaults to `"singleton"`
+ * - Constructor parameters must match the order of ports in `requires` array
+ * - Class instantiation is always synchronous (factoryKind: "sync")
+ *
+ * @typeParam TProvides - The port being implemented
+ * @typeParam TRequires - Tuple of required port dependencies
+ * @typeParam TClonable - The clonable literal type (true or false)
+ * @typeParam TClass - The class constructor type
+ *
+ * @example
+ * ```typescript
+ * const UserAdapter = createAdapter({
+ *   provides: UserPort,
+ *   requires: [DatabasePort],
+ *   class: UserImpl,
+ *   clonable: true
+ * });
+ * ```
+ */
+export function createAdapter<
+  TProvides extends Port<unknown, string>,
   const TRequires extends readonly Port<unknown, string>[],
   const TClonable extends boolean,
   TClass extends new (...args: PortsToServices<TRequires>) => InferService<TProvides>,
 >(config: {
   readonly provides: TProvides;
-  readonly requires?: TRequires;
+  readonly requires: TRequires;
   readonly class: TClass;
   readonly clonable: TClonable;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
   lifetime?: undefined;
-}): Adapter<
-  TProvides,
-  TupleToUnion<TRequires>,
-  Singleton,
-  Sync,
-  TClonable,
-  TRequires extends readonly [] ? EmptyRequires : TRequires
->;
+}): Adapter<TProvides, TupleToUnion<TRequires>, Singleton, Sync, TClonable, TRequires>;
+
+/**
+ * Creates an adapter from a class constructor with explicit lifetime and clonable (no dependencies).
+ *
+ * - `requires` defaults to `[]`
+ * - Class instantiation is always synchronous (factoryKind: "sync")
+ *
+ * @typeParam TProvides - The port being implemented
+ * @typeParam TLifetime - The lifetime literal type
+ * @typeParam TClonable - The clonable literal type (true or false)
+ * @typeParam TClass - The class constructor type
+ *
+ * @example
+ * ```typescript
+ * const ConfigAdapter = createAdapter({
+ *   provides: ConfigPort,
+ *   lifetime: "singleton",
+ *   clonable: true,
+ *   class: ConfigImpl
+ * });
+ * ```
+ */
+export function createAdapter<
+  TProvides extends Port<unknown, string>,
+  const TLifetime extends Lifetime,
+  const TClonable extends boolean,
+  TClass extends new () => InferService<TProvides>,
+>(config: {
+  readonly provides: TProvides;
+  readonly class: TClass;
+  readonly lifetime: TLifetime;
+  readonly clonable: TClonable;
+  readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  requires?: undefined;
+}): Adapter<TProvides, never, TLifetime, Sync, TClonable, EmptyRequires>;
 
 /**
  * Creates an adapter from a class constructor with all parameters explicit.

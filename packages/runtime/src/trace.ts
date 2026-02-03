@@ -65,7 +65,7 @@ function createTraceEntry(
  * ```typescript
  * import { createContainer, trace } from '@hex-di/runtime';
  *
- * const container = createContainer(graph, { name: 'App' });
+ * const container = createContainer({ graph: graph, name: 'App'  });
  *
  * const { result, traces } = trace(container, () => {
  *   const logger = container.resolve(LoggerPort);
@@ -139,7 +139,7 @@ export type TraceCallback = (entry: TraceEntry) => void;
  * ```typescript
  * import { createContainer, enableTracing } from '@hex-di/runtime';
  *
- * const container = createContainer(graph, { name: 'App' });
+ * const container = createContainer({ graph: graph, name: 'App'  });
  * const traces: TraceEntry[] = [];
  *
  * const disableTracing = enableTracing(container, (entry) => {
@@ -159,7 +159,7 @@ export type TraceCallback = (entry: TraceEntry) => void;
  *
  * @example Without callback (silent tracing)
  * ```typescript
- * const container = createContainer(graph, { name: 'App' });
+ * const container = createContainer({ graph: graph, name: 'App'  });
  * const disableTracing = enableTracing(container);
  *
  * // Tracing is enabled but no callback provided

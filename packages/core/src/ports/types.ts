@@ -73,7 +73,7 @@ declare const __brand: unique symbol;
  * type LoggerPortType = typeof LoggerPort;
  * ```
  */
-export type Port<T, TName extends string = string> = {
+export type Port<T, TName extends string> = {
   /**
    * Brand property for nominal typing.
    * Contains a tuple of [ServiceType, PortName] at the type level.

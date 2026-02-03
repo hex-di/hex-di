@@ -160,6 +160,8 @@ describe("@hex-di/runtime exports", () => {
         "isSealed",
         // Container factory
         "createContainer",
+        // Override builder
+        "OverrideBuilder",
         // Hooks utilities
         "sealHooks",
         // Inspection symbols

@@ -12,7 +12,7 @@
 declare function setTimeout(callback: (...args: unknown[]) => void, ms?: number): unknown;
 
 import { describe, test, expect, vi, expectTypeOf } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import type { InferService } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import {
@@ -106,14 +106,14 @@ interface NotificationService {
 // Port Definitions
 // =============================================================================
 
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
-const ConfigPort = createPort<Config, "Config">({ name: "Config" });
-const DatabasePort = createPort<Database, "Database">({ name: "Database" });
-const CachePort = createPort<Cache, "Cache">({ name: "Cache" });
-const UserRepositoryPort = createPort<UserRepository, "UserRepository">({ name: "UserRepository" });
-const UserServicePort = createPort<UserService, "UserService">({ name: "UserService" });
-const RequestContextPort = createPort<RequestContext, "RequestContext">({ name: "RequestContext" });
-const NotificationServicePort = createPort<NotificationService, "NotificationService">({
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const ConfigPort = port<Config>()({ name: "Config" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const CachePort = port<Cache>()({ name: "Cache" });
+const UserRepositoryPort = port<UserRepository>()({ name: "UserRepository" });
+const UserServicePort = port<UserService>()({ name: "UserService" });
+const RequestContextPort = port<RequestContext>()({ name: "RequestContext" });
+const NotificationServicePort = port<NotificationService>()({
   name: "NotificationService",
 });
 
@@ -187,7 +187,7 @@ describe("Integration: Basic Container Workflow", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(ConfigAdapter).build();
 
     // Step 4: Create container
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Step 5: Resolve services
     const logger = container.resolve(LoggerPort);
@@ -212,7 +212,7 @@ describe("Integration: Basic Container Workflow", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const scope = container.createScope();
 
     expect(Object.isFrozen(container)).toBe(true);
@@ -233,7 +233,7 @@ describe("Integration: Basic Container Workflow", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const logger = container.resolve(LoggerPort);
     logger.log("Hello, world!");
@@ -298,7 +298,7 @@ describe("Integration: Dependency Chain Resolution", () => {
       .provide(DatabaseAdapter)
       .build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Resolve A (Database) - should trigger resolution of B (Logger) and C (Config)
     const database = container.resolve(DatabasePort);
@@ -354,7 +354,7 @@ describe("Integration: Dependency Chain Resolution", () => {
       .provide(DatabaseAdapter)
       .build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     container.resolve(DatabasePort);
 
     // Check that dependencies were passed correctly
@@ -434,7 +434,7 @@ describe("Integration: Dependency Chain Resolution", () => {
       .provide(UserRepositoryAdapter)
       .build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Resolve level 1 - should trigger entire chain
     container.resolve(UserRepositoryPort);
@@ -488,7 +488,7 @@ describe("Integration: Scope Hierarchy", () => {
       .provide(NotificationAdapter)
       .build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const scope = container.createScope();
 
     // Singleton: same instance everywhere
@@ -521,7 +521,7 @@ describe("Integration: Scope Hierarchy", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const scope1 = container.createScope();
     const scope2 = scope1.createScope();
@@ -554,7 +554,7 @@ describe("Integration: Scope Hierarchy", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const scope1 = container.createScope();
     const scope2 = container.createScope();
@@ -591,7 +591,7 @@ describe("Integration: Scope Hierarchy", () => {
     });
 
     const graph = GraphBuilder.create().provide(NotificationAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const scope1 = container.createScope();
     const scope2 = container.createScope();
@@ -653,7 +653,7 @@ describe("Integration: Scope Hierarchy", () => {
       .provide(RequestContextAdapter)
       .build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const scope1 = container.createScope();
     const scope2 = container.createScope();
@@ -718,7 +718,7 @@ describe("Integration: Disposal Workflow", () => {
       .provide(DatabaseAdapter)
       .build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Resolve all services to trigger creation
     container.resolve(DatabasePort);
@@ -751,7 +751,7 @@ describe("Integration: Disposal Workflow", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const parentScope = container.createScope();
     const childScope = parentScope.createScope();
@@ -800,7 +800,7 @@ describe("Integration: Disposal Workflow", () => {
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(ConfigAdapter).build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Resolve to create instances
     container.resolve(ConfigPort);
@@ -829,7 +829,7 @@ describe("Integration: Disposal Workflow", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     container.resolve(LoggerPort);
 
@@ -872,7 +872,7 @@ describe("Integration: Disposal Workflow", () => {
       .provide(RequestContextAdapter)
       .build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const scope = container.createScope();
 
     // Resolve singleton from both
@@ -906,8 +906,8 @@ describe("Integration: Error Scenarios", () => {
       name: string;
     }
 
-    const ServiceAPort = createPort<ServiceA, "ServiceA">({ name: "ServiceA" });
-    const ServiceBPort = createPort<ServiceB, "ServiceB">({ name: "ServiceB" });
+    const ServiceAPort = port<ServiceA>()({ name: "ServiceA" });
+    const ServiceBPort = port<ServiceB>()({ name: "ServiceB" });
 
     const ServiceAAdapter = createAdapter({
       provides: ServiceAPort,
@@ -929,7 +929,7 @@ describe("Integration: Error Scenarios", () => {
       GraphBuilder.create().provide(ServiceAAdapter).provide(ServiceBAdapter) as any
     ).build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     expect(() => container.resolve(ServiceAPort)).toThrow(CircularDependencyError);
 
@@ -957,7 +957,7 @@ describe("Integration: Error Scenarios", () => {
     });
 
     const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     expect(() => container.resolve(DatabasePort)).toThrow(FactoryError);
 
@@ -996,7 +996,7 @@ describe("Integration: Error Scenarios", () => {
       .provide(RequestContextAdapter)
       .build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const scope = container.createScope();
 
     await scope.dispose();
@@ -1026,7 +1026,7 @@ describe("Integration: Error Scenarios", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     expect(() => container.resolve(RequestContextPort)).toThrow(ScopeRequiredError);
 
@@ -1059,7 +1059,7 @@ describe("Integration: Error Scenarios", () => {
 
     const graph = GraphBuilder.create().provide(ConfigAdapter).provide(LoggerAdapter).build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Resolving Logger should fail because its dependency (Config) fails
     expect(() => container.resolve(LoggerPort)).toThrow(FactoryError);
@@ -1091,7 +1091,7 @@ describe("Integration: Error Scenarios", () => {
 
     const graph = GraphBuilder.create().provide(ConfigAdapter).provide(LoggerAdapter).build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Resolve in order: Config, Logger
     container.resolve(ConfigPort);
@@ -1237,7 +1237,7 @@ describe("Integration: Type Safety End-to-End", () => {
       .build();
 
     // Create container - type is Container<...all ports>
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create scope for request handling
     const scope = container.createScope();
@@ -1280,7 +1280,7 @@ describe("Integration: Type Safety End-to-End", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // The resolved value should have the correct type without assertion
     const logger = container.resolve(LoggerPort);
@@ -1326,7 +1326,7 @@ describe("Integration: Type Safety End-to-End", () => {
 
     const graph = GraphBuilder.create().provide(ConfigAdapter).provide(LoggerAdapter).build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const logger = container.resolve(LoggerPort);
 
     // If we got here without type errors, the types are correct
@@ -1353,7 +1353,7 @@ describe("Integration: Type Safety End-to-End", () => {
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(ConfigAdapter).build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const scope = container.createScope();
 
     // Both container and scope should have the same TProvides
@@ -1384,7 +1384,7 @@ describe("Integration: Edge Cases and Gap Coverage", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     await container.dispose();
 
@@ -1405,7 +1405,7 @@ describe("Integration: Edge Cases and Gap Coverage", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const parentScope = container.createScope();
     const childScope = parentScope.createScope();
@@ -1434,7 +1434,7 @@ describe("Integration: Edge Cases and Gap Coverage", () => {
     });
 
     const graph = GraphBuilder.create().provide(NotificationAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const scope = container.createScope();
 
     // Resolve multiple request instances
@@ -1459,9 +1459,9 @@ describe("Integration: Edge Cases and Gap Coverage", () => {
       name: string;
     }
 
-    const ServiceAPort = createPort<ServiceA, "ServiceA">({ name: "ServiceA" });
-    const ServiceBPort = createPort<ServiceB, "ServiceB">({ name: "ServiceB" });
-    const ServiceCPort = createPort<ServiceC, "ServiceC">({ name: "ServiceC" });
+    const ServiceAPort = port<ServiceA>()({ name: "ServiceA" });
+    const ServiceBPort = port<ServiceB>()({ name: "ServiceB" });
+    const ServiceCPort = port<ServiceC>()({ name: "ServiceC" });
 
     const ServiceAAdapter = createAdapter({
       provides: ServiceAPort,
@@ -1493,7 +1493,7 @@ describe("Integration: Edge Cases and Gap Coverage", () => {
         .provide(ServiceCAdapter) as any
     ).build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     expect(() => container.resolve(ServiceAPort)).toThrow(CircularDependencyError);
 
@@ -1531,7 +1531,7 @@ describe("Integration: Edge Cases and Gap Coverage", () => {
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(ConfigAdapter).build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // First resolve fails
     expect(() => container.resolve(LoggerPort)).toThrow(FactoryError);
@@ -1555,7 +1555,7 @@ describe("Integration: Edge Cases and Gap Coverage", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Single adapter container should work
     const logger = container.resolve(LoggerPort);
@@ -1586,7 +1586,7 @@ describe("Integration: Edge Cases and Gap Coverage", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create 4 levels of nested scopes
     const scope1 = container.createScope();

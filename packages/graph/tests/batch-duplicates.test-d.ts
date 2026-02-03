@@ -11,7 +11,7 @@ import {
   type HasDuplicatesInBatch,
   type FindBatchDuplicate,
   type BatchDuplicateErrorMessage,
-} from "../src/advanced.js";
+} from "./test-types.js";
 
 // =============================================================================
 // Test Fixtures

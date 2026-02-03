@@ -1,6 +1,6 @@
 import { expectTypeOf } from "vitest";
 import type { Context } from "hono";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import type { Port } from "@hex-di/core";
 import { resolvePort, type HexHonoEnv, type WithHexDi } from "../src/index.js";
 
@@ -8,7 +8,7 @@ interface Logger {
   log(message: string): void;
 }
 
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
 
 type Env = HexHonoEnv<typeof LoggerPort>;
 declare const context: Context<Env>;

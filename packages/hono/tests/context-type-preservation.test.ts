@@ -12,7 +12,7 @@
 import { describe, test, expect } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "@hex-di/runtime";
 import {
@@ -49,7 +49,7 @@ interface TestService {
   value: number;
 }
 
-const TestServicePort = createPort<TestService, "TestService">({ name: "TestService" });
+const TestServicePort = port<TestService>()({ name: "TestService" });
 
 type AppPorts = typeof TestServicePort;
 type DefaultEnv = HexHonoEnv<AppPorts>;

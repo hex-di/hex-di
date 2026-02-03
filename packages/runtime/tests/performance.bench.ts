@@ -54,7 +54,7 @@ const ScopedAdapter = createAdapter({
 describe("resolution performance", () => {
   bench("100k singleton resolves (cached)", () => {
     const graph = GraphBuilder.create().provide(SingletonAdapter).build();
-    const container = createContainer(graph, { name: "ResolveBench" });
+    const container = createContainer({ graph: graph, name: "ResolveBench" });
 
     // First resolve creates the instance
     container.resolve(SingletonPort);
@@ -67,7 +67,7 @@ describe("resolution performance", () => {
 
   bench("100k transient resolves (uncached)", () => {
     const graph = GraphBuilder.create().provide(TransientAdapter).build();
-    const container = createContainer(graph, { name: "TransientBench" });
+    const container = createContainer({ graph: graph, name: "TransientBench" });
 
     for (let i = 0; i < 100_000; i++) {
       container.resolve(TransientPort);
@@ -76,7 +76,7 @@ describe("resolution performance", () => {
 
   bench("100k mixed singleton/transient resolves", () => {
     const graph = GraphBuilder.create().provide(SingletonAdapter).provide(TransientAdapter).build();
-    const container = createContainer(graph, { name: "MixedBench" });
+    const container = createContainer({ graph: graph, name: "MixedBench" });
 
     // Resolve singletons and transients alternately
     for (let i = 0; i < 100_000; i++) {
@@ -96,7 +96,7 @@ describe("resolution performance", () => {
 describe("scope operations", () => {
   bench("10k scope create/dispose cycles", async () => {
     const graph = GraphBuilder.create().provide(ScopedAdapter).build();
-    const container = createContainer(graph, { name: "ScopeBench" });
+    const container = createContainer({ graph: graph, name: "ScopeBench" });
 
     for (let i = 0; i < 10_000; i++) {
       const scope = container.createScope(`Scope${i}`);
@@ -107,7 +107,7 @@ describe("scope operations", () => {
 
   bench("10k nested scope chains (depth 3)", async () => {
     const graph = GraphBuilder.create().provide(ScopedAdapter).build();
-    const container = createContainer(graph, { name: "NestedScopeBench" });
+    const container = createContainer({ graph: graph, name: "NestedScopeBench" });
 
     for (let i = 0; i < 10_000; i++) {
       const scope1 = container.createScope("L1");
@@ -128,7 +128,7 @@ describe("disposal performance", () => {
     const parentGraph = GraphBuilder.create().provide(SingletonAdapter).build();
     const childGraph = GraphBuilder.create().build();
 
-    const container = createContainer(parentGraph, { name: "DisposalBench" });
+    const container = createContainer({ graph: parentGraph, name: "DisposalBench" });
 
     // Create 1000 child containers
     for (let i = 0; i < 1000; i++) {
@@ -141,7 +141,7 @@ describe("disposal performance", () => {
 
   bench("dispose container with 1k scopes", async () => {
     const graph = GraphBuilder.create().provide(ScopedAdapter).build();
-    const container = createContainer(graph, { name: "ScopeDisposalBench" });
+    const container = createContainer({ graph: graph, name: "ScopeDisposalBench" });
 
     // Create 1000 scopes
     const scopes = [];

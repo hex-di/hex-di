@@ -12,7 +12,7 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
 
@@ -58,9 +58,9 @@ interface AuditServiceWithLoggerId extends AuditService {
   loggerId: string;
 }
 
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
-const DatabasePort = createPort<Database, "Database">({ name: "Database" });
-const RequestContextPort = createPort<RequestContext, "RequestContext">({ name: "RequestContext" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const RequestContextPort = port<RequestContext>()({ name: "RequestContext" });
 
 // Helper to generate unique instance IDs
 let instanceCounter = 0;
@@ -90,7 +90,7 @@ describe("singleton lifetime", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Resolve from container
     const containerLogger = container.resolve(LoggerPort);
@@ -125,7 +125,7 @@ describe("singleton lifetime", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Resolve multiple times from container
     container.resolve(LoggerPort);
@@ -163,7 +163,7 @@ describe("scoped lifetime", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create two scopes
     const scope1 = container.createScope();
@@ -194,7 +194,7 @@ describe("scoped lifetime", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create three scopes
     const scope1 = container.createScope();
@@ -231,7 +231,7 @@ describe("transient lifetime", () => {
     });
 
     const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Every resolve from container returns a new instance
     const db1 = container.resolve(DatabasePort);
@@ -266,7 +266,7 @@ describe("transient lifetime", () => {
     });
 
     const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Resolve 3 times from container
     container.resolve(DatabasePort);
@@ -295,7 +295,7 @@ describe("mixed lifetimes in dependency chain", () => {
     }));
 
     // Create port for extended type that includes loggerId for testing
-    const UserServiceWithLoggerIdPort = createPort<UserServiceWithLoggerId, "UserService">({
+    const UserServiceWithLoggerIdPort = port<UserServiceWithLoggerId>()({
       name: "UserService",
     });
 
@@ -323,7 +323,7 @@ describe("mixed lifetimes in dependency chain", () => {
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(UserServiceAdapter).build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const scope = container.createScope();
 
     // Resolve user service from both container and scope
@@ -349,7 +349,7 @@ describe("mixed lifetimes in dependency chain", () => {
     }));
 
     // Create port for extended type that includes loggerId for testing
-    const AuditServiceWithLoggerIdPort = createPort<AuditServiceWithLoggerId, "AuditService">({
+    const AuditServiceWithLoggerIdPort = port<AuditServiceWithLoggerId>()({
       name: "AuditService",
     });
 
@@ -377,7 +377,7 @@ describe("mixed lifetimes in dependency chain", () => {
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(AuditServiceAdapter).build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const scope1 = container.createScope();
     const scope2 = container.createScope();
 
@@ -405,7 +405,7 @@ describe("mixed lifetimes in dependency chain", () => {
     }));
 
     // Create port for extended type that includes contextId for testing
-    const UserServiceWithContextIdPort = createPort<UserServiceWithContextId, "UserService">({
+    const UserServiceWithContextIdPort = port<UserServiceWithContextId>()({
       name: "UserService",
     });
 
@@ -436,7 +436,7 @@ describe("mixed lifetimes in dependency chain", () => {
       .provide(UserServiceAdapter)
       .build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const scope = container.createScope();
 
     // Resolve user service multiple times from the same scope

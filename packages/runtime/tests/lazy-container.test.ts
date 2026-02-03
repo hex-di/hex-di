@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/index.js";
 
@@ -30,9 +30,9 @@ interface ExtensionService {
 // Test Ports
 // =============================================================================
 
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
-const PluginPort = createPort<PluginService, "Plugin">({ name: "Plugin" });
-const ExtensionPort = createPort<ExtensionService, "Extension">({ name: "Extension" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const PluginPort = port<PluginService>()({ name: "Plugin" });
+const ExtensionPort = port<ExtensionService>()({ name: "Extension" });
 
 // =============================================================================
 // Test Fixtures
@@ -97,7 +97,7 @@ function createExtensionGraph() {
 describe("createChildAsync", () => {
   it("loads graph and returns container", async () => {
     const parentGraph = createParentGraph();
-    const container = createContainer(parentGraph, { name: "Test" });
+    const container = createContainer({ graph: parentGraph, name: "Test" });
 
     const pluginContainer = await container.createChildAsync(
       () => Promise.resolve(createPluginGraph()),
@@ -113,7 +113,7 @@ describe("createChildAsync", () => {
 
   it("returned container works like normal child container", async () => {
     const parentGraph = createParentGraph();
-    const container = createContainer(parentGraph, { name: "Test" });
+    const container = createContainer({ graph: parentGraph, name: "Test" });
 
     const pluginContainer = await container.createChildAsync(
       () => Promise.resolve(createPluginGraph()),
@@ -136,7 +136,7 @@ describe("createChildAsync", () => {
 
   it("passes inheritance modes correctly", async () => {
     const parentGraph = createParentGraph();
-    const container = createContainer(parentGraph, { name: "Test" });
+    const container = createContainer({ graph: parentGraph, name: "Test" });
 
     // Resolve logger from parent first
     const parentLogger = container.resolve(LoggerPort);
@@ -156,7 +156,7 @@ describe("createChildAsync", () => {
 
   it("handles graph loader errors", async () => {
     const parentGraph = createParentGraph();
-    const container = createContainer(parentGraph, { name: "Test" });
+    const container = createContainer({ graph: parentGraph, name: "Test" });
 
     await expect(
       container.createChildAsync(() => Promise.reject(new Error("Load failed")), { name: "Failed" })
@@ -175,7 +175,7 @@ describe("createLazyChild", () => {
 
   beforeEach(() => {
     const parentGraph = createParentGraph();
-    parentContainer = createContainer(parentGraph, { name: "Test" });
+    parentContainer = createContainer({ graph: parentGraph, name: "Test" });
   });
 
   describe("basic functionality", () => {
@@ -391,7 +391,7 @@ describe("createLazyChild", () => {
 describe("LazyContainer type safety", () => {
   it("infers correct types for resolve", async () => {
     const parentGraph = createParentGraph();
-    const container = createContainer(parentGraph, { name: "Test" });
+    const container = createContainer({ graph: parentGraph, name: "Test" });
 
     const lazyPlugin = container.createLazyChild(() => Promise.resolve(createPluginGraph()), {
       name: "Lazy",
@@ -408,7 +408,7 @@ describe("LazyContainer type safety", () => {
 
   it("load() returns typed Container", async () => {
     const parentGraph = createParentGraph();
-    const container = createContainer(parentGraph, { name: "Test" });
+    const container = createContainer({ graph: parentGraph, name: "Test" });
 
     const lazyPlugin = container.createLazyChild(() => Promise.resolve(createPluginGraph()), {
       name: "Lazy",

@@ -10,7 +10,7 @@
  */
 
 import { describe, test, expect, vi } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer, createInspector } from "../src/index.js";
 
@@ -26,8 +26,8 @@ interface Plugin {
   execute(): void;
 }
 
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
-const PluginPort = createPort<Plugin, "Plugin">({ name: "Plugin" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const PluginPort = port<Plugin>()({ name: "Plugin" });
 
 // =============================================================================
 // Child Container Scope Visibility Tests
@@ -44,7 +44,7 @@ describe("Child Container Scope Visibility", () => {
     });
 
     const parentGraph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const parentContainer = createContainer(parentGraph, { name: "Test" });
+    const parentContainer = createContainer({ graph: parentGraph, name: "Test" });
 
     // Create child container with a Plugin
     const PluginAdapter = createAdapter({
@@ -85,7 +85,7 @@ describe("Child Container Scope Visibility", () => {
     });
 
     const parentGraph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const parentContainer = createContainer(parentGraph, { name: "Test" });
+    const parentContainer = createContainer({ graph: parentGraph, name: "Test" });
 
     // Create child container
     const childGraph = GraphBuilder.create().build();
@@ -112,7 +112,7 @@ describe("Child Container Scope Visibility", () => {
     });
 
     const parentGraph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const parentContainer = createContainer(parentGraph, { name: "Test" });
+    const parentContainer = createContainer({ graph: parentGraph, name: "Test" });
 
     // Create two child containers
     const childGraph = GraphBuilder.create().build();
@@ -150,7 +150,7 @@ describe("Child Container Scope Visibility", () => {
     });
 
     const parentGraph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const rootContainer = createContainer(parentGraph, { name: "Test" });
+    const rootContainer = createContainer({ graph: parentGraph, name: "Test" });
 
     // Create child container
     const childGraph = GraphBuilder.create().build();
@@ -188,7 +188,7 @@ describe("Child Container Scope Visibility", () => {
     });
 
     const parentGraph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const parentContainer = createContainer(parentGraph, { name: "Test" });
+    const parentContainer = createContainer({ graph: parentGraph, name: "Test" });
 
     // Create scope on parent
     const _parentScope = parentContainer.createScope();

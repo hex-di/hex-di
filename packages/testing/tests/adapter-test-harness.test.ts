@@ -6,7 +6,7 @@
  */
 
 import { describe, test, expect, vi } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { createAdapterTest } from "../src/adapter-test-harness.js";
 
 // =============================================================================
@@ -35,10 +35,10 @@ interface Config {
   timeout: number;
 }
 
-const LoggerPort = createPort<Logger>({ name: "Logger" });
-const DatabasePort = createPort<Database>({ name: "Database" });
-const UserServicePort = createPort<UserService>({ name: "UserService" });
-const ConfigPort = createPort<Config>({ name: "Config" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const UserServicePort = port<UserService>()({ name: "UserService" });
+const ConfigPort = port<Config>()({ name: "Config" });
 
 // =============================================================================
 // Test Adapters

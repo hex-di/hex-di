@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "@hex-di/runtime";
 import {
@@ -25,9 +25,9 @@ interface ScopedResource {
   disposed: boolean;
 }
 
-const RequestIdPort = createPort<RequestId, "RequestId">({ name: "RequestId" });
-const AsyncValuePort = createPort<AsyncValue, "AsyncValue">({ name: "AsyncValue" });
-const ScopedResourcePort = createPort<ScopedResource, "ScopedResource">({ name: "ScopedResource" });
+const RequestIdPort = port<RequestId>()({ name: "RequestId" });
+const AsyncValuePort = port<AsyncValue>()({ name: "AsyncValue" });
+const ScopedResourcePort = port<ScopedResource>()({ name: "ScopedResource" });
 
 type AppPorts = typeof RequestIdPort | typeof AsyncValuePort | typeof ScopedResourcePort;
 type DefaultEnv = HexHonoEnv<AppPorts>;

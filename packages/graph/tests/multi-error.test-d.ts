@@ -14,7 +14,7 @@
 import { describe, expectTypeOf, it, expect } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
-import type { FilterNever, MultiErrorMessage } from "../src/advanced.js";
+import type { FilterNever, MultiErrorMessage } from "./test-types.js";
 import type { MergeResultAllErrors, AnyBuilderInternals } from "../src/builder/types/index.js";
 import {
   createLoggerAdapter,

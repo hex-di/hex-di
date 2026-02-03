@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect, vi } from "vitest";
-import { createPort, type Port, createAdapter } from "@hex-di/core";
+import { port, type Port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
 
@@ -31,9 +31,9 @@ interface Config {
   getValue(key: string): string;
 }
 
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
-const DatabasePort = createPort<Database, "Database">({ name: "Database" });
-const ConfigPort = createPort<Config, "Config">({ name: "Config" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const ConfigPort = port<Config>()({ name: "Config" });
 
 // =============================================================================
 // Child Container Creation Tests
@@ -49,7 +49,7 @@ describe("ChildContainer", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create empty child graph
     const childGraph = GraphBuilder.create().build();
@@ -68,7 +68,7 @@ describe("ChildContainer", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Resolve from parent first
     const parentLogger = container.resolve(LoggerPort);
@@ -104,7 +104,7 @@ describe("ChildContainer", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create child container
     const childGraph = GraphBuilder.create().build();
@@ -136,7 +136,7 @@ describe("ChildContainer", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const childGraph = GraphBuilder.create().build();
     const childContainer = container.createChild(childGraph, { name: "Child" });
@@ -160,7 +160,7 @@ describe("ChildContainer", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const childGraph = GraphBuilder.create().build();
     const childContainer = container.createChild(childGraph, { name: "Child" });
@@ -178,7 +178,7 @@ describe("ChildContainer", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const childGraph = GraphBuilder.create().build();
     const childContainer = container.createChild(childGraph, { name: "Child" });
@@ -217,7 +217,7 @@ describe("ChildContainer.override()", () => {
     });
 
     const graph = GraphBuilder.create().provide(ParentLoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create child with override using graph
     const childGraph = GraphBuilder.forParent(graph).override(ChildLoggerAdapter).build();
@@ -254,7 +254,7 @@ describe("ChildContainer.override()", () => {
     });
 
     const graph = GraphBuilder.create().provide(ParentLoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Resolve from parent first
     const parentLogger = container.resolve(LoggerPort);
@@ -298,7 +298,7 @@ describe("ChildContainer.override()", () => {
     });
 
     const graph = GraphBuilder.create().provide(ParentLoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create child with override (transient lifetime)
     const childGraph = GraphBuilder.forParent(graph).override(ChildLoggerAdapter).build();
@@ -334,7 +334,7 @@ describe("ChildContainer.extend()", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create child with extension
     const childGraph = GraphBuilder.create().provide(ConfigAdapter).build();
@@ -365,7 +365,7 @@ describe("ChildContainer.extend()", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create child with extension
     const childGraph = GraphBuilder.create().provide(ConfigAdapter).build();
@@ -403,7 +403,7 @@ describe("ChildContainer.extend()", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create child with extension that depends on parent's Logger
     // Use buildFragment() since ConfigAdapter's dependency (Logger) comes from parent
@@ -421,7 +421,7 @@ describe("ChildContainer.extend()", () => {
     interface Cache {
       get(key: string): unknown;
     }
-    const CachePort = createPort<Cache, "Cache">({ name: "Cache" });
+    const CachePort = port<Cache>()({ name: "Cache" });
 
     const LoggerAdapter = createAdapter({
       provides: LoggerPort,
@@ -445,7 +445,7 @@ describe("ChildContainer.extend()", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create child with multiple extensions
     const childGraph = GraphBuilder.create().provide(ConfigAdapter).provide(CacheAdapter).build();
@@ -469,7 +469,7 @@ describe("Inheritance Modes", () => {
     increment(): void;
   }
 
-  const CounterPort = createPort<Counter, "Counter">({ name: "Counter" });
+  const CounterPort = port<Counter>()({ name: "Counter" });
 
   const createCounterAdapter = () =>
     createAdapter({
@@ -490,7 +490,7 @@ describe("Inheritance Modes", () => {
       const CounterAdapter = createCounterAdapter();
 
       const graph = GraphBuilder.create().provide(CounterAdapter).build();
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       // Resolve from parent first
       const parentCounter = container.resolve(CounterPort);
@@ -511,7 +511,7 @@ describe("Inheritance Modes", () => {
       const CounterAdapter = createCounterAdapter();
 
       const graph = GraphBuilder.create().provide(CounterAdapter).build();
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       // Resolve from parent
       const parentCounter = container.resolve(CounterPort);
@@ -534,7 +534,7 @@ describe("Inheritance Modes", () => {
       const CounterAdapter = createCounterAdapter();
 
       const graph = GraphBuilder.create().provide(CounterAdapter).build();
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       // Resolve from parent and set initial state
       const parentCounter = container.resolve(CounterPort);
@@ -558,7 +558,7 @@ describe("Inheritance Modes", () => {
       const CounterAdapter = createCounterAdapter();
 
       const graph = GraphBuilder.create().provide(CounterAdapter).build();
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       // Resolve from parent
       const parentCounter = container.resolve(CounterPort);
@@ -600,7 +600,7 @@ describe("Inheritance Modes", () => {
       });
 
       const graph = GraphBuilder.create().provide(CounterAdapter).build();
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       // Resolve from parent and set initial state
       const parentCounter = container.resolve(CounterPort);
@@ -628,7 +628,7 @@ describe("Inheritance Modes", () => {
       const CounterAdapter = createCounterAdapter();
 
       const graph = GraphBuilder.create().provide(CounterAdapter).build();
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       // Resolve from parent
       const parentCounter = container.resolve(CounterPort);
@@ -669,7 +669,7 @@ describe("Inheritance Modes", () => {
       });
 
       const graph = GraphBuilder.create().provide(CounterAdapter).build();
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       // Resolve parent
       const parentCounter = container.resolve(CounterPort);
@@ -694,7 +694,7 @@ describe("Inheritance Modes", () => {
       interface State {
         data: string;
       }
-      const StatePort = createPort<State, "State">({ name: "State" });
+      const StatePort = port<State>()({ name: "State" });
 
       const CounterAdapter = createCounterAdapter();
       const StateAdapter = createAdapter({
@@ -705,7 +705,7 @@ describe("Inheritance Modes", () => {
       });
 
       const graph = GraphBuilder.create().provide(CounterAdapter).provide(StateAdapter).build();
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       // Set up parent state
       const parentCounter = container.resolve(CounterPort);
@@ -751,7 +751,7 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       // Create child container
       const childGraph = GraphBuilder.create().build();
@@ -779,7 +779,7 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       // Create chain: container -> child -> grandchild
       const childGraph = GraphBuilder.create().build();
@@ -805,7 +805,7 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       const childGraph = GraphBuilder.create().build();
       const childContainer = container.createChild(childGraph, { name: "Child" });
@@ -841,7 +841,7 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(RootLoggerAdapter).build();
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       // Child overrides Logger
       const childGraph = GraphBuilder.forParent(graph).override(ChildLoggerAdapter).build();
@@ -879,7 +879,7 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(RootLoggerAdapter).build();
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       // Child doesn't override Logger
       const childGraph = GraphBuilder.create().build();
@@ -916,7 +916,7 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       const childGraph = GraphBuilder.create().build();
       const childContainer = container.createChild(childGraph, { name: "Child" });
@@ -957,7 +957,7 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       // Resolve from parent to create singleton
       container.resolve(LoggerPort);
@@ -1016,7 +1016,7 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       // Create children in order: child1, child2, child3
       const child1Graph = GraphBuilder.forParent(graph).override(Child1Adapter).build();
@@ -1047,7 +1047,7 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       // Create two children
       const child1Graph = GraphBuilder.create().build();
@@ -1102,7 +1102,7 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(RootAdapter).build();
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       const childGraph = GraphBuilder.forParent(graph).override(ChildAdapter).build();
       const childContainer = container.createChild(childGraph, { name: "Child" });
@@ -1153,7 +1153,7 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(RootLoggerAdapter).build();
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       // Create child with override
       const childGraph = GraphBuilder.forParent(graph).override(ChildLoggerAdapter).build();
@@ -1186,7 +1186,7 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       const childGraph = GraphBuilder.create().provide(ConfigAdapter).build();
       const childContainer = container.createChild(childGraph, { name: "Child" });
@@ -1209,7 +1209,7 @@ describe("Multi-Level Hierarchy and Disposal", () => {
       });
 
       const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-      const container = createContainer(graph, { name: "Test" });
+      const container = createContainer({ graph: graph, name: "Test" });
 
       const childGraph = GraphBuilder.create().build();
       const childContainer = container.createChild(childGraph, { name: "Child" });
@@ -1247,7 +1247,7 @@ describe("Child Container Integration Tests", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const parentContainer = createContainer(graph, { name: "Test" });
+    const parentContainer = createContainer({ graph: graph, name: "Test" });
 
     // 2. Resolve from parent to ensure singleton exists
     const parentLogger = parentContainer.resolve(LoggerPort);
@@ -1320,7 +1320,7 @@ describe("Child Container Integration Tests", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
     const childGraph = GraphBuilder.create().build();
     const childContainer = container.createChild(childGraph, { name: "Child" });
 
@@ -1340,7 +1340,7 @@ describe("Child Container Integration Tests", () => {
       value: number;
       increment(): void;
     }
-    const CounterPort = createPort<Counter, "Counter">({ name: "Counter" });
+    const CounterPort = port<Counter>()({ name: "Counter" });
 
     const CounterAdapter = createAdapter({
       provides: CounterPort,
@@ -1356,7 +1356,7 @@ describe("Child Container Integration Tests", () => {
     });
 
     const graph = GraphBuilder.create().provide(CounterAdapter).build();
-    const rootContainer = createContainer(graph, { name: "Test" });
+    const rootContainer = createContainer({ graph: graph, name: "Test" });
 
     // Root counter: value = 0 -> increment -> value = 1
     const rootCounter = rootContainer.resolve(CounterPort);
@@ -1418,7 +1418,7 @@ describe("Child Container Integration Tests", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const childGraph = GraphBuilder.forParent(graph).override(TransientLoggerAdapter).build();
     const childContainer = container.createChild(childGraph, { name: "Child" });
@@ -1464,7 +1464,7 @@ describe("Child Container Integration Tests", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const childGraph = GraphBuilder.forParent(graph)
       .override(ChildLoggerAdapter)
@@ -1486,7 +1486,7 @@ describe("Child Container Integration Tests", () => {
       value: number;
       increment(): void;
     }
-    const CounterPort = createPort<Counter, "Counter">({ name: "Counter" });
+    const CounterPort = port<Counter>()({ name: "Counter" });
 
     const CounterAdapter = createAdapter({
       provides: CounterPort,
@@ -1501,7 +1501,7 @@ describe("Child Container Integration Tests", () => {
     });
 
     const graph = GraphBuilder.create().provide(CounterAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create two sibling child containers with isolated mode
     const child1Graph = GraphBuilder.create().build();

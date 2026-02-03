@@ -19,7 +19,7 @@
  */
 
 import { describe, it, expectTypeOf } from "vitest";
-import { createPort } from "../src/ports/factory.js";
+import { port, createPort } from "../src/ports/factory.js";
 import { createAdapter } from "../src/adapters/unified.js";
 import type {
   BothFactoryAndClassError,
@@ -44,9 +44,9 @@ interface UserService {
 }
 
 // Ports
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
-const DatabasePort = createPort<Database, "Database">({ name: "Database" });
-const UserServicePort = createPort<UserService, "UserService">({ name: "UserService" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const UserServicePort = port<UserService>()({ name: "UserService" });
 
 // Classes for class-based tests
 class ConsoleLogger implements Logger {
@@ -546,5 +546,153 @@ describe("unified createAdapter - default value inference", () => {
     expectTypeOf(adapter.clonable).toEqualTypeOf<false>();
     expectTypeOf(adapter.requires).toEqualTypeOf<readonly []>();
     expectTypeOf(adapter.factoryKind).toEqualTypeOf<"sync">();
+  });
+});
+
+// =============================================================================
+// Optional Requires Tests
+// =============================================================================
+
+describe("unified createAdapter - optional requires with explicit options", () => {
+  describe("factory variant", () => {
+    it("defaults requires to empty tuple when lifetime is explicit", () => {
+      const adapter = createAdapter({
+        provides: LoggerPort,
+        lifetime: "scoped",
+        factory: () => ({ log: () => {} }),
+      });
+
+      // requires should default to empty tuple even with explicit lifetime
+      expectTypeOf(adapter.requires).toEqualTypeOf<readonly []>();
+      expectTypeOf(adapter.lifetime).toEqualTypeOf<"scoped">();
+    });
+
+    it("defaults requires to empty tuple when clonable is explicit", () => {
+      const adapter = createAdapter({
+        provides: LoggerPort,
+        clonable: true,
+        factory: () => ({ log: () => {} }),
+      });
+
+      // requires should default to empty tuple even with explicit clonable
+      expectTypeOf(adapter.requires).toEqualTypeOf<readonly []>();
+      expectTypeOf(adapter.clonable).toEqualTypeOf<true>();
+    });
+
+    it("defaults requires to empty tuple when lifetime and clonable are explicit", () => {
+      const adapter = createAdapter({
+        provides: LoggerPort,
+        lifetime: "transient",
+        clonable: true,
+        factory: () => ({ log: () => {} }),
+      });
+
+      // requires should default to empty tuple with all other options explicit
+      expectTypeOf(adapter.requires).toEqualTypeOf<readonly []>();
+      expectTypeOf(adapter.lifetime).toEqualTypeOf<"transient">();
+      expectTypeOf(adapter.clonable).toEqualTypeOf<true>();
+    });
+
+    it("preserves explicit requires when provided with lifetime", () => {
+      const adapter = createAdapter({
+        provides: DatabasePort,
+        requires: [LoggerPort],
+        lifetime: "scoped",
+        factory: deps => ({
+          query: async () => {
+            deps.Logger.log("query");
+            return {};
+          },
+        }),
+      });
+
+      // explicit requires should be preserved
+      expectTypeOf(adapter.requires).toEqualTypeOf<readonly [typeof LoggerPort]>();
+      expectTypeOf(adapter.lifetime).toEqualTypeOf<"scoped">();
+    });
+
+    it("preserves explicit requires when provided with clonable", () => {
+      const adapter = createAdapter({
+        provides: DatabasePort,
+        requires: [LoggerPort],
+        clonable: true,
+        factory: deps => ({
+          query: async () => {
+            deps.Logger.log("query");
+            return {};
+          },
+        }),
+      });
+
+      // explicit requires should be preserved
+      expectTypeOf(adapter.requires).toEqualTypeOf<readonly [typeof LoggerPort]>();
+      expectTypeOf(adapter.clonable).toEqualTypeOf<true>();
+    });
+  });
+
+  describe("class variant", () => {
+    it("defaults requires to empty tuple when lifetime is explicit", () => {
+      const adapter = createAdapter({
+        provides: LoggerPort,
+        lifetime: "scoped",
+        class: ConsoleLogger,
+      });
+
+      // requires should default to empty tuple even with explicit lifetime
+      expectTypeOf(adapter.requires).toEqualTypeOf<readonly []>();
+      expectTypeOf(adapter.lifetime).toEqualTypeOf<"scoped">();
+    });
+
+    it("defaults requires to empty tuple when clonable is explicit", () => {
+      const adapter = createAdapter({
+        provides: LoggerPort,
+        clonable: true,
+        class: ConsoleLogger,
+      });
+
+      // requires should default to empty tuple even with explicit clonable
+      expectTypeOf(adapter.requires).toEqualTypeOf<readonly []>();
+      expectTypeOf(adapter.clonable).toEqualTypeOf<true>();
+    });
+
+    it("defaults requires to empty tuple when lifetime and clonable are explicit", () => {
+      const adapter = createAdapter({
+        provides: LoggerPort,
+        lifetime: "transient",
+        clonable: true,
+        class: ConsoleLogger,
+      });
+
+      // requires should default to empty tuple with all other options explicit
+      expectTypeOf(adapter.requires).toEqualTypeOf<readonly []>();
+      expectTypeOf(adapter.lifetime).toEqualTypeOf<"transient">();
+      expectTypeOf(adapter.clonable).toEqualTypeOf<true>();
+    });
+
+    it("preserves explicit requires when provided with lifetime", () => {
+      const adapter = createAdapter({
+        provides: DatabasePort,
+        requires: [LoggerPort],
+        lifetime: "scoped",
+        class: PostgresDatabase,
+      });
+
+      // explicit requires should be preserved
+      expectTypeOf(adapter.requires).toEqualTypeOf<readonly [typeof LoggerPort]>();
+      expectTypeOf(adapter.lifetime).toEqualTypeOf<"scoped">();
+    });
+
+    it("preserves explicit requires when provided with clonable", () => {
+      const adapter = createAdapter({
+        provides: DatabasePort,
+        requires: [LoggerPort],
+        clonable: true,
+        class: PostgresDatabase,
+      });
+
+      // explicit requires should be preserved
+      expectTypeOf(adapter.requires).toEqualTypeOf<readonly [typeof LoggerPort]>();
+      expectTypeOf(adapter.clonable).toEqualTypeOf<true>();
+    });
   });
 });

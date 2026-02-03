@@ -319,7 +319,8 @@ export class TestBuilder {
       .build();
 
     // Create container
-    const container = createContainer(graph as never, {
+    const container = createContainer({
+      graph: graph as never,
       name: this.containerName,
     });
 

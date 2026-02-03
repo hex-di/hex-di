@@ -6,7 +6,7 @@
  */
 
 import { describe, test, expect, vi } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "@hex-di/runtime";
 import { createMockAdapter } from "../src/mock-adapter.js";
@@ -32,9 +32,9 @@ interface UserService {
   createUser(name: string): Promise<{ id: string; name: string }>;
 }
 
-const LoggerPort = createPort<Logger>({ name: "Logger" });
-const DatabasePort = createPort<Database>({ name: "Database" });
-const UserServicePort = createPort<UserService>({ name: "UserService" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const UserServicePort = port<UserService>()({ name: "UserService" });
 
 // =============================================================================
 // createMockAdapter Tests
@@ -211,7 +211,7 @@ describe("createMockAdapter edge cases", () => {
       debug: boolean;
     }
 
-    const ConfigPort = createPort<Config>({ name: "Config" });
+    const ConfigPort = port<Config>()({ name: "Config" });
 
     const mockAdapter = createMockAdapter(ConfigPort, {
       apiUrl: "http://test.com",

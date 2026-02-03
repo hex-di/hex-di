@@ -9,7 +9,7 @@
  * @packageDocumentation
  */
 
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import type { QueryClient } from "@tanstack/react-query";
 import type { FlowService } from "@hex-di/flow";
 import type {
@@ -148,7 +148,7 @@ export interface TaskApiService {
  * const { tasks } = await apiService.getTasks({ status: 'todo', page: 1, pageSize: 10 });
  * ```
  */
-export const TaskApiServicePort = createPort<TaskApiService, "TaskApiService">({
+export const TaskApiServicePort = port<TaskApiService>()({
   name: "TaskApiService",
 });
 
@@ -225,7 +225,7 @@ export interface TaskCacheService {
  * ])
  * ```
  */
-export const TaskCacheServicePort = createPort<TaskCacheService, "TaskCacheService">({
+export const TaskCacheServicePort = port<TaskCacheService>()({
   name: "TaskCacheService",
 });
 
@@ -312,6 +312,6 @@ export type TaskFlowService = FlowService<TaskFlowState, TaskFlowEvent, TaskFlow
  * }
  * ```
  */
-export const TaskFlowServicePort = createPort<TaskFlowService, "TaskFlowService">({
+export const TaskFlowServicePort = port<TaskFlowService>()({
   name: "TaskFlowService",
 });

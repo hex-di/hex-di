@@ -4,7 +4,7 @@
  * @packageDocumentation
  */
 
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import type { UserSession } from "../types.js";
 
 /**
@@ -12,7 +12,7 @@ import type { UserSession } from "../types.js";
  *
  * Provides the current user's identity for the scope.
  */
-export const UserSessionPort = createPort<UserSession, "UserSession">({ name: "UserSession" });
+export const UserSessionPort = port<UserSession>()({ name: "UserSession" });
 
 /**
  * Union of all ports in the user session feature.

@@ -1,4 +1,4 @@
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import type { Todo, User } from "../domain/entities.js";
 
 export interface Logger {
@@ -17,6 +17,6 @@ export interface TodoService {
   toggle(user: User, id: string): Promise<Todo>;
 }
 
-export const LoggerPort = createPort<"Logger", Logger>("Logger");
-export const AuthServicePort = createPort<"AuthService", AuthService>("AuthService");
-export const TodoServicePort = createPort<"TodoService", TodoService>("TodoService");
+export const LoggerPort = port<Logger>()({ name: "Logger" });
+export const AuthServicePort = port<AuthService>()({ name: "AuthService" });
+export const TodoServicePort = port<TodoService>()({ name: "TodoService" });

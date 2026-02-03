@@ -23,12 +23,12 @@
  *
  * @example Basic usage
  * ```typescript
- * import { createPort } from '@hex-di/core';
+ * import { port } from '@hex-di/core';
  * import { createContainer } from '@hex-di/runtime';
  * import { createTypedHooks } from '@hex-di/react';
  *
  * // Define ports
- * const LoggerPort = createPort<Logger>({ name: 'Logger' });
+ * const LoggerPort = port<Logger>()({ name: 'Logger' });
  * type AppPorts = typeof LoggerPort;
  *
  * // Create typed React integration

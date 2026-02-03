@@ -48,7 +48,6 @@ import type {
   GetParentProvides,
   GetMaxDepth,
   GetDepthExceededWarning,
-  GetUncheckedUsed,
 } from "./types/state.js";
 import { inspectGraph, detectCycleAtRuntime } from "../graph/inspection/index.js";
 import type {
@@ -58,17 +57,13 @@ import type {
   ValidationResult,
 } from "../graph/types/inspection.js";
 
-// Import all type-level validation types from the dedicated module
-import type {
-  EmptyDependencyGraph,
-  EmptyLifetimeMap,
-  ProvideResult,
-  ProvideResultAllErrors,
-  ProvideManyResult,
-  MergeResult,
-  OverrideResult,
-  PrettyBuilder,
-} from "./types/index.js";
+// Import type-level validation types directly from source files to avoid circular imports
+// through the barrel file (types/index.ts). The barrel re-exports from inspection.ts
+// which imports from merge.ts which imports GraphBuilder, creating a cycle.
+import type { EmptyDependencyGraph, EmptyLifetimeMap } from "./types/state.js";
+import type { ProvideResult, ProvideResultAllErrors, ProvideManyResult } from "./types/provide.js";
+import type { MergeResult, OverrideResult } from "./types/merge.js";
+import type { PrettyBuilder } from "./types/inspection.js";
 
 // Import brand symbols from shared symbols module
 import { GRAPH_BUILDER_BRAND } from "../symbols/index.js";
@@ -76,7 +71,7 @@ import type { __graphBuilderBrand, __prettyView, __prettyViewSymbol } from "../s
 // Import structural types from builder-types
 import type { BuildableGraphState } from "./builder-types.js";
 import { addAdapter, addManyAdapters, addOverrideAdapter } from "./builder-provide.js";
-import { mergeGraphs, mergeGraphsWithOptions, type MergeGraphOptions } from "./builder-merge.js";
+import { mergeGraphs } from "./builder-merge.js";
 import { buildGraph, buildGraphFragment, type BuiltGraph } from "./builder-build.js";
 
 // NOTE: Inspection utilities (inspectGraph, inspectionToJSON, detectCycleAtRuntime)
@@ -89,15 +84,18 @@ export { GRAPH_BUILDER_BRAND };
 export type { __prettyViewSymbol };
 
 // Re-export type utilities for external use
+// NOTE: Re-export from specific files instead of barrel (types/index.js) to avoid
+// circular import: types/index.ts → inspection.ts → merge.ts → builder.ts
 export type {
   EmptyDependencyGraph,
   EmptyLifetimeMap,
-  ProvideResult,
-  ProvideResultAllErrors,
-  ProvideManyResult,
-  MergeResult,
-  MergeOptions,
-  OverrideResult,
+  AnyBuilderInternals,
+  BuilderInternals,
+  DefaultInternals,
+} from "./types/state.js";
+export type { ProvideResult, ProvideResultAllErrors, ProvideManyResult } from "./types/provide.js";
+export type { MergeResult, MergeOptions, OverrideResult } from "./types/merge.js";
+export type {
   // Inspection types
   ValidationState,
   InspectValidation,
@@ -113,11 +111,7 @@ export type {
   IsBuilderComplete,
   BuilderProvides,
   BuilderMissing,
-  // Grouped internals types
-  AnyBuilderInternals,
-  BuilderInternals,
-  DefaultInternals,
-} from "./types/index.js";
+} from "./types/inspection.js";
 
 // =============================================================================
 // Brand Symbols

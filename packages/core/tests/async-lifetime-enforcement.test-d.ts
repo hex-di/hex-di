@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expectTypeOf } from "vitest";
-import { createAdapter, createPort, type AsyncLifetimeError } from "../src/index.js";
+import { port, createAdapter, createPort, type AsyncLifetimeError } from "../src/index.js";
 
 // =============================================================================
 // Test Fixtures
@@ -27,8 +27,8 @@ interface DepService {
   getValue(): number;
 }
 
-const TestPort = createPort<TestService, "Test">({ name: "Test" });
-const DepPort = createPort<DepService, "Dep">({ name: "Dep" });
+const TestPort = port<TestService>()({ name: "Test" });
+const DepPort = port<DepService>()({ name: "Dep" });
 
 // =============================================================================
 // ASYNC-01: Async + scoped = Error

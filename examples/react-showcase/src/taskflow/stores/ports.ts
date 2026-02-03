@@ -10,7 +10,7 @@
  * @packageDocumentation
  */
 
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import type { UIPreferencesStoreInstance } from "./ui-preferences-store.js";
 import type { FilterStoreInstance } from "./filter-store.js";
 import type { UserSessionStoreInstance } from "./user-session-store.js";
@@ -34,7 +34,7 @@ import type { UserSessionStoreInstance } from "./user-session-store.js";
  * store.getState().setTheme('dark');
  * ```
  */
-export const UIPreferencesStorePort = createPort<UIPreferencesStoreInstance, "UIPreferencesStore">({
+export const UIPreferencesStorePort = port<UIPreferencesStoreInstance>()({
   name: "UIPreferencesStore",
 });
 
@@ -55,7 +55,7 @@ export const UIPreferencesStorePort = createPort<UIPreferencesStoreInstance, "UI
  * store.getState().setStatus('todo');
  * ```
  */
-export const FilterStorePort = createPort<FilterStoreInstance, "FilterStore">({
+export const FilterStorePort = port<FilterStoreInstance>()({
   name: "FilterStore",
 });
 
@@ -80,6 +80,6 @@ export const FilterStorePort = createPort<FilterStoreInstance, "FilterStore">({
  * // Check if user is authenticated before allowing navigation
  * ```
  */
-export const UserSessionStorePort = createPort<UserSessionStoreInstance, "UserSessionStore">({
+export const UserSessionStorePort = port<UserSessionStoreInstance>()({
   name: "UserSessionStore",
 });

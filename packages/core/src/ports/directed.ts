@@ -139,7 +139,7 @@ function hasMetadataKey(obj: object): obj is { readonly [METADATA_KEY]: PortMeta
  *
  * @example
  * ```typescript
- * const inbound = createPort<Logger>({ name: 'Logger', direction: 'inbound' });
+ * const inbound = port<Logger>()({ name: 'Logger', direction: 'inbound' });
  *
  * isDirectedPort(inbound); // true
  *
@@ -166,8 +166,8 @@ export function isDirectedPort(
  *
  * @example
  * ```typescript
- * const inbound = createPort<UserService>({ name: 'UserService', direction: 'inbound' });
- * const outbound = createPort<UserRepo>({ name: 'UserRepo', direction: 'outbound' });
+ * const inbound = port<UserService>()({ name: 'UserService', direction: 'inbound' });
+ * const outbound = port<UserRepo>()({ name: 'UserRepo', direction: 'outbound' });
  *
  * isInboundPort(inbound); // true
  * isInboundPort(outbound); // false
@@ -189,8 +189,8 @@ export function isInboundPort(port: Port<unknown, string>): port is InboundPort<
  *
  * @example
  * ```typescript
- * const inbound = createPort<UserService>({ name: 'UserService', direction: 'inbound' });
- * const outbound = createPort<UserRepo>({ name: 'UserRepo', direction: 'outbound' });
+ * const inbound = port<UserService>()({ name: 'UserService', direction: 'inbound' });
+ * const outbound = port<UserRepo>()({ name: 'UserRepo', direction: 'outbound' });
  *
  * isOutboundPort(outbound); // true
  * isOutboundPort(inbound); // false
@@ -216,8 +216,8 @@ export function isOutboundPort(port: Port<unknown, string>): port is OutboundPor
  *
  * @example
  * ```typescript
- * const inbound = createPort<Logger>({ name: 'Logger', direction: 'inbound' });
- * const outbound = createPort<Logger>({ name: 'Logger' }); // defaults to outbound
+ * const inbound = port<Logger>()({ name: 'Logger', direction: 'inbound' });
+ * const outbound = port<Logger>()({ name: 'Logger' }); // defaults to outbound
  *
  * getPortDirection(inbound); // 'inbound'
  * getPortDirection(outbound); // 'outbound'
@@ -238,7 +238,7 @@ export function getPortDirection(port: Port<unknown, string>): PortDirection | u
  *
  * @example
  * ```typescript
- * const port = createPort<Logger>({
+ * const port = port<Logger>()({
  *   name: 'Logger',
  *   direction: 'inbound',
  *   description: 'Application logging',

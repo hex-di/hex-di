@@ -12,7 +12,7 @@
  * ```typescript
  * import { createContainer } from "@hex-di/runtime";
  *
- * const container = createContainer(graph, { name: 'Root' });
+ * const container = createContainer({ graph: graph, name: 'Root'  });
  *
  * // Access tracer API via built-in property
  * const traces = container.tracer.getTraces();

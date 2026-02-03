@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { parseGraphError, GraphErrorCode } from "../src/advanced.js";
+import { parseGraphError, GraphErrorCode } from "./test-types.js";
 
 describe("Error parsing discriminated union runtime behavior", () => {
   describe("Type narrowing via discriminated union", () => {

@@ -12,7 +12,7 @@
 import { describe, it, expect, expectTypeOf } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
-import type { MergeOptions } from "../src/advanced.js";
+import type { MergeOptions } from "./test-types.js";
 
 // =============================================================================
 // Test Fixtures

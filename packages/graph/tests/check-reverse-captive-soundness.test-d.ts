@@ -10,11 +10,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import type {
-  GetLifetimeLevel,
-  AddLifetime,
-  FindReverseCaptiveDependency,
-} from "../src/advanced.js";
+import type { GetLifetimeLevel, AddLifetime, FindReverseCaptiveDependency } from "./test-types.js";
 
 // =============================================================================
 // GetLifetimeLevel Behavior Tests

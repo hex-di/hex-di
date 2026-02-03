@@ -26,7 +26,7 @@
  */
 
 import { describe, test, expect, vi } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
 
@@ -49,9 +49,9 @@ interface RequestContext {
   instanceId: string;
 }
 
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
-const DatabasePort = createPort<Database, "Database">({ name: "Database" });
-const RequestContextPort = createPort<RequestContext, "RequestContext">({ name: "RequestContext" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const RequestContextPort = port<RequestContext>()({ name: "RequestContext" });
 
 let instanceCounter = 0;
 function generateInstanceId(): string {
@@ -75,7 +75,7 @@ describe("Singleton memory cleanup", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Resolve twice - should get same instance (proves caching works)
     const logger1 = container.resolve(LoggerPort);
@@ -104,7 +104,7 @@ describe("Singleton memory cleanup", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const logger = container.resolve(LoggerPort);
     await container.dispose();
@@ -125,7 +125,7 @@ describe("Singleton memory cleanup", () => {
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     container.resolve(LoggerPort);
     await container.dispose();
@@ -166,7 +166,7 @@ describe("Singleton memory cleanup", () => {
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     container.resolve(LoggerPort);
     container.resolve(DatabasePort);
@@ -196,7 +196,7 @@ describe("Scoped memory cleanup", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const scope1 = container.createScope();
     const scope2 = container.createScope();
@@ -226,7 +226,7 @@ describe("Scoped memory cleanup", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const scope = container.createScope();
     scope.resolve(RequestContextPort);
@@ -247,7 +247,7 @@ describe("Scoped memory cleanup", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const scope = container.createScope();
     scope.resolve(RequestContextPort);
@@ -269,7 +269,7 @@ describe("Scoped memory cleanup", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     const scope1 = container.createScope();
     const scope2 = container.createScope();
@@ -327,7 +327,7 @@ describe("Child scope tracking cleanup", () => {
       .provide(RequestContextAdapter)
       .build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create multiple scopes
     const scope1 = container.createScope();
@@ -370,7 +370,7 @@ describe("Child scope tracking cleanup", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create nested hierarchy: scope1 > scope2 > scope3
     const scope1 = container.createScope();
@@ -409,7 +409,7 @@ describe("Child scope tracking cleanup", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create many scopes
     const scopes = Array.from({ length: 100 }, () => container.createScope());
@@ -446,7 +446,7 @@ describe("GC eligibility verification", () => {
       id: string;
     }
 
-    const LargeServicePort = createPort<LargeService, "LargeService">({ name: "LargeService" });
+    const LargeServicePort = port<LargeService>()({ name: "LargeService" });
 
     const LargeAdapter = createAdapter({
       provides: LargeServicePort,
@@ -459,7 +459,7 @@ describe("GC eligibility verification", () => {
     });
 
     const graph = GraphBuilder.create().provide(LargeAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Resolve and create WeakRef
     const instance = container.resolve(LargeServicePort);
@@ -486,7 +486,7 @@ describe("GC eligibility verification", () => {
       id: string;
     }
 
-    const LargeContextPort = createPort<LargeContext, "LargeContext">({ name: "LargeContext" });
+    const LargeContextPort = port<LargeContext>()({ name: "LargeContext" });
 
     const LargeContextAdapter = createAdapter({
       provides: LargeContextPort,
@@ -499,7 +499,7 @@ describe("GC eligibility verification", () => {
     });
 
     const graph = GraphBuilder.create().provide(LargeContextAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create multiple scopes with large instances
     const scopes = Array.from({ length: 10 }, () => container.createScope());
@@ -548,7 +548,7 @@ describe("Transient instances (no caching)", () => {
     });
 
     const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Each resolve creates a new instance
     const db1 = container.resolve(DatabasePort);
@@ -580,7 +580,7 @@ describe("Transient instances (no caching)", () => {
     });
 
     const graph = GraphBuilder.create().provide(DatabaseAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create several transient instances
     container.resolve(DatabasePort);
@@ -601,7 +601,7 @@ describe("Transient instances (no caching)", () => {
 describe("Stress: many instances cleanup", () => {
   test("disposing container with many singletons completes", async () => {
     const ports = Array.from({ length: 100 }, (_, i) =>
-      createPort<{ id: string }>({ name: `Service${i}` })
+      port<{ id: string }>()({ name: `Service${i}` })
     );
 
     const adapters = ports.map(port =>
@@ -615,7 +615,7 @@ describe("Stress: many instances cleanup", () => {
 
     // Use provideMany for convenience
     const graph = GraphBuilder.create().provideMany(adapters).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Resolve all
     for (const port of ports) {
@@ -640,7 +640,7 @@ describe("Stress: many instances cleanup", () => {
     });
 
     const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // Create and dispose many scopes
     for (let i = 0; i < 1000; i++) {

@@ -37,6 +37,3 @@ coverage/
 
 # Auto Claude data directory
 .auto-claude/
-
-# GSD Planning
-.planning/

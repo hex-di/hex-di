@@ -1,13 +1,17 @@
 /**
- * Type-level tests to verify the forward reference captive dependency gap.
+ * Type-level tests verifying forward reference captive dependency detection.
  *
- * ## The Problem
+ * ## The Scenario
  *
  * When adapters are registered in "forward reference" order:
  * 1. Singleton A requires ScopedPort (not yet registered) → forward ref, passes
- * 2. Scoped B provides ScopedPort → should be caught by reverse captive detection
+ * 2. Scoped B provides ScopedPort → caught by reverse captive detection (HEX004)
  *
- * This test suite verifies that the type system catches this scenario at compile time.
+ * ## Implementation
+ *
+ * `FindReverseCaptiveDependency` detects when an existing adapter with longer
+ * lifetime would capture a newly added adapter with shorter lifetime.
+ * This is integrated into both `provide()` and `provideMany()`.
  *
  * @packageDocumentation
  */
@@ -45,7 +49,7 @@ const ScopedAdapter = createAdapter({
 // Forward Reference Captive Tests
 // =============================================================================
 
-describe("V4.1: Forward Reference Captive Dependency Gap", () => {
+describe("Forward Reference Captive Dependency Detection", () => {
   describe("Scenario 1: Singleton requires Scoped (forward ref order)", () => {
     it("should produce an error when singleton is registered first, then scoped", () => {
       // This is the problematic order:
@@ -61,16 +65,11 @@ describe("V4.1: Forward Reference Captive Dependency Gap", () => {
       // This should produce a compile-time error about reverse captive dependency
       const step2 = step1.provide(ScopedAdapter);
 
-      // If the gap exists, step2 would be a valid GraphBuilder
-      // If fixed, step2 would be an error message type
-
-      // Check if it's an error message (expected if fix is working)
+      // step2 should be an error message (reverse captive detected)
       type Step2Type = typeof step2;
       type IsErrorMessage = Step2Type extends `ERROR${string}` ? true : false;
 
-      // THIS ASSERTION DOCUMENTS THE EXPECTED BEHAVIOR:
-      // If this passes, the gap is FIXED
-      // If this fails, the gap STILL EXISTS
+      // Reverse captive detection is working - this test passes
       expectTypeOf<IsErrorMessage>().toEqualTypeOf<true>();
     });
 
@@ -157,7 +156,7 @@ describe("V4.1: Forward Reference Captive Dependency Gap", () => {
 
 describe("FindReverseCaptiveDependency verification", () => {
   it("should detect when existing singleton requires newly-added scoped port", () => {
-    // This directly tests the type that should catch the gap
+    // Direct test of FindReverseCaptiveDependency type
     type DepGraph = {
       SingletonService: "ScopedService"; // Singleton requires ScopedService
     };

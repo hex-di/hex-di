@@ -412,7 +412,7 @@ export type ContainerMembers<
    *
    * @example
    * ```typescript
-   * const container = createContainer(graph, { name: "App" });
+   * const container = createContainer({ graph: graph, name: "App"  });
    *
    * // Direct property access - maximum discoverability
    * const snapshot = container.inspector.getSnapshot();
@@ -430,7 +430,7 @@ export type ContainerMembers<
    *
    * @example
    * ```typescript
-   * const container = createContainer(graph, { name: "App" });
+   * const container = createContainer({ graph: graph, name: "App"  });
    *
    * // Direct property access - maximum discoverability
    * const traces = container.tracer.getTraces();

@@ -11,7 +11,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port, createPort } from "@hex-di/core";
 import { event, type Event } from "../src/machine/index.js";
 import {
   Effect,
@@ -50,9 +50,9 @@ interface CalculatorService {
 }
 
 // Create port tokens
-const UserServicePort = createPort<UserService, "UserService">({ name: "UserService" });
-const LoggerServicePort = createPort<LoggerService, "LoggerService">({ name: "LoggerService" });
-const CalculatorServicePort = createPort<CalculatorService, "CalculatorService">({
+const UserServicePort = port<UserService>()({ name: "UserService" });
+const LoggerServicePort = port<LoggerService>()({ name: "LoggerService" });
+const CalculatorServicePort = port<CalculatorService>()({
   name: "CalculatorService",
 });
 

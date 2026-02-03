@@ -11,9 +11,9 @@
 
 import { describe, it, expect } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
-import { parseGraphError } from "../src/advanced.js";
+import { parseGraphError } from "./test-types.js";
 import { GraphBuilder } from "../src/index.js";
-import { inspectGraph, GraphErrorCode } from "../src/advanced.js";
+import { inspectGraph, GraphErrorCode } from "./test-types.js";
 
 // =============================================================================
 // Test Fixtures

@@ -13,7 +13,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
-import { inspectGraph } from "../src/advanced.js";
+import { inspectGraph } from "./test-types.js";
 
 // =============================================================================
 // Test Fixtures

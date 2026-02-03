@@ -26,7 +26,7 @@ import type {
   AddManyLifetimes,
   FindAnyCaptiveDependency,
   CaptiveDependencyError,
-} from "../src/advanced.js";
+} from "./test-types.js";
 import type { IsNever } from "@hex-di/core";
 
 // =============================================================================

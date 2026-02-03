@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "./index.js";
 
@@ -9,9 +9,9 @@ describe("Runtime Safety Verification", () => {
     interface Service {
       name: string;
     }
-    const PortA = createPort<Service>({ name: "A" });
-    const PortB = createPort<Service>({ name: "B" });
-    const PortScoped = createPort<Service>({ name: "Scoped" });
+    const PortA = port<Service>()({ name: "A" });
+    const PortB = port<Service>()({ name: "B" });
+    const PortScoped = port<Service>()({ name: "Scoped" });
 
     const AdapterA = createAdapter({
       provides: PortA,
@@ -29,7 +29,7 @@ describe("Runtime Safety Verification", () => {
 
     const graph = GraphBuilder.create().provide(AdapterA).provide(AdapterScoped).build();
 
-    const container = createContainer(graph, { name: "Test" });
+    const container = createContainer({ graph: graph, name: "Test" });
 
     // 1. Container.has checks
     expect(container.has(PortA)).toBe(true);

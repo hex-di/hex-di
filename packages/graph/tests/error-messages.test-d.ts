@@ -17,8 +17,8 @@ import {
   MissingDependencyError,
   DuplicateProviderError,
   type JoinPortNames,
-} from "../src/advanced.js";
-import type { ExtractPortNames } from "../src/advanced.js";
+} from "./test-types.js";
+import type { ExtractPortNames } from "./test-types.js";
 import {
   LoggerPort,
   DatabasePort,

@@ -15,8 +15,8 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder, InferGraphProvides, InferGraphRequires } from "../src/index.js";
-import type { UnsatisfiedDependencies } from "../src/advanced.js";
-import type { IsSatisfied, ValidGraph } from "../src/advanced.js";
+import type { UnsatisfiedDependencies } from "./test-types.js";
+import type { IsSatisfied, ValidGraph } from "./test-types.js";
 
 // =============================================================================
 // Test Service Interfaces

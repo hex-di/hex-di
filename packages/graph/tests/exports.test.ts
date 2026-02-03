@@ -24,7 +24,7 @@ import {
   type InferGraphProvides,
   type InferGraphRequires,
 } from "../src/index.js";
-import { type DuplicateProviderError, type MissingDependencyError } from "../src/advanced.js";
+import { type DuplicateProviderError, type MissingDependencyError } from "./test-types.js";
 import { type Logger, LoggerPort, DatabasePort } from "./fixtures.js";
 
 describe("Public API exports", () => {

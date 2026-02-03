@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port, createPort } from "@hex-di/core";
 import { activityPort } from "../../../src/activities/port.js";
 import { defineEvents } from "../../../src/activities/events.js";
 import { activity } from "../../../src/activities/factory.js";
@@ -43,8 +43,8 @@ interface Logger {
   warn(message: string, meta?: Record<string, unknown>): void;
 }
 
-const ApiPort = createPort<ApiService, "Api">({ name: "Api" });
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
+const ApiPort = port<ApiService>()({ name: "Api" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
 
 const TaskActivityPort = activityPort<{ taskId: string }, TaskResult>()("TaskActivity");
 const SimpleActivityPort = activityPort<number, string>()("SimpleActivity");

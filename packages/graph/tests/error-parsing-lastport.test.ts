@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { parseGraphError, GraphErrorCode } from "../src/advanced.js";
+import { parseGraphError, GraphErrorCode } from "./test-types.js";
 
 describe("DepthLimitExceededDetails.lastPort", () => {
   it("should include lastPort in parsed error when present in message", () => {

@@ -13,7 +13,7 @@ import {
   type MultipleErrorsDetails,
   parseGraphError,
   GraphErrorCode,
-} from "../src/advanced.js";
+} from "./test-types.js";
 
 test("ParsedGraphError is a proper discriminated union", () => {
   // Test that ParsedGraphError can be narrowed by checking the code field

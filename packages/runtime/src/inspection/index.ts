@@ -7,7 +7,7 @@
  * ```typescript
  * import { createContainer } from '@hex-di/runtime';
  *
- * const container = createContainer(graph, { name: 'Root' });
+ * const container = createContainer({ graph: graph, name: 'Root'  });
  *
  * // Access inspector via built-in property
  * const snapshot = container.inspector.getSnapshot();

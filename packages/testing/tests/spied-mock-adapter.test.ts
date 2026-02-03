@@ -6,7 +6,7 @@
  */
 
 import { describe, test, expect, vi } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "@hex-di/runtime";
 import { createSpiedMockAdapter, type SpiedService } from "../src/vitest/spied-mock-adapter.js";
@@ -32,9 +32,9 @@ interface Calculator {
   multiply(a: number, b: number): number;
 }
 
-const LoggerPort = createPort<Logger>({ name: "Logger" });
-const DatabasePort = createPort<Database>({ name: "Database" });
-const CalculatorPort = createPort<Calculator>({ name: "Calculator" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const CalculatorPort = port<Calculator>()({ name: "Calculator" });
 
 // =============================================================================
 // createSpiedMockAdapter Tests

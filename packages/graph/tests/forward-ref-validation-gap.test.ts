@@ -20,7 +20,7 @@
 import { describe, expect, it } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
 import { buildGraph, buildGraphFragment } from "../src/builder/builder-build.js";
-import { detectCaptiveAtRuntime } from "../src/advanced.js";
+import { detectCaptiveAtRuntime } from "./test-types.js";
 
 // =============================================================================
 // Test Fixtures

@@ -15,7 +15,7 @@ import { describe, expectTypeOf, it } from "vitest";
 import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
-import type { GetExtendedDepth } from "../src/advanced.js";
+import type { GetExtendedDepth } from "./test-types.js";
 
 // =============================================================================
 // Test Fixtures

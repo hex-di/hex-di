@@ -151,7 +151,7 @@ function createMockImplementation<T extends object>(
  *   error(message: string): void;
  * }
  *
- * const LoggerPort = createPort<Logger>({ name: 'Logger' });
+ * const LoggerPort = port<Logger>()({ name: 'Logger' });
  *
  * // Only implement the methods your test needs
  * const mockLogger = createMockAdapter(LoggerPort, {

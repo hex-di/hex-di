@@ -128,7 +128,7 @@ export const HOOKS_ACCESS = Symbol.for("hex-di/hooks-access");
  * ```typescript
  * import { createContainer, INSPECTOR } from '@hex-di/runtime';
  *
- * const container = createContainer(graph, { name: 'App' });
+ * const container = createContainer({ graph: graph, name: 'App'  });
  *
  * const inspector = container[INSPECTOR];
  * const snapshot = inspector.getSnapshot();

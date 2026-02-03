@@ -13,7 +13,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { createPort } from "@hex-di/core";
+import { port, createPort } from "@hex-di/core";
 import { activityPort } from "../../src/activities/port.js";
 import { defineEvents } from "../../src/activities/events.js";
 import { activity } from "../../src/activities/factory.js";
@@ -49,10 +49,10 @@ interface CacheService {
   set(key: string, value: unknown): void;
 }
 
-const ApiPort = createPort<ApiService, "Api">({ name: "Api" });
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
-const MetricsPort = createPort<MetricsService, "Metrics">({ name: "Metrics" });
-const CachePort = createPort<CacheService, "Cache">({ name: "Cache" });
+const ApiPort = port<ApiService>()({ name: "Api" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const MetricsPort = port<MetricsService>()({ name: "Metrics" });
+const CachePort = port<CacheService>()({ name: "Cache" });
 
 const TaskActivityPort = activityPort<{ taskId: string }, { result: string }>()("TaskActivity");
 const FetchActivityPort = activityPort<{ url: string }, Response>()("FetchActivity");

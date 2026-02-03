@@ -8,9 +8,11 @@
  * 1. Register SingletonAdapter requiring ScopedPort (forward reference)
  * 2. provideMany([ScopedAdapter]) should detect that SingletonAdapter would capture ScopedPort
  *
- * ## Issue
- * WouldAnyBeCaptive only validates adapters IN the batch, not existing graph adapters.
- * FindReverseCaptiveDependency exists but isn't used in ProvideManyResult.
+ * ## Implementation
+ * `WouldAnyCreateReverseCaptive` is integrated into `CheckBatchCaptiveDependencies`
+ * which is called from `ProvideManyResult`. This ensures both intra-batch captive
+ * (adapters within the batch) and reverse captive (existing adapters capturing
+ * batch adapters) are detected.
  *
  * @packageDocumentation
  */
@@ -70,8 +72,7 @@ describe("provideMany reverse captive detection", () => {
     // Should be an error string, not a GraphBuilder
     type ResultType = typeof result;
 
-    // This test SHOULD pass but currently FAILS because reverse captive
-    // detection is missing from provideMany
+    // Reverse captive detection is integrated via WouldAnyCreateReverseCaptive
     expectTypeOf<ResultType>().toBeString();
 
     // Should be a REVERSE captive error (HEX004)
