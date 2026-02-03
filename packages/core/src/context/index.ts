@@ -6,3 +6,5 @@
 
 export { createContextVariable } from "./variables.js";
 export type { ContextVariable } from "./variables.js";
+
+export { withContext, getContext } from "./helpers.js";
