@@ -30,6 +30,7 @@ export type {
   ContainerKind,
   ContainerDevToolsOptions,
   CreateContainerOptions,
+  CreateContainerConfig,
   CreateChildOptions,
   RuntimePerformanceOptions,
 } from "./options.js";

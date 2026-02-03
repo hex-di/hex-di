@@ -20,7 +20,7 @@ import type {
   Scope,
   InheritanceModeConfig,
   LazyContainer,
-  CreateContainerOptions,
+  CreateContainerConfig,
   CreateChildOptions,
   ContainerKind,
   RuntimePerformanceOptions,
@@ -95,8 +95,7 @@ function createLateBindingHooks(holder: HooksHolder): ResolutionHooks {
 /**
  * Creates a new dependency injection container from a graph.
  *
- * @param graph - The validated ServiceGraph containing all adapters
- * @param options - Optional configuration including resolution hooks
+ * @param config - Configuration object containing graph, name, and optional hooks/performance settings
  * @returns A frozen Container instance
  *
  * @typeParam TProvides - Port union provided by the graph
@@ -104,13 +103,18 @@ function createLateBindingHooks(holder: HooksHolder): ResolutionHooks {
  *
  * @example Basic usage
  * ```typescript
- * const container = createContainer(graph);
+ * const container = createContainer({
+ *   graph,
+ *   name: "App",
+ * });
  * const logger = container.resolve(LoggerPort);
  * ```
  *
  * @example With hooks
  * ```typescript
- * const container = createContainer(graph, {
+ * const container = createContainer({
+ *   graph,
+ *   name: "App",
  *   hooks: {
  *     beforeResolve: (ctx) => console.log(`Resolving ${ctx.portName}`),
  *     afterResolve: (ctx) => console.log(`Resolved in ${ctx.duration}ms`),
@@ -122,10 +126,10 @@ export function createContainer<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string> = never,
 >(
-  graph: Graph<TProvides, Port<unknown, string>>,
-  containerOptions: CreateContainerOptions,
-  hookOptions?: ContainerOptions
+  config: CreateContainerConfig<TProvides, TAsyncPorts>
 ): Container<TProvides, never, TAsyncPorts, "uninitialized"> {
+  const { graph, name, hooks, performance } = config;
+
   // Create late-binding hooks holder with array for dynamic composition
   // This allows hooks to be installed AFTER container creation via wrappers
   const hooksHolder: HooksHolder = { hookSources: [] };
@@ -134,22 +138,17 @@ export function createContainer<
   const lateBindingHooks = createLateBindingHooks(hooksHolder);
 
   // Create config with late-binding hooks
-  const config: RootContainerConfig<TProvides, TAsyncPorts> = {
+  const rootConfig: RootContainerConfig<TProvides, TAsyncPorts> = {
     kind: "root",
     graph,
-    containerName: containerOptions.name,
-    options: { ...hookOptions, hooks: lateBindingHooks },
-    performance: containerOptions.performance,
+    containerName: name,
+    options: { hooks: lateBindingHooks },
+    performance,
   };
-  const impl = new RootContainerImpl<TProvides, TAsyncPorts>(config);
+  const impl = new RootContainerImpl<TProvides, TAsyncPorts>(rootConfig);
 
   // Create wrapper with hooks holder for dynamic hook installation
-  return createUninitializedContainerWrapper(
-    impl,
-    containerOptions.name,
-    hookOptions?.hooks,
-    hooksHolder
-  );
+  return createUninitializedContainerWrapper(impl, name, hooks, hooksHolder);
 }
 
 /**
