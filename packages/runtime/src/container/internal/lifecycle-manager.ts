@@ -233,7 +233,7 @@ export class LifecycleManager {
    */
   getChildContainerSnapshots<T>(getSnapshot: (container: Disposable) => T): T[] {
     const snapshots: T[] = [];
-    for (const container of this.childContainers) {
+    for (const container of this.childContainers.values()) {
       try {
         snapshots.push(getSnapshot(container));
       } catch {
