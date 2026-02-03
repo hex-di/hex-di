@@ -72,7 +72,7 @@ Plans:
 
 **Dependencies:** Phase 15 (requires consolidated runtime before new API patterns)
 
-**Requirements:** API-01, API-02, API-03, API-04, TYPE-01, TYPE-02
+**Requirements:** API-01, API-02, API-03, TYPE-01, TYPE-02
 
 **Success Criteria:**
 
