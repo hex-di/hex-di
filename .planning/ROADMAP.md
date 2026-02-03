@@ -30,7 +30,15 @@
 4. Inspection is a core runtime feature accessed via container API, not via plugin indirection
 5. Legacy type exports (`CaptiveDependencyErrorLegacy`, etc.) removed from package exports
 
-**Plans:** TBD
+**Plans:** 5 plans
+
+Plans:
+
+- [ ] 15-01-PLAN.md - Split types.ts into types/ subdirectory
+- [ ] 15-02-PLAN.md - Extract wrapper utilities to wrapper-utils.ts
+- [ ] 15-03-PLAN.md - Add public hook API, remove HOOKS_ACCESS
+- [ ] 15-04-PLAN.md - Create standalone inspect/trace functions
+- [ ] 15-05-PLAN.md - Remove legacy exports, add explicit return types
 
 ---
 
@@ -233,4 +241,4 @@ See git history for details.
 ---
 
 _Roadmap created: 2026-02-01_
-_Last updated: 2026-02-03 (v5.0 revised with plugin consolidation)_
+_Last updated: 2026-02-03 (Phase 15 planned)_
