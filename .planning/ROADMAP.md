@@ -76,14 +76,23 @@ Plans:
 
 **Success Criteria:**
 
-1. User can call `withOverrides({ [portObject]: () => mock })` with compile-time port name validation
-2. User can use fluent builder: `container.withOverrides().override(port, () => mock).build()`
-3. User creates container with single options object: `createContainer({ graph, hooks, options })`
-4. Existing string-based override API continues to work (deprecated but functional)
+1. User can call `container.override(adapter).build()` with compile-time port validation
+2. User can use fluent builder: `container.override(adapter1).override(adapter2).build()`
+3. User creates container with single options object: `createContainer({ graph, name, hooks, performance })`
+4. String-based override API is removed entirely (no backward compatibility)
 5. Circular dependency detection surfaces at compile time with clear error types
 6. Context variable helpers available in `@hex-di/core` package
 
-**Plans:** TBD
+**Plans:** 6 plans
+
+Plans:
+
+- [ ] 17-01-PLAN.md - Create override builder with type validation
+- [ ] 17-02-PLAN.md - Add override method to Container interface
+- [ ] 17-03-PLAN.md - Simplify createContainer with options object
+- [ ] 17-04-PLAN.md - Remove string-based override API
+- [ ] 17-05-PLAN.md - Compile-time circular dependency detection (TDD)
+- [ ] 17-06-PLAN.md - Move context helpers to core package
 
 ---
 
@@ -247,4 +256,4 @@ See git history for details.
 ---
 
 _Roadmap created: 2026-02-01_
-_Last updated: 2026-02-03 (Phase 16 planned)_
+_Last updated: 2026-02-03 (Phase 17 planned)_
