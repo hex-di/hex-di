@@ -109,23 +109,12 @@ export const TRACING_ACCESS = Symbol.for("hex-di/tracing-access");
 export const ADAPTER_ACCESS = Symbol.for("hex-di/adapter-access");
 
 /**
- * Symbol used to access hook installation capabilities on containers.
+ * Symbol used internally for legacy hook installation capabilities.
  *
- * This Symbol grants controlled access to install resolution hooks
- * after container creation.
+ * @deprecated Use `container.addHook()` and `container.removeHook()` instead.
+ * This symbol is kept for internal compatibility but is not part of the public API.
  *
- * Using `Symbol.for()` ensures cross-realm consistency.
- *
- * @remarks
- * - Returns a HooksInstaller that can add/remove hooks
- * - Hooks are composed in order of installation
- *
- * @example
- * ```typescript
- * const installer = container[HOOKS_ACCESS]();
- * const uninstall = installer.installHooks(hooks);
- * // Later: uninstall() to remove hooks
- * ```
+ * @internal
  */
 export const HOOKS_ACCESS = Symbol.for("hex-di/hooks-access");
 

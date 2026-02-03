@@ -165,7 +165,6 @@ describe("@hex-di/runtime exports", () => {
         // Inspection symbols
         "INTERNAL_ACCESS",
         "TRACING_ACCESS",
-        "HOOKS_ACCESS",
         // Inspector exports
         "createInspector",
         "getInternalAccessor",

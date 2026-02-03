@@ -104,7 +104,8 @@ export type {
   ResolutionResultContext,
   ContainerOptions,
   ContainerKind,
-  HooksInstaller,
+  HookType,
+  HookHandler,
   ImmutableHooksConfig,
 } from "./resolution/hooks.js";
 
@@ -126,7 +127,7 @@ export type {
 // Container State Inspection
 // =============================================================================
 
-export { INTERNAL_ACCESS, TRACING_ACCESS, HOOKS_ACCESS, INSPECTOR } from "./inspection/symbols.js";
+export { INTERNAL_ACCESS, TRACING_ACCESS, INSPECTOR } from "./inspection/symbols.js";
 
 export type {
   ContainerInternalState,
