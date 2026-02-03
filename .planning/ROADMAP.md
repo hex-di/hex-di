@@ -56,7 +56,13 @@ Plans:
 2. Timestamp capture can be disabled via configuration option for production builds
 3. Performance benchmarks exist for resolution (100k ops), scope operations (10k ops), and disposal (1k containers)
 
-**Plans:** TBD
+**Plans:** 3 plans
+
+Plans:
+
+- [ ] 16-01-PLAN.md - O(1) child container unregistration via Map-based tracking
+- [ ] 16-02-PLAN.md - Configurable timestamp capture for production builds
+- [ ] 16-03-PLAN.md - Performance benchmark suite with vitest bench
 
 ---
 
@@ -241,4 +247,4 @@ See git history for details.
 ---
 
 _Roadmap created: 2026-02-01_
-_Last updated: 2026-02-03 (Phase 15 planned)_
+_Last updated: 2026-02-03 (Phase 16 planned)_
