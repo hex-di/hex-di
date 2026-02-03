@@ -13,7 +13,7 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import React from "react";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { ContainerBrand, ScopeBrand } from "@hex-di/runtime";
 import type { Container, Scope } from "@hex-di/runtime";
 import { MissingProviderError } from "../src/errors.js";
@@ -44,7 +44,7 @@ interface TestService {
 /**
  * Port for testing resolution.
  */
-const TestServicePort = createPort<TestService, "TestService">({ name: "TestService" });
+const TestServicePort = port<TestService>()({ name: "TestService" });
 
 /**
  * Type alias for test containers.
@@ -106,6 +106,8 @@ function createMockContainer(): TestContainer {
     get parent(): never {
       throw new Error("Root containers do not have a parent");
     },
+    addHook: vi.fn(),
+    removeHook: vi.fn(),
     [ContainerBrand]: { provides: TestServicePort, extends: undefined as never },
   } as any as TestContainer;
 

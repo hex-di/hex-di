@@ -12,7 +12,7 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, cleanup } from "@testing-library/react";
 import React, { Component, type ReactNode, type ErrorInfo } from "react";
-import { createPort, type InspectorAPI, type TracingAPI } from "@hex-di/core";
+import { port, type InspectorAPI, type TracingAPI } from "@hex-di/core";
 import { ContainerBrand, ScopeBrand, INTERNAL_ACCESS } from "@hex-di/runtime";
 import type { Container, Scope } from "@hex-di/runtime";
 import { createTypedHooks } from "../src/factories/create-typed-hooks.jsx";
@@ -29,7 +29,7 @@ interface TestService {
   name: string;
 }
 
-const TestServicePort = createPort<TestService, "TestService">({ name: "TestService" });
+const TestServicePort = port<TestService>()({ name: "TestService" });
 type TestProvides = typeof TestServicePort;
 type TestContainer = Container<TestProvides>;
 type TestScope = Scope<TestProvides>;
@@ -159,6 +159,8 @@ function createMockContainer(): TestContainer {
     get parent(): never {
       throw new Error("Root containers do not have a parent");
     },
+    addHook: vi.fn(),
+    removeHook: vi.fn(),
     [ContainerBrand]: { provides: TestServicePort, extends: undefined as never },
     [INTERNAL_ACCESS]: (() => ({})) as () => unknown,
   } as TestContainer;

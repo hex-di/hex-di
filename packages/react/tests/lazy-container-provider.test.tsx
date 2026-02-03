@@ -16,7 +16,7 @@
 import React from "react";
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { render, screen, act, cleanup, waitFor } from "@testing-library/react";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "@hex-di/runtime";
@@ -35,8 +35,8 @@ interface PluginService {
   pluginName: string;
 }
 
-const TestServicePort = createPort<TestService, "TestService">({ name: "TestService" });
-const PluginServicePort = createPort<PluginService, "PluginService">({ name: "PluginService" });
+const TestServicePort = port<TestService>()({ name: "TestService" });
+const PluginServicePort = port<PluginService>()({ name: "PluginService" });
 
 const TestServiceAdapter = createAdapter({
   provides: TestServicePort,

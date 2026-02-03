@@ -11,7 +11,7 @@ import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
 import { createContainer, INTERNAL_ACCESS } from "@hex-di/runtime";
 import { createTypedHooks } from "../src/index.js";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 
@@ -20,7 +20,7 @@ import { GraphBuilder } from "@hex-di/graph";
 // =============================================================================
 
 // Create a simple port for testing
-const TestPort = createPort<{ value: string }, "Test">({ name: "Test" });
+const TestPort = port<{ value: string }>()({ name: "Test" });
 
 // Create typed hooks
 const { ContainerProvider, AutoScopeProvider, usePort } = createTypedHooks<typeof TestPort>();

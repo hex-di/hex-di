@@ -13,7 +13,7 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import React from "react";
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { ContainerBrand, ScopeBrand } from "@hex-di/runtime";
 import type { Container, Scope } from "@hex-di/runtime";
 import { MissingProviderError } from "../src/errors.js";
@@ -39,9 +39,9 @@ interface UserService {
   getUser(id: string): { name: string };
 }
 
-const LoggerPort = createPort<LoggerService, "Logger">({ name: "Logger" });
-const DatabasePort = createPort<DatabaseService, "Database">({ name: "Database" });
-const UserServicePort = createPort<UserService, "UserService">({ name: "UserService" });
+const LoggerPort = port<LoggerService>()({ name: "Logger" });
+const DatabasePort = port<DatabaseService>()({ name: "Database" });
+const UserServicePort = port<UserService>()({ name: "UserService" });
 
 type TestProvides = typeof LoggerPort | typeof DatabasePort | typeof UserServicePort;
 type TestContainer = Container<TestProvides>;
@@ -130,6 +130,8 @@ function createMockContainer(): TestContainer {
     get parent(): never {
       throw new Error("Root containers do not have a parent");
     },
+    addHook: vi.fn(),
+    removeHook: vi.fn(),
     [ContainerBrand]: { provides: LoggerPort, extends: undefined as never },
   } as unknown as TestContainer;
 
