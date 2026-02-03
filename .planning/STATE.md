@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 16 - Performance
-Plan: 01 of 3 complete
+Plan: 02 of 3 complete
 Status: In progress
-Last activity: 2026-02-03 - Completed 16-01-PLAN.md
+Last activity: 2026-02-03 - Completed 16-02-PLAN.md
 
-Progress: [█ ] 1/3 plans in Phase 16 (16-02, 16-03 remaining)
+Progress: [██ ] 2/3 plans in Phase 16 (16-03 remaining)
 
 ## v5.0 Phase Status
 
@@ -30,9 +30,9 @@ Progress: [█ ] 1/3 plans in Phase 16 (16-02, 16-03 remaining)
 
 **Velocity (v1.1 + v1.2 + v2.0 + v3.0 + v4.0 + v5.0):**
 
-- Total plans completed: 30
-- Average duration: 4.5 min
-- Total execution time: ~135 min
+- Total plans completed: 31
+- Average duration: 4.4 min
+- Total execution time: ~138 min
 
 **By Phase:**
 
@@ -52,12 +52,12 @@ Progress: [█ ] 1/3 plans in Phase 16 (16-02, 16-03 remaining)
 | 12-api-cleanup                      | 3     | 17 min | 5.7 min  |
 | 13-runtime-features                 | 2     | 9 min  | 4.5 min  |
 | 14-bidirectional-captive-validation | 1     | 8 min  | 8 min    |
-| 16-performance                      | 1     | 2 min  | 2 min    |
+| 16-performance                      | 2     | 6 min  | 3 min    |
 
 **Recent Trend:**
 
-- Last 5 plans: [6m, 3m, 8m, 5m, 2m]
-- Trend: Stable (avg ~5min per plan)
+- Last 5 plans: [3m, 8m, 5m, 2m, 4m]
+- Trend: Stable (avg ~4.2min per plan)
 
 ## Accumulated Context
 
@@ -81,6 +81,10 @@ Recent for v5.0:
 - 16-01: Use Symbol property for internal ID storage to avoid API changes
 - 16-01: Convert Map to Array for LIFO disposal iteration
 - 16-01: Map<number, T> with Symbol ID pattern for O(1) unregistration while preserving insertion order
+- 16-02: MemoMapConfig defaults to capturing timestamps (captureTimestamps !== false)
+- 16-02: Performance options propagate from parent to child containers via CreateChildOptions
+- 16-02: MemoMap config passed through BaseContainerImpl constructor parameter
+- 16-02: resolvedAt: 0 when timestamps disabled as clear indicator
 
 ### Pending Todos
 
@@ -96,11 +100,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 16-01-PLAN.md
+Stopped at: Completed 16-02-PLAN.md
 Resume file: None
-Next: Execute 16-02 or 16-03 (16-02 recommended next)
+Next: Execute 16-03 (final plan in Phase 16)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-03 (16-01 complete)_
+_Last updated: 2026-02-03 (16-02 complete)_
