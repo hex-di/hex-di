@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 
 ## Current Position
 
-Phase: 16 - Performance
-Plan: 03 of 3 complete
-Status: Phase complete
-Last activity: 2026-02-03 - Completed 16-03-PLAN.md
+Phase: 17 - Type-Safe API
+Plan: 01 of 6 (17-05 complete - feature already exists)
+Status: In progress
+Last activity: 2026-02-04 - Completed 17-05-PLAN.md (documented existing implementation)
 
-Progress: [███] 3/3 plans in Phase 16 (Phase 16 complete)
+Progress: [█░░░░░] 1/6 plans in Phase 17
 
 ## v5.0 Phase Status
 
@@ -22,7 +22,7 @@ Progress: [███] 3/3 plans in Phase 16 (Phase 16 complete)
 | ----- | ------------- | ------------ | -------- |
 | 15    | Foundation    | 5            | Complete |
 | 16    | Performance   | 3            | Complete |
-| 17    | Type-Safe API | 6            | Pending  |
+| 17    | Type-Safe API | 6            | Active   |
 | 18    | Testing       | 4            | Pending  |
 | 19    | Polish        | 7            | Pending  |
 
@@ -88,6 +88,7 @@ Recent for v5.0:
 - 16-03: Benchmark targets: 100k resolution ops, 10k scope ops, 1k disposal containers
 - 16-03: Vitest bench mode conflicts with explicit `typecheck: false` configuration
 - 16-03: Individual named ports preferred over array-based dynamic ports for type inference
+- 17-05: Circular dependency detection already fully implemented in packages/graph/src/validation/types/cycle/
 
 ### Pending Todos
 
@@ -99,15 +100,16 @@ None.
 
 - Phase 17 (Type-Safe API): Builder pattern depth limits need validation during planning
 - May need to test with 10-20 chained overrides for TypeScript recursion limits
+- **Plan 17-05 issue**: Plan requests circular detection (already exists). Should be reviewed/removed as it's outside Phase 17 scope (override API)
 
 ## Session Continuity
 
-Last session: 2026-02-03
-Stopped at: Completed Phase 16 Performance (verified)
+Last session: 2026-02-04
+Stopped at: Completed 17-05 (documented existing circular detection implementation)
 Resume file: None
-Next: Plan Phase 17 Type-Safe API (/gsd:discuss-phase 17)
+Next: Continue Phase 17 with remaining plans (17-01, 17-02, 17-03, 17-04, 17-06)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-03 (Phase 16 complete)_
+_Last updated: 2026-02-04 (Phase 17 in progress - 17-05 complete)_
