@@ -28,6 +28,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:types": "vitest run --typecheck",
+    "test:bench": "vitest bench",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [

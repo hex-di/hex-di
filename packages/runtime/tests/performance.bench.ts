@@ -26,9 +26,6 @@ const SingletonPort = port<object>()({ name: "SingletonPort" });
 const TransientPort = port<object>()({ name: "TransientPort" });
 const ScopedPort = port<object>()({ name: "ScopedPort" });
 
-// Create 100 ports for variety testing
-const manyPorts = Array.from({ length: 100 }, (_, i) => port<object>()({ name: `Port${i}` }));
-
 const SingletonAdapter = createAdapter({
   provides: SingletonPort,
   requires: [],
@@ -49,15 +46,6 @@ const ScopedAdapter = createAdapter({
   lifetime: "scoped",
   factory: () => ({}),
 });
-
-const manyAdapters = manyPorts.map(p =>
-  createAdapter({
-    provides: p,
-    requires: [],
-    lifetime: "singleton",
-    factory: () => ({}),
-  })
-);
 
 // =============================================================================
 // Resolution Performance Benchmarks
@@ -86,12 +74,17 @@ describe("resolution performance", () => {
     }
   });
 
-  bench("resolve 100 different singletons", () => {
-    const graph = GraphBuilder.create().provideMany(manyAdapters).build();
-    const container = createContainer(graph, { name: "ManyPortsBench" });
+  bench("100k mixed singleton/transient resolves", () => {
+    const graph = GraphBuilder.create().provide(SingletonAdapter).provide(TransientAdapter).build();
+    const container = createContainer(graph, { name: "MixedBench" });
 
-    for (const p of manyPorts) {
-      container.resolve(p);
+    // Resolve singletons and transients alternately
+    for (let i = 0; i < 100_000; i++) {
+      if (i % 2 === 0) {
+        container.resolve(SingletonPort);
+      } else {
+        container.resolve(TransientPort);
+      }
     }
   });
 });
