@@ -13,6 +13,17 @@
 import type { MemoMap } from "../../util/memo-map.js";
 
 // =============================================================================
+// Internal Symbols
+// =============================================================================
+
+/**
+ * Symbol for internal ID storage on child containers.
+ * Enables O(1) unregistration via Map.delete().
+ * @internal
+ */
+const CHILD_ID = Symbol("childContainerId");
+
+// =============================================================================
 // Types
 // =============================================================================
 
@@ -23,6 +34,12 @@ import type { MemoMap } from "../../util/memo-map.js";
 export interface Disposable {
   dispose(): Promise<void>;
   readonly isDisposed: boolean;
+  /**
+   * Internal ID for O(1) child container unregistration.
+   * Set by LifecycleManager.registerChildContainer().
+   * @internal
+   */
+  [CHILD_ID]?: number;
 }
 
 /**
@@ -66,9 +83,15 @@ export class LifecycleManager {
   private readonly childScopes: Set<Disposable> = new Set();
 
   /**
-   * Tracks all child containers in registration order for LIFO disposal.
+   * Tracks all child containers via numeric ID for O(1) unregistration.
+   * Map preserves insertion order for LIFO disposal.
    */
-  private readonly childContainers: Disposable[] = [];
+  private readonly childContainers: Map<number, Disposable> = new Map();
+
+  /**
+   * Counter for assigning unique IDs to child containers.
+   */
+  private childIdCounter: number = 0;
 
   /**
    * Whether this container has been disposed.
@@ -105,22 +128,26 @@ export class LifecycleManager {
 
   /**
    * Registers a child container for lifecycle tracking.
+   * Assigns unique ID stored as Symbol property for O(1) unregistration.
    *
    * @param child - The child container to track
    */
   registerChildContainer(child: Disposable): void {
-    this.childContainers.push(child);
+    const id = this.childIdCounter++;
+    child[CHILD_ID] = id;
+    this.childContainers.set(id, child);
   }
 
   /**
    * Unregisters a child container from lifecycle tracking.
+   * O(1) operation via Map.delete() using Symbol-stored ID.
    *
    * @param child - The child container to remove
    */
   unregisterChildContainer(child: Disposable): void {
-    const idx = this.childContainers.indexOf(child);
-    if (idx !== -1) {
-      this.childContainers.splice(idx, 1);
+    const id = child[CHILD_ID];
+    if (id !== undefined) {
+      this.childContainers.delete(id);
     }
   }
 
@@ -155,14 +182,15 @@ export class LifecycleManager {
     }
     this.disposed = true;
 
-    // Dispose child containers in LIFO order
-    for (let i = this.childContainers.length - 1; i >= 0; i--) {
-      const child = this.childContainers[i];
+    // Dispose child containers in LIFO order (convert Map to Array and reverse)
+    const children = Array.from(this.childContainers.values());
+    for (let i = children.length - 1; i >= 0; i--) {
+      const child = children[i];
       if (child) {
         await child.dispose();
       }
     }
-    this.childContainers.length = 0;
+    this.childContainers.clear();
 
     // Dispose child scopes
     for (const scope of this.childScopes) {
