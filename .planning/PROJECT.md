@@ -10,11 +10,13 @@ Catch dependency graph errors at compile time, not runtime — invalid graphs sh
 
 ## Current State
 
-**Latest:** v3.0 Unified Adapter API (shipped 2026-02-02)
+**Latest:** v4.0 GraphBuilder Improvements (shipped 2026-02-03)
 
 - 10 packages under `@hex-di/*` scope
-- 1634 tests passing
-- Unified `createAdapter()` with auto-detect async
+- 1664 tests passing
+- Unified `provide()` with auto-detect async
+- GraphSummary inspection mode
+- Bidirectional captive validation verified complete
 
 ## Requirements
 
@@ -48,19 +50,18 @@ Catch dependency graph errors at compile time, not runtime — invalid graphs sh
 - Auto-detect async from factory return type — v3.0
 - Compile-time enforcement: async factories require singleton lifetime — v3.0
 - Smart defaults (lifetime: singleton, requires: []) — v3.0
+- Unified `provide()` with auto-detect async (removed provideAsync, provideUnchecked, provideFirstError) — v4.0
+- `merge()` handles max depth safely (removed mergeWith) — v4.0
+- `withExtendedDepth()` clearer naming (renamed from withUnsafeDepthOverride) — v4.0
+- `inspect({ summary: true })` returns lightweight GraphSummary — v4.0
+- Disposal lifecycle verified (LIFO order, async, error aggregation) — v4.0
+- Bidirectional captive validation verified complete (existing reverse captive detection handles forward refs) — v4.0
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-**v4.0 GraphBuilder Improvements:**
-
-- Unified `provide()` with type-level async detection
-- Override lifetime validation (HEX022)
-- Bidirectional captive validation
-- Inspection summary mode
-- Disposal lifecycle
-- API cleanup (remove deprecated methods, rename `withUnsafeDepthOverride`)
+No active milestone. Define next via `/gsd:new-milestone`.
 
 ### Out of Scope
 
@@ -101,7 +102,9 @@ Catch dependency graph errors at compile time, not runtime — invalid graphs sh
 | Unified createPort() with object config             | Single entry point, rich metadata            | ✓ Good (v2.0) |
 | Unified createAdapter() with auto-detect async      | 7 functions → 1, clean API surface           | ✓ Good (v3.0) |
 | Compile-time async lifetime enforcement             | Catch invalid patterns before runtime        | ✓ Good (v3.0) |
+| Unified provide() with auto-detect async            | 4 methods → 1, clean builder API             | ✓ Good (v4.0) |
+| Skip Plan 14-02 (pending constraints)               | Gap doesn't exist — existing code sufficient | ✓ Good (v4.0) |
 
 ---
 
-_Last updated: 2026-02-02 after v4.0 milestone started_
+_Last updated: 2026-02-03 after v4.0 milestone completed_

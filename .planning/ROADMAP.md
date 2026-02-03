@@ -6,7 +6,17 @@
 - [x] **v1.1 Scoped Overrides** - Phases 3-4 (shipped 2026-01-xx)
 - [x] **v1.2 Port Directions** - Phase 5 (shipped 2026-02-01)
 - [x] **v2.0 Unified Port API** - Phases 6-8 (shipped 2026-02-02)
-- [x] **v3.0 Unified Adapter API** - Phases 9-12 (shipped 2026-02-02)
+- [x] **v3.0 Unified Adapter API** - Phases 9-11 (shipped 2026-02-02)
+- [x] **v4.0 GraphBuilder Improvements** - Phases 12-14 (shipped 2026-02-03) → [v4.0-ROADMAP.md](milestones/v4.0-ROADMAP.md)
+
+## Current: No active milestone
+
+Next milestone to be defined via `/gsd:new-milestone`.
+
+---
+
+<details>
+<summary>v3.0 Unified Adapter API (Phases 9-11) - SHIPPED</summary>
 
 ## v3.0 Unified Adapter API
 
@@ -85,23 +95,7 @@ Plans:
 2. ✓ Attempting to import removed functions produces clear "not exported" error
 3. ✓ Package exports only the unified `createAdapter()` for adapter creation
 
----
-
-### Phase 12: Migration ✅
-
-**Goal:** All existing tests and documentation use the new `createAdapter()` API.
-
-**Dependencies:** Phase 11 (old APIs removed, must update consumers)
-
-**Requirements:** MIG-01, MIG-02
-
-**Success Criteria:**
-
-1. ✓ All test files use `createAdapter()` API exclusively
-2. ✓ All tests pass with new API (1634 tests)
-3. ✓ Documentation shows `createAdapter()` as the single entry point
-
----
+</details>
 
 ## Phases (Historical)
 
@@ -126,16 +120,18 @@ See git history for details.
 
 ## Progress
 
-| Phase | Name                       | Status   | Requirements |
-| ----- | -------------------------- | -------- | ------------ |
-| 9     | Unified createAdapter      | Complete | 10           |
-| 10    | Async Lifetime Enforcement | Complete | 5            |
-| 11    | API Removal                | Complete | 6            |
-| 12    | Migration                  | Complete | 2            |
+All milestones through v4.0 complete.
 
-**v3.0 Coverage:** 23/23 requirements delivered ✓
+| Milestone                      | Phases | Status   | Shipped    |
+| ------------------------------ | ------ | -------- | ---------- |
+| v1.0 MVP                       | 1-2    | Complete | 2025-12-xx |
+| v1.1 Scoped Overrides          | 3-4    | Complete | 2026-01-xx |
+| v1.2 Port Directions           | 5      | Complete | 2026-02-01 |
+| v2.0 Unified Port API          | 6-8    | Complete | 2026-02-02 |
+| v3.0 Unified Adapter API       | 9-11   | Complete | 2026-02-02 |
+| v4.0 GraphBuilder Improvements | 12-14  | Complete | 2026-02-03 |
 
 ---
 
 _Roadmap created: 2026-02-01_
-_Last updated: 2026-02-02 (v3.0 Milestone complete)_
+_Last updated: 2026-02-03 (v4.0 Milestone complete)_
