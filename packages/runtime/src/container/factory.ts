@@ -11,7 +11,6 @@ import type {
   ContainerMembers,
   Scope,
   InheritanceModeConfig,
-  InheritanceMode,
   LazyContainer,
   CreateContainerOptions,
   CreateChildOptions,
@@ -23,79 +22,24 @@ import {
   ChildContainerImpl,
   type RootContainerConfig,
   type ParentContainerLike,
-  type ChildContainerConfig,
-  type RuntimeAdapter,
 } from "./impl.js";
 import type { InternalContainerMethods } from "./internal-types.js";
 import { INTERNAL_ACCESS, ADAPTER_ACCESS, HOOKS_ACCESS } from "../inspection/symbols.js";
 import { unreachable } from "../util/unreachable.js";
 import { createChildContainerWrapper } from "./wrappers.js";
-import { isInheritanceMode } from "./helpers.js";
 import type {
   ResolutionHooks,
   ResolutionHookContext,
   ResolutionResultContext,
 } from "../resolution/hooks.js";
-import { createBuiltinInspectorAPI, createBuiltinTracerAPI } from "../inspection/builtin-api.js";
 import type { InspectorAPI } from "../inspection/types.js";
 import type { TracingAPI } from "@hex-di/core";
-import type { InternalAccessible } from "../inspection/creation.js";
-
-// =============================================================================
-// Builtin API Attachment Helper
-// =============================================================================
-
-/**
- * Type for container objects that support INTERNAL_ACCESS and can have
- * inspector/tracer attached.
- *
- * @internal
- */
-interface AttachableContainer extends InternalAccessible {
-  inspector?: InspectorAPI;
-  tracer?: TracingAPI;
-}
-
-/**
- * Type for container with required inspector and tracer properties.
- *
- * @internal
- */
-interface ContainerWithBuiltinAPIs extends InternalAccessible {
-  readonly inspector: InspectorAPI;
-  readonly tracer: TracingAPI;
-}
-
-/**
- * Attaches built-in inspector and tracer APIs to a container object.
- *
- * Uses Object.defineProperty to make properties non-enumerable and readonly.
- *
- * @param container - Container object that implements INTERNAL_ACCESS
- *
- * @internal
- */
-function attachBuiltinAPIs(
-  container: AttachableContainer
-): asserts container is ContainerWithBuiltinAPIs {
-  // Add built-in inspector API as non-enumerable property
-  const inspectorAPI = createBuiltinInspectorAPI(container);
-  Object.defineProperty(container, "inspector", {
-    value: inspectorAPI,
-    writable: false,
-    enumerable: false,
-    configurable: false,
-  });
-
-  // Add built-in tracer API as non-enumerable property
-  const tracerAPI = createBuiltinTracerAPI();
-  Object.defineProperty(container, "tracer", {
-    value: tracerAPI,
-    writable: false,
-    enumerable: false,
-    configurable: false,
-  });
-}
+import {
+  attachBuiltinAPIs,
+  parseChildGraph,
+  parseInheritanceModes,
+  createChildContainerConfig,
+} from "./wrapper-utils.js";
 
 // =============================================================================
 // Late-Binding Hooks
@@ -587,12 +531,6 @@ function createRootScope<
 }
 
 // =============================================================================
-// Child Container ID Generation
-// =============================================================================
-
-import { generateChildContainerId } from "./id-generator.js";
-
-// =============================================================================
 // Child Container Creation from Graph
 // =============================================================================
 
@@ -626,44 +564,16 @@ function createChildFromGraph<
   TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
   "initialized"
 > {
-  // Generate unique ID for this child container (used internally)
-  const containerId = generateChildContainerId();
-
-  // Parse the child graph to separate overrides from extensions
-  const overrides = new Map<Port<unknown, string>, RuntimeAdapter>();
-  const extensions = new Map<Port<unknown, string>, RuntimeAdapter>();
-
-  for (const adapter of childGraph.adapters) {
-    const portName = adapter.provides.__portName;
-    if (childGraph.overridePortNames.has(portName)) {
-      // This is an override - replaces parent's adapter
-      overrides.set(adapter.provides, adapter);
-    } else {
-      // This is an extension - new adapter not in parent
-      extensions.set(adapter.provides, adapter);
-    }
-  }
-
-  // Convert inheritance modes config to Map
-  const inheritanceModesMap = new Map<string, InheritanceMode>();
-  if (inheritanceModes !== undefined) {
-    for (const [portName, mode] of Object.entries(inheritanceModes)) {
-      if (isInheritanceMode(mode)) {
-        inheritanceModesMap.set(portName, mode);
-      }
-    }
-  }
-
-  const config: ChildContainerConfig<TParentProvides, TAsyncPorts> = {
-    kind: "child",
-    parent: parentLike,
+  const { overrides, extensions } = parseChildGraph(childGraph);
+  const inheritanceModesMap = parseInheritanceModes(inheritanceModes);
+  const config = createChildContainerConfig(
+    parentLike,
     overrides,
     extensions,
-    inheritanceModes: inheritanceModesMap,
-    containerId,
-    containerName: childName,
-    parentContainerId: parentName, // Use parent name for internal tracking
-  };
+    inheritanceModesMap,
+    childName,
+    parentName
+  );
 
   const impl = new ChildContainerImpl<
     TParentProvides,
