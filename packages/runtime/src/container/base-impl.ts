@@ -6,7 +6,7 @@
  */
 
 import type { Port, InferService } from "@hex-di/core";
-import { MemoMap } from "../util/memo-map.js";
+import { MemoMap, type MemoMapConfig } from "../util/memo-map.js";
 import { ResolutionContext } from "../resolution/context.js";
 import type { ScopeImpl } from "../scope/impl.js";
 import {
@@ -71,10 +71,11 @@ export abstract class BaseContainerImpl<
 
   protected constructor(
     adapterRegistry: AdapterRegistry<TProvides, TAsyncPorts>,
-    hooksRunner: HooksRunner | null
+    hooksRunner: HooksRunner | null,
+    memoMapConfig?: MemoMapConfig
   ) {
     this.adapterRegistry = adapterRegistry;
-    this.singletonMemo = new MemoMap();
+    this.singletonMemo = new MemoMap(undefined, memoMapConfig);
     this.resolutionContext = new ResolutionContext();
     this.lifecycleManager = new LifecycleManager();
     this.asyncInitializer = new AsyncInitializer();

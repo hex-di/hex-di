@@ -100,7 +100,12 @@ export class ChildContainerImpl<
       containerMetadata
     );
 
-    super(adapterRegistry, hooksRunner);
+    // Create MemoMap config for timestamp capture
+    const memoMapConfig = {
+      captureTimestamps: config.performance?.disableTimestamps !== true,
+    };
+
+    super(adapterRegistry, hooksRunner, memoMapConfig);
 
     // Store reference to hook sources for installHooks/uninstallHooks
     this.dynamicHookSources = dynamicHookSources;

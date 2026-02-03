@@ -32,8 +32,11 @@ export class RootContainerImpl<
   constructor(config: RootContainerConfig<TProvides, TAsyncPorts>) {
     const adapterRegistry = new AdapterRegistry<TProvides, TAsyncPorts>(null);
     const hooksRunner = RootContainerImpl.createHooksRunner(config);
+    const memoMapConfig = {
+      captureTimestamps: config.performance?.disableTimestamps !== true,
+    };
 
-    super(adapterRegistry, hooksRunner);
+    super(adapterRegistry, hooksRunner, memoMapConfig);
 
     this.containerNameValue = config.containerName;
     this.initializeFromGraph(config);

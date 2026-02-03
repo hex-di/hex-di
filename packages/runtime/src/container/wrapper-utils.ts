@@ -8,7 +8,11 @@ import type { Graph } from "@hex-di/graph";
 import type { InspectorAPI } from "../inspection/types.js";
 import { createBuiltinInspectorAPI, createBuiltinTracerAPI } from "../inspection/builtin-api.js";
 import type { InternalAccessible } from "../inspection/creation.js";
-import type { InheritanceModeConfig, InheritanceMode } from "../types.js";
+import type {
+  InheritanceModeConfig,
+  InheritanceMode,
+  RuntimePerformanceOptions,
+} from "../types.js";
 import type { RuntimeAdapter, ParentContainerLike, ChildContainerConfig } from "./impl.js";
 import { generateChildContainerId } from "./id-generator.js";
 import { isInheritanceMode } from "./helpers.js";
@@ -142,7 +146,8 @@ export function createChildContainerConfig<
   extensions: Map<Port<unknown, string>, RuntimeAdapter>,
   inheritanceModesMap: Map<string, InheritanceMode>,
   childName: string,
-  parentName: string
+  parentName: string,
+  performance?: RuntimePerformanceOptions
 ): ChildContainerConfig<TParentProvides, TAsyncPorts> {
   const containerId = generateChildContainerId();
 
@@ -155,5 +160,6 @@ export function createChildContainerConfig<
     containerId,
     containerName: childName,
     parentContainerId: parentName,
+    performance,
   };
 }

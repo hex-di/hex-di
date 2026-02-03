@@ -23,6 +23,7 @@ import type {
   CreateContainerOptions,
   CreateChildOptions,
   ContainerKind,
+  RuntimePerformanceOptions,
 } from "../types.js";
 import { ContainerBrand } from "../types.js";
 import {
@@ -138,6 +139,7 @@ export function createContainer<
     graph,
     containerName: containerOptions.name,
     options: { ...hookOptions, hooks: lateBindingHooks },
+    performance: containerOptions.performance,
   };
   const impl = new RootContainerImpl<TProvides, TAsyncPorts>(config);
 
@@ -264,7 +266,8 @@ function createUninitializedContainerWrapper<
         childGraph,
         options.name,
         containerName, // parent's name
-        options.inheritanceModes
+        options.inheritanceModes,
+        options.performance
       );
     },
     createChildAsync: <
@@ -460,7 +463,8 @@ function createInitializedContainerWrapper<
         childGraph,
         options.name,
         containerName, // parent's name
-        options.inheritanceModes
+        options.inheritanceModes,
+        options.performance
       );
     },
     createChildAsync: <
@@ -611,6 +615,7 @@ function createRootScope<
  * @param childName - Name for the child container
  * @param parentName - Name of the parent container (for hierarchy tracking)
  * @param inheritanceModes - Optional per-port inheritance mode configuration
+ * @param performance - Optional performance options
  *
  * @internal
  */
@@ -623,7 +628,8 @@ function createChildFromGraph<
   childGraph: TChildGraph,
   childName: string,
   parentName: string,
-  inheritanceModes?: InheritanceModeConfig<TParentProvides>
+  inheritanceModes?: InheritanceModeConfig<TParentProvides>,
+  performance?: RuntimePerformanceOptions
 ): Container<
   TParentProvides,
   Exclude<InferGraphProvides<TChildGraph>, TParentProvides>,
@@ -638,7 +644,8 @@ function createChildFromGraph<
     extensions,
     inheritanceModesMap,
     childName,
-    parentName
+    parentName,
+    performance
   );
 
   const impl = new ChildContainerImpl<
