@@ -13,6 +13,19 @@
 
 import type { Port, InferService } from "@hex-di/core";
 // =============================================================================
+// Configuration Types
+// =============================================================================
+
+/**
+ * Configuration options for MemoMap behavior.
+ * @internal
+ */
+export interface MemoMapConfig {
+  /** Whether to capture timestamps (default: true) */
+  readonly captureTimestamps?: boolean;
+}
+
+// =============================================================================
 // Internal Types
 // =============================================================================
 
@@ -136,13 +149,20 @@ export class MemoMap {
   private resolutionCounter: number = 0;
 
   /**
+   * Configuration for MemoMap behavior.
+   */
+  private readonly config: MemoMapConfig;
+
+  /**
    * Creates a new MemoMap instance.
    *
    * @param parent - Optional parent MemoMap for singleton inheritance.
    *   When provided, parent cache is checked first during getOrElseMemoize.
+   * @param config - Optional configuration for MemoMap behavior.
    */
-  constructor(parent?: MemoMap) {
+  constructor(parent?: MemoMap, config?: MemoMapConfig) {
     this.parent = parent;
+    this.config = config ?? {};
   }
 
   /**
@@ -192,7 +212,7 @@ export class MemoMap {
       port,
       instance,
       finalizer,
-      resolvedAt: Date.now(),
+      resolvedAt: this.config.captureTimestamps !== false ? Date.now() : 0,
       resolutionOrder: this.resolutionCounter++,
     };
     this.cache.set(port, entry);
@@ -243,7 +263,7 @@ export class MemoMap {
       port,
       instance,
       finalizer,
-      resolvedAt: Date.now(),
+      resolvedAt: this.config.captureTimestamps !== false ? Date.now() : 0,
       resolutionOrder: this.resolutionCounter++,
     };
     this.cache.set(port, entry);
@@ -300,7 +320,7 @@ export class MemoMap {
       port,
       instance,
       finalizer,
-      resolvedAt: Date.now(),
+      resolvedAt: this.config.captureTimestamps !== false ? Date.now() : 0,
       resolutionOrder: this.resolutionCounter++,
     };
     this.cache.set(port, entry);
@@ -392,6 +412,7 @@ export class MemoMap {
    * - Has its own empty cache
    * - Can see parent's cached instances via getOrElseMemoize
    * - Tracks its own creation order independently
+   * - Inherits the parent's configuration
    *
    * @returns A new MemoMap with this as parent
    *
@@ -405,7 +426,7 @@ export class MemoMap {
    * ```
    */
   fork(): MemoMap {
-    return new MemoMap(this);
+    return new MemoMap(this, this.config);
   }
 
   /**
