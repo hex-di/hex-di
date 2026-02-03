@@ -60,9 +60,9 @@ Plans:
 
 Plans:
 
-- [ ] 16-01-PLAN.md - O(1) child container unregistration via Map-based tracking
-- [ ] 16-02-PLAN.md - Configurable timestamp capture for production builds
-- [ ] 16-03-PLAN.md - Performance benchmark suite with vitest bench
+- [x] 16-01-PLAN.md - O(1) child container unregistration via Map-based tracking
+- [x] 16-02-PLAN.md - Configurable timestamp capture for production builds
+- [x] 16-03-PLAN.md - Performance benchmark suite with vitest bench
 
 ---
 

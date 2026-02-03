@@ -26,9 +26,9 @@ Requirements for runtime package improvements (8.7/10 -> 9.5/10). Each maps to r
 
 ### Performance
 
-- [ ] **PERF-01**: O(1) child container unregistration (Map instead of Array)
-- [ ] **PERF-02**: Configurable timestamp capture (disable in production)
-- [ ] **PERF-03**: Performance benchmarks for resolution, scopes, and disposal
+- [x] **PERF-01**: O(1) child container unregistration (Map instead of Array)
+- [x] **PERF-02**: Configurable timestamp capture (disable in production)
+- [x] **PERF-03**: Performance benchmarks for resolution, scopes, and disposal
 
 ### Testing
 
@@ -78,35 +78,35 @@ Explicitly excluded. Documented to prevent scope creep.
 
 Which phases cover which requirements. Updated during roadmap creation.
 
-| Requirement | Phase | Status  |
-| ----------- | ----- | ------- |
-| QUAL-01     | 15    | Pending |
-| QUAL-02     | 15    | Pending |
-| QUAL-03     | 15    | Pending |
-| QUAL-04     | 15    | Pending |
-| QUAL-05     | 15    | Pending |
-| QUAL-06     | 15    | Pending |
-| API-01      | 17    | Pending |
-| API-02      | 17    | Pending |
-| API-03      | 17    | Pending |
-| API-04      | 17    | Pending |
-| API-05      | 15    | Pending |
-| PERF-01     | 16    | Pending |
-| PERF-02     | 16    | Pending |
-| PERF-03     | 16    | Pending |
-| TEST-01     | 18    | Pending |
-| TEST-02     | 18    | Pending |
-| TEST-03     | 18    | Pending |
-| TEST-04     | 18    | Pending |
-| ERR-01      | 19    | Pending |
-| ERR-02      | 19    | Pending |
-| ERR-03      | 19    | Pending |
-| DOC-01      | 19    | Pending |
-| DOC-02      | 19    | Pending |
-| DOC-03      | 19    | Pending |
-| DOC-04      | 19    | Pending |
-| TYPE-01     | 17    | Pending |
-| TYPE-02     | 17    | Pending |
+| Requirement | Phase | Status   |
+| ----------- | ----- | -------- |
+| QUAL-01     | 15    | Pending  |
+| QUAL-02     | 15    | Pending  |
+| QUAL-03     | 15    | Pending  |
+| QUAL-04     | 15    | Pending  |
+| QUAL-05     | 15    | Pending  |
+| QUAL-06     | 15    | Pending  |
+| API-01      | 17    | Pending  |
+| API-02      | 17    | Pending  |
+| API-03      | 17    | Pending  |
+| API-04      | 17    | Pending  |
+| API-05      | 15    | Pending  |
+| PERF-01     | 16    | Complete |
+| PERF-02     | 16    | Complete |
+| PERF-03     | 16    | Complete |
+| TEST-01     | 18    | Pending  |
+| TEST-02     | 18    | Pending  |
+| TEST-03     | 18    | Pending  |
+| TEST-04     | 18    | Pending  |
+| ERR-01      | 19    | Pending  |
+| ERR-02      | 19    | Pending  |
+| ERR-03      | 19    | Pending  |
+| DOC-01      | 19    | Pending  |
+| DOC-02      | 19    | Pending  |
+| DOC-03      | 19    | Pending  |
+| DOC-04      | 19    | Pending  |
+| TYPE-01     | 17    | Pending  |
+| TYPE-02     | 17    | Pending  |
 
 **Coverage:**
 
