@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 17 - Type-Safe API
-Plan: 02 of 6 (17-05, 17-06 complete)
+Plan: 01 of 6 complete
 Status: In progress
-Last activity: 2026-02-04 - Completed 17-06-PLAN.md (context variable API)
+Last activity: 2026-02-04 - Completed 17-01-PLAN.md (override builder)
 
-Progress: [██░░░░] 2/6 plans in Phase 17
+Progress: [█░░░░░] 1/6 plans in Phase 17
 
 ## v5.0 Phase Status
 
@@ -53,12 +53,12 @@ Progress: [██░░░░] 2/6 plans in Phase 17
 | 13-runtime-features                 | 2     | 9 min  | 4.5 min  |
 | 14-bidirectional-captive-validation | 1     | 8 min  | 8 min    |
 | 16-performance                      | 3     | 11 min | 3.7 min  |
-| 17-type-safe-api                    | 2     | 7 min  | 3.5 min  |
+| 17-type-safe-api                    | 1     | 3 min  | 3 min    |
 
 **Recent Trend:**
 
-- Last 5 plans: [5m, 2m, 4m, 5m, 2m]
-- Trend: Stable (avg ~3.6min per plan)
+- Last 5 plans: [2m, 4m, 5m, 2m, 3m]
+- Trend: Stable (avg ~3.2min per plan)
 
 ## Accumulated Context
 
@@ -92,6 +92,9 @@ Recent for v5.0:
 - 17-05: Circular dependency detection already fully implemented in packages/graph/src/validation/types/cycle/
 - 17-06: Context API uses Symbol-based keys for collision prevention and type safety
 - 17-06: Default values stored in ContextVariable definition, not at retrieval sites
+- 17-01: Two-phase validation for override builder: port exists + deps satisfied
+- 17-01: OverrideBuilder uses GraphBuilder.forParent() to create override graph fragments
+- 17-01: Template literal error types provide ERROR[TYPE-XX] codes with fix suggestions
 
 ### Pending Todos
 
@@ -108,11 +111,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-04
-Stopped at: Completed 17-06 (context variable API)
+Stopped at: Completed 17-01 (override builder implementation)
 Resume file: None
-Next: Continue Phase 17 with remaining plans (17-01, 17-02, 17-03, 17-04)
+Next: Continue Phase 17 with remaining plans (17-02, 17-03, 17-04)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-04 (Phase 17 in progress - 17-05, 17-06 complete)_
+_Last updated: 2026-02-04 (Phase 17 in progress - 17-01 complete)_
