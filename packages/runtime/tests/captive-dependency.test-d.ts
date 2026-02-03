@@ -26,13 +26,19 @@
  */
 
 import { describe, expectTypeOf, it, expect } from "vitest";
-import { createPort, createAdapter } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 
-import type {
-  LifetimeLevel,
-  ValidateCaptiveDependency,
-  CaptiveDependencyErrorLegacy,
-} from "../src/index.js";
+import type { LifetimeLevel, ValidateCaptiveDependency } from "../src/index.js";
+
+/**
+ * Helper type for testing captive dependency errors.
+ * Matches the structure of the internal CaptiveDependencyErrorLegacy type
+ * returned by ValidateCaptiveDependency.
+ */
+type CaptiveDependencyErrorShape = {
+  readonly __errorBrand: "CaptiveDependencyError";
+  readonly __message: string;
+};
 
 // =============================================================================
 // Test Service Interfaces
@@ -58,10 +64,10 @@ interface RequestContext {
 // Test Port Tokens
 // =============================================================================
 
-const LoggerPort = createPort<Logger, "Logger">({ name: "Logger" });
-const DatabasePort = createPort<Database, "Database">({ name: "Database" });
-const UserServicePort = createPort<UserService, "UserService">({ name: "UserService" });
-const RequestContextPort = createPort<RequestContext, "RequestContext">({ name: "RequestContext" });
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const DatabasePort = port<Database>()({ name: "Database" });
+const UserServicePort = port<UserService>()({ name: "UserService" });
+const RequestContextPort = port<RequestContext>()({ name: "RequestContext" });
 
 // Use ports to suppress unused variable warnings
 expect(LoggerPort).toBeDefined();
@@ -287,8 +293,8 @@ describe("Invalid captive dependency scenarios (should produce error types)", ()
       typeof ScopedDatabaseAdapter
     >;
 
-    // Should be a CaptiveDependencyErrorLegacy
-    expectTypeOf<Result>().toMatchTypeOf<CaptiveDependencyErrorLegacy<string>>();
+    // Should be a CaptiveDependencyError
+    expectTypeOf<Result>().toMatchTypeOf<CaptiveDependencyErrorShape>();
   });
 
   it("singleton depending on transient produces error type", () => {
@@ -311,8 +317,8 @@ describe("Invalid captive dependency scenarios (should produce error types)", ()
       typeof RequestContextAdapter
     >;
 
-    // Should be a CaptiveDependencyErrorLegacy
-    expectTypeOf<Result>().toMatchTypeOf<CaptiveDependencyErrorLegacy<string>>();
+    // Should be a CaptiveDependencyError
+    expectTypeOf<Result>().toMatchTypeOf<CaptiveDependencyErrorShape>();
   });
 
   it("scoped depending on transient produces error type", () => {
@@ -335,8 +341,8 @@ describe("Invalid captive dependency scenarios (should produce error types)", ()
       typeof RequestContextAdapter
     >;
 
-    // Should be a CaptiveDependencyErrorLegacy
-    expectTypeOf<Result>().toMatchTypeOf<CaptiveDependencyErrorLegacy<string>>();
+    // Should be a CaptiveDependencyError
+    expectTypeOf<Result>().toMatchTypeOf<CaptiveDependencyErrorShape>();
   });
 });
 
@@ -344,23 +350,56 @@ describe("Invalid captive dependency scenarios (should produce error types)", ()
 // Error Message Tests
 // =============================================================================
 
-describe("CaptiveDependencyErrorLegacy type", () => {
-  it("error type includes descriptive message", () => {
-    type TestError =
-      CaptiveDependencyErrorLegacy<"Singleton 'UserService' cannot depend on Scoped 'Database'">;
+describe("CaptiveDependencyError type structure", () => {
+  it("error type has correct brand property", () => {
+    // Use ValidateCaptiveDependency to get an actual error type
+    const SingletonDependsOnScoped = createAdapter({
+      provides: UserServicePort,
+      requires: [DatabasePort],
+      lifetime: "singleton",
+      factory: deps => ({
+        getUser: async (id: string) => {
+          await deps.Database.query(`SELECT * FROM users WHERE id = '${id}'`);
+          return { id, name: "Test" };
+        },
+      }),
+    });
+    expect(SingletonDependsOnScoped).toBeDefined();
 
-    // Error should have the __errorBrand property
-    expectTypeOf<TestError>().toHaveProperty("__errorBrand");
+    type ErrorResult = ValidateCaptiveDependency<
+      typeof SingletonDependsOnScoped,
+      typeof ScopedDatabaseAdapter
+    >;
 
-    // Error should have the __message property with the descriptive message
-    expectTypeOf<
-      TestError["__message"]
-    >().toEqualTypeOf<"Singleton 'UserService' cannot depend on Scoped 'Database'">();
+    // Error should have the __errorBrand property with correct value
+    expectTypeOf<ErrorResult["__errorBrand"]>().toEqualTypeOf<"CaptiveDependencyError">();
   });
 
-  it("error type has correct brand", () => {
-    type TestError = CaptiveDependencyErrorLegacy<"Test message">;
+  it("error type has descriptive message property", () => {
+    // Use ValidateCaptiveDependency to get an actual error type
+    const SingletonDependsOnScoped = createAdapter({
+      provides: UserServicePort,
+      requires: [DatabasePort],
+      lifetime: "singleton",
+      factory: deps => ({
+        getUser: async (id: string) => {
+          await deps.Database.query(`SELECT * FROM users WHERE id = '${id}'`);
+          return { id, name: "Test" };
+        },
+      }),
+    });
+    expect(SingletonDependsOnScoped).toBeDefined();
 
-    expectTypeOf<TestError["__errorBrand"]>().toEqualTypeOf<"CaptiveDependencyError">();
+    type ErrorResult = ValidateCaptiveDependency<
+      typeof SingletonDependsOnScoped,
+      typeof ScopedDatabaseAdapter
+    >;
+
+    // Error should have the __message property (a string literal with the error details)
+    expectTypeOf<ErrorResult["__message"]>().toMatchTypeOf<string>();
+    // The message should describe the captive dependency
+    expectTypeOf<
+      ErrorResult["__message"]
+    >().toEqualTypeOf<"Singleton 'UserService' cannot depend on Scoped 'Database'">();
   });
 });

@@ -118,7 +118,6 @@ export type {
   LifetimeLevel,
   IsCaptiveDependency,
   CaptiveDependencyError,
-  CaptiveDependencyErrorLegacy,
   ValidateCaptiveDependency,
   ValidateAllDependencies,
 } from "./captive-dependency.js";

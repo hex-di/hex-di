@@ -126,38 +126,11 @@ type LocalLifetimeName<Level extends number> = Level extends 1
 // =============================================================================
 
 /**
- * A branded error type that produces a readable compile-time error message
- * when a captive dependency is detected.
- *
- * This type is returned by `ValidateCaptiveDependency` when an adapter
- * attempts to depend on an adapter with a shorter lifetime. The error
- * message clearly explains which adapter, which dependency, and their
- * respective lifetimes to help developers fix the issue.
- *
- * @typeParam TMessage - The descriptive error message as a string literal type
- *
- * @returns A branded error type with:
- * - `__errorBrand: 'CaptiveDependencyError'` - For type discrimination
- * - `__message: TMessage` - The descriptive error message
- *
- * @remarks
- * - The error brand ensures this type cannot be confused with valid results
- * - The message is visible in IDE tooltips when hovering over type errors
- * - This type has zero runtime cost - it exists only at the type level
- *
- * @see {@link ValidateCaptiveDependency} - The type that produces this error
- * @see {@link MissingDependencyError} - Similar error pattern in @hex-di/graph
- *
- * @example
- * ```typescript
- * type Error = CaptiveDependencyErrorLegacy<"Singleton 'UserService' cannot depend on Scoped 'Database'">;
- * // {
- * //   __errorBrand: 'CaptiveDependencyError';
- * //   __message: "Singleton 'UserService' cannot depend on Scoped 'Database'";
- * // }
- * ```
+ * @internal
+ * Legacy error type used by ValidateCaptiveDependency.
+ * Not exported from public API - use CaptiveDependencyError from @hex-di/graph instead.
  */
-export type CaptiveDependencyErrorLegacy<TMessage extends string> = {
+type CaptiveDependencyErrorLegacy<TMessage extends string> = {
   readonly __errorBrand: "CaptiveDependencyError";
   readonly __message: TMessage;
 };
