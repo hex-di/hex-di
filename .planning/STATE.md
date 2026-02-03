@@ -74,6 +74,7 @@ Recent for v5.0:
 - Phase 17 depends on Phase 15 (needs consolidated runtime before new patterns)
 - 15-02: Created wrapper-utils.ts for shared container creation utilities
 - 15-01: Split types.ts (1,271 LOC) into 8 focused files in types/ subdirectory
+- 15-03: Added public addHook/removeHook API to Container, removed HOOKS_ACCESS from public exports
 - 15-05: Removed CaptiveDependencyErrorLegacy from public exports, marked as @internal
 
 ### Pending Todos
