@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A TypeScript dependency injection library implementing Hexagonal Architecture (Ports & Adapters) with compile-time validation. Provides type-safe dependency graphs, lifetime management (singleton/scoped/transient), fluent builder APIs, and framework integrations for React and Hono.
+A TypeScript dependency injection library implementing Hexagonal Architecture (Ports & Adapters) with compile-time validation. Provides type-safe dependency graphs, lifetime management (singleton/scoped/transient), fluent builder APIs, type-safe override builders, and framework integrations for React and Hono.
 
 ## Core Value
 
@@ -10,48 +10,16 @@ Catch dependency graph errors at compile time, not runtime — invalid graphs sh
 
 ## Current State
 
-**Latest:** v4.0 GraphBuilder Improvements (shipped 2026-02-03)
+**Latest:** v5.0 Runtime Package Improvements (shipped 2026-02-05)
 
 - 10 packages under `@hex-di/*` scope
-- 1664 tests passing
-- Unified `provide()` with auto-detect async
-- GraphSummary inspection mode
-- Bidirectional captive validation verified complete
-
-## Current Milestone: v5.0 Runtime Package Improvements
-
-**Goal:** Elevate `@hex-di/runtime` from 8.7/10 to 9.5/10 through code quality, API design, testing, and documentation improvements.
-
-**Target features:**
-
-**High Priority:**
-
-- Extract shared wrapper logic (~200 LOC reduction)
-- Type-safe `withOverrides()` API (port-keyed instead of string-keyed)
-- Comprehensive resolution hook testing (30+ new tests)
-- Split `types.ts` (1,271 lines → 6 files <400 each)
-- Consolidate inspector exports (remove duplicates)
-
-**Medium Priority:**
-
-- O(1) child container unregistration (Map vs Array)
-- Remove legacy type exports
-- Plugin system tests (15+ new tests)
-- Error message context improvements (suggestions, examples)
-- Timestamp capture optimization (configurable)
-- Architecture documentation
-- Merge createContainer options API
-
-**Low Priority:**
-
-- Compile-time circular dependency detection
-- "Did you mean?" suggestions for port names
-- Split inspection/helpers.ts
-- Performance benchmarks
-- Move context variables to core
-- Add explicit return types
-- Enhance type documentation
-- State machine documentation
+- 1,816 tests passing across 122 test files
+- 179,821 total lines of TypeScript
+- Well-organized runtime with focused type files and core tracing/inspection
+- Type-safe override builder with compile-time port validation
+- Performance benchmarks and configurable timestamp capture
+- Enhanced error experience with "Did you mean?" suggestions
+- Architecture documentation and design decisions documented
 
 ## Requirements
 
@@ -90,13 +58,29 @@ Catch dependency graph errors at compile time, not runtime — invalid graphs sh
 - `withExtendedDepth()` clearer naming (renamed from withUnsafeDepthOverride) — v4.0
 - `inspect({ summary: true })` returns lightweight GraphSummary — v4.0
 - Disposal lifecycle verified (LIFO order, async, error aggregation) — v4.0
-- Bidirectional captive validation verified complete (existing reverse captive detection handles forward refs) — v4.0
+- Bidirectional captive validation verified complete — v4.0
+- Split `types.ts` into 8 focused files in types/ subdirectory — v5.0
+- Extracted wrapper utilities to `wrapper-utils.ts` (~180 LOC dedup) — v5.0
+- Consolidated tracing/inspection as core features, removed HOOKS_ACCESS plugin — v5.0
+- Removed legacy type exports (`CaptiveDependencyErrorLegacy`) — v5.0
+- Type-safe `container.override(adapter).build()` with compile-time port validation — v5.0
+- Unified `createContainer()` with single options object — v5.0
+- O(1) child container unregistration via Map-based tracking — v5.0
+- Configurable timestamp capture for production builds — v5.0
+- Performance benchmarks for resolution, scopes, and disposal — v5.0
+- Compile-time circular dependency detection (type-level DFS) — v5.0
+- Context variable helpers in `@hex-di/core` package — v5.0
+- Resolution hook tests (29 tests) and hook composition tests (15 tests) — v5.0
+- Inspector API tests (21 tests) and tracer API tests (23 tests) — v5.0
+- Error messages with `suggestion` property and "Did you mean?" — v5.0
+- Architecture documentation and design decisions — v5.0
+- `@typeParam` JSDoc annotations for IDE support — v5.0
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-See "Current Milestone: v5.0" section above for full feature list.
+None — planning next milestone.
 
 ### Out of Scope
 
@@ -106,19 +90,22 @@ See "Current Milestone: v5.0" section above for full feature list.
 - Convention-based auto-wiring — Too implicit for core library philosophy
 - Performance optimization for type checking — Address in dedicated milestone
 - Request-scoped lifetime — Redundant with existing scoped lifetime and createScope()
+- Plugin system for tracing — Consolidated into core runtime (v5.0 decision)
 
 ## Context
 
 - Monorepo with 10 packages under `@hex-di/*` scope
 - Type-level validation is complex (1,250 line provide.ts, 810 line merge.ts)
 - Graph builder validation is complete and verified
-- v1.2 improved weakest areas: scoped overrides (7→9), API ergonomics (8→9), port system (8.5→9)
+- Runtime package elevated to production quality (v5.0)
+- 6 milestones shipped (v1.1, v1.2, v2.0, v3.0, v4.0, v5.0)
+- 51 plans executed across 19 phases
 
 ## Constraints
 
 - **Type safety**: No `any` types — per project rules
 - **No casting**: Fix underlying type issues, don't cast around them
-- **Backward compatible**: All improvements are additive, existing API unchanged
+- **Breaking changes welcome**: Clean breaks preferred over deprecation shims
 
 ## Key Decisions
 
@@ -139,7 +126,13 @@ See "Current Milestone: v5.0" section above for full feature list.
 | Compile-time async lifetime enforcement             | Catch invalid patterns before runtime        | ✓ Good (v3.0) |
 | Unified provide() with auto-detect async            | 4 methods → 1, clean builder API             | ✓ Good (v4.0) |
 | Skip Plan 14-02 (pending constraints)               | Gap doesn't exist — existing code sufficient | ✓ Good (v4.0) |
+| Remove HOOKS_ACCESS plugin system                   | Tracing/inspection are core, not plugins     | ✓ Good (v5.0) |
+| Single options object for createContainer           | Clean API, no backward compatibility shims   | ✓ Good (v5.0) |
+| Type-safe override builder (adapter-keyed)          | Compile-time port validation, no strings     | ✓ Good (v5.0) |
+| Symbol-based context variable keys                  | Collision prevention and type safety         | ✓ Good (v5.0) |
+| FIFO beforeResolve / LIFO afterResolve ordering     | Middleware pattern for hook composition      | ✓ Good (v5.0) |
+| Levenshtein MAX_DISTANCE=2 for suggestions          | Balances helpfulness vs false positives      | ✓ Good (v5.0) |
 
 ---
 
-_Last updated: 2026-02-03 after v5.0 milestone started_
+_Last updated: 2026-02-05 after v5.0 milestone shipped_
