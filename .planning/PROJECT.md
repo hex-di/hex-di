@@ -8,6 +8,25 @@ A TypeScript dependency injection library implementing Hexagonal Architecture (P
 
 Catch dependency graph errors at compile time, not runtime — invalid graphs should fail to typecheck.
 
+## Current Milestone: v6.0 Monorepo Reorganization
+
+**Goal:** Restructure the monorepo to cleanly separate core packages, integrations, tooling, and higher-level libraries — preparing for store, saga, and query libraries.
+
+**Target structure:**
+
+- `packages/` — Core DI engine (core, graph, runtime)
+- `integrations/` — Framework integrations (react, hono)
+- `tooling/` — Developer tools (testing, visualization, graph-viz)
+- `libs/` — Libraries built on HexDI, each with sub-packages (libs/flow/{core,react}, libs/store/{core,react}, etc.)
+
+**Target features:**
+
+- Move all 10 existing packages to new folder structure
+- Update pnpm-workspace.yaml, tsconfig references, and build configs
+- Update all internal import paths and workspace:\* dependencies
+- Verify all tests, typechecks, builds, and lint pass after migration
+- No functional code changes — purely structural
+
 ## Current State
 
 **Latest:** v5.0 Runtime Package Improvements (shipped 2026-02-05)
@@ -80,7 +99,11 @@ Catch dependency graph errors at compile time, not runtime — invalid graphs sh
 
 <!-- Current scope. Building toward these. -->
 
-None — planning next milestone.
+- [ ] Monorepo restructured into packages/, integrations/, tooling/, libs/ groups
+- [ ] libs/ uses nested sub-packages per library (libs/flow/{core,react})
+- [ ] All workspace configs, tsconfig references, and build configs updated
+- [ ] All tests, typechecks, builds, and lint pass after migration
+- [ ] Examples and website workspace references updated
 
 ### Out of Scope
 
@@ -111,28 +134,31 @@ None — planning next milestone.
 
 <!-- Decisions that constrain future work. Add throughout project lifecycle. -->
 
-| Decision                                            | Rationale                                    | Outcome       |
-| --------------------------------------------------- | -------------------------------------------- | ------------- |
-| Fix all 3 bugs in single milestone                  | They're related (all in merge/build logic)   | ✓ Good (v1.1) |
-| Verification-only milestone                         | Bugs were already fixed in prior refactoring | ✓ Good (v1.1) |
-| Defense-in-depth validation                         | Runtime backs up compile-time checks         | ✓ Good (v1.1) |
-| Focus v1.2 on DX improvements                       | Expert analysis shows clear priority areas   | ✓ Good (v1.2) |
-| Additive-only changes for v1.2                      | Maintains backward compatibility             | ✓ Good (v1.2) |
-| Factory-based overrides keyed by port name          | API simplicity, lazy instantiation           | ✓ Good (v1.2) |
-| Curried create<TService>()(name) for ServiceBuilder | Enables partial type application             | ✓ Good (v1.2) |
-| DirectedPort as intersection with Port              | Backward compatible, gradual adoption        | ✓ Good (v1.2) |
-| Unified createPort() with object config             | Single entry point, rich metadata            | ✓ Good (v2.0) |
-| Unified createAdapter() with auto-detect async      | 7 functions → 1, clean API surface           | ✓ Good (v3.0) |
-| Compile-time async lifetime enforcement             | Catch invalid patterns before runtime        | ✓ Good (v3.0) |
-| Unified provide() with auto-detect async            | 4 methods → 1, clean builder API             | ✓ Good (v4.0) |
-| Skip Plan 14-02 (pending constraints)               | Gap doesn't exist — existing code sufficient | ✓ Good (v4.0) |
-| Remove HOOKS_ACCESS plugin system                   | Tracing/inspection are core, not plugins     | ✓ Good (v5.0) |
-| Single options object for createContainer           | Clean API, no backward compatibility shims   | ✓ Good (v5.0) |
-| Type-safe override builder (adapter-keyed)          | Compile-time port validation, no strings     | ✓ Good (v5.0) |
-| Symbol-based context variable keys                  | Collision prevention and type safety         | ✓ Good (v5.0) |
-| FIFO beforeResolve / LIFO afterResolve ordering     | Middleware pattern for hook composition      | ✓ Good (v5.0) |
-| Levenshtein MAX_DISTANCE=2 for suggestions          | Balances helpfulness vs false positives      | ✓ Good (v5.0) |
+| Decision                                              | Rationale                                                    | Outcome          |
+| ----------------------------------------------------- | ------------------------------------------------------------ | ---------------- |
+| Fix all 3 bugs in single milestone                    | They're related (all in merge/build logic)                   | ✓ Good (v1.1)    |
+| Verification-only milestone                           | Bugs were already fixed in prior refactoring                 | ✓ Good (v1.1)    |
+| Defense-in-depth validation                           | Runtime backs up compile-time checks                         | ✓ Good (v1.1)    |
+| Focus v1.2 on DX improvements                         | Expert analysis shows clear priority areas                   | ✓ Good (v1.2)    |
+| Additive-only changes for v1.2                        | Maintains backward compatibility                             | ✓ Good (v1.2)    |
+| Factory-based overrides keyed by port name            | API simplicity, lazy instantiation                           | ✓ Good (v1.2)    |
+| Curried create<TService>()(name) for ServiceBuilder   | Enables partial type application                             | ✓ Good (v1.2)    |
+| DirectedPort as intersection with Port                | Backward compatible, gradual adoption                        | ✓ Good (v1.2)    |
+| Unified createPort() with object config               | Single entry point, rich metadata                            | ✓ Good (v2.0)    |
+| Unified createAdapter() with auto-detect async        | 7 functions → 1, clean API surface                           | ✓ Good (v3.0)    |
+| Compile-time async lifetime enforcement               | Catch invalid patterns before runtime                        | ✓ Good (v3.0)    |
+| Unified provide() with auto-detect async              | 4 methods → 1, clean builder API                             | ✓ Good (v4.0)    |
+| Skip Plan 14-02 (pending constraints)                 | Gap doesn't exist — existing code sufficient                 | ✓ Good (v4.0)    |
+| Remove HOOKS_ACCESS plugin system                     | Tracing/inspection are core, not plugins                     | ✓ Good (v5.0)    |
+| Single options object for createContainer             | Clean API, no backward compatibility shims                   | ✓ Good (v5.0)    |
+| Type-safe override builder (adapter-keyed)            | Compile-time port validation, no strings                     | ✓ Good (v5.0)    |
+| Symbol-based context variable keys                    | Collision prevention and type safety                         | ✓ Good (v5.0)    |
+| FIFO beforeResolve / LIFO afterResolve ordering       | Middleware pattern for hook composition                      | ✓ Good (v5.0)    |
+| Levenshtein MAX_DISTANCE=2 for suggestions            | Balances helpfulness vs false positives                      | ✓ Good (v5.0)    |
+| Keep core/graph/runtime as separate packages          | Architectural separation of compile-time vs runtime concerns | — Pending (v6.0) |
+| Nested sub-packages in libs/ (libs/flow/{core,react}) | Each library groups its own ecosystem                        | — Pending (v6.0) |
+| Flat packages in packages/, integrations/, tooling/   | No per-library integration variants needed                   | — Pending (v6.0) |
 
 ---
 
-_Last updated: 2026-02-05 after v5.0 milestone shipped_
+_Last updated: 2026-02-05 after v6.0 milestone started_

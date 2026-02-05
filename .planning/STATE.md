@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Catch dependency graph errors at compile time, not runtime
-**Current focus:** Planning next milestone
+**Current focus:** v6.0 Monorepo Reorganization
 
 ## Current Position
 
-Phase: None (between milestones)
-Plan: N/A
-Status: v5.0 shipped, ready for next milestone
-Last activity: 2026-02-05 — v5.0 milestone complete
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-05 — Milestone v6.0 started
 
 ## Milestone History
 
@@ -50,11 +50,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: v5.0 milestone archived
+Stopped at: Milestone v6.0 requirements definition
 Resume file: None
-Next: `/gsd:new-milestone` to start next milestone
+Next: Define requirements → create roadmap
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-05 (v5.0 milestone complete and archived)_
+_Last updated: 2026-02-05 (v6.0 milestone started)_
