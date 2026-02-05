@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 17 - Type-Safe API
-Plan: 04 of 6 complete (01, 02, 03, 05, 06 done)
-Status: In progress
-Last activity: 2026-02-05 - Completed 17-02-PLAN.md (override method on Container interface)
+Plan: 6 of 6 complete (all done)
+Status: Phase complete
+Last activity: 2026-02-05 - Completed 17-04-PLAN.md (remove string-based override API)
 
-Progress: [████░░] 5/6 plans in Phase 17
+Progress: [██████] 6/6 plans in Phase 17
 
 ## v5.0 Phase Status
 
@@ -22,7 +22,7 @@ Progress: [████░░] 5/6 plans in Phase 17
 | ----- | ------------- | ------------ | -------- |
 | 15    | Foundation    | 5            | Complete |
 | 16    | Performance   | 3            | Complete |
-| 17    | Type-Safe API | 6            | Active   |
+| 17    | Type-Safe API | 6            | Complete |
 | 18    | Testing       | 4            | Pending  |
 | 19    | Polish        | 7            | Pending  |
 
@@ -30,9 +30,9 @@ Progress: [████░░] 5/6 plans in Phase 17
 
 **Velocity (v1.1 + v1.2 + v2.0 + v3.0 + v4.0 + v5.0):**
 
-- Total plans completed: 36
+- Total plans completed: 37
 - Average duration: 4.3 min
-- Total execution time: ~155 min
+- Total execution time: ~161 min
 
 **By Phase:**
 
@@ -53,12 +53,12 @@ Progress: [████░░] 5/6 plans in Phase 17
 | 13-runtime-features                 | 2     | 9 min  | 4.5 min  |
 | 14-bidirectional-captive-validation | 1     | 8 min  | 8 min    |
 | 16-performance                      | 3     | 11 min | 3.7 min  |
-| 17-type-safe-api                    | 4     | 18 min | 4.5 min  |
+| 17-type-safe-api                    | 5     | 24 min | 4.8 min  |
 
 **Recent Trend:**
 
-- Last 5 plans: [4m, 5m, 2m, 3m, 5m]
-- Trend: Stable (avg ~3.8min per plan)
+- Last 5 plans: [5m, 2m, 3m, 5m, 6m]
+- Trend: Stable (avg ~4.2min per plan)
 
 ## Accumulated Context
 
@@ -99,6 +99,8 @@ Recent for v5.0:
 - 17-03: No backward compatibility - breaking change with old API removed entirely
 - 17-02: Override method implemented in wrapper layer, not impl classes
 - 17-02: ContainerForOverride minimal interface avoids parent property type conflicts
+- 17-04: String-based withOverrides API completely removed
+- 17-04: Tests clarify shared inheritance behavior (parent instances used for non-overridden)
 
 ### Pending Todos
 
@@ -108,18 +110,17 @@ None.
 
 **Research flags from SUMMARY.md:**
 
-- Phase 17 (Type-Safe API): Builder pattern depth limits need validation during planning
-- May need to test with 10-20 chained overrides for TypeScript recursion limits
-- **Plan 17-05 issue**: Plan requests circular detection (already exists). Should be reviewed/removed as it's outside Phase 17 scope (override API)
+- Phase 17 (Type-Safe API): Builder pattern depth limits validated during 17-01
+- 17-05: Circular detection already exists - plan noted this, no changes needed
 
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed 17-02 (override method on Container interface)
+Stopped at: Completed Phase 17 (all 6 plans)
 Resume file: None
-Next: Continue Phase 17 with remaining plan (17-04)
+Next: Continue to Phase 18 (Testing)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-05 (Phase 17 in progress - 17-02 complete)_
+_Last updated: 2026-02-05 (Phase 17 complete)_
