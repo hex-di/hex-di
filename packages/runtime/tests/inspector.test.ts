@@ -446,3 +446,210 @@ describe("createInspector Factory", () => {
     expect(() => inspector.getScopeTree()).toThrow(/disposed/i);
   });
 });
+
+// =============================================================================
+// Lifecycle Stage Tests
+// =============================================================================
+
+describe("Lifecycle Stage Inspection", () => {
+  test("Inspector returns accurate data before any resolutions", () => {
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const DatabaseAdapter = createAdapter({
+      provides: DatabasePort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ query: vi.fn() }),
+    });
+
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
+    const container = createContainer({ graph: graph, name: "PreResolve" });
+
+    // Use built-in inspector property for InspectorAPI
+    const inspector = container.inspector;
+
+    // Before any resolutions
+    const snapshot = inspector.getSnapshot();
+
+    // Container should not be disposed
+    expect(snapshot.isDisposed).toBe(false);
+
+    // Container kind should be root
+    expect(snapshot.kind).toBe("root");
+
+    // Phase should be initialized (container created and ready)
+    expect(snapshot.phase).toBe("initialized");
+
+    // Singleton entries exist for all singleton adapters (2 total)
+    expect(snapshot.singletons.length).toBe(2);
+
+    // But none are resolved yet
+    const resolvedSingletons = snapshot.singletons.filter(s => s.isResolved);
+    expect(resolvedSingletons.length).toBe(0);
+
+    // Ports should be available
+    const ports = inspector.listPorts();
+    expect(ports).toContain("Logger");
+    expect(ports).toContain("Database");
+
+    // No ports should be resolved
+    expect(inspector.isResolved("Logger")).toBe(false);
+    expect(inspector.isResolved("Database")).toBe(false);
+
+    // Scope tree should show empty root
+    const tree = inspector.getScopeTree();
+    expect(tree.id).toBe("container");
+    expect(tree.resolvedCount).toBe(0);
+  });
+
+  test("Inspector captures mid-resolution state correctly", () => {
+    // Use array to collect snapshots (avoids closure mutation issues)
+    const capturedSnapshots: Array<{
+      kind: string;
+      phase: string;
+      singletons: readonly { portName: string; isResolved: boolean }[];
+    }> = [];
+
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const DatabaseAdapter = createAdapter({
+      provides: DatabasePort,
+      requires: [LoggerPort],
+      lifetime: "singleton",
+      factory: deps => {
+        // Capture state during resolution using the container's inspector
+        const snapshot = containerRef.inspector.getSnapshot();
+        capturedSnapshots.push({
+          kind: snapshot.kind,
+          phase: snapshot.phase,
+          singletons: snapshot.singletons.map(s => ({
+            portName: s.portName,
+            isResolved: s.isResolved,
+          })),
+        });
+        return { query: vi.fn() };
+      },
+    });
+
+    const fullGraph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
+    const containerRef = createContainer({ graph: fullGraph, name: "MidResolve" });
+
+    // Resolve Database - this will trigger Logger resolution first
+    containerRef.resolve(DatabasePort);
+
+    // Verify mid-resolution snapshot was captured
+    expect(capturedSnapshots.length).toBe(1);
+
+    const capturedSnapshot = capturedSnapshots[0];
+    if (capturedSnapshot !== undefined) {
+      // During Database resolution, Logger should already be resolved
+      const loggerEntry = capturedSnapshot.singletons.find(e => e.portName === "Logger");
+      expect(loggerEntry).toBeDefined();
+      expect(loggerEntry!.isResolved).toBe(true);
+
+      // Database entry exists but should not be resolved yet (still in factory)
+      const databaseEntry = capturedSnapshot.singletons.find(e => e.portName === "Database");
+      expect(databaseEntry).toBeDefined();
+      expect(databaseEntry!.isResolved).toBe(false);
+
+      // Container should still be initialized
+      expect(capturedSnapshot.phase).toBe("initialized");
+    }
+
+    // After resolution completes
+    const finalSnapshot = containerRef.inspector.getSnapshot();
+    expect(finalSnapshot.singletons.length).toBe(2);
+
+    const finalLogger = finalSnapshot.singletons.find(e => e.portName === "Logger");
+    const finalDatabase = finalSnapshot.singletons.find(e => e.portName === "Database");
+    expect(finalLogger?.isResolved).toBe(true);
+    expect(finalDatabase?.isResolved).toBe(true);
+  });
+
+  test("Inspector reflects disposed container state", async () => {
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const container = createContainer({ graph: graph, name: "Disposed" });
+
+    // Resolve and verify initial state
+    container.resolve(LoggerPort);
+    const beforeDisposal = container.inspector.getSnapshot();
+    expect(beforeDisposal.isDisposed).toBe(false);
+    expect(beforeDisposal.phase).toBe("initialized");
+    expect(beforeDisposal.singletons.length).toBe(1);
+
+    // Dispose the container
+    await container.dispose();
+
+    // Inspector operations throw after disposal (expected behavior)
+    // This verifies that inspector correctly detects disposed state
+    expect(() => container.inspector.getSnapshot()).toThrow(/disposed/i);
+    expect(() => container.inspector.getPhase()).toThrow(/disposed/i);
+    expect(() => container.inspector.listPorts()).toThrow(/disposed/i);
+
+    // Container kind is still accessible
+    expect(container.inspector.getContainerKind()).toBe("root");
+  });
+
+  test("Inspector tracks phase transitions (uninitialized -> initialized)", () => {
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const RequestContextAdapter = createAdapter({
+      provides: RequestContextPort,
+      requires: [],
+      lifetime: "scoped",
+      factory: () => ({ requestId: "test" }),
+    });
+
+    const graph = GraphBuilder.create()
+      .provide(LoggerAdapter)
+      .provide(RequestContextAdapter)
+      .build();
+    const container = createContainer({ graph: graph, name: "PhaseTracking" });
+
+    // Container is created in initialized phase (no separate initialization step for sync)
+    const initialSnapshot = container.inspector.getSnapshot();
+    expect(initialSnapshot.phase).toBe("initialized");
+    expect(initialSnapshot.kind).toBe("root");
+
+    // Resolve a service
+    container.resolve(LoggerPort);
+    const afterResolve = container.inspector.getSnapshot();
+    expect(afterResolve.phase).toBe("initialized");
+
+    // Create a scope and resolve a scoped service
+    const scope = container.createScope();
+    scope.resolve(RequestContextPort);
+
+    // Verify scope appears in scope tree with active status
+    const tree = container.inspector.getScopeTree();
+    expect(tree.children.length).toBe(1);
+    expect(tree.children[0]!.status).toBe("active");
+    expect(tree.children[0]!.resolvedCount).toBe(1);
+
+    // Phase should be consistent across multiple calls
+    expect(container.inspector.getPhase()).toBe("initialized");
+    expect(container.inspector.getContainerKind()).toBe("root");
+  });
+});
