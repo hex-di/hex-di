@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 19 - Polish
-Plan: 2 of 7 complete
+Plan: 1 of 7 complete
 Status: In progress
-Last activity: 2026-02-05 - Completed 19-02-PLAN.md (enhanced error messages)
+Last activity: 2026-02-05 - Completed 19-01-PLAN.md (error suggestions and "did you mean")
 
-Progress: [██░░░░░] 2/7 plans in Phase 19
+Progress: [█░░░░░░] 1/7 plans in Phase 19
 
 ## v5.0 Phase Status
 
@@ -55,12 +55,12 @@ Progress: [██░░░░░] 2/7 plans in Phase 19
 | 16-performance                      | 3     | 11 min | 3.7 min  |
 | 17-type-safe-api                    | 5     | 24 min | 4.8 min  |
 | 18-testing                          | 4     | 18 min | 4.5 min  |
-| 19-polish                           | 2     | 6 min  | 3.0 min  |
+| 19-polish                           | 1     | 6 min  | 6.0 min  |
 
 **Recent Trend:**
 
-- Last 5 plans: [6m, 4m, 4m, 6m, 3m]
-- Trend: Stable (avg ~4.5min per plan)
+- Last 5 plans: [4m, 4m, 6m, 3m, 6m]
+- Trend: Stable (avg ~4.6min per plan)
 
 ## Accumulated Context
 
@@ -117,8 +117,9 @@ Recent for v5.0:
 - 18-04: Use trace() and enableTracing() functions directly rather than container.tracer property
 - 18-04: Test MemoryCollector directly for filter validation (cleaner than end-to-end integration)
 - 18-04: Synchronous busy-wait timing for predictable test durations
-- 19-02: Template literal error types embed copy-paste-ready code examples using type parameters
-- 19-02: Type-level error tests use commented code to document expected behavior without CI failures
+- 19-01: MAX_DISTANCE=2 for string similarity suggestions (balances helpfulness vs false positives)
+- 19-01: suggestion property on ContainerError (writable for constructor assignment)
+- 19-01: Only programming errors get suggestions (runtime errors depend on user code)
 
 ### Pending Todos
 
@@ -134,11 +135,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed 19-02-PLAN.md (enhanced error messages)
+Stopped at: Completed 19-01-PLAN.md (error suggestions and "did you mean")
 Resume file: None
-Next: Continue Phase 19 (5 plans remaining)
+Next: Continue Phase 19 (6 plans remaining)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-05 (Phase 19: 2/7 plans complete - in progress)_
+_Last updated: 2026-02-05 (Phase 19: 1/7 plans complete - in progress)_
