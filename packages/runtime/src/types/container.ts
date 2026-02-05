@@ -7,7 +7,8 @@
  * @packageDocumentation
  */
 
-import type { Port, InferService, TracingAPI, InspectorAPI } from "@hex-di/core";
+import type { Port, InferService, TracingAPI, InspectorAPI, AdapterConstraint } from "@hex-di/core";
+import { OverrideBuilder } from "../container/override-builder.js";
 import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
 import { INTERNAL_ACCESS } from "../inspection/symbols.js";
 import type { ContainerInternalState } from "../inspection/internal-state-types.js";
@@ -492,6 +493,50 @@ export type ContainerMembers<
    * ```
    */
   removeHook<T extends HookType>(type: T, handler: HookHandler<T>): void;
+
+  // =========================================================================
+  // Override API (Type-Safe Container Overrides)
+  // =========================================================================
+
+  /**
+   * Creates an override builder for type-safe container overrides.
+   *
+   * The override builder provides a fluent API for creating child containers
+   * with overridden adapters. Each `.override()` call is validated at compile
+   * time to ensure:
+   * 1. The adapter's port exists in this container's graph
+   * 2. The adapter's dependencies are satisfied
+   *
+   * The `.build()` method creates a child container with the overrides applied.
+   *
+   * @typeParam A - The adapter type to override with
+   * @param adapter - The adapter instance to use as an override
+   * @returns An OverrideBuilder for chaining additional overrides
+   *
+   * @example
+   * ```typescript
+   * // Create a test container with mock services
+   * const testContainer = container
+   *   .override(MockLoggerAdapter)
+   *   .override(MockDatabaseAdapter)
+   *   .build();
+   *
+   * // The mock logger is now used instead of the real one
+   * const logger = testContainer.resolve(LoggerPort);
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Compile-time error if port doesn't exist
+   * container.override(UnknownAdapter); // ERROR: Port 'Unknown' not found in graph
+   *
+   * // Compile-time error if dependencies missing
+   * container.override(AdapterWithMissingDeps); // ERROR: Missing dependencies
+   * ```
+   */
+  override<A extends AdapterConstraint>(
+    adapter: A
+  ): OverrideBuilder<TProvides | TExtends, never, TAsyncPorts, TPhase>;
 
   /**
    * Brand property for nominal typing.
