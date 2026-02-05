@@ -3,7 +3,8 @@
  * @packageDocumentation
  */
 
-import type { Port, InferService } from "@hex-di/core";
+import type { Port, InferService, AdapterConstraint } from "@hex-di/core";
+import { OverrideBuilder, type ContainerForOverride } from "./override-builder.js";
 import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
 import type {
   Container,
@@ -166,8 +167,8 @@ export function createChildContainerWrapper<
   parentName: string
 ): Container<TProvides, TExtends, TAsyncPorts, "initialized"> {
   // Use ContainerMembers instead of Container for internal type
-  // Note: "inspector" and "tracer" are initially optional placeholders.
-  // They are set via Object.defineProperty for non-enumerability via attachBuiltinAPIs().
+  // Note: "inspector" and "tracer" are set via Object.defineProperty after creation
+  // for non-enumerability. Override is included directly with proper type.
   type ChildContainerInternals = Omit<
     ContainerMembers<TProvides, TExtends, TAsyncPorts, "initialized">,
     "inspector" | "tracer"
@@ -190,7 +191,29 @@ export function createChildContainerWrapper<
   // Hook sources for HOOKS_ACCESS (legacy) and addHook/removeHook (new)
   const hookSources: ResolutionHooks[] = [];
 
+  // Override method defined using a deferred reference pattern.
+  // The container is accessed at call-time (not definition-time), which avoids
+  // forward reference issues without needing `let` or eslint-disable.
+  // The explicit return type annotation ensures TypeScript infers the correct
+  // type parameters for OverrideBuilder.
+  //
+  // We create a ContainerForOverride object that captures only what OverrideBuilder
+  // needs (name + createChild), avoiding the type mismatch from the `parent` property
+  // which differs between root containers (parent: never) and child containers.
+  function overrideMethod<A extends AdapterConstraint>(
+    adapter: A
+  ): OverrideBuilder<TProvides | TExtends, never, TAsyncPorts, "initialized"> {
+    // Create a minimal ContainerForOverride that exposes just name and createChild.
+    // This avoids the parent property type mismatch between root and child containers.
+    const containerThunk = (): ContainerForOverride<TProvides | TExtends, TAsyncPorts> => ({
+      name: childName,
+      createChild: (graph, options) => childContainer.createChild(graph, options),
+    });
+    return new OverrideBuilder(containerThunk, [adapter]);
+  }
+
   const childContainer: ChildContainerInternals = {
+    override: overrideMethod,
     resolve,
     resolveAsync: <P extends TProvides | TExtends>(port: P): Promise<InferService<P>> =>
       impl.resolveAsync(port),

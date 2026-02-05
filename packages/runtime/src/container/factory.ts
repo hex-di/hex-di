@@ -3,10 +3,10 @@
  * @packageDocumentation
  */
 
-import type { Port, InferService } from "@hex-di/core";
+import type { Port, InferService, AdapterConstraint } from "@hex-di/core";
+import { OverrideBuilder, type ContainerForOverride } from "./override-builder.js";
 import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
 import type {
-  ContainerOptions,
   HooksInstaller,
   HookType,
   HookHandler,
@@ -210,6 +210,23 @@ function createUninitializedContainerWrapper<
     return impl.resolve(port);
   }
 
+  // Override method defined using a function declaration pattern.
+  // This avoids needing `let` + eslint-disable because function declarations
+  // can reference variables declared later (hoisting), and when the function
+  // is called, `container` will already be assigned.
+  //
+  // We create a ContainerForOverride object that captures only what OverrideBuilder
+  // needs (name + createChild), avoiding type issues with the full container type.
+  function overrideMethod<A extends AdapterConstraint>(
+    adapter: A
+  ): OverrideBuilder<TProvides, never, TAsyncPorts, "uninitialized"> {
+    const containerThunk = (): ContainerForOverride<TProvides, TAsyncPorts> => ({
+      name: containerName,
+      createChild: (graph, options) => container.createChild(graph, options),
+    });
+    return new OverrideBuilder(containerThunk, [adapter]);
+  }
+
   const container: UninitializedContainerInternals<TProvides, TAsyncPorts> = {
     resolve,
     resolveAsync: <P extends TProvides>(port: P): Promise<InferService<P>> =>
@@ -351,6 +368,8 @@ function createUninitializedContainerWrapper<
     get [ContainerBrand]() {
       return unreachable<{ provides: TProvides; extends: never }>("Container brand is type-only");
     },
+    // Type-safe override builder API
+    override: overrideMethod,
   };
 
   // Add .parent getter as non-enumerable to prevent React DevTools from triggering it
@@ -414,6 +433,23 @@ function createInitializedContainerWrapper<
 ): Container<TProvides, never, TAsyncPorts, "initialized"> {
   function resolve<P extends TProvides>(port: P): InferService<P> {
     return impl.resolve(port);
+  }
+
+  // Override method defined using a function declaration pattern.
+  // This avoids needing `let` + eslint-disable because function declarations
+  // can reference variables declared later (hoisting), and when the function
+  // is called, `container` will already be assigned.
+  //
+  // We create a ContainerForOverride object that captures only what OverrideBuilder
+  // needs (name + createChild), avoiding type issues with the full container type.
+  function overrideMethod<A extends AdapterConstraint>(
+    adapter: A
+  ): OverrideBuilder<TProvides, never, TAsyncPorts, "initialized"> {
+    const containerThunk = (): ContainerForOverride<TProvides, TAsyncPorts> => ({
+      name: containerName,
+      createChild: (graph, options) => container.createChild(graph, options),
+    });
+    return new OverrideBuilder(containerThunk, [adapter]);
   }
 
   const container: InitializedContainerInternals<TProvides, TAsyncPorts> = {
@@ -548,6 +584,8 @@ function createInitializedContainerWrapper<
     get [ContainerBrand]() {
       return unreachable<{ provides: TProvides; extends: never }>("Container brand is type-only");
     },
+    // Type-safe override builder API
+    override: overrideMethod,
   };
 
   // Add .parent getter as non-enumerable to prevent React DevTools from triggering it
