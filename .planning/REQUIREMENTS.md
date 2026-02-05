@@ -32,10 +32,10 @@ Requirements for runtime package improvements (8.7/10 -> 9.5/10). Each maps to r
 
 ### Testing
 
-- [ ] **TEST-01**: Comprehensive resolution hook tests (20+ tests)
-- [ ] **TEST-02**: Hook composition tests (10+ tests)
-- [ ] **TEST-03**: Inspector API tests (integrated, not plugin-based)
-- [ ] **TEST-04**: Tracer API tests (integrated, not plugin-based)
+- [x] **TEST-01**: Comprehensive resolution hook tests (20+ tests)
+- [x] **TEST-02**: Hook composition tests (10+ tests)
+- [x] **TEST-03**: Inspector API tests (integrated, not plugin-based)
+- [x] **TEST-04**: Tracer API tests (integrated, not plugin-based)
 
 ### Error Experience
 
@@ -94,10 +94,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PERF-01     | 16    | Complete |
 | PERF-02     | 16    | Complete |
 | PERF-03     | 16    | Complete |
-| TEST-01     | 18    | Pending  |
-| TEST-02     | 18    | Pending  |
-| TEST-03     | 18    | Pending  |
-| TEST-04     | 18    | Pending  |
+| TEST-01     | 18    | Complete |
+| TEST-02     | 18    | Complete |
+| TEST-03     | 18    | Complete |
+| TEST-04     | 18    | Complete |
 | ERR-01      | 19    | Pending  |
 | ERR-02      | 19    | Pending  |
 | ERR-03      | 19    | Pending  |

@@ -111,7 +111,12 @@ Plans:
 3. Inspector API tests cover core integrated API (not plugin), validating all public methods and edge cases
 4. Tracer API tests cover core integrated API, verifying trace collection, filtering, and output formats
 
-**Plans:** TBD
+**Plans:**
+
+- [x] 18-01: Resolution Hook Tests (29 tests)
+- [x] 18-02: Hook Composition Tests (15 tests)
+- [x] 18-03: Inspector API Tests (21 tests)
+- [x] 18-04: Tracer API Tests (23 tests)
 
 ---
 
