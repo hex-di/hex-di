@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 
 ## Current Position
 
-Phase: 17 - Type-Safe API
-Plan: 6 of 6 complete (all done)
-Status: Phase complete
-Last activity: 2026-02-05 - Completed 17-04-PLAN.md (remove string-based override API)
+Phase: 18 - Testing
+Plan: 2 of 4 complete
+Status: In progress
+Last activity: 2026-02-05 - Completed 18-02-PLAN.md (hook composition tests)
 
-Progress: [██████] 6/6 plans in Phase 17
+Progress: [██▓▓] 2/4 plans in Phase 18
 
 ## v5.0 Phase Status
 
@@ -23,16 +23,16 @@ Progress: [██████] 6/6 plans in Phase 17
 | 15    | Foundation    | 5            | Complete |
 | 16    | Performance   | 3            | Complete |
 | 17    | Type-Safe API | 6            | Complete |
-| 18    | Testing       | 4            | Pending  |
+| 18    | Testing       | 4            | Active   |
 | 19    | Polish        | 7            | Pending  |
 
 ## Performance Metrics
 
 **Velocity (v1.1 + v1.2 + v2.0 + v3.0 + v4.0 + v5.0):**
 
-- Total plans completed: 37
+- Total plans completed: 38
 - Average duration: 4.3 min
-- Total execution time: ~161 min
+- Total execution time: ~165 min
 
 **By Phase:**
 
@@ -54,11 +54,12 @@ Progress: [██████] 6/6 plans in Phase 17
 | 14-bidirectional-captive-validation | 1     | 8 min  | 8 min    |
 | 16-performance                      | 3     | 11 min | 3.7 min  |
 | 17-type-safe-api                    | 5     | 24 min | 4.8 min  |
+| 18-testing                          | 2     | 8 min  | 4 min    |
 
 **Recent Trend:**
 
-- Last 5 plans: [5m, 2m, 3m, 5m, 6m]
-- Trend: Stable (avg ~4.2min per plan)
+- Last 5 plans: [3m, 5m, 6m, 4m, 4m]
+- Trend: Stable (avg ~4.4min per plan)
 
 ## Accumulated Context
 
@@ -101,6 +102,11 @@ Recent for v5.0:
 - 17-02: ContainerForOverride minimal interface avoids parent property type conflicts
 - 17-04: String-based withOverrides API completely removed
 - 17-04: Tests clarify shared inheritance behavior (parent instances used for non-overridden)
+- 18-02: beforeResolve uses FIFO ordering (first registered, first called)
+- 18-02: afterResolve uses LIFO ordering (last registered, first called) - middleware pattern
+- 18-02: Mid-resolution add/remove affects current resolution (in-place array modification)
+- 18-02: Parent and child containers maintain independent hook management
+- 18-02: Scopes report parent container's kind, not separate "scope" kind
 
 ### Pending Todos
 
@@ -116,11 +122,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed Phase 17 (all 6 plans)
+Stopped at: Completed 18-02-PLAN.md (hook composition tests)
 Resume file: None
-Next: Continue to Phase 18 (Testing)
+Next: Continue with 18-03 or 18-04 in Phase 18
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-05 (Phase 17 complete)_
+_Last updated: 2026-02-05 (Phase 18: 2/4 plans complete)_
