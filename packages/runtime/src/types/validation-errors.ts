@@ -30,7 +30,7 @@ type PortUnionToString<P extends Port<unknown, string>> = P extends never
  * Provides:
  * - The port name that was attempted
  * - Available ports in the graph
- * - Actionable fix suggestion
+ * - Actionable fix suggestion with copy-paste-ready example
  *
  * @typeParam TPortName - The port name that was attempted to override
  * @typeParam TAvailable - Union of available Port types in the graph
@@ -41,6 +41,10 @@ type PortUnionToString<P extends Port<unknown, string>> = P extends never
  * // ERROR[TYPE-01]: Port 'UnknownPort' not found in graph.
  * // Available ports: Logger | Database
  * // Fix: Add adapter for 'UnknownPort' to graph before creating override.
+ * // Example:
+ * //   const graph = GraphBuilder.create()
+ * //     .provide(UnknownAdapter)  // Add the missing adapter
+ * //     .build();
  * ```
  */
 export type PortNotInGraphError<
@@ -50,7 +54,12 @@ export type PortNotInGraphError<
 
 Available ports: ${PortUnionToString<TAvailable>}
 
-Fix: Add adapter for '${TPortName}' to graph before creating override.`;
+Fix: Add adapter for '${TPortName}' to graph before creating override.
+
+Example:
+  const graph = GraphBuilder.create()
+    .provide(${TPortName}Adapter)  // Add the missing adapter
+    .build();`;
 
 /**
  * Error message when an override adapter has unsatisfied dependencies.
@@ -58,7 +67,7 @@ Fix: Add adapter for '${TPortName}' to graph before creating override.`;
  * Provides:
  * - The port name being overridden
  * - Which dependencies are missing
- * - Actionable fix suggestion
+ * - Actionable fix suggestion with copy-paste-ready example
  *
  * @typeParam TPortName - The port name being overridden
  * @typeParam TMissing - Union of missing dependency Port types
@@ -69,6 +78,12 @@ Fix: Add adapter for '${TPortName}' to graph before creating override.`;
  * // ERROR[TYPE-02]: Override adapter for 'UserService' has unsatisfied dependencies.
  * // Missing: Config | Logger
  * // Fix: Ensure all required ports exist in graph or add them before overriding.
+ * // Example:
+ * //   const graph = GraphBuilder.create()
+ * //     .provide(ConfigAdapter)   // Add missing Config dependency
+ * //     .provide(LoggerAdapter)   // Add missing Logger dependency
+ * //     .provide(UserServiceAdapter)
+ * //     .build();
  * ```
  */
 export type MissingDependenciesError<
@@ -78,4 +93,10 @@ export type MissingDependenciesError<
 
 Missing: ${PortUnionToString<TMissing>}
 
-Fix: Ensure all required ports exist in graph or add them before overriding.`;
+Fix: Ensure all required ports exist in graph or add them before overriding.
+
+Example:
+  const graph = GraphBuilder.create()
+    .provide(${PortUnionToString<TMissing>}Adapter)  // Add missing dependency
+    .provide(${TPortName}Adapter)
+    .build();`;
