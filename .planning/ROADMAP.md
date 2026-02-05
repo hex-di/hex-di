@@ -87,12 +87,12 @@ Plans:
 
 Plans:
 
-- [ ] 17-01-PLAN.md - Create override builder with type validation
-- [ ] 17-02-PLAN.md - Add override method to Container interface
-- [ ] 17-03-PLAN.md - Simplify createContainer with options object
-- [ ] 17-04-PLAN.md - Remove string-based override API
-- [ ] 17-05-PLAN.md - Compile-time circular dependency detection (TDD)
-- [ ] 17-06-PLAN.md - Move context helpers to core package
+- [x] 17-01-PLAN.md - Create override builder with type validation
+- [x] 17-02-PLAN.md - Add override method to Container interface
+- [x] 17-03-PLAN.md - Simplify createContainer with options object
+- [x] 17-04-PLAN.md - Remove string-based override API
+- [x] 17-05-PLAN.md - Compile-time circular dependency detection (TDD)
+- [x] 17-06-PLAN.md - Move context helpers to core package
 
 ---
 

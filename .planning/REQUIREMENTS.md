@@ -18,10 +18,10 @@ Requirements for runtime package improvements (8.7/10 -> 9.5/10). Each maps to r
 
 ### API Design
 
-- [ ] **API-01**: Type-safe `withOverrides()` API using port objects as keys
-- [ ] **API-02**: Override builder pattern with fluent `.override(adapter, config)` method
-- [ ] **API-03**: Merge `createContainer` options into single object parameter
-- [ ] **API-04**: Backward compatible overload for existing string-based overrides (deprecated)
+- [x] **API-01**: Type-safe override API using adapter objects (via `container.override(adapter).build()`)
+- [x] **API-02**: Override builder pattern with fluent `.override(adapter)` method
+- [x] **API-03**: Merge `createContainer` options into single object parameter
+- [x] **API-04**: ~~Backward compatible overload~~ — REMOVED (clean break, no deprecation per project policy)
 - [ ] **API-05**: Remove legacy type exports (`CaptiveDependencyErrorLegacy`, etc.)
 
 ### Performance
@@ -52,8 +52,8 @@ Requirements for runtime package improvements (8.7/10 -> 9.5/10). Each maps to r
 
 ### Type Safety
 
-- [ ] **TYPE-01**: Compile-time circular dependency detection (type-level DFS)
-- [ ] **TYPE-02**: Move context variable helpers to `@hex-di/core` or dedicated package
+- [x] **TYPE-01**: Compile-time circular dependency detection (type-level DFS)
+- [x] **TYPE-02**: Move context variable helpers to `@hex-di/core` package
 
 ## Future Requirements
 
@@ -86,10 +86,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | QUAL-04     | 15    | Pending  |
 | QUAL-05     | 15    | Pending  |
 | QUAL-06     | 15    | Pending  |
-| API-01      | 17    | Pending  |
-| API-02      | 17    | Pending  |
-| API-03      | 17    | Pending  |
-| API-04      | 17    | Pending  |
+| API-01      | 17    | Complete |
+| API-02      | 17    | Complete |
+| API-03      | 17    | Complete |
+| API-04      | 17    | Removed  |
 | API-05      | 15    | Pending  |
 | PERF-01     | 16    | Complete |
 | PERF-02     | 16    | Complete |
@@ -105,8 +105,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DOC-02      | 19    | Pending  |
 | DOC-03      | 19    | Pending  |
 | DOC-04      | 19    | Pending  |
-| TYPE-01     | 17    | Pending  |
-| TYPE-02     | 17    | Pending  |
+| TYPE-01     | 17    | Complete |
+| TYPE-02     | 17    | Complete |
 
 **Coverage:**
 
@@ -117,4 +117,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 ---
 
 _Requirements defined: 2026-02-03_
-_Last updated: 2026-02-03 (traceability complete, plugin consolidation reflected)_
+_Last updated: 2026-02-05 (Phase 17 complete: API-01/02/03, TYPE-01/02)_
