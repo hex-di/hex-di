@@ -32,45 +32,118 @@ import { ScopeBrand } from "./brands.js";
  * - Different TProvides type parameters produce incompatible types
  *
  * @typeParam TProvides - Union of Port types that this scope can resolve.
- *   The resolve method is constrained to only accept ports in this union.
- * @typeParam TAsyncPorts - Union of Port types that have async factories.
- *   These ports require async initialization before sync resolution.
- * @typeParam TPhase - The initialization phase of the parent container.
- *   Controls whether sync resolve can access async ports.
+ *   For scopes created from a container, this is the container's effective provides
+ *   union: `ContainerTProvides | ContainerTExtends`. For scopes created from another
+ *   scope, this is inherited from the parent scope. This type parameter determines
+ *   which ports can be passed to `resolve()` and `resolveAsync()`. Unlike containers,
+ *   scopes don't have an `TExtends` parameter because they don't support graph
+ *   extensions - they purely inherit resolution capability from their parent.
+ *
+ * @typeParam TAsyncPorts - Union of Port types that have async factory functions.
+ *   Inherited from the parent container through the scope chain. These ports require
+ *   special handling before initialization:
+ *   - Before parent initialization: Cannot be resolved synchronously (throws AsyncInitializationRequiredError)
+ *   - After parent initialization: Can be resolved synchronously (using cached result)
+ *   This type parameter is propagated unchanged through scope creation, ensuring
+ *   that all scopes in a chain have consistent async resolution behavior based on
+ *   the root container's initialization state.
+ *
+ * @typeParam TPhase - The initialization phase: `'uninitialized' | 'initialized'`.
+ *   Inherited from the parent container at scope creation time and reflects the root
+ *   container's initialization state. Scopes cannot change their phase independently:
+ *   - `'uninitialized'`: Root container not initialized, sync resolve limited to non-async ports
+ *   - `'initialized'`: Root container initialized, all ports resolvable synchronously
+ *   This phase is captured at scope creation and remains fixed even if the root container
+ *   is later initialized. To access newly-initialized async ports, create a new scope
+ *   after initialization.
  *
  * @remarks
- * - The brand property carries the TProvides type for nominal typing
- * - Scopes inherit singleton instances from the parent container
- * - Scoped instances are created once per scope and not shared with siblings
- * - Request instances are created fresh on every resolve call
- * - Before initialization, sync resolve is limited to non-async ports
- * - After initialization, all ports can be resolved synchronously
+ * **Nominal Typing via Branding:**
+ * The `[ScopeBrand]` property carries `TProvides` at the type level, making scopes
+ * with different type parameters structurally incompatible. This prevents accidentally
+ * passing a scope with the wrong ports to a function. The brand also distinguishes
+ * Scope from Container despite having similar method signatures.
+ *
+ * **Lifetime Behavior:**
+ * Scopes manage service lifetimes within a request or operation:
+ * - **Singleton**: Shared across the entire container hierarchy (resolved from root)
+ * - **Scoped**: Created once per scope, shared within that scope and its children
+ * - **Request**: Created fresh on every `resolve()` call, never cached
+ *
+ * Scopes inherit singleton instances from the container but maintain their own cache
+ * for scoped instances. This enables request-scoped services (e.g., user context,
+ * database transactions) while still sharing application-level singletons (e.g., loggers).
+ *
+ * **Resolution Behavior:**
+ * - The `resolve` method accepts only `TProvides` (unlike Container which accepts `TProvides | TExtends`)
+ * - Before initialization, only `Exclude<TProvides, TAsyncPorts>` is resolvable
+ * - After initialization, all `TProvides` ports are resolvable synchronously
+ * - `resolveAsync` always accepts all `TProvides` regardless of phase
+ * - Scopes can resolve scoped-lifetime ports (Containers cannot - they throw ScopeRequiredError)
+ *
+ * **Scope Hierarchy:**
+ * Scopes can be nested arbitrarily deep via `createScope()`. Child scopes:
+ * - Inherit singleton instances from the root container
+ * - Inherit scoped instances from parent scope (if configured as "shared")
+ * - Maintain their own cache for scoped instances
+ * - Dispose independently without affecting parent or siblings
+ *
+ * **Phase Inheritance Gotcha:**
+ * A scope created before container initialization will remain in the 'uninitialized'
+ * phase even after the container is initialized. This is by design - the scope's
+ * type reflects the container state at creation time. If you need access to newly
+ * initialized async ports, create a new scope after calling `container.initialize()`.
  *
  * @see {@link Container} - Parent container type with identical API but separate brand
  * @see {@link Container.createScope} - Method that creates Scope instances
+ * @see {@link Scope.createScope} - Create nested child scopes
  *
- * @example Basic usage
+ * @example Basic usage with lifetime behavior
  * ```typescript
  * // Scope type is parameterized by the ports it can resolve
- * type AppScope = Scope<typeof LoggerPort | typeof UserContextPort>;
+ * type AppScope = Scope<typeof LoggerPort | typeof UserContextPort, never, 'initialized'>;
+ * //                    ^- can resolve both ports            ^- no async ports  ^- initialized
  *
- * // The resolve method is type-safe
  * declare const scope: AppScope;
- * const logger = scope.resolve(LoggerPort);        // Singleton (shared)
- * const context = scope.resolve(UserContextPort);  // Scoped (per-scope)
+ * const logger = scope.resolve(LoggerPort);        // Singleton (shared from container)
+ * const context = scope.resolve(UserContextPort);  // Scoped (created for this scope)
+ * const context2 = scope.resolve(UserContextPort); // Same instance (cached in scope)
  * ```
  *
- * @example Nested scopes
+ * @example Nested scopes with lifecycle
  * ```typescript
- * const parentScope = container.createScope();
- * const childScope = parentScope.createScope();
+ * const parentScope = container.createScope("parent");
+ * const childScope = parentScope.createScope("child");
  *
  * // Child scope can resolve the same ports
- * const logger = childScope.resolve(LoggerPort);
+ * const logger = childScope.resolve(LoggerPort);      // Singleton (from container)
+ * const parentCtx = parentScope.resolve(UserContextPort); // Scoped instance A
+ * const childCtx = childScope.resolve(UserContextPort);   // Scoped instance B (separate)
  *
  * // Disposing child does not affect parent
- * await childScope.dispose();
- * // parentScope is still usable
+ * await childScope.dispose(); // Disposes instance B
+ * // parentScope is still usable, instance A still valid
+ * const stillValid = parentScope.resolve(UserContextPort); // Same instance A
+ * ```
+ *
+ * @example Phase inheritance behavior
+ * ```typescript
+ * const container = createContainer(graph);
+ * // Type: Container<..., never, AsyncPort, 'uninitialized'>
+ *
+ * const earlyScope = container.createScope();
+ * // Type: Scope<..., AsyncPort, 'uninitialized'>
+ * // earlyScope.resolve(AsyncPort); // ERROR: async port not initialized
+ *
+ * await container.initialize();
+ * // Container now: Container<..., never, AsyncPort, 'initialized'>
+ *
+ * // earlyScope still has 'uninitialized' phase (type captured at creation)
+ * // earlyScope.resolve(AsyncPort); // Still ERROR at compile time
+ *
+ * const lateScope = container.createScope();
+ * // Type: Scope<..., AsyncPort, 'initialized'>
+ * const db = lateScope.resolve(AsyncPort); // OK: scope created after initialization
  * ```
  */
 // Note: Scopes don't have plugin APIs. They're pure resolution contexts.

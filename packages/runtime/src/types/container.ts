@@ -31,43 +31,97 @@ import type { HookType, HookHandler } from "../resolution/hooks.js";
  * - Root containers: `TExtends = never` (has `initialize()`, no `parent`)
  * - Child containers: `TExtends` is a port union (has `parent`, no `initialize()`)
  *
- * @typeParam TProvides - Union of Port types from graph (root) or parent (child).
- * @typeParam TExtends - Union of Port types added via `.extend()`. `never` for root containers.
- * @typeParam TAsyncPorts - Union of Port types that have async factories.
- * @typeParam TPhase - The initialization phase of the container.
+ * @typeParam TProvides - Union of Port types available from the container's graph or parent container.
+ *   For root containers, this comes from the Graph type (`InferGraphProvides<TGraph>`).
+ *   For child containers, this represents the effective provides union from the parent
+ *   (`ParentProvides | ParentExtends`). This type parameter determines which ports can
+ *   be passed to `resolve()` and `resolveAsync()`. It's the "base" set of ports before
+ *   any extensions are added.
+ *
+ * @typeParam TExtends - Union of Port types added via child graph extensions or `.override().extend()`.
+ *   For root containers, this is always `never` (root containers don't extend, they provide).
+ *   For child containers, this represents ports that were added by the child graph but
+ *   were not present in the parent. Together with `TProvides`, this forms the complete
+ *   set of resolvable ports: `TProvides | TExtends`. This distinction is critical for:
+ *   - Type-checking the `parent` property (only exists when `TExtends` is not `never`)
+ *   - Type-checking the `initialize()` method (only exists when `TExtends` is `never`)
+ *   - Tracking which ports are new vs inherited in child containers
+ *
+ * @typeParam TAsyncPorts - Union of Port types that have async factory functions.
+ *   These ports require special handling before initialization:
+ *   - Before `initialize()`: Cannot be resolved synchronously (throws AsyncInitializationRequiredError)
+ *   - After `initialize()`: Can be resolved synchronously (cached result from initialization)
+ *   This type parameter flows through container creation and child container creation,
+ *   accumulating async ports from both parent and child graphs. It's used to narrow
+ *   the type of `resolve()` before initialization to exclude async ports.
+ *
+ * @typeParam TPhase - The initialization phase: `'uninitialized' | 'initialized'`.
+ *   This type-state parameter tracks whether async initialization has completed:
+ *   - `'uninitialized'`: Fresh container, `initialize()` available (root only), sync resolve limited
+ *   - `'initialized'`: After calling `initialize()`, all ports resolvable synchronously
+ *   Child containers inherit their parent's phase at creation time and cannot change it.
+ *   This enables compile-time enforcement of async initialization requirements, preventing
+ *   runtime errors from attempting to synchronously resolve uninitialized async ports.
  *
  * @remarks
- * - The brand property carries the TProvides and TExtends types for nominal typing
- * - The resolve method is generic to preserve the specific port type being resolved
- * - Resolution works on `TProvides | TExtends` (effective provides)
- * - Before initialization, sync resolve is limited to non-async ports
- * - After initialization, all ports can be resolved synchronously
- * - Child containers inherit initialization state from their parent
+ * **Nominal Typing via Branding:**
+ * The `[ContainerBrand]` property carries `TProvides` and `TExtends` at the type level,
+ * making containers with different type parameters structurally incompatible. This prevents
+ * accidentally passing a container with the wrong ports to a function.
+ *
+ * **Resolution Behavior:**
+ * - The `resolve` method accepts `TProvides | TExtends` (effective provides union)
+ * - Before initialization, only `Exclude<TProvides | TExtends, TAsyncPorts>` is resolvable
+ * - After initialization, all `TProvides | TExtends` ports are resolvable synchronously
+ * - `resolveAsync` always accepts all `TProvides | TExtends` regardless of phase
+ *
+ * **Root vs Child Containers:**
+ * The type system uses `TExtends` to distinguish container kinds:
+ * - `[TExtends] extends [never]`: Root container (has `initialize()`, no `parent`)
+ * - `TExtends` is a port union: Child container (has `parent`, no `initialize()`)
+ * Note the `[T] extends [never]` syntax prevents conditional type distribution over `never`.
+ *
+ * **Initialization Phase Flow:**
+ * Root containers start as `'uninitialized'` and transition to `'initialized'` via `initialize()`.
+ * Child containers inherit their parent's phase at creation and cannot change it independently.
+ * This means child containers created before parent initialization may have limited sync access
+ * to async ports until the root ancestor is initialized.
  *
  * @see {@link Scope} - Child scope type with identical resolution API but separate brand
  * @see {@link createContainer} - Factory function to create root container instances
  * @see {@link Container.createChild} - Creates child containers from a Graph
  *
- * @example Root container usage
+ * @example Root container with type parameters
  * ```typescript
  * // Root container type has TExtends = never
  * const container = createContainer(graph);
- * // Type: Container<LoggerPort | DatabasePort, never, AsyncPorts>
+ * // Type: Container<LoggerPort | DatabasePort, never, DatabasePort, 'uninitialized'>
+ * //                ^- TProvides from graph  ^- no extensions  ^- DB is async  ^- not initialized
  *
- * const logger = container.resolve(LoggerPort);
- * await container.initialize(); // Only root containers have initialize()
+ * const logger = container.resolve(LoggerPort);  // OK: sync port
+ * // container.resolve(DatabasePort);            // ERROR: async port, not initialized
+ *
+ * await container.initialize(); // Transition to 'initialized' phase
+ * // Type now: Container<LoggerPort | DatabasePort, never, DatabasePort, 'initialized'>
+ * const db = container.resolve(DatabasePort);    // OK: async port, now initialized
  * ```
  *
- * @example Child container usage
+ * @example Child container with extensions
  * ```typescript
- * const child = container.createChild()
- *   .override(MockLoggerAdapter)
- *   .extend(NewFeatureAdapter)
- *   .build();
- * // Type: Container<LoggerPort | DatabasePort, NewFeaturePort>
+ * const child = container.createChild(
+ *   GraphBuilder.create()
+ *     .override(MockLoggerAdapter)   // Override parent's logger
+ *     .provide(CacheAdapter)         // Add new cache port
+ *     .build()
+ * );
+ * // Type: Container<LoggerPort | DatabasePort, CachePort, DatabasePort, 'initialized'>
+ * //                ^- inherited provides       ^- new port   ^- inherited async  ^- inherited phase
  *
- * child.parent; // Access parent container
- * // child.initialize() - Not available on child containers
+ * child.parent; // Container<LoggerPort | DatabasePort, never, ...>
+ * // child.initialize() - Not available (TExtends is not never)
+ *
+ * const cache = child.resolve(CachePort);  // OK: from TExtends
+ * const logger = child.resolve(LoggerPort); // OK: from TProvides (overridden)
  * ```
  */
 export type Container<
