@@ -22,6 +22,7 @@ import type {
   MemoEntrySnapshot,
 } from "./internal-state-types.js";
 import { isRecord } from "../util/type-guards.js";
+import { suggestSimilarPort } from "../util/string-similarity.js";
 
 // =============================================================================
 // Re-exports for convenience
@@ -335,8 +336,18 @@ export function createInspector(container: InternalAccessible): ContainerInspect
     }
 
     if (adapterInfo === undefined) {
+      // Collect all available port names for suggestion
+      const availablePorts: string[] = [];
+      for (const [, info] of state.adapterMap) {
+        availablePorts.push(info.portName);
+      }
+
+      // Try to suggest a similar port name
+      const suggestion = suggestSimilarPort(portName, availablePorts);
+      const didYouMean = suggestion ? ` Did you mean '${suggestion}'?` : "";
+
       throw new Error(
-        `Port '${portName}' is not registered in this container. ` +
+        `Port '${portName}' is not registered in this container.${didYouMean} ` +
           `Use listPorts() to see available ports.`
       );
     }

@@ -103,6 +103,17 @@ export abstract class ContainerError extends Error {
   abstract readonly isProgrammingError: boolean;
 
   /**
+   * Optional actionable suggestion for fixing the error.
+   *
+   * Programming errors (isProgrammingError: true) should include suggestions
+   * with copy-paste-ready code examples showing how to fix the issue.
+   *
+   * Runtime errors (isProgrammingError: false) typically don't include
+   * suggestions since they depend on user code behavior.
+   */
+  suggestion?: string;
+
+  /**
    * Creates a new ContainerError instance.
    *
    * @param message - The error message describing what went wrong
@@ -180,6 +191,23 @@ export class CircularDependencyError extends ContainerError {
 
     // Store a defensive copy of the chain
     this.dependencyChain = Object.freeze([...dependencyChain]);
+
+    // Provide actionable fix suggestion
+    this.suggestion =
+      "To break the circular dependency, refactor your code:\n" +
+      "1. Extract shared logic into a third service that both depend on\n" +
+      "2. Pass data as parameters instead of injecting the service\n" +
+      "3. Use lazy injection if one service only needs the other occasionally\n\n" +
+      "Example - extract shared logic:\n" +
+      "```typescript\n" +
+      "// Before: A -> B -> A (circular)\n" +
+      "// After:  A -> Shared, B -> Shared (no cycle)\n" +
+      "const SharedLogicPort = definePort<SharedLogic>();\n" +
+      "const SharedLogicAdapter = createAdapter({\n" +
+      "  provides: SharedLogicPort,\n" +
+      "  factory: () => new SharedLogic()\n" +
+      "});\n" +
+      "```";
   }
 }
 
@@ -285,6 +313,25 @@ export class DisposedScopeError extends ContainerError {
     );
 
     this.portName = portName;
+
+    // Provide lifecycle management guidance
+    this.suggestion =
+      "Scope lifecycle management:\n" +
+      "1. Check if the scope is disposed before using it\n" +
+      "2. Don't store scope references beyond their intended lifetime\n" +
+      "3. Use try/finally to ensure proper disposal timing\n\n" +
+      "Example - check disposal state:\n" +
+      "```typescript\n" +
+      "const scope = container.createScope();\n" +
+      "try {\n" +
+      "  // Use scope for request lifetime\n" +
+      "  const service = scope.resolve(ServicePort);\n" +
+      "  await handleRequest(service);\n" +
+      "} finally {\n" +
+      "  await scope.dispose();\n" +
+      "}\n" +
+      "// Don't use scope here - it's disposed\n" +
+      "```";
   }
 }
 
@@ -336,6 +383,20 @@ export class ScopeRequiredError extends ContainerError {
     );
 
     this.portName = portName;
+
+    // Provide scope creation example
+    this.suggestion =
+      "Create a scope before resolving scoped services:\n\n" +
+      "Example:\n" +
+      "```typescript\n" +
+      "// Create a scope (typically per-request or per-operation)\n" +
+      "const scope = container.createScope();\n\n" +
+      "// Resolve scoped services from the scope\n" +
+      `const service = scope.resolve(${portName});\n\n` +
+      "// Use the service...\n\n" +
+      "// Dispose the scope when done\n" +
+      "await scope.dispose();\n" +
+      "```";
   }
 }
 
@@ -450,6 +511,19 @@ export class AsyncInitializationRequiredError extends ContainerError {
     );
 
     this.portName = portName;
+
+    // Provide async resolution examples
+    this.suggestion =
+      "Two ways to resolve async ports:\n\n" +
+      "Option 1 - Use resolveAsync() (recommended):\n" +
+      "```typescript\n" +
+      `const service = await container.resolveAsync(${portName});\n` +
+      "```\n\n" +
+      "Option 2 - Initialize container first, then use sync resolve:\n" +
+      "```typescript\n" +
+      "const initialized = await container.initialize();\n" +
+      `const service = initialized.resolve(${portName});\n` +
+      "```";
   }
 }
 
@@ -512,5 +586,29 @@ export class NonClonableForkedError extends ContainerError {
     );
 
     this.portName = portName;
+
+    // Provide alternatives to forked mode
+    this.suggestion =
+      "Choose an appropriate inheritance mode:\n\n" +
+      "Option 1 - Use shared mode (share parent's instance):\n" +
+      "```typescript\n" +
+      "const child = parent.createChild({\n" +
+      `  inherit: { ${portName}: 'shared' }\n` +
+      "});\n" +
+      "```\n\n" +
+      "Option 2 - Use isolated mode (create new instance):\n" +
+      "```typescript\n" +
+      "const child = parent.createChild({\n" +
+      `  inherit: { ${portName}: 'isolated' }\n` +
+      "});\n" +
+      "```\n\n" +
+      "Option 3 - Mark adapter as clonable if safe:\n" +
+      "```typescript\n" +
+      "const adapter = createAdapter({\n" +
+      `  provides: ${portName},\n` +
+      "  factory: () => new Service(),\n" +
+      "  clonable: true  // Only if shallow clone is safe\n" +
+      "});\n" +
+      "```";
   }
 }
