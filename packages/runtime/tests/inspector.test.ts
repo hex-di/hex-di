@@ -38,6 +38,178 @@ const RequestContextPort = port<RequestContext>()({ name: "RequestContext" });
 const UserServicePort = port<UserService>()({ name: "UserService" });
 
 // =============================================================================
+// Test Utilities
+// =============================================================================
+
+/**
+ * Creates a complex multi-level container/scope hierarchy for testing inspector APIs.
+ *
+ * Structure:
+ * - Root container with singleton and scoped adapters
+ * - Two child containers (via override)
+ * - Three scopes at root level
+ * - Nested scopes within scopes
+ *
+ * @returns Object containing all containers and scopes for verification
+ */
+function createComplexHierarchy() {
+  const LoggerAdapter = createAdapter({
+    provides: LoggerPort,
+    requires: [],
+    lifetime: "singleton",
+    factory: () => ({ log: vi.fn() }),
+  });
+
+  const DatabaseAdapter = createAdapter({
+    provides: DatabasePort,
+    requires: [],
+    lifetime: "singleton",
+    factory: () => ({ query: vi.fn() }),
+  });
+
+  const RequestContextAdapter = createAdapter({
+    provides: RequestContextPort,
+    requires: [],
+    lifetime: "scoped",
+    factory: () => ({ requestId: `req-${Math.random()}` }),
+  });
+
+  const graph = GraphBuilder.create()
+    .provide(LoggerAdapter)
+    .provide(DatabaseAdapter)
+    .provide(RequestContextAdapter)
+    .build();
+
+  const root = createContainer({ graph, name: "ComplexRoot" });
+
+  // Create child containers
+  const MockDatabaseAdapter1 = createAdapter({
+    provides: DatabasePort,
+    requires: [],
+    lifetime: "singleton",
+    factory: () => ({ query: vi.fn() }),
+  });
+
+  const MockDatabaseAdapter2 = createAdapter({
+    provides: DatabasePort,
+    requires: [],
+    lifetime: "singleton",
+    factory: () => ({ query: vi.fn() }),
+  });
+
+  const child1 = root.override(MockDatabaseAdapter1).build();
+  const child2 = root.override(MockDatabaseAdapter2).build();
+
+  // Create scopes at root level
+  const rootScope1 = root.createScope();
+  const rootScope2 = root.createScope();
+  const rootScope3 = root.createScope();
+
+  // Create nested scopes
+  const nestedScope1 = rootScope1.createScope();
+  const nestedScope2 = rootScope1.createScope();
+  const deepNestedScope = nestedScope1.createScope();
+
+  return {
+    root,
+    children: [child1, child2],
+    scopes: {
+      level1: [rootScope1, rootScope2, rootScope3],
+      level2: [nestedScope1, nestedScope2],
+      level3: [deepNestedScope],
+    },
+  };
+}
+
+/**
+ * Captures snapshots at all levels of a container hierarchy.
+ *
+ * @param hierarchy - Hierarchy created by createComplexHierarchy()
+ * @returns Array of snapshots from each container/scope level
+ */
+function snapshotAllLevels(hierarchy: ReturnType<typeof createComplexHierarchy>) {
+  const snapshots = [];
+
+  // Root snapshot
+  snapshots.push({
+    level: "root",
+    snapshot: hierarchy.root.inspector.getSnapshot(),
+    scopeTree: hierarchy.root.inspector.getScopeTree(),
+  });
+
+  // Child snapshots
+  for (let i = 0; i < hierarchy.children.length; i++) {
+    const child = hierarchy.children[i];
+    if (child !== undefined) {
+      snapshots.push({
+        level: `child-${i}`,
+        snapshot: child.inspector.getSnapshot(),
+        scopeTree: child.inspector.getScopeTree(),
+      });
+    }
+  }
+
+  return snapshots;
+}
+
+/**
+ * Verifies parent/child relationships are correctly reported in hierarchy.
+ *
+ * @param root - Root container
+ * @param expectedChildCount - Expected number of direct children
+ * @returns true if all relationships are valid
+ */
+function verifyHierarchyIntegrity(
+  root: ReturnType<typeof createContainer>,
+  expectedChildCount: number
+): boolean {
+  const childInspectors = root.inspector.getChildContainers();
+
+  if (childInspectors.length !== expectedChildCount) {
+    return false;
+  }
+
+  // Verify each child reports as "child" kind
+  for (const childInspector of childInspectors) {
+    if (childInspector.getContainerKind() !== "child") {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Monitors container phase transitions by repeatedly capturing snapshots.
+ *
+ * @param container - Container to monitor
+ * @param operation - Async operation that causes phase transitions
+ * @returns Array of phases observed during operation
+ */
+async function trackPhaseTransitions(
+  container: ReturnType<typeof createContainer>,
+  operation: () => Promise<void>
+): Promise<string[]> {
+  const phases: string[] = [];
+
+  // Capture initial phase
+  phases.push(container.inspector.getPhase());
+
+  // Execute operation
+  await operation();
+
+  // Capture final phase (if not disposed)
+  try {
+    phases.push(container.inspector.getPhase());
+  } catch {
+    // If disposed, record that
+    phases.push("disposed");
+  }
+
+  return phases;
+}
+
+// =============================================================================
 // createInspector Factory Tests
 // =============================================================================
 
@@ -875,5 +1047,87 @@ describe("Cross-Scope Hierarchy Inspection", () => {
     // Both should throw on inspector operations
     expect(() => parent.inspector.getSnapshot()).toThrow(/disposed/i);
     expect(() => child.inspector.getSnapshot()).toThrow(/disposed/i);
+  });
+});
+
+// =============================================================================
+// Test Utility Verification
+// =============================================================================
+
+describe("Test Utilities", () => {
+  test("createComplexHierarchy builds multi-level structure", () => {
+    const hierarchy = createComplexHierarchy();
+
+    // Verify root exists
+    expect(hierarchy.root).toBeDefined();
+    expect(hierarchy.root.inspector.getContainerKind()).toBe("root");
+
+    // Verify children exist
+    expect(hierarchy.children.length).toBe(2);
+    for (const child of hierarchy.children) {
+      expect(child.inspector.getContainerKind()).toBe("child");
+    }
+
+    // Verify scopes exist at each level
+    expect(hierarchy.scopes.level1.length).toBe(3);
+    expect(hierarchy.scopes.level2.length).toBe(2);
+    expect(hierarchy.scopes.level3.length).toBe(1);
+
+    // Verify scope tree reflects structure
+    const tree = hierarchy.root.inspector.getScopeTree();
+    expect(tree.children.length).toBe(3); // 3 root-level scopes
+  });
+
+  test("snapshotAllLevels captures state from entire hierarchy", () => {
+    const hierarchy = createComplexHierarchy();
+    const snapshots = snapshotAllLevels(hierarchy);
+
+    // Should have root + 2 children = 3 snapshots
+    expect(snapshots.length).toBe(3);
+
+    // Verify root snapshot
+    const rootSnap = snapshots.find(s => s.level === "root");
+    expect(rootSnap).toBeDefined();
+    expect(rootSnap!.snapshot.kind).toBe("root");
+    expect(rootSnap!.scopeTree.id).toBe("container");
+
+    // Verify child snapshots
+    const childSnaps = snapshots.filter(s => s.level.startsWith("child"));
+    expect(childSnaps.length).toBe(2);
+    for (const snap of childSnaps) {
+      expect(snap.snapshot.kind).toBe("child");
+    }
+  });
+
+  test("verifyHierarchyIntegrity validates parent/child relationships", () => {
+    const hierarchy = createComplexHierarchy();
+
+    // Should have 2 children
+    expect(verifyHierarchyIntegrity(hierarchy.root, 2)).toBe(true);
+
+    // Wrong expected count should fail
+    expect(verifyHierarchyIntegrity(hierarchy.root, 1)).toBe(false);
+    expect(verifyHierarchyIntegrity(hierarchy.root, 3)).toBe(false);
+  });
+
+  test("trackPhaseTransitions monitors phase changes", async () => {
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const container = createContainer({ graph, name: "PhaseTest" });
+
+    const phases = await trackPhaseTransitions(container, async () => {
+      await container.dispose();
+    });
+
+    // Should capture initial and final phases
+    expect(phases.length).toBe(2);
+    expect(phases[0]).toBe("initialized");
+    expect(phases[1]).toBe("disposed");
   });
 });
