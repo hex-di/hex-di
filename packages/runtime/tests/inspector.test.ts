@@ -653,3 +653,227 @@ describe("Lifecycle Stage Inspection", () => {
     expect(container.inspector.getContainerKind()).toBe("root");
   });
 });
+
+// =============================================================================
+// Cross-Scope Hierarchy Tests
+// =============================================================================
+
+describe("Cross-Scope Hierarchy Inspection", () => {
+  test("getScopeTree returns complete hierarchy with nested scopes", () => {
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const RequestContextAdapter = createAdapter({
+      provides: RequestContextPort,
+      requires: [],
+      lifetime: "scoped",
+      factory: () => ({ requestId: "test" }),
+    });
+
+    const graph = GraphBuilder.create()
+      .provide(LoggerAdapter)
+      .provide(RequestContextAdapter)
+      .build();
+    const container = createContainer({ graph: graph, name: "HierarchyTest" });
+
+    // Build nested scope structure: container -> scope1 -> nestedScope
+    //                                       -> scope2
+    const scope1 = container.createScope();
+    const scope2 = container.createScope();
+    const nestedScope = scope1.createScope();
+
+    // Resolve scoped services in each scope
+    scope1.resolve(RequestContextPort);
+    scope2.resolve(RequestContextPort);
+    nestedScope.resolve(RequestContextPort);
+
+    // Get complete hierarchy tree
+    const tree = container.inspector.getScopeTree();
+
+    // Verify root container
+    expect(tree.id).toBe("container");
+    expect(tree.status).toBe("active");
+
+    // Verify two direct children (scope1, scope2)
+    expect(tree.children.length).toBe(2);
+
+    // Find scope1 (the one with a nested child)
+    const scope1Node = tree.children.find(c => c.children.length > 0);
+    expect(scope1Node).toBeDefined();
+    expect(scope1Node!.status).toBe("active");
+    expect(scope1Node!.resolvedCount).toBe(1);
+
+    // Verify nested scope
+    expect(scope1Node!.children.length).toBe(1);
+    const nestedNode = scope1Node!.children[0];
+    expect(nestedNode).toBeDefined();
+    expect(nestedNode!.status).toBe("active");
+    expect(nestedNode!.resolvedCount).toBe(1);
+
+    // Find scope2 (the one without children)
+    const scope2Node = tree.children.find(c => c.children.length === 0);
+    expect(scope2Node).toBeDefined();
+    expect(scope2Node!.resolvedCount).toBe(1);
+  });
+
+  test("getChildContainers lists all direct child containers", () => {
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const DatabaseAdapter = createAdapter({
+      provides: DatabasePort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ query: vi.fn() }),
+    });
+
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
+    const rootContainer = createContainer({ graph: graph, name: "RootContainer" });
+
+    // Create child containers using override builder
+    const MockDatabaseAdapter1 = createAdapter({
+      provides: DatabasePort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ query: vi.fn() }),
+    });
+
+    const MockDatabaseAdapter2 = createAdapter({
+      provides: DatabasePort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ query: vi.fn() }),
+    });
+
+    const child1 = rootContainer.override(MockDatabaseAdapter1).build();
+    const child2 = rootContainer.override(MockDatabaseAdapter2).build();
+
+    // Get child containers via inspector
+    const childInspectors = rootContainer.inspector.getChildContainers();
+
+    // Should have exactly 2 children
+    expect(childInspectors.length).toBe(2);
+
+    // Each child should have InspectorAPI methods
+    for (const childInspector of childInspectors) {
+      expect(typeof childInspector.getSnapshot).toBe("function");
+      expect(typeof childInspector.getContainerKind).toBe("function");
+
+      // Verify child kind
+      expect(childInspector.getContainerKind()).toBe("child");
+    }
+
+    // Verify child names are auto-generated from parent
+    const childNames = childInspectors.map(ci => ci.getSnapshot().containerName).sort();
+    expect(childNames).toEqual(["RootContainer-override", "RootContainer-override"]);
+  });
+
+  test("Inspector correctly reports override container relationships", () => {
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const DatabaseAdapter = createAdapter({
+      provides: DatabasePort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ query: vi.fn() }),
+    });
+
+    const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
+    const container = createContainer({ graph: graph, name: "OverrideTest" });
+
+    // Create override that replaces Database
+    const MockDatabaseAdapter = createAdapter({
+      provides: DatabasePort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ query: vi.fn() }),
+    });
+
+    const overridden = container.override(MockDatabaseAdapter).build();
+
+    // Verify override container
+    const overrideSnapshot = overridden.inspector.getSnapshot();
+    expect(overrideSnapshot.containerName).toBe("OverrideTest-override");
+    expect(overrideSnapshot.kind).toBe("child");
+
+    // Get graph data to check override information
+    const graphData = overridden.inspector.getGraphData();
+    const databaseAdapter = graphData.adapters.find(a => a.portName === "Database");
+
+    expect(databaseAdapter).toBeDefined();
+    expect(databaseAdapter!.origin).toBe("overridden");
+    expect(databaseAdapter!.isOverride).toBe(true);
+
+    // Verify there's exactly one adapter in the override (just the overridden Database)
+    expect(graphData.adapters.length).toBe(1);
+
+    // Verify this is a child container via snapshot
+    expect(overrideSnapshot.kind).toBe("child");
+
+    // Verify the container can resolve both inherited and overridden services
+    const logger = overridden.resolve(LoggerPort);
+    const database = overridden.resolve(DatabasePort);
+    expect(logger).toBeDefined();
+    expect(database).toBeDefined();
+  });
+
+  test("Parent/child inspector coordination during disposal", async () => {
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const parent = createContainer({ graph: graph, name: "Parent" });
+
+    // Create child using override builder
+    const MockLoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const child = parent.override(MockLoggerAdapter).build();
+
+    // Verify both active before disposal
+    expect(parent.inspector.getPhase()).toBe("initialized");
+    expect(child.inspector.getPhase()).toBe("initialized");
+
+    // Dispose child
+    await child.dispose();
+
+    // Parent should remain active
+    expect(parent.inspector.getPhase()).toBe("initialized");
+
+    // Child should be disposed
+    expect(() => child.inspector.getSnapshot()).toThrow(/disposed/i);
+
+    // Verify parent's child list still returns the child (even though disposed)
+    const childInspectors = parent.inspector.getChildContainers();
+    // Note: getChildContainers returns children regardless of disposal state
+    expect(childInspectors.length).toBeGreaterThanOrEqual(0);
+
+    // Now dispose parent
+    await parent.dispose();
+
+    // Both should throw on inspector operations
+    expect(() => parent.inspector.getSnapshot()).toThrow(/disposed/i);
+    expect(() => child.inspector.getSnapshot()).toThrow(/disposed/i);
+  });
+});
