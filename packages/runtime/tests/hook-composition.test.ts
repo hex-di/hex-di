@@ -9,7 +9,7 @@
  * - Hook self-modification scenarios
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/index.js";
@@ -46,23 +46,27 @@ const ServicePort = port<Service>()({ name: "Service" });
 // =============================================================================
 
 /**
- * Creates numbered hooks that record their execution order.
- * Useful for verifying FIFO ordering.
+ * Creates a beforeResolve hook that records its execution order.
  */
-function createOrderedHooks(
-  type: "beforeResolve" | "afterResolve",
+function createBeforeHook(
   sequence: number[],
   hookNumber: number
-) {
-  if (type === "beforeResolve") {
-    return (ctx: ResolutionHookContext) => {
-      sequence.push(hookNumber);
-    };
-  } else {
-    return (ctx: ResolutionResultContext) => {
-      sequence.push(hookNumber);
-    };
-  }
+): (ctx: ResolutionHookContext) => void {
+  return () => {
+    sequence.push(hookNumber);
+  };
+}
+
+/**
+ * Creates an afterResolve hook that records its execution order.
+ */
+function createAfterHook(
+  sequence: number[],
+  hookNumber: number
+): (ctx: ResolutionResultContext) => void {
+  return () => {
+    sequence.push(hookNumber);
+  };
 }
 
 /**
@@ -130,8 +134,8 @@ function createNestedResolution() {
     provides: ServicePort,
     requires: [DatabasePort],
     lifetime: "singleton",
-    factory: (db: Database) => ({
-      execute: () => db.query("SELECT 1"),
+    factory: deps => ({
+      execute: () => deps.Database.query("SELECT 1"),
     }),
   });
 
@@ -198,9 +202,9 @@ describe("Hook Composition - FIFO Ordering", () => {
     const sequence: number[] = [];
 
     // Register 3 hooks in order: 1, 2, 3
-    container.addHook("beforeResolve", createOrderedHooks("beforeResolve", sequence, 1));
-    container.addHook("beforeResolve", createOrderedHooks("beforeResolve", sequence, 2));
-    container.addHook("beforeResolve", createOrderedHooks("beforeResolve", sequence, 3));
+    container.addHook("beforeResolve", createBeforeHook(sequence, 1));
+    container.addHook("beforeResolve", createBeforeHook(sequence, 2));
+    container.addHook("beforeResolve", createBeforeHook(sequence, 3));
 
     // Resolve triggers all hooks
     container.resolve(LoggerPort);
@@ -223,9 +227,9 @@ describe("Hook Composition - FIFO Ordering", () => {
     const sequence: number[] = [];
 
     // Register 3 hooks in order: 1, 2, 3
-    container.addHook("afterResolve", createOrderedHooks("afterResolve", sequence, 1));
-    container.addHook("afterResolve", createOrderedHooks("afterResolve", sequence, 2));
-    container.addHook("afterResolve", createOrderedHooks("afterResolve", sequence, 3));
+    container.addHook("afterResolve", createAfterHook(sequence, 1));
+    container.addHook("afterResolve", createAfterHook(sequence, 2));
+    container.addHook("afterResolve", createAfterHook(sequence, 3));
 
     // Resolve triggers all hooks
     container.resolve(LoggerPort);
@@ -251,15 +255,15 @@ describe("Hook Composition - FIFO Ordering", () => {
       graph,
       name: "Test",
       hooks: {
-        beforeResolve: createOrderedHooks("beforeResolve", sequence, 1),
+        beforeResolve: createBeforeHook(sequence, 1),
       },
     });
 
     // Hook 2 via addHook
-    container.addHook("beforeResolve", createOrderedHooks("beforeResolve", sequence, 2));
+    container.addHook("beforeResolve", createBeforeHook(sequence, 2));
 
     // Hook 3 via addHook
-    container.addHook("beforeResolve", createOrderedHooks("beforeResolve", sequence, 3));
+    container.addHook("beforeResolve", createBeforeHook(sequence, 3));
 
     // Resolve triggers all hooks
     container.resolve(LoggerPort);
@@ -305,37 +309,40 @@ describe("Hook Composition - Lifecycle Sequencing", () => {
       provides: LoggerPort,
       requires: [],
       lifetime: "singleton",
-      factory: () => ({ log: (msg: string) => {} }),
+      factory: () => ({ log: () => {} }),
     });
 
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
     const container = createContainer({ graph, name: "Test" });
 
-    let beforeContext: ResolutionHookContext | null = null;
-    let afterContext: ResolutionResultContext | null = null;
+    const beforeContexts: ResolutionHookContext[] = [];
+    const afterContexts: ResolutionResultContext[] = [];
 
     container.addHook("beforeResolve", ctx => {
-      beforeContext = ctx;
+      beforeContexts.push(ctx);
     });
 
     container.addHook("afterResolve", ctx => {
-      afterContext = ctx;
+      afterContexts.push(ctx);
     });
 
     container.resolve(LoggerPort);
 
-    expect(beforeContext).not.toBeNull();
-    expect(afterContext).not.toBeNull();
+    expect(beforeContexts.length).toBeGreaterThan(0);
+    expect(afterContexts.length).toBeGreaterThan(0);
+
+    const beforeCtx = beforeContexts[0];
+    const afterCtx = afterContexts[0];
 
     // Verify shared context properties
-    expect(afterContext?.portName).toBe(beforeContext?.portName);
-    expect(afterContext?.lifetime).toBe(beforeContext?.lifetime);
-    expect(afterContext?.depth).toBe(beforeContext?.depth);
-    expect(afterContext?.containerId).toBe(beforeContext?.containerId);
+    expect(afterCtx.portName).toBe(beforeCtx.portName);
+    expect(afterCtx.lifetime).toBe(beforeCtx.lifetime);
+    expect(afterCtx.depth).toBe(beforeCtx.depth);
+    expect(afterCtx.containerId).toBe(beforeCtx.containerId);
 
     // Verify afterResolve extensions
-    expect(afterContext?.duration).toBeGreaterThanOrEqual(0);
-    expect(afterContext?.error).toBeNull();
+    expect(afterCtx.duration).toBeGreaterThanOrEqual(0);
+    expect(afterCtx.error).toBeNull();
   });
 
   it("should fire afterResolve even when factory throws", () => {
@@ -352,15 +359,15 @@ describe("Hook Composition - Lifecycle Sequencing", () => {
     const container = createContainer({ graph, name: "Test" });
 
     const events: string[] = [];
-    let capturedError: Error | null = null;
+    const errors: (Error | null)[] = [];
 
-    container.addHook("beforeResolve", ctx => {
+    container.addHook("beforeResolve", () => {
       events.push("before");
     });
 
     container.addHook("afterResolve", ctx => {
       events.push("after");
-      capturedError = ctx.error;
+      errors.push(ctx.error);
     });
 
     // Resolution should throw
@@ -368,8 +375,8 @@ describe("Hook Composition - Lifecycle Sequencing", () => {
 
     // But both hooks should have fired
     expect(events).toEqual(["before", "after"]);
-    expect(capturedError).toBeInstanceOf(Error);
-    expect(capturedError?.message).toContain("Factory error");
+    expect(errors[0]).toBeInstanceOf(Error);
+    expect(errors[0]?.message).toContain("Factory error");
   });
 });
 

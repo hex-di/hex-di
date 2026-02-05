@@ -12,8 +12,8 @@
  * - FIFO ordering contract for multiple hooks
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
-import { port, type Port, createAdapter } from "@hex-di/core";
+import { describe, it, expect } from "vitest";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/index.js";
 import type { ResolutionHookContext, ResolutionResultContext } from "../src/resolution/hooks.js";
@@ -29,7 +29,6 @@ interface Config {
 
 interface Logger {
   log(message: string): void;
-  debug(message: string): void;
 }
 
 interface Database {
@@ -95,11 +94,6 @@ function verifyHookContext(ctx: ResolutionHookContext): void {
   expect(["root", "child", "lazy", "scope"]).toContain(ctx.containerKind);
 }
 
-function verifyHookOrder(calls: ResolutionHookContext[], expectedOrder: string[]): void {
-  const actualOrder = calls.map(c => c.portName);
-  expect(actualOrder).toEqual(expectedOrder);
-}
-
 function createTestContainer() {
   const ConfigAdapter = createAdapter({
     provides: ConfigPort,
@@ -113,8 +107,7 @@ function createTestContainer() {
     requires: [ConfigPort],
     lifetime: "singleton",
     factory: () => ({
-      log: (msg: string) => console.log(msg),
-      debug: (msg: string) => console.debug(msg),
+      log: () => undefined,
     }),
   });
 
@@ -863,7 +856,6 @@ describe("Resolution Hooks - Scoped Containers", () => {
       lifetime: "singleton",
       factory: () => ({
         log: () => undefined,
-        debug: () => undefined,
       }),
     });
 
