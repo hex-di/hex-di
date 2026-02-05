@@ -107,6 +107,12 @@ Recent for v5.0:
 - 18-02: Mid-resolution add/remove affects current resolution (in-place array modification)
 - 18-02: Parent and child containers maintain independent hook management
 - 18-02: Scopes report parent container's kind, not separate "scope" kind
+- 18-03: Inspector API has two variants: ContainerInspector (snapshot()) and InspectorAPI (getSnapshot())
+- 18-03: Container.inspector property provides InspectorAPI, not ContainerInspector
+- 18-03: Scopes don't have .inspector property - use createInspector() instead
+- 18-03: Disposed containers throw on most inspector operations except getContainerKind()
+- 18-03: Override containers built via container.override(adapter).build() (not builder chain)
+- 18-03: Singleton snapshot includes ALL singleton adapters, not just resolved ones
 - 18-04: Use trace() and enableTracing() functions directly rather than container.tracer property
 - 18-04: Test MemoryCollector directly for filter validation (cleaner than end-to-end integration)
 - 18-04: Synchronous busy-wait timing for predictable test durations
