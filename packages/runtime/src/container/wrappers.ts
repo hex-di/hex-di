@@ -292,10 +292,6 @@ export function createChildContainerWrapper<
       Exclude<InferGraphProvides<TChildGraph>, TProvides | TExtends>,
       TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
     > => createLazyChildContainerInternal(childContainer, childName, graphLoader, options),
-    withOverrides: <TOverrides extends Record<string, (() => unknown) | undefined>, R>(
-      overrides: TOverrides,
-      fn: () => R
-    ): R => impl.withOverrides(overrides, fn),
     dispose: async () => {
       await impl.dispose();
     },

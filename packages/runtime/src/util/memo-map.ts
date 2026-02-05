@@ -237,8 +237,8 @@ export class MemoMap {
    *
    * @example
    * ```typescript
-   * // Used by OverrideContext to ensure overrides don't inherit from parent
-   * const mockLogger = overrideMemo.memoizeOwn(
+   * // Cache a value locally without checking parent
+   * const mockLogger = childMemo.memoizeOwn(
    *   LoggerPort,
    *   () => new MockLogger()
    * );

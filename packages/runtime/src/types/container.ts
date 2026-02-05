@@ -16,25 +16,7 @@ import type { ContainerPhase, ContainerKind, CreateChildOptions } from "./option
 import { ContainerBrand } from "./brands.js";
 import type { LazyContainer } from "./lazy-container.js";
 import type { Scope } from "./scope.js";
-import type { ExtractPortNames } from "./inheritance.js";
 import type { HookType, HookHandler } from "../resolution/hooks.js";
-
-// =============================================================================
-// Internal Utility Types
-// =============================================================================
-
-/**
- * Infers the service type from a port union by port name.
- *
- * Given a union of ports and a port name string, extracts the service type
- * of the port with that name. Used for type-safe override maps.
- *
- * @typeParam TPorts - Union of Port types to search
- * @typeParam TName - Port name string to match
- * @internal
- */
-type InferServiceByName<TPorts extends Port<unknown, string>, TName extends string> =
-  TPorts extends Port<infer TService, TName> ? TService : never;
 
 // =============================================================================
 // Container Type (Unified: Root + Child)
@@ -150,44 +132,6 @@ export type ContainerMembers<
    * @throws {AsyncFactoryError} If the async factory function throws
    */
   resolveAsync<P extends TProvides | TExtends>(port: P): Promise<InferService<P>>;
-
-  /**
-   * Executes a function with temporary service overrides.
-   *
-   * Creates an isolated override context where specified ports resolve to
-   * override adapters instead of the original implementations. The override
-   * context has its own memoization map, ensuring instances created within
-   * the override context are isolated from the parent container.
-   *
-   * @typeParam TOverrides - Map type of ports to override adapter factories
-   * @typeParam R - Return type of the callback function
-   * @param overrides - Map of port names to factory functions that create override instances
-   * @param fn - Function to execute with overrides applied
-   * @returns The result of the function execution
-   *
-   * @example
-   * ```typescript
-   * const result = container.withOverrides(
-   *   { Logger: () => new MockLogger() },
-   *   () => {
-   *     const logger = container.resolve(LoggerPort); // Gets mock
-   *     return someOperation(logger);
-   *   }
-   * );
-   * ```
-   */
-  withOverrides<
-    TOverrides extends {
-      [K in ExtractPortNames<TProvides | TExtends>]?: () => InferServiceByName<
-        TProvides | TExtends,
-        K
-      >;
-    },
-    R,
-  >(
-    overrides: TOverrides,
-    fn: () => R
-  ): R;
 
   /**
    * Initializes all async ports in priority order.

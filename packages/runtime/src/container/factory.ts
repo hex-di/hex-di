@@ -317,10 +317,6 @@ function createUninitializedContainerWrapper<
       Exclude<InferGraphProvides<TChildGraph>, TProvides>,
       TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
     > => createLazyChildContainer(container, containerName, graphLoader, options),
-    withOverrides: <TOverrides extends Record<string, (() => unknown) | undefined>, R>(
-      overrides: TOverrides,
-      fn: () => R
-    ): R => impl.withOverrides(overrides, fn),
     dispose: async () => {
       await impl.dispose();
     },
@@ -533,10 +529,6 @@ function createInitializedContainerWrapper<
       Exclude<InferGraphProvides<TChildGraph>, TProvides>,
       TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
     > => createLazyChildContainer(container, containerName, graphLoader, options),
-    withOverrides: <TOverrides extends Record<string, (() => unknown) | undefined>, R>(
-      overrides: TOverrides,
-      fn: () => R
-    ): R => impl.withOverrides(overrides, fn),
     dispose: async () => {
       await impl.dispose();
     },

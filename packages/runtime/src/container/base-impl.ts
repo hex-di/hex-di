@@ -25,13 +25,6 @@ import { AsyncResolutionEngine } from "../resolution/async-engine.js";
 import { AsyncInitializer } from "./internal/async-initializer.js";
 import { AdapterRegistry } from "./internal/adapter-registry.js";
 import { createMemoMapSnapshot } from "./helpers.js";
-import {
-  OverrideContext,
-  type OverrideFactoryMap,
-  pushOverrideContext,
-  popOverrideContext,
-  getActiveOverrideContext,
-} from "./override-context.js";
 
 /**
  * Abstract base class for container implementations.
@@ -198,14 +191,6 @@ export abstract class BaseContainerImpl<
       throw new DisposedScopeError(portName);
     }
 
-    // Check for active override context first
-    const overrideContext = getActiveOverrideContext();
-    if (overrideContext !== undefined && overrideContext.isOverridden(port)) {
-      // Port is overridden - delegate to override context
-      // The override context will use our resolveInternal for non-overridden dependencies
-      return overrideContext.resolve(port);
-    }
-
     // Check if should resolve locally
     if (this.adapterRegistry.shouldResolveLocally(port, this.isRoot)) {
       const adapter = this.adapterRegistry.getLocal(port);
@@ -244,14 +229,6 @@ export abstract class BaseContainerImpl<
     scopeId: string | null = null
   ): unknown {
     const portName = port.__portName;
-
-    // Check for active override context first.
-    // This is critical for nested dependency resolution: when resolving dependencies
-    // of a non-overridden service, we must still check if each dependency is overridden.
-    const overrideContext = getActiveOverrideContext();
-    if (overrideContext !== undefined && overrideContext.isOverridden(port)) {
-      return overrideContext.resolve(port);
-    }
 
     const adapter = this.getAdapter(port);
 
@@ -344,43 +321,6 @@ export abstract class BaseContainerImpl<
 
   getSingletonMemo(): MemoMap {
     return this.singletonMemo;
-  }
-
-  // ===========================================================================
-  // Override Context
-  // ===========================================================================
-
-  /**
-   * Executes a function with temporary service overrides.
-   *
-   * Creates an isolated override context where specified ports resolve to
-   * override factories instead of the original implementations. The override
-   * context has its own memoization map, ensuring instances created within
-   * the override context are isolated from the parent container.
-   *
-   * @typeParam R - Return type of the callback function
-   * @param overrides - Map of port names to factory functions
-   * @param fn - Function to execute with overrides applied
-   * @returns The result of the function execution
-   */
-  withOverrides<R>(overrides: OverrideFactoryMap, fn: () => R): R {
-    if (this.lifecycleManager.isDisposed) {
-      throw new DisposedScopeError("container");
-    }
-
-    // Create the override context with factory map
-    const context = new OverrideContext<TProvides | TExtends>(this, overrides);
-
-    // Push context onto the active stack
-    pushOverrideContext(context);
-
-    try {
-      // Execute the callback - resolutions will be intercepted by the active context
-      return fn();
-    } finally {
-      // Pop context from the stack
-      popOverrideContext();
-    }
   }
 
   // ===========================================================================
