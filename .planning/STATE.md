@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 17 - Type-Safe API
-Plan: 03 of 6 complete
+Plan: 04 of 6 complete (01, 02, 03, 05, 06 done)
 Status: In progress
-Last activity: 2026-02-04 - Completed 17-03-PLAN.md (unified createContainer API)
+Last activity: 2026-02-05 - Completed 17-02-PLAN.md (override method on Container interface)
 
-Progress: [███░░░] 3/6 plans in Phase 17
+Progress: [████░░] 5/6 plans in Phase 17
 
 ## v5.0 Phase Status
 
@@ -30,9 +30,9 @@ Progress: [███░░░] 3/6 plans in Phase 17
 
 **Velocity (v1.1 + v1.2 + v2.0 + v3.0 + v4.0 + v5.0):**
 
-- Total plans completed: 35
+- Total plans completed: 36
 - Average duration: 4.3 min
-- Total execution time: ~150 min
+- Total execution time: ~155 min
 
 **By Phase:**
 
@@ -53,7 +53,7 @@ Progress: [███░░░] 3/6 plans in Phase 17
 | 13-runtime-features                 | 2     | 9 min  | 4.5 min  |
 | 14-bidirectional-captive-validation | 1     | 8 min  | 8 min    |
 | 16-performance                      | 3     | 11 min | 3.7 min  |
-| 17-type-safe-api                    | 3     | 13 min | 4.3 min  |
+| 17-type-safe-api                    | 4     | 18 min | 4.5 min  |
 
 **Recent Trend:**
 
@@ -97,6 +97,8 @@ Recent for v5.0:
 - 17-01: Template literal error types provide ERROR[TYPE-XX] codes with fix suggestions
 - 17-03: Single options object pattern for createContainer (graph, name, hooks, devtools, performance)
 - 17-03: No backward compatibility - breaking change with old API removed entirely
+- 17-02: Override method implemented in wrapper layer, not impl classes
+- 17-02: ContainerForOverride minimal interface avoids parent property type conflicts
 
 ### Pending Todos
 
@@ -112,12 +114,12 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-04
-Stopped at: Completed 17-03 (unified createContainer API)
+Last session: 2026-02-05
+Stopped at: Completed 17-02 (override method on Container interface)
 Resume file: None
-Next: Continue Phase 17 with remaining plans (17-04, 17-05, 17-06)
+Next: Continue Phase 17 with remaining plan (17-04)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-04 (Phase 17 in progress - 17-03 complete)_
+_Last updated: 2026-02-05 (Phase 17 in progress - 17-02 complete)_
