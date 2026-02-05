@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 18 - Testing
-Plan: 2 of 4 complete
-Status: In progress
-Last activity: 2026-02-05 - Completed 18-02-PLAN.md (hook composition tests)
+Plan: 4 of 4 complete
+Status: Phase complete
+Last activity: 2026-02-05 - Completed 18-04-PLAN.md (tracer API tests)
 
-Progress: [██▓▓] 2/4 plans in Phase 18
+Progress: [████] 4/4 plans in Phase 18
 
 ## v5.0 Phase Status
 
@@ -23,16 +23,16 @@ Progress: [██▓▓] 2/4 plans in Phase 18
 | 15    | Foundation    | 5            | Complete |
 | 16    | Performance   | 3            | Complete |
 | 17    | Type-Safe API | 6            | Complete |
-| 18    | Testing       | 4            | Active   |
+| 18    | Testing       | 4            | Complete |
 | 19    | Polish        | 7            | Pending  |
 
 ## Performance Metrics
 
 **Velocity (v1.1 + v1.2 + v2.0 + v3.0 + v4.0 + v5.0):**
 
-- Total plans completed: 38
-- Average duration: 4.3 min
-- Total execution time: ~165 min
+- Total plans completed: 40
+- Average duration: 4.2 min
+- Total execution time: ~177 min
 
 **By Phase:**
 
@@ -54,12 +54,12 @@ Progress: [██▓▓] 2/4 plans in Phase 18
 | 14-bidirectional-captive-validation | 1     | 8 min  | 8 min    |
 | 16-performance                      | 3     | 11 min | 3.7 min  |
 | 17-type-safe-api                    | 5     | 24 min | 4.8 min  |
-| 18-testing                          | 2     | 8 min  | 4 min    |
+| 18-testing                          | 4     | 18 min | 4.5 min  |
 
 **Recent Trend:**
 
-- Last 5 plans: [3m, 5m, 6m, 4m, 4m]
-- Trend: Stable (avg ~4.4min per plan)
+- Last 5 plans: [5m, 6m, 4m, 4m, 6m]
+- Trend: Stable (avg ~5min per plan)
 
 ## Accumulated Context
 
@@ -107,6 +107,9 @@ Recent for v5.0:
 - 18-02: Mid-resolution add/remove affects current resolution (in-place array modification)
 - 18-02: Parent and child containers maintain independent hook management
 - 18-02: Scopes report parent container's kind, not separate "scope" kind
+- 18-04: Use trace() and enableTracing() functions directly rather than container.tracer property
+- 18-04: Test MemoryCollector directly for filter validation (cleaner than end-to-end integration)
+- 18-04: Synchronous busy-wait timing for predictable test durations
 
 ### Pending Todos
 
@@ -122,11 +125,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed 18-02-PLAN.md (hook composition tests)
+Stopped at: Completed 18-04-PLAN.md (tracer API tests)
 Resume file: None
-Next: Continue with 18-03 or 18-04 in Phase 18
+Next: Phase 18 complete - ready for Phase 19 (Polish)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-05 (Phase 18: 2/4 plans complete)_
+_Last updated: 2026-02-05 (Phase 18: 4/4 plans complete - phase complete)_
