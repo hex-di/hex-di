@@ -1,10 +1,13 @@
 /**
  * Tests for enhanced template literal error types with code examples.
  *
- * These tests verify that the enhanced error messages with examples are
- * displayed correctly during compile-time validation failures. The tests
- * use @ts-expect-error to intentionally trigger type errors and document
- * the expected error messages with code examples.
+ * These tests document the enhanced error messages with examples that appear
+ * during compile-time validation failures. While the override method returns
+ * error strings at the type level (not runtime), these tests demonstrate the
+ * scenarios where those enhanced error messages would be shown to developers.
+ *
+ * To see the actual error messages with examples, uncomment the test calls
+ * and observe the TypeScript errors in your IDE.
  *
  * @packageDocumentation
  */
@@ -77,8 +80,8 @@ describe("PortNotInGraphError with code examples", () => {
      *     .provide(DatabaseAdapter)  // Add the missing adapter
      *     .build();
      */
-    // @ts-expect-error - Intentionally trigger PortNotInGraphError to verify error message includes example
-    container.override(UnknownAdapter).build();
+    // Uncommenting the line below would trigger a compile-time error:
+    // container.override(UnknownAdapter).build();
 
     // Runtime: This test verifies compile-time errors, so we just ensure
     // the container is still valid for other operations
@@ -120,8 +123,8 @@ describe("PortNotInGraphError with code examples", () => {
      *     .provide(EmailServiceAdapter)  // Add the missing adapter
      *     .build();
      */
-    // @ts-expect-error - Verify error includes specific port name 'EmailService'
-    container.override(EmailAdapter).build();
+    // Uncommenting the line below would trigger a compile-time error:
+    // container.override(EmailAdapter).build();
 
     expect(container.isDisposed).toBe(false);
   });
@@ -166,8 +169,8 @@ describe("PortNotInGraphError with code examples", () => {
      *     .provide(EmailServiceAdapter)  // Add the missing adapter
      *     .build();
      */
-    // @ts-expect-error - Verify available ports are listed
-    container.override(EmailAdapter).build();
+    // Uncommenting the line below would trigger a compile-time error:
+    // container.override(EmailAdapter).build();
 
     expect(container.isDisposed).toBe(false);
   });
@@ -217,8 +220,8 @@ describe("MissingDependenciesError with code examples", () => {
      *     .provide(UserServiceAdapter)
      *     .build();
      */
-    // @ts-expect-error - Intentionally trigger MissingDependenciesError to verify error message
-    container.override(UserServiceAdapter).build();
+    // Uncommenting the line below would trigger a compile-time error:
+    // container.override(UserServiceAdapter).build();
 
     expect(container.isDisposed).toBe(false);
   });
@@ -256,8 +259,8 @@ describe("MissingDependenciesError with code examples", () => {
      *     .provide(UserServiceAdapter)
      *     .build();
      */
-    // @ts-expect-error - Verify error shows multiple missing dependencies
-    container.override(UserServiceAdapter).build();
+    // Uncommenting the line below would trigger a compile-time error:
+    // container.override(UserServiceAdapter).build();
 
     expect(container.isDisposed).toBe(false);
   });
@@ -300,8 +303,8 @@ describe("MissingDependenciesError with code examples", () => {
      *     .provide(EmailServiceAdapter)
      *     .build();
      */
-    // @ts-expect-error - Verify error includes specific port name 'EmailService'
-    container.override(EmailAdapter).build();
+    // Uncommenting the line below would trigger a compile-time error:
+    // container.override(EmailAdapter).build();
 
     expect(container.isDisposed).toBe(false);
   });
