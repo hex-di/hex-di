@@ -68,35 +68,35 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status  |
 | ----------- | ----- | ------- |
-| MIG-01      |       | Pending |
-| MIG-02      |       | Pending |
-| MIG-03      |       | Pending |
-| MIG-04      |       | Pending |
-| MIG-05      |       | Pending |
-| MIG-06      |       | Pending |
-| MIG-07      |       | Pending |
-| MIG-08      |       | Pending |
-| CFG-01      |       | Pending |
-| CFG-02      |       | Pending |
-| CFG-03      |       | Pending |
-| CFG-04      |       | Pending |
-| CFG-05      |       | Pending |
-| VER-01      |       | Pending |
-| VER-02      |       | Pending |
-| VER-03      |       | Pending |
-| VER-04      |       | Pending |
-| VER-05      |       | Pending |
-| REF-01      |       | Pending |
-| REF-02      |       | Pending |
-| REF-03      |       | Pending |
+| MIG-01      | 20    | Pending |
+| MIG-02      | 20    | Pending |
+| MIG-03      | 20    | Pending |
+| MIG-04      | 21    | Pending |
+| MIG-05      | 21    | Pending |
+| MIG-06      | 21    | Pending |
+| MIG-07      | 21    | Pending |
+| MIG-08      | 21    | Pending |
+| CFG-01      | 20    | Pending |
+| CFG-02      | 20    | Pending |
+| CFG-03      | 20    | Pending |
+| CFG-04      | 20    | Pending |
+| CFG-05      | 20    | Pending |
+| VER-01      | 22    | Pending |
+| VER-02      | 22    | Pending |
+| VER-03      | 22    | Pending |
+| VER-04      | 22    | Pending |
+| VER-05      | 22    | Pending |
+| REF-01      | 22    | Pending |
+| REF-02      | 22    | Pending |
+| REF-03      | 22    | Pending |
 
 **Coverage:**
 
 - v6.0 requirements: 21 total
-- Mapped to phases: 0
-- Unmapped: 21 ⚠️
+- Mapped to phases: 21
+- Unmapped: 0
 
 ---
 
 _Requirements defined: 2026-02-05_
-_Last updated: 2026-02-05 after initial definition_
+_Last updated: 2026-02-05 after roadmap creation_

@@ -5,14 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Catch dependency graph errors at compile time, not runtime
-**Current focus:** v6.0 Monorepo Reorganization
+**Current focus:** v6.0 Monorepo Reorganization - Phase 20 (Integration Migration)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-02-05 — Milestone v6.0 started
+Phase: 20 of 22 (Integration Migration)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-02-05 -- Roadmap created for v6.0
+
+Progress: [░░░░░░░░░░] 0%
 
 ## Milestone History
 
@@ -24,6 +26,7 @@ Last activity: 2026-02-05 — Milestone v6.0 started
 | v3.0      | 9-11   | Shipped | 2026-02-02 |
 | v4.0      | 12-14  | Shipped | 2026-02-03 |
 | v5.0      | 15-19  | Shipped | 2026-02-05 |
+| v6.0      | 20-22  | Active  | -          |
 
 ## Performance Metrics
 
@@ -38,6 +41,7 @@ Last activity: 2026-02-05 — Milestone v6.0 started
 ### Decisions
 
 Key decisions captured in PROJECT.md (19 decisions across 6 milestones).
+v6.0 pending decisions: keep core/graph/runtime separate, nested sub-packages in libs/, flat packages elsewhere.
 
 ### Pending Todos
 
@@ -50,11 +54,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Milestone v6.0 requirements definition
+Stopped at: v6.0 roadmap created (3 phases, 21 requirements mapped)
 Resume file: None
-Next: Define requirements → create roadmap
+Next: Plan phase 20 (Integration Migration)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-05 (v6.0 milestone started)_
+_Last updated: 2026-02-05 (v6.0 roadmap created)_
