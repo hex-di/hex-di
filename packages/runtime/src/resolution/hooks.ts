@@ -197,25 +197,41 @@ export interface ResolutionResultContext extends ResolutionHookContext {
  * Hooks are called synchronously during resolution.
  *
  * @remarks
- * - Hooks should not throw errors; doing so will interrupt resolution
- * - Hooks should be fast to avoid impacting resolution performance
- * - Hooks are called for ALL resolutions, including nested dependencies
- * - For tracing, use beforeResolve to start timing and afterResolve to record
+ * **Hook Execution Order:**
+ * - Multiple `beforeResolve` hooks fire in installation order (FIFO)
+ * - Multiple `afterResolve` hooks fire in reverse installation order (LIFO)
+ * This mimics middleware patterns where setup runs forward and cleanup runs backward.
  *
- * @example Basic tracing
+ * **Performance Considerations:**
+ * - Hooks should not throw errors; doing so will interrupt resolution and propagate to caller
+ * - Hooks should be fast to avoid impacting resolution performance (aim for <1ms)
+ * - Hooks are called for ALL resolutions, including nested dependencies (high frequency)
+ * - Use `container.tracer` API instead of hooks for observability (optimized, built-in)
+ *
+ * **Use Cases:**
+ * - Custom tracing/logging systems that don't use the built-in tracer
+ * - Integration with external APM tools (DataDog, New Relic, etc.)
+ * - Dependency injection validation or policy enforcement
+ * - Testing: Capture resolution events for assertions
+ *
+ * @example Basic tracing implementation
  * ```typescript
  * const traces: Array<{port: string, duration: number}> = [];
  *
- * const container = createContainer(graph, {
+ * const container = createContainer({
+ *   graph,
+ *   name: "App",
  *   hooks: {
  *     afterResolve: (ctx) => {
- *       traces.push({ port: ctx.portName, duration: ctx.duration });
+ *       if (ctx.error === null) {
+ *         traces.push({ port: ctx.portName, duration: ctx.duration });
+ *       }
  *     },
  *   },
  * });
  * ```
  *
- * @example Parent-child tracking
+ * @example Dependency graph tracking
  * ```typescript
  * const hooks: ResolutionHooks = {
  *   beforeResolve: (ctx) => {
@@ -225,25 +241,93 @@ export interface ResolutionResultContext extends ResolutionHookContext {
  *   },
  * };
  * ```
+ *
+ * @example Error monitoring integration
+ * ```typescript
+ * const container = createContainer({
+ *   graph,
+ *   name: "App",
+ *   hooks: {
+ *     afterResolve: (ctx) => {
+ *       if (ctx.error !== null) {
+ *         sentryClient.captureException(ctx.error, {
+ *           tags: { port: ctx.portName, lifetime: ctx.lifetime },
+ *         });
+ *       }
+ *     },
+ *   },
+ * });
+ * ```
  */
 export interface ResolutionHooks {
   /**
    * Called before each resolution attempt.
    *
-   * Invoked after adapter lookup but before cache check and instance creation.
-   * Called for both cache hits and misses.
+   * **Execution Order:**
+   * - Fires AFTER adapter lookup but BEFORE cache check
+   * - Called for both cache hits and cache misses
+   * - Called for every port in the dependency tree (nested resolutions)
+   *
+   * **Context Information:**
+   * - `portName`: The port being resolved (e.g., "Logger")
+   * - `lifetime`: The adapter's lifetime ("singleton" | "scoped" | "request")
+   * - `parentPort`: The port that depends on this one (null for top-level resolve)
+   * - `scopeId`: The scope ID if resolving in a scope (null for container)
+   *
+   * **Common Patterns:**
+   * - Start performance timers (use `afterResolve` to stop)
+   * - Log dependency chains via `parentPort`
+   * - Validate resolution policies (e.g., "don't resolve DB in tests")
    *
    * @param context - Information about the resolution being attempted
+   *
+   * @example
+   * ```typescript
+   * beforeResolve: (ctx) => {
+   *   console.log(`[RESOLVE START] ${ctx.portName} (${ctx.lifetime})`);
+   *   if (ctx.parentPort) {
+   *     console.log(`  └─ required by ${ctx.parentPort.__portName}`);
+   *   }
+   * }
+   * ```
    */
   beforeResolve?: (context: ResolutionHookContext) => void;
 
   /**
    * Called after each resolution completes (success or failure).
    *
-   * Always invoked, even when resolution throws an error.
-   * The error property indicates success (null) or failure (Error instance).
+   * **Execution Order:**
+   * - Fires AFTER factory execution and cache storage
+   * - ALWAYS invoked, even when resolution throws an error
+   * - For multiple hooks, fires in LIFO order (last installed, first executed)
+   *
+   * **Context Information:**
+   * - All properties from `beforeResolve` context (portName, lifetime, etc.)
+   * - `duration`: Time taken to resolve (milliseconds, includes nested dependencies)
+   * - `error`: Error if resolution failed, or `null` on success
+   *
+   * **Common Patterns:**
+   * - Record resolution timing and success rate
+   * - Send errors to monitoring systems
+   * - Calculate dependency graph statistics
+   * - Test assertions on resolution behavior
    *
    * @param context - Information about the completed resolution
+   *
+   * @example Success/error tracking
+   * ```typescript
+   * afterResolve: (ctx) => {
+   *   if (ctx.error === null) {
+   *     metrics.increment('resolution.success', { port: ctx.portName });
+   *     metrics.histogram('resolution.duration', ctx.duration);
+   *   } else {
+   *     metrics.increment('resolution.error', {
+   *       port: ctx.portName,
+   *       error: ctx.error.constructor.name
+   *     });
+   *   }
+   * }
+   * ```
    */
   afterResolve?: (context: ResolutionResultContext) => void;
 }

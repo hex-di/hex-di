@@ -34,7 +34,32 @@ import { createMemoMapSnapshot } from "./helpers.js";
  * - Lifecycle management (disposal, child registration)
  * - DevTools state access
  *
- * @internal
+ * @typeParam TProvides - Union of Port types available from the container's graph or parent.
+ *   For root containers, this comes from the Graph type. For child containers, this is
+ *   the effective provides union from the parent (`ParentProvides | ParentExtends`).
+ *
+ * @typeParam TExtends - Union of Port types added via child graph extensions.
+ *   Always `never` for root containers. For child containers, this represents ports
+ *   that were added by the child graph but were not present in the parent.
+ *
+ * @typeParam TAsyncPorts - Union of Port types that have async factory functions.
+ *   Used to track which ports require async initialization before sync resolution.
+ *
+ * @remarks
+ * **Implementation Architecture:**
+ * - Subclasses: `RootContainerImpl` and `ChildContainerImpl`
+ * - Resolution engines handle the actual factory execution and caching
+ * - Lifecycle manager handles disposal and child/scope tracking
+ * - Adapter registry provides port-to-adapter lookups with inheritance support
+ *
+ * **Protected Methods for Subclasses:**
+ * - `onWrapperSet()`: Called when the public wrapper is assigned
+ * - `resolveWithInheritance()`: Child containers implement parent delegation
+ * - `resolveInternalFallback()`: Fallback resolution for ports not found locally
+ * - `getParentUnregisterCallback()`: Cleanup callback for disposal
+ *
+ * @internal This class is not exported from the public API. Users interact with
+ * the `Container` type, not this implementation class.
  */
 export abstract class BaseContainerImpl<
   TProvides extends Port<unknown, string>,
