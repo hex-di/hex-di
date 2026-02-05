@@ -8,7 +8,7 @@
 - [x] **v2.0 Unified Port API** - Phases 6-8 (shipped 2026-02-02)
 - [x] **v3.0 Unified Adapter API** - Phases 9-11 (shipped 2026-02-02)
 - [x] **v4.0 GraphBuilder Improvements** - Phases 12-14 (shipped 2026-02-03) -> [v4.0-ROADMAP.md](milestones/v4.0-ROADMAP.md)
-- [ ] **v5.0 Runtime Package Improvements** - Phases 15-19 (current)
+- [ ] **v5.0 Runtime Package Improvements** - Phases 15-19 (complete, pending audit)
 
 ## Current: v5.0 Runtime Package Improvements
 
@@ -141,10 +141,10 @@ Plans:
 
 Plans:
 
-- [ ] 19-01-PLAN.md - Enhanced error messages with suggestions and "did you mean"
-- [ ] 19-02-PLAN.md - Template literal errors with code examples
-- [ ] 19-03-PLAN.md - Architecture and design decision documentation
-- [ ] 19-04-PLAN.md - JSDoc @typeParam annotations for IDE support
+- [x] 19-01-PLAN.md - Enhanced error messages with suggestions and "did you mean"
+- [x] 19-02-PLAN.md - Template literal errors with code examples
+- [x] 19-03-PLAN.md - Architecture and design decision documentation
+- [x] 19-04-PLAN.md - JSDoc @typeParam annotations for IDE support
 
 ---
 
@@ -268,4 +268,4 @@ See git history for details.
 ---
 
 _Roadmap created: 2026-02-01_
-_Last updated: 2026-02-03 (Phase 17 planned)_
+_Last updated: 2026-02-05 (Phase 19 complete)_

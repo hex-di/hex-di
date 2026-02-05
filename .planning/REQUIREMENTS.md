@@ -39,16 +39,16 @@ Requirements for runtime package improvements (8.7/10 -> 9.5/10). Each maps to r
 
 ### Error Experience
 
-- [ ] **ERR-01**: Error messages include `suggestion` property with actionable guidance
-- [ ] **ERR-02**: Error messages include code examples for common mistakes
-- [ ] **ERR-03**: "Did you mean?" suggestions for mistyped port names
+- [x] **ERR-01**: Error messages include `suggestion` property with actionable guidance
+- [x] **ERR-02**: Error messages include code examples for common mistakes
+- [x] **ERR-03**: "Did you mean?" suggestions for mistyped port names
 
 ### Documentation
 
-- [ ] **DOC-01**: Architecture documentation (`runtime-architecture.md`)
-- [ ] **DOC-02**: Container lifecycle state machine diagram
-- [ ] **DOC-03**: `@typeParam` documentation for Container type
-- [ ] **DOC-04**: Design decisions documentation (branded types, phase-dependent resolution, etc.)
+- [x] **DOC-01**: Architecture documentation (`runtime-architecture.md`)
+- [x] **DOC-02**: Container lifecycle state machine diagram
+- [x] **DOC-03**: `@typeParam` documentation for Container type
+- [x] **DOC-04**: Design decisions documentation (branded types, phase-dependent resolution, etc.)
 
 ### Type Safety
 
@@ -98,13 +98,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TEST-02     | 18    | Complete |
 | TEST-03     | 18    | Complete |
 | TEST-04     | 18    | Complete |
-| ERR-01      | 19    | Pending  |
-| ERR-02      | 19    | Pending  |
-| ERR-03      | 19    | Pending  |
-| DOC-01      | 19    | Pending  |
-| DOC-02      | 19    | Pending  |
-| DOC-03      | 19    | Pending  |
-| DOC-04      | 19    | Pending  |
+| ERR-01      | 19    | Complete |
+| ERR-02      | 19    | Complete |
+| ERR-03      | 19    | Complete |
+| DOC-01      | 19    | Complete |
+| DOC-02      | 19    | Complete |
+| DOC-03      | 19    | Complete |
+| DOC-04      | 19    | Complete |
 | TYPE-01     | 17    | Complete |
 | TYPE-02     | 17    | Complete |
 
@@ -117,4 +117,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 ---
 
 _Requirements defined: 2026-02-03_
-_Last updated: 2026-02-05 (Phase 17 complete: API-01/02/03, TYPE-01/02)_
+_Last updated: 2026-02-05 (Phase 19 complete: ERR-01/02/03, DOC-01/02/03/04)_
