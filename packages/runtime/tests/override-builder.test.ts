@@ -33,14 +33,9 @@ interface UserService {
   getUser(id: string): { id: string; name: string };
 }
 
-interface Config {
-  getValue(key: string): string;
-}
-
 const LoggerPort = port<Logger>()({ name: "Logger" });
 const DatabasePort = port<Database>()({ name: "Database" });
 const UserServicePort = port<UserService>()({ name: "UserService" });
-const _ConfigPort = port<Config>()({ name: "Config" });
 
 // =============================================================================
 // container.override() Returns OverrideBuilder
