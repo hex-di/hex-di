@@ -74,18 +74,12 @@ Phases 15-19: Type file split, tracing/inspection consolidation, override builde
 **Goal**: Integrations (react, hono) live in their own top-level directory, workspace recognizes the new structure, and the full build pipeline passes
 **Depends on**: Nothing (first phase of v6.0)
 **Requirements**: MIG-01, MIG-02, MIG-03, CFG-01, CFG-02, CFG-03, CFG-04, CFG-05
-**Success Criteria** (what must be TRUE):
-
-1. `integrations/react` and `integrations/hono` directories exist with their full package contents; `packages/react` and `packages/hono` no longer exist
-2. `pnpm-workspace.yaml` includes globs for `packages/*`, `integrations/*`, `tooling/*`, `libs/*/*`, `examples/*`, and `website`
-3. Core packages (core, graph, runtime) remain at `packages/{core,graph,runtime}` with no changes
-4. `pnpm install && pnpm build && pnpm typecheck && pnpm test && pnpm lint` all pass with the new structure
-   **Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
 
-- [ ] 20-01: Create directory structure, update workspace globs, move integration packages
-- [ ] 20-02: Update tsconfig references, eslint configs, and per-package paths for moved integrations
+- [ ] 20-01-PLAN.md -- Move react and hono to integrations/, update pnpm-workspace.yaml
+- [ ] 20-02-PLAN.md -- Update root configs (vitest, eslint, example tsconfigs), full pipeline verification
 
 ### Phase 21: Tooling & Library Migration
 
