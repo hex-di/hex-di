@@ -6,7 +6,6 @@
 
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { userEvent } from "@testing-library/user-event";
 import { createMemoryTracer } from "@hex-di/tracing";
 import { TracingProvider } from "../src/providers/tracing-provider.js";
 import { useTracer } from "../src/hooks/use-tracer.js";
@@ -162,9 +161,8 @@ describe("useSpan", () => {
 });
 
 describe("useTracedCallback", () => {
-  it("creates span when callback is invoked", async () => {
+  it("creates span when callback is invoked", () => {
     const tracer = createMemoryTracer();
-    const user = userEvent.setup();
 
     function TestComponent() {
       const handleClick = useTracedCallback(
@@ -185,16 +183,15 @@ describe("useTracedCallback", () => {
     );
 
     const button = screen.getByText("Click Me");
-    await user.click(button);
+    button.click();
 
-    const spans = tracer.getSpans();
+    const spans = tracer.getCollectedSpans();
     expect(spans.length).toBe(1);
     expect(spans[0].name).toBe("button.click");
   });
 
   it("handles async callbacks correctly", async () => {
     const tracer = createMemoryTracer();
-    const user = userEvent.setup();
 
     function TestComponent() {
       const handleClick = useTracedCallback(
@@ -216,19 +213,18 @@ describe("useTracedCallback", () => {
     );
 
     const button = screen.getByText("Async Click");
-    await user.click(button);
+    button.click();
 
     // Wait for async operation to complete
     await new Promise(resolve => setTimeout(resolve, 10));
 
-    const spans = tracer.getSpans();
+    const spans = tracer.getCollectedSpans();
     expect(spans.length).toBe(1);
     expect(spans[0].name).toBe("async.operation");
   });
 
-  it("preserves callback arguments", async () => {
+  it("preserves callback arguments", () => {
     const tracer = createMemoryTracer();
-    const user = userEvent.setup();
     let capturedValue = "";
 
     function TestComponent() {
@@ -250,7 +246,7 @@ describe("useTracedCallback", () => {
     );
 
     const button = screen.getByText("Click");
-    await user.click(button);
+    button.click();
 
     expect(capturedValue).toBe("test-value");
   });
@@ -297,9 +293,8 @@ describe("useTracedCallback", () => {
     expect(callbackRefs[1]).not.toBe(callbackRefs[2]);
   });
 
-  it("records exceptions in spans", async () => {
+  it("records exceptions in spans", () => {
     const tracer = createMemoryTracer();
-    const user = userEvent.setup();
 
     function TestComponent() {
       const handleClick = useTracedCallback(
@@ -328,16 +323,15 @@ describe("useTracedCallback", () => {
     );
 
     const button = screen.getByText("Click");
-    await user.click(button);
+    button.click();
 
-    const spans = tracer.getSpans();
+    const spans = tracer.getCollectedSpans();
     expect(spans.length).toBe(1);
     expect(spans[0].status.code).toBe("error");
   });
 
-  it("handles multiple callback invocations", async () => {
+  it("handles multiple callback invocations", () => {
     const tracer = createMemoryTracer();
-    const user = userEvent.setup();
 
     function TestComponent() {
       const handleClick = useTracedCallback(
@@ -358,11 +352,11 @@ describe("useTracedCallback", () => {
     );
 
     const button = screen.getByText("Click");
-    await user.click(button);
-    await user.click(button);
-    await user.click(button);
+    button.click();
+    button.click();
+    button.click();
 
-    const spans = tracer.getSpans();
+    const spans = tracer.getCollectedSpans();
     expect(spans.length).toBe(3);
     expect(spans.every(s => s.name === "multi.click")).toBe(true);
   });
@@ -380,9 +374,9 @@ describe("React hooks rules compliance", () => {
 
       return (
         <div>
-          {tracerFromHook ? "has-tracer" : "no-tracer"}
+          {tracerFromHook !== undefined ? "has-tracer" : "no-tracer"}
           {span ? "has-span" : "no-span"}
-          {callback ? "has-callback" : "no-callback"}
+          {callback !== undefined ? "has-callback" : "no-callback"}
         </div>
       );
     }
