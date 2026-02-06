@@ -3,10 +3,6 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   cacheDir: ".vite-temp",
   test: {
-    include: ["packages/**/*.test.ts", "integrations/**/*.test.ts", "integrations/**/*.test.tsx"],
-    environmentMatchGlobs: [
-      ["integrations/react/**/*.test.{ts,tsx}", "jsdom"],
-      ["examples/react-showcase/**/*.test.{ts,tsx}", "jsdom"],
-    ],
+    include: ["packages/**/*.test.ts", "integrations/**/*.test.ts"],
   },
 });

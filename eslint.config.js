@@ -129,12 +129,5 @@ export default tseslint.config(
       "website/**",
     ],
   },
-  {
-    languageOptions: {
-      parserOptions: {
-        project: "./tsconfig.json",
-      },
-    },
-  },
   ...baseConfig
 );
