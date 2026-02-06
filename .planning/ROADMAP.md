@@ -1,68 +1,24 @@
-# Roadmap: HexDI
+# Project Roadmap
 
-## Milestones
+## Tracking
 
-- ✅ **v1.1 Bugfix Verification** — Phases 1-2 (shipped 2026-02-01)
-- ✅ **v1.2 DX Improvements** — Phases 3-5 (shipped 2026-02-01)
-- ✅ **v2.0 Unified Port API** — Phases 6-8 (shipped 2026-02-02)
-- ✅ **v3.0 Unified Adapter API** — Phases 9-11 (shipped 2026-02-02)
-- ✅ **v4.0 Runtime API Simplification** — Phases 12-14 (shipped 2026-02-03)
-- ✅ **v5.0 Runtime Package Improvements** — Phases 15-19 (shipped 2026-02-05)
-- ✅ **v6.0 Monorepo Reorganization** — Phases 20-22 (shipped 2026-02-06)
-- **v7.0 Distributed Tracing** — Phases 23-27 (active)
+- **Started:** 2026-02-01
+- **Current Phase:** 24 of 27 (Container Instrumentation and Context Propagation)
+- **Completion:** 59% (23/39 phases complete)
 
-## Phases
+## Shipped Milestones
 
-<details>
-<summary>✅ v1.1 Bugfix Verification (Phases 1-2) — SHIPPED 2026-02-01</summary>
+| Version | Phases | Status  | Ship Date  | Key Features                             |
+| ------- | ------ | ------- | ---------- | ---------------------------------------- |
+| v1.1    | 1-2    | Shipped | 2026-02-01 | Bug fixes, initial verification          |
+| v1.2    | 3-5    | Shipped | 2026-02-01 | Scoped overrides, enhanced defineService |
+| v2.0    | 6-8    | Shipped | 2026-02-02 | Unified createPort, graph inspection     |
+| v3.0    | 9-11   | Shipped | 2026-02-02 | Unified adapters, async detection        |
+| v4.0    | 12-14  | Shipped | 2026-02-03 | Unified provide, disposal system         |
+| v5.0    | 15-19  | Shipped | 2026-02-05 | Type refinement, performance, docs       |
+| v6.0    | 20-22  | Shipped | 2026-02-06 | Framework integrations, libraries        |
 
-Phases 1-2: Verification of merge operation bugs and runtime captive detection.
-
-</details>
-
-<details>
-<summary>✅ v1.2 DX Improvements (Phases 3-5) — SHIPPED 2026-02-01</summary>
-
-Phases 3-5: Scoped overrides, enhanced defineService, port directions and metadata.
-
-</details>
-
-<details>
-<summary>✅ v2.0 Unified Port API (Phases 6-8) — SHIPPED 2026-02-02</summary>
-
-Phases 6-8: Unified createPort(), InboundPorts/OutboundPorts utilities, graph inspection filtering.
-
-</details>
-
-<details>
-<summary>✅ v3.0 Unified Adapter API (Phases 9-11) — SHIPPED 2026-02-02</summary>
-
-Phases 9-11: Unified createAdapter(), auto-detect async, compile-time async lifetime enforcement.
-
-</details>
-
-<details>
-<summary>✅ v4.0 Runtime API Simplification (Phases 12-14) — SHIPPED 2026-02-03</summary>
-
-Phases 12-14: Unified provide(), merge() safety, disposal lifecycle, GraphSummary.
-
-</details>
-
-<details>
-<summary>✅ v5.0 Runtime Package Improvements (Phases 15-19) — SHIPPED 2026-02-05</summary>
-
-Phases 15-19: Type file split, tracing/inspection consolidation, override builder, performance benchmarks, documentation.
-
-</details>
-
-<details>
-<summary>✅ v6.0 Monorepo Reorganization (Phases 20-22) — SHIPPED 2026-02-06</summary>
-
-Phases 20-22: Restructured monorepo into packages/, integrations/, tooling/, libs/ groups with nested sub-packages.
-
-See: `.planning/milestones/v6.0-ROADMAP.md` for full details.
-
-</details>
+## Active Milestone
 
 ### v7.0 Distributed Tracing (Active)
 
@@ -91,6 +47,13 @@ Plans:
 
 **Goal:** Developers can instrument a single container or entire tree with one call; resolution spans form parent-child relationships across container boundaries
 **Requirements:** INST-01..09 (9 requirements)
+**Plans:** 3 plans
+
+Plans:
+
+- [ ] 24-01-PLAN.md — Core instrumentation with span stack
+- [ ] 24-02-PLAN.md — Tree instrumentation with subscription
+- [ ] 24-03-PLAN.md — Hook factory and exports
 
 #### Phase 25: OpenTelemetry Backend and Export Pipeline
 
@@ -134,7 +97,37 @@ Plans:
 | 21. Tooling & Library Migration | v6.0      | 2/2            | Complete    | 2026-02-06 |
 | 22. Verification & References   | v6.0      | 2/2            | Complete    | 2026-02-06 |
 | 23. Core Tracing Foundation     | v7.0      | 8/8            | Complete    | 2026-02-06 |
-| 24. Container Instrumentation   | v7.0      | 0/TBD          | Not started | -          |
+| 24. Container Instrumentation   | v7.0      | 0/3            | Not started | -          |
 | 25. OTel Backend & Export       | v7.0      | 0/TBD          | Not started | -          |
 | 26. Breaking Change Migration   | v7.0      | 0/TBD          | Not started | -          |
 | 27. Framework & Testing         | v7.0      | 0/TBD          | Not started | -          |
+
+## Tracking
+
+### Velocity
+
+**By Milestone:**
+
+| Milestone | Phases | Plans | Days   | Plans/Day |
+| --------- | ------ | ----- | ------ | --------- |
+| v1.1      | 2      | 2     | 1      | 2.0       |
+| v1.2      | 3      | 9     | 1      | 9.0       |
+| v2.0      | 3      | 3     | 1      | 3.0       |
+| v3.0      | 3      | 9     | 1      | 9.0       |
+| v4.0      | 3      | 6     | 1      | 6.0       |
+| v5.0      | 5      | 22    | 3      | 7.3       |
+| v6.0      | 3      | 6     | 1      | 6.0       |
+| v7.0      | 5      | 68    | Active | TBD       |
+
+**Overall:** 68 plans in 6 days = 11.3 plans/day
+
+### Burndown
+
+| Week | Phases Remaining | Plans Remaining | Trend |
+| ---- | ---------------- | --------------- | ----- |
+| 1    | 27               | ~100            | Start |
+| 2    | 4                | ~20             | -87%  |
+
+---
+
+_Last updated: 2026-02-06_
