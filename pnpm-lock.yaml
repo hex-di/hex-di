@@ -64,7 +64,7 @@ importers:
         version: link:../../packages/graph
       '@hex-di/hono':
         specifier: workspace:*
-        version: link:../../packages/hono
+        version: link:../../integrations/hono
       '@hex-di/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
@@ -101,16 +101,16 @@ importers:
         version: link:../../packages/core
       '@hex-di/flow':
         specifier: workspace:*
-        version: link:../../packages/flow
+        version: link:../../libs/flow/core
       '@hex-di/flow-react':
         specifier: workspace:*
-        version: link:../../packages/flow-react
+        version: link:../../libs/flow/react
       '@hex-di/graph':
         specifier: workspace:*
         version: link:../../packages/graph
       '@hex-di/react':
         specifier: workspace:*
-        version: link:../../packages/react
+        version: link:../../integrations/react
       '@hex-di/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
@@ -132,7 +132,7 @@ importers:
     devDependencies:
       '@hex-di/testing':
         specifier: workspace:*
-        version: link:../../packages/testing
+        version: link:../../tooling/testing
       '@testing-library/dom':
         specifier: ^10.0.0
         version: 10.4.1
@@ -176,38 +176,36 @@ importers:
         specifier: ^4.0.16
         version: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@25.0.3)(jiti@1.21.7)(jsdom@24.1.3)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
 
-  packages/core:
-    dependencies:
-      typescript:
-        specifier: '>=5.0'
-        version: 5.6.3
-
-  packages/flow:
+  integrations/hono:
     dependencies:
       '@hex-di/core':
         specifier: workspace:*
-        version: link:../core
-      '@hex-di/graph':
-        specifier: workspace:*
-        version: link:../graph
+        version: link:../../packages/core
       '@hex-di/runtime':
         specifier: workspace:*
-        version: link:../runtime
+        version: link:../../packages/runtime
       typescript:
         specifier: '>=5.0'
         version: 5.6.3
+    devDependencies:
+      '@hex-di/graph':
+        specifier: workspace:*
+        version: link:../../packages/graph
+      hono:
+        specifier: ^4.11.1
+        version: 4.11.1
 
-  packages/flow-react:
+  integrations/react:
     dependencies:
       '@hex-di/core':
         specifier: workspace:*
-        version: link:../core
-      '@hex-di/flow':
+        version: link:../../packages/core
+      '@hex-di/graph':
         specifier: workspace:*
-        version: link:../flow
-      '@hex-di/react':
+        version: link:../../packages/graph
+      '@hex-di/runtime':
         specifier: workspace:*
-        version: link:../react
+        version: link:../../packages/runtime
       typescript:
         specifier: '>=5.0'
         version: 5.6.3
@@ -231,6 +229,61 @@ importers:
         specifier: ^19.2.3
         version: 19.2.3(react@19.2.3)
 
+  libs/flow/core:
+    dependencies:
+      '@hex-di/core':
+        specifier: workspace:*
+        version: link:../../../packages/core
+      '@hex-di/graph':
+        specifier: workspace:*
+        version: link:../../../packages/graph
+      '@hex-di/runtime':
+        specifier: workspace:*
+        version: link:../../../packages/runtime
+      typescript:
+        specifier: '>=5.0'
+        version: 5.6.3
+
+  libs/flow/react:
+    dependencies:
+      '@hex-di/core':
+        specifier: workspace:*
+        version: link:../../../packages/core
+      '@hex-di/flow':
+        specifier: workspace:*
+        version: link:../core
+      '@hex-di/react':
+        specifier: workspace:*
+        version: link:../../../integrations/react
+      typescript:
+        specifier: '>=5.0'
+        version: 5.6.3
+    devDependencies:
+      '@testing-library/react':
+        specifier: ^16.0.0
+        version: 16.3.1(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@types/react':
+        specifier: ^19.2.0
+        version: 19.2.7
+      '@types/react-dom':
+        specifier: ^19.2.0
+        version: 19.2.3(@types/react@19.2.7)
+      jsdom:
+        specifier: ^24.0.0
+        version: 24.1.3
+      react:
+        specifier: ^19.2.3
+        version: 19.2.3
+      react-dom:
+        specifier: ^19.2.3
+        version: 19.2.3(react@19.2.3)
+
+  packages/core:
+    dependencies:
+      typescript:
+        specifier: '>=5.0'
+        version: 5.6.3
+
   packages/graph:
     dependencies:
       '@hex-di/core':
@@ -253,7 +306,19 @@ importers:
         specifier: ^4.5.3
         version: 4.5.3
 
-  packages/graph-viz:
+  packages/runtime:
+    dependencies:
+      '@hex-di/core':
+        specifier: workspace:*
+        version: link:../core
+      '@hex-di/graph':
+        specifier: workspace:*
+        version: link:../graph
+      typescript:
+        specifier: '>=5.0'
+        version: 5.9.3
+
+  tooling/graph-viz:
     dependencies:
       dagre:
         specifier: ^0.8.5
@@ -290,88 +355,23 @@ importers:
         specifier: ^19.2.3
         version: 19.2.3(react@19.2.3)
 
-  packages/hono:
+  tooling/testing:
     dependencies:
       '@hex-di/core':
         specifier: workspace:*
-        version: link:../core
+        version: link:../../packages/core
+      '@hex-di/graph':
+        specifier: workspace:*
+        version: link:../../packages/graph
+      '@hex-di/react':
+        specifier: workspace:*
+        version: link:../../integrations/react
       '@hex-di/runtime':
         specifier: workspace:*
-        version: link:../runtime
+        version: link:../../packages/runtime
       typescript:
         specifier: '>=5.0'
         version: 5.6.3
-    devDependencies:
-      '@hex-di/graph':
-        specifier: workspace:*
-        version: link:../graph
-      hono:
-        specifier: ^4.11.1
-        version: 4.11.1
-
-  packages/react:
-    dependencies:
-      '@hex-di/core':
-        specifier: workspace:*
-        version: link:../core
-      '@hex-di/graph':
-        specifier: workspace:*
-        version: link:../graph
-      '@hex-di/runtime':
-        specifier: workspace:*
-        version: link:../runtime
-      typescript:
-        specifier: '>=5.0'
-        version: 5.9.3
-    devDependencies:
-      '@testing-library/react':
-        specifier: ^16.0.0
-        version: 16.3.1(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@types/react':
-        specifier: ^19.2.0
-        version: 19.2.7
-      '@types/react-dom':
-        specifier: ^19.2.0
-        version: 19.2.3(@types/react@19.2.7)
-      jsdom:
-        specifier: ^24.0.0
-        version: 24.1.3
-      react:
-        specifier: ^19.2.3
-        version: 19.2.3
-      react-dom:
-        specifier: ^19.2.3
-        version: 19.2.3(react@19.2.3)
-
-  packages/runtime:
-    dependencies:
-      '@hex-di/core':
-        specifier: workspace:*
-        version: link:../core
-      '@hex-di/graph':
-        specifier: workspace:*
-        version: link:../graph
-      typescript:
-        specifier: '>=5.0'
-        version: 5.9.3
-
-  packages/testing:
-    dependencies:
-      '@hex-di/core':
-        specifier: workspace:*
-        version: link:../core
-      '@hex-di/graph':
-        specifier: workspace:*
-        version: link:../graph
-      '@hex-di/react':
-        specifier: workspace:*
-        version: link:../react
-      '@hex-di/runtime':
-        specifier: workspace:*
-        version: link:../runtime
-      typescript:
-        specifier: '>=5.0'
-        version: 5.9.3
       vitest:
         specifier: '>=4.0.0'
         version: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@25.0.3)(jiti@2.6.1)(jsdom@24.1.3)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
@@ -395,18 +395,18 @@ importers:
         specifier: ^19.2.3
         version: 19.2.3(react@19.2.3)
 
-  packages/visualization:
+  tooling/visualization:
     dependencies:
       '@hex-di/graph':
         specifier: workspace:*
-        version: link:../graph
+        version: link:../../packages/graph
       typescript:
         specifier: '>=5.0'
         version: 5.6.3
     devDependencies:
       '@hex-di/core':
         specifier: workspace:*
-        version: link:../core
+        version: link:../../packages/core
       vitest:
         specifier: 4.0.16
         version: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@25.0.3)(jiti@2.6.1)(jsdom@25.0.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)

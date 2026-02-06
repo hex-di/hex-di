@@ -180,7 +180,7 @@ describe("HexDI Integration", () => {
     it("should resolve FlowService from container via adapter", () => {
       const graph = GraphBuilder.create().provide(SimpleFlowServiceAdapter).build();
 
-      const container = createContainer(graph, { name: "TestContainer" });
+      const container = createContainer({ graph, name: "TestContainer" });
       const scope = container.createScope();
 
       const flowService = scope.resolve(SimpleFlowServicePort);
@@ -204,7 +204,7 @@ describe("HexDI Integration", () => {
     it("should resolve FlowService with correct initial state", () => {
       const graph = GraphBuilder.create().provide(SimpleFlowServiceAdapter).build();
 
-      const container = createContainer(graph, { name: "TestContainer" });
+      const container = createContainer({ graph, name: "TestContainer" });
       const scope = container.createScope();
 
       const flowService = scope.resolve(SimpleFlowServicePort);
@@ -220,7 +220,7 @@ describe("HexDI Integration", () => {
     it("should transition state correctly", () => {
       const graph = GraphBuilder.create().provide(SimpleFlowServiceAdapter).build();
 
-      const container = createContainer(graph, { name: "TestContainer" });
+      const container = createContainer({ graph, name: "TestContainer" });
       const scope = container.createScope();
 
       const flowService = scope.resolve(SimpleFlowServicePort);
@@ -244,7 +244,7 @@ describe("HexDI Integration", () => {
     it("should create new machine instance per scope", () => {
       const graph = GraphBuilder.create().provide(SimpleFlowServiceAdapter).build();
 
-      const container = createContainer(graph, { name: "TestContainer" });
+      const container = createContainer({ graph, name: "TestContainer" });
 
       const scope1 = container.createScope();
       const scope2 = container.createScope();
@@ -267,7 +267,7 @@ describe("HexDI Integration", () => {
     it("should return same instance within same scope", () => {
       const graph = GraphBuilder.create().provide(SimpleFlowServiceAdapter).build();
 
-      const container = createContainer(graph, { name: "TestContainer" });
+      const container = createContainer({ graph, name: "TestContainer" });
       const scope = container.createScope();
 
       const flowService1 = scope.resolve(SimpleFlowServicePort);
@@ -285,7 +285,7 @@ describe("HexDI Integration", () => {
     it.skip("should dispose machine when scope is disposed", async () => {
       const graph = GraphBuilder.create().provide(SimpleFlowServiceAdapter).build();
 
-      const container = createContainer(graph, { name: "TestContainer" });
+      const container = createContainer({ graph, name: "TestContainer" });
       const scope = container.createScope();
 
       const flowService = scope.resolve(SimpleFlowServicePort);
@@ -366,7 +366,7 @@ describe("HexDI Integration", () => {
       });
 
       const graph = GraphBuilder.create().provide(DelayFlowServiceAdapter).build();
-      const container = createContainer(graph, { name: "TestContainer" });
+      const container = createContainer({ graph, name: "TestContainer" });
       const scope = container.createScope();
 
       const flowService = scope.resolve(DelayFlowServicePort);
@@ -444,7 +444,7 @@ describe("HexDI Integration", () => {
       });
 
       const graph = GraphBuilder.create().provide(ParallelFlowServiceAdapter).build();
-      const container = createContainer(graph, { name: "TestContainer" });
+      const container = createContainer({ graph, name: "TestContainer" });
       const scope = container.createScope();
 
       const flowService = scope.resolve(ParallelFlowServicePort);
@@ -518,7 +518,7 @@ describe("HexDI Integration", () => {
       });
 
       const graph = GraphBuilder.create().provide(SequenceFlowServiceAdapter).build();
-      const container = createContainer(graph, { name: "TestContainer" });
+      const container = createContainer({ graph, name: "TestContainer" });
       const scope = container.createScope();
 
       const flowService = scope.resolve(SequenceFlowServicePort);

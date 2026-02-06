@@ -8,5 +8,5 @@
   },
   "include": ["src/**/*.ts", "tests/**/*.ts"],
   "exclude": ["node_modules", "dist"],
-  "references": [{ "path": "../core" }, { "path": "../graph" }]
+  "references": [{ "path": "../../packages/core" }, { "path": "../../packages/graph" }]
 }

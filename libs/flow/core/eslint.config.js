@@ -1,6 +1,6 @@
 // @ts-check
 import tseslint from "typescript-eslint";
-import { baseConfig, testConfig } from "../../eslint.config.js";
+import { baseConfig, testConfig } from "../../../eslint.config.js";
 
 export default tseslint.config(
   {

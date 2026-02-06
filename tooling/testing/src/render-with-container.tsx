@@ -148,7 +148,7 @@ export function renderWithContainer<TProvides extends Port<unknown, string>>(
   options?: RenderOptions
 ): RenderWithContainerResult<TProvides> {
   // Create a container from the provided graph
-  const diContainer = createContainer(graph, { name: "Test" });
+  const diContainer = createContainer({ graph, name: "Test" });
 
   // Wrap the element with the global shared HexDiContainerProvider
   // This uses the same context that the global usePort hook consumes
