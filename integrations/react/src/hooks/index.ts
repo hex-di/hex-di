@@ -12,3 +12,4 @@ export { useScope } from "./use-scope.js";
 export { useDeps } from "./use-deps.js";
 export { useTracer } from "./use-tracer.js";
 export { useSpan } from "./use-span.js";
+export { useTracedCallback } from "./use-traced-callback.js";
