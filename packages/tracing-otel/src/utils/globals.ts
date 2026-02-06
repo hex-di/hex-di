@@ -13,6 +13,24 @@ export interface ConsoleLike {
   error(message: string, ...args: unknown[]): void;
 }
 
+/** Subset of setTimeout API for scheduling callbacks. */
+interface SetTimeoutLike {
+  (callback: () => void, ms: number): unknown;
+}
+
+/** Subset of clearTimeout API for cancelling scheduled callbacks. */
+interface ClearTimeoutLike {
+  (handle: unknown): void;
+}
+
+function isSetTimeoutLike(value: unknown): value is SetTimeoutLike {
+  return typeof value === "function";
+}
+
+function isClearTimeoutLike(value: unknown): value is ClearTimeoutLike {
+  return typeof value === "function";
+}
+
 function isConsoleLike(value: unknown): value is ConsoleLike {
   return (
     value !== null &&
@@ -58,7 +76,7 @@ export function safeSetTimeout(callback: () => void, ms: number): unknown {
   const g: Record<string, unknown> = globalThis;
   const fn: unknown = g.setTimeout;
 
-  if (typeof fn === "function") {
+  if (isSetTimeoutLike(fn)) {
     return fn(callback, ms);
   }
 
@@ -78,7 +96,7 @@ export function safeClearTimeout(handle: unknown): void {
   const g: Record<string, unknown> = globalThis;
   const fn: unknown = g.clearTimeout;
 
-  if (typeof fn === "function") {
+  if (isClearTimeoutLike(fn)) {
     fn(handle);
   }
 }

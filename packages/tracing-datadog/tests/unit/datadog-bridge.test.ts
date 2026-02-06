@@ -55,7 +55,7 @@ function createMockDdTracer(): DdTracer {
   const spans = new Map<string, DdSpan>();
 
   return {
-    startSpan: vi.fn((name: string, options?: any) => {
+    startSpan: vi.fn((name: string, _options?: any) => {
       const span = createMockDdSpan(name);
       spans.set(name, span);
       return span;

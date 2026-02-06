@@ -77,77 +77,82 @@ export function createDataDogBridge(config: DataDogBridgeConfig): SpanExporter {
      *
      * @param spans - Readonly array of completed HexDI spans
      */
-    async export(spans: ReadonlyArray<SpanData>): Promise<void> {
-      try {
-        for (const hexSpan of spans) {
-          try {
-            // Find parent span if this is a child span
-            const parentSpan = hexSpan.parentSpanId
-              ? activeSpans.get(hexSpan.parentSpanId)
-              : undefined;
+    export(spans: ReadonlyArray<SpanData>): Promise<void> {
+      return Promise.resolve().then(() => {
+        try {
+          for (const hexSpan of spans) {
+            try {
+              // Find parent span if this is a child span
+              const parentSpan = hexSpan.parentSpanId
+                ? activeSpans.get(hexSpan.parentSpanId)
+                : undefined;
 
-            // Start dd-trace span with same name and timing
-            const ddSpan = tracer.startSpan(hexSpan.name, {
-              startTime: hexSpan.startTime,
-              childOf: parentSpan,
-              tags: {}, // Will set via setTag for proper typing
-            });
-
-            // Store span for potential child spans
-            activeSpans.set(hexSpan.context.spanId, ddSpan);
-
-            // Set span kind as tag (dd-trace doesn't have direct kind concept)
-            ddSpan.setTag("span.kind", hexSpan.kind);
-
-            // Set all HexDI attributes as DataDog tags
-            for (const [key, value] of Object.entries(hexSpan.attributes)) {
-              ddSpan.setTag(key, value);
-            }
-
-            // Handle error status
-            if (hexSpan.status === "error") {
-              ddSpan.setTag("error", true);
-              // Add error message from attributes if available
-              const errorMsg = hexSpan.attributes["error.message"];
-              if (errorMsg) {
-                ddSpan.setTag("error.message", errorMsg);
-              }
-            }
-
-            // Set resource name (DataDog's primary span identifier)
-            // Use operation name from attributes or span name
-            const operationName = hexSpan.attributes["operation.name"];
-            const resourceName = typeof operationName === "string" ? operationName : hexSpan.name;
-            ddSpan.setTag("resource.name", resourceName);
-
-            // Add span events as tags (dd-trace doesn't have first-class events)
-            if (hexSpan.events.length > 0) {
-              ddSpan.setTag("span.events.count", hexSpan.events.length);
-              hexSpan.events.forEach((event, index) => {
-                ddSpan.setTag(`event.${index}.name`, event.name);
-                ddSpan.setTag(`event.${index}.time`, event.time);
-                if (event.attributes) {
-                  for (const [key, value] of Object.entries(event.attributes)) {
-                    ddSpan.setTag(`event.${index}.${key}`, value);
-                  }
-                }
+              // Start dd-trace span with same name and timing
+              const ddSpan = tracer.startSpan(hexSpan.name, {
+                startTime: hexSpan.startTime,
+                childOf: parentSpan,
+                tags: {}, // Will set via setTag for proper typing
               });
+
+              // Store span for potential child spans
+              activeSpans.set(hexSpan.context.spanId, ddSpan);
+
+              // Set span kind as tag (dd-trace doesn't have direct kind concept)
+              ddSpan.setTag("span.kind", hexSpan.kind);
+
+              // Set all HexDI attributes as DataDog tags
+              for (const [key, value] of Object.entries(hexSpan.attributes)) {
+                ddSpan.setTag(key, value);
+              }
+
+              // Handle error status
+              if (hexSpan.status === "error") {
+                ddSpan.setTag("error", true);
+                // Add error message from attributes if available
+                const errorMsg = hexSpan.attributes["error.message"];
+                if (errorMsg) {
+                  ddSpan.setTag("error.message", errorMsg);
+                }
+              }
+
+              // Set resource name (DataDog's primary span identifier)
+              // Use operation name from attributes or span name
+              const operationName = hexSpan.attributes["operation.name"];
+              const resourceName = typeof operationName === "string" ? operationName : hexSpan.name;
+              ddSpan.setTag("resource.name", resourceName);
+
+              // Add span events as tags (dd-trace doesn't have first-class events)
+              if (hexSpan.events.length > 0) {
+                ddSpan.setTag("span.events.count", hexSpan.events.length);
+                hexSpan.events.forEach((event, index) => {
+                  ddSpan.setTag(`event.${index}.name`, event.name);
+                  ddSpan.setTag(`event.${index}.time`, event.time);
+                  if (event.attributes) {
+                    for (const [key, value] of Object.entries(event.attributes)) {
+                      ddSpan.setTag(`event.${index}.${key}`, value);
+                    }
+                  }
+                });
+              }
+
+              // Finish span with correct end time
+              ddSpan.finish(hexSpan.endTime);
+
+              // Clean up from active spans map
+              activeSpans.delete(hexSpan.context.spanId);
+            } catch (spanError) {
+              // Log individual span errors but continue processing batch
+              logError(
+                `[hex-di/tracing-datadog] Failed to export span ${hexSpan.name}:`,
+                spanError
+              );
             }
-
-            // Finish span with correct end time
-            ddSpan.finish(hexSpan.endTime);
-
-            // Clean up from active spans map
-            activeSpans.delete(hexSpan.context.spanId);
-          } catch (spanError) {
-            // Log individual span errors but continue processing batch
-            logError(`[hex-di/tracing-datadog] Failed to export span ${hexSpan.name}:`, spanError);
           }
+        } catch (error) {
+          // Log but don't throw - telemetry failures shouldn't break the application
+          logError("[hex-di/tracing-datadog] DataDog export failed:", error);
         }
-      } catch (error) {
-        // Log but don't throw - telemetry failures shouldn't break the application
-        logError("[hex-di/tracing-datadog] DataDog export failed:", error);
-      }
+      });
     },
 
     /**
