@@ -9,14 +9,18 @@ hex-di/
 ├── packages/                    # Core monorepo packages
 │   ├── core/                    # Zero-dependency foundation (ports, adapters, errors, inspection)
 │   ├── runtime/                 # Container creation and service resolution
-│   ├── graph/                   # Compile-time validation and dependency graph building
+│   └── graph/                   # Compile-time validation and dependency graph building
+├── integrations/                # Framework integrations
 │   ├── react/                   # React integration (hooks, providers)
-│   ├── flow/                    # State machine runtime with effects and activities
-│   ├── flow-react/              # React integration for flow state machines
-│   ├── hono/                    # Hono web framework integration
+│   └── hono/                    # Hono web framework integration
+├── tooling/                     # Developer tooling packages
 │   ├── testing/                 # Testing utilities (mocks, test adapters, assertions)
-│   ├── graph-viz/               # Generic React graph visualization component
-│   └── visualization/           # Graph visualization (Mermaid, Dot output)
+│   ├── visualization/           # Graph visualization (Mermaid, Dot output)
+│   └── graph-viz/               # Generic React graph visualization component
+├── libs/                        # Domain libraries
+│   └── flow/                    # State machine domain
+│       ├── core/                # State machine runtime with effects and activities
+│       └── react/               # React integration for flow state machines
 ├── examples/                    # Example applications
 │   ├── react-showcase/          # React integration showcase with containers and scopes
 │   └── hono-todo/               # Hono backend example with DI
@@ -93,7 +97,7 @@ hex-di/
   - `types/` - Inference and validation types
 - Key files: `index.ts` (primary), `advanced.ts` (inspection/validation)
 
-**packages/react/src:**
+**integrations/react/src:**
 
 - Purpose: React integration without global state
 - Contains:
@@ -115,7 +119,7 @@ hex-di/
   - `internal/` - Internal utilities
 - Key files: `index.ts` (main export)
 
-**packages/flow/src:**
+**libs/flow/core/src:**
 
 - Purpose: State machine runtime with type-safe effects and activities
 - Contains:
@@ -145,7 +149,7 @@ hex-di/
   - `errors/` - Flow-specific error classes
 - Key files: `index.ts` (main export)
 
-**packages/flow-react/src:**
+**libs/flow/react/src:**
 
 - Purpose: React components and hooks for flow state machines
 - Contains:
@@ -155,7 +159,7 @@ hex-di/
   - `internal/` - Internal utilities
 - Key files: `index.ts` (main export)
 
-**packages/hono/src:**
+**integrations/hono/src:**
 
 - Purpose: Hono web framework integration
 - Contains:
@@ -165,7 +169,7 @@ hex-di/
   - `index.ts` - Main export
 - Key files: `index.ts` (main export)
 
-**packages/testing/src:**
+**tooling/testing/src:**
 
 - Purpose: Testing utilities and mocks
 - Contains:
@@ -179,7 +183,7 @@ hex-di/
   - `index.ts` - Main export (no vitest deps)
 - Key files: `index.ts` (main), `vitest/index.ts` (vitest integration)
 
-**packages/graph-viz/src:**
+**tooling/graph-viz/src:**
 
 - Purpose: Generic React graph visualization component
 - Contains:
@@ -192,7 +196,7 @@ hex-di/
   - `types.ts` - Component types
 - Key files: `index.ts` (main export)
 
-**packages/visualization/src:**
+**tooling/visualization/src:**
 
 - Purpose: Graph visualization (Mermaid/Dot output)
 - Contains:
