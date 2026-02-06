@@ -11,7 +11,7 @@ HexDI is a modern dependency injection framework designed for TypeScript applica
 - **Three Lifetime Scopes** - Singleton, scoped, and transient lifetimes with proper isolation
 - **Immutable Builder Pattern** - Effect-TS inspired composition that enables graph branching
 - **React Integration** - Typed hooks and providers with automatic scope lifecycle
-- **Built-in Tracing & Inspection** - Access via container.tracer and container.inspector
+- **Distributed Tracing** - Opt-in via `@hex-di/tracing` with OpenTelemetry export support
 - **Zero Runtime Overhead** - Phantom types and optional features add no cost when unused
 
 ## Quick Start
@@ -72,6 +72,9 @@ pnpm add @hex-di/react
 # Hono integration
 pnpm add @hex-di/hono
 
+# Distributed tracing
+pnpm add @hex-di/tracing
+
 # Testing utilities
 pnpm add -D @hex-di/testing
 ```
@@ -85,18 +88,19 @@ pnpm add -D @hex-di/testing
 
 ## Packages Overview
 
-| Package                                              | Description                                          | Required |
-| ---------------------------------------------------- | ---------------------------------------------------- | -------- |
-| [`@hex-di/ports`](./packages/ports)                  | Port token system - define service contracts         | Yes      |
-| [`@hex-di/graph`](./packages/graph)                  | GraphBuilder with compile-time dependency validation | Yes      |
-| [`@hex-di/runtime`](./packages/runtime)              | Container creation and service resolution            | Yes      |
-| [`@hex-di/react`](./integrations/react)              | React hooks and providers                            | No       |
-| [`@hex-di/hono`](./integrations/hono)                | Hono middleware, helpers, and Env utilities           | No       |
-| [`@hex-di/testing`](./tooling/testing)               | Mocking, overrides, and test utilities               | No       |
-| [`@hex-di/visualization`](./tooling/visualization)   | Graph visualization - DOT and Mermaid export         | No       |
-| [`@hex-di/graph-viz`](./tooling/graph-viz)           | Graph visualization components with zoom/pan         | No       |
-| [`@hex-di/flow`](./libs/flow/core)                   | Typed state machine runtime with effects-as-data     | No       |
-| [`@hex-di/flow-react`](./libs/flow/react)            | React hooks for flow state machines                  | No       |
+| Package                                            | Description                                          | Required |
+| -------------------------------------------------- | ---------------------------------------------------- | -------- |
+| [`@hex-di/ports`](./packages/ports)                | Port token system - define service contracts         | Yes      |
+| [`@hex-di/graph`](./packages/graph)                | GraphBuilder with compile-time dependency validation | Yes      |
+| [`@hex-di/runtime`](./packages/runtime)            | Container creation and service resolution            | Yes      |
+| [`@hex-di/react`](./integrations/react)            | React hooks and providers                            | No       |
+| [`@hex-di/hono`](./integrations/hono)              | Hono middleware, helpers, and Env utilities          | No       |
+| [`@hex-di/tracing`](./packages/tracing)            | Distributed tracing with OpenTelemetry support       | No       |
+| [`@hex-di/testing`](./tooling/testing)             | Mocking, overrides, and test utilities               | No       |
+| [`@hex-di/visualization`](./tooling/visualization) | Graph visualization - DOT and Mermaid export         | No       |
+| [`@hex-di/graph-viz`](./tooling/graph-viz)         | Graph visualization components with zoom/pan         | No       |
+| [`@hex-di/flow`](./libs/flow/core)                 | Typed state machine runtime with effects-as-data     | No       |
+| [`@hex-di/flow-react`](./libs/flow/react)          | React hooks for flow state machines                  | No       |
 
 ## Core Concepts
 
@@ -276,24 +280,23 @@ container.resolve(UnknownPort);
 // Error: Argument of type 'typeof UnknownPort' is not assignable...
 ```
 
-## Tracing & Inspection
+## Distributed Tracing
 
-Access built-in tracing and inspection via container properties:
+Add resolution tracing via the `@hex-di/tracing` package:
 
 ```typescript
 import { createContainer } from "@hex-di/runtime";
+import { instrumentContainer, createConsoleTracer } from "@hex-di/tracing";
 
 const container = createContainer(graph);
 
-// Access tracer for resolution traces
-const tracer = container.tracer;
-const stats = tracer.getStats();
-console.log(`Total resolutions: ${stats.totalResolutions}`);
+// Instrument the container with a tracer
+const tracer = createConsoleTracer();
+instrumentContainer(container, tracer);
 
-// Access inspector for container metadata
-const inspector = container.inspector;
-const graphData = inspector.getGraphData();
-console.log(`Services: ${graphData.nodes.length}`);
+// All resolutions are now traced automatically
+const logger = container.resolve(LoggerPort);
+// Console output: [HexDI] resolve Logger (singleton) 1.2ms
 ```
 
 ## Testing

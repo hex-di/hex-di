@@ -167,7 +167,7 @@ const withOrders = base.provide(OrderServiceAdapter);
 Phantom types and optional features add no cost when unused:
 
 - Port types carry service information at compile-time only
-- Tracing is opt-in via container.tracer
+- Tracing is opt-in via `@hex-di/tracing` instrumentContainer()
 - React hooks only exist if you import them
 
 ## Getting Help
