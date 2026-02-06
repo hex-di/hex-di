@@ -74,6 +74,18 @@ See: `.planning/milestones/v7.0-ROADMAP.md` for full details.
 
 **Goal:** Developers can import @hex-di/tracing and use a complete tracing API with ports, built-in adapters, W3C Trace Context, and ID generation -- zero external dependencies
 **Requirements:** CORE-01..10, ADPT-01..04, CTX-01..07, PERF-03, PERF-04 (23 requirements)
+**Plans:** 8 plans
+
+Plans:
+
+- [ ] 23-01-PLAN.md — Package setup and port definitions
+- [ ] 23-02-PLAN.md — Core types and interfaces
+- [ ] 23-03-PLAN.md — NoOp adapter implementation
+- [ ] 23-04-PLAN.md — Memory adapter implementation
+- [ ] 23-05-PLAN.md — Console adapter implementation
+- [ ] 23-06-PLAN.md — W3C Trace Context propagation
+- [ ] 23-07-PLAN.md — ID generation and utilities
+- [ ] 23-08-PLAN.md — Integration tests and documentation
 
 #### Phase 24: Container Instrumentation and Context Propagation
 
@@ -121,7 +133,7 @@ See: `.planning/milestones/v7.0-ROADMAP.md` for full details.
 | 20. Integration Migration       | v6.0      | 2/2            | Complete    | 2026-02-06 |
 | 21. Tooling & Library Migration | v6.0      | 2/2            | Complete    | 2026-02-06 |
 | 22. Verification & References   | v6.0      | 2/2            | Complete    | 2026-02-06 |
-| 23. Core Tracing Foundation     | v7.0      | 0/TBD          | Not started | -          |
+| 23. Core Tracing Foundation     | v7.0      | 0/8            | Planned     | -          |
 | 24. Container Instrumentation   | v7.0      | 0/TBD          | Not started | -          |
 | 25. OTel Backend & Export       | v7.0      | 0/TBD          | Not started | -          |
 | 26. Breaking Change Migration   | v7.0      | 0/TBD          | Not started | -          |
