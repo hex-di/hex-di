@@ -4,6 +4,50 @@ import type { Context } from "hono";
 import { extractTraceContext, injectTraceContext } from "@hex-di/tracing";
 
 /**
+ * Subset of the Headers API used for iterating over request headers.
+ * Used for type-safe access to context.req.raw.headers without relying
+ * on the `any` generic parameter from Hono's Context type.
+ */
+interface HeadersLike {
+  forEach(callback: (value: string, key: string) => void): void;
+}
+
+/**
+ * Type guard that narrows an unknown value to HeadersLike.
+ *
+ * Checks for object shape with a forEach method, which is the
+ * subset of the Headers API we need for extracting trace context.
+ */
+function isHeadersLike(value: unknown): value is HeadersLike {
+  return (
+    value !== null &&
+    value !== undefined &&
+    typeof value === "object" &&
+    "forEach" in value &&
+    typeof value.forEach === "function"
+  );
+}
+
+/**
+ * Safely extract response status from a value that may be a Response.
+ *
+ * Hono's Context.res is typed as Response, but the `any` env parameter
+ * causes ESLint to flag member access as unsafe. This guard narrows safely.
+ */
+function getResponseStatus(res: unknown): number | undefined {
+  if (
+    res !== null &&
+    res !== undefined &&
+    typeof res === "object" &&
+    "status" in res &&
+    typeof res.status === "number"
+  ) {
+    return res.status;
+  }
+  return undefined;
+}
+
+/**
  * Options for customizing tracing middleware behavior.
  */
 export interface TracingMiddlewareOptions {
@@ -102,8 +146,15 @@ export function tracingMiddleware(options: TracingMiddlewareOptions): Middleware
     const extractedContext = extractContext
       ? (() => {
           const headers: Record<string, string | undefined> = {};
-          const rawHeaders = context.req.raw.headers;
-          if (rawHeaders && typeof rawHeaders.forEach === "function") {
+          const rawRequest: unknown = context.req.raw;
+          const rawHeaders: unknown =
+            rawRequest !== null &&
+            rawRequest !== undefined &&
+            typeof rawRequest === "object" &&
+            "headers" in rawRequest
+              ? rawRequest.headers
+              : undefined;
+          if (isHeadersLike(rawHeaders)) {
             rawHeaders.forEach((value: string, key: string) => {
               headers[key] = value;
             });
@@ -150,7 +201,7 @@ export function tracingMiddleware(options: TracingMiddlewareOptions): Middleware
       await next();
 
       // Record response status code
-      const responseStatus = context.res?.status ?? 200;
+      const responseStatus = getResponseStatus(context.res) ?? 200;
       span.setAttribute("http.status_code", responseStatus);
 
       // Set error status for 5xx responses
