@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 
 ## Current Position
 
-Phase: 27 of 27 (Framework Integrations and Testing Utilities)
-Plan: 5 of 5
-Status: Phase complete
-Last activity: 2026-02-06 -- Completed 27-05-PLAN.md (Documentation and Final Integration)
+Phase: 28 of 28 (Tracing Test Coverage)
+Plan: 3 of 5
+Status: In progress
+Last activity: 2026-02-06 -- Completed 28-03-PLAN.md (OTel Span Adapter and Processor Tests)
 
-Progress: [██████████] 100% - v7.0 COMPLETE
+Progress: [██████████░] 103/105 plans (98%)
 
 ## Milestone History
 
@@ -33,9 +33,9 @@ Progress: [██████████] 100% - v7.0 COMPLETE
 
 **Velocity (all milestones):**
 
-- Total plans completed: 83
-- Total phases: 27 complete
-- Total milestones: 7 (v7.0 complete, ready to ship)
+- Total plans completed: 86
+- Total phases: 27 complete, 1 in progress (Phase 28)
+- Total milestones: 7 (v7.0 complete, Phase 28 test coverage in progress)
 
 ## Accumulated Context
 
@@ -120,6 +120,9 @@ Key decisions captured in PROJECT.md (23 decisions across 7 milestones).
 - Performance overhead acceptable for tracing; recommend sampling and port filters for production (27-04)
 - Comprehensive README structure for all integration packages (27-05)
 - Examples demonstrate real-world integration patterns (DI + middleware + tracing) (27-05)
+- Mock exporter pattern for processor tests (captures exported batches) (28-03)
+- Fake timers (vi.useFakeTimers) for testing scheduled flush behavior (28-03)
+- Test factory functions (createTestSpan) for consistent test data (28-03)
 
 ### Pending Todos
 
@@ -132,19 +135,20 @@ None.
 - Pre-existing test failures in examples/react-showcase (12 tests) -- should be addressed separately
 - Phase 24 completed with known gap: dynamic child container auto-instrumentation requires runtime to emit child-created events (deferred to v8.0 ENH-05)
 - Phase 25 completed: all 15 must-haves verified, 4 new packages (tracing-otel, tracing-jaeger, tracing-zipkin, tracing-datadog)
-- Phase 25 note: no behavioral tests for backend packages (structural verification only)
+- Phase 25 note: no behavioral tests for backend packages (structural verification only) -- RESOLVED in Phase 28
 - Phase 26 complete: all breaking changes successfully migrated across 5 plans
 - Phase 27 complete: all 12 requirements verified (FRMW-01..06, TEST-01..04, PERF-01..02, PERF-05)
-- v7.0 Distributed Tracing milestone COMPLETE - ready to ship
+- Phase 28 in progress: adding comprehensive test coverage for tracing packages (28-03 complete: OTel backend tests)
+- v7.0 Distributed Tracing milestone COMPLETE - Phase 28 adding test coverage
 
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Completed 27-05-PLAN.md (Documentation and Final Integration)
+Stopped at: Completed 28-03-PLAN.md (OTel Span Adapter and Processor Tests)
 Resume file: None
-Next: v7.0 COMPLETE - Ready to ship
+Next: Continue Phase 28 with remaining test coverage plans (28-04, 28-05)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-06 (Phase 27 Plan 05 complete - v7.0 SHIPPED)_
+_Last updated: 2026-02-06 (Phase 28 Plan 03 complete - OTel backend tests added)_
