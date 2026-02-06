@@ -206,10 +206,10 @@ export interface ResolutionResultContext extends ResolutionHookContext {
  * - Hooks should not throw errors; doing so will interrupt resolution and propagate to caller
  * - Hooks should be fast to avoid impacting resolution performance (aim for <1ms)
  * - Hooks are called for ALL resolutions, including nested dependencies (high frequency)
- * - Use `container.tracer` API instead of hooks for observability (optimized, built-in)
+ * - Use `@hex-di/tracing` instrumentContainer() for observability (optimized, dedicated)
  *
  * **Use Cases:**
- * - Custom tracing/logging systems that don't use the built-in tracer
+ * - Custom tracing/logging systems beyond @hex-di/tracing
  * - Integration with external APM tools (DataDog, New Relic, etc.)
  * - Dependency injection validation or policy enforcement
  * - Testing: Capture resolution events for assertions

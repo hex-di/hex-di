@@ -106,15 +106,15 @@ describe("@hex-di/runtime exports", () => {
   });
 
   describe("Should NOT re-export from other packages", () => {
-    it("should NOT re-export MemoryCollector (use @hex-di/core)", () => {
+    it("should NOT export removed MemoryCollector", () => {
       expect(runtimeExports["MemoryCollector"]).toBeUndefined();
     });
 
-    it("should NOT re-export NoOpCollector (use @hex-di/core)", () => {
+    it("should NOT export removed NoOpCollector", () => {
       expect(runtimeExports["NoOpCollector"]).toBeUndefined();
     });
 
-    it("should NOT re-export CompositeCollector (use @hex-di/core)", () => {
+    it("should NOT export removed CompositeCollector", () => {
       expect(runtimeExports["CompositeCollector"]).toBeUndefined();
     });
 

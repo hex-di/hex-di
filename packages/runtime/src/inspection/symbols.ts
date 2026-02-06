@@ -83,10 +83,8 @@ export const INTERNAL_ACCESS = Symbol.for("hex-di/internal-access");
  * import { createContainer, TRACING_ACCESS } from '@hex-di/runtime';
  *
  * const container = createContainer(graph);
- * const tracingAPI = container.tracer;
- *
- * const traces = tracingAPI.getTraces();
- * const stats = tracingAPI.getStats();
+ * // Used internally by @hex-di/tracing to access the tracing subsystem
+ * const tracingAccess = container[TRACING_ACCESS];
  * ```
  */
 export const TRACING_ACCESS = Symbol.for("hex-di/tracing-access");

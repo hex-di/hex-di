@@ -557,7 +557,7 @@ export interface CreateContainerConfig<
    * @default undefined (no hooks)
    *
    * @remarks
-   * Use the built-in `container.tracer` API for most observability needs.
+   * Use `@hex-di/tracing` instrumentContainer() for most observability needs.
    * Hooks are for custom integrations (APM tools, policy enforcement, etc.).
    *
    * @example
