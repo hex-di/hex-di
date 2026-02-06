@@ -78,11 +78,11 @@ See: `.planning/milestones/v7.0-ROADMAP.md` for full details.
 
 Plans:
 
-- [ ] 23-01-PLAN.md — Package setup and port definitions
-- [ ] 23-02-PLAN.md — Core types and interfaces
-- [ ] 23-03-PLAN.md — NoOp adapter implementation
-- [ ] 23-04-PLAN.md — Memory adapter implementation
-- [ ] 23-05-PLAN.md — Console adapter implementation
+- [x] 23-01-PLAN.md — Package setup and port definitions
+- [x] 23-02-PLAN.md — Core types and interfaces
+- [x] 23-03-PLAN.md — NoOp adapter implementation
+- [x] 23-04-PLAN.md — Memory adapter implementation
+- [x] 23-05-PLAN.md — Console adapter implementation
 - [ ] 23-06-PLAN.md — W3C Trace Context propagation
 - [ ] 23-07-PLAN.md — ID generation and utilities
 - [ ] 23-08-PLAN.md — Integration tests and documentation
@@ -133,7 +133,7 @@ Plans:
 | 20. Integration Migration       | v6.0      | 2/2            | Complete    | 2026-02-06 |
 | 21. Tooling & Library Migration | v6.0      | 2/2            | Complete    | 2026-02-06 |
 | 22. Verification & References   | v6.0      | 2/2            | Complete    | 2026-02-06 |
-| 23. Core Tracing Foundation     | v7.0      | 0/8            | Planned     | -          |
+| 23. Core Tracing Foundation     | v7.0      | 5/8            | In progress | -          |
 | 24. Container Instrumentation   | v7.0      | 0/TBD          | Not started | -          |
 | 25. OTel Backend & Export       | v7.0      | 0/TBD          | Not started | -          |
 | 26. Breaking Change Migration   | v7.0      | 0/TBD          | Not started | -          |
