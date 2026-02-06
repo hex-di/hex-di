@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 
 ## Current Position
 
-Phase: Not started (researching)
-Plan: —
-Status: Researching domain ecosystem
-Last activity: 2026-02-06 — Milestone v7.0 started
+Phase: 23 (Core Tracing Package Foundation)
+Plan: Not started
+Status: Roadmap created, ready for phase planning
+Last activity: 2026-02-06 -- v7.0 roadmap created (5 phases, 66 requirements)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -27,7 +27,7 @@ Progress: [░░░░░░░░░░] 0%
 | v4.0      | 12-14  | Shipped | 2026-02-03 |
 | v5.0      | 15-19  | Shipped | 2026-02-05 |
 | v6.0      | 20-22  | Shipped | 2026-02-06 |
-| v7.0      | 23+    | Active  | —          |
+| v7.0      | 23-27  | Active  | --         |
 
 ## Performance Metrics
 
@@ -43,6 +43,17 @@ Progress: [░░░░░░░░░░] 0%
 
 Key decisions captured in PROJECT.md (23 decisions across 7 milestones).
 
+**v7.0 key decisions:**
+
+- Centralized Tree-Walking Subscription (NOT tracer propagation)
+- No changes to @hex-di/runtime hook inheritance
+- No runtime package changes for MVP
+- @hex-di/tracing in packages/ (runtime library, not tooling)
+- Module-level span stack for context propagation
+- WeakMap<InspectorAPI, Container> for MVP reverse lookup
+- W3C Trace Context manual implementation (no dependency)
+- OTel is universal standard; Jaeger/Zipkin via OTel exporters; DataDog via dd-trace
+
 ### Pending Todos
 
 None.
@@ -52,15 +63,18 @@ None.
 - Pre-existing lint errors in packages/graph (11 errors, 12 warnings) -- should be addressed separately
 - Pre-existing lint warnings in libs/flow/core (31 warnings) -- should be addressed separately
 - Pre-existing test failures in examples/react-showcase (12 tests) -- should be addressed separately
+- Phase 24 MEDIUM risk: span stack for cross-container context has no JS DI prior art
+- Phase 25 MEDIUM risk: OTel version pinning, type bridging without casts
+- Phase 26 HIGH risk: breaking changes across multiple packages
 
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: v7.0 milestone research phase
-Resume file: None
-Next: Complete research → define requirements → create roadmap
+Stopped at: v7.0 roadmap created
+Resume file: .planning/milestones/v7.0-ROADMAP.md
+Next: Plan Phase 23
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-06 (v7.0 milestone started)_
+_Last updated: 2026-02-06 (v7.0 roadmap created)_
