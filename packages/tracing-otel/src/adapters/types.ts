@@ -7,12 +7,8 @@
  * @packageDocumentation
  */
 
-import {
-  SpanKind as OtelSpanKind,
-  SpanStatusCode,
-  type HrTime,
-  type Link,
-} from "@opentelemetry/api";
+import { SpanKind as OtelSpanKind, SpanStatusCode } from "@opentelemetry/api";
+import type { HrTime, Link } from "@opentelemetry/api";
 import type { SpanKind as HexSpanKind, SpanStatus, SpanEvent } from "@hex-di/tracing";
 import type { TimedEvent } from "@opentelemetry/sdk-trace-base";
 

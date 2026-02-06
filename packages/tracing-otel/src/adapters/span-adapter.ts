@@ -11,7 +11,6 @@ import type { SpanData } from "@hex-di/tracing";
 import type { ReadableSpan } from "@opentelemetry/sdk-trace-base";
 import type { SpanContext } from "@opentelemetry/api";
 import { resourceFromAttributes } from "@opentelemetry/resources";
-import type { Resource } from "@opentelemetry/resources";
 import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
 import {
   convertSpanKind,
@@ -30,7 +29,7 @@ import {
  *
  * @returns Default OTel Resource
  */
-function createDefaultResource(): Resource {
+function createDefaultResource() {
   return resourceFromAttributes({
     [ATTR_SERVICE_NAME]: "hex-di-app",
   });
