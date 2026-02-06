@@ -12,11 +12,11 @@ Requirements for monorepo restructuring. Each maps to roadmap phases.
 - [x] **MIG-01**: Core packages (core, graph, runtime) remain at `packages/{core,graph,runtime}`
 - [x] **MIG-02**: React integration moved to `integrations/react`
 - [x] **MIG-03**: Hono integration moved to `integrations/hono`
-- [ ] **MIG-04**: Testing utilities moved to `tooling/testing`
-- [ ] **MIG-05**: Visualization package moved to `tooling/visualization`
-- [ ] **MIG-06**: Graph-viz package moved to `tooling/graph-viz`
-- [ ] **MIG-07**: Flow package moved to `libs/flow/core`
-- [ ] **MIG-08**: Flow-react package moved to `libs/flow/react`
+- [x] **MIG-04**: Testing utilities moved to `tooling/testing`
+- [x] **MIG-05**: Visualization package moved to `tooling/visualization`
+- [x] **MIG-06**: Graph-viz package moved to `tooling/graph-viz`
+- [x] **MIG-07**: Flow package moved to `libs/flow/core`
+- [x] **MIG-08**: Flow-react package moved to `libs/flow/react`
 
 ### Workspace Configuration
 
@@ -66,29 +66,29 @@ Deferred to later milestones. Tracked but not in current roadmap.
 
 Which phases cover which requirements. Updated during roadmap creation.
 
-| Requirement | Phase | Status  |
-| ----------- | ----- | ------- |
+| Requirement | Phase | Status   |
+| ----------- | ----- | -------- |
 | MIG-01      | 20    | Complete |
 | MIG-02      | 20    | Complete |
 | MIG-03      | 20    | Complete |
-| MIG-04      | 21    | Pending |
-| MIG-05      | 21    | Pending |
-| MIG-06      | 21    | Pending |
-| MIG-07      | 21    | Pending |
-| MIG-08      | 21    | Pending |
+| MIG-04      | 21    | Complete |
+| MIG-05      | 21    | Complete |
+| MIG-06      | 21    | Complete |
+| MIG-07      | 21    | Complete |
+| MIG-08      | 21    | Complete |
 | CFG-01      | 20    | Complete |
 | CFG-02      | 20    | Complete |
 | CFG-03      | 20    | Complete |
 | CFG-04      | 20    | Complete |
 | CFG-05      | 20    | Complete |
-| VER-01      | 22    | Pending |
-| VER-02      | 22    | Pending |
-| VER-03      | 22    | Pending |
-| VER-04      | 22    | Pending |
-| VER-05      | 22    | Pending |
-| REF-01      | 22    | Pending |
-| REF-02      | 22    | Pending |
-| REF-03      | 22    | Pending |
+| VER-01      | 22    | Pending  |
+| VER-02      | 22    | Pending  |
+| VER-03      | 22    | Pending  |
+| VER-04      | 22    | Pending  |
+| VER-05      | 22    | Pending  |
+| REF-01      | 22    | Pending  |
+| REF-02      | 22    | Pending  |
+| REF-03      | 22    | Pending  |
 
 **Coverage:**
 
@@ -99,4 +99,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 ---
 
 _Requirements defined: 2026-02-05_
-_Last updated: 2026-02-06 after phase 20 completion_
+_Last updated: 2026-02-06 after phase 21 completion_

@@ -64,7 +64,7 @@ Phases 15-19: Type file split, tracing/inspection consolidation, override builde
 - Decimal phases (20.1, 20.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 20: Integration Migration** - Create new directory structure, move react and hono integrations, update workspace and build configs
-- [ ] **Phase 21: Tooling & Library Migration** - Move testing, visualization, and graph-viz to tooling; move flow packages to libs
+- [x] **Phase 21: Tooling & Library Migration** - Move testing, visualization, and graph-viz to tooling; move flow packages to libs
 - [ ] **Phase 22: Verification & References** - Full build verification, example and website reference updates
 
 ## Phase Details
@@ -97,8 +97,8 @@ Plans:
 
 Plans:
 
-- [ ] 21-01-PLAN.md — Move all packages to new locations with git mv, verify workspace recognition
-- [ ] 21-02-PLAN.md — Update root configs and package metadata, full pipeline verification
+- [x] 21-01-PLAN.md — Move all packages to new locations with git mv, verify workspace recognition
+- [x] 21-02-PLAN.md — Update root configs and package metadata, full pipeline verification
 
 ### Phase 22: Verification & References
 
@@ -127,5 +127,5 @@ Phases execute in numeric order: 20 -> 21 -> 22
 | Phase                           | Plans Complete | Status      | Completed  |
 | ------------------------------- | -------------- | ----------- | ---------- |
 | 20. Integration Migration       | 2/2            | Complete    | 2026-02-06 |
-| 21. Tooling & Library Migration | 0/2            | Not started | -          |
+| 21. Tooling & Library Migration | 2/2            | Complete    | 2026-02-06 |
 | 22. Verification & References   | 0/2            | Not started | -          |

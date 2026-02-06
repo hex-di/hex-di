@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Catch dependency graph errors at compile time, not runtime
-**Current focus:** v6.0 Monorepo Reorganization - Phase 22 (Documentation)
+**Current focus:** v6.0 Monorepo Reorganization - Phase 22 (Verification & References)
 
 ## Current Position
 
-Phase: 21 of 22 (Tooling & Library Migration) -- COMPLETE
+Phase: 21 of 22 (Tooling & Library Migration) -- COMPLETE, VERIFIED
 Plan: 2 of 2 complete
-Status: Phase complete
-Last activity: 2026-02-06 -- Completed 21-02-PLAN.md (configuration updates and pipeline verification)
+Status: Phase complete, verified (4/4 must-haves passed)
+Last activity: 2026-02-06 -- Phase 21 verified and complete
 
-Progress: [████████░░] 38%
+Progress: [██████░░░░] 67%
 
 ## Milestone History
 
@@ -43,12 +43,14 @@ Progress: [████████░░] 38%
 Key decisions captured in PROJECT.md (19 decisions across 6 milestones).
 
 **v6.0 decisions (phase 20):**
-- Pre-added tooling/* and libs/*/* globs to pnpm-workspace.yaml for phase 21
+
+- Pre-added tooling/_ and libs/_/\* globs to pnpm-workspace.yaml for phase 21
 - Framework integrations live in integrations/ not packages/
 - Root eslint config needs parserOptions for type-aware linting of root files
 - Root vitest config only includes .test.ts (not .tsx); .tsx tests run in package context with jsdom
 
 **v6.0 decisions (phase 21):**
+
 - Used --no-verify for structural move commits (lint-staged catches pre-existing warnings on renamed files)
 - libs/ uses nested domain structure: libs/<domain>/<package>
 - Root vitest.config.ts updated to include tooling/** and libs/** globs
@@ -56,6 +58,7 @@ Key decisions captured in PROJECT.md (19 decisions across 6 milestones).
 - Pre-existing lint errors in packages/graph left as-is (not migration-related)
 
 **v6.0 pending decisions:**
+
 - Keep core/graph/runtime separate vs consolidate into single package
 
 ### Pending Todos
@@ -70,11 +73,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Completed 21-02-PLAN.md (configuration updates and pipeline verification)
+Stopped at: Phase 21 complete and verified
 Resume file: None
-Next: Phase 22 (Documentation) or v6.0 completion
+Next: Plan phase 22 (Verification & References)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-06 (phase 21 complete)_
+_Last updated: 2026-02-06 (phase 21 complete, verified)_
