@@ -112,12 +112,13 @@ Plans:
 3. Website workspace configuration resolves correctly
 4. `pnpm test` passes with 1,816+ tests across all packages
 5. `pnpm build && pnpm typecheck && pnpm lint` all pass cleanly (no warnings, no errors)
-   **Plans**: TBD
+
+**Plans:** 2 plans
 
 Plans:
 
-- [ ] 22-01: Update example and website workspace references
-- [ ] 22-02: Full verification sweep and fix any remaining issues
+- [ ] 22-01-PLAN.md — Verify examples and website work with reorganized structure
+- [ ] 22-02-PLAN.md — Run full pipeline verification and fix any remaining issues
 
 ## Progress
 
