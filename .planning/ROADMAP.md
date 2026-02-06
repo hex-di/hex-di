@@ -3,8 +3,8 @@
 ## Tracking
 
 - **Started:** 2026-02-01
-- **Current Phase:** 28 of 28 (Tracing Test Coverage) — COMPLETE
-- **Completion:** 100% (28/28 phases complete)
+- **Current Phase:** 29 of 31 (Lint Cleanup)
+- **Completion:** 90% (28/31 phases complete)
 
 ## Shipped Milestones
 
@@ -110,38 +110,73 @@ Plans:
 - [x] 28-03-PLAN.md — OTel span adapter and processor tests (convertToReadableSpan, batch/simple processors)
 - [x] 28-04-PLAN.md — Backend adapter tests (Jaeger, Zipkin, DataDog exporter wiring)
 
+#### Phase 29: Lint Cleanup
+
+**Goal:** Zero lint warnings across all tracing and integration packages
+**Gap Closure:** Closes Hono middleware warnings (7), tracing type-guards warnings (2), cross-container test warnings (5) from v7.0-MILESTONE-AUDIT.md
+**Plans:** 1 plan
+
+Plans:
+
+- [ ] 29-01-PLAN.md — Fix all lint warnings in tracing and Hono packages
+
+#### Phase 30: Dynamic Child Container Auto-Instrumentation
+
+**Goal:** instrumentContainerTree automatically instruments dynamically created child containers via child-created events
+**Gap Closure:** Closes Phase 24 gap "dynamic child auto-instrumentation non-functional" from v7.0-MILESTONE-AUDIT.md
+**Plans:** 2 plans
+
+Plans:
+
+- [ ] 30-01-PLAN.md — Emit child-created events from runtime LifecycleManager
+- [ ] 30-02-PLAN.md — Wire tree.ts listener to new events and fix reverse lookup
+
+#### Phase 31: Tracing Performance Optimization
+
+**Goal:** Reduce NoOp tracer overhead to <10% and Memory tracer overhead to <100% via hot path optimization
+**Gap Closure:** Closes performance overhead gaps from v7.0-MILESTONE-AUDIT.md
+**Plans:** 2 plans
+
+Plans:
+
+- [ ] 31-01-PLAN.md — Optimize instrumentation hook hot path (NoOp target: <10%)
+- [ ] 31-02-PLAN.md — Optimize Memory tracer span creation and storage (target: <100%)
+
 ## Progress
 
-| Phase                           | Milestone | Plans Complete | Status   | Completed  |
-| ------------------------------- | --------- | -------------- | -------- | ---------- |
-| 1. Bug Verification             | v1.1      | 1/1            | Complete | 2026-02-01 |
-| 2. Fix Verification             | v1.1      | 1/1            | Complete | 2026-02-01 |
-| 3. Scoped Overrides             | v1.2      | 3/3            | Complete | 2026-02-01 |
-| 4. Enhanced defineService       | v1.2      | 3/3            | Complete | 2026-02-01 |
-| 5. Port Directions              | v1.2      | 3/3            | Complete | 2026-02-01 |
-| 6. Unified createPort           | v2.0      | 1/1            | Complete | 2026-02-02 |
-| 7. Port Utilities               | v2.0      | 1/1            | Complete | 2026-02-02 |
-| 8. Graph Inspection             | v2.0      | 1/1            | Complete | 2026-02-02 |
-| 9. Unified createAdapter        | v3.0      | 3/3            | Complete | 2026-02-02 |
-| 10. Auto-detect Async           | v3.0      | 3/3            | Complete | 2026-02-02 |
-| 11. Async Lifetime Enforcement  | v3.0      | 3/3            | Complete | 2026-02-02 |
-| 12. Unified provide             | v4.0      | 2/2            | Complete | 2026-02-03 |
-| 13. Merge Safety                | v4.0      | 2/2            | Complete | 2026-02-03 |
-| 14. Disposal & Inspection       | v4.0      | 2/2            | Complete | 2026-02-03 |
-| 15. Type File Split             | v5.0      | 2/2            | Complete | 2026-02-03 |
-| 16. Tracing Consolidation       | v5.0      | 6/6            | Complete | 2026-02-04 |
-| 17. Override Builder            | v5.0      | 5/5            | Complete | 2026-02-04 |
-| 18. Performance & Testing       | v5.0      | 5/5            | Complete | 2026-02-05 |
-| 19. Documentation & Polish      | v5.0      | 4/4            | Complete | 2026-02-05 |
-| 20. Integration Migration       | v6.0      | 2/2            | Complete | 2026-02-06 |
-| 21. Tooling & Library Migration | v6.0      | 2/2            | Complete | 2026-02-06 |
-| 22. Verification & References   | v6.0      | 2/2            | Complete | 2026-02-06 |
-| 23. Core Tracing Foundation     | v7.0      | 8/8            | Complete | 2026-02-06 |
-| 24. Container Instrumentation   | v7.0      | 3/3            | Complete | 2026-02-06 |
-| 25. OTel Backend & Export       | v7.0      | 5/5            | Complete | 2026-02-06 |
-| 26. Breaking Change Migration   | v7.0      | 5/5            | Complete | 2026-02-06 |
-| 27. Framework & Testing         | v7.0      | 5/5            | Complete | 2026-02-06 |
-| 28. Tracing Test Coverage       | v7.0      | 4/4            | Complete | 2026-02-06 |
+| Phase                             | Milestone | Plans Complete | Status   | Completed  |
+| --------------------------------- | --------- | -------------- | -------- | ---------- |
+| 1. Bug Verification               | v1.1      | 1/1            | Complete | 2026-02-01 |
+| 2. Fix Verification               | v1.1      | 1/1            | Complete | 2026-02-01 |
+| 3. Scoped Overrides               | v1.2      | 3/3            | Complete | 2026-02-01 |
+| 4. Enhanced defineService         | v1.2      | 3/3            | Complete | 2026-02-01 |
+| 5. Port Directions                | v1.2      | 3/3            | Complete | 2026-02-01 |
+| 6. Unified createPort             | v2.0      | 1/1            | Complete | 2026-02-02 |
+| 7. Port Utilities                 | v2.0      | 1/1            | Complete | 2026-02-02 |
+| 8. Graph Inspection               | v2.0      | 1/1            | Complete | 2026-02-02 |
+| 9. Unified createAdapter          | v3.0      | 3/3            | Complete | 2026-02-02 |
+| 10. Auto-detect Async             | v3.0      | 3/3            | Complete | 2026-02-02 |
+| 11. Async Lifetime Enforcement    | v3.0      | 3/3            | Complete | 2026-02-02 |
+| 12. Unified provide               | v4.0      | 2/2            | Complete | 2026-02-03 |
+| 13. Merge Safety                  | v4.0      | 2/2            | Complete | 2026-02-03 |
+| 14. Disposal & Inspection         | v4.0      | 2/2            | Complete | 2026-02-03 |
+| 15. Type File Split               | v5.0      | 2/2            | Complete | 2026-02-03 |
+| 16. Tracing Consolidation         | v5.0      | 6/6            | Complete | 2026-02-04 |
+| 17. Override Builder              | v5.0      | 5/5            | Complete | 2026-02-04 |
+| 18. Performance & Testing         | v5.0      | 5/5            | Complete | 2026-02-05 |
+| 19. Documentation & Polish        | v5.0      | 4/4            | Complete | 2026-02-05 |
+| 20. Integration Migration         | v6.0      | 2/2            | Complete | 2026-02-06 |
+| 21. Tooling & Library Migration   | v6.0      | 2/2            | Complete | 2026-02-06 |
+| 22. Verification & References     | v6.0      | 2/2            | Complete | 2026-02-06 |
+| 23. Core Tracing Foundation       | v7.0      | 8/8            | Complete | 2026-02-06 |
+| 24. Container Instrumentation     | v7.0      | 3/3            | Complete | 2026-02-06 |
+| 25. OTel Backend & Export         | v7.0      | 5/5            | Complete | 2026-02-06 |
+| 26. Breaking Change Migration     | v7.0      | 5/5            | Complete | 2026-02-06 |
+| 27. Framework & Testing           | v7.0      | 5/5            | Complete | 2026-02-06 |
+| 28. Tracing Test Coverage         | v7.0      | 4/4            | Complete | 2026-02-06 |
+| 29. Lint Cleanup                  | v7.0      | 0/1            | Pending  | —          |
+| 30. Dynamic Child Instrumentation | v7.0      | 0/2            | Pending  | —          |
+| 31. Tracing Performance           | v7.0      | 0/2            | Pending  | —          |
 
 ## Tracking
 
