@@ -86,7 +86,21 @@ Catch dependency graph errors at compile time, not runtime — invalid graphs sh
 
 <!-- Current scope. Building toward these. -->
 
-(No active requirements — planning next milestone)
+#### Current Milestone: v7.0 Distributed Tracing
+
+**Goal:** Replace existing tracing infrastructure with a distributed tracing system supporting cross-container propagation, multiple backends, and framework integration.
+
+**Target features:**
+
+- New `@hex-di/tracing` package with Tracer, Span, SpanExporter, SpanProcessor ports
+- NoOp, Memory, Console adapters for zero-cost, testing, and development use
+- W3C Trace Context propagation and correlation ID tracking
+- Cross-container tracing (parent container traces all child container resolutions)
+- Automatic DI instrumentation (`instrumentContainer()`, `createTracingHook()`)
+- Framework integration (Hono middleware, React hooks/provider)
+- Backend packages: `@hex-di/tracing-otel`, `@hex-di/tracing-jaeger`, `@hex-di/tracing-zipkin`, `@hex-di/tracing-datadog`
+- Replace existing TraceCollector/TracingAPI/ResolutionSpan with new design (breaking change)
+- Debugging DX: resolution chain visibility, scope clarity, richer error context
 
 ### Out of Scope
 
@@ -97,6 +111,7 @@ Catch dependency graph errors at compile time, not runtime — invalid graphs sh
 - Performance optimization for type checking — Address in dedicated milestone
 - Request-scoped lifetime — Redundant with existing scoped lifetime and createScope()
 - Plugin system for tracing — Consolidated into core runtime (v5.0 decision)
+- @hex-di/logging package — Deferred to v8.0 milestone (tracing first, logging builds on it)
 
 ## Context
 
@@ -147,4 +162,4 @@ Catch dependency graph errors at compile time, not runtime — invalid graphs sh
 
 ---
 
-_Last updated: 2026-02-06 after v6.0 milestone_
+_Last updated: 2026-02-06 after v7.0 milestone started_
