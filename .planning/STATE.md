@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 ## Current Position
 
 Phase: 26 of 27 (Breaking Change Migration)
-Plan: 2 of 5
+Plan: 3 of 5
 Status: In progress
-Last activity: 2026-02-06 -- Completed 26-02-PLAN.md (Remove runtime tracing references)
+Last activity: 2026-02-06 -- Completed 26-03-PLAN.md (Update integration packages)
 
-Progress: [████████░░] 72%
+Progress: [████████░░] 74%
 
 ## Milestone History
 
@@ -33,7 +33,7 @@ Progress: [████████░░] 72%
 
 **Velocity (all milestones):**
 
-- Total plans completed: 73
+- Total plans completed: 74
 - Total phases: 25 (phase 26 in progress)
 - Total milestones: 7
 
@@ -94,6 +94,9 @@ Key decisions captured in PROJECT.md (23 decisions across 7 milestones).
 - Inspection TracingAPI preserved during core cleanup -- separate module from old collector-based tracing (26-01)
 - Container.tracer removed; tracing now exclusively via @hex-di/tracing instrumentContainer() (26-02)
 - TRACING_ACCESS symbol retained in runtime for inspection system use (26-02)
+- Hono integration already clean of old tracing -- no changes needed (26-03)
+- React test mock containers cleaned of dead TracingAPI/mockTracer code (26-03)
+- @hex-di/testing package does not exist -- MIGR-07 trivially satisfied (26-03)
 
 ### Pending Todos
 
@@ -112,11 +115,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Completed 26-02-PLAN.md (Remove runtime tracing references)
+Stopped at: Completed 26-03-PLAN.md (Update integration packages)
 Resume file: None
-Next: 26-03-PLAN.md (Update integration packages)
+Next: 26-04-PLAN.md (Update examples and downstream consumers)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-06 (Plan 26-02 complete)_
+_Last updated: 2026-02-06 (Plan 26-03 complete)_
