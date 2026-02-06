@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 
 ## Current Position
 
-Phase: 26 of 27 (Breaking Change Migration) -- not started
-Plan: 0 of TBD
-Status: Ready
-Last activity: 2026-02-06 -- Completed Phase 25 (OpenTelemetry Backend and Export Pipeline)
+Phase: 26 of 27 (Breaking Change Migration)
+Plan: 1 of 5
+Status: In progress
+Last activity: 2026-02-06 -- Completed 26-01-PLAN.md (Remove old tracing types from core)
 
-Progress: [███████░░░] 68%
+Progress: [████████░░] 70%
 
 ## Milestone History
 
@@ -33,8 +33,8 @@ Progress: [███████░░░] 68%
 
 **Velocity (all milestones):**
 
-- Total plans completed: 72
-- Total phases: 25
+- Total plans completed: 73
+- Total phases: 25 (phase 26 in progress)
 - Total milestones: 7
 
 ## Accumulated Context
@@ -91,6 +91,7 @@ Key decisions captured in PROJECT.md (23 decisions across 7 milestones).
 - dd-trace as optional peer dependency to avoid ~50MB forced installation (25-05)
 - Minimal interface wrapping (DdSpan/DdTracer) without direct dd-trace type imports (25-05)
 - Bridge accepts initialized tracer for user-controlled dd-trace configuration (25-05)
+- Inspection TracingAPI preserved during core cleanup -- separate module from old collector-based tracing (26-01)
 
 ### Pending Todos
 
@@ -109,11 +110,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Completed Phase 25 (OpenTelemetry Backend and Export Pipeline)
+Stopped at: Completed 26-01-PLAN.md (Remove old tracing types from core)
 Resume file: None
-Next: Phase 26 (Breaking Change Migration)
+Next: 26-02-PLAN.md (Remove runtime tracing references)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-06 (Phase 25 complete)_
+_Last updated: 2026-02-06 (Plan 26-01 complete)_
