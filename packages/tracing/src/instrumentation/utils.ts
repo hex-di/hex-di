@@ -8,6 +8,7 @@
  */
 
 import type { InspectorAPI } from "@hex-di/core";
+import type { HookType, HookHandler } from "@hex-di/runtime";
 
 /**
  * Minimal interface for a container that supports hook installation.
@@ -16,8 +17,8 @@ import type { InspectorAPI } from "@hex-di/core";
  * defined locally to avoid circular dependencies between modules.
  */
 interface HookableContainer {
-  addHook<T extends string>(type: T, handler: unknown): void;
-  removeHook<T extends string>(type: T, handler: unknown): void;
+  addHook<T extends HookType>(type: T, handler: HookHandler<T>): void;
+  removeHook<T extends HookType>(type: T, handler: HookHandler<T>): void;
 }
 
 /**
