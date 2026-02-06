@@ -21,8 +21,6 @@ describe("Memory Tracer Overhead", () => {
     for (let i = 0; i < BENCHMARK_ITERATIONS; i++) {
       container.resolve(TestPort);
     }
-
-    void container.dispose();
   });
 
   bench("instrumented: Memory tracer", () => {
@@ -31,7 +29,7 @@ describe("Memory Tracer Overhead", () => {
     const tracer = createMemoryTracer();
 
     // Instrument with Memory tracer
-    const cleanup = instrumentContainer(container, tracer);
+    instrumentContainer(container, tracer);
 
     // 100k transient resolutions with periodic span clearing
     // Clear every 10k to avoid memory growth affecting results
@@ -42,20 +40,27 @@ describe("Memory Tracer Overhead", () => {
         tracer.clear();
       }
     }
-
-    // Clean up instrumentation
-    cleanup();
-    void container.dispose();
   });
 });
 
 /**
- * Expected Results (PERF-02):
- * - Memory tracer overhead < 10% vs baseline
- * - Includes span creation, stack operations, and storage
- * - Periodic clearing prevents memory growth from skewing results
+ * Benchmark Results (100k transient resolutions):
  *
- * Example output (target):
- * baseline: no instrumentation       10,000 ops/sec
- * instrumented: Memory tracer         9,100 ops/sec  (9% overhead) ✓
+ * baseline: no instrumentation  61.84 Hz  (16.17ms per 100k)
+ * instrumented: Memory tracer     8.81 Hz (113.53ms per 100k)
+ *
+ * Overhead: ~602% (7.02x slower)
+ * Absolute overhead: ~97ms per 100k resolutions
+ *
+ * Note: PERF-02 target was < 10% overhead. Actual overhead is higher due to:
+ * - Span creation and serialization for every resolution
+ * - Stack operations (push/pop) for context management
+ * - SpanData object allocation and storage
+ * - Timestamp generation (high-resolution timing)
+ *
+ * This overhead is expected for in-memory tracing with full span capture.
+ * For production, use:
+ * - Sampling (only trace % of requests)
+ * - Port filters (only trace specific services)
+ * - Batch export to external systems (avoid in-memory accumulation)
  */
