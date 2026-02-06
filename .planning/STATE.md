@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Catch dependency graph errors at compile time, not runtime
-**Current focus:** v6.0 Monorepo Reorganization - Phase 21 (Tooling & Library Migration)
+**Current focus:** v6.0 Monorepo Reorganization - Phase 22 (Documentation)
 
 ## Current Position
 
-Phase: 21 of 22 (Tooling & Library Migration)
-Plan: 1 of 2 complete
-Status: In progress
-Last activity: 2026-02-06 -- Completed 21-01-PLAN.md (package physical moves)
+Phase: 21 of 22 (Tooling & Library Migration) -- COMPLETE
+Plan: 2 of 2 complete
+Status: Phase complete
+Last activity: 2026-02-06 -- Completed 21-02-PLAN.md (configuration updates and pipeline verification)
 
-Progress: [████░░░░░░] 37%
+Progress: [████████░░] 38%
 
 ## Milestone History
 
@@ -32,9 +32,9 @@ Progress: [████░░░░░░] 37%
 
 **Velocity (all milestones):**
 
-- Total plans completed: 54
-- Total phases: 20
-- Total execution time: ~231 min
+- Total plans completed: 56
+- Total phases: 21
+- Total execution time: ~242 min
 
 ## Accumulated Context
 
@@ -52,6 +52,8 @@ Key decisions captured in PROJECT.md (19 decisions across 6 milestones).
 - Used --no-verify for structural move commits (lint-staged catches pre-existing warnings on renamed files)
 - libs/ uses nested domain structure: libs/<domain>/<package>
 - Root vitest.config.ts updated to include tooling/** and libs/** globs
+- tsconfig.build.json extends paths must match tsconfig.json depth (both need updating when packages move)
+- Pre-existing lint errors in packages/graph left as-is (not migration-related)
 
 **v6.0 pending decisions:**
 - Keep core/graph/runtime separate vs consolidate into single package
@@ -63,15 +65,16 @@ None.
 ### Blockers/Concerns
 
 - Pre-existing lint warnings in flow package (3000+ warnings surfaced by lint-staged during move) - should be addressed separately
+- Pre-existing lint errors in packages/graph (11 errors, 12 warnings) - should be addressed separately
 
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Completed 21-01-PLAN.md (package physical moves)
+Stopped at: Completed 21-02-PLAN.md (configuration updates and pipeline verification)
 Resume file: None
-Next: Execute 21-02-PLAN.md (cross-reference updates)
+Next: Phase 22 (Documentation) or v6.0 completion
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-06 (phase 21 plan 01 complete)_
+_Last updated: 2026-02-06 (phase 21 complete)_
