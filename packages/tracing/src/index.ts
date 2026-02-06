@@ -6,8 +6,9 @@
  * Provides:
  * - Port definitions for Tracer, SpanExporter, SpanProcessor
  * - Core tracing types (Span, SpanData, SpanContext, etc.)
- * - W3C Trace Context compatible interfaces
- * - OpenTelemetry-compatible API surface
+ * - Adapter implementations (NoOp, Memory, Console)
+ * - W3C Trace Context parsing and propagation
+ * - Utility functions (ID generation, type guards, timing)
  *
  * @packageDocumentation
  */
@@ -34,3 +35,54 @@ export type {
   SpanKind,
   SpanStatus,
 } from "./types/index.js";
+
+// =============================================================================
+// Adapters
+// =============================================================================
+
+export {
+  // NoOp adapter
+  NoOpTracerAdapter,
+  NOOP_TRACER,
+  NOOP_SPAN,
+  // Memory adapter
+  MemoryTracerAdapter,
+  MemoryTracer,
+  createMemoryTracer,
+  MemorySpan,
+  // Console adapter
+  ConsoleTracerAdapter,
+  createConsoleTracer,
+  ConsoleTracer,
+} from "./adapters/index.js";
+export type { ConsoleTracerOptions } from "./adapters/index.js";
+
+// =============================================================================
+// W3C Trace Context
+// =============================================================================
+
+export {
+  parseTraceparent,
+  formatTraceparent,
+  extractTraceContext,
+  injectTraceContext,
+  TraceContextVar,
+  ActiveSpanVar,
+  CorrelationIdVar,
+} from "./context/index.js";
+
+// =============================================================================
+// Utilities
+// =============================================================================
+
+export {
+  generateTraceId,
+  generateSpanId,
+  isAttributeValue,
+  isSpanKind,
+  isSpanStatus,
+  isValidTraceId,
+  isValidSpanId,
+  getHighResTimestamp,
+  formatDuration,
+} from "./utils/index.js";
