@@ -113,3 +113,17 @@ export type {
   PortFilter,
   HookableContainer,
 } from "./instrumentation/index.js";
+
+// =============================================================================
+// Testing Utilities
+// =============================================================================
+
+export {
+  assertSpanExists,
+  hasAttribute,
+  hasEvent,
+  hasStatus,
+  hasDuration,
+} from "./testing/index.js";
+
+export type { SpanMatcher } from "./testing/index.js";
