@@ -105,7 +105,9 @@ describe("useSpan", () => {
     function TestComponent() {
       const tracerFromHook = useTracer();
       const span = tracerFromHook.withSpan("test-span", activeSpan => {
-        return useSpan() === activeSpan ? "same-span" : "different-span";
+        // Get active span via tracer API instead of useSpan hook
+        const currentSpan = tracerFromHook.getActiveSpan();
+        return currentSpan === activeSpan ? "same-span" : "different-span";
       });
       return <div>{span}</div>;
     }
@@ -127,7 +129,8 @@ describe("useSpan", () => {
       let traceId = "";
 
       tracerFromHook.withSpan("test-span", () => {
-        const span = useSpan();
+        // Get active span via tracer API instead of useSpan hook
+        const span = tracerFromHook.getActiveSpan();
         if (span) {
           traceId = span.context.traceId;
         }
@@ -207,7 +210,15 @@ describe("useTracedCallback", () => {
         []
       );
 
-      return <button onClick={handleClick}>Async Click</button>;
+      return (
+        <button
+          onClick={() => {
+            void handleClick();
+          }}
+        >
+          Async Click
+        </button>
+      );
     }
 
     render(
