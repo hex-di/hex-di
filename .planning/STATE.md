@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 ## Current Position
 
 Phase: 27 of 27 (Framework Integrations and Testing Utilities)
-Plan: 1 of 5
+Plan: 2 of 5
 Status: In progress
-Last activity: 2026-02-06 -- Completed 27-01-PLAN.md (Test Utilities Foundation)
+Last activity: 2026-02-06 -- Completed 27-02-PLAN.md (Hono Tracing Middleware)
 
-Progress: [█████████░] 81%
+Progress: [█████████░] 82%
 
 ## Milestone History
 
@@ -33,7 +33,7 @@ Progress: [█████████░] 81%
 
 **Velocity (all milestones):**
 
-- Total plans completed: 81
+- Total plans completed: 82
 - Total phases: 26 complete, 27 in progress
 - Total milestones: 7
 
@@ -105,6 +105,12 @@ Key decisions captured in PROJECT.md (23 decisions across 7 milestones).
 - Pure function predicates (hasAttribute, hasEvent, hasStatus, hasDuration) for composable assertions (27-01)
 - Separate @hex-di/tracing/testing namespace for tree-shaking (27-01)
 - Descriptive error messages include both search criteria and available spans (27-01)
+- TracingMiddlewareOptions provides tracer, spanName, extractContext, injectContext, attributes (27-02)
+- Default span name follows HTTP semantic conventions: ${method} ${path} (27-02)
+- Server spans always created as root spans (root: true) for HTTP entry points (27-02)
+- Extracted traceparent context recorded as span attributes due to tracer API limitation (27-02)
+- 5xx responses automatically set error status on span (27-02)
+- Hono's internal error handling means middleware sees 500 responses, not raw exceptions (27-02)
 
 ### Pending Todos
 
@@ -123,11 +129,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Completed 27-01-PLAN.md (Test Utilities Foundation)
+Stopped at: Completed 27-02-PLAN.md (Hono Tracing Middleware)
 Resume file: None
-Next: 27-02-PLAN.md (Hono Tracing Middleware)
+Next: 27-03-PLAN.md (React Tracing Integration)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-06 (Phase 26 complete)_
+_Last updated: 2026-02-06 (Phase 27 Plan 02 complete)_
