@@ -79,7 +79,6 @@ export function createOtlpHttpExporter(options?: OtlpHttpExporterOptions): SpanE
   const otlpExporter = new OTLPTraceExporter({
     url: options?.url ?? "http://localhost:4318/v1/traces",
     headers: options?.headers,
-    compression: options?.compression,
     timeoutMillis: options?.timeout ?? 10000,
   });
 
