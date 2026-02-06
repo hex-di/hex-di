@@ -243,6 +243,13 @@ describe("public API surface", () => {
       "isValidSpanId",
       "getHighResTimestamp",
       "formatDuration",
+      // Instrumentation
+      "instrumentContainer",
+      "createTracingHook",
+      "evaluatePortFilter",
+      "isPredicateFilter",
+      "isDeclarativeFilter",
+      "DEFAULT_INSTRUMENT_OPTIONS",
     ];
 
     // Verify all expected exports exist

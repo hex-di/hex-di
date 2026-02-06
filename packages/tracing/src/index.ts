@@ -86,3 +86,19 @@ export {
   getHighResTimestamp,
   formatDuration,
 } from "./utils/index.js";
+
+// =============================================================================
+// Instrumentation
+// =============================================================================
+
+export {
+  instrumentContainer,
+  // instrumentContainerTree, // Added by plan 24-02
+  createTracingHook,
+  evaluatePortFilter,
+  isPredicateFilter,
+  isDeclarativeFilter,
+  DEFAULT_INSTRUMENT_OPTIONS,
+} from "./instrumentation/index.js";
+
+export type { AutoInstrumentOptions, PortFilter } from "./instrumentation/index.js";
