@@ -10,7 +10,7 @@
 import type { SpanData } from "@hex-di/tracing";
 import type { ReadableSpan } from "@opentelemetry/sdk-trace-base";
 import type { SpanContext } from "@opentelemetry/api";
-import { resourceFromAttributes } from "@opentelemetry/resources";
+import { type Resource, resourceFromAttributes } from "@opentelemetry/resources";
 import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
 import {
   convertSpanKind,
@@ -46,9 +46,11 @@ function createDefaultResource() {
  * converting each field explicitly rather than casting the entire structure.
  *
  * @param hexSpan - HexDI span data
+ * @param resource - Optional OpenTelemetry Resource with service metadata.
+ *                   If not provided, uses a default resource with "hex-di-app".
  * @returns OTel ReadableSpan interface
  */
-export function convertToReadableSpan(hexSpan: SpanData): ReadableSpan {
+export function convertToReadableSpan(hexSpan: SpanData, resource?: Resource): ReadableSpan {
   const startTime = convertToHrTime(hexSpan.startTime);
   const endTime = convertToHrTime(hexSpan.endTime);
   const duration = convertToHrTime(hexSpan.endTime - hexSpan.startTime);
@@ -105,7 +107,7 @@ export function convertToReadableSpan(hexSpan: SpanData): ReadableSpan {
     events: hexSpan.events.map(convertSpanEvent),
     duration,
     ended: true,
-    resource: createDefaultResource(),
+    resource: resource ?? createDefaultResource(),
     instrumentationScope: {
       name: "@hex-di/tracing",
       version: "0.1.0",
