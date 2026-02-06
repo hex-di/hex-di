@@ -8,8 +8,6 @@
  * - Adapter types, constants, and factory functions
  * - Error codes, classes, and parsing utilities
  * - Inspection types for containers and graphs
- * - Trace collectors for resolution monitoring
- * - Resolution span types and utilities
  * - Type-level and runtime utilities
  *
  * @packageDocumentation
@@ -229,24 +227,6 @@ export type {
   InspectorListener,
   InspectorAPI,
 } from "./inspection/inspector-types.js";
-
-// =============================================================================
-// Collectors
-// =============================================================================
-
-export type { TraceCollector, TraceSubscriber, Unsubscribe } from "./collectors/types.js";
-export { MemoryCollector } from "./collectors/memory.js";
-export { NoOpCollector } from "./collectors/noop.js";
-export { CompositeCollector } from "./collectors/composite.js";
-
-// =============================================================================
-// Span
-// =============================================================================
-
-export type { ResolutionSpan } from "./span/types.js";
-export { SpanBuilder, toSpan, getSelfTime, getSpanDepth, countSpans } from "./span/builder.js";
-export type { ContainerMetrics, LifetimeMetrics, PortMetrics } from "./span/metrics.js";
-export { MetricsCollector, fromTraceStats } from "./span/metrics.js";
 
 // =============================================================================
 // Utilities
