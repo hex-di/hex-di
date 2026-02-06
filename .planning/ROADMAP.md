@@ -3,8 +3,8 @@
 ## Tracking
 
 - **Started:** 2026-02-01
-- **Current Phase:** 26 of 27 (Breaking Change Migration)
-- **Completion:** 93% (25/27 phases complete)
+- **Current Phase:** 27 of 27 (Framework Integrations and Testing Utilities)
+- **Completion:** 96% (26/27 phases complete)
 
 ## Shipped Milestones
 
@@ -77,11 +77,11 @@ Plans:
 
 Plans:
 
-- [ ] 26-01-PLAN.md — Remove old tracing from @hex-di/core
-- [ ] 26-02-PLAN.md — Remove old tracing from @hex-di/runtime
-- [ ] 26-03-PLAN.md — Update integration packages
-- [ ] 26-04-PLAN.md — Migrate all examples
-- [ ] 26-05-PLAN.md — Final verification and cleanup
+- [x] 26-01-PLAN.md — Remove old tracing from @hex-di/core
+- [x] 26-02-PLAN.md — Remove old tracing from @hex-di/runtime
+- [x] 26-03-PLAN.md — Update integration packages
+- [x] 26-04-PLAN.md — Migrate all examples
+- [x] 26-05-PLAN.md — Final verification and cleanup
 
 #### Phase 27: Framework Integrations and Testing Utilities
 
@@ -117,7 +117,7 @@ Plans:
 | 23. Core Tracing Foundation     | v7.0      | 8/8            | Complete    | 2026-02-06 |
 | 24. Container Instrumentation   | v7.0      | 3/3            | Complete    | 2026-02-06 |
 | 25. OTel Backend & Export       | v7.0      | 5/5            | Complete    | 2026-02-06 |
-| 26. Breaking Change Migration   | v7.0      | 0/5            | Not started | -          |
+| 26. Breaking Change Migration   | v7.0      | 5/5            | Complete    | 2026-02-06 |
 | 27. Framework & Testing         | v7.0      | 0/TBD          | Not started | -          |
 
 ## Tracking
@@ -135,16 +135,16 @@ Plans:
 | v4.0      | 3      | 6     | 1      | 6.0       |
 | v5.0      | 5      | 22    | 3      | 7.3       |
 | v6.0      | 3      | 6     | 1      | 6.0       |
-| v7.0      | 5      | 16    | Active | TBD       |
+| v7.0      | 5      | 21    | Active | TBD       |
 
-**Overall:** 72 plans in 6 days = 12.0 plans/day
+**Overall:** 77 plans in 6 days = 12.8 plans/day
 
 ### Burndown
 
 | Week | Phases Remaining | Plans Remaining | Trend |
 | ---- | ---------------- | --------------- | ----- |
 | 1    | 27               | ~100            | Start |
-| 2    | 4                | ~20             | -87%  |
+| 2    | 1                | ~12             | -96%  |
 
 ---
 

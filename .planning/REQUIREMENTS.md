@@ -68,15 +68,15 @@
 
 ### Breaking Changes and Migration
 
-- [ ] **MIGR-01**: Remove existing TraceCollector, TracingAPI, ResolutionSpan types from @hex-di/core
-- [ ] **MIGR-02**: Remove trace(), enableTracing() standalone functions from @hex-di/runtime
-- [ ] **MIGR-03**: Remove container.tracer property (TracingAPI) from @hex-di/runtime
-- [ ] **MIGR-04**: Remove MemoryCollector, NoOpCollector, CompositeCollector from @hex-di/runtime
-- [ ] **MIGR-05**: Update @hex-di/hono integration to use new tracing system
-- [ ] **MIGR-06**: Update @hex-di/react integration to use new tracing system
-- [ ] **MIGR-07**: Update @hex-di/testing if it references old tracing types
-- [ ] **MIGR-08**: Update all examples to use new tracing API
-- [ ] **MIGR-09**: Full pnpm -r typecheck and pnpm -r test pass after migration
+- [x] **MIGR-01**: Remove existing TraceCollector, TracingAPI, ResolutionSpan types from @hex-di/core
+- [x] **MIGR-02**: Remove trace(), enableTracing() standalone functions from @hex-di/runtime
+- [x] **MIGR-03**: Remove container.tracer property (TracingAPI) from @hex-di/runtime
+- [x] **MIGR-04**: Remove MemoryCollector, NoOpCollector, CompositeCollector from @hex-di/runtime
+- [x] **MIGR-05**: Update @hex-di/hono integration to use new tracing system
+- [x] **MIGR-06**: Update @hex-di/react integration to use new tracing system
+- [x] **MIGR-07**: Update @hex-di/testing if it references old tracing types
+- [x] **MIGR-08**: Update all examples to use new tracing API
+- [x] **MIGR-09**: Full pnpm -r typecheck and pnpm -r test pass after migration
 
 ### Framework Integration
 
@@ -180,15 +180,15 @@
 | BACK-02     | Phase 25    | Complete |
 | BACK-03     | Phase 25    | Complete |
 | BACK-04     | Phase 25    | Complete |
-| MIGR-01     | Phase 26    | Pending  |
-| MIGR-02     | Phase 26    | Pending  |
-| MIGR-03     | Phase 26    | Pending  |
-| MIGR-04     | Phase 26    | Pending  |
-| MIGR-05     | Phase 26    | Pending  |
-| MIGR-06     | Phase 26    | Pending  |
-| MIGR-07     | Phase 26    | Pending  |
-| MIGR-08     | Phase 26    | Pending  |
-| MIGR-09     | Phase 26    | Pending  |
+| MIGR-01     | Phase 26    | Complete |
+| MIGR-02     | Phase 26    | Complete |
+| MIGR-03     | Phase 26    | Complete |
+| MIGR-04     | Phase 26    | Complete |
+| MIGR-05     | Phase 26    | Complete |
+| MIGR-06     | Phase 26    | Complete |
+| MIGR-07     | Phase 26    | Complete |
+| MIGR-08     | Phase 26    | Complete |
+| MIGR-09     | Phase 26    | Complete |
 | FRMW-01     | Phase 27    | Pending  |
 | FRMW-02     | Phase 27    | Pending  |
 | FRMW-03     | Phase 27    | Pending  |
