@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 
 ## Current Position
 
-Phase: 21 of 22 (Tooling & Library Migration) -- COMPLETE, VERIFIED
-Plan: 2 of 2 complete
-Status: Phase complete, verified (4/4 must-haves passed)
-Last activity: 2026-02-06 -- Phase 21 verified and complete
+Phase: 22 of 22 (Verification & References) -- IN PROGRESS
+Plan: 1 of 2 complete
+Status: In progress
+Last activity: 2026-02-06 -- Completed 22-01-PLAN.md
 
-Progress: [██████░░░░] 67%
+Progress: [███████░░░] 69%
 
 ## Milestone History
 
@@ -32,9 +32,9 @@ Progress: [██████░░░░] 67%
 
 **Velocity (all milestones):**
 
-- Total plans completed: 56
-- Total phases: 21
-- Total execution time: ~242 min
+- Total plans completed: 57
+- Total phases: 21.5 (phase 22 in progress)
+- Total execution time: ~243 min
 
 ## Accumulated Context
 
@@ -57,6 +57,11 @@ Key decisions captured in PROJECT.md (19 decisions across 6 milestones).
 - tsconfig.build.json extends paths must match tsconfig.json depth (both need updating when packages move)
 - Pre-existing lint errors in packages/graph left as-is (not migration-related)
 
+**v6.0 decisions (phase 22):**
+
+- workspace:\* protocol makes examples resilient to package location changes
+- Pre-existing test failures in examples not related to reorganization
+
 **v6.0 pending decisions:**
 
 - Keep core/graph/runtime separate vs consolidate into single package
@@ -69,15 +74,16 @@ None.
 
 - Pre-existing lint warnings in flow package (3000+ warnings surfaced by lint-staged during move) - should be addressed separately
 - Pre-existing lint errors in packages/graph (11 errors, 12 warnings) - should be addressed separately
+- Pre-existing test failures in react-showcase example (12 tests - zustand localStorage and tracing issues) - should be addressed separately
 
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Phase 21 complete and verified
+Stopped at: Completed 22-01-PLAN.md
 Resume file: None
-Next: Plan phase 22 (Verification & References)
+Next: Continue phase 22 (plan 22-02)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-06 (phase 21 complete, verified)_
+_Last updated: 2026-02-06 (22-01 complete)_
