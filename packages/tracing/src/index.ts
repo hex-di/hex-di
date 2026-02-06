@@ -93,12 +93,23 @@ export {
 
 export {
   instrumentContainer,
-  // instrumentContainerTree, // Added by plan 24-02
+  instrumentContainerTree,
   createTracingHook,
   evaluatePortFilter,
   isPredicateFilter,
   isDeclarativeFilter,
   DEFAULT_INSTRUMENT_OPTIONS,
+  matchesPortPattern,
+  shouldTracePort,
+  pushSpan,
+  popSpan,
+  getActiveSpan,
+  clearStack,
+  getStackDepth,
 } from "./instrumentation/index.js";
 
-export type { AutoInstrumentOptions, PortFilter } from "./instrumentation/index.js";
+export type {
+  AutoInstrumentOptions,
+  PortFilter,
+  HookableContainer,
+} from "./instrumentation/index.js";

@@ -8,18 +8,7 @@
  */
 
 import type { InspectorAPI } from "@hex-di/core";
-import type { HookType, HookHandler } from "@hex-di/runtime";
-
-/**
- * Minimal interface for a container that supports hook installation.
- *
- * This mirrors the HookableContainer interface from container.ts but is
- * defined locally to avoid circular dependencies between modules.
- */
-interface HookableContainer {
-  addHook<T extends HookType>(type: T, handler: HookHandler<T>): void;
-  removeHook<T extends HookType>(type: T, handler: HookHandler<T>): void;
-}
+import type { HookableContainer } from "./types.js";
 
 /**
  * WeakMap tracking InspectorAPI -> Container mappings.

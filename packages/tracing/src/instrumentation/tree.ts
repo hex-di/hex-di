@@ -8,22 +8,10 @@
  */
 
 import type { InspectorAPI, InspectorListener } from "@hex-di/core";
-import type { HookType, HookHandler } from "@hex-di/runtime";
 import type { Tracer } from "../ports/tracer.js";
 import { instrumentContainer } from "./container.js";
-import type { AutoInstrumentOptions } from "./types.js";
+import type { AutoInstrumentOptions, HookableContainer } from "./types.js";
 import { registerContainerMapping, getContainerFromInspector } from "./utils.js";
-
-/**
- * Minimal interface for a container that supports hook installation.
- *
- * This allows instrumentContainerTree to work with any container type
- * (root, child, scope) without requiring generic type parameters.
- */
-interface HookableContainer {
-  addHook<T extends HookType>(type: T, handler: HookHandler<T>): void;
-  removeHook<T extends HookType>(type: T, handler: HookHandler<T>): void;
-}
 
 /**
  * Instruments an entire container tree with distributed tracing.

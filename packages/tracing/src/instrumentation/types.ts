@@ -7,6 +7,22 @@
  * @packageDocumentation
  */
 
+import type { HookType, HookHandler } from "@hex-di/runtime";
+
+/**
+ * Minimal interface for a container that supports hook installation.
+ *
+ * This allows instrumentation functions to work with any container type
+ * (root, child, scope) without requiring generic type parameters.
+ *
+ * Defined once here and shared by container.ts, tree.ts, and utils.ts
+ * to avoid structural type incompatibilities across module boundaries.
+ */
+export interface HookableContainer {
+  addHook<T extends HookType>(type: T, handler: HookHandler<T>): void;
+  removeHook<T extends HookType>(type: T, handler: HookHandler<T>): void;
+}
+
 /**
  * Port filter specification for selective instrumentation.
  *

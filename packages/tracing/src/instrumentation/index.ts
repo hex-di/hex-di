@@ -12,14 +12,14 @@
 // =============================================================================
 
 export { instrumentContainer } from "./container.js";
-// export { instrumentContainerTree } from "./tree.js"; // Added by plan 24-02
+export { instrumentContainerTree } from "./tree.js";
 export { createTracingHook } from "./hooks.js";
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export type { AutoInstrumentOptions, PortFilter } from "./types.js";
+export type { AutoInstrumentOptions, PortFilter, HookableContainer } from "./types.js";
 
 // =============================================================================
 // Utilities
@@ -27,3 +27,5 @@ export type { AutoInstrumentOptions, PortFilter } from "./types.js";
 
 export { evaluatePortFilter, isPredicateFilter, isDeclarativeFilter } from "./types.js";
 export { DEFAULT_INSTRUMENT_OPTIONS } from "./types.js";
+export { matchesPortPattern, shouldTracePort } from "./utils.js";
+export { pushSpan, popSpan, getActiveSpan, clearStack, getStackDepth } from "./span-stack.js";

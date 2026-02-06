@@ -245,11 +245,19 @@ describe("public API surface", () => {
       "formatDuration",
       // Instrumentation
       "instrumentContainer",
+      "instrumentContainerTree",
       "createTracingHook",
       "evaluatePortFilter",
       "isPredicateFilter",
       "isDeclarativeFilter",
       "DEFAULT_INSTRUMENT_OPTIONS",
+      "matchesPortPattern",
+      "shouldTracePort",
+      "pushSpan",
+      "popSpan",
+      "getActiveSpan",
+      "clearStack",
+      "getStackDepth",
     ];
 
     // Verify all expected exports exist
