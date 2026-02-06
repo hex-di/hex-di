@@ -50,7 +50,7 @@ describe("createBatchSpanProcessor", () => {
     };
   }
 
-  it("should buffer spans below batch size", () => {
+  it("should buffer spans below batch size", async () => {
     const processor = createBatchSpanProcessor(mockExporter, {
       maxExportBatchSize: 10,
       scheduledDelayMillis: 5000,
@@ -64,7 +64,7 @@ describe("createBatchSpanProcessor", () => {
     expect(mockExporter.export).not.toHaveBeenCalled();
     expect(exportedBatches).toHaveLength(0);
 
-    processor.shutdown();
+    await processor.shutdown();
   });
 
   it("should flush buffered spans after scheduled delay", async () => {
