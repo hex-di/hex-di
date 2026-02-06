@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 ## Current Position
 
 Phase: 24 of 27 (Container Instrumentation and Context Propagation) -- in progress
-Plan: 2 of 4 complete
+Plan: 3 of 4 complete
 Status: In progress
-Last activity: 2026-02-06 -- Completed 24-02-PLAN.md (tree instrumentation)
+Last activity: 2026-02-06 -- Completed 24-03-PLAN.md (hook factory exports)
 
-Progress: [██████░░░░] 57%
+Progress: [██████░░░░] 58%
 
 ## Milestone History
 
@@ -33,7 +33,7 @@ Progress: [██████░░░░] 57%
 
 **Velocity (all milestones):**
 
-- Total plans completed: 70
+- Total plans completed: 71
 - Total phases: 23 (1 in progress)
 - Total milestones: 7
 
@@ -71,6 +71,9 @@ Key decisions captured in PROJECT.md (23 decisions across 7 milestones).
 - Register mappings during walkTree for all instrumented containers (24-02)
 - Subscribe to 'child-created' events on all inspectors for live updates (24-02)
 - Pattern matching supports _, prefix_, and \*suffix wildcards for port filters (24-02)
+- createTracingHook returns ResolutionHooks for manual registration (24-03)
+- Instrumentation module exposes public APIs while keeping internals private (24-03)
+- Integration test validates exact export surface to prevent drift (24-03)
 
 ### Pending Todos
 
@@ -88,11 +91,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Completed 24-02-PLAN.md
+Stopped at: Completed 24-03-PLAN.md
 Resume file: None
-Next: Continue Phase 24 (Plans 24-03, 24-04)
+Next: Continue Phase 24 (Plan 24-04)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-06 (24-02 completed, Phase 24 in progress)_
+_Last updated: 2026-02-06 (24-03 completed, Phase 24 in progress)_
