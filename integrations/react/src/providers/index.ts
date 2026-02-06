@@ -29,3 +29,6 @@ export type { ReactiveScopeProviderProps } from "./reactive-scope-provider.js";
 
 export { HexDiLazyContainerProvider, useLazyContainerState } from "./lazy-container-provider.js";
 export type { UseLazyContainerStateResult } from "./lazy-container-provider.js";
+
+export { TracingProvider } from "./tracing-provider.js";
+export type { TracingProviderProps } from "./tracing-provider.js";

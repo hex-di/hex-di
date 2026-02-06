@@ -18,3 +18,5 @@ export {
   type ResolverContextValue,
   type RuntimeResolverContextValue,
 } from "./resolver-context.js";
+
+export { TracingContext, type TracingContextValue } from "./tracing-context.js";

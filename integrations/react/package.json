@@ -54,7 +54,8 @@
   "dependencies": {
     "@hex-di/core": "workspace:*",
     "@hex-di/graph": "workspace:*",
-    "@hex-di/runtime": "workspace:*"
+    "@hex-di/runtime": "workspace:*",
+    "@hex-di/tracing": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=19.0.0",
