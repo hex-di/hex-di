@@ -19,12 +19,11 @@ import { GraphBuilder } from "@hex-di/graph";
 import { createMemoryTracer } from "../../../src/adapters/memory/tracer.js";
 import { instrumentContainer } from "../../../src/instrumentation/container.js";
 import { clearStack, getStackDepth } from "../../../src/instrumentation/span-stack.js";
-import type { Container } from "@hex-di/runtime";
 import type { MemoryTracer } from "../../../src/adapters/memory/tracer.js";
 
 describe("cross-container span relationships", () => {
   let tracer: MemoryTracer;
-  let containers: Array<Container<unknown>>;
+  let containers: any[];
 
   beforeEach(() => {
     tracer = createMemoryTracer();
@@ -96,7 +95,7 @@ describe("cross-container span relationships", () => {
       const Port1 = port<string>()({ name: "Outer" });
       const Port2 = port<string>()({ name: "Inner" });
 
-      let container2Ref: Container<unknown>;
+      let container2Ref: any;
 
       const adapter1 = createAdapter({
         provides: Port1,
@@ -162,8 +161,8 @@ describe("cross-container span relationships", () => {
       const PortB = port<string>()({ name: "ServiceB" });
       const PortC = port<string>()({ name: "ServiceC" });
 
-      let containerBRef: Container<unknown>;
-      let containerCRef: Container<unknown>;
+      let containerBRef: any;
+      let containerCRef: any;
 
       const adapterA = createAdapter({
         provides: PortA,
@@ -236,7 +235,7 @@ describe("cross-container span relationships", () => {
 
       let depthOuter = -1;
       let depthInner = -1;
-      let containerInnerRef: Container<unknown>;
+      let containerInnerRef: any;
 
       const outerAdapter = createAdapter({
         provides: PortOuter,
@@ -284,7 +283,7 @@ describe("cross-container span relationships", () => {
       const PortOuter = port<string>()({ name: "Outer" });
       const PortInner = port<string>()({ name: "Inner" });
 
-      let containerInnerRef: Container<unknown>;
+      let containerInnerRef: any;
 
       const outerAdapter = createAdapter({
         provides: PortOuter,

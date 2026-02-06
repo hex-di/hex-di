@@ -17,12 +17,11 @@ import { GraphBuilder } from "@hex-di/graph";
 import { createMemoryTracer } from "../../../src/adapters/memory/tracer.js";
 import { instrumentContainerTree } from "../../../src/instrumentation/tree.js";
 import { clearStack } from "../../../src/instrumentation/span-stack.js";
-import type { Container } from "@hex-di/runtime";
 import type { MemoryTracer } from "../../../src/adapters/memory/tracer.js";
 
 describe("instrumentContainerTree", () => {
   let tracer: MemoryTracer;
-  let containers: Array<Container<unknown>>;
+  let containers: Array<any>;
 
   beforeEach(() => {
     tracer = createMemoryTracer();
