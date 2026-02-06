@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 
 ## Current Position
 
-Phase: 25 of 27 (OpenTelemetry Backend and Export Pipeline) -- not started
-Plan: 0 of TBD
-Status: Ready
-Last activity: 2026-02-06 -- Completed Phase 24 (container instrumentation)
+Phase: 25 of 27 (OpenTelemetry Backend and Export Pipeline) -- in progress
+Plan: 1 of TBD
+Status: In progress
+Last activity: 2026-02-06 -- Completed 25-01-PLAN.md (package foundation)
 
-Progress: [██████░░░░] 62%
+Progress: [██████░░░░] 63%
 
 ## Milestone History
 
@@ -33,7 +33,7 @@ Progress: [██████░░░░] 62%
 
 **Velocity (all milestones):**
 
-- Total plans completed: 74
+- Total plans completed: 75
 - Total phases: 24
 - Total milestones: 7
 
@@ -74,6 +74,11 @@ Key decisions captured in PROJECT.md (23 decisions across 7 milestones).
 - createTracingHook returns ResolutionHooks for manual registration (24-03)
 - Instrumentation module exposes public APIs while keeping internals private (24-03)
 - Integration test validates exact export surface to prevent drift (24-03)
+- Type conversion without casts for SpanData → ReadableSpan (25-01)
+- HrTime format [seconds, nanoseconds] for high-precision timestamps (25-01)
+- resourceFromAttributes factory for Resource creation (25-01)
+- Explicit field mapping instead of type casting for safety (25-01)
+- Fixed tsconfig.build.json rootDir to prevent dist/src/ nesting (25-01)
 
 ### Pending Todos
 
@@ -86,17 +91,18 @@ None.
 - Pre-existing test failures in examples/react-showcase (12 tests) -- should be addressed separately
 - Phase 24 completed with known gap: dynamic child container auto-instrumentation requires runtime to emit child-created events (deferred to v8.0 ENH-05)
 - Phase 24 completed without behavioral tests for instrumentation module (structural verification only)
-- Phase 25 MEDIUM risk: OTel version pinning, type bridging without casts
+- Phase 25-01 complete: type bridging without casts achieved successfully
+- Phase 25 ongoing: processors and exporters in subsequent plans
 - Phase 26 HIGH risk: breaking changes across multiple packages
 
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Phase 24 complete
+Stopped at: Completed 25-01-PLAN.md (package foundation)
 Resume file: None
-Next: Plan Phase 25 (OTel Backend and Export Pipeline)
+Next: Continue Phase 25 (processors and exporters)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-06 (Phase 24 complete, Phase 25 next)_
+_Last updated: 2026-02-06 (Phase 25-01 complete)_
