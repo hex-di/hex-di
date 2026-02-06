@@ -84,7 +84,8 @@ function logError(message: string, ...args: unknown[]): void {
     const g: Record<string, unknown> = globalThis;
     const cons = g.console;
     if (cons && typeof cons === "object" && "error" in cons) {
-      const errorFn = (cons as Record<string, unknown>).error;
+      const consObj: Record<string, unknown> = cons;
+      const errorFn = consObj.error;
       if (typeof errorFn === "function") {
         errorFn.call(cons, message, ...args);
       }
