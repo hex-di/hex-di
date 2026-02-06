@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 ## Current Position
 
 Phase: 24 of 27 (Container Instrumentation and Context Propagation) -- in progress
-Plan: 1 of 4 complete
+Plan: 2 of 4 complete
 Status: In progress
-Last activity: 2026-02-06 -- Completed 24-01-PLAN.md (core instrumentation)
+Last activity: 2026-02-06 -- Completed 24-02-PLAN.md (tree instrumentation)
 
-Progress: [██████░░░░] 56%
+Progress: [██████░░░░] 57%
 
 ## Milestone History
 
@@ -33,7 +33,7 @@ Progress: [██████░░░░] 56%
 
 **Velocity (all milestones):**
 
-- Total plans completed: 69
+- Total plans completed: 70
 - Total phases: 23 (1 in progress)
 - Total milestones: 7
 
@@ -67,6 +67,10 @@ Key decisions captured in PROJECT.md (23 decisions across 7 milestones).
 - HookableContainer interface instead of InspectorAPI for instrumentation (24-01)
 - Resolution key combines containerId, portName, depth, timestamp for uniqueness (24-01)
 - Duration filtering at span-end (afterResolve) not span-start (24-01)
+- WeakMap for InspectorAPI->Container reverse lookup (enables garbage collection) (24-02)
+- Register mappings during walkTree for all instrumented containers (24-02)
+- Subscribe to 'child-created' events on all inspectors for live updates (24-02)
+- Pattern matching supports _, prefix_, and \*suffix wildcards for port filters (24-02)
 
 ### Pending Todos
 
@@ -84,11 +88,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Completed 24-01-PLAN.md
+Stopped at: Completed 24-02-PLAN.md
 Resume file: None
-Next: Continue Phase 24 (Plans 24-02, 24-03, 24-04)
+Next: Continue Phase 24 (Plans 24-03, 24-04)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-06 (24-01 completed, Phase 24 in progress)_
+_Last updated: 2026-02-06 (24-02 completed, Phase 24 in progress)_
