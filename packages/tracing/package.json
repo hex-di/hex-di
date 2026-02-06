@@ -37,6 +37,7 @@
     "lint": "eslint . --cache",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:bench": "vitest bench",
     "test:types": "vitest run --typecheck",
     "typecheck": "tsc --noEmit"
   },
