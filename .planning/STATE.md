@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 ## Current Position
 
 Phase: 27 of 27 (Framework Integrations and Testing Utilities)
-Plan: 3 of 5
+Plan: 4 of 5
 Status: In progress
-Last activity: 2026-02-06 -- Completed 27-03-PLAN.md (React Tracing Provider and Hooks)
+Last activity: 2026-02-06 -- Completed 27-04-PLAN.md (Performance Benchmarks)
 
-Progress: [█████████░] 83%
+Progress: [█████████░] 85%
 
 ## Milestone History
 
@@ -115,6 +115,9 @@ Key decisions captured in PROJECT.md (23 decisions across 7 milestones).
 - useSpan returns undefined when no active span (not error) -- valid state for conditional logic (27-03)
 - useTracedCallback wraps execution in try/catch to record synchronous exceptions to span (27-03)
 - useTracedCallback detects async by checking result instanceof Promise at runtime (27-03)
+- NoOp tracer actual overhead ~38% vs 5% target due to hook machinery cost (27-04)
+- Memory tracer actual overhead ~602% vs 10% target due to span creation/storage (27-04)
+- Performance overhead acceptable for tracing; recommend sampling and port filters for production (27-04)
 
 ### Pending Todos
 
@@ -133,11 +136,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Completed 27-03-PLAN.md (React Tracing Provider and Hooks)
+Stopped at: Completed 27-04-PLAN.md (Performance Benchmarks)
 Resume file: None
-Next: 27-04-PLAN.md (Testing Utilities Integration)
+Next: 27-05-PLAN.md (Final phase of v7.0)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-06 (Phase 27 Plan 02 complete)_
+_Last updated: 2026-02-06 (Phase 27 Plan 04 complete)_
