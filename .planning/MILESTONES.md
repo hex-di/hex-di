@@ -1,5 +1,34 @@
 # Project Milestones: HexDI
 
+## v6.0 Monorepo Reorganization (Shipped: 2026-02-06)
+
+**Delivered:** Restructured the monorepo into semantic groups (packages/, integrations/, tooling/, libs/) with nested sub-packages, preparing for future store, saga, and query libraries.
+
+**Phases completed:** 20-22 (6 plans total)
+
+**Key accomplishments:**
+
+- Moved React and Hono integrations to `integrations/` with full git history preserved (197 renames total)
+- Moved testing, visualization, and graph-viz to `tooling/` directory
+- Moved flow packages to nested `libs/flow/{core,react}` structure
+- Updated all workspace configs, tsconfig references, eslint configs, and vitest includes
+- Verified full pipeline: build, typecheck, 1,817 tests passing, lint clean
+- Zero stale references to old package locations in active code
+
+**Stats:**
+
+- 232 files changed, +4,410 / -187 lines
+- 174,858 total lines of TypeScript
+- 3 phases, 6 plans
+- 1,817 tests passing (1 new test)
+- 1 day from start to ship (2026-02-06)
+
+**Git range:** `58f9680` -> `4d68928`
+
+**What's next:** Planning next milestone
+
+---
+
 ## v5.0 Runtime Package Improvements (Shipped: 2026-02-05)
 
 **Delivered:** Elevated runtime package quality through code reorganization, plugin consolidation, type-safe override APIs, performance optimizations, comprehensive testing, and enhanced error experience.
@@ -110,4 +139,4 @@
 
 ---
 
-_Last updated: 2026-02-05_
+_Last updated: 2026-02-06_

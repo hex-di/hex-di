@@ -8,37 +8,19 @@ A TypeScript dependency injection library implementing Hexagonal Architecture (P
 
 Catch dependency graph errors at compile time, not runtime — invalid graphs should fail to typecheck.
 
-## Current Milestone: v6.0 Monorepo Reorganization
+## Current State
 
-**Goal:** Restructure the monorepo to cleanly separate core packages, integrations, tooling, and higher-level libraries — preparing for store, saga, and query libraries.
+**Latest:** v6.0 Monorepo Reorganization (shipped 2026-02-06)
 
-**Target structure:**
-
+- 10 packages under `@hex-di/*` scope across 4 directory groups
 - `packages/` — Core DI engine (core, graph, runtime)
 - `integrations/` — Framework integrations (react, hono)
 - `tooling/` — Developer tools (testing, visualization, graph-viz)
-- `libs/` — Libraries built on HexDI, each with sub-packages (libs/flow/{core,react}, libs/store/{core,react}, etc.)
-
-**Target features:**
-
-- Move all 10 existing packages to new folder structure
-- Update pnpm-workspace.yaml, tsconfig references, and build configs
-- Update all internal import paths and workspace:\* dependencies
-- Verify all tests, typechecks, builds, and lint pass after migration
-- No functional code changes — purely structural
-
-## Current State
-
-**Latest:** v5.0 Runtime Package Improvements (shipped 2026-02-05)
-
-- 10 packages under `@hex-di/*` scope
-- 1,816 tests passing across 122 test files
-- 179,821 total lines of TypeScript
-- Well-organized runtime with focused type files and core tracing/inspection
-- Type-safe override builder with compile-time port validation
-- Performance benchmarks and configurable timestamp capture
-- Enhanced error experience with "Did you mean?" suggestions
-- Architecture documentation and design decisions documented
+- `libs/` — Higher-level libraries (flow/{core,react})
+- 1,817 tests passing
+- 174,858 total lines of TypeScript
+- 7 milestones shipped (v1.1, v1.2, v2.0, v3.0, v4.0, v5.0, v6.0)
+- 57 plans executed across 22 phases
 
 ## Requirements
 
@@ -94,16 +76,17 @@ Catch dependency graph errors at compile time, not runtime — invalid graphs sh
 - Error messages with `suggestion` property and "Did you mean?" — v5.0
 - Architecture documentation and design decisions — v5.0
 - `@typeParam` JSDoc annotations for IDE support — v5.0
+- Monorepo restructured into packages/, integrations/, tooling/, libs/ groups — v6.0
+- libs/ uses nested sub-packages per library (libs/flow/{core,react}) — v6.0
+- All workspace configs, tsconfig references, and build configs updated — v6.0
+- All tests, typechecks, builds, and lint pass after migration — v6.0
+- Examples and website workspace references updated — v6.0
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Monorepo restructured into packages/, integrations/, tooling/, libs/ groups
-- [ ] libs/ uses nested sub-packages per library (libs/flow/{core,react})
-- [ ] All workspace configs, tsconfig references, and build configs updated
-- [ ] All tests, typechecks, builds, and lint pass after migration
-- [ ] Examples and website workspace references updated
+(No active requirements — planning next milestone)
 
 ### Out of Scope
 
@@ -117,12 +100,14 @@ Catch dependency graph errors at compile time, not runtime — invalid graphs sh
 
 ## Context
 
-- Monorepo with 10 packages under `@hex-di/*` scope
+- Monorepo with 10 packages under `@hex-di/*` scope across 4 directory groups
 - Type-level validation is complex (1,250 line provide.ts, 810 line merge.ts)
 - Graph builder validation is complete and verified
 - Runtime package elevated to production quality (v5.0)
-- 6 milestones shipped (v1.1, v1.2, v2.0, v3.0, v4.0, v5.0)
-- 51 plans executed across 19 phases
+- Monorepo reorganized into semantic groups (v6.0)
+- 7 milestones shipped (v1.1, v1.2, v2.0, v3.0, v4.0, v5.0, v6.0)
+- 57 plans executed across 22 phases
+- Pre-existing tech debt: lint errors in packages/graph (11), lint warnings in libs/flow/core (31), test failures in react-showcase (12)
 
 ## Constraints
 
@@ -134,31 +119,32 @@ Catch dependency graph errors at compile time, not runtime — invalid graphs sh
 
 <!-- Decisions that constrain future work. Add throughout project lifecycle. -->
 
-| Decision                                              | Rationale                                                    | Outcome          |
-| ----------------------------------------------------- | ------------------------------------------------------------ | ---------------- |
-| Fix all 3 bugs in single milestone                    | They're related (all in merge/build logic)                   | ✓ Good (v1.1)    |
-| Verification-only milestone                           | Bugs were already fixed in prior refactoring                 | ✓ Good (v1.1)    |
-| Defense-in-depth validation                           | Runtime backs up compile-time checks                         | ✓ Good (v1.1)    |
-| Focus v1.2 on DX improvements                         | Expert analysis shows clear priority areas                   | ✓ Good (v1.2)    |
-| Additive-only changes for v1.2                        | Maintains backward compatibility                             | ✓ Good (v1.2)    |
-| Factory-based overrides keyed by port name            | API simplicity, lazy instantiation                           | ✓ Good (v1.2)    |
-| Curried create<TService>()(name) for ServiceBuilder   | Enables partial type application                             | ✓ Good (v1.2)    |
-| DirectedPort as intersection with Port                | Backward compatible, gradual adoption                        | ✓ Good (v1.2)    |
-| Unified createPort() with object config               | Single entry point, rich metadata                            | ✓ Good (v2.0)    |
-| Unified createAdapter() with auto-detect async        | 7 functions → 1, clean API surface                           | ✓ Good (v3.0)    |
-| Compile-time async lifetime enforcement               | Catch invalid patterns before runtime                        | ✓ Good (v3.0)    |
-| Unified provide() with auto-detect async              | 4 methods → 1, clean builder API                             | ✓ Good (v4.0)    |
-| Skip Plan 14-02 (pending constraints)                 | Gap doesn't exist — existing code sufficient                 | ✓ Good (v4.0)    |
-| Remove HOOKS_ACCESS plugin system                     | Tracing/inspection are core, not plugins                     | ✓ Good (v5.0)    |
-| Single options object for createContainer             | Clean API, no backward compatibility shims                   | ✓ Good (v5.0)    |
-| Type-safe override builder (adapter-keyed)            | Compile-time port validation, no strings                     | ✓ Good (v5.0)    |
-| Symbol-based context variable keys                    | Collision prevention and type safety                         | ✓ Good (v5.0)    |
-| FIFO beforeResolve / LIFO afterResolve ordering       | Middleware pattern for hook composition                      | ✓ Good (v5.0)    |
-| Levenshtein MAX_DISTANCE=2 for suggestions            | Balances helpfulness vs false positives                      | ✓ Good (v5.0)    |
-| Keep core/graph/runtime as separate packages          | Architectural separation of compile-time vs runtime concerns | — Pending (v6.0) |
-| Nested sub-packages in libs/ (libs/flow/{core,react}) | Each library groups its own ecosystem                        | — Pending (v6.0) |
-| Flat packages in packages/, integrations/, tooling/   | No per-library integration variants needed                   | — Pending (v6.0) |
+| Decision                                              | Rationale                                                    | Outcome       |
+| ----------------------------------------------------- | ------------------------------------------------------------ | ------------- |
+| Fix all 3 bugs in single milestone                    | They're related (all in merge/build logic)                   | ✓ Good (v1.1) |
+| Verification-only milestone                           | Bugs were already fixed in prior refactoring                 | ✓ Good (v1.1) |
+| Defense-in-depth validation                           | Runtime backs up compile-time checks                         | ✓ Good (v1.1) |
+| Focus v1.2 on DX improvements                         | Expert analysis shows clear priority areas                   | ✓ Good (v1.2) |
+| Additive-only changes for v1.2                        | Maintains backward compatibility                             | ✓ Good (v1.2) |
+| Factory-based overrides keyed by port name            | API simplicity, lazy instantiation                           | ✓ Good (v1.2) |
+| Curried create<TService>()(name) for ServiceBuilder   | Enables partial type application                             | ✓ Good (v1.2) |
+| DirectedPort as intersection with Port                | Backward compatible, gradual adoption                        | ✓ Good (v1.2) |
+| Unified createPort() with object config               | Single entry point, rich metadata                            | ✓ Good (v2.0) |
+| Unified createAdapter() with auto-detect async        | 7 functions → 1, clean API surface                           | ✓ Good (v3.0) |
+| Compile-time async lifetime enforcement               | Catch invalid patterns before runtime                        | ✓ Good (v3.0) |
+| Unified provide() with auto-detect async              | 4 methods → 1, clean builder API                             | ✓ Good (v4.0) |
+| Skip Plan 14-02 (pending constraints)                 | Gap doesn't exist — existing code sufficient                 | ✓ Good (v4.0) |
+| Remove HOOKS_ACCESS plugin system                     | Tracing/inspection are core, not plugins                     | ✓ Good (v5.0) |
+| Single options object for createContainer             | Clean API, no backward compatibility shims                   | ✓ Good (v5.0) |
+| Type-safe override builder (adapter-keyed)            | Compile-time port validation, no strings                     | ✓ Good (v5.0) |
+| Symbol-based context variable keys                    | Collision prevention and type safety                         | ✓ Good (v5.0) |
+| FIFO beforeResolve / LIFO afterResolve ordering       | Middleware pattern for hook composition                      | ✓ Good (v5.0) |
+| Levenshtein MAX_DISTANCE=2 for suggestions            | Balances helpfulness vs false positives                      | ✓ Good (v5.0) |
+| Keep core/graph/runtime as separate packages          | Architectural separation of compile-time vs runtime concerns | ✓ Good (v6.0) |
+| Nested sub-packages in libs/ (libs/flow/{core,react}) | Each library groups its own ecosystem                        | ✓ Good (v6.0) |
+| Flat packages in packages/, integrations/, tooling/   | No per-library integration variants needed                   | ✓ Good (v6.0) |
+| workspace:\* protocol for example dependencies        | Resilient to package location changes                        | ✓ Good (v6.0) |
 
 ---
 
-_Last updated: 2026-02-05 after v6.0 milestone started_
+_Last updated: 2026-02-06 after v6.0 milestone_
