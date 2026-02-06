@@ -63,7 +63,8 @@
   "homepage": "https://github.com/hex-di/hex-di/tree/main/packages/tracing#readme",
   "dependencies": {},
   "peerDependencies": {
-    "@hex-di/core": "workspace:*"
+    "@hex-di/core": "workspace:*",
+    "@hex-di/runtime": "workspace:*"
   },
   "engines": {
     "node": ">=18.0.0"
