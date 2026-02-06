@@ -176,6 +176,19 @@ export { HexDiAsyncContainerProvider, useAsyncContainerState } from "./providers
 export { HexDiLazyContainerProvider, useLazyContainerState } from "./providers/index.js";
 export type { UseLazyContainerStateResult } from "./providers/index.js";
 
+/**
+ * TracingProvider for distributed tracing support.
+ *
+ * This provider makes a tracer instance available to React components,
+ * enabling first-class tracing integration with useTracer, useSpan,
+ * and useTracedCallback hooks.
+ *
+ * @see {@link TracingProvider} - Provider component documentation
+ * @see {@link TracingProviderProps} - Props type
+ */
+export { TracingProvider } from "./providers/index.js";
+export type { TracingProviderProps } from "./providers/index.js";
+
 // =============================================================================
 // Global Hooks
 // =============================================================================
@@ -192,6 +205,20 @@ export type { UseLazyContainerStateResult } from "./providers/index.js";
 export { usePort } from "./hooks/index.js";
 export { useContainer } from "./hooks/index.js";
 export { useScope } from "./hooks/index.js";
+
+/**
+ * Tracing hooks for accessing tracer, active span, and creating traced callbacks.
+ *
+ * These hooks provide first-class tracing support in React applications:
+ * - useTracer: Access the tracer instance for manual span management
+ * - useSpan: Get the currently active span for conditional logic
+ * - useTracedCallback: Create callbacks wrapped in spans with automatic lifecycle
+ *
+ * @see {@link useTracer} - Hook for accessing tracer
+ * @see {@link useSpan} - Hook for getting active span
+ * @see {@link useTracedCallback} - Hook for creating traced callbacks
+ */
+export { useTracer, useSpan, useTracedCallback } from "./hooks/index.js";
 
 // =============================================================================
 // Declarative Component Creation
