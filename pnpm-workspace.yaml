@@ -1,4 +1,7 @@
 packages:
   - "packages/*"
+  - "integrations/*"
+  - "tooling/*"
+  - "libs/*/*"
   - "examples/*"
   - "website"
