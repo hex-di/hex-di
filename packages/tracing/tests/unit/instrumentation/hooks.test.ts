@@ -14,25 +14,16 @@ import { createTracingHook } from "../../../src/instrumentation/hooks.js";
 import { instrumentContainer } from "../../../src/instrumentation/container.js";
 import { createMemoryTracer } from "../../../src/adapters/memory/tracer.js";
 import { clearStack } from "../../../src/instrumentation/span-stack.js";
-import type { HookableContainer } from "../../../src/instrumentation/types.js";
 import type { ResolutionHookContext, ResolutionResultContext } from "@hex-di/runtime";
 
-interface MockHookableContainer extends HookableContainer {
-  addHook: ReturnType<typeof vi.fn>;
-  removeHook: ReturnType<typeof vi.fn>;
-}
-
-function createMockContainer(): MockHookableContainer {
-  const mock = {
+function createMockContainer(): any {
+  return {
     addHook: vi.fn(),
     removeHook: vi.fn(),
   };
-  return mock;
 }
 
-function createMockResolutionContext(
-  overrides?: Partial<ResolutionHookContext>
-): ResolutionHookContext {
+function createMockResolutionContext(overrides?: Partial<ResolutionHookContext>): any {
   return {
     portName: "TestPort",
     lifetime: "transient",
@@ -44,9 +35,7 @@ function createMockResolutionContext(
   };
 }
 
-function createMockResultContext(
-  overrides?: Partial<ResolutionResultContext>
-): ResolutionResultContext {
+function createMockResultContext(overrides?: Partial<ResolutionResultContext>): any {
   return {
     portName: "TestPort",
     lifetime: "transient",
@@ -95,7 +84,7 @@ describe("createTracingHook", () => {
       const tracer = createMemoryTracer();
       const hooks = createTracingHook(tracer);
 
-      hooks.beforeResolve(createMockResolutionContext({ portName: "Logger" }));
+      hooks.beforeResolve!(createMockResolutionContext({ portName: "Logger" }));
 
       // Span should be created but not yet completed
       const spans = tracer.getCollectedSpans();
@@ -106,8 +95,8 @@ describe("createTracingHook", () => {
       const tracer = createMemoryTracer();
       const hooks = createTracingHook(tracer);
 
-      hooks.beforeResolve(createMockResolutionContext({ portName: "Logger" }));
-      hooks.afterResolve(createMockResultContext({ portName: "Logger" }));
+      hooks.beforeResolve!(createMockResolutionContext({ portName: "Logger" }));
+      hooks.afterResolve!(createMockResultContext({ portName: "Logger" }));
 
       const spans = tracer.getCollectedSpans();
       expect(spans).toHaveLength(1);
@@ -118,14 +107,14 @@ describe("createTracingHook", () => {
       const tracer = createMemoryTracer();
       const hooks = createTracingHook(tracer);
 
-      hooks.beforeResolve(
+      hooks.beforeResolve!(
         createMockResolutionContext({
           portName: "Database",
           lifetime: "singleton",
           depth: 1,
         })
       );
-      hooks.afterResolve(
+      hooks.afterResolve!(
         createMockResultContext({
           portName: "Database",
           lifetime: "singleton",
@@ -147,8 +136,8 @@ describe("createTracingHook", () => {
 
       const error = new Error("Test error");
 
-      hooks.beforeResolve(createMockResolutionContext());
-      hooks.afterResolve(createMockResultContext({ error }));
+      hooks.beforeResolve!(createMockResolutionContext());
+      hooks.afterResolve!(createMockResultContext({ error }));
 
       const spans = tracer.getCollectedSpans();
       expect(spans[0].status).toBe("error");
@@ -168,12 +157,12 @@ describe("createTracingHook", () => {
       });
 
       // Should trace Logger
-      hooks.beforeResolve(createMockResolutionContext({ portName: "Logger" }));
-      hooks.afterResolve(createMockResultContext({ portName: "Logger" }));
+      hooks.beforeResolve!(createMockResolutionContext({ portName: "Logger" }));
+      hooks.afterResolve!(createMockResultContext({ portName: "Logger" }));
 
       // Should not trace Database
-      hooks.beforeResolve(createMockResolutionContext({ portName: "Database" }));
-      hooks.afterResolve(createMockResultContext({ portName: "Database" }));
+      hooks.beforeResolve!(createMockResolutionContext({ portName: "Database" }));
+      hooks.afterResolve!(createMockResultContext({ portName: "Database" }));
 
       const spans = tracer.getCollectedSpans();
       expect(spans).toHaveLength(1);
@@ -187,12 +176,12 @@ describe("createTracingHook", () => {
       });
 
       // Non-cached resolution
-      hooks.beforeResolve(createMockResolutionContext({ isCacheHit: false }));
-      hooks.afterResolve(createMockResultContext({ isCacheHit: false }));
+      hooks.beforeResolve!(createMockResolutionContext({ isCacheHit: false }));
+      hooks.afterResolve!(createMockResultContext({ isCacheHit: false }));
 
       // Cached resolution
-      hooks.beforeResolve(createMockResolutionContext({ isCacheHit: true }));
-      hooks.afterResolve(createMockResultContext({ isCacheHit: true }));
+      hooks.beforeResolve!(createMockResolutionContext({ isCacheHit: true }));
+      hooks.afterResolve!(createMockResultContext({ isCacheHit: true }));
 
       const spans = tracer.getCollectedSpans();
       expect(spans).toHaveLength(1); // Only non-cached
@@ -205,12 +194,12 @@ describe("createTracingHook", () => {
       });
 
       // Fast resolution (below threshold)
-      hooks.beforeResolve(createMockResolutionContext({ portName: "Fast" }));
-      hooks.afterResolve(createMockResultContext({ portName: "Fast", duration: 5 }));
+      hooks.beforeResolve!(createMockResolutionContext({ portName: "Fast" }));
+      hooks.afterResolve!(createMockResultContext({ portName: "Fast", duration: 5 }));
 
       // Slow resolution (above threshold)
-      hooks.beforeResolve(createMockResolutionContext({ portName: "Slow" }));
-      hooks.afterResolve(createMockResultContext({ portName: "Slow", duration: 15 }));
+      hooks.beforeResolve!(createMockResolutionContext({ portName: "Slow" }));
+      hooks.afterResolve!(createMockResultContext({ portName: "Slow", duration: 15 }));
 
       const spans = tracer.getCollectedSpans();
       // Both spans created but fast one has minimal processing
@@ -226,8 +215,8 @@ describe("createTracingHook", () => {
         },
       });
 
-      hooks.beforeResolve(createMockResolutionContext());
-      hooks.afterResolve(createMockResultContext());
+      hooks.beforeResolve!(createMockResolutionContext());
+      hooks.afterResolve!(createMockResultContext());
 
       const spans = tracer.getCollectedSpans();
       expect(spans[0].attributes).toMatchObject({
@@ -243,16 +232,16 @@ describe("createTracingHook", () => {
       const hooks = createTracingHook(tracer);
 
       // First resolution
-      hooks.beforeResolve(createMockResolutionContext({ portName: "Logger" }));
-      hooks.afterResolve(createMockResultContext({ portName: "Logger" }));
+      hooks.beforeResolve!(createMockResolutionContext({ portName: "Logger" }));
+      hooks.afterResolve!(createMockResultContext({ portName: "Logger" }));
 
       // Second resolution
-      hooks.beforeResolve(createMockResolutionContext({ portName: "Database" }));
-      hooks.afterResolve(createMockResultContext({ portName: "Database" }));
+      hooks.beforeResolve!(createMockResolutionContext({ portName: "Database" }));
+      hooks.afterResolve!(createMockResultContext({ portName: "Database" }));
 
       // Third resolution
-      hooks.beforeResolve(createMockResolutionContext({ portName: "Cache" }));
-      hooks.afterResolve(createMockResultContext({ portName: "Cache" }));
+      hooks.beforeResolve!(createMockResolutionContext({ portName: "Cache" }));
+      hooks.afterResolve!(createMockResultContext({ portName: "Cache" }));
 
       const spans = tracer.getCollectedSpans();
       expect(spans).toHaveLength(3);
@@ -266,14 +255,14 @@ describe("createTracingHook", () => {
       const hooks = createTracingHook(tracer);
 
       // Start multiple resolutions (simulating concurrent/nested)
-      hooks.beforeResolve(createMockResolutionContext({ portName: "A", depth: 0 }));
-      hooks.beforeResolve(createMockResolutionContext({ portName: "B", depth: 1 }));
-      hooks.beforeResolve(createMockResolutionContext({ portName: "C", depth: 2 }));
+      hooks.beforeResolve!(createMockResolutionContext({ portName: "A", depth: 0 }));
+      hooks.beforeResolve!(createMockResolutionContext({ portName: "B", depth: 1 }));
+      hooks.beforeResolve!(createMockResolutionContext({ portName: "C", depth: 2 }));
 
       // Complete in LIFO order (nested resolution pattern)
-      hooks.afterResolve(createMockResultContext({ portName: "C", depth: 2 }));
-      hooks.afterResolve(createMockResultContext({ portName: "B", depth: 1 }));
-      hooks.afterResolve(createMockResultContext({ portName: "A", depth: 0 }));
+      hooks.afterResolve!(createMockResultContext({ portName: "C", depth: 2 }));
+      hooks.afterResolve!(createMockResultContext({ portName: "B", depth: 1 }));
+      hooks.afterResolve!(createMockResultContext({ portName: "A", depth: 0 }));
 
       const spans = tracer.getCollectedSpans();
       expect(spans).toHaveLength(3);
@@ -291,17 +280,17 @@ describe("createTracingHook", () => {
 
       // Test with createTracingHook
       const hooks = createTracingHook(tracer1, options);
-      hooks.beforeResolve(createMockResolutionContext({ portName: "TestPort" }));
-      hooks.afterResolve(createMockResultContext({ portName: "TestPort", duration: 10 }));
+      hooks.beforeResolve!(createMockResolutionContext({ portName: "TestPort" }));
+      hooks.afterResolve!(createMockResultContext({ portName: "TestPort", duration: 10 }));
       const hookSpans = tracer1.getCollectedSpans();
 
       // Test with instrumentContainer
       const container = createMockContainer();
       instrumentContainer(container, tracer2, options);
-      const beforeResolve = container.addHook.mock.calls[0][1];
-      const afterResolve = container.addHook.mock.calls[1][1];
-      beforeResolve(createMockResolutionContext({ portName: "TestPort" }));
-      afterResolve(createMockResultContext({ portName: "TestPort", duration: 10 }));
+      const beforeResolve = container.addHook.mock.calls[0]![1];
+      const afterResolve = container.addHook.mock.calls[1]![1];
+      beforeResolve!(createMockResolutionContext({ portName: "TestPort" }));
+      afterResolve!(createMockResultContext({ portName: "TestPort", duration: 10 }));
       const containerSpans = tracer2.getCollectedSpans();
 
       // Should produce identical spans
@@ -321,21 +310,21 @@ describe("createTracingHook", () => {
 
       // Test with createTracingHook
       const hooks = createTracingHook(tracer1, options);
-      hooks.beforeResolve(createMockResolutionContext({ portName: "Logger" }));
-      hooks.afterResolve(createMockResultContext({ portName: "Logger" }));
-      hooks.beforeResolve(createMockResolutionContext({ portName: "Cache" })); // Filtered
-      hooks.afterResolve(createMockResultContext({ portName: "Cache" }));
+      hooks.beforeResolve!(createMockResolutionContext({ portName: "Logger" }));
+      hooks.afterResolve!(createMockResultContext({ portName: "Logger" }));
+      hooks.beforeResolve!(createMockResolutionContext({ portName: "Cache" })); // Filtered
+      hooks.afterResolve!(createMockResultContext({ portName: "Cache" }));
       const hookSpans = tracer1.getCollectedSpans();
 
       // Test with instrumentContainer
       const container = createMockContainer();
       instrumentContainer(container, tracer2, options);
-      const beforeResolve = container.addHook.mock.calls[0][1];
-      const afterResolve = container.addHook.mock.calls[1][1];
-      beforeResolve(createMockResolutionContext({ portName: "Logger" }));
-      afterResolve(createMockResultContext({ portName: "Logger" }));
-      beforeResolve(createMockResolutionContext({ portName: "Cache" })); // Filtered
-      afterResolve(createMockResultContext({ portName: "Cache" }));
+      const beforeResolve = container.addHook.mock.calls[0]![1];
+      const afterResolve = container.addHook.mock.calls[1]![1];
+      beforeResolve!(createMockResolutionContext({ portName: "Logger" }));
+      afterResolve!(createMockResultContext({ portName: "Logger" }));
+      beforeResolve!(createMockResolutionContext({ portName: "Cache" })); // Filtered
+      afterResolve!(createMockResultContext({ portName: "Cache" }));
       const containerSpans = tracer2.getCollectedSpans();
 
       // Should produce same number of spans (filtered consistently)
@@ -353,17 +342,17 @@ describe("createTracingHook", () => {
 
       // Test with createTracingHook
       const hooks = createTracingHook(tracer1);
-      hooks.beforeResolve(createMockResolutionContext());
-      hooks.afterResolve(createMockResultContext({ error }));
+      hooks.beforeResolve!(createMockResolutionContext());
+      hooks.afterResolve!(createMockResultContext({ error }));
       const hookSpans = tracer1.getCollectedSpans();
 
       // Test with instrumentContainer
       const container = createMockContainer();
       instrumentContainer(container, tracer2);
-      const beforeResolve = container.addHook.mock.calls[0][1];
-      const afterResolve = container.addHook.mock.calls[1][1];
-      beforeResolve(createMockResolutionContext());
-      afterResolve(createMockResultContext({ error }));
+      const beforeResolve = container.addHook.mock.calls[0]![1];
+      const afterResolve = container.addHook.mock.calls[1]![1];
+      beforeResolve!(createMockResolutionContext());
+      afterResolve!(createMockResultContext({ error }));
       const containerSpans = tracer2.getCollectedSpans();
 
       // Should handle errors identically
@@ -382,21 +371,21 @@ describe("createTracingHook", () => {
 
       // Test with createTracingHook
       const hooks = createTracingHook(tracer1, options);
-      hooks.beforeResolve(createMockResolutionContext({ portName: "Fast" }));
-      hooks.afterResolve(createMockResultContext({ portName: "Fast", duration: 5 }));
-      hooks.beforeResolve(createMockResolutionContext({ portName: "Slow" }));
-      hooks.afterResolve(createMockResultContext({ portName: "Slow", duration: 15 }));
+      hooks.beforeResolve!(createMockResolutionContext({ portName: "Fast" }));
+      hooks.afterResolve!(createMockResultContext({ portName: "Fast", duration: 5 }));
+      hooks.beforeResolve!(createMockResolutionContext({ portName: "Slow" }));
+      hooks.afterResolve!(createMockResultContext({ portName: "Slow", duration: 15 }));
       const hookSpans = tracer1.getCollectedSpans();
 
       // Test with instrumentContainer
       const container = createMockContainer();
       instrumentContainer(container, tracer2, options);
-      const beforeResolve = container.addHook.mock.calls[0][1];
-      const afterResolve = container.addHook.mock.calls[1][1];
-      beforeResolve(createMockResolutionContext({ portName: "Fast" }));
-      afterResolve(createMockResultContext({ portName: "Fast", duration: 5 }));
-      beforeResolve(createMockResolutionContext({ portName: "Slow" }));
-      afterResolve(createMockResultContext({ portName: "Slow", duration: 15 }));
+      const beforeResolve = container.addHook.mock.calls[0]![1];
+      const afterResolve = container.addHook.mock.calls[1]![1];
+      beforeResolve!(createMockResolutionContext({ portName: "Fast" }));
+      afterResolve!(createMockResultContext({ portName: "Fast", duration: 5 }));
+      beforeResolve!(createMockResolutionContext({ portName: "Slow" }));
+      afterResolve!(createMockResultContext({ portName: "Slow", duration: 15 }));
       const containerSpans = tracer2.getCollectedSpans();
 
       // Should produce same spans with same processing

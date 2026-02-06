@@ -14,45 +14,18 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { instrumentContainer } from "../../../src/instrumentation/container.js";
-import type { HookableContainer } from "../../../src/instrumentation/types.js";
-import type { Tracer } from "../../../src/ports/tracer.js";
-import type { Span } from "../../../src/types/index.js";
 import type { ResolutionHookContext, ResolutionResultContext } from "@hex-di/runtime";
 import { clearStack } from "../../../src/instrumentation/span-stack.js";
 
-interface MockHookableContainer extends HookableContainer {
-  addHook: ReturnType<typeof vi.fn>;
-  removeHook: ReturnType<typeof vi.fn>;
-}
-
-function createMockContainer(): MockHookableContainer {
+function createMockContainer(): any {
   return {
     addHook: vi.fn(),
     removeHook: vi.fn(),
   };
 }
 
-interface MockSpan extends Span {
-  setAttribute: ReturnType<typeof vi.fn>;
-  setAttributes: ReturnType<typeof vi.fn>;
-  addEvent: ReturnType<typeof vi.fn>;
-  setStatus: ReturnType<typeof vi.fn>;
-  recordException: ReturnType<typeof vi.fn>;
-  end: ReturnType<typeof vi.fn>;
-  isRecording: ReturnType<typeof vi.fn>;
-}
-
-interface MockTracer extends Tracer {
-  startSpan: ReturnType<typeof vi.fn>;
-  withSpan: ReturnType<typeof vi.fn>;
-  withSpanAsync: ReturnType<typeof vi.fn>;
-  getActiveSpan: ReturnType<typeof vi.fn>;
-  getSpanContext: ReturnType<typeof vi.fn>;
-  withAttributes: ReturnType<typeof vi.fn>;
-}
-
-function createMockTracer(): MockTracer {
-  const mockSpan: MockSpan = {
+function createMockTracer(): any {
+  const mockSpan: any = {
     context: {
       traceId: "00000000000000000000000000000001",
       spanId: "0000000000000001",
@@ -77,9 +50,7 @@ function createMockTracer(): MockTracer {
   };
 }
 
-function createMockResolutionContext(
-  overrides?: Partial<ResolutionHookContext>
-): ResolutionHookContext {
+function createMockResolutionContext(overrides?: Partial<ResolutionHookContext>): any {
   return {
     portName: "TestPort",
     lifetime: "transient",
@@ -91,9 +62,7 @@ function createMockResolutionContext(
   };
 }
 
-function createMockResultContext(
-  overrides?: Partial<ResolutionResultContext>
-): ResolutionResultContext {
+function createMockResultContext(overrides?: Partial<ResolutionResultContext>): any {
   return {
     portName: "TestPort",
     lifetime: "transient",
