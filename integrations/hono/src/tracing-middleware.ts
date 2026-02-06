@@ -94,7 +94,7 @@ export function tracingMiddleware(options: TracingMiddlewareOptions): Middleware
     attributes,
   } = options;
 
-  const middleware: MiddlewareHandler = async (context, next) => {
+  return async (context, next) => {
     // Extract parent context from request headers if enabled
     // Note: Current tracer implementations don't support external parent context
     // from SpanContext, but we still extract it for potential future use or
@@ -102,9 +102,12 @@ export function tracingMiddleware(options: TracingMiddlewareOptions): Middleware
     const extractedContext = extractContext
       ? (() => {
           const headers: Record<string, string | undefined> = {};
-          context.req.raw.headers.forEach((value, key) => {
-            headers[key] = value;
-          });
+          const rawHeaders = context.req.raw.headers;
+          if (rawHeaders && typeof rawHeaders.forEach === "function") {
+            rawHeaders.forEach((value: string, key: string) => {
+              headers[key] = value;
+            });
+          }
           return extractTraceContext(headers);
         })()
       : undefined;
@@ -147,10 +150,11 @@ export function tracingMiddleware(options: TracingMiddlewareOptions): Middleware
       await next();
 
       // Record response status code
-      span.setAttribute("http.status_code", context.res.status);
+      const responseStatus = context.res?.status ?? 200;
+      span.setAttribute("http.status_code", responseStatus);
 
       // Set error status for 5xx responses
-      if (context.res.status >= 500) {
+      if (responseStatus >= 500) {
         span.setStatus("error");
       }
     } catch (error) {
@@ -184,6 +188,4 @@ export function tracingMiddleware(options: TracingMiddlewareOptions): Middleware
       throw handlerError;
     }
   };
-
-  return middleware;
 }
