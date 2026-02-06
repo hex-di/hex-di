@@ -10,9 +10,14 @@ import type { DdSpan, DdTracer } from "../../src/types.js";
 import type { SpanData } from "@hex-di/tracing";
 
 /**
- * Helper to create test SpanData
+ * Helper to create test SpanData with optional overrides
  */
-function createTestSpanData(name: string, startTime: number, endTime: number): SpanData {
+function createTestSpanData(
+  name: string,
+  startTime: number,
+  endTime: number,
+  overrides?: Partial<SpanData>
+): SpanData {
   return {
     context: {
       traceId: "trace123",
@@ -28,6 +33,7 @@ function createTestSpanData(name: string, startTime: number, endTime: number): S
     events: [],
     links: [],
     parentSpanId: undefined,
+    ...overrides,
   };
 }
 
@@ -85,12 +91,13 @@ describe("createDataDogBridge", () => {
 
   it("should convert HexDI attributes to DataDog tags", async () => {
     const bridge = createDataDogBridge({ tracer: mockTracer });
-    const spanData = createTestSpanData("test", 1000, 2000);
-    spanData.attributes = {
-      "http.method": "GET",
-      "http.url": "/api/users",
-      "custom.tag": "value",
-    };
+    const spanData = createTestSpanData("test", 1000, 2000, {
+      attributes: {
+        "http.method": "GET",
+        "http.url": "/api/users",
+        "custom.tag": "value",
+      },
+    });
 
     await bridge.export([spanData]);
 
@@ -103,8 +110,9 @@ describe("createDataDogBridge", () => {
 
   it("should set span.kind tag from HexDI span kind", async () => {
     const bridge = createDataDogBridge({ tracer: mockTracer });
-    const spanData = createTestSpanData("test", 1000, 2000);
-    spanData.kind = "server";
+    const spanData = createTestSpanData("test", 1000, 2000, {
+      kind: "server",
+    });
 
     await bridge.export([spanData]);
 
@@ -118,8 +126,9 @@ describe("createDataDogBridge", () => {
     // Export parent and child in same batch - child should NOT find parent
     // because parent is finished and cleaned up before child is processed
     const parentData = createTestSpanData("parent", 1000, 3000);
-    const childData = createTestSpanData("child", 1500, 2500);
-    childData.parentSpanId = "parent";
+    const childData = createTestSpanData("child", 1500, 2500, {
+      parentSpanId: "parent",
+    });
 
     await bridge.export([parentData, childData]);
 
@@ -139,11 +148,12 @@ describe("createDataDogBridge", () => {
 
   it("should handle error status by setting error tag", async () => {
     const bridge = createDataDogBridge({ tracer: mockTracer });
-    const spanData = createTestSpanData("test", 1000, 2000);
-    spanData.status = "error";
-    spanData.attributes = {
-      "error.message": "Something went wrong",
-    };
+    const spanData = createTestSpanData("test", 1000, 2000, {
+      status: "error",
+      attributes: {
+        "error.message": "Something went wrong",
+      },
+    });
 
     await bridge.export([spanData]);
 
@@ -156,8 +166,9 @@ describe("createDataDogBridge", () => {
     const bridge = createDataDogBridge({ tracer: mockTracer });
 
     // Test with operation name attribute
-    const spanData1 = createTestSpanData("test1", 1000, 2000);
-    spanData1.attributes = { "operation.name": "custom-operation" };
+    const spanData1 = createTestSpanData("test1", 1000, 2000, {
+      attributes: { "operation.name": "custom-operation" },
+    });
     await bridge.export([spanData1]);
 
     const mockSpan1 = mockTracer._mockSpans.get("test1");
@@ -173,19 +184,20 @@ describe("createDataDogBridge", () => {
 
   it("should serialize span events as tags", async () => {
     const bridge = createDataDogBridge({ tracer: mockTracer });
-    const spanData = createTestSpanData("test", 1000, 2000);
-    spanData.events = [
-      {
-        name: "exception",
-        time: 1500,
-        attributes: { "exception.type": "Error", "exception.message": "Failed" },
-      },
-      {
-        name: "cache-hit",
-        time: 1600,
-        attributes: { "cache.key": "user:123" },
-      },
-    ];
+    const spanData = createTestSpanData("test", 1000, 2000, {
+      events: [
+        {
+          name: "exception",
+          time: 1500,
+          attributes: { "exception.type": "Error", "exception.message": "Failed" },
+        },
+        {
+          name: "cache-hit",
+          time: 1600,
+          attributes: { "cache.key": "user:123" },
+        },
+      ],
+    });
 
     await bridge.export([spanData]);
 
@@ -208,8 +220,9 @@ describe("createDataDogBridge", () => {
     await bridge.export([parentData]);
 
     // Verify parent is NOT in active spans - it was cleaned up after finish
-    const childData1 = createTestSpanData("child1", 1100, 1900);
-    childData1.parentSpanId = "parent";
+    const childData1 = createTestSpanData("child1", 1100, 1900, {
+      parentSpanId: "parent",
+    });
     await bridge.export([childData1]);
 
     // First child should NOT find parent (parent was cleaned up)
@@ -220,8 +233,9 @@ describe("createDataDogBridge", () => {
     });
 
     // Export another child - child1 should also be gone
-    const childData2 = createTestSpanData("child2", 1200, 1800);
-    childData2.parentSpanId = "child1";
+    const childData2 = createTestSpanData("child2", 1200, 1800, {
+      parentSpanId: "child1",
+    });
     await bridge.export([childData2]);
 
     expect(mockTracer.startSpan).toHaveBeenNthCalledWith(3, "child2", {
@@ -275,8 +289,9 @@ describe("createDataDogBridge", () => {
     await bridge.shutdown();
 
     // Export a child referencing span1 - should not find parent
-    const childData = createTestSpanData("child", 3000, 4000);
-    childData.parentSpanId = "span1";
+    const childData = createTestSpanData("child", 3000, 4000, {
+      parentSpanId: "span1",
+    });
     await bridge.export([childData]);
 
     // Should not have childOf since parent was cleared

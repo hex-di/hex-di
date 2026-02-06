@@ -56,7 +56,7 @@ vi.mock("@hex-di/tracing-otel", () => {
         ended: true,
         resource,
         kind: 0,
-        instrumentationLibrary: { name: "test" },
+        instrumentationScope: { name: "test", version: undefined, schemaUrl: undefined },
         droppedAttributesCount: 0,
         droppedEventsCount: 0,
         droppedLinksCount: 0,
