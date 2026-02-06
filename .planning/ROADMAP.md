@@ -83,9 +83,9 @@ Plans:
 - [x] 23-03-PLAN.md — NoOp adapter implementation
 - [x] 23-04-PLAN.md — Memory adapter implementation
 - [x] 23-05-PLAN.md — Console adapter implementation
-- [ ] 23-06-PLAN.md — W3C Trace Context propagation
+- [x] 23-06-PLAN.md — W3C Trace Context propagation
 - [x] 23-07-PLAN.md — ID generation and utilities
-- [ ] 23-08-PLAN.md — Integration tests and documentation
+- [x] 23-08-PLAN.md — Integration tests and documentation
 
 #### Phase 24: Container Instrumentation and Context Propagation
 
@@ -133,7 +133,7 @@ Plans:
 | 20. Integration Migration       | v6.0      | 2/2            | Complete    | 2026-02-06 |
 | 21. Tooling & Library Migration | v6.0      | 2/2            | Complete    | 2026-02-06 |
 | 22. Verification & References   | v6.0      | 2/2            | Complete    | 2026-02-06 |
-| 23. Core Tracing Foundation     | v7.0      | 6/8            | In progress | -          |
+| 23. Core Tracing Foundation     | v7.0      | 8/8            | Complete    | 2026-02-06 |
 | 24. Container Instrumentation   | v7.0      | 0/TBD          | Not started | -          |
 | 25. OTel Backend & Export       | v7.0      | 0/TBD          | Not started | -          |
 | 26. Breaking Change Migration   | v7.0      | 0/TBD          | Not started | -          |

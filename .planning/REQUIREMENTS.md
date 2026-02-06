@@ -8,33 +8,33 @@
 
 ### Core Types and Ports
 
-- [ ] **CORE-01**: Tracer port with startSpan, withSpan, withSpanAsync, getActiveSpan, getSpanContext, withAttributes methods
-- [ ] **CORE-02**: Span interface with context, setAttribute, setAttributes, addEvent, setStatus, recordException, end, isRecording
-- [ ] **CORE-03**: SpanContext type with traceId (32 hex), spanId (16 hex), traceFlags, traceState
-- [ ] **CORE-04**: SpanData type for completed spans (context, parentSpanId, name, kind, startTime, endTime, duration, status, attributes, events, links)
-- [ ] **CORE-05**: SpanExporter port with export, shutdown, forceFlush methods
-- [ ] **CORE-06**: SpanProcessor port with onStart, onEnd, shutdown, forceFlush methods
-- [ ] **CORE-07**: AttributeValue type (string | number | boolean | arrays) with type guards (no casts)
-- [ ] **CORE-08**: SpanKind type (internal, server, client, producer, consumer)
-- [ ] **CORE-09**: SpanStatus type (ok, error, unset)
-- [ ] **CORE-10**: TracerPort, SpanExporterPort, SpanProcessorPort port definitions via createPort()
+- [x] **CORE-01**: Tracer port with startSpan, withSpan, withSpanAsync, getActiveSpan, getSpanContext, withAttributes methods
+- [x] **CORE-02**: Span interface with context, setAttribute, setAttributes, addEvent, setStatus, recordException, end, isRecording
+- [x] **CORE-03**: SpanContext type with traceId (32 hex), spanId (16 hex), traceFlags, traceState
+- [x] **CORE-04**: SpanData type for completed spans (context, parentSpanId, name, kind, startTime, endTime, duration, status, attributes, events, links)
+- [x] **CORE-05**: SpanExporter port with export, shutdown, forceFlush methods
+- [x] **CORE-06**: SpanProcessor port with onStart, onEnd, shutdown, forceFlush methods
+- [x] **CORE-07**: AttributeValue type (string | number | boolean | arrays) with type guards (no casts)
+- [x] **CORE-08**: SpanKind type (internal, server, client, producer, consumer)
+- [x] **CORE-09**: SpanStatus type (ok, error, unset)
+- [x] **CORE-10**: TracerPort, SpanExporterPort, SpanProcessorPort port definitions via createPort()
 
 ### Built-in Adapters
 
-- [ ] **ADPT-01**: NoOpTracer adapter with zero runtime overhead (singleton frozen span, no allocations, no timing calls)
-- [ ] **ADPT-02**: MemoryTracer adapter that collects SpanData for testing assertions (getCollectedSpans, clear)
-- [ ] **ADPT-03**: ConsoleTracer adapter for development debugging (colorize, includeTimestamps, minDurationMs options)
-- [ ] **ADPT-04**: All adapters registered via createAdapter() with proper port/lifetime configuration
+- [x] **ADPT-01**: NoOpTracer adapter with zero runtime overhead (singleton frozen span, no allocations, no timing calls)
+- [x] **ADPT-02**: MemoryTracer adapter that collects SpanData for testing assertions (getCollectedSpans, clear)
+- [x] **ADPT-03**: ConsoleTracer adapter for development debugging (colorize, includeTimestamps, minDurationMs options)
+- [x] **ADPT-04**: All adapters registered via createAdapter() with proper port/lifetime configuration
 
 ### Context Propagation
 
-- [ ] **CTX-01**: W3C Trace Context traceparent header parsing (version-traceId-spanId-traceFlags)
-- [ ] **CTX-02**: W3C Trace Context traceparent header serialization
-- [ ] **CTX-03**: tracestate header parsing and serialization (vendor-specific key-value pairs)
-- [ ] **CTX-04**: extractTraceContext(headers) function for incoming request context extraction
-- [ ] **CTX-05**: injectTraceContext(context, headers) function for outgoing request context injection
-- [ ] **CTX-06**: Trace/span ID generation (crypto.randomUUID or hex-encoded random bytes)
-- [ ] **CTX-07**: Correlation ID propagation via context variable (CorrelationIdVar)
+- [x] **CTX-01**: W3C Trace Context traceparent header parsing (version-traceId-spanId-traceFlags)
+- [x] **CTX-02**: W3C Trace Context traceparent header serialization
+- [x] **CTX-03**: tracestate header parsing and serialization (vendor-specific key-value pairs)
+- [x] **CTX-04**: extractTraceContext(headers) function for incoming request context extraction
+- [x] **CTX-05**: injectTraceContext(context, headers) function for outgoing request context injection
+- [x] **CTX-06**: Trace/span ID generation (crypto.randomUUID or hex-encoded random bytes)
+- [x] **CTX-07**: Correlation ID propagation via context variable (CorrelationIdVar)
 
 ### Container Instrumentation
 
@@ -98,8 +98,8 @@
 
 - [ ] **PERF-01**: NoOp tracer overhead < 5% vs no tracing (benchmark verified)
 - [ ] **PERF-02**: Memory tracer overhead < 10% vs no tracing (benchmark verified)
-- [ ] **PERF-03**: Zero external dependencies in @hex-di/tracing core package
-- [ ] **PERF-04**: All public API has comprehensive JSDoc documentation
+- [x] **PERF-03**: Zero external dependencies in @hex-di/tracing core package
+- [x] **PERF-04**: All public API has comprehensive JSDoc documentation
 - [ ] **PERF-05**: No `any` types, no type casts, no eslint-disable comments
 
 ## v8.0 Requirements (Deferred)
@@ -136,74 +136,74 @@
 
 ## Traceability
 
-| Requirement | Phase       | Status  |
-| ----------- | ----------- | ------- |
-| CORE-01     | Phase 23    | Pending |
-| CORE-02     | Phase 23    | Pending |
-| CORE-03     | Phase 23    | Pending |
-| CORE-04     | Phase 23    | Pending |
-| CORE-05     | Phase 23    | Pending |
-| CORE-06     | Phase 23    | Pending |
-| CORE-07     | Phase 23    | Pending |
-| CORE-08     | Phase 23    | Pending |
-| CORE-09     | Phase 23    | Pending |
-| CORE-10     | Phase 23    | Pending |
-| ADPT-01     | Phase 23    | Pending |
-| ADPT-02     | Phase 23    | Pending |
-| ADPT-03     | Phase 23    | Pending |
-| ADPT-04     | Phase 23    | Pending |
-| CTX-01      | Phase 23    | Pending |
-| CTX-02      | Phase 23    | Pending |
-| CTX-03      | Phase 23    | Pending |
-| CTX-04      | Phase 23    | Pending |
-| CTX-05      | Phase 23    | Pending |
-| CTX-06      | Phase 23    | Pending |
-| CTX-07      | Phase 23    | Pending |
-| INST-01     | Phase 24    | Pending |
-| INST-02     | Phase 24    | Pending |
-| INST-03     | Phase 24    | Pending |
-| INST-04     | Phase 24    | Pending |
-| INST-05     | Phase 24    | Pending |
-| INST-06     | Phase 24    | Pending |
-| INST-07     | Phase 24    | Pending |
-| INST-08     | Phase 24    | Pending |
-| INST-09     | Phase 24    | Pending |
-| OTEL-01     | Phase 25    | Pending |
-| OTEL-02     | Phase 25    | Pending |
-| OTEL-03     | Phase 25    | Pending |
-| OTEL-04     | Phase 25    | Pending |
-| OTEL-05     | Phase 25    | Pending |
-| OTEL-06     | Phase 25    | Pending |
-| OTEL-07     | Phase 25    | Pending |
-| OTEL-08     | Phase 25    | Pending |
-| BACK-01     | Phase 25    | Pending |
-| BACK-02     | Phase 25    | Pending |
-| BACK-03     | Phase 25    | Pending |
-| BACK-04     | Phase 25    | Pending |
-| MIGR-01     | Phase 26    | Pending |
-| MIGR-02     | Phase 26    | Pending |
-| MIGR-03     | Phase 26    | Pending |
-| MIGR-04     | Phase 26    | Pending |
-| MIGR-05     | Phase 26    | Pending |
-| MIGR-06     | Phase 26    | Pending |
-| MIGR-07     | Phase 26    | Pending |
-| MIGR-08     | Phase 26    | Pending |
-| MIGR-09     | Phase 26    | Pending |
-| FRMW-01     | Phase 27    | Pending |
-| FRMW-02     | Phase 27    | Pending |
-| FRMW-03     | Phase 27    | Pending |
-| FRMW-04     | Phase 27    | Pending |
-| FRMW-05     | Phase 27    | Pending |
-| FRMW-06     | Phase 27    | Pending |
-| TEST-01     | Phase 27    | Pending |
-| TEST-02     | Phase 27    | Pending |
-| TEST-03     | Phase 27    | Pending |
-| TEST-04     | Phase 27    | Pending |
-| PERF-01     | Phase 27    | Pending |
-| PERF-02     | Phase 27    | Pending |
-| PERF-03     | Phase 23    | Pending |
-| PERF-04     | Phase 23    | Pending |
-| PERF-05     | Phase 23-27 | Pending |
+| Requirement | Phase       | Status   |
+| ----------- | ----------- | -------- |
+| CORE-01     | Phase 23    | Complete |
+| CORE-02     | Phase 23    | Complete |
+| CORE-03     | Phase 23    | Complete |
+| CORE-04     | Phase 23    | Complete |
+| CORE-05     | Phase 23    | Complete |
+| CORE-06     | Phase 23    | Complete |
+| CORE-07     | Phase 23    | Complete |
+| CORE-08     | Phase 23    | Complete |
+| CORE-09     | Phase 23    | Complete |
+| CORE-10     | Phase 23    | Complete |
+| ADPT-01     | Phase 23    | Complete |
+| ADPT-02     | Phase 23    | Complete |
+| ADPT-03     | Phase 23    | Complete |
+| ADPT-04     | Phase 23    | Complete |
+| CTX-01      | Phase 23    | Complete |
+| CTX-02      | Phase 23    | Complete |
+| CTX-03      | Phase 23    | Complete |
+| CTX-04      | Phase 23    | Complete |
+| CTX-05      | Phase 23    | Complete |
+| CTX-06      | Phase 23    | Complete |
+| CTX-07      | Phase 23    | Complete |
+| INST-01     | Phase 24    | Pending  |
+| INST-02     | Phase 24    | Pending  |
+| INST-03     | Phase 24    | Pending  |
+| INST-04     | Phase 24    | Pending  |
+| INST-05     | Phase 24    | Pending  |
+| INST-06     | Phase 24    | Pending  |
+| INST-07     | Phase 24    | Pending  |
+| INST-08     | Phase 24    | Pending  |
+| INST-09     | Phase 24    | Pending  |
+| OTEL-01     | Phase 25    | Pending  |
+| OTEL-02     | Phase 25    | Pending  |
+| OTEL-03     | Phase 25    | Pending  |
+| OTEL-04     | Phase 25    | Pending  |
+| OTEL-05     | Phase 25    | Pending  |
+| OTEL-06     | Phase 25    | Pending  |
+| OTEL-07     | Phase 25    | Pending  |
+| OTEL-08     | Phase 25    | Pending  |
+| BACK-01     | Phase 25    | Pending  |
+| BACK-02     | Phase 25    | Pending  |
+| BACK-03     | Phase 25    | Pending  |
+| BACK-04     | Phase 25    | Pending  |
+| MIGR-01     | Phase 26    | Pending  |
+| MIGR-02     | Phase 26    | Pending  |
+| MIGR-03     | Phase 26    | Pending  |
+| MIGR-04     | Phase 26    | Pending  |
+| MIGR-05     | Phase 26    | Pending  |
+| MIGR-06     | Phase 26    | Pending  |
+| MIGR-07     | Phase 26    | Pending  |
+| MIGR-08     | Phase 26    | Pending  |
+| MIGR-09     | Phase 26    | Pending  |
+| FRMW-01     | Phase 27    | Pending  |
+| FRMW-02     | Phase 27    | Pending  |
+| FRMW-03     | Phase 27    | Pending  |
+| FRMW-04     | Phase 27    | Pending  |
+| FRMW-05     | Phase 27    | Pending  |
+| FRMW-06     | Phase 27    | Pending  |
+| TEST-01     | Phase 27    | Pending  |
+| TEST-02     | Phase 27    | Pending  |
+| TEST-03     | Phase 27    | Pending  |
+| TEST-04     | Phase 27    | Pending  |
+| PERF-01     | Phase 27    | Pending  |
+| PERF-02     | Phase 27    | Pending  |
+| PERF-03     | Phase 23    | Complete |
+| PERF-04     | Phase 23    | Complete |
+| PERF-05     | Phase 23-27 | Pending  |
 
 **Coverage:**
 
@@ -214,4 +214,4 @@
 ---
 
 _Requirements defined: 2026-02-06_
-_Last updated: 2026-02-06 after roadmap creation_
+_Last updated: 2026-02-06 Phase 23 complete_
