@@ -232,28 +232,53 @@ export class ConsoleTracer implements Tracer {
   private readonly _spanStack: StackEntry[];
   private readonly _defaultAttributes: Attributes;
 
-  constructor(options: ConsoleTracerOptions = {}) {
-    // Apply defaults
-    this._options = {
-      colorize:
-        options.colorize ?? (typeof process !== "undefined" && process.stdout?.isTTY === true),
-      includeTimestamps: options.includeTimestamps ?? true,
-      minDurationMs: options.minDurationMs ?? 0,
-      indent: options.indent ?? true,
-    };
+  constructor(
+    options: ConsoleTracerOptions | Required<ConsoleTracerOptions> = {},
+    defaultAttributes: Attributes = {}
+  ) {
+    // Apply defaults if options is not fully specified
+    const isFullySpecified =
+      "colorize" in options &&
+      "includeTimestamps" in options &&
+      "minDurationMs" in options &&
+      "indent" in options;
+
+    if (isFullySpecified) {
+      this._options = options as Required<ConsoleTracerOptions>;
+    } else {
+      this._options = {
+        colorize: options.colorize ?? this._detectTTY(),
+        includeTimestamps: options.includeTimestamps ?? true,
+        minDurationMs: options.minDurationMs ?? 0,
+        indent: options.indent ?? true,
+      };
+    }
     this._spanStack = [];
-    this._defaultAttributes = {};
+    this._defaultAttributes = defaultAttributes;
   }
 
   /**
-   * Private constructor for withAttributes() to create derived tracers.
+   * Detect if running in a TTY terminal for colorization.
    *
    * @internal
    */
-  private constructor(options: Required<ConsoleTracerOptions>, defaultAttributes: Attributes) {
-    this._options = options;
-    this._spanStack = [];
-    this._defaultAttributes = defaultAttributes;
+  private _detectTTY(): boolean {
+    try {
+      // Check for Node.js process.stdout.isTTY
+      const globalProcess = globalThis as unknown;
+      if (globalProcess && typeof globalProcess === "object" && "process" in globalProcess) {
+        const nodeProcess = (globalProcess as { process: unknown }).process;
+        if (nodeProcess && typeof nodeProcess === "object" && "stdout" in nodeProcess) {
+          const stdout = (nodeProcess as { stdout: unknown }).stdout;
+          if (stdout && typeof stdout === "object" && "isTTY" in stdout) {
+            return (stdout as { isTTY: boolean }).isTTY === true;
+          }
+        }
+      }
+    } catch {
+      // Ignore errors
+    }
+    return false;
   }
 
   startSpan(name: string, options?: SpanOptions): Span {
@@ -328,7 +353,21 @@ export class ConsoleTracer implements Tracer {
   private _onSpanEnd(spanData: SpanData, depth: number): void {
     const output = formatSpan(spanData, depth, this._options);
     if (output) {
-      console.log(output);
+      this._logToConsole(output);
+    }
+  }
+
+  /**
+   * Output to console.log via globalThis for environment independence.
+   *
+   * @param message - Message to log
+   *
+   * @internal
+   */
+  private _logToConsole(message: string): void {
+    const globalConsole = (globalThis as { console?: { log: (msg: string) => void } }).console;
+    if (globalConsole && typeof globalConsole.log === "function") {
+      globalConsole.log(message);
     }
   }
 
