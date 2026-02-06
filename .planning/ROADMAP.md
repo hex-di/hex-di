@@ -73,6 +73,15 @@ Plans:
 
 **Goal:** All old tracing types removed from every package; full monorepo builds, typechecks, and tests clean
 **Requirements:** MIGR-01..09 (9 requirements)
+**Plans:** 5 plans
+
+Plans:
+
+- [ ] 26-01-PLAN.md — Remove old tracing from @hex-di/core
+- [ ] 26-02-PLAN.md — Remove old tracing from @hex-di/runtime
+- [ ] 26-03-PLAN.md — Update integration packages
+- [ ] 26-04-PLAN.md — Migrate all examples
+- [ ] 26-05-PLAN.md — Final verification and cleanup
 
 #### Phase 27: Framework Integrations and Testing Utilities
 
@@ -108,7 +117,7 @@ Plans:
 | 23. Core Tracing Foundation     | v7.0      | 8/8            | Complete    | 2026-02-06 |
 | 24. Container Instrumentation   | v7.0      | 3/3            | Complete    | 2026-02-06 |
 | 25. OTel Backend & Export       | v7.0      | 5/5            | Complete    | 2026-02-06 |
-| 26. Breaking Change Migration   | v7.0      | 0/TBD          | Not started | -          |
+| 26. Breaking Change Migration   | v7.0      | 0/5            | Not started | -          |
 | 27. Framework & Testing         | v7.0      | 0/TBD          | Not started | -          |
 
 ## Tracking
