@@ -178,6 +178,11 @@ function createMockContainer(): TestContainer {
     },
     addHook: vi.fn(),
     removeHook: vi.fn(),
+    override: vi.fn().mockReturnValue({
+      override: vi.fn(),
+      extend: vi.fn(),
+      build: vi.fn(),
+    }),
     [ContainerBrand]: { provides: LoggerPort, extends: undefined as never },
     [INTERNAL_ACCESS]: () => mockInternalState,
   } as TestContainer;

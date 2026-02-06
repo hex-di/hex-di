@@ -192,7 +192,14 @@ export type {
   DepthLimitWarning,
   // Captive dependency detection
   LifetimeLevel,
+  LifetimeName,
   IsCaptiveDependency,
+  AddLifetime,
+  GetLifetimeLevel,
+  MergeLifetimeMaps,
+  FindAnyCaptiveDependency,
+  AddManyLifetimes,
+  WouldAnyBeCaptive,
   // Dependency satisfaction
   UnsatisfiedDependencies,
   OrphanPorts,
