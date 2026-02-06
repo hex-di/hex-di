@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** Catch dependency graph errors at compile time, not runtime
-**Current focus:** v7.0 Distributed Tracing — COMPLETE
+**Current focus:** Lint Cleanup (gap closure)
 
 ## Current Position
 
-Phase: 28 of 28 (Tracing Test Coverage)
-Plan: 4 of 4 (All plans complete)
-Status: Phase complete
-Last activity: 2026-02-06 -- Phase 28 complete, v7.0 milestone shipped
+Phase: 29 of 29 (Lint Cleanup)
+Plan: 1 of 1 (29-01 complete)
+Status: In progress
+Last activity: 2026-02-07 -- Completed 29-01-PLAN.md (tracing/integration lint cleanup)
 
-Progress: [███████████] 87/87 plans (100%)
+Progress: [████████████] 88/88 plans (100%)
 
 ## Milestone History
 
@@ -33,8 +33,8 @@ Progress: [███████████] 87/87 plans (100%)
 
 **Velocity (all milestones):**
 
-- Total plans completed: 87
-- Total phases: 28 complete
+- Total plans completed: 88
+- Total phases: 28 complete + 1 in progress
 - Total milestones: 8 shipped
 
 ## Accumulated Context
@@ -127,6 +127,10 @@ Key decisions captured in PROJECT.md (23 decisions across 8 milestones).
 - Non-null assertions for mock.calls access in tests (28-01)
 - Equivalence testing pattern for duplicate API surfaces (createTracingHook vs instrumentContainer) (28-01)
 - Container<unknown> replaced with any in integration test type declarations (28-02)
+- HeadersLike interface for safe Hono request header iteration (29-01)
+- getResponseStatus helper for safe Hono response status access (29-01)
+- Promise.resolve().then() pattern for synchronous SpanExporter implementations (29-01)
+- Ref object { current: any } pattern for deferred container assignment in test closures (29-01)
 
 ### Pending Todos
 
@@ -151,12 +155,12 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-06
-Stopped at: Phase 28 complete, v7.0 milestone shipped
+Last session: 2026-02-07
+Stopped at: Completed 29-01-PLAN.md (tracing/integration lint cleanup)
 Resume file: None
-Next: All phases complete. Start new milestone or address tech debt.
+Next: Continue Phase 29 lint cleanup or start new work.
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-06 (Phase 28 complete - v7.0 Distributed Tracing milestone shipped)_
+_Last updated: 2026-02-07 (Phase 29 Plan 01 complete - tracing/integration lint cleanup)_
