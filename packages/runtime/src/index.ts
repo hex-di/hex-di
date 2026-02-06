@@ -184,14 +184,7 @@ export type {
 } from "./inspection/index.js";
 
 // =============================================================================
-// Tracing Module
-// =============================================================================
-
-export { hasTracing, getTracingAPI, type ContainerWithTracing } from "./tracing/index.js";
-
-// =============================================================================
-// Standalone Inspection and Tracing Functions
+// Standalone Inspection Functions
 // =============================================================================
 
 export { inspect } from "./inspect.js";
-export { trace, enableTracing, type TraceResult, type TraceCallback } from "./trace.js";
