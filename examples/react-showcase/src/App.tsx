@@ -2,7 +2,7 @@
  * App component - Root component for the React Showcase.
  *
  * Architecture:
- * - Unified root container with built-in tracing and inspection
+ * - Root container with optional tracing via @hex-di/tracing
  * - Chat Dashboard as child container (loads immediately)
  * - TaskFlow as lazy container (loads on navigation)
  *
@@ -47,17 +47,17 @@ import { ModalProvider } from "./taskflow/components/modals/index.js";
 import { ChatRoom } from "./components/ChatRoom.js";
 
 // =============================================================================
-// Root Container (with built-in tracing and inspection)
+// Root Container
 // =============================================================================
 
 /**
  * Root container with shared infrastructure (Logger, Config).
  * All feature containers are children of this root.
  *
- * Note: Tracing and inspection are now built-in features - no plugins needed.
- * Access via container.tracer and container.inspector properties.
+ * For tracing, use instrumentContainer() from @hex-di/tracing.
+ * For inspection, use the container's inspector property.
  */
-const rootContainer = createContainer(rootGraph, { name: "App Root" });
+const rootContainer = createContainer({ graph: rootGraph, name: "App Root" });
 
 // =============================================================================
 // Chat Container (child of root)
@@ -343,7 +343,7 @@ function TaskFlowDemo() {
  * Root application component.
  *
  * Features:
- * - Unified root container with built-in tracing and inspection
+ * - Root container with optional tracing via @hex-di/tracing
  * - AsyncContainerProvider for root initialization
  * - Chat Dashboard (/) and TaskFlow (/taskflow/*) demos
  */

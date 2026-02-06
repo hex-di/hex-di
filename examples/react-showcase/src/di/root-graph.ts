@@ -30,21 +30,19 @@ import { ConfigAdapter, LoggerAdapter } from "./adapters.js";
  * 1. LoggerAdapter (singleton, sync) - Application-wide logging
  * 2. ConfigAdapter (singleton, ASYNC) - Application configuration
  *
- * @example Creating the root container
+ * @example Creating the root container with tracing
  * ```typescript
- * import { createContainer, pipe, createPluginWrapper, TracingPlugin, InspectorPlugin } from "@hex-di/runtime";
+ * import { createContainer } from "@hex-di/runtime";
+ * import { instrumentContainer, createMemoryTracer } from "@hex-di/tracing";
  * import { rootGraph } from "./di/root-graph";
  *
- * const withTracing = createPluginWrapper(TracingPlugin);
- * const withInspector = createPluginWrapper(InspectorPlugin);
+ * const container = createContainer({ graph: rootGraph, name: "App Root" });
  *
- * const rootContainer = pipe(
- *   createContainer(rootGraph),
- *   withTracing,
- *   withInspector
- * );
+ * // Optional: add tracing
+ * const tracer = createMemoryTracer();
+ * const cleanup = instrumentContainer(container, tracer);
  *
- * await rootContainer.initialize(); // Required for async ConfigAdapter
+ * await container.initialize(); // Required for async ConfigAdapter
  * ```
  */
 export const rootGraph = GraphBuilder.create()
