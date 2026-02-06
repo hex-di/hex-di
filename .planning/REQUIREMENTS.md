@@ -38,15 +38,15 @@
 
 ### Container Instrumentation
 
-- [ ] **INST-01**: instrumentContainer(container, tracer, options) installs beforeResolve/afterResolve hooks on a single container, returns cleanup function
-- [ ] **INST-02**: instrumentContainerTree(root, tracer, options) walks container hierarchy via inspector and instruments all containers
-- [ ] **INST-03**: Module-level span stack for active span context propagation across containers
-- [ ] **INST-04**: beforeResolve hook creates child span under active parent span, pushes to stack
-- [ ] **INST-05**: afterResolve hook pops span from stack, records error/success, ends span with try/finally
-- [ ] **INST-06**: Resolution span attributes: hex-di.port.name, hex-di.port.lifetime, hex-di.resolution.cached, hex-di.container.name
-- [ ] **INST-07**: createTracingHook(tracer, options) creates a standalone ResolutionHook for manual hook registration
-- [ ] **INST-08**: AutoInstrumentOptions: traceSyncResolutions, traceAsyncResolutions, portFilter, additionalAttributes, minDurationMs
-- [ ] **INST-09**: Cross-container tracing: parent container span is parent of child container resolution spans
+- [x] **INST-01**: instrumentContainer(container, tracer, options) installs beforeResolve/afterResolve hooks on a single container, returns cleanup function
+- [x] **INST-02**: instrumentContainerTree(root, tracer, options) walks container hierarchy via inspector and instruments all containers
+- [x] **INST-03**: Module-level span stack for active span context propagation across containers
+- [x] **INST-04**: beforeResolve hook creates child span under active parent span, pushes to stack
+- [x] **INST-05**: afterResolve hook pops span from stack, records error/success, ends span with try/finally
+- [x] **INST-06**: Resolution span attributes: hex-di.port.name, hex-di.port.lifetime, hex-di.resolution.cached, hex-di.container.name
+- [x] **INST-07**: createTracingHook(tracer, options) creates a standalone ResolutionHook for manual hook registration
+- [x] **INST-08**: AutoInstrumentOptions: traceSyncResolutions, traceAsyncResolutions, portFilter, additionalAttributes, minDurationMs
+- [x] **INST-09**: Cross-container tracing: parent container span is parent of child container resolution spans
 
 ### OpenTelemetry Backend
 
@@ -159,15 +159,15 @@
 | CTX-05      | Phase 23    | Complete |
 | CTX-06      | Phase 23    | Complete |
 | CTX-07      | Phase 23    | Complete |
-| INST-01     | Phase 24    | Pending  |
-| INST-02     | Phase 24    | Pending  |
-| INST-03     | Phase 24    | Pending  |
-| INST-04     | Phase 24    | Pending  |
-| INST-05     | Phase 24    | Pending  |
-| INST-06     | Phase 24    | Pending  |
-| INST-07     | Phase 24    | Pending  |
-| INST-08     | Phase 24    | Pending  |
-| INST-09     | Phase 24    | Pending  |
+| INST-01     | Phase 24    | Complete |
+| INST-02     | Phase 24    | Complete |
+| INST-03     | Phase 24    | Complete |
+| INST-04     | Phase 24    | Complete |
+| INST-05     | Phase 24    | Complete |
+| INST-06     | Phase 24    | Complete |
+| INST-07     | Phase 24    | Complete |
+| INST-08     | Phase 24    | Complete |
+| INST-09     | Phase 24    | Complete |
 | OTEL-01     | Phase 25    | Pending  |
 | OTEL-02     | Phase 25    | Pending  |
 | OTEL-03     | Phase 25    | Pending  |
@@ -214,4 +214,4 @@
 ---
 
 _Requirements defined: 2026-02-06_
-_Last updated: 2026-02-06 Phase 23 complete_
+_Last updated: 2026-02-06 Phase 24 complete_

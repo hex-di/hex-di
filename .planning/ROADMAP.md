@@ -3,8 +3,8 @@
 ## Tracking
 
 - **Started:** 2026-02-01
-- **Current Phase:** 24 of 27 (Container Instrumentation and Context Propagation)
-- **Completion:** 59% (23/39 phases complete)
+- **Current Phase:** 25 of 27 (OpenTelemetry Backend and Export Pipeline)
+- **Completion:** 62% (24/39 phases complete)
 
 ## Shipped Milestones
 
@@ -51,9 +51,9 @@ Plans:
 
 Plans:
 
-- [ ] 24-01-PLAN.md — Core instrumentation with span stack
-- [ ] 24-02-PLAN.md — Tree instrumentation with subscription
-- [ ] 24-03-PLAN.md — Hook factory and exports
+- [x] 24-01-PLAN.md — Core instrumentation with span stack
+- [x] 24-02-PLAN.md — Tree instrumentation with subscription
+- [x] 24-03-PLAN.md — Hook factory and exports
 
 #### Phase 25: OpenTelemetry Backend and Export Pipeline
 
@@ -97,7 +97,7 @@ Plans:
 | 21. Tooling & Library Migration | v6.0      | 2/2            | Complete    | 2026-02-06 |
 | 22. Verification & References   | v6.0      | 2/2            | Complete    | 2026-02-06 |
 | 23. Core Tracing Foundation     | v7.0      | 8/8            | Complete    | 2026-02-06 |
-| 24. Container Instrumentation   | v7.0      | 0/3            | Not started | -          |
+| 24. Container Instrumentation   | v7.0      | 3/3            | Complete    | 2026-02-06 |
 | 25. OTel Backend & Export       | v7.0      | 0/TBD          | Not started | -          |
 | 26. Breaking Change Migration   | v7.0      | 0/TBD          | Not started | -          |
 | 27. Framework & Testing         | v7.0      | 0/TBD          | Not started | -          |
@@ -117,9 +117,9 @@ Plans:
 | v4.0      | 3      | 6     | 1      | 6.0       |
 | v5.0      | 5      | 22    | 3      | 7.3       |
 | v6.0      | 3      | 6     | 1      | 6.0       |
-| v7.0      | 5      | 68    | Active | TBD       |
+| v7.0      | 5      | 71    | Active | TBD       |
 
-**Overall:** 68 plans in 6 days = 11.3 plans/day
+**Overall:** 71 plans in 6 days = 11.8 plans/day
 
 ### Burndown
 
