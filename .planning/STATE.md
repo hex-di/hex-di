@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 
 ## Current Position
 
-Phase: 23 of 27 (Core Tracing Package Foundation) -- complete, ready for Phase 24
-Plan: complete
-Status: Phase 23 complete, ready for Phase 24
-Last activity: 2026-02-06 -- Phase 23 complete (8/8 plans, 156 tests, 23 requirements)
+Phase: 24 of 27 (Container Instrumentation and Context Propagation) -- in progress
+Plan: 1 of 4 complete
+Status: In progress
+Last activity: 2026-02-06 -- Completed 24-01-PLAN.md (core instrumentation)
 
-Progress: [██████░░░░] 55%
+Progress: [██████░░░░] 56%
 
 ## Milestone History
 
@@ -33,8 +33,8 @@ Progress: [██████░░░░] 55%
 
 **Velocity (all milestones):**
 
-- Total plans completed: 68
-- Total phases: 23
+- Total plans completed: 69
+- Total phases: 23 (1 in progress)
 - Total milestones: 7
 
 ## Accumulated Context
@@ -64,6 +64,9 @@ Key decisions captured in PROJECT.md (23 decisions across 7 milestones).
 - All-zeros ID validation per W3C spec (23-07)
 - globals.d.ts pattern for test types instead of @types/node dependency (23-08)
 - Integration tests verify exact export surface via star-import comparison (23-08)
+- HookableContainer interface instead of InspectorAPI for instrumentation (24-01)
+- Resolution key combines containerId, portName, depth, timestamp for uniqueness (24-01)
+- Duration filtering at span-end (afterResolve) not span-start (24-01)
 
 ### Pending Todos
 
@@ -81,11 +84,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Phase 23 complete
+Stopped at: Completed 24-01-PLAN.md
 Resume file: None
-Next: Plan Phase 24 (Container Instrumentation and Context Propagation)
+Next: Continue Phase 24 (Plans 24-02, 24-03, 24-04)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-06 (23-08 completed, Phase 23 complete)_
+_Last updated: 2026-02-06 (24-01 completed, Phase 24 in progress)_
