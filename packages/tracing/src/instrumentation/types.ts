@@ -7,8 +7,6 @@
  * @packageDocumentation
  */
 
-import type { Attributes } from "../types/index.js";
-
 /**
  * Port filter specification for selective instrumentation.
  *
@@ -230,15 +228,15 @@ export interface AutoInstrumentOptions {
  * };
  * ```
  */
-export const DEFAULT_INSTRUMENT_OPTIONS: Required<AutoInstrumentOptions> = {
+export const DEFAULT_INSTRUMENT_OPTIONS = {
   traceSyncResolutions: true,
   traceAsyncResolutions: true,
   traceCachedResolutions: true,
-  portFilter: undefined as unknown as PortFilter, // No filtering
+  portFilter: undefined,
   additionalAttributes: {},
   minDurationMs: 0,
   includeStackTrace: false,
-};
+} satisfies AutoInstrumentOptions;
 
 /**
  * Type guard to check if a port filter is a predicate function.

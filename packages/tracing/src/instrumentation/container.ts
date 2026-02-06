@@ -15,8 +15,7 @@ import type {
   HookHandler,
 } from "@hex-di/runtime";
 import type { Tracer } from "../ports/tracer.js";
-import type { Span } from "../types/index.js";
-import { pushSpan, popSpan, getActiveSpan } from "./span-stack.js";
+import { pushSpan, popSpan } from "./span-stack.js";
 import type { AutoInstrumentOptions } from "./types.js";
 import { evaluatePortFilter } from "./types.js";
 
@@ -125,32 +124,34 @@ export function instrumentContainer(
     includeStackTrace: options?.includeStackTrace ?? false,
   };
 
-  // Map to track spans for each resolution (by resolution ID)
-  // We use a Map instead of the stack directly because afterResolve might
-  // not always be called in LIFO order for nested async resolutions
-  const spanMap = new Map<string, Span>();
+  /**
+   * Determines whether a resolution should be traced based on options.
+   * Used by both beforeResolve (to decide whether to push a span)
+   * and afterResolve (to decide whether to pop one).
+   */
+  function shouldTrace(ctx: ResolutionHookContext): boolean {
+    if (!evaluatePortFilter(opts.portFilter, ctx.portName)) {
+      return false;
+    }
+    if (ctx.isCacheHit && !opts.traceCachedResolutions) {
+      return false;
+    }
+    return true;
+  }
 
   /**
    * beforeResolve hook: Create and start span
    */
   function beforeResolve(ctx: ResolutionHookContext): void {
-    // Filter by port name
-    if (!evaluatePortFilter(opts.portFilter, ctx.portName)) {
+    if (!shouldTrace(ctx)) {
       return;
     }
-
-    // Filter by cache status
-    if (ctx.isCacheHit && !opts.traceCachedResolutions) {
-      return;
-    }
-
-    // Get parent span from stack for parent-child relationship
-    const parentSpan = getActiveSpan();
 
     // Create span with concise name format
     const spanName = `resolve:${ctx.portName}`;
 
-    // Start span with parent context if available
+    // Start span (parent-child relationship is implicit via stack -
+    // the tracer implementation can check getActiveSpan() if needed)
     const span = tracer.startSpan(spanName, {
       kind: "internal",
       attributes: {
@@ -186,40 +187,32 @@ export function instrumentContainer(
 
     // Push span to stack for nested resolutions to use as parent
     pushSpan(span);
-
-    // Store span in map for retrieval in afterResolve
-    // Use a unique key combining container ID, port name, and depth
-    const resolutionKey = `${ctx.containerId}:${ctx.portName}:${ctx.depth}:${Date.now()}`;
-    spanMap.set(resolutionKey, span);
-
-    // Store resolution key in context for afterResolve retrieval
-    // We'll use a property that won't collide with runtime internals
-    (ctx as { __tracingKey?: string }).__tracingKey = resolutionKey;
   }
 
   /**
    * afterResolve hook: Complete span with result/error
+   *
+   * Re-evaluates the same filter as beforeResolve to determine
+   * whether this resolution was traced. This is necessary because
+   * the runtime creates a new context object for afterResolve
+   * (via spread), so we cannot use object identity to correlate.
+   * The filter is deterministic for the same port/cache state,
+   * so re-evaluation is correct.
    */
   function afterResolve(ctx: ResolutionResultContext): void {
-    // Retrieve resolution key from context
-    const resolutionKey = (ctx as { __tracingKey?: string }).__tracingKey;
-    if (!resolutionKey) {
-      // This resolution wasn't traced (filtered out in beforeResolve)
+    // Re-evaluate the same filter - if beforeResolve skipped
+    // this resolution, afterResolve must skip it too
+    if (!shouldTrace(ctx)) {
       return;
     }
 
-    // Retrieve span from map
-    const span = spanMap.get(resolutionKey);
+    // Pop the span that the matching beforeResolve pushed.
+    // The stack is LIFO and hooks fire symmetrically, so this
+    // always returns the correct span.
+    const span = popSpan();
     if (!span) {
-      // Span not found (shouldn't happen, but handle gracefully)
       return;
     }
-
-    // Clean up map entry
-    spanMap.delete(resolutionKey);
-
-    // Pop span from stack
-    popSpan();
 
     try {
       // Add duration attribute
@@ -227,8 +220,7 @@ export function instrumentContainer(
 
       // Filter by minimum duration
       if (opts.minDurationMs > 0 && ctx.duration < opts.minDurationMs) {
-        // Duration below threshold - don't record this span
-        // We still need to end it to maintain proper span lifecycle
+        // Duration below threshold - end span without meaningful status
         span.setStatus("ok");
         span.end();
         return;
@@ -236,11 +228,9 @@ export function instrumentContainer(
 
       // Set status based on error
       if (ctx.error !== null) {
-        // Resolution failed
         span.recordException(ctx.error);
         span.setStatus("error");
       } else {
-        // Resolution succeeded
         span.setStatus("ok");
       }
     } finally {
@@ -258,9 +248,6 @@ export function instrumentContainer(
     // Remove hooks
     container.removeHook("beforeResolve", beforeResolve);
     container.removeHook("afterResolve", afterResolve);
-
-    // Clear span map (in case of incomplete resolutions)
-    spanMap.clear();
 
     // Remove from tracking map
     installedCleanups.delete(container);
