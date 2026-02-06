@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 ## Current Position
 
 Phase: 25 of 27 (OpenTelemetry Backend and Export Pipeline) -- in progress
-Plan: 1 of TBD
+Plan: 3 of TBD
 Status: In progress
-Last activity: 2026-02-06 -- Completed 25-01-PLAN.md (package foundation)
+Last activity: 2026-02-06 -- Completed 25-03-PLAN.md (OTLP HTTP exporter)
 
-Progress: [██████░░░░] 63%
+Progress: [██████░░░░] 65%
 
 ## Milestone History
 
@@ -33,7 +33,7 @@ Progress: [██████░░░░] 63%
 
 **Velocity (all milestones):**
 
-- Total plans completed: 75
+- Total plans completed: 77
 - Total phases: 24
 - Total milestones: 7
 
@@ -79,6 +79,10 @@ Key decisions captured in PROJECT.md (23 decisions across 7 milestones).
 - resourceFromAttributes factory for Resource creation (25-01)
 - Explicit field mapping instead of type casting for safety (25-01)
 - Fixed tsconfig.build.json rootDir to prevent dist/src/ nesting (25-01)
+- Resource metadata via factory function, not constructor (25-03)
+- Preserve HexDI attributes while adding OTel conventions (25-03)
+- Log export errors but never throw (graceful degradation) (25-03)
+- Updated OTLP exporter to 0.211.0 for sdk-trace-base compatibility (25-03)
 
 ### Pending Todos
 
@@ -92,17 +96,19 @@ None.
 - Phase 24 completed with known gap: dynamic child container auto-instrumentation requires runtime to emit child-created events (deferred to v8.0 ENH-05)
 - Phase 24 completed without behavioral tests for instrumentation module (structural verification only)
 - Phase 25-01 complete: type bridging without casts achieved successfully
-- Phase 25 ongoing: processors and exporters in subsequent plans
+- Phase 25-02 complete: SimpleSpanProcessor for immediate export (parallel with 25-03)
+- Phase 25-03 complete: OTLP HTTP exporter with resource and semantic conventions
+- Phase 25 ongoing: BatchSpanProcessor in 25-04
 - Phase 26 HIGH risk: breaking changes across multiple packages
 
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Completed 25-01-PLAN.md (package foundation)
+Stopped at: Completed 25-03-PLAN.md (OTLP HTTP exporter)
 Resume file: None
-Next: Continue Phase 25 (processors and exporters)
+Next: Continue Phase 25 (BatchSpanProcessor in 25-04)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-06 (Phase 25-01 complete)_
+_Last updated: 2026-02-06 (Phase 25-03 complete)_
