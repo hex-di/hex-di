@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 ## Current Position
 
 Phase: 25 of 27 (OpenTelemetry Backend and Export Pipeline) -- in progress
-Plan: 3 of TBD
+Plan: 5 of TBD
 Status: In progress
-Last activity: 2026-02-06 -- Completed 25-02-PLAN.md (span processors) and 25-03-PLAN.md (OTLP exporter) in parallel
+Last activity: 2026-02-06 -- Completed 25-05-PLAN.md (DataDog bridge with peer dependency pattern)
 
-Progress: [██████░░░░] 65%
+Progress: [██████░░░░] 67%
 
 ## Milestone History
 
@@ -87,6 +87,10 @@ Key decisions captured in PROJECT.md (23 decisions across 7 milestones).
 - Preserve HexDI attributes while adding OTel conventions (25-03)
 - Log export errors but never throw (graceful degradation) (25-03)
 - Updated OTLP exporter to 0.211.0 for sdk-trace-base compatibility (25-03)
+- dd-trace as optional peer dependency to avoid ~50MB forced installation (25-05)
+- Minimal interface wrapping (DdSpan/DdTracer) without direct dd-trace type imports (25-05)
+- Bridge accepts initialized tracer for user-controlled dd-trace configuration (25-05)
+- Span events flattened to numbered tags (event.0.name) for dd-trace compatibility (25-05)
 
 ### Pending Todos
 
@@ -102,17 +106,18 @@ None.
 - Phase 25-01 complete: type bridging without casts achieved successfully
 - Phase 25-02 complete: BatchSpanProcessor and SimpleSpanProcessor with timeout-safe shutdown (parallel with 25-03)
 - Phase 25-03 complete: OTLP HTTP exporter with resource and semantic conventions
-- Phase 25 ongoing: next plan TBD (processors and exporters complete)
+- Phase 25-05 complete: DataDog bridge with peer dependency pattern (no behavioral tests - integration validation recommended)
+- Phase 25 ongoing: next plan TBD (processors and exporters complete, backends growing)
 - Phase 26 HIGH risk: breaking changes across multiple packages
 
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Completed 25-02-PLAN.md (span processors) and 25-03-PLAN.md (OTLP exporter)
+Stopped at: Completed 25-05-PLAN.md (DataDog bridge with peer dependency pattern)
 Resume file: None
-Next: Continue Phase 25 (next plan TBD)
+Next: Continue Phase 25 (backend exporters complete, integration/testing next)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-06 (Phase 25-02 and 25-03 complete)_
+_Last updated: 2026-02-06 (Phase 25-05 complete)_
