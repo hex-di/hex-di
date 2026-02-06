@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import type { SpanData } from "../types.js";
 
 /**
@@ -135,7 +135,7 @@ export interface SpanExporter {
  * });
  * ```
  */
-export const SpanExporterPort = createPort<SpanExporter>()({
+export const SpanExporterPort = port<SpanExporter>()({
   name: "SpanExporter",
   direction: "outbound",
   description: "Exports completed spans to observability backends",

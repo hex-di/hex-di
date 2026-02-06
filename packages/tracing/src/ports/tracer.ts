@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import type { Span, SpanOptions, SpanContext, Attributes } from "../types.js";
 
 /**
@@ -248,7 +248,7 @@ export interface Tracer {
  * });
  * ```
  */
-export const TracerPort = createPort<Tracer>()({
+export const TracerPort = port<Tracer>()({
   name: "Tracer",
   direction: "outbound",
   description: "Distributed tracing service for creating and managing spans",

@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import { createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import type { Span, SpanData } from "../types.js";
 
 /**
@@ -158,7 +158,7 @@ export interface SpanProcessor {
  * });
  * ```
  */
-export const SpanProcessorPort = createPort<SpanProcessor>()({
+export const SpanProcessorPort = port<SpanProcessor>()({
   name: "SpanProcessor",
   direction: "outbound",
   description: "Processes span lifecycle events and coordinates exports",
