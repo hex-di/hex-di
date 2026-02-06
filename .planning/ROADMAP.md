@@ -118,7 +118,7 @@ Plans:
 
 Plans:
 
-- [ ] 29-01-PLAN.md — Fix all lint warnings in tracing and Hono packages
+- [ ] 29-01-PLAN.md — Fix all 18 lint warnings in tracing and integration packages
 
 #### Phase 30: Dynamic Child Container Auto-Instrumentation
 
