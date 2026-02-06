@@ -7,6 +7,29 @@
  * @packageDocumentation
  */
 
+/** Shape of a performance-like object with timeOrigin and now(). */
+interface PerformanceLike {
+  timeOrigin: number;
+  now: () => number;
+}
+
+/**
+ * Check if value has the shape of a Performance API object.
+ *
+ * @param value - Value to check
+ * @returns true if value has timeOrigin (number) and now (function)
+ */
+function isPerformanceLike(value: unknown): value is PerformanceLike {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  if (!("timeOrigin" in value) || !("now" in value)) {
+    return false;
+  }
+  // After 'in' narrowing, TypeScript knows these properties exist
+  return typeof value.timeOrigin === "number" && typeof value.now === "function";
+}
+
 /**
  * Get high-resolution timestamp in milliseconds since Unix epoch.
  *
@@ -36,10 +59,12 @@
 export function getHighResTimestamp(): number {
   // Try performance API (browser, Node.js 16+)
   if (typeof globalThis !== "undefined" && "performance" in globalThis) {
-    const performance = (globalThis as { performance?: { timeOrigin: number; now: () => number } })
-      .performance;
-    if (performance?.timeOrigin !== undefined && performance?.now) {
-      return performance.timeOrigin + performance.now();
+    const maybeGlobal: unknown = globalThis;
+    if (maybeGlobal && typeof maybeGlobal === "object" && "performance" in maybeGlobal) {
+      const perf: unknown = maybeGlobal.performance;
+      if (isPerformanceLike(perf)) {
+        return perf.timeOrigin + perf.now();
+      }
     }
   }
 

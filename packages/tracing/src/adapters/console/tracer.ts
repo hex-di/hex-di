@@ -232,27 +232,13 @@ export class ConsoleTracer implements Tracer {
   private readonly _spanStack: StackEntry[];
   private readonly _defaultAttributes: Attributes;
 
-  constructor(
-    options: ConsoleTracerOptions | Required<ConsoleTracerOptions> = {},
-    defaultAttributes: Attributes = {}
-  ) {
-    // Apply defaults if options is not fully specified
-    const isFullySpecified =
-      "colorize" in options &&
-      "includeTimestamps" in options &&
-      "minDurationMs" in options &&
-      "indent" in options;
-
-    if (isFullySpecified) {
-      this._options = options as Required<ConsoleTracerOptions>;
-    } else {
-      this._options = {
-        colorize: options.colorize ?? this._detectTTY(),
-        includeTimestamps: options.includeTimestamps ?? true,
-        minDurationMs: options.minDurationMs ?? 0,
-        indent: options.indent ?? true,
-      };
-    }
+  constructor(options: ConsoleTracerOptions = {}, defaultAttributes: Attributes = {}) {
+    this._options = {
+      colorize: options.colorize ?? this._detectTTY(),
+      includeTimestamps: options.includeTimestamps ?? true,
+      minDurationMs: options.minDurationMs ?? 0,
+      indent: options.indent ?? true,
+    };
     this._spanStack = [];
     this._defaultAttributes = defaultAttributes;
   }
@@ -265,13 +251,13 @@ export class ConsoleTracer implements Tracer {
   private _detectTTY(): boolean {
     try {
       // Check for Node.js process.stdout.isTTY
-      const globalProcess = globalThis as unknown;
-      if (globalProcess && typeof globalProcess === "object" && "process" in globalProcess) {
-        const nodeProcess = (globalProcess as { process: unknown }).process;
-        if (nodeProcess && typeof nodeProcess === "object" && "stdout" in nodeProcess) {
-          const stdout = (nodeProcess as { stdout: unknown }).stdout;
+      const g: unknown = globalThis;
+      if (g && typeof g === "object" && "process" in g) {
+        const proc: unknown = g.process;
+        if (proc && typeof proc === "object" && "stdout" in proc) {
+          const stdout: unknown = proc.stdout;
           if (stdout && typeof stdout === "object" && "isTTY" in stdout) {
-            return (stdout as { isTTY: boolean }).isTTY === true;
+            return stdout.isTTY === true;
           }
         }
       }
@@ -365,9 +351,12 @@ export class ConsoleTracer implements Tracer {
    * @internal
    */
   private _logToConsole(message: string): void {
-    const globalConsole = (globalThis as { console?: { log: (msg: string) => void } }).console;
-    if (globalConsole && typeof globalConsole.log === "function") {
-      globalConsole.log(message);
+    const g: unknown = globalThis;
+    if (g && typeof g === "object" && "console" in g) {
+      const cons: unknown = g.console;
+      if (cons && typeof cons === "object" && "log" in cons && typeof cons.log === "function") {
+        cons.log(message);
+      }
     }
   }
 

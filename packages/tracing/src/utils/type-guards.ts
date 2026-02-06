@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import type { AttributeValue, SpanKind, SpanStatus } from "../types";
+import type { AttributeValue, SpanKind, SpanStatus } from "../types/index.js";
 
 /**
  * Check if value is a valid attribute value.

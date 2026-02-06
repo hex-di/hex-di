@@ -7,7 +7,7 @@
  */
 
 // ID generation
-export { generateTraceId, generateSpanId } from "./id-generation";
+export { generateTraceId, generateSpanId } from "./id-generation.js";
 
 // Type guards
 export {
@@ -16,7 +16,7 @@ export {
   isSpanStatus,
   isValidTraceId,
   isValidSpanId,
-} from "./type-guards";
+} from "./type-guards.js";
 
 // Timing
-export { getHighResTimestamp, formatDuration } from "./timing";
+export { getHighResTimestamp, formatDuration } from "./timing.js";
