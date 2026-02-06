@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 ## Current Position
 
 Phase: 28 of 28 (Tracing Test Coverage)
-Plan: 3 of 5
+Plan: 1 of 5
 Status: In progress
-Last activity: 2026-02-06 -- Completed 28-03-PLAN.md (OTel Span Adapter and Processor Tests)
+Last activity: 2026-02-06 -- Completed 28-01-PLAN.md (Instrumentation Unit Tests)
 
-Progress: [██████████░] 103/105 plans (98%)
+Progress: [██████████░] 104/107 plans (97%)
 
 ## Milestone History
 
@@ -123,6 +123,9 @@ Key decisions captured in PROJECT.md (23 decisions across 7 milestones).
 - Mock exporter pattern for processor tests (captures exported batches) (28-03)
 - Fake timers (vi.useFakeTimers) for testing scheduled flush behavior (28-03)
 - Test factory functions (createTestSpan) for consistent test data (28-03)
+- Test mocks use any return types per CLAUDE.md guidelines for vitest compatibility (28-01)
+- Non-null assertions for mock.calls access in tests (28-01)
+- Equivalence testing pattern for duplicate API surfaces (createTracingHook vs instrumentContainer) (28-01)
 
 ### Pending Todos
 
@@ -138,17 +141,19 @@ None.
 - Phase 25 note: no behavioral tests for backend packages (structural verification only) -- RESOLVED in Phase 28
 - Phase 26 complete: all breaking changes successfully migrated across 5 plans
 - Phase 27 complete: all 12 requirements verified (FRMW-01..06, TEST-01..04, PERF-01..02, PERF-05)
-- Phase 28 in progress: adding comprehensive test coverage for tracing packages (28-03 complete: OTel backend tests)
+- Phase 28 in progress: adding comprehensive test coverage for tracing packages
+  - 28-01 complete: Instrumentation unit tests (78 tests: span-stack, container, port-filtering, hooks)
+  - 28-03 complete: OTel backend tests (span adapter, processors)
 - v7.0 Distributed Tracing milestone COMPLETE - Phase 28 adding test coverage
 
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Completed 28-03-PLAN.md (OTel Span Adapter and Processor Tests)
+Stopped at: Completed 28-01-PLAN.md (Instrumentation Unit Tests)
 Resume file: None
-Next: Continue Phase 28 with remaining test coverage plans (28-04, 28-05)
+Next: Continue Phase 28 with remaining test coverage plans (28-02, 28-04, 28-05)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-06 (Phase 28 Plan 03 complete - OTel backend tests added)_
+_Last updated: 2026-02-06 (Phase 28 Plan 01 complete - Instrumentation unit tests added)_
