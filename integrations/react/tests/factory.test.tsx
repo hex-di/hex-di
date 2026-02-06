@@ -13,7 +13,7 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import React from "react";
-import { port, type InspectorAPI, type TracingAPI } from "@hex-di/core";
+import { port, type InspectorAPI } from "@hex-di/core";
 import { ContainerBrand, ScopeBrand, INTERNAL_ACCESS } from "@hex-di/runtime";
 import type { Container, Scope, ContainerInternalState, ScopeInternalState } from "@hex-di/runtime";
 import { createTypedHooks } from "../src/factories/create-typed-hooks.jsx";
@@ -128,24 +128,6 @@ function createMockContainer(): TestContainer {
     isDisposed: false,
   };
 
-  const mockTracer: TracingAPI = {
-    getTraces: vi.fn().mockReturnValue([]),
-    getStats: vi.fn().mockReturnValue({
-      totalResolutions: 0,
-      cacheHits: 0,
-      cacheMisses: 0,
-      avgResolutionMs: 0,
-      portStats: new Map(),
-    }),
-    pause: vi.fn(),
-    resume: vi.fn(),
-    clear: vi.fn(),
-    subscribe: vi.fn().mockReturnValue(() => {}),
-    isPaused: vi.fn().mockReturnValue(false),
-    pin: vi.fn(),
-    unpin: vi.fn(),
-  };
-
   const mockContainer: TestContainer = {
     resolve: mockResolve,
     resolveAsync: mockResolveAsync,
@@ -170,7 +152,6 @@ function createMockContainer(): TestContainer {
     parentName: null,
     kind: "root",
     inspector: mockInspector,
-    tracer: mockTracer,
     withOverrides: vi.fn().mockImplementation((_overrides, fn) => fn()),
     createRequestScope: vi.fn().mockReturnValue(mockScope),
     get parent(): never {
