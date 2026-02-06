@@ -258,6 +258,12 @@ describe("public API surface", () => {
       "getActiveSpan",
       "clearStack",
       "getStackDepth",
+      // Testing utilities
+      "assertSpanExists",
+      "hasAttribute",
+      "hasEvent",
+      "hasStatus",
+      "hasDuration",
     ];
 
     // Verify all expected exports exist
