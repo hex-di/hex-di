@@ -50,21 +50,21 @@
 
 ### OpenTelemetry Backend
 
-- [ ] **OTEL-01**: @hex-di/tracing-otel package in packages/tracing-otel/
-- [ ] **OTEL-02**: OtelSpanExporter adapter converting HexDI SpanData to OTel ReadableSpan
-- [ ] **OTEL-03**: BatchSpanProcessor with configurable batch size and flush interval
-- [ ] **OTEL-04**: SimpleSpanProcessor for synchronous export (testing/development)
-- [ ] **OTEL-05**: OTLP HTTP exporter configuration (endpoint, headers, compression)
-- [ ] **OTEL-06**: Resource metadata support (service.name, service.version, deployment.environment)
-- [ ] **OTEL-07**: Semantic conventions mapping (hex-di.\* to OTel standard attributes)
-- [ ] **OTEL-08**: Timeout-based shutdown for BatchSpanProcessor (prevents disposal deadlock)
+- [x] **OTEL-01**: @hex-di/tracing-otel package in packages/tracing-otel/
+- [x] **OTEL-02**: OtelSpanExporter adapter converting HexDI SpanData to OTel ReadableSpan
+- [x] **OTEL-03**: BatchSpanProcessor with configurable batch size and flush interval
+- [x] **OTEL-04**: SimpleSpanProcessor for synchronous export (testing/development)
+- [x] **OTEL-05**: OTLP HTTP exporter configuration (endpoint, headers, compression)
+- [x] **OTEL-06**: Resource metadata support (service.name, service.version, deployment.environment)
+- [x] **OTEL-07**: Semantic conventions mapping (hex-di.\* to OTel standard attributes)
+- [x] **OTEL-08**: Timeout-based shutdown for BatchSpanProcessor (prevents disposal deadlock)
 
 ### Backend Adapters
 
-- [ ] **BACK-01**: @hex-di/tracing-jaeger package using @opentelemetry/exporter-jaeger (via OTel, not deprecated jaeger-client)
-- [ ] **BACK-02**: @hex-di/tracing-zipkin package using @opentelemetry/exporter-zipkin (via OTel, not deprecated zipkin npm)
-- [ ] **BACK-03**: @hex-di/tracing-datadog package using dd-trace (proprietary protocol, not OTel bridge)
-- [ ] **BACK-04**: Each backend adapter implements SpanExporterPort with proper factory and lifetime
+- [x] **BACK-01**: @hex-di/tracing-jaeger package using @opentelemetry/exporter-jaeger (via OTel, not deprecated jaeger-client)
+- [x] **BACK-02**: @hex-di/tracing-zipkin package using @opentelemetry/exporter-zipkin (via OTel, not deprecated zipkin npm)
+- [x] **BACK-03**: @hex-di/tracing-datadog package using dd-trace (proprietary protocol, not OTel bridge)
+- [x] **BACK-04**: Each backend adapter implements SpanExporterPort with proper factory and lifetime
 
 ### Breaking Changes and Migration
 
@@ -168,18 +168,18 @@
 | INST-07     | Phase 24    | Complete |
 | INST-08     | Phase 24    | Complete |
 | INST-09     | Phase 24    | Complete |
-| OTEL-01     | Phase 25    | Pending  |
-| OTEL-02     | Phase 25    | Pending  |
-| OTEL-03     | Phase 25    | Pending  |
-| OTEL-04     | Phase 25    | Pending  |
-| OTEL-05     | Phase 25    | Pending  |
-| OTEL-06     | Phase 25    | Pending  |
-| OTEL-07     | Phase 25    | Pending  |
-| OTEL-08     | Phase 25    | Pending  |
-| BACK-01     | Phase 25    | Pending  |
-| BACK-02     | Phase 25    | Pending  |
-| BACK-03     | Phase 25    | Pending  |
-| BACK-04     | Phase 25    | Pending  |
+| OTEL-01     | Phase 25    | Complete |
+| OTEL-02     | Phase 25    | Complete |
+| OTEL-03     | Phase 25    | Complete |
+| OTEL-04     | Phase 25    | Complete |
+| OTEL-05     | Phase 25    | Complete |
+| OTEL-06     | Phase 25    | Complete |
+| OTEL-07     | Phase 25    | Complete |
+| OTEL-08     | Phase 25    | Complete |
+| BACK-01     | Phase 25    | Complete |
+| BACK-02     | Phase 25    | Complete |
+| BACK-03     | Phase 25    | Complete |
+| BACK-04     | Phase 25    | Complete |
 | MIGR-01     | Phase 26    | Pending  |
 | MIGR-02     | Phase 26    | Pending  |
 | MIGR-03     | Phase 26    | Pending  |
@@ -214,4 +214,4 @@
 ---
 
 _Requirements defined: 2026-02-06_
-_Last updated: 2026-02-06 Phase 24 complete_
+_Last updated: 2026-02-06 Phase 25 complete_

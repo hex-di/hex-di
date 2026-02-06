@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 
 ## Current Position
 
-Phase: 25 of 27 (OpenTelemetry Backend and Export Pipeline) -- in progress
-Plan: 5 of TBD
-Status: In progress
-Last activity: 2026-02-06 -- Completed 25-04-PLAN.md (Jaeger and Zipkin exporters)
+Phase: 26 of 27 (Breaking Change Migration) -- not started
+Plan: 0 of TBD
+Status: Ready
+Last activity: 2026-02-06 -- Completed Phase 25 (OpenTelemetry Backend and Export Pipeline)
 
-Progress: [██████░░░░] 67%
+Progress: [███████░░░] 68%
 
 ## Milestone History
 
@@ -33,8 +33,8 @@ Progress: [██████░░░░] 67%
 
 **Velocity (all milestones):**
 
-- Total plans completed: 79
-- Total phases: 24
+- Total plans completed: 72
+- Total phases: 25
 - Total milestones: 7
 
 ## Accumulated Context
@@ -81,20 +81,16 @@ Key decisions captured in PROJECT.md (23 decisions across 7 milestones).
 - Fixed tsconfig.build.json rootDir to prevent dist/src/ nesting (25-01)
 - Factory functions for processors (no classes needed) (25-02)
 - FIFO drop policy when buffer exceeds maxQueueSize (25-02)
-- Type guards for global API access without casts (25-02)
+- safeSetTimeout/safeClearTimeout API for cross-platform timer access (25-02)
 - Graceful degradation when setTimeout unavailable (25-02)
 - Resource metadata via factory function, not constructor (25-03)
 - Preserve HexDI attributes while adding OTel conventions (25-03)
 - Log export errors but never throw (graceful degradation) (25-03)
-- Updated OTLP exporter to 0.211.0 for sdk-trace-base compatibility (25-03)
-- Jaeger exporter uses native @opentelemetry/exporter-jaeger (not deprecated at 2.5.0) (25-04)
-- Zipkin exporter uses native @opentelemetry/exporter-zipkin (25-04)
-- Inline logError helpers to avoid exposing tracing-otel internals (25-04)
-- No type casts via explicit type annotation instead (CLAUDE.md compliance) (25-04)
+- Jaeger exporter uses @opentelemetry/exporter-jaeger with Thrift protocol (25-04)
+- Zipkin exporter uses @opentelemetry/exporter-zipkin with JSON v2 API (25-04)
 - dd-trace as optional peer dependency to avoid ~50MB forced installation (25-05)
 - Minimal interface wrapping (DdSpan/DdTracer) without direct dd-trace type imports (25-05)
 - Bridge accepts initialized tracer for user-controlled dd-trace configuration (25-05)
-- Span events flattened to numbered tags (event.0.name) for dd-trace compatibility (25-05)
 
 ### Pending Todos
 
@@ -106,23 +102,18 @@ None.
 - Pre-existing lint warnings in libs/flow/core (31 warnings) -- should be addressed separately
 - Pre-existing test failures in examples/react-showcase (12 tests) -- should be addressed separately
 - Phase 24 completed with known gap: dynamic child container auto-instrumentation requires runtime to emit child-created events (deferred to v8.0 ENH-05)
-- Phase 24 completed without behavioral tests for instrumentation module (structural verification only)
-- Phase 25-01 complete: type bridging without casts achieved successfully
-- Phase 25-02 complete: BatchSpanProcessor and SimpleSpanProcessor with timeout-safe shutdown (parallel with 25-03)
-- Phase 25-03 complete: OTLP HTTP exporter with resource and semantic conventions
-- Phase 25-04 complete: Jaeger and Zipkin exporters with native OTel packages
-- Phase 25-05 complete: DataDog bridge with peer dependency pattern (no behavioral tests - integration validation recommended)
-- Phase 25 ongoing: next plan TBD (processors and exporters complete, multiple backend adapters available)
+- Phase 25 completed: all 15 must-haves verified, 4 new packages (tracing-otel, tracing-jaeger, tracing-zipkin, tracing-datadog)
+- Phase 25 note: no behavioral tests for backend packages (structural verification only)
 - Phase 26 HIGH risk: breaking changes across multiple packages
 
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Completed 25-04-PLAN.md (Jaeger and Zipkin exporters)
+Stopped at: Completed Phase 25 (OpenTelemetry Backend and Export Pipeline)
 Resume file: None
-Next: Continue Phase 25 (OTLP/Jaeger/Zipkin/DataDog exporters complete, integration/testing next)
+Next: Phase 26 (Breaking Change Migration)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-06 (Phase 25-04 complete)_
+_Last updated: 2026-02-06 (Phase 25 complete)_
