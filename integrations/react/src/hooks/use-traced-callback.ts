@@ -111,11 +111,23 @@ export function useTracedCallback<TArgs extends readonly unknown[], TReturn>(
 
   return useCallback(
     (...args: TArgs): TReturn => {
-      // Detect if callback is async by checking return type
-      const result = callback(...args);
+      // Try to execute callback and detect if it's async
+      let result: TReturn;
+      let isAsync = false;
+
+      try {
+        result = callback(...args);
+        isAsync = result instanceof Promise;
+      } catch (error) {
+        // If callback throws synchronously, wrap in span to record error
+        return tracer.withSpan(name, span => {
+          span.recordException(error instanceof Error ? error : String(error));
+          throw error;
+        });
+      }
 
       // If result is a Promise, use withSpanAsync
-      if (result instanceof Promise) {
+      if (isAsync) {
         return tracer.withSpanAsync(name, async () => {
           return await result;
         }) as TReturn;
