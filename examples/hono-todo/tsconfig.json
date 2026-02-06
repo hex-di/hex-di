@@ -6,9 +6,9 @@
     "moduleResolution": "node",
     "baseUrl": ".",
     "paths": {
-      "@hex-di/hono": ["../../packages/hono/src/index.ts"]
+      "@hex-di/hono": ["../../integrations/hono/src/index.ts"]
     }
   },
-  "include": ["src/**/*.ts", "../../packages/hono/src/**/*.ts"],
+  "include": ["src/**/*.ts", "../../integrations/hono/src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

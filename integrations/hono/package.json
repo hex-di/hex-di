@@ -43,12 +43,12 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/hex-di/hex-di.git",
-    "directory": "packages/hono"
+    "directory": "integrations/hono"
   },
   "bugs": {
     "url": "https://github.com/hex-di/hex-di/issues"
   },
-  "homepage": "https://github.com/hex-di/hex-di/tree/main/packages/hono#readme",
+  "homepage": "https://github.com/hex-di/hex-di/tree/main/integrations/hono#readme",
   "dependencies": {
     "@hex-di/core": "workspace:*",
     "@hex-di/runtime": "workspace:*"

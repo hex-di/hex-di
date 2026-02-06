@@ -90,8 +90,8 @@ pnpm add -D @hex-di/testing
 | [`@hex-di/ports`](./packages/ports)     | Port token system - define service contracts         | Yes      |
 | [`@hex-di/graph`](./packages/graph)     | GraphBuilder with compile-time dependency validation | Yes      |
 | [`@hex-di/runtime`](./packages/runtime) | Container creation and service resolution            | Yes      |
-| [`@hex-di/react`](./packages/react)     | React hooks and providers                            | No       |
-| [`@hex-di/hono`](./packages/hono)       | Hono middleware, helpers, and Env utilities          | No       |
+| [`@hex-di/react`](./integrations/react) | React hooks and providers                            | No       |
+| [`@hex-di/hono`](./integrations/hono)   | Hono middleware, helpers, and Env utilities          | No       |
 | [`@hex-di/testing`](./packages/testing) | Mocking, overrides, and test utilities               | No       |
 
 ## Core Concepts

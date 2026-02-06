@@ -124,9 +124,17 @@ export default tseslint.config(
       "**/coverage/**",
       // Packages have their own configs
       "packages/**",
+      "integrations/**",
       "examples/**",
       "website/**",
     ],
+  },
+  {
+    languageOptions: {
+      parserOptions: {
+        project: "./tsconfig.json",
+      },
+    },
   },
   ...baseConfig
 );
