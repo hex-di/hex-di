@@ -177,13 +177,8 @@ describe("@hex-di/runtime exports", () => {
         "detectContainerKind",
         "detectPhase",
         "buildTypedSnapshot",
-        // Tracing exports
-        "hasTracing",
-        "getTracingAPI",
-        // Standalone inspection and tracing functions
+        // Standalone inspection functions
         "inspect",
-        "trace",
-        "enableTracing",
       ];
 
       // Verify all expected exports exist

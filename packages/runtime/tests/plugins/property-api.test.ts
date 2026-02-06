@@ -1,9 +1,9 @@
 /**
- * Tests for property-based API (`container.inspector`, `container.tracer`).
+ * Tests for property-based API (`container.inspector`).
  *
- * These tests verify that the inspector and tracer APIs are available as
- * direct readonly properties on containers, following the recommendation
- * from the DI Container Architect for maximum discoverability and zero ceremony.
+ * These tests verify that the inspector API is available as a direct
+ * readonly property on containers, following the recommendation from
+ * the DI Container Architect for maximum discoverability and zero ceremony.
  *
  * @packageDocumentation
  */
@@ -14,7 +14,6 @@ import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../../src/container/factory.js";
 import type { Container, InferContainerProvides } from "../../src/types.js";
 import type { InspectorAPI } from "../../src/inspection/types.js";
-import type { TracingAPI } from "@hex-di/core";
 
 // =============================================================================
 // Test Fixtures
@@ -101,44 +100,6 @@ describe("Property-Based API", () => {
     });
   });
 
-  describe("container.tracer property", () => {
-    it("exists and returns TracerAPI", () => {
-      const graph = createTestGraph();
-      const container = createContainer({ graph: graph, name: "TestContainer" });
-
-      expect(container.tracer).toBeDefined();
-
-      // Verify it has the expected TracingAPI methods
-      const tracer = container.tracer;
-      expect(typeof tracer.getTraces).toBe("function");
-      expect(typeof tracer.getStats).toBe("function");
-      expect(typeof tracer.pause).toBe("function");
-      expect(typeof tracer.resume).toBe("function");
-      expect(typeof tracer.clear).toBe("function");
-      expect(typeof tracer.subscribe).toBe("function");
-      expect(typeof tracer.isPaused).toBe("function");
-      expect(typeof tracer.pin).toBe("function");
-      expect(typeof tracer.unpin).toBe("function");
-    });
-
-    it("is non-enumerable", () => {
-      const graph = createTestGraph();
-      const container = createContainer({ graph: graph, name: "TestContainer" });
-
-      const propertyDescriptor = Object.getOwnPropertyDescriptor(container, "tracer");
-      expect(propertyDescriptor).toBeDefined();
-      expect(propertyDescriptor?.enumerable).toBe(false);
-    });
-
-    it("is frozen/immutable", () => {
-      const graph = createTestGraph();
-      const container = createContainer({ graph: graph, name: "TestContainer" });
-
-      const tracer = container.tracer;
-      expect(Object.isFrozen(tracer)).toBe(true);
-    });
-  });
-
   describe("child container properties", () => {
     it("child containers have inspector property", () => {
       const graph = createTestGraph();
@@ -154,17 +115,6 @@ describe("Property-Based API", () => {
       expect(child.inspector.getContainerKind()).toBe("child");
     });
 
-    it("child containers have tracer property", () => {
-      const graph = createTestGraph();
-      const container = createContainer({ graph: graph, name: "ParentContainer" });
-      const childGraph = createChildGraph(graph);
-      const child = container.createChild(childGraph, { name: "ChildContainer" });
-
-      expect(child.tracer).toBeDefined();
-      expect(typeof child.tracer.getTraces).toBe("function");
-      expect(typeof child.tracer.getStats).toBe("function");
-    });
-
     it("child container properties are non-enumerable and frozen", () => {
       const graph = createTestGraph();
       const container = createContainer({ graph: graph, name: "ParentContainer" });
@@ -175,11 +125,6 @@ describe("Property-Based API", () => {
       const inspectorDescriptor = Object.getOwnPropertyDescriptor(child, "inspector");
       expect(inspectorDescriptor?.enumerable).toBe(false);
       expect(Object.isFrozen(child.inspector)).toBe(true);
-
-      // Tracer
-      const tracerDescriptor = Object.getOwnPropertyDescriptor(child, "tracer");
-      expect(tracerDescriptor?.enumerable).toBe(false);
-      expect(Object.isFrozen(child.tracer)).toBe(true);
     });
   });
 
@@ -197,20 +142,6 @@ describe("Property-Based API", () => {
       expect("containerName" in snapshot).toBe(true);
       expect(snapshot.containerName).toBe("TestContainer");
     });
-
-    it("container.tracer methods have correctly inferred types", () => {
-      const graph = createTestGraph();
-      const container = createContainer({ graph: graph, name: "TestContainer" });
-
-      // This test passes if it compiles - verifies type inference
-      const traces = container.tracer.getTraces();
-      const stats = container.tracer.getStats();
-
-      // Runtime verification
-      expect(Array.isArray(traces)).toBe(true);
-      expect(typeof stats.totalResolutions).toBe("number");
-      expect(typeof stats.averageDuration).toBe("number");
-    });
   });
 });
 
@@ -227,21 +158,12 @@ describe("Type-Level Property API Tests", () => {
     expectTypeOf(container.inspector).toMatchTypeOf<InspectorAPI>();
   });
 
-  it("Container type includes tracer property", () => {
-    const graph = createTestGraph();
-    const container = createContainer({ graph: graph, name: "TestContainer" });
-
-    // This compiles only if container.tracer is TracingAPI
-    expectTypeOf(container.tracer).toMatchTypeOf<TracingAPI>();
-  });
-
-  it("child container types include inspector and tracer properties", () => {
+  it("child container types include inspector property", () => {
     const graph = createTestGraph();
     const container = createContainer({ graph: graph, name: "ParentContainer" });
     const childGraph = createChildGraph(graph);
     const child = container.createChild(childGraph, { name: "ChildContainer" });
 
     expectTypeOf(child.inspector).toMatchTypeOf<InspectorAPI>();
-    expectTypeOf(child.tracer).toMatchTypeOf<TracingAPI>();
   });
 });
