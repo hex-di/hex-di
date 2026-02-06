@@ -4,14 +4,18 @@
  * @packageDocumentation
  */
 
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, afterEach } from "vitest";
+import { render, screen, cleanup } from "@testing-library/react";
 import { createMemoryTracer } from "@hex-di/tracing";
 import { TracingProvider } from "../src/providers/tracing-provider.js";
 import { useTracer } from "../src/hooks/use-tracer.js";
 import { useSpan } from "../src/hooks/use-span.js";
 import { useTracedCallback } from "../src/hooks/use-traced-callback.js";
 import { MissingProviderError } from "../src/errors.js";
+
+afterEach(() => {
+  cleanup();
+});
 
 describe("useTracer", () => {
   it("returns tracer from TracingProvider", () => {
