@@ -327,7 +327,7 @@ describe("useTracedCallback", () => {
 
     const spans = tracer.getCollectedSpans();
     expect(spans.length).toBe(1);
-    expect(spans[0].status.code).toBe("error");
+    expect(spans[0].status).toBe("error");
   });
 
   it("handles multiple callback invocations", () => {
