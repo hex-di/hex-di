@@ -23,12 +23,14 @@ import { BrowserRouter, Routes, Route, NavLink, useRoutes } from "react-router-d
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { createContainer } from "@hex-di/runtime";
+import { createConsoleTracer, instrumentContainer } from "@hex-di/tracing";
 
 // React package imports for providers
 import {
   HexDiAsyncContainerProvider,
   HexDiLazyContainerProvider,
   HexDiContainerProvider,
+  TracingProvider,
 } from "@hex-di/react";
 
 // DI graphs
@@ -47,6 +49,16 @@ import { ModalProvider } from "./taskflow/components/modals/index.js";
 import { ChatRoom } from "./components/ChatRoom.js";
 
 // =============================================================================
+// Tracing Setup
+// =============================================================================
+
+/**
+ * Create tracer for distributed tracing across the application.
+ * Console tracer outputs spans to browser console for development visibility.
+ */
+const tracer = createConsoleTracer({ colorize: true, minDurationMs: 5 });
+
+// =============================================================================
 // Root Container
 // =============================================================================
 
@@ -54,10 +66,16 @@ import { ChatRoom } from "./components/ChatRoom.js";
  * Root container with shared infrastructure (Logger, Config).
  * All feature containers are children of this root.
  *
- * For tracing, use instrumentContainer() from @hex-di/tracing.
- * For inspection, use the container's inspector property.
+ * Instrumented with tracer to trace all service resolutions.
  */
 const rootContainer = createContainer({ graph: rootGraph, name: "App Root" });
+
+// Instrument container to trace all service resolutions
+// This creates spans for DI resolution, allowing visibility into container behavior
+instrumentContainer(rootContainer, tracer, {
+  // Only trace specific ports to reduce noise (optional)
+  // portFilter: 'Logger',
+});
 
 // =============================================================================
 // Chat Container (child of root)
@@ -343,33 +361,37 @@ function TaskFlowDemo() {
  * Root application component.
  *
  * Features:
- * - Root container with optional tracing via @hex-di/tracing
+ * - TracingProvider for distributed tracing across all components
+ * - Root container with instrumentation via @hex-di/tracing
  * - AsyncContainerProvider for root initialization
  * - Chat Dashboard (/) and TaskFlow (/taskflow/*) demos
  */
 export function App() {
   return (
     <BrowserRouter>
-      <HexDiAsyncContainerProvider container={rootContainer}>
-        {/* Loading state for root container async initialization */}
-        <HexDiAsyncContainerProvider.Loading>
-          <GlobalLoadingSpinner />
-        </HexDiAsyncContainerProvider.Loading>
+      {/* Tracing provider wraps entire app to enable tracing hooks in all components */}
+      <TracingProvider tracer={tracer}>
+        <HexDiAsyncContainerProvider container={rootContainer}>
+          {/* Loading state for root container async initialization */}
+          <HexDiAsyncContainerProvider.Loading>
+            <GlobalLoadingSpinner />
+          </HexDiAsyncContainerProvider.Loading>
 
-        {/* Error state */}
-        <HexDiAsyncContainerProvider.Error>
-          {error => <GlobalErrorDisplay error={error} />}
-        </HexDiAsyncContainerProvider.Error>
+          {/* Error state */}
+          <HexDiAsyncContainerProvider.Error>
+            {error => <GlobalErrorDisplay error={error} />}
+          </HexDiAsyncContainerProvider.Error>
 
-        {/* Ready state - root container initialized */}
-        <HexDiAsyncContainerProvider.Ready>
-          <AppNavigation />
-          <Routes>
-            <Route path="/" element={<ChatDashboardDemo />} />
-            <Route path="/taskflow/*" element={<TaskFlowDemo />} />
-          </Routes>
-        </HexDiAsyncContainerProvider.Ready>
-      </HexDiAsyncContainerProvider>
+          {/* Ready state - root container initialized */}
+          <HexDiAsyncContainerProvider.Ready>
+            <AppNavigation />
+            <Routes>
+              <Route path="/" element={<ChatDashboardDemo />} />
+              <Route path="/taskflow/*" element={<TaskFlowDemo />} />
+            </Routes>
+          </HexDiAsyncContainerProvider.Ready>
+        </HexDiAsyncContainerProvider>
+      </TracingProvider>
     </BrowserRouter>
   );
 }

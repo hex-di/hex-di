@@ -14,6 +14,7 @@
     "@hex-di/graph": "workspace:*",
     "@hex-di/runtime": "workspace:*",
     "@hex-di/hono": "workspace:*",
+    "@hex-di/tracing": "workspace:*",
     "@hono/node-server": "^1.19.7",
     "@hono/zod-openapi": "^0.18.4",
     "@scalar/hono-api-reference": "^0.5.165",

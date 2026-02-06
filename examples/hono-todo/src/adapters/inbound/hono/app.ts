@@ -1,8 +1,9 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { apiReference } from "@scalar/hono-api-reference";
-import { createScopeMiddleware, resolvePort } from "@hex-di/hono";
+import { createScopeMiddleware, resolvePort, tracingMiddleware } from "@hex-di/hono";
 import type { HexHonoEnv } from "@hex-di/hono";
 import type { Context } from "hono";
+import { createConsoleTracer } from "@hex-di/tracing";
 import { UnauthorizedError } from "../../../application/errors.js";
 import { AuthServicePort, LoggerPort, TodoServicePort } from "../../../application/ports.js";
 import { TodoNotFoundError } from "../../../domain/errors.js";
@@ -18,7 +19,8 @@ const bearerAuth: { bearerAuth: [] }[] = [{ bearerAuth: [] }];
 const authHeader = (value: string | null | undefined): string | undefined =>
   value === null || value === undefined ? undefined : value.replace(/^Bearer\s+/i, "");
 
-const respondUnauthorized = (c: AppContext) => c.json<{ error: string }, 401>({ error: "Unauthorized" }, 401);
+const respondUnauthorized = (c: AppContext) =>
+  c.json<{ error: string }, 401>({ error: "Unauthorized" }, 401);
 const respondNotFound = (c: AppContext, message: string) =>
   c.json<{ error: string }, 404>({ error: message }, 404);
 
@@ -31,7 +33,24 @@ const requireUser = async (c: AppContext) => {
 export const createHonoApp = (container: AppContainer) => {
   const app = new OpenAPIHono<Env>();
 
+  // Add per-request scope middleware (creates fresh DI scope for each request)
   app.use("*", createScopeMiddleware(container));
+
+  // Add distributed tracing middleware (creates server spans with W3C Trace Context)
+  // Console tracer outputs spans to stdout for development visibility
+  const tracer = createConsoleTracer({ colorize: true, minDurationMs: 1 });
+  app.use(
+    "*",
+    tracingMiddleware({
+      tracer,
+      // Customize span names to use route patterns instead of actual paths
+      spanName: c => `${c.req.method} ${c.req.routePath || c.req.path}`,
+      // Add custom attributes for request correlation
+      attributes: c => ({
+        "request.id": resolvePort(c, RequestIdPort),
+      }),
+    })
+  );
 
   app.use("*", async (c, next) => {
     const requestId = resolvePort(c, RequestIdPort);
@@ -62,7 +81,7 @@ export const createHonoApp = (container: AppContainer) => {
     },
   });
 
-  app.openapi(meRoute, async (c) => {
+  app.openapi(meRoute, async c => {
     const token = authHeader(c.req.header("authorization"));
     const auth = resolvePort(c, AuthServicePort);
     const user = await auth.authenticate(token);
@@ -81,14 +100,19 @@ export const createHonoApp = (container: AppContainer) => {
       200: {
         description: "List todos",
         content: {
-          "application/json": { schema: z.object({ todos: z.array(TodoSchema) }).openapi("TodoListResponse") },
+          "application/json": {
+            schema: z.object({ todos: z.array(TodoSchema) }).openapi("TodoListResponse"),
+          },
         },
       },
-      401: { description: "Unauthorized", content: { "application/json": { schema: ErrorSchema } } },
+      401: {
+        description: "Unauthorized",
+        content: { "application/json": { schema: ErrorSchema } },
+      },
     },
   });
 
-  app.openapi(listRoute, async (c) => {
+  app.openapi(listRoute, async c => {
     try {
       const user = await requireUser(c);
       const todos = await resolvePort(c, TodoServicePort).list(user);
@@ -117,14 +141,21 @@ export const createHonoApp = (container: AppContainer) => {
     responses: {
       201: {
         description: "Created todo",
-        content: { "application/json": { schema: z.object({ todo: TodoSchema }).openapi("CreateTodoResponse") } },
+        content: {
+          "application/json": {
+            schema: z.object({ todo: TodoSchema }).openapi("CreateTodoResponse"),
+          },
+        },
       },
       400: { description: "Bad request", content: { "application/json": { schema: ErrorSchema } } },
-      401: { description: "Unauthorized", content: { "application/json": { schema: ErrorSchema } } },
+      401: {
+        description: "Unauthorized",
+        content: { "application/json": { schema: ErrorSchema } },
+      },
     },
   });
 
-  app.openapi(createRouteDef, async (c) => {
+  app.openapi(createRouteDef, async c => {
     try {
       const user = await requireUser(c);
       const body = await c.req.json<{ title?: string }>();
@@ -154,14 +185,21 @@ export const createHonoApp = (container: AppContainer) => {
     responses: {
       200: {
         description: "Toggled todo",
-        content: { "application/json": { schema: z.object({ todo: TodoSchema }).openapi("ToggleTodoResponse") } },
+        content: {
+          "application/json": {
+            schema: z.object({ todo: TodoSchema }).openapi("ToggleTodoResponse"),
+          },
+        },
       },
-      401: { description: "Unauthorized", content: { "application/json": { schema: ErrorSchema } } },
+      401: {
+        description: "Unauthorized",
+        content: { "application/json": { schema: ErrorSchema } },
+      },
       404: { description: "Not found", content: { "application/json": { schema: ErrorSchema } } },
     },
   });
 
-  app.openapi(toggleRoute, async (c) => {
+  app.openapi(toggleRoute, async c => {
     try {
       const user = await requireUser(c);
       const todo = await resolvePort(c, TodoServicePort).toggle(user, c.req.param("id"));
