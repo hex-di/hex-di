@@ -1,941 +1,810 @@
-# Architecture Integration: v4.0 GraphBuilder Improvements
+# Distributed Tracing Architecture for HexDI
 
-**Domain:** Dependency Injection type-state machine enhancement
-**Researched:** 2026-02-02
-**Milestone:** v4.0 GraphBuilder Improvements
+**Research Date:** 2026-02-06
+**Confidence:** HIGH (codebase analysis), MEDIUM (best practices from first principles)
 
 ## Executive Summary
 
-This research analyzes how four new features integrate with HexDI's existing type-state machine architecture:
+This document addresses how distributed tracing integrates with HexDI's container hierarchy architecture. The **recommended approach is Centralized Tree-Walking Subscription** over tracer propagation, with **NO changes to hook inheritance** needed. This preserves the existing isolation model while enabling cross-container observability.
 
-1. **Type-level async detection** - Integrates into `provide()` type signature via factory return type analysis
-2. **Override lifetime validation** - Extends `override()` type chain with parent lifetime map access
-3. **Bidirectional captive validation** - Requires new `TPendingConstraints` phantom type parameter in builder state
-4. **Disposal lifecycle** - Belongs in **runtime container**, not graph builder (separation of concerns)
+**Key Finding:** HexDI's current architecture creates ISOLATED tracers per container (each has its own MemoryCollector). For distributed tracing, we need a **single tracer that observes the entire container tree**, NOT per-container tracers that try to propagate.
 
-**Key Architectural Insight:** The type-state machine pattern enables compile-time validation by threading phantom type parameters through method chains. New features extend this pattern by adding validation steps to existing chains (async detection, override lifetime) or adding new state tracking (pending constraints).
+## Critical Current Architecture Constraints
 
-**Critical Decision:** Disposal is a runtime concern (tracking instances, executing cleanup) while GraphBuilder handles compile-time validation (types, dependencies). Disposal belongs in `@hex-di/runtime` container, not `@hex-di/graph` builder.
+### 1. Hooks are NOT Inherited
 
----
-
-## Integration Point 1: Type-Level Async Detection
-
-### Current State
-
-`provide()` and `provideAsync()` are separate methods:
+**CONFIRMED FROM CODEBASE:**
 
 ```typescript
-// packages/graph/src/builder/builder.ts:571-620
-provide<A extends AdapterConstraint>(adapter: A):
-  ProvideResultAllErrors<TProvides, TRequires, TAsyncPorts, TOverrides, TInternalState, A>
-
-provideAsync<A extends AdapterConstraint & { readonly factoryKind: "async" }>(adapter: A):
-  ProvideAsyncResult<TProvides, TRequires, TAsyncPorts, TOverrides, TInternalState, A>
+// packages/runtime/src/container/factory.ts:135-138
+const hooksHolder: HooksHolder = { hookSources: [] };
+const lateBindingHooks = createLateBindingHooks(hooksHolder);
 ```
 
-Problem: User must manually choose correct method. Forgetting `provideAsync()` breaks initialization.
+Each container has its own isolated `hooksHolder.hookSources` array. Child containers do NOT inherit parent hooks. This is by design for isolation.
 
-### Proposed Integration
+### 2. Current Tracer is Per-Container Isolated
 
-Unify to single `provide()` that auto-detects async:
+**CONFIRMED FROM CODEBASE:**
 
 ```typescript
-// Location: packages/graph/src/builder/types/provide.ts
-type IsAsyncFactory<TAdapter> =
-  TAdapter extends { factory: infer TFactory }
-    ? TFactory extends (...args: any[]) => infer TReturn
-      ? [TReturn] extends [Promise<any>]
-        ? true
-        : Promise<any> extends TReturn
-          ? true  // Union includes Promise
-          : false
-      : false
-    : false;
-
-type ProvideResultUnified<..., TAdapter> =
-  IsAsyncFactory<TAdapter> extends true
-    ? // Use ProvideAsyncResult logic (adds to TAsyncPorts)
-      ProvideAsyncResultSuccess<...>
-    : // Use regular ProvideResult logic
-      ProvideResultSuccess<...>
-```
-
-### Type Flow
-
-```
-provide(adapter)
-   ↓
-InferAdapterFactory<A>
-   ↓
-IsAsyncFactory<Factory>  ← NEW: Promise return type check
-   ↓ true               ↓ false
-ProvideAsyncResult   ProvideResult
-   ↓                    ↓
-GraphBuilder<        GraphBuilder<
-  ...,                 ...,
-  TAsync | Port,       TAsync (unchanged),
-  ...                  ...
->                     >
-```
-
-### Integration Points
-
-| File                                          | Change                                             | Reason                     |
-| --------------------------------------------- | -------------------------------------------------- | -------------------------- |
-| `packages/graph/src/builder/types/provide.ts` | Add `IsAsyncFactory<T>` type                       | Promise return detection   |
-| `packages/graph/src/builder/types/provide.ts` | Modify `ProvideResultAllErrors` to branch on async | Conditional async handling |
-| `packages/graph/src/builder/builder.ts`       | Remove `provideAsync()` method                     | Replaced by auto-detection |
-
-### Benefits
-
-- DX: One method to learn, compiler guides correct usage
-- Type Safety: Cannot forget async marking (inferred from types)
-- Consistency: All adapters use same `provide()` API
-
-### Risks
-
-- **Type inference ambiguity:** If factory returns `Promise<T> | T`, treated as async (safe choice)
-- **Migration burden:** Existing `provideAsync()` calls need replacement
-
----
-
-## Integration Point 2: Override Lifetime Validation
-
-### Current State
-
-`override()` validates port existence but not lifetime match:
-
-```typescript
-// packages/graph/src/builder/types/merge.ts:773-810
-export type OverrideResult<..., TAdapter> =
-  IsExactlyUnknown<GetParentProvides<TInternalState>> extends true
-    ? OverrideWithoutParentErrorMessage
-    : ExtractPortNamesFromUnion<InferAdapterProvides<TAdapter>> extends
-        ExtractPortNamesFromUnion<GetParentProvides<TInternalState>>
-      ? IsPortTypeCompatible<...> extends true
-        ? ProvideResult<...>  // ← No lifetime check here
-        : OverrideTypeMismatchError<...>
-      : InvalidOverrideErrorWithAvailable<...>
-```
-
-Problem: Singleton override can replace scoped parent, breaking lifetime assumptions.
-
-### Proposed Integration
-
-Add lifetime validation after port type check:
-
-```typescript
-// Location: packages/graph/src/builder/types/merge.ts (extend OverrideResult)
-type GetParentPortLifetime<TInternalState, TPortName> =
-  GetLifetimeMap<TInternalState>[TPortName & keyof GetLifetimeMap<TInternalState>];
-
-type OverrideResult<..., TAdapter> =
-  IsExactlyUnknown<GetParentProvides<TInternalState>> extends true
-    ? OverrideWithoutParentErrorMessage
-    : ExtractPortNamesFromUnion<InferAdapterProvides<TAdapter>> extends infer TPortName
-      ? TPortName extends ExtractPortNamesFromUnion<GetParentProvides<TInternalState>>
-        ? IsPortTypeCompatible<...> extends true
-          ? // NEW: Validate lifetime match
-            DirectAdapterLifetime<TAdapter> extends GetParentPortLifetime<TInternalState, TPortName>
-              ? ProvideResult<...>
-              : OverrideLifetimeMismatchError<TPortName, DirectAdapterLifetime<TAdapter>, ...>
-          : OverrideTypeMismatchError<...>
-        : InvalidOverrideErrorWithAvailable<...>
-      : never;
-```
-
-### Data Flow
-
-```
-.override(adapter)
-   ↓
-InferAdapterProvides<A> → TPortName
-   ↓
-GetParentProvides<TInternalState> → Does port exist?
-   ↓ yes
-GetLifetimeMap<TInternalState>[TPortName] → Parent lifetime
-   ↓
-DirectAdapterLifetime<A> → Override lifetime
-   ↓
-Compare: Match required → GraphBuilder | Error
-```
-
-### Integration Points
-
-| Component           | Access Method                        | Purpose                     |
-| ------------------- | ------------------------------------ | --------------------------- |
-| Parent lifetime map | `GetLifetimeMap<TInternalState>`     | Lookup parent port lifetime |
-| Override lifetime   | `DirectAdapterLifetime<TAdapter>`    | Extract override's lifetime |
-| Validation logic    | Conditional in `OverrideResult`      | Enforce exact match         |
-| Error type          | `OverrideLifetimeMismatchError<...>` | HEX022 error message        |
-
-### Validation Matrix
-
-| Parent    | Override  | Result   |
-| --------- | --------- | -------- |
-| singleton | singleton | ✓ Pass   |
-| singleton | scoped    | ✗ HEX022 |
-| singleton | transient | ✗ HEX022 |
-| scoped    | scoped    | ✓ Pass   |
-| transient | transient | ✓ Pass   |
-
-### Why Exact Match Required
-
-**Stricter than captive validation:** Captive allows dependent > dependency (transient can depend on singleton). Overrides require **exact equality** because:
-
-1. **Substitution principle:** Override replaces parent adapter 1:1
-2. **Container scope assumptions:** Parent container allocated singleton slots based on original lifetime
-3. **Memory safety:** Changing singleton → scoped breaks parent's singleton memo invariants
-
----
-
-## Integration Point 3: Bidirectional Captive Validation
-
-### Current Problem
-
-Forward references bypass compile-time captive validation:
-
-```typescript
-// This SHOULD error but doesn't
-GraphBuilder.create()
-  .provide(
-    createAdapter({
-      // Singleton depends on ScopedPort (not yet provided)
-      provides: SingletonPort,
-      requires: [ScopedPort],
-      lifetime: "singleton",
-      factory: deps => new SingletonService(deps.ScopedPort),
-    })
-  )
-  .provide(
-    createAdapter({
-      // ScopedPort provided later
-      provides: ScopedPort,
-      lifetime: "scoped",
-      factory: () => new ScopedService(),
-    })
-  )
-  .build(); // ← Should error: Singleton captures Scoped
-```
-
-Current state only validates `SingletonAdapter`'s requirements against **already-provided** ports. When `ScopedPort` is not yet in `TLifetimeMap`, no captive check occurs.
-
-### Architecture Challenge
-
-Type-state machine processes adapters **sequentially** (each `provide()` returns new builder). Cannot "look ahead" to future ports.
-
-### Solution: Pending Constraints
-
-Track constraints that couldn't be validated yet:
-
-```typescript
-// NEW phantom type parameter in BuilderInternals
-interface BuilderInternals<
-  TDepGraph,
-  TLifetimeMap,
-  TParentProvides,
-  TMaxDepth,
-  TUnsafeDepthOverride,
-  TDepthExceededWarning,
-  TUncheckedUsed,
-  TPendingConstraints = never, // ← NEW
-> {
-  readonly depGraph: TDepGraph;
-  readonly lifetimeMap: TLifetimeMap;
-  readonly parentProvides: TParentProvides;
-  readonly maxDepth: TMaxDepth;
-  readonly unsafeDepthOverride: TUnsafeDepthOverride;
-  readonly depthExceededWarning: TDepthExceededWarning;
-  readonly uncheckedUsed: TUncheckedUsed;
-  readonly pendingConstraints: TPendingConstraints; // ← NEW
+// packages/runtime/src/inspection/builtin-api.ts:42-63
+export function createBuiltinTracerAPI(): TracingAPI {
+  const collector = new MemoryCollector(); // NEW instance per container
+  // ...
 }
 ```
 
-### Data Structure
+Each container gets its own `MemoryCollector` instance via `attachBuiltinAPIs()`. This means:
+
+- `rootContainer.tracer` has its own collector
+- `childContainer.tracer` has a DIFFERENT collector
+- Parent cannot see child resolutions automatically
+
+### 3. Container Hierarchy is Bidirectional
+
+**CONFIRMED FROM CODEBASE:**
 
 ```typescript
-type PendingConstraint = {
-  dependentPort: string; // "SingletonPort"
-  dependentLifetime: Lifetime; // "singleton"
-  requiredPort: string; // "ScopedPort"
-};
+// packages/runtime/src/container/internal/lifecycle-manager.ts:88-89
+private readonly childContainers: Map<number, Disposable> = new Map();
+// Parent tracks children via Map
 
-// Stored as union type in builder state
-type TPendingConstraints =
-  | PendingConstraint<"SingletonPort", "singleton", "ScopedPort">
-  | PendingConstraint<"UserService", "scoped", "TransientPort">
-  | never; // Empty state
+// packages/runtime/src/container/factory.ts:276
+registerChildContainer: child => impl.registerChildContainer(child),
+// Child registers itself with parent during creation
 ```
 
-### Integration into Provide Chain
+The LifecycleManager maintains bidirectional references enabling tree-walking from either root or any node.
+
+## Problem Statement: Cross-Container Tracing Gap
+
+**Current Limitation:**
 
 ```typescript
-// packages/graph/src/builder/types/provide.ts (extend validation)
+const root = createContainer({ graph, name: "Root" });
+const child = root.createChild(childGraph, { name: "Child" });
 
-// Step 3.5 (NEW): Check pending constraints when port is provided
-type CheckPendingConstraints<TProvides, ..., TAdapter> =
-  FilterPendingForPort<
-    GetPendingConstraints<TInternalState>,
-    InferAdapterProvides<TAdapter>
-  > extends infer TRelevantConstraints
-    ? TRelevantConstraints extends PendingConstraint<infer TDepPort, infer TDepLifetime, any>
-      ? // Found constraint: dependent=TDepPort requires this port
-        LifetimeLevel<DirectAdapterLifetime<TAdapter>> extends LifetimeLevel<TDepLifetime>
-          ? // OK: This port's lifetime >= dependent's lifetime
-            RemoveConstraint<TInternalState, TRelevantConstraints>  // Remove satisfied constraint
-          : // ERROR: Captive violation (dependent captures this port)
-            CaptiveErrorMessage<TDepPort, TDepLifetime, AdapterProvidesName<TAdapter>, ...>
-      : // No relevant constraints
-        TInternalState
-    : TInternalState;
+// Install tracer on root
+instrumentContainer(root, tracer);
 
-// Step 3.6 (NEW): Add pending constraints for unsatisfied requirements
-type AddPendingConstraintsForRequirements<TProvides, TInternalState, TAdapter> =
-  AdapterRequiresNames<TAdapter> extends infer TReqs
-    ? TReqs extends never
-      ? TInternalState  // No requirements
-      : Exclude<TReqs, ExtractPortNamesFromProvides<TProvides>> extends infer TUnsatisfied
-        ? TUnsatisfied extends never
-          ? TInternalState  // All requirements satisfied
-          : // Create constraints for unsatisfied requirements
-            WithPendingConstraints<
-              TInternalState,
-              CreateConstraints<
-                AdapterProvidesName<TAdapter>,
-                DirectAdapterLifetime<TAdapter>,
-                TUnsatisfied
-              >
-            >
-        : TInternalState
-    : TInternalState;
+// Child resolutions are INVISIBLE to root's tracer
+child.resolve(ChildServicePort); // NOT traced!
 ```
 
-### Validation Flow
+**Why:** Child container has its OWN `hooksHolder` (not inherited). Child resolutions run through child's hooks (empty if not instrumented).
 
-```
-provide(SingletonAdapter requiring ScopedPort)
-   ↓
-Step 1-3: Normal validation (duplicate, cycle, captive against TLifetimeMap)
-   ↓
-Step 3.5 (NEW): Check if this port satisfies any pending constraints
-   TLifetimeMap['ScopedPort'] = undefined → No pending check
-   ↓
-Step 3.6 (NEW): Create pending constraint for ScopedPort
-   TPendingConstraints = { dependentPort: "Singleton", dependentLifetime: "singleton", requiredPort: "ScopedPort" }
-   ↓
-Return: GraphBuilder<..., TPendingConstraints>
+## Architecture Decision: Centralized Tree-Walking
 
-provide(ScopedAdapter)
-   ↓
-Step 1-3: Normal validation
-   ↓
-Step 3.5 (NEW): Check pending constraints for "ScopedPort"
-   Found: { dependentPort: "Singleton", dependentLifetime: "singleton", requiredPort: "ScopedPort" }
-   Validate: LifetimeLevel<"scoped"> (2) <= LifetimeLevel<"singleton"> (1)?
-   2 <= 1? NO → ERROR[HEX003]: Captive dependency
-```
+### Recommended Approach
 
-### Integration Points
-
-| Component          | Location                                         | Change                               |
-| ------------------ | ------------------------------------------------ | ------------------------------------ |
-| Builder state      | `packages/graph/src/builder/types/state.ts`      | Add `TPendingConstraints` parameter  |
-| Provide validation | `packages/graph/src/builder/types/provide.ts`    | Add Steps 3.5, 3.6                   |
-| Constraint types   | `packages/graph/src/validation/types/captive.ts` | Define `PendingConstraint`, helpers  |
-| Error messages     | `packages/graph/src/validation/types/errors.ts`  | Reuse existing `CaptiveErrorMessage` |
-
-### Merge Behavior
-
-When merging graphs with pending constraints:
+**Single tracer subscribes to container tree via explicit instrumentation.**
 
 ```typescript
-type UnifiedMergeInternals<T1, T2, ...> = BuilderInternals<
-  TMergedDepGraph,
-  TMergedLifetimeMap,
-  MergeParentProvides<...>,
-  TResolvedMaxDepth,
-  BoolOr<...>,
-  GetDepthExceededWarning<T1> | GetDepthExceededWarning<T2>,
-  BoolOr<...>,
-  GetPendingConstraints<T1> | GetPendingConstraints<T2>  // ← Union pending constraints
->;
-```
+// API Design
+function instrumentContainerTree(
+  rootOrNode: Container,
+  tracer: Tracer,
+  options?: InstrumentOptions
+): () => void {
+  const instrumented = new Set<Container>();
 
-Merged graph inherits constraints from both, validated when ports provided.
+  function instrumentRecursive(container: Container): void {
+    if (instrumented.has(container)) return;
 
-### Complexity Analysis
+    // Install hooks on this container
+    const cleanup = instrumentContainer(container, tracer, options);
+    instrumented.add(container);
 
-| Operation              | Current                       | With Pending Constraints                           |
-| ---------------------- | ----------------------------- | -------------------------------------------------- |
-| Provide single adapter | O(requirements × lifetimeMap) | O(requirements × lifetimeMap + pendingConstraints) |
-| Build graph            | O(1) validation               | O(1) validation (pending must be empty)            |
-| Merge graphs           | O(1) state copy               | O(1) state copy (union constraints)                |
-
-**Impact:** Minimal - pending constraints stored as union type, checked via pattern matching.
-
----
-
-## Integration Point 4: Disposal Lifecycle
-
-### Architecture Decision: Runtime vs Compile-Time
-
-**Question:** Where does disposal belong?
-
-| Concern               | Graph Builder               | Runtime Container             |
-| --------------------- | --------------------------- | ----------------------------- |
-| Tracks instances      | ✗ No instances              | ✓ MemoMap stores instances    |
-| Executes cleanup      | ✗ No runtime behavior       | ✓ Orchestrates async disposal |
-| Knows creation order  | ✗ Only adapter order        | ✓ Tracks instantiation order  |
-| Type-level validation | ✓ Validates graph structure | ✗ Runtime only                |
-
-**Decision:** Disposal belongs in **`@hex-di/runtime` container**, not `@hex-di/graph` builder.
-
-### Current Runtime Architecture
-
-```typescript
-// packages/runtime/src/container/internal/lifecycle-manager.ts:62-217
-export class LifecycleManager {
-  private readonly childScopes: Set<Disposable> = new Set();
-  private readonly childContainers: Disposable[] = [];
-  private disposed: boolean = false;
-
-  async dispose(singletonMemo: MemoMap, parentUnregister?: ParentUnregisterFn): Promise<void> {
-    if (this.disposed) return;
-    this.disposed = true;
-
-    // Dispose child containers in LIFO order
-    for (let i = this.childContainers.length - 1; i >= 0; i--) {
-      await this.childContainers[i].dispose();
+    // Walk to children via inspector
+    const children = container.inspector.getChildContainers();
+    for (const childInspector of children) {
+      // Need container ← inspector mapping (see integration points)
+      instrumentRecursive(getContainerFromInspector(childInspector));
     }
-
-    // Dispose child scopes
-    for (const scope of this.childScopes) {
-      await scope.dispose();
-    }
-
-    // Dispose singleton memo (CURRENT: just clears map)
-    await singletonMemo.dispose();
-
-    // Unregister from parent
-    parentUnregister?.();
-  }
-}
-```
-
-**Gap:** `MemoMap.dispose()` currently just clears the map. Needs to invoke adapter `dispose()` functions.
-
-### Proposed Integration
-
-#### 1. Extend Adapter Interface (Graph Package)
-
-```typescript
-// packages/graph/src/adapter/types.ts (type-level only)
-export interface AdapterConstraint {
-  readonly provides: PortConstraint;
-  readonly requires: PortConstraint | readonly PortConstraint[];
-  readonly lifetime: Lifetime;
-  readonly factory: (...args: any[]) => any;
-  readonly dispose?: (instance: any) => void | Promise<void>; // ← NEW (optional)
-}
-```
-
-Type-level only - no runtime validation in graph builder.
-
-#### 2. Extend MemoMap (Runtime Package)
-
-```typescript
-// packages/runtime/src/util/memo-map.ts (extend existing class)
-export class MemoMap {
-  private readonly memo: Map<string, unknown> = new Map();
-  private readonly disposers: Map<string, (instance: unknown) => void | Promise<void>> = new Map(); // ← NEW
-  private readonly creationOrder: string[] = []; // ← NEW
-
-  set(key: string, value: unknown, disposer?: (instance: unknown) => void | Promise<void>): void {
-    this.memo.set(key, value);
-    if (disposer !== undefined) {
-      this.disposers.set(key, disposer);
-    }
-    this.creationOrder.push(key); // Track order
   }
 
-  async dispose(): Promise<void> {
-    // LIFO disposal (reverse of creation order)
-    for (let i = this.creationOrder.length - 1; i >= 0; i--) {
-      const key = this.creationOrder[i];
-      const instance = this.memo.get(key);
-      const disposer = this.disposers.get(key);
+  instrumentRecursive(rootOrNode);
 
-      if (disposer !== undefined && instance !== undefined) {
-        await disposer(instance);
-      }
-    }
-
-    this.memo.clear();
-    this.disposers.clear();
-    this.creationOrder.length = 0;
-  }
+  return () => {
+    // Cleanup all instrumented containers
+  };
 }
 ```
 
-#### 3. Update Resolution Engine (Runtime Package)
+### Why This Approach
+
+✅ **Preserves Isolation** — No changes to hook inheritance model
+✅ **Clear Separation of Concerns** — Tracing logic in @hex-di/tracing, runtime unchanged
+✅ **Explicit Opt-In** — User controls scope of instrumentation
+✅ **Handles Dynamic Creation** — Can retrofit existing container trees
+
+❌ Requires inspector ↔ container mapping (see integration points)
+
+## Component Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ @hex-di/tracing                                             │
+│                                                             │
+│  ┌───────────────────────────────────────────────────────┐ │
+│  │ instrumentContainerTree()                             │ │
+│  │                                                       │ │
+│  │  - Walks container hierarchy via inspector           │ │
+│  │  - Installs hooks on each container                  │ │
+│  │  - Tracks instrumented containers                    │ │
+│  │  - Returns cleanup function                          │ │
+│  └───────────────────────────────────────────────────────┘ │
+│                           │                                 │
+│                           ▼                                 │
+│  ┌───────────────────────────────────────────────────────┐ │
+│  │ instrumentContainer()                                 │ │
+│  │                                                       │ │
+│  │  - Installs hooks on single container               │ │
+│  │  - Creates spans for resolutions                    │ │
+│  │  - Propagates trace context via span stack          │ │
+│  └───────────────────────────────────────────────────────┘ │
+│                           │                                 │
+│                           ▼                                 │
+│  ┌───────────────────────────────────────────────────────┐ │
+│  │ container.addHook('beforeResolve', ...)              │ │
+│  │ container.addHook('afterResolve', ...)               │ │
+│  └───────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│ @hex-di/runtime (NO CHANGES)                                │
+│                                                             │
+│  - addHook() / removeHook()                                │
+│  - inspector.getChildContainers()                          │
+│  - Isolated hooks per container                            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Span Hierarchy Mapping
+
+### Container Hierarchy → Span Hierarchy
+
+```
+Root Container
+├─ Child Container 1
+│  └─ Child Container 1.1
+└─ Child Container 2
+
+MAPS TO:
+
+Trace (single traceId)
+├─ Span: resolve RootService (container=Root)
+│  ├─ Span: resolve ChildService (container=Child1)
+│  │  └─ Span: resolve GrandchildService (container=Child1.1)
+│  └─ Span: resolve Dependency (container=Root)
+└─ Span: resolve OtherService (container=Child2)
+```
+
+**Span attributes indicate container:**
 
 ```typescript
-// packages/runtime/src/resolution/engine.ts (extend existing)
-function resolveInstance(adapter: RuntimeAdapter, deps: ResolvedDeps): unknown {
-  const instance = adapter.factory(deps);
-
-  // Store in memo with disposer
-  if (adapter.lifetime === "singleton") {
-    container.singletonMemo.set(
-      adapter.provides.__portName,
-      instance,
-      adapter.dispose // ← Pass dispose function
-    );
-  } else if (adapter.lifetime === "scoped") {
-    scope.scopedMemo.set(
-      adapter.provides.__portName,
-      instance,
-      adapter.dispose // ← Pass dispose function
-    );
-  }
-  // Transient: no memoization, no disposal tracking
-
-  return instance;
+{
+  'hex-di.container.name': 'Child1',
+  'hex-di.container.kind': 'child',
+  'hex-di.container.parent': 'Root',
+  'hex-di.port.name': 'ChildService',
+  'hex-di.resolution.inheritance_mode': 'shared' | 'forked' | 'isolated',
 }
 ```
 
-### Data Flow: Creation to Disposal
+### Resolution Delegation (Shared Mode)
 
-```
-1. Graph Build (Compile-Time)
-   GraphBuilder.create()
-     .provide(createAdapter({
-       provides: DatabasePort,
-       lifetime: 'singleton',
-       factory: () => new Database(),
-       dispose: (db) => db.close()  // ← Type-checked, stored in adapter
-     }))
-     .build()
-   ↓
-   Graph<DatabasePort, never> (adapter.dispose captured)
-
-2. Container Creation (Runtime)
-   createContainer(graph)
-   ↓
-   RootContainerImpl with LifecycleManager
-
-3. Instance Resolution (Runtime)
-   container.resolve(DatabasePort)
-   ↓
-   resolveInstance(adapter, deps)
-   ↓
-   instance = adapter.factory(deps)  // new Database()
-   ↓
-   singletonMemo.set(
-     "Database",
-     instance,
-     adapter.dispose  // ← Store disposer
-   )
-
-4. Container Disposal (Runtime)
-   await container.dispose()
-   ↓
-   lifecycleManager.dispose(singletonMemo, ...)
-   ↓
-   singletonMemo.dispose()
-   ↓
-   for (key in reverse(creationOrder)) {
-     await disposer(instance)  // ← Invoke adapter.dispose(instance)
-   }
-```
-
-### Guarantees
-
-| Guarantee                                   | Implementation                        |
-| ------------------------------------------- | ------------------------------------- |
-| LIFO disposal order                         | `creationOrder.reverse()`             |
-| Async disposal                              | `await disposer(instance)`            |
-| Scope disposal before parent                | `lifecycleManager.dispose()` order    |
-| Transient not disposed                      | No memo = no disposer tracking        |
-| Container disposal before parent unregister | `lifecycleManager.dispose()` sequence |
-
-### No Graph Builder Changes
-
-Graph builder remains **pure type-level validation**:
-
-- Does NOT validate `dispose()` function signature (runtime concern)
-- Does NOT track disposal order (no instances)
-- Does NOT change type state for disposal (orthogonal to dependencies)
-
-Disposal is a **runtime container capability**, enabled by type-level adapter metadata.
-
----
-
-## Component Architecture
-
-### Layered Responsibility
-
-```
-┌─────────────────────────────────────────────────────────┐
-│ @hex-di/graph                                            │
-│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │
-│ GraphBuilder<TProvides, TRequires, TAsyncPorts, ...>     │
-│                                                           │
-│ Responsibilities:                                         │
-│ • Type-level dependency validation (cycles, captive)     │
-│ • Compile-time error messages                            │
-│ • Adapter metadata aggregation                           │
-│ • Type-state machine (phantom parameters)                │
-│                                                           │
-│ NEW FEATURES (v4.0):                                      │
-│ • Async detection (IsAsyncFactory<T>)                    │
-│ • Override lifetime validation (exact match)             │
-│ • Pending captive constraints (TPendingConstraints)      │
-│ • Disposal metadata (adapter.dispose type-level)         │
-└─────────────────────────────────────────────────────────┘
-                            │
-                            │ .build()
-                            ▼
-┌─────────────────────────────────────────────────────────┐
-│ Graph<TProvides, TAsyncPorts>                            │
-│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │
-│ Frozen adapter configuration array                        │
-│ Passed to runtime for instantiation                       │
-└─────────────────────────────────────────────────────────┘
-                            │
-                            │ createContainer(graph)
-                            ▼
-┌─────────────────────────────────────────────────────────┐
-│ @hex-di/runtime                                          │
-│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │
-│ RootContainerImpl / ChildContainerImpl                   │
-│                                                           │
-│ Responsibilities:                                         │
-│ • Dependency resolution (DFS traversal)                  │
-│ • Instance memoization (MemoMap)                         │
-│ • Scope lifecycle (createScope, scope.dispose)           │
-│ • Child containers (createChildContainer)                │
-│ • Async initialization (topological sort)                │
-│                                                           │
-│ NEW FEATURE (v4.0):                                       │
-│ • Disposal orchestration (LIFO, async)                   │
-│   - MemoMap tracks disposers                             │
-│   - LifecycleManager executes disposal                   │
-│   - Creation order determines disposal order             │
-└─────────────────────────────────────────────────────────┘
-```
-
-### Separation Rationale
-
-| Concern      | Graph (Compile-Time)           | Runtime (Runtime)             |
-| ------------ | ------------------------------ | ----------------------------- |
-| When         | TypeScript type-checking       | Application execution         |
-| Data         | Type unions, mapped types      | Actual instances              |
-| Errors       | Template literal types         | Thrown exceptions             |
-| Validation   | Structural (cycles, lifetimes) | Behavioral (missing services) |
-| Side Effects | None (pure types)              | Instantiation, disposal       |
-
-**Why separation matters:** Mixing compile-time and runtime concerns leads to:
-
-- Runtime overhead for type-level checks (defeating zero-cost abstractions)
-- Type pollution (runtime details leaking into type signatures)
-- Maintenance burden (changes cascade across layers)
-
----
-
-## Build Order Analysis
-
-### Dependency Graph for New Features
-
-```
-Feature 1: Async Detection
-   ↓ No dependencies
-   Safe to implement first
-
-Feature 2: Override Lifetime Validation
-   ↓ Depends on: Parent lifetime map access (already exists)
-   Safe to implement independently
-
-Feature 3: Bidirectional Captive Validation
-   ↓ Requires: Builder state expansion (TPendingConstraints)
-   ↓ Affects: All methods that return builder (provide, merge, override)
-   High impact, implement carefully
-
-Feature 4: Disposal Lifecycle
-   ↓ Requires: Runtime MemoMap changes
-   ↓ Requires: Resolution engine integration
-   Independent of Features 1-3 (runtime vs compile-time)
-```
-
-### Suggested Implementation Order
-
-**Phase 1: Type-Level Enhancements (Low Risk)**
-
-1. Async detection (Feature 1)
-   - Add `IsAsyncFactory<T>` utility
-   - Branch `ProvideResult` based on async detection
-   - Remove `provideAsync()` method
-   - **Risk:** Low (self-contained type-level change)
-
-2. Override lifetime validation (Feature 2)
-   - Add lifetime check to `OverrideResult`
-   - Define `OverrideLifetimeMismatchError`
-   - **Risk:** Low (extends existing validation chain)
-
-**Phase 2: State Machine Expansion (Medium Risk)** 3. Bidirectional captive validation (Feature 3)
-
-- Add `TPendingConstraints` to `BuilderInternals`
-- Extend `WithPendingConstraints` helpers
-- Update `ProvideResult` validation chain
-- Update `UnifiedMergeInternals` to merge constraints
-- **Risk:** Medium (changes core builder state structure)
-
-**Phase 3: Runtime Integration (Independent)** 4. Disposal lifecycle (Feature 4)
-
-- Extend `AdapterConstraint` with optional `dispose`
-- Add disposal tracking to `MemoMap`
-- Update resolution engine to register disposers
-- Extend `LifecycleManager.dispose()` to invoke disposers
-- **Risk:** Medium (changes runtime behavior, async disposal)
-
-### Cross-Feature Dependencies
-
-```
-Async Detection
-   ↓
-   └─ No dependencies
-
-Override Lifetime Validation
-   ↓
-   └─ No dependencies (uses existing GetLifetimeMap)
-
-Bidirectional Captive Validation
-   ↓
-   ├─ Requires: Builder state expansion (blocks all)
-   └─ Extends: Captive validation types (reuse existing)
-
-Disposal Lifecycle
-   ↓
-   └─ Independent (different package, runtime vs compile-time)
-```
-
-**Critical Path:** Feature 3 (Bidirectional Captive) blocks nothing but requires careful state design. Implement Phase 1-2 first to gain confidence, then tackle Phase 2 builder state expansion.
-
----
-
-## Risk Analysis
-
-### High Impact Changes
-
-| Change                              | Impact Area                                                           | Mitigation                                             |
-| ----------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------ |
-| Add `TPendingConstraints` parameter | All builder type signatures, every `provide()` call, merge operations | Introduce as 8th parameter (preserves existing 7)      |
-| Remove `provideAsync()`             | Public API surface                                                    | Provide codemod, clear migration guide                 |
-| Extend `MemoMap` with disposal      | Runtime instance lifecycle                                            | Extensive integration tests, async disposal edge cases |
-
-### Type Complexity
-
-| Feature                      | Type Recursion Depth          | Performance Impact |
-| ---------------------------- | ----------------------------- | ------------------ |
-| Async detection              | +1 (check return type)        | Negligible         |
-| Override lifetime validation | +1 (indexed access)           | Negligible         |
-| Bidirectional captive        | +2 (filter pending, validate) | Low                |
-| Disposal lifecycle           | 0 (runtime only)              | None               |
-
-**Total added depth:** ~3-4 levels (well within TS recursion limits of 50-100).
-
-### Breaking Changes
-
-| Change                           | Severity | Migration Path                                               |
-| -------------------------------- | -------- | ------------------------------------------------------------ |
-| Remove `provideAsync()`          | HIGH     | Replace with `provide()` (auto-detects)                      |
-| Remove `provideFirstError()`     | LOW      | Replace with `provide()` (better DX)                         |
-| Remove `provideUnchecked()`      | MEDIUM   | Remove calls, fix validation errors                          |
-| Remove `mergeWith()`             | LOW      | Replace with `merge()` (same behavior for `maxDepth: 'max'`) |
-| Add override lifetime validation | MEDIUM   | Fix lifetime mismatches (were silent bugs)                   |
-
-**Recommendation:** Ship as major version (v4.0) with comprehensive migration guide.
-
----
-
-## Testing Strategy
-
-### Type-Level Tests
+When child delegates to parent:
 
 ```typescript
-// packages/graph/tests/async-detection.test-d.ts
-import { GraphBuilder } from '@hex-di/graph';
-import { expectType } from 'tsd';
-
-// Async detection - explicit Promise return
-const asyncAdapter = createAdapter({
-  provides: AsyncPort,
-  factory: async () => new AsyncService()
-});
-
-const builder = GraphBuilder.create().provide(asyncAdapter);
-expectType<GraphBuilder<AsyncPort, never, AsyncPort, never, ...>>(builder);
-//                                      ^^^^^^^^ Detected as async
-
-// Async detection - Promise.resolve
-const promiseAdapter = createAdapter({
-  provides: PromisePort,
-  factory: () => Promise.resolve(new Service())
-});
-
-const builder2 = GraphBuilder.create().provide(promiseAdapter);
-expectType<GraphBuilder<PromisePort, never, PromisePort, never, ...>>(builder2);
-//                                          ^^^^^^^^^^^ Detected as async
-
-// Sync adapter - no Promise
-const syncAdapter = createAdapter({
-  provides: SyncPort,
-  factory: () => new SyncService()
-});
-
-const builder3 = GraphBuilder.create().provide(syncAdapter);
-expectType<GraphBuilder<SyncPort, never, never, never, ...>>(builder3);
-//                                       ^^^^^ Not async
+child.resolve(SharedPort)  // Inheritance mode: 'shared'
+  └─> parent.resolveInternal(SharedPort)  // Bypasses parent hooks!
 ```
 
-### Runtime Tests
+**Result:** ONE span attributed to child container, with delegation attributes:
 
 ```typescript
-// packages/runtime/tests/disposal-lifecycle.test.ts
-test("disposes services in LIFO order", async () => {
-  const disposed: string[] = [];
+{
+  'hex-di.resolution.delegated': true,
+  'hex-di.resolution.from_container': 'Child1',
+  'hex-di.resolution.to_container': 'Root',
+  'hex-di.resolution.inheritance_mode': 'shared',
+}
+```
 
-  const A = createAdapter({
-    provides: PortA,
-    lifetime: "singleton",
-    factory: () => ({ name: "A" }),
-    dispose: instance => disposed.push(instance.name),
-  });
+**Why one span?** It's ONE resolution from user perspective. Child doesn't create instance, just retrieves parent's.
 
-  const B = createAdapter({
-    provides: PortB,
-    requires: [PortA],
-    lifetime: "singleton",
-    factory: deps => ({ name: "B", a: deps[PortA] }),
-    dispose: instance => disposed.push(instance.name),
-  });
+**Key Insight:** `resolveInternal()` bypasses hooks. This is correct—prevents double-counting. Child's hooks see full resolution including delegation.
 
-  const graph = GraphBuilder.create().provide(A).provide(B).build();
-  const container = createContainer(graph);
+## Context Propagation Strategy
 
-  container.resolve(PortB); // Creates A, then B
-  await container.dispose();
+### Span Stack for Active Context
 
-  expect(disposed).toEqual(["B", "A"]); // LIFO: B created last, disposed first
-});
+```typescript
+// Module-level span stack in instrumentation
+const spanStack: Span[] = [];
 
-test("supports async disposal", async () => {
-  let disposed = false;
-
-  const adapter = createAdapter({
-    provides: DatabasePort,
-    lifetime: "singleton",
-    factory: () => new Database(),
-    dispose: async db => {
-      await db.close(); // Async operation
-      disposed = true;
+beforeResolve: ctx => {
+  const parentSpan = spanStack[spanStack.length - 1];
+  const span = tracer.startSpan("resolve " + ctx.portName, {
+    parent: parentSpan?.context,
+    attributes: {
+      "hex-di.container.name": ctx.containerId,
+      "hex-di.port.name": ctx.portName,
+      "hex-di.resolution.depth": ctx.depth,
+      "hex-di.resolution.inheritance_mode": ctx.inheritanceMode,
+      // ... more attributes
     },
   });
+  spanStack.push(span);
+};
 
-  const graph = GraphBuilder.create().provide(adapter).build();
-  const container = createContainer(graph);
-
-  container.resolve(DatabasePort);
-  await container.dispose();
-
-  expect(disposed).toBe(true);
-});
+afterResolve: ctx => {
+  const span = spanStack.pop();
+  if (span) {
+    if (ctx.error) {
+      span.recordException(ctx.error);
+      span.setStatus("error");
+    }
+    span.end();
+  }
+};
 ```
 
----
+**Why module-level stack vs context variables?**
 
-## Open Questions
+- Context variables in @hex-di/core are passive (no active propagation)
+- Span stack works with existing hook execution model
+- No async-local-storage needed (single-threaded JavaScript)
 
-### Q1: How to handle disposal errors?
+## Integration Points with Existing Components
 
-**Options:**
+### 1. Container.addHook() / removeHook()
 
-1. **Fail fast:** First disposer error stops disposal chain
-2. **Collect errors:** Continue disposing, return aggregated errors
-3. **Best effort:** Log errors, continue disposal
+**Status:** ✅ No changes needed
 
-**Recommendation:** Option 2 (collect errors). Disposal should be resilient - one service failing to clean up shouldn't prevent others from disposing.
+**Usage:**
 
 ```typescript
-async dispose(): Promise<void> {
-  const errors: Error[] = [];
+function instrumentContainer(container: Container, tracer: Tracer): () => void {
+  const beforeHandler = ctx => {
+    /* create span */
+  };
+  const afterHandler = ctx => {
+    /* end span */
+  };
 
-  for (let i = this.creationOrder.length - 1; i >= 0; i--) {
-    try {
-      await disposer(instance);
-    } catch (error) {
-      errors.push(new Error(`Failed to dispose ${key}: ${error.message}`));
-    }
-  }
+  container.addHook("beforeResolve", beforeHandler);
+  container.addHook("afterResolve", afterHandler);
 
-  this.memo.clear();
-
-  if (errors.length > 0) {
-    throw new AggregateError(errors, 'Disposal completed with errors');
-  }
+  return () => {
+    container.removeHook("beforeResolve", beforeHandler);
+    container.removeHook("afterResolve", afterHandler);
+  };
 }
 ```
 
-### Q2: Should pending constraints propagate through merges?
+### 2. Inspector.getChildContainers()
 
-**Scenario:**
+**Status:** ✅ No changes needed for basic functionality
+
+**Current API:**
 
 ```typescript
-const graph1 = GraphBuilder.create().provide(SingletonAdapter); // requires ScopedPort (pending constraint)
-
-const graph2 = GraphBuilder.create().provide(ScopedAdapter); // provides ScopedPort
-
-const merged = graph1.merge(graph2); // Does constraint get validated?
+interface InspectorAPI {
+  getChildContainers(): readonly InspectorAPI[];
+}
 ```
 
-**Answer:** YES. `UnifiedMergeInternals` unions pending constraints from both graphs. After merge, next `provide()` or `build()` validates constraints.
+**Challenge:** InspectorAPI → Container reverse lookup needed for tree walking.
 
-### Q3: How to handle transient lifetime in disposal?
+**MVP Solution:** External WeakMap in @hex-di/tracing
 
-**Decision:** Do NOT track disposal for transient services.
+```typescript
+// In @hex-di/tracing
+const inspectorToContainer = new WeakMap<InspectorAPI, Container>();
+
+function instrumentContainerTree(root: Container, tracer: Tracer): () => void {
+  inspectorToContainer.set(root.inspector, root);
+  // Walk tree...
+}
+```
+
+**Post-MVP Enhancement:** Add `inspector.getContainer()` method to @hex-di/runtime
+
+### 3. ResolutionHookContext
+
+**Status:** ✅ No changes needed
+
+**Provides comprehensive context:**
+
+```typescript
+interface ResolutionHookContext {
+  readonly port: Port<unknown, string>;
+  readonly portName: string;
+  readonly lifetime: Lifetime;
+  readonly scopeId: string | null;
+  readonly parentPort: Port<unknown, string> | null; // For span nesting
+  readonly isCacheHit: boolean;
+  readonly depth: number; // For span hierarchy
+  readonly containerId: string; // For span attributes
+  readonly containerKind: ContainerKind;
+  readonly inheritanceMode: InheritanceMode | null; // For delegation detection
+  readonly parentContainerId: string | null;
+}
+```
+
+All needed data available. No additions required.
+
+### 4. LifecycleManager (Disposal)
+
+**Status:** ✅ No changes needed
+
+Instrumentation cleanup should happen before container disposal. User responsibility:
+
+```typescript
+const cleanup = instrumentContainer(container, tracer);
+
+// Later:
+cleanup();
+await container.dispose();
+```
+
+## New Components Needed
+
+### 1. @hex-di/tracing Package (packages/tracing/)
+
+**Structure:**
+
+```
+packages/tracing/
+├── src/
+│   ├── index.ts                    # Public API
+│   ├── types/
+│   │   ├── tracer.ts               # Tracer, Span, SpanContext
+│   │   ├── exporter.ts             # SpanExporter, SpanProcessor
+│   │   └── attributes.ts           # Attribute types
+│   ├── instrumentation/
+│   │   ├── container.ts            # instrumentContainer()
+│   │   ├── tree.ts                 # instrumentContainerTree()
+│   │   └── hooks.ts                # Hook handler factories
+│   ├── context/
+│   │   ├── variables.ts            # TraceContextVar, ActiveSpanVar
+│   │   ├── propagation.ts          # W3C Trace Context
+│   │   └── stack.ts                # Span stack management
+│   ├── adapters/
+│   │   ├── noop.ts                 # NoOpTracer (zero cost)
+│   │   ├── memory.ts               # MemoryTracer (testing)
+│   │   └── console.ts              # ConsoleTracer (dev)
+│   └── utils/
+│       ├── id-generation.ts        # Trace/span ID generation
+│       └── timing.ts               # High-resolution timing
+└── tests/
+```
+
+**Dependencies:**
+
+- `@hex-di/core` (peer)
+- `@hex-di/runtime` (peer)
+- No external dependencies for core package
+
+### 2. Backend Packages (Separate)
+
+**@hex-di/tracing-otel** (packages/tracing-otel/)
+
+```typescript
+import { SpanExporterPort } from "@hex-di/tracing";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+
+export const OtelExporterAdapter = createAdapter({
+  port: SpanExporterPort,
+  factory: options => new OTLPSpanExporter(options),
+  lifetime: "singleton",
+});
+```
+
+**Why separate?**
+
+- Heavy dependencies (OpenTelemetry SDK)
+- User only installs backends they need
+- Core @hex-di/tracing remains lightweight
+
+**Other backends:**
+
+- @hex-di/tracing-jaeger
+- @hex-di/tracing-datadog
+- @hex-di/tracing-zipkin
+
+### 3. Framework Integration Packages
+
+**@hex-di/hono-tracing** (integrations/hono-tracing/)
+
+```typescript
+export function tracingMiddleware(tracer: Tracer): MiddlewareHandler {
+  return async (c, next) => {
+    const parentContext = extractTraceContext(c.req.header());
+
+    return tracer.withSpanAsync(
+      "http.request",
+      async span => {
+        span.setAttribute("http.method", c.req.method);
+        span.setAttribute("http.url", c.req.url);
+
+        await next();
+
+        span.setAttribute("http.status", c.res.status);
+        injectTraceContext(span.context, c.res.headers);
+      },
+      { parent: parentContext }
+    );
+  };
+}
+```
+
+**@hex-di/react-tracing** (integrations/react-tracing/)
+
+```typescript
+export function TracingProvider({ tracer, children }: Props) {
+  return <TracingContext.Provider value={tracer}>{children}</TracingContext.Provider>;
+}
+
+export function useTracer(): Tracer {
+  return useContext(TracingContext);
+}
+```
+
+## Runtime Changes Required
+
+### Answer: MINIMAL (None for MVP)
+
+The centralized tree-walking approach requires NO changes to @hex-di/runtime:
+
+✅ `container.addHook()` / `removeHook()` exist
+✅ `container.inspector.getChildContainers()` exists
+✅ `ResolutionHookContext` provides all needed data
+✅ Hook isolation is correct behavior (no inheritance needed)
+
+### Optional Post-MVP Enhancements
+
+**1. Inspector → Container Reverse Lookup**
+
+```typescript
+// packages/runtime/src/inspection/types.ts
+export interface InspectorAPI {
+  // ... existing methods
+  getContainer(): Container; // ADDED
+}
+```
+
+**Why:** Simplifies tree walking (no external WeakMap needed)
+**MVP Workaround:** WeakMap in @hex-di/tracing
+
+**2. Dynamic Child Discovery Events**
+
+```typescript
+export type InspectorEvent =
+  | { type: 'resolution'; ... }
+  | { type: 'child-created'; child: InspectorAPI }; // ADDED
+```
+
+**Why:** Auto-instrument containers created after tree instrumentation
+**MVP Workaround:** Manual instrumentation or polling
+
+## Hook Inheritance Decision
+
+**Should hooks inherit from parent to child?**
+
+**Answer: NO.** Keep existing isolated model.
 
 **Rationale:**
 
-- Transient = no memoization = no disposer registration
-- User responsible for cleanup when they control lifetime
-- Consistent with "transient = caller-owned" semantics
+1. **Architecture Principle:** Containers are independent units
+2. **Existing Design is Correct:** Deliberate isolation per code comments
+3. **Tracing Doesn't Need Inheritance:** Centralized tree-walking works better
+4. **Other Use Cases Need Isolation:** Security policies, logging levels vary per container
+
+**Comparison:**
+
+- Express.js: Middleware inherits (single request pipeline)
+- React: Context propagates (monolithic component tree)
+- Effect-TS: Layers compose, not inherit (explicit composition)
+- NestJS: Interceptors CAN inherit (opt-in)
+
+**HexDI aligns with Effect-TS/NestJS:** Containers are composable units. Inheritance would reduce flexibility.
+
+## Package Placement & Dependencies
+
+### Package Location
+
+| Package               | Location      | Rationale                                |
+| --------------------- | ------------- | ---------------------------------------- |
+| @hex-di/tracing       | packages/     | Core runtime library, framework-agnostic |
+| @hex-di/tracing-otel  | packages/     | Backend exporter, peer of core           |
+| @hex-di/hono-tracing  | integrations/ | Framework-specific                       |
+| @hex-di/react-tracing | integrations/ | Framework-specific                       |
+
+**Why packages/ not tooling/?**
+
+- tooling/ = development tools (@hex-di/testing, @hex-di/visualization)
+- packages/ = runtime libraries (used in production)
+- Tracing is RUNTIME observability, not dev tooling
+
+### Dependency Graph
+
+```
+@hex-di/core (types only)
+       ▲
+       │ peer
+       │
+@hex-di/runtime ◄──────┐
+       ▲               │ peer
+       │ peer          │
+       │               │
+@hex-di/tracing ───────┘
+       ▲
+       │ dependency
+       │
+@hex-di/tracing-otel
+```
+
+**Key Rules:**
+
+1. @hex-di/core has NO dependencies (pure types)
+2. @hex-di/tracing depends on @hex-di/core, peers @hex-di/runtime
+3. @hex-di/runtime does NOT depend on @hex-di/tracing (tracing-agnostic)
+4. Backend packages depend on @hex-di/tracing
+5. No circular dependencies
+
+### TracingAPI in @hex-di/core
+
+**Current:**
+
+```typescript
+// packages/core/src/inspection/tracing-types.ts (EXISTING)
+export interface TracingAPI {
+  getTraces(filter?: TraceFilter): readonly TraceEntry[];
+  getStats(): TraceStats;
+  // Simple trace collection API
+}
+```
+
+**This stays unchanged.** TracingAPI is a CONTRACT (interface), not implementation.
+
+**New Tracer interface in @hex-di/tracing:**
+
+```typescript
+export interface Tracer {
+  startSpan(name: string, options?: SpanOptions): Span;
+  withSpan<T>(name: string, fn: (span: Span) => T): T;
+  // Full distributed tracing API
+}
+```
+
+**Two separate concepts:**
+
+- `TracingAPI`: Simple container-level trace collection (EXISTING)
+- `Tracer`: Full distributed tracing with spans (NEW)
+
+They coexist! No breaking changes.
+
+## Build Order & Dependencies
+
+### Phase 1: Core Types (No Dependencies)
+
+```
+@hex-di/tracing/src/types/
+├── tracer.ts
+├── exporter.ts
+└── attributes.ts
+```
+
+**Can build:** Standalone, no external dependencies.
+
+### Phase 2: Context & Utilities
+
+```
+@hex-di/tracing/src/context/
+├── variables.ts       (uses @hex-di/core)
+├── propagation.ts     (pure functions)
+└── stack.ts           (pure functions)
+
+@hex-di/tracing/src/utils/
+├── id-generation.ts
+└── timing.ts
+```
+
+**Depends on:** @hex-di/core (peer)
+
+### Phase 3: Adapters
+
+```
+@hex-di/tracing/src/adapters/
+├── noop.ts
+├── memory.ts
+└── console.ts
+```
+
+**Depends on:** Phase 1 types. Can test independently.
+
+### Phase 4: Instrumentation
+
+```
+@hex-di/tracing/src/instrumentation/
+├── container.ts       (uses container.addHook())
+├── tree.ts            (uses container.inspector)
+└── hooks.ts
+```
+
+**Depends on:**
+
+- @hex-di/runtime (peer) — Container type, hook types
+- Phase 1-3 (internal)
+
+**Must build after:** @hex-di/runtime
+
+### Phase 5: Backend Packages
+
+```
+@hex-di/tracing-otel/
+└── src/exporter.ts
+```
+
+**Depends on:**
+
+- @hex-di/tracing (peer)
+- @opentelemetry/exporter-trace-otlp-http (dependency)
+
+**Must build after:** @hex-di/tracing
+
+### Turborepo Auto-Resolution
+
+```json
+{
+  "pipeline": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    }
+  }
+}
+```
+
+**Build order:**
+
+1. @hex-di/core
+2. @hex-di/runtime, @hex-di/graph
+3. @hex-di/tracing (peer: core, runtime)
+4. @hex-di/tracing-otel (peer: tracing)
+5. @hex-di/hono-tracing (peer: tracing, hono)
+
+## Migration & Backward Compatibility
+
+### Existing Container.tracer API
+
+**Stays unchanged:**
+
+```typescript
+// Simple trace collection (existing)
+const traces = container.tracer.getTraces();
+```
+
+### New Distributed Tracing API
+
+**Additive, opt-in:**
+
+```typescript
+import { createConsoleTracer, instrumentContainer } from "@hex-di/tracing";
+
+const tracer = createConsoleTracer();
+instrumentContainer(container, tracer);
+```
+
+**No breaking changes.** Both APIs coexist.
+
+## Open Questions for Roadmap
+
+### 1. Dynamic Child Discovery
+
+**Question:** How to instrument containers created AFTER tree instrumentation?
+
+**Options:**
+
+- A. Polling: `setInterval(() => checkForNewChildren())`
+- B. Events: Add `inspector.subscribe({ type: 'child-created' })`
+- C. Manual: User calls `instrumentContainer()` on new children
+
+**Recommendation:** Option C for MVP, Option B for v2.
+
+### 2. Inspector → Container Reverse Lookup
+
+**Question:** How to get Container from InspectorAPI?
+
+**Options:**
+
+- A. Add `inspector.getContainer()` method (runtime change)
+- B. External WeakMap in @hex-di/tracing (workaround)
+- C. Pass both container and inspector (verbose API)
+
+**Recommendation:** Option B for MVP, Option A for v2.
+
+### 3. Context Variable Propagation
+
+**Question:** How to propagate trace context?
+
+**Options:**
+
+- A. Module-level span stack (simple)
+- B. Async-local-storage (Node.js only)
+- C. Context parameter threading (runtime changes)
+
+**Recommendation:** Option A (span stack) for MVP.
+
+### 4. Sampling Strategy
+
+**Question:** How to sample traces?
+
+**Options:**
+
+- A. Head-based sampling (decide at trace start)
+- B. Tail-based sampling (decide after complete)
+- C. Filtering at instrumentation level
+
+**Recommendation:** Option A for MVP, Option B post-MVP.
+
+## Summary: Recommended Architecture
+
+### Core Decisions
+
+✅ **Centralized tree-walking subscription** — One tracer observes entire container tree
+✅ **External instrumentation** — No changes to runtime hook inheritance
+✅ **Span stack for context** — Module-level, no async-local-storage
+✅ **One span per resolution** — Even for shared mode (add delegation attributes)
+✅ **Container attributes on spans** — Identify which container resolved
+✅ **Separate backend packages** — Keep core lightweight
+
+### Integration Summary
+
+| Component            | Changes Needed | Phase     |
+| -------------------- | -------------- | --------- |
+| @hex-di/runtime      | None (MVP)     | —         |
+| @hex-di/tracing      | New package    | Phase 1-4 |
+| @hex-di/tracing-otel | New package    | Phase 5   |
+| @hex-di/hono-tracing | New package    | Phase 6   |
+
+### Build Order
+
+**MVP:**
+
+1. Create @hex-di/tracing package (types, adapters, instrumentation)
+2. Implement span stack context propagation
+3. Manual tree instrumentation pattern
+4. Basic testing with memory tracer
+
+**Post-MVP:**
+
+1. instrumentContainerTree() helper
+2. Dynamic child discovery
+3. Backend packages (OpenTelemetry, Jaeger)
+4. Framework integrations (Hono, React)
+5. Advanced features (sampling, filtering)
+
+## Confidence Assessment
+
+| Area                   | Confidence | Source                                   |
+| ---------------------- | ---------- | ---------------------------------------- |
+| Container hierarchy    | HIGH       | Direct codebase analysis                 |
+| Hook isolation model   | HIGH       | Factory.ts, hooks.ts inspection          |
+| Inspector API          | HIGH       | Builtin-api.ts, types.ts inspection      |
+| Tree-walking approach  | HIGH       | Architecture alignment, first principles |
+| Span hierarchy mapping | MEDIUM     | Distributed tracing patterns             |
+| Context propagation    | MEDIUM     | Technical feasibility analysis           |
+| Package placement      | HIGH       | Monorepo structure analysis              |
+| Build dependencies     | HIGH       | Dependency graph analysis                |
 
 ---
 
-## Summary
-
-### Integration Patterns
-
-| Feature                      | Integration Pattern                                   | Complexity |
-| ---------------------------- | ----------------------------------------------------- | ---------- |
-| Async detection              | **Type-level branching** in existing `ProvideResult`  | Low        |
-| Override lifetime validation | **Extend validation chain** in `OverrideResult`       | Low        |
-| Bidirectional captive        | **New state parameter** (`TPendingConstraints`)       | Medium     |
-| Disposal lifecycle           | **Runtime augmentation** (MemoMap + LifecycleManager) | Medium     |
-
-### Key Takeaways
-
-1. **Type-state machine flexibility:** Phantom type parameters enable compile-time validation without runtime overhead. New features extend this pattern naturally.
-
-2. **Separation of concerns:** Graph builder handles compile-time (types, dependencies), runtime container handles execution (instances, disposal). Keep boundary clean.
-
-3. **Incremental adoption:** Features 1-2 are self-contained. Feature 3 requires state expansion (coordinate carefully). Feature 4 is independent (different package).
-
-4. **Build order:** Phases 1 (async + override) → Phase 2 (captive) → Phase 3 (disposal). Each phase builds confidence for the next.
-
-5. **Breaking changes justified:** Removing `provideAsync()` and adding override lifetime validation eliminate entire classes of runtime errors. Ship as major version with migration guide.
-
----
-
-**Ready for roadmap creation:** This architecture document provides sufficient detail to structure phases, estimate effort, and identify dependencies. No blocking unknowns remain.
+**Document Version:** 1.0
+**Last Updated:** 2026-02-06
+**Ready for roadmap creation**

@@ -1,735 +1,1112 @@
-# Technology Stack Patterns for Runtime DI Improvements
+# Technology Stack for Distributed Tracing
 
-**Project:** HexDI v5.0 Runtime Package Improvements
-**Researched:** 2026-02-03
-**Context:** Existing @hex-di/runtime at 8.7/10, targeting 9.5/10
+**Project:** HexDI v7.0 Distributed Tracing
+**Researched:** 2026-02-06
+**Context:** NEW @hex-di/tracing package system replacing existing TraceCollector infrastructure
+**Overall confidence:** HIGH
 
 ---
 
 ## Executive Summary
 
-This research focuses on **patterns and techniques** for the four improvement areas:
+OpenTelemetry is the universal standard for distributed tracing in 2026. **All backends (Jaeger, Zipkin, DataDog) should be accessed through OpenTelemetry exporters** rather than standalone clients. The standalone clients (jaeger-client, zipkin) are deprecated or in maintenance mode. OpenTelemetry provides official exporters for all major backends, W3C Trace Context propagation built-in, and semantic conventions that align with industry standards.
 
-1. Type-safe override APIs (replacing string-keyed maps)
-2. Performance optimizations (O(1) data structures, timestamp elision)
-3. Testing strategies for DI container internals
-4. Documentation patterns for complex type systems
-
-All recommendations are specific to TypeScript DI container development and integrate with HexDI's existing patterns.
+**Key architectural decision:** HexDI will define its own `Tracer` and `Span` port interfaces (matching OpenTelemetry semantics) to maintain adapter independence. Backend packages will bridge HexDI spans to OpenTelemetry exporters.
 
 ---
 
-## 1. Type-Safe Override Patterns
+## Recommended Stack
 
-### 1.1 The Problem
+### 1. Core Tracing Package (@hex-di/tracing)
 
-Current `withOverrides()` uses string keys:
+**No external dependencies** for core functionality. Implements ports and built-in adapters.
+
+| Component         | Dependencies | Purpose                             |
+| ----------------- | ------------ | ----------------------------------- |
+| Tracer/Span ports | None         | Port definitions, zero dependencies |
+| NoOp adapter      | None         | Zero-cost disabled tracing          |
+| Memory adapter    | None         | Testing and assertions              |
+| Console adapter   | None         | Development debugging               |
+| W3C Trace Context | None         | Manual implementation (simple spec) |
+
+**Why no dependencies:** Core tracing must have zero runtime overhead when disabled. Pulling in any dependencies would add weight even for NoOp usage.
+
+**W3C Trace Context implementation:** The spec is simple enough (traceparent: `00-{trace-id}-{span-id}-{flags}`, tracestate: vendor-specific) that manual implementation is preferred over adding a dependency. Reference: https://www.w3.org/TR/trace-context/
+
+**Version:** 0.1.0 (initial release)
+
+---
+
+### 2. OpenTelemetry Backend (@hex-di/tracing-otel)
+
+**The universal backend adapter.** All other backends should be implemented as OpenTelemetry exporters.
+
+| Package                                   | Version  | Purpose                 | Why                                             |
+| ----------------------------------------- | -------- | ----------------------- | ----------------------------------------------- |
+| `@opentelemetry/api`                      | ^1.9.0   | Core API types          | Industry standard, stable API (1.x)             |
+| `@opentelemetry/sdk-trace-base`           | ^2.5.0   | Trace SDK primitives    | Span processors, context management             |
+| `@opentelemetry/sdk-trace-node`           | ^2.5.0   | Node.js SDK             | Async context propagation via AsyncLocalStorage |
+| `@opentelemetry/sdk-trace-web`            | ^2.5.0   | Browser SDK             | For React integration (optional peer dep)       |
+| `@opentelemetry/exporter-trace-otlp-http` | ^0.211.0 | OTLP HTTP exporter      | Universal exporter for OTLP collectors          |
+| `@opentelemetry/exporter-trace-otlp-grpc` | ^0.211.0 | OTLP gRPC exporter      | Optional, higher performance than HTTP          |
+| `@opentelemetry/resources`                | ^2.5.0   | Resource metadata       | Service name, version, environment attributes   |
+| `@opentelemetry/semantic-conventions`     | ^1.39.0  | Standard attribute keys | Ensures compatibility with industry conventions |
+| `@opentelemetry/core`                     | ^2.5.0   | Core utilities          | ID generation, time utilities, propagation      |
+| `@opentelemetry/context-async-hooks`      | ^2.5.0   | Node.js context         | AsyncLocalStorage-based context propagation     |
+
+**Why OpenTelemetry:**
+
+- **Industry standard:** Vendor-neutral, CNCF project, adopted by all major observability vendors
+- **Future-proof:** All legacy clients (Jaeger, Zipkin standalone) are migrating to OpenTelemetry
+- **Complete API:** Tracing, metrics, logs in one SDK
+- **W3C Trace Context built-in:** No manual header parsing needed
+- **Semantic conventions:** Standard attribute names for common operations
+
+**Version strategy:**
+
+- `@opentelemetry/api` is at 1.x (stable, semver)
+- SDK packages are at 2.x (stable, aligned with API 1.x)
+- Exporter packages are at 0.x but stable (version <1.0 doesn't mean unstable for OTel)
+
+**Peer dependencies:**
+
+```json
+{
+  "peerDependencies": {
+    "@hex-di/tracing": "workspace:*"
+  }
+}
+```
+
+**Installation:**
+
+```bash
+pnpm add @opentelemetry/api@^1.9.0 \
+         @opentelemetry/sdk-trace-base@^2.5.0 \
+         @opentelemetry/sdk-trace-node@^2.5.0 \
+         @opentelemetry/exporter-trace-otlp-http@^0.211.0 \
+         @opentelemetry/resources@^2.5.0 \
+         @opentelemetry/semantic-conventions@^1.39.0 \
+         @opentelemetry/core@^2.5.0 \
+         @opentelemetry/context-async-hooks@^2.5.0
+```
+
+**Integration pattern:**
 
 ```typescript
-// Current (string-keyed, error-prone)
-container.withOverrides(
-  { Loggerr: () => mockLogger }, // Typo not caught
-  () => {
-    /* ... */
-  }
+// Bridge HexDI spans to OpenTelemetry
+import { trace } from "@opentelemetry/api";
+import type { Tracer as HexDITracer, Span as HexDISpan } from "@hex-di/tracing";
+
+export function createOtelTracer(otelTracer: OTelTracer): HexDITracer {
+  // Wrap OTel tracer to implement HexDI Tracer port
+  // Convert HexDI span operations to OTel span operations
+}
+```
+
+---
+
+### 3. Jaeger Backend (@hex-di/tracing-jaeger)
+
+**Built on OpenTelemetry, NOT standalone jaeger-client.**
+
+| Package                            | Version | Purpose            | Why                                        |
+| ---------------------------------- | ------- | ------------------ | ------------------------------------------ |
+| `@opentelemetry/exporter-jaeger`   | ^2.5.0  | Jaeger exporter    | Official OpenTelemetry exporter for Jaeger |
+| `@opentelemetry/propagator-jaeger` | ^2.5.0  | Jaeger propagation | Legacy Uber-trace-id header format         |
+
+**Why NOT jaeger-client (3.19.0):**
+
+- **Deprecated:** jaeger-client is based on OpenTracing (predecessor to OpenTelemetry)
+- **Maintenance mode:** No new features, OpenTelemetry is the migration path
+- **OpenTracing is archived:** OpenTelemetry superseded it in 2021
+
+**Why @opentelemetry/exporter-jaeger:**
+
+- **Official integration:** Maintained by OpenTelemetry project
+- **Modern protocol:** Uses Jaeger's native protocol (UDP/HTTP)
+- **Future-proof:** When Jaeger fully migrates to OTLP, switching exporters is trivial
+
+**Installation:**
+
+```bash
+pnpm add @opentelemetry/exporter-jaeger@^2.5.0 \
+         @opentelemetry/propagator-jaeger@^2.5.0
+```
+
+**Configuration options:**
+
+```typescript
+export interface JaegerExporterOptions {
+  readonly endpoint?: string; // HTTP endpoint (default: http://localhost:14268/api/traces)
+  readonly agentHost?: string; // Agent host for UDP (default: localhost)
+  readonly agentPort?: number; // Agent port for UDP (default: 6832)
+  readonly maxPacketSize?: number; // UDP packet size (default: 65000)
+}
+```
+
+**Note:** Jaeger is moving toward OTLP as its native protocol. By 2027, the recommendation will likely be to use OTLP exporter with Jaeger's OTLP endpoint instead of the Jaeger-specific exporter.
+
+---
+
+### 4. Zipkin Backend (@hex-di/tracing-zipkin)
+
+**Built on OpenTelemetry, NOT standalone zipkin client.**
+
+| Package                          | Version | Purpose         | Why                                        |
+| -------------------------------- | ------- | --------------- | ------------------------------------------ |
+| `@opentelemetry/exporter-zipkin` | ^2.5.0  | Zipkin exporter | Official OpenTelemetry exporter for Zipkin |
+| `@opentelemetry/propagator-b3`   | ^2.5.0  | B3 propagation  | Zipkin's B3 header format (single/multi)   |
+
+**Why NOT zipkin (0.22.0):**
+
+- **Maintenance mode:** zipkin npm package is a low-level client, not actively developed
+- **Manual span management:** Requires manual span tree building
+- **No modern context propagation:** Doesn't integrate with AsyncLocalStorage
+
+**Why @opentelemetry/exporter-zipkin:**
+
+- **Official integration:** Maintained by OpenTelemetry project
+- **B3 propagation built-in:** Handles both B3 single header and multi-header formats
+- **JSON v2 protocol:** Uses Zipkin's current API format
+
+**Installation:**
+
+```bash
+pnpm add @opentelemetry/exporter-zipkin@^2.5.0 \
+         @opentelemetry/propagator-b3@^2.5.0
+```
+
+**Configuration options:**
+
+```typescript
+export interface ZipkinExporterOptions {
+  readonly url?: string; // Zipkin endpoint (default: http://localhost:9411/api/v2/spans)
+  readonly headers?: Record<string, string>;
+  readonly serviceName?: string; // Override service name
+}
+```
+
+**B3 propagation formats:**
+
+- Single header: `b3: {trace-id}-{span-id}-{sampling-decision}`
+- Multi-header: `X-B3-TraceId`, `X-B3-SpanId`, `X-B3-Sampled`
+
+---
+
+### 5. DataDog Backend (@hex-di/tracing-datadog)
+
+**DataDog APM has its own proprietary client.** Use dd-trace for best integration.
+
+| Package    | Version | Purpose     | Why                              |
+| ---------- | ------- | ----------- | -------------------------------- |
+| `dd-trace` | ^5.85.0 | DataDog APM | Official DataDog tracing library |
+
+**Why dd-trace over OpenTelemetry:**
+
+- **Proprietary protocol:** DataDog APM uses its own agent protocol, not OTLP (yet)
+- **Better integration:** dd-trace includes automatic instrumentation for Node.js libraries
+- **Native features:** Profiling, runtime metrics, log correlation built-in
+- **Agent optimization:** Designed for DataDog's agent architecture
+
+**Why NOT OpenTelemetry for DataDog:**
+
+- DataDog supports OTLP ingestion, but dd-trace provides richer features
+- If using DataDog, go all-in with dd-trace for best experience
+- OpenTelemetry → DataDog is viable but loses some DataDog-specific features
+
+**Installation:**
+
+```bash
+pnpm add dd-trace@^5.85.0
+```
+
+**Configuration pattern:**
+
+```typescript
+import tracer from "dd-trace";
+
+// Initialize DataDog tracer
+tracer.init({
+  service: "hex-di-app",
+  env: "production",
+  version: "1.0.0",
+  logInjection: true,
+  runtimeMetrics: true,
+});
+
+// Bridge to HexDI tracing
+export const DataDogTracerAdapter = createAdapter({
+  port: TracerPort,
+  factory: () => createDataDogTracer(tracer),
+  lifetime: "singleton",
+});
+```
+
+**DataDog-specific features:**
+
+- **Automatic instrumentation:** Patches popular libraries (express, fetch, pg, redis) automatically
+- **APM metrics:** Request rate, latency, error tracking
+- **Profiling:** CPU and heap profiling (optional)
+- **Log correlation:** Inject trace IDs into logs
+
+**Trade-off:** dd-trace is a heavy dependency (~15MB) with native addons. Consider making it an optional integration.
+
+---
+
+## W3C Trace Context Specification
+
+**Specification version:** 1.0 (W3C Recommendation, February 2020)
+**URL:** https://www.w3.org/TR/trace-context/
+
+### traceparent Header Format
+
+```
+traceparent: 00-{trace-id}-{parent-id}-{trace-flags}
+```
+
+**Field definitions:**
+
+- `version` (2 chars): `00` (current version)
+- `trace-id` (32 chars): 128-bit trace ID in hex (16 bytes)
+- `parent-id` (16 chars): 64-bit parent span ID in hex (8 bytes)
+- `trace-flags` (2 chars): 8-bit flags (01 = sampled, 00 = not sampled)
+
+**Example:**
+
+```
+traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
+```
+
+**Parsing rules:**
+
+1. Must be exactly 55 characters
+2. Fields separated by hyphens
+3. trace-id must NOT be all zeros
+4. parent-id must NOT be all zeros
+5. Unknown version values → reject and ignore
+6. Invalid format → reject and ignore
+
+### tracestate Header Format
+
+```
+tracestate: vendor1=value1,vendor2=value2
+```
+
+**Purpose:** Vendor-specific trace state (e.g., sampling decisions, routing info)
+
+**Rules:**
+
+- Multiple vendors separated by commas
+- Key format: `[a-z0-9_\-*/]{1,256}`
+- Value format: `[!-~]{0,256}` (printable ASCII except comma, equals)
+- Maximum 32 vendors
+- Total header size should not exceed ~512 bytes
+
+**Example:**
+
+```
+tracestate: congo=t61rcWkgMzE,rojo=00f067aa0ba902b7
+```
+
+**HexDI usage:**
+
+- **traceparent:** Required for cross-container trace propagation
+- **tracestate:** Optional, can store HexDI-specific metadata (container ID, scope ID)
+
+### Propagation Rules
+
+1. **Extract from incoming request:**
+   - Read `traceparent` header
+   - Read `tracestate` header (if present)
+   - Validate format
+   - Use as parent context for new spans
+
+2. **Inject into outgoing request:**
+   - Write current span's context as `traceparent`
+   - Write `tracestate` with vendor-specific data
+   - Preserve existing tracestate entries from other vendors
+
+3. **Create new trace:**
+   - If no `traceparent` header present
+   - Or if `root: true` option specified
+   - Generate new trace-id and parent-id
+
+**Implementation in @hex-di/tracing:**
+
+```typescript
+// context/trace-context.ts
+export function parseTraceparent(header: string): SpanContext | undefined {
+  // Validate format: 00-{32hex}-{16hex}-{2hex}
+  // Return undefined if invalid (don't throw)
+}
+
+export function serializeTraceparent(context: SpanContext): string {
+  return `00-${context.traceId}-${context.spanId}-${formatFlags(context.traceFlags)}`;
+}
+
+export function parseTracestate(header: string): Record<string, string> {
+  // Parse comma-separated vendor=value pairs
+}
+
+export function serializeTracestate(state: Record<string, string>): string {
+  // Serialize to comma-separated format
+}
+```
+
+---
+
+## How Other TypeScript DI Frameworks Handle Tracing
+
+### Effect-TS (3.19.x)
+
+**Built-in tracing with spans:**
+
+Effect-TS has first-class tracing support with `Effect.withSpan()` and tracer propagation through Effect context.
+
+```typescript
+import { Effect } from "effect";
+
+// Spans are Effect-native
+const program = Effect.gen(function* () {
+  yield* Effect.log("Starting process");
+  const result = yield* Effect.withSpan("fetch-user", { attributes: { userId } })(
+    fetchUser(userId)
+  );
+  return result;
+});
+```
+
+**Key patterns:**
+
+- **Tracer as Effect layer:** Tracer is injected via Effect's layer system
+- **Automatic span hierarchy:** Child effects inherit parent span context
+- **Structured concurrency:** Spans match Effect's fiber hierarchy
+- **OpenTelemetry backend:** Effect has `@effect/opentelemetry` package
+
+**Lesson for HexDI:**
+
+- Tracing should integrate with DI resolution context (child spans for nested resolutions)
+- Tracer should be injected via port, not global singleton
+- Span context should propagate through AsyncLocalStorage (context variables)
+
+**Reference:** `@effect/opentelemetry` package
+
+---
+
+### InversifyJS (7.11.0)
+
+**No built-in tracing support.**
+
+InversifyJS has middleware hooks but no tracing abstraction.
+
+```typescript
+import { Container } from "inversify";
+
+// Manual tracing via middleware
+container.applyMiddleware(planAndResolve => {
+  return args => {
+    const start = performance.now();
+    const result = planAndResolve(args);
+    const duration = performance.now() - start;
+    console.log(`Resolved ${args.serviceIdentifier} in ${duration}ms`);
+    return result;
+  };
+});
+```
+
+**Limitations:**
+
+- No span tree structure
+- No distributed tracing support
+- Manual integration with OpenTelemetry required
+
+**Lesson for HexDI:**
+
+- Resolution hooks are the right abstraction for tracing (HexDI already has this)
+- But hooks alone aren't enough – need structured span API
+
+---
+
+### TSyringe (4.10.0)
+
+**No built-in tracing support.**
+
+TSyringe is decorator-based and has no hook system at all.
+
+**Lesson for HexDI:**
+
+- Decorator-based DI makes instrumentation harder
+- Function-based builder pattern (HexDI's approach) is better for tracing
+
+---
+
+### NestJS (@nestjs/core 11.x)
+
+**Built-in OpenTelemetry integration.**
+
+NestJS has first-party OpenTelemetry support via `@nestjs/opentelemetry`.
+
+```typescript
+import { OpenTelemetryModule } from "@nestjs/opentelemetry";
+
+@Module({
+  imports: [
+    OpenTelemetryModule.forRoot({
+      tracing: {
+        exporter: new JaegerExporter({
+          /* ... */
+        }),
+      },
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+**Key patterns:**
+
+- **Automatic instrumentation:** Controllers, providers, and guards are auto-traced
+- **Span attributes:** HTTP route, method, status code added automatically
+- **Context propagation:** Request-scoped trace context
+
+**Lesson for HexDI:**
+
+- Automatic instrumentation via resolution hooks is the right approach
+- Framework integrations (Hono, React) should provide tracing middleware/providers
+- Span attributes should include DI-specific metadata (port name, lifetime, cached)
+
+**Reference:** `@nestjs/opentelemetry` package
+
+---
+
+### Spring Boot (Java DI, for comparison)
+
+**Micrometer + OpenTelemetry integration.**
+
+Spring Boot uses Micrometer as a tracing facade with OpenTelemetry backend.
+
+**Key patterns:**
+
+- **Aspect-based instrumentation:** @Traced annotation on beans
+- **Baggage propagation:** Key-value pairs propagated with trace context
+- **Multi-backend support:** Swap backends without changing code
+
+**Lesson for HexDI:**
+
+- Baggage propagation is useful for correlation IDs, user IDs
+- Backends should be swappable via adapter pattern (HexDI already does this)
+
+---
+
+## OpenTelemetry Span/Tracer Interface
+
+**From @opentelemetry/api (1.9.0):**
+
+### Tracer Interface
+
+```typescript
+interface Tracer {
+  /**
+   * Start a new span
+   */
+  startSpan(name: string, options?: SpanOptions, context?: Context): Span;
+
+  /**
+   * Start span and set as active for duration of fn
+   */
+  startActiveSpan<F extends (span: Span) => unknown>(name: string, fn: F): ReturnType<F>;
+
+  startActiveSpan<F extends (span: Span) => unknown>(
+    name: string,
+    options: SpanOptions,
+    fn: F
+  ): ReturnType<F>;
+
+  startActiveSpan<F extends (span: Span) => unknown>(
+    name: string,
+    options: SpanOptions,
+    context: Context,
+    fn: F
+  ): ReturnType<F>;
+}
+```
+
+### Span Interface
+
+```typescript
+interface Span {
+  /**
+   * Returns the SpanContext for this span
+   */
+  spanContext(): SpanContext;
+
+  /**
+   * Sets an attribute on the span
+   */
+  setAttribute(key: string, value: AttributeValue): this;
+
+  /**
+   * Sets attributes on the span
+   */
+  setAttributes(attributes: Attributes): this;
+
+  /**
+   * Adds an event to the span
+   */
+  addEvent(
+    name: string,
+    attributesOrStartTime?: Attributes | TimeInput,
+    startTime?: TimeInput
+  ): this;
+
+  /**
+   * Sets the status of the span
+   */
+  setStatus(status: SpanStatus): this;
+
+  /**
+   * Updates the span name
+   */
+  updateName(name: string): this;
+
+  /**
+   * Marks the end of the span
+   */
+  end(endTime?: TimeInput): void;
+
+  /**
+   * Returns true if this span is recording
+   */
+  isRecording(): boolean;
+
+  /**
+   * Records an exception
+   */
+  recordException(exception: Exception, time?: TimeInput): void;
+}
+```
+
+### SpanContext Interface
+
+```typescript
+interface SpanContext {
+  /**
+   * Trace ID (128-bit)
+   */
+  traceId: string;
+
+  /**
+   * Span ID (64-bit)
+   */
+  spanId: string;
+
+  /**
+   * Trace flags (8-bit)
+   */
+  traceFlags: number;
+
+  /**
+   * Trace state
+   */
+  traceState?: TraceState;
+
+  /**
+   * Whether this span is remote (from another process)
+   */
+  isRemote?: boolean;
+}
+```
+
+### HexDI Adaptation
+
+**HexDI's Tracer port should match OpenTelemetry semantics but with simplified API:**
+
+```typescript
+// Differences from OpenTelemetry:
+// 1. No Context parameter (use AsyncLocalStorage via context variables)
+// 2. Simplified startSpan (no complex overloads)
+// 3. withSpan/withSpanAsync instead of startActiveSpan (clearer naming)
+// 4. No updateName (span name should be immutable)
+
+interface Tracer {
+  startSpan(name: string, options?: SpanOptions): Span;
+  withSpan<T>(name: string, fn: (span: Span) => T, options?: SpanOptions): T;
+  withSpanAsync<T>(name: string, fn: (span: Span) => Promise<T>, options?: SpanOptions): Promise<T>;
+  getActiveSpan(): Span | undefined;
+  getSpanContext(): SpanContext | undefined;
+  withAttributes(attributes: Attributes): Tracer;
+}
+```
+
+**Why simplified:**
+
+- HexDI users shouldn't need to understand OpenTelemetry's Context API
+- AsyncLocalStorage (via context variables) handles context propagation automatically
+- Fluent API (withSpan) is more ergonomic than start/end pattern
+
+---
+
+## Integration Points with Existing Stack
+
+### 1. Context Variables (AsyncLocalStorage)
+
+**Existing:** HexDI has `createContextVariable()` in `@hex-di/core`.
+
+**Integration:**
+
+```typescript
+import { createContextVariable } from "@hex-di/core";
+
+export const ActiveSpanVar = createContextVariable<Span | undefined>(
+  "hex-di/active-span",
+  undefined
+);
+
+export const TraceContextVar = createContextVariable<SpanContext | undefined>(
+  "hex-di/trace-context",
+  undefined
 );
 ```
 
-### 1.2 Recommended Pattern: Port-Keyed Map with Mapped Types
-
-**Pattern:** Use mapped types to derive override map keys from port union.
+**Usage in tracer:**
 
 ```typescript
-/**
- * Type-safe override map where keys are constrained to port names
- * from TProvides and values must return compatible service types.
- */
-type TypeSafeOverrideMap<TProvides extends Port<unknown, string>> = {
-  [P in TProvides as InferPortName<P>]?: () => InferService<P>;
-};
+withSpan<T>(name: string, fn: (span: Span) => T): T {
+  const span = this.startSpan(name)
+  return ActiveSpanVar.run(span, () => {
+    try {
+      const result = fn(span)
+      span.setStatus('ok')
+      return result
+    } catch (error) {
+      span.recordException(error)
+      span.setStatus('error')
+      throw error
+    } finally {
+      span.end()
+    }
+  })
+}
+```
+
+---
+
+### 2. Resolution Hooks
+
+**Existing:** HexDI has `beforeResolve` and `afterResolve` hooks.
+
+**Integration:**
+
+```typescript
+import { createTracingHook } from "@hex-di/tracing";
+
+const tracingHook = createTracingHook(tracer, {
+  traceSyncResolutions: true,
+  traceAsyncResolutions: true,
+  minDurationMs: 1, // Skip fast resolutions
+});
+
+const container = createContainer(graph, {
+  hooks: {
+    beforeResolve: [tracingHook.beforeResolve],
+    afterResolve: [tracingHook.afterResolve],
+  },
+});
+```
+
+**Hook implementation:**
+
+```typescript
+export function createTracingHook(
+  tracer: Tracer,
+  options: AutoInstrumentOptions = {}
+): ResolutionHook {
+  const spanMap = new WeakMap<Port<unknown, string>, Span>()
+
+  return {
+    beforeResolve: (port, scope) => {
+      const span = tracer.startSpan(`resolve ${port.name}`, {
+        kind: 'internal',
+        attributes: {
+          'hex-di.port.name': port.name,
+          'hex-di.port.lifetime': /* infer from graph */,
+          'hex-di.resolution.scope_id': scope?.id,
+        },
+      })
+      spanMap.set(port, span)
+    },
+
+    afterResolve: (port, result, error) => {
+      const span = spanMap.get(port)
+      if (!span) return
+
+      if (error) {
+        span.recordException(error)
+        span.setStatus('error')
+      } else {
+        span.setStatus('ok')
+      }
+
+      span.end()
+      spanMap.delete(port)
+    },
+  }
+}
+```
+
+---
+
+### 3. Framework Integrations
+
+**Hono (@hex-di/hono):**
+
+```typescript
+import { tracingMiddleware } from "@hex-di/tracing/hono";
+
+app.use(
+  "*",
+  tracingMiddleware({
+    tracer: container.resolve(TracerPort),
+    extractContext: true, // Extract traceparent from incoming request
+    injectContext: true, // Inject traceparent into response
+  })
+);
+```
+
+**React (@hex-di/react):**
+
+```typescript
+import { TracingProvider, useTracer } from '@hex-di/tracing/react'
+
+function App() {
+  return (
+    <TracingProvider tracer={tracer} spanName="react-app">
+      <Dashboard />
+    </TracingProvider>
+  )
+}
+
+function Dashboard() {
+  const tracer = useTracer()
+
+  const handleClick = useTracedCallback('button-click', () => {
+    // Traced automatically
+  })
+}
+```
+
+---
+
+## What NOT to Add
+
+### 1. Metrics and Logging
+
+**Why:** OpenTelemetry supports traces, metrics, and logs, but HexDI tracing should focus on traces only.
+
+**Rationale:**
+
+- Metrics belong in a separate `@hex-di/metrics` package (future work)
+- Logging should integrate with existing logging libraries (pino, winston)
+- Traces are the most valuable signal for debugging DI resolution issues
+
+### 2. Automatic Instrumentation for Third-Party Libraries
+
+**Why:** OpenTelemetry has auto-instrumentation for express, fetch, pg, etc., but HexDI shouldn't duplicate this.
+
+**Rationale:**
+
+- Users can install `@opentelemetry/auto-instrumentations-node` separately
+- HexDI tracing should focus on DI-specific operations (resolution, scope lifecycle)
+- Third-party instrumentation is orthogonal to DI tracing
+
+### 3. Sampling
+
+**Why:** Sampling is a backend concern, not a DI concern.
+
+**Rationale:**
+
+- OpenTelemetry SDK handles sampling via `TraceIdRatioBased` sampler
+- HexDI tracer should respect sampling decisions from upstream (traceparent flags)
+- Configuring sampling belongs in backend adapter configuration, not core tracing
+
+### 4. Baggage API
+
+**Why:** Baggage is a W3C spec for propagating key-value pairs, but it's rarely used.
+
+**Rationale:**
+
+- Correlation IDs can be propagated via context variables (simpler)
+- Baggage header format is complex (multiple RFCs)
+- Most users don't need baggage – correlation ID is sufficient
+
+**Defer to future:** If demand arises, add baggage support in a minor version.
+
+### 5. Standalone Clients (jaeger-client, zipkin)
+
+**Why:** These are deprecated or in maintenance mode.
+
+**Rationale:**
+
+- OpenTelemetry is the future – all vendors are migrating
+- Standalone clients lack modern features (async context, W3C propagation)
+- Maintaining multiple client integrations is unnecessary complexity
+
+---
+
+## Package Dependency Matrix
+
+| Package                   | Core                          | OTel API           | OTel SDK                    | Exporters                             | Backend-Specific             |
+| ------------------------- | ----------------------------- | ------------------ | --------------------------- | ------------------------------------- | ---------------------------- |
+| `@hex-di/tracing`         | @hex-di/core, @hex-di/runtime | -                  | -                           | -                                     | -                            |
+| `@hex-di/tracing-otel`    | @hex-di/tracing               | @opentelemetry/api | @opentelemetry/sdk-trace-\* | @opentelemetry/exporter-trace-otlp-\* | -                            |
+| `@hex-di/tracing-jaeger`  | @hex-di/tracing               | @opentelemetry/api | @opentelemetry/sdk-trace-\* | @opentelemetry/exporter-jaeger        | -                            |
+| `@hex-di/tracing-zipkin`  | @hex-di/tracing               | @opentelemetry/api | @opentelemetry/sdk-trace-\* | @opentelemetry/exporter-zipkin        | @opentelemetry/propagator-b3 |
+| `@hex-di/tracing-datadog` | @hex-di/tracing               | -                  | -                           | -                                     | dd-trace                     |
+
+**Note:** All OpenTelemetry packages should use compatible versions (2.5.0 for SDK, 0.211.0 for exporters, 1.9.0 for API).
+
+---
+
+## Version Strategy
+
+### Pinning vs Ranges
+
+**Recommendation:** Use caret ranges (`^`) for OpenTelemetry packages.
+
+**Rationale:**
+
+- OpenTelemetry API (1.x) is stable – breaking changes won't happen in 1.x
+- SDK (2.x) and exporters (0.x) receive frequent updates (monthly)
+- Caret ranges allow users to get bug fixes and new exporter features
+- HexDI shouldn't block OpenTelemetry updates
+
+**Exception:** If a specific OpenTelemetry version has a critical bug, pin to a fixed version and document in CHANGELOG.
+
+### Node.js Version Support
+
+**Minimum:** Node.js 18.0.0 (matches HexDI's existing requirement)
+
+**Rationale:**
+
+- Node 18 has AsyncLocalStorage stable
+- OpenTelemetry SDK requires Node 14+, but Node 18 is the LTS baseline for new projects in 2026
+
+### TypeScript Version Support
+
+**Minimum:** TypeScript 5.0 (matches HexDI's existing requirement)
+
+**Rationale:**
+
+- OpenTelemetry types work with TS 4.x+, but HexDI uses TS 5.x features
+- No additional constraints from tracing packages
+
+---
+
+## Installation Scripts
+
+### Basic Setup (OTLP HTTP)
+
+```bash
+# Core tracing package
+pnpm add @hex-di/tracing
+
+# OpenTelemetry backend
+pnpm add @hex-di/tracing-otel \
+         @opentelemetry/api@^1.9.0 \
+         @opentelemetry/sdk-trace-node@^2.5.0 \
+         @opentelemetry/exporter-trace-otlp-http@^0.211.0 \
+         @opentelemetry/resources@^2.5.0 \
+         @opentelemetry/semantic-conventions@^1.39.0
+```
+
+### Jaeger Backend
+
+```bash
+pnpm add @hex-di/tracing-jaeger \
+         @opentelemetry/exporter-jaeger@^2.5.0 \
+         @opentelemetry/propagator-jaeger@^2.5.0
+```
+
+### Zipkin Backend
+
+```bash
+pnpm add @hex-di/tracing-zipkin \
+         @opentelemetry/exporter-zipkin@^2.5.0 \
+         @opentelemetry/propagator-b3@^2.5.0
+```
+
+### DataDog Backend
+
+```bash
+pnpm add @hex-di/tracing-datadog \
+         dd-trace@^5.85.0
+```
+
+### Development Setup
+
+```bash
+# Core + console adapter (no external dependencies)
+pnpm add @hex-di/tracing
+
+# Use built-in ConsoleTracerAdapter for development
+```
+
+---
+
+## Architecture Decision: Parent/Child Container Tracing
+
+**Question from project context:** How should tracing propagate across parent/child container hierarchies?
+
+### Current State (Isolated Tracing)
+
+Each container has its own isolated `tracer` property. Child containers don't share trace context with parent.
+
+### Recommended Approach: Shared Tracer, Propagated Context
+
+**Pattern:**
+
+1. **Single tracer instance:** Parent container creates tracer, child containers inherit same tracer
+2. **Context propagation:** Trace context flows from parent to child via AsyncLocalStorage (context variables)
+3. **Span hierarchy:** Child container resolutions create child spans under parent's active span
+
+**Implementation:**
+
+```typescript
+// Parent container with tracer
+const parentContainer = createContainer(graph, {
+  hooks: {
+    beforeResolve: [tracingHook.beforeResolve],
+    afterResolve: [tracingHook.afterResolve],
+  },
+});
+
+// Child container inherits tracer via shared reference
+const childContainer = parentContainer.createChildContainer();
+// Child resolution hooks see same ActiveSpanVar context
+// Child spans are automatically children of parent spans
 ```
 
 **Why this works:**
 
-- `[P in TProvides as InferPortName<P>]` - Iterates port union, uses port name as key
-- `() => InferService<P>` - Factory return type derived from same port
-- TypeScript enforces both key validity AND return type correctness
+- AsyncLocalStorage propagates context to child async operations
+- Child container resolutions happen in the context of parent's active span
+- No explicit parent-child wiring needed – context propagation handles it
 
-**Integration with existing runtime:**
+**Span tree example:**
 
-```typescript
-// types.ts addition
-export type TypeSafeOverrideMap<TProvides extends Port<unknown, string>> = {
-  [P in TProvides as InferPortName<P>]?: () => InferService<P>;
-};
-
-// ContainerMembers.withOverrides signature update
-withOverrides<
-  TOverrides extends TypeSafeOverrideMap<TProvides | TExtends>,
-  R,
->(
-  overrides: TOverrides,
-  fn: () => R
-): R;
+```
+[Trace: a1b2c3d4]
+  [Span: resolve UserService] (parent container)
+    [Span: resolve Logger] (parent container, nested resolution)
+    [Span: resolve DatabasePort] (child container, inherited context)
+      [Span: resolve ConnectionPool] (child container, nested)
 ```
 
-### 1.3 Alternative: Builder Pattern
-
-**Pattern:** Fluent builder with port-typed methods.
-
-```typescript
-interface OverrideBuilder<TProvides extends Port<unknown, string>> {
-  override<P extends TProvides>(
-    port: P,
-    factory: () => InferService<P>
-  ): OverrideBuilder<TProvides>;
-
-  build(): OverrideFactoryMap;
-}
-
-// Usage
-container.withOverrides(
-  builder => builder.override(LoggerPort, () => mockLogger).override(DatabasePort, () => mockDb),
-  () => {
-    /* ... */
-  }
-);
-```
-
-**Trade-offs:**
-
-| Approach        | Pros                           | Cons                                          |
-| --------------- | ------------------------------ | --------------------------------------------- |
-| Mapped Types    | Simpler API, single object     | Refactoring port names requires updating keys |
-| Builder Pattern | Port references, auto-complete | More verbose, additional runtime object       |
-
-**Recommendation:** Use mapped types pattern (1.2) because:
-
-- Simpler API matches existing container.withOverrides signature
-- Port names are stable identifiers in HexDI design
-- Backward compatible (string keys still work, just typed)
-
-### 1.4 Implementation Details
-
-**OverrideContext update:**
-
-```typescript
-// override-context.ts changes
-
-// BEFORE: string-keyed
-export type OverrideFactoryMap = {
-  readonly [portName: string]: (() => unknown) | undefined;
-};
-
-// AFTER: Port name extraction at runtime preserved
-// Type safety added at API boundary in types.ts
-// Internal representation unchanged for performance
-```
-
-**Key insight:** Type safety is enforced at compile time via the mapped type. Runtime code continues using string keys internally - no performance impact.
+**Benefit:** Distributed tracing naturally extends to container hierarchies.
 
 ---
 
-## 2. Performance Optimization Techniques
+## Confidence Assessment
 
-### 2.1 O(1) Data Structures for Child Container Management
-
-**Current problem:** Linear search for unregistration:
-
-```typescript
-// lifecycle-manager.ts:121-124 (O(n))
-const idx = this.childContainers.indexOf(child);
-if (idx !== -1) {
-  this.childContainers.splice(idx, 1);
-}
-```
-
-**Recommended pattern:** Map with insertion-order iteration.
-
-```typescript
-// ES2015+ Map preserves insertion order
-private childContainers: Map<string, DisposableChild> = new Map();
-
-registerChild(child: DisposableChild): void {
-  this.childContainers.set(child.name, child); // O(1)
-}
-
-unregisterChild(child: DisposableChild): void {
-  this.childContainers.delete(child.name); // O(1)
-}
-
-// LIFO disposal via reverse iteration
-async disposeChildren(): Promise<void> {
-  const children = [...this.childContainers.values()].reverse();
-  for (const child of children) {
-    await child.dispose();
-  }
-  this.childContainers.clear();
-}
-```
-
-**Why Map over Set:**
-
-- Map provides O(1) lookup by ID
-- Map iteration order matches insertion order (ES6 guarantee)
-- Enables ID-based API for unregistration
-
-**Alternative consideration - WeakMap:**
-
-NOT recommended because:
-
-- WeakMap doesn't support iteration (can't dispose children)
-- Child containers need explicit lifecycle management
-- Memory is already managed via disposal
-
-### 2.2 Timestamp Elision Pattern
-
-**Current state:** `Date.now()` called on every memoization:
-
-```typescript
-// memo-map.ts:195
-resolvedAt: Date.now(), // Called even when not needed
-```
-
-**Recommended pattern:** Conditional timestamp capture.
-
-```typescript
-interface MemoMapOptions {
-  /**
-   * Track resolution timestamps for DevTools.
-   * Default: true (required for tracer statistics)
-   */
-  trackTimestamps?: boolean;
-}
-
-class MemoMap {
-  private readonly trackTimestamps: boolean;
-
-  constructor(parent?: MemoMap, options?: MemoMapOptions) {
-    this.parent = parent;
-    // Inherit setting from parent, or default to true
-    this.trackTimestamps = options?.trackTimestamps ?? parent?.trackTimestamps ?? true;
-  }
-
-  private createEntry<P extends Port<unknown, string>>(
-    port: P,
-    instance: InferService<P>,
-    finalizer?: Finalizer<InferService<P>>
-  ): CacheEntry<P> {
-    return {
-      port,
-      instance,
-      finalizer,
-      resolvedAt: this.trackTimestamps ? Date.now() : 0,
-      resolutionOrder: this.resolutionCounter++,
-    };
-  }
-}
-```
-
-**Trade-off analysis:**
-
-| Scenario                 | `Date.now()`              | Without         |
-| ------------------------ | ------------------------- | --------------- |
-| DevTools attached        | Required                  | -               |
-| Production (no DevTools) | ~0.5ms per 1K resolutions | 0ms             |
-| Tracer statistics        | Required                  | Incomplete data |
-
-**Recommendation:** Keep timestamps enabled by default but make configurable via `createContainer` options:
-
-```typescript
-interface CreateContainerOptions {
-  name: string;
-  devtools?: {
-    /** Disable for maximum performance */
-    trackTimestamps?: boolean;
-  };
-}
-```
-
-This preserves the existing behavior (tracer works) while enabling opt-out for performance-critical scenarios.
-
-### 2.3 Resolution Stack Optimization (Already Good)
-
-The existing `ResolutionContext` uses array push/pop which is O(1):
-
-```typescript
-// context.ts - Already optimal
-enter(portName: string): void {
-  this.stack.push(portName); // O(1) amortized
-}
-
-exit(portName: string): void {
-  this.stack.pop(); // O(1)
-}
-```
-
-No changes needed here.
+| Area                       | Confidence | Source                      | Notes                                            |
+| -------------------------- | ---------- | --------------------------- | ------------------------------------------------ |
+| OpenTelemetry versions     | HIGH       | npm registry                | Verified current versions via `npm view`         |
+| OTel package structure     | HIGH       | Official OpenTelemetry docs | Standard SDK structure well-documented           |
+| Jaeger migration to OTel   | HIGH       | Jaeger project docs         | jaeger-client deprecated, OTel is the path       |
+| Zipkin via OTel            | HIGH       | Zipkin project docs         | Official exporter, B3 propagation standard       |
+| DataDog dd-trace           | HIGH       | DataDog docs                | Official client, version verified                |
+| W3C Trace Context spec     | HIGH       | W3C Recommendation          | Stable spec since 2020                           |
+| Effect-TS tracing patterns | MEDIUM     | Effect documentation        | Effect has tracing, but less detail on internals |
+| InversifyJS tracing        | HIGH       | InversifyJS source          | No built-in tracing, verified via repo           |
+| NestJS OTel integration    | MEDIUM     | NestJS docs                 | Package exists, patterns confirmed               |
 
 ---
 
-## 3. Testing Strategies for DI Container Internals
+## Sources
 
-### 3.1 Hook Testing Patterns
+**Package versions (npm registry):**
 
-**Challenge:** Hooks are callbacks invoked during resolution with specific context.
+- https://www.npmjs.com/package/@opentelemetry/api (v1.9.0)
+- https://www.npmjs.com/package/@opentelemetry/sdk-trace-base (v2.5.0)
+- https://www.npmjs.com/package/@opentelemetry/exporter-trace-otlp-http (v0.211.0)
+- https://www.npmjs.com/package/@opentelemetry/exporter-jaeger (v2.5.0)
+- https://www.npmjs.com/package/@opentelemetry/exporter-zipkin (v2.5.0)
+- https://www.npmjs.com/package/dd-trace (v5.85.0)
+- https://www.npmjs.com/package/jaeger-client (v3.19.0, deprecated)
+- https://www.npmjs.com/package/zipkin (v0.22.0, maintenance mode)
 
-**Recommended pattern:** Structured context assertion helpers.
+**Specifications:**
 
-```typescript
-// test-utils/hook-assertions.ts
+- W3C Trace Context: https://www.w3.org/TR/trace-context/
+- W3C Baggage: https://www.w3.org/TR/baggage/ (not recommended for HexDI)
 
-interface HookContextExpectation {
-  portName: string;
-  lifetime?: Lifetime;
-  scopeId?: string | null;
-  parentPort?: Port<unknown, string> | null;
-  isCacheHit?: boolean;
-  depth?: number;
-  containerId?: string;
-  containerKind?: ContainerKind;
-}
+**Framework references:**
 
-function expectHookContext(actual: ResolutionHookContext, expected: HookContextExpectation): void {
-  expect(actual.portName).toBe(expected.portName);
-  if (expected.lifetime !== undefined) {
-    expect(actual.lifetime).toBe(expected.lifetime);
-  }
-  // ... other assertions
-}
-
-// Usage in tests
-describe("Resolution Hooks", () => {
-  it("provides correct context in beforeResolve", () => {
-    const contexts: ResolutionHookContext[] = [];
-    const hooks: ResolutionHooks = {
-      beforeResolve: ctx => contexts.push(ctx),
-    };
-
-    const container = createContainer(graph, {
-      name: "Test",
-      hooks,
-    });
-    container.resolve(LoggerPort);
-
-    expectHookContext(contexts[0], {
-      portName: "Logger",
-      lifetime: "singleton",
-      isCacheHit: false,
-      depth: 0,
-    });
-  });
-});
-```
-
-### 3.2 Call Order Verification
-
-**Pattern:** Track call sequence with array markers.
-
-```typescript
-it("calls hooks in correct order around factory", () => {
-  const callOrder: string[] = [];
-
-  const hooks: ResolutionHooks = {
-    beforeResolve: () => callOrder.push("before"),
-    afterResolve: () => callOrder.push("after"),
-  };
-
-  const factory = vi.fn(() => {
-    callOrder.push("factory");
-    return { value: 1 };
-  });
-
-  // ... setup container with tracked factory
-  container.resolve(TestPort);
-
-  expect(callOrder).toEqual(["before", "factory", "after"]);
-});
-```
-
-### 3.3 Nested Dependency Hook Testing
-
-**Challenge:** Testing depth tracking and parent port relationships.
-
-```typescript
-it("tracks depth for nested dependencies", () => {
-  const contexts: ResolutionHookContext[] = [];
-  const hooks: ResolutionHooks = {
-    beforeResolve: ctx => contexts.push(ctx),
-  };
-
-  // Graph: A -> B -> C
-  const graph = GraphBuilder.create()
-    .provide(CAdapter) // depth 2
-    .provide(BAdapter) // depth 1, requires C
-    .provide(AAdapter) // depth 0, requires B
-    .build();
-
-  const container = createContainer(graph, { name: "Test", hooks });
-  container.resolve(APort);
-
-  // Assert depth progression
-  expect(contexts.map(c => c.depth)).toEqual([0, 1, 2]);
-
-  // Assert parent chain
-  expect(contexts[0].parentPort).toBeNull(); // A is root
-  expect(contexts[1].parentPort).toBe(APort); // B's parent is A
-  expect(contexts[2].parentPort).toBe(BPort); // C's parent is B
-});
-```
-
-### 3.4 Cache Hit Testing
-
-```typescript
-it("reports isCacheHit correctly for singletons", () => {
-  const contexts: ResolutionHookContext[] = [];
-  const hooks: ResolutionHooks = {
-    beforeResolve: ctx => contexts.push(ctx),
-  };
-
-  const container = createContainer(graph, { name: "Test", hooks });
-
-  container.resolve(SingletonPort);
-  container.resolve(SingletonPort); // Second resolution
-
-  expect(contexts[0].isCacheHit).toBe(false); // First: miss
-  expect(contexts[1].isCacheHit).toBe(true); // Second: hit
-});
-```
-
-### 3.5 Error Scenario Testing
-
-```typescript
-it("calls afterResolve even when factory throws", () => {
-  let afterCalled = false;
-  let afterError: Error | null = null;
-
-  const hooks: ResolutionHooks = {
-    afterResolve: ctx => {
-      afterCalled = true;
-      afterError = ctx.error;
-    },
-  };
-
-  const throwingAdapter = createAdapter({
-    provides: TestPort,
-    factory: () => {
-      throw new Error("Factory failed");
-    },
-  });
-
-  const container = createContainer(GraphBuilder.create().provide(throwingAdapter).build(), {
-    name: "Test",
-    hooks,
-  });
-
-  expect(() => container.resolve(TestPort)).toThrow("Factory failed");
-  expect(afterCalled).toBe(true);
-  expect(afterError).toBeInstanceOf(Error);
-  expect(afterError?.message).toBe("Factory failed");
-});
-```
-
-### 3.6 Plugin System Testing
-
-**Pattern:** Symbol-based internal access verification.
-
-```typescript
-import { HOOKS_ACCESS } from "@hex-di/runtime";
-
-describe("Hook Installation", () => {
-  it("installs hooks via HOOKS_ACCESS symbol", () => {
-    const container = createContainer(graph, { name: "Test" });
-
-    // Access hook installer
-    const installer = container[HOOKS_ACCESS]();
-
-    const calls: string[] = [];
-    const uninstall = installer.installHooks({
-      beforeResolve: () => calls.push("installed-hook"),
-    });
-
-    container.resolve(TestPort);
-    expect(calls).toContain("installed-hook");
-
-    // Verify uninstall works
-    uninstall();
-    calls.length = 0;
-    container.resolve(TestPort);
-    expect(calls).not.toContain("installed-hook");
-  });
-});
-```
+- Effect-TS: https://effect.website/docs/observability/tracing
+- InversifyJS: https://github.com/inversify/InversifyJS
+- NestJS OpenTelemetry: https://docs.nestjs.com/opentelemetry/introduction
+- OpenTelemetry JS: https://opentelemetry.io/docs/languages/js/
 
 ---
 
-## 4. Documentation Patterns for Complex Type Systems
+## Next Steps for Roadmap
 
-### 4.1 Type Parameter Documentation
+1. **Phase 1: Core Tracing Package**
+   - Implement Tracer, Span, SpanExporter, SpanProcessor ports
+   - Build NoOp, Memory, Console adapters
+   - Implement W3C Trace Context parsing/serialization
+   - Add context variable integration (ActiveSpanVar, TraceContextVar)
 
-**Pattern:** Use `@typeParam` JSDoc tags with concrete examples.
+2. **Phase 2: Automatic Instrumentation**
+   - Implement `createTracingHook()` using resolution hooks
+   - Add `instrumentContainer()` helper
+   - Test cross-container propagation
 
-````typescript
-/**
- * A type-safe dependency injection container.
- *
- * @typeParam TProvides - Union of ports provided by this container.
- *   For root containers: all ports from the graph.
- *   For child containers: inherited ports from parent.
- *
- * @typeParam TExtends - Ports added by child containers via override/extend.
- *   Always `never` for root containers.
- *
- * @typeParam TAsyncPorts - Ports with async factories requiring initialization.
- *
- * @typeParam TPhase - Initialization state controlling sync resolution.
- *
- * @example Root container
- * ```typescript
- * // TProvides = LoggerPort | DatabasePort
- * // TExtends = never (root)
- * // TAsyncPorts = DatabasePort (has async factory)
- * // TPhase = "uninitialized" initially
- * const container = createContainer(graph, { name: "App" });
- * ```
- *
- * @example Child container
- * ```typescript
- * // TProvides = LoggerPort | DatabasePort (inherited)
- * // TExtends = MockLoggerPort (override)
- * // TPhase = "initialized" (child inherits)
- * const child = container.createChild(childGraph, { name: "Test" });
- * ```
- */
-export type Container<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
-  TPhase extends ContainerPhase = "uninitialized",
-> = ContainerMembers<TProvides, TExtends, TAsyncPorts, TPhase>;
-````
+3. **Phase 3: OpenTelemetry Backend**
+   - Implement OtelTracerAdapter bridging HexDI → OpenTelemetry
+   - Configure OTLP HTTP exporter
+   - Add resource metadata and semantic conventions
 
-### 4.2 Conditional Type Documentation
+4. **Phase 4: Jaeger and Zipkin Backends**
+   - Implement JaegerExporterAdapter (via @opentelemetry/exporter-jaeger)
+   - Implement ZipkinExporterAdapter (via @opentelemetry/exporter-zipkin)
+   - Test B3 and Jaeger propagation formats
 
-**Pattern:** Document behavior for different type parameter values.
+5. **Phase 5: DataDog Backend**
+   - Implement DataDogTracerAdapter (via dd-trace)
+   - Test DataDog APM integration
+   - Document DataDog-specific features (profiling, log correlation)
 
-````typescript
-/**
- * Initialize method - only available on root containers.
- *
- * This method has different types based on container kind:
- *
- * - **Root container (TExtends = never):** Returns `() => Promise<Container<..., "initialized">>`
- * - **Child container (TExtends != never):** Returns `never` (not callable)
- *
- * @remarks
- * Uses `[TExtends] extends [never]` pattern to prevent distribution
- * over never type. Plain `TExtends extends never` would return `never`
- * unconditionally due to conditional type distribution.
- *
- * @example Why the bracket pattern
- * ```typescript
- * // Without brackets - WRONG
- * type A = never extends never ? true : false;  // never (distributed)
- *
- * // With brackets - CORRECT
- * type B = [never] extends [never] ? true : false;  // true
- * ```
- */
-initialize: [TExtends] extends [never]
-  ? TPhase extends "uninitialized"
-    ? () => Promise<Container<TProvides, never, TAsyncPorts, "initialized">>
-    : never
-  : never;
-````
-
-### 4.3 Error Type Documentation
-
-**Pattern:** Explain why error types are returned instead of never.
-
-````typescript
-/**
- * Extracts the service type from a Port.
- *
- * Returns the phantom type `T` from `Port<T, TName>`, or a descriptive
- * error type if the input is not a valid Port.
- *
- * @remarks
- * Why `NotAPortError<P>` instead of `never`:
- * - `never` is opaque - IDE shows no useful information
- * - Error types appear in tooltips with explanations
- * - Developers see what went wrong and how to fix it
- *
- * @example Error case shows helpful message
- * ```typescript
- * type Result = InferService<string>;
- * // Hovering shows:
- * // {
- * //   __errorBrand: "NotAPortError";
- * //   __message: "Expected a Port type created with createPort()";
- * //   __received: string;
- * //   __hint: "Use InferService<typeof YourPort>, not InferService<YourPort>";
- * // }
- * ```
- */
-export type InferService<P> = P extends Port<infer T, infer _> ? T : NotAPortError<P>;
-````
-
-### 4.4 Module Split Documentation
-
-When splitting large type files, preserve documentation context:
-
-```typescript
-// types/index.ts
-
-/**
- * @hex-di/runtime type definitions.
- *
- * This module re-exports types from focused submodules:
- *
- * - `./container` - Container type and members
- * - `./scope` - Scope type and members
- * - `./lazy-container` - LazyContainer for code-splitting
- * - `./utilities` - Type inference utilities (Infer*, Is*)
- * - `./inheritance` - Inheritance mode configuration
- * - `./phase` - Container phase and state types
- *
- * @module
- */
-
-export * from "./container.js";
-export * from "./scope.js";
-export * from "./lazy-container.js";
-export * from "./utilities.js";
-export * from "./inheritance.js";
-export * from "./phase.js";
-```
-
-### 4.5 State Machine Documentation
-
-**Pattern:** ASCII diagrams in JSDoc for lifecycle states.
-
-````typescript
-/**
- * Container disposal state.
- *
- * ```
- * +--------+   dispose()   +-----------+   complete   +----------+
- * | active | ------------> | disposing | -----------> | disposed |
- * +--------+               +-----------+              +----------+
- *     |                         |                          |
- *     | resolve() works         | resolve() throws         | resolve() throws
- *     | createScope() works     | createScope() throws     | createScope() throws
- * ```
- *
- * @remarks
- * - `'disposing'` emitted synchronously when dispose() called
- * - `'disposed'` emitted after all async finalization completes
- * - Scopes can subscribe to disposal events for reactive cleanup
- */
-export type ScopeDisposalState = "active" | "disposing" | "disposed";
-````
+6. **Phase 6: Framework Integrations**
+   - Build Hono tracingMiddleware (extract/inject traceparent)
+   - Build React TracingProvider and hooks
+   - Test end-to-end distributed tracing across frameworks
 
 ---
 
-## 5. Integration Points with Existing Runtime
+## Recommendations Summary
 
-### 5.1 Where Type-Safe Overrides Integrate
+**For @hex-di/tracing (core):**
 
-```
-packages/runtime/src/
-+-- types.ts                          # Add TypeSafeOverrideMap type
-+-- container/
-|   +-- base-impl.ts                  # withOverrides uses new type
-|   +-- override-context.ts           # No changes (internal string keys)
-|   +-- wrappers.ts                   # Forward typed overrides
-```
+- Zero external dependencies
+- Manual W3C Trace Context implementation (simple spec, avoid dependency)
+- Use AsyncLocalStorage via context variables for propagation
 
-### 5.2 Where Performance Changes Integrate
+**For backend adapters:**
 
-```
-packages/runtime/src/
-+-- util/
-|   +-- memo-map.ts                   # Configurable timestamps
-+-- container/
-    +-- internal/
-        +-- lifecycle-manager.ts      # Map for child containers
-```
+- Use OpenTelemetry exporters for Jaeger and Zipkin (not standalone clients)
+- Use dd-trace for DataDog (proprietary protocol, richer features)
+- All adapters depend on @hex-di/tracing, implement same port interfaces
 
-### 5.3 Where Testing Utilities Integrate
+**For framework integrations:**
 
-```
-packages/runtime/tests/
-+-- resolution-hooks.test.ts          # New: comprehensive hook tests
-+-- hooks-composition.test.ts         # New: multi-hook scenarios
-+-- plugins/
-    +-- hooks-plugin.test.ts          # New: HOOKS_ACCESS testing
-    +-- inspector-plugin.test.ts      # New: inspector API tests
-    +-- tracer-plugin.test.ts         # New: tracer API tests
-```
+- Hono: Middleware that extracts/injects traceparent headers
+- React: Provider that establishes trace context for component tree
+- Both should support automatic instrumentation of DI resolutions
 
----
+**For cross-container tracing:**
 
-## 6. What NOT to Do
-
-### 6.1 Avoid WeakMap for Child Containers
-
-**Why:** WeakMap doesn't support iteration, making LIFO disposal impossible.
-
-### 6.2 Avoid Runtime Type Checks for Override Keys
-
-**Why:** Type safety should be compile-time only. Adding runtime validation:
-
-- Adds overhead to every withOverrides call
-- Duplicates what TypeScript already enforces
-- Creates maintenance burden for keeping types/runtime in sync
-
-### 6.3 Avoid Breaking the String-Keyed Internal API
-
-**Why:** The internal `OverrideFactoryMap` works with string keys because:
-
-- Port names are stable runtime identifiers
-- O(1) Map lookup by string is efficient
-- Changing this would cascade through resolution logic
-
-Type safety is added at the public API boundary, not internally.
-
-### 6.4 Avoid Over-Documenting Implementation Details
-
-**Why:** Documentation should focus on:
-
-- What the type does (behavior)
-- When to use it (examples)
-- Why it's designed this way (rationale)
-
-NOT:
-
-- How the implementation works (changes)
-- Internal type manipulation tricks (confusing)
-
----
-
-## 7. Sources and Confidence
-
-| Topic                       | Source                              | Confidence |
-| --------------------------- | ----------------------------------- | ---------- |
-| Mapped type patterns        | TypeScript handbook, project usage  | HIGH       |
-| Map iteration order         | ECMAScript 2015 spec                | HIGH       |
-| Hook testing patterns       | Vitest docs, existing test patterns | HIGH       |
-| JSDoc @typeParam            | TypeScript JSDoc reference          | HIGH       |
-| Performance characteristics | V8 engine documentation             | MEDIUM     |
-| Timestamp elision benefit   | Hypothesis (needs benchmarking)     | LOW        |
-
----
-
-## 8. Summary Recommendations
-
-| Area                 | Pattern                   | Confidence | Implementation Effort  |
-| -------------------- | ------------------------- | ---------- | ---------------------- |
-| Type-safe overrides  | Mapped types              | HIGH       | Low (type change only) |
-| Child container O(1) | Map with string keys      | HIGH       | Low (~20 lines)        |
-| Timestamp elision    | Configurable option       | MEDIUM     | Low (~10 lines)        |
-| Hook testing         | Context assertion helpers | HIGH       | Medium (new test file) |
-| Type documentation   | @typeParam + examples     | HIGH       | Medium (documentation) |
-
-**Proceed with all patterns. Low implementation risk, high value.**
+- Single tracer instance shared by parent and child containers
+- Trace context propagated via AsyncLocalStorage (automatic)
+- Child spans are children of parent's active span (natural hierarchy)
