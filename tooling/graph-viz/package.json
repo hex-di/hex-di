@@ -46,12 +46,12 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/hex-di/hex-di.git",
-    "directory": "packages/graph-viz"
+    "directory": "tooling/graph-viz"
   },
   "bugs": {
     "url": "https://github.com/hex-di/hex-di/issues"
   },
-  "homepage": "https://github.com/hex-di/hex-di/tree/main/packages/graph-viz#readme",
+  "homepage": "https://github.com/hex-di/hex-di/tree/main/tooling/graph-viz#readme",
   "dependencies": {
     "dagre": "^0.8.5"
   },

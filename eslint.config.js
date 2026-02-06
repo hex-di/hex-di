@@ -125,9 +125,18 @@ export default tseslint.config(
       // Packages have their own configs
       "packages/**",
       "integrations/**",
+      "tooling/**",
+      "libs/**",
       "examples/**",
       "website/**",
     ],
+  },
+  {
+    languageOptions: {
+      parserOptions: {
+        project: "./tsconfig.json",
+      },
+    },
   },
   ...baseConfig
 );

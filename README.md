@@ -85,14 +85,18 @@ pnpm add -D @hex-di/testing
 
 ## Packages Overview
 
-| Package                                 | Description                                          | Required |
-| --------------------------------------- | ---------------------------------------------------- | -------- |
-| [`@hex-di/ports`](./packages/ports)     | Port token system - define service contracts         | Yes      |
-| [`@hex-di/graph`](./packages/graph)     | GraphBuilder with compile-time dependency validation | Yes      |
-| [`@hex-di/runtime`](./packages/runtime) | Container creation and service resolution            | Yes      |
-| [`@hex-di/react`](./integrations/react) | React hooks and providers                            | No       |
-| [`@hex-di/hono`](./integrations/hono)   | Hono middleware, helpers, and Env utilities          | No       |
-| [`@hex-di/testing`](./packages/testing) | Mocking, overrides, and test utilities               | No       |
+| Package                                              | Description                                          | Required |
+| ---------------------------------------------------- | ---------------------------------------------------- | -------- |
+| [`@hex-di/ports`](./packages/ports)                  | Port token system - define service contracts         | Yes      |
+| [`@hex-di/graph`](./packages/graph)                  | GraphBuilder with compile-time dependency validation | Yes      |
+| [`@hex-di/runtime`](./packages/runtime)              | Container creation and service resolution            | Yes      |
+| [`@hex-di/react`](./integrations/react)              | React hooks and providers                            | No       |
+| [`@hex-di/hono`](./integrations/hono)                | Hono middleware, helpers, and Env utilities           | No       |
+| [`@hex-di/testing`](./tooling/testing)               | Mocking, overrides, and test utilities               | No       |
+| [`@hex-di/visualization`](./tooling/visualization)   | Graph visualization - DOT and Mermaid export         | No       |
+| [`@hex-di/graph-viz`](./tooling/graph-viz)           | Graph visualization components with zoom/pan         | No       |
+| [`@hex-di/flow`](./libs/flow/core)                   | Typed state machine runtime with effects-as-data     | No       |
+| [`@hex-di/flow-react`](./libs/flow/react)            | React hooks for flow state machines                  | No       |
 
 ## Core Concepts
 

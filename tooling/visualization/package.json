@@ -43,12 +43,12 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/hex-di/hex-di.git",
-    "directory": "packages/visualization"
+    "directory": "tooling/visualization"
   },
   "bugs": {
     "url": "https://github.com/hex-di/hex-di/issues"
   },
-  "homepage": "https://github.com/hex-di/hex-di/tree/main/packages/visualization#readme",
+  "homepage": "https://github.com/hex-di/hex-di/tree/main/tooling/visualization#readme",
   "dependencies": {
     "@hex-di/graph": "workspace:*"
   },
