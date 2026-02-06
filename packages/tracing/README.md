@@ -237,6 +237,200 @@ isValidTraceId("4bf92f..."); // true (32 hex, not all zeros)
 isValidSpanId("00f067..."); // true (16 hex, not all zeros)
 ```
 
+## Testing Utilities
+
+The `@hex-di/tracing/testing` namespace provides assertion helpers and span matchers for verifying tracing behavior in tests. These utilities are tree-shakeable and exported separately to avoid including test code in production bundles.
+
+### Importing Test Utilities
+
+```typescript
+import {
+  assertSpanExists,
+  hasAttribute,
+  hasEvent,
+  hasStatus,
+  hasDuration,
+} from "@hex-di/tracing/testing";
+```
+
+### assertSpanExists
+
+Finds spans matching criteria and throws a descriptive error if not found. Supports exact name matching, RegExp patterns, and multiple optional criteria.
+
+```typescript
+import { createMemoryTracer } from "@hex-di/tracing";
+import { assertSpanExists, hasAttribute, hasStatus } from "@hex-di/tracing/testing";
+
+const tracer = createMemoryTracer();
+
+tracer.withSpan("http.request", span => {
+  span.setAttribute("http.method", "GET");
+  span.setAttribute("http.status_code", 200);
+  span.setStatus("ok");
+});
+
+const spans = tracer.getCollectedSpans();
+
+// Exact name match
+assertSpanExists(spans, { name: "http.request" });
+
+// Pattern matching
+assertSpanExists(spans, { name: /^http\./ });
+
+// Multiple criteria
+assertSpanExists(spans, {
+  name: "http.request",
+  status: "ok",
+  attributes: { "http.method": "GET" },
+});
+
+// If not found, throws error with available spans:
+// Error: No span matching criteria found
+//   Search criteria: {"name":"db.query"}
+//   Available spans: ["http.request"]
+```
+
+### Span Matchers
+
+Pure function predicates for composable span matching. All matchers return `boolean` and have no side effects.
+
+#### hasAttribute
+
+Check if span has attribute with optional value matching:
+
+```typescript
+import { hasAttribute } from "@hex-di/tracing/testing";
+
+// Check attribute presence
+hasAttribute(span, "http.method"); // true if attribute exists
+
+// Check attribute value (exact match)
+hasAttribute(span, "http.method", "GET"); // true if method === "GET"
+
+// Check number attribute
+hasAttribute(span, "http.status_code", 200); // true if status === 200
+```
+
+#### hasEvent
+
+Check if span has event by name:
+
+```typescript
+import { hasEvent } from "@hex-di/tracing/testing";
+
+tracer.withSpan("operation", span => {
+  span.addEvent("cache.hit", { key: "user:123" });
+});
+
+hasEvent(span, "cache.hit"); // true
+hasEvent(span, "cache.miss"); // false
+```
+
+#### hasStatus
+
+Check span status:
+
+```typescript
+import { hasStatus } from "@hex-di/tracing/testing";
+
+span.setStatus("error");
+
+hasStatus(span, "error"); // true
+hasStatus(span, "ok"); // false
+```
+
+#### hasDuration
+
+Check if span duration falls within bounds (milliseconds):
+
+```typescript
+import { hasDuration } from "@hex-di/tracing/testing";
+
+// Minimum duration only
+hasDuration(span, 10); // true if duration >= 10ms
+
+// Min and max bounds
+hasDuration(span, 10, 100); // true if 10ms <= duration <= 100ms
+
+// Max duration only (pass undefined for min)
+hasDuration(span, undefined, 50); // true if duration <= 50ms
+```
+
+### Complete Test Example
+
+```typescript
+import { describe, it, expect } from "vitest";
+import { createMemoryTracer } from "@hex-di/tracing";
+import {
+  assertSpanExists,
+  hasAttribute,
+  hasEvent,
+  hasStatus,
+  hasDuration,
+} from "@hex-di/tracing/testing";
+
+describe("HTTP Request Tracing", () => {
+  it("creates span with correct attributes", () => {
+    const tracer = createMemoryTracer();
+
+    tracer.withSpan("GET /users", span => {
+      span.setAttribute("http.method", "GET");
+      span.setAttribute("http.route", "/users");
+      span.setAttribute("http.status_code", 200);
+      span.addEvent("request.start");
+      span.addEvent("database.query");
+      span.addEvent("response.sent");
+      span.setStatus("ok");
+    });
+
+    const spans = tracer.getCollectedSpans();
+
+    // Find span by pattern
+    const httpSpan = assertSpanExists(spans, { name: /^GET / });
+
+    // Verify attributes
+    expect(hasAttribute(httpSpan, "http.method", "GET")).toBe(true);
+    expect(hasAttribute(httpSpan, "http.status_code", 200)).toBe(true);
+
+    // Verify events
+    expect(hasEvent(httpSpan, "request.start")).toBe(true);
+    expect(hasEvent(httpSpan, "database.query")).toBe(true);
+
+    // Verify status
+    expect(hasStatus(httpSpan, "ok")).toBe(true);
+
+    // Verify duration (should be very fast in tests)
+    expect(hasDuration(httpSpan, 0, 100)).toBe(true);
+  });
+});
+```
+
+### Performance Benchmarks
+
+Performance benchmarks verify tracing overhead using vitest's benchmark API:
+
+```bash
+pnpm --filter @hex-di/tracing test:bench
+```
+
+**NoOp Tracer Overhead:**
+
+- Baseline: 61.97 Hz (16.14ms per 100k resolutions)
+- Instrumented: 44.80 Hz (22.32ms per 100k resolutions)
+- **Overhead: ~38% (6ms absolute for 100k operations)**
+
+**Memory Tracer Overhead:**
+
+- Baseline: 61.84 Hz (16.17ms per 100k resolutions)
+- Instrumented: 8.81 Hz (113.53ms per 100k resolutions)
+- **Overhead: ~602% (97ms absolute for 100k operations)**
+
+The overhead is acceptable for distributed tracing use cases. For production:
+
+- Use sampling (trace subset of requests)
+- Apply port filters (only trace critical services)
+- Use batch export to external systems
+
 ## License
 
 MIT
