@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 ## Current Position
 
 Phase: 27 of 27 (Framework Integrations and Testing Utilities)
-Plan: 2 of 5
+Plan: 3 of 5
 Status: In progress
-Last activity: 2026-02-06 -- Completed 27-02-PLAN.md (Hono Tracing Middleware)
+Last activity: 2026-02-06 -- Completed 27-03-PLAN.md (React Tracing Provider and Hooks)
 
-Progress: [█████████░] 82%
+Progress: [█████████░] 83%
 
 ## Milestone History
 
@@ -111,6 +111,10 @@ Key decisions captured in PROJECT.md (23 decisions across 7 milestones).
 - Extracted traceparent context recorded as span attributes due to tracer API limitation (27-02)
 - 5xx responses automatically set error status on span (27-02)
 - Hono's internal error handling means middleware sees 500 responses, not raw exceptions (27-02)
+- TracingProvider uses simple React Context (no typed factory pattern) for tracer propagation (27-03)
+- useSpan returns undefined when no active span (not error) -- valid state for conditional logic (27-03)
+- useTracedCallback wraps execution in try/catch to record synchronous exceptions to span (27-03)
+- useTracedCallback detects async by checking result instanceof Promise at runtime (27-03)
 
 ### Pending Todos
 
@@ -129,9 +133,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Completed 27-02-PLAN.md (Hono Tracing Middleware)
+Stopped at: Completed 27-03-PLAN.md (React Tracing Provider and Hooks)
 Resume file: None
-Next: 27-03-PLAN.md (React Tracing Integration)
+Next: 27-04-PLAN.md (Testing Utilities Integration)
 
 ---
 
