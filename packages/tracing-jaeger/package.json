@@ -55,7 +55,8 @@
     "@hex-di/tracing": "workspace:^",
     "@hex-di/tracing-otel": "workspace:^",
     "@opentelemetry/exporter-jaeger": "^2.5.0",
-    "@opentelemetry/resources": "^2.5.0"
+    "@opentelemetry/resources": "^2.5.0",
+    "@opentelemetry/sdk-trace-base": "^2.5.0"
   },
   "devDependencies": {
     "typescript": "^5.7.3",
