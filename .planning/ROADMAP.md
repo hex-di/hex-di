@@ -3,8 +3,8 @@
 ## Tracking
 
 - **Started:** 2026-02-01
-- **Current Phase:** 27 of 27 (Framework Integrations and Testing Utilities)
-- **Completion:** 100% (27/27 phases complete)
+- **Current Phase:** 28 of 28 (Tracing Test Coverage)
+- **Completion:** 96% (27/28 phases complete)
 
 ## Shipped Milestones
 
@@ -97,6 +97,19 @@ Plans:
 - [x] 27-04-PLAN.md — Performance benchmarks
 - [x] 27-05-PLAN.md — Documentation and final integration
 
+#### Phase 28: Tracing Test Coverage
+
+**Goal:** Close test coverage gaps from milestone audit — instrumentation code and OTel backend packages get comprehensive behavioral tests proving correctness
+**Gap Closure:** Closes Phase 24 (zero instrumentation tests) and Phase 25 (no OTel package tests) gaps from v7.0-MILESTONE-AUDIT.md
+**Plans:** TBD
+
+Plans:
+
+- [ ] 28-01-PLAN.md — Instrumentation unit tests (span stack, instrumentContainer, port filtering, cleanup, error recording)
+- [ ] 28-02-PLAN.md — Cross-container integration tests (parent-child span relationships, instrumentContainerTree)
+- [ ] 28-03-PLAN.md — OTel span adapter and processor tests (convertToReadableSpan, batch/simple processors)
+- [ ] 28-04-PLAN.md — Backend adapter tests (Jaeger, Zipkin, DataDog exporter wiring)
+
 ## Progress
 
 | Phase                           | Milestone | Plans Complete | Status   | Completed  |
@@ -128,6 +141,7 @@ Plans:
 | 25. OTel Backend & Export       | v7.0      | 5/5            | Complete | 2026-02-06 |
 | 26. Breaking Change Migration   | v7.0      | 5/5            | Complete | 2026-02-06 |
 | 27. Framework & Testing         | v7.0      | 5/5            | Complete | 2026-02-06 |
+| 28. Tracing Test Coverage       | v7.0      | 0/4            | Pending  | --         |
 
 ## Tracking
 
@@ -144,16 +158,16 @@ Plans:
 | v4.0      | 3      | 6     | 1    | 6.0       |
 | v5.0      | 5      | 22    | 3    | 7.3       |
 | v6.0      | 3      | 6     | 1    | 6.0       |
-| v7.0      | 5      | 26    | 1    | 26.0      |
+| v7.0      | 6      | 26+   | 1+   | --        |
 
-**Overall:** 83 plans in 6 days = 13.8 plans/day
+**Overall:** 83 plans in 6 days = 13.8 plans/day (Phase 28 pending)
 
 ### Burndown
 
-| Week | Phases Remaining | Plans Remaining | Trend |
-| ---- | ---------------- | --------------- | ----- |
-| 1    | 27               | ~100            | Start |
-| 2    | 0                | 0               | Done  |
+| Week | Phases Remaining | Plans Remaining | Trend       |
+| ---- | ---------------- | --------------- | ----------- |
+| 1    | 27               | ~100            | Start       |
+| 2    | 1                | 4               | Gap closure |
 
 ---
 
