@@ -95,16 +95,27 @@ function generateRandomHex(length: number): string {
  */
 export function generateTraceId(): string {
   // Try crypto.getRandomValues (browser, Node.js 15+)
-  if (typeof globalThis !== "undefined" && globalThis.crypto?.getRandomValues) {
-    let attempts = 0;
-    while (attempts < 3) {
-      const bytes = new Uint8Array(16);
-      globalThis.crypto.getRandomValues(bytes);
+  if (typeof globalThis !== "undefined" && "crypto" in globalThis) {
+    const maybeGlobal: unknown = globalThis;
+    if (maybeGlobal && typeof maybeGlobal === "object" && "crypto" in maybeGlobal) {
+      const crypto: unknown = maybeGlobal.crypto;
+      if (
+        crypto &&
+        typeof crypto === "object" &&
+        "getRandomValues" in crypto &&
+        typeof crypto.getRandomValues === "function"
+      ) {
+        let attempts = 0;
+        while (attempts < 3) {
+          const bytes = new Uint8Array(16);
+          crypto.getRandomValues(bytes);
 
-      if (!isAllZeros(bytes)) {
-        return bytesToHex(bytes);
+          if (!isAllZeros(bytes)) {
+            return bytesToHex(bytes);
+          }
+          attempts++;
+        }
       }
-      attempts++;
     }
   }
 
@@ -143,16 +154,27 @@ export function generateTraceId(): string {
  */
 export function generateSpanId(): string {
   // Try crypto.getRandomValues (browser, Node.js 15+)
-  if (typeof globalThis !== "undefined" && globalThis.crypto?.getRandomValues) {
-    let attempts = 0;
-    while (attempts < 3) {
-      const bytes = new Uint8Array(8);
-      globalThis.crypto.getRandomValues(bytes);
+  if (typeof globalThis !== "undefined" && "crypto" in globalThis) {
+    const maybeGlobal: unknown = globalThis;
+    if (maybeGlobal && typeof maybeGlobal === "object" && "crypto" in maybeGlobal) {
+      const crypto: unknown = maybeGlobal.crypto;
+      if (
+        crypto &&
+        typeof crypto === "object" &&
+        "getRandomValues" in crypto &&
+        typeof crypto.getRandomValues === "function"
+      ) {
+        let attempts = 0;
+        while (attempts < 3) {
+          const bytes = new Uint8Array(8);
+          crypto.getRandomValues(bytes);
 
-      if (!isAllZeros(bytes)) {
-        return bytesToHex(bytes);
+          if (!isAllZeros(bytes)) {
+            return bytesToHex(bytes);
+          }
+          attempts++;
+        }
       }
-      attempts++;
     }
   }
 
