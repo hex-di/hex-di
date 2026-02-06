@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 
 ## Current Position
 
-Phase: 26 of 27 (Breaking Change Migration)
-Plan: 5 of 5
-Status: Phase complete
-Last activity: 2026-02-06 -- Completed 26-05-PLAN.md (Final verification and cleanup)
+Phase: 27 of 27 (Framework Integrations and Testing Utilities)
+Plan: 1 of 5
+Status: In progress
+Last activity: 2026-02-06 -- Completed 27-01-PLAN.md (Test Utilities Foundation)
 
-Progress: [█████████░] 80%
+Progress: [█████████░] 81%
 
 ## Milestone History
 
@@ -33,8 +33,8 @@ Progress: [█████████░] 80%
 
 **Velocity (all milestones):**
 
-- Total plans completed: 80
-- Total phases: 26 (phase 26 complete)
+- Total plans completed: 81
+- Total phases: 26 complete, 27 in progress
 - Total milestones: 7
 
 ## Accumulated Context
@@ -101,6 +101,10 @@ Key decisions captured in PROJECT.md (23 decisions across 7 milestones).
 - @hex-di/tracing added as devDependency to react-showcase for test usage (26-04)
 - libs/flow/core tracing is independent of DI tracing -- no migration needed (26-05)
 - Negative export assertions kept as guard tests for removed collector types (26-05)
+- SpanMatcher interface with optional criteria for flexible span matching (27-01)
+- Pure function predicates (hasAttribute, hasEvent, hasStatus, hasDuration) for composable assertions (27-01)
+- Separate @hex-di/tracing/testing namespace for tree-shaking (27-01)
+- Descriptive error messages include both search criteria and available spans (27-01)
 
 ### Pending Todos
 
@@ -119,9 +123,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Completed 26-05-PLAN.md (Final verification and cleanup)
+Stopped at: Completed 27-01-PLAN.md (Test Utilities Foundation)
 Resume file: None
-Next: Phase 27 (v7.0 release preparation)
+Next: 27-02-PLAN.md (Hono Tracing Middleware)
 
 ---
 
