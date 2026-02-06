@@ -59,6 +59,15 @@ Plans:
 
 **Goal:** Developers can export HexDI traces to any OTel-compatible backend through dedicated packages with batching, resource metadata, and semantic conventions
 **Requirements:** OTEL-01..08, BACK-01..04 (12 requirements)
+**Plans:** 5 plans
+
+Plans:
+
+- [ ] 25-01-PLAN.md — OTel package foundation with SpanData conversion
+- [ ] 25-02-PLAN.md — Batch and Simple span processors
+- [ ] 25-03-PLAN.md — OTLP HTTP exporter with resource metadata
+- [ ] 25-04-PLAN.md — Jaeger and Zipkin backend adapters
+- [ ] 25-05-PLAN.md — DataDog bridge with dd-trace
 
 #### Phase 26: Breaking Change Migration
 
@@ -98,7 +107,7 @@ Plans:
 | 22. Verification & References   | v6.0      | 2/2            | Complete    | 2026-02-06 |
 | 23. Core Tracing Foundation     | v7.0      | 8/8            | Complete    | 2026-02-06 |
 | 24. Container Instrumentation   | v7.0      | 3/3            | Complete    | 2026-02-06 |
-| 25. OTel Backend & Export       | v7.0      | 0/TBD          | Not started | -          |
+| 25. OTel Backend & Export       | v7.0      | 0/5            | Not started | -          |
 | 26. Breaking Change Migration   | v7.0      | 0/TBD          | Not started | -          |
 | 27. Framework & Testing         | v7.0      | 0/TBD          | Not started | -          |
 
