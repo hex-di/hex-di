@@ -92,12 +92,13 @@ Plans:
 2. `libs/flow/core` and `libs/flow/react` directories exist with their full package contents; `packages/flow` and `packages/flow-react` no longer exist
 3. All inter-package workspace dependencies (`workspace:*` protocol) resolve correctly across the new paths
 4. `pnpm install && pnpm build && pnpm typecheck && pnpm test && pnpm lint` all pass
-   **Plans**: TBD
+
+**Plans:** 2 plans
 
 Plans:
 
-- [ ] 21-01: Move tooling packages (testing, visualization, graph-viz) to tooling/
-- [ ] 21-02: Move flow packages to libs/flow/{core,react}, update all configs and references
+- [ ] 21-01-PLAN.md — Move all packages to new locations with git mv, verify workspace recognition
+- [ ] 21-02-PLAN.md — Update root configs and package metadata, full pipeline verification
 
 ### Phase 22: Verification & References
 
@@ -123,8 +124,8 @@ Plans:
 **Execution Order:**
 Phases execute in numeric order: 20 -> 21 -> 22
 
-| Phase                           | Plans Complete | Status      | Completed |
-| ------------------------------- | -------------- | ----------- | --------- |
+| Phase                           | Plans Complete | Status      | Completed  |
+| ------------------------------- | -------------- | ----------- | ---------- |
 | 20. Integration Migration       | 2/2            | Complete    | 2026-02-06 |
-| 21. Tooling & Library Migration | 0/2            | Not started | -         |
-| 22. Verification & References   | 0/2            | Not started | -         |
+| 21. Tooling & Library Migration | 0/2            | Not started | -          |
+| 22. Verification & References   | 0/2            | Not started | -          |
