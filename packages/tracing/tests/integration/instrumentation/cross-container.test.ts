@@ -95,7 +95,7 @@ describe("cross-container span relationships", () => {
       const Port1 = port<string>()({ name: "Outer" });
       const Port2 = port<string>()({ name: "Inner" });
 
-      let container2Ref: any;
+      const container2Ref: { current: any } = { current: null };
 
       const adapter1 = createAdapter({
         provides: Port1,
@@ -103,7 +103,7 @@ describe("cross-container span relationships", () => {
         lifetime: "singleton",
         factory: () => {
           // Manually trigger resolution in container2 during this resolution
-          const inner = container2Ref.resolve(Port2);
+          const inner = container2Ref.current.resolve(Port2);
           return `outer-${inner}`;
         },
       });
@@ -120,7 +120,7 @@ describe("cross-container span relationships", () => {
 
       const container1 = createContainer({ graph: graph1, name: "Container1" });
       const container2 = createContainer({ graph: graph2, name: "Container2" });
-      container2Ref = container2;
+      container2Ref.current = container2;
       containers.push(container1, container2);
 
       // Instrument both
@@ -161,15 +161,15 @@ describe("cross-container span relationships", () => {
       const PortB = port<string>()({ name: "ServiceB" });
       const PortC = port<string>()({ name: "ServiceC" });
 
-      let containerBRef: any;
-      let containerCRef: any;
+      const containerBRef: { current: any } = { current: null };
+      const containerCRef: { current: any } = { current: null };
 
       const adapterA = createAdapter({
         provides: PortA,
         requires: [],
         lifetime: "singleton",
         factory: () => {
-          const b = containerBRef.resolve(PortB);
+          const b = containerBRef.current.resolve(PortB);
           return `A-${b}`;
         },
       });
@@ -179,7 +179,7 @@ describe("cross-container span relationships", () => {
         requires: [],
         lifetime: "singleton",
         factory: () => {
-          const c = containerCRef.resolve(PortC);
+          const c = containerCRef.current.resolve(PortC);
           return `B-${c}`;
         },
       });
@@ -198,8 +198,8 @@ describe("cross-container span relationships", () => {
       const containerA = createContainer({ graph: graphA, name: "A" });
       const containerB = createContainer({ graph: graphB, name: "B" });
       const containerC = createContainer({ graph: graphC, name: "C" });
-      containerBRef = containerB;
-      containerCRef = containerC;
+      containerBRef.current = containerB;
+      containerCRef.current = containerC;
       containers.push(containerA, containerB, containerC);
 
       instrumentContainer(containerA, tracer);
@@ -235,7 +235,7 @@ describe("cross-container span relationships", () => {
 
       let depthOuter = -1;
       let depthInner = -1;
-      let containerInnerRef: any;
+      const containerInnerRef: { current: any } = { current: null };
 
       const outerAdapter = createAdapter({
         provides: PortOuter,
@@ -243,7 +243,7 @@ describe("cross-container span relationships", () => {
         lifetime: "singleton",
         factory: () => {
           depthOuter = getStackDepth();
-          const inner = containerInnerRef.resolve(PortInner);
+          const inner = containerInnerRef.current.resolve(PortInner);
           return `outer-${inner}`;
         },
       });
@@ -263,7 +263,7 @@ describe("cross-container span relationships", () => {
 
       const containerOuter = createContainer({ graph: outerGraph, name: "Outer" });
       const containerInner = createContainer({ graph: innerGraph, name: "Inner" });
-      containerInnerRef = containerInner;
+      containerInnerRef.current = containerInner;
       containers.push(containerOuter, containerInner);
 
       instrumentContainer(containerOuter, tracer);
@@ -283,14 +283,14 @@ describe("cross-container span relationships", () => {
       const PortOuter = port<string>()({ name: "Outer" });
       const PortInner = port<string>()({ name: "Inner" });
 
-      let containerInnerRef: any;
+      const containerInnerRef: { current: any } = { current: null };
 
       const outerAdapter = createAdapter({
         provides: PortOuter,
         requires: [],
         lifetime: "singleton",
         factory: () => {
-          return containerInnerRef.resolve(PortInner);
+          return containerInnerRef.current.resolve(PortInner);
         },
       });
 
@@ -308,7 +308,7 @@ describe("cross-container span relationships", () => {
 
       const containerOuter = createContainer({ graph: outerGraph, name: "Outer" });
       const containerInner = createContainer({ graph: innerGraph, name: "Inner" });
-      containerInnerRef = containerInner;
+      containerInnerRef.current = containerInner;
       containers.push(containerOuter, containerInner);
 
       instrumentContainer(containerOuter, tracer);

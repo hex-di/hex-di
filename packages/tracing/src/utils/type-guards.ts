@@ -59,41 +59,17 @@ export function isAttributeValue(value: unknown): value is AttributeValue {
       return false;
     }
 
-    const firstElement = value[0];
+    // Use every() predicate pattern to avoid unsafe element access
+    const isAllStrings = (arr: unknown[]): boolean =>
+      arr.every((item: unknown) => typeof item === "string");
 
-    // Check string[]
-    if (typeof firstElement === "string") {
-      for (let i = 0; i < value.length; i++) {
-        if (typeof value[i] !== "string") {
-          return false;
-        }
-      }
-      return true;
-    }
+    const isAllNumbers = (arr: unknown[]): boolean =>
+      arr.every((item: unknown) => typeof item === "number" && !Number.isNaN(item));
 
-    // Check number[]
-    if (typeof firstElement === "number") {
-      for (let i = 0; i < value.length; i++) {
-        const element = value[i];
-        if (typeof element !== "number" || Number.isNaN(element)) {
-          return false;
-        }
-      }
-      return true;
-    }
+    const isAllBooleans = (arr: unknown[]): boolean =>
+      arr.every((item: unknown) => typeof item === "boolean");
 
-    // Check boolean[]
-    if (typeof firstElement === "boolean") {
-      for (let i = 0; i < value.length; i++) {
-        if (typeof value[i] !== "boolean") {
-          return false;
-        }
-      }
-      return true;
-    }
-
-    // Mixed or invalid array type
-    return false;
+    return isAllStrings(value) || isAllNumbers(value) || isAllBooleans(value);
   }
 
   // Reject objects and other types
