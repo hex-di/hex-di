@@ -51,7 +51,8 @@
   "homepage": "https://github.com/hex-di/hex-di/tree/main/integrations/hono#readme",
   "dependencies": {
     "@hex-di/core": "workspace:*",
-    "@hex-di/runtime": "workspace:*"
+    "@hex-di/runtime": "workspace:*",
+    "@hex-di/tracing": "workspace:*"
   },
   "devDependencies": {
     "@hex-di/graph": "workspace:*",

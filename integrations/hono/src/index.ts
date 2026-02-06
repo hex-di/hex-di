@@ -23,6 +23,9 @@ export { DEFAULT_SCOPE_KEY, DEFAULT_CONTAINER_KEY } from "./constants.js";
 export { createScopeMiddleware } from "./middleware.js";
 export type { ScopeMiddlewareOptions } from "./middleware.js";
 
+export { tracingMiddleware } from "./tracing-middleware.js";
+export type { TracingMiddlewareOptions } from "./tracing-middleware.js";
+
 // =============================================================================
 // Helpers
 // =============================================================================
