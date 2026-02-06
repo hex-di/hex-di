@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { Port, InferService, TracingAPI, InspectorAPI, AdapterConstraint } from "@hex-di/core";
+import type { Port, InferService, InspectorAPI, AdapterConstraint } from "@hex-di/core";
 import { OverrideBuilder } from "../container/override-builder.js";
 import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
 import { INTERNAL_ACCESS } from "../inspection/symbols.js";
@@ -420,28 +420,6 @@ export type ContainerMembers<
    * ```
    */
   readonly inspector: InspectorAPI;
-
-  /**
-   * Tracer API for resolution tracing and performance monitoring.
-   *
-   * Provides methods to retrieve traces, statistics, and subscribe to resolution events.
-   * Always available on containers - no plugin configuration or symbol imports required.
-   *
-   * @example
-   * ```typescript
-   * const container = createContainer({ graph: graph, name: "App"  });
-   *
-   * // Direct property access - maximum discoverability
-   * const traces = container.tracer.getTraces();
-   * const stats = container.tracer.getStats();
-   *
-   * // Subscribe to real-time traces
-   * container.tracer.subscribe((entry) => {
-   *   console.log(`Resolved ${entry.portName} in ${entry.duration}ms`);
-   * });
-   * ```
-   */
-  readonly tracer: TracingAPI;
 
   // =========================================================================
   // Hook Management API

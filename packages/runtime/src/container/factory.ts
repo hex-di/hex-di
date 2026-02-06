@@ -37,7 +37,6 @@ import { INTERNAL_ACCESS, ADAPTER_ACCESS, HOOKS_ACCESS } from "../inspection/sym
 import { unreachable } from "../util/unreachable.js";
 import { createChildContainerWrapper } from "./wrappers.js";
 import type { InspectorAPI } from "../inspection/types.js";
-import type { TracingAPI } from "@hex-di/core";
 import {
   attachBuiltinAPIs,
   parseChildGraph,
@@ -154,41 +153,39 @@ export function createContainer<
 /**
  * Internal type for uninitialized root container.
  *
- * Note: "inspector" and "tracer" are initially optional placeholders.
- * They are set via Object.defineProperty for non-enumerability via attachBuiltinAPIs().
+ * Note: "inspector" is initially an optional placeholder.
+ * It is set via Object.defineProperty for non-enumerability via attachBuiltinAPIs().
  */
 type UninitializedContainerInternals<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
 > = Omit<
   ContainerMembers<TProvides, never, TAsyncPorts, "uninitialized">,
-  "initialize" | "inspector" | "tracer"
+  "initialize" | "inspector"
 > &
   InternalContainerMethods<TProvides> & {
     initialize: () => Promise<Container<TProvides, never, TAsyncPorts, "initialized">>;
-    // Placeholders - will be set by attachBuiltinAPIs before freeze
+    // Placeholder - will be set by attachBuiltinAPIs before freeze
     inspector?: InspectorAPI;
-    tracer?: TracingAPI;
   };
 
 /**
  * Internal type for initialized root container.
  *
- * Note: "inspector" and "tracer" are initially optional placeholders.
- * They are set via Object.defineProperty for non-enumerability via attachBuiltinAPIs().
+ * Note: "inspector" is initially an optional placeholder.
+ * It is set via Object.defineProperty for non-enumerability via attachBuiltinAPIs().
  */
 type InitializedContainerInternals<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string>,
 > = Omit<
   ContainerMembers<TProvides, never, TAsyncPorts, "initialized">,
-  "initialize" | "inspector" | "tracer"
+  "initialize" | "inspector"
 > &
   InternalContainerMethods<TProvides> & {
     readonly initialize: never;
-    // Placeholders - will be set by attachBuiltinAPIs before freeze
+    // Placeholder - will be set by attachBuiltinAPIs before freeze
     inspector?: InspectorAPI;
-    tracer?: TracingAPI;
   };
 
 function createUninitializedContainerWrapper<
@@ -387,7 +384,7 @@ function createUninitializedContainerWrapper<
     configurable: false,
   });
 
-  // Add built-in inspector and tracer APIs as non-enumerable properties
+  // Add built-in inspector API as non-enumerable property
   attachBuiltinAPIs(container);
 
   // Add user hooks to hookSources (if any)
@@ -599,7 +596,7 @@ function createInitializedContainerWrapper<
     configurable: false,
   });
 
-  // Add built-in inspector and tracer APIs as non-enumerable properties
+  // Add built-in inspector API as non-enumerable property
   attachBuiltinAPIs(container);
 
   Object.freeze(container);

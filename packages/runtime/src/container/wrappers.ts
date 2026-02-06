@@ -44,7 +44,6 @@ import type {
   InternalContainerMethods,
 } from "./internal-types.js";
 import type { InspectorAPI } from "../inspection/types.js";
-import type { TracingAPI } from "@hex-di/core";
 import {
   attachBuiltinAPIs,
   parseChildGraph,
@@ -167,16 +166,15 @@ export function createChildContainerWrapper<
   parentName: string
 ): Container<TProvides, TExtends, TAsyncPorts, "initialized"> {
   // Use ContainerMembers instead of Container for internal type
-  // Note: "inspector" and "tracer" are set via Object.defineProperty after creation
+  // Note: "inspector" is set via Object.defineProperty after creation
   // for non-enumerability. Override is included directly with proper type.
   type ChildContainerInternals = Omit<
     ContainerMembers<TProvides, TExtends, TAsyncPorts, "initialized">,
-    "inspector" | "tracer"
+    "inspector"
   > &
     InternalContainerMethods<TProvides | TExtends> & {
-      // Placeholders - will be set by attachBuiltinAPIs before freeze
+      // Placeholder - will be set by attachBuiltinAPIs before freeze
       inspector?: InspectorAPI;
-      tracer?: TracingAPI;
     };
 
   // Child containers are always initialized, so resolve accepts all ports
@@ -372,7 +370,7 @@ export function createChildContainerWrapper<
     configurable: false,
   });
 
-  // Add built-in inspector and tracer APIs as non-enumerable properties
+  // Add built-in inspector API as non-enumerable property
   attachBuiltinAPIs(childContainer);
 
   impl.setWrapper(childContainer);

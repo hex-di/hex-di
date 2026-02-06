@@ -1,24 +1,18 @@
 /**
  * Built-in API factory for container property-based access.
  *
- * Creates InspectorAPI and TracingAPI instances for the built-in
- * `.inspector` and `.tracer` container properties.
+ * Creates InspectorAPI instances for the built-in `.inspector` container property.
  *
  * @packageDocumentation
  */
 
 import type {
-  TracingAPI,
-  TraceFilter,
-  TraceStats,
-  TraceEntry,
   ContainerGraphData,
   AdapterInfo,
   VisualizableAdapter,
   InspectorListener,
   ServiceOrigin,
 } from "@hex-di/core";
-import { MemoryCollector } from "@hex-di/core";
 import type { InspectorAPI } from "./types.js";
 import { createInspector as createRuntimeInspector, type InternalAccessible } from "./creation.js";
 import {
@@ -28,39 +22,6 @@ import {
 } from "./internal-helpers.js";
 import type { ContainerInternalState } from "./internal-state-types.js";
 import { INTERNAL_ACCESS } from "./symbols.js";
-
-// =============================================================================
-// Tracer API Factory
-// =============================================================================
-
-/**
- * Creates a standalone TracingAPI instance.
- *
- * @returns A frozen TracingAPI instance
- * @internal
- */
-export function createBuiltinTracerAPI(): TracingAPI {
-  const collector = new MemoryCollector();
-  let isPaused = false;
-
-  const api: TracingAPI = {
-    getTraces: (filter?: TraceFilter) => collector.getTraces(filter),
-    getStats: (): TraceStats => collector.getStats(),
-    pause: (): void => {
-      isPaused = true;
-    },
-    resume: (): void => {
-      isPaused = false;
-    },
-    clear: (): void => collector.clear(),
-    subscribe: (callback: (entry: TraceEntry) => void) => collector.subscribe(callback),
-    isPaused: (): boolean => isPaused,
-    pin: (id: string): void => collector.pin?.(id),
-    unpin: (id: string): void => collector.unpin?.(id),
-  };
-
-  return Object.freeze(api);
-}
 
 // =============================================================================
 // Inspector API Factory

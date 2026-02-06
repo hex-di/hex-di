@@ -3,10 +3,10 @@
  * @packageDocumentation
  */
 
-import type { Port, TracingAPI } from "@hex-di/core";
+import type { Port } from "@hex-di/core";
 import type { Graph } from "@hex-di/graph";
 import type { InspectorAPI } from "../inspection/types.js";
-import { createBuiltinInspectorAPI, createBuiltinTracerAPI } from "../inspection/builtin-api.js";
+import { createBuiltinInspectorAPI } from "../inspection/builtin-api.js";
 import type { InternalAccessible } from "../inspection/creation.js";
 import type {
   InheritanceModeConfig,
@@ -23,29 +23,27 @@ import { isInheritanceMode } from "./helpers.js";
 
 /**
  * Type for container objects that support INTERNAL_ACCESS and can have
- * inspector/tracer attached.
+ * inspector attached.
  *
  * @internal
  */
 export interface AttachableContainer extends InternalAccessible {
   inspector?: InspectorAPI;
-  tracer?: TracingAPI;
 }
 
 /**
- * Type for container with required inspector and tracer properties.
+ * Type for container with required inspector property.
  *
  * @internal
  */
 export interface ContainerWithBuiltinAPIs extends InternalAccessible {
   readonly inspector: InspectorAPI;
-  readonly tracer: TracingAPI;
 }
 
 /**
- * Attaches built-in inspector and tracer APIs to a container object.
+ * Attaches built-in inspector API to a container object.
  *
- * Uses Object.defineProperty to make properties non-enumerable and readonly.
+ * Uses Object.defineProperty to make the property non-enumerable and readonly.
  *
  * @param container - Container object that implements INTERNAL_ACCESS
  *
@@ -58,15 +56,6 @@ export function attachBuiltinAPIs(
   const inspectorAPI = createBuiltinInspectorAPI(container);
   Object.defineProperty(container, "inspector", {
     value: inspectorAPI,
-    writable: false,
-    enumerable: false,
-    configurable: false,
-  });
-
-  // Add built-in tracer API as non-enumerable property
-  const tracerAPI = createBuiltinTracerAPI();
-  Object.defineProperty(container, "tracer", {
-    value: tracerAPI,
     writable: false,
     enumerable: false,
     configurable: false,
