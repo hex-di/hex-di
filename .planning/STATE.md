@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 ## Current Position
 
 Phase: 26 of 27 (Breaking Change Migration)
-Plan: 1 of 5
+Plan: 2 of 5
 Status: In progress
-Last activity: 2026-02-06 -- Completed 26-01-PLAN.md (Remove old tracing types from core)
+Last activity: 2026-02-06 -- Completed 26-02-PLAN.md (Remove runtime tracing references)
 
-Progress: [████████░░] 70%
+Progress: [████████░░] 72%
 
 ## Milestone History
 
@@ -92,6 +92,8 @@ Key decisions captured in PROJECT.md (23 decisions across 7 milestones).
 - Minimal interface wrapping (DdSpan/DdTracer) without direct dd-trace type imports (25-05)
 - Bridge accepts initialized tracer for user-controlled dd-trace configuration (25-05)
 - Inspection TracingAPI preserved during core cleanup -- separate module from old collector-based tracing (26-01)
+- Container.tracer removed; tracing now exclusively via @hex-di/tracing instrumentContainer() (26-02)
+- TRACING_ACCESS symbol retained in runtime for inspection system use (26-02)
 
 ### Pending Todos
 
@@ -110,11 +112,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Completed 26-01-PLAN.md (Remove old tracing types from core)
+Stopped at: Completed 26-02-PLAN.md (Remove runtime tracing references)
 Resume file: None
-Next: 26-02-PLAN.md (Remove runtime tracing references)
+Next: 26-03-PLAN.md (Update integration packages)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-06 (Plan 26-01 complete)_
+_Last updated: 2026-02-06 (Plan 26-02 complete)_
