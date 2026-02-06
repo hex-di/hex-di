@@ -9,9 +9,9 @@ Requirements for monorepo restructuring. Each maps to roadmap phases.
 
 ### Package Migration
 
-- [ ] **MIG-01**: Core packages (core, graph, runtime) remain at `packages/{core,graph,runtime}`
-- [ ] **MIG-02**: React integration moved to `integrations/react`
-- [ ] **MIG-03**: Hono integration moved to `integrations/hono`
+- [x] **MIG-01**: Core packages (core, graph, runtime) remain at `packages/{core,graph,runtime}`
+- [x] **MIG-02**: React integration moved to `integrations/react`
+- [x] **MIG-03**: Hono integration moved to `integrations/hono`
 - [ ] **MIG-04**: Testing utilities moved to `tooling/testing`
 - [ ] **MIG-05**: Visualization package moved to `tooling/visualization`
 - [ ] **MIG-06**: Graph-viz package moved to `tooling/graph-viz`
@@ -20,11 +20,11 @@ Requirements for monorepo restructuring. Each maps to roadmap phases.
 
 ### Workspace Configuration
 
-- [ ] **CFG-01**: pnpm-workspace.yaml updated with new workspace globs (`packages/*`, `integrations/*`, `tooling/*`, `libs/*/*`)
-- [ ] **CFG-02**: Root tsconfig.json project references updated for all new paths
-- [ ] **CFG-03**: Per-package tsconfig.json paths and references updated
-- [ ] **CFG-04**: Per-package eslint.config.js paths updated (shared config imports)
-- [ ] **CFG-05**: Root package.json scripts work with new structure
+- [x] **CFG-01**: pnpm-workspace.yaml updated with new workspace globs (`packages/*`, `integrations/*`, `tooling/*`, `libs/*/*`)
+- [x] **CFG-02**: Root tsconfig.json project references updated for all new paths
+- [x] **CFG-03**: Per-package tsconfig.json paths and references updated
+- [x] **CFG-04**: Per-package eslint.config.js paths updated (shared config imports)
+- [x] **CFG-05**: Root package.json scripts work with new structure
 
 ### Build Verification
 
@@ -68,19 +68,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status  |
 | ----------- | ----- | ------- |
-| MIG-01      | 20    | Pending |
-| MIG-02      | 20    | Pending |
-| MIG-03      | 20    | Pending |
+| MIG-01      | 20    | Complete |
+| MIG-02      | 20    | Complete |
+| MIG-03      | 20    | Complete |
 | MIG-04      | 21    | Pending |
 | MIG-05      | 21    | Pending |
 | MIG-06      | 21    | Pending |
 | MIG-07      | 21    | Pending |
 | MIG-08      | 21    | Pending |
-| CFG-01      | 20    | Pending |
-| CFG-02      | 20    | Pending |
-| CFG-03      | 20    | Pending |
-| CFG-04      | 20    | Pending |
-| CFG-05      | 20    | Pending |
+| CFG-01      | 20    | Complete |
+| CFG-02      | 20    | Complete |
+| CFG-03      | 20    | Complete |
+| CFG-04      | 20    | Complete |
+| CFG-05      | 20    | Complete |
 | VER-01      | 22    | Pending |
 | VER-02      | 22    | Pending |
 | VER-03      | 22    | Pending |
@@ -99,4 +99,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 ---
 
 _Requirements defined: 2026-02-05_
-_Last updated: 2026-02-05 after roadmap creation_
+_Last updated: 2026-02-06 after phase 20 completion_

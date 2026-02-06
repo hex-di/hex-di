@@ -63,7 +63,7 @@ Phases 15-19: Type file split, tracing/inspection consolidation, override builde
 - Integer phases (20, 21, 22): Planned milestone work
 - Decimal phases (20.1, 20.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 20: Integration Migration** - Create new directory structure, move react and hono integrations, update workspace and build configs
+- [x] **Phase 20: Integration Migration** - Create new directory structure, move react and hono integrations, update workspace and build configs
 - [ ] **Phase 21: Tooling & Library Migration** - Move testing, visualization, and graph-viz to tooling; move flow packages to libs
 - [ ] **Phase 22: Verification & References** - Full build verification, example and website reference updates
 
@@ -78,8 +78,8 @@ Phases 15-19: Type file split, tracing/inspection consolidation, override builde
 
 Plans:
 
-- [ ] 20-01-PLAN.md -- Move react and hono to integrations/, update pnpm-workspace.yaml
-- [ ] 20-02-PLAN.md -- Update root configs (vitest, eslint, example tsconfigs), full pipeline verification
+- [x] 20-01-PLAN.md -- Move react and hono to integrations/, update pnpm-workspace.yaml
+- [x] 20-02-PLAN.md -- Update root configs (vitest, eslint, example tsconfigs), full pipeline verification
 
 ### Phase 21: Tooling & Library Migration
 
@@ -125,6 +125,6 @@ Phases execute in numeric order: 20 -> 21 -> 22
 
 | Phase                           | Plans Complete | Status      | Completed |
 | ------------------------------- | -------------- | ----------- | --------- |
-| 20. Integration Migration       | 0/2            | Not started | -         |
+| 20. Integration Migration       | 2/2            | Complete    | 2026-02-06 |
 | 21. Tooling & Library Migration | 0/2            | Not started | -         |
 | 22. Verification & References   | 0/2            | Not started | -         |
