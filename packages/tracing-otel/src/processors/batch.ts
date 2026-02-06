@@ -10,13 +10,7 @@
 
 import type { Span, SpanData, SpanExporter, SpanProcessor } from "@hex-di/tracing";
 import type { BatchSpanProcessorOptions } from "./types.js";
-import {
-  logError,
-  getSetTimeout,
-  getClearTimeout,
-  type SetTimeoutFn,
-  type ClearTimeoutFn,
-} from "../utils/globals.js";
+import { logError, safeSetTimeout, safeClearTimeout, hasSetTimeout } from "../utils/globals.js";
 
 /**
  * Default configuration values for BatchSpanProcessor.
@@ -87,22 +81,18 @@ export function createBatchSpanProcessor(
 
   // Internal state
   const spanBuffer: SpanData[] = [];
-  let flushTimer: number | object | undefined = undefined;
+  let flushTimer: unknown = undefined;
   let isShutdown = false;
-
-  // Get timer functions once at initialization
-  const setTimeoutFn: SetTimeoutFn | undefined = getSetTimeout();
-  const clearTimeoutFn: ClearTimeoutFn | undefined = getClearTimeout();
 
   /**
    * Schedule a flush after scheduledDelayMillis if not already scheduled.
    */
   function scheduleFlush(): void {
-    if (flushTimer !== undefined || !setTimeoutFn) {
+    if (flushTimer !== undefined || !hasSetTimeout()) {
       return; // Timer already set or no setTimeout available
     }
 
-    flushTimer = setTimeoutFn(() => {
+    flushTimer = safeSetTimeout(() => {
       flushTimer = undefined;
       flush().catch(err => {
         logError("[hex-di/tracing-otel] BatchSpanProcessor scheduled flush failed:", err);
@@ -114,8 +104,8 @@ export function createBatchSpanProcessor(
    * Clear any pending flush timer.
    */
   function clearFlushTimer(): void {
-    if (flushTimer !== undefined && clearTimeoutFn) {
-      clearTimeoutFn(flushTimer);
+    if (flushTimer !== undefined) {
+      safeClearTimeout(flushTimer);
       flushTimer = undefined;
     }
   }
@@ -222,7 +212,7 @@ export function createBatchSpanProcessor(
       }
 
       // Shutdown exporter with timeout
-      if (!setTimeoutFn) {
+      if (!hasSetTimeout()) {
         // No timeout available - just call shutdown directly
         try {
           await exporter.shutdown();
@@ -236,11 +226,9 @@ export function createBatchSpanProcessor(
         await Promise.race([
           exporter.shutdown(),
           new Promise<never>((_resolve, reject) => {
-            if (setTimeoutFn) {
-              setTimeoutFn(() => {
-                reject(new Error("Shutdown timeout"));
-              }, exportTimeoutMillis);
-            }
+            safeSetTimeout(() => {
+              reject(new Error("Shutdown timeout"));
+            }, exportTimeoutMillis);
           }),
         ]);
       } catch (err) {

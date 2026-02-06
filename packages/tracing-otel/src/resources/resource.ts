@@ -8,12 +8,14 @@
  */
 
 import { type Resource, resourceFromAttributes } from "@opentelemetry/resources";
-import {
-  ATTR_SERVICE_NAME,
-  ATTR_SERVICE_VERSION,
-  SEMRESATTRS_DEPLOYMENT_ENVIRONMENT,
-  SEMRESATTRS_SERVICE_NAMESPACE,
-} from "@opentelemetry/semantic-conventions";
+import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from "@opentelemetry/semantic-conventions";
+
+/**
+ * Semantic convention attribute keys not available as named exports in
+ * @opentelemetry/semantic-conventions v1.39. Using string literals per spec.
+ */
+const ATTR_DEPLOYMENT_ENVIRONMENT = "deployment.environment";
+const ATTR_SERVICE_NAMESPACE = "service.namespace";
 
 /**
  * Configuration for creating a Resource with service identification metadata.
@@ -146,12 +148,12 @@ export function createResource(config: ResourceConfig): Resource {
 
   // Optional: deployment.environment
   if (config.deploymentEnvironment !== undefined) {
-    attributes[SEMRESATTRS_DEPLOYMENT_ENVIRONMENT] = config.deploymentEnvironment;
+    attributes[ATTR_DEPLOYMENT_ENVIRONMENT] = config.deploymentEnvironment;
   }
 
   // Optional: service.namespace
   if (config.serviceNamespace !== undefined) {
-    attributes[SEMRESATTRS_SERVICE_NAMESPACE] = config.serviceNamespace;
+    attributes[ATTR_SERVICE_NAMESPACE] = config.serviceNamespace;
   }
 
   // Merge any additional custom attributes

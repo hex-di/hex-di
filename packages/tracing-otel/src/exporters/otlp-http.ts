@@ -13,6 +13,7 @@ import type { ReadableSpan } from "@opentelemetry/sdk-trace-base";
 import { convertToReadableSpan } from "../adapters/span-adapter.js";
 import { createResource } from "../resources/resource.js";
 import { mapHexDiToOtelAttributes } from "../semantic-conventions/mapper.js";
+import { logError } from "../utils/globals.js";
 import type { OtlpHttpExporterOptions } from "./types.js";
 
 /**
@@ -122,7 +123,7 @@ export function createOtlpHttpExporter(options?: OtlpHttpExporterOptions): SpanE
         });
       } catch (error) {
         // Log but don't throw - telemetry failures shouldn't break the application
-        console.error("[hex-di/tracing-otel] OTLP export failed:", error);
+        logError("[hex-di/tracing-otel] OTLP export failed:", error);
       }
     },
 
@@ -135,7 +136,7 @@ export function createOtlpHttpExporter(options?: OtlpHttpExporterOptions): SpanE
       try {
         await otlpExporter.forceFlush();
       } catch (error) {
-        console.error("[hex-di/tracing-otel] OTLP forceFlush failed:", error);
+        logError("[hex-di/tracing-otel] OTLP forceFlush failed:", error);
       }
     },
 
@@ -148,7 +149,7 @@ export function createOtlpHttpExporter(options?: OtlpHttpExporterOptions): SpanE
       try {
         await otlpExporter.shutdown();
       } catch (error) {
-        console.error("[hex-di/tracing-otel] OTLP shutdown failed:", error);
+        logError("[hex-di/tracing-otel] OTLP shutdown failed:", error);
       }
     },
   };

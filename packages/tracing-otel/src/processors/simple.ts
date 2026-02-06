@@ -10,7 +10,7 @@
 
 import type { Span, SpanData, SpanExporter, SpanProcessor } from "@hex-di/tracing";
 import type { SimpleSpanProcessorOptions } from "./types.js";
-import { logError, getSetTimeout } from "../utils/globals.js";
+import { logError, safeSetTimeout, hasSetTimeout } from "../utils/globals.js";
 
 /**
  * Default timeout for export operations (30 seconds).
@@ -116,8 +116,7 @@ export function createSimpleSpanProcessor(
 
       isShutdown = true;
 
-      const setTimeoutFn = getSetTimeout();
-      if (!setTimeoutFn) {
+      if (!hasSetTimeout()) {
         // No timeout available - just call shutdown directly
         try {
           await exporter.shutdown();
@@ -131,7 +130,7 @@ export function createSimpleSpanProcessor(
         await Promise.race([
           exporter.shutdown(),
           new Promise<never>((_resolve, reject) => {
-            setTimeoutFn(() => {
+            safeSetTimeout(() => {
               reject(new Error("Shutdown timeout"));
             }, exportTimeoutMillis);
           }),

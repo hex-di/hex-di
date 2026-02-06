@@ -1,28 +1,27 @@
 /**
- * Cross-platform global accessors for tracing-otel package.
+ * Typed cross-platform global accessors for tracing-otel package.
  *
- * Provides safe typed access to platform APIs without depending on
- * DOM or Node.js type definitions.
+ * Provides safe access to platform APIs (console, setTimeout, clearTimeout)
+ * without depending on DOM or Node.js type definitions. Each accessor
+ * encapsulates the `unknown` narrowing of `globalThis` in a single place.
  *
  * @packageDocumentation
  */
 
-/**
- * Subset of Console API used for error logging.
- */
+/** Subset of Console API used for error logging. */
 export interface ConsoleLike {
   error(message: string, ...args: unknown[]): void;
 }
 
-/**
- * Type for setTimeout function signature.
- */
-export type SetTimeoutFn = (callback: () => void, ms: number) => number | object;
-
-/**
- * Type for clearTimeout function signature.
- */
-export type ClearTimeoutFn = (id: number | object) => void;
+function isConsoleLike(value: unknown): value is ConsoleLike {
+  return (
+    value !== null &&
+    value !== undefined &&
+    typeof value === "object" &&
+    "error" in value &&
+    typeof value.error === "function"
+  );
+}
 
 /**
  * Get the platform console API if available.
@@ -44,62 +43,55 @@ export function getConsole(): ConsoleLike | undefined {
   return undefined;
 }
 
-function isConsoleLike(value: unknown): value is ConsoleLike {
-  return (
-    value !== null &&
-    value !== undefined &&
-    typeof value === "object" &&
-    "error" in value &&
-    typeof value.error === "function"
-  );
-}
-
 /**
- * Get the platform setTimeout function if available.
+ * Schedule a callback after a delay.
  *
- * @returns setTimeout function or undefined if unavailable
+ * Returns an opaque timer handle that can be passed to `safeClearTimeout`.
+ *
+ * @returns Timer handle, or undefined if setTimeout is unavailable
  */
-export function getSetTimeout(): SetTimeoutFn | undefined {
+export function safeSetTimeout(callback: () => void, ms: number): unknown {
   if (typeof globalThis === "undefined" || !("setTimeout" in globalThis)) {
     return undefined;
   }
 
   const g: Record<string, unknown> = globalThis;
-  const setTimeoutFn: unknown = g.setTimeout;
+  const fn: unknown = g.setTimeout;
 
-  if (isSetTimeoutFn(setTimeoutFn)) {
-    return setTimeoutFn;
+  if (typeof fn === "function") {
+    return fn(callback, ms);
   }
 
   return undefined;
-}
-
-function isSetTimeoutFn(value: unknown): value is SetTimeoutFn {
-  return typeof value === "function";
 }
 
 /**
- * Get the platform clearTimeout function if available.
+ * Cancel a previously scheduled timeout.
  *
- * @returns clearTimeout function or undefined if unavailable
+ * @param handle - Timer handle from safeSetTimeout
  */
-export function getClearTimeout(): ClearTimeoutFn | undefined {
+export function safeClearTimeout(handle: unknown): void {
   if (typeof globalThis === "undefined" || !("clearTimeout" in globalThis)) {
-    return undefined;
+    return;
   }
 
   const g: Record<string, unknown> = globalThis;
-  const clearTimeoutFn: unknown = g.clearTimeout;
+  const fn: unknown = g.clearTimeout;
 
-  if (isClearTimeoutFn(clearTimeoutFn)) {
-    return clearTimeoutFn;
+  if (typeof fn === "function") {
+    fn(handle);
   }
-
-  return undefined;
 }
 
-function isClearTimeoutFn(value: unknown): value is ClearTimeoutFn {
-  return typeof value === "function";
+/**
+ * Check if setTimeout is available on this platform.
+ */
+export function hasSetTimeout(): boolean {
+  if (typeof globalThis === "undefined" || !("setTimeout" in globalThis)) {
+    return false;
+  }
+  const g: Record<string, unknown> = globalThis;
+  return typeof g.setTimeout === "function";
 }
 
 /**
