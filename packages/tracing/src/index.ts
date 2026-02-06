@@ -31,7 +31,6 @@ export type {
   Attributes,
   AttributeValue,
   SpanEvent,
-  SpanLink,
   SpanKind,
   SpanStatus,
-} from "./types.js";
+} from "./types/index.js";

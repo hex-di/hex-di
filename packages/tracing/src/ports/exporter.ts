@@ -8,7 +8,7 @@
  */
 
 import { port } from "@hex-di/core";
-import type { SpanData } from "../types.js";
+import type { SpanData } from "../types/index.js";
 
 /**
  * Service interface for exporting completed spans.

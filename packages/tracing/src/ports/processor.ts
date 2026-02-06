@@ -8,7 +8,7 @@
  */
 
 import { port } from "@hex-di/core";
-import type { Span, SpanData } from "../types.js";
+import type { Span, SpanData } from "../types/index.js";
 
 /**
  * Service interface for processing span lifecycle events.

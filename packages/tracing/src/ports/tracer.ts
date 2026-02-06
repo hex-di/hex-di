@@ -8,7 +8,7 @@
  */
 
 import { port } from "@hex-di/core";
-import type { Span, SpanOptions, SpanContext, Attributes } from "../types.js";
+import type { Span, SpanOptions, SpanContext, Attributes } from "../types/index.js";
 
 /**
  * Service interface for the distributed tracer.
