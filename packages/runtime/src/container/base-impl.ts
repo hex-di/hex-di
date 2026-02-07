@@ -25,6 +25,34 @@ import { AsyncResolutionEngine } from "../resolution/async-engine.js";
 import { AsyncInitializer } from "./internal/async-initializer.js";
 import { AdapterRegistry } from "./internal/adapter-registry.js";
 import { createMemoMapSnapshot } from "./helpers.js";
+import { consumeLazyFlag } from "./lazy-impl.js";
+import type { InspectorAPI } from "../inspection/types.js";
+
+// =============================================================================
+// Internal Helpers
+// =============================================================================
+
+/**
+ * Checks if an object has an inspector property with emit capability.
+ * Uses structural checks with `in` operator — no type casts needed.
+ * @internal
+ */
+interface HasInspector {
+  readonly inspector: InspectorAPI;
+}
+
+function hasInspector(obj: unknown): obj is HasInspector {
+  if (typeof obj !== "object" || obj === null || !("inspector" in obj)) {
+    return false;
+  }
+  const { inspector } = obj;
+  return (
+    typeof inspector === "object" &&
+    inspector !== null &&
+    "subscribe" in inspector &&
+    "emit" in inspector
+  );
+}
 
 /**
  * Abstract base class for container implementations.
@@ -183,7 +211,25 @@ export abstract class BaseContainerImpl<
   }
 
   registerChildContainer(child: DisposableChild): void {
-    this.lifecycleManager.registerChildContainer(child);
+    // Extract child inspector if available
+    const childInspector = hasInspector(child) ? child.inspector : undefined;
+
+    // Register child and get assigned ID
+    const childId = this.lifecycleManager.registerChildContainer(child, childInspector);
+
+    // Emit child-created event from parent's inspector
+    if (hasInspector(this.wrapper)) {
+      const { inspector: parentInspector } = this.wrapper;
+      if (parentInspector.emit !== undefined) {
+        const childKind: "child" | "lazy" = consumeLazyFlag() ? "lazy" : "child";
+
+        parentInspector.emit({
+          type: "child-created",
+          childId: String(childId),
+          childKind,
+        });
+      }
+    }
   }
 
   unregisterChildContainer(child: DisposableChild): void {

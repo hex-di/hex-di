@@ -11,6 +11,31 @@ import type { Container, LazyContainer, CreateChildOptions } from "../types.js";
 import { DisposedScopeError } from "../errors/index.js";
 
 /**
+ * Flag indicating the next child container creation originated from a lazy load.
+ * Set before createChild is called, checked and cleared in registerChildContainer.
+ * @internal
+ */
+export let nextChildIsLazy = false;
+
+/**
+ * Sets the lazy creation flag before creating a child container.
+ * @internal
+ */
+export function markNextChildAsLazy(): void {
+  nextChildIsLazy = true;
+}
+
+/**
+ * Consumes and returns the lazy creation flag.
+ * @internal
+ */
+export function consumeLazyFlag(): boolean {
+  const wasLazy = nextChildIsLazy;
+  nextChildIsLazy = false;
+  return wasLazy;
+}
+
+/**
  * Internal container-like interface needed for lazy container operations.
  * @internal
  */
@@ -107,6 +132,9 @@ export class LazyContainerImpl<
       if (this._isDisposed) {
         throw new DisposedScopeError("LazyContainer");
       }
+
+      // Mark the next child creation as lazy so registerChildContainer emits correct childKind
+      markNextChildAsLazy();
 
       // Create child container using parent's createChild
       // SAFETY: Type assertion needed because createChild returns a computed type

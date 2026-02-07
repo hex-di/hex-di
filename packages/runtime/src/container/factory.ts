@@ -411,6 +411,9 @@ function createUninitializedContainerWrapper<
     configurable: false,
   });
 
+  // Set wrapper reference on impl so registerChildContainer can access parent inspector
+  impl.setWrapper(container);
+
   Object.freeze(container);
   return container;
 }
@@ -598,6 +601,9 @@ function createInitializedContainerWrapper<
 
   // Add built-in inspector API as non-enumerable property
   attachBuiltinAPIs(container);
+
+  // Set wrapper reference on impl so registerChildContainer can access parent inspector
+  impl.setWrapper(container);
 
   Object.freeze(container);
   return container;

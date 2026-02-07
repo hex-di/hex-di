@@ -11,6 +11,7 @@
  */
 
 import type { MemoMap } from "../../util/memo-map.js";
+import type { InspectorAPI } from "../../inspection/types.js";
 
 // =============================================================================
 // Internal Symbols
@@ -22,6 +23,14 @@ import type { MemoMap } from "../../util/memo-map.js";
  * @internal
  */
 const CHILD_ID = Symbol("childContainerId");
+
+/**
+ * Map storing child inspector references by childId.
+ * Used by tracing package to instrument dynamically created children.
+ * Note: Using Map instead of WeakMap because childId is a number, not object.
+ * @internal
+ */
+export const childInspectorMap = new Map<number, InspectorAPI>();
 
 // =============================================================================
 // Types
@@ -131,11 +140,20 @@ export class LifecycleManager {
    * Assigns unique ID stored as Symbol property for O(1) unregistration.
    *
    * @param child - The child container to track
+   * @param inspector - Optional inspector to store in childInspectorMap
+   * @returns The assigned child ID
    */
-  registerChildContainer(child: Disposable): void {
+  registerChildContainer(child: Disposable, inspector?: InspectorAPI): number {
     const id = this.childIdCounter++;
     child[CHILD_ID] = id;
     this.childContainers.set(id, child);
+
+    // Store child inspector if provided
+    if (inspector !== undefined) {
+      childInspectorMap.set(id, inspector);
+    }
+
+    return id;
   }
 
   /**
@@ -148,6 +166,7 @@ export class LifecycleManager {
     const id = child[CHILD_ID];
     if (id !== undefined) {
       this.childContainers.delete(id);
+      childInspectorMap.delete(id);
     }
   }
 
