@@ -11,6 +11,29 @@ import type { InspectorAPI } from "@hex-di/core";
 import type { HookableContainer } from "./types.js";
 
 /**
+ * Structural type guard for HookableContainer.
+ *
+ * Checks that the value is a non-null object with `addHook` and `removeHook`
+ * methods. Used to safely narrow `unknown` values (e.g., from
+ * InspectorAPI.getContainer()) to HookableContainer without type casts.
+ *
+ * @param value - The value to check
+ * @returns True if the value structurally matches HookableContainer
+ *
+ * @internal
+ */
+export function isHookableContainer(value: unknown): value is HookableContainer {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "addHook" in value &&
+    typeof value.addHook === "function" &&
+    "removeHook" in value &&
+    typeof value.removeHook === "function"
+  );
+}
+
+/**
  * WeakMap tracking InspectorAPI -> Container mappings.
  *
  * Since InspectorAPI doesn't provide a reverse lookup to get the Container,

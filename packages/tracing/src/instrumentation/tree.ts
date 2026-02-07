@@ -11,7 +11,11 @@ import type { InspectorAPI, InspectorListener } from "@hex-di/core";
 import type { Tracer } from "../ports/tracer.js";
 import { instrumentContainer } from "./container.js";
 import type { AutoInstrumentOptions, HookableContainer } from "./types.js";
-import { registerContainerMapping, getContainerFromInspector } from "./utils.js";
+import {
+  registerContainerMapping,
+  getContainerFromInspector,
+  isHookableContainer,
+} from "./utils.js";
 
 /**
  * Instruments an entire container tree with distributed tracing.
@@ -162,12 +166,17 @@ export function instrumentContainerTree(
         // A new child container was created - find it and instrument it
         const childInspectors = inspectorToWalk.getChildContainers();
 
-        // The new child should be the last one in the array
-        // (assuming getChildContainers returns children in creation order)
         for (const childInspector of childInspectors) {
-          const childContainer = getContainerFromInspector(childInspector);
+          // Try direct access via getContainer() first (works for dynamic children),
+          // then fall back to WeakMap lookup (works for pre-registered children)
+          const directContainer = childInspector.getContainer?.();
+          const childContainer = isHookableContainer(directContainer)
+            ? directContainer
+            : getContainerFromInspector(childInspector);
 
           if (childContainer && !cleanups.has(childContainer)) {
+            // Register mapping for future lookups before walking
+            registerContainerMapping(childInspector, childContainer);
             // New child found - recursively walk it
             walkTree(childContainer, childInspector);
           }
