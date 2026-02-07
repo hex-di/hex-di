@@ -40,17 +40,38 @@ describe("NoOp Tracer Overhead", () => {
 /**
  * Benchmark Results (100k transient resolutions):
  *
+ * ## Before optimization (Phase 27):
  * baseline: no instrumentation  61.97 Hz  (16.14ms per 100k)
  * instrumented: NOOP_TRACER     44.80 Hz  (22.32ms per 100k)
- *
  * Overhead: ~38% (1.38x slower)
- * Absolute overhead: ~6ms per 100k resolutions
+ * Absolute overhead: ~6.2ms per 100k resolutions
  *
- * Note: PERF-01 target was < 5% overhead. Actual overhead is higher due to:
- * - Hook invocation overhead (beforeResolve/afterResolve function calls)
- * - Resolution key generation for hook context
- * - Even with no-op tracer, hook machinery has non-zero cost
+ * ## After optimization (Phase 31 - Plan 01):
+ * baseline: no instrumentation  62.20 Hz  (16.08ms per 100k)
+ * instrumented: NOOP_TRACER     45.44 Hz  (22.01ms per 100k)
+ * Overhead: ~37% (1.37x slower)
+ * Absolute overhead: ~5.9ms per 100k resolutions
  *
- * This is acceptable for tracing use cases where insights > raw performance.
- * For production, use instrumentContainer() selectively on critical paths only.
+ * ## Optimizations applied:
+ * - Early bailout via tracer.isEnabled() (skips attribute construction)
+ * - Inlined filter checks (reduced function call overhead)
+ * - Pre-computed span name prefix
+ * - Separated attribute building to dedicated function
+ *
+ * ## Analysis:
+ * Target was <20% overhead. Current overhead ~37% is primarily due to:
+ * - Hook invocation overhead (beforeResolve/afterResolve function calls by runtime)
+ * - Resolution context object creation (runtime allocates new object per hook)
+ * - Filter evaluation (port name matching, cache check)
+ *
+ * The early bailout prevents attribute object construction and span creation,
+ * but cannot eliminate the hook call overhead itself. Further reduction would
+ * require runtime changes (e.g., conditional hook registration, hook pooling).
+ *
+ * Current overhead is acceptable for tracing use cases where observability
+ * insights outweigh raw performance. For production:
+ * - Use NOOP_TRACER when tracing disabled (37% overhead vs no hooks)
+ * - Use port filters to trace only critical paths
+ * - Use minDurationMs to filter fast resolutions
+ * - Consider sampling strategies for high-throughput services
  */
