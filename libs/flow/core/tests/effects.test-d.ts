@@ -11,7 +11,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { port, createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { event, type Event } from "../src/machine/index.js";
 import {
   Effect,

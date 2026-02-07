@@ -925,8 +925,8 @@ describe("Cross-Scope Hierarchy Inspection", () => {
       factory: () => ({ query: vi.fn() }),
     });
 
-    const child1 = rootContainer.override(MockDatabaseAdapter1).build();
-    const child2 = rootContainer.override(MockDatabaseAdapter2).build();
+    rootContainer.override(MockDatabaseAdapter1).build();
+    rootContainer.override(MockDatabaseAdapter2).build();
 
     // Get child containers via inspector
     const childInspectors = rootContainer.inspector.getChildContainers();

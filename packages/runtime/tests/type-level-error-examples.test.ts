@@ -59,7 +59,7 @@ describe("PortNotInGraphError with code examples", () => {
     const container = createContainer({ graph, name: "Test" });
 
     // This adapter is for a port that doesn't exist in the graph
-    const UnknownAdapter = createAdapter({
+    const _UnknownAdapter = createAdapter({
       provides: DatabasePort, // DatabasePort is NOT in the graph
       requires: [],
       lifetime: "singleton",
@@ -81,7 +81,7 @@ describe("PortNotInGraphError with code examples", () => {
      *     .build();
      */
     // Uncommenting the line below would trigger a compile-time error:
-    // container.override(UnknownAdapter).build();
+    // container.override(_UnknownAdapter).build();
 
     // Runtime: This test verifies compile-time errors, so we just ensure
     // the container is still valid for other operations
@@ -100,7 +100,7 @@ describe("PortNotInGraphError with code examples", () => {
     const container = createContainer({ graph, name: "Test" });
 
     // EmailService doesn't exist in graph (only Database)
-    const EmailAdapter = createAdapter({
+    const _EmailAdapter = createAdapter({
       provides: EmailServicePort, // EmailServicePort NOT in graph
       requires: [],
       lifetime: "singleton",
@@ -124,7 +124,7 @@ describe("PortNotInGraphError with code examples", () => {
      *     .build();
      */
     // Uncommenting the line below would trigger a compile-time error:
-    // container.override(EmailAdapter).build();
+    // container.override(_EmailAdapter).build();
 
     expect(container.isDisposed).toBe(false);
   });
@@ -148,7 +148,7 @@ describe("PortNotInGraphError with code examples", () => {
 
     const container = createContainer({ graph, name: "Test" });
 
-    const EmailAdapter = createAdapter({
+    const _EmailAdapter = createAdapter({
       provides: EmailServicePort,
       requires: [],
       lifetime: "singleton",
@@ -170,7 +170,7 @@ describe("PortNotInGraphError with code examples", () => {
      *     .build();
      */
     // Uncommenting the line below would trigger a compile-time error:
-    // container.override(EmailAdapter).build();
+    // container.override(_EmailAdapter).build();
 
     expect(container.isDisposed).toBe(false);
   });
@@ -193,7 +193,7 @@ describe("MissingDependenciesError with code examples", () => {
     const container = createContainer({ graph, name: "Test" });
 
     // UserService requires Database, but Database is NOT in the graph
-    const UserServiceAdapter = createAdapter({
+    const _UserServiceAdapter = createAdapter({
       provides: UserServicePort,
       requires: [DatabasePort], // DatabasePort NOT in graph
       lifetime: "singleton",
@@ -221,7 +221,7 @@ describe("MissingDependenciesError with code examples", () => {
      *     .build();
      */
     // Uncommenting the line below would trigger a compile-time error:
-    // container.override(UserServiceAdapter).build();
+    // container.override(_UserServiceAdapter).build();
 
     expect(container.isDisposed).toBe(false);
   });
@@ -231,7 +231,7 @@ describe("MissingDependenciesError with code examples", () => {
     const container = createContainer({ graph, name: "Test" });
 
     // UserService requires both Logger and Database, both missing
-    const UserServiceAdapter = createAdapter({
+    const _UserServiceAdapter = createAdapter({
       provides: UserServicePort,
       requires: [LoggerPort, DatabasePort], // Both NOT in graph
       lifetime: "singleton",
@@ -260,7 +260,7 @@ describe("MissingDependenciesError with code examples", () => {
      *     .build();
      */
     // Uncommenting the line below would trigger a compile-time error:
-    // container.override(UserServiceAdapter).build();
+    // container.override(_UserServiceAdapter).build();
 
     expect(container.isDisposed).toBe(false);
   });
@@ -277,7 +277,7 @@ describe("MissingDependenciesError with code examples", () => {
     const container = createContainer({ graph, name: "Test" });
 
     // EmailService requires Database (missing)
-    const EmailAdapter = createAdapter({
+    const _EmailAdapter = createAdapter({
       provides: EmailServicePort,
       requires: [DatabasePort], // NOT in graph
       lifetime: "singleton",
@@ -304,7 +304,7 @@ describe("MissingDependenciesError with code examples", () => {
      *     .build();
      */
     // Uncommenting the line below would trigger a compile-time error:
-    // container.override(EmailAdapter).build();
+    // container.override(_EmailAdapter).build();
 
     expect(container.isDisposed).toBe(false);
   });

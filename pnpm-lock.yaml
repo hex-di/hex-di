@@ -68,6 +68,9 @@ importers:
       '@hex-di/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
+      '@hex-di/tracing':
+        specifier: workspace:*
+        version: link:../../packages/tracing
       '@hono/node-server':
         specifier: ^1.19.7
         version: 1.19.7(hono@4.11.1)
@@ -187,6 +190,9 @@ importers:
       '@hex-di/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
+      '@hex-di/tracing':
+        specifier: workspace:*
+        version: link:../../packages/tracing
       typescript:
         specifier: '>=5.0'
         version: 5.6.3
@@ -209,6 +215,9 @@ importers:
       '@hex-di/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
+      '@hex-di/tracing':
+        specifier: workspace:*
+        version: link:../../packages/tracing
       typescript:
         specifier: '>=5.0'
         version: 5.6.3
@@ -309,6 +318,12 @@ importers:
         specifier: ^4.5.3
         version: 4.5.3
 
+  packages/result:
+    dependencies:
+      typescript:
+        specifier: '>=5.0'
+        version: 5.9.3
+
   packages/runtime:
     dependencies:
       '@hex-di/core':
@@ -329,6 +344,10 @@ importers:
       '@hex-di/runtime':
         specifier: workspace:*
         version: link:../runtime
+    devDependencies:
+      '@hex-di/graph':
+        specifier: workspace:*
+        version: link:../graph
 
   packages/tracing-datadog:
     dependencies:

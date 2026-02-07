@@ -454,7 +454,7 @@ describe("Scope custom names", () => {
     const container = createContainer({ graph: graph, name: "Test" });
 
     const parentScope = container.createScope("parent-scope");
-    const childScope = parentScope.createScope("child-scope");
+    parentScope.createScope("child-scope");
 
     const inspector = createInspector(container);
     const tree = inspector.getScopeTree();

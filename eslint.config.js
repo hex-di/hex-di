@@ -82,7 +82,16 @@ export const testConfig = tseslint.config({
     "@typescript-eslint/no-empty-object-type": "off",
 
     // Keep some safety in tests
-    "@typescript-eslint/no-unused-vars": "warn",
+    "@typescript-eslint/no-unused-vars": [
+      "warn",
+      {
+        args: "none",
+        varsIgnorePattern: "^_",
+        caughtErrors: "none",
+        destructuredArrayIgnorePattern: "^_",
+        ignoreRestSiblings: true,
+      },
+    ],
     "prefer-const": "warn",
 
     // Async rules still active - tests should handle promises correctly

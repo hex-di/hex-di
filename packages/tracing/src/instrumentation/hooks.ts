@@ -116,6 +116,12 @@ export function createTracingHook(
     includeStackTrace: options?.includeStackTrace ?? false,
   };
 
+  // Precompute: skip filter evaluation when no filtering is configured
+  const alwaysTrace = opts.portFilter === undefined && opts.traceCachedResolutions;
+
+  // Precompute: whether additional attributes need merging
+  const hasAdditionalAttributes = Object.keys(opts.additionalAttributes).length > 0;
+
   /**
    * Builds span attributes from resolution context.
    * Separated to enable early bailout optimization - only called when tracing is active.
@@ -146,8 +152,8 @@ export function createTracingHook(
       attributes["hex-di.inheritance.mode"] = ctx.inheritanceMode;
     }
 
-    // Merge additional attributes
-    if (opts.additionalAttributes) {
+    // Merge additional attributes (skip when empty)
+    if (hasAdditionalAttributes) {
       Object.assign(attributes, opts.additionalAttributes);
     }
 
@@ -158,17 +164,14 @@ export function createTracingHook(
    * beforeResolve hook: Create and start span
    */
   function beforeResolve(ctx: ResolutionHookContext): void {
-    // Inline filter checks for performance
-    if (!evaluatePortFilter(opts.portFilter, ctx.portName)) {
-      return;
-    }
-    if (ctx.isCacheHit && !opts.traceCachedResolutions) {
-      return;
-    }
-
-    // Early bailout: skip attribute construction for NoOp tracer
-    if (!tracer.isEnabled()) {
-      return;
+    // Fast path: skip filter evaluation when no filtering is configured
+    if (!alwaysTrace) {
+      if (!evaluatePortFilter(opts.portFilter, ctx.portName)) {
+        return;
+      }
+      if (ctx.isCacheHit && !opts.traceCachedResolutions) {
+        return;
+      }
     }
 
     // Build attributes only after bailout check passes
@@ -207,17 +210,14 @@ export function createTracingHook(
    * so re-evaluation is correct.
    */
   function afterResolve(ctx: ResolutionResultContext): void {
-    // Inline filter checks for performance (must match beforeResolve)
-    if (!evaluatePortFilter(opts.portFilter, ctx.portName)) {
-      return;
-    }
-    if (ctx.isCacheHit && !opts.traceCachedResolutions) {
-      return;
-    }
-
-    // Early bailout: no span to pop if tracer is disabled
-    if (!tracer.isEnabled()) {
-      return;
+    // Fast path: skip filter evaluation when no filtering is configured
+    if (!alwaysTrace) {
+      if (!evaluatePortFilter(opts.portFilter, ctx.portName)) {
+        return;
+      }
+      if (ctx.isCacheHit && !opts.traceCachedResolutions) {
+        return;
+      }
     }
 
     // Pop the span that the matching beforeResolve pushed.

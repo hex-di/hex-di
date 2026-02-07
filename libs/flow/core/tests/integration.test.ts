@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { port, createPort, createAdapter, type InferService } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "@hex-di/runtime";
 import { createMachine } from "../src/machine/create-machine.js";
@@ -19,11 +19,7 @@ import { event } from "../src/machine/factories.js";
 import { Effect } from "../src/effects/constructors.js";
 import { createMachineRunner } from "../src/runner/create-runner.js";
 import { createActivityManager } from "../src/activities/manager.js";
-import {
-  createDIEffectExecutor,
-  type FlowService,
-  type ScopeResolver,
-} from "../src/integration/index.js";
+import { createDIEffectExecutor, type FlowService } from "../src/integration/index.js";
 
 // =============================================================================
 // Test Service Interfaces and Ports
@@ -64,7 +60,7 @@ function createCounterService(): CounterService {
   };
 }
 
-const CounterServiceAdapter = createAdapter({
+const _CounterServiceAdapter = createAdapter({
   provides: CounterServicePort,
   requires: [] as const,
   lifetime: "scoped",
@@ -86,7 +82,7 @@ interface TestMachineContext {
 // Event helpers
 const startEvent = event<"START">("START");
 const stopEvent = event<"STOP">("STOP");
-const incrementEvent = event<"INCREMENT">("INCREMENT");
+const _incrementEvent = event<"INCREMENT">("INCREMENT");
 const goEvent = event<"GO">("GO");
 
 // =============================================================================
@@ -169,6 +165,7 @@ const SimpleFlowServiceAdapter = createAdapter({
       },
     };
   },
+  finalizer: flowService => flowService.dispose(),
 });
 
 // =============================================================================
@@ -282,7 +279,7 @@ describe("HexDI Integration", () => {
       void container.dispose();
     });
 
-    it.skip("should dispose machine when scope is disposed", async () => {
+    it("should dispose machine when scope is disposed", async () => {
       const graph = GraphBuilder.create().provide(SimpleFlowServiceAdapter).build();
 
       const container = createContainer({ graph, name: "TestContainer" });

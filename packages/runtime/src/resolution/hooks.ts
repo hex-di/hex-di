@@ -146,12 +146,26 @@ export interface ResolutionHookContext {
    * Used to trace the container hierarchy.
    */
   readonly parentContainerId: string | null;
+
+  /**
+   * Duration of the resolution in milliseconds.
+   * 0 before resolution completes, set after resolution.
+   */
+  readonly duration: number;
+
+  /**
+   * Error thrown during resolution, or null on success.
+   * null before resolution completes, set after resolution.
+   */
+  readonly error: Error | null;
 }
 
 /**
- * Extended context provided to afterResolve hook after resolution completes.
+ * Context provided to afterResolve hook after resolution completes.
  *
- * Includes all properties from ResolutionHookContext plus timing and error info.
+ * This is the same as ResolutionHookContext — the `duration` and `error`
+ * fields are set after resolution completes by mutating the context in-place
+ * (avoiding a spread allocation per resolution).
  *
  * @remarks
  * - `duration` is measured using `Date.now()` for cross-platform compatibility
@@ -171,20 +185,7 @@ export interface ResolutionHookContext {
  * };
  * ```
  */
-export interface ResolutionResultContext extends ResolutionHookContext {
-  /**
-   * Duration of the resolution in milliseconds.
-   * Measured from before adapter lookup to after factory completion.
-   * Includes time spent resolving dependencies.
-   */
-  readonly duration: number;
-
-  /**
-   * Error thrown during resolution, or null on success.
-   * Can be CircularDependencyError, FactoryError, etc.
-   */
-  readonly error: Error | null;
-}
+export type ResolutionResultContext = ResolutionHookContext;
 
 // =============================================================================
 // Resolution Hooks Interface

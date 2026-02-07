@@ -17,7 +17,7 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { port, createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import {
   // Activity Ports
   activityPort,

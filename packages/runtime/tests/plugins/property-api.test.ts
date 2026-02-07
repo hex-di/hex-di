@@ -12,7 +12,6 @@ import { describe, it, expect, vi, expectTypeOf } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../../src/container/factory.js";
-import type { Container, InferContainerProvides } from "../../src/types.js";
 import type { InspectorAPI } from "../../src/inspection/types.js";
 
 // =============================================================================

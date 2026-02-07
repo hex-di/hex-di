@@ -10,10 +10,92 @@
  * @packageDocumentation
  */
 
-import type { Port, AdapterConstraint, InferAdapterProvides } from "@hex-di/core";
-import { GraphBuilder, type Graph } from "@hex-di/graph";
+import type { Port, AdapterConstraint } from "@hex-di/core";
+import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
 import type { Container } from "../types/container.js";
 import type { ValidateOverrideAdapter } from "../types/override-types.js";
+
+/**
+ * Graph structure for override operations.
+ *
+ * Uses `declare` for phantom types to satisfy Graph interface constraint
+ * without requiring runtime values. This follows the same pattern as
+ * GraphBuilder's phantom type properties.
+ *
+ * Since overrides only replace existing implementations (no new ports),
+ * all phantom types are `never`.
+ *
+ * @internal
+ */
+class OverrideGraph {
+  readonly adapters: readonly AdapterConstraint[];
+  readonly overridePortNames: ReadonlySet<string>;
+
+  // Phantom properties for type inference via InferGraph* utilities.
+  // These exist at the type level only - no runtime value needed.
+  declare readonly __provides: never;
+  declare readonly __asyncPorts: never;
+  declare readonly __overrides: never;
+
+  constructor(adapters: readonly AdapterConstraint[]) {
+    const portNames = new Set(adapters.map(a => a.provides.__portName));
+    this.adapters = Object.freeze([...adapters]);
+    this.overridePortNames = portNames;
+    Object.freeze(this);
+  }
+}
+
+/**
+ * Thunk type for lazy container access.
+ * Zero runtime overhead - just a function call.
+ * This pattern solves the self-reference problem in a fully type-safe way.
+ *
+ * @typeParam T - The container type being accessed lazily
+ * @internal
+ */
+type ContainerThunk<T> = () => T;
+
+/**
+ * Minimal container interface required by OverrideBuilder.
+ *
+ * This interface captures only what OverrideBuilder needs from a container,
+ * allowing it to work with both root containers (`TExtends = never`) and
+ * child containers (`TExtends` != `never`).
+ *
+ * The key insight is that OverrideBuilder only needs:
+ * 1. The container name (for naming the override child)
+ * 2. The createChild method (to create the override child container)
+ *
+ * By using this minimal interface instead of full `Container<..., never, ...>`,
+ * we avoid the type mismatch with the `parent` property that differs between
+ * root containers (parent: never) and child containers (parent: Container).
+ *
+ * The `createChild` method is generic to match the actual container's signature.
+ * When called with `OverrideGraph` (which has `__provides: never` and `__asyncPorts: never`),
+ * TypeScript will correctly compute:
+ * - `Exclude<never, TProvides>` = `never`
+ * - `TAsyncPorts | never` = `TAsyncPorts`
+ *
+ * @typeParam TProvides - Union of port types the container provides
+ * @typeParam TAsyncPorts - Union of async port types
+ */
+export interface ContainerForOverride<
+  TProvides extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string>,
+> {
+  readonly name: string;
+  createChild<
+    TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+  >(
+    childGraph: TChildGraph,
+    options: { readonly name: string }
+  ): Container<
+    TProvides,
+    Exclude<InferGraphProvides<TChildGraph>, TProvides>,
+    TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
+    "initialized"
+  >;
+}
 
 /**
  * Immutable builder for creating type-safe container overrides.
@@ -81,11 +163,16 @@ export class OverrideBuilder<
   declare private readonly __phase: TPhase;
 
   /**
-   * Reference to the base container.
-   * Used to access the graph and create child containers.
+   * Thunk to lazily access the base container.
+   * Using a thunk solves the self-reference problem type-safely.
+   *
+   * Uses `ContainerForOverride` instead of full `Container` type to allow
+   * both root and child containers to use the override API without type
+   * conflicts from the `parent` property.
+   *
    * @internal
    */
-  private readonly container: Container<TProvides, never, TAsyncPorts, TPhase>;
+  private readonly getContainer: ContainerThunk<ContainerForOverride<TProvides, TAsyncPorts>>;
 
   /**
    * Accumulated adapters for override graph.
@@ -100,17 +187,25 @@ export class OverrideBuilder<
   private readonly containerName: string;
 
   /**
-   * Private constructor to enforce immutable pattern.
+   * Constructor using thunk pattern for lazy container access.
+   *
+   * The thunk pattern allows the container to reference itself in the
+   * override method without forward reference issues or type casts.
+   *
+   * @param getContainer - Thunk that returns the container (uses minimal interface)
+   * @param adapters - Accumulated adapters for override
+   * @param containerName - Optional name for the child container
    * @internal
    */
   constructor(
-    container: Container<TProvides, never, TAsyncPorts, TPhase>,
+    getContainer: ContainerThunk<ContainerForOverride<TProvides, TAsyncPorts>>,
     adapters: readonly AdapterConstraint[] = [],
     containerName?: string
   ) {
-    this.container = container;
+    this.getContainer = getContainer;
     this.adapters = Object.freeze([...adapters]);
-    this.containerName = containerName ?? `${container.name}-override`;
+    // Lazily get container name only when needed
+    this.containerName = containerName ?? `${getContainer().name}-override`;
     Object.freeze(this);
   }
 
@@ -139,18 +234,22 @@ export class OverrideBuilder<
     ? OverrideBuilder<TProvides, TOverrides, TAsyncPorts, TPhase>
     : ValidateOverrideAdapter<TProvides, A>;
   override<A extends AdapterConstraint>(adapter: A): unknown {
-    return new OverrideBuilder(this.container, [...this.adapters, adapter], this.containerName);
+    return new OverrideBuilder(this.getContainer, [...this.adapters, adapter], this.containerName);
   }
 
   /**
    * Builds the child container with accumulated overrides.
    *
    * Creates:
-   * 1. An override graph fragment using GraphBuilder
+   * 1. An override graph with all adapters marked as overrides
    * 2. A child container from the base container with that graph
    *
    * The child container inherits all parent ports but resolves
    * overridden ports using the provided adapters.
+   *
+   * Since overrides replace existing implementations (not new ports),
+   * the child container has the same `TProvides` as the parent with
+   * `TExtends = never`.
    *
    * @returns Child Container with overrides applied
    *
@@ -164,31 +263,18 @@ export class OverrideBuilder<
    * // Returns mock instance from MockLoggerAdapter
    * ```
    */
-  build(): Container<TProvides, TOverrides, TAsyncPorts, "initialized"> {
-    // Create a minimal Graph-like object for forParent type tracking
-    // We only need the type parameters, not the full implementation
-    const parentGraphLike = {} as Graph<TProvides, TAsyncPorts, never>;
+  build(): Container<TProvides, never, TAsyncPorts, "initialized"> {
+    // Create override graph with all adapters marked as overrides.
+    // OverrideGraph uses `declare` for phantom types, satisfying Graph
+    // interface constraint without runtime values or casts.
+    const overrideGraph = new OverrideGraph(this.adapters);
 
-    // Build override graph fragment using GraphBuilder
-    // Type assertions are safe because we validated all ports exist at compile time in override()
-    let builder = GraphBuilder.forParent(parentGraphLike) as unknown;
-
-    // Add all adapters as overrides
-    for (const adapter of this.adapters) {
-      builder = (builder as { override(a: AdapterConstraint): unknown }).override(adapter);
-    }
-
-    // Build the fragment
-    const overrideGraph = (
-      builder as {
-        buildFragment(): Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>;
-      }
-    ).buildFragment();
-
-    // Create child container with override graph
-    // Type assertion is safe because we validated all ports exist at compile time
-    return this.container.createChild(overrideGraph, {
+    // Get the container and create child with override graph
+    const container = this.getContainer();
+    const childContainer = container.createChild(overrideGraph, {
       name: this.containerName,
-    }) as unknown as Container<TProvides, TOverrides, TAsyncPorts, "initialized">;
+    });
+
+    return childContainer;
   }
 }

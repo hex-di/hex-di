@@ -65,7 +65,7 @@ function buildContainer(disposalLog: string[]) {
     .provide(asyncValueAdapter)
     .build();
 
-  return createContainer(graph, { name: "TestContainer" });
+  return createContainer({ graph, name: "TestContainer" });
 }
 
 describe("@hex-di/hono", () => {

@@ -11,12 +11,7 @@
 
 import type { Port } from "@hex-di/core";
 import type { Lifetime } from "@hex-di/core";
-import type {
-  ResolutionHooks,
-  ResolutionHookContext,
-  ResolutionResultContext,
-  ContainerKind,
-} from "./hooks.js";
+import type { ResolutionHooks, ResolutionHookContext, ContainerKind } from "./hooks.js";
 import type { InheritanceMode } from "../types.js";
 import type { MemoMap } from "../util/memo-map.js";
 
@@ -57,14 +52,29 @@ export interface ResolutionMetadata {
   readonly inheritanceMode: InheritanceMode | null;
 }
 
+// =============================================================================
+// Mutable context type used internally
+// =============================================================================
+
 /**
- * Entry in the parent resolution stack.
- * Tracks which port triggered the current resolution and when.
+ * Internal mutable version of ResolutionHookContext.
+ * The public interface is readonly, but we mutate in-place to avoid spreading.
  * @internal
  */
-interface ParentStackEntry {
-  readonly port: Port<unknown, string>;
-  readonly startTime: number;
+interface MutableHookContext {
+  port: Port<unknown, string>;
+  portName: string;
+  lifetime: Lifetime;
+  scopeId: string | null;
+  parentPort: Port<unknown, string> | null;
+  isCacheHit: boolean;
+  depth: number;
+  containerId: string;
+  containerKind: ContainerKind;
+  inheritanceMode: InheritanceMode | null;
+  parentContainerId: string | null;
+  duration: number;
+  error: Error | null;
 }
 
 // =============================================================================
@@ -98,10 +108,11 @@ interface ParentStackEntry {
  */
 export class HooksRunner {
   /**
-   * Stack tracking parent resolutions for depth calculation.
-   * Entries are pushed before resolution and popped after.
+   * Parallel arrays for parent stack tracking.
+   * Avoids allocating ParentStackEntry objects per resolution.
    */
-  private readonly parentStack: ParentStackEntry[] = [];
+  private readonly _parentPorts: Port<unknown, string>[] = [];
+  private readonly _parentStartTimes: number[] = [];
 
   /**
    * Creates a new HooksRunner instance.
@@ -140,14 +151,15 @@ export class HooksRunner {
     inheritanceMode: InheritanceMode | null,
     action: () => T
   ): T {
-    const context = this.createContext(port, adapter, scopeId, isCacheHit, inheritanceMode);
+    const context = this._createContext(port, adapter, scopeId, isCacheHit, inheritanceMode);
 
     if (this.hooks.beforeResolve !== undefined) {
       this.hooks.beforeResolve(context);
     }
 
     const startTime = Date.now();
-    this.parentStack.push({ port, startTime });
+    this._parentPorts.push(port);
+    this._parentStartTimes.push(startTime);
 
     let error: Error | null = null;
     try {
@@ -156,7 +168,7 @@ export class HooksRunner {
       error = e instanceof Error ? e : new Error(String(e));
       throw e;
     } finally {
-      this.emitAfterResolve(context, startTime, error);
+      this._emitAfterResolve(context, startTime, error);
     }
   }
 
@@ -182,14 +194,15 @@ export class HooksRunner {
     inheritanceMode: InheritanceMode | null,
     action: () => Promise<T>
   ): Promise<T> {
-    const context = this.createContext(port, adapter, scopeId, isCacheHit, inheritanceMode);
+    const context = this._createContext(port, adapter, scopeId, isCacheHit, inheritanceMode);
 
     if (this.hooks.beforeResolve !== undefined) {
       this.hooks.beforeResolve(context);
     }
 
     const startTime = Date.now();
-    this.parentStack.push({ port, startTime });
+    this._parentPorts.push(port);
+    this._parentStartTimes.push(startTime);
 
     let error: Error | null = null;
     return action()
@@ -198,7 +211,7 @@ export class HooksRunner {
         throw err;
       })
       .finally(() => {
-        this.emitAfterResolve(context, startTime, error);
+        this._emitAfterResolve(context, startTime, error);
       });
   }
 
@@ -208,50 +221,51 @@ export class HooksRunner {
 
   /**
    * Creates the resolution hook context from current state.
+   * Initializes duration=0 and error=null for later in-place mutation.
    */
-  private createContext(
+  private _createContext(
     port: Port<unknown, string>,
     adapter: AdapterInfo,
     scopeId: string | null,
     isCacheHit: boolean,
     inheritanceMode: InheritanceMode | null
-  ): ResolutionHookContext {
-    const parentEntry =
-      this.parentStack.length > 0 ? this.parentStack[this.parentStack.length - 1] : null;
+  ): MutableHookContext {
+    const len = this._parentPorts.length;
+    const parentPort = len > 0 ? this._parentPorts[len - 1] : null;
 
     return {
       port,
       portName: port.__portName,
       lifetime: adapter.lifetime,
       scopeId,
-      parentPort: parentEntry?.port ?? null,
+      parentPort: parentPort ?? null,
       isCacheHit,
-      depth: this.parentStack.length,
+      depth: len,
       containerId: this.containerMetadata.containerId,
       containerKind: this.containerMetadata.containerKind,
       inheritanceMode,
       parentContainerId: this.containerMetadata.parentContainerId,
+      duration: 0,
+      error: null,
     };
   }
 
   /**
-   * Emits the afterResolve hook with timing and error info.
+   * Emits the afterResolve hook by mutating context in-place (no spread).
    */
-  private emitAfterResolve(
-    context: ResolutionHookContext,
+  private _emitAfterResolve(
+    context: MutableHookContext,
     startTime: number,
     error: Error | null
   ): void {
-    this.parentStack.pop();
-    const duration = Date.now() - startTime;
+    this._parentPorts.pop();
+    this._parentStartTimes.pop();
 
     if (this.hooks.afterResolve !== undefined) {
-      const resultContext: ResolutionResultContext = {
-        ...context,
-        duration,
-        error,
-      };
-      this.hooks.afterResolve(resultContext);
+      // Mutate in-place instead of creating new object via spread
+      context.duration = Date.now() - startTime;
+      context.error = error;
+      this.hooks.afterResolve(context as ResolutionHookContext);
     }
   }
 }

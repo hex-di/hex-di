@@ -96,23 +96,23 @@ describe("activityPort factory creates correctly branded type", () => {
 
 describe("ActivityInput extracts input type", () => {
   it("extracts input type from ActivityPort", () => {
-    const FetchUserPort = activityPort<FetchUserInput, User>()("FetchUser");
+    const _FetchUserPort = activityPort<FetchUserInput, User>()("FetchUser");
 
-    type ExtractedInput = ActivityInput<typeof FetchUserPort>;
+    type ExtractedInput = ActivityInput<typeof _FetchUserPort>;
     expectTypeOf<ExtractedInput>().toEqualTypeOf<FetchUserInput>();
   });
 
   it("extracts void input type", () => {
-    const StartPort = activityPort<void, string>()("Start");
+    const _StartPort = activityPort<void, string>()("Start");
 
-    type ExtractedInput = ActivityInput<typeof StartPort>;
+    type ExtractedInput = ActivityInput<typeof _StartPort>;
     expectTypeOf<ExtractedInput>().toEqualTypeOf<void>();
   });
 
   it("extracts complex input type", () => {
-    const PollingPort = activityPort<PollingInput, PollingResult>()("Polling");
+    const _PollingPort = activityPort<PollingInput, PollingResult>()("Polling");
 
-    type ExtractedInput = ActivityInput<typeof PollingPort>;
+    type ExtractedInput = ActivityInput<typeof _PollingPort>;
     expectTypeOf<ExtractedInput>().toEqualTypeOf<PollingInput>();
   });
 
@@ -131,23 +131,23 @@ describe("ActivityInput extracts input type", () => {
 
 describe("ActivityOutput extracts output type", () => {
   it("extracts output type from ActivityPort", () => {
-    const FetchUserPort = activityPort<FetchUserInput, User>()("FetchUser");
+    const _FetchUserPort = activityPort<FetchUserInput, User>()("FetchUser");
 
-    type ExtractedOutput = ActivityOutput<typeof FetchUserPort>;
+    type ExtractedOutput = ActivityOutput<typeof _FetchUserPort>;
     expectTypeOf<ExtractedOutput>().toEqualTypeOf<User>();
   });
 
   it("extracts void output type", () => {
-    const LogPort = activityPort<string, void>()("Log");
+    const _LogPort = activityPort<string, void>()("Log");
 
-    type ExtractedOutput = ActivityOutput<typeof LogPort>;
+    type ExtractedOutput = ActivityOutput<typeof _LogPort>;
     expectTypeOf<ExtractedOutput>().toEqualTypeOf<void>();
   });
 
   it("extracts complex output type", () => {
-    const PollingPort = activityPort<PollingInput, PollingResult>()("Polling");
+    const _PollingPort = activityPort<PollingInput, PollingResult>()("Polling");
 
-    type ExtractedOutput = ActivityOutput<typeof PollingPort>;
+    type ExtractedOutput = ActivityOutput<typeof _PollingPort>;
     expectTypeOf<ExtractedOutput>().toEqualTypeOf<PollingResult>();
   });
 
@@ -173,14 +173,14 @@ describe("ActivityPort is assignable to Port type", () => {
   });
 
   it("can be used where Port is expected", () => {
-    const FetchUserPort = activityPort<FetchUserInput, User>()("FetchUser");
+    const _FetchUserPort = activityPort<FetchUserInput, User>()("FetchUser");
 
     // Should be usable in a function expecting Port
     type AcceptsPort<P extends Port<unknown, string>> = P;
 
     // This should compile without error
-    type Result = AcceptsPort<typeof FetchUserPort>;
-    expectTypeOf<Result>().toEqualTypeOf<typeof FetchUserPort>();
+    type Result = AcceptsPort<typeof _FetchUserPort>;
+    expectTypeOf<Result>().toEqualTypeOf<typeof _FetchUserPort>();
   });
 
   it("ActivityPort type alias matches Port structure", () => {
@@ -283,10 +283,10 @@ describe("phantom properties __activityInput and __activityOutput exist at type 
   });
 
   it("created ports have phantom properties at type level", () => {
-    const FetchUserPort = activityPort<FetchUserInput, User>()("FetchUser");
+    const _FetchUserPort = activityPort<FetchUserInput, User>()("FetchUser");
 
     // The phantom properties should be accessible on typeof
-    type PortType = typeof FetchUserPort;
+    type PortType = typeof _FetchUserPort;
 
     expectTypeOf<PortType["__activityInput"]>().toEqualTypeOf<FetchUserInput>();
     expectTypeOf<PortType["__activityOutput"]>().toEqualTypeOf<User>();
@@ -299,8 +299,8 @@ describe("phantom properties __activityInput and __activityOutput exist at type 
 
 describe("type utilities work together correctly", () => {
   it("ActivityInput and ActivityOutput can reconstruct activity type", () => {
-    const FetchUserPort = activityPort<FetchUserInput, User>()("FetchUser");
-    type PortType = typeof FetchUserPort;
+    const _FetchUserPort = activityPort<FetchUserInput, User>()("FetchUser");
+    type PortType = typeof _FetchUserPort;
 
     type Input = ActivityInput<PortType>;
     type Output = ActivityOutput<PortType>;
@@ -311,8 +311,8 @@ describe("type utilities work together correctly", () => {
   });
 
   it("phantom properties and utility types produce same results", () => {
-    const TestPort = activityPort<PollingInput, PollingResult>()("Test");
-    type PortType = typeof TestPort;
+    const _TestPort = activityPort<PollingInput, PollingResult>()("Test");
+    type PortType = typeof _TestPort;
 
     // Via phantom properties
     type InputViaPhantom = PortType["__activityInput"];

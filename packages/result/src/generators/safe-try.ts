@@ -1,0 +1,89 @@
+import type { Result, Err, ResultAsync } from "../core/types.js";
+import { err } from "../core/result.js";
+import { ResultAsyncImpl } from "../async/result-async.js";
+
+/**
+ * safeTry uses JavaScript generators to emulate Rust's `?` operator.
+ * Inside a safeTry block, `yield*` on a Result either extracts the
+ * Ok value or early-returns the Err.
+ *
+ * Sync overload: generator function returns Result<T, E>
+ * Async overload: async generator function returns ResultAsync<T, E>
+ */
+
+/** Extract E from Err<never, E> or union of Err<never, E1> | Err<never, E2> */
+type ExtractErrType<Y> = Y extends Err<never, infer E> ? E : never;
+
+// Sync overload — T from return, E from both yield and return
+export function safeTry<Y extends Err<never, unknown>, T, RE>(
+  generator: () => Generator<Y, Result<T, RE>, unknown>
+): Result<T, ExtractErrType<Y> | RE>;
+
+// Async overload
+export function safeTry<Y extends Err<never, unknown>, T, RE>(
+  generator: () => AsyncGenerator<Y, Result<T, RE>, unknown>
+): ResultAsync<T, ExtractErrType<Y> | RE>;
+
+// Implementation
+export function safeTry(
+  generator: () =>
+    | Generator<Err<never, unknown>, Result<unknown, unknown>, unknown>
+    | AsyncGenerator<Err<never, unknown>, Result<unknown, unknown>, unknown>
+): Result<unknown, unknown> | ResultAsync<unknown, unknown> {
+  const gen = generator();
+
+  // AsyncGenerator has Symbol.asyncIterator; sync Generator does not
+  if (isAsyncGenerator(gen)) {
+    return runAsync(gen);
+  }
+
+  return runSync(gen);
+}
+
+function isAsyncGenerator(
+  gen:
+    | Generator<Err<never, unknown>, Result<unknown, unknown>, unknown>
+    | AsyncGenerator<Err<never, unknown>, Result<unknown, unknown>, unknown>
+): gen is AsyncGenerator<Err<never, unknown>, Result<unknown, unknown>, unknown> {
+  return Symbol.asyncIterator in gen;
+}
+
+function runSync(
+  gen: Generator<Err<never, unknown>, Result<unknown, unknown>, unknown>
+): Result<unknown, unknown> {
+  for (;;) {
+    const next = gen.next();
+
+    if (next.done) {
+      return next.value;
+    }
+
+    // The yielded value is an Err — early return
+    const yieldedErr = next.value;
+    // Tell the generator to clean up (run finally blocks)
+    gen.return(err(yieldedErr.error));
+    return err(yieldedErr.error);
+  }
+}
+
+function runAsync(
+  gen: AsyncGenerator<Err<never, unknown>, Result<unknown, unknown>, unknown>
+): ResultAsync<unknown, unknown> {
+  const promise = (async (): Promise<Result<unknown, unknown>> => {
+    for (;;) {
+      const next = await gen.next();
+
+      if (next.done) {
+        return next.value;
+      }
+
+      // The yielded value is an Err — early return
+      const yieldedErr = next.value;
+      // Tell the generator to clean up (run finally blocks)
+      await gen.return(err(yieldedErr.error));
+      return err(yieldedErr.error);
+    }
+  })();
+
+  return ResultAsyncImpl.fromSafePromise(promise).andThen(result => result);
+}

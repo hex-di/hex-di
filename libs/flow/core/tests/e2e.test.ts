@@ -17,7 +17,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { port, createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { createMachine } from "../src/machine/create-machine.js";
 import { event } from "../src/machine/factories.js";
 import { Effect } from "../src/effects/constructors.js";

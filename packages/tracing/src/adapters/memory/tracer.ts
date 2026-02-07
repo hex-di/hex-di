@@ -8,9 +8,15 @@
  */
 
 import type { Tracer } from "../../ports/tracer.js";
-import type { Span, SpanOptions, SpanContext, SpanData, Attributes } from "../../types/index.js";
+import type {
+  Span,
+  SpanOptions,
+  SpanContext,
+  SpanData,
+  Attributes,
+  AttributeValue,
+} from "../../types/index.js";
 import { MemorySpan } from "./span.js";
-import { ObjectPool } from "../../utils/index.js";
 
 /**
  * MemoryTracer - In-memory implementation of the Tracer interface.
@@ -52,11 +58,8 @@ export class MemoryTracer implements Tracer {
   /** Current size of circular buffer */
   private _size = 0;
 
-  /** Map-based stack of active spans for O(1) operations */
-  private readonly _spanStack = new Map<number, Span>();
-
-  /** Current depth in span stack */
-  private _stackDepth = 0;
+  /** Array-based stack of active spans (push/pop are O(1)) */
+  private readonly _spanStack: Span[] = [];
 
   /** Maximum number of spans to retain (FIFO eviction) */
   private readonly _maxSpans: number;
@@ -64,8 +67,11 @@ export class MemoryTracer implements Tracer {
   /** Default attributes applied to all spans */
   private readonly _defaultAttributes: Attributes;
 
-  /** Object pool for span reuse to reduce allocation overhead */
-  private readonly _spanPool: ObjectPool<MemorySpan>;
+  /** Whether default attributes are non-empty (skip merge when false) */
+  private readonly _hasDefaultAttributes: boolean;
+
+  /** Bound onEnd callback to avoid creating closures per span */
+  private readonly _onSpanEnd: (spanData: SpanData) => void;
 
   /**
    * Creates a new MemoryTracer.
@@ -77,11 +83,8 @@ export class MemoryTracer implements Tracer {
     this._maxSpans = maxSpans;
     this._spans = new Array(maxSpans);
     this._defaultAttributes = defaultAttributes;
-    this._spanPool = new ObjectPool<MemorySpan>(
-      () => new MemorySpan(),
-      span => span.reset(),
-      1000 // Pool up to 1000 spans
-    );
+    this._hasDefaultAttributes = Object.keys(defaultAttributes).length > 0;
+    this._onSpanEnd = this._collectSpan.bind(this);
   }
 
   /**
@@ -98,29 +101,42 @@ export class MemoryTracer implements Tracer {
     // Determine parent context
     const parentContext = options?.root ? undefined : this.getSpanContext();
 
-    // Merge default attributes with span attributes
-    const mergedAttributes = {
-      ...this._defaultAttributes,
-      ...(options?.attributes ?? {}),
-    };
+    // Determine final attributes — avoid spread/merge when possible
+    let attributes: Attributes | undefined;
+    if (this._hasDefaultAttributes) {
+      // Merge default attributes with span attributes using for...in
+      const merged: Record<string, AttributeValue> = {};
+      const defaults = this._defaultAttributes;
+      for (const key in defaults) {
+        merged[key] = defaults[key];
+      }
+      const optAttrs = options?.attributes;
+      if (optAttrs !== undefined) {
+        for (const key in optAttrs) {
+          merged[key] = optAttrs[key];
+        }
+      }
+      attributes = merged;
+    } else {
+      attributes = options?.attributes;
+    }
 
-    const mergedOptions: SpanOptions = {
-      ...options,
-      attributes: mergedAttributes,
-    };
+    // Create span directly (no pool)
+    const span = new MemorySpan();
 
-    // Acquire span from pool
-    const span = this._spanPool.acquire();
+    // Initialize span with individual params (no options object)
+    span.init(
+      name,
+      parentContext,
+      options?.kind ?? "internal",
+      attributes,
+      options?.links,
+      options?.startTime,
+      this._onSpanEnd
+    );
 
-    // Initialize span with onEnd callback that collects data and releases span
-    span.init(name, parentContext, mergedOptions, spanData => {
-      this._collectSpan(spanData);
-      // Release span back to pool after data is collected
-      this._spanPool.release(span);
-    });
-
-    // Push to active span stack (O(1) with Map)
-    this._spanStack.set(this._stackDepth++, span);
+    // Push to active span stack
+    this._spanStack.push(span);
 
     return span;
   }
@@ -193,10 +209,11 @@ export class MemoryTracer implements Tracer {
    * @returns The active span, or undefined if no span is active
    */
   getActiveSpan(): Span | undefined {
-    if (this._stackDepth === 0) {
+    const len = this._spanStack.length;
+    if (len === 0) {
       return undefined;
     }
-    return this._spanStack.get(this._stackDepth - 1);
+    return this._spanStack[len - 1];
   }
 
   /**
@@ -219,11 +236,15 @@ export class MemoryTracer implements Tracer {
    * @returns A new tracer instance with the attributes applied
    */
   withAttributes(attributes: Attributes): Tracer {
-    const mergedAttributes = {
-      ...this._defaultAttributes,
-      ...attributes,
-    };
-    return new MemoryTracer(this._maxSpans, mergedAttributes);
+    const merged: Record<string, AttributeValue> = {};
+    const defaults = this._defaultAttributes;
+    for (const key in defaults) {
+      merged[key] = defaults[key];
+    }
+    for (const key in attributes) {
+      merged[key] = attributes[key];
+    }
+    return new MemoryTracer(this._maxSpans, merged);
   }
 
   /**
@@ -269,8 +290,7 @@ export class MemoryTracer implements Tracer {
     this._spans.fill(undefined);
 
     // Reset span stack
-    this._spanStack.clear();
-    this._stackDepth = 0;
+    this._spanStack.length = 0;
   }
 
   /**
@@ -302,15 +322,18 @@ export class MemoryTracer implements Tracer {
    * @internal
    */
   private _popSpan(span: Span): void {
-    // Find the span in the stack
-    for (const [depth, stackSpan] of this._spanStack.entries()) {
-      if (stackSpan === span) {
-        this._spanStack.delete(depth);
-        // Only decrement if it's the top of the stack
-        if (depth === this._stackDepth - 1) {
-          this._stackDepth--;
-        }
-        break;
+    const stack = this._spanStack;
+    const len = stack.length;
+    // Fast path: span is at the top of the stack (most common case)
+    if (len > 0 && stack[len - 1] === span) {
+      stack.pop();
+      return;
+    }
+    // Slow path: find and remove from middle
+    for (let i = len - 2; i >= 0; i--) {
+      if (stack[i] === span) {
+        stack.splice(i, 1);
+        return;
       }
     }
   }

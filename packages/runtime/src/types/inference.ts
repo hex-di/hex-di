@@ -10,7 +10,6 @@
 import type { Port, InferService } from "@hex-di/core";
 import type { Container } from "./container.js";
 import type { Scope } from "./scope.js";
-import type { ContainerPhase } from "./options.js";
 
 // =============================================================================
 // Type Utility Functions

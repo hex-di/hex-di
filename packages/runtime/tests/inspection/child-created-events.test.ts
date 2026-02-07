@@ -112,8 +112,8 @@ describe("child-created events - createChild", () => {
       )
       .build();
 
-    const child1 = root.createChild(childGraph1, { name: "Child1" });
-    const child2 = root.createChild(childGraph2, { name: "Child2" });
+    root.createChild(childGraph1, { name: "Child1" });
+    root.createChild(childGraph2, { name: "Child2" });
 
     const childCreatedEvents = events.filter(e => e.type === "child-created");
     expect(childCreatedEvents).toHaveLength(2);

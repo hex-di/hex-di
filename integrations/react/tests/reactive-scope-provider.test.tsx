@@ -38,7 +38,7 @@ const TestServiceAdapter = createAdapter({
 
 function createTestContainer() {
   const graph = GraphBuilder.create().provide(TestServiceAdapter).build();
-  return createContainer(graph, { name: "TestContainer" });
+  return createContainer({ graph, name: "TestContainer" });
 }
 
 // =============================================================================

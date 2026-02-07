@@ -13,7 +13,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { port, createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { activityPort } from "../../src/activities/port.js";
 import { defineEvents } from "../../src/activities/events.js";
 import { activity } from "../../src/activities/factory.js";
@@ -241,26 +241,26 @@ describe("AssertUniqueActivityPorts type utility", () => {
 
   it("returns error type for duplicate ports", () => {
     // Create two activities with the same port name
-    const DuplicateActivity1 = activity(TaskActivityPort, {
+    const _DuplicateActivity1 = activity(TaskActivityPort, {
       requires: [ApiPort],
       emits: TaskEvents,
       execute: async () => ({ result: "a" }),
     });
 
-    const DuplicateActivity2 = activity(TaskActivityPort, {
+    const _DuplicateActivity2 = activity(TaskActivityPort, {
       requires: [LoggerPort],
       emits: TaskEvents,
       execute: async () => ({ result: "b" }),
     });
 
-    type Activities = readonly [typeof DuplicateActivity1, typeof DuplicateActivity2];
+    type Activities = readonly [typeof _DuplicateActivity1, typeof _DuplicateActivity2];
     type Result = AssertUniqueActivityPorts<Activities>;
 
     expectTypeOf<Result>().toMatchTypeOf<DuplicateActivityPortError<"TaskActivity">>();
   });
 
   it("detects duplicate in middle of array", () => {
-    const DuplicateFetch = activity(FetchActivityPort, {
+    const _DuplicateFetch = activity(FetchActivityPort, {
       requires: [],
       emits: FetchEvents,
       execute: async () => new Response(),
@@ -269,7 +269,7 @@ describe("AssertUniqueActivityPorts type utility", () => {
     type Activities = readonly [
       typeof TaskActivity,
       typeof FetchActivity,
-      typeof DuplicateFetch, // Duplicate of FetchActivity
+      typeof _DuplicateFetch, // Duplicate of FetchActivity
     ];
     type Result = AssertUniqueActivityPorts<Activities>;
 
@@ -290,15 +290,15 @@ describe("Activities array type constraints", () => {
   });
 
   it("array of activities is assignable to readonly ConfiguredActivityAny[]", () => {
-    const activities = [TaskActivity, FetchActivity] as const;
+    const _activities = [TaskActivity, FetchActivity] as const;
 
-    expectTypeOf(activities).toMatchTypeOf<readonly ConfiguredActivityAny[]>();
+    expectTypeOf(_activities).toMatchTypeOf<readonly ConfiguredActivityAny[]>();
   });
 
   it("preserves tuple types for activities array", () => {
-    const activities = [TaskActivity, FetchActivity] as const;
+    const _activities = [TaskActivity, FetchActivity] as const;
 
-    type ActivitiesType = typeof activities;
+    type ActivitiesType = typeof _activities;
     expectTypeOf<ActivitiesType>().toEqualTypeOf<
       readonly [typeof TaskActivity, typeof FetchActivity]
     >();
@@ -403,16 +403,16 @@ describe("Edge cases for activity validation", () => {
 
   it("handles activity with many requirements", () => {
     // Create activity with many requirements
-    const ManyDepsActivity = activity(activityPort<void, void>()("ManyDeps"), {
+    const _ManyDepsActivity = activity(activityPort<void, void>()("ManyDeps"), {
       requires: [ApiPort, LoggerPort, MetricsPort, CachePort],
       emits: defineEvents({ DONE: () => ({}) }),
       execute: async () => {},
     });
 
     type Available = "Api" | "Logger" | "Metrics" | "Cache";
-    type Result = ValidateActivityRequirements<typeof ManyDepsActivity, Available>;
+    type Result = ValidateActivityRequirements<typeof _ManyDepsActivity, Available>;
 
-    expectTypeOf<Result>().toEqualTypeOf<typeof ManyDepsActivity>();
+    expectTypeOf<Result>().toEqualTypeOf<typeof _ManyDepsActivity>();
   });
 
   it("strict subset relationship - extra available ports are fine", () => {

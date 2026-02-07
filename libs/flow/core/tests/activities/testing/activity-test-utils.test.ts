@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { port, createPort } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { activityPort } from "../../../src/activities/port.js";
 import { defineEvents } from "../../../src/activities/events.js";
 import { activity } from "../../../src/activities/factory.js";
@@ -47,7 +47,7 @@ const ApiPort = port<ApiService>()({ name: "Api" });
 const LoggerPort = port<Logger>()({ name: "Logger" });
 
 const TaskActivityPort = activityPort<{ taskId: string }, TaskResult>()("TaskActivity");
-const SimpleActivityPort = activityPort<number, string>()("SimpleActivity");
+const _SimpleActivityPort = activityPort<number, string>()("SimpleActivity");
 
 const TaskEvents = defineEvents({
   PROGRESS: (percent: number) => ({ percent }),

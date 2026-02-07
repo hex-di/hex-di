@@ -11,7 +11,6 @@
 import type {
   Span,
   SpanContext,
-  SpanOptions,
   SpanEvent,
   SpanData,
   SpanStatus,
@@ -21,16 +20,26 @@ import type {
 } from "../../types/index.js";
 import { generateTraceId, generateSpanId } from "../../utils/index.js";
 
+/** Shared empty arrays to avoid allocating new ones per span */
+const EMPTY_LINKS: ReadonlyArray<SpanContext> = Object.freeze([]);
+const EMPTY_EVENTS: ReadonlyArray<SpanEvent> = Object.freeze([]);
+
+/** No-op end callback to avoid null checks */
+const NOOP_END: (spanData: SpanData) => void = () => {};
+
 /**
  * MemorySpan - In-memory implementation of the Span interface.
  *
  * Collects all span data in memory for testing and debugging purposes.
  * Calls the provided onEnd callback with SpanData when the span ends.
  *
- * **Object pooling:** Spans are designed for reuse via object pooling.
- * Use init() to initialize and reset() to prepare for pool return.
+ * All fields are initialized in the constructor to ensure a monomorphic
+ * V8 hidden class for optimal JIT performance.
  *
- * **Thread safety:** Not thread-safe. Designed for single-threaded test environments.
+ * **Attribute optimization:** Attributes are stored as a mutable plain object.
+ * Initial attributes from init() are copied in directly, and setAttribute()
+ * writes to the same object. toSpanData() passes the reference directly,
+ * avoiding any Map ↔ object conversion.
  *
  * @public
  */
@@ -52,16 +61,16 @@ export class MemorySpan implements Span {
   private _kind: SpanKind = "internal";
 
   /** Parent span ID if this is a child span */
-  private _parentSpanId?: string;
+  private _parentSpanId: string | undefined = undefined;
 
   /** Links to other spans */
-  private _links: SpanContext[] = [];
+  private _links: ReadonlyArray<SpanContext> = EMPTY_LINKS;
 
-  /** Mutable attributes storage (lazy-allocated) */
-  private _attributes?: Map<string, AttributeValue>;
+  /** Mutable attributes storage as plain object (no Map overhead) */
+  private _attributes: Record<string, AttributeValue> | undefined = undefined;
 
   /** Recorded events (lazy-allocated) */
-  private _events?: SpanEvent[];
+  private _events: SpanEvent[] | undefined = undefined;
 
   /** Current span status */
   private _status: SpanStatus = "unset";
@@ -70,93 +79,68 @@ export class MemorySpan implements Span {
   private _recording = false;
 
   /** Callback invoked when span ends */
-  private _onEnd: (spanData: SpanData) => void = () => {};
+  private _onEnd: (spanData: SpanData) => void = NOOP_END;
 
   /**
    * Initialize the span with new data.
    *
-   * Called by the tracer when acquiring a span from the pool or creating new.
+   * Called by the tracer when creating a new span. Accepts individual
+   * parameters instead of an options object to avoid intermediate allocations.
    *
    * @param name - Human-readable span name
    * @param parentContext - Optional parent span context for hierarchy
-   * @param options - Optional span configuration
+   * @param kind - Span kind (defaults to "internal")
+   * @param attributes - Optional initial attributes (passed by reference when possible)
+   * @param links - Optional span links
+   * @param startTime - Optional explicit start time
    * @param onEnd - Callback invoked with SpanData when span ends
    * @internal
    */
   init(
     name: string,
     parentContext: SpanContext | undefined,
-    options: SpanOptions | undefined,
+    kind: SpanKind,
+    attributes: Attributes | undefined,
+    links: ReadonlyArray<SpanContext> | undefined,
+    startTime: number | undefined,
     onEnd: (spanData: SpanData) => void
   ): void {
     this._name = name;
     this._onEnd = onEnd;
     this._parentSpanId = parentContext?.spanId;
-    this._kind = options?.kind ?? "internal";
-    this._links = options?.links ? [...options.links] : [];
+    this._kind = kind;
+    this._links = links ?? EMPTY_LINKS;
     this._status = "unset";
     this._recording = true;
+    this._events = undefined;
 
-    // Initialize with options attributes if provided (lazy allocation)
-    if (options?.attributes && Object.keys(options.attributes).length > 0) {
-      if (!this._attributes) {
-        this._attributes = new Map();
-      } else {
-        this._attributes.clear();
+    // Store attributes: use provided object directly as mutable record
+    // (Attributes is Readonly<Record<...>> at compile time but we need mutable access)
+    // We cast-free approach: create new object and copy, or set to undefined
+    if (attributes !== undefined) {
+      // Copy into a fresh mutable object
+      const mutable: Record<string, AttributeValue> = {};
+      for (const key in attributes) {
+        mutable[key] = attributes[key];
       }
-      for (const [key, value] of Object.entries(options.attributes)) {
-        this._attributes.set(key, value);
-      }
+      this._attributes = mutable;
+    } else {
+      this._attributes = undefined;
     }
 
     // Generate span context (use parent's traceId if available)
     const traceId = parentContext?.traceId ?? generateTraceId();
     const spanId = generateSpanId();
-    const traceFlags = parentContext?.traceFlags ?? 0x01; // Default to sampled
-    const traceState = parentContext?.traceState;
 
     this.context = {
       traceId,
       spanId,
-      traceFlags,
-      traceState,
+      traceFlags: parentContext?.traceFlags ?? 0x01,
+      traceState: parentContext?.traceState,
     };
 
     // Set start time (use explicit time or current time)
-    this._startTime = options?.startTime ?? Date.now();
-  }
-
-  /**
-   * Reset the span to clean state for pool reuse.
-   *
-   * Called by the object pool after a span is released.
-   *
-   * @internal
-   */
-  reset(): void {
-    this._name = "";
-    this._parentSpanId = undefined;
-    this._kind = "internal";
-    this._links = [];
-    this._status = "unset";
-    this._recording = false;
-    this._startTime = 0;
-    this._onEnd = () => {};
-
-    // Clear lazy-allocated structures
-    if (this._attributes) {
-      this._attributes.clear();
-    }
-    if (this._events) {
-      this._events.length = 0;
-    }
-
-    // Reset context
-    this.context = {
-      traceId: "",
-      spanId: "",
-      traceFlags: 0x01,
-    };
+    this._startTime = startTime ?? Date.now();
   }
 
   /**
@@ -168,10 +152,10 @@ export class MemorySpan implements Span {
    */
   setAttribute(key: string, value: AttributeValue): this {
     if (this._recording) {
-      if (!this._attributes) {
-        this._attributes = new Map();
+      if (this._attributes === undefined) {
+        this._attributes = {};
       }
-      this._attributes.set(key, value);
+      this._attributes[key] = value;
     }
     return this;
   }
@@ -184,11 +168,11 @@ export class MemorySpan implements Span {
    */
   setAttributes(attributes: Attributes): this {
     if (this._recording) {
-      if (!this._attributes) {
-        this._attributes = new Map();
+      if (this._attributes === undefined) {
+        this._attributes = {};
       }
-      for (const [key, value] of Object.entries(attributes)) {
-        this._attributes.set(key, value);
+      for (const key in attributes) {
+        this._attributes[key] = attributes[key];
       }
     }
     return this;
@@ -202,7 +186,7 @@ export class MemorySpan implements Span {
    */
   addEvent(event: SpanEvent): this {
     if (this._recording) {
-      if (!this._events) {
+      if (this._events === undefined) {
         this._events = [];
       }
       this._events.push(event);
@@ -257,7 +241,6 @@ export class MemorySpan implements Span {
    * No further modifications allowed after calling end().
    *
    * Calls the onEnd callback with immutable SpanData snapshot.
-   * The tracer is responsible for releasing the span back to the pool.
    *
    * @param endTime - Optional explicit end time (defaults to current time)
    */
@@ -269,7 +252,7 @@ export class MemorySpan implements Span {
     this._recording = false;
     const finalEndTime = endTime ?? Date.now();
 
-    const spanData = this.toSpanData(finalEndTime);
+    const spanData = this._toSpanData(finalEndTime);
     this._onEnd(spanData);
   }
 
@@ -289,15 +272,7 @@ export class MemorySpan implements Span {
    * @returns Immutable span data
    * @internal
    */
-  private toSpanData(endTime: number): SpanData {
-    // Convert Map to plain object for attributes (only if allocated)
-    const attributes: Record<string, AttributeValue> = {};
-    if (this._attributes) {
-      for (const [key, value] of this._attributes.entries()) {
-        attributes[key] = value;
-      }
-    }
-
+  private _toSpanData(endTime: number): SpanData {
     return {
       context: this.context,
       parentSpanId: this._parentSpanId,
@@ -306,9 +281,9 @@ export class MemorySpan implements Span {
       startTime: this._startTime,
       endTime,
       status: this._status,
-      attributes,
-      events: this._events ? [...this._events] : [],
-      links: [...this._links],
+      attributes: this._attributes ?? {},
+      events: this._events ?? EMPTY_EVENTS,
+      links: this._links,
     };
   }
 }

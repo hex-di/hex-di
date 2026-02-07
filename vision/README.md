@@ -11,11 +11,11 @@ This directory contains detailed documentation for each phase of the HexDI visio
 ## Phases
 
 ```
-Phase 1: PLUMBING       ████████████████████ 100%   713 lines of docs
-Phase 2: AWARENESS       ████████████████████ 100%   955 lines of docs
-Phase 3: REPORTING       ███░░░░░░░░░░░░░░░░░  15%  1985 lines of docs
-Phase 4: COMMUNICATION   ████████░░░░░░░░░░░░  40%  1746 lines of docs
-Phase 5: AUTONOMY        ░░░░░░░░░░░░░░░░░░░░   0%  1391 lines of docs
+Phase 1: PLUMBING       ████████████████████ 100%  1200 lines of docs
+Phase 2: AWARENESS       ████████████████████ 100%  1046 lines of docs
+Phase 3: REPORTING       ███░░░░░░░░░░░░░░░░░  15%  2062 lines of docs
+Phase 4: COMMUNICATION   ████████░░░░░░░░░░░░  40%  2173 lines of docs
+Phase 5: AUTONOMY        ░░░░░░░░░░░░░░░░░░░░   0%  1389 lines of docs
 ```
 
 | Phase | Document                                                     | Status | Description                                                                                                    |
@@ -40,7 +40,7 @@ Wave 7 ─── Phase 5.3-5.4 ─── MAPE-K loop + health ──── 10-14
 
 ## Total Documentation
 
-**6,790 lines** across 5 phase documents covering:
+**7,870 lines** across 5 phase documents covering:
 
 - Verified implementation details with file paths
 - Interface designs with TypeScript type definitions

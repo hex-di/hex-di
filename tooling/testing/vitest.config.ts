@@ -5,7 +5,7 @@ export default defineConfig({
   resolve: {
     alias: {
       // Resolve @hex-di/react to source files during testing to avoid build artifact issues
-      "@hex-di/react": path.resolve(__dirname, "../react/src/index.ts"),
+      "@hex-di/react": path.resolve(__dirname, "../../integrations/react/src/index.ts"),
     },
   },
   test: {

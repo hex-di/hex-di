@@ -14,18 +14,14 @@ let lastZipkinInstance: any = null;
 
 // Mock the OTel ZipkinExporter
 vi.mock("@opentelemetry/exporter-zipkin", () => {
-  const MockZipkinExporter = vi.fn((config: any) => {
-    const instance = {
-      _config: config,
-      export: vi.fn((spans: any, callback: any) => {
-        // Simulate async callback - success by default
-        setTimeout(() => {
-          callback({ code: 0 });
-        }, 0);
-      }),
-      forceFlush: vi.fn(() => Promise.resolve()),
-      shutdown: vi.fn(() => Promise.resolve()),
-    };
+  const MockZipkinExporter = vi.fn(function MockZipkin(config: any) {
+    const instance = Object.create(MockZipkinExporter.prototype);
+    instance._config = config;
+    instance.export = vi.fn((_spans: any, callback: any) => {
+      setTimeout(() => callback({ code: 0 }), 0);
+    });
+    instance.forceFlush = vi.fn(() => Promise.resolve());
+    instance.shutdown = vi.fn(() => Promise.resolve());
     lastZipkinInstance = instance;
     return instance;
   });

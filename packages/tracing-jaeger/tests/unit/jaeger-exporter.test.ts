@@ -14,18 +14,14 @@ let lastJaegerInstance: any = null;
 
 // Mock the OTel JaegerExporter
 vi.mock("@opentelemetry/exporter-jaeger", () => {
-  const MockJaegerExporter = vi.fn((config: any) => {
-    const instance = {
-      _config: config,
-      export: vi.fn((spans: any, callback: any) => {
-        // Simulate async callback - success by default
-        setTimeout(() => {
-          callback({ code: 0 });
-        }, 0);
-      }),
-      forceFlush: vi.fn(() => Promise.resolve()),
-      shutdown: vi.fn(() => Promise.resolve()),
-    };
+  const MockJaegerExporter = vi.fn(function MockJaeger(config: any) {
+    const instance = Object.create(MockJaegerExporter.prototype);
+    instance._config = config;
+    instance.export = vi.fn((_spans: any, callback: any) => {
+      setTimeout(() => callback({ code: 0 }), 0);
+    });
+    instance.forceFlush = vi.fn(() => Promise.resolve());
+    instance.shutdown = vi.fn(() => Promise.resolve());
     lastJaegerInstance = instance;
     return instance;
   });

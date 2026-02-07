@@ -54,7 +54,7 @@ const PluginServiceAdapter = createAdapter({
 
 function createParentContainer() {
   const graph = GraphBuilder.create().provide(TestServiceAdapter).build();
-  return createContainer(graph, { name: "ParentContainer" });
+  return createContainer({ graph, name: "ParentContainer" });
 }
 
 function createPluginGraph() {
