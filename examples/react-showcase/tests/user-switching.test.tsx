@@ -97,7 +97,7 @@ describe("User Switching", () => {
       .override(mockLogger)
       .override(mockConfig)
       .build();
-    const aliceContainer = createContainer(aliceGraph, { name: "Alice" });
+    const aliceContainer = createContainer({ graph: aliceGraph, name: "Alice" });
     const aliceScope = aliceContainer.createScope("alice-scope");
     const aliceSession = aliceScope.resolve(UserSessionPort);
     expect(aliceSession.user.name).toBe("Alice");
@@ -110,7 +110,7 @@ describe("User Switching", () => {
       .override(mockLogger)
       .override(mockConfig)
       .build();
-    const bobContainer = createContainer(bobGraph, { name: "Bob" });
+    const bobContainer = createContainer({ graph: bobGraph, name: "Bob" });
     const bobScope = bobContainer.createScope("bob-scope");
     const bobSession = bobScope.resolve(UserSessionPort);
     expect(bobSession.user.name).toBe("Bob");
@@ -158,7 +158,7 @@ describe("User Switching", () => {
       .override(mockNotificationService)
       .build();
 
-    const container = createContainer(testGraph, { name: "Test" });
+    const container = createContainer({ graph: testGraph, name: "Test" });
 
     render(
       <AsyncContainerProvider

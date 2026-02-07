@@ -64,7 +64,7 @@ function renderWithAppContainer(
   element: ReactElement,
   graph: Graph<AppPorts, AppAsyncPorts>
 ): RenderWithAppContainerResult {
-  const diContainer = createContainer(graph, { name: "Test" });
+  const diContainer = createContainer({ graph, name: "Test" });
 
   const { container } = render(
     <ContainerProvider container={diContainer}>{element}</ContainerProvider>

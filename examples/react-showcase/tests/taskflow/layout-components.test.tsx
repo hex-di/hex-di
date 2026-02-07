@@ -13,6 +13,33 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+
+// =============================================================================
+// Mock localStorage for Zustand persist middleware
+// =============================================================================
+
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: vi.fn((key: string) => store[key] ?? null),
+    setItem: vi.fn((key: string, value: string) => {
+      store[key] = value;
+    }),
+    removeItem: vi.fn((key: string) => {
+      delete store[key];
+    }),
+    clear: vi.fn(() => {
+      store = {};
+    }),
+    get length() {
+      return Object.keys(store).length;
+    },
+    key: vi.fn((index: number) => Object.keys(store)[index] ?? null),
+  };
+})();
+
+vi.stubGlobal("localStorage", localStorageMock);
+
 import { createUIPreferencesStore } from "../../src/taskflow/stores/ui-preferences-store.js";
 import { createUserSessionStore } from "../../src/taskflow/stores/user-session-store.js";
 import type { UIPreferencesStoreInstance } from "../../src/taskflow/stores/ui-preferences-store.js";
@@ -54,6 +81,8 @@ describe("Sidebar collapse/expand interaction", () => {
   let uiPreferencesStore: UIPreferencesStoreInstance;
 
   beforeEach(() => {
+    localStorageMock.clear();
+    vi.clearAllMocks();
     uiPreferencesStore = createUIPreferencesStore();
     // Reset to expanded state
     uiPreferencesStore.getState().setSidebarCollapsed(false);

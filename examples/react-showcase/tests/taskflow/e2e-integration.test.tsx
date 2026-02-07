@@ -88,7 +88,7 @@ function createTestEnv() {
     .provide(FilterStoreAdapter)
     .build();
 
-  const container = createContainer(graph, { name: "Test" });
+  const container = createContainer({ graph, name: "Test" });
 
   return { queryClient, container };
 }

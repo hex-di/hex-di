@@ -59,7 +59,7 @@ function createTestEnv() {
     .provide(createTaskCacheServiceAdapter(queryClient))
     .build();
 
-  const container = createContainer(graph, { name: "Test" });
+  const container = createContainer({ graph, name: "Test" });
 
   return { queryClient, container };
 }
