@@ -161,23 +161,24 @@ export function instrumentContainerTree(
     registerContainerMapping(inspectorToWalk, containerToWalk);
 
     // Subscribe to inspector events for live updates
-    const listener: InspectorListener = event => {
+    const listener: InspectorListener = async event => {
       if (event.type === "child-created") {
-        // A new child container was created - find it and instrument it
-        const childInspectors = inspectorToWalk.getChildContainers();
+        // Get child inspector directly from childInspectorMap using childId
+        const { childInspectorMap } = await import("@hex-di/runtime/internal");
+        const childIdNumeric = Number(event.childId);
+        const childInspector = childInspectorMap.get(childIdNumeric);
 
-        for (const childInspector of childInspectors) {
-          // Try direct access via getContainer() first (works for dynamic children),
-          // then fall back to WeakMap lookup (works for pre-registered children)
+        if (childInspector) {
+          // Use getContainer() for direct access to the child container
           const directContainer = childInspector.getContainer?.();
           const childContainer = isHookableContainer(directContainer)
             ? directContainer
             : getContainerFromInspector(childInspector);
 
           if (childContainer && !cleanups.has(childContainer)) {
-            // Register mapping for future lookups before walking
+            // Register mapping for this child's potential children
             registerContainerMapping(childInspector, childContainer);
-            // New child found - recursively walk it
+            // Recursively instrument the new child
             walkTree(childContainer, childInspector);
           }
         }
