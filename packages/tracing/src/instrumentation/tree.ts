@@ -16,6 +16,7 @@ import {
   getContainerFromInspector,
   isHookableContainer,
 } from "./utils.js";
+import { childInspectorMap } from "@hex-di/runtime/internal";
 
 /**
  * Instruments an entire container tree with distributed tracing.
@@ -161,10 +162,9 @@ export function instrumentContainerTree(
     registerContainerMapping(inspectorToWalk, containerToWalk);
 
     // Subscribe to inspector events for live updates
-    const listener: InspectorListener = async event => {
+    const listener: InspectorListener = event => {
       if (event.type === "child-created") {
         // Get child inspector directly from childInspectorMap using childId
-        const { childInspectorMap } = await import("@hex-di/runtime/internal");
         const childIdNumeric = Number(event.childId);
         const childInspector = childInspectorMap.get(childIdNumeric);
 
@@ -191,7 +191,16 @@ export function instrumentContainerTree(
     // Walk existing child containers
     const childInspectors = inspectorToWalk.getChildContainers();
     for (const childInspector of childInspectors) {
-      const childContainer = getContainerFromInspector(childInspector);
+      // Skip lazy containers - they'll be instrumented when they emit child-created event
+      if (childInspector.getContainerKind() === "lazy") {
+        continue;
+      }
+
+      // Use getContainer() for direct access (works for both pre-existing and dynamic children)
+      const directContainer = childInspector.getContainer?.();
+      const childContainer = isHookableContainer(directContainer)
+        ? directContainer
+        : getContainerFromInspector(childInspector);
 
       if (childContainer) {
         // Recursively walk the child tree
