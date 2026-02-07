@@ -135,12 +135,14 @@ Plans:
 
 **Goal:** Reduce NoOp tracer overhead to <20% and Memory tracer overhead to <200% via hot path optimization
 **Gap Closure:** Closes performance overhead gaps from v7.0-MILESTONE-AUDIT.md
-**Plans:** 2 plans
+**Plans:** 4 plans (2 executed, 2 gap closure)
 
 Plans:
 
-- [ ] 31-01-PLAN.md — Optimize NoOp tracer hot path with early bailout (target: <20%)
-- [ ] 31-02-PLAN.md — Optimize Memory tracer with fast ID generation and circular buffer (target: <200%)
+- [x] 31-01-PLAN.md — Optimize NoOp tracer hot path with early bailout (target: <20%)
+- [x] 31-02-PLAN.md — Optimize Memory tracer with fast ID generation and circular buffer (target: <200%)
+- [ ] 31-03-PLAN.md — Implement conditional hook registration for near-zero NoOp overhead
+- [ ] 31-04-PLAN.md — Add object pooling to reduce Memory tracer allocation overhead
 
 ## Progress
 
