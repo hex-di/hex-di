@@ -15,7 +15,8 @@ import type {
 } from "@hex-di/runtime";
 import type { Tracer } from "../ports/tracer.js";
 import { pushSpan, popSpan } from "./span-stack.js";
-import type { AutoInstrumentOptions, Attributes } from "./types.js";
+import type { Attributes, AttributeValue } from "../types/index.js";
+import type { AutoInstrumentOptions } from "./types.js";
 import { evaluatePortFilter } from "./types.js";
 
 /**
@@ -120,7 +121,7 @@ export function createTracingHook(
    * Separated to enable early bailout optimization - only called when tracing is active.
    */
   function buildAttributes(ctx: ResolutionHookContext): Attributes {
-    const attributes: Attributes = {
+    const attributes: Record<string, AttributeValue> = {
       // Standard hex-di attributes per INST-06
       "hex-di.port.name": ctx.portName,
       "hex-di.port.lifetime": ctx.lifetime,
