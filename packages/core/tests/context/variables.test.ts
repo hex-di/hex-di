@@ -154,8 +154,8 @@ describe("Context Variables", () => {
       const timeout = createContextVariable("timeout", 1000);
 
       // These should compile without errors due to proper type inference
-      const userEntry = withContext(userId, "new-id");
-      const timeoutEntry = withContext(timeout, 5000);
+      const _userEntry = withContext(userId, "new-id");
+      const _timeoutEntry = withContext(timeout, 5000);
 
       const context = new Map<symbol, unknown>([
         [userId.id, "user-123"],

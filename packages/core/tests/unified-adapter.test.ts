@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { port, createAdapter, createPort } from "../src/index.js";
+import { port, createAdapter } from "../src/index.js";
 
 // =============================================================================
 // Test Interfaces
