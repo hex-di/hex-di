@@ -262,4 +262,24 @@ export interface InspectorAPI {
    * Gets complete graph data for DevTools visualization.
    */
   getGraphData(): ContainerGraphData;
+
+  // =========================================================================
+  // Internal methods (for runtime and tracing)
+  // =========================================================================
+
+  /**
+   * Gets the container instance this inspector wraps.
+   *
+   * @internal For reverse lookup by instrumentation (tracing package)
+   * @returns The container instance
+   */
+  getContainer?(): unknown;
+
+  /**
+   * Emits an inspector event to all subscribers.
+   *
+   * @internal For runtime use only (event emission from LifecycleManager)
+   * @param event - The event to emit
+   */
+  emit?(event: InspectorEvent): void;
 }
