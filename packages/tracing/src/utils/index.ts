@@ -20,3 +20,9 @@ export {
 
 // Timing
 export { getHighResTimestamp, formatDuration } from "./timing.js";
+
+// Object pooling
+export { ObjectPool } from "./object-pool.js";
+
+// Cross-platform global types
+export type { CryptoLike, PerformanceLike, ConsoleLike } from "./globals.js";
