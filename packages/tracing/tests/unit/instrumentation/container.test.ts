@@ -47,6 +47,7 @@ function createMockTracer(): any {
     getActiveSpan: vi.fn(),
     getSpanContext: vi.fn(),
     withAttributes: vi.fn(),
+    isEnabled: vi.fn().mockReturnValue(true),
   };
 }
 

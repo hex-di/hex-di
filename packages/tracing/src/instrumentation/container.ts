@@ -90,6 +90,16 @@ export function instrumentContainer(
   tracer: Tracer,
   options?: AutoInstrumentOptions
 ): () => void {
+  // Early bailout for NoOp tracer - don't register hooks at all.
+  // This eliminates overhead completely by preventing hook invocations.
+  // When tracer.isEnabled() returns false, the container has no tracing
+  // hooks registered, resulting in zero resolution overhead.
+  if (!tracer.isEnabled()) {
+    return () => {
+      // No-op cleanup - no hooks were registered
+    };
+  }
+
   // Check for existing instrumentation
   const existingCleanup = installedCleanups.get(container);
   if (existingCleanup) {
