@@ -11,8 +11,28 @@
  * @packageDocumentation
  */
 
+import { getCrypto } from "./globals.js";
+
 /**
- * Convert byte array to hex string.
+ * Hex character lookup table for fast byte-to-hex conversion.
+ * Using array lookup is ~3x faster than toString(16).padStart().
+ */
+const HEX_CHARS = "0123456789abcdef".split("");
+
+/**
+ * Reusable buffer for trace ID generation to avoid allocation overhead.
+ */
+const traceIdBuffer = new Uint8Array(16);
+
+/**
+ * Reusable buffer for span ID generation to avoid allocation overhead.
+ */
+const spanIdBuffer = new Uint8Array(8);
+
+/**
+ * Convert byte array to hex string using lookup table.
+ *
+ * ~3x faster than byte.toString(16).padStart(2, "0") approach.
  *
  * @param bytes - Byte array to convert
  * @returns Lowercase hex string (2 chars per byte)
@@ -22,7 +42,7 @@ function bytesToHex(bytes: Uint8Array): string {
   for (let i = 0; i < bytes.length; i++) {
     const byte = bytes[i];
     if (byte !== undefined) {
-      hex += byte.toString(16).padStart(2, "0");
+      hex += HEX_CHARS[byte >> 4] + HEX_CHARS[byte & 0xf];
     }
   }
   return hex;
@@ -95,27 +115,16 @@ function generateRandomHex(length: number): string {
  */
 export function generateTraceId(): string {
   // Try crypto.getRandomValues (browser, Node.js 15+)
-  if (typeof globalThis !== "undefined" && "crypto" in globalThis) {
-    const maybeGlobal: unknown = globalThis;
-    if (maybeGlobal && typeof maybeGlobal === "object" && "crypto" in maybeGlobal) {
-      const crypto: unknown = maybeGlobal.crypto;
-      if (
-        crypto &&
-        typeof crypto === "object" &&
-        "getRandomValues" in crypto &&
-        typeof crypto.getRandomValues === "function"
-      ) {
-        let attempts = 0;
-        while (attempts < 3) {
-          const bytes = new Uint8Array(16);
-          crypto.getRandomValues(bytes);
+  const crypto = getCrypto();
+  if (crypto) {
+    let attempts = 0;
+    while (attempts < 3) {
+      crypto.getRandomValues(traceIdBuffer);
 
-          if (!isAllZeros(bytes)) {
-            return bytesToHex(bytes);
-          }
-          attempts++;
-        }
+      if (!isAllZeros(traceIdBuffer)) {
+        return bytesToHex(traceIdBuffer);
       }
+      attempts++;
     }
   }
 
@@ -154,27 +163,16 @@ export function generateTraceId(): string {
  */
 export function generateSpanId(): string {
   // Try crypto.getRandomValues (browser, Node.js 15+)
-  if (typeof globalThis !== "undefined" && "crypto" in globalThis) {
-    const maybeGlobal: unknown = globalThis;
-    if (maybeGlobal && typeof maybeGlobal === "object" && "crypto" in maybeGlobal) {
-      const crypto: unknown = maybeGlobal.crypto;
-      if (
-        crypto &&
-        typeof crypto === "object" &&
-        "getRandomValues" in crypto &&
-        typeof crypto.getRandomValues === "function"
-      ) {
-        let attempts = 0;
-        while (attempts < 3) {
-          const bytes = new Uint8Array(8);
-          crypto.getRandomValues(bytes);
+  const crypto = getCrypto();
+  if (crypto) {
+    let attempts = 0;
+    while (attempts < 3) {
+      crypto.getRandomValues(spanIdBuffer);
 
-          if (!isAllZeros(bytes)) {
-            return bytesToHex(bytes);
-          }
-          attempts++;
-        }
+      if (!isAllZeros(spanIdBuffer)) {
+        return bytesToHex(spanIdBuffer);
       }
+      attempts++;
     }
   }
 
