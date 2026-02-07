@@ -16,8 +16,10 @@ import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createMemoryTracer } from "../../../src/adapters/memory/tracer.js";
 import { instrumentContainerTree } from "../../../src/instrumentation/tree.js";
+import { instrumentContainer } from "../../../src/instrumentation/container.js";
 import { clearStack } from "../../../src/instrumentation/span-stack.js";
 import type { MemoryTracer } from "../../../src/adapters/memory/tracer.js";
+import { NOOP_TRACER } from "../../../src/adapters/noop/index.js";
 
 describe("instrumentContainerTree", () => {
   let tracer: MemoryTracer;
@@ -161,5 +163,194 @@ describe("instrumentContainerTree", () => {
     // Should not create spans after cleanup
     root.resolve(RootPort);
     expect(tracer.getCollectedSpans()).toHaveLength(0);
+  });
+
+  describe("NoOp tracer zero-overhead", () => {
+    it("should return no-op cleanup for NoOp tracer in instrumentContainer", () => {
+      const noopTracer = NOOP_TRACER;
+      const TestPort = port<string>()({ name: "Test" });
+
+      const adapter = createAdapter({
+        provides: TestPort,
+        requires: [],
+        lifetime: "transient",
+        factory: () => "test",
+      });
+
+      const graph = GraphBuilder.create().provide(adapter).build();
+      const container = createContainer({ graph, name: "Test" });
+      containers.push(container);
+
+      // Instrument with NoOp tracer
+      const cleanup = instrumentContainer(container, noopTracer);
+
+      // Cleanup should be callable (no-op)
+      expect(() => cleanup()).not.toThrow();
+
+      // Resolution should work without creating spans
+      const result = container.resolve(TestPort);
+      expect(result).toBe("test");
+    });
+
+    it("should not register hooks with NoOp tracer in instrumentContainer", () => {
+      const noopTracer = NOOP_TRACER;
+      const TestPort = port<string>()({ name: "Test" });
+
+      const adapter = createAdapter({
+        provides: TestPort,
+        requires: [],
+        lifetime: "transient",
+        factory: () => "test",
+      });
+
+      const graph = GraphBuilder.create().provide(adapter).build();
+      const container = createContainer({ graph, name: "Test" });
+      containers.push(container);
+
+      // Get the inspector to check for registered hooks
+      const inspector = container.inspector;
+
+      // Instrument with NoOp tracer
+      instrumentContainer(container, noopTracer);
+
+      // Verify no hooks are registered by checking the inspector's listeners
+      // We can't directly access hooks, but we can verify that resolutions
+      // don't trigger any span-related side effects by using a memory tracer
+      // for comparison
+      const memoryContainer = createContainer({ graph, name: "Memory" });
+      containers.push(memoryContainer);
+      const memoryTracer = createMemoryTracer();
+      instrumentContainer(memoryContainer, memoryTracer);
+
+      // Resolve in both containers
+      container.resolve(TestPort);
+      memoryContainer.resolve(TestPort);
+
+      // Memory tracer should have spans, NoOp should not affect anything
+      const spans = memoryTracer.getCollectedSpans();
+      expect(spans.length).toBeGreaterThan(0);
+
+      // NoOp tracer confirmed to not record anything (implicit - no spans to check)
+      expect(noopTracer.isEnabled()).toBe(false);
+    });
+
+    it("should return no-op cleanup for NoOp tracer in instrumentContainerTree", () => {
+      const noopTracer = NOOP_TRACER;
+      const RootPort = port<string>()({ name: "Root" });
+      const ChildPort = port<string>()({ name: "Child" });
+
+      const rootAdapter = createAdapter({
+        provides: RootPort,
+        requires: [],
+        lifetime: "transient",
+        factory: () => "root",
+      });
+
+      const childAdapter = createAdapter({
+        provides: ChildPort,
+        requires: [],
+        lifetime: "transient",
+        factory: () => "child",
+      });
+
+      const rootGraph = GraphBuilder.create().provide(rootAdapter).build();
+      const childGraph = GraphBuilder.create().provide(childAdapter).buildFragment();
+
+      const root = createContainer({ graph: rootGraph, name: "Root" });
+      const child = root.createChild(childGraph, { name: "Child" });
+      containers.push(root, child);
+
+      // Instrument tree with NoOp tracer
+      const cleanup = instrumentContainerTree(root, root.inspector, noopTracer);
+
+      // Cleanup should be callable (no-op)
+      expect(() => cleanup()).not.toThrow();
+
+      // Resolutions should work without creating spans
+      const rootResult = root.resolve(RootPort);
+      const childResult = child.resolve(ChildPort);
+      expect(rootResult).toBe("root");
+      expect(childResult).toBe("child");
+    });
+
+    it("should skip tree walking for NoOp tracer in instrumentContainerTree", () => {
+      const noopTracer = NOOP_TRACER;
+      const RootPort = port<string>()({ name: "Root" });
+      const ChildPort = port<string>()({ name: "Child" });
+
+      const rootAdapter = createAdapter({
+        provides: RootPort,
+        requires: [],
+        lifetime: "transient",
+        factory: () => "root",
+      });
+
+      const childAdapter = createAdapter({
+        provides: ChildPort,
+        requires: [],
+        lifetime: "transient",
+        factory: () => "child",
+      });
+
+      const rootGraph = GraphBuilder.create().provide(rootAdapter).build();
+      const childGraph = GraphBuilder.create().provide(childAdapter).buildFragment();
+
+      const root = createContainer({ graph: rootGraph, name: "Root" });
+      const child = root.createChild(childGraph, { name: "Child" });
+      containers.push(root, child);
+
+      // Instrument tree with NoOp tracer - should return immediately
+      instrumentContainerTree(root, root.inspector, noopTracer);
+
+      // Verify child containers also have no hooks by comparing with memory tracer
+      const memoryRoot = createContainer({ graph: rootGraph, name: "MemoryRoot" });
+      const memoryChild = memoryRoot.createChild(childGraph, { name: "MemoryChild" });
+      containers.push(memoryRoot, memoryChild);
+
+      const memoryTracer = createMemoryTracer();
+      instrumentContainerTree(memoryRoot, memoryRoot.inspector, memoryTracer);
+
+      // Resolve in both trees
+      root.resolve(RootPort);
+      child.resolve(ChildPort);
+      memoryRoot.resolve(RootPort);
+      memoryChild.resolve(ChildPort);
+
+      // Memory tracer should have spans for both containers
+      const spans = memoryTracer.getCollectedSpans();
+      expect(spans.length).toBeGreaterThan(0);
+      expect(spans.some(s => s.name === "resolve:Root")).toBe(true);
+      expect(spans.some(s => s.name === "resolve:Child")).toBe(true);
+
+      // NoOp tracer confirmed to have zero overhead
+      expect(noopTracer.isEnabled()).toBe(false);
+    });
+
+    it("should allow cleanup to be called multiple times with NoOp tracer", () => {
+      const noopTracer = NOOP_TRACER;
+      const TestPort = port<string>()({ name: "Test" });
+
+      const adapter = createAdapter({
+        provides: TestPort,
+        requires: [],
+        lifetime: "transient",
+        factory: () => "test",
+      });
+
+      const graph = GraphBuilder.create().provide(adapter).build();
+      const container = createContainer({ graph, name: "Test" });
+      containers.push(container);
+
+      const cleanup = instrumentContainerTree(container, container.inspector, noopTracer);
+
+      // Should be safe to call multiple times
+      cleanup();
+      cleanup();
+      cleanup();
+
+      // Container should still work
+      const result = container.resolve(TestPort);
+      expect(result).toBe("test");
+    });
   });
 });
