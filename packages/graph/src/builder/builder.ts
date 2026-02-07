@@ -61,7 +61,7 @@ import type {
 // through the barrel file (types/index.ts). The barrel re-exports from inspection.ts
 // which imports from merge.ts which imports GraphBuilder, creating a cycle.
 import type { EmptyDependencyGraph, EmptyLifetimeMap } from "./types/state.js";
-import type { ProvideResult, ProvideResultAllErrors, ProvideManyResult } from "./types/provide.js";
+import type { ProvideResultAllErrors, ProvideManyResult } from "./types/provide.js";
 import type { MergeResult, OverrideResult } from "./types/merge.js";
 import type { PrettyBuilder } from "./types/inspection.js";
 

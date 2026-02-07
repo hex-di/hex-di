@@ -207,12 +207,11 @@ test("No type-level regressions with literal types", () => {
   expectTypeOf(code).toEqualTypeOf<"DUPLICATE_ADAPTER">();
 
   // Ensure numeric codes are also literal
-  const numericCode = import("../src/validation/error-parsing.js").then(
-    m => m.GraphErrorNumericCode.DUPLICATE_ADAPTER
-  );
-  numericCode.then(code => {
-    expectTypeOf(code).toEqualTypeOf<"HEX001">();
-  });
+  void import("../src/validation/error-parsing.js")
+    .then(m => m.GraphErrorNumericCode.DUPLICATE_ADAPTER)
+    .then(code => {
+      expectTypeOf(code).toEqualTypeOf<"HEX001">();
+    });
 });
 
 test("Discriminated union exhaustiveness in switch", () => {

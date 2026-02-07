@@ -72,14 +72,14 @@ describe("depth-limited cycle detection soundness", () => {
       const PortX = port<{ x: () => void }>()({ name: "X" });
       const PortY = port<{ y: () => void }>()({ name: "Y" });
 
-      const AdapterX = createAdapter({
+      const _AdapterX = createAdapter({
         provides: PortX,
         requires: [PortY],
         lifetime: "singleton",
         factory: () => ({ x: () => {} }),
       });
 
-      const AdapterY = createAdapter({
+      const _AdapterY = createAdapter({
         provides: PortY,
         requires: [PortX],
         lifetime: "singleton",

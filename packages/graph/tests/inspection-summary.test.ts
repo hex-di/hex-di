@@ -43,7 +43,7 @@ const CacheAdapter = createAdapter({
   factory: () => ({ get: () => "value" }),
 });
 
-const UserServiceAdapter = createAdapter({
+const _UserServiceAdapter = createAdapter({
   provides: UserServicePort,
   requires: [LoggerPort, DatabasePort] as const,
   lifetime: "scoped",

@@ -206,8 +206,8 @@ describe("IsBrandedPortName edge cases", () => {
   });
 
   it("should return false for empty object", () => {
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    type Result = IsBrandedPortName<{}>;
+    type EmptyObj = Record<string, never>;
+    type Result = IsBrandedPortName<EmptyObj>;
     expectTypeOf<Result>().toEqualTypeOf<false>();
   });
 

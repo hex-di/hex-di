@@ -8,7 +8,7 @@
 import { describe, it, expect } from "vitest";
 import { port, createAdapter, type AdapterConstraint } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
-import { inspectionToJSON, detectCycleAtRuntime, inspectGraph } from "./test-types.js";
+import { inspectionToJSON, detectCycleAtRuntime } from "./test-types.js";
 
 // =============================================================================
 // Test Fixtures

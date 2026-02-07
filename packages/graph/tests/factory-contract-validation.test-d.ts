@@ -38,7 +38,7 @@ describe("Factory contract validation at compile-time", () => {
         provides: LoggerPort,
         requires: [],
         lifetime: "singleton",
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
+
         factory: () => ({ log: (_msg: string) => {} }),
       });
 
@@ -53,9 +53,8 @@ describe("Factory contract validation at compile-time", () => {
         requires: [],
         lifetime: "singleton",
         factory: () => ({
-          // eslint-disable-next-line @typescript-eslint/no-empty-function
           log: (_msg: string) => {},
-          // eslint-disable-next-line @typescript-eslint/no-empty-function
+
           debug: (_msg: string) => {}, // Extra method - allowed
         }),
       });
@@ -78,7 +77,6 @@ describe("Factory contract validation at compile-time", () => {
 
       // A factory that returns the correct type compiles
       const validFactory = (): LoggerService => ({
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
         log: (_msg: string) => {},
       });
 
@@ -101,7 +99,7 @@ describe("Factory contract validation at compile-time", () => {
         provides: LoggerPort,
         requires: [],
         lifetime: "singleton",
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
+
         factory: () => ({ log: (_msg: unknown) => {} }),
       });
 
@@ -152,7 +150,7 @@ describe("Factory contract validation at compile-time", () => {
         lifetime: "singleton",
         factory: () => ({
           findById: (id: string) => ({ id, name: "User" }),
-          // eslint-disable-next-line @typescript-eslint/no-empty-function
+
           save: (_item: User) => {},
         }),
       });

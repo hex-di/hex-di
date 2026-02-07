@@ -6,7 +6,6 @@
 
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { createAdapter, type EmptyDeps } from "@hex-di/core";
-import { GraphBuilder } from "../../src/index.js";
 import {
   Logger,
   Database,

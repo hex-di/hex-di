@@ -10,7 +10,6 @@
 import {
   createPort as coreCreatePort,
   createAdapter,
-  port,
   type Port,
   type Adapter,
   type Lifetime,
