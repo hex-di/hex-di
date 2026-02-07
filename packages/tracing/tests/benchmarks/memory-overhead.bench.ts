@@ -46,12 +46,17 @@ describe("Memory Tracer Overhead", () => {
 /**
  * Benchmark Results (100k transient resolutions):
  *
+ * After Plan 31-04 object pooling:
+ * baseline: no instrumentation  62.98 Hz  (15.88ms per 100k)
+ * instrumented: Memory tracer    6.79 Hz (147.30ms per 100k)
+ *
+ * Overhead: ~828% (9.28x slower)
+ * Absolute overhead: ~131ms per 100k resolutions
+ *
  * After Plan 31-02 optimizations:
  * baseline: no instrumentation  62.92 Hz  (15.89ms per 100k)
  * instrumented: Memory tracer    9.77 Hz (102.36ms per 100k)
- *
  * Overhead: ~544% (6.44x slower)
- * Absolute overhead: ~86ms per 100k resolutions
  *
  * Pre-optimization (Plan 31-01):
  * baseline: no instrumentation  61.84 Hz  (16.17ms per 100k)
@@ -63,14 +68,21 @@ describe("Memory Tracer Overhead", () => {
  * - Lazy allocation: attributes and events only allocated when used
  * - Map-based span stack: O(1) push/pop instead of Array operations
  * - Circular buffer: eliminates Array.shift() O(n) overhead
+ * Result: Reduced overhead from 602% to 544%
  *
- * Result: Reduced overhead from 602% to 544% (58% reduction in overhead cost)
+ * Plan 31-04 object pooling result:
+ * - Object pooling INCREASED overhead from 544% to 828%
+ * - In this benchmark, pooling adds overhead rather than reducing it
+ * - Short-lived spans don't benefit from pooling (modern JS engines optimize well)
+ * - init() + reset() overhead > constructor allocation cost
+ * - Pooling may benefit longer-lived spans or high-concurrency scenarios
  *
- * Note: PERF-02 target was < 10% overhead. Actual overhead is higher due to:
+ * Note: Target was < 300% overhead. This was not achieved due to fundamental costs:
  * - Span creation and serialization for every resolution
  * - Stack operations (push/pop) for context management
  * - SpanData object allocation and storage
  * - Timestamp generation (high-resolution timing)
+ * - ID generation (even optimized crypto-based approach has cost)
  *
  * This overhead is expected for in-memory tracing with full span capture.
  * For production, use:
