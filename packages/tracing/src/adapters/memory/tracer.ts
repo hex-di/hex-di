@@ -39,11 +39,23 @@ import { MemorySpan } from "./span.js";
  * @public
  */
 export class MemoryTracer implements Tracer {
-  /** Flat storage of completed spans */
-  private _spans: SpanData[];
+  /** Circular buffer for completed spans */
+  private readonly _spans: (SpanData | undefined)[];
 
-  /** Stack of active spans for context propagation */
-  private _spanStack: Span[];
+  /** Head pointer for circular buffer */
+  private _head = 0;
+
+  /** Tail pointer for circular buffer */
+  private _tail = 0;
+
+  /** Current size of circular buffer */
+  private _size = 0;
+
+  /** Map-based stack of active spans for O(1) operations */
+  private readonly _spanStack = new Map<number, Span>();
+
+  /** Current depth in span stack */
+  private _stackDepth = 0;
 
   /** Maximum number of spans to retain (FIFO eviction) */
   private readonly _maxSpans: number;
@@ -58,9 +70,8 @@ export class MemoryTracer implements Tracer {
    * @param defaultAttributes - Attributes applied to all spans (default: {})
    */
   constructor(maxSpans = 10000, defaultAttributes: Attributes = {}) {
-    this._spans = [];
-    this._spanStack = [];
     this._maxSpans = maxSpans;
+    this._spans = new Array(maxSpans);
     this._defaultAttributes = defaultAttributes;
   }
 
@@ -94,8 +105,8 @@ export class MemoryTracer implements Tracer {
       this._collectSpan(spanData);
     });
 
-    // Push to active span stack
-    this._spanStack.push(span);
+    // Push to active span stack (O(1) with Map)
+    this._spanStack.set(this._stackDepth++, span);
 
     return span;
   }
@@ -168,7 +179,10 @@ export class MemoryTracer implements Tracer {
    * @returns The active span, or undefined if no span is active
    */
   getActiveSpan(): Span | undefined {
-    return this._spanStack[this._spanStack.length - 1];
+    if (this._stackDepth === 0) {
+      return undefined;
+    }
+    return this._spanStack.get(this._stackDepth - 1);
   }
 
   /**
@@ -217,7 +231,15 @@ export class MemoryTracer implements Tracer {
    * @returns Array of completed span data
    */
   getCollectedSpans(): SpanData[] {
-    return [...this._spans];
+    const result: SpanData[] = [];
+    for (let i = 0; i < this._size; i++) {
+      const index = (this._head + i) % this._maxSpans;
+      const span = this._spans[index];
+      if (span !== undefined) {
+        result.push(span);
+      }
+    }
+    return result;
   }
 
   /**
@@ -226,22 +248,36 @@ export class MemoryTracer implements Tracer {
    * Useful for test isolation between test cases.
    */
   clear(): void {
-    this._spans = [];
-    this._spanStack = [];
+    // Reset circular buffer
+    this._head = 0;
+    this._tail = 0;
+    this._size = 0;
+    this._spans.fill(undefined);
+
+    // Reset span stack
+    this._spanStack.clear();
+    this._stackDepth = 0;
   }
 
   /**
    * Collects a completed span, enforcing the max span limit.
    *
+   * Circular buffer implementation eliminates Array.shift() O(n) overhead.
+   *
    * @param spanData - Completed span data
    * @internal
    */
   private _collectSpan(spanData: SpanData): void {
-    this._spans.push(spanData);
+    // Write at tail position
+    this._spans[this._tail] = spanData;
+    this._tail = (this._tail + 1) % this._maxSpans;
 
-    // Enforce FIFO eviction if over limit
-    if (this._spans.length > this._maxSpans) {
-      this._spans.shift(); // Remove oldest span
+    // Update size and advance head if buffer is full
+    if (this._size < this._maxSpans) {
+      this._size++;
+    } else {
+      // Buffer full, advance head to maintain FIFO
+      this._head = (this._head + 1) % this._maxSpans;
     }
   }
 
@@ -252,9 +288,16 @@ export class MemoryTracer implements Tracer {
    * @internal
    */
   private _popSpan(span: Span): void {
-    const index = this._spanStack.indexOf(span);
-    if (index !== -1) {
-      this._spanStack.splice(index, 1);
+    // Find the span in the stack
+    for (const [depth, stackSpan] of this._spanStack.entries()) {
+      if (stackSpan === span) {
+        this._spanStack.delete(depth);
+        // Only decrement if it's the top of the stack
+        if (depth === this._stackDepth - 1) {
+          this._stackDepth--;
+        }
+        break;
+      }
     }
   }
 }

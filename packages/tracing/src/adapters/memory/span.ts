@@ -68,11 +68,11 @@ export class MemorySpan implements Span {
   /** Links to other spans */
   private readonly _links: ReadonlyArray<SpanContext>;
 
-  /** Mutable attributes storage */
-  private readonly _attributes: Map<string, AttributeValue>;
+  /** Mutable attributes storage (lazy-allocated) */
+  private _attributes?: Map<string, AttributeValue>;
 
-  /** Recorded events */
-  private readonly _events: SpanEvent[];
+  /** Recorded events (lazy-allocated) */
+  private _events?: SpanEvent[];
 
   /** Current span status */
   private _status: SpanStatus;
@@ -104,11 +104,10 @@ export class MemorySpan implements Span {
     this._links = options?.links ?? [];
     this._status = "unset";
     this._recording = true;
-    this._events = [];
-    this._attributes = new Map();
 
-    // Initialize with options attributes if provided
-    if (options?.attributes) {
+    // Initialize with options attributes if provided (lazy allocation)
+    if (options?.attributes && Object.keys(options.attributes).length > 0) {
+      this._attributes = new Map();
       for (const [key, value] of Object.entries(options.attributes)) {
         this._attributes.set(key, value);
       }
@@ -140,6 +139,9 @@ export class MemorySpan implements Span {
    */
   setAttribute(key: string, value: AttributeValue): this {
     if (this._recording) {
+      if (!this._attributes) {
+        this._attributes = new Map();
+      }
       this._attributes.set(key, value);
     }
     return this;
@@ -153,6 +155,9 @@ export class MemorySpan implements Span {
    */
   setAttributes(attributes: Attributes): this {
     if (this._recording) {
+      if (!this._attributes) {
+        this._attributes = new Map();
+      }
       for (const [key, value] of Object.entries(attributes)) {
         this._attributes.set(key, value);
       }
@@ -168,6 +173,9 @@ export class MemorySpan implements Span {
    */
   addEvent(event: SpanEvent): this {
     if (this._recording) {
+      if (!this._events) {
+        this._events = [];
+      }
       this._events.push(event);
     }
     return this;
@@ -250,10 +258,12 @@ export class MemorySpan implements Span {
    * @internal
    */
   private toSpanData(endTime: number): SpanData {
-    // Convert Map to plain object for attributes
+    // Convert Map to plain object for attributes (only if allocated)
     const attributes: Record<string, AttributeValue> = {};
-    for (const [key, value] of this._attributes.entries()) {
-      attributes[key] = value;
+    if (this._attributes) {
+      for (const [key, value] of this._attributes.entries()) {
+        attributes[key] = value;
+      }
     }
 
     return {
@@ -265,7 +275,7 @@ export class MemorySpan implements Span {
       endTime,
       status: this._status,
       attributes,
-      events: [...this._events],
+      events: this._events ? [...this._events] : [],
       links: [...this._links],
     };
   }
