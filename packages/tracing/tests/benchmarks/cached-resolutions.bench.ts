@@ -11,7 +11,7 @@ import { bench, describe } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "@hex-di/runtime";
-import { instrumentContainer, createMemoryTracer, createNoopTracer } from "../../src/index.js";
+import { instrumentContainer, createMemoryTracer, NOOP_TRACER } from "../../src/index.js";
 
 /**
  * Simple test object for cached resolution workload.
@@ -61,7 +61,7 @@ describe("Cached Resolution Overhead", () => {
   bench("instrumented: NoOp tracer (singleton)", () => {
     const graph = createCachedGraph();
     const container = createContainer({ graph, name: "NoOp" });
-    const tracer = createNoopTracer();
+    const tracer = NOOP_TRACER;
 
     instrumentContainer(container, tracer);
 
