@@ -15,8 +15,14 @@ import type {
 } from "@hex-di/runtime";
 import type { Tracer } from "../ports/tracer.js";
 import { pushSpan, popSpan } from "./span-stack.js";
-import type { AutoInstrumentOptions } from "./types.js";
+import type { AutoInstrumentOptions, Attributes } from "./types.js";
 import { evaluatePortFilter } from "./types.js";
+
+/**
+ * Span name prefix constant for inline optimization.
+ * Pre-computed to avoid string concatenation overhead.
+ */
+const RESOLVE_PREFIX = "resolve:";
 
 /**
  * Creates a tracing hook for manual registration.
@@ -110,56 +116,71 @@ export function createTracingHook(
   };
 
   /**
-   * Determines whether a resolution should be traced based on options.
-   * Used by both beforeResolve (to decide whether to push a span)
-   * and afterResolve (to decide whether to pop one).
+   * Builds span attributes from resolution context.
+   * Separated to enable early bailout optimization - only called when tracing is active.
    */
-  function shouldTrace(ctx: ResolutionHookContext): boolean {
-    if (!evaluatePortFilter(opts.portFilter, ctx.portName)) {
-      return false;
+  function buildAttributes(ctx: ResolutionHookContext): Attributes {
+    const attributes: Attributes = {
+      // Standard hex-di attributes per INST-06
+      "hex-di.port.name": ctx.portName,
+      "hex-di.port.lifetime": ctx.lifetime,
+      "hex-di.resolution.cached": ctx.isCacheHit,
+      "hex-di.container.name": ctx.containerId,
+      "hex-di.container.kind": ctx.containerKind,
+      "hex-di.resolution.depth": ctx.depth,
+    };
+
+    // Add parent port if available
+    if (ctx.parentPort) {
+      attributes["hex-di.parent.port"] = ctx.parentPort.__portName;
     }
-    if (ctx.isCacheHit && !opts.traceCachedResolutions) {
-      return false;
+
+    // Add scope ID if in scope
+    if (ctx.scopeId) {
+      attributes["hex-di.scope.id"] = ctx.scopeId;
     }
-    return true;
+
+    // Add inheritance mode if applicable
+    if (ctx.inheritanceMode) {
+      attributes["hex-di.inheritance.mode"] = ctx.inheritanceMode;
+    }
+
+    // Merge additional attributes
+    if (opts.additionalAttributes) {
+      Object.assign(attributes, opts.additionalAttributes);
+    }
+
+    return attributes;
   }
 
   /**
    * beforeResolve hook: Create and start span
    */
   function beforeResolve(ctx: ResolutionHookContext): void {
-    if (!shouldTrace(ctx)) {
+    // Inline filter checks for performance
+    if (!evaluatePortFilter(opts.portFilter, ctx.portName)) {
+      return;
+    }
+    if (ctx.isCacheHit && !opts.traceCachedResolutions) {
       return;
     }
 
-    // Create span with concise name format
-    const spanName = `resolve:${ctx.portName}`;
+    // Early bailout: skip attribute construction for NoOp tracer
+    if (!tracer.isEnabled()) {
+      return;
+    }
+
+    // Build attributes only after bailout check passes
+    const attributes = buildAttributes(ctx);
+
+    // Create span with pre-computed name prefix
+    const spanName = RESOLVE_PREFIX + ctx.portName;
 
     // Start span (parent-child relationship is implicit via stack -
     // the tracer implementation can check getActiveSpan() if needed)
     const span = tracer.startSpan(spanName, {
       kind: "internal",
-      attributes: {
-        // Standard hex-di attributes per INST-06
-        "hex-di.port.name": ctx.portName,
-        "hex-di.port.lifetime": ctx.lifetime,
-        "hex-di.resolution.cached": ctx.isCacheHit,
-        "hex-di.container.name": ctx.containerId,
-        "hex-di.container.kind": ctx.containerKind,
-        "hex-di.resolution.depth": ctx.depth,
-
-        // Add parent port if available
-        ...(ctx.parentPort && { "hex-di.parent.port": ctx.parentPort.__portName }),
-
-        // Add scope ID if in scope
-        ...(ctx.scopeId && { "hex-di.scope.id": ctx.scopeId }),
-
-        // Add inheritance mode if applicable
-        ...(ctx.inheritanceMode && { "hex-di.inheritance.mode": ctx.inheritanceMode }),
-
-        // Merge additional attributes
-        ...opts.additionalAttributes,
-      },
+      attributes,
     });
 
     // Add stack trace if requested
@@ -185,9 +206,16 @@ export function createTracingHook(
    * so re-evaluation is correct.
    */
   function afterResolve(ctx: ResolutionResultContext): void {
-    // Re-evaluate the same filter - if beforeResolve skipped
-    // this resolution, afterResolve must skip it too
-    if (!shouldTrace(ctx)) {
+    // Inline filter checks for performance (must match beforeResolve)
+    if (!evaluatePortFilter(opts.portFilter, ctx.portName)) {
+      return;
+    }
+    if (ctx.isCacheHit && !opts.traceCachedResolutions) {
+      return;
+    }
+
+    // Early bailout: no span to pop if tracer is disabled
+    if (!tracer.isEnabled()) {
       return;
     }
 
