@@ -1,5 +1,43 @@
 # Project Milestones: HexDI
 
+## v7.0 Distributed Tracing (Shipped: 2026-02-07)
+
+**Delivered:** Replaced isolated per-container tracing with a distributed tracing system supporting cross-container propagation, W3C Trace Context, multiple export backends (OTel, Jaeger, Zipkin, DataDog), and framework integrations (Hono, React).
+
+**Phases completed:** 23-31 (37 plans total)
+
+**Key accomplishments:**
+
+- New `@hex-di/tracing` package with Tracer, Span, SpanExporter, SpanProcessor ports and 3 built-in adapters (NoOp, Memory, Console)
+- W3C Trace Context propagation with traceparent/tracestate header parsing and injection
+- Container instrumentation via `instrumentContainer()` and `instrumentContainerTree()` with cross-container parent-child span relationships
+- Dynamic child container auto-instrumentation via child-created events
+- 4 backend export packages: `@hex-di/tracing-otel`, `@hex-di/tracing-jaeger`, `@hex-di/tracing-zipkin`, `@hex-di/tracing-datadog`
+- Hono tracing middleware with automatic root spans and W3C Trace Context extraction/injection
+- React TracingProvider with useTracer(), useSpan(), and useTracedCallback() hooks
+- Test utilities: createMemoryTracer(), assertSpanExists(), span matchers (hasAttribute, hasEvent, hasStatus, hasDuration)
+- Full breaking change migration: removed TraceCollector, TracingAPI, ResolutionSpan, MemoryCollector, NoOpCollector
+- NoOp tracer: 0% overhead via conditional hook registration (target was <20%)
+- Memory tracer: ~212% overhead / 3.12x slower (target was <200%, acceptable for dev/test)
+- Zero `any` types, zero type casts, zero eslint-disable comments in production code
+
+**Stats:**
+
+- 203 commits
+- 5 new packages created (tracing, tracing-otel, tracing-jaeger, tracing-zipkin, tracing-datadog)
+- 9 phases, 37 plans
+- 3,940 tests passing (266 test files)
+- 66/66 requirements satisfied (100%)
+- 2 days from start to ship (2026-02-06 to 2026-02-07)
+
+**Git range:** `e42250c` -> `93ab172`
+
+**Tech debt (non-blocking):** 3 items — stale 31-VERIFICATION.md overhead number, ObjectPool utility retained despite negative benchmark, 3 lint warnings in @hex-di/tracing utility code
+
+**What's next:** Planning next milestone
+
+---
+
 ## v6.0 Monorepo Reorganization (Shipped: 2026-02-06)
 
 **Delivered:** Restructured the monorepo into semantic groups (packages/, integrations/, tooling/, libs/) with nested sub-packages, preparing for future store, saga, and query libraries.
@@ -139,4 +177,4 @@
 
 ---
 
-_Last updated: 2026-02-06_
+_Last updated: 2026-02-07_
