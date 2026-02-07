@@ -126,7 +126,7 @@ export { AdapterRegistry } from "./container/internal/adapter-registry.js";
  * LifecycleManager for disposal.
  * @internal
  */
-export { LifecycleManager } from "./container/internal/lifecycle-manager.js";
+export { LifecycleManager, childInspectorMap } from "./container/internal/lifecycle-manager.js";
 
 /**
  * ResolutionEngine for sync resolution.
