@@ -133,14 +133,14 @@ Plans:
 
 #### Phase 31: Tracing Performance Optimization
 
-**Goal:** Reduce NoOp tracer overhead to <10% and Memory tracer overhead to <100% via hot path optimization
+**Goal:** Reduce NoOp tracer overhead to <20% and Memory tracer overhead to <200% via hot path optimization
 **Gap Closure:** Closes performance overhead gaps from v7.0-MILESTONE-AUDIT.md
 **Plans:** 2 plans
 
 Plans:
 
-- [ ] 31-01-PLAN.md — Optimize instrumentation hook hot path (NoOp target: <10%)
-- [ ] 31-02-PLAN.md — Optimize Memory tracer span creation and storage (target: <100%)
+- [ ] 31-01-PLAN.md — Optimize NoOp tracer hot path with early bailout (target: <20%)
+- [ ] 31-02-PLAN.md — Optimize Memory tracer with fast ID generation and circular buffer (target: <200%)
 
 ## Progress
 
