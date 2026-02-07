@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 ## Current Position
 
 Phase: 31 of 31 (Tracing Performance Optimization)
-Plan: 2 of 2 (All plans executed)
-Status: Gaps found -- performance targets not met (code correct, targets require runtime changes)
-Last activity: 2026-02-07 -- Verification found 2 gaps: NoOp 37% (target <20%), Memory 572% (target <200%)
+Plan: 3 of 4 (Gap closure in progress)
+Status: Gap 31-03 CLOSED -- NoOp overhead 0% (target <20%)
+Last activity: 2026-02-07 -- Completed 31-03-PLAN.md (conditional hook registration)
 
-Progress: [████████████] 92/92 plans (100%)
+Progress: [████████████] 93/94 plans (98.9%)
 
 ## Milestone History
 
@@ -146,6 +146,9 @@ Key decisions captured in PROJECT.md (23 decisions across 8 milestones).
 - Map-based span stack provides O(1) push/pop vs Array operations (31-02)
 - Circular buffer eliminates Array.shift() O(n) overhead for span storage (31-02)
 - Memory tracer overhead reduced from 602% to ~540% through combined optimizations (31-02)
+- Conditional hook registration via tracer.isEnabled() check eliminates NoOp overhead (31-03)
+- Early bailout in instrumentContainer/Tree returns no-op cleanup when tracer disabled (31-03)
+- NoOp tracer overhead reduced from 37% to 0% via conditional instrumentation (31-03)
 
 ### Pending Todos
 
@@ -172,19 +175,21 @@ None.
   - 30-01: Runtime emits child-created events with childId and childKind
   - 30-02: Tree instrumentation wired to childInspectorMap and getContainer()
   - 11 new integration tests, 321 total tracing tests pass
-- Phase 31 complete: Tracing performance optimization (2 plans)
+- Phase 31 gap closure: Tracing performance optimization (4 plans)
   - 31-01: NoOp tracer optimized from 38% to 37% overhead via early bailout
   - 31-02: Memory tracer optimized from 602% to ~540% overhead
-  - Optimizations: crypto ID generation, lazy allocation, Map-based stack, circular buffer
+  - 31-03: NoOp tracer optimized from 37% to 0% overhead via conditional hook registration
+  - Optimizations: crypto ID generation, lazy allocation, Map-based stack, circular buffer, conditional instrumentation
   - Added 2 new benchmark scenarios (cached resolutions, nested resolutions)
   - All 321 tests pass
+  - Gap 31-03 CLOSED: NoOp overhead 0% (target <20%)
 
 ## Session Continuity
 
 Last session: 2026-02-07
-Stopped at: Phase 31 gaps found (Tracing Performance Optimization)
+Stopped at: Completed 31-03-PLAN.md (conditional hook registration)
 Resume file: None
-Next: /gsd:plan-phase 31 --gaps (runtime-level performance optimizations)
+Next: Execute 31-04-PLAN.md (remaining Memory tracer optimizations)
 
 ---
 
