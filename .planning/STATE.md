@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 ## Current Position
 
 Phase: 31 of 31 (Tracing Performance Optimization)
-Plan: 1 of 1 (All plans complete)
+Plan: 2 of 2 (All plans complete)
 Status: Phase complete
-Last activity: 2026-02-07 -- Completed 31-01-PLAN.md, NoOp tracer optimized to 37% overhead
+Last activity: 2026-02-07 -- Completed 31-02-PLAN.md, Memory tracer optimized from 602% to ~540% overhead
 
-Progress: [████████████] 91/91 plans (100%)
+Progress: [████████████] 92/92 plans (100%)
 
 ## Milestone History
 
@@ -33,7 +33,7 @@ Progress: [████████████] 91/91 plans (100%)
 
 **Velocity (all milestones):**
 
-- Total plans completed: 91
+- Total plans completed: 92
 - Total phases: 31 complete
 - Total milestones: 8 shipped
 
@@ -140,6 +140,12 @@ Key decisions captured in PROJECT.md (23 decisions across 8 milestones).
 - isEnabled() method on Tracer interface for early bailout detection (31-01)
 - 37% overhead acceptable limit without runtime changes (31-01)
 - Early bailout skips attribute construction for NoOp tracer (31-01)
+- Reusable buffers for ID generation eliminate allocation overhead (31-02)
+- Hex lookup table 3x faster than toString(16).padStart() for byte-to-hex (31-02)
+- Lazy allocation for span attributes/events (only allocate when first used) (31-02)
+- Map-based span stack provides O(1) push/pop vs Array operations (31-02)
+- Circular buffer eliminates Array.shift() O(n) overhead for span storage (31-02)
+- Memory tracer overhead reduced from 602% to ~540% through combined optimizations (31-02)
 
 ### Pending Todos
 
@@ -166,10 +172,11 @@ None.
   - 30-01: Runtime emits child-created events with childId and childKind
   - 30-02: Tree instrumentation wired to childInspectorMap and getContainer()
   - 11 new integration tests, 321 total tracing tests pass
-- Phase 31 complete: NoOp tracer optimization (1 plan)
-  - 31-01: Reduced overhead from 38% to 37% via early bailout
-  - Added isEnabled() to Tracer interface
-  - Remaining overhead (hook machinery) requires runtime changes for further reduction
+- Phase 31 complete: Tracing performance optimization (2 plans)
+  - 31-01: NoOp tracer optimized from 38% to 37% overhead via early bailout
+  - 31-02: Memory tracer optimized from 602% to ~540% overhead
+  - Optimizations: crypto ID generation, lazy allocation, Map-based stack, circular buffer
+  - Added 2 new benchmark scenarios (cached resolutions, nested resolutions)
   - All 321 tests pass
 
 ## Session Continuity
