@@ -15,7 +15,14 @@
  * @packageDocumentation
  */
 
-import type { Span, SpanContext, SpanEvent, Attributes } from "../../types/index.js";
+import type {
+  Span,
+  SpanContext,
+  SpanOptions,
+  SpanEvent,
+  Attributes,
+  AttributeValue,
+} from "../../types/index.js";
 import type { Tracer } from "../../ports/tracer.js";
 import type { SpanStatus } from "../../types/status.js";
 
@@ -37,12 +44,13 @@ const NOOP_SPAN_CONTEXT: SpanContext = Object.freeze({
  *
  * All mutation methods return `this` for chaining without allocating.
  * isRecording() returns false to signal that telemetry is not being captured.
+ * isEnabled() returns false for completeness (matches parent tracer).
  * end() is a no-op since there's no state to finalize.
  */
 const NOOP_SPAN: Span = Object.freeze({
   context: NOOP_SPAN_CONTEXT,
 
-  setAttribute(_key: string, _value: unknown): Span {
+  setAttribute(_key: string, _value: AttributeValue): Span {
     return NOOP_SPAN;
   },
 
@@ -69,6 +77,10 @@ const NOOP_SPAN: Span = Object.freeze({
   isRecording(): boolean {
     return false;
   },
+
+  isEnabled(): boolean {
+    return false;
+  },
 });
 
 /**
@@ -85,20 +97,21 @@ const NOOP_SPAN: Span = Object.freeze({
  * - `getActiveSpan()`: Returns undefined (no active tracing)
  * - `getSpanContext()`: Returns undefined (no context to propagate)
  * - `withAttributes()`: Returns self (attributes have no effect)
+ * - `isEnabled()`: Returns false (enables early bailout optimizations)
  */
 const NOOP_TRACER: Tracer = Object.freeze({
-  startSpan(_name: string, _options?: unknown): Span {
+  startSpan(_name: string, _options?: SpanOptions): Span {
     return NOOP_SPAN;
   },
 
-  withSpan<T>(_name: string, fn: (span: Span) => T, _options?: unknown): T {
+  withSpan<T>(_name: string, fn: (span: Span) => T, _options?: SpanOptions): T {
     return fn(NOOP_SPAN);
   },
 
   async withSpanAsync<T>(
     _name: string,
     fn: (span: Span) => Promise<T>,
-    _options?: unknown
+    _options?: SpanOptions
   ): Promise<T> {
     return fn(NOOP_SPAN);
   },
@@ -113,6 +126,10 @@ const NOOP_TRACER: Tracer = Object.freeze({
 
   withAttributes(_attributes: Attributes): Tracer {
     return NOOP_TRACER;
+  },
+
+  isEnabled(): boolean {
+    return false;
   },
 });
 

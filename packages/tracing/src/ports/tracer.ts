@@ -221,6 +221,33 @@ export interface Tracer {
    * ```
    */
   withAttributes(attributes: Attributes): Tracer;
+
+  /**
+   * Indicates whether this tracer is actively recording spans.
+   *
+   * Returns false for NoOp tracers, true for recording tracers
+   * (Memory, Console, OTel, etc). This enables early bailout
+   * optimizations in instrumentation code to avoid constructing
+   * attribute objects when tracing is disabled.
+   *
+   * @returns true if tracer records spans, false for NoOp
+   *
+   * @remarks
+   * - NoOp tracers return false (no recording, zero overhead)
+   * - All other tracer implementations return true
+   * - Used by instrumentation hooks for performance optimization
+   * - Not intended for application code - use getActiveSpan() instead
+   *
+   * @example
+   * ```typescript
+   * if (tracer.isEnabled()) {
+   *   // Only construct expensive attribute objects when tracing
+   *   const attributes = buildComplexAttributes();
+   *   tracer.startSpan('operation', { attributes });
+   * }
+   * ```
+   */
+  isEnabled(): boolean;
 }
 
 /**

@@ -13,42 +13,8 @@ import type { Attributes, AttributeValue } from "../../types/attributes.js";
 import type { SpanKind, SpanStatus } from "../../types/status.js";
 import type { ConsoleTracerOptions } from "./formatter.js";
 import { formatSpan } from "./formatter.js";
-
-/**
- * Generate a random hex string of specified byte length.
- *
- * Uses Math.random for simplicity. Plan 23-07 will provide crypto-grade IDs.
- *
- * @param bytes - Number of bytes to generate
- * @returns Hex string (2 chars per byte)
- *
- * @internal
- */
-function randomHex(bytes: number): string {
-  let result = "";
-  for (let i = 0; i < bytes * 2; i++) {
-    result += Math.floor(Math.random() * 16).toString(16);
-  }
-  return result;
-}
-
-/**
- * Generate a W3C Trace Context compliant trace ID (16 bytes = 32 hex chars).
- *
- * @internal
- */
-function generateTraceId(): string {
-  return randomHex(16);
-}
-
-/**
- * Generate a W3C Trace Context compliant span ID (8 bytes = 16 hex chars).
- *
- * @internal
- */
-function generateSpanId(): string {
-  return randomHex(8);
-}
+import { generateTraceId, generateSpanId } from "../../utils/id-generation.js";
+import { getStdoutTTY, getConsole } from "../../utils/globals.js";
 
 /**
  * Span implementation for ConsoleTracer.
@@ -249,22 +215,7 @@ export class ConsoleTracer implements Tracer {
    * @internal
    */
   private _detectTTY(): boolean {
-    try {
-      // Check for Node.js process.stdout.isTTY
-      const g: unknown = globalThis;
-      if (g && typeof g === "object" && "process" in g) {
-        const proc: unknown = g.process;
-        if (proc && typeof proc === "object" && "stdout" in proc) {
-          const stdout: unknown = proc.stdout;
-          if (stdout && typeof stdout === "object" && "isTTY" in stdout) {
-            return stdout.isTTY === true;
-          }
-        }
-      }
-    } catch {
-      // Ignore errors
-    }
-    return false;
+    return getStdoutTTY();
   }
 
   startSpan(name: string, options?: SpanOptions): Span {
@@ -329,6 +280,17 @@ export class ConsoleTracer implements Tracer {
   }
 
   /**
+   * Indicates whether this tracer is actively recording spans.
+   *
+   * ConsoleTracer always returns true (records spans for console output).
+   *
+   * @returns true (console tracer always records)
+   */
+  isEnabled(): boolean {
+    return true;
+  }
+
+  /**
    * Handle span end event - format and output to console.
    *
    * @param spanData - Completed span data
@@ -351,12 +313,9 @@ export class ConsoleTracer implements Tracer {
    * @internal
    */
   private _logToConsole(message: string): void {
-    const g: unknown = globalThis;
-    if (g && typeof g === "object" && "console" in g) {
-      const cons: unknown = g.console;
-      if (cons && typeof cons === "object" && "log" in cons && typeof cons.log === "function") {
-        cons.log(message);
-      }
+    const cons = getConsole();
+    if (cons) {
+      cons.log(message);
     }
   }
 

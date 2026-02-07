@@ -199,6 +199,17 @@ export class MemoryTracer implements Tracer {
   }
 
   /**
+   * Indicates whether this tracer is actively recording spans.
+   *
+   * MemoryTracer always returns true (records spans for testing).
+   *
+   * @returns true (memory tracer always records)
+   */
+  isEnabled(): boolean {
+    return true;
+  }
+
+  /**
    * Returns a copy of all collected spans.
    *
    * Spans are in the order they were completed (not necessarily creation order).
