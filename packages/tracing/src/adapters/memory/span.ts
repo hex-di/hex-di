@@ -19,25 +19,7 @@ import type {
   AttributeValue,
   SpanKind,
 } from "../../types/index.js";
-
-/**
- * Generates a random hex string for span/trace IDs.
- *
- * This is a simple implementation for testing purposes.
- * Plan 23-07 will provide proper crypto-based ID generation.
- *
- * @param bytes - Number of bytes to generate (8 for spanId, 16 for traceId)
- * @returns Hex string of length bytes * 2
- * @internal
- */
-function generateHexId(bytes: number): string {
-  const hexChars = "0123456789abcdef";
-  let result = "";
-  for (let i = 0; i < bytes * 2; i++) {
-    result += hexChars[Math.floor(Math.random() * 16)];
-  }
-  return result;
-}
+import { generateTraceId, generateSpanId } from "../../utils/index.js";
 
 /**
  * MemorySpan - In-memory implementation of the Span interface.
@@ -45,28 +27,35 @@ function generateHexId(bytes: number): string {
  * Collects all span data in memory for testing and debugging purposes.
  * Calls the provided onEnd callback with SpanData when the span ends.
  *
+ * **Object pooling:** Spans are designed for reuse via object pooling.
+ * Use init() to initialize and reset() to prepare for pool return.
+ *
  * **Thread safety:** Not thread-safe. Designed for single-threaded test environments.
  *
  * @public
  */
 export class MemorySpan implements Span {
   /** W3C Trace Context for this span */
-  readonly context: SpanContext;
+  context: SpanContext = {
+    traceId: "",
+    spanId: "",
+    traceFlags: 0x01,
+  };
 
   /** Span start time in milliseconds since Unix epoch */
-  private readonly _startTime: number;
+  private _startTime = 0;
 
   /** Span name (operation identifier) */
-  private readonly _name: string;
+  private _name = "";
 
   /** Span kind (internal, server, client, etc.) */
-  private readonly _kind: SpanKind;
+  private _kind: SpanKind = "internal";
 
   /** Parent span ID if this is a child span */
-  private readonly _parentSpanId?: string;
+  private _parentSpanId?: string;
 
   /** Links to other spans */
-  private readonly _links: ReadonlyArray<SpanContext>;
+  private _links: SpanContext[] = [];
 
   /** Mutable attributes storage (lazy-allocated) */
   private _attributes?: Map<string, AttributeValue>;
@@ -75,47 +64,54 @@ export class MemorySpan implements Span {
   private _events?: SpanEvent[];
 
   /** Current span status */
-  private _status: SpanStatus;
+  private _status: SpanStatus = "unset";
 
   /** Whether the span is still recording */
-  private _recording: boolean;
+  private _recording = false;
 
   /** Callback invoked when span ends */
-  private readonly _onEnd: (spanData: SpanData) => void;
+  private _onEnd: (spanData: SpanData) => void = () => {};
 
   /**
-   * Creates a new MemorySpan.
+   * Initialize the span with new data.
+   *
+   * Called by the tracer when acquiring a span from the pool or creating new.
    *
    * @param name - Human-readable span name
    * @param parentContext - Optional parent span context for hierarchy
    * @param options - Optional span configuration
    * @param onEnd - Callback invoked with SpanData when span ends
+   * @internal
    */
-  constructor(
+  init(
     name: string,
     parentContext: SpanContext | undefined,
     options: SpanOptions | undefined,
     onEnd: (spanData: SpanData) => void
-  ) {
+  ): void {
     this._name = name;
     this._onEnd = onEnd;
     this._parentSpanId = parentContext?.spanId;
     this._kind = options?.kind ?? "internal";
-    this._links = options?.links ?? [];
+    this._links = options?.links ? [...options.links] : [];
     this._status = "unset";
     this._recording = true;
 
     // Initialize with options attributes if provided (lazy allocation)
     if (options?.attributes && Object.keys(options.attributes).length > 0) {
-      this._attributes = new Map();
+      if (!this._attributes) {
+        this._attributes = new Map();
+      } else {
+        this._attributes.clear();
+      }
       for (const [key, value] of Object.entries(options.attributes)) {
         this._attributes.set(key, value);
       }
     }
 
     // Generate span context (use parent's traceId if available)
-    const traceId = parentContext?.traceId ?? generateHexId(16);
-    const spanId = generateHexId(8);
+    const traceId = parentContext?.traceId ?? generateTraceId();
+    const spanId = generateSpanId();
     const traceFlags = parentContext?.traceFlags ?? 0x01; // Default to sampled
     const traceState = parentContext?.traceState;
 
@@ -128,6 +124,39 @@ export class MemorySpan implements Span {
 
     // Set start time (use explicit time or current time)
     this._startTime = options?.startTime ?? Date.now();
+  }
+
+  /**
+   * Reset the span to clean state for pool reuse.
+   *
+   * Called by the object pool after a span is released.
+   *
+   * @internal
+   */
+  reset(): void {
+    this._name = "";
+    this._parentSpanId = undefined;
+    this._kind = "internal";
+    this._links = [];
+    this._status = "unset";
+    this._recording = false;
+    this._startTime = 0;
+    this._onEnd = () => {};
+
+    // Clear lazy-allocated structures
+    if (this._attributes) {
+      this._attributes.clear();
+    }
+    if (this._events) {
+      this._events.length = 0;
+    }
+
+    // Reset context
+    this.context = {
+      traceId: "",
+      spanId: "",
+      traceFlags: 0x01,
+    };
   }
 
   /**
@@ -226,6 +255,9 @@ export class MemorySpan implements Span {
   /**
    * Complete the span and record its end time.
    * No further modifications allowed after calling end().
+   *
+   * Calls the onEnd callback with immutable SpanData snapshot.
+   * The tracer is responsible for releasing the span back to the pool.
    *
    * @param endTime - Optional explicit end time (defaults to current time)
    */

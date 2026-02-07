@@ -10,6 +10,7 @@
 import type { Tracer } from "../../ports/tracer.js";
 import type { Span, SpanOptions, SpanContext, SpanData, Attributes } from "../../types/index.js";
 import { MemorySpan } from "./span.js";
+import { ObjectPool } from "../../utils/index.js";
 
 /**
  * MemoryTracer - In-memory implementation of the Tracer interface.
@@ -63,6 +64,9 @@ export class MemoryTracer implements Tracer {
   /** Default attributes applied to all spans */
   private readonly _defaultAttributes: Attributes;
 
+  /** Object pool for span reuse to reduce allocation overhead */
+  private readonly _spanPool: ObjectPool<MemorySpan>;
+
   /**
    * Creates a new MemoryTracer.
    *
@@ -73,6 +77,11 @@ export class MemoryTracer implements Tracer {
     this._maxSpans = maxSpans;
     this._spans = new Array(maxSpans);
     this._defaultAttributes = defaultAttributes;
+    this._spanPool = new ObjectPool<MemorySpan>(
+      () => new MemorySpan(),
+      span => span.reset(),
+      1000 // Pool up to 1000 spans
+    );
   }
 
   /**
@@ -100,9 +109,14 @@ export class MemoryTracer implements Tracer {
       attributes: mergedAttributes,
     };
 
-    // Create span with onEnd callback that collects span data
-    const span = new MemorySpan(name, parentContext, mergedOptions, spanData => {
+    // Acquire span from pool
+    const span = this._spanPool.acquire();
+
+    // Initialize span with onEnd callback that collects data and releases span
+    span.init(name, parentContext, mergedOptions, spanData => {
       this._collectSpan(spanData);
+      // Release span back to pool after data is collected
+      this._spanPool.release(span);
     });
 
     // Push to active span stack (O(1) with Map)

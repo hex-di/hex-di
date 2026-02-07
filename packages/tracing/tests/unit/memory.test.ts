@@ -367,7 +367,8 @@ describe("MemoryTracer", () => {
 
 describe("MemorySpan", () => {
   it("should implement Span interface", () => {
-    const span = new MemorySpan("test", undefined, undefined, () => {});
+    const span = new MemorySpan();
+    span.init("test", undefined, undefined, () => {});
     expect(span.isRecording()).toBe(true);
     expect(span.context.traceId).toHaveLength(32);
     expect(span.context.spanId).toHaveLength(16);
@@ -375,7 +376,8 @@ describe("MemorySpan", () => {
 
   it("should not record after end()", () => {
     let recorded = false;
-    const span = new MemorySpan("test", undefined, undefined, () => {
+    const span = new MemorySpan();
+    span.init("test", undefined, undefined, () => {
       recorded = true;
     });
 
@@ -390,14 +392,16 @@ describe("MemorySpan", () => {
   });
 
   it("should support method chaining", () => {
-    const span = new MemorySpan("test", undefined, undefined, () => {});
+    const span = new MemorySpan();
+    span.init("test", undefined, undefined, () => {});
     const result = span.setAttribute("a", 1).setAttributes({ b: 2 }).setStatus("ok");
     expect(result).toBe(span);
   });
 
   it("should support addEvent", () => {
     let capturedData: unknown;
-    const span = new MemorySpan("test", undefined, undefined, data => {
+    const span = new MemorySpan();
+    span.init("test", undefined, undefined, data => {
       capturedData = data;
     });
 
