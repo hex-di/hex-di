@@ -3,8 +3,8 @@
 ## Tracking
 
 - **Started:** 2026-02-01
-- **Current Phase:** 30 of 31 (Dynamic Child Instrumentation)
-- **Completion:** 94% (29/31 phases complete)
+- **Current Phase:** 31 of 31 (Tracing Performance Optimization)
+- **Completion:** 97% (30/31 phases complete)
 
 ## Shipped Milestones
 
@@ -128,8 +128,8 @@ Plans:
 
 Plans:
 
-- [ ] 30-01-PLAN.md — Emit child-created events from runtime LifecycleManager
-- [ ] 30-02-PLAN.md — Wire tree.ts listener to new events and fix reverse lookup
+- [x] 30-01-PLAN.md — Emit child-created events from runtime LifecycleManager
+- [x] 30-02-PLAN.md — Wire tree.ts listener to new events and fix reverse lookup
 
 #### Phase 31: Tracing Performance Optimization
 
@@ -175,7 +175,7 @@ Plans:
 | 27. Framework & Testing           | v7.0      | 5/5            | Complete | 2026-02-06 |
 | 28. Tracing Test Coverage         | v7.0      | 4/4            | Complete | 2026-02-06 |
 | 29. Lint Cleanup                  | v7.0      | 1/1            | Complete | 2026-02-07 |
-| 30. Dynamic Child Instrumentation | v7.0      | 0/2            | Pending  | —          |
+| 30. Dynamic Child Instrumentation | v7.0      | 2/2            | Complete | 2026-02-07 |
 | 31. Tracing Performance           | v7.0      | 0/2            | Pending  | —          |
 
 ## Tracking
@@ -195,7 +195,7 @@ Plans:
 | v6.0      | 3      | 6     | 1    | 6.0       |
 | v7.0      | 6      | 30    | 1    | 30.0      |
 
-**Overall:** 87 plans in 6 days = 14.5 plans/day
+**Overall:** 89 plans in 7 days = 12.7 plans/day
 
 ### Burndown
 
