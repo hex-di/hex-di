@@ -108,6 +108,16 @@ export function instrumentContainerTree(
   tracer: Tracer,
   options?: AutoInstrumentOptions
 ): () => void {
+  // Early bailout for NoOp tracer - don't instrument tree at all.
+  // This eliminates overhead for entire container hierarchies by preventing
+  // any hooks from being registered. When tracer.isEnabled() returns false,
+  // no containers in the tree have tracing hooks, resulting in zero overhead.
+  if (!tracer.isEnabled()) {
+    return () => {
+      // No-op cleanup - no hooks were registered, no subscriptions made
+    };
+  }
+
   /**
    * Map tracking cleanup functions for all instrumented containers.
    *
