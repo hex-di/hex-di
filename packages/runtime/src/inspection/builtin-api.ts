@@ -11,6 +11,7 @@ import type {
   AdapterInfo,
   VisualizableAdapter,
   InspectorListener,
+  InspectorEvent,
   ServiceOrigin,
 } from "@hex-di/core";
 import type { InspectorAPI } from "./types.js";
@@ -260,6 +261,10 @@ export function createBuiltinInspectorAPI(container: InternalAccessible): Inspec
     // Graph data
     getAdapterInfo,
     getGraphData,
+
+    // Internal methods (for runtime and tracing)
+    getContainer: () => container,
+    emit: (event: InspectorEvent) => emitter.emit(event),
   };
 
   return Object.freeze(inspector);
