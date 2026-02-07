@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 
 ## Current Position
 
-Phase: 29 of 31 (Lint Cleanup)
-Plan: 1 of 1 (All plans complete)
+Phase: 30 of 31 (Dynamic Child Instrumentation)
+Plan: 2 of 2 (All plans complete)
 Status: Phase complete
-Last activity: 2026-02-07 -- Phase 29 complete, lint warnings eliminated
+Last activity: 2026-02-07 -- Completed 30-02-PLAN.md, dynamic child auto-instrumentation working
 
-Progress: [████████████] 88/88 plans (100%)
+Progress: [████████████] 90/90 plans (100%)
 
 ## Milestone History
 
@@ -33,8 +33,8 @@ Progress: [████████████] 88/88 plans (100%)
 
 **Velocity (all milestones):**
 
-- Total plans completed: 88
-- Total phases: 29 complete
+- Total plans completed: 90
+- Total phases: 30 complete
 - Total milestones: 8 shipped
 
 ## Accumulated Context
@@ -131,6 +131,12 @@ Key decisions captured in PROJECT.md (23 decisions across 8 milestones).
 - getResponseStatus helper for safe Hono response status access (29-01)
 - Promise.resolve().then() pattern for synchronous SpanExporter implementations (29-01)
 - Ref object { current: any } pattern for deferred container assignment in test closures (29-01)
+- childInspectorMap as Map<number, InspectorAPI> for cross-package access (30-01)
+- Module-level lazy flag for marking lazy-created containers (30-01)
+- Root factories call setWrapper() for inspector access (30-01)
+- Module-level childInspectorMap import for synchronous event handling (30-02)
+- getContainer() used for both pre-existing and dynamic children (30-02)
+- Lazy containers skipped during tree walk (instrumented on load only) (30-02)
 
 ### Pending Todos
 
@@ -153,15 +159,19 @@ None.
   - 28-04: Backend adapter tests (41 tests: Jaeger, Zipkin, DataDog)
 - v7.0 Distributed Tracing milestone COMPLETE -- all 28 phases shipped
 - Phase 29 complete: 18 lint warnings eliminated across 4 packages (hono, tracing, tracing-otel, tracing-datadog)
+- Phase 30 complete: Dynamic child auto-instrumentation working (2 plans)
+  - 30-01: Runtime emits child-created events with childId and childKind
+  - 30-02: Tree instrumentation wired to childInspectorMap and getContainer()
+  - 11 new integration tests, 321 total tracing tests pass
 
 ## Session Continuity
 
 Last session: 2026-02-07
-Stopped at: Phase 29 complete
+Stopped at: Phase 30 complete (Dynamic Child Instrumentation)
 Resume file: None
-Next: Phase 30 (Dynamic Child Instrumentation) or Phase 31 (Tracing Performance)
+Next: Phase 31 (Tracing Performance Optimization)
 
 ---
 
 _State initialized: 2026-02-01_
-_Last updated: 2026-02-07 (Phase 29 complete - lint cleanup)_
+_Last updated: 2026-02-07 (Phase 30 complete - dynamic child instrumentation)_
