@@ -361,6 +361,8 @@ Registration is explicit rather than automatic. Auto-registration (injecting the
 
 **Rationale:** A global batch flag creates hidden shared state. In multi-scope applications (multi-tenant, SSR with concurrent requests), a global batch in one scope defers notifications in all scopes -- a subtle timing bug. Container-scoped batching ensures each scope's notification cycle is independent, consistent with the principle that every signal flows through the container.
 
+**Resolution:** Per-container signal isolation is now fully supported via `createIsolatedReactiveSystem()` from `alien-signals/system`. Each container can use its own `ReactiveSystemInstance` with independent batching, subscriber tracking, and effect queues. `batch()` accepts an optional `system` parameter for fully isolated batching. The original per-target depth tracking via WeakMap remains for diagnostics.
+
 **Alternatives considered:** Global `batch(() => { ... })` (simpler API). Rejected because it violates the nervous system principle of no hidden global state and causes cross-scope interference.
 
 ### D12: Trace correlation via traceId/spanId
@@ -390,6 +392,8 @@ Registration is explicit rather than automatic. Auto-registration (injecting the
 **Rationale:** Building a correct signal engine with diamond dependency solving, topological evaluation, and glitch-free propagation is a multi-week effort with subtle correctness requirements (e.g., the Stale-Clean-Check optimization, proper handling of conditional dependencies, and cycle detection in computed chains). `alien-signals` provides all of this in ~1KB gzipped with zero dependencies and best-in-class performance.
 
 The store adds a thin adapter layer for HexDI-specific concerns (container-scoped batching, disposal integration, snapshot separation, subscriber counting) that `alien-signals` does not handle. This keeps the reactive core battle-tested while the HexDI-specific behavior is a small, auditable surface.
+
+**Per-container isolation:** `alien-signals` v3.1.2 exports `createReactiveSystem` from `alien-signals/system`, a factory that creates isolated dependency graph primitives. `createIsolatedReactiveSystem()` in `reactivity/system-factory.ts` uses this factory to produce per-container signal systems with their own `batchDepth`, `activeSub`, `queued[]`, and `flush()`. Signals, computeds, and effects created via `createSignal(v, system)` / `createComputed(fn, system)` / `createEffect(fn, system)` are fully isolated — batching in container A cannot defer notifications in container B.
 
 **Alternatives considered:**
 

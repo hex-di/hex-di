@@ -74,7 +74,10 @@ export function createMockStepExecutor<TOutput = unknown>(
         return config.valueFn(params);
       }
 
-      return config?.value as TOutput;
+      if (config?.value !== undefined) {
+        return config.value;
+      }
+      throw new Error("MockStepExecutor: no value, valueFn, or error configured");
     },
   };
 

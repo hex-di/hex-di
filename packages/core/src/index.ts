@@ -18,7 +18,13 @@
 // =============================================================================
 
 export { createPort, port } from "./ports/factory.js";
-export type { Port, InferService, InferPortName, NotAPortError } from "./ports/types.js";
+export type {
+  Port,
+  InferService,
+  InferPortName,
+  InferPortCategory,
+  NotAPortError,
+} from "./ports/types.js";
 
 // Directed ports
 export {
@@ -66,6 +72,7 @@ export type {
   Lifetime,
   FactoryKind,
   ResolvedDeps,
+  PortDeps,
   EmptyDeps,
 } from "./adapters/types.js";
 
@@ -122,6 +129,10 @@ export {
   AsyncInitializationRequiredError,
   NonClonableForkedError,
 } from "./errors/classes.js";
+
+// Resolution error union
+export type { ResolutionError } from "./errors/resolution-error.js";
+export { isResolutionError, toResolutionError } from "./errors/resolution-error.js";
 
 // Error parsing
 export { isHexError, parseError } from "./errors/parsing.js";
@@ -226,7 +237,24 @@ export type {
   InspectorEvent,
   InspectorListener,
   InspectorAPI,
+  ResultStatistics,
 } from "./inspection/inspector-types.js";
+
+// Library inspector protocol
+export type {
+  LibraryInspector,
+  LibraryEvent,
+  LibraryEventListener,
+  UnifiedSnapshot,
+  LibraryQueryEntry,
+  LibraryQueryResult,
+  LibraryQueryPredicate,
+} from "./inspection/library-inspector-types.js";
+
+export {
+  isLibraryInspector,
+  createLibraryInspectorPort,
+} from "./inspection/library-inspector-types.js";
 
 // =============================================================================
 // Utilities

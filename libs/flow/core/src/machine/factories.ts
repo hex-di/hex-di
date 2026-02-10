@@ -108,19 +108,14 @@ function unsafeCreateEventWithoutPayload<TName extends string>(type: TName): Eve
 // =============================================================================
 
 /**
- * Recursively freezes an object and all its nested properties.
- *
- * This ensures runtime immutability matches the type-level DeepReadonly guarantee.
- *
- * @param obj - The object to deeply freeze
- * @returns The same object, now frozen
+ * Internal helper that deeply freezes an object value in-place and returns it.
+ * Operates on the runtime representation without type-level concerns.
  *
  * @internal
  */
-function deepFreeze<T>(obj: T): DeepReadonly<T> {
-  // Handle null, undefined, and primitives
+function deepFreezeValue(obj: unknown): unknown {
   if (obj === null || obj === undefined || typeof obj !== "object") {
-    return obj as DeepReadonly<T>;
+    return obj;
   }
 
   // Get all property names (including non-enumerable ones)
@@ -128,28 +123,42 @@ function deepFreeze<T>(obj: T): DeepReadonly<T> {
 
   // Freeze each property value before freezing the object itself
   for (const name of propNames) {
-    const value = (obj as Record<string, unknown>)[name];
-    if (value !== null && typeof value === "object") {
-      deepFreeze(value);
+    const desc = Object.getOwnPropertyDescriptor(obj, name);
+    if (desc !== undefined) {
+      const value = desc.value;
+      if (value !== null && typeof value === "object") {
+        deepFreezeValue(value);
+      }
     }
   }
 
-  return Object.freeze(obj) as DeepReadonly<T>;
+  return Object.freeze(obj);
+}
+
+/**
+ * Recursively freezes an object and all its nested properties.
+ *
+ * This ensures runtime immutability matches the type-level DeepReadonly guarantee.
+ *
+ * @param obj - The object to deeply freeze
+ * @returns The same object, now frozen
+ *
+ * @remarks
+ * TypeScript cannot prove that deeply freezing a value of type T produces DeepReadonly<T>,
+ * because Object.freeze only returns Readonly<T> (shallow). The @ts-expect-error below
+ * bridges this gap: at runtime, deepFreezeValue recursively freezes all nested properties,
+ * so the result truly is DeepReadonly<T>, even though TypeScript cannot verify this statically.
+ *
+ * @internal
+ */
+function deepFreeze<T>(obj: T): DeepReadonly<T> {
+  // @ts-expect-error - TypeScript cannot prove deep freeze produces DeepReadonly<T>; see remarks above
+  return deepFreezeValue(obj);
 }
 
 // =============================================================================
 // State Factory Function
 // =============================================================================
-
-/**
- * Return type for the state factory's inner function.
- * Conditional based on whether TContext is void.
- *
- * @internal
- */
-type StateFactoryReturn<TName extends string, TContext> = TContext extends void
-  ? () => State<TName, void>
-  : (context: TContext) => State<TName, TContext>;
 
 /**
  * Creates a curried factory function for producing State values.
@@ -196,34 +205,24 @@ type StateFactoryReturn<TName extends string, TContext> = TContext extends void
  * // loadingState.context === { progress: 50, message: 'Loading...' } (frozen)
  * ```
  */
+export function state<TName extends string>(name: TName): () => State<TName, void>;
+export function state<TName extends string, TContext>(
+  name: TName
+): (context: TContext) => State<TName, TContext>;
 export function state<TName extends string, TContext = void>(
   name: TName
-): StateFactoryReturn<TName, TContext> {
-  // The return type depends on whether TContext is void
-  // We need to handle both cases at runtime
-  const factory = (context?: TContext): State<TName, TContext> => {
+): (context?: TContext) => State<TName, void> | State<TName, TContext> {
+  return (context?: TContext): State<TName, void> | State<TName, TContext> => {
     if (context === undefined) {
-      return unsafeCreateStateWithoutContext(name) as State<TName, TContext>;
+      return unsafeCreateStateWithoutContext(name);
     }
     return unsafeCreateState(name, context);
   };
-
-  return factory as StateFactoryReturn<TName, TContext>;
 }
 
 // =============================================================================
 // Event Factory Function
 // =============================================================================
-
-/**
- * Return type for the event factory's inner function.
- * Conditional based on whether TPayload is void.
- *
- * @internal
- */
-type EventFactoryReturn<TName extends string, TPayload> = TPayload extends void
-  ? () => Event<TName, void>
-  : (payload: TPayload) => Event<TName, TPayload>;
 
 /**
  * Creates a curried factory function for producing Event values.
@@ -269,17 +268,17 @@ type EventFactoryReturn<TName extends string, TPayload> = TPayload extends void
  * // submitEvent.payload === { formId: 'login', data: { user: 'test' } } (frozen)
  * ```
  */
+export function event<TName extends string>(type: TName): () => Event<TName, void>;
+export function event<TName extends string, TPayload>(
+  type: TName
+): (payload: TPayload) => Event<TName, TPayload>;
 export function event<TName extends string, TPayload = void>(
   type: TName
-): EventFactoryReturn<TName, TPayload> {
-  // The return type depends on whether TPayload is void
-  // We need to handle both cases at runtime
-  const factory = (payload?: TPayload): Event<TName, TPayload> => {
+): (payload?: TPayload) => Event<TName, void> | Event<TName, TPayload> {
+  return (payload?: TPayload): Event<TName, void> | Event<TName, TPayload> => {
     if (payload === undefined) {
-      return unsafeCreateEventWithoutPayload(type) as Event<TName, TPayload>;
+      return unsafeCreateEventWithoutPayload(type);
     }
     return unsafeCreateEvent(type, payload);
   };
-
-  return factory as EventFactoryReturn<TName, TPayload>;
 }

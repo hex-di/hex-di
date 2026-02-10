@@ -33,6 +33,13 @@ export type { TracingMiddlewareOptions } from "./tracing-middleware.js";
 export { getScope, getContainer, resolvePort, resolvePortAsync } from "./helpers.js";
 
 // =============================================================================
+// Inspection
+// =============================================================================
+
+export { getInspector, requestIdMiddleware, createDiagnosticRoutes } from "./inspection/index.js";
+export type { RequestIdOptions, DiagnosticRoutesConfig } from "./inspection/index.js";
+
+// =============================================================================
 // Errors
 // =============================================================================
 
@@ -48,7 +55,7 @@ export type { HexHonoVariables, HexHonoEnv, WithHexDi } from "./types.js";
 // Re-exports from @hex-di/core
 // =============================================================================
 
-export type { Port, InferService, InferPortName } from "@hex-di/core";
+export type { Port, InferService, InferPortName, InspectorAPI } from "@hex-di/core";
 
 // =============================================================================
 // Re-exports from @hex-di/runtime

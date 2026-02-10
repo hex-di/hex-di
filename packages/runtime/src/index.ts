@@ -24,6 +24,7 @@ export {
   AsyncFactoryError,
   AsyncInitializationRequiredError,
   NonClonableForkedError,
+  DisposalError,
 } from "./errors/index.js";
 
 // =============================================================================
@@ -188,3 +189,11 @@ export type {
 // =============================================================================
 
 export { inspect } from "./inspect.js";
+
+// =============================================================================
+// Result Integration
+// =============================================================================
+
+export { resolveResult, recordResult } from "./container/result-helpers.js";
+
+export type { ResultStatistics } from "./inspection/types.js";

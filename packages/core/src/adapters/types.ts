@@ -9,6 +9,7 @@
  */
 
 import type { InferService, InferPortName, Port } from "../ports/types.js";
+import type { TupleToUnion } from "../utils/type-utilities.js";
 
 // =============================================================================
 // Brand Symbols
@@ -100,6 +101,39 @@ export type ResolvedDeps<TRequires> = [TRequires] extends [never]
   : {
       [TPort in TRequires as InferPortName<TPort> & string]: InferService<TPort>;
     };
+
+// =============================================================================
+// PortDeps Helper Type
+// =============================================================================
+
+/**
+ * Maps a tuple of Port types to a typed dependencies object.
+ *
+ * This is the canonical type for expressing "these ports -> this deps object"
+ * across all HexDI libraries (store, flow, query). It composes `TupleToUnion`
+ * and `ResolvedDeps` to convert a readonly tuple of ports into a keyed object
+ * where port names are keys and service types are values.
+ *
+ * For empty tuples, returns `EmptyDeps` (branded empty type that prevents
+ * arbitrary key access).
+ *
+ * @typeParam TRequires - A readonly tuple of Port types
+ *
+ * @example
+ * ```typescript
+ * const LoggerPort = createPort<Logger>('Logger');
+ * const DbPort = createPort<Database>('Database');
+ *
+ * type Deps = PortDeps<readonly [typeof LoggerPort, typeof DbPort]>;
+ * // { Logger: Logger; Database: Database }
+ *
+ * type NoDeps = PortDeps<readonly []>;
+ * // EmptyDeps
+ * ```
+ */
+export type PortDeps<TRequires extends readonly Port<unknown, string>[]> = ResolvedDeps<
+  TupleToUnion<TRequires>
+>;
 
 // =============================================================================
 // Adapter Type

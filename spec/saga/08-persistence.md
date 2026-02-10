@@ -10,24 +10,32 @@ Sagas that span long-running operations (external API calls, human approvals, mu
 
 ### 12.1 SagaPersister Interface
 
-The `SagaPersister` interface defines the contract for all persistence adapters:
+The `SagaPersister` interface defines the contract for all persistence adapters. All methods return `ResultAsync` with a typed `PersistenceError` union, enabling callers to handle storage failures, missing executions, and serialization issues through the standard Result pipeline instead of try/catch:
 
 ```typescript
+type PersistenceError =
+  | { readonly _tag: "NotFound"; readonly executionId: string }
+  | { readonly _tag: "StorageFailure"; readonly operation: string; readonly cause: unknown }
+  | { readonly _tag: "SerializationFailure"; readonly cause: unknown };
+
 interface SagaPersister {
   /** Persist a complete execution state snapshot */
-  save(state: SagaExecutionState): Promise<void>;
+  save(state: SagaExecutionState): ResultAsync<void, PersistenceError>;
 
   /** Load execution state by ID, returns null if not found */
-  load(executionId: string): Promise<SagaExecutionState | null>;
+  load(executionId: string): ResultAsync<SagaExecutionState | null, PersistenceError>;
 
   /** Delete execution state (after successful completion or explicit cleanup) */
-  delete(executionId: string): Promise<void>;
+  delete(executionId: string): ResultAsync<void, PersistenceError>;
 
   /** List execution states matching optional filters */
-  list(filters?: PersisterFilters): Promise<SagaExecutionState[]>;
+  list(filters?: PersisterFilters): ResultAsync<SagaExecutionState[], PersistenceError>;
 
   /** Partial update of execution state (for efficient checkpointing) */
-  update(executionId: string, updates: Partial<SagaExecutionState>): Promise<void>;
+  update(
+    executionId: string,
+    updates: Partial<SagaExecutionState>
+  ): ResultAsync<void, PersistenceError>;
 }
 
 interface PersisterFilters {
@@ -193,27 +201,30 @@ This port is consumed by the saga runtime internally. When a saga definition has
 
 #### In-Memory Persister
 
-Provided for testing and development. Not suitable for production use since state does not survive process restarts:
+Provided for testing and development. Not suitable for production use since state does not survive process restarts. All methods return `ResultAsync` with typed `PersistenceError`:
 
 ```typescript
+import { okAsync, errAsync } from "@hex-di/result";
+
 function createInMemoryPersister(): SagaPersister {
   const store = new Map<string, SagaExecutionState>();
 
   return {
-    async save(state) {
-      store.set(state.executionId, structuredClone(state));
+    save(state) {
+      return okAsync(store.set(state.executionId, structuredClone(state))).map(() => undefined);
     },
 
-    async load(executionId) {
+    load(executionId) {
       const state = store.get(executionId);
-      return state ? structuredClone(state) : null;
+      return okAsync(state ? structuredClone(state) : null);
     },
 
-    async delete(executionId) {
+    delete(executionId) {
       store.delete(executionId);
+      return okAsync(undefined);
     },
 
-    async list(filters) {
+    list(filters) {
       let results = [...store.values()];
 
       if (filters?.sagaName) {
@@ -223,10 +234,12 @@ function createInMemoryPersister(): SagaPersister {
         results = results.filter(s => s.status === filters.status);
       }
       if (filters?.startedAfter) {
-        results = results.filter(s => new Date(s.timestamps.startedAt) > filters.startedAfter!);
+        const after = filters.startedAfter;
+        results = results.filter(s => new Date(s.timestamps.startedAt) > after);
       }
       if (filters?.startedBefore) {
-        results = results.filter(s => new Date(s.timestamps.startedAt) < filters.startedBefore!);
+        const before = filters.startedBefore;
+        results = results.filter(s => new Date(s.timestamps.startedAt) < before);
       }
       if (filters?.offset) {
         results = results.slice(filters.offset);
@@ -235,15 +248,16 @@ function createInMemoryPersister(): SagaPersister {
         results = results.slice(0, filters.limit);
       }
 
-      return results.map(s => structuredClone(s));
+      return okAsync(results.map(s => structuredClone(s)));
     },
 
-    async update(executionId, updates) {
+    update(executionId, updates) {
       const existing = store.get(executionId);
       if (!existing) {
-        throw new Error(`Execution ${executionId} not found`);
+        return errAsync({ _tag: "NotFound" as const, executionId });
       }
       store.set(executionId, { ...existing, ...updates });
+      return okAsync(undefined);
     },
   };
 }
@@ -253,46 +267,57 @@ Uses `structuredClone` on read/write to prevent external mutation of internal st
 
 #### PostgreSQL Persister Example
 
-A production-grade adapter using a database port to demonstrate the pattern:
+A production-grade adapter using a database port to demonstrate the pattern. All methods return `ResultAsync`, wrapping database errors as `StorageFailure`:
 
 ```typescript
+import { ResultAsync } from "@hex-di/result";
+
 function createPostgresPersister(db: DatabasePort): SagaPersister {
   return {
-    async save(state) {
-      await db.query(
-        `INSERT INTO saga_executions (execution_id, saga_name, state)
-         VALUES ($1, $2, $3)
-         ON CONFLICT (execution_id)
-         DO UPDATE SET state = $3, updated_at = NOW()`,
-        [state.executionId, state.sagaName, JSON.stringify(state)]
-      );
+    save(state) {
+      return ResultAsync.fromPromise(
+        db.query(
+          `INSERT INTO saga_executions (execution_id, saga_name, state)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (execution_id)
+           DO UPDATE SET state = $3, updated_at = NOW()`,
+          [state.executionId, state.sagaName, JSON.stringify(state)]
+        ),
+        cause => ({ _tag: "StorageFailure" as const, operation: "save", cause })
+      ).map(() => undefined);
     },
 
-    async load(executionId) {
-      const result = await db.query(`SELECT state FROM saga_executions WHERE execution_id = $1`, [
-        executionId,
-      ]);
-      return result.rows[0]?.state ?? null;
+    load(executionId) {
+      return ResultAsync.fromPromise(
+        db.query(`SELECT state FROM saga_executions WHERE execution_id = $1`, [executionId]),
+        cause => ({ _tag: "StorageFailure" as const, operation: "load", cause })
+      ).map(result => result.rows[0]?.state ?? null);
     },
 
-    async delete(executionId) {
-      await db.query(`DELETE FROM saga_executions WHERE execution_id = $1`, [executionId]);
+    delete(executionId) {
+      return ResultAsync.fromPromise(
+        db.query(`DELETE FROM saga_executions WHERE execution_id = $1`, [executionId]),
+        cause => ({ _tag: "StorageFailure" as const, operation: "delete", cause })
+      ).map(() => undefined);
     },
 
-    async list(filters) {
+    list(filters) {
       // Build dynamic WHERE clause from filters
       // ... (filter by saga_name, status, started_after, started_before)
       // Apply LIMIT/OFFSET for pagination
+      // Wrap in ResultAsync.fromPromise with StorageFailure error mapping
     },
 
-    async update(executionId, updates) {
-      // Use JSONB merge: state || $2::jsonb
-      await db.query(
-        `UPDATE saga_executions
-         SET state = state || $2::jsonb, updated_at = NOW()
-         WHERE execution_id = $1`,
-        [executionId, JSON.stringify(updates)]
-      );
+    update(executionId, updates) {
+      return ResultAsync.fromPromise(
+        db.query(
+          `UPDATE saga_executions
+           SET state = state || $2::jsonb, updated_at = NOW()
+           WHERE execution_id = $1`,
+          [executionId, JSON.stringify(updates)]
+        ),
+        cause => ({ _tag: "StorageFailure" as const, operation: "update", cause })
+      ).map(() => undefined);
     },
   };
 }

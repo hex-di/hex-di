@@ -132,14 +132,16 @@ export abstract class BaseContainerImpl<
       this.singletonMemo,
       this.resolutionContext,
       this.hooksRunner,
-      (port, scopedMemo, scopeId) => this.resolveInternal(port, scopedMemo, scopeId)
+      (port, scopedMemo, scopeId, scopeName) =>
+        this.resolveInternal(port, scopedMemo, scopeId, scopeName)
     );
 
     this.asyncResolutionEngine = new AsyncResolutionEngine(
       this.singletonMemo,
       this.resolutionContext,
       this.hooksRunner,
-      (port, scopedMemo, scopeId) => this.resolveAsyncInternal(port, scopedMemo, scopeId)
+      (port, scopedMemo, scopeId, scopeName) =>
+        this.resolveAsyncInternal(port, scopedMemo, scopeId, scopeName)
     );
   }
 
@@ -287,17 +289,20 @@ export abstract class BaseContainerImpl<
   resolveInternal<P extends TProvides | TExtends>(
     port: P,
     scopedMemo: MemoMap,
-    scopeId?: string | null
+    scopeId?: string | null,
+    scopeName?: string
   ): InferService<P>;
   resolveInternal(
     port: Port<unknown, string>,
     scopedMemo: MemoMap,
-    scopeId?: string | null
+    scopeId?: string | null,
+    scopeName?: string
   ): unknown;
   resolveInternal(
     port: Port<unknown, string>,
     scopedMemo: MemoMap,
-    scopeId: string | null = null
+    scopeId: string | null = null,
+    scopeName?: string
   ): unknown {
     const portName = port.__portName;
 
@@ -307,16 +312,17 @@ export abstract class BaseContainerImpl<
       return this.resolveInternalFallback(port, portName);
     }
 
-    return this.resolveWithAdapter(port, adapter, scopedMemo, scopeId);
+    return this.resolveWithAdapter(port, adapter, scopedMemo, scopeId, scopeName);
   }
 
   protected resolveWithAdapter<P extends Port<unknown, string>>(
     port: P,
     adapter: RuntimeAdapterFor<P>,
     scopedMemo: MemoMap,
-    scopeId: string | null
+    scopeId: string | null,
+    scopeName?: string
   ): InferService<P> {
-    return this.resolutionEngine.resolve(port, adapter, scopedMemo, scopeId);
+    return this.resolutionEngine.resolve(port, adapter, scopedMemo, scopeId, null, scopeName);
   }
 
   // ===========================================================================
@@ -348,17 +354,20 @@ export abstract class BaseContainerImpl<
   resolveAsyncInternal<P extends TProvides | TExtends>(
     port: P,
     scopedMemo: MemoMap,
-    scopeId?: string | null
+    scopeId?: string | null,
+    scopeName?: string
   ): Promise<InferService<P>>;
   resolveAsyncInternal(
     port: Port<unknown, string>,
     scopedMemo: MemoMap,
-    scopeId?: string | null
+    scopeId?: string | null,
+    scopeName?: string
   ): Promise<unknown>;
   async resolveAsyncInternal(
     port: Port<unknown, string>,
     scopedMemo: MemoMap,
-    scopeId: string | null = null
+    scopeId: string | null = null,
+    scopeName?: string
   ): Promise<unknown> {
     const adapter = this.getAdapter(port);
 
@@ -366,16 +375,17 @@ export abstract class BaseContainerImpl<
       return this.resolveAsyncInternalFallback(port);
     }
 
-    return this.resolveAsyncWithAdapter(port, adapter, scopedMemo, scopeId);
+    return this.resolveAsyncWithAdapter(port, adapter, scopedMemo, scopeId, scopeName);
   }
 
   protected resolveAsyncWithAdapter<P extends Port<unknown, string>>(
     port: P,
     adapter: RuntimeAdapterFor<P>,
     scopedMemo: MemoMap,
-    scopeId: string | null
+    scopeId: string | null,
+    scopeName?: string
   ): Promise<InferService<P>> {
-    return this.asyncResolutionEngine.resolve(port, adapter, scopedMemo, scopeId);
+    return this.asyncResolutionEngine.resolve(port, adapter, scopedMemo, scopeId, null, scopeName);
   }
 
   // ===========================================================================

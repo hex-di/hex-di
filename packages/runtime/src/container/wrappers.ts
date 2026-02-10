@@ -4,8 +4,11 @@
  */
 
 import type { Port, InferService, AdapterConstraint } from "@hex-di/core";
+import { getPortMetadata, isLibraryInspector } from "@hex-di/core";
+import { tryCatch, fromPromise } from "@hex-di/result";
 import { OverrideBuilder, type ContainerForOverride } from "./override-builder.js";
 import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
+import { mapToContainerError, mapToDisposalError, emitResultEvent } from "./result-helpers.js";
 import type {
   Container,
   ContainerMembers,
@@ -215,6 +218,19 @@ export function createChildContainerWrapper<
     resolve,
     resolveAsync: <P extends TProvides | TExtends>(port: P): Promise<InferService<P>> =>
       impl.resolveAsync(port),
+    tryResolve: <P extends TProvides | TExtends>(port: P) => {
+      const result = tryCatch(() => impl.resolve(port), mapToContainerError);
+      emitResultEvent(childContainer.inspector, port.__portName, result);
+      return result;
+    },
+    tryResolveAsync: <P extends TProvides | TExtends>(port: P) => {
+      const resultAsync = fromPromise(impl.resolveAsync(port), mapToContainerError);
+      void resultAsync.then(result => {
+        emitResultEvent(childContainer.inspector, port.__portName, result);
+      });
+      return resultAsync;
+    },
+    tryDispose: () => fromPromise(impl.dispose(), mapToDisposalError),
     resolveInternal: <P extends TProvides | TExtends>(port: P): InferService<P> =>
       impl.resolve(port),
     resolveAsyncInternal: <P extends TProvides | TExtends>(port: P): Promise<InferService<P>> =>
@@ -225,7 +241,8 @@ export function createChildContainerWrapper<
     kind: "child" as ContainerKind,
     has: (port: Port<unknown, string>): boolean => impl.has(port),
     hasAdapter: (port: Port<unknown, string>): boolean => impl.hasAdapter(port),
-    createScope: (name?: string) => createChildContainerScope(impl, name),
+    createScope: (name?: string) =>
+      createChildContainerScope(impl, name, () => childContainer.inspector),
     createChild: <
       TChildGraph extends Graph<
         Port<unknown, string>,
@@ -291,6 +308,7 @@ export function createChildContainerWrapper<
       TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
     > => createLazyChildContainerInternal(childContainer, childName, graphLoader, options),
     dispose: async () => {
+      childContainer.inspector?.disposeLibraries?.();
       await impl.dispose();
     },
     get isDisposed() {
@@ -302,6 +320,9 @@ export function createChildContainerWrapper<
     },
     // Child containers don't have initialize - this should return never
     get initialize(): never {
+      return unreachable("Child containers cannot be initialized - they inherit state from parent");
+    },
+    get tryInitialize(): never {
       return unreachable("Child containers cannot be initialized - they inherit state from parent");
     },
     get parent() {
@@ -373,6 +394,18 @@ export function createChildContainerWrapper<
   // Add built-in inspector API as non-enumerable property
   attachBuiltinAPIs(childContainer);
 
+  // Install auto-discovery hook for library inspectors
+  impl.installHooks({
+    afterResolve: ctx => {
+      if (ctx.result !== undefined) {
+        const portMeta = getPortMetadata(ctx.port);
+        if (portMeta?.category === "library-inspector" && isLibraryInspector(ctx.result)) {
+          childContainer.inspector?.registerLibrary(ctx.result);
+        }
+      }
+    },
+  });
+
   impl.setWrapper(childContainer);
   Object.freeze(childContainer);
   return childContainer;
@@ -394,7 +427,8 @@ export function createChildContainerScope<
   TAsyncPorts extends Port<unknown, string>,
 >(
   impl: ChildContainerImpl<TProvides, TExtends, TAsyncPorts>,
-  name?: string
+  name?: string,
+  getInspector?: () => import("../inspection/types.js").InspectorAPI | undefined
 ): Scope<TProvides | TExtends, TAsyncPorts, "initialized"> {
   const scopeImpl = new ScopeImpl<TProvides | TExtends, TAsyncPorts, "initialized">(
     impl,
@@ -404,7 +438,7 @@ export function createChildContainerScope<
     name // scope name
   );
   impl.registerChildScope(scopeImpl);
-  return createScopeWrapper(scopeImpl);
+  return createScopeWrapper(scopeImpl, getInspector);
 }
 
 // =============================================================================

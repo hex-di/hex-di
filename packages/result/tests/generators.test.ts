@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { ok, err } from "../src/index.js";
 import type { Result } from "../src/index.js";
 import { safeTry } from "../src/generators/safe-try.js";
-import { ResultAsyncImpl } from "../src/async/result-async.js";
+import { ResultAsync } from "../src/async/result-async.js";
 
 describe("Generators", () => {
   // DoD 9 #1
@@ -94,7 +94,7 @@ describe("Generators", () => {
   it("safeTry async: can yield* both Result and ResultAsync (via await)", async () => {
     const result = safeTry(async function* () {
       const a = yield* ok(10); // sync Result
-      const b = yield* await ResultAsyncImpl.ok(20); // async ResultAsync → await → Result
+      const b = yield* await ResultAsync.ok(20); // async ResultAsync → await → Result
       return ok(a + b);
     });
     const resolved = await result;
@@ -114,6 +114,26 @@ describe("Generators", () => {
     if (resolved.isOk()) expect(resolved.value).toBe(42);
   });
 
+  // --- Mutation gap: async generator cleanup ---
+  it("safeTry async: generator cleanup runs on early return", async () => {
+    const cleanup = vi.fn();
+
+    const result = safeTry(async function* () {
+      try {
+        const _a = yield* ok(1);
+        const _b = yield* err("async-stop");
+        return ok(999);
+      } finally {
+        cleanup();
+      }
+    });
+
+    const resolved = await result;
+    expect(resolved._tag).toBe("Err");
+    if (resolved.isErr()) expect(resolved.error).toBe("async-stop");
+    expect(cleanup).toHaveBeenCalledOnce();
+  });
+
   // DoD 9 #9
   it("Ok [Symbol.iterator] yields the Ok value", () => {
     const iter = ok(42)[Symbol.iterator]();
@@ -129,6 +149,34 @@ describe("Generators", () => {
     const result = iter.next();
     expect(result.done).toBe(false);
     expect(result.value).toBe(e);
+  });
+
+  // --- Mutation gap: Ok iterator return() method ---
+  it("Ok iterator return() produces done result with given value", () => {
+    const iter = ok(42)[Symbol.iterator]();
+    const result = iter.return(99);
+    expect(result.done).toBe(true);
+    expect(result.value).toBe(99);
+  });
+
+  // --- Mutation gap: Ok iterator throw() method ---
+  it("Ok iterator throw() re-throws the error", () => {
+    const iter = ok(42)[Symbol.iterator]();
+    expect(() => iter.throw(new Error("test"))).toThrow("test");
+  });
+
+  // --- Mutation gap: Ok iterator [Symbol.iterator] returns self ---
+  it("Ok iterator [Symbol.iterator]() returns self", () => {
+    const iter = ok(42)[Symbol.iterator]();
+    expect(iter[Symbol.iterator]()).toBe(iter);
+  });
+
+  // --- Mutation gap: Err iterator continues with error after yield ---
+  it("Err iterator throws unreachable on second next()", () => {
+    const e = err("bad");
+    const iter = e[Symbol.iterator]();
+    iter.next(); // first yields the Err
+    expect(() => iter.next()).toThrow("unreachable");
   });
 
   // DoD 9 #11

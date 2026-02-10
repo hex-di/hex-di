@@ -147,6 +147,11 @@ export function createTracingHook(
       attributes["hex-di.scope.id"] = ctx.scopeId;
     }
 
+    // Add scope name if user-provided (distinct from auto-generated scope ID)
+    if (ctx.scopeName) {
+      attributes["hex-di.scope.name"] = ctx.scopeName;
+    }
+
     // Add inheritance mode if applicable
     if (ctx.inheritanceMode) {
       attributes["hex-di.inheritance.mode"] = ctx.inheritanceMode;

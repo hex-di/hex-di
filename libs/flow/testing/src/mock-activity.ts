@@ -61,53 +61,58 @@ export function createMockActivity<TInput = void, TOutput = void>(options?: {
   let _startCount = 0;
   let _lastInput: TInput | undefined;
 
+  function resolveResult(
+    input: TInput,
+    resolve: (value: TOutput | PromiseLike<TOutput>) => void,
+    reject: (reason: unknown) => void
+  ): void {
+    if (options?.error) {
+      reject(options.error);
+      return;
+    }
+    if (options?.resultFn) {
+      resolve(options.resultFn(input));
+      return;
+    }
+    if (options?.result !== undefined) {
+      resolve(options.result);
+      return;
+    }
+    // @ts-expect-error - When TOutput is void (default), undefined is the correct value.
+    // For non-void TOutput, callers must provide result or resultFn.
+    resolve(undefined);
+  }
+
   const activity = {
     execute(input: TInput, _sink: unknown, signal: AbortSignal): Promise<TOutput> {
       _started = true;
       _startCount++;
       _lastInput = input;
 
-      const onAbort = (): void => {
-        _stopped = true;
-      };
-      signal.addEventListener("abort", onAbort, { once: true });
-
       return new Promise<TOutput>((resolve, reject) => {
-        const finish = (): void => {
-          signal.removeEventListener("abort", onAbort);
+        if (signal.aborted) {
+          _stopped = true;
+          reject(new Error("Activity aborted"));
+          return;
+        }
 
-          if (signal.aborted) {
-            _stopped = true;
-            reject(new Error("Activity aborted"));
-            return;
-          }
-
-          if (options?.error) {
-            reject(options.error);
-            return;
-          }
-
-          if (options?.resultFn) {
-            const r = options.resultFn(input);
-            resolve(r as TOutput);
-            return;
-          }
-
-          resolve(options?.result as TOutput);
+        const onAbort = (): void => {
+          _stopped = true;
+          reject(new Error("Activity aborted"));
         };
 
         if (options?.delay !== undefined && options.delay > 0) {
-          const timer = globalThis.setTimeout(finish, options.delay);
-          signal.addEventListener(
-            "abort",
-            () => {
-              globalThis.clearTimeout(timer);
-              finish();
-            },
-            { once: true }
-          );
+          const timer = globalThis.setTimeout(() => {
+            resolveResult(input, resolve, reject);
+          }, options.delay);
+
+          signal.addEventListener("abort", () => {
+            globalThis.clearTimeout(timer);
+            onAbort();
+          });
         } else {
-          finish();
+          signal.addEventListener("abort", onAbort);
+          resolveResult(input, resolve, reject);
         }
       });
     },

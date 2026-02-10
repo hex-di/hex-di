@@ -17,7 +17,7 @@
  * @packageDocumentation
  */
 
-import { createMachine, Effect, type Machine } from "@hex-di/flow";
+import { defineMachine, Effect, type Machine } from "@hex-di/flow";
 import { ROUTES, type RoutePath, type User, type NavigationContext } from "../types.js";
 
 // =============================================================================
@@ -218,7 +218,7 @@ export function resolvePathToState(
  * LOGOUT: Returns to dashboard and clears user
  * ```
  */
-export const navigationMachine: NavigationMachine = createMachine({
+export const navigationMachine: NavigationMachine = defineMachine({
   id: "navigation",
   initial: "idle",
   context: initialContext,

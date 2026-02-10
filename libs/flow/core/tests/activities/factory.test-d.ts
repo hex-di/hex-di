@@ -4,7 +4,7 @@
  * These tests verify:
  * 1. activity(port, config) returns correctly typed ConfiguredActivity
  * 2. requires tuple types preserved via const modifier
- * 3. deps object type matches ResolvedActivityDeps<TRequires>
+ * 3. deps object type matches PortDeps<TRequires>
  * 4. sink type matches TypedEventSink<TEvents>
  * 5. execute input type matches ActivityInput<TPort>
  * 6. execute return type matches ActivityOutput<TPort>
@@ -16,12 +16,12 @@
 
 import { describe, expectTypeOf, it } from "vitest";
 import { port } from "@hex-di/core";
+import type { PortDeps } from "@hex-di/core";
 import { activityPort } from "../../src/activities/port.js";
 import { defineEvents, type TypedEventSink } from "../../src/activities/events.js";
 import { activity } from "../../src/activities/factory.js";
 import type {
   CleanupReason,
-  ResolvedActivityDeps,
   ActivityContext,
   ConfiguredActivity,
   ConfiguredActivityAny,
@@ -174,10 +174,10 @@ describe("requires tuple types preserved via const modifier", () => {
 });
 
 // =============================================================================
-// Test 3: deps object type matches ResolvedActivityDeps<TRequires>
+// Test 3: deps object type matches PortDeps<TRequires>
 // =============================================================================
 
-describe("deps object type matches ResolvedActivityDeps<TRequires>", () => {
+describe("deps object type matches PortDeps<TRequires>", () => {
   it("provides deps keyed by port name with correct service types", () => {
     activity(TaskActivityPort, {
       requires: [ApiPort, LoggerPort],
@@ -195,33 +195,24 @@ describe("deps object type matches ResolvedActivityDeps<TRequires>", () => {
     });
   });
 
-  it("provides empty deps object for empty requires", () => {
+  it("provides EmptyDeps for empty requires", () => {
     activity(SimpleActivityPort, {
       requires: [],
       emits: EmptyEvents,
       execute: async (n, { deps }) => {
-        // Empty tuple produces empty object type (mapped type over never results in {})
-        // Verify deps has no properties by checking it's an empty object
+        // Empty tuple resolves to EmptyDeps (branded empty type)
         expectTypeOf(deps).toMatchTypeOf<Record<string, unknown>>();
-        // Can't access any properties
-        type DepsKeys = keyof typeof deps;
-        expectTypeOf<DepsKeys>().toEqualTypeOf<never>();
         return String(n);
       },
     });
   });
 
-  it("ResolvedActivityDeps type utility produces correct type", () => {
-    type TwoPortDeps = ResolvedActivityDeps<readonly [typeof ApiPort, typeof LoggerPort]>;
+  it("PortDeps type utility produces correct type", () => {
+    type TwoPortDeps = PortDeps<readonly [typeof ApiPort, typeof LoggerPort]>;
     expectTypeOf<TwoPortDeps>().toEqualTypeOf<{ Api: ApiService; Logger: Logger }>();
 
-    type SinglePortDeps = ResolvedActivityDeps<readonly [typeof ApiPort]>;
+    type SinglePortDeps = PortDeps<readonly [typeof ApiPort]>;
     expectTypeOf<SinglePortDeps>().toEqualTypeOf<{ Api: ApiService }>();
-
-    // Empty tuple mapped type produces {} (empty object), not Record<string, never>
-    type EmptyDeps = ResolvedActivityDeps<readonly []>;
-    type EmptyDepsKeys = keyof EmptyDeps;
-    expectTypeOf<EmptyDepsKeys>().toEqualTypeOf<never>();
   });
 });
 

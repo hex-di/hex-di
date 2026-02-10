@@ -32,3 +32,6 @@ export type { UseLazyContainerStateResult } from "./lazy-container-provider.js";
 
 export { TracingProvider } from "./tracing-provider.js";
 export type { TracingProviderProps } from "./tracing-provider.js";
+
+export { InspectorProvider } from "./inspector-provider.js";
+export type { InspectorProviderProps } from "./inspector-provider.js";

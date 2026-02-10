@@ -28,7 +28,7 @@
  * @packageDocumentation
  */
 
-import { createMachine, Effect, type Machine } from "@hex-di/flow";
+import { defineMachine, Effect, type Machine } from "@hex-di/flow";
 import type { Task } from "../types.js";
 import type { TaskFlowState, TaskFlowEvent, TaskFlowContext } from "./ports.js";
 
@@ -102,7 +102,7 @@ const initialContext: TaskFlowContext = {
  * ```
  */
 export const taskFlowMachine: Machine<TaskFlowState, TaskFlowEvent, TaskFlowContext> =
-  createMachine({
+  defineMachine({
     id: "taskFlow",
     initial: "idle",
     context: initialContext,

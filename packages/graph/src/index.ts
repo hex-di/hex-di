@@ -65,6 +65,20 @@ export type {
 } from "./graph/types/graph-inference.js";
 
 // =============================================================================
+// Result-based Build API
+// =============================================================================
+
+export type {
+  GraphBuildError,
+  GraphValidationError,
+  CyclicDependencyBuildError,
+  CaptiveDependencyBuildError,
+  MissingDependencyBuildError,
+} from "./errors/index.js";
+
+export { isGraphBuildError } from "./errors/index.js";
+
+// =============================================================================
 // Pretty View Symbol (for IDE type display)
 // =============================================================================
 

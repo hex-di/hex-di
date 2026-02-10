@@ -27,8 +27,13 @@
     "lint": "eslint . --cache",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:mutation": "stryker run",
     "test:types": "vitest run --typecheck",
     "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@stryker-mutator/core": "^9.5.1",
+    "@stryker-mutator/vitest-runner": "^9.5.1"
   },
   "keywords": [
     "result",

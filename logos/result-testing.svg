@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- "Bifurcated Hex in Test Boundary" - Simplified result split + dashed rect + checkmarks -->
+  <!-- Background: simplified bifurcated hex at top -->
+  <!-- Left half (emerald - Ok) -->
+  <polygon points="100,18 24,61 24,139 100,182" fill="#10B981"/>
+  <!-- Right half (orange - Err) -->
+  <polygon points="100,18 176,61 176,139 100,182" fill="#F97316"/>
+  <!-- White gap down center -->
+  <line x1="100" y1="16" x2="100" y2="184" stroke="white" stroke-width="4"/>
+  <!-- Small checkmark on left -->
+  <polyline points="52,68 62,80 78,56" fill="none" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Small X on right -->
+  <line x1="124" y1="58" x2="148" y2="80" stroke="white" stroke-width="5" stroke-linecap="round"/>
+  <line x1="148" y1="58" x2="124" y2="80" stroke="white" stroke-width="5" stroke-linecap="round"/>
+  <!-- Dashed test boundary rectangle -->
+  <rect x="38" y="92" width="124" height="55" rx="6" fill="white" opacity="0.15" stroke="white" stroke-width="2" stroke-dasharray="6,3"/>
+  <!-- Green checkmarks inside boundary -->
+  <polyline points="56,112 64,122 78,106" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="96,112 104,122 118,106" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="76,130 84,140 98,124" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

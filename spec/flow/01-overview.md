@@ -93,7 +93,7 @@ HexDI Flow approach:
 |          XState               |    |        HexDI Flow             |
 +-------------------------------+    +-------------------------------+
 |                               |    |                               |
-|  createMachine({              |    |  createMachine({              |
+|  createMachine({              |    |  defineMachine({              |
 |    states: {                  |    |    states: {                  |
 |      loading: {               |    |      loading: {               |
 |        invoke: {              |    |        entry: [               |
@@ -121,7 +121,7 @@ The initial release includes the full feature set of the current implementation 
 
 - Flat state machines with branded types (State, Event, Machine)
 - Effect system: Invoke, Spawn, Stop, Emit, Delay, Parallel, Sequence, None
-- Activity system: activityPort, activity factory, defineEvents, cleanup, timeouts
+- Activity system: createActivityPort, activity factory, defineEvents, cleanup, timeouts
 - Pure interpreter: `transition()` function
 - Machine runner: createMachineRunner with send/sendAndExecute/subscribe
 - DI integration: createFlowPort, createFlowAdapter, DIEffectExecutor
@@ -244,7 +244,7 @@ Framework integration is provided by separate packages:
 +-----------v---------------------v---v-------------------v------------+
 |                     MACHINE DEFINITION                                |
 |                                                                       |
-|  createMachine({                                                      |
+|  defineMachine({                                                      |
 |    id: 'order',                                                       |
 |    initial: 'idle',                                                   |
 |    context: { ... },                                                  |
@@ -335,7 +335,7 @@ async function handleSubmit(formData: FormData) {
 **After (HexDI Flow -- port-based effects, pure transitions):**
 
 ```typescript
-const formMachine = createMachine({
+const formMachine = defineMachine({
   id: "form",
   initial: "idle",
   context: { data: null, error: null },
@@ -384,7 +384,7 @@ flow/
 |   |   |   +-- config.ts         # MachineConfig type
 |   |   |   +-- state-node.ts     # StateNode with entry/exit/on
 |   |   |   +-- transition.ts     # TransitionConfig with target/guard/actions/effects
-|   |   |   +-- create-machine.ts # createMachine factory
+|   |   |   +-- define-machine.ts # defineMachine factory
 |   |   |   +-- factories.ts      # state() and event() curried factories
 |   |   |   +-- builder.ts        # NEW: setup() builder DSL
 |   |   |   +-- guards.ts         # NEW: defineGuard factory
@@ -395,7 +395,7 @@ flow/
 |   |   |   +-- constructors.ts   # Effect namespace with factory functions
 |   |   |   +-- index.ts
 |   |   +-- activities/
-|   |   |   +-- port.ts           # activityPort() curried factory
+|   |   |   +-- port.ts           # createActivityPort() curried factory
 |   |   |   +-- factory.ts        # activity() factory
 |   |   |   +-- events.ts         # defineEvents() typed event system
 |   |   |   +-- manager.ts        # ActivityManager lifecycle tracking
@@ -463,6 +463,7 @@ flow/
        |                         |                     |
        v                         v                     v
   @hex-di/react             @hex-di/runtime       @hex-di/graph
+                            @hex-di/result
                             @hex-di/tracing
 
 @hex-di/flow-testing -----> @hex-di/flow
@@ -478,11 +479,11 @@ flow/
 
 ### 3.3 Peer Dependencies
 
-| Package                | Dependencies                      | Peer Dependencies |
-| ---------------------- | --------------------------------- | ----------------- |
-| `@hex-di/flow`         | `@hex-di/core`, `@hex-di/runtime` | --                |
-| `@hex-di/flow-react`   | `@hex-di/flow`, `@hex-di/react`   | `react`           |
-| `@hex-di/flow-testing` | `@hex-di/flow`                    | --                |
+| Package                | Dependencies                                                           | Peer Dependencies |
+| ---------------------- | ---------------------------------------------------------------------- | ----------------- |
+| `@hex-di/flow`         | `@hex-di/core`, `@hex-di/runtime`, `@hex-di/result`, `@hex-di/tracing` | --                |
+| `@hex-di/flow-react`   | `@hex-di/flow`, `@hex-di/react`                                        | `react`           |
+| `@hex-di/flow-testing` | `@hex-di/flow`                                                         | --                |
 
 ### 3.4 What Exists Today vs. What is New
 
@@ -491,12 +492,12 @@ The current implementation (`libs/flow/core` and `libs/flow/react`) already prov
 ```
 EXISTING (libs/flow/core)           NEW in 0.1.0 spec
 +----------------------------------+----------------------------------+
-| createMachine factory            | setup() builder DSL              |
+| defineMachine factory            | setup() builder DSL              |
 | State, Event branded types       | defineGuard named guards         |
 | state(), event() factories       | defineAction named actions       |
 | Effect.invoke/spawn/stop/emit/   | serialize/restore                |
 |   delay/parallel/sequence/none   | @hex-di/flow-testing package     |
-| activityPort, activity factory   | createMachineTestHarness         |
+| createActivityPort, activity     | createMachineTestHarness         |
 | defineEvents typed event system  | MockEffectExecutor               |
 | ActivityManager lifecycle        | Assertion helpers                |
 | Pure interpreter (transition fn) |                                  |

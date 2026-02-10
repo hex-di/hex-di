@@ -41,17 +41,23 @@ Define advanced composition, coordination, and integration patterns for HexDI Fl
 - Provide a `retryConfig` helper that generates the states and transitions for a retry pattern: `{ maxRetries, initialDelay, maxDelay, backoffMultiplier }`
 - The helper produces a `waiting` state with a delay effect and a guard `canRetry` that checks retry count against `maxRetries`
 - Context is automatically extended with `retryCount: number` and `retryDelay: number` fields
-- The helper returns a partial machine config (states + guards) that can be spread into a `createMachine` call
+- The helper returns a partial machine config (states + guards) that can be spread into a `defineMachine` call
 - Alternatively, this can be a higher-order machine pattern (a function that wraps an existing machine with retry behavior)
 
 **Saga Integration via @hex-di/saga**
 
-- Define a pattern where a flow machine orchestrates a saga by invoking a SagaPort as an activity
-- The saga runs as an `Effect.invoke(SagaPort, 'execute', [sagaDefinition])` where the saga definition describes the compensatable steps
-- On saga success, the machine transitions to a success state; on saga failure with compensation, it transitions to a compensated/failed state
-- The saga's compensation events are routed back to the machine for UI feedback (e.g., "rolling back step 3 of 5")
+> **Full integration guide:** See [Integration: Flow + Saga](../integration/flow-saga.md) for complete patterns and wiring examples.
+
+- Define a pattern where a flow machine orchestrates a saga by invoking a `SagaPort<TName, TInput, TOutput, TError>` as an activity
+- The saga runs as an `Effect.invoke(SagaPort, 'execute', input)` where the `SagaPort` token resolves to a `SagaExecutor` that runs the configured saga definition
+- On saga success, the machine receives a `done.invoke.{portName}` event carrying `SagaSuccess<TOutput>` (with `output` and `executionId` fields)
+- On saga failure, the machine receives an `error.invoke.{portName}` event carrying `EffectExecutionError { _tag: "InvokeError", cause: SagaError<TError> }`. The `cause` field is the full `SagaError` with its `_tag` discriminant (`"StepFailed"`, `"CompensationFailed"`, `"Timeout"`, etc.) for structured error handling in the machine's error transition
+- The saga's `SagaProgressEvent` and `SagaCompensationEvent` (imported from `@hex-di/saga`) are routed back to the machine via the activity `EventSink` for UI feedback (e.g., "rolling back step 3 of 5")
+- The shared integration contract types (`SagaProgressEvent`, `SagaCompensationEvent`) are defined in the saga spec (see [Saga Integration §15.0](../saga/10-integration.md#150-shared-integration-contract-types)) and exported from `@hex-di/saga`
 
 **Store Integration: Bidirectional Context Sync**
+
+> **Full integration guide:** See [Integration: Store + Flow](../integration/store-flow.md) for complete patterns and wiring examples.
 
 - Define a `syncWithStore(storePort, selector, eventType)` helper that creates an activity subscription to a `@hex-di/store` instance
 - Store state changes matching the selector emit events to the machine, allowing the machine to react to external state
@@ -59,6 +65,8 @@ Define advanced composition, coordination, and integration patterns for HexDI Fl
 - The sync is unidirectional by default (store -> machine); bidirectional sync requires explicit dispatch effects in machine transitions
 
 **Query Integration: Triggering Queries from States**
+
+> **Full integration guide:** See [Integration: Query + Flow](../integration/query-flow.md) for complete patterns and wiring examples.
 
 - Define a pattern for invoking `@hex-di/query` operations from machine states using `Effect.invoke(QueryPort, 'fetch', [queryKey])`
 - Query results arrive as `done.invoke.{queryId}` events with the data payload

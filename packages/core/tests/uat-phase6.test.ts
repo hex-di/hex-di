@@ -234,7 +234,9 @@ describe("Phase 6 UAT: Core Port API", () => {
       expect(metadata?.tags).toEqual(["logging", "observability", "core"]);
 
       // Verify types
-      expectTypeOf(FullPort).toEqualTypeOf<DirectedPort<Logger, "FullLogger", "outbound">>();
+      expectTypeOf(FullPort).toEqualTypeOf<
+        DirectedPort<Logger, "FullLogger", "outbound", "infrastructure">
+      >();
     });
 
     it("different port names with same service work correctly", () => {

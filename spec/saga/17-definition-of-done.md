@@ -574,25 +574,25 @@ This document defines all tests required for `@hex-di/saga` and `@hex-di/saga-re
 
 ### Unit Tests — `libs/saga/react/tests/use-saga.test.tsx`
 
-| #   | Test                                                                        | Type |
-| --- | --------------------------------------------------------------------------- | ---- |
-| 1   | `useSaga(port)` returns initial state: status "idle", data null, error null | unit |
-| 2   | `execute(input)` transitions status to "running"                            | unit |
-| 3   | `execute(input)` returns `ResultAsync<SagaSuccess, SagaError>`              | unit |
-| 4   | Successful execution transitions status to "success"                        | unit |
-| 5   | Successful execution populates `data` with SagaSuccess output               | unit |
-| 6   | Failed execution transitions through "compensating" to "error"              | unit |
-| 7   | Failed execution populates `error` with SagaError                           | unit |
-| 8   | `error` with `_tag: "StepFailed"` has `compensated: true`                   | unit |
-| 9   | `error` with `_tag: "CompensationFailed"` has `compensated: false`          | unit |
-| 10  | `cancel()` triggers cancellation and returns to idle after compensation     | unit |
-| 11  | `reset()` returns status to "idle", clears data and error                   | unit |
-| 12  | `execute()` while running throws error                                      | unit |
-| 13  | `reset()` while running throws error                                        | unit |
-| 14  | `reset()` while compensating throws error                                   | unit |
-| 15  | Component unmount during execution triggers cleanup                         | unit |
-| 16  | `isIdle`, `isRunning`, `isSuccess`, `isError` boolean helpers               | unit |
-| 17  | `executionId` populated after `execute()` called                            | unit |
+| #   | Test                                                                                                              | Type |
+| --- | ----------------------------------------------------------------------------------------------------------------- | ---- |
+| 1   | `useSaga(port)` returns initial state: status "idle", data null, error null                                       | unit |
+| 2   | `execute(input)` transitions status to "running"                                                                  | unit |
+| 3   | `execute(input)` returns `ResultAsync<SagaSuccess, SagaError>`                                                    | unit |
+| 4   | Successful execution transitions status to "success"                                                              | unit |
+| 5   | Successful execution populates `data` with SagaSuccess output                                                     | unit |
+| 6   | Failed execution transitions through "compensating" to "error"                                                    | unit |
+| 7   | Failed execution populates `error` with SagaError                                                                 | unit |
+| 8   | `error` with `_tag: "StepFailed"` implies full compensation (`compensatedSteps.length === completedSteps.length`) | unit |
+| 9   | `error` with `_tag: "CompensationFailed"` implies partial compensation (`failedCompensationSteps.length > 0`)     | unit |
+| 10  | `cancel()` triggers cancellation and returns to idle after compensation                                           | unit |
+| 11  | `reset()` returns status to "idle", clears data and error                                                         | unit |
+| 12  | `execute()` while running throws error                                                                            | unit |
+| 13  | `reset()` while running throws error                                                                              | unit |
+| 14  | `reset()` while compensating throws error                                                                         | unit |
+| 15  | Component unmount during execution triggers cleanup                                                               | unit |
+| 16  | `isIdle`, `isRunning`, `isSuccess`, `isError` boolean helpers                                                     | unit |
+| 17  | `executionId` populated after `execute()` called                                                                  | unit |
 
 ### Unit Tests — `libs/saga/react/tests/use-saga-status.test.tsx`
 

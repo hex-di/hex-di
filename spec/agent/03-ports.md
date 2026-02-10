@@ -53,15 +53,15 @@ const deleteTaskTool = defineTool({
 });
 
 // Define the tool port
-const TaskToolsPort = createPort<ToolPortService<[typeof createTaskTool, typeof deleteTaskTool]>>()(
-  {
-    name: "TaskTools",
-    direction: "inbound",
-  }
-);
+const TaskToolsPort = port<ToolPortService<[typeof createTaskTool, typeof deleteTaskTool]>>()({
+  name: "TaskTools",
+  direction: "inbound",
+});
 ```
 
 The tool port's type parameter captures the exact tuple of tool definitions, giving compile-time knowledge of which tools are available and their parameter types.
+
+> **Note:** The `SuggestedCategory` type in `@hex-di/core` should be extended with agent-specific categories: `"agent"`, `"ai"`, `"llm"`, and `"tool"`. Until then, the `(string & {})` escape hatch allows using these categories without IDE autocomplete.
 
 ### 5.3 Tool Name Uniqueness
 
@@ -115,12 +115,12 @@ interface AgentService {
 Each agent in the system is a separate port, allowing multiple agents to coexist in the same container:
 
 ```typescript
-const TaskAgentPort = createPort<AgentService>()({
+const TaskAgentPort = port<AgentService>()({
   name: "TaskAgent",
   description: "Agent that manages tasks — create, update, delete, query",
 });
 
-const AnalyticsAgentPort = createPort<AgentService>()({
+const AnalyticsAgentPort = port<AgentService>()({
   name: "AnalyticsAgent",
   description: "Agent that answers analytics questions about task data",
 });
@@ -210,12 +210,12 @@ const LlmPort: DirectedPort<LlmService, "Llm", "outbound">;
 Applications that need multiple LLM providers (e.g., a fast model for simple tasks and a powerful model for complex reasoning) define additional ports:
 
 ```typescript
-const FastLlmPort = createPort<LlmService>()({
+const FastLlmPort = port<LlmService>()({
   name: "FastLlm",
   description: "Fast, cheap model for simple operations",
 });
 
-const ReasoningLlmPort = createPort<LlmService>()({
+const ReasoningLlmPort = port<LlmService>()({
   name: "ReasoningLlm",
   description: "Powerful model for complex reasoning",
 });

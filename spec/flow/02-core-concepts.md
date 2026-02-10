@@ -27,7 +27,7 @@ Key properties:
 
 The brand symbol (`MachineBrandSymbol`) enables nominal typing: two machines with identical structure but different generic parameters are type-incompatible.
 
-A Machine is created via `createMachine()` and is deeply frozen at runtime.
+A Machine is created via `defineMachine()` and is deeply frozen at runtime.
 
 ---
 
@@ -89,7 +89,7 @@ Within a machine definition, event names appear as keys in the `on` record of ea
 **Context** is the extended state data that persists across transitions. It represents the mutable aspect of machine state -- information that cannot be expressed by the finite set of state names alone (counters, loaded data, error messages, etc.).
 
 ```typescript
-const machine = createMachine({
+const machine = defineMachine({
   id: 'counter',
   initial: 'active',
   context: { count: 0, lastAction: '' },

@@ -54,7 +54,7 @@
   },
   "devDependencies": {
     "@hex-di/core": "workspace:*",
-    "vitest": "4.0.16"
+    "vitest": "4.0.18"
   },
   "peerDependencies": {
     "typescript": ">=5.0"

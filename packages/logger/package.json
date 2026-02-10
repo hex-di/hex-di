@@ -1,0 +1,81 @@
+{
+  "name": "@hex-di/logger",
+  "version": "0.1.0",
+  "description": "Structured logging support for HexDI - context-aware, type-safe, multiple backend support",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./ports": {
+      "import": {
+        "types": "./dist/ports/index.d.ts",
+        "default": "./dist/ports/index.js"
+      },
+      "require": {
+        "types": "./dist/ports/index.d.cts",
+        "default": "./dist/ports/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "lint": "eslint . --cache",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:types": "vitest run --typecheck",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "logging",
+    "structured-logging",
+    "hexagonal-architecture",
+    "dependency-injection",
+    "typescript",
+    "type-safe"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hex-di/hex-di.git",
+    "directory": "packages/logger"
+  },
+  "bugs": {
+    "url": "https://github.com/hex-di/hex-di/issues"
+  },
+  "homepage": "https://github.com/hex-di/hex-di/tree/main/packages/logger#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "@hex-di/graph": "workspace:*",
+    "hono": "^4.0.0"
+  },
+  "peerDependencies": {
+    "@hex-di/core": "workspace:*",
+    "@hex-di/runtime": "workspace:*",
+    "hono": ">=4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "hono": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "sideEffects": false
+}

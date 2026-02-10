@@ -9,7 +9,11 @@
  */
 
 import type { SpanData, SpanExporter } from "@hex-di/tracing";
-import { convertToReadableSpan, createResource } from "@hex-di/tracing-otel";
+import {
+  convertToReadableSpan,
+  createResource,
+  mapHexDiToOtelAttributes,
+} from "@hex-di/tracing-otel";
 import { ZipkinExporter } from "@opentelemetry/exporter-zipkin";
 import type { ReadableSpan } from "@opentelemetry/sdk-trace-base";
 
@@ -69,6 +73,35 @@ export interface ZipkinExporterOptions {
    * ```
    */
   attributes?: Record<string, string>;
+
+  /**
+   * HTTP headers for authentication with the Zipkin collector.
+   *
+   * @example
+   * ```typescript
+   * {
+   *   'Authorization': 'Bearer my-token',
+   * }
+   * ```
+   */
+  headers?: Record<string, string>;
+
+  /**
+   * Request timeout in milliseconds.
+   *
+   * @default 10000 (10 seconds)
+   */
+  timeout?: number;
+
+  /**
+   * Whether to map HexDI-specific attributes to OpenTelemetry semantic conventions.
+   *
+   * When enabled, attributes like `hex-di.port.name` are additionally mapped to
+   * OTel conventions like `code.namespace` for better interop with Zipkin's UI.
+   *
+   * @default true
+   */
+  mapSemanticAttributes?: boolean;
 }
 
 /**
@@ -145,6 +178,8 @@ function logError(message: string, ...args: unknown[]): void {
  * ```
  */
 export function createZipkinExporter(options: ZipkinExporterOptions): SpanExporter {
+  const shouldMapAttributes = options.mapSemanticAttributes !== false;
+
   // Create Resource from service metadata
   const resource = createResource({
     serviceName: options.serviceName,
@@ -157,23 +192,36 @@ export function createZipkinExporter(options: ZipkinExporterOptions): SpanExport
   // Create underlying OpenTelemetry Zipkin exporter
   const zipkinExporter = new ZipkinExporter({
     url: options.url ?? "http://localhost:9411/api/v2/spans",
+    headers: options.headers,
   });
+
+  let isShutdown = false;
 
   return {
     /**
      * Export a batch of HexDI spans to Zipkin backend.
      *
      * Converts HexDI spans to OpenTelemetry format and sends via JSON v2 API.
+     * Optionally maps HexDI-specific attributes to OTel semantic conventions.
      * Failures are logged but don't throw to avoid blocking the application.
      *
      * @param spans - Readonly array of completed HexDI spans
      */
     async export(spans: ReadonlyArray<SpanData>): Promise<void> {
+      if (isShutdown) {
+        return;
+      }
+
       try {
         // Convert HexDI spans to OTel ReadableSpan format with resource
-        const readableSpans: ReadableSpan[] = spans.map(hexSpan =>
-          convertToReadableSpan(hexSpan, resource)
-        );
+        const readableSpans: ReadableSpan[] = spans.map(hexSpan => {
+          // Optionally map HexDI attributes to OTel semantic conventions
+          const mappedSpan = shouldMapAttributes
+            ? { ...hexSpan, attributes: mapHexDiToOtelAttributes(hexSpan.attributes) }
+            : hexSpan;
+
+          return convertToReadableSpan(mappedSpan, resource);
+        });
 
         // Export via underlying Zipkin exporter (callback-based API)
         await new Promise<void>((resolve, reject) => {
@@ -199,6 +247,10 @@ export function createZipkinExporter(options: ZipkinExporterOptions): SpanExport
      * Delegates to the underlying Zipkin exporter's flush mechanism.
      */
     async forceFlush(): Promise<void> {
+      if (isShutdown) {
+        return;
+      }
+
       try {
         await zipkinExporter.forceFlush();
       } catch (error) {
@@ -212,6 +264,12 @@ export function createZipkinExporter(options: ZipkinExporterOptions): SpanExport
      * Ensures all buffered spans are exported before cleanup.
      */
     async shutdown(): Promise<void> {
+      if (isShutdown) {
+        return;
+      }
+
+      isShutdown = true;
+
       try {
         await zipkinExporter.shutdown();
       } catch (error) {

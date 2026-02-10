@@ -32,6 +32,13 @@
  */
 
 import type { AdapterConstraint } from "@hex-di/core";
+import type { Result } from "@hex-di/result";
+import type { GraphBuildError, GraphValidationError } from "../errors/index.js";
+import {
+  CyclicDependencyBuild,
+  CaptiveDependencyBuild,
+  MissingDependencyBuild,
+} from "../errors/index.js";
 import type {
   JoinPortNames,
   UnsatisfiedDependencies,
@@ -49,7 +56,12 @@ import type {
   GetMaxDepth,
   GetDepthExceededWarning,
 } from "./types/state.js";
-import { inspectGraph, detectCycleAtRuntime } from "../graph/inspection/index.js";
+import {
+  inspectGraph,
+  detectCycleAtRuntime,
+  detectCaptiveAtRuntime,
+  formatCaptiveError,
+} from "../graph/inspection/index.js";
 import type {
   GraphInspection,
   GraphSummary,
@@ -72,7 +84,13 @@ import type { __graphBuilderBrand, __prettyView, __prettyViewSymbol } from "../s
 import type { BuildableGraphState } from "./builder-types.js";
 import { addAdapter, addManyAdapters, addOverrideAdapter } from "./builder-provide.js";
 import { mergeGraphs } from "./builder-merge.js";
-import { buildGraph, buildGraphFragment, type BuiltGraph } from "./builder-build.js";
+import {
+  buildGraph,
+  buildGraphFragment,
+  tryBuildGraph,
+  tryBuildGraphFragment,
+  type BuiltGraph,
+} from "./builder-build.js";
 
 // NOTE: Inspection utilities (inspectGraph, inspectionToJSON, detectCycleAtRuntime)
 // and their types are exported from graph/inspection/index.ts.
@@ -641,17 +659,46 @@ export class GraphBuilder<
   validate(): ValidationResult {
     const inspection = this.inspect();
 
-    const errors: string[] = [];
+    const errors: GraphValidationError[] = [];
 
     if (inspection.unsatisfiedRequirements.length > 0) {
-      errors.push(`Missing adapters for: ${inspection.unsatisfiedRequirements.join(", ")}`);
+      errors.push(
+        MissingDependencyBuild({
+          missingPorts: inspection.unsatisfiedRequirements,
+          message: `Missing adapters for: ${inspection.unsatisfiedRequirements.join(", ")}`,
+        })
+      );
     }
 
     if (inspection.depthLimitExceeded) {
       const cycle = detectCycleAtRuntime(this.adapters);
       if (cycle) {
-        errors.push(`Circular dependency: ${cycle.join(" -> ")}`);
+        errors.push(
+          CyclicDependencyBuild({
+            cyclePath: cycle,
+            message: `Circular dependency: ${cycle.join(" -> ")}`,
+          })
+        );
       }
+    }
+
+    // Check captive dependencies (bug fix: was previously missing from validate())
+    const captive = detectCaptiveAtRuntime(this.adapters);
+    if (captive) {
+      errors.push(
+        CaptiveDependencyBuild({
+          dependentPort: captive.dependentPort,
+          dependentLifetime: captive.dependentLifetime,
+          captivePort: captive.captivePort,
+          captiveLifetime: captive.captiveLifetime,
+          message: formatCaptiveError(
+            captive.dependentPort,
+            captive.dependentLifetime,
+            captive.captivePort,
+            captive.captiveLifetime
+          ),
+        })
+      );
     }
 
     const warnings: string[] = [];
@@ -702,5 +749,30 @@ export class GraphBuilder<
   buildFragment(): Graph<TProvides, TAsyncPorts, TOverrides>;
   buildFragment(): BuiltGraph {
     return buildGraphFragment(this);
+  }
+
+  /**
+   * Builds the dependency graph, returning a Result instead of throwing.
+   *
+   * Same compile-time guard as `build()` — returns a template literal error type
+   * when dependencies are unsatisfied. At runtime, always returns `Result`.
+   *
+   * @pure Returns new frozen Result; original builder unchanged.
+   */
+  tryBuild(): [UnsatisfiedDependencies<TProvides, TRequires>] extends [never]
+    ? Result<Graph<TProvides, TAsyncPorts, TOverrides>, GraphBuildError>
+    : `ERROR[HEX008]: Missing adapters for ${JoinPortNames<UnsatisfiedDependencies<TProvides, TRequires>>}. Call .provide() first.`;
+  tryBuild(): Result<BuiltGraph, GraphBuildError> | string {
+    return tryBuildGraph(this);
+  }
+
+  /**
+   * Builds a graph fragment for child containers, returning a Result instead of throwing.
+   *
+   * @pure Returns new frozen Result; original builder unchanged.
+   */
+  tryBuildFragment(): Result<Graph<TProvides, TAsyncPorts, TOverrides>, GraphBuildError>;
+  tryBuildFragment(): Result<BuiltGraph, GraphBuildError> {
+    return tryBuildGraphFragment(this);
   }
 }

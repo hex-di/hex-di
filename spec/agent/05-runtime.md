@@ -29,7 +29,7 @@ interface RunOptions {
 
 ```typescript
 interface AgentRun {
-  readonly result: Promise<AgentRunResult>;
+  readonly result: Promise<Result<AgentRunResult, AgentError>>;
   readonly abort: () => void;
 }
 
@@ -69,8 +69,8 @@ function runAgent(agent, prompt, messages, signal):
   emit("run-started", { runId, agentName: agent.config.name })
 
   loop:
-    if signal.aborted: throw AbortError
-    if turnCount >= agent.config.maxTurns: break
+    if signal.aborted: return Err(RunAbortedError { turnNumber: turnCount })
+    if turnCount >= agent.config.maxTurns: return Err(MaxTurnsExceededError { maxTurns, turnCount })
 
     turnCount++
     emit("turn-started", { turnNumber: turnCount })
@@ -113,7 +113,7 @@ function runAgent(agent, prompt, messages, signal):
     emit("turn-complete", { turnNumber: turnCount })
 
   emit("run-complete", { runId, result })
-  return result
+  return Ok(result)
 ```
 
 ### 13.5 Streaming Execution
@@ -159,15 +159,15 @@ run.abort();
 When aborted, the runner:
 
 1. Cancels any in-flight LLM request
-2. Emits a `run-error` event with an `AbortError`
-3. Rejects the `result` promise with the same error
+2. Emits a `run-error` event with a `RunAbortedError`
+3. Resolves the `result` promise with `Err(RunAbortedError)`
 4. Stops yielding events from the async iterable
 
 ### 13.7 AgentRunnerPort and Adapter
 
 ```typescript
 // Port
-const AgentRunnerPort = createPort<AgentRunnerService>()({
+const AgentRunnerPort = port<AgentRunnerService>()({
   name: "AgentRunner",
 });
 
@@ -212,13 +212,11 @@ const policy: ApprovalPolicy = {
   tools: ["deleteTask", "deleteUser", "dropTable"],
 };
 
-// Approve based on argument values
+// Approve based on tool name — the policy determines whether to prompt the user,
+// not to inspect argument values (argument validation is the tool's responsibility)
 const policy: ApprovalPolicy = toolCall => {
-  if (toolCall.name === "transferFunds") {
-    const args = toolCall.arguments as { amount: number };
-    return args.amount > 1000; // Only approve large transfers
-  }
-  return false;
+  // All transferFunds calls require approval regardless of amount
+  return toolCall.name === "transferFunds";
 };
 ```
 
@@ -237,7 +235,7 @@ interface ApprovalService {
 }
 
 // Port
-const ApprovalPort = createPort<ApprovalService>()({
+const ApprovalPort = port<ApprovalService>()({
   name: "Approval",
   direction: "inbound",
 });
@@ -327,8 +325,8 @@ immediately        |
 When a timeout is configured on the callback approval adapter:
 
 1. If the user does not respond within the timeout period, the `defaultDecision` is used
-2. If no `defaultDecision` is set, the approval request rejects with a `TimeoutError`
-3. The `TimeoutError` is caught by the runner and returned to the LLM as an error tool result
+2. If no `defaultDecision` is set, the approval request returns an `Err(ApprovalTimeoutError)` with `_tag: "ApprovalTimeout"`, the tool name, and the configured timeout in milliseconds
+3. The `ApprovalTimeoutError` is caught by the runner and returned to the LLM as an error tool result
 
 ---
 
@@ -414,7 +412,7 @@ interface RunCompleteEvent {
 interface RunErrorEvent {
   readonly type: "run-error";
   readonly runId: string;
-  readonly error: Error;
+  readonly error: AgentError;
 }
 ```
 
@@ -512,6 +510,150 @@ async function collectEvents(events: AsyncIterable<AgentEvent>): Promise<readonl
   return collected;
 }
 ```
+
+---
+
+## 16. Introspection & Tracing
+
+### 16.1 AgentInspector
+
+The `AgentInspector` provides runtime visibility into agent state: registered tools, active conversations, and pending approvals. It follows the same pull-based query / push-based subscription pattern used by the container inspector (`InspectorAPI`).
+
+```typescript
+interface ToolInfo {
+  readonly name: string;
+  readonly description: string;
+  readonly portName: string;
+}
+
+interface ConversationSnapshot {
+  readonly conversationId: string;
+  readonly agentName: string;
+  readonly messageCount: number;
+  readonly turnCount: number;
+  readonly startedAt: number;
+  readonly lastActivityAt: number;
+  readonly status: "active" | "complete" | "error" | "aborted";
+}
+
+interface AgentInspectorListener {
+  onRunStarted?(snapshot: ConversationSnapshot): void;
+  onRunComplete?(snapshot: ConversationSnapshot): void;
+  onToolCall?(toolName: string, conversationId: string): void;
+  onApprovalRequested?(toolName: string, conversationId: string): void;
+}
+
+interface AgentInspector {
+  /** Get all registered tools across all tool ports */
+  getTools(): readonly ToolInfo[];
+  /** Get snapshots of all active conversations */
+  getActiveConversations(): readonly ConversationSnapshot[];
+  /** Get pending approval requests */
+  getApprovalQueue(): readonly ApprovalRequest[];
+  /** Get message history for a specific conversation */
+  getConversationHistory(conversationId: string): readonly Message[];
+  /** Subscribe to inspector events */
+  subscribe(listener: AgentInspectorListener): () => void;
+}
+```
+
+#### Container Inspector Integration
+
+The `AgentInspector` is registered with the container inspector when the agent adapter is wired into the graph. This means agent state is accessible through the same unified inspector surface used for container, tracing, flow, store, and saga inspection.
+
+```typescript
+// Access via container
+const agentInspector = container.inspector.getAgentInspector();
+const tools = agentInspector.getTools();
+const active = agentInspector.getActiveConversations();
+```
+
+The agent inspector updates in real time. Each `run-started`, `run-complete`, `tool-call-started`, and `approval-requested` event from the runner is forwarded to inspector subscribers, keeping the inspector state synchronized without polling.
+
+### 16.2 Tracing Integration
+
+Agent runs emit structured tracing spans through the HexDI tracing infrastructure. When the container has a `TracingPort` registered, span emission is automatic -- no additional configuration is required.
+
+#### Span Hierarchy
+
+Each agent run produces a tree of spans:
+
+- **Run span:** `agent:run/${agentName}` -- covers the entire run from start to completion or error
+  - Attributes: `hex-di.agent.name`, `hex-di.agent.run_id`
+- **Turn span:** `agent:turn/${turnNumber}` -- child of the run span, one per LLM round-trip
+  - Attributes: `hex-di.agent.turn_number`
+- **Tool span:** `agent:tool/${toolName}` -- child of the turn span, one per tool call
+  - Attributes: `hex-di.agent.tool_name`, `hex-di.agent.conversation_id`, `hex-di.agent.approved`
+- **LLM span:** `agent:llm/generate` -- child of the turn span, covers the LLM API call
+  - Attributes: `hex-di.agent.model`, `hex-di.agent.tokens.prompt`, `hex-di.agent.tokens.completion`
+
+```
+agent:run/TaskAgent (run_id=abc-123)
+  agent:turn/1
+    agent:llm/generate (model=gpt-4o, tokens.prompt=512, tokens.completion=128)
+    agent:tool/createTask (approved=true)
+  agent:turn/2
+    agent:llm/generate (model=gpt-4o, tokens.prompt=800, tokens.completion=64)
+```
+
+#### Automatic Activation
+
+```typescript
+// Tracing is automatic when the container has a TracingPort
+// No configuration needed -- the runner emits spans through the tracing infrastructure
+```
+
+#### Multi-Agent Trace Propagation
+
+When one agent delegates to another (via orchestrator tools that call sub-agent runners), the trace context propagates automatically. The child agent's spans appear as children of the parent agent's tool span, providing a unified trace across the entire multi-agent execution:
+
+```
+agent:run/Orchestrator
+  agent:turn/1
+    agent:llm/generate
+    agent:tool/delegateToTaskAgent
+      agent:run/TaskAgent          <-- child agent inherits trace context
+        agent:turn/1
+          agent:llm/generate
+          agent:tool/createTask
+```
+
+### 16.3 Disposal Protocol
+
+Agent adapters participate in the container's disposal lifecycle. When a scope is disposed, any active agent runs within that scope are aborted and resources are cleaned up.
+
+```typescript
+// Agent adapters register finalizers for cleanup
+const agentAdapter = createAgentAdapter({
+  provides: TaskAgentPort,
+  requires: [LlmPort, ContextPort, TaskToolsPort] as const,
+  config: {
+    name: "TaskAgent",
+    systemPrompt: "...",
+    maxTurns: 10,
+  },
+  // Finalizer is called when the scope is disposed
+  // The runner aborts in-flight LLM requests, flushes pending events
+});
+
+// Scope disposal triggers cleanup
+const scope = container.createScope("session");
+const runner = scope.resolve(AgentRunnerPort);
+// ... use runner ...
+await scope.dispose(); // Cancels any active runs, flushes events
+```
+
+The disposal sequence:
+
+1. The scope's `dispose()` method is called
+2. The runner's finalizer fires, calling `abort()` on all active `AgentRun` instances
+3. In-flight LLM requests are cancelled via `AbortSignal`
+4. Pending approval requests are rejected with a `DisposedError`
+5. A final `run-error` event is emitted for each aborted run
+6. The tracing span for each aborted run is closed with status `"error"`
+7. Event subscribers are detached
+
+This ensures no leaked promises, no orphaned HTTP connections, and no stale approval requests after scope teardown.
 
 ---
 

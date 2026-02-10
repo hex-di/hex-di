@@ -8,6 +8,8 @@
  */
 
 import type { Port, InferService } from "@hex-di/core";
+import type { Result, ResultAsync } from "@hex-di/result";
+import type { ContainerError, DisposalError } from "../errors/index.js";
 import { INTERNAL_ACCESS } from "../inspection/symbols.js";
 import type { ScopeInternalState } from "../inspection/internal-state-types.js";
 import type {
@@ -201,6 +203,41 @@ export type ScopeMembers<
    * @throws {AsyncFactoryError} If the async factory function throws
    */
   resolveAsync<P extends TProvides>(port: P): Promise<InferService<P>>;
+
+  /**
+   * Resolves a service instance, returning a Result instead of throwing.
+   *
+   * Same port constraints as `resolve()` - phase-dependent for async ports.
+   * Returns `Ok(service)` on success, `Err(ContainerError)` on failure.
+   *
+   * @typeParam P - The specific port type being resolved
+   * @param port - The port token to resolve
+   * @returns A Result containing the service instance or a ContainerError
+   */
+  tryResolve<P extends TPhase extends "initialized" ? TProvides : Exclude<TProvides, TAsyncPorts>>(
+    port: P
+  ): Result<InferService<P>, ContainerError>;
+
+  /**
+   * Resolves a service instance asynchronously, returning a ResultAsync instead of throwing.
+   *
+   * Same port constraints as `resolveAsync()`.
+   * Returns `Ok(service)` on success, `Err(ContainerError)` on failure.
+   *
+   * @typeParam P - The specific port type being resolved
+   * @param port - The port token to resolve
+   * @returns A ResultAsync containing the service instance or a ContainerError
+   */
+  tryResolveAsync<P extends TProvides>(port: P): ResultAsync<InferService<P>, ContainerError>;
+
+  /**
+   * Disposes the scope, returning a ResultAsync instead of throwing.
+   *
+   * Returns `Ok(void)` on clean disposal, `Err(DisposalError)` if finalizers threw.
+   *
+   * @returns A ResultAsync that resolves to void or a DisposalError
+   */
+  tryDispose(): ResultAsync<void, DisposalError>;
 
   /**
    * Creates a child scope for managing nested scoped service lifetimes.

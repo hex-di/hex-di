@@ -19,4 +19,12 @@ export type {
   InspectorEvent,
   InspectorListener,
   InspectorAPI,
+  ResultStatistics,
+  LibraryInspector,
+  LibraryEvent,
+  LibraryEventListener,
+  UnifiedSnapshot,
+  LibraryQueryEntry,
+  LibraryQueryResult,
+  LibraryQueryPredicate,
 } from "@hex-di/core";

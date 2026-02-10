@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- "States in Test Boundary" - 2 state nodes + arrow in dashed rect + clock + checkmarks -->
+  <!-- Background hexagon -->
+  <polygon points="100,18 176,61 176,139 100,182 24,139 24,61" fill="#4338CA"/>
+  <!-- Dashed test boundary rectangle -->
+  <rect x="38" y="45" width="124" height="80" rx="6" fill="white" opacity="0.1" stroke="white" stroke-width="2" stroke-dasharray="6,3"/>
+  <!-- State node 1 (initial) -->
+  <circle cx="62" cy="80" r="12" fill="none" stroke="white" stroke-width="2.5"/>
+  <circle cx="62" cy="80" r="5" fill="white"/>
+  <!-- Arrow -->
+  <line x1="74" y1="80" x2="104" y2="80" stroke="white" stroke-width="2.5"/>
+  <polyline points="100,75 106,80 100,85" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- State node 2 (active) -->
+  <rect x="108" y="70" width="36" height="20" rx="5" fill="white" opacity="0.8"/>
+  <!-- Small clock icon (VirtualClock reference) -->
+  <circle cx="54" cy="58" r="8" fill="none" stroke="white" stroke-width="1.5" opacity="0.6"/>
+  <line x1="54" y1="58" x2="54" y2="53" stroke="white" stroke-width="1.5" opacity="0.6"/>
+  <line x1="54" y1="58" x2="58" y2="60" stroke="white" stroke-width="1.5" opacity="0.6"/>
+  <!-- Green checkmarks -->
+  <polyline points="62,142 70,152 84,136" fill="none" stroke="#10B981" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="102,142 110,152 124,136" fill="none" stroke="#10B981" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

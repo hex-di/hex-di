@@ -6,9 +6,13 @@
  */
 
 import type { Port, InferService } from "@hex-di/core";
+import type { ResultAsync } from "@hex-di/result";
+import { fromPromise } from "@hex-di/result";
 import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
 import type { Container, LazyContainer, CreateChildOptions } from "../types.js";
+import type { ContainerError, DisposalError } from "../errors/index.js";
 import { DisposedScopeError } from "../errors/index.js";
+import { mapToContainerError, mapToDisposalError } from "./result-helpers.js";
 
 /**
  * Flag indicating the next child container creation originated from a lazy load.
@@ -172,6 +176,31 @@ export class LazyContainerImpl<
   async resolveAsync<P extends TProvides | TExtends>(port: P): Promise<InferService<P>> {
     const container = await this.load();
     return container.resolveAsync(port);
+  }
+
+  /**
+   * Resolves a service instance, returning a ResultAsync instead of throwing.
+   */
+  tryResolve<P extends TProvides | TExtends>(
+    port: P
+  ): ResultAsync<InferService<P>, ContainerError> {
+    return fromPromise(this.resolve(port), mapToContainerError);
+  }
+
+  /**
+   * Resolves a service instance asynchronously, returning a ResultAsync instead of throwing.
+   */
+  tryResolveAsync<P extends TProvides | TExtends>(
+    port: P
+  ): ResultAsync<InferService<P>, ContainerError> {
+    return fromPromise(this.resolveAsync(port), mapToContainerError);
+  }
+
+  /**
+   * Disposes the lazy container, returning a ResultAsync instead of throwing.
+   */
+  tryDispose(): ResultAsync<void, DisposalError> {
+    return fromPromise(this.dispose(), mapToDisposalError);
   }
 
   /**

@@ -221,6 +221,59 @@ export { useScope } from "./hooks/index.js";
 export { useTracer, useSpan, useTracedCallback } from "./hooks/index.js";
 
 // =============================================================================
+// Inspection Hooks & Provider
+// =============================================================================
+
+/**
+ * Inspection hooks for reactive container state observation.
+ *
+ * These hooks provide reactive access to container inspection data:
+ * - useInspector: Access the InspectorAPI instance
+ * - useSnapshot: Reactive container snapshot
+ * - useScopeTree: Reactive scope hierarchy
+ * - useUnifiedSnapshot: Reactive unified snapshot (container + libraries)
+ *
+ * All require an InspectorProvider ancestor in the component tree.
+ *
+ * @see {@link useInspector} - Hook for accessing InspectorAPI
+ * @see {@link useSnapshot} - Hook for reactive container snapshot
+ * @see {@link useScopeTree} - Hook for reactive scope tree
+ * @see {@link useUnifiedSnapshot} - Hook for reactive unified snapshot
+ */
+export {
+  useInspector,
+  useSnapshot,
+  useScopeTree,
+  useUnifiedSnapshot,
+  useTracingSummary,
+} from "./hooks/index.js";
+export type { TracingSummary } from "./hooks/index.js";
+
+/**
+ * InspectorProvider for container inspection context.
+ *
+ * Makes an InspectorAPI instance available to inspection hooks.
+ *
+ * @see {@link InspectorProvider} - Provider component documentation
+ * @see {@link InspectorProviderProps} - Props type
+ */
+export { InspectorProvider } from "./providers/index.js";
+export type { InspectorProviderProps } from "./providers/index.js";
+
+// =============================================================================
+// DevTools Bridge
+// =============================================================================
+
+/**
+ * DevToolsBridge component for forwarding inspector events to browser DevTools.
+ *
+ * @see {@link DevToolsBridge} - Component documentation
+ * @see {@link DevToolsBridgeProps} - Props type
+ */
+export { DevToolsBridge } from "./components/dev-tools-bridge.js";
+export type { DevToolsBridgeProps } from "./components/dev-tools-bridge.js";
+
+// =============================================================================
 // Declarative Component Creation
 // =============================================================================
 
@@ -267,7 +320,15 @@ export { MissingProviderError } from "./errors.js";
  *
  * These types are commonly used alongside React integration types.
  */
-export type { Port, InferService, InferPortName } from "@hex-di/core";
+export type {
+  Port,
+  InferService,
+  InferPortName,
+  InspectorAPI,
+  ContainerSnapshot,
+  ScopeTree,
+  UnifiedSnapshot,
+} from "@hex-di/core";
 
 // =============================================================================
 // Re-exports from @hex-di/runtime

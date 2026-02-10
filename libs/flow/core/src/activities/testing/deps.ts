@@ -7,8 +7,7 @@
  * @packageDocumentation
  */
 
-import type { Port, InferPortName, InferService } from "@hex-di/core";
-import type { ResolvedActivityDeps } from "../types.js";
+import type { Port, InferPortName, InferService, PortDeps } from "@hex-di/core";
 
 // =============================================================================
 // Types
@@ -69,7 +68,7 @@ export class MissingMockError extends Error {
  * @param requires - The activity's requires tuple (array of ports)
  * @param mocks - Partial object containing mock implementations keyed by port name
  *
- * @returns A fully-typed ResolvedActivityDeps object
+ * @returns A fully-typed PortDeps object
  *
  * @throws MissingMockError - If any required port does not have a mock provided
  *
@@ -142,31 +141,35 @@ export class MissingMockError extends Error {
  */
 export function createTestDeps<TRequires extends readonly Port<unknown, string>[]>(
   requires: TRequires,
-  mocks: Partial<ResolvedActivityDeps<TRequires>>
-): ResolvedActivityDeps<TRequires> {
+  mocks: Partial<PortDeps<TRequires>>
+): PortDeps<TRequires> {
   // Extract port names for error reporting
   const requiredPortNames = requires.map(p => p.__portName);
 
   // Validate all required ports have mocks
   for (const port of requires) {
     const portName = port.__portName;
-    const mockKey = portName as keyof typeof mocks;
+    const mockValue = Object.getOwnPropertyDescriptor(mocks, portName)?.value;
 
-    if (!(mockKey in mocks) || mocks[mockKey] === undefined) {
+    if (mockValue === undefined && !Object.prototype.hasOwnProperty.call(mocks, portName)) {
       throw new MissingMockError(portName, requiredPortNames);
     }
   }
 
   // Build the deps object from the requires tuple
-  const deps = {} as Record<string, unknown>;
+  const deps: Record<string, unknown> = {};
 
   for (const port of requires) {
     const portName = port.__portName;
-    deps[portName] = mocks[portName as keyof typeof mocks];
+    deps[portName] = Object.getOwnPropertyDescriptor(mocks, portName)?.value;
   }
 
-  // Freeze to prevent accidental mutation
-  return Object.freeze(deps) as ResolvedActivityDeps<TRequires>;
+  // Freeze to prevent accidental mutation.
+  // @ts-expect-error - Variance bridge: deps is Record<string, unknown> but PortDeps<TRequires>
+  // is a mapped type { [P in TRequires[number] as InferPortName<P>]: InferService<P> }. At runtime the
+  // object has the correct keys and values (populated from validated mocks above). TypeScript cannot
+  // prove the Record matches the mapped type because TRequires is a generic parameter.
+  return Object.freeze(deps);
 }
 
 // =============================================================================

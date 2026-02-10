@@ -264,6 +264,23 @@ describe("public API surface", () => {
       "hasEvent",
       "hasStatus",
       "hasDuration",
+      // Inspection
+      "matchesFilter",
+      "filterSpans",
+      "computeAverageDuration",
+      "computeErrorCount",
+      "computeCacheHitRate",
+      "computePercentiles",
+      "buildTraceTree",
+      "createTracingQueryApi",
+      "TracingLibraryInspectorPort",
+      "createTracingLibraryInspector",
+      "TracingQueryApiPort",
+      "TracingLibraryInspectorAdapter",
+      // Bridge
+      "TracerLikePort",
+      "createTracerLikeAdapter",
+      "tracerLikeAdapter",
     ];
 
     // Verify all expected exports exist

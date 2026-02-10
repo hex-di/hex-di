@@ -9,7 +9,11 @@
  */
 
 import type { SpanData, SpanExporter } from "@hex-di/tracing";
-import { convertToReadableSpan, createResource } from "@hex-di/tracing-otel";
+import {
+  convertToReadableSpan,
+  createResource,
+  mapHexDiToOtelAttributes,
+} from "@hex-di/tracing-otel";
 import { JaegerExporter } from "@opentelemetry/exporter-jaeger";
 import type { ReadableSpan } from "@opentelemetry/sdk-trace-base";
 
@@ -69,6 +73,38 @@ export interface JaegerExporterOptions {
    * ```
    */
   attributes?: Record<string, string>;
+
+  /**
+   * HTTP headers for authentication with the Jaeger collector.
+   *
+   * Used when the Jaeger collector requires authentication (e.g., behind
+   * a reverse proxy or using Jaeger's built-in auth).
+   *
+   * @example
+   * ```typescript
+   * {
+   *   'Authorization': 'Bearer my-token',
+   * }
+   * ```
+   */
+  headers?: Record<string, string>;
+
+  /**
+   * Request timeout in milliseconds.
+   *
+   * @default 10000 (10 seconds)
+   */
+  timeout?: number;
+
+  /**
+   * Whether to map HexDI-specific attributes to OpenTelemetry semantic conventions.
+   *
+   * When enabled, attributes like `hex-di.port.name` are additionally mapped to
+   * OTel conventions like `code.namespace` for better interop with Jaeger's UI.
+   *
+   * @default true
+   */
+  mapSemanticAttributes?: boolean;
 }
 
 /**
@@ -145,6 +181,8 @@ function logError(message: string, ...args: unknown[]): void {
  * ```
  */
 export function createJaegerExporter(options: JaegerExporterOptions): SpanExporter {
+  const shouldMapAttributes = options.mapSemanticAttributes !== false;
+
   // Create Resource from service metadata
   const resource = createResource({
     serviceName: options.serviceName,
@@ -159,21 +197,33 @@ export function createJaegerExporter(options: JaegerExporterOptions): SpanExport
     endpoint: options.endpoint ?? "http://localhost:14268/api/traces",
   });
 
+  let isShutdown = false;
+
   return {
     /**
      * Export a batch of HexDI spans to Jaeger backend.
      *
      * Converts HexDI spans to OpenTelemetry format and sends via Thrift over HTTP.
+     * Optionally maps HexDI-specific attributes to OTel semantic conventions.
      * Failures are logged but don't throw to avoid blocking the application.
      *
      * @param spans - Readonly array of completed HexDI spans
      */
     async export(spans: ReadonlyArray<SpanData>): Promise<void> {
+      if (isShutdown) {
+        return;
+      }
+
       try {
         // Convert HexDI spans to OTel ReadableSpan format with resource
-        const readableSpans: ReadableSpan[] = spans.map(hexSpan =>
-          convertToReadableSpan(hexSpan, resource)
-        );
+        const readableSpans: ReadableSpan[] = spans.map(hexSpan => {
+          // Optionally map HexDI attributes to OTel semantic conventions
+          const mappedSpan = shouldMapAttributes
+            ? { ...hexSpan, attributes: mapHexDiToOtelAttributes(hexSpan.attributes) }
+            : hexSpan;
+
+          return convertToReadableSpan(mappedSpan, resource);
+        });
 
         // Export via underlying Jaeger exporter (callback-based API)
         await new Promise<void>((resolve, reject) => {
@@ -199,6 +249,10 @@ export function createJaegerExporter(options: JaegerExporterOptions): SpanExport
      * Delegates to the underlying Jaeger exporter's flush mechanism.
      */
     async forceFlush(): Promise<void> {
+      if (isShutdown) {
+        return;
+      }
+
       try {
         await jaegerExporter.forceFlush();
       } catch (error) {
@@ -212,6 +266,12 @@ export function createJaegerExporter(options: JaegerExporterOptions): SpanExport
      * Ensures all buffered spans are exported before cleanup.
      */
     async shutdown(): Promise<void> {
+      if (isShutdown) {
+        return;
+      }
+
+      isShutdown = true;
+
       try {
         await jaegerExporter.shutdown();
       } catch (error) {

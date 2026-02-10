@@ -159,6 +159,50 @@ describe("Chaining", () => {
     expect(fn).not.toHaveBeenCalled();
   });
 
+  // --- Mutation gap: inspect return value on Err ---
+  it("inspect on Err returns the same Err instance", () => {
+    const fn = vi.fn();
+    const original: Result<number, string> = err("x");
+    const result = original.inspect(fn);
+    expect(result).toBe(original);
+    expect(result._tag).toBe("Err");
+  });
+
+  // --- Mutation gap: inspectErr return value on Ok ---
+  it("inspectErr on Ok returns the same Ok instance", () => {
+    const fn = vi.fn();
+    const original: Result<number, string> = ok(42);
+    const result = original.inspectErr(fn);
+    expect(result).toBe(original);
+    expect(result._tag).toBe("Ok");
+  });
+
+  // --- Mutation gap: orTee error swallowing on Err ---
+  it("err('x').orTee(throwing fn) returns Err('x') (swallows error)", () => {
+    const result: Result<number, string> = err("x");
+    const teed = result.orTee(() => {
+      throw new Error("boom");
+    });
+    expect(teed._tag).toBe("Err");
+    if (teed.isErr()) expect(teed.error).toBe("x");
+  });
+
+  // --- Mutation gap: andTee on Err does not call fn ---
+  it("err('x').andTee() does not call the function", () => {
+    const fn = vi.fn();
+    const result: Result<number, string> = err("x");
+    result.andTee(fn);
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  // --- Mutation gap: orTee on Ok does not call fn ---
+  it("ok(1).orTee() does not call the function", () => {
+    const fn = vi.fn();
+    const result: Result<number, string> = ok(1);
+    result.orTee(fn);
+    expect(fn).not.toHaveBeenCalled();
+  });
+
   // DoD 5 #21
   it("Chaining andThen accumulates error types via union", () => {
     type E1 = { _tag: "E1" };

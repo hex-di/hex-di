@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- "The Bifurcated Hex" - Hexagon split vertically with Ok/Err halves -->
+  <!-- Left half (emerald - Ok) -->
+  <polygon points="100,18 24,61 24,139 100,182" fill="#10B981"/>
+  <!-- Right half (orange - Err) -->
+  <polygon points="100,18 176,61 176,139 100,182" fill="#F97316"/>
+  <!-- White gap down center -->
+  <line x1="100" y1="16" x2="100" y2="184" stroke="white" stroke-width="4"/>
+  <!-- Negative-space checkmark on left half -->
+  <polyline points="44,96 58,112 78,80" fill="none" stroke="white" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Negative-space X on right half -->
+  <line x1="122" y1="82" x2="152" y2="112" stroke="white" stroke-width="7" stroke-linecap="round"/>
+  <line x1="152" y1="82" x2="122" y2="112" stroke="white" stroke-width="7" stroke-linecap="round"/>
+</svg>

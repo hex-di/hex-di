@@ -8,6 +8,7 @@
  */
 
 import type { AdapterConstraint } from "@hex-di/core";
+import type { GraphValidationError } from "../../errors/index.js";
 
 /**
  * Structural type for graph-like objects that can be inspected.
@@ -73,7 +74,11 @@ export interface GraphSuggestion {
     | "depth_warning"
     | "orphan_port"
     | "disposal_warning"
-    | "unnecessary_lazy";
+    | "unnecessary_lazy"
+    | "saga_step_without_compensation"
+    | "saga_long_timeout_without_persistence"
+    | "saga_no_retry_on_external_port"
+    | "saga_singleton_with_scoped_deps";
   /** The port name this suggestion relates to */
   readonly portName: string;
   /** Human-readable description of the issue */
@@ -375,8 +380,8 @@ export interface ValidationResult {
   /** Whether the graph is valid and ready to build */
   readonly valid: boolean;
 
-  /** List of validation errors (empty if valid) */
-  readonly errors: readonly string[];
+  /** List of structured validation errors (empty if valid) */
+  readonly errors: readonly GraphValidationError[];
 
   /** List of warnings (graph can still be built) */
   readonly warnings: readonly string[];

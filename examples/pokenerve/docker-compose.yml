@@ -1,0 +1,47 @@
+services:
+  jaeger:
+    image: jaegertracing/all-in-one:1.76.0
+    ports:
+      - "16686:16686"
+      - "4318:4318"
+      - "14268:14268"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - pokenerve
+
+  api:
+    build:
+      context: ../../
+      dockerfile: examples/pokenerve/api/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - POKEAPI_BASE_URL=https://pokeapi.co/api/v2
+      - JAEGER_ENDPOINT=http://jaeger:14268/api/traces
+      - JAEGER_SERVICE_NAME=pokenerve-api
+      - NODE_ENV=development
+    depends_on:
+      - jaeger
+    networks:
+      - pokenerve
+
+  frontend:
+    build:
+      context: ../../
+      dockerfile: examples/pokenerve/frontend/Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3001
+      - VITE_JAEGER_UI_URL=http://localhost:16686
+      - VITE_OTLP_ENDPOINT=http://localhost:4318
+    depends_on:
+      - api
+    networks:
+      - pokenerve
+
+networks:
+  pokenerve:
+    driver: bridge

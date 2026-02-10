@@ -74,7 +74,7 @@ function isEventObject(
     typeof value === "object" &&
     value !== null &&
     "type" in value &&
-    typeof (value as Record<string, unknown>).type === "string"
+    typeof Object.getOwnPropertyDescriptor(value, "type")?.value === "string"
   );
 }
 
@@ -165,13 +165,19 @@ export function createTestEventSink<TEvents>(): TestEventSink<TEvents> {
     // Pattern 2: Type string + optional payload
     if (typeof firstArg === "string") {
       const type = firstArg;
-      const payload = (args[1] ?? {}) as Record<string, unknown>;
+      // Build the event object from type + optional payload
+      const eventObject: { readonly type: string } & Record<string, unknown> = { type };
 
-      // Build the event object
-      const eventObject: { readonly type: string } & Record<string, unknown> = {
-        type,
-        ...payload,
-      };
+      // Copy payload properties using Object.getOwnPropertyDescriptor
+      const secondArg = args[1];
+      if (typeof secondArg === "object" && secondArg !== null) {
+        for (const key of Object.keys(secondArg)) {
+          const desc = Object.getOwnPropertyDescriptor(secondArg, key);
+          if (desc !== undefined) {
+            eventObject[key] = desc.value;
+          }
+        }
+      }
 
       capturedEvents.push(eventObject);
       return;
@@ -183,18 +189,19 @@ export function createTestEventSink<TEvents>(): TestEventSink<TEvents> {
     );
   }
 
-  // The sink object with proper typing
-  // TypedEventSink's emit has overloaded signatures that constrain what callers can pass
-  // We implement a permissive version internally that captures everything
+  // The sink object with proper typing.
+  // TypedEventSink's emit has overloaded signatures that constrain what callers can pass.
+  // The internal emit function with variadic (...args: unknown[]) signature is assignable
+  // because TypedEventSink["emit"] resolves to a generic function that accepts unknown args.
   const sink: TestEventSink<TEvents> = {
-    emit: emit as TypedEventSink<TEvents>["emit"],
+    emit,
 
     get events(): readonly EventOf<TEvents>[] {
-      // The internal array has a more permissive type, but we expose it as the
-      // correctly typed EventOf<TEvents> array. This is safe because:
-      // 1. The emit method only adds objects that match the expected event structure
-      // 2. TypeScript's type safety at the call site ensures correct event types
-      return capturedEvents as unknown as readonly EventOf<TEvents>[];
+      // @ts-expect-error - Variance bridge: capturedEvents is Array<{ type: string } & Record<string, unknown>>
+      // but EventOf<TEvents> is a union of specific event types. At runtime the stored events match
+      // because they were emitted through the type-safe TypedEventSink interface. TypeScript cannot
+      // verify this because TEvents is an unconstrained generic parameter.
+      return capturedEvents;
     },
 
     clear(): void {

@@ -16,6 +16,7 @@ const users = await queryClient.fetch(UsersPort, { role: "admin" });
 - **Query ports** (`createQueryPort`) that return `DirectedPort<QueryFetcher<TData, TParams, TError>, TName, "inbound">`
 - **Mutation ports** (`createMutationPort`) that return `DirectedPort<MutationExecutor<TData, TInput>, TName, "inbound">`
 - **Query adapters** (`createQueryAdapter`) and **mutation adapters** (`createMutationAdapter`) that return `Adapter<TProvides, TRequires, TLifetime, "async">`
+- **Signal-based reactivity** powered by `alien-signals/system` with per-scope isolated reactive systems, glitch-free propagation, and container-scoped batching
 - **QueryClient** with caching, deduplication, background refresh, retry, and garbage collection
 - **Structural sharing** for referential stability across re-renders
 - **Compile-time query dependency validation** (`dependsOn`) with cycle detection via `IsReachable<>`
@@ -170,18 +171,20 @@ query/
 │   │   │   ├── mutation-adapter.ts  # createMutationAdapter factory
 │   │   │   ├── streamed-adapter.ts  # createStreamedQueryAdapter factory
 │   │   │   └── types.ts             # Adapter type definitions
+│   │   ├── reactivity/
+│   │   │   ├── signals.ts       # Signal/Computed/Effect wrappers over alien-signals
+│   │   │   ├── system-factory.ts # createIsolatedReactiveSystem() factory
+│   │   │   └── batch.ts         # Container-scoped batching with cross-scope detection
 │   │   ├── cache/
-│   │   │   ├── cache.ts         # QueryCache implementation
-│   │   │   ├── entry.ts         # CacheEntry type and utilities
+│   │   │   ├── cache.ts         # QueryCache implementation (signal-backed entries)
+│   │   │   ├── entry.ts         # CacheEntry type and reactive entry factory
 │   │   │   ├── key.ts           # Cache key serialization
 │   │   │   ├── sharing.ts       # Structural sharing (replaceEqualDeep)
-│   │   │   └── gc.ts            # Garbage collector
+│   │   │   └── gc.ts            # Garbage collector (subscriber-tracked via signals)
 │   │   ├── client/
 │   │   │   ├── client.ts        # QueryClient implementation
 │   │   │   ├── dedup.ts         # Deduplication manager
-│   │   │   ├── observer.ts      # QueryObserver (subscribes to cache)
-│   │   │   ├── mutation-observer.ts # MutationObserver
-│   │   │   ├── factory.ts        # createQueryClient factory
+│   │   │   ├── factory.ts       # createQueryClient factory
 │   │   │   └── types.ts         # Client type definitions
 │   │   ├── inspector/
 │   │   │   ├── inspector.ts     # QueryInspector implementation
@@ -248,7 +251,7 @@ query/
                     @hex-di/result
                          │
                          ▼
-                  @hex-di/query
+                  @hex-di/query ◀── alien-signals (peer)
                     │         │
                     │    (optional)
                     │         ▼
@@ -262,12 +265,12 @@ query/
 
 ### Package Dependencies
 
-| Package                  | Dependencies                                      | Peer Dependencies |
-| ------------------------ | ------------------------------------------------- | ----------------- |
-| `@hex-di/query`          | `@hex-di/core`, `@hex-di/graph`, `@hex-di/result` | -                 |
-| `@hex-di/query-react`    | `@hex-di/query`, `@hex-di/react`                  | `react >= 18`     |
-| `@hex-di/query-testing`  | `@hex-di/query`, `@hex-di/testing`                | -                 |
-| `@hex-di/query-devtools` | `@hex-di/query`                                   | -                 |
+| Package                  | Dependencies                                      | Peer Dependencies      |
+| ------------------------ | ------------------------------------------------- | ---------------------- |
+| `@hex-di/query`          | `@hex-di/core`, `@hex-di/graph`, `@hex-di/result` | `alien-signals >= 1.0` |
+| `@hex-di/query-react`    | `@hex-di/query`, `@hex-di/react`                  | `react >= 18`          |
+| `@hex-di/query-testing`  | `@hex-di/query`, `@hex-di/testing`                | -                      |
+| `@hex-di/query-devtools` | `@hex-di/query`                                   | -                      |
 
 **Optional integration:** When `@hex-di/tracing` is in the graph, query fetches
 automatically produce tracing spans via the resolution hooks system. No explicit
@@ -297,7 +300,12 @@ dependency is required -- the integration is hook-based.
 │  │                                                              │           │
 │  │  ┌──────────┐  ┌────────────┐  ┌──────────┐  ┌──────────┐ │           │
 │  │  │QueryCache│  │DedupManager│  │  Retry   │  │    GC    │ │           │
-│  │  └──────────┘  └────────────┘  └──────────┘  └──────────┘ │           │
+│  │  │(signals) │  └────────────┘  └──────────┘  └──────────┘ │           │
+│  │  └──────────┘                                               │           │
+│  │  ┌──────────────────────────────────────────────────────┐   │           │
+│  │  │ ReactiveSystem (alien-signals/system, per-scope)     │   │           │
+│  │  │  signal() · computed() · effect() · batch()          │   │           │
+│  │  └──────────────────────────────────────────────────────┘   │           │
 │  └──────────────────────┬──────────────────────────────────────┘           │
 │                         │                                                   │
 │           ┌─────────────┼─────────────────────┐                            │

@@ -17,6 +17,14 @@ import type {
   Lifetime,
   FactoryKind,
 } from "./container-types.js";
+import type {
+  LibraryEvent,
+  LibraryInspector,
+  UnifiedSnapshot,
+  LibraryQueryEntry,
+  LibraryQueryResult,
+  LibraryQueryPredicate,
+} from "./library-inspector-types.js";
 
 // =============================================================================
 // Scope Event Types
@@ -89,6 +97,11 @@ export interface VisualizableAdapter {
    * Whether this adapter overrides a parent adapter.
    */
   readonly isOverride?: boolean;
+  /**
+   * Optional adapter metadata (e.g., description, category, tags).
+   * Populated from the adapter's port metadata if available.
+   */
+  readonly metadata?: Readonly<Record<string, unknown>>;
 }
 
 /**
@@ -137,12 +150,55 @@ export type InspectorEvent =
   | {
       readonly type: "child-disposed";
       readonly childId: string;
-    };
+    }
+  | {
+      readonly type: "result:ok";
+      readonly portName: string;
+      readonly timestamp: number;
+    }
+  | {
+      readonly type: "result:err";
+      readonly portName: string;
+      readonly errorCode: string;
+      readonly timestamp: number;
+    }
+  | {
+      readonly type: "result:recovered";
+      readonly portName: string;
+      readonly fromCode: string;
+      readonly timestamp: number;
+    }
+  | { readonly type: "library"; readonly event: LibraryEvent }
+  | { readonly type: "library-registered"; readonly name: string }
+  | { readonly type: "library-unregistered"; readonly name: string };
 
 /**
  * Listener function for inspector events.
  */
 export type InspectorListener = (event: InspectorEvent) => void;
+
+// =============================================================================
+// Result Statistics
+// =============================================================================
+
+/**
+ * Statistics for Result outcomes tracked per port.
+ *
+ * Provides aggregated counts of ok/err outcomes and error rate
+ * for monitoring and alerting on resolution reliability.
+ */
+export interface ResultStatistics {
+  readonly portName: string;
+  readonly totalCalls: number;
+  readonly okCount: number;
+  readonly errCount: number;
+  readonly errorRate: number;
+  readonly errorsByCode: ReadonlyMap<string, number>;
+  readonly lastError?: {
+    readonly code: string;
+    readonly timestamp: number;
+  };
+}
 
 // =============================================================================
 // Inspector API (Unified)
@@ -264,6 +320,110 @@ export interface InspectorAPI {
   getGraphData(): ContainerGraphData;
 
   // =========================================================================
+  // Result Statistics
+  // =========================================================================
+
+  /**
+   * Gets result statistics for a specific port.
+   *
+   * @param portName - The port name to get statistics for
+   * @returns Statistics for the port, or undefined if no results recorded
+   */
+  getResultStatistics(portName: string): ResultStatistics | undefined;
+
+  /**
+   * Gets result statistics for all ports that have recorded results.
+   *
+   * @returns A map of port names to their result statistics
+   */
+  getAllResultStatistics(): ReadonlyMap<string, ResultStatistics>;
+
+  /**
+   * Gets ports whose error rate exceeds the given threshold.
+   *
+   * @param threshold - Error rate threshold (0.0 to 1.0)
+   * @returns Array of ResultStatistics for ports above the threshold
+   */
+  getHighErrorRatePorts(threshold: number): readonly ResultStatistics[];
+
+  // =========================================================================
+  // Library Inspector Registry
+  // =========================================================================
+
+  /**
+   * Registers a library inspector with the container.
+   *
+   * The inspector participates in unified snapshots and its events
+   * are forwarded to container subscribers as `{ type: "library", event }`.
+   *
+   * If an inspector with the same name is already registered,
+   * the previous one is unregistered first (last-write-wins).
+   *
+   * @param inspector - The library inspector to register
+   * @returns Unsubscribe function that removes the inspector
+   */
+  registerLibrary(inspector: LibraryInspector): () => void;
+
+  /**
+   * Gets all registered library inspectors.
+   *
+   * @returns Map of library name to inspector
+   */
+  getLibraryInspectors(): ReadonlyMap<string, LibraryInspector>;
+
+  /**
+   * Gets a specific library inspector by name.
+   *
+   * @param name - The library name (e.g., "flow", "store")
+   * @returns The inspector, or undefined if not registered
+   */
+  getLibraryInspector(name: string): LibraryInspector | undefined;
+
+  /**
+   * Gets a unified snapshot combining container state and all
+   * registered library snapshots.
+   *
+   * @returns Frozen unified snapshot
+   */
+  getUnifiedSnapshot(): UnifiedSnapshot;
+
+  // =========================================================================
+  // Cross-Library Query API
+  // =========================================================================
+
+  /**
+   * Queries all library snapshots with a custom predicate.
+   *
+   * Flattens each library's snapshot into `{library, key, value}` entries
+   * and returns those matching the predicate. Libraries whose `getSnapshot()`
+   * throws are silently skipped.
+   *
+   * @param predicate - Filter function applied to each entry
+   * @returns Frozen array of matching entries
+   */
+  queryLibraries(predicate: LibraryQueryPredicate): readonly LibraryQueryResult[];
+
+  /**
+   * Queries a single library's snapshot entries.
+   *
+   * @param name - Library name (e.g., "flow", "store")
+   * @param predicate - Optional filter; if omitted, all entries are returned
+   * @returns Frozen array of matching entries, or empty if library not found
+   */
+  queryByLibrary(
+    name: string,
+    predicate?: (entry: LibraryQueryEntry) => boolean
+  ): readonly LibraryQueryResult[];
+
+  /**
+   * Queries all libraries for entries whose key matches a pattern.
+   *
+   * @param pattern - Exact string or RegExp to match against entry keys
+   * @returns Frozen array of matching entries
+   */
+  queryByKey(pattern: string | RegExp): readonly LibraryQueryResult[];
+
+  // =========================================================================
   // Internal methods (for runtime and tracing)
   // =========================================================================
 
@@ -282,4 +442,11 @@ export interface InspectorAPI {
    * @param event - The event to emit
    */
   emit?(event: InspectorEvent): void;
+
+  /**
+   * Disposes all registered library inspectors.
+   *
+   * @internal Called by the container during disposal to clean up library resources.
+   */
+  disposeLibraries?(): void;
 }

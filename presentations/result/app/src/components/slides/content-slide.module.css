@@ -1,0 +1,25 @@
+.container {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-light);
+  padding: var(--slide-padding-top) var(--slide-padding-horizontal)
+    var(--slide-padding-bottom);
+}
+
+.inner {
+  max-width: var(--slide-max-width);
+  margin: 0 auto;
+}
+
+.title {
+  font-size: var(--text-section-title);
+  font-weight: var(--text-section-title-weight);
+  color: var(--neutral-900);
+  margin-bottom: 24px;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}

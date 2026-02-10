@@ -13,7 +13,7 @@ Provide a type-safe, DI-integrated activity system for long-running, cancellable
 
 **Activity Port Definition**
 
-- `activityPort<TInput, TOutput>()('Name')` creates an immutable, frozen port token using curried partial type inference (explicit I/O types, inferred name literal)
+- `createActivityPort<TInput, TOutput>()('Name')` creates an immutable, frozen port token using curried partial type inference (explicit I/O types, inferred name literal)
 - The port carries phantom types `__activityInput` and `__activityOutput` for compile-time extraction with zero runtime cost
 - `ActivityInput<P>` and `ActivityOutput<P>` utility types extract I/O types from any `ActivityPort` via conditional type inference
 - The underlying port is a branded `Port<Activity<TInput, TOutput>, TName>` from `@hex-di/core`, making it compatible with the container's resolution system
@@ -81,14 +81,14 @@ Provide a type-safe, DI-integrated activity system for long-running, cancellable
 - `testActivity(activity, options)` is the primary test harness, returning `TestActivityResult` with `result`, `error`, `events`, `status`, `cleanupCalled`, `cleanupReason`
 - `createTestEventSink<TEvents>()` captures emitted events into a readable `events` array
 - `createTestSignal()` provides an `abort()` and `timeout(ms)` method for simulating cancellation and timeout scenarios
-- `createTestDeps(requires, partialMocks)` builds mock deps from a partial map, throwing `MissingMockError` for unregistered ports
+- `createTestDeps(requires, partialMocks)` builds mock deps from a partial map, returning `Result<ResolvedDeps, MissingMockError>` where `MissingMockError` is a tagged union `{ _tag: "MissingMock", portName: string, message: string }` for unregistered ports
 
 ## Existing Code to Leverage
 
 **`libs/flow/core/src/activities/port.ts` - Activity Port Factory**
 
 - Defines `ActivityPort<TInput, TOutput, TName>` extending `Port` with phantom types
-- Provides `activityPort<TInput, TOutput>()` curried factory and `ActivityInput`/`ActivityOutput` utility types
+- Provides `createActivityPort<TInput, TOutput>()` curried factory and `ActivityInput`/`ActivityOutput` utility types
 - Uses `unsafeCreateActivityPort` with a single `@ts-expect-error` for the phantom type gap
 - All ports are frozen and immutable at runtime
 

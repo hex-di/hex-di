@@ -8,6 +8,8 @@
  */
 
 import type { Port, InferService } from "@hex-di/core";
+import type { ResultAsync } from "@hex-di/result";
+import type { ContainerError, DisposalError } from "../errors/index.js";
 import type { Container } from "./container.js";
 
 // =============================================================================
@@ -103,6 +105,40 @@ type LazyContainerMembers<
    * @returns A promise that resolves to the service instance
    */
   resolveAsync<P extends TProvides | TExtends>(port: P): Promise<InferService<P>>;
+
+  /**
+   * Resolves a service instance, returning a ResultAsync instead of throwing.
+   *
+   * Returns `Ok(service)` on success, `Err(ContainerError)` on failure.
+   * Always returns ResultAsync since graph loading is inherently asynchronous.
+   *
+   * @typeParam P - The specific port type being resolved
+   * @param port - The port token to resolve
+   * @returns A ResultAsync containing the service instance or a ContainerError
+   */
+  tryResolve<P extends TProvides | TExtends>(port: P): ResultAsync<InferService<P>, ContainerError>;
+
+  /**
+   * Resolves a service instance asynchronously, returning a ResultAsync instead of throwing.
+   *
+   * Alias for `tryResolve()` since both methods are async.
+   *
+   * @typeParam P - The specific port type being resolved
+   * @param port - The port token to resolve
+   * @returns A ResultAsync containing the service instance or a ContainerError
+   */
+  tryResolveAsync<P extends TProvides | TExtends>(
+    port: P
+  ): ResultAsync<InferService<P>, ContainerError>;
+
+  /**
+   * Disposes the lazy container, returning a ResultAsync instead of throwing.
+   *
+   * Returns `Ok(void)` on clean disposal, `Err(DisposalError)` if finalizers threw.
+   *
+   * @returns A ResultAsync that resolves to void or a DisposalError
+   */
+  tryDispose(): ResultAsync<void, DisposalError>;
 
   /**
    * Explicitly loads the graph and returns the underlying container.

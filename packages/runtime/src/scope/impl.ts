@@ -4,8 +4,15 @@
  */
 
 import type { Port, InferService } from "@hex-di/core";
+import { tryCatch, fromPromise } from "@hex-di/result";
 import type { Scope } from "../types.js";
 import { ScopeBrand } from "../types.js";
+import {
+  mapToContainerError,
+  mapToDisposalError,
+  emitResultEvent,
+} from "../container/result-helpers.js";
+import type { InspectorAPI } from "../inspection/types.js";
 import { MemoMap } from "../util/memo-map.js";
 import { INTERNAL_ACCESS } from "../inspection/symbols.js";
 import type {
@@ -119,6 +126,7 @@ export class ScopeImpl<
   TPhase extends "uninitialized" | "initialized" = "uninitialized",
 > {
   readonly id: string;
+  readonly name: string | undefined;
   private readonly container: ScopeContainerAccess<TProvides>;
   private readonly scopedMemo: MemoMap;
   private disposed: boolean = false;
@@ -134,6 +142,7 @@ export class ScopeImpl<
     unregisterFromContainer?: () => void,
     name?: string
   ) {
+    this.name = name;
     this.id = generateScopeId(name);
     this.container = container;
     this.scopedMemo = singletonMemo.fork();
@@ -147,7 +156,7 @@ export class ScopeImpl<
     if (this.disposed) {
       throw new DisposedScopeError(portName);
     }
-    return this.container.resolveInternal(port, this.scopedMemo, this.id);
+    return this.container.resolveInternal(port, this.scopedMemo, this.id, this.name);
   }
 
   async resolveAsync<P extends TProvides>(port: P): Promise<InferService<P>> {
@@ -155,7 +164,7 @@ export class ScopeImpl<
     if (this.disposed) {
       throw new DisposedScopeError(portName);
     }
-    return this.container.resolveAsyncInternal(port, this.scopedMemo, this.id);
+    return this.container.resolveAsyncInternal(port, this.scopedMemo, this.id, this.name);
   }
 
   createScope(name?: string): Scope<TProvides, TAsyncPorts, TPhase> {
@@ -286,7 +295,10 @@ export function createScopeWrapper<
   TProvides extends Port<unknown, string>,
   TAsyncPorts extends Port<unknown, string> = never,
   TPhase extends "uninitialized" | "initialized" = "uninitialized",
->(impl: ScopeImpl<TProvides, TAsyncPorts, TPhase>): Scope<TProvides, TAsyncPorts, TPhase> {
+>(
+  impl: ScopeImpl<TProvides, TAsyncPorts, TPhase>,
+  getInspector?: () => InspectorAPI | undefined
+): Scope<TProvides, TAsyncPorts, TPhase> {
   function resolve<
     P extends TPhase extends "initialized" ? TProvides : Exclude<TProvides, TAsyncPorts>,
   >(port: P): InferService<P> {
@@ -296,6 +308,23 @@ export function createScopeWrapper<
   const scope: Scope<TProvides, TAsyncPorts, TPhase> = {
     resolve,
     resolveAsync: port => impl.resolveAsync(port),
+    tryResolve: <
+      P extends TPhase extends "initialized" ? TProvides : Exclude<TProvides, TAsyncPorts>,
+    >(
+      port: P
+    ) => {
+      const result = tryCatch(() => impl.resolve(port), mapToContainerError);
+      emitResultEvent(getInspector?.(), port.__portName, result);
+      return result;
+    },
+    tryResolveAsync: <P extends TProvides>(port: P) => {
+      const resultAsync = fromPromise(impl.resolveAsync(port), mapToContainerError);
+      void resultAsync.then(result => {
+        emitResultEvent(getInspector?.(), port.__portName, result);
+      });
+      return resultAsync;
+    },
+    tryDispose: () => fromPromise(impl.dispose(), mapToDisposalError),
     createScope: (name?: string) => impl.createScope(name),
     dispose: () => impl.dispose(),
     get isDisposed() {

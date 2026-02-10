@@ -4,33 +4,34 @@
 
 ### Feature Matrix
 
-| Feature                           | HexDI Query                   | TanStack Query v5              | SWR v2           | Apollo Client v3       |
-| --------------------------------- | ----------------------------- | ------------------------------ | ---------------- | ---------------------- |
-| **Query Key**                     | Port (typed object)           | String/tuple array             | String key       | GraphQL document       |
-| **Fetch Function**                | Adapter (DI-resolved)         | Inline `queryFn`               | Inline `fetcher` | GraphQL executor       |
-| **Dependency Injection**          | Native (ports/adapters)       | None                           | None             | None                   |
-| **Compile-Time Graph Validation** | Yes (GraphBuilder)            | No                             | No               | No (codegen optional)  |
-| **Structural Sharing**            | Yes (`replaceEqualDeep`)      | Yes                            | No               | Yes (normalized cache) |
-| **Deduplication**                 | Yes                           | Yes                            | Yes              | Yes                    |
-| **Background Refetch**            | Yes                           | Yes                            | Yes              | Yes (polling)          |
-| **Retry**                         | Configurable                  | Configurable                   | Configurable     | Network retry link     |
-| **Garbage Collection**            | Observer-based + cacheTime    | Observer-based + gcTime        | Timer-based      | Manual + `evict`       |
-| **Optimistic Updates**            | `TContext` typed              | Untyped context                | Manual           | `optimisticResponse`   |
-| **Infinite Queries**              | `useInfiniteQuery`            | `useInfiniteQuery`             | `useSWRInfinite` | `fetchMore`            |
-| **Suspense**                      | `useSuspenseQuery`            | `useSuspenseQuery`             | `suspense: true` | `useSuspenseQuery`     |
-| **Streaming**                     | `createStreamedQueryAdapter`  | `streamedQuery` (experimental) | No               | `useSubscription`      |
-| **Mutations**                     | Port + adapter                | `useMutation`                  | `useSWRMutation` | `useMutation`          |
-| **Auto Invalidation**             | Declared in port effects      | Manual `onSuccess`             | Manual `mutate`  | `refetchQueries`       |
-| **Scope Isolation**               | Container scopes              | QueryClient instances          | SWRConfig        | ApolloProvider         |
-| **Multi-Tenancy**                 | Graph per tenant              | Client per tenant              | Custom           | Link chain             |
-| **Offline Support**               | CachePersisterPort            | `persistQueryClient`           | Custom           | `apollo-cache-persist` |
-| **Devtools**                      | QueryInspectorPort + MCP      | React Query Devtools           | SWR DevTools     | Apollo DevTools        |
-| **Introspection API**             | QueryInspectorAPI             | `QueryCache` events            | No               | `InMemoryCache` API    |
-| **Tracing**                       | `@hex-di/tracing` spans       | No                             | No               | Apollo Tracing         |
-| **MCP/AI Integration**            | Native (VISION.md Phase 3)    | No                             | No               | No                     |
-| **Type-Level Tests**              | Comprehensive (`*.test-d.ts`) | No                             | No               | No                     |
-| **Framework Agnostic**            | Core is framework-agnostic    | Yes                            | React-only       | React/Vue/Svelte       |
-| **Bundle Size**                   | TBD                           | ~13KB gzipped                  | ~4KB gzipped     | ~33KB gzipped          |
+| Feature                           | HexDI Query                         | TanStack Query v5              | SWR v2           | Apollo Client v3       |
+| --------------------------------- | ----------------------------------- | ------------------------------ | ---------------- | ---------------------- |
+| **Query Key**                     | Port (typed object)                 | String/tuple array             | String key       | GraphQL document       |
+| **Fetch Function**                | Adapter (DI-resolved)               | Inline `queryFn`               | Inline `fetcher` | GraphQL executor       |
+| **Dependency Injection**          | Native (ports/adapters)             | None                           | None             | None                   |
+| **Compile-Time Graph Validation** | Yes (GraphBuilder)                  | No                             | No               | No (codegen optional)  |
+| **Structural Sharing**            | Yes (`replaceEqualDeep`)            | Yes                            | No               | Yes (normalized cache) |
+| **Deduplication**                 | Yes                                 | Yes                            | Yes              | Yes                    |
+| **Background Refetch**            | Yes                                 | Yes                            | Yes              | Yes (polling)          |
+| **Retry**                         | Configurable                        | Configurable                   | Configurable     | Network retry link     |
+| **Reactivity Engine**             | alien-signals (per-scope)           | Manual observer pattern        | SWR internal     | InMemoryCache reactive |
+| **Garbage Collection**            | Signal subscriber-based + cacheTime | Observer-based + gcTime        | Timer-based      | Manual + `evict`       |
+| **Optimistic Updates**            | `TContext` typed                    | Untyped context                | Manual           | `optimisticResponse`   |
+| **Infinite Queries**              | `useInfiniteQuery`                  | `useInfiniteQuery`             | `useSWRInfinite` | `fetchMore`            |
+| **Suspense**                      | `useSuspenseQuery`                  | `useSuspenseQuery`             | `suspense: true` | `useSuspenseQuery`     |
+| **Streaming**                     | `createStreamedQueryAdapter`        | `streamedQuery` (experimental) | No               | `useSubscription`      |
+| **Mutations**                     | Port + adapter                      | `useMutation`                  | `useSWRMutation` | `useMutation`          |
+| **Auto Invalidation**             | Declared in port effects            | Manual `onSuccess`             | Manual `mutate`  | `refetchQueries`       |
+| **Scope Isolation**               | Container scopes                    | QueryClient instances          | SWRConfig        | ApolloProvider         |
+| **Multi-Tenancy**                 | Graph per tenant                    | Client per tenant              | Custom           | Link chain             |
+| **Offline Support**               | CachePersisterPort                  | `persistQueryClient`           | Custom           | `apollo-cache-persist` |
+| **Devtools**                      | QueryInspectorPort + MCP            | React Query Devtools           | SWR DevTools     | Apollo DevTools        |
+| **Introspection API**             | QueryInspectorAPI                   | `QueryCache` events            | No               | `InMemoryCache` API    |
+| **Tracing**                       | `@hex-di/tracing` spans             | No                             | No               | Apollo Tracing         |
+| **MCP/AI Integration**            | Native (VISION.md Phase 3)          | No                             | No               | No                     |
+| **Type-Level Tests**              | Comprehensive (`*.test-d.ts`)       | No                             | No               | No                     |
+| **Framework Agnostic**            | Core is framework-agnostic          | Yes                            | React-only       | React/Vue/Svelte       |
+| **Bundle Size**                   | TBD                                 | ~13KB gzipped                  | ~4KB gzipped     | ~33KB gzipped          |
 
 ### Key Differentiators
 
@@ -58,45 +59,48 @@
 
 ## Appendix B: Glossary
 
-| Term                        | Definition                                                                                                                                                                             |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Adapter**                 | HexDI implementation of a port. For queries, provides the fetch logic. For mutations, provides the execute logic.                                                                      |
-| **Cache Entry**             | A single record in the QueryCache identified by a CacheKey. Contains data, error, status, and metadata.                                                                                |
-| **Cache Key**               | Tuple `[portName, paramsHash]` uniquely identifying a cache entry.                                                                                                                     |
-| **Cache Time**              | Duration (ms) an unused cache entry is kept before garbage collection. Default: 300,000 (5 min).                                                                                       |
-| **Container**               | HexDI runtime that manages instance creation, scoping, disposal, and dependency resolution.                                                                                            |
-| **Dehydrated State**        | A serializable snapshot of the QueryClient cache, produced by `dehydrate()` on the server and consumed by `hydrate()` on the client. Enables SSR cache transfer.                       |
-| **Deduplication**           | Mechanism that ensures only one in-flight request exists for a given cache key. Subsequent requests share the same in-flight fetch.                                                    |
-| **DirectedPort**            | A port with a direction (`"inbound"` or `"outbound"`). Query and mutation ports are always `"inbound"`.                                                                                |
-| **Effects**                 | Cache side effects declared on a MutationPort: `invalidates` (mark stale) and `removes` (evict).                                                                                       |
-| **Fetch Context**           | Object passed to every query fetcher: `{ signal, meta, client, pageParam, direction }`.                                                                                                |
-| **Fetch Status**            | Whether a query is currently fetching: `"idle"`, `"fetching"`, or `"paused"`.                                                                                                          |
-| **Garbage Collection (GC)** | Process that removes cache entries with zero observers after `cacheTime` expires.                                                                                                      |
-| **Graph**                   | The dependency graph built by `GraphBuilder`. Contains all adapter registrations. Validated at compile time.                                                                           |
-| **Hydration**               | The process of populating a client-side QueryClient cache from a `DehydratedState` object transferred from the server. Prevents redundant fetches after SSR.                           |
-| **GraphBuilder**            | Compile-time validated builder for constructing dependency graphs. Reports missing adapters as TypeScript errors.                                                                      |
-| **Invalidation**            | Marking cached data as stale. Active queries refetch immediately; inactive queries refetch on next mount.                                                                              |
-| **Mutation Context**        | Object passed to mutation executors: `{ signal, meta }`.                                                                                                                               |
-| **Mutation Executor**       | The function returned by a mutation adapter's factory: `(input, context) => ResultAsync<TData, TError>`.                                                                               |
-| **Observer**                | A `QueryObserver` instance that subscribes to a cache entry and derives component-friendly state.                                                                                      |
-| **Observer Count**          | Number of active observers (components) watching a cache entry. When zero, the entry becomes GC-eligible.                                                                              |
-| **Optimistic Update**       | UI update applied before server confirmation. Uses `TContext` for type-safe rollback on error.                                                                                         |
-| **Phantom Type**            | A type-only property (no runtime value) used for compile-time type extraction. Uses unique symbols.                                                                                    |
-| **Placeholder Data**        | Data shown while the actual query is loading. Can be static or derived from previous data.                                                                                             |
-| **Port**                    | HexDI contract declaring what a service provides. Query ports declare data contracts.                                                                                                  |
-| **Prefetch**                | Populating the cache before data is needed. Does not return data.                                                                                                                      |
-| **Query Fetcher**           | The function returned by a query adapter's factory: `(params, context) => ResultAsync<TData, TError>`.                                                                                 |
-| **Query Inspector**         | Service providing runtime visibility into cache state, fetch history, and invalidation events.                                                                                         |
-| **Query Status**            | The primary state of a query: `"pending"` (no data), `"success"`, or `"error"`.                                                                                                        |
-| **QueryResolutionError**    | Tagged union of infrastructure errors produced by QueryClient: `QueryFetchFailed`, `QueryCancelled`, `QueryTimeout`, `QueryAdapterMissing`, `QueryInvalidationCycle`, `QueryDisposed`. |
-| **Result**                  | Discriminated union `Ok<T, E> \| Err<T, E>` from `@hex-di/result`. Represents a value that is either a success (`Ok`) or a failure (`Err`).                                            |
-| **ResultAsync**             | Async wrapper `Promise<Result<T, E>>` with chainable methods (`map`, `andThen`, `orElse`). Returned by query/mutation adapters and QueryClient methods.                                |
-| **Scope**                   | A child container with isolated or overridden service instances. Used for per-request, per-tenant, or per-test isolation.                                                              |
-| **Select**                  | A transform function applied to cached data before returning to the component. Runs on every cache update.                                                                             |
-| **Stale Time**              | Duration (ms) before data is considered stale after fetching. Default: 0 (immediately stale).                                                                                          |
-| **Streamed Query**          | A query that receives data incrementally via `AsyncIterable`. Used for SSE, WebSockets, AI completions.                                                                                |
-| **Structural Sharing**      | Algorithm (`replaceEqualDeep`) that preserves reference equality for unchanged parts of a data tree.                                                                                   |
-| **Tagged Union**            | A TypeScript union type where each member has a literal `_tag` property enabling exhaustive `switch` handling and type narrowing.                                                      |
+| Term                         | Definition                                                                                                                                                                             |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Adapter**                  | HexDI implementation of a port. For queries, provides the fetch logic. For mutations, provides the execute logic.                                                                      |
+| **Cache Entry**              | A single record in the QueryCache identified by a CacheKey. Contains data, error, status, and metadata.                                                                                |
+| **Cache Key**                | Tuple `[portName, paramsHash]` uniquely identifying a cache entry.                                                                                                                     |
+| **Cache Time**               | Duration (ms) an unused cache entry is kept before garbage collection. Default: 300,000 (5 min).                                                                                       |
+| **Container**                | HexDI runtime that manages instance creation, scoping, disposal, and dependency resolution.                                                                                            |
+| **Dehydrated State**         | A serializable snapshot of the QueryClient cache, produced by `dehydrate()` on the server and consumed by `hydrate()` on the client. Enables SSR cache transfer.                       |
+| **Deduplication**            | Mechanism that ensures only one in-flight request exists for a given cache key. Subsequent requests share the same in-flight fetch.                                                    |
+| **DirectedPort**             | A port with a direction (`"inbound"` or `"outbound"`). Query and mutation ports are always `"inbound"`.                                                                                |
+| **Effects**                  | Cache side effects declared on a MutationPort: `invalidates` (mark stale) and `removes` (evict).                                                                                       |
+| **Computed**                 | A derived reactive value that auto-tracks its signal dependencies and caches until they change. Created via `createComputed(fn, system)`.                                              |
+| **Fetch Context**            | Object passed to every query fetcher: `{ signal, meta, pageParam, direction }`.                                                                                                        |
+| **Fetch Status**             | Whether a query is currently fetching: `"idle"` or `"fetching"`.                                                                                                                       |
+| **Garbage Collection (GC)**  | Process that removes cache entries with zero signal subscribers after `cacheTime` expires.                                                                                             |
+| **Glitch-Free Propagation**  | Property of alien-signals' topological sort: derived computeds never see intermediate/inconsistent state when multiple source signals change in a batch.                               |
+| **Graph**                    | The dependency graph built by `GraphBuilder`. Contains all adapter registrations. Validated at compile time.                                                                           |
+| **Hydration**                | The process of populating a client-side QueryClient cache from a `DehydratedState` object transferred from the server. Prevents redundant fetches after SSR.                           |
+| **GraphBuilder**             | Compile-time validated builder for constructing dependency graphs. Reports missing adapters as TypeScript errors.                                                                      |
+| **Invalidation**             | Marking cached data as stale. Active queries refetch immediately; inactive queries refetch on next mount.                                                                              |
+| **Mutation Context**         | Object passed to mutation executors: `{ signal, meta }`.                                                                                                                               |
+| **Mutation Executor**        | The function returned by a mutation adapter's factory: `(input, context) => ResultAsync<TData, TError>`.                                                                               |
+| **Reactive Effect**          | A side-effect runner that auto-tracks signal reads and re-runs when dependencies change. Created via `createEffect(fn, system)`.                                                       |
+| **Reactive System Instance** | An isolated reactive graph created via `createIsolatedReactiveSystem()`. Provides signal(), computed(), effect(), and batch primitives scoped to one container/scope.                  |
+| **Optimistic Update**        | UI update applied before server confirmation. Uses `TContext` for type-safe rollback on error.                                                                                         |
+| **Phantom Type**             | A type-only property (no runtime value) used for compile-time type extraction. Uses unique symbols.                                                                                    |
+| **Placeholder Data**         | Data shown while the actual query is loading. Can be static or derived from previous data.                                                                                             |
+| **Port**                     | HexDI contract declaring what a service provides. Query ports declare data contracts.                                                                                                  |
+| **Prefetch**                 | Populating the cache before data is needed. Does not return data.                                                                                                                      |
+| **Query Fetcher**            | The function returned by a query adapter's factory: `(params, context) => ResultAsync<TData, TError>`.                                                                                 |
+| **Query Inspector**          | Service providing runtime visibility into cache state, fetch history, and invalidation events.                                                                                         |
+| **Query Status**             | The primary state of a query: `"pending"` (no data), `"success"`, or `"error"`.                                                                                                        |
+| **QueryResolutionError**     | Tagged union of infrastructure errors produced by QueryClient: `QueryFetchFailed`, `QueryCancelled`, `QueryTimeout`, `QueryAdapterMissing`, `QueryInvalidationCycle`, `QueryDisposed`. |
+| **Result**                   | Discriminated union `Ok<T, E> \| Err<T, E>` from `@hex-di/result`. Represents a value that is either a success (`Ok`) or a failure (`Err`).                                            |
+| **ResultAsync**              | Async wrapper `Promise<Result<T, E>>` with chainable methods (`map`, `andThen`, `orElse`). Returned by query/mutation adapters and QueryClient methods.                                |
+| **Scope**                    | A child container with isolated or overridden service instances. Used for per-request, per-tenant, or per-test isolation.                                                              |
+| **Select**                   | A transform function applied to cached data before returning to the component. Runs on every cache update.                                                                             |
+| **Signal**                   | A reactive value container that tracks dependents. Reading a signal inside a computed or effect registers an automatic dependency. Created via `createSignal(initial, system)`.        |
+| **Stale Time**               | Duration (ms) before data is considered stale after fetching. Default: 0 (immediately stale).                                                                                          |
+| **Streamed Query**           | A query that receives data incrementally via `AsyncIterable`. Used for SSE, WebSockets, AI completions.                                                                                |
+| **Structural Sharing**       | Algorithm (`replaceEqualDeep`) that preserves reference equality for unchanged parts of a data tree.                                                                                   |
+| **Tagged Union**             | A TypeScript union type where each member has a literal `_tag` property enabling exhaustive `switch` handling and type narrowing.                                                      |
 
 ## Appendix C: Design Decisions
 
@@ -140,17 +144,22 @@
 
 **Trade-off:** Less flexibility for conditional invalidation. If a mutation should only sometimes invalidate, use manual invalidation in `onSuccess` instead.
 
-### C4. Why observer pattern?
+### C4. Why signal-based reactivity (alien-signals)?
 
-**Decision:** Components interact with cache through `QueryObserver` instances, not direct cache access.
+**Decision:** Cache entries are signal-backed. Components subscribe via reactive effects (alien-signals), not manual observer pattern (subscribe/unsubscribe/notify).
 
 **Rationale:**
 
-- Decouples cache management from UI framework bindings
-- Observers derive component-friendly state (`isPending`, `isError`, etc.)
-- Observers manage refetch triggers (mount, focus, interval)
-- Same pattern used by TanStack Query and Apollo Client -- proven at scale
-- Enables future framework adapters (Vue, Svelte) without changing core
+- **Automatic dependency tracking** -- reading a signal inside an effect or computed automatically registers a subscription. No manual subscribe/unsubscribe plumbing.
+- **Glitch-free propagation** -- alien-signals' topological sort ensures derived computeds never see intermediate inconsistent state during batched updates.
+- **Diamond dependency resolution** -- multiple computeds depending on the same signal are evaluated once per batch, not once per dependent.
+- **Per-scope isolation** -- `createIsolatedReactiveSystem()` provides independent dependency graphs per container/scope, preventing cross-scope interference.
+- **Subscriber-tracked GC** -- alien-signals tracks subscriber links internally. No manual `observerCount` increment/decrement (eliminates off-by-one bugs).
+- **Consistency with @hex-di/store** -- the store already uses alien-signals. Sharing the reactivity engine reduces bundle size and provides a uniform reactive programming model across the ecosystem.
+- **Bundle size** -- alien-signals is ~1KB gzipped. The manual observer pattern it replaces would be larger and less capable.
+- **Enables future framework adapters** -- Vue, Svelte, and SolidJS all use signals natively. An alien-signals core maps trivially to these frameworks.
+
+**Trade-off:** Signal-based reactivity is more abstract than explicit subscribe/notify. Debugging requires understanding the dependency graph. alien-signals devtools and the QueryInspectorPort mitigate this.
 
 ### C5. Why structural sharing?
 

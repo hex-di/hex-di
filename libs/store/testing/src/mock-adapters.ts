@@ -9,12 +9,40 @@
 
 import type {
   ActionMap,
+  BoundActions,
   StateService,
   StateListener,
   Unsubscribe,
   AtomService,
   DeepReadonly,
 } from "@hex-di/store";
+import { deepFreeze } from "@hex-di/store";
+
+// =============================================================================
+// Dynamic dispatch bridge
+// =============================================================================
+
+/**
+ * Bridges static/dynamic dispatch for functions typed with never[] rest params.
+ *
+ * ActionMap reducers use `(state, ...args: never[]) => state` to prevent
+ * direct invocation. This helper invokes them via a property descriptor
+ * swap to avoid type casts.
+ */
+function applyDynamic<R>(fn: (...args: never[]) => R, args: readonly unknown[]): R;
+function applyDynamic(fn: (...args: never[]) => unknown, args: readonly unknown[]): unknown {
+  const wrapper: { invoke(...a: unknown[]): unknown } = { invoke: () => undefined };
+  Object.defineProperty(wrapper, "invoke", { value: fn });
+  return wrapper.invoke(...args);
+}
+
+function callReducer<TState>(
+  reducer: (state: TState, ...args: never[]) => TState,
+  state: TState,
+  args: readonly unknown[]
+): TState {
+  return applyDynamic(reducer, [state, ...args]);
+}
 
 // =============================================================================
 // MockStateAdapter
@@ -77,58 +105,82 @@ export function createMockStateAdapter<TState, TActions extends ActionMap<TState
 
   function notify(prev: TState, next: TState): void {
     for (const listener of _listeners) {
-      listener(next as DeepReadonly<TState>, prev as DeepReadonly<TState>);
+      listener(deepFreeze(next), deepFreeze(prev));
     }
   }
 
-  // Build bound actions
-  type BoundActionFn = (...args: unknown[]) => void;
-  const boundActions: Record<string, BoundActionFn> = {};
-  for (const [name, reducer] of Object.entries(config.actions)) {
-    const actionFn = reducer as (state: TState, ...args: unknown[]) => TState;
-    boundActions[name] = (...args: unknown[]) => {
-      _spies.push({ name, args, timestamp: Date.now() });
-      const prev = _state;
-      _state = actionFn(prev, ...args);
-      notify(prev, _state);
+  // Build bound actions using function overload to bridge generic/runtime types.
+  // The overload signature returns BoundActions; the implementation works with
+  // Record<string, Function> which is structurally identical at runtime.
+  function buildBoundActions(): BoundActions<TState, TActions>;
+  function buildBoundActions(): Record<string, (...args: unknown[]) => void> {
+    const record: Record<string, (...args: unknown[]) => void> = {};
+    for (const name of Object.keys(config.actions)) {
+      const reducer = config.actions[name];
+      if (!reducer) continue;
+      record[name] = (...args: unknown[]) => {
+        _spies.push({ name, args, timestamp: Date.now() });
+        const prev = _state;
+        _state = callReducer(reducer, prev, args);
+        notify(prev, _state);
+      };
+    }
+    return Object.freeze(record);
+  }
+
+  const boundActions = buildBoundActions();
+
+  // Separate subscribe implementations for each overload
+  function subscribeToState(listener: StateListener<TState>): Unsubscribe {
+    _listeners.add(listener);
+    return () => {
+      _listeners.delete(listener);
     };
+  }
+
+  function subscribeToSelector<TSelected>(
+    selector: (state: DeepReadonly<TState>) => TSelected,
+    listener: (value: TSelected, prev: TSelected) => void,
+    equalityFn?: (a: TSelected, b: TSelected) => boolean
+  ): Unsubscribe {
+    let prevSelected = selector(deepFreeze(_state));
+    const stateListener: StateListener<TState> = state => {
+      const selected = selector(state);
+      const isEqual = equalityFn ? equalityFn(selected, prevSelected) : selected === prevSelected;
+      if (!isEqual) {
+        const prev = prevSelected;
+        prevSelected = selected;
+        listener(selected, prev);
+      }
+    };
+    _listeners.add(stateListener);
+    return () => {
+      _listeners.delete(stateListener);
+    };
+  }
+
+  // Overloaded subscribe matching StateService interface
+  function subscribeImpl(listener: StateListener<TState>): Unsubscribe;
+  function subscribeImpl<TSelected>(
+    selector: (state: DeepReadonly<TState>) => TSelected,
+    listener: (value: TSelected, prev: TSelected) => void,
+    equalityFn?: (a: TSelected, b: TSelected) => boolean
+  ): Unsubscribe;
+  function subscribeImpl(...args: [unknown, ...unknown[]]): Unsubscribe {
+    if (args.length === 1) {
+      return applyDynamic(subscribeToState, args);
+    }
+    return applyDynamic(subscribeToSelector, args);
   }
 
   const service: MockStateService<TState, TActions> = {
     get state(): DeepReadonly<TState> {
-      return _state as DeepReadonly<TState>;
+      return deepFreeze(_state);
     },
     get actions() {
-      return boundActions as StateService<TState, TActions>["actions"];
+      return boundActions;
     },
-    subscribe(...args: unknown[]): Unsubscribe {
-      if (args.length === 1 && typeof args[0] === "function") {
-        const listener = args[0] as StateListener<TState>;
-        _listeners.add(listener);
-        return () => {
-          _listeners.delete(listener);
-        };
-      }
-      // Selector overload
-      const selector = args[0] as (state: DeepReadonly<TState>) => unknown;
-      const listener = args[1] as (value: unknown, prev: unknown) => void;
-      const equalityFn = args[2] as ((a: unknown, b: unknown) => boolean) | undefined;
-
-      let prevSelected = selector(_state as DeepReadonly<TState>);
-      const stateListener: StateListener<TState> = state => {
-        const selected = selector(state);
-        const isEqual = equalityFn ? equalityFn(selected, prevSelected) : selected === prevSelected;
-        if (!isEqual) {
-          const prev = prevSelected;
-          prevSelected = selected;
-          listener(selected, prev);
-        }
-      };
-      _listeners.add(stateListener);
-      return () => {
-        _listeners.delete(stateListener);
-      };
-    },
+    subscribe: subscribeImpl,
     get actionSpies(): ReadonlyArray<ActionSpy> {
       return _spies;
     },
@@ -143,6 +195,9 @@ export function createMockStateAdapter<TState, TActions extends ActionMap<TState
       const prev = _state;
       _state = state;
       notify(prev, _state);
+    },
+    get isDisposed(): boolean {
+      return false;
     },
   };
 
@@ -197,13 +252,13 @@ export function createMockAtomAdapter<TValue>(
 
   function notify(prev: TValue, next: TValue): void {
     for (const listener of _listeners) {
-      listener(next as DeepReadonly<TValue>, prev as DeepReadonly<TValue>);
+      listener(deepFreeze(next), deepFreeze(prev));
     }
   }
 
   return {
     get value(): DeepReadonly<TValue> {
-      return _value as DeepReadonly<TValue>;
+      return deepFreeze(_value);
     },
     set(value: TValue): void {
       _spies.push({ operation: "set", value, timestamp: Date.now() });
@@ -235,6 +290,9 @@ export function createMockAtomAdapter<TValue>(
     reset(): void {
       _value = _initial;
       _spies.length = 0;
+    },
+    get isDisposed(): boolean {
+      return false;
     },
   };
 }

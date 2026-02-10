@@ -26,6 +26,16 @@
  * shallowEqual({ a: { b: 1 } }, { a: { b: 1 } }) // false (nested objects are different refs)
  * ```
  */
+/**
+ * Safely retrieves a property value from an object by name using getOwnPropertyDescriptor.
+ * Avoids index-signature casts on narrowed `object` types.
+ * @internal
+ */
+function propertyValue(obj: object, key: string): unknown {
+  const desc = Object.getOwnPropertyDescriptor(obj, key);
+  return desc !== undefined ? desc.value : undefined;
+}
+
 export function shallowEqual<T>(a: T, b: T): boolean {
   // Strict equality check handles primitives and same references
   if (Object.is(a, b)) {
@@ -67,7 +77,7 @@ export function shallowEqual<T>(a: T, b: T): boolean {
   for (const key of keysA) {
     if (
       !Object.prototype.hasOwnProperty.call(b, key) ||
-      !Object.is((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key])
+      !Object.is(propertyValue(a, key), propertyValue(b, key))
     ) {
       return false;
     }

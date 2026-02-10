@@ -6,11 +6,87 @@
  * - MachineRunner: Interface for running and interacting with machines
  * - EffectExecutor: Interface for executing effect descriptors
  *
+ * All methods that can fail return Result or ResultAsync instead of throwing.
+ *
  * @packageDocumentation
  */
 
+import type { Result } from "@hex-di/result";
+import { ResultAsync } from "@hex-di/result";
 import type { ActivityInstance, ActivityStatus } from "../activities/types.js";
 import type { EffectAny } from "../effects/types.js";
+import type { TransitionError, EffectExecutionError, DisposeError } from "../errors/index.js";
+
+// =============================================================================
+// StateValue Type
+// =============================================================================
+
+/**
+ * Represents the active state configuration of a machine.
+ *
+ * - For flat (atomic) states: a plain string (e.g., `'idle'`)
+ * - For compound states: a nested object (e.g., `{ active: 'loading' }`)
+ * - For deeply nested compounds: `{ active: { editing: 'unsaved' } }`
+ */
+export type StateValue = string | { readonly [key: string]: StateValue };
+
+// Re-export ResultAsync for convenience (consumers need it for type annotations)
+export { ResultAsync };
+
+// =============================================================================
+// PendingEvent Type
+// =============================================================================
+
+/**
+ * An event waiting in the queue during re-entrant send processing.
+ */
+export interface PendingEvent {
+  /** The event type string. */
+  readonly type: string;
+  /** Optional payload attached to the event. */
+  readonly payload?: unknown;
+  /** Source of the event: emit (from effect), delay (from timer), or external (user send). */
+  readonly source: "emit" | "delay" | "external";
+  /** Timestamp when the event was enqueued. */
+  readonly enqueuedAt: number;
+}
+
+// =============================================================================
+// History Types
+// =============================================================================
+
+/**
+ * A recorded transition for the history buffer.
+ */
+export interface TransitionHistoryEntry {
+  readonly prevState: string;
+  readonly nextState: string;
+  readonly eventType: string;
+  readonly effectCount: number;
+  readonly timestamp: number;
+}
+
+/**
+ * A recorded effect execution for the history buffer.
+ */
+export interface EffectExecutionEntry {
+  readonly effectTag: string;
+  readonly ok: boolean;
+  readonly timestamp: number;
+  readonly duration: number;
+}
+
+/**
+ * Configuration for history recording in MachineRunner.
+ */
+export interface HistoryConfig {
+  /** Whether history recording is enabled. Disabled by default for zero overhead. */
+  readonly enabled: boolean;
+  /** Maximum number of transitions to keep. @default 50 */
+  readonly transitionBufferSize?: number;
+  /** Maximum number of effect executions to keep. @default 100 */
+  readonly effectBufferSize?: number;
+}
 
 // =============================================================================
 // MachineSnapshot Type
@@ -48,7 +124,7 @@ import type { EffectAny } from "../effects/types.js";
  */
 export interface MachineSnapshot<TState extends string, TContext> {
   /**
-   * The current state name.
+   * The current top-level state name.
    */
   readonly state: TState;
 
@@ -62,6 +138,40 @@ export interface MachineSnapshot<TState extends string, TContext> {
    * Includes running, completed, failed, and cancelled activities.
    */
   readonly activities: readonly ActivityInstance[];
+
+  /**
+   * Events waiting in the queue during re-entrant processing.
+   * Empty unless the machine is currently processing a transition.
+   */
+  readonly pendingEvents: readonly PendingEvent[];
+
+  /**
+   * The full active state configuration.
+   *
+   * - For flat states: a plain string (e.g., `'idle'`)
+   * - For compound states: a nested object (e.g., `{ active: 'loading' }`)
+   */
+  readonly stateValue: StateValue;
+
+  /**
+   * Checks if the current state matches a dot-separated path.
+   *
+   * The path must start with a valid top-level state name. For compound states,
+   * you can use dot notation to match nested states (e.g., `'active.loading'`).
+   *
+   * @example
+   * ```typescript
+   * snapshot.matches('active');          // true if in any child of active
+   * snapshot.matches('active.loading');  // true if in active.loading specifically
+   * ```
+   */
+  matches(path: TState | `${TState}.${string}`): boolean;
+
+  /**
+   * Checks whether an event would trigger a valid transition from the current state.
+   * Includes events handled by parent compound states (event bubbling).
+   */
+  can(event: { readonly type: string }): boolean;
 }
 
 // =============================================================================
@@ -73,8 +183,8 @@ export interface MachineSnapshot<TState extends string, TContext> {
  *
  * The MachineRunner provides:
  * - State and context accessors
- * - Pure transition via `send()` - returns effects without executing
- * - Imperative transition via `sendAndExecute()` - transitions and executes effects
+ * - Pure transition via `send()` - returns Result with effects
+ * - Imperative transition via `sendAndExecute()` - returns ResultAsync
  * - Subscription for state change notifications
  * - Activity status tracking
  * - Disposal for cleanup
@@ -84,25 +194,23 @@ export interface MachineSnapshot<TState extends string, TContext> {
  * @typeParam TContext - The context type
  *
  * @remarks
- * The runner separates concerns:
- * - `send()` is pure: computes the transition and returns effect descriptors
- * - `sendAndExecute()` is imperative: delegates to `send()` then executes effects
- *
- * This separation enables:
- * - Testing transitions without side effects
- * - Inspecting effects before execution
- * - Custom effect execution strategies
+ * All methods that can fail return Result/ResultAsync:
+ * - `send()` returns `Result<readonly EffectAny[], TransitionError>`
+ * - `sendAndExecute()` returns `ResultAsync<void, TransitionError | EffectExecutionError>`
+ * - `dispose()` returns `ResultAsync<void, DisposeError>`
  *
  * @example
  * ```typescript
  * const runner = createMachineRunner(machine, options);
  *
  * // Pure transition - get effects without executing
- * const effects = runner.send(event);
- * console.log(effects); // [{ _tag: 'Delay', milliseconds: 100 }, ...]
+ * const result = runner.send(event);
+ * if (result._tag === 'Ok') {
+ *   console.log(result.value); // effects array
+ * }
  *
  * // Imperative transition - execute effects
- * await runner.sendAndExecute(event);
+ * const execResult = await runner.sendAndExecute(event);
  *
  * // Subscribe to changes
  * const unsubscribe = runner.subscribe((snapshot) => {
@@ -143,6 +251,14 @@ export interface MachineRunner<
   context(): TContext;
 
   /**
+   * Returns the active state value.
+   *
+   * For flat machines: returns the state name string (e.g., `'idle'`).
+   * For compound machines: returns a nested object (e.g., `{ active: 'loading' }`).
+   */
+  stateValue(): StateValue;
+
+  /**
    * Performs a pure state transition.
    *
    * This method:
@@ -156,29 +272,28 @@ export interface MachineRunner<
    * This enables testing transitions without side effects.
    *
    * @param event - The event to send to the machine
-   * @returns A readonly array of effect descriptors to execute
+   * @returns Result with effects on success, or TransitionError on failure
    *
    * @remarks
    * If no valid transition exists (no transition defined or all guards fail),
-   * returns an empty array and the state remains unchanged.
+   * returns ok with empty array and the state remains unchanged.
    *
    * @example
    * ```typescript
-   * // Get effects without executing
-   * const effects = runner.send({ type: 'FETCH' });
-   *
-   * // Effects are pure data - can be logged, tested, etc.
-   * console.log(effects);
-   * // [
-   * //   { _tag: 'Invoke', port: UserServicePort, method: 'getUser', args: ['123'] },
-   * //   { _tag: 'Delay', milliseconds: 100 }
-   * // ]
-   *
-   * // State has already transitioned
-   * console.log(runner.state()); // 'loading'
+   * const result = runner.send({ type: 'FETCH' });
+   * if (result._tag === 'Ok') {
+   *   // result.value is readonly EffectAny[]
+   *   console.log(result.value);
+   * } else {
+   *   // result.error is TransitionError
+   *   switch (result.error._tag) {
+   *     case 'Disposed': // machine was disposed
+   *     case 'GuardThrew': // guard threw an exception
+   *   }
+   * }
    * ```
    */
-  send(event: TEvent): readonly EffectAny[];
+  send(event: TEvent): Result<readonly EffectAny[], TransitionError>;
 
   /**
    * Performs a state transition and executes all resulting effects.
@@ -187,18 +302,45 @@ export interface MachineRunner<
    * each effect using the configured EffectExecutor.
    *
    * @param event - The event to send to the machine
-   * @returns A promise that resolves when all effects have been executed
+   * @returns ResultAsync that resolves on success, or error on failure
    *
    * @example
    * ```typescript
-   * // Transition and execute effects
-   * await runner.sendAndExecute({ type: 'FETCH' });
-   *
-   * // State has transitioned and all effects have completed
-   * console.log(runner.state()); // 'success' or 'error'
+   * const result = await runner.sendAndExecute({ type: 'FETCH' });
+   * if (result._tag === 'Err') {
+   *   console.log('Failed:', result.error._tag);
+   * }
    * ```
    */
-  sendAndExecute(event: TEvent): Promise<void>;
+  sendAndExecute(event: TEvent): ResultAsync<void, TransitionError | EffectExecutionError>;
+
+  /**
+   * Sends multiple events in a batch.
+   *
+   * Events are processed sequentially. Subscribers are notified once
+   * after all events have been processed (not after each individual event).
+   * Short-circuits on first error - remaining events are not processed.
+   *
+   * **Does NOT execute effects** - returns all accumulated effects.
+   *
+   * @param events - The events to send in order
+   * @returns Result with all accumulated effects, or TransitionError on first failure
+   *
+   * @example
+   * ```typescript
+   * const result = runner.sendBatch([
+   *   { type: 'SET_NAME', name: 'Alice' },
+   *   { type: 'SET_AGE', age: 30 },
+   *   { type: 'SUBMIT' },
+   * ]);
+   *
+   * if (result._tag === 'Ok') {
+   *   // result.value is all effects from all transitions
+   *   console.log('All events processed, effects:', result.value);
+   * }
+   * ```
+   */
+  sendBatch(events: readonly TEvent[]): Result<readonly EffectAny[], TransitionError>;
 
   /**
    * Subscribes to state change notifications.
@@ -245,17 +387,29 @@ export interface MachineRunner<
    * After disposal, the runner should not be used (though state/context
    * can still be read).
    *
-   * @returns A promise that resolves when disposal is complete
+   * @returns ResultAsync that resolves on success
    *
    * @remarks
    * Multiple calls to dispose are safe (subsequent calls are no-ops).
    */
-  dispose(): Promise<void>;
+  dispose(): ResultAsync<void, DisposeError>;
 
   /**
    * Whether the runner has been disposed.
    */
   readonly isDisposed: boolean;
+
+  /**
+   * Returns recorded transition history entries.
+   * Returns empty array if history is not enabled.
+   */
+  getTransitionHistory(): readonly TransitionHistoryEntry[];
+
+  /**
+   * Returns recorded effect execution entries.
+   * Returns empty array if history is not enabled.
+   */
+  getEffectHistory(): readonly EffectExecutionEntry[];
 }
 
 // =============================================================================
@@ -279,12 +433,20 @@ export interface MachineRunnerAny {
   snapshot(): MachineSnapshot<string, unknown>;
   state(): string;
   context(): unknown;
-  send(event: { readonly type: string }): readonly EffectAny[];
-  sendAndExecute(event: { readonly type: string }): Promise<void>;
+  stateValue(): StateValue;
+  send(event: { readonly type: string }): Result<readonly EffectAny[], TransitionError>;
+  sendBatch(
+    events: readonly { readonly type: string }[]
+  ): Result<readonly EffectAny[], TransitionError>;
+  sendAndExecute(event: {
+    readonly type: string;
+  }): ResultAsync<void, TransitionError | EffectExecutionError>;
   subscribe(callback: (snapshot: MachineSnapshot<string, unknown>) => void): () => void;
   getActivityStatus(id: string): ActivityStatus | undefined;
-  dispose(): Promise<void>;
+  dispose(): ResultAsync<void, DisposeError>;
   readonly isDisposed: boolean;
+  getTransitionHistory(): readonly TransitionHistoryEntry[];
+  getEffectHistory(): readonly EffectExecutionEntry[];
 }
 
 // =============================================================================
@@ -312,26 +474,15 @@ export interface MachineRunnerAny {
  * @example Production executor
  * ```typescript
  * const executor: EffectExecutor = {
- *   async execute(effect) {
+ *   execute(effect) {
  *     switch (effect._tag) {
  *       case 'Invoke':
- *         const service = container.resolve(effect.port);
- *         await service[effect.method](...effect.args);
- *         break;
- *       case 'Delay':
- *         await new Promise(r => setTimeout(r, effect.milliseconds));
- *         break;
+ *         return ResultAsync.fromPromise(
+ *           container.resolve(effect.port)[effect.method](...effect.args),
+ *           (e) => InvokeError({ portName: '', method: '', cause: e })
+ *         );
  *       // ... other effect types
  *     }
- *   }
- * };
- * ```
- *
- * @example Test executor
- * ```typescript
- * const mockExecutor: EffectExecutor = {
- *   async execute(effect) {
- *     recordedEffects.push(effect);
  *   }
  * };
  * ```
@@ -341,7 +492,7 @@ export interface EffectExecutor {
    * Executes a single effect descriptor.
    *
    * @param effect - The effect descriptor to execute
-   * @returns A promise that resolves when the effect is complete
+   * @returns ResultAsync that resolves on success or contains an EffectExecutionError
    */
-  execute(effect: EffectAny): Promise<void>;
+  execute(effect: EffectAny): ResultAsync<void, EffectExecutionError>;
 }

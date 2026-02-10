@@ -69,6 +69,10 @@ vi.mock("@hex-di/tracing-otel", () => {
         },
       };
     }),
+    mapHexDiToOtelAttributes: vi.fn((attributes: any) => {
+      // Simple pass-through plus a marker to verify it was called
+      return { ...attributes, _mapped: true };
+    }),
   };
 });
 
@@ -110,6 +114,7 @@ describe("createZipkinExporter", () => {
 
     expect(ZipkinExporter).toHaveBeenCalledWith({
       url: "http://zipkin:9411/api/v2/spans",
+      headers: undefined,
     });
     expect(exporter).toBeDefined();
   });
@@ -123,6 +128,21 @@ describe("createZipkinExporter", () => {
 
     expect(ZipkinExporter).toHaveBeenCalledWith({
       url: "http://localhost:9411/api/v2/spans",
+      headers: undefined,
+    });
+  });
+
+  it("should pass headers to underlying ZipkinExporter", async () => {
+    const { ZipkinExporter } = await import("@opentelemetry/exporter-zipkin");
+
+    createZipkinExporter({
+      serviceName: "test-service",
+      headers: { Authorization: "Bearer my-token" },
+    });
+
+    expect(ZipkinExporter).toHaveBeenCalledWith({
+      url: "http://localhost:9411/api/v2/spans",
+      headers: { Authorization: "Bearer my-token" },
     });
   });
 
@@ -155,14 +175,29 @@ describe("createZipkinExporter", () => {
     await exporter.export(spans);
 
     expect(convertToReadableSpan).toHaveBeenCalledTimes(2);
-    expect(convertToReadableSpan).toHaveBeenCalledWith(
-      spans[0],
-      expect.objectContaining({
-        attributes: expect.objectContaining({
-          "service.name": "test-service",
-        }),
-      })
-    );
+  });
+
+  it("should map HexDI attributes to OTel semantic conventions by default", async () => {
+    const { mapHexDiToOtelAttributes } = await import("@hex-di/tracing-otel");
+    const exporter = createZipkinExporter({ serviceName: "test-service" });
+
+    const spans = [createTestSpanData("test")];
+    await exporter.export(spans);
+
+    expect(mapHexDiToOtelAttributes).toHaveBeenCalledTimes(1);
+  });
+
+  it("should skip attribute mapping when mapSemanticAttributes is false", async () => {
+    const { mapHexDiToOtelAttributes } = await import("@hex-di/tracing-otel");
+    const exporter = createZipkinExporter({
+      serviceName: "test-service",
+      mapSemanticAttributes: false,
+    });
+
+    const spans = [createTestSpanData("test")];
+    await exporter.export(spans);
+
+    expect(mapHexDiToOtelAttributes).not.toHaveBeenCalled();
   });
 
   it("should delegate export to underlying ZipkinExporter", async () => {
@@ -265,6 +300,42 @@ describe("createZipkinExporter", () => {
     expect(consoleErrorSpy.mock.calls[0]![0]).toContain("Shutdown failed");
 
     consoleErrorSpy.mockRestore();
+  });
+
+  it("should be idempotent on shutdown", async () => {
+    const exporter = createZipkinExporter({ serviceName: "test-service" });
+
+    // First shutdown
+    await exporter.shutdown();
+    expect(lastZipkinInstance!.shutdown).toHaveBeenCalledTimes(1);
+
+    // Second shutdown should be a no-op
+    await exporter.shutdown();
+    expect(lastZipkinInstance!.shutdown).toHaveBeenCalledTimes(1);
+  });
+
+  it("should no-op export after shutdown", async () => {
+    const exporter = createZipkinExporter({ serviceName: "test-service" });
+
+    await exporter.shutdown();
+
+    // Export after shutdown should be a no-op
+    const spans = [createTestSpanData("test")];
+    await exporter.export(spans);
+
+    // The export callback should not have been called after shutdown
+    expect(lastZipkinInstance!.export).not.toHaveBeenCalled();
+  });
+
+  it("should no-op forceFlush after shutdown", async () => {
+    const exporter = createZipkinExporter({ serviceName: "test-service" });
+
+    await exporter.shutdown();
+    (lastZipkinInstance!.forceFlush as ReturnType<typeof vi.fn>).mockClear();
+
+    // forceFlush after shutdown should be a no-op
+    await exporter.forceFlush();
+    expect(lastZipkinInstance!.forceFlush).not.toHaveBeenCalled();
   });
 
   it("should handle empty span batches", async () => {

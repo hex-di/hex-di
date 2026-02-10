@@ -17,7 +17,7 @@ import {
   type Activity,
   type EventSink,
   createActivityManager,
-  createActivityPort,
+  activityPort,
 } from "../src/activities/index.js";
 import { event } from "../src/machine/factories.js";
 
@@ -283,20 +283,20 @@ describe("Activity System", () => {
     });
   });
 
-  describe("createActivityPort", () => {
+  describe("activityPort", () => {
     it("should create a port with the correct name", () => {
-      // createActivityPort is a curried function: createActivityPort<TInput, TOutput>()(name)
-      const port = createActivityPort<{ data: string }, string>()("FetchActivity");
+      // activityPort is a curried function: activityPort<TInput, TOutput>()(name)
+      const p = activityPort<{ data: string }, string>()("FetchActivity");
 
-      expect(port.__portName).toBe("FetchActivity");
+      expect(p.__portName).toBe("FetchActivity");
     });
 
     it("should preserve port name literal type", () => {
-      // createActivityPort is a curried function: createActivityPort<TInput, TOutput>()(name)
-      const port = createActivityPort<void, void>()("TestActivity");
+      // activityPort is a curried function: activityPort<TInput, TOutput>()(name)
+      const p = activityPort<void, void>()("TestActivity");
 
       // Type-level test: the port name should be the literal type
-      const name: "TestActivity" = port.__portName;
+      const name: "TestActivity" = p.__portName;
       expect(name).toBe("TestActivity");
     });
   });

@@ -206,17 +206,20 @@ export class ChildContainerImpl<
   resolveInternal<P extends TProvides | TExtends>(
     port: P,
     scopedMemo: MemoMap,
-    scopeId?: string | null
+    scopeId?: string | null,
+    scopeName?: string
   ): InferService<P>;
   resolveInternal(
     port: Port<unknown, string>,
     scopedMemo: MemoMap,
-    scopeId?: string | null
+    scopeId?: string | null,
+    scopeName?: string
   ): unknown;
   resolveInternal(
     port: Port<unknown, string>,
     scopedMemo: MemoMap,
-    scopeId: string | null = null
+    scopeId: string | null = null,
+    scopeName?: string
   ): unknown {
     // For inherited ports, delegate to inheritance resolver
     // This handles shared mode by calling parent.resolveInternal which returns cached value
@@ -225,13 +228,13 @@ export class ChildContainerImpl<
       const adapter = this.adapterRegistry.get(port);
       if (adapter !== undefined && adapter.lifetime === "scoped") {
         // Scoped ports: base class creates scoped instance in child's scope
-        return super.resolveInternal(port, scopedMemo, scopeId);
+        return super.resolveInternal(port, scopedMemo, scopeId, scopeName);
       }
       // Non-scoped inherited ports: delegate to fallback (respects inheritance mode)
       return this.resolveInternalFallback(port, port.__portName);
     }
     // Local ports resolve normally via base implementation
-    return super.resolveInternal(port, scopedMemo, scopeId);
+    return super.resolveInternal(port, scopedMemo, scopeId, scopeName);
   }
 
   protected getParentUnregisterCallback(): (() => void) | undefined {

@@ -29,7 +29,7 @@
  *
  * @example Basic state machine
  * ```typescript
- * import { createMachine, state, event, Effect } from '@hex-di/flow';
+ * import { defineMachine, state, event, Effect } from '@hex-di/flow';
  *
  * // Define states
  * const idle = state<'idle'>('idle');
@@ -41,7 +41,7 @@
  * const resolved = event<'RESOLVED', { data: string }>('RESOLVED');
  *
  * // Create machine
- * const machine = createMachine({
+ * const machine = defineMachine({
  *   id: 'fetcher',
  *   initial: 'idle',
  *   states: {
@@ -127,7 +127,7 @@ export {
   type MachineStatesRecord,
 
   // Machine factory and inference
-  createMachine,
+  defineMachine,
   type InferMachineState,
   type InferMachineEvent,
   type InferMachineContext,
@@ -135,6 +135,26 @@ export {
   // Factory functions
   state,
   event,
+
+  // Guards module
+  guard,
+  and,
+  or,
+  not,
+  type Guard,
+  type NamedGuard,
+
+  // Actions module
+  defineAction,
+  composeActions,
+  type Action,
+  type NamedAction,
+
+  // Builder DSL
+  createMachineBuilder,
+  type StatePhaseBuilder,
+  type TransitionPhaseBuilder,
+  type TransitionOptions,
 } from "./machine/index.js";
 
 // =============================================================================
@@ -156,9 +176,15 @@ export {
   type ParallelEffect,
   type SequenceEffect,
   type NoneEffect,
+  type ChooseBranch,
+  type ChooseEffect,
+  type LogEffect,
 
   // Universal constraint type
   type EffectAny,
+
+  // Activity port structural type
+  type ActivityPortLike,
 
   // Effect constructors namespace
   Effect,
@@ -182,7 +208,6 @@ export {
 
   // Configured activity types (new API)
   type CleanupReason,
-  type ResolvedActivityDeps,
   type ActivityContext,
   type ActivityConfig,
   type ConfiguredActivity,
@@ -199,7 +224,6 @@ export {
   type ActivityInput,
   type ActivityOutput,
   activityPort,
-  createActivityPort, // Legacy export (deprecated)
 
   // Typed Events
   defineEvents,
@@ -234,6 +258,17 @@ export {
   // Snapshot type
   type MachineSnapshot,
 
+  // StateValue type
+  type StateValue,
+
+  // PendingEvent type
+  type PendingEvent,
+
+  // History types
+  type TransitionHistoryEntry,
+  type EffectExecutionEntry,
+  type HistoryConfig,
+
   // Runner interface and factory
   type MachineRunner,
   type MachineRunnerAny,
@@ -244,8 +279,14 @@ export {
   type EffectExecutor,
   createBasicExecutor,
 
+  // ResultAsync (re-exported for consumer convenience)
+  ResultAsync,
+
   // Interpreter (pure transition logic)
   transition,
+  transitionSafe,
+  computeInitialPath,
+  canTransition,
   type TransitionResult,
 } from "./runner/index.js";
 
@@ -265,6 +306,12 @@ export {
   createFlowPort,
   type FlowPort,
 
+  // DI Ports for introspection
+  FlowInspectorPort,
+  FlowRegistryPort,
+  FlowLibraryInspectorPort,
+  FlowEventBusPort,
+
   // DI Effect Executor
   createDIEffectExecutor,
   type DIEffectExecutor,
@@ -275,7 +322,55 @@ export {
   createFlowAdapter,
   type FlowAdapterConfig,
   type FlowAdapter,
+
+  // FlowRegistry Adapter
+  FlowRegistryAdapter,
+
+  // FlowEventBus Adapter
+  FlowEventBusAdapter,
+
+  // FlowInspector Adapter
+  createFlowInspectorAdapter,
+  type FlowInspectorAdapterConfig,
+
+  // Metadata
+  computeFlowMetadata,
+  isFlowMetadata,
+  type FlowAdapterMetadata,
+  type TransitionDetail,
+
+  // Tracing Bridge
+  createFlowTracingBridge,
+  type FlowTracingBridgeConfig,
+
+  // Library Inspector Bridge
+  createFlowLibraryInspector,
+
+  // FlowLibraryInspector Adapter
+  FlowLibraryInspectorAdapter,
 } from "./integration/index.js";
+
+// =============================================================================
+// Event Bus Module - Cross-machine Event Pub/Sub
+// =============================================================================
+
+export { createFlowEventBus, type FlowEventBus, type FlowEvent } from "./event-bus/index.js";
+
+// =============================================================================
+// Serialization Module - State Persistence
+// =============================================================================
+
+export {
+  serializeMachineState,
+  restoreMachineState,
+  type SerializedMachineState,
+  NonSerializableContext,
+  CircularReference,
+  InvalidState,
+  MachineIdMismatch,
+  type SerializationError,
+  type RestoreError,
+} from "./serialization/index.js";
 
 // =============================================================================
 // Tracing Module - DevTools Integration
@@ -331,21 +426,82 @@ export {
 } from "./devtools/index.js";
 
 // =============================================================================
-// Errors Module - Error Hierarchy
+// Errors Module - Error Types
 // =============================================================================
 
 export {
-  // Base class
-  FlowError,
-
-  // Specific error types
-  InvalidTransitionError,
-  InvalidStateError,
-  InvalidEventError,
-  ActivityError,
-  EffectExecutionError,
-  DisposedMachineError,
-
-  // Utility function
-  extractErrorMessage,
+  GuardThrew,
+  ActionThrew,
+  Disposed,
+  QueueOverflow,
+  type TransitionError,
+  InvokeError,
+  SpawnError,
+  StopError,
+  ResolutionError,
+  SequenceAborted,
+  ParallelErrors,
+  type EffectExecutionError,
+  MetadataInvalid,
+  DuplicateActivityPort,
+  ActivityNotFrozen,
+  PortNotAvailable,
+  type FlowAdapterError,
+  DisposeError,
+  ActivityNotFound,
 } from "./errors/index.js";
+
+// =============================================================================
+// Introspection Module - DevTools & Diagnostics
+// =============================================================================
+
+export {
+  // CircularBuffer
+  CircularBuffer,
+
+  // FlowRegistry
+  createFlowRegistry,
+  type FlowRegistry,
+  type RegistryEntry,
+  type RegistryEvent,
+  type RegistryListener,
+
+  // FlowInspector
+  createFlowInspector,
+  type FlowInspector,
+  type FlowInspectorConfig,
+  type HealthEvent,
+  type EffectResultRecord,
+
+  // FlowTracingHook
+  createFlowTracingHook,
+  type FlowTracingHook,
+  type FlowTracingHookOptions,
+  type TracerLike,
+} from "./introspection/index.js";
+
+// =============================================================================
+// Patterns Module - Advanced Composition Patterns
+// =============================================================================
+
+export {
+  // Actor model
+  createMachineActivity,
+  type MachineActivityConfig,
+
+  // Subscription
+  createSubscriptionActivity,
+  type SubscribeFn,
+  type SubscriptionActivityConfig,
+
+  // Retry
+  retryConfig,
+  type RetryPatternConfig,
+  type RetryContext,
+  type RetryPatternResult,
+
+  // Coordination
+  waitForAll,
+  waitForAny,
+  type CoordinationContext,
+} from "./patterns/index.js";

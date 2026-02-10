@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- "The Angular Braces" - Thin hex outline + angular curly braces + center dot -->
+  <!-- Thin hexagonal outline frame -->
+  <polygon points="100,18 176,61 176,139 100,182 24,139 24,61" fill="none" stroke="#7C3AED" stroke-width="4"/>
+  <!-- Left curly brace -->
+  <path d="M 75,60 L 65,70 L 65,90 L 55,100 L 65,110 L 65,130 L 75,140"
+    fill="none" stroke="#7C3AED" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Right curly brace -->
+  <path d="M 125,60 L 135,70 L 135,90 L 145,100 L 135,110 L 135,130 L 125,140"
+    fill="none" stroke="#7C3AED" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Resolved service dot -->
+  <circle cx="100" cy="100" r="8" fill="#7C3AED"/>
+</svg>

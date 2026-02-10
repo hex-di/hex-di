@@ -6,7 +6,9 @@
  * @packageDocumentation
  */
 
-import type { EffectExecutor, EffectAny } from "@hex-di/flow";
+import type { EffectExecutor, EffectAny, EffectExecutionError } from "@hex-di/flow";
+import { ResultAsync } from "@hex-di/result";
+import { InvokeError } from "@hex-di/flow";
 
 // =============================================================================
 // Types
@@ -63,22 +65,27 @@ export function createMockEffectExecutor(
   const recorded: RecordedEffect[] = [];
 
   const executor: EffectExecutor = {
-    async execute(effect: EffectAny): Promise<void> {
-      recorded.push({ effect, timestamp: Date.now() });
+    execute(effect: EffectAny): ResultAsync<void, EffectExecutionError> {
+      return ResultAsync.fromPromise(
+        (async () => {
+          recorded.push({ effect, timestamp: Date.now() });
 
-      if (responses) {
-        for (const response of responses) {
-          if (response.tag === effect._tag) {
-            if (response.error) {
-              throw response.error;
+          if (responses) {
+            for (const response of responses) {
+              if (response.tag === effect._tag) {
+                if (response.error) {
+                  throw response.error;
+                }
+                if (response.handler) {
+                  await response.handler(effect);
+                }
+                return;
+              }
             }
-            if (response.handler) {
-              await response.handler(effect);
-            }
-            return;
           }
-        }
-      }
+        })(),
+        cause => InvokeError({ portName: "", method: "", cause })
+      );
     },
   };
 

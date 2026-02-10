@@ -28,6 +28,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:types": "vitest run --typecheck",
+    "test:coverage": "vitest run --coverage",
+    "test:mutation": "stryker run",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
@@ -61,5 +63,10 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "devDependencies": {
+    "@stryker-mutator/core": "^8.7.1",
+    "@stryker-mutator/vitest-runner": "^8.7.1",
+    "@vitest/coverage-v8": "4.0.18"
+  }
 }

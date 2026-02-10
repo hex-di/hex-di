@@ -86,6 +86,33 @@ export type MethodReturn<TService, TMethod extends keyof TService> = TService[TM
   : never;
 
 // =============================================================================
+// Activity Port Structural Type
+// =============================================================================
+
+/**
+ * Structural type matching any ActivityPort for use in Effect.spawn() overloads.
+ *
+ * This enables type-safe spawning by port reference, extracting the port name
+ * and inferring the activity input type from the port's phantom properties.
+ *
+ * @typeParam TInput - The activity input type (carried as phantom property)
+ *
+ * @example
+ * ```typescript
+ * const FetchUserPort = activityPort<{ userId: string }, User>()('FetchUser');
+ *
+ * // Port satisfies ActivityPortLike<{ userId: string }>
+ * const effect = Effect.spawn(FetchUserPort, { userId: "123" });
+ * // effect.activityId === "FetchUser"
+ * // effect.input is { userId: string }
+ * ```
+ */
+export interface ActivityPortLike<TInput = unknown> {
+  readonly __portName: string;
+  readonly __activityInput: TInput;
+}
+
+// =============================================================================
 // Base Effect Interface
 // =============================================================================
 
@@ -352,6 +379,76 @@ export interface SequenceEffect<
 export type NoneEffect = BaseEffect<"None">;
 
 // =============================================================================
+// ChooseEffect - Conditional Effect Selection
+// =============================================================================
+
+/**
+ * A branch in a ChooseEffect.
+ *
+ * Each branch has an optional guard and a list of effects to execute
+ * if the guard passes (or if no guard is specified).
+ */
+export interface ChooseBranch {
+  /**
+   * Optional guard function evaluated with current context and event.
+   * If omitted, the branch is treated as a default/fallback.
+   */
+  readonly guard?: (context: unknown, event: { readonly type: string }) => boolean;
+
+  /**
+   * Effects to execute if this branch is selected.
+   */
+  readonly effects: readonly EffectAny[];
+}
+
+/**
+ * Effect descriptor for conditionally selecting effects based on guards.
+ *
+ * Branches are evaluated in order. The first branch whose guard returns true
+ * (or has no guard) is selected, and its effects are executed.
+ *
+ * @example
+ * ```typescript
+ * const effect = Effect.choose([
+ *   { guard: (ctx) => ctx.retryCount < 3, effects: [Effect.emit(retryEvent())] },
+ *   { effects: [Effect.emit(failEvent())] }, // fallback
+ * ]);
+ * ```
+ */
+export interface ChooseEffect extends BaseEffect<"Choose"> {
+  /**
+   * The branches to evaluate in order.
+   */
+  readonly branches: readonly ChooseBranch[];
+}
+
+// =============================================================================
+// LogEffect - Logging Effect
+// =============================================================================
+
+/**
+ * Effect descriptor for logging a message.
+ *
+ * The message can be a static string or a function that receives the current
+ * context and event to produce a dynamic message.
+ *
+ * @example
+ * ```typescript
+ * // Static message
+ * const effect = Effect.log("Entering loading state");
+ *
+ * // Dynamic message
+ * const effect = Effect.log((ctx, evt) => `Processing ${evt.type} in ${ctx.state}`);
+ * ```
+ */
+export interface LogEffect extends BaseEffect<"Log"> {
+  /**
+   * The message to log. Can be a static string or a function.
+   */
+  readonly message: string | ((context: unknown, event: { readonly type: string }) => string);
+}
+
+// =============================================================================
 // EffectAny - Universal Constraint Type
 // =============================================================================
 
@@ -382,5 +479,15 @@ export interface EffectAny {
    * Discriminator tag for effect type narrowing.
    * All valid effect tags are included in this union.
    */
-  readonly _tag: "Invoke" | "Spawn" | "Stop" | "Emit" | "Delay" | "Parallel" | "Sequence" | "None";
+  readonly _tag:
+    | "Invoke"
+    | "Spawn"
+    | "Stop"
+    | "Emit"
+    | "Delay"
+    | "Parallel"
+    | "Sequence"
+    | "None"
+    | "Choose"
+    | "Log";
 }

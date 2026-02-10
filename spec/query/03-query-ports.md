@@ -46,6 +46,13 @@ interface QueryPortConfig<
    */
   readonly dependsOn?: TDependsOn;
 
+  /**
+   * NOTE: When `createQueryAdapter()` processes a query port, each port listed
+   * in `dependsOn` is automatically added to the adapter's `requires` array.
+   * This ensures the GraphBuilder validates dependency cycles and captive
+   * dependency violations across query-to-query relationships.
+   */
+
   /** Default query options (can be overridden per-use) */
   readonly defaults?: Partial<QueryDefaults>;
 }
@@ -129,6 +136,35 @@ const ShippingRatePort = createQueryPort<ShippingRate, { zip: string; weight: nu
 });
 ```
 
+### dependsOn to Adapter requires Mapping
+
+When `createQueryAdapter()` processes a query port, it reads the port's `config.dependsOn` array and adds each dependency port to the adapter's `requires` array. This bridges the query-level data dependency declaration into the standard HexDI adapter dependency graph, enabling the `GraphBuilder` to validate:
+
+1. **Cycle detection** -- circular query-to-query dependencies (A depends on B depends on A) are caught at compile time via `IsReachable<>`
+2. **Captive dependency violations** -- a singleton query adapter depending on a scoped query port is flagged
+3. **Missing ports** -- a `dependsOn` reference to a port with no adapter in the graph produces a compile-time error
+
+```typescript
+// Given a port with dependsOn:
+const UserPostsPort = createQueryPort<Post[], { authorId: string }>()({
+  name: "UserPosts",
+  dependsOn: [UserByIdPort],
+});
+
+// createQueryAdapter translates dependsOn into requires:
+const UserPostsAdapter = createQueryAdapter(UserPostsPort, {
+  fetcher: fetchUserPosts,
+  // Internally, the adapter's requires includes UserByIdPort
+  // (in addition to any explicitly listed requires).
+});
+
+// Equivalent to manually writing:
+// requires: [UserByIdPort]
+// but derived automatically from the port's dependsOn declaration.
+```
+
+The mapping is additive: if the adapter config also specifies explicit `requires` (e.g., for infrastructure ports like `HttpClientPort`), the `dependsOn` ports are merged into the final `requires` array alongside them.
+
 ### Port is the Key
 
 The port's `name` property becomes the first element of the cache key. Combined with serialized params, it produces a deterministic key:
@@ -148,6 +184,8 @@ No string-based query keys. No key factories. The port IS the key.
 ## 12. QueryPort Type Definition
 
 A `QueryPort` is a `DirectedPort<QueryFetcher<TData, TParams, TError>, TName, "inbound">` with phantom types for type-safe data extraction. The port carries the fetcher function type directly -- no wrapper object.
+
+**Port Direction:** `QueryPort` uses `"inbound"` direction. The application (domain layer) calls the fetcher to receive data -- the data flows inward from infrastructure to domain. This contrasts with `SagaPort`/`SagaManagementPort` which use `"outbound"` direction, and `FlowPort` which intentionally omits direction (bidirectional: events in, state out).
 
 ### Type Definition
 

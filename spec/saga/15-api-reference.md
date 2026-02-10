@@ -203,12 +203,20 @@ interface SagaManagementExecutor<TOutput, TError> {
   listExecutions(filters?: ExecutionFilters): ResultAsync<SagaExecutionSummary[], ManagementError>;
 }
 
+type PersistenceError =
+  | { readonly _tag: "NotFound"; readonly executionId: string }
+  | { readonly _tag: "StorageFailure"; readonly operation: string; readonly cause: unknown }
+  | { readonly _tag: "SerializationFailure"; readonly cause: unknown };
+
 interface SagaPersister {
-  save(state: SagaExecutionState): Promise<void>;
-  load(executionId: string): Promise<SagaExecutionState | null>;
-  delete(executionId: string): Promise<void>;
-  list(filters?: PersisterFilters): Promise<SagaExecutionState[]>;
-  update(executionId: string, updates: Partial<SagaExecutionState>): Promise<void>;
+  save(state: SagaExecutionState): ResultAsync<void, PersistenceError>;
+  load(executionId: string): ResultAsync<SagaExecutionState | null, PersistenceError>;
+  delete(executionId: string): ResultAsync<void, PersistenceError>;
+  list(filters?: PersisterFilters): ResultAsync<SagaExecutionState[], PersistenceError>;
+  update(
+    executionId: string,
+    updates: Partial<SagaExecutionState>
+  ): ResultAsync<void, PersistenceError>;
 }
 
 interface SagaExecutionState {
@@ -306,6 +314,8 @@ import type {
   SagaStatusType,
   SagaEvent,
   SagaEventListener,
+  SagaProgressEvent,
+  SagaCompensationEvent,
   StepContext,
   CompensationContext,
   ExecutionTrace,
@@ -323,70 +333,86 @@ interface SagaSuccess<TOutput> {
 
 /** Base interface shared by all SagaError variants */
 interface SagaErrorBase {
-  readonly _tag: string;
-  readonly message: string;
   readonly executionId: string;
+  readonly sagaName: string;
+  readonly stepName: string;
+  readonly stepIndex: number;
+  readonly message: string;
+  readonly completedSteps: readonly string[];
+  readonly compensatedSteps: readonly string[];
 }
 
 /** Tagged union of all saga error variants */
 type SagaError<TCause = unknown> =
-  | {
-      readonly _tag: "StepFailed";
-      readonly message: string;
-      readonly executionId: string;
-      readonly stepName: string;
-      readonly stepIndex: number;
-      readonly cause: TCause;
-      readonly completedSteps: readonly string[];
-      readonly compensatedSteps: readonly string[];
-      readonly compensated: boolean;
-    }
-  | {
-      readonly _tag: "CompensationFailed";
-      readonly message: string;
-      readonly executionId: string;
-      readonly stepName: string;
-      readonly originalError: TCause;
-      readonly compensationError: unknown;
-      readonly compensatedSteps: readonly string[];
-      readonly failedCompensationSteps: readonly string[];
-    }
-  | {
-      readonly _tag: "Timeout";
-      readonly message: string;
-      readonly executionId: string;
-      readonly timeoutMs: number;
-      readonly lastStepName: string;
-      readonly lastStepIndex: number;
-    }
-  | {
-      readonly _tag: "Cancelled";
-      readonly message: string;
-      readonly executionId: string;
-      readonly cancelledAtStepName: string;
-      readonly compensated: boolean;
-      readonly compensatedSteps: readonly string[];
-    }
-  | {
-      readonly _tag: "ValidationFailed";
-      readonly message: string;
-      readonly executionId: string;
-      readonly validationErrors: readonly string[];
-    }
-  | {
-      readonly _tag: "PortNotFound";
-      readonly message: string;
-      readonly executionId: string;
-      readonly portName: string;
-      readonly stepName: string;
-    }
-  | {
-      readonly _tag: "PersistenceFailed";
-      readonly message: string;
-      readonly executionId: string;
-      readonly operation: string;
-      readonly cause: unknown;
-    };
+  | StepFailedError<TCause>
+  | CompensationFailedError<TCause>
+  | TimeoutError
+  | CancelledError
+  | ValidationFailedError
+  | PortNotFoundError
+  | PersistenceFailedError;
+
+/** A forward step failed after retries exhausted; compensation succeeded fully */
+interface StepFailedError<TCause = unknown> extends SagaErrorBase {
+  readonly _tag: "StepFailed";
+  readonly cause: TCause;
+}
+
+/** A compensation handler itself failed -- system is in an inconsistent state */
+interface CompensationFailedError<TCause = unknown> extends SagaErrorBase {
+  readonly _tag: "CompensationFailed";
+  /** The original error that triggered the compensation chain */
+  readonly cause: TCause;
+  /** The error thrown by the compensation handler */
+  readonly compensationCause: unknown;
+  /** Steps whose compensation failed (includes the failing step) */
+  readonly failedCompensationSteps: readonly string[];
+}
+
+/** A step or the entire saga exceeded its configured timeout */
+interface TimeoutError extends SagaErrorBase {
+  readonly _tag: "Timeout";
+  /** The configured timeout in milliseconds that was exceeded */
+  readonly timeoutMs: number;
+}
+
+/** The saga was explicitly cancelled via the runtime API */
+interface CancelledError extends SagaErrorBase {
+  readonly _tag: "Cancelled";
+}
+
+/** Input validation failed before any steps ran */
+interface ValidationFailedError extends SagaErrorBase {
+  readonly _tag: "ValidationFailed";
+  /** Validation error details */
+  readonly cause: unknown;
+}
+
+/** A step references a port not registered in the container */
+interface PortNotFoundError extends SagaErrorBase {
+  readonly _tag: "PortNotFound";
+  /** The port name that was not found */
+  readonly portName: string;
+}
+
+/** The persistence layer failed to save or load saga state */
+interface PersistenceFailedError extends SagaErrorBase {
+  readonly _tag: "PersistenceFailed";
+  /** The persistence operation that failed */
+  readonly operation: "save" | "load" | "delete" | "update";
+  /** The underlying persistence error */
+  readonly cause: unknown;
+}
+
+/**
+ * Note: Pre-execution variants (ValidationFailed, PortNotFound) use sentinel
+ * values for base fields: stepName: "", stepIndex: -1, completedSteps: [].
+ *
+ * The `compensated: boolean` field from the old SagaResult is absorbed into
+ * the tag structure:
+ * - StepFailed = compensation succeeded fully
+ * - CompensationFailed = compensation was partial
+ */
 
 /** Tagged union of management operation errors */
 type ManagementError =
@@ -455,7 +481,7 @@ type SagaStatus =
       state: "cancelled";
       executionId: string;
       sagaName: string;
-      cancelledAtStepName: string;
+      stepName: string;
       compensated: boolean;
       compensatedSteps: ReadonlyArray<string>;
       startedAt: number;
@@ -529,6 +555,27 @@ interface CompensationTrace {
   readonly completedAt: number;
   readonly totalDurationMs: number;
 }
+
+/** Events emitted by a saga execution for UI feedback (Flow integration) */
+type SagaProgressEvent =
+  | { readonly _tag: "StepStarted"; readonly stepName: string; readonly stepIndex: number }
+  | {
+      readonly _tag: "StepCompleted";
+      readonly stepName: string;
+      readonly stepIndex: number;
+      readonly totalSteps: number;
+    }
+  | { readonly _tag: "CompensationStarted"; readonly stepName: string }
+  | { readonly _tag: "CompensationCompleted"; readonly stepName: string };
+
+/** Compensation-specific events for detailed UI feedback (Flow integration) */
+type SagaCompensationEvent =
+  | {
+      readonly _tag: "CompensationTriggered";
+      readonly failedStepName: string;
+      readonly stepsToCompensate: number;
+    }
+  | { readonly _tag: "CompensationStepFailed"; readonly stepName: string; readonly cause: unknown };
 ```
 
 #### SagaEvent Interfaces
@@ -550,8 +597,8 @@ interface CompensationFailedEvent {
   readonly type: "compensation:failed";
   readonly executionId: string;
   readonly stepName: string;
-  readonly originalError: unknown;
-  readonly compensationError: unknown;
+  readonly cause: unknown;
+  readonly compensationCause: unknown;
   readonly timestamp: number;
 }
 
@@ -952,7 +999,7 @@ interface SagaHistoryOptions {
 interface SagaHistoryResult {
   entries: readonly SagaExecutionSummary[];
   loading: boolean;
-  error: Error | null;
+  error: ManagementError | null;
   refresh: () => void;
   total: number;
 }

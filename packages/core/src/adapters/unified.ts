@@ -8,7 +8,7 @@
  */
 
 import type { Port, InferService } from "../ports/types.js";
-import type { Adapter, Lifetime, ResolvedDeps } from "./types.js";
+import type { Adapter, Lifetime, ResolvedDeps, PortDeps } from "./types.js";
 import type { TupleToUnion } from "../utils/type-utilities.js";
 import type { IsAsyncFactory, EnforceAsyncLifetime } from "./unified-types.js";
 import {
@@ -291,7 +291,7 @@ export function createAdapter<
   TProvides extends Port<unknown, string>,
   const TRequires extends readonly Port<unknown, string>[],
   TFactory extends (
-    deps: ResolvedDeps<TupleToUnion<TRequires>>
+    deps: PortDeps<TRequires>
   ) => InferService<TProvides> | Promise<InferService<TProvides>>,
 >(config: {
   readonly provides: TProvides;
@@ -369,7 +369,7 @@ export function createAdapter<
   const TRequires extends readonly Port<unknown, string>[],
   const TLifetime extends Lifetime,
   TFactory extends (
-    deps: ResolvedDeps<TupleToUnion<TRequires>>
+    deps: PortDeps<TRequires>
   ) => InferService<TProvides> | Promise<InferService<TProvides>>,
 >(config: {
   readonly provides: TProvides;
@@ -437,7 +437,7 @@ export function createAdapter<
   const TRequires extends readonly Port<unknown, string>[],
   const TClonable extends boolean,
   TFactory extends (
-    deps: ResolvedDeps<TupleToUnion<TRequires>>
+    deps: PortDeps<TRequires>
   ) => InferService<TProvides> | Promise<InferService<TProvides>>,
 >(config: {
   readonly provides: TProvides;
@@ -518,7 +518,7 @@ export function createAdapter<
   const TLifetime extends Lifetime,
   const TClonable extends boolean,
   TFactory extends (
-    deps: ResolvedDeps<TupleToUnion<TRequires>>
+    deps: PortDeps<TRequires>
   ) => InferService<TProvides> | Promise<InferService<TProvides>>,
 >(config: {
   readonly provides: TProvides;

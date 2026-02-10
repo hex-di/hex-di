@@ -1,6 +1,7 @@
 import { describe, it, expectTypeOf } from "vitest";
 import { ok, err } from "../src/index.js";
-import type { Result, Ok, Err, ResultAsync } from "../src/index.js";
+import type { Result, Ok, Err } from "../src/index.js";
+import type { ResultAsync } from "../src/core/types.js";
 
 describe("Extraction - Type Level", () => {
   // DoD 6 type #1

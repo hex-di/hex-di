@@ -7,5 +7,11 @@
  * @packageDocumentation
  */
 
-export type { Port, NotAPortError, InferService, InferPortName } from "./types.js";
+export type {
+  Port,
+  NotAPortError,
+  InferService,
+  InferPortName,
+  InferPortCategory,
+} from "./types.js";
 export { createPort, port } from "./factory.js";

@@ -15,8 +15,6 @@ import {
   createActivityManager,
   createDIEffectExecutor,
   type FlowService,
-  type MachineSnapshot,
-  type EffectAny,
 } from "@hex-di/flow";
 import { QueryClient } from "@tanstack/react-query";
 import {
@@ -407,33 +405,34 @@ export const TaskFlowServiceAdapter = createAdapter({
 
     // Create FlowService wrapper with specific types
     const flowService: FlowService<TaskFlowState, TaskFlowEvent, TaskFlowContext> = {
-      snapshot(): MachineSnapshot<TaskFlowState, TaskFlowContext> {
+      snapshot() {
         return runner.snapshot();
       },
-      state(): TaskFlowState {
+      state() {
         return runner.state();
       },
-      context(): TaskFlowContext {
+      context() {
         return runner.context();
       },
-      send(event: { readonly type: TaskFlowEvent }): readonly EffectAny[] {
+      send(event) {
         return runner.send(event);
       },
-      sendAndExecute(event: { readonly type: TaskFlowEvent }): Promise<void> {
+      sendBatch(events) {
+        return runner.sendBatch(events);
+      },
+      sendAndExecute(event) {
         return runner.sendAndExecute(event);
       },
-      subscribe(
-        callback: (snapshot: MachineSnapshot<TaskFlowState, TaskFlowContext>) => void
-      ): () => void {
+      subscribe(callback) {
         return runner.subscribe(callback);
       },
-      getActivityStatus(id: string) {
+      getActivityStatus(id) {
         return runner.getActivityStatus(id);
       },
-      dispose(): Promise<void> {
+      dispose() {
         return runner.dispose();
       },
-      get isDisposed(): boolean {
+      get isDisposed() {
         return runner.isDisposed;
       },
     };

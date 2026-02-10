@@ -405,7 +405,7 @@ The `onDone` property on compound and parallel states defines what happens when 
 The type system must validate nested state references at compile time:
 
 ```
-  createMachine({
+  defineMachine({
     id: 'app',
     initial: 'active',
     states: {

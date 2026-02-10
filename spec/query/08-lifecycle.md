@@ -7,16 +7,17 @@
                 │
                 ▼
   ┌─────────────────────────────┐
-  │ 1. CREATE / GET OBSERVER    │
-  │    QueryObserver binds to   │
-  │    cache key + options      │
+  │ 1. GET / CREATE ENTRY       │
+  │    cache.getOrCreateEntry() │
+  │    Returns ReactiveCacheEntry│
   └──────────────┬──────────────┘
                  │
                  ▼
   ┌─────────────────────────────┐
-  │ 2. CHECK CACHE              │
-  │    key: ['Users',           │
-  │          '{"role":"admin"}']│
+  │ 2. CHECK CACHE (read signal)│
+  │    entry.result$.peek()     │
+  │    entry.isInvalidated$.    │
+  │      peek()                 │
   └──────────────┬──────────────┘
                  │
        ┌─────────┴─────────┐
@@ -29,8 +30,8 @@
        │                   │
        ▼                   ▼
   Return cached      ┌─────────────────────────────┐
-  immediately        │ 3. CHECK DEDUP MAP          │
-                     └──────────────┬──────────────┘
+  (read signals      │ 3. CHECK DEDUP MAP          │
+   in effect)        └──────────────┬──────────────┘
                                     │
                           ┌─────────┴─────────┐
                           │                   │
@@ -41,30 +42,30 @@
                      └────┬────┘         └────┬────┘
                           │                   │
                           ▼                   ▼
-                     Subscribe to        ┌─────────────────────────────┐
-                     in-flight fetch     │ 4. RESOLVE ADAPTER          │
-                                         │    container.resolve(Port)  │
-                                         └──────────────┬──────────────┘
-                                                        │
-                                                        ▼
-                                         ┌─────────────────────────────┐
-                                         │ 5. EXECUTE FETCH            │
-                                         │    adapter(params, context) │
-                                         └──────────────┬──────────────┘
-                                                        │
-                                           ┌────────────┴────────────┐
-                                           │                         │
-                                           ▼                         ▼
-                                      ┌─────────┐               ┌─────────┐
-                                      │ SUCCESS │               │ ERROR   │
-                                      └────┬────┘               └────┬────┘
-                                           │                         │
-                                           ▼                         ▼
-                                      * Structural share        * Retry?
-                                      * Update cache            * Update error
-                                      * Notify observers        * Notify observers
-                                      * Clear from dedup        * Clear from dedup
-                                      * Return data             * Return error
+                     Await existing       ┌─────────────────────────────┐
+                     in-flight result     │ 4. RESOLVE ADAPTER          │
+                                          │    container.resolve(Port)  │
+                                          └──────────────┬──────────────┘
+                                                         │
+                                                         ▼
+                                          ┌─────────────────────────────┐
+                                          │ 5. EXECUTE FETCH            │
+                                          │    adapter(params, context) │
+                                          └──────────────┬──────────────┘
+                                                         │
+                                            ┌────────────┴────────────┐
+                                            │                         │
+                                            ▼                         ▼
+                                       ┌─────────┐               ┌─────────┐
+                                       │ SUCCESS │               │ ERROR   │
+                                       └────┬────┘               └────┬────┘
+                                            │                         │
+                                            ▼                         ▼
+                                       * Structural share        * Retry?
+                                       * Write result$ signal   * Write result$ signal
+                                       * Signal propagation      * Signal propagation
+                                       *   notifies all effects  *   notifies all effects
+                                       * Clear from dedup        * Clear from dedup
 ```
 
 ## 33. Query States
@@ -77,6 +78,8 @@ type FetchStatus = "idle" | "fetching";
 ```
 
 ### QueryState Interface
+
+`QueryState` is the **consumer-facing snapshot** returned by React hooks. It is a plain object (not reactive) derived from the underlying `ReactiveCacheEntry` signals. React hooks read the signals inside a `useSyncExternalStore` subscription and produce a new `QueryState` snapshot on each change.
 
 ```typescript
 interface QueryState<TData, TError = Error> {
@@ -138,6 +141,25 @@ interface RefetchOptions {
 }
 ```
 
+### Relationship Between ReactiveCacheEntry and QueryState
+
+```
+ReactiveCacheEntry (internal, reactive)     QueryState (consumer-facing, snapshot)
+─────────────────────────────────────       ──────────────────────────────────────
+result$: Signal<...>                   ──>  result: Result<TData, TError> | undefined
+fetchStatus$: Signal<FetchStatus>      ──>  fetchStatus: FetchStatus
+status: Computed<QueryStatus>          ──>  status: QueryStatus
+data: Computed<TData | undefined>      ──>  data: TData | undefined
+error: Computed<TError | null>         ──>  error: TError | null
+isPending: Computed<boolean>           ──>  isPending: boolean
+isLoading: Computed<boolean>           ──>  isLoading: boolean
+isRefetching: Computed<boolean>        ──>  isRefetching: boolean
+dataUpdatedAt$: Signal<...>            ──>  dataUpdatedAt: number | undefined
+
+React hooks call .get() on each Computed inside useSyncExternalStore's
+subscribe callback, producing a plain QueryState snapshot per render cycle.
+```
+
 ## 34. State Transitions
 
 ```
@@ -190,26 +212,40 @@ interface RefetchOptions {
 
 ### State Derivation Rules
 
+These are implemented as **computeds** in the `ReactiveCacheEntry` (see [07 - Cache Architecture, Section 27](./07-cache.md#27-cache-entry-signal-backed)). alien-signals ensures they are lazy-evaluated, cached until dependencies change, and glitch-free (no intermediate inconsistent states):
+
 ```typescript
-const isPending = status === "pending";
-const isSuccess = status === "success";
-const isError = status === "error";
-const isFetching = fetchStatus === "fetching";
-const isLoading = isPending && isFetching; // First load
-const isRefetching = isSuccess && isFetching; // Background refetch
+// Inside createReactiveCacheEntry — all are computeds in the isolated system:
+const isPending = createComputed(() => status.get() === "pending", system);
+const isSuccess = createComputed(() => status.get() === "success", system);
+const isError = createComputed(() => status.get() === "error", system);
+const isFetching = createComputed(() => fetchStatus$.get() === "fetching", system);
+const isLoading = createComputed(() => isPending.get() && isFetching.get(), system); // First load
+const isRefetching = createComputed(() => isSuccess.get() && isFetching.get(), system); // Background refetch
 ```
+
+**Diamond dependency resolution:** Both `isLoading` and `isRefetching` depend on `isFetching` (which depends on `fetchStatus$`), and on `isPending`/`isSuccess` (which depend on `status`, which depends on `result$`). When a fetch completes and both `result$` and `fetchStatus$` change in a batch, alien-signals' topological sort ensures each computed is evaluated at most once and never sees an intermediate state where one source has changed but the other hasn't.
 
 ## 35. Staleness
 
 Data is considered stale when it has exceeded its `staleTime`. Stale data is still returned from cache but triggers a background refetch.
 
+Staleness is modeled as a **computed** in the reactive entry, reading from the entry's source signals:
+
 ```typescript
-function isStale(entry: CacheEntry<unknown>, staleTime: number): boolean {
-  if (entry.dataUpdatedAt === undefined) return true;
-  if (entry.isInvalidated) return true;
-  return Date.now() - entry.dataUpdatedAt > staleTime;
-}
+// Inside createReactiveCacheEntry:
+const isStale = createComputed(() => {
+  const updatedAt = dataUpdatedAt$.get();
+  if (updatedAt === undefined) return true;
+  if (isInvalidated$.get()) return true;
+  return clock.now() - updatedAt > staleTime;
+}, system);
 ```
+
+> **Note:** Since `clock.now()` is not a signal, `isStale` does not auto-update as time passes.
+> Instead, staleness is **checked** at specific trigger points (mount, focus, interval tick).
+> The computed caches its result until `dataUpdatedAt$` or `isInvalidated$` change, which is
+> when staleness meaningfully changes due to a fetch or invalidation.
 
 ### staleTime Resolution Order
 
@@ -288,17 +324,17 @@ With deduplication:    1 network request, 3 subscribers
 
 ### Cancellation on Unmount
 
-When all observers for a key unmount before the fetch completes:
+When all effects tracking a cache entry's signals are disposed (all components unmount) before the fetch completes:
 
 ```typescript
-// When observer count drops to 0 for an in-flight request:
+// When hasSubscribers(entry) becomes false for an in-flight request:
 // 1. Start a timeout (default: 0ms, configurable)
-// 2. If no new observers mount within the timeout:
+// 2. If no new effect reads the entry's signals within the timeout:
 //    - Abort the fetch via AbortController
 //    - Remove from dedup map
-// 3. If a new observer mounts within the timeout:
+// 3. If a new effect reads the signals within the timeout:
 //    - Cancel the timeout
-//    - Subscribe the new observer to the in-flight fetch
+//    - The new effect is automatically tracked by alien-signals
 ```
 
 ## 38. Retry & Backoff

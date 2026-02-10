@@ -18,13 +18,13 @@ Phase 4: COMMUNICATION   ████████░░░░░░░░░░�
 Phase 5: AUTONOMY        ░░░░░░░░░░░░░░░░░░░░   0%  1389 lines of docs
 ```
 
-| Phase | Document                                                     | Status | Description                                                                                                    |
-| ----- | ------------------------------------------------------------ | ------ | -------------------------------------------------------------------------------------------------------------- |
-| 1     | [PHASE-1-PLUMBING.md](phase-1/PHASE-1-PLUMBING.md)           | 100%   | Container wires services. Ports, adapters, lifetimes, resolution engine, scopes, errors.                       |
-| 2     | [PHASE-2-AWARENESS.md](phase-2/PHASE-2-AWARENESS.md)         | 100%   | Container knows itself. Graph inspection, runtime snapshots, tracing spans, Inspector API.                     |
-| 3     | [PHASE-3-REPORTING.md](phase-3/PHASE-3-REPORTING.md)         | 15%    | Every library reports back. Tracing queries, flow registry, store, query, saga, agent. **THE CRITICAL PHASE.** |
-| 4     | [PHASE-4-COMMUNICATION.md](phase-4/PHASE-4-COMMUNICATION.md) | 40%    | Application speaks externally. MCP server, A2A protocol, REST API, DevTools dashboard. OTel export done.       |
-| 5     | [PHASE-5-AUTONOMY.md](phase-5/PHASE-5-AUTONOMY.md)           | 0%     | Application acts on knowledge. Auto-healing, auto-optimization, MAPE-K loop, health assessment.                |
+| Phase | Document                                                     | Status | Description                                                                                                            |
+| ----- | ------------------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------- |
+| 1     | [PHASE-1-PLUMBING.md](phase-1/PHASE-1-PLUMBING.md)           | 100%   | Container wires services. Ports, adapters, lifetimes, resolution engine, scopes, errors.                               |
+| 2     | [PHASE-2-AWARENESS.md](phase-2/PHASE-2-AWARENESS.md)         | 100%   | Container knows itself. Graph inspection, runtime snapshots, tracing spans, Inspector API.                             |
+| 3     | [PHASE-3-REPORTING.md](phase-3/PHASE-3-REPORTING.md)         | 15%    | Every library reports back. Tracing queries, flow registry, logger, store, query, saga, agent. **THE CRITICAL PHASE.** |
+| 4     | [PHASE-4-COMMUNICATION.md](phase-4/PHASE-4-COMMUNICATION.md) | 40%    | Application speaks externally. MCP server, A2A protocol, REST API, DevTools dashboard. OTel export done.               |
+| 5     | [PHASE-5-AUTONOMY.md](phase-5/PHASE-5-AUTONOMY.md)           | 0%     | Application acts on knowledge. Auto-healing, auto-optimization, MAPE-K loop, health assessment.                        |
 
 ## Execution Strategy
 

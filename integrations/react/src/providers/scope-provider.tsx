@@ -6,7 +6,7 @@
  * @packageDocumentation
  */
 
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import type { Port } from "@hex-di/core";
 import type { Scope } from "@hex-di/runtime";
 import { ResolverContext, type RuntimeResolverContextValue } from "../context/resolver-context.js";
@@ -76,13 +76,16 @@ export function HexDiScopeProvider<TProvides extends Port<unknown, string>>({
   scope,
   children,
 }: HexDiScopeProviderProps<TProvides>): React.ReactNode {
-  // Convert to bivariant runtime ref. No type cast needed because
-  // toRuntimeScopeRef explicitly constructs an object with bivariant methods.
-  const scopeRef = toRuntimeScopeRef(scope);
+  // Convert to bivariant runtime ref, memoized to avoid creating new wrapper
+  // objects on every render.
+  const scopeRef = useMemo(() => toRuntimeScopeRef(scope), [scope]);
 
-  const resolverContextValue: RuntimeResolverContextValue = {
-    resolver: scopeRef,
-  };
+  const resolverContextValue = useMemo(
+    (): RuntimeResolverContextValue => ({
+      resolver: scopeRef,
+    }),
+    [scopeRef]
+  );
 
   return (
     <ResolverContext.Provider value={resolverContextValue}>{children}</ResolverContext.Provider>

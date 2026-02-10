@@ -1,6 +1,6 @@
 # 5. Machine Definition
 
-This section specifies the API for defining state machines. The improved API introduces `defineMachine()` as the primary entry point, offering a more ergonomic builder experience while retaining `createMachine()` for lower-level use cases.
+This section specifies the API for defining state machines. `defineMachine()` is the entry point, offering an ergonomic builder experience with full type inference.
 
 ---
 
@@ -43,10 +43,10 @@ const orderMachine = defineMachine({
 
 ### Key improvements over current API
 
-**Before (current verbose API):**
+**Before (verbose style):**
 
 ```typescript
-const machine = createMachine({
+const machine = defineMachine({
   id: "order",
   initial: "idle",
   context: { orderId: "", items: [] as Item[], total: 0 },
@@ -208,13 +208,9 @@ interface EffectAny {
 
 ---
 
-## 5.4 Machine Factories
+## 5.4 defineMachine
 
-Two factory functions exist for different use cases:
-
-### defineMachine (recommended)
-
-The high-level, ergonomic API:
+`defineMachine` is the sole factory function for creating state machines:
 
 - Accepts string shorthand transitions.
 - Infers initial state from first key.
@@ -234,32 +230,9 @@ const machine = defineMachine({
 // Type: Machine<'off' | 'on', 'TOGGLE', { enabled: boolean }>
 ```
 
-### createMachine (low-level)
-
-The existing factory function remains available for cases where the caller already has fully-formed `StateNode` objects:
-
-- Requires explicit `initial` property.
-- Requires full `TransitionConfig` objects (no string shorthand).
-- Requires explicit `on: {}` for terminal states.
-- Returns a deeply frozen `Machine`.
-
-```typescript
-const machine = createMachine({
-  id: "toggle",
-  initial: "off",
-  context: { enabled: false },
-  states: {
-    off: { on: { TOGGLE: { target: "on" } } },
-    on: { on: { TOGGLE: { target: "off" } } },
-  },
-});
-```
-
-Both factories produce identical `Machine` types at the output. The difference is purely in input ergonomics.
-
 ### Immutability guarantee
 
-Both factories deeply freeze the returned object via `Object.freeze()` recursion. Attempted mutation throws in strict mode and silently fails otherwise. This matches the `DeepReadonly` constraint at the type level.
+`defineMachine` deeply freezes the returned object via `Object.freeze()` recursion. Attempted mutation throws in strict mode and silently fails otherwise. This matches the `DeepReadonly` constraint at the type level.
 
 ---
 

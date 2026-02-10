@@ -6,7 +6,7 @@
  * @packageDocumentation
  */
 
-import { useEffect, useContext, useRef, type ReactNode } from "react";
+import { useEffect, useContext, useMemo, useRef, type ReactNode } from "react";
 import { MissingProviderError } from "../errors.js";
 import { ResolverContext } from "../context/resolver-context.js";
 import type { RuntimeResolverRef } from "../internal/runtime-refs.js";
@@ -143,7 +143,10 @@ export function HexDiAutoScopeProvider({
     };
   }, []);
 
+  // Memoize context value to avoid creating new object on every render.
+  const resolverContextValue = useMemo(() => ({ resolver: scope }), [scope]);
+
   return (
-    <ResolverContext.Provider value={{ resolver: scope }}>{children}</ResolverContext.Provider>
+    <ResolverContext.Provider value={resolverContextValue}>{children}</ResolverContext.Provider>
   );
 }

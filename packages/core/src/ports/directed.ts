@@ -100,7 +100,8 @@ export function createDirectedPortImpl<
   TService,
   TName extends string,
   TDirection extends PortDirection,
->(runtime: DirectedPortRuntime<TName>): DirectedPort<TService, TName, TDirection>;
+  TCategory extends string = string,
+>(runtime: DirectedPortRuntime<TName>): DirectedPort<TService, TName, TDirection, TCategory>;
 export function createDirectedPortImpl<TName extends string>(
   runtime: DirectedPortRuntime<TName>
 ): object {
@@ -270,4 +271,5 @@ export type {
   IsDirectedPort,
   InferPortDirection,
   InferPortMetadata,
+  InferPortCategory,
 } from "./types.js";

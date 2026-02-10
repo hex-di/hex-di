@@ -227,6 +227,12 @@ A callback parameter would be simpler but would not integrate with the DI system
 
 **Rationale:** Agent instances hold per-session state (message history, context values). Making them scoped means each user session gets its own agent instance with its own conversation history. Singleton agents would require external session management and introduce shared mutable state.
 
+### C.8 "Agent" Naming (disambiguated from MAPE-K)
+
+**Decision:** The package uses `@hex-di/agent` and the term "Agent" for AI agents, which differs from Phase 5's MAPE-K autonomic "Agent" components (MonitorAgent, AnalyzeAgent, etc.).
+
+**Rationale:** The `@hex-di/agent` package name provides namespace disambiguation. At the code level, AI agent types use the `Agent` prefix (e.g., `AgentService`, `AgentRunnerPort`), while MAPE-K components will use the `Autonomic` prefix (e.g., `AutonomicMonitor`, `AutonomicAnalyzer`) when Phase 5 is implemented. The package-level separation (`@hex-di/agent` vs `@hex-di/autonomic`) ensures no import collisions.
+
 ### C.7 AgentRunner Separate from Agent (not merged)
 
 **Decision:** `AgentPort` and `AgentRunnerPort` are separate ports, not combined into one.
@@ -242,10 +248,33 @@ Separating them allows:
 - Runner middleware (rate limiting, logging) without touching agent configuration
 - Multiple runners for the same agent in different contexts
 
+### C.9 Result<T, E> for Error Handling (not throw/catch)
+
+**Decision:** Agent errors use `Result<AgentRunResult, AgentError>` from `@hex-di/result`, not `throw`/`try-catch`.
+
+**Rationale:** Every HexDI package uses `Result<T, E>` for error handling: sagas return `Result<SagaSuccess, SagaError>`, flows return `Result<FlowOutput, FlowError>`, and queries return `Result<QueryResult, QueryError>`. The agent package follows the same convention for consistency.
+
+`AgentError` is a tagged union (discriminated on `_tag`) with eight variants covering every agent failure mode. This enables exhaustive `switch` handling, structured error diagnostics, and composability with other HexDI `Result` types.
+
+The alternative -- throwing exceptions -- would break the composition model. A thrown error cannot carry typed diagnostic context, cannot be narrowed via `switch`, and forces `try-catch` wrappers that obscure control flow. With `Result`, the caller always knows an operation can fail and must explicitly handle the error path:
+
+```typescript
+const result = await runner.run({ prompt: "..." }).result;
+
+// Forced to handle both paths
+result.match(
+  success => console.log(success.lastMessage.content),
+  error => {
+    switch (error._tag) {
+      case "MaxTurnsExceeded":
+        console.log(`Hit limit: ${error.turnCount}/${error.maxTurns}`);
+        break;
+      // ... other variants
+    }
+  }
+);
+```
+
 ---
 
-_Previous: [09 - API Reference](./09-api-reference.md)_
-
----
-
-_End of Specification_
+_Previous: [09 - API Reference](./09-api-reference.md) | Next: [11 - Definition of Done](./11-definition-of-done.md)_

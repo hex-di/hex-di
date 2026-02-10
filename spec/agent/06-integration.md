@@ -28,9 +28,9 @@ import { z } from "zod";
 // 1. Application service ports (already exist)
 // ──────────────────────────────────────────────
 
-const TaskServicePort = createPort<TaskService>()({ name: "TaskService" });
-const UserServicePort = createPort<UserService>()({ name: "UserService" });
-const CurrentUserPort = createPort<CurrentUser>()({ name: "CurrentUser" });
+const TaskServicePort = port<TaskService>()({ name: "TaskService" });
+const UserServicePort = port<UserService>()({ name: "UserService" });
+const CurrentUserPort = port<CurrentUser>()({ name: "CurrentUser" });
 
 // ──────────────────────────────────────────────
 // 2. Application adapters (already exist)
@@ -52,12 +52,12 @@ const userServiceAdapter = createAdapter({
 // 3. Agent-specific ports
 // ──────────────────────────────────────────────
 
-const TaskToolsPort = createPort<ToolPortService<readonly ToolDefinition[]>>()({
+const TaskToolsPort = port<ToolPortService<readonly ToolDefinition[]>>()({
   name: "TaskTools",
   direction: "inbound",
 });
 
-const TaskAgentPort = createPort<AgentService>()({ name: "TaskAgent" });
+const TaskAgentPort = port<AgentService>()({ name: "TaskAgent" });
 
 // ──────────────────────────────────────────────
 // 4. Agent adapters
@@ -329,7 +329,7 @@ The primary hook for building chat interfaces:
 function useAgentChat(runnerPort: Port<AgentRunnerService, string>): {
   readonly messages: readonly Message[];
   readonly isRunning: boolean;
-  readonly error: Error | undefined;
+  readonly error: AgentError | undefined;
   send: (prompt: string) => void;
   abort: () => void;
   reset: () => void;
@@ -561,8 +561,8 @@ function App() {
 
 ```typescript
 // ports.ts
-export const TaskToolsPort = createPort<ToolPortService<readonly ToolDefinition[]>>()({ name: "TaskTools" });
-export const TaskAgentPort = createPort<AgentService>()({ name: "TaskAgent" });
+export const TaskToolsPort = port<ToolPortService<readonly ToolDefinition[]>>()({ name: "TaskTools" });
+export const TaskAgentPort = port<AgentService>()({ name: "TaskAgent" });
 
 // container.ts
 const graph = GraphBuilder.create()

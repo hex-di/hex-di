@@ -118,12 +118,12 @@ const scopedClient = queryClient.createChild(scope);
 The QueryClient internally:
 
 1. Generates a cache key from `[port.name, stableStringify(params)]`
-2. Checks the cache for fresh data
+2. Checks the cache for fresh data (reads the cache entry signal)
 3. Checks the dedup map for in-flight requests
 4. Resolves the query adapter from the bound container/scope
 5. Executes the fetcher with retry logic
-6. Stores results in the cache with structural sharing
-7. Notifies all subscribers
+6. Stores results in the cache entry signal with structural sharing
+7. Signal propagation automatically notifies all subscribers (computeds and effects)
 
 > **Design note:** The QueryClient is not a port because it does not represent a service
 > contract -- it is infrastructure that orchestrates resolution. Making it a port would
@@ -134,50 +134,68 @@ The QueryClient internally:
 
 ## 10. QueryCache
 
-The **QueryCache** stores query results and manages staleness. It is an internal data structure owned by the QueryClient.
+The **QueryCache** stores query results and manages staleness. It is an internal data structure owned by the QueryClient. Each cache entry is backed by **signals** from `alien-signals/system`, enabling fine-grained reactivity.
 
 ```
 Cache Key: [portName, paramsHash]
     │
     ▼
 ┌──────────────────────────────────────────────────────────────┐
-│                        CacheEntry                             │
+│                   Reactive CacheEntry                         │
 │                                                               │
-│  result: Result<TData, TError>   status: QueryStatus         │
-│  data: TData | undefined         dataUpdatedAt: number       │
-│  error: TError | null            errorUpdatedAt: number      │
-│  fetchCount: number              subscriberCount: number     │
-│  isStale: boolean                                            │
+│  result$: Signal<Result<TData, TError> | undefined>          │
+│  fetchStatus$: Signal<FetchStatus>                           │
+│  fetchCount$: Signal<number>                                 │
+│  isInvalidated$: Signal<boolean>                             │
+│  dataUpdatedAt$: Signal<number | undefined>                  │
+│  errorUpdatedAt$: Signal<number | undefined>                 │
 │                                                               │
-│  `result` is the source of truth. `data` and `error` are    │
-│  derived accessors: data = result.isOk() ? result.value :    │
-│  undefined; error = result.isErr() ? result.error : null.    │
+│  status:    Computed  (derived from result$)                 │
+│  data:      Computed  (derived from result$)                 │
+│  error:     Computed  (derived from result$)                 │
+│  isPending: Computed  (derived from status)                  │
+│  isLoading: Computed  (derived from status + fetchStatus$)   │
+│  isStale:   Computed  (derived from dataUpdatedAt$ + config) │
+│                                                               │
+│  Subscriber count is tracked automatically by                │
+│  alien-signals' dependency graph (no manual counter).        │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 Key behaviors:
 
-- **Subscriber-based GC** -- entries with zero subscribers are eligible for garbage collection after `cacheTime` expires
-- **Structural sharing** -- when new data arrives, only changed references are replaced (`replaceEqualDeep`)
-- **Event-driven** -- cache mutations emit events that observers subscribe to
+- **Signal-based subscriber tracking** -- the reactive system automatically tracks which effects/computeds read from a cache entry signal; entries with zero subscribers are eligible for garbage collection after `cacheTime` expires
+- **Structural sharing** -- when new data arrives, `replaceEqualDeep` compares against the previous value before writing to the signal, preserving reference equality for unchanged portions
+- **Glitch-free propagation** -- alien-signals' topological sorting ensures derived computeds (`isPending`, `isLoading`, `isStale`) never expose intermediate/inconsistent state
+- **Batched mutation effects** -- multiple cache invalidations from a single mutation are batched into one notification cycle via `batch()`
 - **Serializable** -- entire cache can be serialized/deserialized for persistence or devtools
 
-### Observer Pattern
+### Signal-Based Reactivity
 
-Components do not read from the cache directly. They create **QueryObservers** that subscribe to cache changes and derive component-friendly state:
+Components do not subscribe to cache events manually. They read from **signals** and **computeds** via **effects** that the reactive system tracks automatically:
 
 ```
-Component ──> QueryObserver ──> QueryCache ──> CacheEntry
+Component ──> createEffect() ──> Computed (isPending, data, etc.) ──> Signal (result$)
 
-QueryObserver:
-  - Subscribes to a specific cache key
-  - Derives isPending, isError, isFetching, etc.
-  - Applies structural sharing to prevent unnecessary re-renders
-  - Manages refetch triggers (mount, focus, interval)
-  - Reports staleness based on port defaults + options
+Signal-based reactivity:
+  - Cache entries are signals; reading a signal registers a dependency
+  - Derived state (isPending, isError, isFetching, etc.) are computeds
+  - React hooks subscribe via useSyncExternalStore + createEffect
+  - Structural sharing is applied at the signal write boundary
+  - Refetch triggers (mount, focus, interval) write to fetchStatus$ signal
+  - Staleness is a computed derived from dataUpdatedAt$ + staleTime config
+  - Subscriber count is implicit in the dependency graph (no manual counter)
 ```
 
-This is the same pattern used by TanStack Query (QueryObserver) and Apollo (ObservableQuery). The observer decouples cache management from UI framework bindings.
+This eliminates the explicit QueryObserver/subscribe/notify plumbing used by TanStack Query. Instead, alien-signals' dependency graph provides automatic, fine-grained change propagation with diamond dependency resolution and glitch-free semantics.
+
+### Per-Scope Reactive Isolation
+
+Each QueryClient owns an isolated `ReactiveSystemInstance` created via `createIsolatedReactiveSystem()` from `alien-signals/system`. This means:
+
+- **No cross-scope interference** -- signals in one scope cannot register as dependencies in another scope's computeds or effects
+- **Isolated batching** -- `batch()` in scope A does not defer notifications in scope B
+- **Deterministic disposal** -- disposing a scope tears down its reactive system, automatically unsubscribing all effects
 
 ---
 

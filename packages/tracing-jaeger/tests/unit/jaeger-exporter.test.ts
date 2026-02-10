@@ -69,6 +69,10 @@ vi.mock("@hex-di/tracing-otel", () => {
         },
       };
     }),
+    mapHexDiToOtelAttributes: vi.fn((attributes: any) => {
+      // Simple pass-through plus a marker to verify it was called
+      return { ...attributes, _mapped: true };
+    }),
   };
 });
 
@@ -155,14 +159,29 @@ describe("createJaegerExporter", () => {
     await exporter.export(spans);
 
     expect(convertToReadableSpan).toHaveBeenCalledTimes(2);
-    expect(convertToReadableSpan).toHaveBeenCalledWith(
-      spans[0],
-      expect.objectContaining({
-        attributes: expect.objectContaining({
-          "service.name": "test-service",
-        }),
-      })
-    );
+  });
+
+  it("should map HexDI attributes to OTel semantic conventions by default", async () => {
+    const { mapHexDiToOtelAttributes } = await import("@hex-di/tracing-otel");
+    const exporter = createJaegerExporter({ serviceName: "test-service" });
+
+    const spans = [createTestSpanData("test")];
+    await exporter.export(spans);
+
+    expect(mapHexDiToOtelAttributes).toHaveBeenCalledTimes(1);
+  });
+
+  it("should skip attribute mapping when mapSemanticAttributes is false", async () => {
+    const { mapHexDiToOtelAttributes } = await import("@hex-di/tracing-otel");
+    const exporter = createJaegerExporter({
+      serviceName: "test-service",
+      mapSemanticAttributes: false,
+    });
+
+    const spans = [createTestSpanData("test")];
+    await exporter.export(spans);
+
+    expect(mapHexDiToOtelAttributes).not.toHaveBeenCalled();
   });
 
   it("should delegate export to underlying JaegerExporter", async () => {
@@ -265,6 +284,43 @@ describe("createJaegerExporter", () => {
     expect(consoleErrorSpy.mock.calls[0]![0]).toContain("Shutdown failed");
 
     consoleErrorSpy.mockRestore();
+  });
+
+  it("should be idempotent on shutdown", async () => {
+    const exporter = createJaegerExporter({ serviceName: "test-service" });
+
+    // First shutdown
+    await exporter.shutdown();
+    expect(lastJaegerInstance!.shutdown).toHaveBeenCalledTimes(1);
+
+    // Second shutdown should be a no-op
+    await exporter.shutdown();
+    expect(lastJaegerInstance!.shutdown).toHaveBeenCalledTimes(1);
+  });
+
+  it("should no-op export after shutdown", async () => {
+    const exporter = createJaegerExporter({ serviceName: "test-service" });
+
+    await exporter.shutdown();
+
+    // Export after shutdown should be a no-op
+    const spans = [createTestSpanData("test")];
+    await exporter.export(spans);
+
+    // The export callback should not have been called after the initial construction
+    // (export on the underlying JaegerExporter should not be called)
+    expect(lastJaegerInstance!.export).not.toHaveBeenCalled();
+  });
+
+  it("should no-op forceFlush after shutdown", async () => {
+    const exporter = createJaegerExporter({ serviceName: "test-service" });
+
+    await exporter.shutdown();
+    (lastJaegerInstance!.forceFlush as ReturnType<typeof vi.fn>).mockClear();
+
+    // forceFlush after shutdown should be a no-op
+    await exporter.forceFlush();
+    expect(lastJaegerInstance!.forceFlush).not.toHaveBeenCalled();
   });
 
   it("should handle empty span batches", async () => {

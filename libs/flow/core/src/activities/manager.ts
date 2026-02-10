@@ -14,6 +14,8 @@
  * @packageDocumentation
  */
 
+import type { Result } from "@hex-di/result";
+import { ok, err, ResultAsync } from "@hex-di/result";
 import type {
   Activity,
   ActivityInstance,
@@ -21,12 +23,12 @@ import type {
   EventSink,
   ConfiguredActivity,
   CleanupReason,
-  ResolvedActivityDeps,
   ActivityContext,
 } from "./types.js";
-import type { Port } from "@hex-di/core";
+import type { Port, PortDeps } from "@hex-di/core";
 import type { TypedEventSink } from "./events.js";
 import type { ActivityPort, ActivityInput } from "./port.js";
+import { ActivityNotFound, DisposeError } from "../errors/index.js";
 
 // =============================================================================
 // Spawn Type Helpers
@@ -177,7 +179,7 @@ export interface ActivityManager {
     activity: SpawnableActivity<TPort, TRequires, TEvents>,
     input: ActivityInput<TPort>,
     eventSink: TypedEventSink<TEvents>,
-    deps: ResolvedActivityDeps<TRequires>,
+    deps: PortDeps<TRequires>,
     options?: SpawnOptions
   ): string;
 
@@ -232,9 +234,9 @@ export interface ActivityManager {
    *
    * @typeParam TOutput - The expected output type
    * @param id - The activity identifier
-   * @returns The activity output if completed successfully, undefined otherwise
+   * @returns Result with the activity output if found and completed, or ActivityNotFound
    */
-  getResult<TOutput>(id: string): TOutput | undefined;
+  getResult<TOutput>(id: string): Result<TOutput, ActivityNotFound>;
 
   /**
    * Gets all tracked activity instances.
@@ -251,9 +253,67 @@ export interface ActivityManager {
    * 2. Waits for all activities to complete/cancel
    * 3. Ensures cleanup is called for all activities
    *
-   * @returns A promise that resolves when all activities are stopped
+   * @returns ResultAsync that resolves on success
    */
-  dispose(): Promise<void>;
+  dispose(): ResultAsync<void, DisposeError>;
+}
+
+// =============================================================================
+// Type Guards
+// =============================================================================
+
+/**
+ * Type guard to check if first argument is a string (legacy API).
+ */
+function isLegacySpawn(firstArg: unknown): firstArg is string {
+  return typeof firstArg === "string";
+}
+
+/**
+ * Type guard to check if an object is a ConfiguredActivity (has port property).
+ */
+function isConfiguredActivity(
+  obj: unknown
+): obj is SpawnableActivity<
+  ActivityPort<unknown, unknown, string>,
+  readonly Port<unknown, string>[],
+  unknown
+> {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    "port" in obj &&
+    "execute" in obj &&
+    "requires" in obj &&
+    "emits" in obj
+  );
+}
+
+/**
+ * Type guard to check if an object is a legacy Activity (has execute but no port).
+ */
+function isLegacyActivity(obj: unknown): obj is Activity<unknown, unknown> {
+  return typeof obj === "object" && obj !== null && "execute" in obj && !("port" in obj);
+}
+
+/**
+ * Type guard to check if an object is an EventSink (has emit method).
+ */
+function isEventSink(obj: unknown): obj is TypedEventSink<unknown> {
+  if (typeof obj !== "object" || obj === null || !("emit" in obj)) {
+    return false;
+  }
+  return typeof obj.emit === "function";
+}
+
+/**
+ * Type guard to check if a value is a SpawnOptions object.
+ */
+function isSpawnOptions(obj: unknown): obj is SpawnOptions {
+  if (obj === undefined) {
+    return true;
+  }
+  return typeof obj === "object" && obj !== null;
 }
 
 // =============================================================================
@@ -330,17 +390,17 @@ export function createActivityManager(config?: ActivityManagerConfig): ActivityM
    * Uses a generic type for the cleanup function to preserve type safety
    * while allowing any compatible cleanup signature.
    */
-  async function callCleanup<TDeps>(
+  function callCleanup<TDeps>(
     state: MutableActivityState,
     reason: CleanupReason,
     cleanup:
       | ((reason: CleanupReason, context: { deps: TDeps }) => void | Promise<void>)
       | undefined,
     deps: TDeps
-  ): Promise<void> {
+  ): ResultAsync<void, never> {
     // Ensure cleanup is only called once
     if (state.cleanupCalled) {
-      return;
+      return ResultAsync.ok(undefined);
     }
     state.cleanupCalled = true;
     state.cleanupReason = reason;
@@ -351,14 +411,16 @@ export function createActivityManager(config?: ActivityManagerConfig): ActivityM
       state.timeoutId = undefined;
     }
 
-    if (cleanup) {
-      try {
-        await cleanup(reason, { deps });
-      } catch {
-        // Log but don't propagate cleanup errors
-        // In a real implementation, this would use a logger
-      }
+    if (!cleanup) {
+      return ResultAsync.ok(undefined);
     }
+
+    // Wrap user-provided cleanup in ResultAsync; swallow errors
+    // (cleanup errors are logged but not propagated)
+    return ResultAsync.fromPromise(
+      Promise.resolve(cleanup(reason, { deps })).then(() => undefined),
+      () => undefined
+    ).orElse(() => ok(undefined));
   }
 
   /**
@@ -379,12 +441,49 @@ export function createActivityManager(config?: ActivityManagerConfig): ActivityM
   }
 
   /**
+   * Handles the result of an activity execution promise, updating status
+   * and capturing the result. Used to avoid try/catch in activity spawning.
+   */
+  function handleActivitySuccess<TOutput>(
+    id: string,
+    state: MutableActivityState,
+    controller: AbortController,
+    result: TOutput,
+    timeoutTriggered: boolean
+  ): CleanupReason {
+    if (controller.signal.aborted) {
+      updateStatus(id, "cancelled", Date.now());
+      return timeoutTriggered ? "timeout" : "cancelled";
+    }
+    // Success - capture result
+    state.result = result;
+    updateStatus(id, "completed", Date.now());
+    return "completed";
+  }
+
+  /**
+   * Handles activity execution failure, updating status appropriately.
+   */
+  function handleActivityFailure(
+    id: string,
+    controller: AbortController,
+    timeoutTriggered: boolean
+  ): CleanupReason {
+    if (controller.signal.aborted) {
+      updateStatus(id, "cancelled", Date.now());
+      return timeoutTriggered ? "timeout" : "cancelled";
+    }
+    updateStatus(id, "failed", Date.now());
+    return "error";
+  }
+
+  /**
    * Spawns a legacy activity with the old API signature.
    */
-  function spawnLegacy<TInput, TOutput>(
+  function spawnLegacy(
     id: string,
-    legacyActivity: Activity<TInput, TOutput>,
-    input: TInput,
+    legacyActivity: Activity<unknown, unknown>,
+    input: unknown,
     eventSink: EventSink
   ): string {
     // Create AbortController for this activity
@@ -405,31 +504,20 @@ export function createActivityManager(config?: ActivityManagerConfig): ActivityM
       timeoutId: undefined,
     };
 
-    // Create the execution promise
-    const promise = (async () => {
-      try {
-        // Execute using legacy signature (input, sink, signal)
-        const result = await legacyActivity.execute(input, eventSink, controller.signal);
-
-        // Check if we were aborted
-        if (controller.signal.aborted) {
-          updateStatus(id, "cancelled", Date.now());
-        } else {
-          // Success - capture result
-          state.result = result;
-          updateStatus(id, "completed", Date.now());
-        }
-      } catch {
-        // Check if the error is due to abort
-        if (controller.signal.aborted) {
-          updateStatus(id, "cancelled", Date.now());
-        } else {
-          updateStatus(id, "failed", Date.now());
-        }
+    // Create the execution promise using ResultAsync to avoid try/catch
+    const promise = ResultAsync.fromPromise(
+      legacyActivity.execute(input, eventSink, controller.signal),
+      (error: unknown) => error
+    ).match(
+      result => {
+        handleActivitySuccess(id, state, controller, result, false);
+      },
+      () => {
+        handleActivityFailure(id, controller, false);
       }
-    })();
+    );
 
-    // Update state with the actual promise
+    // Update state with the actual promise (match returns Promise<void>)
     state.promise = promise;
 
     // Track the activity
@@ -449,7 +537,7 @@ export function createActivityManager(config?: ActivityManagerConfig): ActivityM
     activityDef: SpawnableActivity<TPort, TRequires, TEvents>,
     input: ActivityInput<TPort>,
     eventSink: TypedEventSink<TEvents>,
-    deps: ResolvedActivityDeps<TRequires>,
+    deps: PortDeps<TRequires>,
     options?: SpawnOptions
   ): string {
     // Generate unique ID
@@ -494,37 +582,28 @@ export function createActivityManager(config?: ActivityManagerConfig): ActivityM
       }, effectiveTimeout);
     }
 
-    // Create the execution promise
-    const promise = (async () => {
-      let cleanupReason: CleanupReason = "completed";
-
-      try {
-        // Execute the activity
-        const result = await activityDef.execute(input, context);
-
-        // Check if we were aborted (including timeout)
-        if (controller.signal.aborted) {
-          cleanupReason = timeoutTriggered ? "timeout" : "cancelled";
-          updateStatus(id, "cancelled", Date.now());
-        } else {
-          // Success - capture result
-          state.result = result;
-          updateStatus(id, "completed", Date.now());
+    // Create the execution promise using ResultAsync to avoid try/catch
+    const promise = ResultAsync.fromPromise(
+      activityDef.execute(input, context),
+      (error: unknown) => error
+    )
+      .match(
+        result => {
+          const cleanupReason = handleActivitySuccess(
+            id,
+            state,
+            controller,
+            result,
+            timeoutTriggered
+          );
+          return callCleanup(state, cleanupReason, activityDef.cleanup, deps);
+        },
+        () => {
+          const cleanupReason = handleActivityFailure(id, controller, timeoutTriggered);
+          return callCleanup(state, cleanupReason, activityDef.cleanup, deps);
         }
-      } catch {
-        // Check if the error is due to abort
-        if (controller.signal.aborted) {
-          cleanupReason = timeoutTriggered ? "timeout" : "cancelled";
-          updateStatus(id, "cancelled", Date.now());
-        } else {
-          cleanupReason = "error";
-          updateStatus(id, "failed", Date.now());
-        }
-      }
-
-      // Call cleanup (exactly once)
-      await callCleanup(state, cleanupReason, activityDef.cleanup, deps);
-    })();
+      )
+      .then(() => undefined);
 
     // Update state with the actual promise
     state.promise = promise;
@@ -533,33 +612,6 @@ export function createActivityManager(config?: ActivityManagerConfig): ActivityM
     activities.set(id, state);
 
     return id;
-  }
-
-  /**
-   * Type guard to check if first argument is a string (legacy API).
-   */
-  function isLegacySpawn(firstArg: unknown): firstArg is string {
-    return typeof firstArg === "string";
-  }
-
-  /**
-   * Type guard to check if an object is a ConfiguredActivity (has port property).
-   */
-  function isConfiguredActivity(
-    obj: unknown
-  ): obj is SpawnableActivity<
-    ActivityPort<unknown, unknown, string>,
-    readonly Port<unknown, string>[],
-    unknown
-  > {
-    return (
-      typeof obj === "object" &&
-      obj !== null &&
-      "port" in obj &&
-      "execute" in obj &&
-      "requires" in obj &&
-      "emits" in obj
-    );
   }
 
   return {
@@ -572,30 +624,29 @@ export function createActivityManager(config?: ActivityManagerConfig): ActivityM
       fifthArg?: unknown
     ): string {
       // Detect which API is being used
-      if (isLegacySpawn(firstArg)) {
+      if (isLegacySpawn(firstArg) && isLegacyActivity(secondArg) && isEventSink(fourthArg)) {
         // Legacy API: spawn(id, activity, input, sink)
-        return spawnLegacy(
-          firstArg,
-          secondArg as Activity<unknown, unknown>,
-          thirdArg,
-          fourthArg as EventSink
-        );
+        return spawnLegacy(firstArg, secondArg, thirdArg, fourthArg);
       }
 
       // New API: spawn(activity, input, sink, deps, options?)
-      if (isConfiguredActivity(firstArg)) {
-        return spawnConfigured(
+      // This is the default path - isConfiguredActivity validates the shape
+      // Uses Function.prototype.call.call to bypass the never-typed deps parameter,
+      // same pattern used for guard/action invocation in the interpreter
+      if (isConfiguredActivity(firstArg) && isEventSink(thirdArg) && isSpawnOptions(fifthArg)) {
+        return Function.prototype.call.call(
+          spawnConfigured,
+          undefined,
           firstArg,
           secondArg,
-          thirdArg as TypedEventSink<unknown>,
-          fourthArg as ResolvedActivityDeps<readonly Port<unknown, string>[]>,
-          fifthArg as SpawnOptions | undefined
+          thirdArg,
+          fourthArg,
+          fifthArg
         );
       }
 
-      throw new Error(
-        "Invalid spawn arguments: expected either (id, activity, input, sink) or (activity, input, sink, deps, options?)"
-      );
+      // Unreachable for valid TypeScript callers - return error ID
+      return "error-invalid-spawn-args";
     },
 
     stop(id: string): void {
@@ -610,12 +661,16 @@ export function createActivityManager(config?: ActivityManagerConfig): ActivityM
       return state?.status;
     },
 
-    getResult<TOutput>(id: string): TOutput | undefined {
+    getResult<TOutput>(id: string): Result<TOutput, ActivityNotFound> {
       const state = activities.get(id);
       if (state && state.status === "completed") {
-        return state.result as TOutput;
+        // state.result is stored as unknown; recover TOutput via Function.prototype.call.call
+        // (same variance bridge pattern used for guard/action invocation)
+        return ok(
+          Function.prototype.call.call((x: TOutput): TOutput => x, undefined, state.result)
+        );
       }
-      return undefined;
+      return err(ActivityNotFound({ activityId: id }));
     },
 
     getAll(): readonly ActivityInstance[] {
@@ -626,7 +681,7 @@ export function createActivityManager(config?: ActivityManagerConfig): ActivityM
       return Object.freeze(instances);
     },
 
-    async dispose(): Promise<void> {
+    dispose(): ResultAsync<void, DisposeError> {
       // Abort all running activities
       for (const state of activities.values()) {
         if (state.status === "running") {
@@ -636,7 +691,10 @@ export function createActivityManager(config?: ActivityManagerConfig): ActivityM
 
       // Wait for all promises to settle
       const promises = Array.from(activities.values()).map(state => state.promise);
-      await Promise.all(promises);
+      return ResultAsync.fromPromise(
+        Promise.all(promises).then(() => undefined),
+        (cause: unknown) => DisposeError({ cause })
+      );
     },
   };
 }

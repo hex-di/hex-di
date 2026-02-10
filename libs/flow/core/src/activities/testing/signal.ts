@@ -168,10 +168,13 @@ export function createTestSignal(): TestSignal {
     }, ms);
   }
 
-  // Create the TestSignal by extending the controller's signal
-  // We use Object.defineProperties to add methods while preserving
-  // the native AbortSignal prototype chain
-  const testSignal = controller.signal as TestSignal;
+  // Augment controller.signal with abort() and timeout() methods.
+  // Object.defineProperties adds runtime properties that TypeScript cannot track
+  // because it has no type-narrowing for defineProperties.
+  // @ts-expect-error - TypeScript sees controller.signal as AbortSignal (missing abort/timeout methods).
+  // After Object.defineProperties below, the signal has both methods at runtime. TypeScript has no
+  // mechanism to narrow types through Object.defineProperties calls.
+  const testSignal: TestSignal = controller.signal;
 
   Object.defineProperties(testSignal, {
     abort: {

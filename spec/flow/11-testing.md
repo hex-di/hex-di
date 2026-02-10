@@ -181,7 +181,7 @@ Single `.` entry point -- all testing utilities are exported from the root.
 
 - `createTestEventSink<TEvents>()` already implemented: captures emitted events with `events` array and `clear()` method
 - `createTestSignal()` already implemented: controllable `AbortSignal` with `abort(reason?)` and `timeout(ms)` methods
-- `createTestDeps(requires, mocks)` already implemented: creates typed dependency object from port tuple and mocks, throws `MissingMockError` for missing mocks
+- `createTestDeps(requires, mocks)` already implemented: creates typed dependency object from port tuple and mocks, returns `Result<ResolvedDeps, MissingMockError>` for missing mocks
 - These should be re-exported from `@hex-di/flow-testing` package for consumer convenience
 
 ## Existing Code to Leverage
@@ -195,7 +195,7 @@ Single `.` entry point -- all testing utilities are exported from the root.
 **`libs/flow/core/src/activities/testing/deps.ts`**
 
 - `createTestDeps` and `MocksFor` type utility for building typed mock objects from port tuples
-- `MissingMockError` for clear error messages when mocks are missing
+- `MissingMockError` tagged union type `{ _tag: "MissingMock", portName: string, message: string }` for clear error messages when mocks are missing
 - `testMachine` mocks should use the same `MocksFor` type pattern for consistency
 
 **`libs/flow/core/src/runner/interpreter.ts` (transition function)**

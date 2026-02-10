@@ -146,6 +146,26 @@ function createMockContainer(): TestContainer {
     getChildContainers: vi.fn().mockReturnValue([]),
     getAdapterInfo: vi.fn().mockReturnValue(undefined),
     getGraphData: vi.fn().mockReturnValue({ nodes: [], edges: [] }),
+    getResultStatistics: vi.fn().mockReturnValue(undefined),
+    getAllResultStatistics: vi.fn().mockReturnValue(new Map()),
+    getHighErrorRatePorts: vi.fn().mockReturnValue([]),
+    registerLibrary: vi.fn().mockReturnValue(() => {}),
+    getLibraryInspectors: vi.fn().mockReturnValue(new Map()),
+    getLibraryInspector: vi.fn().mockReturnValue(undefined),
+    getUnifiedSnapshot: vi.fn().mockReturnValue({
+      timestamp: Date.now(),
+      container: {
+        kind: "root",
+        containerId: "root",
+        containerName: "TestContainer",
+        phase: "uninitialized",
+        singletons: [],
+        scopes: [],
+        children: [],
+      },
+      libraries: {},
+      registeredLibraries: [],
+    }),
     isDisposed: false,
   };
 

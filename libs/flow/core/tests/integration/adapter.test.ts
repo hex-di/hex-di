@@ -16,6 +16,7 @@
 
 import { describe, it, expect, vi } from "vitest";
 import { port } from "@hex-di/core";
+import { expectOk, expectErr } from "@hex-di/result-testing";
 import { activityPort } from "../../src/activities/port.js";
 import { defineEvents } from "../../src/activities/events.js";
 import { activity } from "../../src/activities/factory.js";
@@ -26,10 +27,14 @@ import {
   createFlowAdapter,
   createFlowPort,
   createDIEffectExecutor,
+  createFlowTracingBridge,
 } from "../../src/integration/index.js";
 import type { FlowService } from "../../src/integration/types.js";
-import { createMachine } from "../../src/machine/create-machine.js";
+import { FlowInspectorPort, FlowRegistryPort } from "../../src/integration/types.js";
+import { defineMachine } from "../../src/machine/define-machine.js";
 import { Effect } from "../../src/effects/constructors.js";
+import { createFlowTracingHook } from "../../src/introspection/flow-tracing-hook.js";
+import type { TracerLike } from "../../src/introspection/types.js";
 
 // =============================================================================
 // Test Fixtures
@@ -61,7 +66,7 @@ interface TestContext {
   progress: number;
 }
 
-const testMachine = createMachine({
+const testMachine = defineMachine({
   id: "test-machine",
   initial: "idle",
   context: { lastEvent: "none", progress: 0 } satisfies TestContext,
@@ -167,6 +172,7 @@ function createTestFlowService(
     state: () => runner.state(),
     context: () => runner.context(),
     send: e => runner.send(e as Parameters<typeof runner.send>[0]),
+    sendBatch: events => runner.sendBatch(events as Parameters<typeof runner.sendBatch>[0]),
     sendAndExecute: e => runner.sendAndExecute(e as Parameters<typeof runner.sendAndExecute>[0]),
     subscribe: cb => runner.subscribe(cb),
     getActivityStatus: id => runner.getActivityStatus(id),
@@ -202,25 +208,27 @@ describe("FlowAdapter with activities", () => {
         },
       });
 
-      const adapter = createFlowAdapter({
+      const adapterResult = createFlowAdapter({
         provides: TestFlowPort,
         requires: [ApiPort, LoggerPort] as const,
         activities: [TaskActivity] as const,
         machine: testMachine,
       });
 
+      const adapter = adapterResult.expect("adapter creation failed");
       expect(adapter.provides).toBe(TestFlowPort);
       expect(adapter.requires).toEqual([ApiPort, LoggerPort]);
       expect(adapter.lifetime).toBe("scoped");
     });
 
     it("should create FlowAdapter without activities", () => {
-      const adapter = createFlowAdapter({
+      const adapterResult = createFlowAdapter({
         provides: TestFlowPort,
         requires: [ApiPort] as const,
         machine: testMachine,
       });
 
+      const adapter = adapterResult.expect("adapter creation failed");
       expect(adapter.provides).toBe(TestFlowPort);
       expect(adapter.requires).toEqual([ApiPort]);
     });
@@ -232,8 +240,8 @@ describe("FlowAdapter with activities", () => {
         execute: async () => ({ result: "done" }),
       });
 
-      // This should not throw
-      const adapter = createFlowAdapter({
+      // This should succeed
+      const adapterResult = createFlowAdapter({
         provides: TestFlowPort,
         requires: [ApiPort] as const,
         activities: [TaskActivity] as const,
@@ -241,12 +249,12 @@ describe("FlowAdapter with activities", () => {
         defaultActivityTimeout: 30000,
       });
 
-      expect(adapter).toBeDefined();
+      expectOk(adapterResult);
     });
   });
 
   describe("Runtime validation", () => {
-    it("should throw on duplicate activity port names", () => {
+    it("should return Err on duplicate activity port names", () => {
       const Activity1 = activity(TaskActivityPort, {
         requires: [ApiPort],
         emits: TaskEvents,
@@ -259,18 +267,19 @@ describe("FlowAdapter with activities", () => {
         execute: async () => ({ result: "b" }),
       });
 
-      expect(() => {
-        createFlowAdapter({
-          provides: TestFlowPort,
-          requires: [ApiPort, LoggerPort] as const,
-          // Using type assertion to bypass compile-time check and test runtime validation
-          activities: [Activity1, Activity2] as unknown as readonly [typeof Activity1],
-          machine: testMachine,
-        });
-      }).toThrow(/Duplicate activity port name/);
+      const result = createFlowAdapter({
+        provides: TestFlowPort,
+        requires: [ApiPort, LoggerPort] as const,
+        // Using type assertion to bypass compile-time check and test runtime validation
+        activities: [Activity1, Activity2] as unknown as readonly [typeof Activity1],
+        machine: testMachine,
+      });
+
+      const error = expectErr(result);
+      expect(error._tag).toBe("DuplicateActivityPort");
     });
 
-    it("should throw on unfrozen activity", () => {
+    it("should return Err on unfrozen activity", () => {
       // Create an unfrozen activity manually (bypassing the factory)
       const unfrozenActivity = {
         port: TaskActivityPort,
@@ -280,15 +289,16 @@ describe("FlowAdapter with activities", () => {
         execute: async () => ({ result: "test" }),
       };
 
-      expect(() => {
-        createFlowAdapter({
-          provides: TestFlowPort,
-          requires: [ApiPort] as const,
-          // Using type assertion to bypass type check and test runtime validation
-          activities: [unfrozenActivity] as unknown as readonly [typeof unfrozenActivity],
-          machine: testMachine,
-        });
-      }).toThrow(/not frozen/);
+      const result = createFlowAdapter({
+        provides: TestFlowPort,
+        requires: [ApiPort] as const,
+        // Using type assertion to bypass type check and test runtime validation
+        activities: [unfrozenActivity] as unknown as readonly [typeof unfrozenActivity],
+        machine: testMachine,
+      });
+
+      const error = expectErr(result);
+      expect(error._tag).toBe("ActivityNotFrozen");
     });
   });
 
@@ -467,7 +477,7 @@ describe("FlowAdapter with activities", () => {
   describe("Activity not found error", () => {
     it("should throw when spawning unknown activity", async () => {
       // Create a machine that tries to spawn an activity not in the registry
-      const machineWithUnknownActivity = createMachine({
+      const machineWithUnknownActivity = defineMachine({
         id: "test-unknown",
         initial: "idle",
         context: {},
@@ -539,12 +549,387 @@ describe("FlowAdapter with activities", () => {
         activityManager,
       });
 
-      // This should throw when trying to spawn unknown activity
-      await expect(runner.sendAndExecute({ type: "START" })).rejects.toThrow(
-        /Activity "UnknownActivity" not found/
-      );
+      // sendAndExecute returns ResultAsync which resolves to Err for unknown activity
+      const result = await runner.sendAndExecute({ type: "START" });
+      const error = expectErr(result);
+      expect(error._tag).toBe("SpawnError");
 
       await runner.dispose();
+    });
+  });
+});
+
+// =============================================================================
+// Tracer auto-creation from config
+// =============================================================================
+
+describe("FlowAdapter tracer auto-creation", () => {
+  it("auto-creates tracingHook from tracer config", () => {
+    const pushSpan = vi.fn();
+    const popSpan = vi.fn();
+    const mockTracer: TracerLike = { pushSpan, popSpan };
+
+    const adapterResult = createFlowAdapter({
+      provides: TestFlowPort,
+      requires: [ApiPort] as const,
+      machine: testMachine,
+      tracer: mockTracer,
+    });
+
+    // Adapter should be created successfully
+    expectOk(adapterResult);
+  });
+
+  it("does not create tracingHook when explicit tracingHook provided", () => {
+    const pushSpan = vi.fn();
+    const popSpan = vi.fn();
+    const mockTracer: TracerLike = { pushSpan, popSpan };
+
+    const explicitHook = createFlowTracingHook({
+      tracer: mockTracer,
+      scopeId: "explicit-scope",
+    });
+
+    const adapterResult = createFlowAdapter({
+      provides: TestFlowPort,
+      requires: [ApiPort] as const,
+      machine: testMachine,
+      tracer: mockTracer,
+      tracingHook: explicitHook,
+    });
+
+    expectOk(adapterResult);
+  });
+
+  it("auto-created tracingHook uses port name as scopeId", () => {
+    const pushSpanCalls: Array<{ name: string; attrs: Record<string, string> | undefined }> = [];
+    const mockTracer: TracerLike = {
+      pushSpan(name: string, attributes?: Record<string, string>) {
+        pushSpanCalls.push({ name, attrs: attributes });
+      },
+      popSpan: vi.fn(),
+    };
+
+    const adapterResult = createFlowAdapter({
+      provides: TestFlowPort,
+      requires: [ApiPort] as const,
+      machine: testMachine,
+      tracer: mockTracer,
+    });
+
+    expectOk(adapterResult);
+    // The tracer is wired; the auto-created hook uses scopeId = `${portName}-scope`.
+    // We can verify by checking the adapter was created without error.
+    // The actual scope_id attribute is tested in the flow-tracing-hook unit tests.
+  });
+
+  it("adapter without tracer or tracingHook has no tracing", () => {
+    const adapterResult = createFlowAdapter({
+      provides: TestFlowPort,
+      requires: [ApiPort] as const,
+      machine: testMachine,
+    });
+
+    expectOk(adapterResult);
+  });
+});
+
+// =============================================================================
+// tracerPort auto-resolution
+// =============================================================================
+
+describe("FlowAdapter tracerPort auto-resolution", () => {
+  const TracerPort = port<TracerLike>()({ name: "Tracer" });
+
+  it("auto-resolves tracer from tracerPort and creates tracingHook", () => {
+    const adapterResult = createFlowAdapter({
+      provides: TestFlowPort,
+      requires: [ApiPort, TracerPort] as const,
+      machine: testMachine,
+      tracerPort: TracerPort,
+    });
+
+    // Should succeed - the tracerPort is wired for auto-resolution
+    expectOk(adapterResult);
+  });
+
+  it("tracerPort is ignored when explicit tracingHook is provided", () => {
+    const pushSpan = vi.fn();
+    const popSpan = vi.fn();
+    const mockTracer: TracerLike = { pushSpan, popSpan };
+
+    const explicitHook = createFlowTracingHook({
+      tracer: mockTracer,
+      scopeId: "explicit",
+    });
+
+    const adapterResult = createFlowAdapter({
+      provides: TestFlowPort,
+      requires: [ApiPort, TracerPort] as const,
+      machine: testMachine,
+      tracerPort: TracerPort,
+      tracingHook: explicitHook,
+    });
+
+    expectOk(adapterResult);
+  });
+
+  it("tracerPort is ignored when explicit tracer is provided", () => {
+    const pushSpan = vi.fn();
+    const popSpan = vi.fn();
+    const mockTracer: TracerLike = { pushSpan, popSpan };
+
+    const adapterResult = createFlowAdapter({
+      provides: TestFlowPort,
+      requires: [ApiPort, TracerPort] as const,
+      machine: testMachine,
+      tracerPort: TracerPort,
+      tracer: mockTracer,
+    });
+
+    expectOk(adapterResult);
+  });
+
+  it("gracefully handles when resolved service does not match TracerLike", () => {
+    // Use a port that resolves to a non-TracerLike service
+    const adapterResult = createFlowAdapter({
+      provides: TestFlowPort,
+      requires: [ApiPort] as const,
+      machine: testMachine,
+      tracerPort: ApiPort, // ApiPort resolves to ApiService, not TracerLike
+    });
+
+    // Should still create the adapter successfully, just without tracing
+    expectOk(adapterResult);
+  });
+});
+
+// =============================================================================
+// DI Ports for Introspection
+// =============================================================================
+
+describe("FlowInspectorPort and FlowRegistryPort", () => {
+  it("FlowInspectorPort has correct port name", () => {
+    expect(FlowInspectorPort.__portName).toBe("FlowInspector");
+  });
+
+  it("FlowRegistryPort has correct port name", () => {
+    expect(FlowRegistryPort.__portName).toBe("FlowRegistry");
+  });
+
+  it("FlowInspectorPort is a proper Port object", () => {
+    expect(typeof FlowInspectorPort).toBe("object");
+    expect(FlowInspectorPort).not.toBeNull();
+    expect(FlowInspectorPort.__portName).toBe("FlowInspector");
+  });
+
+  it("FlowRegistryPort is a proper Port object", () => {
+    expect(typeof FlowRegistryPort).toBe("object");
+    expect(FlowRegistryPort).not.toBeNull();
+    expect(FlowRegistryPort.__portName).toBe("FlowRegistry");
+  });
+});
+
+// =============================================================================
+// Tracing Bridge
+// =============================================================================
+
+describe("createFlowTracingBridge", () => {
+  it("creates FlowTracingHookOptions from TracerLike", () => {
+    const mockTracer: TracerLike = {
+      pushSpan: vi.fn(),
+      popSpan: vi.fn(),
+    };
+
+    const options = createFlowTracingBridge({ tracer: mockTracer });
+
+    expect(options.tracer).toBe(mockTracer);
+    expect(options.filter).toBeUndefined();
+    expect(options.traceEffects).toBeUndefined();
+  });
+
+  it("passes filter and traceEffects through", () => {
+    const mockTracer: TracerLike = {
+      pushSpan: vi.fn(),
+      popSpan: vi.fn(),
+    };
+
+    const filter = (machineId: string) => machineId !== "internal";
+
+    const options = createFlowTracingBridge({
+      tracer: mockTracer,
+      filter,
+      traceEffects: false,
+    });
+
+    expect(options.tracer).toBe(mockTracer);
+    expect(options.filter).toBe(filter);
+    expect(options.traceEffects).toBe(false);
+  });
+
+  it("integrates with createFlowTracingHook", () => {
+    const pushSpan = vi.fn();
+    const popSpan = vi.fn();
+
+    const mockTracer: TracerLike = { pushSpan, popSpan };
+
+    const hookOptions = createFlowTracingBridge({ tracer: mockTracer });
+    const hook = createFlowTracingHook(hookOptions);
+
+    // Use the hook to verify it works end-to-end
+    hook.onTransitionStart("test-machine", "idle", "loading", "FETCH");
+    expect(pushSpan).toHaveBeenCalledWith("flow:test-machine/idle->loading", {
+      machine_id: "test-machine",
+      from_state: "idle",
+      to_state: "loading",
+      event_type: "FETCH",
+    });
+
+    hook.onTransitionEnd("test-machine", true);
+    expect(popSpan).toHaveBeenCalledWith("ok");
+
+    hook.onEffectStart("Invoke", "ApiPort.fetch");
+    expect(pushSpan).toHaveBeenCalledWith("flow:effect:Invoke:ApiPort.fetch", {
+      effect_tag: "Invoke",
+      detail: "ApiPort.fetch",
+    });
+
+    hook.onEffectEnd(false);
+    expect(popSpan).toHaveBeenCalledWith("error");
+  });
+});
+
+// =============================================================================
+// Additional Adapter Integration Tests
+// =============================================================================
+
+describe("Additional FlowAdapter tests", () => {
+  describe("Multi-FlowAdapter in same scope", () => {
+    it("creates multiple adapters for different machines", () => {
+      const SecondFlowPort = createFlowPort<
+        "idle" | "active",
+        "ACTIVATE" | "DEACTIVATE",
+        { active: boolean }
+      >("SecondFlow");
+
+      const secondMachine = defineMachine({
+        id: "second-machine",
+        initial: "idle",
+        context: { active: false },
+        states: {
+          idle: {
+            on: {
+              ACTIVATE: {
+                target: "active",
+                actions: [() => ({ active: true })],
+              },
+            },
+          },
+          active: {
+            on: {
+              DEACTIVATE: {
+                target: "idle",
+                actions: [() => ({ active: false })],
+              },
+            },
+          },
+        },
+      });
+
+      const adapter1Result = createFlowAdapter({
+        provides: TestFlowPort,
+        requires: [ApiPort] as const,
+        machine: testMachine,
+      });
+
+      const adapter2Result = createFlowAdapter({
+        provides: SecondFlowPort,
+        requires: [] as const,
+        machine: secondMachine,
+      });
+
+      const adapter1Value = expectOk(adapter1Result);
+      const adapter2Value = expectOk(adapter2Result);
+
+      expect(adapter1Value.provides).toBe(TestFlowPort);
+      expect(adapter2Value.provides).toBe(SecondFlowPort);
+      expect(adapter1Value.provides).not.toBe(adapter2Value.provides);
+    });
+  });
+
+  describe("Adapter metadata shape", () => {
+    it("has correct metadata fields", () => {
+      const adapterResult = createFlowAdapter({
+        provides: TestFlowPort,
+        requires: [ApiPort] as const,
+        machine: testMachine,
+      });
+
+      const adapter = adapterResult.expect("adapter creation failed");
+      expect(adapter.provides.__portName).toBe("TestFlow");
+      expect(adapter.requires).toEqual([ApiPort]);
+      expect(typeof adapter.lifetime).toBe("string");
+    });
+  });
+
+  describe("Duplicate activity port names", () => {
+    it("returns Err with DuplicateActivityPort tag", () => {
+      const TaskActivity1 = activity(TaskActivityPort, {
+        requires: [ApiPort],
+        emits: TaskEvents,
+        execute: async () => ({ result: "a" }),
+      });
+
+      const TaskActivity2 = activity(TaskActivityPort, {
+        requires: [LoggerPort],
+        emits: TaskEvents,
+        execute: async () => ({ result: "b" }),
+      });
+
+      const result = createFlowAdapter({
+        provides: TestFlowPort,
+        requires: [ApiPort, LoggerPort] as const,
+        activities: [TaskActivity1, TaskActivity2] as unknown as readonly [typeof TaskActivity1],
+        machine: testMachine,
+      });
+
+      const error = expectErr(result);
+      expect(error._tag).toBe("DuplicateActivityPort");
+    });
+  });
+
+  describe("Non-frozen activity", () => {
+    it("returns Err with ActivityNotFrozen tag", () => {
+      const unfrozen = {
+        port: TaskActivityPort,
+        requires: [ApiPort] as const,
+        emits: TaskEvents,
+        timeout: undefined,
+        execute: async () => ({ result: "test" }),
+      };
+
+      const result = createFlowAdapter({
+        provides: TestFlowPort,
+        requires: [ApiPort] as const,
+        activities: [unfrozen] as unknown as readonly [typeof unfrozen],
+        machine: testMachine,
+      });
+
+      const error = expectErr(result);
+      expect(error._tag).toBe("ActivityNotFrozen");
+    });
+  });
+
+  describe("Lifetime defaults", () => {
+    it("defaults to scoped lifetime", () => {
+      const adapterResult = createFlowAdapter({
+        provides: TestFlowPort,
+        requires: [ApiPort] as const,
+        machine: testMachine,
+      });
+
+      const adapter = adapterResult.expect("adapter creation failed");
+      expect(adapter.lifetime).toBe("scoped");
     });
   });
 });

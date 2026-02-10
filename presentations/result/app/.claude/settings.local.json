@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --filter @hex-di/flow-react test)",
+      "Bash(pnpm --filter @hex-di/flow-react typecheck:*)",
+      "Bash(pnpm build:*)",
+      "Bash(python3:*)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm test:*)",
+      "Bash(git stash:*)",
+      "Bash(pnpm vitest run:*)",
+      "Bash(find:*)",
+      "Bash(cloc:*)",
+      "Bash(ls:*)",
+      "Bash(wc:*)"
+    ]
+  }
+}

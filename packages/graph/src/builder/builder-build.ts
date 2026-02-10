@@ -2,8 +2,8 @@
  * Build Functions for GraphBuilder.
  *
  * This module provides standalone functions for finalizing buildable graphs
- * into frozen Graph objects. These functions are pure (except for throwing
- * on cycle detection) and return frozen objects.
+ * into frozen Graph objects. Functions return Result types for recoverable
+ * error handling, with throwing wrappers for backward compatibility.
  *
  * ## Design Pattern
  *
@@ -17,6 +17,8 @@
  */
 
 import type { AdapterConstraint } from "@hex-di/core";
+import { ok, err } from "@hex-di/result";
+import type { Result } from "@hex-di/result";
 import type { BuildableGraph } from "./builder-types.js";
 import {
   inspectGraph,
@@ -25,13 +27,15 @@ import {
   formatCycleError,
   formatCaptiveError,
 } from "../graph/inspection/index.js";
+import { CyclicDependencyBuild, CaptiveDependencyBuild } from "../errors/index.js";
+import type { GraphBuildError } from "../errors/index.js";
 
 /**
- * Validates a buildable graph at runtime.
+ * Validates a buildable graph at runtime, returning a Result.
  *
  * This function performs runtime validation that complements the type-level
- * validation. It is called by both `buildGraph` and `buildGraphFragment` to
- * ensure consistent validation behavior.
+ * validation. It is called by both `tryBuildGraph` and `tryBuildGraphFragment`
+ * to ensure consistent validation behavior.
  *
  * Validation performed:
  * 1. **Cycle detection** (when depth limit exceeded):
@@ -42,23 +46,26 @@ import {
  *    - Checks that singletons don't depend on scoped/transient services
  *    - Run unconditionally as defense-in-depth against type system bypasses
  *
- * @pure No side effects, but may throw errors.
+ * @pure No side effects.
  *
  * @param buildable - The graph state to validate
- * @throws {Error} With HEX002 if circular dependency detected
- * @throws {Error} With HEX003 if captive dependency detected
+ * @returns `Ok(undefined)` if valid, `Err(GraphBuildError)` if invalid
  *
  * @internal
  */
-export function validateBuildable(buildable: BuildableGraph): void {
+export function validateBuildable(buildable: BuildableGraph): Result<void, GraphBuildError> {
   const inspection = inspectGraph(buildable);
 
   // Check for cycles only when depth limit was exceeded (type system handles normal cases)
   if (inspection.depthLimitExceeded) {
     const cycle = detectCycleAtRuntime(buildable.adapters);
     if (cycle) {
-      // Use standardized error format (matches compile-time errors)
-      throw new Error(formatCycleError(cycle));
+      return err(
+        CyclicDependencyBuild({
+          cyclePath: cycle,
+          message: formatCycleError(cycle),
+        })
+      );
     }
   }
 
@@ -67,16 +74,23 @@ export function validateBuildable(buildable: BuildableGraph): void {
   // even when depth limit is not exceeded.
   const captive = detectCaptiveAtRuntime(buildable.adapters);
   if (captive) {
-    // Use standardized error format (matches compile-time errors)
-    throw new Error(
-      formatCaptiveError(
-        captive.dependentPort,
-        captive.dependentLifetime,
-        captive.captivePort,
-        captive.captiveLifetime
-      )
+    return err(
+      CaptiveDependencyBuild({
+        dependentPort: captive.dependentPort,
+        dependentLifetime: captive.dependentLifetime,
+        captivePort: captive.captivePort,
+        captiveLifetime: captive.captiveLifetime,
+        message: formatCaptiveError(
+          captive.dependentPort,
+          captive.dependentLifetime,
+          captive.captivePort,
+          captive.captiveLifetime
+        ),
+      })
     );
   }
+
+  return ok(undefined);
 }
 
 /**
@@ -93,72 +107,94 @@ export interface BuiltGraph {
   readonly overridePortNames: ReadonlySet<string>;
 }
 
+// =============================================================================
+// Result-based Build Functions
+// =============================================================================
+
+/**
+ * Builds a graph after validating dependencies at runtime, returning a Result.
+ *
+ * @pure Returns frozen Result. No side effects.
+ *
+ * @param buildable - The graph state to build
+ * @returns `Ok(BuiltGraph)` if valid, `Err(GraphBuildError)` if invalid
+ *
+ * @internal
+ */
+export function tryBuildGraph(buildable: BuildableGraph): Result<BuiltGraph, GraphBuildError> {
+  return validateBuildable(buildable).map(() =>
+    Object.freeze({
+      adapters: buildable.adapters,
+      overridePortNames: buildable.overridePortNames,
+    })
+  );
+}
+
+/**
+ * Builds a graph fragment after validating at runtime, returning a Result.
+ *
+ * Used for child containers where dependencies may be satisfied by the parent.
+ * Still performs cycle and captive detection as a safety net.
+ *
+ * @pure Returns frozen Result. No side effects.
+ *
+ * @param buildable - The graph state to build
+ * @returns `Ok(BuiltGraph)` if valid, `Err(GraphBuildError)` if invalid
+ *
+ * @internal
+ */
+export function tryBuildGraphFragment(
+  buildable: BuildableGraph
+): Result<BuiltGraph, GraphBuildError> {
+  return validateBuildable(buildable).map(() =>
+    Object.freeze({
+      adapters: buildable.adapters,
+      overridePortNames: buildable.overridePortNames,
+    })
+  );
+}
+
+// =============================================================================
+// Throwing Build Functions (backward-compatible wrappers)
+// =============================================================================
+
 /**
  * Builds a graph after validating dependencies at runtime.
  *
- * This function performs the same runtime checks as GraphBuilder.build():
- * - Checks if depth limit was exceeded (type-level detection may have false negatives)
- * - Performs runtime cycle detection if depth limit was exceeded
- * - Throws if a cycle is detected
- *
- * Note: Most validation happens at the type level through GraphBuilder's
- * conditional return types. This function provides runtime safety net.
- *
- * @pure Returns frozen object. May throw for cycles.
+ * @pure Returns frozen object. May throw for cycles or captive dependencies.
  *
  * @param buildable - The graph state to build
  * @returns A frozen graph object
- * @throws {Error} If a circular dependency is detected at runtime
- *
- * @example
- * ```typescript
- * const graph = buildGraph({
- *   adapters: [LoggerAdapter, DatabaseAdapter],
- *   overridePortNames: new Set()
- * });
- * ```
+ * @throws {Error} If a circular or captive dependency is detected at runtime
  *
  * @internal
  */
 export function buildGraph(buildable: BuildableGraph): BuiltGraph {
-  // Validate using shared logic
-  validateBuildable(buildable);
-
-  return Object.freeze({
-    adapters: buildable.adapters,
-    overridePortNames: buildable.overridePortNames,
-  });
+  const result = tryBuildGraph(buildable);
+  if (result.isErr()) {
+    throw new Error(result.error.message);
+  }
+  return result.value;
 }
 
 /**
  * Builds a graph fragment without validating all dependencies are satisfied.
  *
- * This function is used for child containers where dependencies may be
- * satisfied by the parent. It still performs cycle detection as a safety net.
+ * Used for child containers where dependencies may be satisfied by the parent.
+ * Still performs cycle and captive detection as a safety net.
  *
- * @pure Returns frozen object. May throw for cycles.
+ * @pure Returns frozen object. May throw for cycles or captive dependencies.
  *
  * @param buildable - The graph state to build
  * @returns A frozen graph object
- * @throws {Error} If a circular dependency is detected at runtime
- *
- * @example
- * ```typescript
- * // Child graph - dependencies come from parent
- * const fragment = buildGraphFragment({
- *   adapters: [ConfigAdapter],  // Requires Logger from parent
- *   overridePortNames: new Set()
- * });
- * ```
+ * @throws {Error} If a circular or captive dependency is detected at runtime
  *
  * @internal
  */
 export function buildGraphFragment(buildable: BuildableGraph): BuiltGraph {
-  // Validate using shared logic
-  validateBuildable(buildable);
-
-  return Object.freeze({
-    adapters: buildable.adapters,
-    overridePortNames: buildable.overridePortNames,
-  });
+  const result = tryBuildGraphFragment(buildable);
+  if (result.isErr()) {
+    throw new Error(result.error.message);
+  }
+  return result.value;
 }

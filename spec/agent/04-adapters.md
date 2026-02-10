@@ -8,7 +8,7 @@ Tool adapters bridge existing application ports to the agent's tool system. They
 
 ```typescript
 function createToolAdapter<
-  TProvides extends Port<ToolPortService<TTools>, string>,
+  TProvides extends DirectedPort<ToolPortService<TTools>, string, PortDirection>,
   TTools extends readonly ToolDefinition[],
   TRequires extends readonly Port<unknown, string>[],
 >(config: {
@@ -26,11 +26,11 @@ The `tools` factory receives resolved dependencies and returns tool definitions 
 import { z } from "zod";
 
 // Existing application ports
-const TaskServicePort = createPort<TaskService>()({ name: "TaskService" });
-const UserServicePort = createPort<UserService>()({ name: "UserService" });
+const TaskServicePort = port<TaskService>()({ name: "TaskService" });
+const UserServicePort = port<UserService>()({ name: "UserService" });
 
 // Define the tool port
-const TaskToolsPort = createPort<ToolPortService<readonly ToolDefinition[]>>()({
+const TaskToolsPort = port<ToolPortService<readonly ToolDefinition[]>>()({
   name: "TaskTools",
   direction: "inbound",
 });
@@ -104,15 +104,34 @@ The `AgentAdapter` then depends on all three tool ports and merges their tools.
 
 ### 9.4 Tool Error Handling
 
-If a tool's `execute` function throws, the runner catches the error and returns it as a `ToolResult` with `isError: true`. The error message is sent back to the LLM so it can recover:
+The runner handles two kinds of tool errors, each producing a typed `AgentError` variant:
+
+1. **Validation failure** -- The LLM-provided arguments fail Zod parsing. The runner produces a `ToolValidationFailedError` and sends the validation messages back to the LLM as a `ToolErrorResult` so it can retry with corrected arguments.
+2. **Execution failure** -- The tool's `execute` function throws. The runner produces a `ToolExecutionFailedError` and sends the error message back to the LLM so it can recover.
+
+Both errors are also included in the `run-error` event and the `Result` returned by `AgentRun.result`.
 
 ```typescript
 // Inside the runner (conceptual):
-try {
-  const result = await tool.execute(validatedParams);
-  return { callId, result, isError: false };
-} catch (error) {
-  return { callId, result: String(error), isError: true };
+function executeTool(toolCall: ToolCall): ToolResult {
+  const tool = findTool(toolCall.name);
+
+  // 1. Validate arguments against the tool's Zod schema
+  const parsed = tool.parameters.safeParse(toolCall.arguments);
+  if (!parsed.success) {
+    // ToolValidationFailedError — send validation errors back to LLM
+    const validationErrors = parsed.error.issues.map(i => `${i.path.join(".")}: ${i.message}`);
+    return { callId: toolCall.id, result: validationErrors.join("; "), isError: true };
+  }
+
+  // 2. Execute with validated params
+  try {
+    const result = await tool.execute(parsed.data);
+    return { callId: toolCall.id, result, isError: false };
+  } catch (error) {
+    // ToolExecutionFailedError — send error message back to LLM
+    return { callId: toolCall.id, result: String(error), isError: true };
+  }
 }
 ```
 
@@ -128,12 +147,13 @@ Agent adapters wire tools, context, and LLM together into a configured `AgentSer
 
 ```typescript
 function createAgentAdapter<
-  TProvides extends Port<AgentService, string>,
+  TProvides extends DirectedPort<AgentService, string, PortDirection>,
+  TRequires extends readonly Port<unknown, string>[],
 >(config: {
   readonly provides: TProvides;
-  readonly requires: readonly Port<unknown, string>[];
+  readonly requires: TRequires;
   readonly config: AgentConfig;
-}): Adapter<TProvides, /* inferred from requires */, "scoped">;
+}): Adapter<TProvides, TupleToUnion<TRequires>, "scoped">;
 ```
 
 The `requires` array must include:

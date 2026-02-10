@@ -142,9 +142,18 @@ interface SagaExecutionSummary {
 }
 ```
 
+### 7.1a Port Direction
+
+Both `SagaPort` and `SagaManagementPort` use `"outbound"` direction. The application (domain layer) calls outward through these ports to trigger saga executions or manage them -- the saga runtime is an infrastructure concern invoked by the domain, making both ports outbound by convention.
+
+- **`SagaPort`** -- `"outbound"`: the domain initiates a saga execution by calling `execute()` through the port
+- **`SagaManagementPort`** -- `"outbound"`: infrastructure/admin code initiates management operations (`resume`, `cancel`, `getStatus`) through the port
+
+This contrasts with `QueryPort` which uses `"inbound"` direction (the application receives data by calling a fetcher), and `FlowPort` which intentionally omits direction (bidirectional: events flow in, state flows out).
+
 ### 7.2 Factory Function
 
-The `sagaPort` factory uses the curried generics pattern established by `activityPort` from
+The `sagaPort` factory uses the curried generics pattern established by `createActivityPort` from
 `@hex-di/flow` and the base `port()` factory from `@hex-di/core`. Type parameters that
 TypeScript cannot infer (`TInput`, `TOutput`, `TError`) are explicit in the first call; the
 configuration object is inferred in the second call.
@@ -555,7 +564,9 @@ result.match(
   },
   error => {
     console.error("Order failed:", error._tag);
-    console.log("Compensated:", error.compensated);
+    if (error._tag === "StepFailed") {
+      console.log("Compensated steps:", error.compensatedSteps.join(", "));
+    }
   }
 );
 

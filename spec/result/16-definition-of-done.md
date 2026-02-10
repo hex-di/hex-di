@@ -580,6 +580,7 @@ Before marking the spec as "implemented," the following must all pass:
 | No `any` types in source      | `grep -r "any" packages/result/src/`                                   | 0 matches  |
 | No type casts in source       | `grep -r " as " packages/result/src/`                                  | 0 matches  |
 | No eslint-disable in source   | `grep -r "eslint-disable" packages/result/src/`                        | 0 matches  |
+| No `Impl` in public API       | `grep -r "ResultAsyncImpl" packages/result/dist/`                      | 0 matches  |
 | Mutation score (core types)   | `pnpm --filter @hex-di/result stryker -- --mutate src/core/**`         | >95%       |
 | Mutation score (constructors) | `pnpm --filter @hex-di/result stryker -- --mutate src/constructors/**` | >95%       |
 | Mutation score (methods)      | `pnpm --filter @hex-di/result stryker -- --mutate src/methods/**`      | >95%       |

@@ -28,9 +28,15 @@ export type {
   ParallelEffect,
   SequenceEffect,
   NoneEffect,
+  ChooseBranch,
+  ChooseEffect,
+  LogEffect,
 
   // Universal constraint type
   EffectAny,
+
+  // Activity port structural type
+  ActivityPortLike,
 } from "./types.js";
 
 // =============================================================================

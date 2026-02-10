@@ -127,3 +127,38 @@ export {
 } from "./testing/index.js";
 
 export type { SpanMatcher } from "./testing/index.js";
+
+// =============================================================================
+// Bridge — TracerLike (stack-based tracer for library hooks)
+// =============================================================================
+
+export { TracerLikePort, createTracerLikeAdapter, tracerLikeAdapter } from "./bridge/index.js";
+
+export type { TracerLike } from "./bridge/index.js";
+
+// =============================================================================
+// Inspection
+// =============================================================================
+
+export {
+  matchesFilter,
+  filterSpans,
+  computeAverageDuration,
+  computeErrorCount,
+  computeCacheHitRate,
+  computePercentiles,
+  buildTraceTree,
+  createTracingQueryApi,
+  TracingLibraryInspectorPort,
+  createTracingLibraryInspector,
+  TracingQueryApiPort,
+  TracingLibraryInspectorAdapter,
+} from "./inspection/index.js";
+
+export type {
+  SpanFilter,
+  TimeRangeOptions,
+  TraceTree,
+  TracingQueryAPI,
+  SpanSource,
+} from "./inspection/index.js";

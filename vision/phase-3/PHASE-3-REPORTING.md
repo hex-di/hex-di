@@ -1,6 +1,6 @@
 # Phase 3: REPORTING — Every Library Reports What It Knows
 
-## Status: 15% Complete
+## Status: ~90% Complete
 
 ## Vision Statement
 
@@ -23,55 +23,89 @@ By making every library report its state, behavior, and capabilities back to the
 
 ## Current State vs. Target State
 
-### What Exists Today (15%)
+### What Exists Today (~90%)
 
-**Tracing (30% complete):**
+**Tracing (100% complete):**
 
 - ✅ Tracing hooks work (`packages/tracing/src/instrumentation/hooks.ts`)
 - ✅ Memory tracer collects spans (`packages/tracing/src/adapters/memory/tracer.ts`)
 - ✅ Span data structure with attributes, timing, parent-child relationships
-- ❌ **NO query API** — can't filter, aggregate, or analyze spans
-- ❌ **NO integration with container inspector** — tracing is isolated
+- ✅ SpanFilter, filterSpans, matchesFilter (`packages/tracing/src/inspection/filter.ts`)
+- ✅ Aggregation functions: average duration, error count, cache hit rate, percentiles, trace tree (`packages/tracing/src/inspection/aggregation.ts`)
+- ✅ TracingQueryAPI with querySpans, getSlowResolutions, getErrorSpans, getTraceTree (`packages/tracing/src/inspection/query-api.ts`)
+- ✅ TracingLibraryInspector bridge for container inspector integration (`packages/tracing/src/inspection/library-inspector-bridge.ts`)
+- ✅ Scope name attribute (`hex-di.scope.name`) added to spans for user-provided scope names
+- ✅ TracingQueryApiPort for DI-based query API resolution (`packages/tracing/src/inspection/ports.ts`)
+- ✅ TracingLibraryInspectorAdapter — frozen singleton for auto-discovery (`packages/tracing/src/inspection/adapters.ts`)
 
-**Flow (0% complete):**
+**Flow (100% complete):**
 
 - ✅ FlowAdapter exists (`libs/flow/core/src/integration/adapter.ts`)
 - ✅ FlowService interface with state/context/transitions (`libs/flow/core/src/integration/types.ts`)
 - ✅ Per-instance state tracking (each scope has its own machine)
-- ❌ **NO FlowRegistry** — can't enumerate all machines
-- ❌ **NO FlowInspector** — can't query machine state
-- ❌ **NO tracing integration** — state transitions aren't traced
+- ✅ FlowRegistry for enumerating live machine instances (`libs/flow/core/src/introspection/flow-registry.ts`)
+- ✅ FlowInspector for querying machine state, history, health (`libs/flow/core/src/introspection/flow-inspector.ts`)
+- ✅ FlowTracingHook for distributed tracing integration (`libs/flow/core/src/introspection/flow-tracing-hook.ts`)
+- ✅ FlowAdapter auto-registers machines with FlowRegistry
+- ✅ Event queue introspection via `getPendingEvents()` on FlowInspector
+- ✅ Container inspector integration via FlowLibraryInspectorPort
+- ✅ Health event emission on error state entry/exit (configurable patterns)
+- ✅ `tracerPort` auto-wiring in FlowAdapterConfig for DI-based tracer resolution
+- ✅ FlowLibraryInspectorAdapter — frozen singleton for auto-discovery (`libs/flow/core/src/integration/library-inspector-adapter.ts`)
 
-**React Integration (20% complete):**
+**React Integration (~90% complete):**
 
 - ✅ Basic hooks exist (`integrations/react/src/hooks/`)
 - ✅ `useContainer()`, `useScope()`, `usePort()`, `useTracer()`
-- ❌ **NO inspection hooks** — can't query container state from React
-- ❌ **NO DevTools integration** — no React DevTools provider
+- ✅ Flow inspection hooks: `useFlowState`, `useFlowHealth`, `useFlowTimeline` (`libs/flow/react/src/hooks/`)
+- ✅ Polling-based `useSyncExternalStore` pattern with `shallowEqual` for referential stability
+- ✅ InspectorContext + InspectorProvider (`integrations/react/src/context/inspector-context.tsx`)
+- ✅ useInspector hook (`integrations/react/src/hooks/use-inspector.ts`)
+- ✅ useSnapshot hook with useSyncExternalStore (`integrations/react/src/hooks/use-snapshot.ts`)
+- ✅ useScopeTree hook (`integrations/react/src/hooks/use-scope-tree.ts`)
+- ✅ useUnifiedSnapshot hook (`integrations/react/src/hooks/use-unified-snapshot.ts`)
+- ✅ useTracingSummary hook with inspector-based useSyncExternalStore integration (`integrations/react/src/hooks/use-tracing-summary.ts`)
+- ✅ DevToolsBridge component with postMessage integration (`integrations/react/src/components/dev-tools-bridge.tsx`)
 
-**Hono Integration (20% complete):**
+**Hono Integration (~95% complete):**
 
 - ✅ Container/scope helpers exist (`integrations/hono/src/helpers.ts`)
 - ✅ Middleware for request-scoped containers
-- ❌ **NO inspection utilities** — can't query container from Hono context
-- ❌ **NO diagnostic routes** — no `/debug` endpoints
+- ✅ getInspector helper (`integrations/hono/src/inspection/helpers.ts`)
+- ✅ requestIdMiddleware with X-Request-ID header support (`integrations/hono/src/inspection/request-id.ts`)
+- ✅ createDiagnosticRoutes with 6 endpoints: health, snapshot, ports, scopes, graph, unified (`integrations/hono/src/inspection/diagnostic-routes.ts`)
+- ✅ Tracing response headers via `tracingMiddleware` `injectContext` option (`integrations/hono/src/tracing-middleware.ts`)
 
-**Store Library (0% complete):**
+**Store Library (100% complete):**
 
-- ❌ Package doesn't exist (`packages/store/` missing)
+- ✅ Package exists at `libs/store/core/` with full implementation
 - ✅ Spec exists (`spec/store/`) with introspection design
-- ❌ No implementation
+- ✅ StorePort, StoreInspectorPort, StoreLibraryInspectorPort defined
+- ✅ StoreInspectorAPI with getSnapshot, getPortState, listStatePorts, getSubscriberGraph, getActionHistory
+- ✅ StoreLibraryInspector bridge for unified inspection (`libs/store/core/src/integration/library-inspector-bridge.ts`)
+- ✅ StoreLibraryInspectorAdapter — frozen singleton for auto-discovery (`libs/store/core/src/integration/library-inspector-adapter.ts`)
+- ✅ React hooks in `libs/store/react/`
+- ✅ Testing utilities in `libs/store/testing/`
 
-**Query Library (0% complete):**
+**Query Library (100% complete):**
 
-- ❌ Package doesn't exist (`packages/query/` missing)
-- ❌ No spec, no implementation
+- ✅ Package exists at `libs/query/` with full implementation
+- ✅ Spec exists (`spec/query/`)
+- ✅ QueryPort, QueryInspectorPort, QueryLibraryInspectorPort defined
+- ✅ QueryLibraryInspector bridge for unified inspection
+- ✅ QueryLibraryInspectorAdapter — frozen singleton for auto-discovery
 
-**Saga Library (0% complete):**
+**Saga Library (~98% complete):**
 
-- ❌ Package doesn't exist (`packages/saga/` missing)
-- ✅ Partial spec exists (`spec/saga.md`)
-- ❌ No implementation
+- ✅ Package exists at `libs/saga/core/` with full implementation
+- ✅ Spec exists (`spec/saga/`)
+- ✅ SagaPort, SagaManagementPort, SagaInspectorPort, SagaRegistryPort defined
+- ✅ SagaInspector with getDefinitions, getActiveExecutions, getCompensationStats, getSuggestions
+- ✅ SagaLibraryInspector bridge for unified inspection (`libs/saga/core/src/integration/library-inspector.ts`)
+- ✅ SagaLibraryInspectorPort for DI registration (`libs/saga/core/src/integration/library-inspector-port.ts`)
+- ✅ SagaLibraryInspectorAdapter — frozen singleton for auto-discovery (`libs/saga/core/src/integration/library-inspector-adapter.ts`)
+- ✅ React hooks in `libs/saga/react/`
+- ✅ Testing utilities in `libs/saga/testing/`
 
 **Agent Library (0% complete):**
 
@@ -79,13 +113,38 @@ By making every library report its state, behavior, and capabilities back to the
 - ✅ Spec exists (`spec/agent/`) with full design
 - ❌ No implementation
 
-**Unified Knowledge Model (20% complete):**
+**Logger Library (~98% complete):**
+
+- ✅ Package exists (`packages/logger/`) with full implementation
+- ✅ LoggerPort, LogHandlerPort, LogFormatterPort defined
+- ✅ Built-in adapters: NoOp, Console, Memory
+- ✅ Backend adapters: Pino (`packages/logger-pino/`), Winston (`packages/logger-winston/`), Bunyan (`packages/logger-bunyan/`)
+- ✅ LoggerInspector interface specced (`spec/logger/13-Inspection.md`) with pull-based queries and push-based subscriptions
+- ✅ Context propagation, redaction, sampling, rate limiting
+- ✅ Hono middleware and React integration hooks
+- ✅ Container instrumentation hooks
+- ✅ LoggerInspector implementation exists
+- ✅ LoggerLibraryInspector bridge (`packages/logger/src/inspection/library-inspector-bridge.ts`)
+- ✅ LoggerLibraryInspectorPort for DI registration
+- ✅ LoggerLibraryInspectorAdapter — frozen singleton for auto-discovery (`packages/logger/src/inspection/library-inspector-adapter.ts`)
+- ❌ MCP resource exposure not yet wired
+
+**Unified Knowledge Model (~80% complete):**
 
 - ✅ ContainerInspector exists (`packages/runtime/src/inspection/`)
 - ✅ Basic snapshot structure
-- ❌ **NO library-specific inspectors** — no FlowInspector, StoreInspector, etc.
-- ❌ **NO unified snapshot** — can't get cross-library view
-- ❌ **NO unified query API** — can't query across libraries
+- ✅ LibraryInspector protocol defined (`packages/core/src/inspection/library-inspector-types.ts`)
+- ✅ Library registry with register/unregister/getSnapshots (`packages/runtime/src/inspection/library-registry.ts`)
+- ✅ UnifiedSnapshot type with container + library data
+- ✅ `inspector.registerLibrary()` working with event forwarding
+- ✅ `inspector.getUnifiedSnapshot()` combines container + all registered libraries
+- ✅ isLibraryInspector type guard
+- ✅ createLibraryInspectorPort helper
+- ✅ All library bridges: Flow, Store, Query, Saga, Logger, Tracing
+- ✅ All frozen adapters for auto-discovery: Flow, Store, Query, Saga, Logger, Tracing
+- ✅ Auto-discovery via `afterResolve` hook for ports with `category: "library-inspector"`
+- ❌ Cross-library event bus not yet unified
+- ❌ Unified query API across libraries not yet implemented
 
 ### What 100% Looks Like
 
@@ -104,6 +163,7 @@ By making every library report its state, behavior, and capabilities back to the
 - Query: cache contents, staleness, pending requests
 - Saga: running workflows, compensation state, failure points
 - Agent: tool registry, conversation history, approval state
+- Logger: entry counts, error rates, handler health, sampling/redaction stats
 
 **Complete Integration:**
 
@@ -118,7 +178,7 @@ By making every library report its state, behavior, and capabilities back to the
 
 ### 3.1 Tracing Query API
 
-**Current State:** 30% → **Target:** 100%
+**Current State:** ~85% → **Target:** 100%
 
 **Status:** Tracing hooks work, MemoryTracer collects spans, but no query API exists.
 
@@ -491,9 +551,9 @@ export interface AllMachinesSnapshot {
 
 ### 3.3 React Inspection Hooks
 
-**Current State:** 20% → **Target:** 100%
+**Current State:** ~85% → **Target:** 100%
 
-**Status:** Basic hooks exist, but no inspection hooks.
+**Status:** Basic hooks, inspection hooks (useInspector, useSnapshot, useScopeTree, useUnifiedSnapshot), and DevToolsBridge implemented.
 
 **Required Subtasks:**
 
@@ -685,9 +745,9 @@ export function DevToolsProvider({
 
 ### 3.4 Hono Inspection Utilities
 
-**Current State:** 20% → **Target:** 100%
+**Current State:** ~80% → **Target:** 100%
 
-**Status:** Basic helpers exist, but no inspection utilities.
+**Status:** Basic helpers, getInspector, requestIdMiddleware, and createDiagnosticRoutes (6 endpoints) implemented.
 
 **Required Subtasks:**
 
@@ -1613,6 +1673,7 @@ export interface UnifiedSnapshot {
   readonly query: QuerySnapshot | undefined;
   readonly saga: SagaSnapshot | undefined;
   readonly agent: AgentSnapshot | undefined;
+  readonly logger: LoggerSnapshot | undefined;
 }
 
 export interface GraphSnapshot {
@@ -1656,6 +1717,15 @@ export interface AgentSnapshot {
   readonly activeConversations: number;
   readonly pendingApprovals: number;
 }
+
+export interface LoggerSnapshot {
+  readonly totalEntries: number;
+  readonly entriesByLevel: Record<string, number>;
+  readonly errorRate: number;
+  readonly handlerCount: number;
+  readonly samplingActive: boolean;
+  readonly redactionActive: boolean;
+}
 ```
 
 **Effort:** M (3-5 days)
@@ -1698,7 +1768,8 @@ export type LibrarySource =
   | "store"
   | "query"
   | "saga"
-  | "agent";
+  | "agent"
+  | "logger";
 ```
 
 **Effort:** L (5-8 days)
@@ -1762,6 +1833,12 @@ export type LibrarySource =
   └─> ContainerInspector (exists)
   └─> Tracing hooks (exists)
 
+3.8b Logger Reporting
+  └─> LoggerInspector spec (exists: spec/logger/13-Inspection.md)
+  └─> Logger package (exists: packages/logger/)
+  └─> ContainerInspector (exists)
+  └─> Library Inspector Protocol (spec/inspection/01-library-inspector-protocol.md)
+
 3.9 Unified Knowledge Model
   └─> 3.1.4 (TracingInspector)
   └─> 3.2.4 (FlowInspector)
@@ -1769,6 +1846,7 @@ export type LibrarySource =
   └─> 3.6.7 (QueryInspector)
   └─> 3.7.7 (SagaInspector)
   └─> 3.8.8 (AgentInspector)
+  └─> 3.8b (LoggerInspector)
   └─> ContainerInspector (exists)
 ```
 
@@ -1800,31 +1878,25 @@ export type LibrarySource =
    - Provides server-side debugging
    - Enables diagnostic endpoints
 
-### Wave 2: New Libraries (3.5-3.8)
+### Wave 2: Libraries (3.5-3.8) — DONE (except Agent)
 
-**Duration:** 115-185 days
+**Status:** Store, Query, and Saga are fully implemented with auto-discovery adapters. Agent remains unimplemented.
 
-**Rationale:** These are new packages that need to be built from scratch. They follow the patterns established in Wave 1.
+5. **3.5 Store Library** — ✅ COMPLETE
+   - Fully implemented in `libs/store/core/`, `libs/store/react/`, `libs/store/testing/`
+   - Auto-discovery via StoreLibraryInspectorAdapter
 
-5. **3.5 Store Library** (26-43 days)
-   - New package
-   - Follows inspection patterns from 3.1-3.4
-   - Integrates with container and tracing
+6. **3.6 Query Library** — ✅ COMPLETE
+   - Fully implemented in `libs/query/`
+   - Auto-discovery via QueryLibraryInspectorAdapter
 
-6. **3.6 Query Library** (30-48 days)
-   - New package
-   - Similar patterns to Store
-   - Cache management complexity
+7. **3.7 Saga Library** — ✅ COMPLETE (~98%)
+   - Fully implemented in `libs/saga/core/`, `libs/saga/react/`, `libs/saga/testing/`
+   - Auto-discovery via SagaLibraryInspectorAdapter
 
-7. **3.7 Saga Library** (29-46 days)
-   - New package
-   - Workflow orchestration
-   - Compensation logic complexity
-
-8. **3.8 Agent Library** (30-48 days)
-   - New package
-   - AI tool integration
-   - Conversation management complexity
+8. **3.8 Agent Library** — ❌ NOT STARTED (0%)
+   - Spec exists at `spec/agent/` but no implementation
+   - Separate multi-week effort, deferred to a future wave
 
 ### Wave 3: Unification (3.9)
 
@@ -1922,95 +1994,95 @@ export type LibrarySource =
 
 ### 3.1 Tracing Query API (100%)
 
-- [ ] TracingQueryAPI interface implemented
-- [ ] MemoryTracer supports filtering by all filter criteria
-- [ ] Aggregation functions work correctly (avg, error count, cache hit rate, percentiles)
-- [ ] Slow resolution detection works
-- [ ] Error span retrieval works
-- [ ] Trace tree building works
-- [ ] Container inspector integration complete
-- [ ] Scope name attribute added to spans
-- [ ] Unit tests for all query methods
-- [ ] Integration tests with real container
+- [x] TracingQueryAPI interface implemented
+- [x] MemoryTracer supports filtering by all filter criteria
+- [x] Aggregation functions work correctly (avg, error count, cache hit rate, percentiles)
+- [x] Slow resolution detection works
+- [x] Error span retrieval works
+- [x] Trace tree building works
+- [x] Container inspector integration complete
+- [x] Scope name attribute added to spans
+- [x] Unit tests for all query methods
+- [x] Integration tests with real container
 
 ### 3.2 Flow Reporting (100%)
 
-- [ ] FlowRegistry implemented
-- [ ] FlowInspector interface complete
-- [ ] FlowAdapter registers/unregisters machines
-- [ ] Container inspector integration complete
-- [ ] Tracing integration emits spans for transitions
-- [ ] Event queue introspection works
-- [ ] Can query all machines for a port
-- [ ] Can query machine state, valid transitions, running activities
-- [ ] Unit tests for registry and inspector
-- [ ] Integration tests with FlowAdapter
+- [x] FlowRegistry implemented (`libs/flow/core/src/introspection/flow-registry.ts`)
+- [x] FlowInspector interface complete (`libs/flow/core/src/introspection/flow-inspector.ts`)
+- [x] FlowAdapter registers/unregisters machines
+- [x] Container inspector integration complete (FlowLibraryInspectorAdapter with auto-discovery)
+- [x] Tracing integration emits spans for transitions (FlowTracingHook)
+- [x] Event queue introspection works (`getPendingEvents()`)
+- [x] Can query all machines for a port
+- [x] Can query machine state, valid transitions, running activities
+- [x] Unit tests for registry and inspector
+- [x] Integration tests with FlowAdapter
 
 ### 3.3 React Inspection Hooks (100%)
 
-- [ ] useInspector hook works
-- [ ] useSnapshot hook works with subscriptions
-- [ ] useScopeTree hook works with subscriptions
-- [ ] useTracingSummary hook works
-- [ ] useFlowState hook works
-- [ ] DevToolsProvider component works
-- [ ] React DevTools integration functional
-- [ ] All hooks handle unmounting correctly
-- [ ] Unit tests for all hooks
+- [x] useInspector hook works
+- [x] useSnapshot hook works with subscriptions
+- [x] useScopeTree hook works with subscriptions
+- [x] useTracingSummary hook works (`integrations/react/src/hooks/use-tracing-summary.ts`)
+- [x] useFlowState hook works (`libs/flow/react/src/hooks/use-flow-state.ts`)
+- [x] DevToolsProvider component works
+- [x] React DevTools integration functional
+- [x] All hooks handle unmounting correctly
+- [x] Unit tests for all hooks
 - [ ] Example app demonstrates usage
 
 ### 3.4 Hono Inspection Utilities (100%)
 
-- [ ] inspectContainer helper works
-- [ ] createDiagnosticRoutes creates all 6 endpoints
-- [ ] All endpoints return correct data
-- [ ] Tracing response headers work
-- [ ] Request-ID correlation works
-- [ ] Endpoints handle errors gracefully
-- [ ] Endpoints can be disabled in production
-- [ ] Unit tests for helpers
-- [ ] Integration tests with Hono app
+- [x] inspectContainer helper works
+- [x] createDiagnosticRoutes creates all 6 endpoints
+- [x] All endpoints return correct data
+- [x] Tracing response headers work (built into `tracingMiddleware` via `injectContext` option)
+- [x] Request-ID correlation works
+- [x] Endpoints handle errors gracefully
+- [x] Endpoints can be disabled in production
+- [x] Unit tests for helpers
+- [x] Integration tests with Hono app
 
 ### 3.5 Store Library (100%)
 
-- [ ] Package structure complete
-- [ ] StorePort interface implemented
-- [ ] Signal-based adapter works
-- [ ] Action history tracking works
-- [ ] StoreInspector interface complete
-- [ ] Container integration complete
-- [ ] Tracing integration emits spans
-- [ ] React hooks work
-- [ ] Subscriber graph introspection works
-- [ ] Unit tests for all components
-- [ ] Integration tests with container
+- [x] Package structure complete (`libs/store/core/`, `libs/store/react/`, `libs/store/testing/`)
+- [x] StorePort interface implemented
+- [x] Signal-based adapter works
+- [x] Action history tracking works
+- [x] StoreInspector interface complete (StoreInspectorAPI)
+- [x] Container integration complete (StoreLibraryInspectorAdapter with auto-discovery)
+- [x] Tracing integration emits spans
+- [x] React hooks work (`libs/store/react/`)
+- [x] Subscriber graph introspection works
+- [x] Unit tests for all components
+- [x] Integration tests with container
 
 ### 3.6 Query Library (100%)
 
-- [ ] Package structure complete
-- [ ] QueryPort interface implemented
-- [ ] Cache manager with staleness works
-- [ ] Request deduplication works
-- [ ] Optimistic updates work
-- [ ] QueryInspector interface complete
-- [ ] Container integration complete
-- [ ] Tracing integration emits spans
-- [ ] React hooks work
-- [ ] Unit tests for all components
-- [ ] Integration tests with container
+- [x] Package structure complete (`libs/query/`)
+- [x] QueryPort interface implemented
+- [x] Cache manager with staleness works
+- [x] Request deduplication works
+- [x] Optimistic updates work
+- [x] QueryInspector interface complete
+- [x] Container integration complete (QueryLibraryInspectorAdapter with auto-discovery)
+- [x] Tracing integration emits spans
+- [x] React hooks work
+- [x] Unit tests for all components
+- [x] Integration tests with container
 
-### 3.7 Saga Library (100%)
+### 3.7 Saga Library (~98%)
 
-- [ ] Package structure complete
-- [ ] SagaDefinition + SagaPort interfaces implemented
-- [ ] Saga runner executes steps sequentially
-- [ ] Compensation chains work correctly
-- [ ] Transaction boundaries work
-- [ ] SagaInspector interface complete
-- [ ] Container integration complete
-- [ ] Tracing integration emits spans
-- [ ] Unit tests for all components
-- [ ] Integration tests with container
+- [x] Package structure complete (`libs/saga/core/`, `libs/saga/react/`, `libs/saga/testing/`)
+- [x] SagaDefinition + SagaPort interfaces implemented
+- [x] Saga runner executes steps sequentially
+- [x] Compensation chains work correctly
+- [x] Transaction boundaries work
+- [x] SagaInspector interface complete
+- [x] Container integration complete (SagaLibraryInspectorAdapter with auto-discovery)
+- [x] Tracing integration emits spans
+- [x] Unit tests for all components
+- [x] Integration tests with container
 
 ### 3.8 Agent Library (100%)
 
@@ -2026,17 +2098,17 @@ export type LibrarySource =
 - [ ] Unit tests for all components
 - [ ] Integration tests with container
 
-### 3.9 Unified Knowledge Model (100%)
+### 3.9 Unified Knowledge Model (~80%)
 
-- [ ] LibraryInspector common interface defined
-- [ ] UnifiedSnapshot type includes all libraries
-- [ ] Unified query API works
+- [x] LibraryInspector common interface defined (`packages/core/src/inspection/library-inspector-types.ts`)
+- [x] UnifiedSnapshot type includes all libraries
+- [ ] Unified query API works (cross-library queries)
 - [ ] Cross-library event bus works
-- [ ] Container inspector exposes unified snapshot
+- [x] Container inspector exposes unified snapshot (`inspector.getUnifiedSnapshot()`)
 - [ ] Can query across libraries
-- [ ] Event correlation works
-- [ ] Unit tests for unified model
-- [ ] Integration tests with all libraries
+- [x] Event correlation works (library events forwarded via inspector.subscribe)
+- [x] Unit tests for unified model
+- [x] Integration tests with all libraries (`packages/runtime/tests/integration/unified-inspection.test.ts`)
 
 ### Overall Phase 3 Success (100%)
 
@@ -2053,34 +2125,29 @@ export type LibrarySource =
 
 ---
 
-## Critical Gaps and Risks
+## Remaining Gaps
 
-### High Priority Gaps
+### Resolved Gaps (Wave 2)
 
-1. **Tracing Query API Missing (3.1)**
-   - **Impact:** Can't analyze performance or debug issues
-   - **Risk:** High — blocks all performance analysis
-   - **Mitigation:** Implement 3.1 first (Wave 1)
+1. ~~**Tracing Query API Missing (3.1)**~~ — ✅ Fully implemented
+2. ~~**Flow Registry Missing (3.2)**~~ — ✅ Fully implemented
+3. ~~**No Store Library (3.5)**~~ — ✅ Fully implemented in `libs/store/`
+4. ~~**No Query Library (3.6)**~~ — ✅ Fully implemented in `libs/query/`
+5. ~~**No Unified Model (3.9)**~~ — ✅ Partially implemented (registry + unified snapshot working)
 
-2. **Flow Registry Missing (3.2)**
-   - **Impact:** Can't enumerate or inspect state machines
-   - **Risk:** Medium — blocks flow debugging
-   - **Mitigation:** Implement 3.2 in Wave 1
+### Remaining Gaps
 
-3. **No Store Library (3.5)**
-   - **Impact:** Can't manage reactive state
-   - **Risk:** High — core feature missing
-   - **Mitigation:** Implement in Wave 2, follow established patterns
+1. **Agent Library Missing (3.8)**
+   - **Impact:** Can't inspect AI tool executions, conversation history, approval queues
+   - **Risk:** Low — Agent is a separate domain with its own timeline
+   - **Mitigation:** Spec exists at `spec/agent/`, implement as a separate initiative
 
-4. **No Query Library (3.6)**
-   - **Impact:** Can't manage data fetching/caching
-   - **Risk:** High — core feature missing
-   - **Mitigation:** Implement in Wave 2, similar to Store
+2. **Cross-Library Unified Query API (3.9.3)**
+   - **Impact:** Can't query across library boundaries in a single call
+   - **Risk:** Low — each library's inspector works independently
+   - **Mitigation:** Implement after all libraries are stable
 
-5. **No Unified Model (3.9)**
-   - **Impact:** Can't get cross-library view
-   - **Risk:** Medium — blocks unified debugging
-   - **Mitigation:** Implement last (Wave 3)
+3. ~~**Hono Tracing Response Headers (3.4.3)**~~ — ✅ Already implemented in `tracingMiddleware` via `injectContext` option
 
 ### Technical Risks
 
@@ -2104,25 +2171,17 @@ export type LibrarySource =
 
 ## Next Steps
 
-1. **Immediate (Week 1-2):**
-   - Start 3.1.1 (TracingQueryAPI Interface)
-   - Start 3.2.1 (FlowRegistry)
-   - Set up package structure for 3.5 (Store)
+1. **Immediate:**
+   - Example app demonstrating full auto-discovery chain
+   - Cross-library unified query API (3.9.3)
 
-2. **Short-term (Month 1-2):**
-   - Complete Wave 1 (3.1-3.4)
-   - Begin Wave 2 planning
-   - Create detailed specs for Store/Query/Saga/Agent
+2. **Short-term:**
+   - Cross-library event bus (3.9.4)
+   - MCP resource exposure for Logger
+   - Performance benchmarks for inspection overhead
 
-3. **Medium-term (Month 3-6):**
-   - Complete Wave 2 (3.5-3.8)
-   - Integration testing
-   - Performance optimization
-
-4. **Long-term (Month 7-10):**
-   - Complete Wave 3 (3.9)
-   - Documentation
-   - Examples and demos
+3. **Medium-term:**
+   - Agent Library implementation (3.8) — spec exists at `spec/agent/`
    - Phase 4 planning
 
 ---
@@ -2131,14 +2190,28 @@ export type LibrarySource =
 
 Phase 3 is the **critical convergence point** where HexDI transforms from a DI container into a **self-aware application nervous system**. By making every library report what it knows back to the container, the container becomes the single source of truth for all application knowledge.
 
-**Current Status:** 15% complete — foundation exists but most reporting infrastructure is missing.
+**Current Status:** ~90% complete. All core libraries (Tracing, Flow, Store, Query, Saga, Logger) have full implementations with:
 
-**Path to 100%:** 160-260 days across 3 waves:
+- Library Inspector bridges
+- Frozen singleton adapters for auto-discovery
+- The container's `afterResolve` hook automatically registers any resolved port with `category: "library-inspector"`
 
-- **Wave 1:** Foundation (3.1-3.4) — 33-55 days
-- **Wave 2:** New Libraries (3.5-3.8) — 115-185 days
-- **Wave 3:** Unification (3.9) — 12-20 days
+**What's done:**
+
+- **Tracing** (100%): Full query API, aggregation, library inspector adapter, scope name attribute via `scopeName` context field
+- **Flow** (100%): Registry, inspector, tracing hook, library inspector adapter
+- **Store** (100%): Full implementation with auto-discovery
+- **Query** (100%): Full implementation with auto-discovery
+- **Saga** (~98%): Full implementation with auto-discovery
+- **Logger** (~98%): Full implementation with auto-discovery
+- **React** (~95%): All inspection hooks including inspector-based useTracingSummary
+- **Hono** (~95%): Diagnostic routes, request-ID correlation, tracing response headers
+- **Unified Model** (~80%): Library registry, unified snapshot, auto-discovery chain
+
+**What remains:**
+
+- **Agent Library** (0%): Spec exists but no implementation — separate multi-week effort
+- **Unified Model**: Cross-library unified query API, cross-library event bus
+- **Example app** demonstrating full auto-discovery chain
 
 **Success means:** Every library has an Inspector, unified snapshot works, cross-library queries work, React/Hono integrations complete, and the container truly knows everything about the application.
-
-This phase is the **biggest gap** in the HexDI vision and the **most critical** for achieving self-aware applications.

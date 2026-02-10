@@ -71,24 +71,22 @@ This document defines all tests required for `@hex-di/flow`, `@hex-di/flow-react
 
 ### Unit Tests -- `machine-definition.test.ts`
 
-| #   | Test                                                                           | Type |
-| --- | ------------------------------------------------------------------------------ | ---- |
-| 1   | `defineMachine` creates a valid Machine from config                            | unit |
-| 2   | `defineMachine` infers initial state from first key when `initial` is omitted  | unit |
-| 3   | `defineMachine` uses explicit `initial` when provided                          | unit |
-| 4   | String shorthand transitions are normalized to full `TransitionConfig`         | unit |
-| 5   | `type: 'final'` states are recognized as terminal                              | unit |
-| 6   | `createMachine` requires explicit `initial` property                           | unit |
-| 7   | `createMachine` requires full `TransitionConfig` objects (no string shorthand) | unit |
-| 8   | Both factories produce deeply frozen Machine objects                           | unit |
-| 9   | Both factories produce identical Machine types at output                       | unit |
-| 10  | Attempted mutation of frozen machine throws in strict mode                     | unit |
-| 11  | Machine `id` is immutable after creation                                       | unit |
-| 12  | Transition with guard, actions, and effects is preserved in machine            | unit |
-| 13  | Multiple transitions for same event (guarded array) are preserved              | unit |
-| 14  | Empty `on: {}` defines a final state in `createMachine`                        | unit |
-| 15  | `MachineConfig` accepts `undefined` as context                                 | unit |
-| 16  | Machine composition via `Effect.spawn` references child machine                | unit |
+| #   | Test                                                                          | Type |
+| --- | ----------------------------------------------------------------------------- | ---- |
+| 1   | `defineMachine` creates a valid Machine from config                           | unit |
+| 2   | `defineMachine` infers initial state from first key when `initial` is omitted | unit |
+| 3   | `defineMachine` uses explicit `initial` when provided                         | unit |
+| 4   | String shorthand transitions are normalized to full `TransitionConfig`        | unit |
+| 5   | `type: 'final'` states are recognized as terminal                             | unit |
+| 6   | `defineMachine` normalizes full `TransitionConfig` objects correctly          | unit |
+| 7   | `defineMachine` produces deeply frozen Machine objects                        | unit |
+| 8   | Attempted mutation of frozen machine throws in strict mode                    | unit |
+| 9   | Machine `id` is immutable after creation                                      | unit |
+| 10  | Transition with guard, actions, and effects is preserved in machine           | unit |
+| 11  | Multiple transitions for same event (guarded array) are preserved             | unit |
+| 12  | Empty `on: {}` defines a final state in `defineMachine`                       | unit |
+| 13  | `MachineConfig` accepts `undefined` as context                                | unit |
+| 14  | Machine composition via `Effect.spawn` references child machine               | unit |
 
 ### Type-Level Tests -- `machine-definition.test-d.ts`
 
@@ -206,11 +204,11 @@ This document defines all tests required for `@hex-di/flow`, `@hex-di/flow-react
 
 #### Port Tests -- `activities/port.test.ts`
 
-| #   | Test                                                                  | Type |
-| --- | --------------------------------------------------------------------- | ---- |
-| 1   | `activityPort<TInput, TOutput>()('Name')` creates a frozen port token | unit |
-| 2   | Port carries phantom types `__activityInput` and `__activityOutput`   | unit |
-| 3   | Port `__portName` matches the provided name                           | unit |
+| #   | Test                                                                        | Type |
+| --- | --------------------------------------------------------------------------- | ---- |
+| 1   | `createActivityPort<TInput, TOutput>()('Name')` creates a frozen port token | unit |
+| 2   | Port carries phantom types `__activityInput` and `__activityOutput`         | unit |
+| 3   | Port `__portName` matches the provided name                                 | unit |
 
 #### Event Tests -- `activities/events.test.ts`
 

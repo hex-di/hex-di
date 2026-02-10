@@ -133,10 +133,7 @@ describe("unified createAdapter - factory variant with defaults", () => {
 // =============================================================================
 
 describe("unified createAdapter - factory variant with explicit values", () => {
-  it.skip("preserves explicit requires tuple type with explicit params", () => {
-    // TODO: This currently fails due to overload resolution issues
-    // TypeScript cannot properly match the overload when all params are explicit
-    // This is a known limitation and will be fixed in a future implementation update
+  it("preserves explicit requires tuple type with explicit params", () => {
     const adapter = createAdapter({
       provides: DatabasePort,
       requires: [LoggerPort],
@@ -176,10 +173,7 @@ describe("unified createAdapter - factory variant with explicit values", () => {
     expectTypeOf(adapter.clonable).toEqualTypeOf<true>();
   });
 
-  it.skip("supports multiple requires in tuple", () => {
-    // TODO: This currently fails due to overload resolution issues
-    // TypeScript cannot properly match the overload when all params are explicit
-    // This is a known limitation and will be fixed in a future implementation update
+  it("supports multiple requires in tuple", () => {
     const adapter = createAdapter({
       provides: UserServicePort,
       requires: [DatabasePort, LoggerPort],

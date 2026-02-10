@@ -42,6 +42,15 @@ HexDI Agent introduces six port categories:
 
 **Inbound** ports receive data from the application into the agent system. **Outbound** ports send requests from the agent system to external services.
 
+**Direction rationale:** In hexagonal architecture, _inbound_ ports receive data from the application (primary/driving side) into the hexagon, while _outbound_ ports send requests from the hexagon to external services (secondary/driven side). For AI agents:
+
+- **`ToolPort` (inbound):** The application _provides_ tool capabilities to the agent. Tools are driven by application services and injected into the agent hexagon — the application drives the definition of what the agent can do.
+- **`ContextPort` (inbound):** The application _pushes_ state into the agent. Context flows from application services into the agent's awareness — the application drives what the agent knows.
+- **`ApprovalPort` (inbound):** The application _provides_ an approval mechanism to the agent. The approval UI or policy is driven by the application layer.
+- **`LlmPort` (outbound):** The agent _requests_ text generation from an external LLM provider. This is infrastructure the agent depends on, like a database port.
+- **`AgentPort` (outbound):** The agent configuration _produces_ a configured agent instance consumed by the runner. The runner drives agent execution.
+- **`AgentRunnerPort` (outbound):** The application _requests_ agent execution. The runner drives the execution loop using external infrastructure (LLM, approval).
+
 ### 4.3 The Execution Loop
 
 When an agent runs, the `AgentRunner` executes a turn-based loop:
@@ -106,14 +115,24 @@ interface ToolCall {
   readonly arguments: unknown;
 }
 
-interface ToolResult {
+type ToolResult = ToolSuccessResult | ToolErrorResult;
+
+interface ToolSuccessResult {
   readonly callId: string;
   readonly result: unknown;
-  readonly isError?: boolean;
+  readonly isError: false;
+}
+
+interface ToolErrorResult {
+  readonly callId: string;
+  readonly result: unknown;
+  readonly isError: true;
 }
 ```
 
 These types are intentionally minimal. They map directly to the common subset of OpenAI, Anthropic, and other LLM provider message formats. The `LlmAdapter` is responsible for translating between `Message` and the provider's native format.
+
+> **Future consideration:** `Message.content` is `string` only in this version. Future versions may support multimodal content via a `ContentPart[]` union (`TextPart | ImagePart | AudioPart`) to match evolving LLM capabilities. This would be a breaking change to the `Message` interface.
 
 ### 4.5 Tool Definitions
 
@@ -170,12 +189,147 @@ type AgentEvent =
   | { type: "approval-resolved"; callId: string; approved: boolean }
   | { type: "turn-complete"; turnNumber: number }
   | { type: "run-complete"; runId: string; result: AgentRunResult }
-  | { type: "run-error"; runId: string; error: Error };
+  | { type: "run-error"; runId: string; error: AgentError };
 ```
 
 These events map to the AG-UI protocol event types, making HexDI Agent compatible with AG-UI consumers without additional transformation.
 
-### 4.7 Lifetimes and Scoping
+### 4.7 Error Types
+
+All agent failures are represented as an `AgentError` tagged union -- a discriminated union of plain objects carrying full diagnostic context about the failure. Every variant shares a common base of diagnostic fields:
+
+```typescript
+interface AgentErrorBase {
+  /** Unique run ID for correlation with tracing spans */
+  readonly runId: string;
+  /** Agent name from config */
+  readonly agentName: string;
+  /** Human-readable error message */
+  readonly message: string;
+}
+```
+
+The eight error variants cover every failure mode in agent execution:
+
+```typescript
+type AgentError =
+  | ToolExecutionFailedError
+  | ToolValidationFailedError
+  | ToolNameCollisionError
+  | LlmGenerationFailedError
+  | ApprovalTimeoutError
+  | RunAbortedError
+  | MaxTurnsExceededError
+  | AgentConfigInvalidError;
+
+/** A tool's execute function threw during invocation */
+interface ToolExecutionFailedError extends AgentErrorBase {
+  readonly _tag: "ToolExecutionFailed";
+  readonly toolName: string;
+  readonly cause: unknown;
+}
+
+/** The LLM-provided arguments failed Zod validation for a tool */
+interface ToolValidationFailedError extends AgentErrorBase {
+  readonly _tag: "ToolValidationFailed";
+  readonly toolName: string;
+  readonly validationErrors: readonly string[];
+}
+
+/** Two or more tool ports contributed tools with the same name */
+interface ToolNameCollisionError extends AgentErrorBase {
+  readonly _tag: "ToolNameCollision";
+  readonly duplicateName: string;
+  readonly contributingPorts: readonly string[];
+}
+
+/** The LLM failed to generate a response */
+interface LlmGenerationFailedError extends AgentErrorBase {
+  readonly _tag: "LlmGenerationFailed";
+  readonly cause: unknown;
+  readonly turnNumber: number;
+}
+
+/** An approval request timed out without a user decision */
+interface ApprovalTimeoutError extends AgentErrorBase {
+  readonly _tag: "ApprovalTimeout";
+  readonly toolName: string;
+  readonly timeoutMs: number;
+}
+
+/** The run was aborted via AbortSignal or the abort() method */
+interface RunAbortedError extends AgentErrorBase {
+  readonly _tag: "RunAborted";
+  readonly turnNumber: number;
+}
+
+/** The agent exhausted its configured maxTurns without completing */
+interface MaxTurnsExceededError extends AgentErrorBase {
+  readonly _tag: "MaxTurnsExceeded";
+  readonly maxTurns: number;
+  readonly turnCount: number;
+}
+
+/** The agent configuration is invalid (detected at resolution time) */
+interface AgentConfigInvalidError extends AgentErrorBase {
+  readonly _tag: "AgentConfigInvalid";
+  readonly field: string;
+  readonly reason: string;
+}
+```
+
+The `_tag` field enables exhaustive error handling via `switch`:
+
+```typescript
+import { type Result } from "@hex-di/result";
+
+const result = await runner.run({ prompt: "Create a task" }).result;
+
+if (result.isErr()) {
+  const error = result.error;
+
+  switch (error._tag) {
+    case "ToolExecutionFailed":
+      console.error(`Tool "${error.toolName}" threw:`, error.cause);
+      break;
+
+    case "ToolValidationFailed":
+      console.error(`Tool "${error.toolName}" received invalid arguments:`, error.validationErrors);
+      break;
+
+    case "ToolNameCollision":
+      console.error(
+        `Duplicate tool name "${error.duplicateName}" from ports:`,
+        error.contributingPorts
+      );
+      break;
+
+    case "LlmGenerationFailed":
+      console.error(`LLM failed on turn ${error.turnNumber}:`, error.cause);
+      break;
+
+    case "ApprovalTimeout":
+      console.error(`Approval for "${error.toolName}" timed out after ${error.timeoutMs}ms`);
+      break;
+
+    case "RunAborted":
+      console.log(`Run aborted on turn ${error.turnNumber}`);
+      break;
+
+    case "MaxTurnsExceeded":
+      console.error(`Agent hit turn limit: ${error.turnCount}/${error.maxTurns}`);
+      break;
+
+    case "AgentConfigInvalid":
+      console.error(`Invalid config field "${error.field}": ${error.reason}`);
+      break;
+  }
+}
+```
+
+Agent errors are always returned via `Result<AgentRunResult, AgentError>`, never thrown. This follows the same convention as `@hex-di/saga`, `@hex-di/flow`, and `@hex-di/query`, where all domain errors are tagged unions returned through `Result`.
+
+### 4.8 Lifetimes and Scoping
 
 Agent-related ports follow specific lifetime patterns:
 
@@ -199,7 +353,11 @@ app.post("/chat", req => {
   const runner = scope.resolve(AgentRunnerPort);
   const result = await runner.run({ prompt: req.body.message }).result;
   await scope.dispose();
-  return result.lastMessage.content;
+
+  if (result.isErr()) {
+    return { error: result.error._tag, message: result.error.message };
+  }
+  return result.value.lastMessage.content;
 });
 ```
 

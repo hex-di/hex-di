@@ -69,3 +69,54 @@ export { serializeSnapshot, snapshotMachine, type SerializedSnapshot } from "./s
 // =============================================================================
 
 export { createVirtualClock, type VirtualClock } from "./virtual-clock.js";
+
+// =============================================================================
+// Guard Testing
+// =============================================================================
+
+export {
+  testGuard,
+  testGuardSafe,
+  type TestGuardInput,
+  type TestGuardResult,
+} from "./test-guard.js";
+
+// =============================================================================
+// Transition Testing
+// =============================================================================
+
+export {
+  testTransition,
+  type TestTransitionOptions,
+  type TestTransitionResult,
+} from "./test-transition.js";
+
+// =============================================================================
+// Effect Testing
+// =============================================================================
+
+export {
+  testEffect,
+  testEffectSafe,
+  type EffectMocks,
+  type TestEffectOptions,
+  type TestEffectResult,
+} from "./test-effect.js";
+
+// =============================================================================
+// Flow Integration Testing
+// =============================================================================
+
+export {
+  testFlowInContainer,
+  type ContainerMocks,
+  type TestFlowInContainerConfig,
+  type TestFlowInContainerResult,
+  type InvocationRecord,
+} from "./test-flow-in-container.js";
+
+// =============================================================================
+// Result Testing Utilities (re-exported from @hex-di/result-testing)
+// =============================================================================
+
+export { expectOk, expectErr, expectOkAsync, expectErrAsync } from "@hex-di/result-testing";

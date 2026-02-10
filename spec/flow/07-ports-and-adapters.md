@@ -17,6 +17,10 @@ Integrate state machines and their activities into the HexDI dependency injectio
 - `FlowPort<TState, TEvent, TContext, TName>` is a type alias; the port token is interchangeable with any standard `Port` in the container
 - `InferFlowServiceState`, `InferFlowServiceEvent`, `InferFlowServiceContext` utility types extract type parameters from a `FlowService` via conditional inference
 
+**Flow Port Direction**
+
+- Flow ports intentionally omit direction (they are bidirectional). Events flow inward via `send(event)` / `sendAndExecute(event)`, while state flows outward via `snapshot()`, `state()`, `context()`, and `subscribe(callback)`. This dual data flow means neither `"inbound"` nor `"outbound"` accurately describes the port, so `FlowPort` extends the base undirected `Port` rather than `DirectedPort`.
+
 **FlowService Interface**
 
 - `FlowService<TState, TEvent, TContext>` wraps a `MachineRunner` and exposes: `snapshot()`, `state()`, `context()`, `send(event)`, `sendAndExecute(event)`, `subscribe(callback)`, `getActivityStatus(id)`, `dispose()`, `isDisposed`

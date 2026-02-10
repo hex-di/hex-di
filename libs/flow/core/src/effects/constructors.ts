@@ -21,6 +21,10 @@ import type {
   EffectAny,
   MethodNames,
   MethodParams,
+  ChooseBranch,
+  ChooseEffect,
+  LogEffect,
+  ActivityPortLike,
 } from "./types.js";
 
 // =============================================================================
@@ -33,7 +37,67 @@ import type {
  *
  * @internal
  */
-const NONE_EFFECT: NoneEffect = Object.freeze({ _tag: "None" }) as NoneEffect;
+const NONE_EFFECT: NoneEffect = Object.freeze({ _tag: "None" as const });
+
+// =============================================================================
+// Spawn Overloads
+// =============================================================================
+
+/**
+ * Overloaded spawn function type.
+ *
+ * - Overload 1: Accepts an ActivityPort, extracts the port name as activityId
+ *   and infers the input type from the port's phantom `__activityInput`.
+ * - Overload 2: Accepts a string activityId (existing API).
+ */
+interface SpawnFn {
+  /**
+   * Creates a SpawnEffect from an ActivityPort.
+   *
+   * The port's `__portName` is used as the activityId, and the input type
+   * is inferred from the port's phantom `__activityInput` property.
+   *
+   * @param port - An ActivityPort defining the activity
+   * @param input - Input data matching the port's input type
+   */
+  <TPort extends ActivityPortLike<unknown>>(
+    port: TPort,
+    input: TPort extends ActivityPortLike<infer TInput> ? TInput : never
+  ): SpawnEffect<
+    TPort extends { readonly __portName: infer TName extends string } ? TName : string,
+    TPort extends ActivityPortLike<infer TInput> ? TInput : never
+  >;
+
+  /**
+   * Creates a SpawnEffect from a string activity ID.
+   *
+   * @param activityId - Unique identifier for this activity instance
+   * @param input - Input data for the activity
+   */
+  <const TActivityId extends string, TInput>(
+    activityId: TActivityId,
+    input: TInput
+  ): SpawnEffect<TActivityId, TInput>;
+}
+
+/**
+ * Implementation of the overloaded spawn function.
+ *
+ * At runtime, checks whether the first argument is a string or an object
+ * with `__portName` to extract the activityId.
+ */
+const spawnImpl: SpawnFn = (
+  activityIdOrPort: string | { readonly __portName: string },
+  input: unknown
+): SpawnEffect<string, unknown> => {
+  const activityId =
+    typeof activityIdOrPort === "string" ? activityIdOrPort : activityIdOrPort.__portName;
+  return Object.freeze({
+    _tag: "Spawn",
+    activityId,
+    input,
+  });
+};
 
 // =============================================================================
 // Effect Constructors Namespace
@@ -123,40 +187,23 @@ export const Effect = {
   /**
    * Creates a SpawnEffect for starting a long-running activity.
    *
-   * Activities are background processes that can:
-   * - Emit events back to the machine via EventSink
-   * - Be cancelled via AbortSignal
-   * - Have typed input data
-   *
-   * @typeParam TActivityId - The activity identifier literal type (inferred)
-   * @typeParam TInput - The input data type (inferred)
-   *
-   * @param activityId - Unique identifier for this activity instance
-   * @param input - Input data for the activity
-   *
-   * @returns An immutable SpawnEffect descriptor
+   * Supports two calling conventions:
+   * - **Port-based**: Pass an ActivityPort to extract the activityId from
+   *   `__portName` and infer the input type from the port's phantom properties.
+   * - **String-based**: Pass a string activityId directly (existing API).
    *
    * @example
    * ```typescript
-   * // Spawn with typed input
-   * const effect = Effect.spawn("fetchData", { userId: "123", page: 1 });
-   * // effect.activityId === "fetchData"
-   * // effect.input === { userId: "123", page: 1 }
+   * // Port-based: type-safe input inference
+   * const FetchPort = activityPort<{ userId: string }, User>()('FetchUser');
+   * const effect = Effect.spawn(FetchPort, { userId: "123" });
+   * // effect.activityId === "FetchUser"
    *
-   * // Spawn without input
-   * const heartbeat = Effect.spawn("heartbeat", undefined);
+   * // String-based: explicit ID
+   * const effect2 = Effect.spawn("heartbeat", undefined);
    * ```
    */
-  spawn<const TActivityId extends string, TInput>(
-    activityId: TActivityId,
-    input: TInput
-  ): SpawnEffect<TActivityId, TInput> {
-    return Object.freeze({
-      _tag: "Spawn",
-      activityId,
-      input,
-    });
-  },
+  spawn: spawnImpl,
 
   /**
    * Creates a StopEffect for stopping a running activity.
@@ -306,5 +353,36 @@ export const Effect = {
    */
   none(): NoneEffect {
     return NONE_EFFECT;
+  },
+
+  /**
+   * Creates a ChooseEffect for conditionally selecting effects based on guards.
+   *
+   * Branches are evaluated in order. The first branch whose guard returns true
+   * (or has no guard) is selected, and its effects are executed.
+   *
+   * @param branches - The branches to evaluate
+   * @returns An immutable ChooseEffect descriptor
+   */
+  choose(branches: readonly ChooseBranch[]): ChooseEffect {
+    return Object.freeze({
+      _tag: "Choose",
+      branches,
+    });
+  },
+
+  /**
+   * Creates a LogEffect for logging a message.
+   *
+   * @param message - A static string or function producing a dynamic message
+   * @returns An immutable LogEffect descriptor
+   */
+  log(
+    message: string | ((context: unknown, event: { readonly type: string }) => string)
+  ): LogEffect {
+    return Object.freeze({
+      _tag: "Log",
+      message,
+    });
   },
 } as const;

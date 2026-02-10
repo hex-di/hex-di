@@ -40,7 +40,7 @@ import {
   createDIEffectExecutor,
   createActivityManager,
   createMachineRunner,
-  createMachine,
+  defineMachine,
   Effect,
   // Types
   type Machine,
@@ -299,7 +299,7 @@ interface DashboardContext {
 /**
  * Create the state machine.
  */
-const dashboardMachine = createMachine({
+const dashboardMachine = defineMachine({
   id: "dashboard",
   initial: "idle",
   context: {
@@ -429,7 +429,7 @@ const DashboardFlowPort = createFlowPort<
 /**
  * Create the FlowAdapter with all activities.
  */
-const DashboardFlowAdapter = createFlowAdapter({
+const DashboardFlowAdapterResult = createFlowAdapter({
   provides: DashboardFlowPort,
 
   // All dependencies needed by activities
@@ -443,6 +443,10 @@ const DashboardFlowAdapter = createFlowAdapter({
   // Default timeout for activities without explicit timeout
   defaultActivityTimeout: 30000,
 });
+
+const DashboardFlowAdapter = DashboardFlowAdapterResult.expect(
+  "DashboardFlowAdapter creation failed"
+);
 
 // =============================================================================
 // TESTS: Verify all Activity API features
@@ -842,7 +846,7 @@ describe("Activity API Showcase", () => {
 
     it("should run single activity flow: load user", async () => {
       // Simple machine with single activity
-      const simpleMachine = createMachine({
+      const simpleMachine = defineMachine({
         id: "simple-load",
         initial: "idle",
         context: { user: null as User | null },
@@ -938,7 +942,7 @@ describe("Activity API Showcase", () => {
         },
       });
 
-      const simpleMachine = createMachine({
+      const simpleMachine = defineMachine({
         id: "simple",
         initial: "idle",
         context: {},
@@ -1029,7 +1033,7 @@ describe("Activity API Showcase", () => {
       };
 
       // Create a simpler machine that directly spawns the polling activity
-      const simpleMachine = createMachine({
+      const simpleMachine = defineMachine({
         id: "simple",
         initial: "idle",
         context: {},

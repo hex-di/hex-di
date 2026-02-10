@@ -103,6 +103,13 @@ export interface ResolutionHookContext {
   readonly scopeId: string | null;
 
   /**
+   * User-provided name of the scope where resolution is occurring.
+   * undefined when resolving outside a scope or when the scope has an auto-generated ID.
+   * Distinct from scopeId which may be auto-generated (e.g., "scope-0").
+   */
+  readonly scopeName: string | undefined;
+
+  /**
    * The parent port if this is a nested dependency resolution.
    * null for top-level resolutions initiated by user code.
    */
@@ -158,6 +165,13 @@ export interface ResolutionHookContext {
    * null before resolution completes, set after resolution.
    */
   readonly error: Error | null;
+
+  /**
+   * The resolved instance, or undefined before resolution completes.
+   * Set after a successful factory call; undefined on errors.
+   * Enables auto-discovery of LibraryInspectors via afterResolve hooks.
+   */
+  readonly result?: unknown;
 }
 
 /**

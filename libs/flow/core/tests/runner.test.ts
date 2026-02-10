@@ -9,12 +9,15 @@
  * - Guards are evaluated in definition order
  * - Actions update context immutably
  * - Dispose stops all activities
+ * - Event queue for re-entrant send support
  *
  * @packageDocumentation
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { createMachine } from "../src/machine/create-machine.js";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { ResultAsync } from "@hex-di/result";
+import { expectOk, expectErr } from "@hex-di/result-testing";
+import { defineMachine } from "../src/machine/define-machine.js";
 import { event } from "../src/machine/factories.js";
 import { Effect } from "../src/effects/constructors.js";
 import {
@@ -23,6 +26,7 @@ import {
   type EffectExecutor,
 } from "../src/runner/index.js";
 import { createActivityManager, type ActivityManager } from "../src/activities/index.js";
+import type { EffectExecutionError } from "../src/errors/index.js";
 
 // =============================================================================
 // Context Type Definitions for Test Machines
@@ -57,7 +61,7 @@ interface StrictGuardContext {
 /**
  * Simple toggle machine for basic tests.
  */
-const toggleMachine = createMachine({
+const toggleMachine = defineMachine({
   id: "toggle",
   initial: "off",
   context: undefined,
@@ -78,7 +82,7 @@ const toggleMachine = createMachine({
 /**
  * Counter machine for context update tests.
  */
-const counterMachine = createMachine({
+const counterMachine = defineMachine({
   id: "counter",
   initial: "active",
   context: { count: 0 } satisfies CounterContext,
@@ -116,7 +120,7 @@ const counterMachine = createMachine({
 /**
  * Machine with guards for testing guard evaluation order.
  */
-const guardedMachine = createMachine({
+const guardedMachine = defineMachine({
   id: "guarded",
   initial: "idle",
   context: { retryCount: 0, maxRetries: 3 } satisfies GuardedContext,
@@ -155,7 +159,7 @@ const guardedMachine = createMachine({
 /**
  * Machine with effects for testing effect collection.
  */
-const effectMachine = createMachine({
+const effectMachine = defineMachine({
   id: "effects",
   initial: "idle",
   context: undefined,
@@ -220,10 +224,9 @@ function createMockExecutor(): EffectExecutor & {
 } {
   const executedEffects: Array<{ readonly _tag: string }> = [];
   return {
-    async execute(effect): Promise<void> {
+    execute(effect): ResultAsync<void, EffectExecutionError> {
       executedEffects.push(effect);
-      // Simulate async execution
-      await Promise.resolve();
+      return ResultAsync.ok(undefined);
     },
     get executedEffects(): ReadonlyArray<{ readonly _tag: string }> {
       return executedEffects;
@@ -236,8 +239,8 @@ function createMockExecutor(): EffectExecutor & {
  */
 function createNoOpExecutor(): EffectExecutor {
   return {
-    async execute(): Promise<void> {
-      // No-op
+    execute(): ResultAsync<void, EffectExecutionError> {
+      return ResultAsync.ok(undefined);
     },
   };
 }
@@ -296,13 +299,14 @@ describe("MachineRunner", () => {
       });
 
       // send() should return effects but NOT execute them
-      const effects = runner.send(startEvent());
+      const result = runner.send(startEvent());
 
       // Effects should include: exit(idle) + transition + entry(loading)
       // Exit: [Effect.delay(5)]
       // Transition: [Effect.delay(100)]
       // Entry: [Effect.delay(20)]
-      expect(effects.length).toBeGreaterThan(0);
+      const value = expectOk(result);
+      expect(value.length).toBeGreaterThan(0);
 
       // The executor should NOT have been called
       expect(mockExecutor.executedEffects).toHaveLength(0);
@@ -338,8 +342,9 @@ describe("MachineRunner", () => {
       expect(runner.state()).toBe("success");
 
       // No transitions defined from success state for SUCCESS event
-      const effects = runner.send(successEvent());
-      expect(effects).toEqual([]);
+      const result = runner.send(successEvent());
+      const value = expectOk(result);
+      expect(value).toEqual([]);
       expect(runner.state()).toBe("success"); // State unchanged
     });
   });
@@ -368,9 +373,12 @@ describe("MachineRunner", () => {
     it("should await effect execution", async () => {
       let effectExecuted = false;
       const slowExecutor: EffectExecutor = {
-        async execute(): Promise<void> {
-          await new Promise(resolve => setTimeout(resolve, 50));
-          effectExecuted = true;
+        execute(): ResultAsync<void, EffectExecutionError> {
+          return ResultAsync.fromSafePromise(
+            new Promise<void>(resolve => setTimeout(resolve, 50)).then(() => {
+              effectExecuted = true;
+            })
+          );
         },
       };
 
@@ -500,7 +508,7 @@ describe("MachineRunner", () => {
 
     it("should skip transition when guard returns false and no fallback exists", () => {
       // Create a machine with only guarded transitions (no fallback)
-      const strictGuardedMachine = createMachine({
+      const strictGuardedMachine = defineMachine({
         id: "strictGuarded",
         initial: "idle",
         context: { value: 10 } satisfies StrictGuardContext,
@@ -528,10 +536,11 @@ describe("MachineRunner", () => {
 
       expect(runner.state()).toBe("idle");
 
-      const effects = runner.send(goEvent());
+      const result = runner.send(goEvent());
 
       // Guard failed, no transition
-      expect(effects).toEqual([]);
+      const value = expectOk(result);
+      expect(value).toEqual([]);
       expect(runner.state()).toBe("idle");
     });
   });
@@ -558,7 +567,7 @@ describe("MachineRunner", () => {
 
     it("should chain multiple actions", () => {
       // Create a machine with multiple actions per transition
-      const multiActionMachine = createMachine({
+      const multiActionMachine = defineMachine({
         id: "multiAction",
         initial: "idle",
         context: { value: 0, log: [] as readonly string[] } satisfies MultiActionContext,
@@ -692,6 +701,608 @@ describe("MachineRunner", () => {
 
       expect(snapshot.activities).toBeDefined();
       expect(Array.isArray(snapshot.activities)).toBe(true);
+    });
+
+    it("should include pendingEvents in snapshot", () => {
+      const runner = createMachineRunner(toggleMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+      });
+
+      const snapshot = runner.snapshot();
+
+      expect(snapshot.pendingEvents).toBeDefined();
+      expect(Array.isArray(snapshot.pendingEvents)).toBe(true);
+      expect(snapshot.pendingEvents).toHaveLength(0);
+    });
+  });
+
+  describe("Event Queue", () => {
+    it("re-entrant send enqueues event instead of processing immediately", () => {
+      const runner = createMachineRunner(toggleMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+      });
+
+      const states: string[] = [];
+
+      runner.subscribe(() => {
+        states.push(runner.state());
+        // Re-entrant send during notification
+        if (runner.state() === "on") {
+          runner.send(toggleEvent());
+        }
+      });
+
+      runner.send(toggleEvent()); // off -> on, triggers subscriber which enqueues toggle
+
+      // After queue drain: should be "off" (toggled back)
+      expect(runner.state()).toBe("off");
+      // Subscriber notified after first transition (state=on) and after drain (state=off)
+      expect(states).toHaveLength(2);
+      expect(states[0]).toBe("on");
+      expect(states[1]).toBe("off");
+    });
+
+    it("queued events are drained after current transition completes", () => {
+      const runner = createMachineRunner(toggleMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+      });
+
+      let sendCount = 0;
+
+      runner.subscribe(() => {
+        sendCount++;
+        // Enqueue two more events during first notification
+        if (sendCount === 1 && runner.state() === "on") {
+          runner.send(toggleEvent()); // enqueue: on -> off
+          runner.send(toggleEvent()); // enqueue: off -> on
+        }
+      });
+
+      runner.send(toggleEvent()); // off -> on
+
+      // After queue drain: on -> off -> on = final state "on"
+      expect(runner.state()).toBe("on");
+    });
+
+    it("bounded by maxQueueSize, exceeding returns QueueOverflow", () => {
+      const runner = createMachineRunner(toggleMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+        maxQueueSize: 2,
+      });
+
+      let overflowResult: ReturnType<typeof runner.send> | undefined;
+      let notifyCount = 0;
+
+      runner.subscribe(() => {
+        notifyCount++;
+        // Only enqueue on the first notification to avoid infinite loop
+        if (notifyCount === 1) {
+          runner.send(toggleEvent()); // queue: 1
+          runner.send(toggleEvent()); // queue: 2
+          overflowResult = runner.send(toggleEvent()); // queue overflow
+        }
+      });
+
+      runner.send(toggleEvent()); // off -> on, triggers subscriber
+
+      // The third re-entrant send should have returned QueueOverflow
+      expect(overflowResult).toBeDefined();
+      if (overflowResult === undefined) throw new Error("Expected overflowResult");
+      const overflowError = expectErr(overflowResult);
+      expect(overflowError._tag).toBe("QueueOverflow");
+    });
+
+    it("pendingEvents field exists on snapshot and is an array", () => {
+      const runner = createMachineRunner(toggleMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+      });
+
+      // Verify the field exists at rest (empty)
+      const snapshot = runner.snapshot();
+      expect(snapshot.pendingEvents).toBeDefined();
+      expect(Array.isArray(snapshot.pendingEvents)).toBe(true);
+      expect(snapshot.pendingEvents).toHaveLength(0);
+    });
+
+    it("send returns ok with accumulated effects from all drained events", () => {
+      const runner = createMachineRunner(effectMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+      });
+
+      // Start event produces effects (exit idle + transition + entry loading)
+      const result = runner.send(startEvent());
+      const value = expectOk(result);
+      expect(value.length).toBeGreaterThan(0);
+    });
+
+    it("sendBatch works with event queue drain", () => {
+      const runner = createMachineRunner(toggleMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+      });
+
+      // sendBatch with multiple events
+      const result = runner.sendBatch([toggleEvent(), toggleEvent()]);
+      expectOk(result);
+      // off -> on -> off
+      expect(runner.state()).toBe("off");
+    });
+  });
+
+  describe("PendingEvent source tagging", () => {
+    it("direct send() re-entrant events are processed (default external source)", () => {
+      const runner = createMachineRunner(toggleMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+      });
+
+      runner.subscribe(() => {
+        if (runner.state() === "on") {
+          // Enqueue a re-entrant event (tagged as "external" by default)
+          runner.send(toggleEvent());
+        }
+      });
+
+      runner.send(toggleEvent()); // off -> on -> off (re-entrant toggle)
+      expect(runner.state()).toBe("off");
+    });
+
+    it("_sendInternal exists as non-enumerable property", () => {
+      const runner = createMachineRunner(toggleMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+      });
+
+      const descriptor = Object.getOwnPropertyDescriptor(runner, "_sendInternal");
+      expect(descriptor).toBeDefined();
+      expect(typeof descriptor?.value).toBe("function");
+      expect(descriptor?.enumerable).toBe(false);
+    });
+
+    it("_sendInternal tags re-entrant events with specified source", () => {
+      const runner = createMachineRunner(toggleMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+      });
+
+      const descriptor = Object.getOwnPropertyDescriptor(runner, "_sendInternal");
+      const sendInternal = descriptor?.value;
+
+      runner.subscribe(() => {
+        if (runner.state() === "on") {
+          // Use internal send to tag as "emit"
+          sendInternal({ type: "TOGGLE" }, "emit");
+        }
+      });
+
+      runner.send(toggleEvent()); // off -> on -> off (via re-entrant "emit" source)
+      expect(runner.state()).toBe("off");
+    });
+  });
+
+  describe("History Buffers", () => {
+    it("history disabled by default - getTransitionHistory returns empty array", () => {
+      const runner = createMachineRunner(toggleMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+      });
+
+      runner.send(toggleEvent());
+      runner.send(toggleEvent());
+
+      expect(runner.getTransitionHistory()).toEqual([]);
+      expect(runner.getEffectHistory()).toEqual([]);
+    });
+
+    it("records transitions when history is enabled", () => {
+      const runner = createMachineRunner(toggleMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+        history: { enabled: true },
+      });
+
+      runner.send(toggleEvent()); // off -> on
+      runner.send(toggleEvent()); // on -> off
+
+      const history = runner.getTransitionHistory();
+      expect(history).toHaveLength(2);
+
+      expect(history[0].prevState).toBe("off");
+      expect(history[0].nextState).toBe("on");
+      expect(history[0].eventType).toBe("TOGGLE");
+      expect(history[0].effectCount).toBe(0);
+      expect(typeof history[0].timestamp).toBe("number");
+
+      expect(history[1].prevState).toBe("on");
+      expect(history[1].nextState).toBe("off");
+      expect(history[1].eventType).toBe("TOGGLE");
+    });
+
+    it("records effect executions when history is enabled", async () => {
+      const runner = createMachineRunner(effectMachine, {
+        executor: createMockExecutor(),
+        activityManager,
+        history: { enabled: true },
+      });
+
+      // idle -> loading produces effects (exit delay(5), transition delay(100), entry delay(20))
+      await runner.sendAndExecute(startEvent());
+
+      const effectHistory = runner.getEffectHistory();
+      expect(effectHistory.length).toBeGreaterThan(0);
+
+      for (const entry of effectHistory) {
+        expect(typeof entry.effectTag).toBe("string");
+        expect(typeof entry.ok).toBe("boolean");
+        expect(typeof entry.timestamp).toBe("number");
+        expect(typeof entry.duration).toBe("number");
+        expect(entry.ok).toBe(true);
+      }
+    });
+
+    it("circular eviction when buffer is full", () => {
+      const runner = createMachineRunner(toggleMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+        history: { enabled: true, transitionBufferSize: 3 },
+      });
+
+      // Perform 5 transitions (buffer only holds 3)
+      runner.send(toggleEvent()); // off -> on (1)
+      runner.send(toggleEvent()); // on -> off (2)
+      runner.send(toggleEvent()); // off -> on (3)
+      runner.send(toggleEvent()); // on -> off (4) - evicts (1)
+      runner.send(toggleEvent()); // off -> on (5) - evicts (2)
+
+      const history = runner.getTransitionHistory();
+      expect(history).toHaveLength(3);
+
+      // Only the last 3 transitions should remain
+      expect(history[0].prevState).toBe("off");
+      expect(history[0].nextState).toBe("on");
+
+      expect(history[1].prevState).toBe("on");
+      expect(history[1].nextState).toBe("off");
+
+      expect(history[2].prevState).toBe("off");
+      expect(history[2].nextState).toBe("on");
+    });
+  });
+
+  // ===========================================================================
+  // Error State Health Events
+  // ===========================================================================
+
+  describe("Error State Health Events", () => {
+    const errorStateMachine = defineMachine({
+      id: "error-state-machine",
+      initial: "idle",
+      context: undefined,
+      states: {
+        idle: {
+          on: {
+            FAIL: { target: "error" },
+            DEGRADE: { target: "failed_validation" },
+          },
+        },
+        error: {
+          on: {
+            RECOVER: { target: "idle" },
+          },
+        },
+        failed_validation: {
+          on: {
+            FIX: { target: "idle" },
+          },
+        },
+      },
+    });
+
+    const failEvent = event<"FAIL">("FAIL");
+    const recoverEvent = event<"RECOVER">("RECOVER");
+
+    it("emits flow-error when transitioning into an error state", () => {
+      const healthEvents: Array<{ type: string; state?: string; machineId: string }> = [];
+      const runner = createMachineRunner(errorStateMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+        onHealthEvent: event => {
+          healthEvents.push(event);
+        },
+      });
+
+      runner.send(failEvent());
+
+      expect(healthEvents).toHaveLength(1);
+      expect(healthEvents[0]?.type).toBe("flow-error");
+      if (healthEvents[0]?.type === "flow-error") {
+        expect(healthEvents[0].state).toBe("error");
+        expect(healthEvents[0].machineId).toBe("error-state-machine");
+      }
+    });
+
+    it("emits flow-recovered when leaving an error state", () => {
+      const healthEvents: Array<{ type: string; fromState?: string; machineId: string }> = [];
+      const runner = createMachineRunner(errorStateMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+        onHealthEvent: event => {
+          healthEvents.push(event);
+        },
+      });
+
+      runner.send(failEvent()); // idle -> error
+      runner.send(recoverEvent()); // error -> idle
+
+      expect(healthEvents).toHaveLength(2);
+      expect(healthEvents[1]?.type).toBe("flow-recovered");
+      if (healthEvents[1]?.type === "flow-recovered") {
+        expect(healthEvents[1].fromState).toBe("error");
+      }
+    });
+
+    it("uses custom errorStatePatterns when provided", () => {
+      const customMachine = defineMachine({
+        id: "custom-patterns",
+        initial: "idle",
+        context: undefined,
+        states: {
+          idle: {
+            on: {
+              BREAK: { target: "broken" },
+            },
+          },
+          broken: {
+            on: {
+              FIX: { target: "idle" },
+            },
+          },
+        },
+      });
+
+      const healthEvents: Array<{ type: string }> = [];
+      const runner = createMachineRunner(customMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+        onHealthEvent: event => {
+          healthEvents.push(event);
+        },
+        errorStatePatterns: ["broken"],
+      });
+
+      const breakEvent = event<"BREAK">("BREAK");
+      runner.send(breakEvent());
+
+      expect(healthEvents).toHaveLength(1);
+      expect(healthEvents[0]?.type).toBe("flow-error");
+    });
+
+    it("does not emit health events without onHealthEvent callback", () => {
+      const runner = createMachineRunner(errorStateMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+        // No onHealthEvent
+      });
+
+      // Should not throw
+      runner.send(failEvent());
+      expect(runner.state()).toBe("error");
+    });
+
+    it("does not emit health events between non-error states", () => {
+      const nonErrorMachine = defineMachine({
+        id: "non-error",
+        initial: "idle",
+        context: undefined,
+        states: {
+          idle: {
+            on: {
+              GO: { target: "active" },
+            },
+          },
+          active: {
+            on: {
+              STOP: { target: "idle" },
+            },
+          },
+        },
+      });
+
+      const healthEvents: Array<{ type: string }> = [];
+      const runner = createMachineRunner(nonErrorMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+        onHealthEvent: event => {
+          healthEvents.push(event);
+        },
+      });
+
+      const goEvent = event<"GO">("GO");
+      const stopEvent = event<"STOP">("STOP");
+
+      runner.send(goEvent());
+      runner.send(stopEvent());
+
+      expect(healthEvents).toHaveLength(0);
+    });
+  });
+
+  // ===========================================================================
+  // Additional Runner Edge Case Tests
+  // ===========================================================================
+
+  describe("Edge Cases: Non-Error throws and post-dispose behavior", () => {
+    it("non-Error throws in guard (number) produces GuardThrew", () => {
+      const throwNumberMachine = defineMachine({
+        id: "throw-number-guard",
+        initial: "idle",
+        context: undefined,
+        states: {
+          idle: {
+            on: {
+              GO: {
+                target: "done",
+                guard: (): boolean => {
+                  throw 42;
+                },
+              },
+            },
+          },
+          done: { on: {} },
+        },
+      });
+
+      const runner = createMachineRunner(throwNumberMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+      });
+
+      const result = runner.send({ type: "GO" });
+      const error = expectErr(result);
+      expect(error._tag).toBe("GuardThrew");
+    });
+
+    it("non-Error throws in guard (string) produces GuardThrew", () => {
+      const throwStringMachine = defineMachine({
+        id: "throw-string-guard",
+        initial: "idle",
+        context: undefined,
+        states: {
+          idle: {
+            on: {
+              GO: {
+                target: "done",
+                guard: (): boolean => {
+                  throw "oops";
+                },
+              },
+            },
+          },
+          done: { on: {} },
+        },
+      });
+
+      const runner = createMachineRunner(throwStringMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+      });
+
+      const result = runner.send({ type: "GO" });
+      const error = expectErr(result);
+      expect(error._tag).toBe("GuardThrew");
+    });
+
+    it("non-Error throws in action produces ActionThrew", () => {
+      const throwInActionMachine = defineMachine({
+        id: "throw-in-action",
+        initial: "idle",
+        context: undefined,
+        states: {
+          idle: {
+            on: {
+              GO: {
+                target: "done",
+                actions: [
+                  (): never => {
+                    throw null;
+                  },
+                ],
+              },
+            },
+          },
+          done: { on: {} },
+        },
+      });
+
+      const runner = createMachineRunner(throwInActionMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+      });
+
+      const result = runner.send({ type: "GO" });
+      const error = expectErr(result);
+      expect(error._tag).toBe("ActionThrew");
+    });
+
+    it("send after dispose returns Disposed error", async () => {
+      const runner = createMachineRunner(toggleMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+      });
+
+      await runner.dispose();
+
+      const result = runner.send(toggleEvent());
+      const error = expectErr(result);
+      expect(error._tag).toBe("Disposed");
+    });
+  });
+
+  // ===========================================================================
+  // Tracer Shorthand
+  // ===========================================================================
+
+  describe("tracer shorthand", () => {
+    function createSpyTracerLike(): {
+      pushSpan: (name: string, attributes?: Record<string, string>) => void;
+      popSpan: (status: "ok" | "error") => void;
+      calls: { push: unknown[][]; pop: unknown[][] };
+    } {
+      const calls = { push: [] as unknown[][], pop: [] as unknown[][] };
+      return {
+        pushSpan(name: string, attributes?: Record<string, string>): void {
+          calls.push.push([name, attributes]);
+        },
+        popSpan(status: "ok" | "error"): void {
+          calls.pop.push([status]);
+        },
+        calls,
+      };
+    }
+
+    it("auto-creates FlowTracingHook when tracer option is provided", () => {
+      const spyTracer = createSpyTracerLike();
+      const runner = createMachineRunner(toggleMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+        tracer: spyTracer,
+      });
+
+      runner.send(toggleEvent()); // off -> on
+
+      // The auto-created hook should have called pushSpan and popSpan
+      expect(spyTracer.calls.push.length).toBeGreaterThan(0);
+      expect(spyTracer.calls.pop.length).toBeGreaterThan(0);
+      expect(spyTracer.calls.pop[0][0]).toBe("ok");
+    });
+
+    it("tracingHook takes precedence over tracer", () => {
+      const spyTracer = createSpyTracerLike();
+      const customHook = {
+        onTransitionStart: vi.fn(),
+        onTransitionEnd: vi.fn(),
+        onEffectStart: vi.fn(),
+        onEffectEnd: vi.fn(),
+      };
+
+      const runner = createMachineRunner(toggleMachine, {
+        executor: createNoOpExecutor(),
+        activityManager,
+        tracingHook: customHook,
+        tracer: spyTracer,
+      });
+
+      runner.send(toggleEvent()); // off -> on
+
+      // Custom hook should be called, tracer should NOT
+      expect(customHook.onTransitionStart).toHaveBeenCalled();
+      expect(spyTracer.calls.push).toHaveLength(0);
     });
   });
 });

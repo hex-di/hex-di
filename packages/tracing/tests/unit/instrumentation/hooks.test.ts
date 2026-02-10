@@ -393,4 +393,97 @@ describe("createTracingHook", () => {
       expect(containerSpans).toHaveLength(2);
     });
   });
+
+  describe("scope name attribute", () => {
+    it("should set hex-di.scope.name for user-named scopes", () => {
+      const tracer = createMemoryTracer();
+      const hooks = createTracingHook(tracer);
+
+      hooks.beforeResolve!(
+        createMockResolutionContext({
+          portName: "TestPort",
+          scopeId: "dashboard",
+          scopeName: "dashboard",
+        })
+      );
+      hooks.afterResolve!(
+        createMockResultContext({
+          portName: "TestPort",
+          scopeId: "dashboard",
+        })
+      );
+
+      const spans = tracer.getCollectedSpans();
+      expect(spans).toHaveLength(1);
+      expect(spans[0].attributes["hex-di.scope.id"]).toBe("dashboard");
+      expect(spans[0].attributes["hex-di.scope.name"]).toBe("dashboard");
+    });
+
+    it("should NOT set hex-di.scope.name for auto-generated scope IDs", () => {
+      const tracer = createMemoryTracer();
+      const hooks = createTracingHook(tracer);
+
+      hooks.beforeResolve!(
+        createMockResolutionContext({
+          portName: "TestPort",
+          scopeId: "scope-1",
+          scopeName: undefined,
+        })
+      );
+      hooks.afterResolve!(
+        createMockResultContext({
+          portName: "TestPort",
+          scopeId: "scope-1",
+        })
+      );
+
+      const spans = tracer.getCollectedSpans();
+      expect(spans).toHaveLength(1);
+      expect(spans[0].attributes["hex-di.scope.id"]).toBe("scope-1");
+      expect(spans[0].attributes["hex-di.scope.name"]).toBeUndefined();
+    });
+
+    it("should NOT set hex-di.scope.name for multi-digit auto-generated scope IDs", () => {
+      const tracer = createMemoryTracer();
+      const hooks = createTracingHook(tracer);
+
+      hooks.beforeResolve!(
+        createMockResolutionContext({
+          portName: "TestPort",
+          scopeId: "scope-123",
+        })
+      );
+      hooks.afterResolve!(
+        createMockResultContext({
+          portName: "TestPort",
+          scopeId: "scope-123",
+        })
+      );
+
+      const spans = tracer.getCollectedSpans();
+      expect(spans).toHaveLength(1);
+      expect(spans[0].attributes["hex-di.scope.name"]).toBeUndefined();
+    });
+
+    it("should NOT set either attribute when scopeId is absent", () => {
+      const tracer = createMemoryTracer();
+      const hooks = createTracingHook(tracer);
+
+      hooks.beforeResolve!(
+        createMockResolutionContext({
+          portName: "TestPort",
+        })
+      );
+      hooks.afterResolve!(
+        createMockResultContext({
+          portName: "TestPort",
+        })
+      );
+
+      const spans = tracer.getCollectedSpans();
+      expect(spans).toHaveLength(1);
+      expect(spans[0].attributes["hex-di.scope.id"]).toBeUndefined();
+      expect(spans[0].attributes["hex-di.scope.name"]).toBeUndefined();
+    });
+  });
 });

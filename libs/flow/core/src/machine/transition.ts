@@ -139,6 +139,18 @@ export interface TransitionConfig<
    * They do not affect the transition logic or context transformation.
    */
   readonly effects?: readonly EffectAny[];
+
+  /**
+   * Whether this is an internal transition.
+   *
+   * Internal transitions execute actions and transition effects but do NOT
+   * fire exit effects from the current state or entry effects on the target state.
+   * This is useful for self-transitions that update context without triggering
+   * entry/exit side effects.
+   *
+   * @default false (external transition)
+   */
+  readonly internal?: boolean;
 }
 
 // =============================================================================
@@ -178,6 +190,11 @@ export interface TransitionConfigAny {
    * Optional array of effects.
    */
   readonly effects?: readonly EffectAny[];
+
+  /**
+   * Whether this is an internal transition.
+   */
+  readonly internal?: boolean;
 }
 
 // =============================================================================

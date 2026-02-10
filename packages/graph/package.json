@@ -84,7 +84,8 @@
   },
   "homepage": "https://github.com/hex-di/hex-di/tree/main/packages/graph#readme",
   "dependencies": {
-    "@hex-di/core": "workspace:*"
+    "@hex-di/core": "workspace:*",
+    "@hex-di/result": "workspace:*"
   },
   "peerDependencies": {
     "typescript": ">=5.0"
@@ -99,9 +100,10 @@
   },
   "sideEffects": false,
   "devDependencies": {
+    "@hex-di/result-testing": "workspace:*",
     "@stryker-mutator/core": "^8.7.1",
     "@stryker-mutator/vitest-runner": "^8.7.1",
-    "@vitest/coverage-v8": "^4.0.17",
+    "@vitest/coverage-v8": "4.0.18",
     "fast-check": "^4.5.3"
   }
 }

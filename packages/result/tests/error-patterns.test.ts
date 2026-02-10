@@ -29,6 +29,25 @@ describe("Error Patterns", () => {
     expect(error.id).toBe("123");
   });
 
+  // --- Mutation gap: createError returns frozen object ---
+  it("createError factory produces frozen (immutable) objects", () => {
+    const NotFound = createError("NotFound");
+    const error = NotFound({ id: "123" });
+    expect(Object.isFrozen(error)).toBe(true);
+  });
+
+  // --- Mutation gap: assertNever with custom message ---
+  it("assertNever throws with custom message when provided", () => {
+    const badValue = "unexpected" as never;
+    expect(() => assertNever(badValue, "custom message")).toThrow("custom message");
+  });
+
+  // --- Mutation gap: assertNever default message includes value ---
+  it("assertNever default message includes the value", () => {
+    const badValue = "oops" as never;
+    expect(() => assertNever(badValue)).toThrow("Unexpected value");
+  });
+
   // DoD 10 #4
   it("assertNever throws on non-exhaustive match", () => {
     type MyError = { _tag: "A" } | { _tag: "B" };

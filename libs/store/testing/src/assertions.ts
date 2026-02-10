@@ -25,8 +25,8 @@ import type {
 export interface StateAssertions<TState> {
   /** Assert state is deeply equal to the expected value */
   toBe(expected: TState): void;
-  /** Assert state matches a partial object */
-  toMatch(partial: Partial<TState>): void;
+  /** Assert state matches a partial object (TState must extend object) */
+  toMatch(partial: TState extends object ? Partial<TState> : never): void;
   /** Assert state satisfies a predicate */
   toSatisfy(predicate: (state: DeepReadonly<TState>) => boolean): void;
 }
@@ -48,8 +48,8 @@ export function expectState<TState, TActions extends ActionMap<TState>>(
     toBe(expected: TState): void {
       expect(service.state).toEqual(expected);
     },
-    toMatch(partial: Partial<TState>): void {
-      expect(service.state).toMatchObject(partial as Record<string, unknown>);
+    toMatch(partial: TState extends object ? Partial<TState> : never): void {
+      expect(service.state).toMatchObject(partial);
     },
     toSatisfy(predicate: (state: DeepReadonly<TState>) => boolean): void {
       expect(predicate(service.state)).toBe(true);
@@ -96,8 +96,8 @@ export function expectAtom<TValue>(service: AtomService<TValue>): AtomAssertions
 export interface DerivedAssertions<TResult> {
   /** Assert derived value is deeply equal */
   toBe(expected: TResult): void;
-  /** Assert derived value matches partial */
-  toMatch(partial: Partial<TResult>): void;
+  /** Assert derived value matches partial (TResult must extend object) */
+  toMatch(partial: TResult extends object ? Partial<TResult> : never): void;
   /** Assert derived value satisfies a predicate */
   toSatisfy(predicate: (value: DeepReadonly<TResult>) => boolean): void;
 }
@@ -117,8 +117,8 @@ export function expectDerived<TResult>(
     toBe(expected: TResult): void {
       expect(service.value).toEqual(expected);
     },
-    toMatch(partial: Partial<TResult>): void {
-      expect(service.value).toMatchObject(partial as Record<string, unknown>);
+    toMatch(partial: TResult extends object ? Partial<TResult> : never): void {
+      expect(service.value).toMatchObject(partial);
     },
     toSatisfy(predicate: (value: DeepReadonly<TResult>) => boolean): void {
       expect(predicate(service.value)).toBe(true);

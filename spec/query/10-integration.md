@@ -97,7 +97,8 @@ const data = adapterResult.match(
   }
 );
 
-// 5. Result stored in cache, observers notified
+// 5. Result written to cache entry's result$ signal
+//    Signal propagation notifies all subscriber effects automatically
 ```
 
 ### Container Scope Awareness
@@ -123,11 +124,56 @@ const SecureUsersAdapter = createQueryAdapter(UsersPort, {
       ),
 });
 
-// Each scope gets its own child client with its own cache
+// Each scope gets its own child client with its own cache and reactive system
 const scope = container.createScope();
 const scopedClient = queryClient.createChild(scope);
+// scopedClient has its own ReactiveSystemInstance — signals in this scope
+// cannot interfere with the parent's or other scopes' reactive graphs
 const users = await scopedClient.fetch(UsersPort, {});
-// Uses this scope's AuthToken, stores result in scope's cache
+// Uses this scope's AuthToken, stores result in scope's isolated reactive cache
+```
+
+## 46b. Per-Scope Reactive System
+
+Each `QueryClient` (root or child) owns an isolated `ReactiveSystemInstance` created via `createIsolatedReactiveSystem()` from `alien-signals/system`. This mirrors the pattern used by `@hex-di/store` for per-container state isolation.
+
+### Reactive System Lifecycle
+
+```
+createQueryClient(container)
+  │
+  ├── Creates new ReactiveSystemInstance
+  │   (or uses config.reactiveSystem if provided)
+  │
+  ├── All cache entries use this system:
+  │   createSignal(value, system)
+  │   createComputed(fn, system)
+  │
+  └── queryClient.createChild(scope)
+        │
+        └── Creates a NEW ReactiveSystemInstance for the child
+            (child's signals cannot register as deps in parent's computeds)
+```
+
+### Why Per-Scope Isolation
+
+| Concern                  | Shared system (rejected)                        | Per-scope system (chosen)                        |
+| ------------------------ | ----------------------------------------------- | ------------------------------------------------ |
+| Cross-scope interference | Batch in scope A defers scope B's notifications | Each scope has independent batch queue           |
+| Disposal                 | Disposing scope leaves orphan subscribers       | Disposing scope tears down entire reactive graph |
+| Memory                   | GC must scan global subscriber list             | Subscriber list is scope-local, smaller          |
+| Debugging                | Signal dependency graph mixes all scopes        | Each scope's graph is inspectable in isolation   |
+
+### Sharing Reactive Systems
+
+In advanced scenarios (e.g., when a Store and QueryClient operate in the same scope and want to compose signals), an external `ReactiveSystemInstance` can be passed via `config.reactiveSystem`:
+
+```typescript
+const sharedSystem = createIsolatedReactiveSystem();
+const store = createStore(container, { reactiveSystem: sharedSystem });
+const queryClient = createQueryClient(container, { reactiveSystem: sharedSystem });
+// Store signals and query cache signals live in the same reactive graph,
+// enabling cross-domain computeds (e.g., derived view that combines store state + query data)
 ```
 
 ## 47. Scoped Queries
@@ -631,11 +677,13 @@ path is straightforward:
 ```
 1. Component calls useQuery(UsersPort, params)
 2. Hook gets QueryClient from QueryClientContext
-3. QueryClient checks cache for [UsersPort.name, hash(params)]
-4. On miss/stale: QueryClient calls this.container.resolveResult(UsersPort)
-5. Result is matched: Ok yields the QueryFetcher, Err yields a QueryResolutionError
-6. On Ok: QueryClient calls fetcher(params, { signal })
-7. Result stored in cache, observers notified
+3. Hook creates a reactive effect via queryClient.createEffect()
+4. Effect reads cache entry signals -> auto-tracked by reactive system
+5. QueryClient checks cache entry's result$.peek() for [UsersPort.name, hash(params)]
+6. On miss/stale: QueryClient calls this.container.resolveResult(UsersPort)
+7. Result is matched: Ok yields the QueryFetcher, Err yields a QueryResolutionError
+8. On Ok: QueryClient calls fetcher(params, { signal })
+9. Result written to entry.result$ signal -> signal propagation notifies subscriber effects
 ```
 
 ### FetchContext

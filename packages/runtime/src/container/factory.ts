@@ -4,8 +4,12 @@
  */
 
 import type { Port, InferService, AdapterConstraint } from "@hex-di/core";
+import { getPortMetadata, isLibraryInspector } from "@hex-di/core";
+import { tryCatch, fromPromise, type ResultAsync } from "@hex-di/result";
 import { OverrideBuilder, type ContainerForOverride } from "./override-builder.js";
 import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
+import { mapToContainerError, mapToDisposalError, emitResultEvent } from "./result-helpers.js";
+import type { ContainerError } from "../errors/index.js";
 import type {
   HooksInstaller,
   HookType,
@@ -161,10 +165,14 @@ type UninitializedContainerInternals<
   TAsyncPorts extends Port<unknown, string>,
 > = Omit<
   ContainerMembers<TProvides, never, TAsyncPorts, "uninitialized">,
-  "initialize" | "inspector"
+  "initialize" | "tryInitialize" | "inspector"
 > &
   InternalContainerMethods<TProvides> & {
     initialize: () => Promise<Container<TProvides, never, TAsyncPorts, "initialized">>;
+    tryInitialize: () => ResultAsync<
+      Container<TProvides, never, TAsyncPorts, "initialized">,
+      ContainerError
+    >;
     // Placeholder - will be set by attachBuiltinAPIs before freeze
     inspector?: InspectorAPI;
   };
@@ -180,10 +188,11 @@ type InitializedContainerInternals<
   TAsyncPorts extends Port<unknown, string>,
 > = Omit<
   ContainerMembers<TProvides, never, TAsyncPorts, "initialized">,
-  "initialize" | "inspector"
+  "initialize" | "tryInitialize" | "inspector"
 > &
   InternalContainerMethods<TProvides> & {
     readonly initialize: never;
+    readonly tryInitialize: never;
     // Placeholder - will be set by attachBuiltinAPIs before freeze
     inspector?: InspectorAPI;
   };
@@ -228,6 +237,19 @@ function createUninitializedContainerWrapper<
     resolve,
     resolveAsync: <P extends TProvides>(port: P): Promise<InferService<P>> =>
       impl.resolveAsync(port),
+    tryResolve: <P extends Exclude<TProvides, TAsyncPorts>>(port: P) => {
+      const result = tryCatch(() => impl.resolve(port), mapToContainerError);
+      emitResultEvent(container.inspector, port.__portName, result);
+      return result;
+    },
+    tryResolveAsync: <P extends TProvides>(port: P) => {
+      const resultAsync = fromPromise(impl.resolveAsync(port), mapToContainerError);
+      void resultAsync.then(result => {
+        emitResultEvent(container.inspector, port.__portName, result);
+      });
+      return resultAsync;
+    },
+    tryDispose: () => fromPromise(impl.dispose(), mapToDisposalError),
     resolveInternal: <P extends TProvides>(port: P): InferService<P> => impl.resolve(port),
     resolveAsyncInternal: <P extends TProvides>(port: P): Promise<InferService<P>> =>
       impl.resolveAsync(port),
@@ -247,8 +269,29 @@ function createUninitializedContainerWrapper<
       }
       return initializedContainer;
     },
+    tryInitialize: () => {
+      return fromPromise(
+        (async () => {
+          await impl.initialize();
+          if (initializedContainer === null) {
+            initializedContainer = createInitializedContainerWrapper<TProvides, TAsyncPorts>(
+              impl,
+              containerName,
+              hooksHolder,
+              handlerToUninstall
+            );
+          }
+          return initializedContainer;
+        })(),
+        mapToContainerError
+      );
+    },
     createScope: (scopeName?: string) =>
-      createRootScope<TProvides, TAsyncPorts, "uninitialized">(impl, scopeName),
+      createRootScope<TProvides, TAsyncPorts, "uninitialized">(
+        impl,
+        scopeName,
+        () => container.inspector
+      ),
     createChild: <
       TChildGraph extends Graph<
         Port<unknown, string>,
@@ -315,6 +358,7 @@ function createUninitializedContainerWrapper<
       TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
     > => createLazyChildContainer(container, containerName, graphLoader, options),
     dispose: async () => {
+      container.inspector?.disposeLibraries?.();
       await impl.dispose();
     },
     get isInitialized() {
@@ -387,6 +431,18 @@ function createUninitializedContainerWrapper<
   // Add built-in inspector API as non-enumerable property
   attachBuiltinAPIs(container);
 
+  // Install auto-discovery hook for library inspectors
+  hooksHolder.hookSources.push({
+    afterResolve: ctx => {
+      if (ctx.result !== undefined) {
+        const portMeta = getPortMetadata(ctx.port);
+        if (portMeta?.category === "library-inspector" && isLibraryInspector(ctx.result)) {
+          container.inspector?.registerLibrary(ctx.result);
+        }
+      }
+    },
+  });
+
   // Add user hooks to hookSources (if any)
   if (userHooks !== undefined) {
     hooksHolder.hookSources.push(userHooks);
@@ -452,6 +508,19 @@ function createInitializedContainerWrapper<
     resolve,
     resolveAsync: <P extends TProvides>(port: P): Promise<InferService<P>> =>
       impl.resolveAsync(port),
+    tryResolve: <P extends TProvides>(port: P) => {
+      const result = tryCatch(() => impl.resolve(port), mapToContainerError);
+      emitResultEvent(container.inspector, port.__portName, result);
+      return result;
+    },
+    tryResolveAsync: <P extends TProvides>(port: P) => {
+      const resultAsync = fromPromise(impl.resolveAsync(port), mapToContainerError);
+      void resultAsync.then(result => {
+        emitResultEvent(container.inspector, port.__portName, result);
+      });
+      return resultAsync;
+    },
+    tryDispose: () => fromPromise(impl.dispose(), mapToDisposalError),
     resolveInternal: <P extends TProvides>(port: P): InferService<P> => impl.resolve(port),
     resolveAsyncInternal: <P extends TProvides>(port: P): Promise<InferService<P>> =>
       impl.resolveAsync(port),
@@ -462,8 +531,11 @@ function createInitializedContainerWrapper<
     get initialize(): never {
       return unreachable("Initialized containers cannot be initialized again");
     },
+    get tryInitialize(): never {
+      return unreachable("Initialized containers cannot be initialized again");
+    },
     createScope: (name?: string) =>
-      createRootScope<TProvides, TAsyncPorts, "initialized">(impl, name),
+      createRootScope<TProvides, TAsyncPorts, "initialized">(impl, name, () => container.inspector),
     createChild: <
       TChildGraph extends Graph<
         Port<unknown, string>,
@@ -530,6 +602,7 @@ function createInitializedContainerWrapper<
       TAsyncPorts | InferGraphAsyncPorts<TChildGraph>
     > => createLazyChildContainer(container, containerName, graphLoader, options),
     dispose: async () => {
+      container.inspector?.disposeLibraries?.();
       await impl.dispose();
     },
     get isInitialized() {
@@ -618,7 +691,8 @@ function createRootScope<
   TPhase extends "uninitialized" | "initialized",
 >(
   containerImpl: RootContainerImpl<TProvides, TAsyncPorts>,
-  name?: string
+  name?: string,
+  getInspector?: () => InspectorAPI | undefined
 ): Scope<TProvides, TAsyncPorts, TPhase> {
   const scopeImpl = new ScopeImpl<TProvides, TAsyncPorts, TPhase>(
     containerImpl,
@@ -629,7 +703,7 @@ function createRootScope<
   );
   containerImpl.registerChildScope(scopeImpl);
 
-  return createScopeWrapper(scopeImpl);
+  return createScopeWrapper(scopeImpl, getInspector);
 }
 
 // =============================================================================

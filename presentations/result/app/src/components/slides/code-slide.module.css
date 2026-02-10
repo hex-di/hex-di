@@ -1,0 +1,29 @@
+.container {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-white);
+  padding: var(--slide-padding-top) var(--slide-padding-horizontal)
+    var(--slide-padding-bottom);
+}
+
+.inner {
+  max-width: var(--slide-max-width);
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  font-size: var(--text-section-title);
+  font-weight: var(--text-section-title-weight);
+  color: var(--neutral-900);
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.codeArea {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}

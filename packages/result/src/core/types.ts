@@ -13,7 +13,11 @@ export interface ResultAsync<T, E> extends PromiseLike<Result<T, E>> {
     onOk: (value: T) => U | Promise<U>,
     onErr: (error: E) => F | Promise<F>
   ): ResultAsync<U, F>;
+  andThen<U, F>(f: (value: T) => Result<U, F>): ResultAsync<U, E | F>;
+  andThen<U, F>(f: (value: T) => ResultAsync<U, F>): ResultAsync<U, E | F>;
   andThen<U, F>(f: (value: T) => Result<U, F> | ResultAsync<U, F>): ResultAsync<U, E | F>;
+  orElse<U, F>(f: (error: E) => Result<U, F>): ResultAsync<T | U, F>;
+  orElse<U, F>(f: (error: E) => ResultAsync<U, F>): ResultAsync<T | U, F>;
   orElse<U, F>(f: (error: E) => Result<U, F> | ResultAsync<U, F>): ResultAsync<T | U, F>;
   andTee(f: (value: T) => void | Promise<void>): ResultAsync<T, E>;
   orTee(f: (error: E) => void | Promise<void>): ResultAsync<T, E>;

@@ -24,6 +24,10 @@ export {
   NonClonableForkedError,
 } from "./classes.js";
 
+// Resolution error union
+export type { ResolutionError } from "./resolution-error.js";
+export { isResolutionError, toResolutionError } from "./resolution-error.js";
+
 // Error parsing
 export { isHexError, parseError } from "./parsing.js";
 

@@ -35,6 +35,7 @@ import { ContainerError, extractErrorMessage } from "./base.js";
  * ```
  */
 export class CircularDependencyError extends ContainerError {
+  readonly _tag = "CircularDependency";
   readonly code = "CIRCULAR_DEPENDENCY" as const;
   readonly isProgrammingError = true as const;
 
@@ -83,6 +84,7 @@ export class CircularDependencyError extends ContainerError {
  * ```
  */
 export class FactoryError extends ContainerError {
+  readonly _tag = "FactoryFailed";
   readonly code = "FACTORY_FAILED" as const;
   readonly isProgrammingError = false as const;
 
@@ -132,6 +134,7 @@ export class FactoryError extends ContainerError {
  * ```
  */
 export class DisposedScopeError extends ContainerError {
+  readonly _tag = "DisposedScope";
   readonly code = "DISPOSED_SCOPE" as const;
   readonly isProgrammingError = true as const;
 
@@ -180,6 +183,7 @@ export class DisposedScopeError extends ContainerError {
  * ```
  */
 export class ScopeRequiredError extends ContainerError {
+  readonly _tag = "ScopeRequired";
   readonly code = "SCOPE_REQUIRED" as const;
   readonly isProgrammingError = true as const;
 
@@ -229,6 +233,7 @@ export class ScopeRequiredError extends ContainerError {
  * ```
  */
 export class AsyncFactoryError extends ContainerError {
+  readonly _tag = "AsyncFactoryFailed";
   readonly code = "ASYNC_FACTORY_FAILED" as const;
   readonly isProgrammingError = false as const;
 
@@ -287,6 +292,7 @@ export class AsyncFactoryError extends ContainerError {
  * ```
  */
 export class AsyncInitializationRequiredError extends ContainerError {
+  readonly _tag = "AsyncInitRequired";
   readonly code = "ASYNC_INIT_REQUIRED" as const;
   readonly isProgrammingError = true as const;
 
@@ -347,6 +353,7 @@ export class AsyncInitializationRequiredError extends ContainerError {
  * ```
  */
 export class NonClonableForkedError extends ContainerError {
+  readonly _tag = "NonClonableForked";
   readonly code = "NON_CLONABLE_FORKED" as const;
   readonly isProgrammingError = true as const;
 

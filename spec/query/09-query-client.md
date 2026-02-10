@@ -102,14 +102,33 @@ interface QueryClient {
     params?: TParams
   ): void;
 
-  // === Subscriptions ===
+  // === Reactive Access ===
 
-  /** Subscribe to query state changes */
-  subscribe<TData, TParams, TError, TName extends string>(
+  /**
+   * Get the reactive cache entry for a query.
+   * Returns the live ReactiveCacheEntry whose signals can be read inside
+   * computeds or effects to establish automatic dependency tracking.
+   * Returns undefined if the query has never been fetched.
+   */
+  getReactiveEntry<TData, TParams, TError, TName extends string>(
     port: QueryPort<TName, TData, TParams, TError>,
-    params: TParams,
-    callback: (state: QueryState<TData, TError>) => void
-  ): Unsubscribe;
+    params: TParams
+  ): ReactiveCacheEntry<TData, TError> | undefined;
+
+  /**
+   * Create a reactive effect in this client's reactive system.
+   * The effect tracks signal reads and re-runs when they change.
+   * Returns a dispose function. The effect is also disposed when the
+   * QueryClient is disposed.
+   */
+  createEffect(fn: () => void): ReactiveEffect;
+
+  /**
+   * Get the client's isolated ReactiveSystemInstance.
+   * Useful for advanced scenarios like creating custom computeds
+   * that compose multiple cache entries.
+   */
+  getReactiveSystem(): ReactiveSystemInstance;
 
   // === Inspection ===
 
@@ -199,6 +218,19 @@ interface QueryClientConfig {
    * See 07 - Cache Architecture for the Clock port pattern.
    */
   readonly clock?: { readonly now: () => number };
+
+  /**
+   * Optional pre-created ReactiveSystemInstance.
+   * When not provided, `createQueryClient` creates a new isolated
+   * reactive system via `createIsolatedReactiveSystem()` from
+   * `alien-signals/system`. All cache entry signals, computeds,
+   * and effects live in this system's dependency graph.
+   *
+   * Providing an external system is useful for:
+   * - Sharing a reactive system between QueryClient and Store
+   * - Testing with a controlled reactive system
+   */
+  readonly reactiveSystem?: ReactiveSystemInstance;
 }
 
 interface MutationDefaults {
@@ -215,16 +247,18 @@ interface MutationDefaults {
 
 ## 41. Invalidation
 
-Invalidation marks cached data as stale. Active queries (with observers) immediately refetch. Inactive queries refetch on their next mount.
+Invalidation marks cached data as stale by writing to the entry's `isInvalidated$` signal. Active queries (with subscriber effects) immediately refetch. Inactive queries refetch on their next mount.
+
+When a mutation triggers invalidation of multiple ports, all `isInvalidated$.set(true)` writes are wrapped in a `batch()` call on the client's reactive system. This ensures downstream effects see a single consistent notification rather than intermediate states.
 
 ### Invalidation Behaviors
 
-| Scenario                             | Behavior                                |
-| ------------------------------------ | --------------------------------------- |
-| Query is active (has observers)      | Mark stale + trigger background refetch |
-| Query is inactive (no observers)     | Mark stale only (refetch on next use)   |
-| Query is currently fetching          | Cancel current fetch + restart          |
-| Query is disabled (`enabled: false`) | Mark stale only (no auto-refetch)       |
+| Scenario                                   | Behavior                                |
+| ------------------------------------------ | --------------------------------------- |
+| Query has active subscriber effects        | Mark stale + trigger background refetch |
+| Query has no subscriber effects (inactive) | Mark stale only (refetch on next use)   |
+| Query is currently fetching                | Cancel current fetch + restart          |
+| Query is disabled (`enabled: false`)       | Mark stale only (no auto-refetch)       |
 
 ### Automatic Invalidation
 
@@ -282,7 +316,7 @@ await queryClient.cancelAll();
 
 ### When Cancellation Happens Automatically
 
-1. Component unmounts (if no other observers remain)
+1. Component unmounts (if no other subscriber effects remain for the entry's signals)
 2. Query is invalidated while fetching (cancel + restart)
 3. Query parameters change (cancel old, start new)
 4. `enabled` transitions from `true` to `false`
@@ -515,7 +549,7 @@ happens automatically when the parent scope is disposed.
 
 ### Disposal Order
 
-All QueryClient disposal (root or child) follows the same 4-step sequence:
+All QueryClient disposal (root or child) follows the same 5-step sequence:
 
 ```
 queryClient.dispose()
@@ -527,30 +561,35 @@ queryClient.dispose()
   ├── 2. Stop background operations
   │      Stop GC timer, polling intervals, and refetch timers.
   │
-  ├── 3. Clear the cache
+  ├── 3. Dispose all reactive effects
+  │      All effects created via queryClient.createEffect() are disposed.
+  │      This severs all signal subscriber links in the reactive system.
+  │
+  ├── 4. Clear the cache
   │      Remove all cache entries. Release memory.
   │      If a CachePersister is configured, flush pending writes first.
   │
-  └── 4. Mark client as disposed
+  └── 5. Mark client as disposed
          All subsequent method calls return
          ResultAsync.err({ _tag: "QueryDisposed", portName }).
 ```
 
 ### Ordering Rationale
 
-| Step                         | Why This Order                                                   |
-| ---------------------------- | ---------------------------------------------------------------- |
-| Cancel first                 | Prevents in-flight fetches from writing to cache during disposal |
-| Stop background before clear | Prevents timers from firing after cache is gone                  |
-| Clear after cancel           | Ensures no new data arrives after cleanup                        |
-| Mark disposed last           | Ensures all cleanup completes before failing subsequent calls    |
+| Step                           | Why This Order                                                     |
+| ------------------------------ | ------------------------------------------------------------------ |
+| Cancel first                   | Prevents in-flight fetches from writing to signals during disposal |
+| Stop background before effects | Prevents timers from firing after effects are gone                 |
+| Dispose effects before clear   | Severs signal subscriber links before destroying signal sources    |
+| Clear after effects            | Ensures no new data arrives after cleanup                          |
+| Mark disposed last             | Ensures all cleanup completes before failing subsequent calls      |
 
 ### Disposal Safety
 
 - **No adapter resolution during disposal.** Cancellation only signals existing
   AbortControllers, it does not resolve new adapters.
-- **No observer callbacks during disposal.** Observers are detached before cache
-  entries are removed, preventing re-fetch attempts during teardown.
+- **No signal propagation during disposal.** All reactive effects are disposed
+  before cache entries are cleared, preventing re-fetch attempts during teardown.
 - **No mutation effects during disposal.** Pending mutation effects are discarded.
 
 ### Use-After-Dispose Guarantees

@@ -610,8 +610,8 @@ describe("GraphBuilder.validate()", () => {
 
     expect(result.valid).toBe(false);
     expect(result.errors).toHaveLength(1);
-    expect(result.errors[0]).toContain("Missing adapters for");
-    expect(result.errors[0]).toContain("ValidateDep");
+    expect(result.errors[0].message).toContain("Missing adapters for");
+    expect(result.errors[0].message).toContain("ValidateDep");
     expect(result.unsatisfiedRequirements).toContain("ValidateDep");
   });
 

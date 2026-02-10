@@ -148,8 +148,7 @@ export type EnforceAsyncLifetime<TFactory, TLifetime extends string> =
 // =============================================================================
 
 import type { Port, InferService } from "../ports/types.js";
-import type { Lifetime, ResolvedDeps } from "./types.js";
-import type { TupleToUnion } from "../utils/type-utilities.js";
+import type { Lifetime, PortDeps } from "./types.js";
 
 // =============================================================================
 // Config Types
@@ -215,7 +214,7 @@ export interface FactoryConfig<
   TProvides extends Port<unknown, string>,
   TRequires extends readonly Port<unknown, string>[],
   TFactory extends (
-    deps: ResolvedDeps<TupleToUnion<TRequires>>
+    deps: PortDeps<TRequires>
   ) => InferService<TProvides> | Promise<InferService<TProvides>>,
 > extends BaseUnifiedConfig<TProvides, TRequires> {
   /**

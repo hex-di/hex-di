@@ -1,0 +1,80 @@
+.text {
+  font-size: var(--text-body);
+  color: var(--neutral-800);
+  line-height: 1.6;
+}
+
+.bullets {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bullet {
+  font-size: var(--text-body);
+  color: var(--neutral-800);
+  padding-left: 24px;
+  position: relative;
+}
+
+.bullet::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand-base);
+}
+
+.bulletEmphasis {
+  composes: bullet;
+  font-weight: 600;
+  color: var(--neutral-900);
+}
+
+.codeWrapper {
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--code-dark-bg);
+}
+
+.codeFilename {
+  padding: 8px 16px;
+  font-family: var(--font-code);
+  font-size: var(--text-caption);
+  color: var(--code-dark-comment);
+  background: var(--code-dark-gutter-bg);
+  border-bottom: 1px solid var(--neutral-800);
+}
+
+.codeBlock {
+  padding: 16px;
+  overflow-x: auto;
+  font-size: var(--text-code);
+  line-height: 1.6;
+  color: var(--code-dark-text);
+}
+
+.comparisonNote {
+  font-size: var(--text-annotation);
+  color: var(--neutral-500);
+  font-style: italic;
+}
+
+.diagramPlaceholder {
+  font-size: var(--text-body);
+  color: var(--neutral-400);
+  font-style: italic;
+  text-align: center;
+  padding: 48px;
+}
+
+.mixed {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+

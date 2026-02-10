@@ -44,6 +44,71 @@ function App() {
 > setup from container resolution. For scoped clients, wrap scope boundaries with
 > a new `QueryClientProvider` providing the child client.
 
+## 49b. React-Signals Bridge
+
+All React hooks in `@hex-di/query-react` bridge alien-signals' reactive system to React's rendering model using `useSyncExternalStore`. This is the same pattern used by `@hex-di/store-react`.
+
+### How It Works
+
+```typescript
+// Simplified internal implementation pattern used by all query hooks:
+function useQueryInternal<TData, TError>(
+  queryClient: QueryClient,
+  port: QueryPort<..., TData, ..., TError>,
+  params: TParams,
+  options: UseQueryOptions<...>,
+): QueryState<TData, TError> {
+  // 1. Get or create the reactive cache entry
+  const entry = queryClient.getCache().getOrCreateEntry(port, params);
+  const system = queryClient.getReactiveSystem();
+
+  // 2. Bridge signals → React via useSyncExternalStore
+  const state = useSyncExternalStore(
+    // subscribe: create a reactive effect that calls onStoreChange
+    (onStoreChange) => {
+      const effect = createEffect(() => {
+        // Reading these signals inside the effect registers them as dependencies.
+        // When any of these signals change, the effect re-runs, calling onStoreChange.
+        entry.status.get();
+        entry.data.get();
+        entry.error.get();
+        entry.isFetching.get();
+        entry.isLoading.get();
+        entry.isRefetching.get();
+        onStoreChange();
+      }, system);
+      return () => effect.dispose();
+    },
+
+    // getSnapshot: read signal values and produce a plain QueryState object
+    () => ({
+      status: entry.status.peek(),
+      data: entry.data.peek(),
+      error: entry.error.peek(),
+      isPending: entry.isPending.peek(),
+      isSuccess: entry.isSuccess.peek(),
+      isError: entry.isError.peek(),
+      isFetching: entry.isFetching.peek(),
+      isLoading: entry.isLoading.peek(),
+      isRefetching: entry.isRefetching.peek(),
+      result: entry.result$.peek(),
+      dataUpdatedAt: entry.dataUpdatedAt$.peek(),
+      errorUpdatedAt: entry.errorUpdatedAt$.peek(),
+      // ... remaining fields
+    }),
+  );
+
+  return state;
+}
+```
+
+### Key Properties
+
+- **Fine-grained subscriptions** -- the effect only tracks signals that are actually read. If a component only reads `data` and `isPending`, changes to `errorUpdatedAt$` do not trigger re-renders.
+- **Glitch-free** -- alien-signals' topological sort ensures `onStoreChange` is called once per batch, after all computeds have settled. React never sees intermediate states.
+- **Batched mutation effects** -- when a mutation invalidates multiple queries, the cache writes are batched via `batch()`. The React bridge sees a single notification after all entries are updated.
+- **Automatic cleanup** -- the effect is disposed in the `useSyncExternalStore` unsubscribe callback, which runs on unmount. This severs the signal subscriber link, making the entry eligible for GC.
+
 ## 50. useQuery
 
 ```typescript

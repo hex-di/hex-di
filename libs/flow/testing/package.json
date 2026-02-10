@@ -28,7 +28,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:types": "vitest run --typecheck",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:mutation": "stryker run"
   },
   "keywords": [
     "flow",
@@ -47,7 +48,13 @@
     "directory": "libs/flow/testing"
   },
   "dependencies": {
-    "@hex-di/flow": "workspace:*"
+    "@hex-di/flow": "workspace:*",
+    "@hex-di/result": "workspace:*",
+    "@hex-di/result-testing": "workspace:*"
+  },
+  "devDependencies": {
+    "@stryker-mutator/core": "^9.5.1",
+    "@stryker-mutator/vitest-runner": "^9.5.1"
   },
   "peerDependencies": {
     "vitest": ">=4.0.0"

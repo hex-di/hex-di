@@ -7,6 +7,7 @@
  */
 
 import { vi } from "vitest";
+import { type ResultAsync, ResultAsync as RA } from "@hex-di/result";
 
 // =============================================================================
 // Types
@@ -16,8 +17,8 @@ import { vi } from "vitest";
 export interface VirtualClock {
   /** Install fake timers */
   install(): void;
-  /** Advance the clock by the specified milliseconds */
-  advance(ms: number): Promise<void>;
+  /** Advance the clock by the specified milliseconds. Returns Err when clock is not installed. */
+  advance(ms: number): ResultAsync<void, Error>;
   /** Get the current virtual time */
   now(): number;
   /** Uninstall fake timers and restore originals */
@@ -51,11 +52,14 @@ export function createVirtualClock(): VirtualClock {
       vi.useFakeTimers();
       installed = true;
     },
-    async advance(ms: number): Promise<void> {
+    advance(ms: number): ResultAsync<void, Error> {
       if (!installed) {
-        throw new Error("Virtual clock not installed. Call install() first.");
+        return RA.err(new Error("Virtual clock not installed. Call install() first."));
       }
-      await vi.advanceTimersByTimeAsync(ms);
+      return RA.fromPromise(
+        vi.advanceTimersByTimeAsync(ms).then(() => undefined),
+        e => (e instanceof Error ? e : new Error(String(e)))
+      );
     },
     now(): number {
       return Date.now();

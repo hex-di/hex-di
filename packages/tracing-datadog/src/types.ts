@@ -117,4 +117,34 @@ export interface DataDogBridgeConfig {
    * - Enable profiling, APM, or security features as needed
    */
   tracer: DdTracer;
+
+  /**
+   * Service name to tag on all exported spans.
+   *
+   * Maps to DataDog's `service.name` tag. If also set in dd-trace.init(),
+   * this value will be added as an explicit tag on each span.
+   *
+   * @example 'my-api', 'payment-service'
+   */
+  serviceName?: string;
+
+  /**
+   * Deployment environment for all exported spans.
+   *
+   * Maps to DataDog's `env` tag. Helps separate traces by environment
+   * in the DataDog APM UI.
+   *
+   * @example 'production', 'staging', 'development'
+   */
+  environment?: string;
+
+  /**
+   * Service version for deployment tracking.
+   *
+   * Maps to DataDog's `version` tag. Enables version-level filtering
+   * and comparison in DataDog APM.
+   *
+   * @example '1.2.3', '2.0.0-beta.1'
+   */
+  version?: string;
 }

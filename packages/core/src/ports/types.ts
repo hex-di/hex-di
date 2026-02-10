@@ -221,6 +221,16 @@ declare const __directionBrand: unique symbol;
  */
 declare const __metadataKey: unique symbol;
 
+/**
+ * Unique symbol used for type-level category branding.
+ *
+ * Enables compile-time discrimination of ports by category (e.g., "domain",
+ * "library-inspector") while having no runtime presence. Part of the phantom type pattern.
+ *
+ * @internal
+ */
+declare const __categoryBrand: unique symbol;
+
 // =============================================================================
 // Port Direction and Metadata
 // =============================================================================
@@ -298,12 +308,15 @@ export interface PortMetadata {
  * const basePort: Port<Logger, 'Logger'> = port; // OK
  * ```
  */
-export type DirectedPort<TService, TName extends string, TDirection extends PortDirection> = Port<
+export type DirectedPort<
   TService,
-  TName
-> & {
+  TName extends string,
+  TDirection extends PortDirection,
+  TCategory extends string = string,
+> = Port<TService, TName> & {
   readonly [__directionBrand]: TDirection;
   readonly [__metadataKey]: PortMetadata;
+  readonly [__categoryBrand]: TCategory;
 };
 
 // =============================================================================
@@ -333,7 +346,11 @@ export type DirectedPort<TService, TName extends string, TDirection extends Port
  * });
  * ```
  */
-export type InboundPort<TService, TName extends string> = DirectedPort<TService, TName, "inbound">;
+export type InboundPort<
+  TService,
+  TName extends string,
+  TCategory extends string = string,
+> = DirectedPort<TService, TName, "inbound", TCategory>;
 
 /**
  * An outbound (driven) port for infrastructure interfaces.
@@ -358,11 +375,11 @@ export type InboundPort<TService, TName extends string> = DirectedPort<TService,
  * });
  * ```
  */
-export type OutboundPort<TService, TName extends string> = DirectedPort<
+export type OutboundPort<
   TService,
-  TName,
-  "outbound"
->;
+  TName extends string,
+  TCategory extends string = string,
+> = DirectedPort<TService, TName, "outbound", TCategory>;
 
 // =============================================================================
 // Type Predicates for DirectedPort
@@ -418,6 +435,22 @@ export type InferPortDirection<P> = P extends {
  */
 export type InferPortMetadata<P> = P extends { readonly [__metadataKey]: infer M } ? M : never;
 
+/**
+ * Extracts the category literal type from a DirectedPort.
+ *
+ * @typeParam P - A DirectedPort type
+ * @returns The category literal (e.g., `"domain"`, `"library-inspector"`),
+ *          `string` for uncategorized ports, or `never` if not a DirectedPort
+ *
+ * @example
+ * ```typescript
+ * const DomainPort = port<Logger>()({ name: 'Logger', category: 'domain' });
+ * type Cat = InferPortCategory<typeof DomainPort>;
+ * // Cat = 'domain'
+ * ```
+ */
+export type InferPortCategory<P> = P extends { readonly [__categoryBrand]: infer C } ? C : never;
+
 // =============================================================================
 // Port Direction Filter Utilities
 // =============================================================================
@@ -438,7 +471,9 @@ export type InferPortMetadata<P> = P extends { readonly [__metadataKey]: infer M
  * ```
  */
 export type InboundPorts<P> =
-  P extends DirectedPort<infer S, infer N, "inbound"> ? DirectedPort<S, N, "inbound"> : never;
+  P extends DirectedPort<infer S, infer N, "inbound", infer C>
+    ? DirectedPort<S, N, "inbound", C>
+    : never;
 
 /**
  * Filters a union of ports to only those with 'outbound' direction.
@@ -456,7 +491,9 @@ export type InboundPorts<P> =
  * ```
  */
 export type OutboundPorts<P> =
-  P extends DirectedPort<infer S, infer N, "outbound"> ? DirectedPort<S, N, "outbound"> : never;
+  P extends DirectedPort<infer S, infer N, "outbound", infer C>
+    ? DirectedPort<S, N, "outbound", C>
+    : never;
 
 // =============================================================================
 // createPort() Configuration Types
@@ -485,6 +522,12 @@ export type SuggestedCategory =
   | "configuration"
   | "domain"
   | "infrastructure"
+  | "state"
+  | "query"
+  | "saga"
+  | "flow"
+  | "effect"
+  | "library-inspector"
   | (string & {}); // Escape hatch - any string works with autocomplete
 
 /**
@@ -504,7 +547,11 @@ export type SuggestedCategory =
  * };
  * ```
  */
-export interface CreatePortConfig<TName extends string, TDirection extends PortDirection> {
+export interface CreatePortConfig<
+  TName extends string,
+  TDirection extends PortDirection,
+  TCategory extends string = string,
+> {
   /** The unique name for this port */
   readonly name: TName;
   /** The direction: 'inbound' (driving) or 'outbound' (driven). Defaults to 'outbound'. */
@@ -512,7 +559,7 @@ export interface CreatePortConfig<TName extends string, TDirection extends PortD
   /** Human-readable description of the port's purpose */
   readonly description?: string;
   /** Categorical grouping for organization */
-  readonly category?: SuggestedCategory;
+  readonly category?: TCategory & SuggestedCategory;
   /** Searchable tags for filtering and discovery */
   readonly tags?: readonly string[];
 }

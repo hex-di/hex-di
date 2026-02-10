@@ -14,6 +14,7 @@ import type { StateService, ActionMap, DeepReadonly } from "@hex-di/store";
 
 /** A recorded action dispatch */
 export interface RecordedAction<TState> {
+  readonly portName: string;
   readonly prevState: DeepReadonly<TState>;
   readonly nextState: DeepReadonly<TState>;
   readonly timestamp: number;
@@ -27,6 +28,8 @@ export interface ActionRecorder<TState> {
   readonly actionCount: number;
   /** State change history (sequence of states) */
   readonly stateHistory: ReadonlyArray<DeepReadonly<TState>>;
+  /** Get recorded actions filtered by port name */
+  getEventsForPort(portName: string): ReadonlyArray<RecordedAction<TState>>;
   /** Reset all recordings */
   reset(): void;
   /** Unsubscribe from the service */
@@ -50,13 +53,19 @@ export interface ActionRecorder<TState> {
  * ```
  */
 export function createActionRecorder<TState, TActions extends ActionMap<TState>>(
-  service: StateService<TState, TActions>
+  service: StateService<TState, TActions>,
+  portName?: string
 ): ActionRecorder<TState> {
   const recorded: RecordedAction<TState>[] = [];
   const states: DeepReadonly<TState>[] = [service.state];
 
   const unsub = service.subscribe((state: DeepReadonly<TState>, prev: DeepReadonly<TState>) => {
-    recorded.push({ prevState: prev, nextState: state, timestamp: Date.now() });
+    recorded.push({
+      portName: portName ?? "unknown",
+      prevState: prev,
+      nextState: state,
+      timestamp: Date.now(),
+    });
     states.push(state);
   });
 
@@ -69,6 +78,9 @@ export function createActionRecorder<TState, TActions extends ActionMap<TState>>
     },
     get stateHistory(): ReadonlyArray<DeepReadonly<TState>> {
       return states;
+    },
+    getEventsForPort(name: string): ReadonlyArray<RecordedAction<TState>> {
+      return recorded.filter(r => r.portName === name);
     },
     reset(): void {
       recorded.length = 0;

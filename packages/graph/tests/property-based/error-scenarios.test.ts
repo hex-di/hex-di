@@ -61,7 +61,7 @@ describe("Property: Error Message Invariants", () => {
 
         if (!validation.valid) {
           // Error messages should mention the missing port
-          const allText = validation.errors.join(" ");
+          const allText = validation.errors.map((e: { message: string }) => e.message).join(" ");
           expect(allText).toContain(`Missing${name}`);
         }
       }),

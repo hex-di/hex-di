@@ -1,6 +1,7 @@
 import { describe, it, expectTypeOf } from "vitest";
 import { ok, err } from "../src/index.js";
-import type { Result, ResultAsync } from "../src/index.js";
+import type { Result } from "../src/index.js";
+import type { ResultAsync } from "../src/core/types.js";
 import { safeTry } from "../src/generators/safe-try.js";
 
 describe("Generators - Type Level", () => {

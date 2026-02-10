@@ -88,7 +88,7 @@ interface QueryEntrySnapshot {
   readonly dataUpdatedAt: number | undefined;
   readonly errorUpdatedAt: number | undefined;
   readonly fetchCount: number;
-  readonly observerCount: number;
+  readonly hasSubscribers: boolean;
   readonly isInvalidated: boolean;
   readonly isStale: boolean;
   /** Data is included as serializable JSON (may be truncated for large payloads) */
@@ -110,7 +110,7 @@ interface InFlightSnapshot {
 
 interface CacheStats {
   readonly totalEntries: number;
-  readonly activeEntries: number; // observerCount > 0
+  readonly activeEntries: number; // hasSubscribers === true
   readonly staleEntries: number;
   readonly inFlightCount: number;
   readonly cacheHitRate: number; // hits / (hits + misses) over last N requests
@@ -129,7 +129,7 @@ interface QueryDiagnosticSummary {
   /** Total number of queries registered in the cache */
   readonly totalQueries: number;
 
-  /** Queries with at least one active observer */
+  /** Queries with at least one active subscriber */
   readonly activeQueries: number;
 
   /** Queries past their staleTime */
@@ -169,7 +169,7 @@ interface QuerySuggestion {
     | "stale_query"
     | "invalidation_storm"
     | "high_error_rate"
-    | "unused_observer"
+    | "unused_subscriber"
     | "missing_adapter"
     | "large_cache_entry";
 
@@ -191,7 +191,7 @@ interface QuerySuggestion {
 | `stale_query`        | Query has `staleTime: 0` and refetches > 10/min           | `"Users" refetches 15 times/min with staleTime: 0`        | `Increase staleTime to reduce unnecessary refetches`      |
 | `invalidation_storm` | > 5 invalidations of the same port within 1 second        | `"Products" was invalidated 8 times in 1s`                | `Batch invalidations or debounce the triggering mutation` |
 | `high_error_rate`    | > 50% of fetches for a port fail over 10+ attempts        | `"PaymentStatus" has 73% error rate (11/15 fetches)`      | `Check adapter implementation or backend health`          |
-| `unused_observer`    | Observer count > 0 but no renders consumed data for > 60s | `"Analytics" has 3 observers but data was never read`     | `Remove unused useQuery calls or add enabled: false`      |
+| `unused_subscriber`  | Active subscribers but no renders consumed data for > 60s | `"Analytics" has 3 subscribers but data was never read`   | `Remove unused useQuery calls or add enabled: false`      |
 | `missing_adapter`    | Query port exists in cache but no adapter is registered   | `"LegacyUsers" has cached data but no registered adapter` | `Register an adapter or remove stale cache entries`       |
 | `large_cache_entry`  | Serialized entry size > 1MB                               | `"FullCatalog" cache entry is 4.2MB`                      | `Use pagination or select to reduce cached data size`     |
 
@@ -368,7 +368,7 @@ unbounded invalidation cascades at runtime:
 
 2. **Detect strongly connected components (SCCs).** Use Tarjan's algorithm on the
    combined graph of mutations and queries. A cycle exists when a mutation invalidates
-   a query whose observer triggers another mutation (via `onSuccess`) that invalidates
+   a query whose subscriber triggers another mutation (via `onSuccess`) that invalidates
    a query already in the path.
 
 3. **Classify each SCC:**
@@ -505,16 +505,16 @@ type QueryInspectorEvent =
       readonly cacheKey: CacheKey;
     }
   | {
-      readonly kind: "observer-added";
+      readonly kind: "subscriber-added";
       readonly portName: string;
       readonly params: unknown;
-      readonly observerCount: number;
+      readonly hasSubscribers: boolean;
     }
   | {
-      readonly kind: "observer-removed";
+      readonly kind: "subscriber-removed";
       readonly portName: string;
       readonly params: unknown;
-      readonly observerCount: number;
+      readonly hasSubscribers: boolean;
     }
   | {
       readonly kind: "retry";

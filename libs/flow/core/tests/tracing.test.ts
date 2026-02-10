@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { createMachine } from "../src/machine/create-machine.js";
+import { defineMachine } from "../src/machine/define-machine.js";
 import { event } from "../src/machine/factories.js";
 import { createBasicExecutor } from "../src/runner/executor.js";
 import { createActivityManager } from "../src/activities/manager.js";
@@ -36,7 +36,7 @@ interface TestContext {
   readonly count: number;
 }
 
-const testMachine = createMachine({
+const testMachine = defineMachine({
   id: "test-machine",
   initial: "idle",
   context: { count: 0 } satisfies TestContext,

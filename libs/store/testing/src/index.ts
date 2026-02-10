@@ -53,3 +53,13 @@ export {
 // =============================================================================
 
 export { waitForState } from "./wait-for-state.js";
+
+// =============================================================================
+// Test Container
+// =============================================================================
+
+export {
+  createStateTestContainer,
+  type StateTestContainerConfig,
+  type TestContainer,
+} from "./test-container.js";

@@ -159,3 +159,4 @@
 
 export { createDataDogBridge } from "./bridge.js";
 export type { DataDogBridgeConfig, DdSpan, DdTracer } from "./types.js";
+export { mapSpanKindToDataDog } from "./utils.js";

@@ -98,7 +98,7 @@ export {
   GraphErrorCode,
   isGraphError,
   parseGraphError,
-} from "./validation/error-parsing.js";
+} from "./validation/index.js";
 
 export type {
   GraphErrorNumericCodeType,
@@ -148,7 +148,7 @@ export type {
   ParsedInvalidLazyPortError,
   ParsedMultipleErrorsError,
   ParsedUnknownErrorError,
-} from "./validation/error-parsing.js";
+} from "./validation/index.js";
 
 // =============================================================================
 // Structured Logging
@@ -168,6 +168,16 @@ export type {
 
 export type { CorrelationIdGenerator } from "./graph/inspection/correlation.js";
 export { createCorrelationIdGenerator } from "./graph/inspection/correlation.js";
+
+// =============================================================================
+// Graph Build Error Constructors (for tooling and power users)
+// =============================================================================
+
+export {
+  CyclicDependencyBuild,
+  CaptiveDependencyBuild,
+  MissingDependencyBuild,
+} from "./errors/index.js";
 
 // =============================================================================
 // Compile-time Error Types
@@ -222,3 +232,10 @@ export { getOriginalPort } from "@hex-di/core";
 // =============================================================================
 
 export type { IsAsyncAdapter } from "./validation/types/init-priority.js";
+
+// =============================================================================
+// Port Category Utilities
+// =============================================================================
+
+export type { PortsByCategory, HasCategory } from "./builder/types/inspection.js";
+export type { InferPortCategory } from "@hex-di/core";

@@ -10,7 +10,8 @@
 import type { Port } from "@hex-di/core";
 import type { EventOf } from "../events.js";
 import type { ActivityPort, ActivityOutput, ActivityInput } from "../port.js";
-import type { CleanupReason, ResolvedActivityDeps, ConfiguredActivity } from "../types.js";
+import type { PortDeps } from "@hex-di/core";
+import type { CleanupReason, ConfiguredActivity } from "../types.js";
 import { createTestEventSink } from "./event-sink.js";
 import { createTestSignal } from "./signal.js";
 import { createTestDeps } from "./deps.js";
@@ -90,7 +91,7 @@ export interface TestActivityOptions<TInput, TRequires extends readonly Port<unk
    * Mock dependencies keyed by port name.
    * All ports in the activity's requires must have mocks provided.
    */
-  readonly deps: Partial<ResolvedActivityDeps<TRequires>>;
+  readonly deps: Partial<PortDeps<TRequires>>;
 
   /**
    * Optional timeout in milliseconds.

@@ -7,8 +7,8 @@
  * @packageDocumentation
  */
 
-import { createContext, useContext, type ReactNode } from "react";
-import type { FlowCollector } from "@hex-di/flow";
+import { createContext, use, useContext, useEffect, type ReactNode } from "react";
+import type { FlowCollector, FlowServiceAny } from "@hex-di/flow";
 
 // =============================================================================
 // Flow Context
@@ -41,6 +41,32 @@ export interface FlowProviderProps {
    * NoOpFlowCollector (or omit FlowProvider entirely) for production.
    */
   readonly collector: FlowCollector;
+
+  /**
+   * Optional FlowService to manage lifecycle for.
+   *
+   * When provided, the FlowProvider will dispose the service on unmount.
+   * This ties the machine lifecycle to the component tree.
+   */
+  readonly service?: FlowServiceAny;
+
+  /**
+   * Optional async FlowService for Suspense integration.
+   *
+   * When provided, the component suspends until the promise resolves.
+   * Wrap in a `<Suspense>` boundary to show a fallback while loading.
+   * The resolved service is disposed on unmount.
+   *
+   * @example
+   * ```tsx
+   * <Suspense fallback={<Loading />}>
+   *   <FlowProvider collector={collector} asyncService={initService()}>
+   *     <App />
+   *   </FlowProvider>
+   * </Suspense>
+   * ```
+   */
+  readonly asyncService?: Promise<FlowServiceAny>;
 
   /**
    * React children that will have access to the collector via useFlowCollector.
@@ -105,7 +131,29 @@ export interface FlowProviderProps {
  * }
  * ```
  */
-export function FlowProvider({ collector, children }: FlowProviderProps): React.ReactNode {
+export function FlowProvider({
+  collector,
+  service,
+  asyncService,
+  children,
+}: FlowProviderProps): React.ReactNode {
+  // When asyncService is provided, unwrap it via React 19 use() hook.
+  // This suspends the component until the promise resolves, integrating
+  // naturally with <Suspense> boundaries.
+  const resolvedAsyncService = asyncService !== undefined ? use(asyncService) : undefined;
+
+  // The effective service is either the sync service or the resolved async one
+  const effectiveService = service ?? resolvedAsyncService;
+
+  // When a service is provided, dispose it on unmount
+  useEffect(() => {
+    if (!effectiveService) return;
+
+    return () => {
+      void effectiveService.dispose();
+    };
+  }, [effectiveService]);
+
   return (
     <FlowCollectorContext.Provider value={collector}>{children}</FlowCollectorContext.Provider>
   );

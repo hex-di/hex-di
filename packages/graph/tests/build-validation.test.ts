@@ -65,31 +65,40 @@ describe("validateBuildable shared function", () => {
     expect(typeof validateBuildable).toBe("function");
   });
 
-  it("does not throw for valid graph", () => {
+  it("returns Ok for valid graph", () => {
     const buildable = {
       adapters: [LoggerAdapter, DbAdapter],
       overridePortNames: new Set<string>(),
     };
 
-    expect(() => validateBuildable(buildable)).not.toThrow();
+    const result = validateBuildable(buildable);
+    expect(result.isOk()).toBe(true);
   });
 
-  it("throws for captive dependency", () => {
+  it("returns Err for captive dependency", () => {
     const buildable = {
       adapters: [ScopedAdapter, CaptiveSingletonAdapter],
       overridePortNames: new Set<string>(),
     };
 
-    expect(() => validateBuildable(buildable)).toThrow(/captive/i);
+    const result = validateBuildable(buildable);
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error.message).toMatch(/captive/i);
+    }
   });
 
-  it("throws with HEX003 error code for captive dependency", () => {
+  it("returns Err with HEX003 error code for captive dependency", () => {
     const buildable = {
       adapters: [ScopedAdapter, CaptiveSingletonAdapter],
       overridePortNames: new Set<string>(),
     };
 
-    expect(() => validateBuildable(buildable)).toThrow(/HEX003/);
+    const result = validateBuildable(buildable);
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error.message).toMatch(/HEX003/);
+    }
   });
 });
 

@@ -74,7 +74,7 @@ export type FlowPort<
  * @example With machine type inference
  * ```typescript
  * // If you have a machine definition
- * const modalMachine = createMachine({ ... });
+ * const modalMachine = defineMachine({ ... });
  *
  * // You can use InferMachine* utilities for type parameters
  * const ModalFlowPort = createFlowPort<

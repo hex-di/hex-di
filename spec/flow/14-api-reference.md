@@ -13,7 +13,7 @@ Consolidated type signatures for the entire `@hex-di/flow` surface area. See ind
 #### Machine Definition
 
 ```typescript
-import { defineMachine, createMachine, state, event } from "@hex-di/flow";
+import { defineMachine, state, event } from "@hex-di/flow";
 
 import type {
   Machine,
@@ -36,14 +36,6 @@ import type {
 
 ```typescript
 function defineMachine<
-  const TContext,
-  const TStates extends MachineStatesRecord<Extract<keyof TStates, string>, string, TContext>,
->(
-  config: MachineConfig<TContext, TStates>
-): Machine<Extract<keyof TStates, string>, InferEventNames<TStates>, TContext>;
-
-/** @alias defineMachine - preserved for backward compatibility */
-function createMachine<
   const TContext,
   const TStates extends MachineStatesRecord<Extract<keyof TStates, string>, string, TContext>,
 >(
@@ -86,7 +78,7 @@ interface TransitionConfig<
 }
 ```
 
-_Defined in: [02 - Core Concepts](./02-core-concepts.md#41-machine), [03 - Machine Definition](./03-machine-definition.md#5-machine-definition). `defineMachine` is the primary API; `createMachine` is an alias._
+_Defined in: [02 - Core Concepts](./02-core-concepts.md#41-machine), [03 - Machine Definition](./03-machine-definition.md#5-machine-definition)._
 
 #### State and Event Factories
 
@@ -227,7 +219,7 @@ _Defined in: [05 - Effect System](./05-effects.md#9-effect-architecture), [05 - 
 #### Activity System
 
 ```typescript
-import { activityPort, defineEvents, activity, createActivityManager } from "@hex-di/flow";
+import { createActivityPort, defineEvents, activity, createActivityManager } from "@hex-di/flow";
 
 import type {
   ActivityPort,
@@ -250,7 +242,7 @@ import type {
 ```
 
 ```typescript
-function activityPort<TInput, TOutput>(): <const TName extends string>(
+function createActivityPort<TInput, TOutput>(): <const TName extends string>(
   name: TName
 ) => ActivityPort<TInput, TOutput, TName>;
 
@@ -1097,7 +1089,6 @@ import {
   expectEventTypes,
   expectOkTransition,
   expectErrTransition,
-  MissingMockError,
 } from "@hex-di/flow/testing";
 
 // Re-exports from @hex-di/result/testing for convenience
@@ -1113,6 +1104,7 @@ import type {
   ContainerTestOptions,
   VirtualClock,
   MocksFor,
+  MissingMockError,
 } from "@hex-di/flow/testing";
 ```
 
@@ -1166,7 +1158,7 @@ _Defined in: [11 - Testing](./11-testing.md#26-test-harnesses)_
 ```typescript
 function createTestDeps<TRequires extends readonly Port<unknown, string>[]>(
   mocks: MocksFor<TRequires>
-): ResolvedActivityDeps<TRequires>;
+): Result<ResolvedActivityDeps<TRequires>, MissingMockError>;
 
 type MocksFor<TRequires extends readonly Port<unknown, string>[]> = {
   [K in TRequires[number] as K extends Port<unknown, infer N> ? N : never]: K extends Port<
@@ -1177,9 +1169,11 @@ type MocksFor<TRequires extends readonly Port<unknown, string>[]> = {
     : never;
 };
 
-class MissingMockError extends Error {
+type MissingMockError = {
+  readonly _tag: "MissingMock";
   readonly portName: string;
-}
+  readonly message: string;
+};
 ```
 
 _Defined in: [11 - Testing](./11-testing.md#26-test-harnesses)_

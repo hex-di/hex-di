@@ -18,6 +18,17 @@ export type {
   // Snapshot
   MachineSnapshot,
 
+  // StateValue
+  StateValue,
+
+  // PendingEvent
+  PendingEvent,
+
+  // History types
+  TransitionHistoryEntry,
+  EffectExecutionEntry,
+  HistoryConfig,
+
   // Runner interface
   MachineRunner,
   MachineRunnerAny,
@@ -26,11 +37,31 @@ export type {
   EffectExecutor,
 } from "./types.js";
 
+export { ResultAsync } from "./types.js";
+
 // =============================================================================
 // Interpreter
 // =============================================================================
 
-export { transition, type TransitionResult } from "./interpreter.js";
+export {
+  transition,
+  transitionSafe,
+  computeInitialPath,
+  canTransition,
+  computeInitialPathWithParallel,
+  computeParallelRegionPaths,
+  transitionParallelSafe,
+  canTransitionParallel,
+  collectParallelEntryEffects,
+  collectRegionEntryEffects,
+  collectParallelExitEffects,
+  isParallelState,
+  findParallelDepth,
+  type TransitionResult,
+  type ParallelRegionPaths,
+  type ParallelTransitionResult,
+  type HistoryMap,
+} from "./interpreter.js";
 
 // =============================================================================
 // Executor

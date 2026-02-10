@@ -13,7 +13,15 @@ import type {
   InspectorListener,
   InspectorEvent,
   ServiceOrigin,
+  ResultStatistics,
+  LibraryInspector,
+  UnifiedSnapshot,
+  LibraryQueryEntry,
+  LibraryQueryResult,
+  LibraryQueryPredicate,
 } from "@hex-di/core";
+import { getPortMetadata } from "@hex-di/core";
+import { createLibraryRegistry } from "./library-registry.js";
 import type { InspectorAPI } from "./types.js";
 import { createInspector as createRuntimeInspector, type InternalAccessible } from "./creation.js";
 import {
@@ -104,6 +112,100 @@ function getContainerKind(internalState: ContainerInternalState): "root" | "chil
   return "root";
 }
 
+// =============================================================================
+// Result Tracker
+// =============================================================================
+
+/**
+ * Mutable stats accumulator for a single port.
+ * @internal
+ */
+interface MutablePortStats {
+  okCount: number;
+  errCount: number;
+  errorsByCode: Map<string, number>;
+  lastError?: { code: string; timestamp: number };
+}
+
+/**
+ * Creates a result tracker that maintains per-port ok/err counts.
+ *
+ * Integrates with the event emitter: when a `result:ok` or `result:err`
+ * event is emitted, the tracker automatically updates its internal state.
+ *
+ * @internal
+ */
+function createResultTracker(): {
+  handleEvent(event: InspectorEvent): void;
+  getStatistics(portName: string): ResultStatistics | undefined;
+  getAllStatistics(): ReadonlyMap<string, ResultStatistics>;
+  getHighErrorRatePorts(threshold: number): readonly ResultStatistics[];
+} {
+  const stats = new Map<string, MutablePortStats>();
+
+  function getOrCreate(portName: string): MutablePortStats {
+    let entry = stats.get(portName);
+    if (entry === undefined) {
+      entry = { okCount: 0, errCount: 0, errorsByCode: new Map() };
+      stats.set(portName, entry);
+    }
+    return entry;
+  }
+
+  function toSnapshot(portName: string, s: MutablePortStats): ResultStatistics {
+    const totalCalls = s.okCount + s.errCount;
+    return Object.freeze({
+      portName,
+      totalCalls,
+      okCount: s.okCount,
+      errCount: s.errCount,
+      errorRate: totalCalls > 0 ? s.errCount / totalCalls : 0,
+      errorsByCode: new Map(s.errorsByCode),
+      lastError: s.lastError ? Object.freeze({ ...s.lastError }) : undefined,
+    });
+  }
+
+  return {
+    handleEvent(event: InspectorEvent): void {
+      if (event.type === "result:ok") {
+        const entry = getOrCreate(event.portName);
+        entry.okCount++;
+      } else if (event.type === "result:err") {
+        const entry = getOrCreate(event.portName);
+        entry.errCount++;
+        const count = entry.errorsByCode.get(event.errorCode) ?? 0;
+        entry.errorsByCode.set(event.errorCode, count + 1);
+        entry.lastError = { code: event.errorCode, timestamp: event.timestamp };
+      }
+    },
+
+    getStatistics(portName: string): ResultStatistics | undefined {
+      const entry = stats.get(portName);
+      if (entry === undefined) return undefined;
+      return toSnapshot(portName, entry);
+    },
+
+    getAllStatistics(): ReadonlyMap<string, ResultStatistics> {
+      const result = new Map<string, ResultStatistics>();
+      for (const [portName, entry] of stats) {
+        result.set(portName, toSnapshot(portName, entry));
+      }
+      return result;
+    },
+
+    getHighErrorRatePorts(threshold: number): readonly ResultStatistics[] {
+      const result: ResultStatistics[] = [];
+      for (const [portName, entry] of stats) {
+        const totalCalls = entry.okCount + entry.errCount;
+        if (totalCalls > 0 && entry.errCount / totalCalls > threshold) {
+          result.push(toSnapshot(portName, entry));
+        }
+      }
+      return Object.freeze(result);
+    },
+  };
+}
+
 /**
  * Creates a full InspectorAPI instance from a container.
  *
@@ -128,6 +230,21 @@ export function createBuiltinInspectorAPI(container: InternalAccessible): Inspec
 
   // Create event emitter for subscriptions
   const emitter = createEventEmitter();
+
+  // Create result tracker for result statistics
+  const resultTracker = createResultTracker();
+
+  // Create library registry for library inspectors
+  const libraryRegistry = createLibraryRegistry();
+
+  /**
+   * Unified event dispatch: tracks results and notifies subscribers.
+   * @internal
+   */
+  function emitEvent(event: InspectorEvent): void {
+    resultTracker.handleEvent(event);
+    emitter.emit(event);
+  }
 
   // Cache for child inspectors
   const childInspectorCache = new WeakMap<ContainerInternalState, InspectorAPI>();
@@ -201,8 +318,9 @@ export function createBuiltinInspectorAPI(container: InternalAccessible): Inspec
     const hasParent = internalState.parentState !== undefined;
     const adapters: VisualizableAdapter[] = [];
 
-    for (const [, adapter] of internalState.adapterMap) {
+    for (const [port, adapter] of internalState.adapterMap) {
       const origin = determineOrigin(adapter.portName, internalState, hasParent);
+      const portMeta = getPortMetadata(port);
 
       const visualizable: VisualizableAdapter = {
         portName: adapter.portName,
@@ -215,6 +333,7 @@ export function createBuiltinInspectorAPI(container: InternalAccessible): Inspec
             ? (internalState.inheritanceModes.get(adapter.portName) ?? "shared")
             : undefined,
         isOverride: internalState.overridePorts.has(adapter.portName),
+        metadata: portMeta !== undefined ? Object.freeze({ ...portMeta }) : undefined,
       };
 
       adapters.push(Object.freeze(visualizable));
@@ -262,9 +381,41 @@ export function createBuiltinInspectorAPI(container: InternalAccessible): Inspec
     getAdapterInfo,
     getGraphData,
 
+    // Result statistics
+    getResultStatistics: (portName: string) => resultTracker.getStatistics(portName),
+    getAllResultStatistics: () => resultTracker.getAllStatistics(),
+    getHighErrorRatePorts: (threshold: number) => resultTracker.getHighErrorRatePorts(threshold),
+
+    // Library inspector registry
+    registerLibrary(lib: LibraryInspector): () => void {
+      return libraryRegistry.registerLibrary(lib, emitEvent);
+    },
+    getLibraryInspectors: () => libraryRegistry.getLibraryInspectors(),
+    getLibraryInspector: (name: string) => libraryRegistry.getLibraryInspector(name),
+    getUnifiedSnapshot(): UnifiedSnapshot {
+      const containerSnapshot = inspector.getSnapshot();
+      const libraries = libraryRegistry.getLibrarySnapshots();
+      const registeredLibraries = Object.freeze(
+        [...libraryRegistry.getLibraryInspectors().keys()].sort()
+      );
+      return Object.freeze({
+        timestamp: Date.now(),
+        container: containerSnapshot,
+        libraries,
+        registeredLibraries,
+      });
+    },
+
+    // Cross-library query API
+    queryLibraries: (predicate: LibraryQueryPredicate) => libraryRegistry.queryLibraries(predicate),
+    queryByLibrary: (name: string, predicate?: (entry: LibraryQueryEntry) => boolean) =>
+      libraryRegistry.queryByLibrary(name, predicate),
+    queryByKey: (pattern: string | RegExp) => libraryRegistry.queryByKey(pattern),
+
     // Internal methods (for runtime and tracing)
     getContainer: () => container,
-    emit: (event: InspectorEvent) => emitter.emit(event),
+    emit: emitEvent,
+    disposeLibraries: () => libraryRegistry.dispose(),
   };
 
   return Object.freeze(inspector);

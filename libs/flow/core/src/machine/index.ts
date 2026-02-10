@@ -83,14 +83,37 @@ export type {
 // =============================================================================
 
 export {
-  createMachine,
+  defineMachine,
   type InferMachineState,
   type InferMachineEvent,
   type InferMachineContext,
-} from "./create-machine.js";
+} from "./define-machine.js";
 
 // =============================================================================
 // Factory Functions
 // =============================================================================
 
 export { state, event } from "./factories.js";
+
+// =============================================================================
+// Guards Module - Named Guards and Combinators
+// =============================================================================
+
+export { guard, and, or, not, type Guard, type NamedGuard } from "./guards.js";
+
+// =============================================================================
+// Actions Module - Named Actions and Combinators
+// =============================================================================
+
+export { defineAction, composeActions, type Action, type NamedAction } from "./actions.js";
+
+// =============================================================================
+// Builder DSL - Fluent Machine Definition API
+// =============================================================================
+
+export {
+  createMachineBuilder,
+  type StatePhaseBuilder,
+  type TransitionPhaseBuilder,
+  type TransitionOptions,
+} from "./builder.js";

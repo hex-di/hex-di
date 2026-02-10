@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install:*)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm --filter @hex-di/tracing typecheck:*)",
+      "Bash(pnpm --filter @hex-di/flow typecheck:*)",
+      "Bash(pnpm --filter @pokenerve/frontend typecheck:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm --filter @hex-di/tracing test)",
+      "Bash(pnpm --filter @hex-di/flow test -- tests/runner.test.ts)",
+      "Bash(pnpm --filter @hex-di/saga test:*)",
+      "Bash(find:*)"
+    ]
+  }
+}

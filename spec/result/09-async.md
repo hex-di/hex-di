@@ -47,6 +47,16 @@ class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
 }
 ```
 
+### Public API naming
+
+The implementation class MUST be named `ResultAsync` (not `ResultAsyncImpl` or any other internal name). The class name appears in:
+
+- TypeScript error messages and IDE tooltips
+- Stack traces at runtime
+- Generated `.d.ts` declaration files
+
+No implementation-detail suffixes (e.g., `Impl`, `Internal`) may leak through the public API surface.
+
 ### Invariant: ResultAsync never rejects
 
 The internal `_promise` always resolves to a `Result<T, E>`. It never rejects. All error cases are represented as `Err<T, E>`, not as promise rejections. This is enforced by the constructors.

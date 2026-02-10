@@ -253,12 +253,14 @@ export interface ScopeContainerAccess<TProvides extends Port<unknown, string>> {
   resolveInternal<P extends TProvides>(
     port: P,
     scopedMemo: MemoMap,
-    scopeId?: string | null
+    scopeId?: string | null,
+    scopeName?: string
   ): InferService<P>;
   resolveAsyncInternal<P extends TProvides>(
     port: P,
     scopedMemo: MemoMap,
-    scopeId?: string | null
+    scopeId?: string | null,
+    scopeName?: string
   ): Promise<InferService<P>>;
   getSingletonMemo(): MemoMap;
   has(port: Port<unknown, string>): boolean;

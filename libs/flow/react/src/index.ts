@@ -90,15 +90,30 @@ export const VERSION = "0.1.0";
 export {
   // Main hooks
   useMachine,
+  useFlow,
   useSelector,
+  useMachineSelector,
   useSend,
+  useFlowEvent,
+  useActivity,
+  useFlowPort,
+
+  // Inspection hooks
+  useFlowState,
+  useFlowHealth,
+  useFlowTimeline,
 
   // Utility exports
   shallowEqual,
 
   // Type exports
   type UseMachineResult,
+  type UseFlowResult,
+  type FlowStatus,
+  type UseActivityResult,
   type EqualityFn,
+  type UseFlowHealthOptions,
+  type UseFlowTimelineOptions,
 } from "./hooks/index.js";
 
 // =============================================================================
@@ -133,7 +148,13 @@ export type {
   ActivityStatus,
   FlowCollector,
   FlowTransitionEventAny,
+  FlowInspector,
+  HealthEvent,
+  TransitionError,
+  EffectExecutionError,
 } from "@hex-di/flow";
+
+export { FlowInspectorPort, ResultAsync } from "@hex-di/flow";
 
 // =============================================================================
 // Re-exports from @hex-di/react

@@ -234,16 +234,3 @@ export function activityPort<TInput, TOutput>(): <const TName extends string>(
     return unsafeCreateActivityPort<TInput, TOutput, TName>(name);
   };
 }
-
-// =============================================================================
-// Legacy Export (Deprecated)
-// =============================================================================
-
-/**
- * Creates a typed port token for an Activity.
- *
- * @deprecated Use `activityPort` instead. This function will be removed in a future version.
- *
- * @see {@link activityPort} - The recommended curried API
- */
-export const createActivityPort = activityPort;

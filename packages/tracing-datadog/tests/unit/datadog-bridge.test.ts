@@ -8,6 +8,7 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 import { createDataDogBridge } from "../../src/bridge.js";
 import type { DdSpan, DdTracer } from "../../src/types.js";
 import type { SpanData } from "@hex-di/tracing";
+import { mapSpanKindToDataDog } from "../../src/utils.js";
 
 /**
  * Helper to create test SpanData with optional overrides
@@ -102,13 +103,13 @@ describe("createDataDogBridge", () => {
     await bridge.export([spanData]);
 
     const mockSpan = mockTracer._mockSpans.get("test");
-    expect(mockSpan!.setTag).toHaveBeenCalledWith("span.kind", "internal");
+    expect(mockSpan!.setTag).toHaveBeenCalledWith("span.kind", "custom");
     expect(mockSpan!.setTag).toHaveBeenCalledWith("http.method", "GET");
     expect(mockSpan!.setTag).toHaveBeenCalledWith("http.url", "/api/users");
     expect(mockSpan!.setTag).toHaveBeenCalledWith("custom.tag", "value");
   });
 
-  it("should set span.kind tag from HexDI span kind", async () => {
+  it("should map span.kind to DataDog conventions", async () => {
     const bridge = createDataDogBridge({ tracer: mockTracer });
     const spanData = createTestSpanData("test", 1000, 2000, {
       kind: "server",
@@ -117,7 +118,71 @@ describe("createDataDogBridge", () => {
     await bridge.export([spanData]);
 
     const mockSpan = mockTracer._mockSpans.get("test");
-    expect(mockSpan!.setTag).toHaveBeenCalledWith("span.kind", "server");
+    expect(mockSpan!.setTag).toHaveBeenCalledWith("span.kind", "web");
+  });
+
+  it("should set DataDog-specific trace context tags", async () => {
+    const bridge = createDataDogBridge({ tracer: mockTracer });
+    const spanData = createTestSpanData("test", 1000, 2000);
+
+    await bridge.export([spanData]);
+
+    const mockSpan = mockTracer._mockSpans.get("test");
+    expect(mockSpan!.setTag).toHaveBeenCalledWith("dd.trace_id", "trace123");
+    expect(mockSpan!.setTag).toHaveBeenCalledWith("dd.span_id", "test");
+  });
+
+  it("should set duration_ms tag", async () => {
+    const bridge = createDataDogBridge({ tracer: mockTracer });
+    const spanData = createTestSpanData("test", 1000, 2500);
+
+    await bridge.export([spanData]);
+
+    const mockSpan = mockTracer._mockSpans.get("test");
+    expect(mockSpan!.setTag).toHaveBeenCalledWith("duration_ms", 1500);
+  });
+
+  it("should set service metadata tags when provided in config", async () => {
+    const bridge = createDataDogBridge({
+      tracer: mockTracer,
+      serviceName: "my-service",
+      environment: "production",
+      version: "1.2.3",
+    });
+    const spanData = createTestSpanData("test", 1000, 2000);
+
+    await bridge.export([spanData]);
+
+    const mockSpan = mockTracer._mockSpans.get("test");
+    expect(mockSpan!.setTag).toHaveBeenCalledWith("service.name", "my-service");
+    expect(mockSpan!.setTag).toHaveBeenCalledWith("env", "production");
+    expect(mockSpan!.setTag).toHaveBeenCalledWith("version", "1.2.3");
+  });
+
+  it("should not set service metadata tags when not provided", async () => {
+    const bridge = createDataDogBridge({ tracer: mockTracer });
+    const spanData = createTestSpanData("test", 1000, 2000);
+
+    await bridge.export([spanData]);
+
+    const mockSpan = mockTracer._mockSpans.get("test");
+    const setTagCalls = (mockSpan!.setTag as any).mock.calls as Array<[string, unknown]>;
+    const tagKeys = setTagCalls.map((call: [string, unknown]) => call[0]);
+    expect(tagKeys).not.toContain("service.name");
+    expect(tagKeys).not.toContain("env");
+    expect(tagKeys).not.toContain("version");
+  });
+
+  it("should set dd.parent_id tag when parent span exists", async () => {
+    const bridge = createDataDogBridge({ tracer: mockTracer });
+    const spanData = createTestSpanData("child", 1000, 2000, {
+      parentSpanId: "parent-123",
+    });
+
+    await bridge.export([spanData]);
+
+    const mockSpan = mockTracer._mockSpans.get("child");
+    expect(mockSpan!.setTag).toHaveBeenCalledWith("dd.parent_id", "parent-123");
   });
 
   it("should handle parent-child relationships via childOf", async () => {
@@ -160,6 +225,23 @@ describe("createDataDogBridge", () => {
     const mockSpan = mockTracer._mockSpans.get("test");
     expect(mockSpan!.setTag).toHaveBeenCalledWith("error", true);
     expect(mockSpan!.setTag).toHaveBeenCalledWith("error.message", "Something went wrong");
+  });
+
+  it("should handle error status with error.type attribute", async () => {
+    const bridge = createDataDogBridge({ tracer: mockTracer });
+    const spanData = createTestSpanData("test", 1000, 2000, {
+      status: "error",
+      attributes: {
+        "error.message": "Not found",
+        "error.type": "NotFoundError",
+      },
+    });
+
+    await bridge.export([spanData]);
+
+    const mockSpan = mockTracer._mockSpans.get("test");
+    expect(mockSpan!.setTag).toHaveBeenCalledWith("error", true);
+    expect(mockSpan!.setTag).toHaveBeenCalledWith("error.type", "NotFoundError");
   });
 
   it("should set resource.name tag from operation name or span name", async () => {
@@ -288,15 +370,23 @@ describe("createDataDogBridge", () => {
     // Shutdown should clear active spans
     await bridge.shutdown();
 
-    // Export a child referencing span1 - should not find parent
-    const childData = createTestSpanData("child", 3000, 4000, {
-      parentSpanId: "span1",
-    });
-    await bridge.export([childData]);
+    // After shutdown, export should be a no-op
+    await bridge.export([createTestSpanData("child", 3000, 4000)]);
 
-    // Should not have childOf since parent was cleared
-    const lastCall = (mockTracer.startSpan as any).mock.calls[2];
-    expect(lastCall[1].childOf).toBeUndefined();
+    // Only the first 2 exports should have created spans
+    expect(mockTracer.startSpan).toHaveBeenCalledTimes(2);
+  });
+
+  it("should be idempotent on shutdown", async () => {
+    const bridge = createDataDogBridge({ tracer: mockTracer });
+
+    // First shutdown
+    await bridge.shutdown();
+    expect(mockTracer.flush).toHaveBeenCalledTimes(1);
+
+    // Second shutdown should be a no-op
+    await bridge.shutdown();
+    expect(mockTracer.flush).toHaveBeenCalledTimes(1);
   });
 
   it("should handle shutdown errors gracefully", async () => {
@@ -313,6 +403,27 @@ describe("createDataDogBridge", () => {
     expect(consoleErrorSpy.mock.calls[0]![0]).toContain("shutdown failed");
 
     consoleErrorSpy.mockRestore();
+  });
+
+  it("should no-op export after shutdown", async () => {
+    const bridge = createDataDogBridge({ tracer: mockTracer });
+    await bridge.shutdown();
+
+    // Export after shutdown should be a no-op
+    await expect(bridge.export([createTestSpanData("test", 1000, 2000)])).resolves.toBeUndefined();
+    expect(mockTracer.startSpan).not.toHaveBeenCalled();
+  });
+
+  it("should no-op forceFlush after shutdown", async () => {
+    const bridge = createDataDogBridge({ tracer: mockTracer });
+    await bridge.shutdown();
+
+    // Reset flush call count
+    (mockTracer.flush as ReturnType<typeof vi.fn>).mockClear();
+
+    // forceFlush after shutdown should be a no-op
+    await expect(bridge.forceFlush()).resolves.toBeUndefined();
+    expect(mockTracer.flush).not.toHaveBeenCalled();
   });
 
   it("should handle individual span export errors without failing entire batch", async () => {
@@ -405,5 +516,27 @@ describe("createDataDogBridge", () => {
       childOf: undefined,
       tags: {},
     });
+  });
+});
+
+describe("mapSpanKindToDataDog", () => {
+  it("should map server to web", () => {
+    expect(mapSpanKindToDataDog("server")).toBe("web");
+  });
+
+  it("should map client to http", () => {
+    expect(mapSpanKindToDataDog("client")).toBe("http");
+  });
+
+  it("should map internal to custom", () => {
+    expect(mapSpanKindToDataDog("internal")).toBe("custom");
+  });
+
+  it("should map producer to worker", () => {
+    expect(mapSpanKindToDataDog("producer")).toBe("worker");
+  });
+
+  it("should map consumer to worker", () => {
+    expect(mapSpanKindToDataDog("consumer")).toBe("worker");
   });
 });

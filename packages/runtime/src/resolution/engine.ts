@@ -40,7 +40,8 @@ import { resolveWithMemo, buildDependencies } from "./core.js";
 export type SyncDependencyResolver = (
   port: Port<unknown, string>,
   scopedMemo: MemoMap,
-  scopeId: string | null
+  scopeId: string | null,
+  scopeName?: string
 ) => unknown;
 
 // =============================================================================
@@ -109,15 +110,22 @@ export class ResolutionEngine {
     adapter: RuntimeAdapterFor<P>,
     scopedMemo: MemoMap,
     scopeId: string | null,
-    inheritanceMode: InheritanceMode | null = null
+    inheritanceMode: InheritanceMode | null = null,
+    scopeName?: string
   ): InferService<P> {
     if (this.hooksRunner === null) {
-      return this.resolveCore(port, adapter, scopedMemo, scopeId);
+      return this.resolveCore(port, adapter, scopedMemo, scopeId, scopeName);
     }
 
     const isCacheHit = checkCacheHit(port, adapter.lifetime, this.singletonMemo, scopedMemo);
-    return this.hooksRunner.runSync(port, adapter, scopeId, isCacheHit, inheritanceMode, () =>
-      this.resolveCore(port, adapter, scopedMemo, scopeId)
+    return this.hooksRunner.runSync(
+      port,
+      adapter,
+      scopeId,
+      isCacheHit,
+      inheritanceMode,
+      () => this.resolveCore(port, adapter, scopedMemo, scopeId, scopeName),
+      scopeName
     );
   }
 
@@ -134,14 +142,15 @@ export class ResolutionEngine {
     port: P,
     adapter: RuntimeAdapterFor<P>,
     scopedMemo: MemoMap,
-    scopeId: string | null
+    scopeId: string | null,
+    scopeName?: string
   ): InferService<P> {
     return resolveWithMemo(
       port,
       adapter.lifetime,
       this.singletonMemo,
       scopedMemo,
-      () => this.createInstance(port, adapter, scopedMemo, scopeId),
+      () => this.createInstance(port, adapter, scopedMemo, scopeId, scopeName),
       adapter.finalizer
     );
   }
@@ -155,7 +164,8 @@ export class ResolutionEngine {
     port: P,
     adapter: RuntimeAdapterFor<P>,
     scopedMemo: MemoMap,
-    scopeId: string | null
+    scopeId: string | null,
+    scopeName?: string
   ): InferService<P> {
     const portName = port.__portName;
 
@@ -166,7 +176,7 @@ export class ResolutionEngine {
 
       try {
         const deps = buildDependencies(adapter.requires, requiredPort =>
-          this.resolveDependency(requiredPort, scopedMemo, scopeId)
+          this.resolveDependency(requiredPort, scopedMemo, scopeId, scopeName)
         );
         return adapter.factory(deps);
       } catch (e) {

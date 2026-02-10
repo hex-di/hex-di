@@ -8,14 +8,14 @@
 // Core Types
 // =============================================================================
 
-export type { Result, Ok, Err, ResultAsync } from "./core/types.js";
+export type { Result, Ok, Err } from "./core/types.js";
 
 // =============================================================================
 // Factories
 // =============================================================================
 
 export { ok, err } from "./core/result.js";
-export { isResult } from "./core/guards.js";
+export { isResult, isResultAsync } from "./core/guards.js";
 
 // =============================================================================
 // Constructors
@@ -31,7 +31,7 @@ export { fromPromise, fromSafePromise, fromAsyncThrowable } from "./constructors
 // ResultAsync
 // =============================================================================
 
-export { ResultAsyncImpl } from "./async/result-async.js";
+export { ResultAsync } from "./async/result-async.js";
 
 // =============================================================================
 // Combinators

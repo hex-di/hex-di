@@ -1,6 +1,6 @@
 import type { Result, Err, ResultAsync } from "../core/types.js";
 import { err } from "../core/result.js";
-import { ResultAsyncImpl } from "../async/result-async.js";
+import { ResultAsync as ResultAsyncClass } from "../async/result-async.js";
 
 /**
  * safeTry uses JavaScript generators to emulate Rust's `?` operator.
@@ -85,5 +85,5 @@ function runAsync(
     }
   })();
 
-  return ResultAsyncImpl.fromSafePromise(promise).andThen(result => result);
+  return ResultAsyncClass.fromSafePromise(promise).andThen(result => result);
 }

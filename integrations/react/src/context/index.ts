@@ -20,3 +20,5 @@ export {
 } from "./resolver-context.js";
 
 export { TracingContext, type TracingContextValue } from "./tracing-context.js";
+
+export { InspectorContext, type InspectorContextValue } from "./inspector-context.js";

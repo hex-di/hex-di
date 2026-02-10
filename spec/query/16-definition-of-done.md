@@ -232,24 +232,24 @@ This document defines all tests required for `@hex-di/query`, `@hex-di/query-rea
 | 29  | `cache.invalidate(port, params)` marks specific entry as invalidated              | unit |
 | 30  | `cache.invalidate(port)` without params marks all entries for port as invalidated | unit |
 | 31  | `cache.setError(port, params, error)` stores error entry                          | unit |
-| 32  | `cache.subscribe(listener)` fires on `added` event                                | unit |
-| 33  | `cache.subscribe(listener)` fires on `updated` event                              | unit |
-| 34  | `cache.subscribe(listener)` fires on `removed` event                              | unit |
-| 35  | `cache.subscribe(listener)` fires on `invalidated` event                          | unit |
-| 36  | `cache.subscribe(listener)` fires on `cleared` event                              | unit |
-| 37  | Unsubscribe function stops event delivery                                         | unit |
-| 38  | CacheEntry has `result: Ok(data)` after successful set                            | unit |
-| 39  | CacheEntry has `result: Err(error)` after setError                                | unit |
-| 40  | CacheEntry `data` is derived from `result.value` on Ok                            | unit |
-| 41  | CacheEntry `error` is derived from `result.error` on Err                          | unit |
-| 42  | CacheEntry `data` is `undefined` when result is Err                               | unit |
-| 43  | CacheEntry `error` is `null` when result is Ok                                    | unit |
-| 44  | CacheEntry `status` is `"pending"` when result is `undefined`                     | unit |
-| 45  | CacheEntry `status` is `"success"` when result is Ok                              | unit |
-| 46  | CacheEntry `status` is `"error"` when result is Err                               | unit |
-| 47  | CacheEntry `dataUpdatedAt` is set on successful fetch                             | unit |
-| 48  | CacheEntry `errorUpdatedAt` is set on error fetch                                 | unit |
-| 49  | CacheEntry `fetchCount` increments on each fetch                                  | unit |
+| 32  | `cache.getEntry(port, params)` returns `ReactiveCacheEntry` for existing entry    | unit |
+| 33  | `cache.getOrCreateEntry(port, params)` creates entry if absent                    | unit |
+| 34  | `cache.getSnapshot(port, params)` returns non-reactive `CacheEntrySnapshot`       | unit |
+| 35  | Reactive effect on entry fires when `result$` signal changes                      | unit |
+| 36  | Reactive effect on entry fires when `fetchStatus$` signal changes                 | unit |
+| 37  | Disposing reactive effect stops notification delivery                             | unit |
+| 38  | ReactiveCacheEntry has `result$: signal(Ok(data))` after successful set           | unit |
+| 39  | ReactiveCacheEntry has `result$: signal(Err(error))` after setError               | unit |
+| 40  | ReactiveCacheEntry `data` computed derives from `result$.get()` on Ok             | unit |
+| 41  | ReactiveCacheEntry `error` computed derives from `result$.get()` on Err           | unit |
+| 42  | ReactiveCacheEntry `data` computed is `undefined` when result is Err              | unit |
+| 43  | ReactiveCacheEntry `error` computed is `null` when result is Ok                   | unit |
+| 44  | ReactiveCacheEntry `status` computed is `"pending"` when result is `undefined`    | unit |
+| 45  | ReactiveCacheEntry `status` computed is `"success"` when result is Ok             | unit |
+| 46  | ReactiveCacheEntry `status` computed is `"error"` when result is Err              | unit |
+| 47  | ReactiveCacheEntry `dataUpdatedAt$` signal is set on successful fetch             | unit |
+| 48  | ReactiveCacheEntry `errorUpdatedAt$` signal is set on error fetch                 | unit |
+| 49  | ReactiveCacheEntry `fetchCount$` signal increments on each fetch                  | unit |
 
 ### Unit Tests -- `structural-sharing.test.ts`
 
@@ -275,12 +275,12 @@ This document defines all tests required for `@hex-di/query`, `@hex-di/query-rea
 
 | #   | Test                                                                       | Type |
 | --- | -------------------------------------------------------------------------- | ---- |
-| 65  | Entry with `observerCount === 0` and expired `cacheTime` is GC-eligible    | unit |
-| 66  | Entry with `observerCount > 0` is NOT GC-eligible                          | unit |
-| 67  | Entry with `observerCount === 0` but within `cacheTime` is NOT GC-eligible | unit |
+| 65  | Entry with no active subscribers and expired `cacheTime` is GC-eligible    | unit |
+| 66  | Entry with active subscribers (`hasSubscribers(entry)`) is NOT GC-eligible | unit |
+| 67  | Entry with no subscribers but within `cacheTime` is NOT GC-eligible        | unit |
 | 68  | GC removes eligible entries on interval tick                               | unit |
-| 69  | GC is cancelled when new observer mounts before expiry                     | unit |
-| 70  | `cacheTime: 0` makes entry GC-eligible immediately when observers detach   | unit |
+| 69  | GC is cancelled when new subscriber effect mounts before expiry            | unit |
+| 70  | `cacheTime: 0` makes entry GC-eligible immediately when subscribers detach | unit |
 | 71  | `cacheTime: Infinity` prevents GC entirely                                 | unit |
 | 72  | GC respects injectable Clock port for time source                          | unit |
 
@@ -308,6 +308,79 @@ This document defines all tests required for `@hex-di/query`, `@hex-di/query-rea
 ### Mutation Testing
 
 **Target: >95% mutation score.** Cache key generation (determinism, insertion-order independence), `stableStringify`, `replaceEqualDeep`, and GC eligibility checks are critical -- wrong keys cause data corruption and wrong sharing causes stale renders.
+
+---
+
+## DoD 5b: Reactivity Module (Signal-Based Reactivity)
+
+### Unit Tests -- `reactivity/signals.test.ts`
+
+| #   | Test                                                                         | Type |
+| --- | ---------------------------------------------------------------------------- | ---- |
+| 1   | `createSignal(initialValue, system)` creates a signal with initial value     | unit |
+| 2   | `signal.get()` returns current value                                         | unit |
+| 3   | `signal.set(newValue)` updates value and notifies subscribers                | unit |
+| 4   | `signal.peek()` returns current value without tracking dependency            | unit |
+| 5   | `createComputed(fn, system)` creates a lazily-evaluated computed             | unit |
+| 6   | Computed re-evaluates when upstream signal changes                           | unit |
+| 7   | Computed caches value when upstream signal has not changed                   | unit |
+| 8   | Diamond dependency: computed with two paths to same signal evaluates once    | unit |
+| 9   | `createEffect(fn, system)` runs synchronously on creation                    | unit |
+| 10  | Effect re-runs when tracked signal changes                                   | unit |
+| 11  | Disposing effect stops re-execution on signal change                         | unit |
+| 12  | Effect does not re-run when untracked signal changes (via `peek()`)          | unit |
+| 13  | Nested computed: computed depending on another computed propagates correctly | unit |
+
+### Unit Tests -- `reactivity/system-factory.test.ts`
+
+| #   | Test                                                                          | Type |
+| --- | ----------------------------------------------------------------------------- | ---- |
+| 14  | `createIsolatedReactiveSystem()` creates an isolated reactive system instance | unit |
+| 15  | Two isolated systems have independent dependency graphs                       | unit |
+| 16  | Signal in system A does not trigger effects in system B                       | unit |
+| 17  | Disposing system disposes all effects created within it                       | unit |
+
+### Unit Tests -- `reactivity/batch.test.ts`
+
+| #   | Test                                                                              | Type |
+| --- | --------------------------------------------------------------------------------- | ---- |
+| 18  | `batch(target, fn, system)` defers subscriber notifications until batch completes | unit |
+| 19  | Multiple signal writes within batch produce single effect execution               | unit |
+| 20  | Nested batches: inner batch does not flush until outer batch completes            | unit |
+| 21  | Batch uses container-scoped depth tracking (WeakMap per target)                   | unit |
+| 22  | Cross-container batch isolation: batch in container A does not affect container B | unit |
+| 23  | Exception in batch body still decrements depth and flushes                        | unit |
+
+### Unit Tests -- `reactivity/reactive-cache-entry.test.ts`
+
+| #   | Test                                                                                         | Type |
+| --- | -------------------------------------------------------------------------------------------- | ---- |
+| 24  | `createReactiveCacheEntry(key, system)` creates entry with all signal/computed fields        | unit |
+| 25  | Writing to `result$` signal triggers `status` computed re-evaluation                         | unit |
+| 26  | Writing to `result$` signal triggers `data` and `error` computed re-evaluation               | unit |
+| 27  | Writing to `fetchStatus$` signal triggers `isFetching` computed re-evaluation                | unit |
+| 28  | `isLoading` computed is `true` only when `status === "pending" && isFetching`                | unit |
+| 29  | `isRefetching` computed is `true` only when `status === "success" && isFetching`             | unit |
+| 30  | Structural sharing: writing equal data to `result$` via `replaceEqualDeep` skips propagation | unit |
+| 31  | `hasSubscribers(entry)` returns `true` when at least one effect tracks entry signals         | unit |
+| 32  | `hasSubscribers(entry)` returns `false` when no effects track entry signals                  | unit |
+| 33  | `getSnapshot(entry)` returns non-reactive plain object with current signal values            | unit |
+
+### Type-Level Tests -- `reactivity/reactivity.test-d.ts`
+
+| #   | Test                                                                                  | Type |
+| --- | ------------------------------------------------------------------------------------- | ---- |
+| 1   | `Signal<T>` has `get(): T`, `set(value: T): void`, `peek(): T`                        | type |
+| 2   | `Computed<T>` has `get(): T`, `peek(): T` but no `set`                                | type |
+| 3   | `ReactiveEffect` has `dispose(): void`                                                | type |
+| 4   | `ReactiveSystemInstance` has `signal`, `computed`, `effect`, `batch` methods          | type |
+| 5   | `createIsolatedReactiveSystem()` returns `ReactiveSystemInstance`                     | type |
+| 6   | `ReactiveCacheEntry<TData, TError>` signal fields use correct generics                | type |
+| 7   | `CacheEntrySnapshot<TData, TError>` has no signal/computed fields (plain values only) | type |
+
+### Mutation Testing
+
+**Target: >95% mutation score.** Signal propagation, computed caching/invalidation, batch depth tracking, and subscriber detection are critical -- mutations to notification logic cause glitches (inconsistent intermediate states), and mutations to batch depth cause premature or missed flushes.
 
 ---
 
@@ -425,16 +498,16 @@ This document defines all tests required for `@hex-di/query`, `@hex-di/query-rea
 | 22  | `invalidate(port)` without params invalidates all queries for port                 | unit |
 | 23  | `invalidateMatching(predicate)` invalidates matching queries                       | unit |
 | 24  | `invalidateAll()` invalidates all queries                                          | unit |
-| 25  | Active queries (with observers) refetch after invalidation                         | unit |
-| 26  | Inactive queries (no observers) are only marked stale                              | unit |
+| 25  | Active queries (with subscriber effects) refetch after invalidation                | unit |
+| 26  | Inactive queries (no subscribers) are only marked stale                            | unit |
 | 27  | `remove(port, params)` removes specific entry from cache                           | unit |
 | 28  | `remove(port)` without params removes all entries for port                         | unit |
 | 29  | `cancel(port, params)` cancels in-flight fetch for specific key                    | unit |
 | 30  | `cancel(port)` without params cancels all fetches for port                         | unit |
 | 31  | `cancelAll()` cancels all in-flight fetches                                        | unit |
 | 32  | `reset(port, params)` removes data and cancels fetches                             | unit |
-| 33  | `subscribe(port, params, callback)` fires on state changes                         | unit |
-| 34  | Unsubscribe stops callback delivery                                                | unit |
+| 33  | `getReactiveEntry(port, params)` returns `ReactiveCacheEntry` for reactive access  | unit |
+| 34  | `createEffect(fn)` creates a reactive effect on the client's reactive system       | unit |
 | 35  | `getCache()` returns the underlying QueryCache                                     | unit |
 | 36  | `isFetching()` returns count of currently fetching queries                         | unit |
 | 37  | `isFetching({ port })` filters by port                                             | unit |
@@ -463,7 +536,7 @@ This document defines all tests required for `@hex-di/query`, `@hex-di/query-rea
 | --- | --------------------------------------------------------------------- | ---- |
 | 51  | `dispose()` cancels all in-flight queries                             | unit |
 | 52  | `dispose()` stops background operations (GC, polling)                 | unit |
-| 53  | `dispose()` clears the cache                                          | unit |
+| 53  | `dispose()` disposes all reactive effects and clears the cache        | unit |
 | 54  | After `dispose()`, `fetch` returns Err with `QueryDisposed`           | unit |
 | 55  | After `dispose()`, `prefetch` returns Err with `QueryDisposed`        | unit |
 | 56  | After `dispose()`, `ensureQueryData` returns Err with `QueryDisposed` | unit |
@@ -536,7 +609,7 @@ This document defines all tests required for `@hex-di/query`, `@hex-di/query-rea
 | 14  | `getFetchHistory({ since })` filters by timestamp                                  | unit |
 | 15  | `getFetchHistory({ trigger })` filters by trigger type                             | unit |
 | 16  | `getCacheStats()` returns correct `totalEntries`                                   | unit |
-| 17  | `getCacheStats()` returns correct `activeEntries` (observerCount > 0)              | unit |
+| 17  | `getCacheStats()` returns correct `activeEntries` (hasSubscribers)                 | unit |
 | 18  | `getCacheStats()` returns correct `staleEntries`                                   | unit |
 | 19  | `getCacheStats()` returns correct `inFlightCount`                                  | unit |
 | 20  | `getCacheStats()` computes `cacheHitRate`                                          | unit |
@@ -558,8 +631,8 @@ This document defines all tests required for `@hex-di/query`, `@hex-di/query-rea
 | 36  | `subscribe(listener)` fires `deduplicated` event                                   | unit |
 | 37  | `subscribe(listener)` fires `invalidated` event with source                        | unit |
 | 38  | `subscribe(listener)` fires `gc-collected` event                                   | unit |
-| 39  | `subscribe(listener)` fires `observer-added` event with count                      | unit |
-| 40  | `subscribe(listener)` fires `observer-removed` event with count                    | unit |
+| 39  | `subscribe(listener)` fires `subscriber-added` event with count                    | unit |
+| 40  | `subscribe(listener)` fires `subscriber-removed` event with count                  | unit |
 | 41  | `subscribe(listener)` fires `retry` event with attempt and delay                   | unit |
 | 42  | Unsubscribe stops event delivery                                                   | unit |
 
@@ -655,8 +728,8 @@ This document defines all tests required for `@hex-di/query`, `@hex-di/query-rea
 | 12  | `useQuery` with `throwOnError: true` throws error to error boundary          | unit |
 | 13  | `useQuery` with `throwOnError` function: selectively throws based on error   | unit |
 | 14  | `useQuery` with `structuralSharing: false` does not apply structural sharing | unit |
-| 15  | `useQuery` unmount decrements observer count                                 | unit |
-| 16  | `useQuery` re-mount increments observer count                                | unit |
+| 15  | `useQuery` unmount disposes subscriber effect (no active subscribers)        | unit |
+| 16  | `useQuery` re-mount creates new subscriber effect (active subscribers)       | unit |
 | 17  | `refetch()` triggers immediate refetch                                       | unit |
 | 18  | `useQuery` result field contains `Result<TData, TError>` after completion    | unit |
 
@@ -752,7 +825,7 @@ This document defines all tests required for `@hex-di/query`, `@hex-di/query-rea
 
 ### Mutation Testing
 
-**Target: >85% mutation score.** React hook state transitions, observer lifecycle (mount/unmount), and callback invocation order are the highest-priority targets.
+**Target: >85% mutation score.** React hook state transitions, subscriber effect lifecycle (mount/unmount/dispose), useSyncExternalStore bridge correctness, and callback invocation order are the highest-priority targets.
 
 ---
 
@@ -785,28 +858,28 @@ This document defines all tests required for `@hex-di/query`, `@hex-di/query-rea
 
 ### Unit Tests -- `assertions.test.ts`
 
-| #   | Test                                                                          | Type |
-| --- | ----------------------------------------------------------------------------- | ---- |
-| 16  | `expectQueryState(state).toBeLoading()` passes for loading state              | unit |
-| 17  | `expectQueryState(state).toBeLoading()` fails for non-loading state           | unit |
-| 18  | `expectQueryState(state).toBeSuccess()` passes for success state              | unit |
-| 19  | `expectQueryState(state).toBeSuccess(data)` checks data equality              | unit |
-| 20  | `expectQueryState(state).toBeError()` passes for error state                  | unit |
-| 21  | `expectQueryState(state).toBeError(error)` checks error equality              | unit |
-| 22  | `expectQueryState(state).toBeRefetching()` passes for refetching state        | unit |
-| 23  | `expectQueryState(state).toBeFresh()` passes for fresh data                   | unit |
-| 24  | `expectQueryState(state).toBeStale()` passes for stale data                   | unit |
-| 25  | `expectCacheEntry(client, port, params).toExist()` passes for existing entry  | unit |
-| 26  | `expectCacheEntry(client, port, params).toNotExist()` passes for absent entry | unit |
-| 27  | `expectCacheEntry(client, port, params).toHaveData(expected)` checks data     | unit |
-| 28  | `expectCacheEntry(client, port, params).toBeStale()` checks staleness         | unit |
-| 29  | `expectCacheEntry(client, port, params).toBeFresh()` checks freshness         | unit |
-| 30  | `expectCacheEntry(client, port, params).toHaveObserverCount(n)` checks count  | unit |
-| 31  | `expectQueryResult(result).toBeOk()` passes for Ok result                     | unit |
-| 32  | `expectQueryResult(result).toBeOk(data)` checks data equality                 | unit |
-| 33  | `expectQueryResult(result).toBeErr()` passes for Err result                   | unit |
-| 34  | `expectQueryResult(result).toBeErr(error)` checks error equality              | unit |
-| 35  | `expectQueryResult(undefined).toBeUndefined()` passes                         | unit |
+| #   | Test                                                                                   | Type |
+| --- | -------------------------------------------------------------------------------------- | ---- |
+| 16  | `expectQueryState(state).toBeLoading()` passes for loading state                       | unit |
+| 17  | `expectQueryState(state).toBeLoading()` fails for non-loading state                    | unit |
+| 18  | `expectQueryState(state).toBeSuccess()` passes for success state                       | unit |
+| 19  | `expectQueryState(state).toBeSuccess(data)` checks data equality                       | unit |
+| 20  | `expectQueryState(state).toBeError()` passes for error state                           | unit |
+| 21  | `expectQueryState(state).toBeError(error)` checks error equality                       | unit |
+| 22  | `expectQueryState(state).toBeRefetching()` passes for refetching state                 | unit |
+| 23  | `expectQueryState(state).toBeFresh()` passes for fresh data                            | unit |
+| 24  | `expectQueryState(state).toBeStale()` passes for stale data                            | unit |
+| 25  | `expectCacheEntry(client, port, params).toExist()` passes for existing entry           | unit |
+| 26  | `expectCacheEntry(client, port, params).toNotExist()` passes for absent entry          | unit |
+| 27  | `expectCacheEntry(client, port, params).toHaveData(expected)` checks data              | unit |
+| 28  | `expectCacheEntry(client, port, params).toBeStale()` checks staleness                  | unit |
+| 29  | `expectCacheEntry(client, port, params).toBeFresh()` checks freshness                  | unit |
+| 30  | `expectCacheEntry(client, port, params).toHaveSubscribers()` checks active subscribers | unit |
+| 31  | `expectQueryResult(result).toBeOk()` passes for Ok result                              | unit |
+| 32  | `expectQueryResult(result).toBeOk(data)` checks data equality                          | unit |
+| 33  | `expectQueryResult(result).toBeErr()` passes for Err result                            | unit |
+| 34  | `expectQueryResult(result).toBeErr(error)` checks error equality                       | unit |
+| 35  | `expectQueryResult(undefined).toBeUndefined()` passes                                  | unit |
 
 ### Unit Tests -- `test-containers.test.ts`
 
@@ -981,11 +1054,11 @@ This document defines all tests required for `@hex-di/query`, `@hex-di/query-rea
 
 | Category          | Count    |
 | ----------------- | -------- |
-| Unit tests        | ~380     |
-| Type-level tests  | ~76      |
+| Unit tests        | ~420     |
+| Type-level tests  | ~83      |
 | Integration tests | ~65      |
 | E2E tests         | ~28      |
-| **Total**         | **~549** |
+| **Total**         | **~596** |
 
 ## Verification Checklist
 
@@ -1015,6 +1088,7 @@ Before marking the spec as "implemented," the following must all pass:
 | Mutation score (retry)              | `pnpm --filter @hex-di/query stryker -- --mutate src/retry/**`         | >95%       |
 | Mutation score (client)             | `pnpm --filter @hex-di/query stryker -- --mutate src/client/**`        | >90%       |
 | Mutation score (mutation effects)   | `pnpm --filter @hex-di/query stryker -- --mutate src/mutation/**`      | >90%       |
+| Mutation score (reactivity)         | `pnpm --filter @hex-di/query stryker -- --mutate src/reactivity/**`    | >95%       |
 | Mutation score (GC)                 | `pnpm --filter @hex-di/query stryker -- --mutate src/gc/**`            | >90%       |
 | Mutation score (introspection)      | `pnpm --filter @hex-di/query stryker -- --mutate src/inspector/**`     | >85%       |
 | Mutation score (React hooks)        | `pnpm --filter @hex-di/query-react stryker`                            | >85%       |
@@ -1025,6 +1099,10 @@ Before marking the spec as "implemented," the following must all pass:
 
 The query system has several critical behavioral invariants where test suites that merely check "method exists" or "returns data" would miss subtle inversions:
 
+- Signal propagation: skipping `signal.set()` silently drops state updates; using `peek()` instead of `get()` breaks dependency tracking and prevents re-evaluation
+- Batch integrity: missing `startBatch()`/`endBatch()` calls cause glitches (subscribers see intermediate inconsistent state during multi-signal writes)
+- Computed caching: failing to invalidate a computed when upstream changes serves stale derived state; over-invalidating causes redundant computation
+- Per-scope isolation: leaking signals across reactive system boundaries causes cross-tenant interference
 - Cache key determinism: `stableStringify` key ordering mutations cause cache misses for equivalent parameters
 - State derivation: `isLoading` vs `isPending` vs `isRefetching` are distinct combinations of `status` and `fetchStatus` -- swapping conditions produces subtly wrong UI states
 - Structural sharing: returning `next` instead of `prev` when data is unchanged causes unnecessary re-renders; returning `prev` when data changed shows stale data
@@ -1032,11 +1110,13 @@ The query system has several critical behavioral invariants where test suites th
 - Retry backoff: exponential cap mutations cause either immediate retries (no backoff) or infinite waits (cap too high)
 - Mutation effects: firing effects on Err instead of Ok corrupts the cache; skipping invalidation leaves stale data visible
 - Optimistic updates: rolling back on Ok instead of Err, or failing to rollback on Err, corrupts displayed data
+- Subscriber-tracked GC: `hasSubscribers()` returning wrong result either leaks entries (false negative) or prematurely collects active data (false positive)
 
 ### Mutation Targets by Priority
 
 | Priority | Module                                                     | Target Score | Rationale                                     |
 | -------- | ---------------------------------------------------------- | ------------ | --------------------------------------------- |
+| Critical | Reactivity (signals, computeds, batch, system isolation)   | >95%         | Foundation: wrong propagation = glitches      |
 | Critical | Cache key generation (`stableStringify`, `createCacheKey`) | >95%         | Wrong keys = data corruption and cache misses |
 | Critical | State derivation (`isPending`/`isLoading`/`isRefetching`)  | >95%         | Wrong booleans = wrong UI states              |
 | Critical | Structural sharing (`replaceEqualDeep`)                    | >95%         | Reference stability = React performance       |
@@ -1056,6 +1136,9 @@ The query system has several critical behavioral invariants where test suites th
 - **Method call mutations**: `invalidate(port)` -> skip (catches missing cache effect execution)
 - **Boolean literal mutations**: `true` -> `false` in `isInvalidated`, `isFetching` flags
 - **Arithmetic mutations**: `2 ** attempt` -> `2 * attempt` (catches exponential backoff formula)
+- **Signal mutations**: `signal.set(x)` -> skip (catches missing propagation), `signal.get()` -> `signal.peek()` (catches lost dependency tracking)
+- **Batch mutations**: `startBatch()` -> skip, `endBatch()` -> skip (catches missing batching causing glitches or premature flushes)
+- **Computed mutations**: Removing computed dependency reads (catches missing reactive tracking in derived state)
 
 ---
 

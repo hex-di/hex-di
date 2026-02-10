@@ -30,7 +30,6 @@ export type {
 
   // Configured activity types (new API)
   CleanupReason,
-  ResolvedActivityDeps,
   ActivityContext,
   ActivityConfig,
   ConfiguredActivity,
@@ -67,9 +66,6 @@ export {
 
   // Port factory (curried API)
   activityPort,
-
-  // Legacy export (deprecated)
-  createActivityPort,
 } from "./port.js";
 
 // =============================================================================

@@ -1,0 +1,28 @@
+.annotation {
+  display: inline-block;
+  margin-left: 16px;
+  padding: 1px 8px;
+  border-radius: 3px;
+  font-size: var(--text-annotation);
+  font-family: var(--font-body);
+  border-left: 3px solid;
+  white-space: nowrap;
+}
+
+.error {
+  background: rgba(215, 43, 63, 0.1);
+  color: var(--error-light);
+  border-color: var(--error-base);
+}
+
+.ok {
+  background: rgba(7, 148, 85, 0.1);
+  color: var(--success-light);
+  border-color: var(--success-base);
+}
+
+.info {
+  background: rgba(21, 112, 239, 0.1);
+  color: var(--info-light);
+  border-color: var(--info-base);
+}

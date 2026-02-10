@@ -1,0 +1,98 @@
+.container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.svgArea {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.controlButton {
+  background: var(--neutral-50);
+  border: 1px solid var(--neutral-200);
+  border-radius: 6px;
+  padding: 6px 16px;
+  font-size: var(--text-annotation);
+  font-family: var(--font-body);
+  color: var(--neutral-700);
+  cursor: pointer;
+  transition: background var(--duration-code-highlight) ease;
+}
+
+.controlButton:hover {
+  background: var(--neutral-100);
+}
+
+.controlButtonActive {
+  composes: controlButton;
+  background: var(--brand-base);
+  color: var(--neutral-white);
+  border-color: var(--brand-base);
+}
+
+.controlButtonActive:hover {
+  background: var(--brand-darker);
+}
+
+.stateDisplay {
+  font-family: var(--font-code);
+  font-size: var(--text-code);
+  padding: 8px 20px;
+  border-radius: 6px;
+  background: var(--code-dark-bg);
+  color: var(--code-dark-text);
+  min-width: 200px;
+  text-align: center;
+}
+
+.okState {
+  composes: stateDisplay;
+  border-left: 3px solid var(--success-base);
+}
+
+.errState {
+  composes: stateDisplay;
+  border-left: 3px solid var(--error-base);
+}
+
+.legend {
+  display: flex;
+  gap: 24px;
+  font-size: var(--text-caption);
+  color: var(--neutral-500);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendDotOk {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--success-base);
+}
+
+.legendDotErr {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--error-base);
+}

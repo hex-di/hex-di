@@ -10,20 +10,20 @@ Complex applications benefit from multiple specialized agents that delegate to e
 
 ```typescript
 // Specialist ports
-const TaskAgentPort = createPort<AgentService>()({ name: "TaskAgent" });
-const AnalyticsAgentPort = createPort<AgentService>()({ name: "AnalyticsAgent" });
-const CalendarAgentPort = createPort<AgentService>()({ name: "CalendarAgent" });
+const TaskAgentPort = port<AgentService>()({ name: "TaskAgent" });
+const AnalyticsAgentPort = port<AgentService>()({ name: "AnalyticsAgent" });
+const CalendarAgentPort = port<AgentService>()({ name: "CalendarAgent" });
 
 // Orchestrator port
-const OrchestratorPort = createPort<AgentService>()({ name: "Orchestrator" });
+const OrchestratorPort = port<AgentService>()({ name: "Orchestrator" });
 
 // Create runner ports for each specialist
-const TaskRunnerPort = createPort<AgentRunnerService>()({ name: "TaskRunner" });
-const AnalyticsRunnerPort = createPort<AgentRunnerService>()({ name: "AnalyticsRunner" });
-const CalendarRunnerPort = createPort<AgentRunnerService>()({ name: "CalendarRunner" });
+const TaskRunnerPort = port<AgentRunnerService>()({ name: "TaskRunner" });
+const AnalyticsRunnerPort = port<AgentRunnerService>()({ name: "AnalyticsRunner" });
+const CalendarRunnerPort = port<AgentRunnerService>()({ name: "CalendarRunner" });
 
 // Expose specialists as tools for the orchestrator
-const DelegationToolsPort = createPort<ToolPortService<readonly ToolDefinition[]>>()({
+const DelegationToolsPort = port<ToolPortService<readonly ToolDefinition[]>>()({
   name: "DelegationTools",
 });
 
@@ -444,6 +444,137 @@ const fallbackLlmAdapter = createAdapter({
   }),
 });
 ```
+
+### 19.11 Performance Considerations
+
+- **Memory management for long conversations:** Message arrays grow with each turn. For long-running agents, implement a sliding window or summary strategy in the context adapter to cap message history size.
+- **Streaming backpressure:** When streaming events over SSE, ensure the consumer can keep up. The `agentEventsToSse` utility uses a `ReadableStream` which provides natural backpressure through the underlying transport.
+- **Token budget management:** Set `maxTokens` in the agent config to prevent runaway token usage. Monitor `TokenUsage` in the `AgentRunResult` for cost tracking.
+- **Tool execution timeouts:** Individual tool calls should implement their own timeouts within the `execute` function. The agent runner does not impose per-tool timeouts — this is the tool author's responsibility.
+
+### 19.12 Conversation Persistence
+
+Conversations are ephemeral by default -- they exist only for the duration of the scope that holds the runner. For applications that need to resume conversations across sessions (e.g., a support chatbot that survives page reloads), conversation persistence is handled through a persistence adapter.
+
+#### Persistence Adapter
+
+```typescript
+interface ConversationPersistenceService {
+  save(conversationId: string, messages: readonly Message[]): Promise<void>;
+  load(conversationId: string): Promise<readonly Message[] | undefined>;
+  delete(conversationId: string): Promise<void>;
+  list(filter?: {
+    agentName?: string;
+    status?: ConversationSnapshot["status"];
+  }): Promise<readonly string[]>;
+}
+
+const ConversationPersistencePort = port<ConversationPersistenceService>()({
+  name: "ConversationPersistence",
+  direction: "outbound",
+});
+```
+
+When wired into the graph, the runner automatically saves messages after each turn and loads them when a conversation ID is provided in `RunOptions`:
+
+```typescript
+const run = runner.run({
+  prompt: "Continue where we left off",
+  conversationId: "conv-abc-123", // Resumes from persisted history
+});
+```
+
+#### Store Integration
+
+For applications using `@hex-di/store`, conversation state can be managed reactively:
+
+```typescript
+interface ConversationState {
+  readonly conversations: ReadonlyMap<string, readonly Message[]>;
+  readonly activeConversationId: string | undefined;
+}
+
+const ConversationStatePort = createStatePort<ConversationState>()({
+  name: "ConversationState",
+});
+```
+
+The store-based persistence adapter bridges between the `ConversationPersistencePort` and `ConversationStatePort`, keeping the reactive store in sync with persisted conversation data.
+
+#### Serialization Format
+
+Messages are serialized as JSON. The format preserves all fields including tool calls and tool results:
+
+```json
+{
+  "conversationId": "conv-abc-123",
+  "agentName": "TaskAgent",
+  "createdAt": 1700000000000,
+  "updatedAt": 1700001000000,
+  "messages": [
+    { "role": "user", "content": "Create a task for the weekly review" },
+    {
+      "role": "assistant",
+      "content": "I'll create that task for you.",
+      "toolCalls": [
+        { "id": "call-1", "name": "createTask", "arguments": { "title": "Weekly review" } }
+      ]
+    },
+    {
+      "role": "tool",
+      "toolResults": [
+        { "callId": "call-1", "result": { "id": "task-42", "title": "Weekly review" } }
+      ]
+    },
+    { "role": "assistant", "content": "Done! I've created task #42: Weekly review." }
+  ]
+}
+```
+
+### 19.13 Graph Validation
+
+Agent adapters participate in the standard HexDI graph validation pipeline. In addition to the core validation codes (HEX001-HEX009), agent-specific constraints are enforced at graph-build time.
+
+#### Agent-Specific Validation Rules
+
+| Rule                     | Description                                                                       | Error                                |
+| ------------------------ | --------------------------------------------------------------------------------- | ------------------------------------ |
+| Exactly one LLM port     | Each agent adapter must depend on exactly one port that provides `LlmService`     | Graph validation error at build time |
+| Exactly one context port | Each agent adapter must depend on exactly one port that provides `ContextService` | Graph validation error at build time |
+| Tool port direction      | Tool ports must have `direction: "inbound"`                                       | Graph validation error at build time |
+| LLM port direction       | The LLM port must have `direction: "outbound"`                                    | Graph validation error at build time |
+
+These constraints are enforced by the `GraphBuilder` at the type level and verified at runtime during graph construction. A misconfigured agent adapter fails fast with a clear error message rather than producing confusing runtime behavior.
+
+#### Compile-Time Wiring Validation
+
+The `GraphBuilder` type constraints ensure agent wiring correctness at compile time:
+
+```typescript
+// Correctly wired -- compiles
+const graph = createGraphBuilder()
+  .add(llmAdapter) // provides LlmPort (outbound)
+  .add(contextAdapter) // provides ContextPort (inbound)
+  .add(toolAdapter) // provides TaskToolsPort (inbound)
+  .add(agentAdapter) // requires LlmPort, ContextPort, TaskToolsPort
+  .add(runnerAdapter) // requires AgentPort
+  .build();
+
+// Missing LLM port -- type error: AgentPort requires LlmPort
+const graph = createGraphBuilder()
+  .add(contextAdapter)
+  .add(toolAdapter)
+  .add(agentAdapter) // Type error: unresolved dependency LlmPort
+  .build();
+```
+
+#### Integration with Core Validation Codes
+
+Agent validation integrates with the existing error code system:
+
+- **HEX008 (MISSING_DEPENDENCY)**: Raised when an agent adapter's required LLM, context, or tool port is not provided in the graph
+- **HEX003 (CAPTIVE_DEPENDENCY)**: Raised when a singleton LLM adapter is depended on by a scoped agent adapter (valid pattern, but a scoped agent depending on a transient LLM is flagged)
+- **HEX001 (DUPLICATE_ADAPTER)**: Raised when multiple adapters provide the same agent port
 
 ---
 

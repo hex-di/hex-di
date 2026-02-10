@@ -10,7 +10,7 @@
  * @packageDocumentation
  */
 
-import type { InferPortName, InferService, Port } from "@hex-di/core";
+import type { Port, PortDeps } from "@hex-di/core";
 import type { ActivityPort, ActivityInput, ActivityOutput } from "./port.js";
 import type { TypedEventSink } from "./events.js";
 
@@ -29,32 +29,6 @@ import type { TypedEventSink } from "./events.js";
 export type CleanupReason = "completed" | "cancelled" | "timeout" | "error";
 
 // =============================================================================
-// ResolvedActivityDeps Type
-// =============================================================================
-
-/**
- * Maps a tuple of Port types to a name-keyed dependencies object.
- *
- * This type transforms a tuple of Port types into an object where:
- * - Keys are the port names (extracted via InferPortName)
- * - Values are the service types (extracted via InferService)
- *
- * @typeParam TRequires - A readonly tuple of Port types
- *
- * @example
- * ```typescript
- * const ApiPort = port<ApiService>()('Api');
- * const LoggerPort = port<Logger>()('Logger');
- *
- * type Deps = ResolvedActivityDeps<readonly [typeof ApiPort, typeof LoggerPort]>;
- * // { Api: ApiService; Logger: Logger }
- * ```
- */
-export type ResolvedActivityDeps<TRequires extends readonly Port<unknown, string>[]> = {
-  [P in TRequires[number] as InferPortName<P> & string]: InferService<P>;
-};
-
-// =============================================================================
 // ActivityContext Interface
 // =============================================================================
 
@@ -68,7 +42,7 @@ export interface ActivityContext<TRequires extends readonly Port<unknown, string
   /**
    * Resolved dependencies keyed by port name.
    */
-  readonly deps: ResolvedActivityDeps<TRequires>;
+  readonly deps: PortDeps<TRequires>;
 
   /**
    * Type-safe event sink for emitting events during execution.

@@ -2,6 +2,7 @@
  * Saga Test Harness
  *
  * Wraps a saga runner with mock port resolver for isolated testing.
+ * The saga definition is bound at creation time — call execute(input) to run.
  *
  * @packageDocumentation
  */
@@ -12,6 +13,9 @@ import {
   type SagaSuccess,
   type SagaError,
   type SagaEvent,
+  type SagaPersister,
+  type SagaRunnerConfig,
+  type ExecutionTrace,
   createSagaRunner,
 } from "@hex-di/saga";
 
@@ -35,21 +39,24 @@ export interface MockStepResponse {
 export interface SagaTestHarnessConfig {
   /** Mock port responses keyed by port name */
   readonly mocks: Record<string, MockStepResponse>;
+  /** Optional persister for testing resume flows */
+  readonly persister?: SagaPersister;
 }
 
 /** A saga test harness wrapping a runner with mock dependencies */
 export interface SagaTestHarness {
-  /** Execute the saga and return the result */
-  execute(
-    saga: AnySagaDefinition,
-    input: unknown
-  ): ResultAsync<SagaSuccess<unknown>, SagaError<unknown>>;
+  /** Execute the saga with given input and return the result */
+  execute(input: unknown): ResultAsync<SagaSuccess<unknown>, SagaError<unknown>>;
   /** All recorded saga events */
   readonly events: ReadonlyArray<SagaEvent>;
   /** Reset event recordings */
   resetEvents(): void;
   /** Get recorded calls for a port name */
   getCalls(portName: string): ReadonlyArray<unknown>;
+  /** Get the execution trace from the last execution */
+  getTrace(): ExecutionTrace | null;
+  /** Dispose and clear all internal state */
+  dispose(): Promise<void>;
 }
 
 // =============================================================================
@@ -57,24 +64,32 @@ export interface SagaTestHarness {
 // =============================================================================
 
 /**
- * Creates a saga test harness with mock port implementations.
+ * Creates a saga test harness bound to a specific saga definition.
+ *
+ * @param saga - The saga definition to test
+ * @param config - Mock port responses and optional persister
  *
  * @example
  * ```typescript
- * const harness = createSagaTestHarness({
+ * const harness = createSagaTestHarness(createUserSaga, {
  *   mocks: {
  *     UserService: { value: { id: '1', name: 'Alice' } },
  *     EmailService: { value: undefined },
  *   },
  * });
  *
- * const result = await harness.execute(createUserSaga, { name: 'Alice' });
+ * const result = await harness.execute({ name: 'Alice' });
  * expect(result.isOk()).toBe(true);
  * ```
  */
-export function createSagaTestHarness(config: SagaTestHarnessConfig): SagaTestHarness {
+export function createSagaTestHarness(
+  saga: AnySagaDefinition,
+  config: SagaTestHarnessConfig
+): SagaTestHarness {
   const calls = new Map<string, unknown[]>();
   const events: SagaEvent[] = [];
+  let lastExecutionId: string | null = null;
+  let executionCounter = 0;
 
   function getOrCreateCalls(portName: string): unknown[] {
     const existing = calls.get(portName);
@@ -120,17 +135,25 @@ export function createSagaTestHarness(config: SagaTestHarnessConfig): SagaTestHa
     },
   };
 
-  const runner = createSagaRunner(resolver);
+  const runnerConfig: SagaRunnerConfig | undefined = config.persister
+    ? { persister: config.persister }
+    : undefined;
+
+  const runner = createSagaRunner(resolver, runnerConfig);
+
+  const eventListener = (event: SagaEvent): void => {
+    events.push(event);
+  };
 
   return {
-    execute(
-      saga: AnySagaDefinition,
-      input: unknown
-    ): ResultAsync<SagaSuccess<unknown>, SagaError<unknown>> {
-      const result = runner.execute(saga, input);
-      // Subscribe to events for this execution
-      // Since we can't know the executionId before execute, we record events globally
-      return result;
+    execute(input: unknown): ResultAsync<SagaSuccess<unknown>, SagaError<unknown>> {
+      executionCounter++;
+      const executionId = `test-exec-${executionCounter}`;
+      lastExecutionId = executionId;
+      return runner.execute(saga, input, {
+        executionId,
+        listeners: [eventListener],
+      });
     },
     get events(): ReadonlyArray<SagaEvent> {
       return events;
@@ -140,6 +163,16 @@ export function createSagaTestHarness(config: SagaTestHarnessConfig): SagaTestHa
     },
     getCalls(portName: string): ReadonlyArray<unknown> {
       return calls.get(portName) ?? [];
+    },
+    getTrace(): ExecutionTrace | null {
+      if (!lastExecutionId) return null;
+      return runner.getTrace(lastExecutionId);
+    },
+    async dispose(): Promise<void> {
+      calls.clear();
+      events.length = 0;
+      lastExecutionId = null;
+      executionCounter = 0;
     },
   };
 }

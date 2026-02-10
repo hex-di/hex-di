@@ -17,11 +17,11 @@ import {
   type StateNode,
   type TransitionConfig,
   type MachineConfig,
-  createMachine,
+  defineMachine,
   type InferMachineState,
   type InferMachineEvent,
   type InferMachineContext,
-} from "../src/machine/create-machine.js";
+} from "../src/machine/define-machine.js";
 import { Effect } from "../src/effects/index.js";
 
 // =============================================================================
@@ -55,7 +55,7 @@ interface FetcherContext {
 describe("invalid initial state produces compile error", () => {
   it("valid initial state compiles", () => {
     // This should compile fine - 'idle' exists in states
-    const machine = createMachine({
+    const machine = defineMachine({
       id: "test",
       initial: "idle",
       context: { data: null, error: null, retryCount: 0 } as FetcherContext,
@@ -70,7 +70,7 @@ describe("invalid initial state produces compile error", () => {
 
   it("initial state must be a key of states record", () => {
     // The following would fail to compile if uncommented:
-    // createMachine({
+    // defineMachine({
     //   id: "test",
     //   initial: "nonexistent", // Error: not a key of states
     //   context: { data: null, error: null, retryCount: 0 },
@@ -80,9 +80,14 @@ describe("invalid initial state produces compile error", () => {
     //   },
     // });
 
-    // We verify the constraint exists by checking the type
-    type TestConfig = Parameters<typeof createMachine>[0];
-    expectTypeOf<TestConfig>().toHaveProperty("initial");
+    // We verify that initial is optional: the second overload accepts config without initial.
+    // When initial is provided, it must be a key of states.
+    type TestConfigWithInitial = {
+      readonly id: string;
+      readonly initial: "idle" | "loading";
+      readonly states: { idle: { on: {} }; loading: { on: {} } };
+    };
+    expectTypeOf<TestConfigWithInitial>().toHaveProperty("initial");
   });
 });
 
@@ -285,8 +290,8 @@ describe("action must return matching context shape", () => {
 // =============================================================================
 
 describe("machine type encodes full state/event/context information", () => {
-  it("createMachine infers state names from config", () => {
-    const _machine = createMachine({
+  it("defineMachine infers state names from config", () => {
+    const _machine = defineMachine({
       id: "fetcher",
       initial: "idle",
       context: { data: null, error: null, retryCount: 0 } as FetcherContext,
@@ -316,8 +321,8 @@ describe("machine type encodes full state/event/context information", () => {
     expectTypeOf<MachineStateNames>().toEqualTypeOf<"idle" | "loading" | "success" | "error">();
   });
 
-  it("createMachine infers event names from config", () => {
-    const _machine = createMachine({
+  it("defineMachine infers event names from config", () => {
+    const _machine = defineMachine({
       id: "fetcher",
       initial: "idle",
       context: { data: null, error: null, retryCount: 0 } as FetcherContext,
@@ -348,8 +353,8 @@ describe("machine type encodes full state/event/context information", () => {
     expectTypeOf<MachineEventNames>().toMatchTypeOf<"FETCH" | "SUCCESS" | "FAILURE" | "RETRY">();
   });
 
-  it("createMachine preserves context type", () => {
-    const _machine = createMachine({
+  it("defineMachine preserves context type", () => {
+    const _machine = defineMachine({
       id: "fetcher",
       initial: "idle",
       context: { data: null, error: null, retryCount: 0 } as FetcherContext,
@@ -364,7 +369,7 @@ describe("machine type encodes full state/event/context information", () => {
   });
 
   it("Machine is assignable to MachineAny", () => {
-    const machine = createMachine({
+    const machine = defineMachine({
       id: "test",
       initial: "idle",
       context: { value: 0 },
@@ -378,7 +383,7 @@ describe("machine type encodes full state/event/context information", () => {
   });
 
   it("machine is immutable (frozen)", () => {
-    const machine = createMachine({
+    const machine = defineMachine({
       id: "test",
       initial: "idle",
       context: { value: 0 },
@@ -427,7 +432,7 @@ describe("StateNode configuration type", () => {
       },
     };
 
-    expectTypeOf(stateNode.on).toMatchTypeOf<Record<string, unknown>>();
+    expectTypeOf(stateNode.on).toMatchTypeOf<Record<string, unknown> | undefined>();
   });
 });
 

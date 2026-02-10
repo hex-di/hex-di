@@ -136,9 +136,9 @@ HexDI's vision is the new car.
   │  ✓ PostgresDB    │              │  │  query: cache     │  │
   │  ✓ ConfigService │              │  │  saga: workflows  │  │
   │                  │              │  │  agent: AI tools  │  │
-  │  ✓ Exact         │              │  └──────────────────┘  │
-  │  ✓ Complete      │              │                        │
-  │  ✓ From the app  │              │  (a running system     │
+  │  ✓ Exact         │              │  │  logger: pipeline │  │
+  │  ✓ Complete      │              │  └──────────────────┘  │
+  │  ✓ From the app  │              │                        │
   │    itself        │              │   that knows itself)   │
   └──────────────────┘              └────────────────────────┘
 ```
@@ -157,19 +157,20 @@ This transforms the container from plumbing into a **nervous system** -- a live,
 
 A self-aware HexDI application can answer these questions about itself, at runtime, through structured APIs:
 
-| Question                         | Source            | Answer Format                     |
-| -------------------------------- | ----------------- | --------------------------------- |
-| What services exist?             | `@hex-di/graph`   | Typed port registry with metadata |
-| How do they connect?             | `@hex-di/graph`   | Dependency adjacency map          |
-| What's the initialization order? | `@hex-di/graph`   | Topological sort                  |
-| What's currently instantiated?   | `@hex-di/runtime` | Container snapshot                |
-| What scope hierarchy exists?     | `@hex-di/runtime` | Scope tree structure              |
-| What happened during resolution? | `@hex-di/tracing` | Structured spans with timing      |
-| What failed and why?             | `@hex-di/tracing` | Error spans with stack traces     |
-| What's the current state?        | `@hex-di/store`   | Reactive state snapshot           |
-| What data is cached?             | `@hex-di/query`   | Cache entries with freshness      |
-| What workflows are running?      | `@hex-di/saga`    | Saga step + compensation state    |
-| What AI tools are available?     | `@hex-di/agent`   | Tool registry with schemas        |
+| Question                         | Source            | Answer Format                      |
+| -------------------------------- | ----------------- | ---------------------------------- |
+| What services exist?             | `@hex-di/graph`   | Typed port registry with metadata  |
+| How do they connect?             | `@hex-di/graph`   | Dependency adjacency map           |
+| What's the initialization order? | `@hex-di/graph`   | Topological sort                   |
+| What's currently instantiated?   | `@hex-di/runtime` | Container snapshot                 |
+| What scope hierarchy exists?     | `@hex-di/runtime` | Scope tree structure               |
+| What happened during resolution? | `@hex-di/tracing` | Structured spans with timing       |
+| What failed and why?             | `@hex-di/tracing` | Error spans with stack traces      |
+| What's the current state?        | `@hex-di/store`   | Reactive state snapshot            |
+| What data is cached?             | `@hex-di/query`   | Cache entries with freshness       |
+| What workflows are running?      | `@hex-di/saga`    | Saga step + compensation state     |
+| What AI tools are available?     | `@hex-di/agent`   | Tool registry with schemas         |
+| What's being logged?             | `@hex-di/logger`  | Entry counts, error rate, handlers |
 
 No file parsing. No inference. No guessing. The application tells you directly.
 
@@ -186,6 +187,7 @@ No file parsing. No inference. No guessing. The application tells you directly.
   │  Query: fetch activity, cache hits/misses            │
   │  Saga: workflow progress, step execution             │
   │  Agent: tool invocations, LLM conversations          │
+  │  Logger: log entries, error rates, handler activity   │
   │                                                      │
   ├─────────────────────────────────────────────────────┤
   │              Layer 2: STATE                          │
@@ -197,6 +199,7 @@ No file parsing. No inference. No guessing. The application tells you directly.
   │  Query: cached data, staleness, pending fetches      │
   │  Saga: in-progress workflows, compensation state     │
   │  Agent: active conversations, tool availability      │
+  │  Logger: active handlers, sampling config, redaction  │
   │                                                      │
   ├─────────────────────────────────────────────────────┤
   │              Layer 1: STRUCTURE                      │
@@ -277,6 +280,8 @@ The analogy is precise. A biological nervous system:
     │  query: reports    │  │  agent: executes   │  │                    │
     │  data freshness    │  │  AI tool calls     │  │  flow: transitions │
     │                    │  │                    │  │  states on events   │
+    │  logger: reports   │  │                    │  │                    │
+    │  log pipeline      │  │                    │  │                    │
     └────────────────────┘  └────────────────────┘  └────────────────────┘
                │                      │                      │
                └──────────────────────┼──────────────────────┘
@@ -384,6 +389,13 @@ This means the container doesn't just wire services -- it becomes the convergenc
   │  │         │  ─ running activities and effects               │
   │  │         │  ─ event queue contents                          │
   │  └─────────┘                                                 │
+  │                                                              │
+  │  ┌─────────┐  "I know the logging pipeline"                 │
+  │  │ logger  │  ─ log entry counts by level                   │
+  │  │         │  ─ error rate and threshold breaches            │
+  │  │         │  ─ active handlers and their health             │
+  │  │         │  ─ sampling and redaction statistics            │
+  │  └─────────┘                                                 │
   └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -397,6 +409,7 @@ All of this knowledge converges at the container. Because every library register
 - **What's valued** (from the store)
 - **What's fetched** (from query)
 - **What's in progress** (from saga and flow)
+- **What's being logged** (from logger)
 - **What's possible** (from agent)
 
 No single library has the full picture. But the container, sitting at the center, sees everything.
@@ -418,7 +431,8 @@ Anthropic's MCP is the primary protocol for AI-to-application communication. It 
   ───────────          ────────────────
   Resources            Container snapshots, graph topology,
                        store state, query cache contents,
-                       tracing spans, saga workflow state
+                       tracing spans, saga workflow state,
+                       logging snapshots, entry counts
 
   Tools                resolve(port), createScope(),
                        inspect(), getState(), invalidateQuery(),
@@ -622,8 +636,8 @@ The AI didn't guess. It asked the application, and the application answered from
   │  "Show me the topological initialization order"               │
   │  "What are the orphan ports (registered but unreferenced)?"  │
   │                                                               │
-  │  STATE QUERIES (from runtime + store)                         │
-  │  ─────────────────────────────────                            │
+  │  STATE QUERIES (from runtime + store + logger)                │
+  │  ───────────────────────────────────────────                  │
   │  "What singletons are currently instantiated?"               │
   │  "How many active scopes exist?"                              │
   │  "What's the current user session state?"                    │
@@ -631,6 +645,9 @@ The AI didn't guess. It asked the application, and the application answered from
   │  "Which queries are stale?"                                   │
   │  "What workflows are in progress?"                            │
   │  "What state machine states are active?"                      │
+  │  "What's the current logging error rate?"                    │
+  │  "Which log handlers are active?"                             │
+  │  "Is sampling or redaction enabled?"                          │
   │                                                               │
   │  BEHAVIORAL QUERIES (from tracing)                            │
   │  ────────────────────────────────                             │
@@ -961,6 +978,13 @@ The dependency graph + runtime state + behavioral traces form a **domain-specifi
   ✅ @hex-di/react      React integration
   ✅ @hex-di/hono       Hono backend integration
   ✅ @hex-di/flow       State machine runtime
+  ✅ @hex-di/logger     Structured logging with inspection
+                        (LoggerPort, handlers, context propagation,
+                         LoggerInspector with entry counts, error rates,
+                         sampling/redaction stats, MCP resource contracts)
+  ✅ @hex-di/logger-pino     Pino backend adapter
+  ✅ @hex-di/logger-winston  Winston backend adapter
+  ✅ @hex-di/logger-bunyan   Bunyan backend adapter
   ✅ @hex-di/testing    Test utilities
   ✅ @hex-di/visualization  Graph visualization (DOT, Mermaid)
 ```
@@ -1034,8 +1058,9 @@ The dependency graph + runtime state + behavioral traces form a **domain-specifi
   │   4. Knows what data it has         (query)              │
   │   5. Knows what processes are running (saga + flow)      │
   │   6. Knows what it can do           (agent)              │
-  │   7. Can tell you all of the above  (MCP + A2A)          │
-  │   8. Can act on that knowledge      (autonomic)          │
+  │   7. Knows what it's logging        (logger)             │
+  │   8. Can tell you all of the above  (MCP + A2A)          │
+  │   9. Can act on that knowledge      (autonomic)          │
   │                                                           │
   │   Not because someone instrumented it from the outside.  │
   │   Because self-knowledge is built into its foundation.   │

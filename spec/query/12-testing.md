@@ -193,7 +193,8 @@ function expectCacheEntry<TData, TParams, TError, TName extends string>(
   toHaveData: (expected: TData) => void;
   toBeStale: () => void;
   toBeFresh: () => void;
-  toHaveObserverCount: (count: number) => void;
+  toHaveSubscribers: () => void;
+  toHaveNoSubscribers: () => void;
 };
 ```
 

@@ -16,6 +16,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { port } from "@hex-di/core";
+import { expectOk, expectErr } from "@hex-di/result-testing";
 import { activityPort } from "../../src/activities/port.js";
 import { defineEvents } from "../../src/activities/events.js";
 import { activity } from "../../src/activities/factory.js";
@@ -558,7 +559,8 @@ describe("ActivityManager with new Activity type", () => {
       await new Promise(resolve => setTimeout(resolve, 50));
 
       const result = manager.getResult<TaskResult>(id);
-      expect(result).toEqual(expectedResult);
+      const value = expectOk(result);
+      expect(value).toEqual(expectedResult);
     });
 
     it("should return undefined for running activity", async () => {
@@ -581,12 +583,12 @@ describe("ActivityManager with new Activity type", () => {
 
       const id = manager.spawn(DelayedActivity, { delayMs: 5000 }, sink, {});
 
-      // Check immediately while still running
+      // Check immediately while still running - returns Err since not completed
       const result = manager.getResult<string>(id);
-      expect(result).toBeUndefined();
+      expectErr(result);
     });
 
-    it("should return undefined for failed activity", async () => {
+    it("should return Err for failed activity", async () => {
       const FailingActivity = activity(SimpleActivityPort, {
         requires: [],
         emits: EmptyEvents,
@@ -602,10 +604,10 @@ describe("ActivityManager with new Activity type", () => {
       await new Promise(resolve => setTimeout(resolve, 50));
 
       const result = manager.getResult<string>(id);
-      expect(result).toBeUndefined();
+      expectErr(result);
     });
 
-    it("should return undefined for cancelled activity", async () => {
+    it("should return Err for cancelled activity", async () => {
       const DelayedActivity = activity(DelayedActivityPort, {
         requires: [],
         emits: EmptyEvents,
@@ -630,12 +632,12 @@ describe("ActivityManager with new Activity type", () => {
       await new Promise(resolve => setTimeout(resolve, 50));
 
       const result = manager.getResult<string>(id);
-      expect(result).toBeUndefined();
+      expectErr(result);
     });
 
-    it("should return undefined for unknown ID", () => {
+    it("should return Err for unknown ID", () => {
       const result = manager.getResult<unknown>("non-existent-id");
-      expect(result).toBeUndefined();
+      expectErr(result);
     });
   });
 
@@ -788,6 +790,96 @@ describe("ActivityManager with new Activity type", () => {
       // Should still only be called once with 'timeout' reason
       expect(cleanupCalls).toHaveLength(1);
       expect(cleanupCalls[0]).toBe("timeout");
+    });
+  });
+
+  // ===========================================================================
+  // Additional Edge Case Tests
+  // ===========================================================================
+
+  describe("edge cases", () => {
+    it("double-stop is a no-op (no error)", async () => {
+      const cleanupCalls: CleanupReason[] = [];
+
+      const DelayedActivity = activity(DelayedActivityPort, {
+        requires: [],
+        emits: EmptyEvents,
+        execute: async (input, { signal }) => {
+          await new Promise<void>(resolve => {
+            const timeoutId = setTimeout(resolve, input.delayMs);
+            signal.addEventListener("abort", () => {
+              clearTimeout(timeoutId);
+              resolve();
+            });
+          });
+          return "done";
+        },
+        cleanup: reason => {
+          cleanupCalls.push(reason);
+        },
+      });
+
+      const sink = createMockEventSink<typeof EmptyEvents>();
+      const id = manager.spawn(DelayedActivity, { delayMs: 5000 }, sink, {});
+
+      // Stop once
+      manager.stop(id);
+      // Stop again — should be a no-op, no crash, no double cleanup
+      manager.stop(id);
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      expect(cleanupCalls).toHaveLength(1);
+      expect(cleanupCalls[0]).toBe("cancelled");
+    });
+
+    it("stopping non-existent activity id does not throw", () => {
+      // Should not throw for unknown activity IDs
+      expect(() => manager.stop("completely-unknown-id")).not.toThrow();
+    });
+
+    it("getStatus returns undefined for non-existent activity", () => {
+      expect(manager.getStatus("unknown-id")).toBeUndefined();
+    });
+
+    it("dispose stops all running activities and subsequent spawn fails gracefully", async () => {
+      const cleanupCalls: string[] = [];
+
+      const LongActivity = activity(DelayedActivityPort, {
+        requires: [],
+        emits: EmptyEvents,
+        execute: async (input, { signal }) => {
+          await new Promise<void>(resolve => {
+            const timeoutId = setTimeout(resolve, input.delayMs);
+            signal.addEventListener("abort", () => {
+              clearTimeout(timeoutId);
+              resolve();
+            });
+          });
+          return "done";
+        },
+        cleanup: reason => {
+          cleanupCalls.push(reason);
+        },
+      });
+
+      const sink = createMockEventSink<typeof EmptyEvents>();
+
+      const id1 = manager.spawn(LongActivity, { delayMs: 5000 }, sink, {});
+      const id2 = manager.spawn(LongActivity, { delayMs: 5000 }, sink, {});
+
+      expect(manager.getStatus(id1)).toBe("running");
+      expect(manager.getStatus(id2)).toBe("running");
+
+      await manager.dispose();
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Both should have had cleanup called
+      expect(cleanupCalls).toHaveLength(2);
+      cleanupCalls.forEach(reason => {
+        expect(reason).toBe("cancelled");
+      });
     });
   });
 });

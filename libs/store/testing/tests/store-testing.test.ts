@@ -8,7 +8,9 @@ import {
   expectAsyncDerived,
   createActionRecorder,
   waitForState,
+  createStateTestContainer,
 } from "../src/index.js";
+import { createAtomPort, createAtomAdapter } from "@hex-di/store";
 import type {
   DerivedService,
   AsyncDerivedService,
@@ -266,6 +268,15 @@ describe("expectState", () => {
     expectState(mock).toBe({ count: 5, label: "test" });
   });
 
+  it("toBe fails on wrong state", () => {
+    const mock = createMockStateAdapter({
+      initial: { count: 5, label: "test" },
+      actions: counterActions,
+    });
+
+    expect(() => expectState(mock).toBe({ count: 99, label: "test" })).toThrow();
+  });
+
   it("toMatch asserts partial match", () => {
     const mock = createMockStateAdapter({
       initial: { count: 5, label: "test" },
@@ -275,6 +286,15 @@ describe("expectState", () => {
     expectState(mock).toMatch({ count: 5 });
   });
 
+  it("toMatch fails on wrong partial", () => {
+    const mock = createMockStateAdapter({
+      initial: { count: 5, label: "test" },
+      actions: counterActions,
+    });
+
+    expect(() => expectState(mock).toMatch({ count: 99 })).toThrow();
+  });
+
   it("toSatisfy asserts predicate", () => {
     const mock = createMockStateAdapter({
       initial: { count: 5, label: "test" },
@@ -282,6 +302,15 @@ describe("expectState", () => {
     });
 
     expectState(mock).toSatisfy(s => s.count > 0);
+  });
+
+  it("toSatisfy fails when predicate returns false", () => {
+    const mock = createMockStateAdapter({
+      initial: { count: 5, label: "test" },
+      actions: counterActions,
+    });
+
+    expect(() => expectState(mock).toSatisfy(s => s.count < 0)).toThrow();
   });
 });
 
@@ -295,9 +324,19 @@ describe("expectAtom", () => {
     expectAtom(mock).toBe(42);
   });
 
+  it("toBe fails on wrong value", () => {
+    const mock = createMockAtomAdapter({ initial: 42 });
+    expect(() => expectAtom(mock).toBe(99)).toThrow();
+  });
+
   it("toSatisfy asserts predicate", () => {
     const mock = createMockAtomAdapter({ initial: 42 });
     expectAtom(mock).toSatisfy(v => (v as number) > 0);
+  });
+
+  it("toSatisfy fails when predicate returns false", () => {
+    const mock = createMockAtomAdapter({ initial: 42 });
+    expect(() => expectAtom(mock).toSatisfy(v => (v as number) < 0)).toThrow();
   });
 });
 
@@ -311,6 +350,9 @@ describe("expectDerived", () => {
       get value(): DeepReadonly<T> {
         return value as DeepReadonly<T>;
       },
+      get isDisposed() {
+        return false;
+      },
       subscribe(): Unsubscribe {
         return () => {};
       },
@@ -322,14 +364,29 @@ describe("expectDerived", () => {
     expectDerived(derived).toBe({ total: 100 });
   });
 
+  it("toBe fails on wrong value", () => {
+    const derived = createMockDerived({ total: 100 });
+    expect(() => expectDerived(derived).toBe({ total: 999 })).toThrow();
+  });
+
   it("toMatch asserts partial match", () => {
     const derived = createMockDerived({ total: 100, tax: 10 });
     expectDerived(derived).toMatch({ total: 100 });
   });
 
+  it("toMatch fails on wrong partial", () => {
+    const derived = createMockDerived({ total: 100, tax: 10 });
+    expect(() => expectDerived(derived).toMatch({ total: 999 })).toThrow();
+  });
+
   it("toSatisfy asserts predicate", () => {
     const derived = createMockDerived(42);
     expectDerived(derived).toSatisfy(v => (v as number) > 0);
+  });
+
+  it("toSatisfy fails when predicate returns false", () => {
+    const derived = createMockDerived(42);
+    expect(() => expectDerived(derived).toSatisfy(v => (v as number) < 0)).toThrow();
   });
 });
 
@@ -349,6 +406,9 @@ describe("expectAsyncDerived", () => {
       get isLoading() {
         return snapshot.status === "loading";
       },
+      get isDisposed() {
+        return false;
+      },
       refresh(): void {},
       subscribe(): Unsubscribe {
         return () => {};
@@ -366,6 +426,16 @@ describe("expectAsyncDerived", () => {
     expectAsyncDerived(service).toBeLoading();
   });
 
+  it("toBeLoading fails when not loading", () => {
+    const service = createMockAsyncDerived<string>({
+      status: "idle",
+      data: undefined,
+      error: undefined,
+      isLoading: false,
+    });
+    expect(() => expectAsyncDerived(service).toBeLoading()).toThrow();
+  });
+
   it("toBeSuccess asserts success state", () => {
     const service = createMockAsyncDerived<string>({
       status: "success",
@@ -375,6 +445,26 @@ describe("expectAsyncDerived", () => {
     });
     expectAsyncDerived(service).toBeSuccess();
     expectAsyncDerived(service).toBeSuccess("hello");
+  });
+
+  it("toBeSuccess with data checks data equality", () => {
+    const service = createMockAsyncDerived<string>({
+      status: "success",
+      data: "hello",
+      error: undefined,
+      isLoading: false,
+    });
+    expect(() => expectAsyncDerived(service).toBeSuccess("wrong")).toThrow();
+  });
+
+  it("toBeSuccess fails when not success", () => {
+    const service = createMockAsyncDerived<string>({
+      status: "error",
+      data: undefined,
+      error: new Error("fail"),
+      isLoading: false,
+    });
+    expect(() => expectAsyncDerived(service).toBeSuccess()).toThrow();
   });
 
   it("toBeError asserts error state", () => {
@@ -387,6 +477,16 @@ describe("expectAsyncDerived", () => {
     expectAsyncDerived(service).toBeError();
   });
 
+  it("toBeError fails when not error", () => {
+    const service = createMockAsyncDerived<string>({
+      status: "success",
+      data: "hello",
+      error: undefined,
+      isLoading: false,
+    });
+    expect(() => expectAsyncDerived(service).toBeError()).toThrow();
+  });
+
   it("toHaveStatus asserts any status", () => {
     const service = createMockAsyncDerived<string>({
       status: "idle",
@@ -395,6 +495,16 @@ describe("expectAsyncDerived", () => {
       isLoading: false,
     });
     expectAsyncDerived(service).toHaveStatus("idle");
+  });
+
+  it("toHaveStatus fails on wrong status", () => {
+    const service = createMockAsyncDerived<string>({
+      status: "idle",
+      data: undefined,
+      error: undefined,
+      isLoading: false,
+    });
+    expect(() => expectAsyncDerived(service).toHaveStatus("loading")).toThrow();
   });
 });
 
@@ -467,6 +577,47 @@ describe("createActionRecorder", () => {
 
     expect(recorder.actionCount).toBe(0);
   });
+
+  it("includes portName in recorded actions", () => {
+    const mock = createMockStateAdapter({
+      initial: { count: 0, label: "test" },
+      actions: counterActions,
+    });
+    const recorder = createActionRecorder(mock, "MyPort");
+
+    mock.actions.increment();
+
+    expect(recorder.actions[0].portName).toBe("MyPort");
+    recorder.dispose();
+  });
+
+  it("defaults portName to 'unknown' when not provided", () => {
+    const mock = createMockStateAdapter({
+      initial: { count: 0, label: "test" },
+      actions: counterActions,
+    });
+    const recorder = createActionRecorder(mock);
+
+    mock.actions.increment();
+
+    expect(recorder.actions[0].portName).toBe("unknown");
+    recorder.dispose();
+  });
+
+  it("getEventsForPort filters by port name", () => {
+    const mock = createMockStateAdapter({
+      initial: { count: 0, label: "test" },
+      actions: counterActions,
+    });
+    const recorder = createActionRecorder(mock, "TargetPort");
+
+    mock.actions.increment();
+    mock.actions.increment();
+
+    expect(recorder.getEventsForPort("TargetPort")).toHaveLength(2);
+    expect(recorder.getEventsForPort("OtherPort")).toHaveLength(0);
+    recorder.dispose();
+  });
 });
 
 // =============================================================================
@@ -480,7 +631,8 @@ describe("waitForState", () => {
       actions: counterActions,
     });
 
-    await waitForState(mock, s => s.count === 5);
+    const result = await waitForState("TestPort", mock, s => s.count === 5);
+    expect(result.isOk()).toBe(true);
   });
 
   it("resolves after state change satisfies predicate", async () => {
@@ -489,24 +641,139 @@ describe("waitForState", () => {
       actions: counterActions,
     });
 
-    const promise = waitForState(mock, s => s.count >= 3);
+    const promise = waitForState("TestPort", mock, s => s.count >= 3);
 
     mock.actions.increment();
     mock.actions.increment();
     mock.actions.increment();
 
-    await promise;
+    const result = await promise;
+    expect(result.isOk()).toBe(true);
     expect(mock.state.count).toBe(3);
   });
 
-  it("rejects on timeout", async () => {
+  it("returns Err with WaitForStateTimeoutError on timeout", async () => {
     const mock = createMockStateAdapter({
       initial: { count: 0, label: "test" },
       actions: counterActions,
     });
 
-    await expect(waitForState(mock, s => s.count > 100, 50)).rejects.toThrow(
-      "waitForState timed out"
-    );
+    const result = await waitForState("TestPort", mock, s => s.count > 100, 50);
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error._tag).toBe("WaitForStateTimeout");
+      expect(result.error.code).toBe("WAIT_FOR_STATE_TIMEOUT");
+      expect(result.error.portName).toBe("TestPort");
+      expect(result.error.timeoutMs).toBe(50);
+    }
+  });
+
+  it("timeout error has correct _tag for type guard match", async () => {
+    const mock = createMockStateAdapter({
+      initial: { count: 0, label: "test" },
+      actions: counterActions,
+    });
+
+    const result = await waitForState("MyPort", mock, () => false, 20);
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      // Ensures isWaitForStateTimeout type guard works: checks _tag field
+      expect(result.error).toHaveProperty("_tag", "WaitForStateTimeout");
+      expect(typeof result.error).toBe("object");
+      expect(result.error).not.toBeNull();
+    }
+  });
+
+  it("resolves on the first state change that satisfies predicate", async () => {
+    const mock = createMockStateAdapter({
+      initial: { count: 0, label: "test" },
+      actions: counterActions,
+    });
+
+    const promise = waitForState("TestPort", mock, s => s.count === 1, 500);
+
+    // First increment satisfies predicate
+    mock.actions.increment();
+
+    const result = await promise;
+    expect(result.isOk()).toBe(true);
+  });
+
+  it("unsubscribes after predicate is satisfied (no leaks)", async () => {
+    const mock = createMockStateAdapter({
+      initial: { count: 0, label: "test" },
+      actions: counterActions,
+    });
+
+    await waitForState("TestPort", mock, s => s.count === 0); // Already satisfied
+
+    // Verify no dangling subscription by checking we can still operate normally
+    mock.actions.increment();
+    expect(mock.state.count).toBe(1);
+  });
+});
+
+// =============================================================================
+// createStateTestContainer
+// =============================================================================
+
+describe("createStateTestContainer", () => {
+  const ThemePort = createAtomPort<string>()({ name: "Theme" });
+  const themeAdapter = createAtomAdapter({
+    provides: ThemePort,
+    initial: "light",
+  });
+
+  const CountPort = createAtomPort<number>()({ name: "Count" });
+  const countAdapter = createAtomAdapter({
+    provides: CountPort,
+    initial: 0,
+  });
+
+  it("creates container from adapters array (backward compat)", () => {
+    const container = createStateTestContainer([themeAdapter]);
+    const theme = container.resolve(ThemePort);
+    expect(theme.value).toBe("light");
+  });
+
+  it("creates container from config object", () => {
+    const container = createStateTestContainer({
+      adapters: [themeAdapter],
+    });
+    const theme = container.resolve(ThemePort);
+    expect(theme.value).toBe("light");
+  });
+
+  it("applies atom overrides via set()", () => {
+    const container = createStateTestContainer({
+      adapters: [themeAdapter],
+      overrides: [[ThemePort, "dark"]],
+    });
+    const theme = container.resolve(ThemePort);
+    expect(theme.value).toBe("dark");
+  });
+
+  it("applies multiple overrides", () => {
+    const container = createStateTestContainer({
+      adapters: [themeAdapter, countAdapter],
+      overrides: [
+        [ThemePort, "dark"],
+        [CountPort, 42],
+      ],
+    });
+    const theme = container.resolve(ThemePort);
+    const count = container.resolve(CountPort);
+    expect(theme.value).toBe("dark");
+    expect(count.value).toBe(42);
+  });
+
+  it("works with config object and no overrides", () => {
+    const container = createStateTestContainer({
+      adapters: [themeAdapter, countAdapter],
+    });
+    const theme = container.resolve(ThemePort);
+    const count = container.resolve(CountPort);
+    expect(theme.value).toBe("light");
+    expect(count.value).toBe(0);
   });
 });

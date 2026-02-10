@@ -104,38 +104,40 @@ test("parseGraphError returns discriminated union or undefined", () => {
   }
 });
 
-test("All error codes have corresponding detail types", () => {
-  // Type-level exhaustiveness check
+test("All parsed error codes have corresponding detail types", () => {
+  // Type-level exhaustiveness check: all codes that appear in ParsedGraphError
+  // have corresponding detail types. Note: GraphErrorCode (re-exported from core)
+  // includes runtime codes (FACTORY_FAILED etc.) that don't have parsed error types.
   type ErrorCodeToDetails = {
     [GraphErrorCode.DUPLICATE_ADAPTER]: DuplicateAdapterDetails;
     [GraphErrorCode.CIRCULAR_DEPENDENCY]: CircularDependencyDetails;
     [GraphErrorCode.CAPTIVE_DEPENDENCY]: CaptiveDependencyDetails;
-    [GraphErrorCode.REVERSE_CAPTIVE_DEPENDENCY]: import("../src/validation/error-parsing.js").ReverseCaptiveDependencyDetails;
-    [GraphErrorCode.LIFETIME_INCONSISTENCY]: import("../src/validation/error-parsing.js").LifetimeInconsistencyDetails;
-    [GraphErrorCode.SELF_DEPENDENCY]: import("../src/validation/error-parsing.js").SelfDependencyDetails;
-    [GraphErrorCode.DEPTH_LIMIT_EXCEEDED]: import("../src/validation/error-parsing.js").DepthLimitExceededDetails;
+    [GraphErrorCode.REVERSE_CAPTIVE_DEPENDENCY]: import("../src/validation/index.js").ReverseCaptiveDependencyDetails;
+    [GraphErrorCode.LIFETIME_INCONSISTENCY]: import("../src/validation/index.js").LifetimeInconsistencyDetails;
+    [GraphErrorCode.SELF_DEPENDENCY]: import("../src/validation/index.js").SelfDependencyDetails;
+    [GraphErrorCode.DEPTH_LIMIT_EXCEEDED]: import("../src/validation/index.js").DepthLimitExceededDetails;
     [GraphErrorCode.MISSING_DEPENDENCY]: MissingDependencyDetails;
-    [GraphErrorCode.OVERRIDE_WITHOUT_PARENT]: import("../src/validation/error-parsing.js").OverrideWithoutParentDetails;
-    [GraphErrorCode.MISSING_PROVIDES]: import("../src/validation/error-parsing.js").MissingProvidesDetails;
-    [GraphErrorCode.INVALID_PROVIDES]: import("../src/validation/error-parsing.js").InvalidProvidesDetails;
-    [GraphErrorCode.INVALID_REQUIRES_TYPE]: import("../src/validation/error-parsing.js").InvalidRequiresTypeDetails;
-    [GraphErrorCode.INVALID_REQUIRES_ELEMENT]: import("../src/validation/error-parsing.js").InvalidRequiresElementDetails;
-    [GraphErrorCode.INVALID_LIFETIME_TYPE]: import("../src/validation/error-parsing.js").InvalidLifetimeTypeDetails;
-    [GraphErrorCode.INVALID_LIFETIME_VALUE]: import("../src/validation/error-parsing.js").InvalidLifetimeValueDetails;
-    [GraphErrorCode.INVALID_FACTORY]: import("../src/validation/error-parsing.js").InvalidFactoryDetails;
-    [GraphErrorCode.DUPLICATE_REQUIRES]: import("../src/validation/error-parsing.js").DuplicateRequiresDetails;
-    [GraphErrorCode.INVALID_FINALIZER]: import("../src/validation/error-parsing.js").InvalidFinalizerDetails;
-    [GraphErrorCode.INVALID_LAZY_PORT]: import("../src/validation/error-parsing.js").InvalidLazyPortDetails;
+    [GraphErrorCode.OVERRIDE_WITHOUT_PARENT]: import("../src/validation/index.js").OverrideWithoutParentDetails;
+    [GraphErrorCode.MISSING_PROVIDES]: import("../src/validation/index.js").MissingProvidesDetails;
+    [GraphErrorCode.INVALID_PROVIDES]: import("../src/validation/index.js").InvalidProvidesDetails;
+    [GraphErrorCode.INVALID_REQUIRES_TYPE]: import("../src/validation/index.js").InvalidRequiresTypeDetails;
+    [GraphErrorCode.INVALID_REQUIRES_ELEMENT]: import("../src/validation/index.js").InvalidRequiresElementDetails;
+    [GraphErrorCode.INVALID_LIFETIME_TYPE]: import("../src/validation/index.js").InvalidLifetimeTypeDetails;
+    [GraphErrorCode.INVALID_LIFETIME_VALUE]: import("../src/validation/index.js").InvalidLifetimeValueDetails;
+    [GraphErrorCode.INVALID_FACTORY]: import("../src/validation/index.js").InvalidFactoryDetails;
+    [GraphErrorCode.DUPLICATE_REQUIRES]: import("../src/validation/index.js").DuplicateRequiresDetails;
+    [GraphErrorCode.INVALID_FINALIZER]: import("../src/validation/index.js").InvalidFinalizerDetails;
+    [GraphErrorCode.INVALID_LAZY_PORT]: import("../src/validation/index.js").InvalidLazyPortDetails;
     [GraphErrorCode.MULTIPLE_ERRORS]: MultipleErrorsDetails;
-    [GraphErrorCode.UNKNOWN_ERROR]: import("../src/validation/error-parsing.js").UnknownErrorDetails;
+    [GraphErrorCode.UNKNOWN_ERROR]: import("../src/validation/index.js").UnknownErrorDetails;
   };
 
-  // Verify all codes are covered
-  type AllCodes = keyof typeof GraphErrorCode;
+  // Verify that ParsedGraphError's code discriminant is a subset of mapped codes
+  type ParsedCodes = ParsedGraphError["code"];
   type MappedCodes = keyof ErrorCodeToDetails;
 
-  // This should be true - all error codes have detail types
-  expectTypeOf<MappedCodes>().toEqualTypeOf<(typeof GraphErrorCode)[AllCodes]>();
+  // All parsed error codes should be covered by the detail map
+  expectTypeOf<ParsedCodes>().toEqualTypeOf<MappedCodes>();
 });
 
 test("Details are properly readonly", () => {
@@ -207,7 +209,7 @@ test("No type-level regressions with literal types", () => {
   expectTypeOf(code).toEqualTypeOf<"DUPLICATE_ADAPTER">();
 
   // Ensure numeric codes are also literal
-  void import("../src/validation/error-parsing.js")
+  void import("../src/validation/index.js")
     .then(m => m.GraphErrorNumericCode.DUPLICATE_ADAPTER)
     .then(code => {
       expectTypeOf(code).toEqualTypeOf<"HEX001">();

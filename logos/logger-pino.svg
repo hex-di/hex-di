@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- "Logs → Pine Tree" - Compact log lines + arrow + simplified pine tree + speed lines -->
+  <!-- Background hexagon -->
+  <polygon points="100,18 176,61 176,139 100,182 24,139 24,61" fill="#475569"/>
+  <!-- Compact colored log lines (left) -->
+  <rect x="32" y="62" width="22" height="8" rx="2" fill="#60A5FA"/>
+  <rect x="57" y="62" width="32" height="8" rx="2" fill="white" opacity="0.4"/>
+  <rect x="32" y="76" width="24" height="8" rx="2" fill="#FBBF24"/>
+  <rect x="59" y="76" width="28" height="8" rx="2" fill="white" opacity="0.4"/>
+  <rect x="32" y="90" width="26" height="8" rx="2" fill="#A78BFA"/>
+  <rect x="61" y="90" width="30" height="8" rx="2" fill="white" opacity="0.4"/>
+  <!-- Arrow bridge -->
+  <line x1="96" y1="80" x2="112" y2="80" stroke="white" stroke-width="2.5"/>
+  <polyline points="109,75 115,80 109,85" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Simplified pine tree (3 clean overlapping triangles + trunk) -->
+  <!-- Top tier -->
+  <polygon points="145,45 132,72 158,72" fill="white" opacity="0.85"/>
+  <!-- Middle tier -->
+  <polygon points="145,62 128,94 162,94" fill="white" opacity="0.85"/>
+  <!-- Bottom tier -->
+  <polygon points="145,82 122,118 168,118" fill="white" opacity="0.85"/>
+  <!-- Trunk -->
+  <rect x="141" y="118" width="8" height="14" rx="1" fill="white" opacity="0.6"/>
+  <!-- 2 speed lines to left of tree -->
+  <line x1="112" y1="70" x2="124" y2="70" stroke="white" stroke-width="2" opacity="0.35" stroke-linecap="round"/>
+  <line x1="108" y1="82" x2="120" y2="82" stroke="white" stroke-width="2" opacity="0.35" stroke-linecap="round"/>
+</svg>

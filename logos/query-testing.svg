@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- "Cache + Spy Glass" - Compact database + magnifying glass in dashed rect + checkmarks -->
+  <!-- Background hexagon -->
+  <polygon points="100,18 176,61 176,139 100,182 24,139 24,61" fill="#0891B2"/>
+  <!-- Dashed test boundary rectangle -->
+  <rect x="38" y="45" width="124" height="80" rx="6" fill="white" opacity="0.1" stroke="white" stroke-width="2" stroke-dasharray="6,3"/>
+  <!-- Compact database icon inside boundary -->
+  <ellipse cx="72" cy="70" rx="18" ry="7" fill="white" opacity="0.8"/>
+  <rect x="54" y="70" width="36" height="14" fill="white" opacity="0.6"/>
+  <ellipse cx="72" cy="84" rx="18" ry="7" fill="white" opacity="0.6"/>
+  <!-- Magnifying glass (spy adapter) -->
+  <circle cx="132" cy="78" r="16" fill="none" stroke="white" stroke-width="2.5" opacity="0.8"/>
+  <line x1="143" y1="90" x2="154" y2="101" stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+  <!-- Green checkmarks -->
+  <polyline points="62,142 70,152 84,136" fill="none" stroke="#10B981" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="102,142 110,152 124,136" fill="none" stroke="#10B981" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

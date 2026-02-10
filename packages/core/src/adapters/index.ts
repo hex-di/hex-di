@@ -13,6 +13,7 @@ export type {
   FactoryKind,
   Lifetime,
   ResolvedDeps,
+  PortDeps,
   EmptyDeps,
 } from "./types.js";
 

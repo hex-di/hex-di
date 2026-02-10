@@ -66,6 +66,7 @@ interface MutableHookContext {
   portName: string;
   lifetime: Lifetime;
   scopeId: string | null;
+  scopeName: string | undefined;
   parentPort: Port<unknown, string> | null;
   isCacheHit: boolean;
   depth: number;
@@ -75,6 +76,7 @@ interface MutableHookContext {
   parentContainerId: string | null;
   duration: number;
   error: Error | null;
+  result?: unknown;
 }
 
 // =============================================================================
@@ -149,9 +151,17 @@ export class HooksRunner {
     scopeId: string | null,
     isCacheHit: boolean,
     inheritanceMode: InheritanceMode | null,
-    action: () => T
+    action: () => T,
+    scopeName?: string
   ): T {
-    const context = this._createContext(port, adapter, scopeId, isCacheHit, inheritanceMode);
+    const context = this._createContext(
+      port,
+      adapter,
+      scopeId,
+      isCacheHit,
+      inheritanceMode,
+      scopeName
+    );
 
     if (this.hooks.beforeResolve !== undefined) {
       this.hooks.beforeResolve(context);
@@ -163,7 +173,9 @@ export class HooksRunner {
 
     let error: Error | null = null;
     try {
-      return action();
+      const result = action();
+      context.result = result;
+      return result;
     } catch (e) {
       error = e instanceof Error ? e : new Error(String(e));
       throw e;
@@ -192,9 +204,17 @@ export class HooksRunner {
     scopeId: string | null,
     isCacheHit: boolean,
     inheritanceMode: InheritanceMode | null,
-    action: () => Promise<T>
+    action: () => Promise<T>,
+    scopeName?: string
   ): Promise<T> {
-    const context = this._createContext(port, adapter, scopeId, isCacheHit, inheritanceMode);
+    const context = this._createContext(
+      port,
+      adapter,
+      scopeId,
+      isCacheHit,
+      inheritanceMode,
+      scopeName
+    );
 
     if (this.hooks.beforeResolve !== undefined) {
       this.hooks.beforeResolve(context);
@@ -206,6 +226,10 @@ export class HooksRunner {
 
     let error: Error | null = null;
     return action()
+      .then(result => {
+        context.result = result;
+        return result;
+      })
       .catch(err => {
         error = err instanceof Error ? err : new Error(String(err));
         throw err;
@@ -228,7 +252,8 @@ export class HooksRunner {
     adapter: AdapterInfo,
     scopeId: string | null,
     isCacheHit: boolean,
-    inheritanceMode: InheritanceMode | null
+    inheritanceMode: InheritanceMode | null,
+    scopeName?: string
   ): MutableHookContext {
     const len = this._parentPorts.length;
     const parentPort = len > 0 ? this._parentPorts[len - 1] : null;
@@ -238,6 +263,7 @@ export class HooksRunner {
       portName: port.__portName,
       lifetime: adapter.lifetime,
       scopeId,
+      scopeName,
       parentPort: parentPort ?? null,
       isCacheHit,
       depth: len,

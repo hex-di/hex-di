@@ -242,22 +242,29 @@ interface QueryClient {
     params?: TParams
   ): void;
 
-  // Subscriptions
-  subscribe<TData, TParams, TError, TName extends string>(
+  // Reactive access
+  getReactiveEntry<TData, TParams, TError, TName extends string>(
     port: QueryPort<TName, TData, TParams, TError>,
-    params: TParams,
-    callback: (state: QueryState<TData, TError>) => void
-  ): Unsubscribe;
+    params: TParams
+  ): ReactiveCacheEntry<TData, TError> | undefined;
+
+  createEffect(fn: () => void): ReactiveEffect;
+
+  getReactiveSystem(): ReactiveSystemInstance;
 
   // Inspection
   getCache(): QueryCache;
   isFetching(filters?: QueryFilters): number;
   isMutating(filters?: MutationFilters): number;
 
+  // Scoping
+  createChild(scope: Scope): QueryClient;
+
   // Lifecycle
   clear(): void;
   pause(): void;
   resume(): void;
+  dispose(): void;
 }
 ```
 
@@ -266,7 +273,7 @@ _Defined in: [09 - Query Client](./09-query-client.md#39-queryclient-interface)_
 ### createQueryClient
 
 ```typescript
-function createQueryClient(config?: QueryClientConfig): QueryClient;
+function createQueryClient(container: Container, config?: QueryClientConfig): QueryClient;
 
 interface QueryClientConfig {
   readonly defaultOptions?: {
@@ -283,6 +290,7 @@ interface QueryClientConfig {
   readonly persister?: CachePersister;
   readonly maxInvalidationDepth?: number;
   readonly clock?: { readonly now: () => number };
+  readonly reactiveSystem?: ReactiveSystemInstance;
 }
 ```
 
@@ -337,24 +345,133 @@ port names, adapter names, and constraint violations for actionable IDE diagnost
 
 _Defined in: [03 - Query Ports](./03-query-ports.md#14-type-inference-utilities), [04 - Mutation Ports](./04-mutation-ports.md#17-mutation-effects), [10 - Integration](./10-integration.md#48d-captive-dependency-rules-for-query-adapters)_
 
+## 71b. Reactivity Module
+
+### Signal
+
+```typescript
+interface Signal<T> {
+  get(): T;
+  set(value: T): void;
+  peek(): T;
+}
+
+function createSignal<T>(initial: T, system?: ReactiveSystemInstance): Signal<T>;
+```
+
+### Computed
+
+```typescript
+interface Computed<T> {
+  get(): T;
+  peek(): T;
+}
+
+function createComputed<T>(fn: () => T, system?: ReactiveSystemInstance): Computed<T>;
+```
+
+### ReactiveEffect
+
+```typescript
+interface ReactiveEffect {
+  run(): void;
+  dispose(): void;
+}
+
+function createEffect(fn: () => void, system?: ReactiveSystemInstance): ReactiveEffect;
+```
+
+### ReactiveSystemInstance
+
+```typescript
+interface ReactiveSystemInstance {
+  signal<T>(initialValue: T): { (): T; (value: T): void };
+  computed<T>(getter: (previousValue?: T) => T): () => T;
+  effect(fn: () => void): () => void;
+  startBatch(): void;
+  endBatch(): void;
+  getActiveSub(): ReactiveNode | undefined;
+  setActiveSub(sub?: ReactiveNode): ReactiveNode | undefined;
+}
+
+function createIsolatedReactiveSystem(): ReactiveSystemInstance;
+```
+
+### Batching
+
+```typescript
+function batch(
+  containerOrScope: object | null,
+  fn: () => void,
+  system?: ReactiveSystemInstance
+): Result<void, BatchExecutionFailed>;
+
+function isInBatch(target: object): boolean;
+function getBatchDepth(target: object): number;
+```
+
+_Mirrored from: `@hex-di/store` reactivity module_
+
 ## 72. Cache Interfaces
 
 ### QueryCache
 
 ```typescript
 interface QueryCache {
-  get<TData, TError>(key: CacheKey): CacheEntry<TData, TError> | undefined;
-  set<TData, TError>(key: CacheKey, entry: CacheEntry<TData, TError>): void;
-  delete(key: CacheKey): boolean;
-  has(key: CacheKey): boolean;
-  clear(): void;
-  keys(): IterableIterator<CacheKey>;
-  entries(): IterableIterator<readonly [CacheKey, CacheEntry<unknown, unknown>]>;
-  readonly size: number;
+  // Reactive access
+  getEntry<TData, TParams, TError, TName extends string>(
+    port: QueryPort<TName, TData, TParams, TError>,
+    params: TParams
+  ): ReactiveCacheEntry<TData, TError> | undefined;
+
+  getOrCreateEntry<TData, TParams, TError, TName extends string>(
+    port: QueryPort<TName, TData, TParams, TError>,
+    params: TParams
+  ): ReactiveCacheEntry<TData, TError>;
+
+  // Snapshot access
+  getSnapshot<TData, TParams, TError, TName extends string>(
+    port: QueryPort<TName, TData, TParams, TError>,
+    params: TParams
+  ): CacheEntrySnapshot<TData, TError> | undefined;
+
+  has<TData, TParams, TError, TName extends string>(
+    port: QueryPort<TName, TData, TParams, TError>,
+    params: TParams
+  ): boolean;
+
+  getAll(): ReadonlyMap<string, CacheEntrySnapshot<unknown, unknown>>;
+
   findByPort<TData, TParams, TError, TName extends string>(
     port: QueryPort<TName, TData, TParams, TError>
-  ): ReadonlyArray<readonly [CacheKey, CacheEntry<TData, TError>]>;
-  subscribe(listener: (event: CacheEvent) => void): Unsubscribe;
+  ): ReadonlyArray<[CacheKey, CacheEntrySnapshot<TData, TError>]>;
+
+  // Write operations
+  set<TData, TParams, TError, TName extends string>(
+    port: QueryPort<TName, TData, TParams, TError>,
+    params: TParams,
+    data: TData
+  ): void;
+
+  setError<TData, TParams, TError, TName extends string>(
+    port: QueryPort<TName, TData, TParams, TError>,
+    params: TParams,
+    error: TError
+  ): void;
+
+  invalidate<TData, TParams, TError, TName extends string>(
+    port: QueryPort<TName, TData, TParams, TError>,
+    params?: TParams
+  ): void;
+
+  remove<TData, TParams, TError, TName extends string>(
+    port: QueryPort<TName, TData, TParams, TError>,
+    params?: TParams
+  ): void;
+
+  clear(): void;
+
+  readonly size: number;
 }
 
 declare const __cacheKeyBrand: unique symbol;
@@ -365,31 +482,51 @@ type CacheKey<TName extends string = string> = readonly [portName: TName, params
 
 _Defined in: [07 - Cache Architecture](./07-cache.md#28-querycache-interface)_
 
-### CacheEntry
+### ReactiveCacheEntry
 
 ```typescript
-interface CacheEntry<TData, TError> {
+interface ReactiveCacheEntry<TData, TError = Error> {
+  // Source signals
+  readonly result$: Signal<Result<TData, TError> | undefined>;
+  readonly fetchStatus$: Signal<FetchStatus>;
+  readonly fetchCount$: Signal<number>;
+  readonly isInvalidated$: Signal<boolean>;
+  readonly dataUpdatedAt$: Signal<number | undefined>;
+  readonly errorUpdatedAt$: Signal<number | undefined>;
+
+  // Derived computeds
+  readonly status: Computed<QueryStatus>;
+  readonly data: Computed<TData | undefined>;
+  readonly error: Computed<TError | null>;
+  readonly isPending: Computed<boolean>;
+  readonly isSuccess: Computed<boolean>;
+  readonly isError: Computed<boolean>;
+  readonly isFetching: Computed<boolean>;
+  readonly isLoading: Computed<boolean>;
+  readonly isRefetching: Computed<boolean>;
+}
+
+type QueryStatus = "pending" | "error" | "success";
+type FetchStatus = "idle" | "fetching";
+```
+
+### CacheEntrySnapshot (Non-Reactive)
+
+```typescript
+interface CacheEntrySnapshot<TData, TError = Error> {
   readonly result: Result<TData, TError> | undefined;
-  /** Derived from result. Equivalent to result?.isOk() ? result.value : undefined. */
   readonly data: TData | undefined;
-  /** Derived from result. Equivalent to result?.isErr() ? result.error : null. */
   readonly error: TError | null;
   readonly status: QueryStatus;
   readonly fetchStatus: FetchStatus;
   readonly dataUpdatedAt: number | undefined;
   readonly errorUpdatedAt: number | undefined;
   readonly fetchCount: number;
-  readonly observerCount: number;
   readonly isInvalidated: boolean;
-  readonly staleTime: number;
-  readonly cacheTime: number;
 }
-
-type QueryStatus = "pending" | "error" | "success";
-type FetchStatus = "idle" | "fetching" | "paused";
 ```
 
-_Defined in: [07 - Cache Architecture](./07-cache.md#27-cache-entry)_
+_Defined in: [07 - Cache Architecture](./07-cache.md#27-cache-entry-signal-backed)_
 
 ## 73. State Types
 
@@ -790,7 +927,8 @@ function expectCacheEntry<TData, TParams, TError, TName extends string>(
   toHaveData: (expected: TData) => void;
   toBeStale: () => void;
   toBeFresh: () => void;
-  toHaveObserverCount: (count: number) => void;
+  toHaveSubscribers: () => void;
+  toHaveNoSubscribers: () => void;
 };
 
 function expectQueryResult<TData, TError>(
@@ -943,16 +1081,16 @@ type QueryInspectorEvent =
       readonly cacheKey: CacheKey;
     }
   | {
-      readonly kind: "observer-added";
+      readonly kind: "subscriber-added";
       readonly portName: string;
       readonly params: unknown;
-      readonly observerCount: number;
+      readonly subscriberCount: number;
     }
   | {
-      readonly kind: "observer-removed";
+      readonly kind: "subscriber-removed";
       readonly portName: string;
       readonly params: unknown;
-      readonly observerCount: number;
+      readonly subscriberCount: number;
     }
   | {
       readonly kind: "retry";

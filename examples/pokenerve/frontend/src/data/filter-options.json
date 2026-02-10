@@ -1,0 +1,50 @@
+{
+  "types": [
+    "normal",
+    "fire",
+    "water",
+    "electric",
+    "grass",
+    "ice",
+    "fighting",
+    "poison",
+    "ground",
+    "flying",
+    "psychic",
+    "bug",
+    "rock",
+    "ghost",
+    "dragon",
+    "dark",
+    "steel",
+    "fairy"
+  ],
+  "habitats": [
+    "cave",
+    "forest",
+    "grassland",
+    "mountain",
+    "rare",
+    "rough-terrain",
+    "sea",
+    "urban",
+    "waters-edge"
+  ],
+  "colors": ["black", "blue", "brown", "gray", "green", "pink", "purple", "red", "white", "yellow"],
+  "shapes": [
+    "ball",
+    "squiggle",
+    "fish",
+    "arms",
+    "blob",
+    "upright",
+    "legs",
+    "quadruped",
+    "wings",
+    "tentacles",
+    "heads",
+    "humanoid",
+    "bug-wings",
+    "armor"
+  ]
+}

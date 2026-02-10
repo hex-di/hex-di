@@ -23,10 +23,18 @@ export interface ToolCall {
   readonly arguments: unknown;
 }
 
-export interface ToolResult {
+export type ToolResult = ToolSuccessResult | ToolErrorResult;
+
+export interface ToolSuccessResult {
   readonly callId: string;
   readonly result: unknown;
-  readonly isError?: boolean;
+  readonly isError: false;
+}
+
+export interface ToolErrorResult {
+  readonly callId: string;
+  readonly result: unknown;
+  readonly isError: true;
 }
 
 // ── Tool types ─────────────────────────────────────────
@@ -140,7 +148,7 @@ export interface RunOptions {
 }
 
 export interface AgentRun {
-  readonly result: Promise<AgentRunResult>;
+  readonly result: Promise<Result<AgentRunResult, AgentError>>;
   readonly abort: () => void;
 }
 
@@ -227,7 +235,71 @@ export interface RunCompleteEvent {
 export interface RunErrorEvent {
   readonly type: "run-error";
   readonly runId: string;
-  readonly error: Error;
+  readonly error: AgentError;
+}
+
+// ── Error types ────────────────────────────────────────
+export interface AgentErrorBase {
+  readonly runId: string;
+  readonly agentName: string;
+  readonly message: string;
+}
+
+export type AgentError =
+  | ToolExecutionFailedError
+  | ToolValidationFailedError
+  | ToolNameCollisionError
+  | LlmGenerationFailedError
+  | ApprovalTimeoutError
+  | RunAbortedError
+  | MaxTurnsExceededError
+  | AgentConfigInvalidError;
+
+export interface ToolExecutionFailedError extends AgentErrorBase {
+  readonly _tag: "ToolExecutionFailed";
+  readonly toolName: string;
+  readonly cause: unknown;
+}
+
+export interface ToolValidationFailedError extends AgentErrorBase {
+  readonly _tag: "ToolValidationFailed";
+  readonly toolName: string;
+  readonly validationErrors: readonly string[];
+}
+
+export interface ToolNameCollisionError extends AgentErrorBase {
+  readonly _tag: "ToolNameCollision";
+  readonly duplicateName: string;
+  readonly contributingPorts: readonly string[];
+}
+
+export interface LlmGenerationFailedError extends AgentErrorBase {
+  readonly _tag: "LlmGenerationFailed";
+  readonly cause: unknown;
+  readonly turnNumber: number;
+}
+
+export interface ApprovalTimeoutError extends AgentErrorBase {
+  readonly _tag: "ApprovalTimeout";
+  readonly toolName: string;
+  readonly timeoutMs: number;
+}
+
+export interface RunAbortedError extends AgentErrorBase {
+  readonly _tag: "RunAborted";
+  readonly turnNumber: number;
+}
+
+export interface MaxTurnsExceededError extends AgentErrorBase {
+  readonly _tag: "MaxTurnsExceeded";
+  readonly maxTurns: number;
+  readonly turnCount: number;
+}
+
+export interface AgentConfigInvalidError extends AgentErrorBase {
+  readonly _tag: "AgentConfigInvalid";
+  readonly field: string;
+  readonly reason: string;
 }
 
 // ── Approval types ─────────────────────────────────────
@@ -248,6 +320,49 @@ export interface ApprovalRequest {
 export interface ApprovalService {
   requestApproval(request: ApprovalRequest): Promise<boolean>;
 }
+
+// ── Inspector types ───────────────────────────────────
+export interface ToolInfo {
+  readonly name: string;
+  readonly description: string;
+  readonly portName: string;
+}
+
+export interface ConversationSnapshot {
+  readonly conversationId: string;
+  readonly agentName: string;
+  readonly messageCount: number;
+  readonly turnCount: number;
+  readonly startedAt: number;
+  readonly lastActivityAt: number;
+  readonly status: "active" | "complete" | "error" | "aborted";
+}
+
+export interface AgentInspectorListener {
+  onRunStarted?(snapshot: ConversationSnapshot): void;
+  onRunComplete?(snapshot: ConversationSnapshot): void;
+  onToolCall?(toolName: string, conversationId: string): void;
+  onApprovalRequested?(toolName: string, conversationId: string): void;
+}
+
+export interface AgentInspector {
+  getTools(): readonly ToolInfo[];
+  getActiveConversations(): readonly ConversationSnapshot[];
+  getApprovalQueue(): readonly ApprovalRequest[];
+  getConversationHistory(conversationId: string): readonly Message[];
+  subscribe(listener: AgentInspectorListener): () => void;
+}
+
+// ── Persistence types ─────────────────────────────────
+export interface ConversationPersistenceService {
+  save(conversationId: string, messages: readonly Message[]): Promise<void>;
+  load(conversationId: string): Promise<readonly Message[] | undefined>;
+  delete(conversationId: string): Promise<void>;
+  list(filter?: {
+    agentName?: string;
+    status?: ConversationSnapshot["status"];
+  }): Promise<readonly string[]>;
+}
 ```
 
 #### Ports
@@ -257,6 +372,11 @@ export const LlmPort: DirectedPort<LlmService, "Llm", "outbound">;
 export const ContextPort: DirectedPort<ContextService, "AgentContext", "inbound">;
 export const ApprovalPort: DirectedPort<ApprovalService, "Approval", "inbound">;
 export const AgentRunnerPort: DirectedPort<AgentRunnerService, "AgentRunner", "outbound">;
+export const ConversationPersistencePort: DirectedPort<
+  ConversationPersistenceService,
+  "ConversationPersistence",
+  "outbound"
+>;
 ```
 
 #### Functions
@@ -264,12 +384,12 @@ export const AgentRunnerPort: DirectedPort<AgentRunnerService, "AgentRunner", "o
 ```typescript
 // Tool definition
 export function defineTool<TName extends string, TParams extends z.ZodType, TResult>(
-  config: ToolDefinition<TName, TParams, TResult>,
+  config: ToolDefinition<TName, TParams, TResult>
 ): ToolDefinition<TName, TParams, TResult>;
 
 // Adapter factories
 export function createToolAdapter<
-  TProvides extends Port<ToolPortService<TTools>, string>,
+  TProvides extends DirectedPort<ToolPortService<TTools>, string, PortDirection>,
   TTools extends readonly ToolDefinition[],
   TRequires extends readonly Port<unknown, string>[],
 >(config: {
@@ -279,23 +399,20 @@ export function createToolAdapter<
 }): Adapter<TProvides, TupleToUnion<TRequires>, "singleton">;
 
 export function createAgentAdapter<
-  TProvides extends Port<AgentService, string>,
->(config: {
-  readonly provides: TProvides;
-  readonly requires: readonly Port<unknown, string>[];
-  readonly config: AgentConfig;
-}): Adapter<TProvides, /* inferred */, "scoped">;
-
-export function createContextAdapter<
+  TProvides extends DirectedPort<AgentService, string, PortDirection>,
   TRequires extends readonly Port<unknown, string>[],
 >(config: {
+  readonly provides: TProvides;
+  readonly requires: TRequires;
+  readonly config: AgentConfig;
+}): Adapter<TProvides, TupleToUnion<TRequires>, "scoped">;
+
+export function createContextAdapter<TRequires extends readonly Port<unknown, string>[]>(config: {
   readonly requires: TRequires;
   readonly entries: (deps: ResolvedDeps<TupleToUnion<TRequires>>) => readonly ContextEntry[];
 }): Adapter<typeof ContextPort, TupleToUnion<TRequires>, "scoped">;
 
-export function createAgentRunnerAdapter<
-  TAgent extends Port<AgentService, string>,
->(config: {
+export function createAgentRunnerAdapter<TAgent extends Port<AgentService, string>>(config: {
   readonly agent: TAgent;
   readonly approval?: ApprovalPolicy;
   readonly parallelToolCalls?: boolean;
@@ -328,18 +445,14 @@ export function createCallbackApprovalAdapter(config?: {
 }): Adapter<typeof ApprovalPort, never, "scoped">;
 
 // Utilities
-export function agentEventsToSse(
-  events: AsyncIterable<AgentEvent>,
-): ReadableStream<Uint8Array>;
+export function agentEventsToSse(events: AsyncIterable<AgentEvent>): ReadableStream<Uint8Array>;
 
 export function filterEvents<T extends AgentEvent["type"]>(
   events: AsyncIterable<AgentEvent>,
   ...types: readonly T[]
 ): AsyncIterable<Extract<AgentEvent, { type: T }>>;
 
-export function collectEvents(
-  events: AsyncIterable<AgentEvent>,
-): Promise<readonly AgentEvent[]>;
+export function collectEvents(events: AsyncIterable<AgentEvent>): Promise<readonly AgentEvent[]>;
 ```
 
 ---
@@ -351,7 +464,7 @@ export function collectEvents(
 export function useAgentChat(runnerPort: Port<AgentRunnerService, string>): {
   readonly messages: readonly Message[];
   readonly isRunning: boolean;
-  readonly error: Error | undefined;
+  readonly error: AgentError | undefined;
   send: (prompt: string) => void;
   abort: () => void;
   reset: () => void;

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- "Logs → Crown W" - Compact log lines + arrow + geometric W + transport fork -->
+  <!-- Background hexagon -->
+  <polygon points="100,18 176,61 176,139 100,182 24,139 24,61" fill="#475569"/>
+  <!-- Compact colored log lines (left) -->
+  <rect x="32" y="62" width="22" height="8" rx="2" fill="#60A5FA"/>
+  <rect x="57" y="62" width="32" height="8" rx="2" fill="white" opacity="0.4"/>
+  <rect x="32" y="76" width="24" height="8" rx="2" fill="#FBBF24"/>
+  <rect x="59" y="76" width="28" height="8" rx="2" fill="white" opacity="0.4"/>
+  <rect x="32" y="90" width="26" height="8" rx="2" fill="#F87171"/>
+  <rect x="61" y="90" width="30" height="8" rx="2" fill="white" opacity="0.4"/>
+  <!-- Arrow bridge -->
+  <line x1="96" y1="80" x2="112" y2="80" stroke="white" stroke-width="2.5"/>
+  <polyline points="109,75 115,80 109,85" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Geometric "W" as crown/zigzag path (not text) -->
+  <path d="M 120,62 L 128,92 L 140,72 L 152,92 L 160,62" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Transport fork: single point fanning to 3 lines -->
+  <circle cx="140" cy="112" r="4" fill="white" opacity="0.7"/>
+  <line x1="140" y1="116" x2="108" y2="148" stroke="white" stroke-width="2" opacity="0.5"/>
+  <line x1="140" y1="116" x2="140" y2="152" stroke="white" stroke-width="2" opacity="0.5"/>
+  <line x1="140" y1="116" x2="168" y2="148" stroke="white" stroke-width="2" opacity="0.5"/>
+  <!-- Small dots at transport endpoints -->
+  <circle cx="108" cy="148" r="3" fill="white" opacity="0.4"/>
+  <circle cx="140" cy="152" r="3" fill="white" opacity="0.4"/>
+  <circle cx="168" cy="148" r="3" fill="white" opacity="0.4"/>
+</svg>

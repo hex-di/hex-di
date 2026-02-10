@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- "Spans → Magnifying Glass" - Compact trace bars + arrow + magnifying glass with Z -->
+  <!-- Background hexagon -->
+  <polygon points="100,18 176,61 176,139 100,182 24,139 24,61" fill="#D97706"/>
+  <!-- Compact trace bars (left) -->
+  <rect x="32" y="72" width="30" height="10" rx="3" fill="white" opacity="0.9"/>
+  <rect x="40" y="88" width="35" height="10" rx="3" fill="white" opacity="0.7"/>
+  <rect x="40" y="104" width="25" height="10" rx="3" fill="white" opacity="0.55"/>
+  <!-- Arrow bridge -->
+  <line x1="78" y1="92" x2="100" y2="92" stroke="white" stroke-width="2.5"/>
+  <polyline points="96,87 102,92 96,97" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Magnifying glass (right side) -->
+  <!-- Glass circle -->
+  <circle cx="135" cy="82" r="24" fill="none" stroke="white" stroke-width="3" opacity="0.85"/>
+  <!-- Handle at 45 degrees -->
+  <line x1="152" y1="100" x2="168" y2="116" stroke="white" stroke-width="4" stroke-linecap="round" opacity="0.85"/>
+  <!-- "Z" path inside the glass -->
+  <path d="M 122,72 L 148,72 L 122,95 L 148,95" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+</svg>

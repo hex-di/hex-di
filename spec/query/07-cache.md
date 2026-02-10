@@ -127,49 +127,141 @@ Unlike string-array keys in TanStack Query, HexDI Query uses the port name as th
 - **Invalidation** -- invalidate all `UsersPort` queries by matching the prefix
 - **Type safety** -- the port type constrains the params type
 
-## 27. Cache Entry
+## 27. Cache Entry (Signal-Backed)
 
-The `result` field is the **source of truth** for the last fetch outcome. The `data` and
-`error` fields are derived from `result` for ergonomic access.
+Each cache entry is a collection of **signals** (mutable reactive values) and **computeds** (derived reactive values) powered by `alien-signals/system`. The `result$` signal is the **source of truth** for the last fetch outcome. All other fields are either signals for independently mutable state or computeds derived from the source signals.
 
 ```typescript
-interface CacheEntry<TData, TError = Error> {
+interface ReactiveCacheEntry<TData, TError = Error> {
+  // === Source Signals (mutable reactive state) ===
+
   /**
    * Source of truth for the last fetch outcome.
    * `undefined` when the entry exists but no fetch has completed yet (pending state).
+   * Writing to this signal triggers glitch-free propagation to all derived computeds.
    */
+  readonly result$: Signal<Result<TData, TError> | undefined>;
+
+  /** Current fetch status. Written by the fetch pipeline. */
+  readonly fetchStatus$: Signal<FetchStatus>;
+
+  /** Number of times this query has been fetched. Incremented on each fetch start. */
+  readonly fetchCount$: Signal<number>;
+
+  /** Whether this entry is marked as invalidated. Set by invalidate(), cleared on refetch. */
+  readonly isInvalidated$: Signal<boolean>;
+
+  /** Timestamp when data was last fetched successfully (ms since epoch). */
+  readonly dataUpdatedAt$: Signal<number | undefined>;
+
+  /** Timestamp when error was last set (ms since epoch). */
+  readonly errorUpdatedAt$: Signal<number | undefined>;
+
+  // === Derived Computeds (read-only, auto-tracked) ===
+
+  /** Derived: `"pending" | "success" | "error"` based on `result$`. */
+  readonly status: Computed<QueryStatus>;
+
+  /** Derived: `result$.isOk() ? result$.value : undefined`. */
+  readonly data: Computed<TData | undefined>;
+
+  /** Derived: `result$.isErr() ? result$.error : null`. */
+  readonly error: Computed<TError | null>;
+
+  /** Derived: `status === "pending"`. */
+  readonly isPending: Computed<boolean>;
+
+  /** Derived: `status === "success"`. */
+  readonly isSuccess: Computed<boolean>;
+
+  /** Derived: `status === "error"`. */
+  readonly isError: Computed<boolean>;
+
+  /** Derived: `fetchStatus$ === "fetching"`. */
+  readonly isFetching: Computed<boolean>;
+
+  /** Derived: `isPending && isFetching`. First load (no data yet). */
+  readonly isLoading: Computed<boolean>;
+
+  /** Derived: `isSuccess && isFetching`. Background refetch with existing data. */
+  readonly isRefetching: Computed<boolean>;
+}
+```
+
+### Creating a Reactive Cache Entry
+
+Each entry is created within the QueryClient's isolated `ReactiveSystemInstance`:
+
+```typescript
+function createReactiveCacheEntry<TData, TError>(
+  system: ReactiveSystemInstance
+): ReactiveCacheEntry<TData, TError> {
+  // Source signals
+  const result$ = createSignal<Result<TData, TError> | undefined>(undefined, system);
+  const fetchStatus$ = createSignal<FetchStatus>("idle", system);
+  const fetchCount$ = createSignal(0, system);
+  const isInvalidated$ = createSignal(false, system);
+  const dataUpdatedAt$ = createSignal<number | undefined>(undefined, system);
+  const errorUpdatedAt$ = createSignal<number | undefined>(undefined, system);
+
+  // Derived computeds
+  const status = createComputed(() => {
+    const r = result$.get();
+    if (r === undefined) return "pending";
+    return r.isOk() ? "success" : "error";
+  }, system);
+
+  const data = createComputed(() => {
+    const r = result$.get();
+    return r !== undefined && r.isOk() ? r.value : undefined;
+  }, system);
+
+  const error = createComputed(() => {
+    const r = result$.get();
+    return r !== undefined && r.isErr() ? r.error : null;
+  }, system);
+
+  const isPending = createComputed(() => status.get() === "pending", system);
+  const isSuccess = createComputed(() => status.get() === "success", system);
+  const isError = createComputed(() => status.get() === "error", system);
+  const isFetching = createComputed(() => fetchStatus$.get() === "fetching", system);
+  const isLoading = createComputed(() => isPending.get() && isFetching.get(), system);
+  const isRefetching = createComputed(() => isSuccess.get() && isFetching.get(), system);
+
+  return {
+    result$,
+    fetchStatus$,
+    fetchCount$,
+    isInvalidated$,
+    dataUpdatedAt$,
+    errorUpdatedAt$,
+    status,
+    data,
+    error,
+    isPending,
+    isSuccess,
+    isError,
+    isFetching,
+    isLoading,
+    isRefetching,
+  };
+}
+```
+
+### Snapshot Interface (Non-Reactive)
+
+For serialization, persistence, and introspection, a non-reactive snapshot can be derived from the reactive entry:
+
+```typescript
+interface CacheEntrySnapshot<TData, TError = Error> {
   readonly result: Result<TData, TError> | undefined;
-
-  /**
-   * Derived from result: `result?.isOk() ? result.value : undefined`.
-   * Provided for ergonomic access -- consumers that only need the success
-   * value can read `entry.data` without unwrapping the Result.
-   */
   readonly data: TData | undefined;
-
-  /**
-   * Derived from result: `result?.isErr() ? result.error : null`.
-   * Provided for ergonomic access -- consumers that only need the error
-   * can read `entry.error` without unwrapping the Result.
-   */
   readonly error: TError | null;
-
-  /** Current status */
-  readonly status: "pending" | "success" | "error";
-
-  /** Timestamp when data was last fetched successfully (ms since epoch) */
+  readonly status: QueryStatus;
+  readonly fetchStatus: FetchStatus;
   readonly dataUpdatedAt: number | undefined;
-
-  /** Timestamp when error was last set (ms since epoch) */
   readonly errorUpdatedAt: number | undefined;
-
-  /** Number of times this query has been fetched */
   readonly fetchCount: number;
-
-  /** Number of active observers (components subscribed) */
-  readonly observerCount: number;
-
-  /** Whether this entry is marked as invalidated */
   readonly isInvalidated: boolean;
 }
 ```
@@ -177,47 +269,73 @@ interface CacheEntry<TData, TError = Error> {
 ### Entry Lifecycle
 
 ```
-┌──────────┐     fetch()      ┌───────────────┐
-│  absent  │─────────────────>│   pending     │
-│  (no     │                  │ result: undef │
-│  entry)  │                  │ data: undef   │
-└──────────┘                  │ error: undef  │
-                              └──────┬────────┘
-                                     │
-                      ┌──────────────┴──────────────┐
-                      │                              │
-                      ▼                              ▼
-                ┌───────────────┐             ┌───────────────┐
-                │   success     │             │    error      │
-                │ result: Ok(T) │             │ result: Err(E)│
-                │ data: T       │             │ error: E      │
-                │ error: undef  │             │ data: undef   │
-                └──────┬────────┘             └──────┬────────┘
-                       │                              │
-                       │     invalidate()             │
-                       │◀─────────────────────────────┤
-                       │     refetch()                │
-                       │                              │
-                       ▼                              │
-                ┌───────────────┐                     │
-                │   refetch     │                     │
-                │ result: Ok(T) │  (keeps prev Ok)    │
-                │ data: T       │─────────────────────┘
-                │ fetching      │
-                └───────────────┘
+┌──────────┐     fetch()      ┌───────────────────────┐
+│  absent  │─────────────────>│   pending              │
+│  (no     │                  │ result$.set(undefined) │
+│  entry)  │                  │ fetchStatus$.set(      │
+└──────────┘                  │   "fetching")          │
+                              └──────────┬────────────┘
+                                         │
+                          ┌──────────────┴──────────────┐
+                          │                              │
+                          ▼                              ▼
+                    ┌───────────────┐             ┌───────────────┐
+                    │   success     │             │    error      │
+                    │ result$.set(  │             │ result$.set(  │
+                    │   ok(data))   │             │   err(error)) │
+                    │ fetchStatus$  │             │ fetchStatus$  │
+                    │   .set("idle")│             │   .set("idle")│
+                    └──────┬────────┘             └──────┬────────┘
+                           │                              │
+                           │     invalidate()             │
+                           │◀─────────────────────────────┤
+                           │  isInvalidated$.set(true)    │
+                           │                              │
+                           ▼                              │
+                    ┌───────────────┐                     │
+                    │   refetch     │                     │
+                    │ result$: prev │  (keeps prev Ok)    │
+                    │ fetchStatus$  │─────────────────────┘
+                    │  .set(        │
+                    │  "fetching")  │
+                    └───────────────┘
 ```
 
 ## 28. QueryCache Interface
 
+The QueryCache stores reactive entries and provides both reactive access (returning signals/computeds directly) and snapshot access (for serialization and introspection).
+
 ```typescript
 interface QueryCache {
-  // === Read Operations ===
+  // === Reactive Read Operations ===
 
-  /** Get cache entry for a query */
-  get<TData, TParams, TError, TName extends string>(
+  /**
+   * Get the reactive cache entry for a query.
+   * Returns the live ReactiveCacheEntry whose signals can be read inside
+   * computeds or effects to establish automatic dependency tracking.
+   */
+  getEntry<TData, TParams, TError, TName extends string>(
     port: QueryPort<TName, TData, TParams, TError>,
     params: TParams
-  ): CacheEntry<TData, TError> | undefined;
+  ): ReactiveCacheEntry<TData, TError> | undefined;
+
+  /**
+   * Get or create a reactive cache entry.
+   * Used internally by the fetch pipeline. Creates a new entry in the
+   * QueryClient's ReactiveSystemInstance if one does not exist.
+   */
+  getOrCreateEntry<TData, TParams, TError, TName extends string>(
+    port: QueryPort<TName, TData, TParams, TError>,
+    params: TParams
+  ): ReactiveCacheEntry<TData, TError>;
+
+  // === Snapshot Read Operations ===
+
+  /** Get a non-reactive snapshot for a query (for serialization/introspection) */
+  getSnapshot<TData, TParams, TError, TName extends string>(
+    port: QueryPort<TName, TData, TParams, TError>,
+    params: TParams
+  ): CacheEntrySnapshot<TData, TError> | undefined;
 
   /** Check if query has data in cache */
   has<TData, TParams, TError, TName extends string>(
@@ -225,80 +343,83 @@ interface QueryCache {
     params: TParams
   ): boolean;
 
-  /** Get all cache entries */
-  getAll(): ReadonlyMap<string, CacheEntry<unknown, unknown>>;
+  /** Get all cache entry snapshots */
+  getAll(): ReadonlyMap<string, CacheEntrySnapshot<unknown, unknown>>;
 
   /** Find entries matching a port (all param variations) */
   findByPort<TData, TParams, TError, TName extends string>(
     port: QueryPort<TName, TData, TParams, TError>
-  ): ReadonlyArray<[CacheKey, CacheEntry<TData, TError>]>;
+  ): ReadonlyArray<[CacheKey, CacheEntrySnapshot<TData, TError>]>;
 
   /** Find entries matching predicate */
   find(
-    predicate: (entry: CacheEntry<unknown, unknown>, key: CacheKey) => boolean
-  ): ReadonlyArray<[CacheKey, CacheEntry<unknown, unknown>]>;
+    predicate: (entry: CacheEntrySnapshot<unknown, unknown>, key: CacheKey) => boolean
+  ): ReadonlyArray<[CacheKey, CacheEntrySnapshot<unknown, unknown>]>;
 
   // === Write Operations ===
 
-  /** Set data for a query */
+  /**
+   * Set data for a query. Applies structural sharing via `replaceEqualDeep`
+   * before writing to the entry's `result$` signal.
+   */
   set<TData, TParams, TError, TName extends string>(
     port: QueryPort<TName, TData, TParams, TError>,
     params: TParams,
     data: TData
   ): void;
 
-  /** Set error for a query */
+  /** Set error for a query. Writes `err(error)` to the entry's `result$` signal. */
   setError<TData, TParams, TError, TName extends string>(
     port: QueryPort<TName, TData, TParams, TError>,
     params: TParams,
     error: TError
   ): void;
 
-  /** Mark query as invalidated (will refetch on next access) */
+  /**
+   * Mark query as invalidated. Sets `isInvalidated$.set(true)` on the entry.
+   * When params is omitted, invalidates all entries for the port.
+   */
   invalidate<TData, TParams, TError, TName extends string>(
     port: QueryPort<TName, TData, TParams, TError>,
     params?: TParams
   ): void;
 
-  /** Remove query from cache entirely */
+  /** Remove query from cache entirely (disposes the reactive entry) */
   remove<TData, TParams, TError, TName extends string>(
     port: QueryPort<TName, TData, TParams, TError>,
     params?: TParams
   ): void;
 
-  /** Clear all entries from cache */
+  /** Clear all entries from cache (disposes all reactive entries) */
   clear(): void;
-
-  // === Subscriptions ===
-
-  /** Subscribe to all cache changes */
-  subscribe(listener: CacheListener): Unsubscribe;
 
   // === Metrics ===
 
   /** Number of entries in cache */
   readonly size: number;
 }
-
-type Unsubscribe = () => void;
 ```
 
-### Cache Events
+### No Manual Subscribe
+
+The traditional `subscribe(listener: CacheListener): Unsubscribe` pattern is **not needed**. Instead, consumers create reactive effects:
 
 ```typescript
-type CacheEvent =
-  | { readonly type: "added"; readonly key: CacheKey; readonly entry: CacheEntry<unknown, unknown> }
-  | {
-      readonly type: "updated";
-      readonly key: CacheKey;
-      readonly entry: CacheEntry<unknown, unknown>;
-    }
-  | { readonly type: "removed"; readonly key: CacheKey }
-  | { readonly type: "invalidated"; readonly key: CacheKey }
-  | { readonly type: "cleared" };
+// Instead of cache.subscribe(listener), use createEffect:
+const effect = createEffect(() => {
+  const entry = cache.getEntry(UsersPort, { role: "admin" });
+  if (entry !== undefined) {
+    // Reading entry.data.get() inside this effect registers
+    // a dependency. The effect re-runs when data changes.
+    console.log("Users data changed:", entry.data.get());
+  }
+}, system);
 
-type CacheListener = (event: CacheEvent) => void;
+// Dispose when done
+effect.dispose();
 ```
+
+For introspection/inspector purposes, the QueryInspectorPort provides event-based notifications separately (see [09b - Introspection](./09b-introspection.md)).
 
 ## 29. Structural Sharing
 
@@ -306,18 +427,20 @@ When new data arrives from a fetch, the cache applies **structural sharing** (`r
 
 ### How It Works
 
-Structural sharing applies to the `Ok.value` of the `Result`. When a new `ok(newData)` result
-arrives, the cache compares `newData` against the previous `Ok.value` (if the previous result
-was also `Ok`) using `replaceEqualDeep`. This means reference equality is preserved for
-unchanged portions of the success data, while the `Result` wrapper itself is always a new
-instance.
+Structural sharing applies to the `Ok.value` of the `Result` **before writing to the signal**. When a new `ok(newData)` result arrives, the cache compares `newData` against the previous `Ok.value` (read via `result$.peek()`) using `replaceEqualDeep`. The structurally-shared result is then written to the `result$` signal. If the data is entirely unchanged, the signal value is referentially equal and alien-signals skips propagation entirely (no notification overhead).
 
 ```typescript
-// Inside cache update logic:
-if (prevEntry.result?.isOk() && newResult.isOk()) {
-  const sharedValue = replaceEqualDeep(prevEntry.result.value, newResult.value);
-  // If sharedValue === prevEntry.result.value, the data is unchanged
-  // Observers can skip re-render via referential equality check on .data
+// Inside cache.set() — structural sharing at the signal write boundary:
+const prevResult = entry.result$.peek();
+if (prevResult?.isOk() && newResult.isOk()) {
+  const sharedValue = replaceEqualDeep(prevResult.value, newResult.value);
+  if (sharedValue === prevResult.value) {
+    // Data unchanged — write the same Ok reference, signal skips propagation
+    return;
+  }
+  entry.result$.set(ok(sharedValue));
+} else {
+  entry.result$.set(newResult);
 }
 ```
 
@@ -390,8 +513,8 @@ Unused cache entries are automatically cleaned up to prevent memory leaks.
 
 An entry is eligible for garbage collection when:
 
-1. `observerCount === 0` (no active components subscribed)
-2. `Date.now() - dataUpdatedAt > cacheTime` (exceeded the port's cacheTime)
+1. **No active subscribers** -- the entry's signals have zero effects/computeds tracking them (determined by alien-signals' internal subscriber list, exposed via `hasSubscribers(entry)`)
+2. `clock.now() - dataUpdatedAt > cacheTime` (exceeded the port's cacheTime)
 
 ### GC Configuration
 
@@ -498,22 +621,24 @@ where cross-scope sharing is desired, use singleton adapters with the root clien
 ### GC Lifecycle
 
 ```
-Entry created ──▶ observerCount: 1
+Entry created ──▶ effect subscribes (reads entry signals)
 
-Component mounts ──▶ observerCount: N (increments)
+Component mounts ──▶ new effect reads signals (auto-tracked by alien-signals)
 
-Component unmounts ──▶ observerCount: N-1 (decrements)
+Component unmounts ──▶ effect.dispose() (alien-signals removes subscriber link)
 
-All unmounted ──▶ observerCount: 0
-                   │
-                   ▼
-             GC timer starts
-                   │
-                   ├── cacheTime elapses ──▶ Entry removed
-                   │
-                   └── New observer mounts ──▶ Timer cancelled
-                                                 Entry stays
+All effects disposed ──▶ hasSubscribers(entry) === false
+                          │
+                          ▼
+                    GC timer starts
+                          │
+                          ├── cacheTime elapses ──▶ Entry removed
+                          │
+                          └── New effect reads signals ──▶ Timer cancelled
+                                                            Entry stays
 ```
+
+The key difference from manual `observerCount` tracking: alien-signals maintains the subscriber graph internally. The GC queries `hasSubscribers(entry)` by checking whether the entry's `result$` signal has any active subscriber links. This eliminates off-by-one bugs from manual increment/decrement.
 
 ### Default cacheTime
 

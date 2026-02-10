@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- "The Validated DAG" - Thin hex outline + 3-node DAG + checkmark -->
+  <!-- Thin hexagonal outline frame -->
+  <polygon points="100,18 176,61 176,139 100,182 24,139 24,61" fill="none" stroke="#0D9488" stroke-width="4"/>
+  <!-- Directed edges from top node to bottom nodes -->
+  <line x1="100" y1="65" x2="65" y2="105" stroke="#0D9488" stroke-width="4" stroke-linecap="round"/>
+  <line x1="100" y1="65" x2="135" y2="105" stroke="#0D9488" stroke-width="4" stroke-linecap="round"/>
+  <!-- Chevron arrowheads -->
+  <polyline points="71,93 65,105 77,101" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="123,101 135,105 129,93" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- DAG nodes -->
+  <circle cx="100" cy="55" r="12" fill="#0D9488"/>
+  <circle cx="65" cy="110" r="12" fill="#0D9488"/>
+  <circle cx="135" cy="110" r="12" fill="#0D9488"/>
+  <!-- Bold checkmark below DAG, inside hex -->
+  <polyline points="78,142 94,158 124,128" fill="none" stroke="#0D9488" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

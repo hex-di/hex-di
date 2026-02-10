@@ -4,4 +4,7 @@ packages:
   - "tooling/*"
   - "libs/*/*"
   - "examples/*"
+  - "examples/pokenerve/*"
+  - "presentations/*/app"
+  - "testing/*"
   - "website"

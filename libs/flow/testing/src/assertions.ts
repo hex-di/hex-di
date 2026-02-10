@@ -18,7 +18,7 @@ export interface FlowStateAssertions<TState extends string, TContext> {
   /** Assert machine is in the specified state */
   toBeInState(name: TState): void;
   /** Assert machine context matches partial object */
-  toHaveContext(partial: Partial<TContext>): void;
+  toHaveContext(partial: Partial<TContext> & Record<string, unknown>): void;
   /** Assert machine has no running activities */
   toHaveNoActivities(): void;
   /** Assert machine has the specified number of activities */
@@ -43,8 +43,8 @@ export function expectFlowState<TState extends string, TContext>(runner: {
     toBeInState(name: TState): void {
       expect(runner.state()).toBe(name);
     },
-    toHaveContext(partial: Partial<TContext>): void {
-      expect(runner.context()).toMatchObject(partial as Record<string, unknown>);
+    toHaveContext(partial: Partial<TContext> & Record<string, unknown>): void {
+      expect(runner.context()).toMatchObject(partial);
     },
     toHaveNoActivities(): void {
       expect(runner.snapshot().activities).toHaveLength(0);
@@ -75,9 +75,9 @@ export function expectEvents(
   expected: ReadonlyArray<Record<string, unknown>>
 ): void {
   expect(events).toHaveLength(expected.length);
-  for (let i = 0; i < expected.length; i++) {
-    expect(events[i]).toMatchObject(expected[i]);
-  }
+  expected.forEach((exp, i) => {
+    expect(events[i]).toMatchObject(exp);
+  });
 }
 
 /**
@@ -105,7 +105,7 @@ export interface SnapshotAssertions<TState extends string, TContext> {
   /** Assert snapshot state name */
   toBeInState(name: TState): void;
   /** Assert snapshot context matches partial */
-  toHaveContext(partial: Partial<TContext>): void;
+  toHaveContext(partial: Partial<TContext> & Record<string, unknown>): void;
 }
 
 /**
@@ -123,8 +123,8 @@ export function expectSnapshot<TState extends string, TContext>(
     toBeInState(name: TState): void {
       expect(snapshot.state).toBe(name);
     },
-    toHaveContext(partial: Partial<TContext>): void {
-      expect(snapshot.context).toMatchObject(partial as Record<string, unknown>);
+    toHaveContext(partial: Partial<TContext> & Record<string, unknown>): void {
+      expect(snapshot.context).toMatchObject(partial);
     },
   };
 }

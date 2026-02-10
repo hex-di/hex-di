@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import { useContext } from "react";
+import { useContext, useMemo } from "react";
 import type { Port, InferService } from "@hex-di/core";
 import { ResolverContext } from "../context/resolver-context.js";
 import { MissingProviderError } from "../errors.js";
@@ -20,6 +20,10 @@ import { MissingProviderError } from "../errors.js";
  * that the requested port is in the TProvides union. It resolves from the
  * nearest resolver - either a Scope (if inside ScopeProvider or AutoScopeProvider)
  * or the Container (if directly inside ContainerProvider).
+ *
+ * Resolution is memoized per (resolver, port) pair. The resolved instance is
+ * cached until the resolver changes (e.g., entering a new scope) or the port
+ * token changes. This prevents redundant resolution hook calls on re-renders.
  *
  * @typeParam TProvides - Union of Port types available for resolution (inferred)
  * @typeParam P - The specific Port being resolved (must extend TProvides)
@@ -37,7 +41,7 @@ import { MissingProviderError } from "../errors.js";
  * @throws {FactoryError} If the adapter's factory function throws
  *
  * @remarks
- * - Resolution happens on every render - consider memoization for expensive services
+ * - Resolution is memoized: only re-resolves when the resolver or port changes
  * - Programming errors (CircularDependencyError, DisposedScopeError) propagate as React errors
  * - Runtime errors (FactoryError) propagate to Error Boundaries
  * - The port must be in TProvides for compile-time safety
@@ -86,5 +90,9 @@ export function usePort<
   // due to phase-dependent conditional types. The typed hooks (createTypedHooks) use the
   // Resolver interface to avoid this issue.
   const resolver = context.resolver as { resolve: (port: Port<unknown, string>) => unknown };
-  return resolver.resolve(port) as InferService<P>;
+
+  // Memoize resolution per (resolver, port) pair to prevent redundant
+  // hook invocations on re-renders. Re-resolves when the resolver changes
+  // (e.g., entering a new scope) or the port token changes.
+  return useMemo(() => resolver.resolve(port) as InferService<P>, [resolver, port]);
 }

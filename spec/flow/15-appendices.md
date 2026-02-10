@@ -178,9 +178,9 @@ The existing `@hex-di/flow` implementation (v0.1.0) already provides the core AP
 
 ### Existing APIs (Stable)
 
-- `createMachine`, `state`, `event` -- machine definition factories
+- `defineMachine`, `state`, `event` -- machine definition factories
 - `Effect` namespace -- all effect constructors (`invoke`, `spawn`, `stop`, `emit`, `delay`, `parallel`, `sequence`, `none`)
-- `activityPort`, `defineEvents`, `activity` -- activity definition API
+- `createActivityPort`, `defineEvents`, `activity` -- activity definition API
 - `createMachineRunner`, `transition` -- runner and pure interpreter
 - `createFlowPort`, `createFlowAdapter`, `createDIEffectExecutor` -- HexDI integration
 - `FlowMemoryCollector`, `NoOpFlowCollector` -- tracing collectors
@@ -188,7 +188,7 @@ The existing `@hex-di/flow` implementation (v0.1.0) already provides the core AP
 
 ### Planned Additions
 
-- **`defineMachine` builder** -- higher-level API wrapping `createMachine` with builder-pattern ergonomics and `const` type parameter inference
+- **`setup()` builder** -- higher-level API wrapping `defineMachine` with builder-pattern ergonomics and `const` type parameter inference
 - **`Effect.assign`** -- dedicated effect for context updates, replacing inline action functions where appropriate
 - **`Effect.send`** -- send events to child or sibling machines in composed machine setups
 - **`Effect.choose`** -- conditional effect selection based on guards
@@ -197,10 +197,6 @@ The existing `@hex-di/flow` implementation (v0.1.0) already provides the core AP
 - **`testMachine` / `testTransition` test harnesses** -- higher-level testing utilities for full machine testing
 - **`useFlow` / `useMachineSelector` / `useFlowEvent` React hooks** -- higher-level React bindings alongside existing `useMachine` / `useSelector` / `useSend`
 - **Statechart serialization/export** -- export machine definitions to standard statechart formats for visualization
-
-### Deprecation Path
-
-- `createActivityPort` -- replaced by curried `activityPort()()` API. The legacy export remains but will be removed.
 
 ---
 

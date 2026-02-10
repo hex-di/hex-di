@@ -16,10 +16,14 @@ Every variant shares a common base of diagnostic fields:
 interface SagaErrorBase {
   /** Unique execution ID for correlating with tracing spans and persistence records */
   readonly executionId: string;
+  /** Name of the saga definition that failed */
+  readonly sagaName: string;
   /** Name of the step that caused the failure */
   readonly stepName: string;
   /** Zero-based position of the failing step in the saga */
   readonly stepIndex: number;
+  /** Human-readable error message describing the failure */
+  readonly message: string;
   /** Names of steps that completed successfully before the failure */
   readonly completedSteps: readonly string[];
   /** Names of steps that were successfully compensated after the failure */
@@ -116,8 +120,10 @@ A saga execution returns `Result<SagaSuccess<TOutput>, SagaError<TAccumulatedErr
 | ------------------------- | ------------------- | ---------------------------------- | ------------------------------------------------ |
 | `_tag`                    | string literal      | All variants                       | Discriminant for exhaustive `switch` handling    |
 | `executionId`             | `string`            | All variants                       | Unique execution ID for correlation              |
+| `sagaName`                | `string`            | All variants                       | Name of the saga definition that failed          |
 | `stepName`                | `string`            | All variants                       | Name of the step that caused the failure         |
 | `stepIndex`               | `number`            | All variants                       | Zero-based position of the failing step          |
+| `message`                 | `string`            | All variants                       | Human-readable error message                     |
 | `completedSteps`          | `readonly string[]` | All variants                       | Steps that completed before the failure          |
 | `compensatedSteps`        | `readonly string[]` | All variants                       | Steps successfully compensated after the failure |
 | `cause`                   | `TCause`            | `StepFailed`, `CompensationFailed` | The original typed error from the failing step   |

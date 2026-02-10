@@ -144,7 +144,7 @@ function createTestAgent(config: {
   readonly context?: readonly ContextEntry[];
   readonly approval?: ApprovalPolicy;
 }): {
-  readonly container: Container<any, any, any, "initialized">;
+  readonly container: Container<unknown, unknown, unknown, "initialized">;
   readonly runner: AgentRunnerService;
   readonly recorder: ToolCallRecorder;
 };

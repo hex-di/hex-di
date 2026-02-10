@@ -22,6 +22,13 @@ export type {
   InferFlowServiceContext,
 } from "./types.js";
 
+export {
+  FlowInspectorPort,
+  FlowRegistryPort,
+  FlowLibraryInspectorPort,
+  FlowEventBusPort,
+} from "./types.js";
+
 // =============================================================================
 // Port Factory
 // =============================================================================
@@ -52,6 +59,17 @@ export {
 } from "./adapter.js";
 
 // =============================================================================
+// Metadata
+// =============================================================================
+
+export {
+  computeFlowMetadata,
+  isFlowMetadata,
+  type FlowAdapterMetadata,
+  type TransitionDetail,
+} from "./metadata.js";
+
+// =============================================================================
 // Activity Validation (Type-level utilities)
 // =============================================================================
 
@@ -64,3 +82,42 @@ export type {
   ActivityRequiresUnavailablePortError,
   DuplicateActivityPortError,
 } from "./activity-validation.js";
+
+// =============================================================================
+// FlowRegistry Adapter
+// =============================================================================
+
+export { FlowRegistryAdapter } from "./registry-adapter.js";
+
+// =============================================================================
+// FlowEventBus Adapter
+// =============================================================================
+
+export { FlowEventBusAdapter } from "./event-bus-adapter.js";
+
+// =============================================================================
+// FlowInspector Adapter
+// =============================================================================
+
+export {
+  createFlowInspectorAdapter,
+  type FlowInspectorAdapterConfig,
+} from "./inspector-adapter.js";
+
+// =============================================================================
+// Tracing Bridge
+// =============================================================================
+
+export { createFlowTracingBridge, type FlowTracingBridgeConfig } from "./tracing-bridge.js";
+
+// =============================================================================
+// Library Inspector Bridge
+// =============================================================================
+
+export { createFlowLibraryInspector } from "./library-inspector-bridge.js";
+
+// =============================================================================
+// Library Inspector Adapter
+// =============================================================================
+
+export { FlowLibraryInspectorAdapter } from "./library-inspector-adapter.js";

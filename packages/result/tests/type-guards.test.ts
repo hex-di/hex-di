@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { ok, err } from "../src/index.js";
+import { ok, err, ResultAsync } from "../src/index.js";
 import type { Result } from "../src/index.js";
-import { isResult } from "../src/core/guards.js";
+import { isResult, isResultAsync } from "../src/core/guards.js";
 
 describe("Type Guards", () => {
   // DoD 3 #1
@@ -111,6 +111,41 @@ describe("Type Guards", () => {
     expect(extract(err("fail"))).toBe("fail");
   });
 
+  // --- Mutation gap: isResult with object having _tag: "Ok" but no value ---
+  it("isResult({ _tag: 'Ok' }) without value property returns false", () => {
+    expect(isResult({ _tag: "Ok" })).toBe(false);
+  });
+
+  // --- Mutation gap: isResult with object having _tag: "Err" but no error ---
+  it("isResult({ _tag: 'Err' }) without error property returns false", () => {
+    expect(isResult({ _tag: "Err" })).toBe(false);
+  });
+
+  // --- Mutation gap: isResult with non-Result object having _tag ---
+  it("isResult({ _tag: 'Other', value: 1 }) returns false", () => {
+    expect(isResult({ _tag: "Other", value: 1 })).toBe(false);
+  });
+
+  // --- Mutation gap: isResult with number ---
+  it("isResult(42) returns false", () => {
+    expect(isResult(42)).toBe(false);
+  });
+
+  // --- Mutation gap: isResult with boolean ---
+  it("isResult(true) returns false", () => {
+    expect(isResult(true)).toBe(false);
+  });
+
+  // --- Mutation gap: isResult with object matching Ok shape but wrong tag ---
+  it("isResult({ _tag: 'Err', value: 1 }) returns false (has value, not error)", () => {
+    expect(isResult({ _tag: "Err", value: 1 })).toBe(false);
+  });
+
+  // --- Mutation gap: isResult with object matching Err shape but wrong tag ---
+  it("isResult({ _tag: 'Ok', error: 'x' }) returns false (has error, not value)", () => {
+    expect(isResult({ _tag: "Ok", error: "x" })).toBe(false);
+  });
+
   // DoD 3 #18
   it("Array .filter(r => r.isOk()) produces only Ok values", () => {
     const results: Result<number, string>[] = [ok(1), err("bad"), ok(3)];
@@ -118,5 +153,64 @@ describe("Type Guards", () => {
     expect(successes).toHaveLength(2);
     expect(successes[0].value).toBe(1);
     expect(successes[1].value).toBe(3);
+  });
+});
+
+describe("isResultAsync", () => {
+  it("returns true for ResultAsync.ok(1)", () => {
+    expect(isResultAsync(ResultAsync.ok(1))).toBe(true);
+  });
+
+  it("returns true for ResultAsync.err('x')", () => {
+    expect(isResultAsync(ResultAsync.err("x"))).toBe(true);
+  });
+
+  it("returns true for ResultAsync.fromSafePromise(...)", () => {
+    expect(isResultAsync(ResultAsync.fromSafePromise(Promise.resolve(42)))).toBe(true);
+  });
+
+  it("returns false for ok(1) (sync Result, no then)", () => {
+    expect(isResultAsync(ok(1))).toBe(false);
+  });
+
+  it("returns false for err('x') (sync Result)", () => {
+    expect(isResultAsync(err("x"))).toBe(false);
+  });
+
+  it("returns false for null", () => {
+    expect(isResultAsync(null)).toBe(false);
+  });
+
+  it("returns false for undefined", () => {
+    expect(isResultAsync(undefined)).toBe(false);
+  });
+
+  it("returns false for a string", () => {
+    expect(isResultAsync("string")).toBe(false);
+  });
+
+  it("returns false for a number", () => {
+    expect(isResultAsync(42)).toBe(false);
+  });
+
+  it("returns false for a plain Promise (has then but no match)", () => {
+    expect(isResultAsync(Promise.resolve(1))).toBe(false);
+  });
+
+  it("returns false for { match: 'not-a-fn' }", () => {
+    expect(isResultAsync({ match: "not-a-fn" })).toBe(false);
+  });
+
+  it("returns true for structural match { then: fn, match: fn }", () => {
+    const fake = { then: () => {}, match: () => {} };
+    expect(isResultAsync(fake)).toBe(true);
+  });
+
+  it("returns false for { match: fn } without then", () => {
+    expect(isResultAsync({ match: () => {} })).toBe(false);
+  });
+
+  it("returns false for { then: 'not-a-fn', match: fn }", () => {
+    expect(isResultAsync({ then: "not-a-fn", match: () => {} })).toBe(false);
   });
 });

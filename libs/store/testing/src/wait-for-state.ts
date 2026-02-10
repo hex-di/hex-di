@@ -6,7 +6,18 @@
  * @packageDocumentation
  */
 
-import type { StateService, ActionMap, DeepReadonly } from "@hex-di/store";
+import type { StateService, ActionMap, DeepReadonly, WaitForStateTimeout } from "@hex-di/store";
+import { WaitForStateTimeout as WaitForStateTimeoutCtor } from "@hex-di/store";
+import { ResultAsync } from "@hex-di/result";
+
+function isWaitForStateTimeout(value: unknown): value is WaitForStateTimeout {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "_tag" in value &&
+    value._tag === "WaitForStateTimeout"
+  );
+}
 
 // =============================================================================
 // waitForState
@@ -22,36 +33,45 @@ import type { StateService, ActionMap, DeepReadonly } from "@hex-di/store";
  * ```typescript
  * stateService.actions.startLoading();
  * // Somewhere async, the state will change to loaded
- * await waitForState(stateService, s => s.status === 'loaded', 5000);
+ * const result = await waitForState("MyPort", stateService, s => s.status === 'loaded', 5000);
  * ```
  */
 export function waitForState<TState, TActions extends ActionMap<TState>>(
+  portName: string,
   service: StateService<TState, TActions>,
   predicate: (state: DeepReadonly<TState>) => boolean,
   timeout = 5000
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    // Check current state first
-    if (predicate(service.state)) {
-      resolve();
-      return;
-    }
-
-    const timer = { id: undefined as ReturnType<typeof setTimeout> | undefined };
-
-    const unsub = service.subscribe((state: DeepReadonly<TState>) => {
-      if (predicate(state)) {
-        if (timer.id !== undefined) {
-          clearTimeout(timer.id);
-        }
-        unsub();
+): ResultAsync<void, WaitForStateTimeout> {
+  return ResultAsync.fromPromise(
+    new Promise<void>((resolve, reject) => {
+      // Check current state first
+      if (predicate(service.state)) {
         resolve();
+        return;
       }
-    });
 
-    timer.id = setTimeout(() => {
-      unsub();
-      reject(new Error(`waitForState timed out after ${timeout}ms`));
-    }, timeout);
-  });
+      const timer: { id: ReturnType<typeof setTimeout> | undefined } = { id: undefined };
+
+      const unsub = service.subscribe((state: DeepReadonly<TState>) => {
+        if (predicate(state)) {
+          if (timer.id !== undefined) {
+            clearTimeout(timer.id);
+          }
+          unsub();
+          resolve();
+        }
+      });
+
+      timer.id = setTimeout(() => {
+        unsub();
+        reject(WaitForStateTimeoutCtor({ portName, timeoutMs: timeout }));
+      }, timeout);
+    }),
+    (error): WaitForStateTimeout => {
+      if (isWaitForStateTimeout(error)) {
+        return error;
+      }
+      return WaitForStateTimeoutCtor({ portName, timeoutMs: timeout });
+    }
+  );
 }

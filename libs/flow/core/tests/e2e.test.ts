@@ -17,10 +17,12 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { ResultAsync } from "@hex-di/result";
 import { port } from "@hex-di/core";
-import { createMachine } from "../src/machine/create-machine.js";
+import { defineMachine } from "../src/machine/define-machine.js";
 import { event } from "../src/machine/factories.js";
 import { Effect } from "../src/effects/constructors.js";
+import type { EffectAny } from "../src/effects/types.js";
 import { createMachineRunner, type MachineSnapshot } from "../src/runner/index.js";
 import { createActivityManager, type ActivityManager } from "../src/activities/index.js";
 import { createDIEffectExecutor, type ScopeResolver } from "../src/integration/di-executor.js";
@@ -78,7 +80,7 @@ describe("End-to-End Machine Lifecycle", () => {
     }
 
     // Create a workflow machine with multiple states
-    const workflowMachine = createMachine({
+    const workflowMachine = defineMachine({
       id: "workflow-lifecycle",
       initial: "idle",
       context: { step: 0, history: [] } satisfies WorkflowContext,
@@ -147,7 +149,7 @@ describe("End-to-End Machine Lifecycle", () => {
 
     // Create runner
     const runner = createMachineRunner(workflowMachine, {
-      executor: { execute: async () => {} },
+      executor: { execute: () => ResultAsync.ok(undefined) },
       activityManager,
     });
 
@@ -224,7 +226,7 @@ describe("Self-Transitions", () => {
       readonly value: string;
     }
 
-    const formMachine = createMachine({
+    const formMachine = defineMachine({
       id: "form-self-transition",
       initial: "editing",
       context: {
@@ -289,7 +291,7 @@ describe("Self-Transitions", () => {
     const submitEvent = event<"SUBMIT">("SUBMIT");
 
     const runner = createMachineRunner(formMachine, {
-      executor: { execute: async () => {} },
+      executor: { execute: () => ResultAsync.ok(undefined) },
       activityManager,
     });
 
@@ -346,7 +348,7 @@ describe("Context-Driven Guard Chains", () => {
       readonly level: number;
     }
 
-    const gameMachine = createMachine({
+    const gameMachine = defineMachine({
       id: "game-guards",
       initial: "playing",
       context: { score: 0, lives: 3, level: 1 } satisfies GameContext,
@@ -402,7 +404,7 @@ describe("Context-Driven Guard Chains", () => {
     const levelUpEvent = event<"LEVEL_UP">("LEVEL_UP");
 
     const runner = createMachineRunner(gameMachine, {
-      executor: { execute: async () => {} },
+      executor: { execute: () => ResultAsync.ok(undefined) },
       activityManager,
     });
 
@@ -457,7 +459,7 @@ describe("Effect.invoke with Port Resolution", () => {
     };
 
     // Create machine with Effect.invoke
-    const invokerMachine = createMachine({
+    const invokerMachine = defineMachine({
       id: "invoker",
       initial: "idle",
       context: undefined,
@@ -518,17 +520,16 @@ describe("Entry/Exit Effects Ordering", () => {
 
     // Custom executor that logs effect execution order
     const loggingExecutor = {
-      execute: async (effect: {
-        readonly _tag: string;
-        readonly milliseconds?: number;
-      }): Promise<void> => {
-        if (effect._tag === "Delay") {
-          effectLog.push(`delay-${effect.milliseconds}`);
+      execute(effect: EffectAny) {
+        if (effect._tag === "Delay" && "milliseconds" in effect) {
+          const ms = effect.milliseconds;
+          effectLog.push(`delay-${ms}`);
         }
+        return ResultAsync.ok(undefined);
       },
     };
 
-    const orderMachine = createMachine({
+    const orderMachine = defineMachine({
       id: "order-test",
       initial: "A",
       context: undefined,
@@ -601,7 +602,7 @@ describe("Tracing Integration", () => {
       readonly value: number;
     }
 
-    const tracingMachine = createMachine({
+    const tracingMachine = defineMachine({
       id: "tracing-test",
       initial: "idle",
       context: { value: 0 } satisfies TracingContext,
@@ -633,7 +634,7 @@ describe("Tracing Integration", () => {
     });
 
     const collector = new FlowMemoryCollector();
-    const executor = { execute: async () => {} };
+    const executor = { execute: () => ResultAsync.ok(undefined) };
 
     const runner = createTracingRunner(tracingMachine, {
       executor,
@@ -704,7 +705,7 @@ describe("Multiple Runners with Same Machine", () => {
       readonly value: string;
     }
 
-    const sharedMachine = createMachine({
+    const sharedMachine = defineMachine({
       id: "shared-def",
       initial: "active",
       context: { id: "", count: 0 } satisfies IndependentContext,
@@ -742,12 +743,12 @@ describe("Multiple Runners with Same Machine", () => {
 
     // Create two independent runners
     const runner1 = createMachineRunner(sharedMachine, {
-      executor: { execute: async () => {} },
+      executor: { execute: () => ResultAsync.ok(undefined) },
       activityManager,
     });
 
     const runner2 = createMachineRunner(sharedMachine, {
-      executor: { execute: async () => {} },
+      executor: { execute: () => ResultAsync.ok(undefined) },
       activityManager,
     });
 
@@ -788,7 +789,7 @@ describe("Rapid Sequential Transitions", () => {
       readonly count: number;
     }
 
-    const rapidMachine = createMachine({
+    const rapidMachine = defineMachine({
       id: "rapid",
       initial: "counting",
       context: { count: 0 } satisfies CountContext,
@@ -817,7 +818,7 @@ describe("Rapid Sequential Transitions", () => {
     const resetEvent = event<"RESET">("RESET");
 
     const runner = createMachineRunner(rapidMachine, {
-      executor: { execute: async () => {} },
+      executor: { execute: () => ResultAsync.ok(undefined) },
       activityManager,
     });
 

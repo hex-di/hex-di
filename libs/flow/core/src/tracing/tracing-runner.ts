@@ -8,15 +8,42 @@
  * @packageDocumentation
  */
 
+import { ResultAsync } from "@hex-di/result";
+import type { Result } from "@hex-di/result";
 import type { Machine } from "../machine/types.js";
-import type { MachineRunner, MachineSnapshot, EffectExecutor } from "../runner/types.js";
+import type {
+  MachineRunner,
+  MachineSnapshot,
+  EffectExecutor,
+  TransitionHistoryEntry,
+  EffectExecutionEntry,
+} from "../runner/types.js";
 import type { ActivityManager } from "../activities/manager.js";
 import type { ActivityStatus } from "../activities/types.js";
 import type { EffectAny } from "../effects/types.js";
+import type { TransitionError, EffectExecutionError, DisposeError } from "../errors/index.js";
 import type { FlowCollector } from "./collector.js";
 import type { FlowTransitionEventAny } from "./types.js";
 import { createMachineRunner } from "../runner/create-runner.js";
 import { noopFlowCollector } from "./noop-collector.js";
+
+// =============================================================================
+// Internal Collector Event Type
+// =============================================================================
+
+/**
+ * The shape of events passed from the inner runner's collector callback.
+ * This matches the object shape emitted by `createMachineRunner`'s `recordTransition`.
+ * @internal
+ */
+interface InternalCollectorEvent {
+  readonly machineId: string;
+  readonly prevState: string;
+  readonly event: { readonly type: string };
+  readonly nextState: string;
+  readonly effects: readonly EffectAny[];
+  readonly timestamp: number;
+}
 
 // =============================================================================
 // ID Generator
@@ -123,25 +150,15 @@ export function createTracingRunner<
     executor,
     activityManager,
     collector: {
-      collect(event: unknown): void {
-        // Transform the internal event format to FlowTransitionEventAny
-        const transitionEvent = event as {
-          machineId: string;
-          prevState: TStateNames;
-          event: { readonly type: TEventNames };
-          nextState: TStateNames;
-          effects: readonly EffectAny[];
-          timestamp: number;
-        };
-
+      collect(event: InternalCollectorEvent): void {
         const flowEvent: FlowTransitionEventAny = {
           id: generateTransitionId(),
-          machineId: transitionEvent.machineId,
-          prevState: transitionEvent.prevState,
-          event: transitionEvent.event,
-          nextState: transitionEvent.nextState,
-          effects: transitionEvent.effects,
-          timestamp: transitionEvent.timestamp,
+          machineId: event.machineId,
+          prevState: event.prevState,
+          event: event.event,
+          nextState: event.nextState,
+          effects: event.effects,
+          timestamp: event.timestamp,
           duration: 0, // Calculated separately if needed
           isPinned: false,
         };
@@ -151,7 +168,7 @@ export function createTracingRunner<
     },
   });
 
-  // Return the inner runner - it already handles recording
+  // Return the inner runner - it already handles recording via Result types
   return innerRunner;
 }
 
@@ -199,9 +216,6 @@ export function createTracingRunnerWithDuration<
     activityManager,
   });
 
-  // Track current state for recording
-  let disposed = false;
-
   // Create a wrapper that measures duration
   const tracingRunner: MachineRunner<TStateNames, { readonly type: TEventNames }, TContext> = {
     snapshot(): MachineSnapshot<TStateNames, TContext> {
@@ -216,68 +230,75 @@ export function createTracingRunnerWithDuration<
       return innerRunner.context();
     },
 
-    send(event: { readonly type: TEventNames }): readonly EffectAny[] {
-      if (disposed) {
-        return [];
-      }
-
-      const prevState = innerRunner.state();
-      const startTime = performance.now();
-
-      const effects = innerRunner.send(event);
-
-      const duration = performance.now() - startTime;
-      const nextState = innerRunner.state();
-
-      // Only record if state actually changed or effects were produced
-      if (prevState !== nextState || effects.length > 0) {
-        const flowEvent: FlowTransitionEventAny = {
-          id: generateTransitionId(),
-          machineId: machine.id,
-          prevState,
-          event,
-          nextState,
-          effects,
-          timestamp: Date.now(),
-          duration,
-          isPinned: false,
-        };
-
-        collector.collect(flowEvent);
-      }
-
-      return effects;
+    stateValue() {
+      return innerRunner.stateValue();
     },
 
-    async sendAndExecute(event: { readonly type: TEventNames }): Promise<void> {
-      if (disposed) {
-        return;
-      }
-
+    send(event: { readonly type: TEventNames }): Result<readonly EffectAny[], TransitionError> {
       const prevState = innerRunner.state();
       const startTime = performance.now();
 
-      await innerRunner.sendAndExecute(event);
+      const result = innerRunner.send(event);
 
       const duration = performance.now() - startTime;
       const nextState = innerRunner.state();
 
-      // Record the transition with effects execution time included
-      if (prevState !== nextState) {
-        const flowEvent: FlowTransitionEventAny = {
-          id: generateTransitionId(),
-          machineId: machine.id,
-          prevState,
-          event,
-          nextState,
-          effects: [], // Effects already executed
-          timestamp: Date.now(),
-          duration,
-          isPinned: false,
-        };
+      // Only record if transition succeeded and state actually changed or effects were produced
+      if (result._tag === "Ok") {
+        const effects = result.value;
+        if (prevState !== nextState || effects.length > 0) {
+          const flowEvent: FlowTransitionEventAny = {
+            id: generateTransitionId(),
+            machineId: machine.id,
+            prevState,
+            event,
+            nextState,
+            effects,
+            timestamp: Date.now(),
+            duration,
+            isPinned: false,
+          };
 
-        collector.collect(flowEvent);
+          collector.collect(flowEvent);
+        }
       }
+
+      return result;
+    },
+
+    sendAndExecute(event: {
+      readonly type: TEventNames;
+    }): ResultAsync<void, TransitionError | EffectExecutionError> {
+      const prevState = innerRunner.state();
+      const startTime = performance.now();
+
+      return innerRunner.sendAndExecute(event).map(() => {
+        const duration = performance.now() - startTime;
+        const nextState = innerRunner.state();
+
+        // Record the transition with effects execution time included
+        if (prevState !== nextState) {
+          const flowEvent: FlowTransitionEventAny = {
+            id: generateTransitionId(),
+            machineId: machine.id,
+            prevState,
+            event,
+            nextState,
+            effects: [], // Effects already executed
+            timestamp: Date.now(),
+            duration,
+            isPinned: false,
+          };
+
+          collector.collect(flowEvent);
+        }
+      });
+    },
+
+    sendBatch(
+      events: readonly { readonly type: TEventNames }[]
+    ): Result<readonly EffectAny[], TransitionError> {
+      return innerRunner.sendBatch(events);
     },
 
     subscribe(callback: (snapshot: MachineSnapshot<TStateNames, TContext>) => void): () => void {
@@ -288,17 +309,20 @@ export function createTracingRunnerWithDuration<
       return innerRunner.getActivityStatus(id);
     },
 
-    async dispose(): Promise<void> {
-      if (disposed) {
-        return;
-      }
-
-      disposed = true;
-      await innerRunner.dispose();
+    dispose(): ResultAsync<void, DisposeError> {
+      return innerRunner.dispose();
     },
 
     get isDisposed(): boolean {
-      return disposed;
+      return innerRunner.isDisposed;
+    },
+
+    getTransitionHistory(): readonly TransitionHistoryEntry[] {
+      return innerRunner.getTransitionHistory();
+    },
+
+    getEffectHistory(): readonly EffectExecutionEntry[] {
+      return innerRunner.getEffectHistory();
     },
   };
 

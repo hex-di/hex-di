@@ -144,6 +144,7 @@ describe("@hex-di/runtime exports", () => {
         "AsyncFactoryError",
         "AsyncInitializationRequiredError",
         "NonClonableForkedError",
+        "DisposalError",
         // Container brands
         "ContainerBrand",
         "ScopeBrand",
@@ -179,6 +180,9 @@ describe("@hex-di/runtime exports", () => {
         "buildTypedSnapshot",
         // Standalone inspection functions
         "inspect",
+        // Result integration
+        "resolveResult",
+        "recordResult",
       ];
 
       // Verify all expected exports exist

@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import { useContext, type ReactNode } from "react";
+import { useContext, useMemo, type ReactNode } from "react";
 import type { Port, InferService } from "@hex-di/core";
 import type { Scope, ContainerPhase, ContainerInternalState } from "@hex-di/runtime";
 import { INTERNAL_ACCESS } from "@hex-di/runtime";
@@ -180,20 +180,26 @@ export function HexDiContainerProvider<TProvides extends Port<unknown, string>>(
     );
   }
 
-  // Convert to bivariant runtime ref.
-  // No type cast needed because toRuntimeContainerRef explicitly constructs
-  // an object with bivariant methods. Works for both root and child containers.
-  const containerRef = toRuntimeContainerRef(container);
+  // Convert to bivariant runtime ref, memoized to avoid creating new wrapper
+  // objects on every render. Without memoization, toRuntimeContainerRef creates
+  // a new object each call, causing all context consumers to re-render.
+  const containerRef = useMemo(() => toRuntimeContainerRef(container), [container]);
 
-  // Create context values using the bivariant runtime refs.
-  const containerContextValue: RuntimeContainerContextValue = {
-    container: containerRef,
-    isChildContainer: containerIsChild,
-  };
+  // Memoize context values so React's Object.is comparison sees stable references.
+  const containerContextValue = useMemo(
+    (): RuntimeContainerContextValue => ({
+      container: containerRef,
+      isChildContainer: containerIsChild,
+    }),
+    [containerRef, containerIsChild]
+  );
 
-  const resolverContextValue: RuntimeResolverContextValue = {
-    resolver: containerRef,
-  };
+  const resolverContextValue = useMemo(
+    (): RuntimeResolverContextValue => ({
+      resolver: containerRef,
+    }),
+    [containerRef]
+  );
 
   return (
     <ContainerContext.Provider value={containerContextValue}>

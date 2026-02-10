@@ -156,7 +156,7 @@ type SagaStatus =
       state: "cancelled";
       executionId: string;
       sagaName: string;
-      cancelledAtStepName: string;
+      stepName: string;
       compensated: boolean;
       compensatedSteps: ReadonlyArray<string>;
       startedAt: number;
@@ -291,7 +291,7 @@ interface SagaFailedEvent extends SagaEventBase {
 
 interface SagaCancelledEvent extends SagaEventBase {
   readonly type: "saga:cancelled";
-  readonly cancelledAtStepName: string;
+  readonly stepName: string;
   readonly compensated: boolean;
 }
 ```

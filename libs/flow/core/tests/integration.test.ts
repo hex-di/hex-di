@@ -14,7 +14,7 @@ import { describe, it, expect } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "@hex-di/runtime";
-import { createMachine } from "../src/machine/create-machine.js";
+import { defineMachine } from "../src/machine/define-machine.js";
 import { event } from "../src/machine/factories.js";
 import { Effect } from "../src/effects/constructors.js";
 import { createMachineRunner } from "../src/runner/create-runner.js";
@@ -102,7 +102,7 @@ const SimpleFlowServicePort = port<SimpleFlowService>()({
 });
 
 // Simple machine without effects
-const simpleTestMachine = createMachine({
+const simpleTestMachine = defineMachine({
   id: "simple-test-machine",
   initial: "idle",
   context: { value: 0, lastAction: "none" } satisfies TestMachineContext,
@@ -156,6 +156,7 @@ const SimpleFlowServiceAdapter = createAdapter({
       state: () => runner.state(),
       context: () => runner.context(),
       send: e => runner.send(e),
+      sendBatch: events => runner.sendBatch(events),
       sendAndExecute: e => runner.sendAndExecute(e),
       subscribe: cb => runner.subscribe(cb),
       getActivityStatus: id => runner.getActivityStatus(id),
@@ -165,7 +166,11 @@ const SimpleFlowServiceAdapter = createAdapter({
       },
     };
   },
-  finalizer: flowService => flowService.dispose(),
+  finalizer: flowService =>
+    flowService.dispose().match(
+      () => undefined,
+      () => undefined
+    ),
 });
 
 // =============================================================================
@@ -307,7 +312,7 @@ describe("HexDI Integration", () => {
         name: "DelayFlowService",
       });
 
-      const delayMachine = createMachine({
+      const delayMachine = defineMachine({
         id: "delay-test",
         initial: "idle",
         context: undefined,
@@ -351,6 +356,7 @@ describe("HexDI Integration", () => {
             state: () => runner.state(),
             context: () => runner.context(),
             send: e => runner.send(e),
+            sendBatch: events => runner.sendBatch(events),
             sendAndExecute: e => runner.sendAndExecute(e),
             subscribe: cb => runner.subscribe(cb),
             getActivityStatus: id => runner.getActivityStatus(id),
@@ -385,7 +391,7 @@ describe("HexDI Integration", () => {
         name: "ParallelFlowService",
       });
 
-      const parallelMachine = createMachine({
+      const parallelMachine = defineMachine({
         id: "parallel-test",
         initial: "idle",
         context: undefined,
@@ -429,6 +435,7 @@ describe("HexDI Integration", () => {
             state: () => runner.state(),
             context: () => runner.context(),
             send: e => runner.send(e),
+            sendBatch: events => runner.sendBatch(events),
             sendAndExecute: e => runner.sendAndExecute(e),
             subscribe: cb => runner.subscribe(cb),
             getActivityStatus: id => runner.getActivityStatus(id),
@@ -459,7 +466,7 @@ describe("HexDI Integration", () => {
         name: "SequenceFlowService",
       });
 
-      const sequenceMachine = createMachine({
+      const sequenceMachine = defineMachine({
         id: "sequence-test",
         initial: "idle",
         context: undefined,
@@ -503,6 +510,7 @@ describe("HexDI Integration", () => {
             state: () => runner.state(),
             context: () => runner.context(),
             send: e => runner.send(e),
+            sendBatch: events => runner.sendBatch(events),
             sendAndExecute: e => runner.sendAndExecute(e),
             subscribe: cb => runner.subscribe(cb),
             getActivityStatus: id => runner.getActivityStatus(id),

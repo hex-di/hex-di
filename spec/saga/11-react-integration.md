@@ -244,7 +244,7 @@ interface SagaHistoryResult {
   /** Whether data is currently loading */
   loading: boolean;
   /** Error from fetching history */
-  error: Error | null;
+  error: ManagementError | null;
   /** Re-fetch the history list */
   refresh: () => void;
   /** Total number of matching entries (for pagination) */

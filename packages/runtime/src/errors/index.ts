@@ -612,3 +612,93 @@ export class NonClonableForkedError extends ContainerError {
       "```";
   }
 }
+
+// =============================================================================
+// DisposalError
+// =============================================================================
+
+/**
+ * Error returned when container or scope disposal fails.
+ *
+ * Disposal may invoke multiple finalizers. If one or more throw, this error
+ * captures all individual failures in the `causes` array. The original
+ * `AggregateError` (if applicable) is preserved as the standard `cause`.
+ *
+ * @remarks
+ * - This is NOT a programming error - finalizer failures are runtime conditions
+ * - The `causes` array contains all individual errors from failed finalizers
+ * - Used as the error type for `tryDispose()` Result-returning methods
+ *
+ * @example
+ * ```typescript
+ * const result = await container.tryDispose();
+ * if (result.isErr()) {
+ *   const error = result.error;
+ *   console.log(`Disposal failed with ${error.causes.length} errors`);
+ *   for (const cause of error.causes) {
+ *     console.error(cause);
+ *   }
+ * }
+ * ```
+ */
+export class DisposalError extends ContainerError {
+  readonly code = "DISPOSAL_FAILED" as const;
+  readonly isProgrammingError = false as const;
+
+  /**
+   * All individual errors from failed finalizers.
+   */
+  readonly causes: readonly unknown[];
+
+  /**
+   * Creates a new DisposalError.
+   *
+   * @param message - The error message describing what went wrong
+   * @param causes - Array of individual errors from failed finalizers
+   * @param originalError - The original error (typically an AggregateError)
+   */
+  constructor(message: string, causes: readonly unknown[], originalError?: unknown) {
+    super(message);
+    this.causes = Object.freeze([...causes]);
+    if (originalError !== undefined) {
+      // Store original error as standard Error.cause (ES2022+)
+      Object.defineProperty(this, "cause", {
+        value: originalError,
+        writable: false,
+        enumerable: false,
+        configurable: true,
+      });
+    }
+  }
+
+  /**
+   * Creates a DisposalError from an AggregateError thrown during disposal.
+   *
+   * @param err - The AggregateError containing individual finalizer errors
+   * @returns A new DisposalError with all causes extracted
+   */
+  static fromAggregateError(err: AggregateError): DisposalError {
+    return new DisposalError(
+      `Disposal failed: ${err.errors.length} finalizer(s) threw`,
+      err.errors,
+      err
+    );
+  }
+
+  /**
+   * Creates a DisposalError from an unknown thrown value.
+   *
+   * If the value is an AggregateError, delegates to `fromAggregateError`.
+   * Otherwise, wraps the single error in the causes array.
+   *
+   * @param err - The unknown thrown value
+   * @returns A new DisposalError
+   */
+  static fromUnknown(err: unknown): DisposalError {
+    if (err instanceof AggregateError) {
+      return DisposalError.fromAggregateError(err);
+    }
+    const message = extractErrorMessage(err);
+    return new DisposalError(`Disposal failed: ${message}`, [err], err);
+  }
+}

@@ -11,7 +11,12 @@
  * @packageDocumentation
  */
 
-import type { AdapterConstraint, InferAdapterProvides, InferAdapterRequires } from "@hex-di/core";
+import type {
+  AdapterConstraint,
+  DirectedPort,
+  InferAdapterProvides,
+  InferAdapterRequires,
+} from "@hex-di/core";
 import type {
   HasOverlap,
   AdapterProvidesName,
@@ -537,3 +542,42 @@ export type BuilderMissing<B> =
   >
     ? ExtractPortNames<UnsatisfiedDependencies<TProvides, TRequires>>
     : never;
+
+// =============================================================================
+// Port Category Query Utilities
+// =============================================================================
+
+/**
+ * Filters a provides union to ports matching a specific category.
+ *
+ * @typeParam TProvides - The union of provided ports from a graph or builder
+ * @typeParam TCategory - The category literal to filter by
+ *
+ * @example
+ * ```typescript
+ * type InspectorPorts = PortsByCategory<typeof graph.provides, "library-inspector">;
+ * ```
+ */
+export type PortsByCategory<TProvides, TCategory extends string> =
+  TProvides extends DirectedPort<infer S, infer N, infer D, TCategory>
+    ? DirectedPort<S, N, D, TCategory>
+    : never;
+
+/**
+ * Checks if any port in the provides union has a specific category.
+ *
+ * @typeParam TProvides - The union of provided ports
+ * @typeParam TCategory - The category literal to check for
+ * @returns `true` if at least one port has the category, `false` otherwise
+ *
+ * @example
+ * ```typescript
+ * type HasInspector = HasCategory<typeof graph.provides, "library-inspector">;
+ * // true | false
+ * ```
+ */
+export type HasCategory<TProvides, TCategory extends string> = [
+  PortsByCategory<TProvides, TCategory>,
+] extends [never]
+  ? false
+  : true;

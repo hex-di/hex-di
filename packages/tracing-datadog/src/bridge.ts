@@ -9,7 +9,7 @@
 
 import type { SpanData, SpanExporter } from "@hex-di/tracing";
 import type { DataDogBridgeConfig, DdSpan } from "./types.js";
-import { logError } from "./utils.js";
+import { logError, mapSpanKindToDataDog } from "./utils.js";
 
 /**
  * Create a DataDog bridge for exporting HexDI spans to DataDog APM.
@@ -63,10 +63,11 @@ import { logError } from "./utils.js";
  * ```
  */
 export function createDataDogBridge(config: DataDogBridgeConfig): SpanExporter {
-  const { tracer } = config;
+  const { tracer, serviceName, environment, version } = config;
 
   // Track active spans by spanId for parent-child relationships
   const activeSpans = new Map<string, DdSpan>();
+  let isShutdown = false;
 
   return {
     /**
@@ -78,6 +79,10 @@ export function createDataDogBridge(config: DataDogBridgeConfig): SpanExporter {
      * @param spans - Readonly array of completed HexDI spans
      */
     export(spans: ReadonlyArray<SpanData>): Promise<void> {
+      if (isShutdown) {
+        return Promise.resolve();
+      }
+
       return Promise.resolve().then(() => {
         try {
           for (const hexSpan of spans) {
@@ -97,8 +102,26 @@ export function createDataDogBridge(config: DataDogBridgeConfig): SpanExporter {
               // Store span for potential child spans
               activeSpans.set(hexSpan.context.spanId, ddSpan);
 
-              // Set span kind as tag (dd-trace doesn't have direct kind concept)
-              ddSpan.setTag("span.kind", hexSpan.kind);
+              // Set span kind as DataDog-compatible tag
+              ddSpan.setTag("span.kind", mapSpanKindToDataDog(hexSpan.kind));
+
+              // Set DataDog-specific trace context tags
+              ddSpan.setTag("dd.trace_id", hexSpan.context.traceId);
+              ddSpan.setTag("dd.span_id", hexSpan.context.spanId);
+
+              // Set service metadata tags if provided in bridge config
+              if (serviceName) {
+                ddSpan.setTag("service.name", serviceName);
+              }
+              if (environment) {
+                ddSpan.setTag("env", environment);
+              }
+              if (version) {
+                ddSpan.setTag("version", version);
+              }
+
+              // Set duration as a tag (milliseconds)
+              ddSpan.setTag("duration_ms", hexSpan.endTime - hexSpan.startTime);
 
               // Set all HexDI attributes as DataDog tags
               for (const [key, value] of Object.entries(hexSpan.attributes)) {
@@ -113,6 +136,11 @@ export function createDataDogBridge(config: DataDogBridgeConfig): SpanExporter {
                 if (errorMsg) {
                   ddSpan.setTag("error.message", errorMsg);
                 }
+                // Add error type from attributes if available
+                const errorType = hexSpan.attributes["error.type"];
+                if (errorType) {
+                  ddSpan.setTag("error.type", errorType);
+                }
               }
 
               // Set resource name (DataDog's primary span identifier)
@@ -120,6 +148,11 @@ export function createDataDogBridge(config: DataDogBridgeConfig): SpanExporter {
               const operationName = hexSpan.attributes["operation.name"];
               const resourceName = typeof operationName === "string" ? operationName : hexSpan.name;
               ddSpan.setTag("resource.name", resourceName);
+
+              // Set parent span ID if present
+              if (hexSpan.parentSpanId) {
+                ddSpan.setTag("dd.parent_id", hexSpan.parentSpanId);
+              }
 
               // Add span events as tags (dd-trace doesn't have first-class events)
               if (hexSpan.events.length > 0) {
@@ -162,6 +195,10 @@ export function createDataDogBridge(config: DataDogBridgeConfig): SpanExporter {
      * either a Promise or void, so we handle both cases.
      */
     async forceFlush(): Promise<void> {
+      if (isShutdown) {
+        return;
+      }
+
       try {
         const result = tracer.flush();
         // Handle both Promise and void returns
@@ -179,6 +216,12 @@ export function createDataDogBridge(config: DataDogBridgeConfig): SpanExporter {
      * Ensures all buffered spans are flushed to DataDog agent before cleanup.
      */
     async shutdown(): Promise<void> {
+      if (isShutdown) {
+        return;
+      }
+
+      isShutdown = true;
+
       try {
         const result = tracer.flush();
         // Handle both Promise and void returns

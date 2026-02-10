@@ -1,0 +1,517 @@
+/**
+ * Scope hierarchy unit tests.
+ *
+ * Tests for Scope behavior including:
+ * - Scope creation and freezing
+ * - Singleton inheritance from container
+ * - Scoped instance isolation per scope
+ * - Nested scope hierarchy
+ * - Disposal with finalizer invocation
+ *
+ * @packageDocumentation
+ */
+// @ts-nocheck
+
+import { describe, test, expect, vi } from "vitest";
+import { port, createAdapter } from "@hex-di/core";
+import { GraphBuilder } from "@hex-di/graph";
+import { createContainer } from "../src/container/factory.js";
+import { createInspector } from "../src/inspection/creation.js";
+import { DisposedScopeError } from "../src/errors/index.js";
+
+// =============================================================================
+// Test Fixtures
+// =============================================================================
+
+interface Logger {
+  log(message: string): void;
+}
+
+interface RequestContext {
+  requestId: string;
+}
+
+interface SessionStore {
+  sessionId: string;
+}
+
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const RequestContextPort = port<RequestContext>()({ name: "RequestContext" });
+const SessionStorePort = port<SessionStore>()({ name: "SessionStore" });
+
+// =============================================================================
+// Scope Creation Tests
+// =============================================================================
+
+describe("Scope", () => {
+  test("createScope returns frozen Scope object", () => {
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const container = createContainer({ graph: graph, name: "Test" });
+    const scope = container.createScope();
+
+    expect(Object.isFrozen(scope)).toBe(true);
+  });
+
+  test("Scope has resolve, createScope, dispose methods", () => {
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const container = createContainer({ graph: graph, name: "Test" });
+    const scope = container.createScope();
+
+    expect(typeof scope.resolve).toBe("function");
+    expect(typeof scope.createScope).toBe("function");
+    expect(typeof scope.dispose).toBe("function");
+  });
+});
+
+// =============================================================================
+// Singleton Inheritance Tests
+// =============================================================================
+
+describe("Scope singleton inheritance", () => {
+  test("Scope inherits singleton instances from container", () => {
+    const factory = vi.fn(() => ({ log: vi.fn() }));
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory,
+    });
+
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const container = createContainer({ graph: graph, name: "Test" });
+
+    // First resolve from container
+    const containerLogger = container.resolve(LoggerPort);
+
+    // Create scope and resolve same port
+    const scope = container.createScope();
+    const scopeLogger = scope.resolve(LoggerPort);
+
+    // Should return the same instance (singleton inherited from container)
+    expect(scopeLogger).toBe(containerLogger);
+    // Factory should only be called once
+    expect(factory).toHaveBeenCalledTimes(1);
+  });
+
+  test("Scope creates singleton in container if not yet resolved", () => {
+    const factory = vi.fn(() => ({ log: vi.fn() }));
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory,
+    });
+
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const container = createContainer({ graph: graph, name: "Test" });
+
+    // Create scope and resolve singleton (not yet resolved from container)
+    const scope = container.createScope();
+    const scopeLogger = scope.resolve(LoggerPort);
+
+    // Now resolve from container - should be the same instance
+    const containerLogger = container.resolve(LoggerPort);
+
+    expect(scopeLogger).toBe(containerLogger);
+    expect(factory).toHaveBeenCalledTimes(1);
+  });
+});
+
+// =============================================================================
+// Scoped Instance Tests
+// =============================================================================
+
+describe("Scope scoped instances", () => {
+  test("Scope creates own scoped instances", () => {
+    const factory = vi.fn(() => ({ requestId: Math.random().toString() }));
+    const RequestContextAdapter = createAdapter({
+      provides: RequestContextPort,
+      requires: [],
+      lifetime: "scoped",
+      factory,
+    });
+
+    const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
+    const container = createContainer({ graph: graph, name: "Test" });
+    const scope = container.createScope();
+
+    // First resolve
+    const first = scope.resolve(RequestContextPort);
+    // Second resolve from same scope
+    const second = scope.resolve(RequestContextPort);
+
+    // Should be the same instance within the scope
+    expect(first).toBe(second);
+    expect(factory).toHaveBeenCalledTimes(1);
+  });
+
+  test("scoped instances are not shared with parent", () => {
+    const factory = vi.fn(() => ({ requestId: Math.random().toString() }));
+    const RequestContextAdapter = createAdapter({
+      provides: RequestContextPort,
+      requires: [],
+      lifetime: "scoped",
+      factory,
+    });
+
+    const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
+    const container = createContainer({ graph: graph, name: "Test" });
+
+    // Create parent scope
+    const parentScope = container.createScope();
+    const parentContext = parentScope.resolve(RequestContextPort);
+
+    // Create child scope
+    const childScope = parentScope.createScope();
+    const childContext = childScope.resolve(RequestContextPort);
+
+    // Scoped instances should be different between parent and child
+    expect(childContext).not.toBe(parentContext);
+    expect(factory).toHaveBeenCalledTimes(2);
+  });
+
+  test("scoped instances are not shared with sibling scopes", () => {
+    const factory = vi.fn(() => ({ requestId: Math.random().toString() }));
+    const RequestContextAdapter = createAdapter({
+      provides: RequestContextPort,
+      requires: [],
+      lifetime: "scoped",
+      factory,
+    });
+
+    const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
+    const container = createContainer({ graph: graph, name: "Test" });
+
+    // Create two sibling scopes
+    const scope1 = container.createScope();
+    const scope2 = container.createScope();
+
+    const context1 = scope1.resolve(RequestContextPort);
+    const context2 = scope2.resolve(RequestContextPort);
+
+    // Scoped instances should be different between siblings
+    expect(context1).not.toBe(context2);
+    expect(factory).toHaveBeenCalledTimes(2);
+  });
+});
+
+// =============================================================================
+// Nested Scope Tests
+// =============================================================================
+
+describe("Scope nesting", () => {
+  test("nested scopes work correctly", () => {
+    const singletonFactory = vi.fn(() => ({ log: vi.fn() }));
+    const scopedFactory = vi.fn(() => ({ requestId: Math.random().toString() }));
+
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: singletonFactory,
+    });
+
+    const RequestContextAdapter = createAdapter({
+      provides: RequestContextPort,
+      requires: [],
+      lifetime: "scoped",
+      factory: scopedFactory,
+    });
+
+    const graph = GraphBuilder.create()
+      .provide(LoggerAdapter)
+      .provide(RequestContextAdapter)
+      .build();
+
+    const container = createContainer({ graph: graph, name: "Test" });
+    const parentScope = container.createScope();
+    const childScope = parentScope.createScope();
+    const grandchildScope = childScope.createScope();
+
+    // Singleton should be shared across all
+    const containerLogger = container.resolve(LoggerPort);
+    const parentLogger = parentScope.resolve(LoggerPort);
+    const childLogger = childScope.resolve(LoggerPort);
+    const grandchildLogger = grandchildScope.resolve(LoggerPort);
+
+    expect(parentLogger).toBe(containerLogger);
+    expect(childLogger).toBe(containerLogger);
+    expect(grandchildLogger).toBe(containerLogger);
+    expect(singletonFactory).toHaveBeenCalledTimes(1);
+
+    // Scoped should be unique per scope
+    const parentContext = parentScope.resolve(RequestContextPort);
+    const childContext = childScope.resolve(RequestContextPort);
+    const grandchildContext = grandchildScope.resolve(RequestContextPort);
+
+    expect(parentContext).not.toBe(childContext);
+    expect(childContext).not.toBe(grandchildContext);
+    expect(grandchildContext).not.toBe(parentContext);
+    expect(scopedFactory).toHaveBeenCalledTimes(3);
+  });
+});
+
+// =============================================================================
+// Scope Disposal Tests
+// =============================================================================
+
+describe("Scope disposal", () => {
+  test("scope disposal calls scoped finalizers", async () => {
+    const finalizerFn = vi.fn();
+    const RequestContextAdapter = createAdapter({
+      provides: RequestContextPort,
+      requires: [],
+      lifetime: "scoped",
+      factory: () => ({ requestId: "123" }),
+      finalizer: finalizerFn,
+    });
+
+    const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
+    const container = createContainer({ graph: graph, name: "Test" });
+    const scope = container.createScope();
+
+    // Resolve to trigger instance creation
+    scope.resolve(RequestContextPort);
+
+    await scope.dispose();
+
+    expect(finalizerFn).toHaveBeenCalledTimes(1);
+  });
+
+  test("scope disposal does not affect parent singletons", async () => {
+    const singletonFinalizer = vi.fn();
+    const scopedFinalizer = vi.fn();
+
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+      finalizer: singletonFinalizer,
+    });
+
+    const RequestContextAdapter = createAdapter({
+      provides: RequestContextPort,
+      requires: [],
+      lifetime: "scoped",
+      factory: () => ({ requestId: "123" }),
+      finalizer: scopedFinalizer,
+    });
+
+    const graph = GraphBuilder.create()
+      .provide(LoggerAdapter)
+      .provide(RequestContextAdapter)
+      .build();
+
+    const container = createContainer({ graph: graph, name: "Test" });
+
+    // Resolve singleton from container
+    const logger = container.resolve(LoggerPort);
+
+    // Create scope and resolve both
+    const scope = container.createScope();
+    scope.resolve(LoggerPort); // Inherits singleton
+    scope.resolve(RequestContextPort); // Creates scoped instance
+
+    // Dispose scope
+    await scope.dispose();
+
+    // Scoped finalizer should be called
+    expect(scopedFinalizer).toHaveBeenCalledTimes(1);
+    // Singleton finalizer should NOT be called (owned by container)
+    expect(singletonFinalizer).not.toHaveBeenCalled();
+
+    // Singleton should still be resolvable from container
+    const loggerAfterScopeDispose = container.resolve(LoggerPort);
+    expect(loggerAfterScopeDispose).toBe(logger);
+  });
+
+  test("scope disposal throws DisposedScopeError on subsequent resolve", async () => {
+    const RequestContextAdapter = createAdapter({
+      provides: RequestContextPort,
+      requires: [],
+      lifetime: "scoped",
+      factory: () => ({ requestId: "123" }),
+    });
+
+    const graph = GraphBuilder.create().provide(RequestContextAdapter).build();
+    const container = createContainer({ graph: graph, name: "Test" });
+    const scope = container.createScope();
+
+    await scope.dispose();
+
+    expect(() => scope.resolve(RequestContextPort)).toThrow(DisposedScopeError);
+  });
+
+  test("disposing parent scope disposes child scopes first", async () => {
+    const callOrder: string[] = [];
+
+    const RequestContextAdapter = createAdapter({
+      provides: RequestContextPort,
+      requires: [],
+      lifetime: "scoped",
+      factory: () => ({ requestId: "parent" }),
+      finalizer: () => {
+        callOrder.push("parent");
+      },
+    });
+
+    const SessionAdapter = createAdapter({
+      provides: SessionStorePort,
+      requires: [],
+      lifetime: "scoped",
+      factory: () => ({ sessionId: "child" }),
+      finalizer: () => {
+        callOrder.push("child");
+      },
+    });
+
+    const graph = GraphBuilder.create()
+      .provide(RequestContextAdapter)
+      .provide(SessionAdapter)
+      .build();
+
+    const container = createContainer({ graph: graph, name: "Test" });
+    const parentScope = container.createScope();
+    const childScope = parentScope.createScope();
+
+    // Resolve in parent scope
+    parentScope.resolve(RequestContextPort);
+    // Resolve in child scope
+    childScope.resolve(SessionStorePort);
+
+    // Dispose parent - should dispose child first
+    await parentScope.dispose();
+
+    // Child should be disposed before parent
+    expect(callOrder).toEqual(["child", "parent"]);
+  });
+});
+
+// =============================================================================
+// Custom Scope Name Tests
+// =============================================================================
+
+describe("Scope custom names", () => {
+  test("createScope accepts optional name parameter", () => {
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const container = createContainer({ graph: graph, name: "Test" });
+    const scope = container.createScope("my-custom-scope");
+
+    // The scope should have the custom name as its ID
+    expect(scope).toBeDefined();
+    // We'll verify the name through the inspector
+  });
+
+  test("scope name appears in inspector getScopeTree", () => {
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const container = createContainer({ graph: graph, name: "Test" });
+    container.createScope("request-handler-scope");
+
+    const inspector = createInspector(container);
+    const tree = inspector.getScopeTree();
+
+    expect(tree.children.length).toBe(1);
+    expect(tree.children[0].id).toBe("request-handler-scope");
+  });
+
+  test("nested scopes can have custom names", () => {
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const container = createContainer({ graph: graph, name: "Test" });
+
+    const parentScope = container.createScope("parent-scope");
+    parentScope.createScope("child-scope");
+
+    const inspector = createInspector(container);
+    const tree = inspector.getScopeTree();
+
+    expect(tree.children.length).toBe(1);
+    expect(tree.children[0].id).toBe("parent-scope");
+    expect(tree.children[0].children.length).toBe(1);
+    expect(tree.children[0].children[0].id).toBe("child-scope");
+  });
+
+  test("auto-generates name when not provided", () => {
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const container = createContainer({ graph: graph, name: "Test" });
+
+    // Create scope without name
+    container.createScope();
+
+    const inspector = createInspector(container);
+    const tree = inspector.getScopeTree();
+
+    expect(tree.children.length).toBe(1);
+    // Should have auto-generated name like "scope-N"
+    expect(tree.children[0].id).toMatch(/^scope-\d+$/);
+  });
+
+  test("mixed named and auto-named scopes work together", () => {
+    const LoggerAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+
+    const graph = GraphBuilder.create().provide(LoggerAdapter).build();
+    const container = createContainer({ graph: graph, name: "Test" });
+
+    container.createScope("named-scope");
+    container.createScope(); // auto-named
+    container.createScope("another-named-scope");
+
+    const inspector = createInspector(container);
+    const tree = inspector.getScopeTree();
+
+    expect(tree.children.length).toBe(3);
+
+    const names = tree.children.map((c: { id: string }) => c.id);
+    expect(names).toContain("named-scope");
+    expect(names).toContain("another-named-scope");
+    // One should be auto-named
+    expect(names.some((n: string) => /^scope-\d+$/.test(n))).toBe(true);
+  });
+});

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- "The Flame" - Three-layer flame + request/response arrows, no middleware lines -->
+  <!-- Background hexagon -->
+  <polygon points="100,18 176,61 176,139 100,182 24,139 24,61" fill="#EA580C"/>
+  <!-- Flame shape (3 layers) -->
+  <path d="M100,38 C85,63 65,78 70,108 C72,123 82,138 100,153 C118,138 128,123 130,108 C135,78 115,63 100,38Z" fill="white" opacity="0.2"/>
+  <path d="M100,53 C90,70 78,80 82,103 C83,113 90,128 100,138 C110,128 117,113 118,103 C122,80 110,70 100,53Z" fill="white" opacity="0.5"/>
+  <path d="M100,73 C95,83 88,90 90,103 C91,110 95,118 100,126 C105,118 109,110 110,103 C112,90 105,83 100,73Z" fill="white" opacity="0.85"/>
+  <!-- Request arrow (left) -->
+  <line x1="32" y1="82" x2="55" y2="95" stroke="white" stroke-width="2.5" opacity="0.6"/>
+  <polyline points="52,90 58,96 52,98" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
+  <!-- Response arrow (right) -->
+  <line x1="168" y1="82" x2="145" y2="95" stroke="white" stroke-width="2.5" opacity="0.6"/>
+  <polyline points="148,90 142,96 148,98" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
+</svg>

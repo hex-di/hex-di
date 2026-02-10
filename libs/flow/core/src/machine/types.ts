@@ -189,7 +189,7 @@ export type Event<TName extends string, TPayload = void> = {
  * @typeParam TContext - The machine's context type
  *
  * @remarks
- * The Machine type is created using the `createMachine` factory function.
+ * The Machine type is created using the `defineMachine` factory function.
  * The brand property encodes the complete type signature at the type level,
  * while the runtime properties provide access to the configuration.
  *

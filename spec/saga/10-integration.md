@@ -515,6 +515,8 @@ The saga adapter is identical in both graphs. Only the infrastructure adapters d
 
 ## 15. Flow Integration
 
+> **Canonical source:** For complete integration patterns, code examples, and wiring guides, see [Integration: Flow + Saga](../integration/flow-saga.md). This section provides a summary and the shared contract types.
+
 HexDI Saga and HexDI Flow address different concerns and operate at different levels of the application. They are complementary, not competing.
 
 | Concern            | Flow                                      | Saga                                               |
@@ -529,12 +531,85 @@ HexDI Saga and HexDI Flow address different concerns and operate at different le
 | Cancellation       | AbortSignal on activities                 | Compensation chain on failure                      |
 | Container Lifetime | Scoped (per component/session)            | Scoped (per request/workflow)                      |
 
+### 15.0 Shared Integration Contract Types
+
+The following types define the contract between Flow machines and Saga executions. They enable Flow machines to observe saga progress for UI feedback and to invoke sagas through a typed port interface.
+
+```typescript
+/** Events emitted by a saga execution for UI feedback */
+type SagaProgressEvent =
+  | { readonly _tag: "StepStarted"; readonly stepName: string; readonly stepIndex: number }
+  | {
+      readonly _tag: "StepCompleted";
+      readonly stepName: string;
+      readonly stepIndex: number;
+      readonly totalSteps: number;
+    }
+  | { readonly _tag: "CompensationStarted"; readonly stepName: string }
+  | { readonly _tag: "CompensationCompleted"; readonly stepName: string };
+
+type SagaCompensationEvent =
+  | {
+      readonly _tag: "CompensationTriggered";
+      readonly failedStepName: string;
+      readonly stepsToCompensate: number;
+    }
+  | { readonly _tag: "CompensationStepFailed"; readonly stepName: string; readonly cause: unknown };
+```
+
+> **Note on `SagaPort`:** The canonical `SagaPort<TName, TInput, TOutput, TError>` is a branded port token created via `sagaPort<TInput, TOutput, TError>()({ name })` and defined in [05 - Ports & Adapters §7.1](./05-ports-and-adapters.md#71-type-definition). It resolves to a `SagaExecutor<TInput, TOutput, TError>` with an `execute(input: TInput): ResultAsync<SagaSuccess<TOutput>, SagaError<TError>>` method. The 3-parameter form shown in the Flow spec's `Effect.invoke(SagaPort, ...)` refers to this port token -- the type parameters visible to Flow are `TInput`, `TOutput`, and `TError` (the `TName` parameter is carried by the port token itself).
+
+These types are defined in `@hex-di/saga` and consumed by `@hex-di/flow` adapters that bridge state machines with saga executions. `SagaProgressEvent` and `SagaCompensationEvent` are designed to be routed through the Flow activity `EventSink`, enabling machines to transition based on saga step progress (e.g., updating a progress bar or displaying compensation status to the user).
+
+#### Error Mapping Through Flow's Effect Executor
+
+When a Flow machine invokes a saga via `Effect.invoke(SagaPort, "execute", input)`, the saga's result is mapped through the Flow effect executor:
+
+- **`Ok(SagaSuccess<TOutput>)`** → Flow receives a `done.invoke.{portName}` event with `SagaSuccess<TOutput>` as the payload. The machine transitions via `onDone` and can access `event.payload.output` for the saga output.
+
+- **`Err(SagaError<TError>)`** → Flow receives an `error.invoke.{portName}` event with `EffectExecutionError { _tag: "InvokeError", portName, method: "execute", cause: SagaError<TError> }` as the payload.
+
+Discriminating the error in a Flow machine's error handler:
+
+```typescript
+// In the machine's state config:
+checkingOut: {
+  on: {
+    "done.invoke.OrderSaga": {
+      target: "completed",
+      // event.payload is SagaSuccess<OrderOutput>
+      actions: (ctx, event) => ({
+        ...ctx,
+        trackingNumber: event.payload.output.trackingNumber,
+      }),
+    },
+    "error.invoke.OrderSaga": {
+      target: "failed",
+      // event.payload is EffectExecutionError
+      actions: (ctx, event) => {
+        const sagaError = event.payload.cause; // SagaError<OrderErrors>
+        switch (sagaError._tag) {
+          case "StepFailed":
+            return { ...ctx, errorMessage: `Step "${sagaError.stepName}" failed`, rolledBack: true };
+          case "CompensationFailed":
+            return { ...ctx, errorMessage: `Compensation failed at "${sagaError.stepName}"`, rolledBack: false };
+          case "Timeout":
+            return { ...ctx, errorMessage: `Saga timed out after ${sagaError.timeoutMs}ms` };
+          default:
+            return { ...ctx, errorMessage: `Saga error: ${sagaError._tag}` };
+        }
+      },
+    },
+  },
+},
+```
+
 ### 15.1 Flow Triggering Saga
 
 A Flow state machine can trigger a saga as a side effect when entering a particular state or handling an event. The state machine manages the entity lifecycle (the order), while the saga manages the cross-service transaction (checkout).
 
 ```typescript
-import { createMachine, state, event, Effect } from "@hex-di/flow";
+import { defineMachine, state, event, Effect } from "@hex-di/flow";
 
 // States
 const idle = state<"idle">("idle");
@@ -549,7 +624,7 @@ const checkout = event<"CHECKOUT", { paymentMethod: string }>("CHECKOUT");
 const sagaCompleted = event<"SAGA_COMPLETED", { trackingNumber: string }>("SAGA_COMPLETED");
 const sagaFailed = event<"SAGA_FAILED", { error: string }>("SAGA_FAILED");
 
-const OrderMachine = createMachine({
+const OrderMachine = defineMachine({
   id: "order",
   initial: "idle",
   states: {

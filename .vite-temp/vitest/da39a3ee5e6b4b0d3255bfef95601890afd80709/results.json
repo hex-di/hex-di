@@ -1,1 +1,3605 @@
-{"version":"4.0.16","results":[[":packages/devtools/tests/presenters/presenter-extensions.test.ts",{"duration":14.457207999999994,"failed":false}],[":packages/devtools-network/tests/client.test.ts",{"duration":472.9708750000002,"failed":false}],[":packages/testing/tests/integration.test.ts",{"duration":14.185915999999992,"failed":false}],[":packages/runtime/tests/child-container.test.ts",{"duration":13.283875000000023,"failed":false}],[":packages/devtools/tests/view-models/view-models.test.ts",{"duration":8.791749999999993,"failed":false}],[":packages/graph/tests/integration.test.ts",{"duration":5.510166999999996,"failed":false}],[":packages/devtools-network/tests/server.test.ts",{"duration":12.229832999999985,"failed":false}],[":packages/runtime/tests/integration.test.ts",{"duration":115.53145800000004,"failed":false}],[":packages/runtime/tests/async-resolution.test.ts",{"duration":159.004458,"failed":false}],[":packages/devtools/tests/tracing/integration.test.ts",{"duration":8.495958000000002,"failed":false}],[":packages/runtime/tests/disposal.test.ts",{"duration":293.88925000000006,"failed":false}],[":packages/devtools/tests/network/network-layer.test.ts",{"duration":46.727957999999944,"failed":false}],[":packages/devtools/tests/advanced-features.test.ts",{"duration":7.596417000000002,"failed":false}],[":packages/devtools-ui/tests/inspector.presenter.test.ts",{"duration":20.46799999999999,"failed":false}],[":packages/devtools/tests/state/state-extensions.test.ts",{"duration":4.832832999999994,"failed":false}],[":packages/devtools/tests/tracing/tracing-container.test.ts",{"duration":12.300584000000015,"failed":false}],[":packages/devtools/tests/tracing/collector.test.ts",{"duration":7.318665999999979,"failed":false}],[":packages/runtime/tests/lifetime.test.ts",{"duration":5.584708000000006,"failed":false}],[":packages/devtools-ui/tests/timeline.presenter.test.ts",{"duration":17.85075000000002,"failed":false}],[":packages/devtools/tests/edge-cases.test.ts",{"duration":11.677082999999925,"failed":false}],[":packages/runtime/tests/inspector.test.ts",{"duration":9.826542000000018,"failed":false}],[":packages/devtools/tests/integration.test.ts",{"duration":14.791958000000022,"failed":false}],[":packages/devtools-ui/tests/stats.presenter.test.ts",{"duration":17.056832999999997,"failed":false}],[":packages/testing/tests/test-graph-builder.test.ts",{"duration":4.723959000000008,"failed":false}],[":packages/devtools/tests/state/state-migration.test.ts",{"duration":18.906292000000008,"failed":false}],[":packages/runtime/tests/scope.test.ts",{"duration":6.663832999999983,"failed":false}],[":packages/runtime/tests/memo-map.test.ts",{"duration":3.8308750000000202,"failed":false}],[":packages/devtools/tests/tracing/eviction.test.ts",{"duration":8.13229100000001,"failed":false}],[":packages/testing/tests/use-test-container.test.ts",{"duration":22.031667,"failed":false}],[":packages/devtools/tests/sync/browser-tui-sync.test.ts",{"duration":307.156875,"failed":false}],[":packages/devtools/tests/tracing/types.test.ts",{"duration":6.394208999999989,"failed":false}],[":packages/devtools-ui/tests/graph.presenter.test.ts",{"duration":7.990291999999982,"failed":false}],[":packages/devtools-network/tests/mock-websocket.test.ts",{"duration":20.144834000000003,"failed":false}],[":packages/graph/tests/build.test.ts",{"duration":4.117291999999992,"failed":false}],[":packages/devtools/tests/types.test.ts",{"duration":3.245625000000004,"failed":false}],[":packages/devtools-core/tests/core-consolidation.test.ts",{"duration":15.757875000000013,"failed":false}],[":packages/testing/tests/adapter-test-harness.test.ts",{"duration":4.397541999999987,"failed":false}],[":packages/testing/tests/graph-snapshot.test.ts",{"duration":10.248125000000016,"failed":false}],[":packages/runtime/tests/port-resolution-type-safety.test.ts",{"duration":11.04008300000001,"failed":false}],[":packages/graph/tests/graph-builder.test.ts",{"duration":5.579125000000005,"failed":false}],[":packages/runtime/tests/exports.test.ts",{"duration":3.0373340000000155,"failed":false}],[":packages/runtime/tests/type-utilities.test.ts",{"duration":2.6411250000000166,"failed":false}],[":packages/ports/tests/integration.test.ts",{"duration":3.3213329999999814,"failed":false}],[":packages/hono/tests/context-type-preservation.test.ts",{"duration":34.57820799999996,"failed":false}],[":packages/testing/tests/graph-assertions.test.ts",{"duration":4.351416999999998,"failed":false}],[":packages/testing/tests/spied-mock-adapter.test.ts",{"duration":4.758958000000007,"failed":false}],[":packages/devtools/tests/filter-graph.test.ts",{"duration":3.354667000000063,"failed":false}],[":packages/devtools/tests/to-json.test.ts",{"duration":10.11583399999995,"failed":false}],[":packages/devtools/tests/relabel-ports.test.ts",{"duration":5.804167000000007,"failed":false}],[":packages/runtime/tests/container.test.ts",{"duration":6.012999999999977,"failed":false}],[":packages/runtime/tests/errors.test.ts",{"duration":3.276083,"failed":false}],[":packages/devtools-core/tests/transforms.test.ts",{"duration":11.007999999999981,"failed":false}],[":packages/devtools/tests/to-dot.test.ts",{"duration":11.020083999999997,"failed":false}],[":packages/runtime/tests/internal-access.test.ts",{"duration":4.263292000000007,"failed":false}],[":packages/testing/tests/mock-adapter.test.ts",{"duration":7.136874999999975,"failed":false}],[":packages/devtools-core/tests/filters.test.ts",{"duration":3.2239999999999895,"failed":false}],[":packages/devtools/tests/to-mermaid.test.ts",{"duration":12.206749999999943,"failed":false}],[":packages/graph/tests/exports.test.ts",{"duration":2.3662909999999897,"failed":false}],[":packages/devtools/tests/tracing-styles.test.ts",{"duration":2.4964580000000183,"failed":false}],[":packages/devtools/tests/unified-package-scaffolding.test.ts",{"duration":864.754333,"failed":false}],[":packages/hono/tests/middleware.test.ts",{"duration":35.66191700000002,"failed":false}],[":packages/graph/tests/create-adapter.test.ts",{"duration":2.0577499999999986,"failed":false}],[":packages/runtime/tests/resolution-context.test.ts",{"duration":2.455416999999997,"failed":false}],[":packages/runtime/src/verify-runtime-safety.test.ts",{"duration":3.410791999999958,"failed":false}],[":packages/ports/tests/createPort.test.ts",{"duration":2.8795000000000073,"failed":false}],[":packages/ports/tests/exports.test.ts",{"duration":1.412542000000002,"failed":false}],[":packages/react/tests/errors.test.ts",{"duration":1.3733749999999816,"failed":false}],[":packages/graph/tests/define-service.test.ts",{"duration":2.981667000000016,"failed":false}],[":packages/ports/tests/curried-port.test.ts",{"duration":2.1348330000000004,"failed":false}],[":packages/tracing/tests/plugin.test.ts",{"duration":12.434374999999989,"failed":false}],[":packages/runtime/tests/plugin-manager.test.ts",{"duration":6.588333000000006,"failed":false}],[":packages/runtime/tests/child-container-plugins.test.ts",{"duration":7.885290999999995,"failed":false}],[":packages/inspector/tests/plugin.test.ts",{"duration":7.649750000000012,"failed":false}],[":packages/tracing/tests/collectors.test.ts",{"duration":6.915709000000007,"failed":false}],[":packages/runtime/tests/lazy-container.test.ts",{"duration":8.76762500000001,"failed":false}],[":packages/runtime/tests/scope-lifecycle.test.ts",{"duration":7.046042,"failed":false}],[":packages/testing/tests/types.test-d.ts",{"duration":0,"failed":false}],[":packages/runtime/tests/resolution-type-safety.test-d.ts",{"duration":0,"failed":false}],[":packages/graph/tests/circular-dependency.test-d.ts",{"duration":0,"failed":false}],[":packages/graph/tests/validation.test-d.ts",{"duration":0,"failed":false}],[":packages/graph/tests/provide.test-d.ts",{"duration":0,"failed":false}],[":packages/runtime/tests/child-container.test-d.ts",{"duration":0,"failed":false}],[":packages/devtools/tests/types.test-d.ts",{"duration":0,"failed":false}],[":packages/graph/tests/build.test-d.ts",{"duration":0,"failed":false}],[":packages/graph/tests/captive-dependency.test-d.ts",{"duration":0,"failed":false}],[":packages/graph/tests/type-utilities.test-d.ts",{"duration":0,"failed":false}],[":packages/react/tests/types.test-d.ts",{"duration":0,"failed":true}],[":packages/react/tests/unified-provider.test-d.ts",{"duration":0,"failed":false}],[":packages/runtime/tests/plugins.test-d.ts",{"duration":0,"failed":false}],[":packages/inspector/tests/types.test-d.ts",{"duration":0,"failed":false}],[":packages/runtime/tests/captive-dependency.test-d.ts",{"duration":0,"failed":false}],[":packages/graph/tests/error-messages.test-d.ts",{"duration":0,"failed":false}],[":packages/runtime/tests/types.test-d.ts",{"duration":0,"failed":false}],[":packages/graph/tests/graph-builder.test-d.ts",{"duration":0,"failed":false}],[":packages/graph/tests/create-adapter.test-d.ts",{"duration":0,"failed":false}],[":packages/graph/tests/define-service.test-d.ts",{"duration":0,"failed":false}],[":packages/react/tests/runtime-resolver.test-d.ts",{"duration":0,"failed":false}],[":packages/ports/tests/port.test-d.ts",{"duration":0,"failed":false}],[":packages/graph/tests/adapter.test-d.ts",{"duration":0,"failed":false}],[":packages/graph/tests/duplicate-detection.test-d.ts",{"duration":0,"failed":false}],[":packages/react/tests/use-deps.test-d.ts",{"duration":0,"failed":true}],[":packages/tracing/tests/types.test-d.ts",{"duration":0,"failed":false}],[":packages/graph/tests/merge-intent.test-d.ts",{"duration":0,"failed":false}],[":packages/react/tests/lazy-container-provider.test-d.ts",{"duration":0,"failed":false}],[":packages/graph/tests/orphan-ports.test-d.ts",{"duration":0,"failed":false}],[":packages/react/tests/create-component.test-d.ts",{"duration":0,"failed":true}],[":packages/graph/tests/lifetime-consistency.test-d.ts",{"duration":0,"failed":false}],[":packages/ports/tests/error-types.test-d.ts",{"duration":0,"failed":false}],[":packages/ports/tests/curried-port.test-d.ts",{"duration":0,"failed":false}],[":packages/hono/tests/types.test-d.ts",{"duration":0,"failed":false}],[":packages/graph/tests/repro.test-d.ts",{"duration":0,"failed":false}],[":packages/inspector/tests/child-container.test.ts",{"duration":0,"failed":false}],[":packages/runtime/tests/runtime-resolver-scope.test.ts",{"duration":2.9195829999999887,"failed":false}],[":packages/runtime/tests/child-container-scopes.test.ts",{"duration":4.398124999999993,"failed":false}],[":packages/runtime/tests/wrapper-composition.test-d.ts",{"duration":0,"failed":false}],[":packages/react/tests/scope-registration-flow.test.ts",{"duration":5.446665999999993,"failed":false}],[":packages/runtime/tests/scope-registration-flow.test.ts",{"duration":4.371416000000011,"failed":false}],[":packages/devtools/tests/machines/machines.test.ts",{"duration":12.649999999999977,"failed":false}],[":packages/flow/tests/activities/testing/activity-test-utils.test.ts",{"duration":29.911500000000004,"failed":false}],[":packages/flow/tests/tracing.test.ts",{"duration":6.89583300000001,"failed":false}],[":packages/flow/tests/activities/manager.test.ts",{"duration":1229.294042,"failed":false}],[":packages/flow/tests/integration/adapter.test.ts",{"duration":356.71250000000003,"failed":false}],[":packages/flow/tests/examples/activity-api-showcase.test.ts",{"duration":526.209916,"failed":false}],[":packages/flow/tests/runner.test.ts",{"duration":158.25125,"failed":false}],[":packages/flow/tests/e2e.test.ts",{"duration":9.770249999999976,"failed":false}],[":packages/flow/tests/integration.test.ts",{"duration":43.12349999999998,"failed":false}],[":packages/runtime/tests/plugins/inspector/plugin.test.ts",{"duration":9.665333000000032,"failed":false}],[":packages/runtime/tests/plugins/tracing/plugin.test.ts",{"duration":7.982082999999989,"failed":false}],[":packages/runtime/tests/plugins/tracing/collectors.test.ts",{"duration":8.127417000000008,"failed":false}],[":packages/flow/tests/activities/factory.test.ts",{"duration":4.933917000000008,"failed":false}],[":packages/flow/tests/errors.test.ts",{"duration":5.771625,"failed":false}],[":packages/flow/tests/devtools/activity-metadata.test.ts",{"duration":3.8124170000000106,"failed":false}],[":packages/devtools/tests/runtime/selectors.test.ts",{"duration":6.7922089999999855,"failed":false}],[":packages/devtools/tests/activities/activities.test.ts",{"duration":200.02891599999998,"failed":false}],[":packages/runtime/tests/override-tracking.test.ts",{"duration":4.972917000000024,"failed":false}],[":packages/flow/tests/activities.test.ts",{"duration":167.59066600000003,"failed":false}],[":packages/devtools/tests/runtime/types.test.ts",{"duration":11.73429200000001,"failed":false}],[":packages/flow/tests/activities/events.test.ts",{"duration":5.335124999999991,"failed":false}],[":packages/devtools/tests/runtime/define-plugin.test.ts",{"duration":5.1059999999999945,"failed":false}],[":packages/runtime/tests/plugin/wrapper-accumulation.test.ts",{"duration":4.539415999999989,"failed":false}],[":packages/devtools/tests/runtime/devtools-flow-runtime.test.ts",{"duration":6.297374999999988,"failed":false}],[":packages/runtime/tests/plugins/property-api.test.ts",{"duration":6.146791000000007,"failed":false}],[":packages/runtime/tests/plugins/tracing/exports.test.ts",{"duration":4.8165420000000125,"failed":false}],[":packages/runtime/tests/plugins/inspector/child-container.test.ts",{"duration":0,"failed":false}],[":packages/runtime/tests/plugins/inspector/exports.test.ts",{"duration":2.2989579999999705,"failed":false}],[":packages/devtools/tests/plugins/presets.test.ts",{"duration":2.8133339999999976,"failed":false}],[":packages/runtime/tests/plugins/package-removal-verification.test.ts",{"duration":2.0178750000000036,"failed":false}],[":packages/runtime/tests/container-metadata.test.ts",{"duration":5.5061669999999765,"failed":false}],[":packages/graph/tests/edge-cases.test.ts",{"duration":7.161207999999988,"failed":false}],[":packages/graph/tests/error-recovery.test.ts",{"duration":4.648583000000002,"failed":false}],[":packages/graph/tests/edge-cases-extended.test.ts",{"duration":6.128332999999998,"failed":false}],[":packages/graph/tests/concurrent.test.ts",{"duration":36.90829199999999,"failed":false}],[":packages/graph/tests/async-adapter.test.ts",{"duration":7.468666999999982,"failed":false}],[":packages/graph/tests/property-based.test.ts",{"duration":178.529583,"failed":false}],[":packages/graph/tests/contract.test.ts",{"duration":5.478874999999988,"failed":false}],[":packages/runtime/tests/memory-cleanup.test.ts",{"duration":12.893666000000024,"failed":false}],[":packages/graph/tests/snapshot.test.ts",{"duration":9.581625000000003,"failed":false}],[":packages/graph/tests/malformed-config.test.ts",{"duration":4.952334000000008,"failed":false}],[":packages/graph/tests/test-doubles-integration.test.ts",{"duration":5.159374999999983,"failed":false}],[":packages/graph/tests/merge-options.test.ts",{"duration":3.703708000000006,"failed":false}],[":packages/graph/tests/test-doubles.test.ts",{"duration":7.531125000000003,"failed":false}],[":packages/graph/tests/performance.test.ts",{"duration":3489.9685830000003,"failed":false}],[":packages/graph/tests/inspection-phase3.test.ts",{"duration":9.535500000000013,"failed":false}],[":packages/graph/tests/stress.test.ts",{"duration":5.246124999999978,"failed":false}],[":packages/visualization/tests/visualization.test.ts",{"duration":6.753083999999973,"failed":false}],[":packages/graph/tests/test-builder.test.ts",{"duration":4.340665999999999,"failed":false}],[":packages/graph/tests/parent-child.test.ts",{"duration":4.820625000000007,"failed":false}],[":packages/graph/tests/lazy-resolution.test.ts",{"duration":1.929124999999999,"failed":false}],[":packages/graph/tests/convenience-exports.test.ts",{"duration":2.5187080000000037,"failed":false}],[":packages/graph/tests/edge-cases/stress.test.ts",{"duration":2.845749999999981,"failed":false}],[":packages/graph/tests/edge-cases/async-errors.test.ts",{"duration":5.503208999999998,"failed":false}],[":packages/graph/tests/edge-cases/port-names.test.ts",{"duration":3.1535829999999976,"failed":false}],[":packages/graph/tests/integration/multi-layer.test.ts",{"duration":2.0651670000000024,"failed":false}],[":packages/graph/tests/integration/real-world.test.ts",{"duration":1.8934169999999995,"failed":false}],[":packages/graph/tests/integration/type-inference.test.ts",{"duration":2.26833400000001,"failed":false}],[":packages/graph/tests/edge-cases/async-adapters.test.ts",{"duration":9.058666999999986,"failed":false}],[":packages/graph/tests/edge-cases/deep-chains.test.ts",{"duration":2.0180000000000007,"failed":false}],[":packages/graph/tests/integration/complete-workflow.test.ts",{"duration":2.6049170000000004,"failed":false}],[":packages/graph/tests/integration/ports-compatibility.test.ts",{"duration":3.7089169999999854,"failed":false}],[":packages/graph/tests/integration/error-recovery.test.ts",{"duration":2.561417000000006,"failed":false}],[":packages/graph/tests/integration/factory-deps.test.ts",{"duration":1.549750000000003,"failed":false}],[":packages/graph/tests/edge-cases/factory-deps.test.ts",{"duration":2.125916999999987,"failed":false}],[":packages/graph/tests/edge-cases/empty-graph.test.ts",{"duration":2.6257499999999823,"failed":false}],[":packages/graph/tests/integration/mixed-lifetime.test.ts",{"duration":1.654916,"failed":false}],[":packages/graph/tests/edge-cases/finalizers.test.ts",{"duration":1.3432499999999976,"failed":false}],[":packages/graph/tests/edge-cases/immutability.test.ts",{"duration":1.4615830000000045,"failed":false}],[":packages/graph/tests/determinism.test.ts",{"duration":10.745417000000003,"failed":false}],[":packages/graph/tests/property-based/merge-operations.test.ts",{"duration":37.08012499999998,"failed":false}],[":packages/graph/tests/depth-soundness.test.ts",{"duration":5.444083000000006,"failed":false}],[":packages/graph/tests/property-based/inspection.test.ts",{"duration":70.621917,"failed":false}],[":packages/graph/tests/runtime-error-codes.test.ts",{"duration":4.743667000000016,"failed":false}],[":packages/graph/tests/traversal.test.ts",{"duration":3.254250000000013,"failed":false}],[":packages/graph/tests/property-based/adapter-creation.test.ts",{"duration":44.082167,"failed":false}],[":packages/graph/tests/property-based/builder-invariants.test.ts",{"duration":57.819083999999975,"failed":false}],[":packages/graph/tests/property-based/error-scenarios.test.ts",{"duration":40.556375,"failed":false}],[":packages/graph/tests/property-based/dependency-graph.test.ts",{"duration":27.08420799999999,"failed":false}],[":packages/graph/tests/complexity.test.ts",{"duration":2.5755419999999987,"failed":false}],[":packages/graph/tests/build-validation.test.ts",{"duration":2.670833000000016,"failed":false}],[":packages/graph/tests/forward-ref-validation-gap.test.ts",{"duration":4.0901250000000005,"failed":false}],[":packages/graph/tests/injectable-correlation.test.ts",{"duration":1.9381669999999929,"failed":false}],[":packages/runtime/tests/id-generator.test.ts",{"duration":4.679667000000009,"failed":false}],[":packages/graph/tests/correlation-determinism.test.ts",{"duration":1.7708749999999895,"failed":false}],[":packages/graph/tests/hex008-runtime-consistency.test.ts",{"duration":2.4489169999999945,"failed":false}],[":packages/runtime/tests/scope-id-generator.test.ts",{"duration":3.493832999999995,"failed":false}],[":packages/graph/tests/error-parsing-discriminated-union.test.ts",{"duration":3.591667000000001,"failed":false}],[":packages/graph/tests/complexity-api.test.ts",{"duration":2.132458000000014,"failed":false}],[":packages/runtime/tests/support/support.test.ts",{"duration":4.76604199999997,"failed":false}],[":packages/graph/tests/error-parsing-lastport.test.ts",{"duration":2.4799159999999745,"failed":false}],[":packages/graph/tests/depth-boundary.test.ts",{"duration":1.6684170000000051,"failed":false}],[":packages/graph/tests/merge-parent-provides.test-d.ts",{"duration":0,"failed":false}],[":packages/graph/tests/merge-unsafe-override-preservation.test-d.ts",{"duration":0,"failed":false}],[":packages/runtime/tests/request-scope.test.ts",{"duration":10.876709000000005,"failed":false}],[":packages/runtime/tests/override.test.ts",{"duration":7.356290999999999,"failed":false}],[":packages/core/tests/from-class.test.ts",{"duration":4.93312499999999,"failed":false}],[":packages/core/tests/builder.test.ts",{"duration":5.909250000000014,"failed":false}],[":packages/core/tests/directed-ports.test.ts",{"duration":5.731540999999993,"failed":false}],[":packages/core/tests/uat-phase6.test.ts",{"duration":3.365708000000012,"failed":false}],[":packages/graph/tests/inspection-filtering.test.ts",{"duration":5.071167000000003,"failed":false}],[":packages/core/tests/unified-adapter.test.ts",{"duration":3.5321250000000077,"failed":false}],[":packages/core/tests/phase11-removal-verify.test.ts",{"duration":1.411958999999996,"failed":false}],[":packages/graph/tests/inspection-summary.test.ts",{"duration":4.698875000000015,"failed":false}],[":packages/core/tests/context/variables.test.ts",{"duration":2.6572089999999946,"failed":false}],[":packages/runtime/tests/override-builder.test.ts",{"duration":7.626207999999991,"failed":false}],[":packages/runtime/tests/hook-composition.test.ts",{"duration":7.492582999999996,"failed":false}],[":packages/runtime/tests/tracer.test.ts",{"duration":2798.6097499999996,"failed":false}],[":packages/runtime/tests/resolution-hooks.test.ts",{"duration":35.04291699999999,"failed":false}],[":packages/runtime/tests/error-suggestions.test.ts",{"duration":8.35737499999999,"failed":false}],[":packages/runtime/tests/type-level-error-examples.test.ts",{"duration":4.530499999999989,"failed":false}],[":integrations/react/tests/child-container-provider.test.tsx",{"duration":14.895541000000094,"failed":true}],[":integrations/react/tests/strategic.test.tsx",{"duration":11.153333000000089,"failed":true}],[":integrations/react/tests/lazy-container-provider.test.tsx",{"duration":8.338915999999926,"failed":true}],[":integrations/react/tests/factory.test.tsx",{"duration":6.656667000000084,"failed":true}],[":integrations/react/tests/providers.test.tsx",{"duration":6.92391699999996,"failed":true}],[":integrations/react/tests/use-deps.test.tsx",{"duration":6.788583000000017,"failed":true}],[":integrations/react/tests/create-component.test.tsx",{"duration":6.064875000000029,"failed":true}],[":integrations/react/tests/reactive-scope-provider.test.tsx",{"duration":6.817250000000058,"failed":true}],[":integrations/hono/tests/context-type-preservation.test.ts",{"duration":27.63495800000001,"failed":false}],[":integrations/react/tests/hooks.test.tsx",{"duration":5.485124999999925,"failed":true}],[":integrations/hono/tests/middleware.test.ts",{"duration":34.34529100000003,"failed":false}],[":integrations/react/tests/auto-scope-provider-name.test.tsx",{"duration":5.420583000000079,"failed":true}],[":integrations/react/tests/errors.test.ts",{"duration":1.3116249999999923,"failed":false}],[":libs/flow/core/tests/activities/manager.test.ts",{"duration":1221.975458,"failed":false}],[":libs/flow/core/tests/examples/activity-api-showcase.test.ts",{"duration":517.2051250000001,"failed":false}],[":libs/flow/core/tests/tracing.test.ts",{"duration":6.6436669999999935,"failed":false}],[":libs/flow/core/tests/activities/testing/activity-test-utils.test.ts",{"duration":31.920249999999996,"failed":false}],[":libs/flow/core/tests/integration/adapter.test.ts",{"duration":356.933916,"failed":false}],[":tooling/testing/tests/integration.test.ts",{"duration":13.038457999999991,"failed":false}],[":libs/flow/core/tests/e2e.test.ts",{"duration":4.777375000000006,"failed":false}],[":libs/flow/core/tests/runner.test.ts",{"duration":157.56704099999996,"failed":false}],[":libs/flow/core/tests/activities/factory.test.ts",{"duration":6.226040999999981,"failed":false}],[":libs/flow/core/tests/errors.test.ts",{"duration":3.342000000000013,"failed":false}],[":tooling/testing/tests/test-graph-builder.test.ts",{"duration":4.754458,"failed":false}],[":tooling/testing/tests/use-test-container.test.ts",{"duration":20.266166,"failed":false}],[":tooling/testing/tests/adapter-test-harness.test.ts",{"duration":3.2616669999999885,"failed":false}],[":tooling/visualization/tests/visualization.test.ts",{"duration":7.048458000000011,"failed":false}],[":libs/flow/core/tests/integration.test.ts",{"duration":38.981042,"failed":false}],[":libs/flow/core/tests/activities.test.ts",{"duration":165.747208,"failed":false}],[":tooling/testing/tests/graph-snapshot.test.ts",{"duration":10.65825000000001,"failed":false}],[":libs/flow/core/tests/devtools/activity-metadata.test.ts",{"duration":3.929249999999996,"failed":false}],[":tooling/testing/tests/graph-assertions.test.ts",{"duration":4.047333000000009,"failed":false}],[":libs/flow/core/tests/activities/events.test.ts",{"duration":3.871417000000008,"failed":false}],[":tooling/testing/tests/spied-mock-adapter.test.ts",{"duration":4.730000000000018,"failed":false}],[":tooling/testing/tests/mock-adapter.test.ts",{"duration":5.911707999999976,"failed":false}],[":packages/tracing/tests/integration/instrumentation/cross-container.test.ts",{"duration":7.998999999999995,"failed":false}],[":packages/tracing/tests/unit/memory.test.ts",{"duration":19.877208999999993,"failed":false}],[":packages/tracing/tests/unit/instrumentation/container.test.ts",{"duration":8.596792000000008,"failed":false}],[":packages/tracing/tests/unit/instrumentation/hooks.test.ts",{"duration":6.612666999999988,"failed":false}],[":packages/tracing-otel/tests/unit/span-adapter.test.ts",{"duration":4.818457999999993,"failed":false}],[":packages/tracing-otel/tests/unit/batch-processor.test.ts",{"duration":13.477249999999998,"failed":false}],[":packages/tracing/tests/unit/assertions.test.ts",{"duration":3.2970420000000047,"failed":false}],[":packages/tracing/tests/unit/matchers.test.ts",{"duration":3.0978749999999877,"failed":false}],[":packages/tracing/tests/unit/instrumentation/port-filtering.test.ts",{"duration":7.611542,"failed":false}],[":packages/tracing/tests/unit/console.test.ts",{"duration":10.611125000000015,"failed":false}],[":packages/tracing/tests/unit/instrumentation/span-stack.test.ts",{"duration":3.2791660000000036,"failed":false}],[":packages/tracing-zipkin/tests/unit/zipkin-exporter.test.ts",{"duration":6.109917000000024,"failed":true}],[":packages/tracing/tests/integration/tracing.test.ts",{"duration":9.21366599999999,"failed":false}],[":packages/tracing/tests/unit/propagation.test.ts",{"duration":4.254959000000014,"failed":false}],[":packages/tracing-otel/tests/unit/simple-processor.test.ts",{"duration":17.960999999999984,"failed":false}],[":packages/tracing/tests/unit/id-generation.test.ts",{"duration":8.855250000000012,"failed":false}],[":packages/tracing-datadog/tests/unit/datadog-bridge.test.ts",{"duration":5.148832999999996,"failed":false}],[":integrations/hono/tests/tracing-middleware.test.ts",{"duration":39.76637500000004,"failed":false}],[":packages/tracing-jaeger/tests/unit/jaeger-exporter.test.ts",{"duration":5.831040999999971,"failed":true}],[":packages/tracing/tests/unit/noop.test.ts",{"duration":3.0446670000000324,"failed":false}],[":packages/tracing/tests/integration/instrumentation/tree-instrumentation.test.ts",{"duration":10.484875000000017,"failed":false}],[":packages/tracing/tests/benchmarks/noop-overhead.bench.ts",{"duration":1353.98675,"failed":false}],[":packages/tracing/tests/benchmarks/memory-overhead.bench.ts",{"duration":1601.9585000000002,"failed":false}],[":packages/tracing/tests/integration/instrumentation/dynamic-child-instrumentation.test.ts",{"duration":13.792541999999997,"failed":false}],[":packages/runtime/tests/inspection/child-created-events.test.ts",{"duration":18.801457999999997,"failed":false}],[":packages/runtime/tests/inspection/inspector-emit.test.ts",{"duration":2.4950000000000045,"failed":false}],["@hex-di/core:packages/core/tests/unified-adapter.test-d.ts",{"duration":0,"failed":false}],["@hex-di/core:packages/core/tests/async-lifetime-enforcement.test-d.ts",{"duration":0,"failed":false}],["@hex-di/flow:libs/flow/core/tests/activities/factory.test-d.ts",{"duration":0,"failed":false}],["@hex-di/flow:libs/flow/core/tests/integration/adapter.test-d.ts",{"duration":0,"failed":false}],["@hex-di/flow:libs/flow/core/tests/machine.test-d.ts",{"duration":0,"failed":false}],["@hex-di/flow:libs/flow/core/tests/activities/events.test-d.ts",{"duration":0,"failed":false}],["@hex-di/flow:libs/flow/core/tests/effects.test-d.ts",{"duration":0,"failed":false}],["@hex-di/flow:libs/flow/core/tests/activities/port.test-d.ts",{"duration":0,"failed":false}],["@hex-di/flow:libs/flow/core/tests/types.test-d.ts",{"duration":0,"failed":false}],["@hex-di/hono:integrations/hono/tests/types.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/circular-dependency.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/captive-dependency.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/forward-reference-comprehensive.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/build.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/validation.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/provide.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/override-validation-comprehensive.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/type-utilities.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/bidirectional-captive-comprehensive.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/port-name-extraction.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/error-messages.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/multi-error.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/soundness.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/simplified-types.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/lifetime-level-inference-error.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/never-dual-semantics.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/error-parsing-discriminated-union.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/get-direct-deps-intersection.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/is-service-compatible-soundness.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/malformed-adapter-error.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/variance.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/empty-state-invariants.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/forward-reference-marker.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/error-code-consistency.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/graph-builder.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/lazy-resolution.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/create-adapter.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/cast-soundness.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/adapter-provides-name-inference-error.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/branded-port-names.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/maxdepth-provenance.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/merge-conflict.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/error-message-consistency.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/merge-associativity.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/batch-captive-soundness.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/override-compatibility-edge-cases.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/depth-exceeded-soundness.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/any-builder-internals.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/merge-maxdepth-symmetry.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/batch-depth-exceeded.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/merge-parent-provides.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/duplicate-detection.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/adapter.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/forward-ref-compile-time-gap.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/parameter-constraint-experiment.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/inference-error.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/batch-duplicates.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/debug-utilities.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/merge-intent.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/factory-contract-validation.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/provide-many-all-errors.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/captive-result-handlers.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/for-parent.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/orphan-ports.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/batch-reverse-captive.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/depth-exceeded-provenance.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/lifetime-consistency.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/captive-result-handlers-inference-error.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/merged-graph-depth-exceeded.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/error-discriminated-union.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/depth-exceeded-distribution.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/depth-warning-consistency.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/get-direct-deps-ambiguity.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/tuple-preservation.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/adapter-requires-names-soundness.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/batch-self-dependency.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/bidirectional-lazy.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/add-many-edges-soundness.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/override-type-escape.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/batch-depth-provenance.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/async-adapter-batch-validation.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/depth-warning-tracking.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/forward-ref-diagnostic.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/merge-unsafe-override-preservation.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/depth-warning-visibility.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/malformed-adapter-reason.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/check-reverse-captive-soundness.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/circular-import-fix.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/depth-limit-error-provenance.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/depth-exceeded-branding.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/resolved-deps-soundness.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/async-lifetime-constraint.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/lazy-cycle-detection.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/lazy-captive-bug.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/hex008-missing-adapters.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/join-port-names-depth.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/adapter-requires-lazy.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/batch-captive-forward-ref.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/isolate-captive-check.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/lifetime-validation.test-d.ts",{"duration":0,"failed":false}],["@hex-di/graph:packages/graph/tests/repro.test-d.ts",{"duration":0,"failed":false}],["@hex-di/react:integrations/react/tests/types.test-d.ts",{"duration":0,"failed":false}],["@hex-di/react:integrations/react/tests/unified-provider.test-d.ts",{"duration":0,"failed":false}],["@hex-di/react:integrations/react/tests/runtime-resolver.test-d.ts",{"duration":0,"failed":false}],["@hex-di/react:integrations/react/tests/use-deps.test-d.ts",{"duration":0,"failed":false}],["@hex-di/react:integrations/react/tests/lazy-container-provider.test-d.ts",{"duration":0,"failed":false}],["@hex-di/react:integrations/react/tests/create-component.test-d.ts",{"duration":0,"failed":false}],["@hex-di/testing:tooling/testing/tests/types.test-d.ts",{"duration":0,"failed":false}],["@hex-di/flow:libs/flow/core/tests/activities/manager.test.ts",{"duration":1239.2223339999998,"failed":false}],["@hex-di/core:packages/core/tests/directed-ports.test.ts",{"duration":5.740291999999954,"failed":false}],["@hex-di/core:packages/core/tests/unified-adapter.test.ts",{"duration":3.6949579999999855,"failed":false}],["@hex-di/flow:libs/flow/core/tests/integration/adapter.test.ts",{"duration":361.78070900000006,"failed":false}],["@hex-di/flow:libs/flow/core/tests/tracing.test.ts",{"duration":5.804917000000046,"failed":false}],["@hex-di/flow:libs/flow/core/tests/runner.test.ts",{"duration":156.49758300000002,"failed":false}],["@hex-di/flow:libs/flow/core/tests/activities/factory.test.ts",{"duration":4.448458000000002,"failed":false}],["@hex-di/flow:libs/flow/core/tests/e2e.test.ts",{"duration":4.753208000000015,"failed":false}],["@hex-di/flow:libs/flow/core/tests/examples/activity-api-showcase.test.ts",{"duration":516.0151249999999,"failed":false}],["@hex-di/flow:libs/flow/core/tests/activities/testing/activity-test-utils.test.ts",{"duration":30.365625000000023,"failed":false}],["@hex-di/flow:libs/flow/core/tests/integration.test.ts",{"duration":42.760374999999954,"failed":false}],["@hex-di/core:packages/core/tests/uat-phase6.test.ts",{"duration":2.737374999999986,"failed":false}],["@hex-di/core:packages/core/tests/context/variables.test.ts",{"duration":2.243916000000013,"failed":false}],["@hex-di/flow:libs/flow/core/tests/devtools/activity-metadata.test.ts",{"duration":4.054583999999977,"failed":false}],["@hex-di/flow:libs/flow/core/tests/errors.test.ts",{"duration":3.519874999999999,"failed":false}],["@hex-di/flow:libs/flow/core/tests/activities.test.ts",{"duration":168.690292,"failed":false}],["@hex-di/flow:libs/flow/core/tests/activities/events.test.ts",{"duration":3.4353749999999934,"failed":false}],["@hex-di/graph:packages/graph/tests/snapshot.test.ts",{"duration":9.188500000000005,"failed":false}],["@hex-di/graph:packages/graph/tests/async-adapter.test.ts",{"duration":7.9786670000000015,"failed":false}],["@hex-di/graph:packages/graph/tests/edge-cases-extended.test.ts",{"duration":9.578125,"failed":false}],["@hex-di/graph:packages/graph/tests/error-recovery.test.ts",{"duration":4.131708000000003,"failed":false}],["@hex-di/graph:packages/graph/tests/concurrent.test.ts",{"duration":38.229791999999975,"failed":false}],["@hex-di/graph:packages/graph/tests/edge-cases/stress.test.ts",{"duration":7.3668329999999855,"failed":false}],["@hex-di/graph:packages/graph/tests/malformed-config.test.ts",{"duration":5.287583000000012,"failed":false}],["@hex-di/graph:packages/graph/tests/inspection-summary.test.ts",{"duration":5.179750000000013,"failed":false}],["@hex-di/graph:packages/graph/tests/test-doubles.test.ts",{"duration":5.931791000000004,"failed":false}],["@hex-di/graph:packages/graph/tests/inspection-filtering.test.ts",{"duration":4.82454199999998,"failed":false}],["@hex-di/graph:packages/graph/tests/test-doubles-integration.test.ts",{"duration":6.131625000000014,"failed":false}],["@hex-di/graph:packages/graph/tests/performance.test.ts",{"duration":3831.1850409999997,"failed":false}],["@hex-di/graph:packages/graph/tests/merge-options.test.ts",{"duration":8.55295799999999,"failed":false}],["@hex-di/graph:packages/graph/tests/graph-builder.test.ts",{"duration":5.563749999999999,"failed":false}],["@hex-di/graph:packages/graph/tests/contract.test.ts",{"duration":5.43745899999999,"failed":false}],["@hex-di/flow-react:libs/flow/react/tests/hooks.test.tsx",{"duration":23.403917000000092,"failed":false}],["@hex-di/graph:packages/graph/tests/inspection-phase3.test.ts",{"duration":5.015582999999992,"failed":false}],["@hex-di/graph:packages/graph/tests/stress.test.ts",{"duration":5.848041999999992,"failed":false}],["@hex-di/graph:packages/graph/tests/complexity.test.ts",{"duration":2.750917000000001,"failed":false}],["@hex-di/graph:packages/graph/tests/determinism.test.ts",{"duration":9.769040999999987,"failed":false}],["@hex-di/graph:packages/graph/tests/runtime-error-codes.test.ts",{"duration":4.797667000000018,"failed":false}],["@hex-di/graph:packages/graph/tests/error-parsing-discriminated-union.test.ts",{"duration":3.814916000000011,"failed":false}],["@hex-di/graph:packages/graph/tests/property-based/merge-operations.test.ts",{"duration":46.91641699999997,"failed":false}],["@hex-di/graph:packages/graph/tests/traversal.test.ts",{"duration":3.9448750000000246,"failed":false}],["@hex-di/graph:packages/graph/tests/build.test.ts",{"duration":4.302500000000009,"failed":false}],["@hex-di/graph:packages/graph/tests/test-builder.test.ts",{"duration":5.952375000000018,"failed":false}],["@hex-di/graph:packages/graph/tests/edge-cases/async-errors.test.ts",{"duration":3.3083330000000046,"failed":false}],["@hex-di/graph:packages/graph/tests/complexity-api.test.ts",{"duration":2.1154160000000104,"failed":false}],["@hex-di/graph:packages/graph/tests/property-based/builder-invariants.test.ts",{"duration":69.13116600000001,"failed":false}],["@hex-di/graph:packages/graph/tests/property-based/error-scenarios.test.ts",{"duration":39.23141699999999,"failed":false}],["@hex-di/graph:packages/graph/tests/depth-soundness.test.ts",{"duration":9.035500000000013,"failed":false}],["@hex-di/graph:packages/graph/tests/property-based/inspection.test.ts",{"duration":82.08449999999999,"failed":false}],["@hex-di/graph:packages/graph/tests/edge-cases/port-names.test.ts",{"duration":2.9724999999999966,"failed":false}],["@hex-di/graph:packages/graph/tests/property-based/dependency-graph.test.ts",{"duration":28.466458000000017,"failed":false}],["@hex-di/graph:packages/graph/tests/property-based/adapter-creation.test.ts",{"duration":50.97887499999999,"failed":false}],["@hex-di/graph:packages/graph/tests/parent-child.test.ts",{"duration":3.538499999999999,"failed":false}],["@hex-di/graph:packages/graph/tests/integration/real-world.test.ts",{"duration":2.0547909999999945,"failed":false}],["@hex-di/graph:packages/graph/tests/create-adapter.test.ts",{"duration":3.048833000000002,"failed":false}],["@hex-di/graph:packages/graph/tests/integration/multi-layer.test.ts",{"duration":2.0944590000000005,"failed":false}],["@hex-di/graph:packages/graph/tests/exports.test.ts",{"duration":2.1406670000000076,"failed":false}],["@hex-di/graph:packages/graph/tests/integration/type-inference.test.ts",{"duration":2.315624999999983,"failed":false}],["@hex-di/graph:packages/graph/tests/build-validation.test.ts",{"duration":3.4529170000000136,"failed":false}],["@hex-di/graph:packages/graph/tests/lazy-resolution.test.ts",{"duration":3.1097090000000094,"failed":false}],["@hex-di/graph:packages/graph/tests/edge-cases/async-adapters.test.ts",{"duration":5.301625000000001,"failed":false}],["@hex-di/graph:packages/graph/tests/forward-ref-validation-gap.test.ts",{"duration":2.2175829999999905,"failed":false}],["@hex-di/graph:packages/graph/tests/integration/ports-compatibility.test.ts",{"duration":2.1781249999999943,"failed":false}],["@hex-di/graph:packages/graph/tests/injectable-correlation.test.ts",{"duration":3.2940419999999904,"failed":false}],["@hex-di/graph:packages/graph/tests/edge-cases/deep-chains.test.ts",{"duration":1.9604999999999961,"failed":false}],["@hex-di/graph:packages/graph/tests/correlation-determinism.test.ts",{"duration":2.000124999999997,"failed":false}],["@hex-di/graph:packages/graph/tests/error-parsing-lastport.test.ts",{"duration":2.4032080000000065,"failed":false}],["@hex-di/graph:packages/graph/tests/depth-boundary.test.ts",{"duration":2.2830419999999947,"failed":false}],["@hex-di/graph:packages/graph/tests/integration/complete-workflow.test.ts",{"duration":2.6019999999999754,"failed":false}],["@hex-di/graph:packages/graph/tests/hex008-runtime-consistency.test.ts",{"duration":13.840833000000003,"failed":false}],["@hex-di/graph:packages/graph/tests/integration/error-recovery.test.ts",{"duration":2.238416000000001,"failed":false}],["@hex-di/graph:packages/graph/tests/integration/factory-deps.test.ts",{"duration":1.6525000000000034,"failed":false}],["@hex-di/graph:packages/graph/tests/integration/mixed-lifetime.test.ts",{"duration":1.7316250000000082,"failed":false}],["@hex-di/graph:packages/graph/tests/edge-cases/factory-deps.test.ts",{"duration":2.2688750000000084,"failed":false}],["@hex-di/graph:packages/graph/tests/edge-cases/finalizers.test.ts",{"duration":1.4223329999999805,"failed":false}],["@hex-di/graph:packages/graph/tests/edge-cases/immutability.test.ts",{"duration":1.5077079999999796,"failed":false}],["@hex-di/graph:packages/graph/tests/edge-cases/empty-graph.test.ts",{"duration":2.2836250000000007,"failed":false}],["@hex-di/hono:integrations/hono/tests/tracing-middleware.test.ts",{"duration":36.93320899999992,"failed":false}],["@hex-di/hono:integrations/hono/tests/middleware.test.ts",{"duration":30.71524999999997,"failed":false}],["@hex-di/hono:integrations/hono/tests/context-type-preservation.test.ts",{"duration":31.166916000000015,"failed":false}],["@hex-di/graph-viz:tooling/graph-viz/tests/graph-viz.test.tsx",{"duration":69.30287499999997,"failed":false}],["@hex-di/react:integrations/react/tests/child-container-provider.test.tsx",{"duration":192.17329199999995,"failed":false}],["@hex-di/react:integrations/react/tests/factory.test.tsx",{"duration":18.590833000000032,"failed":false}],["@hex-di/react:integrations/react/tests/lazy-container-provider.test.tsx",{"duration":117.7984590000001,"failed":false}],["@hex-di/react:integrations/react/tests/strategic.test.tsx",{"duration":21.96858300000008,"failed":false}],["@hex-di/react:integrations/react/tests/use-deps.test.tsx",{"duration":25.452916999999957,"failed":false}],["@hex-di/react:integrations/react/tests/providers.test.tsx",{"duration":74.63587500000006,"failed":false}],["@hex-di/react:integrations/react/tests/create-component.test.tsx",{"duration":25.0931250000001,"failed":false}],["@hex-di/react:integrations/react/tests/tracing-hooks.test.tsx",{"duration":36.410541999999964,"failed":false}],["@hex-di/runtime:packages/runtime/tests/child-container.test.ts",{"duration":14.147999999999968,"failed":false}],["@hex-di/runtime:packages/runtime/tests/integration.test.ts",{"duration":118.46120800000006,"failed":false}],["@hex-di/runtime:packages/runtime/tests/inspector.test.ts",{"duration":11.928624999999982,"failed":false}],["@hex-di/react:integrations/react/tests/reactive-scope-provider.test.tsx",{"duration":28.33283300000005,"failed":false}],["@hex-di/react:integrations/react/tests/hooks.test.tsx",{"duration":19.956917000000033,"failed":false}],["@hex-di/runtime:packages/runtime/tests/resolution-hooks.test.ts",{"duration":34.40891700000003,"failed":false}],["@hex-di/react:integrations/react/tests/tracing-provider.test.tsx",{"duration":16.279124999999965,"failed":false}],["@hex-di/react:integrations/react/tests/auto-scope-provider-name.test.tsx",{"duration":11.155500000000018,"failed":false}],["@hex-di/runtime:packages/runtime/tests/async-resolution.test.ts",{"duration":160.70979199999994,"failed":false}],["@hex-di/runtime:packages/runtime/tests/hook-composition.test.ts",{"duration":7.354792000000003,"failed":false}],["@hex-di/react:integrations/react/tests/errors.test.ts",{"duration":1.3710829999999987,"failed":false}],["@hex-di/runtime:packages/runtime/tests/disposal.test.ts",{"duration":302.993667,"failed":false}],["@hex-di/runtime:packages/runtime/tests/override.test.ts",{"duration":7.3506249999999795,"failed":false}],["@hex-di/runtime:packages/runtime/tests/memory-cleanup.test.ts",{"duration":15.31049999999999,"failed":false}],["@hex-di/runtime:packages/runtime/tests/override-builder.test.ts",{"duration":8.52562500000002,"failed":false}],["@hex-di/runtime:packages/runtime/tests/inspection/child-created-events.test.ts",{"duration":21.896416999999985,"failed":false}],["@hex-di/runtime:packages/runtime/tests/scope.test.ts",{"duration":6.9947500000000105,"failed":false}],["@hex-di/runtime:packages/runtime/tests/lifetime.test.ts",{"duration":5.877749999999992,"failed":false}],["@hex-di/runtime:packages/runtime/tests/lazy-container.test.ts",{"duration":8.785415999999998,"failed":false}],["@hex-di/runtime:packages/runtime/tests/error-suggestions.test.ts",{"duration":3.494124999999997,"failed":false}],["@hex-di/runtime:packages/runtime/tests/memo-map.test.ts",{"duration":3.966667000000001,"failed":false}],["@hex-di/runtime:packages/runtime/tests/type-level-error-examples.test.ts",{"duration":4.616375000000005,"failed":false}],["@hex-di/runtime:packages/runtime/tests/override-tracking.test.ts",{"duration":4.635666999999984,"failed":false}],["@hex-di/runtime:packages/runtime/tests/errors.test.ts",{"duration":3.327708000000001,"failed":false}],["@hex-di/runtime:packages/runtime/tests/scope-lifecycle.test.ts",{"duration":5.917249999999996,"failed":false}],["@hex-di/runtime:packages/runtime/tests/port-resolution-type-safety.test.ts",{"duration":11.574041999999992,"failed":false}],["@hex-di/runtime:packages/runtime/tests/exports.test.ts",{"duration":3.3174589999999853,"failed":false}],["@hex-di/runtime:packages/runtime/tests/type-utilities.test.ts",{"duration":3.571957999999995,"failed":false}],["@hex-di/runtime:packages/runtime/tests/child-container-scopes.test.ts",{"duration":5.90349999999998,"failed":false}],["@hex-di/runtime:packages/runtime/tests/internal-access.test.ts",{"duration":4.278374999999983,"failed":false}],["@hex-di/runtime:packages/runtime/tests/container.test.ts",{"duration":8.70304200000001,"failed":false}],["@hex-di/runtime:packages/runtime/tests/plugins/property-api.test.ts",{"duration":5.104208,"failed":false}],["@hex-di/runtime:packages/runtime/tests/scope-id-generator.test.ts",{"duration":2.421875,"failed":false}],["@hex-di/runtime:packages/runtime/tests/resolution-context.test.ts",{"duration":2.498750000000001,"failed":false}],["@hex-di/runtime:packages/runtime/tests/id-generator.test.ts",{"duration":2.771415999999988,"failed":false}],["@hex-di/runtime:packages/runtime/tests/container-metadata.test.ts",{"duration":3.7882079999999974,"failed":false}],["@hex-di/runtime:packages/runtime/tests/support/support.test.ts",{"duration":6.165625000000006,"failed":false}],["@hex-di/runtime:packages/runtime/tests/inspection/inspector-emit.test.ts",{"duration":2.3941250000000025,"failed":false}],["@hex-di/tracing:packages/tracing/tests/integration/instrumentation/dynamic-child-instrumentation.test.ts",{"duration":12.338416999999936,"failed":false}],["@hex-di/tracing:packages/tracing/tests/unit/instrumentation/container.test.ts",{"duration":8.745708000000008,"failed":false}],["@hex-di/tracing:packages/tracing/tests/unit/instrumentation/hooks.test.ts",{"duration":7.039291000000006,"failed":false}],["@hex-di/testing:tooling/testing/tests/integration.test.ts",{"duration":12.612249999999904,"failed":false}],["@hex-di/testing:tooling/testing/tests/test-graph-builder.test.ts",{"duration":6.633125000000064,"failed":false}],["@hex-di/testing:tooling/testing/tests/use-test-container.test.ts",{"duration":22.534000000000106,"failed":false}],["@hex-di/testing:tooling/testing/tests/graph-snapshot.test.ts",{"duration":11.094040999999947,"failed":false}],["@hex-di/tracing:packages/tracing/tests/unit/memory.test.ts",{"duration":23.301084000000003,"failed":false}],["@hex-di/testing:tooling/testing/tests/adapter-test-harness.test.ts",{"duration":3.579541000000063,"failed":false}],["@hex-di/testing:tooling/testing/tests/spied-mock-adapter.test.ts",{"duration":4.928500000000099,"failed":false}],["@hex-di/testing:tooling/testing/tests/graph-assertions.test.ts",{"duration":5.07691699999998,"failed":false}],["@hex-di/testing:tooling/testing/tests/render-with-container.test.tsx",{"duration":21.82095800000002,"failed":false}],["@hex-di/testing:tooling/testing/tests/mock-adapter.test.ts",{"duration":6.298415999999975,"failed":false}],["@hex-di/tracing:packages/tracing/tests/integration/instrumentation/tree-instrumentation.test.ts",{"duration":9.357875000000007,"failed":false}],["@hex-di/tracing:packages/tracing/tests/integration/instrumentation/cross-container.test.ts",{"duration":6.051957999999985,"failed":false}],["@hex-di/tracing:packages/tracing/tests/unit/matchers.test.ts",{"duration":3.0693330000000003,"failed":false}],["@hex-di/tracing:packages/tracing/tests/unit/assertions.test.ts",{"duration":3.8013750000000073,"failed":false}],["@hex-di/tracing:packages/tracing/tests/unit/instrumentation/port-filtering.test.ts",{"duration":3.1705419999999975,"failed":false}],["@hex-di/tracing:packages/tracing/tests/unit/console.test.ts",{"duration":10.586708000000016,"failed":false}],["@hex-di/tracing:packages/tracing/tests/integration/tracing.test.ts",{"duration":7.194833999999986,"failed":false}],["@hex-di/tracing:packages/tracing/tests/unit/instrumentation/span-stack.test.ts",{"duration":3.34454199999999,"failed":false}],["@hex-di/tracing:packages/tracing/tests/unit/propagation.test.ts",{"duration":3.0271669999999915,"failed":false}],["@hex-di/tracing:packages/tracing/tests/unit/id-generation.test.ts",{"duration":14.432500000000005,"failed":false}],["@hex-di/tracing-datadog:packages/tracing-datadog/tests/unit/datadog-bridge.test.ts",{"duration":5.109209000000021,"failed":false}],["@hex-di/tracing-jaeger:packages/tracing-jaeger/tests/unit/jaeger-exporter.test.ts",{"duration":8.295582999999993,"failed":false}],["@hex-di/tracing:packages/tracing/tests/unit/noop.test.ts",{"duration":2.767499999999984,"failed":false}],["@hex-di/tracing-otel:packages/tracing-otel/tests/unit/span-adapter.test.ts",{"duration":3.6678330000000017,"failed":false}],["@hex-di/tracing-otel:packages/tracing-otel/tests/unit/batch-processor.test.ts",{"duration":8.696542000000008,"failed":false}],["@hex-di/tracing-otel:packages/tracing-otel/tests/unit/simple-processor.test.ts",{"duration":17.50270900000001,"failed":false}],["@hex-di/tracing-zipkin:packages/tracing-zipkin/tests/unit/zipkin-exporter.test.ts",{"duration":8.984332999999992,"failed":false}],["@hex-di/visualization:tooling/visualization/tests/visualization.test.ts",{"duration":6.959082999999993,"failed":false}]]}
+{
+  "version": "4.0.16",
+  "results": [
+    [
+      ":packages/devtools/tests/presenters/presenter-extensions.test.ts",
+      { "duration": 14.457207999999994, "failed": false }
+    ],
+    [
+      ":packages/devtools-network/tests/client.test.ts",
+      { "duration": 472.9708750000002, "failed": false }
+    ],
+    [
+      ":packages/testing/tests/integration.test.ts",
+      { "duration": 14.185915999999992, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/child-container.test.ts",
+      { "duration": 13.283875000000023, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/view-models/view-models.test.ts",
+      { "duration": 8.791749999999993, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/integration.test.ts",
+      { "duration": 5.510166999999996, "failed": false }
+    ],
+    [
+      ":packages/devtools-network/tests/server.test.ts",
+      { "duration": 12.229832999999985, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/integration.test.ts",
+      { "duration": 115.53145800000004, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/async-resolution.test.ts",
+      { "duration": 159.004458, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/tracing/integration.test.ts",
+      { "duration": 8.495958000000002, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/disposal.test.ts",
+      { "duration": 293.88925000000006, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/network/network-layer.test.ts",
+      { "duration": 46.727957999999944, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/advanced-features.test.ts",
+      { "duration": 7.596417000000002, "failed": false }
+    ],
+    [
+      ":packages/devtools-ui/tests/inspector.presenter.test.ts",
+      { "duration": 20.46799999999999, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/state/state-extensions.test.ts",
+      { "duration": 4.832832999999994, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/tracing/tracing-container.test.ts",
+      { "duration": 12.300584000000015, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/tracing/collector.test.ts",
+      { "duration": 7.318665999999979, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/lifetime.test.ts",
+      { "duration": 5.584708000000006, "failed": false }
+    ],
+    [
+      ":packages/devtools-ui/tests/timeline.presenter.test.ts",
+      { "duration": 17.85075000000002, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/edge-cases.test.ts",
+      { "duration": 11.677082999999925, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/inspector.test.ts",
+      { "duration": 9.826542000000018, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/integration.test.ts",
+      { "duration": 14.791958000000022, "failed": false }
+    ],
+    [
+      ":packages/devtools-ui/tests/stats.presenter.test.ts",
+      { "duration": 17.056832999999997, "failed": false }
+    ],
+    [
+      ":packages/testing/tests/test-graph-builder.test.ts",
+      { "duration": 4.723959000000008, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/state/state-migration.test.ts",
+      { "duration": 18.906292000000008, "failed": false }
+    ],
+    [":packages/runtime/tests/scope.test.ts", { "duration": 6.663832999999983, "failed": false }],
+    [
+      ":packages/runtime/tests/memo-map.test.ts",
+      { "duration": 3.8308750000000202, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/tracing/eviction.test.ts",
+      { "duration": 8.13229100000001, "failed": false }
+    ],
+    [
+      ":packages/testing/tests/use-test-container.test.ts",
+      { "duration": 22.031667, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/sync/browser-tui-sync.test.ts",
+      { "duration": 307.156875, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/tracing/types.test.ts",
+      { "duration": 6.394208999999989, "failed": false }
+    ],
+    [
+      ":packages/devtools-ui/tests/graph.presenter.test.ts",
+      { "duration": 7.990291999999982, "failed": false }
+    ],
+    [
+      ":packages/devtools-network/tests/mock-websocket.test.ts",
+      { "duration": 20.144834000000003, "failed": false }
+    ],
+    [":packages/graph/tests/build.test.ts", { "duration": 4.117291999999992, "failed": false }],
+    [":packages/devtools/tests/types.test.ts", { "duration": 3.245625000000004, "failed": false }],
+    [
+      ":packages/devtools-core/tests/core-consolidation.test.ts",
+      { "duration": 15.757875000000013, "failed": false }
+    ],
+    [
+      ":packages/testing/tests/adapter-test-harness.test.ts",
+      { "duration": 4.397541999999987, "failed": false }
+    ],
+    [
+      ":packages/testing/tests/graph-snapshot.test.ts",
+      { "duration": 10.248125000000016, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/port-resolution-type-safety.test.ts",
+      { "duration": 11.04008300000001, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/graph-builder.test.ts",
+      { "duration": 5.579125000000005, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/exports.test.ts",
+      { "duration": 3.0373340000000155, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/type-utilities.test.ts",
+      { "duration": 2.6411250000000166, "failed": false }
+    ],
+    [
+      ":packages/ports/tests/integration.test.ts",
+      { "duration": 3.3213329999999814, "failed": false }
+    ],
+    [
+      ":packages/hono/tests/context-type-preservation.test.ts",
+      { "duration": 34.57820799999996, "failed": false }
+    ],
+    [
+      ":packages/testing/tests/graph-assertions.test.ts",
+      { "duration": 4.351416999999998, "failed": false }
+    ],
+    [
+      ":packages/testing/tests/spied-mock-adapter.test.ts",
+      { "duration": 4.758958000000007, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/filter-graph.test.ts",
+      { "duration": 3.354667000000063, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/to-json.test.ts",
+      { "duration": 10.11583399999995, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/relabel-ports.test.ts",
+      { "duration": 5.804167000000007, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/container.test.ts",
+      { "duration": 6.012999999999977, "failed": false }
+    ],
+    [":packages/runtime/tests/errors.test.ts", { "duration": 3.276083, "failed": false }],
+    [
+      ":packages/devtools-core/tests/transforms.test.ts",
+      { "duration": 11.007999999999981, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/to-dot.test.ts",
+      { "duration": 11.020083999999997, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/internal-access.test.ts",
+      { "duration": 4.263292000000007, "failed": false }
+    ],
+    [
+      ":packages/testing/tests/mock-adapter.test.ts",
+      { "duration": 7.136874999999975, "failed": false }
+    ],
+    [
+      ":packages/devtools-core/tests/filters.test.ts",
+      { "duration": 3.2239999999999895, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/to-mermaid.test.ts",
+      { "duration": 12.206749999999943, "failed": false }
+    ],
+    [":packages/graph/tests/exports.test.ts", { "duration": 2.3662909999999897, "failed": false }],
+    [
+      ":packages/devtools/tests/tracing-styles.test.ts",
+      { "duration": 2.4964580000000183, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/unified-package-scaffolding.test.ts",
+      { "duration": 864.754333, "failed": false }
+    ],
+    [":packages/hono/tests/middleware.test.ts", { "duration": 35.66191700000002, "failed": false }],
+    [
+      ":packages/graph/tests/create-adapter.test.ts",
+      { "duration": 2.0577499999999986, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/resolution-context.test.ts",
+      { "duration": 2.455416999999997, "failed": false }
+    ],
+    [
+      ":packages/runtime/src/verify-runtime-safety.test.ts",
+      { "duration": 3.410791999999958, "failed": false }
+    ],
+    [
+      ":packages/ports/tests/createPort.test.ts",
+      { "duration": 2.8795000000000073, "failed": false }
+    ],
+    [":packages/ports/tests/exports.test.ts", { "duration": 1.412542000000002, "failed": false }],
+    [":packages/react/tests/errors.test.ts", { "duration": 1.3733749999999816, "failed": false }],
+    [
+      ":packages/graph/tests/define-service.test.ts",
+      { "duration": 2.981667000000016, "failed": false }
+    ],
+    [
+      ":packages/ports/tests/curried-port.test.ts",
+      { "duration": 2.1348330000000004, "failed": false }
+    ],
+    [":packages/tracing/tests/plugin.test.ts", { "duration": 12.434374999999989, "failed": false }],
+    [
+      ":packages/runtime/tests/plugin-manager.test.ts",
+      { "duration": 6.588333000000006, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/child-container-plugins.test.ts",
+      { "duration": 7.885290999999995, "failed": false }
+    ],
+    [
+      ":packages/inspector/tests/plugin.test.ts",
+      { "duration": 7.649750000000012, "failed": false }
+    ],
+    [
+      ":packages/tracing/tests/collectors.test.ts",
+      { "duration": 6.915709000000007, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/lazy-container.test.ts",
+      { "duration": 8.76762500000001, "failed": false }
+    ],
+    [":packages/runtime/tests/scope-lifecycle.test.ts", { "duration": 7.046042, "failed": false }],
+    [":packages/testing/tests/types.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      ":packages/runtime/tests/resolution-type-safety.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [":packages/graph/tests/circular-dependency.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/graph/tests/validation.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/graph/tests/provide.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/runtime/tests/child-container.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/devtools/tests/types.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/graph/tests/build.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/graph/tests/captive-dependency.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/graph/tests/type-utilities.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/react/tests/types.test-d.ts", { "duration": 0, "failed": true }],
+    [":packages/react/tests/unified-provider.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/runtime/tests/plugins.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/inspector/tests/types.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/runtime/tests/captive-dependency.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/graph/tests/error-messages.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/runtime/tests/types.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/graph/tests/graph-builder.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/graph/tests/create-adapter.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/graph/tests/define-service.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/react/tests/runtime-resolver.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/ports/tests/port.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/graph/tests/adapter.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/graph/tests/duplicate-detection.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/react/tests/use-deps.test-d.ts", { "duration": 0, "failed": true }],
+    [":packages/tracing/tests/types.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/graph/tests/merge-intent.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/react/tests/lazy-container-provider.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/graph/tests/orphan-ports.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/react/tests/create-component.test-d.ts", { "duration": 0, "failed": true }],
+    [":packages/graph/tests/lifetime-consistency.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/ports/tests/error-types.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/ports/tests/curried-port.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/hono/tests/types.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/graph/tests/repro.test-d.ts", { "duration": 0, "failed": false }],
+    [":packages/inspector/tests/child-container.test.ts", { "duration": 0, "failed": false }],
+    [
+      ":packages/runtime/tests/runtime-resolver-scope.test.ts",
+      { "duration": 2.9195829999999887, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/child-container-scopes.test.ts",
+      { "duration": 4.398124999999993, "failed": false }
+    ],
+    [":packages/runtime/tests/wrapper-composition.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      ":packages/react/tests/scope-registration-flow.test.ts",
+      { "duration": 5.446665999999993, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/scope-registration-flow.test.ts",
+      { "duration": 4.371416000000011, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/machines/machines.test.ts",
+      { "duration": 12.649999999999977, "failed": false }
+    ],
+    [
+      ":packages/flow/tests/activities/testing/activity-test-utils.test.ts",
+      { "duration": 29.911500000000004, "failed": false }
+    ],
+    [":packages/flow/tests/tracing.test.ts", { "duration": 6.89583300000001, "failed": false }],
+    [
+      ":packages/flow/tests/activities/manager.test.ts",
+      { "duration": 1229.294042, "failed": false }
+    ],
+    [
+      ":packages/flow/tests/integration/adapter.test.ts",
+      { "duration": 356.71250000000003, "failed": false }
+    ],
+    [
+      ":packages/flow/tests/examples/activity-api-showcase.test.ts",
+      { "duration": 526.209916, "failed": false }
+    ],
+    [":packages/flow/tests/runner.test.ts", { "duration": 158.25125, "failed": false }],
+    [":packages/flow/tests/e2e.test.ts", { "duration": 9.770249999999976, "failed": false }],
+    [
+      ":packages/flow/tests/integration.test.ts",
+      { "duration": 43.12349999999998, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/plugins/inspector/plugin.test.ts",
+      { "duration": 9.665333000000032, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/plugins/tracing/plugin.test.ts",
+      { "duration": 7.982082999999989, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/plugins/tracing/collectors.test.ts",
+      { "duration": 8.127417000000008, "failed": false }
+    ],
+    [
+      ":packages/flow/tests/activities/factory.test.ts",
+      { "duration": 4.933917000000008, "failed": false }
+    ],
+    [":packages/flow/tests/errors.test.ts", { "duration": 5.771625, "failed": false }],
+    [
+      ":packages/flow/tests/devtools/activity-metadata.test.ts",
+      { "duration": 3.8124170000000106, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/runtime/selectors.test.ts",
+      { "duration": 6.7922089999999855, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/activities/activities.test.ts",
+      { "duration": 200.02891599999998, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/override-tracking.test.ts",
+      { "duration": 4.972917000000024, "failed": false }
+    ],
+    [
+      ":packages/flow/tests/activities.test.ts",
+      { "duration": 167.59066600000003, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/runtime/types.test.ts",
+      { "duration": 11.73429200000001, "failed": false }
+    ],
+    [
+      ":packages/flow/tests/activities/events.test.ts",
+      { "duration": 5.335124999999991, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/runtime/define-plugin.test.ts",
+      { "duration": 5.1059999999999945, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/plugin/wrapper-accumulation.test.ts",
+      { "duration": 4.539415999999989, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/runtime/devtools-flow-runtime.test.ts",
+      { "duration": 6.297374999999988, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/plugins/property-api.test.ts",
+      { "duration": 6.146791000000007, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/plugins/tracing/exports.test.ts",
+      { "duration": 4.8165420000000125, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/plugins/inspector/child-container.test.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/plugins/inspector/exports.test.ts",
+      { "duration": 2.2989579999999705, "failed": false }
+    ],
+    [
+      ":packages/devtools/tests/plugins/presets.test.ts",
+      { "duration": 2.8133339999999976, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/plugins/package-removal-verification.test.ts",
+      { "duration": 2.0178750000000036, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/container-metadata.test.ts",
+      { "duration": 5.5061669999999765, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/edge-cases.test.ts",
+      { "duration": 7.161207999999988, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/error-recovery.test.ts",
+      { "duration": 4.648583000000002, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/edge-cases-extended.test.ts",
+      { "duration": 6.128332999999998, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/concurrent.test.ts",
+      { "duration": 36.90829199999999, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/async-adapter.test.ts",
+      { "duration": 7.468666999999982, "failed": false }
+    ],
+    [":packages/graph/tests/property-based.test.ts", { "duration": 178.529583, "failed": false }],
+    [":packages/graph/tests/contract.test.ts", { "duration": 5.478874999999988, "failed": false }],
+    [
+      ":packages/runtime/tests/memory-cleanup.test.ts",
+      { "duration": 12.893666000000024, "failed": false }
+    ],
+    [":packages/graph/tests/snapshot.test.ts", { "duration": 9.581625000000003, "failed": false }],
+    [
+      ":packages/graph/tests/malformed-config.test.ts",
+      { "duration": 4.952334000000008, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/test-doubles-integration.test.ts",
+      { "duration": 5.159374999999983, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/merge-options.test.ts",
+      { "duration": 3.703708000000006, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/test-doubles.test.ts",
+      { "duration": 7.531125000000003, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/performance.test.ts",
+      { "duration": 3489.9685830000003, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/inspection-phase3.test.ts",
+      { "duration": 9.535500000000013, "failed": false }
+    ],
+    [":packages/graph/tests/stress.test.ts", { "duration": 5.246124999999978, "failed": false }],
+    [
+      ":packages/visualization/tests/visualization.test.ts",
+      { "duration": 6.753083999999973, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/test-builder.test.ts",
+      { "duration": 4.340665999999999, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/parent-child.test.ts",
+      { "duration": 4.820625000000007, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/lazy-resolution.test.ts",
+      { "duration": 1.929124999999999, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/convenience-exports.test.ts",
+      { "duration": 2.5187080000000037, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/edge-cases/stress.test.ts",
+      { "duration": 2.845749999999981, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/edge-cases/async-errors.test.ts",
+      { "duration": 5.503208999999998, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/edge-cases/port-names.test.ts",
+      { "duration": 3.1535829999999976, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/integration/multi-layer.test.ts",
+      { "duration": 2.0651670000000024, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/integration/real-world.test.ts",
+      { "duration": 1.8934169999999995, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/integration/type-inference.test.ts",
+      { "duration": 2.26833400000001, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/edge-cases/async-adapters.test.ts",
+      { "duration": 9.058666999999986, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/edge-cases/deep-chains.test.ts",
+      { "duration": 2.0180000000000007, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/integration/complete-workflow.test.ts",
+      { "duration": 2.6049170000000004, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/integration/ports-compatibility.test.ts",
+      { "duration": 3.7089169999999854, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/integration/error-recovery.test.ts",
+      { "duration": 2.561417000000006, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/integration/factory-deps.test.ts",
+      { "duration": 1.549750000000003, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/edge-cases/factory-deps.test.ts",
+      { "duration": 2.125916999999987, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/edge-cases/empty-graph.test.ts",
+      { "duration": 2.6257499999999823, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/integration/mixed-lifetime.test.ts",
+      { "duration": 1.654916, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/edge-cases/finalizers.test.ts",
+      { "duration": 1.3432499999999976, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/edge-cases/immutability.test.ts",
+      { "duration": 1.4615830000000045, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/determinism.test.ts",
+      { "duration": 10.745417000000003, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/property-based/merge-operations.test.ts",
+      { "duration": 37.08012499999998, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/depth-soundness.test.ts",
+      { "duration": 5.444083000000006, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/property-based/inspection.test.ts",
+      { "duration": 70.621917, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/runtime-error-codes.test.ts",
+      { "duration": 4.743667000000016, "failed": false }
+    ],
+    [":packages/graph/tests/traversal.test.ts", { "duration": 3.254250000000013, "failed": false }],
+    [
+      ":packages/graph/tests/property-based/adapter-creation.test.ts",
+      { "duration": 44.082167, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/property-based/builder-invariants.test.ts",
+      { "duration": 57.819083999999975, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/property-based/error-scenarios.test.ts",
+      { "duration": 40.556375, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/property-based/dependency-graph.test.ts",
+      { "duration": 27.08420799999999, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/complexity.test.ts",
+      { "duration": 2.5755419999999987, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/build-validation.test.ts",
+      { "duration": 2.670833000000016, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/forward-ref-validation-gap.test.ts",
+      { "duration": 4.0901250000000005, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/injectable-correlation.test.ts",
+      { "duration": 1.9381669999999929, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/id-generator.test.ts",
+      { "duration": 4.679667000000009, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/correlation-determinism.test.ts",
+      { "duration": 1.7708749999999895, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/hex008-runtime-consistency.test.ts",
+      { "duration": 2.4489169999999945, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/scope-id-generator.test.ts",
+      { "duration": 3.493832999999995, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/error-parsing-discriminated-union.test.ts",
+      { "duration": 3.591667000000001, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/complexity-api.test.ts",
+      { "duration": 2.132458000000014, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/support/support.test.ts",
+      { "duration": 4.76604199999997, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/error-parsing-lastport.test.ts",
+      { "duration": 2.4799159999999745, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/depth-boundary.test.ts",
+      { "duration": 1.6684170000000051, "failed": false }
+    ],
+    [":packages/graph/tests/merge-parent-provides.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      ":packages/graph/tests/merge-unsafe-override-preservation.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/request-scope.test.ts",
+      { "duration": 10.876709000000005, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/override.test.ts",
+      { "duration": 7.356290999999999, "failed": false }
+    ],
+    [":packages/core/tests/from-class.test.ts", { "duration": 4.93312499999999, "failed": false }],
+    [":packages/core/tests/builder.test.ts", { "duration": 5.909250000000014, "failed": false }],
+    [
+      ":packages/core/tests/directed-ports.test.ts",
+      { "duration": 5.731540999999993, "failed": false }
+    ],
+    [":packages/core/tests/uat-phase6.test.ts", { "duration": 3.365708000000012, "failed": false }],
+    [
+      ":packages/graph/tests/inspection-filtering.test.ts",
+      { "duration": 5.071167000000003, "failed": false }
+    ],
+    [
+      ":packages/core/tests/unified-adapter.test.ts",
+      { "duration": 3.5321250000000077, "failed": false }
+    ],
+    [
+      ":packages/core/tests/phase11-removal-verify.test.ts",
+      { "duration": 1.411958999999996, "failed": false }
+    ],
+    [
+      ":packages/graph/tests/inspection-summary.test.ts",
+      { "duration": 4.698875000000015, "failed": false }
+    ],
+    [
+      ":packages/core/tests/context/variables.test.ts",
+      { "duration": 2.6572089999999946, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/override-builder.test.ts",
+      { "duration": 7.626207999999991, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/hook-composition.test.ts",
+      { "duration": 7.492582999999996, "failed": false }
+    ],
+    [":packages/runtime/tests/tracer.test.ts", { "duration": 2798.6097499999996, "failed": false }],
+    [
+      ":packages/runtime/tests/resolution-hooks.test.ts",
+      { "duration": 35.04291699999999, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/error-suggestions.test.ts",
+      { "duration": 8.35737499999999, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/type-level-error-examples.test.ts",
+      { "duration": 4.530499999999989, "failed": false }
+    ],
+    [
+      ":integrations/react/tests/child-container-provider.test.tsx",
+      { "duration": 14.895541000000094, "failed": true }
+    ],
+    [
+      ":integrations/react/tests/strategic.test.tsx",
+      { "duration": 11.153333000000089, "failed": true }
+    ],
+    [
+      ":integrations/react/tests/lazy-container-provider.test.tsx",
+      { "duration": 8.338915999999926, "failed": true }
+    ],
+    [
+      ":integrations/react/tests/factory.test.tsx",
+      { "duration": 6.656667000000084, "failed": true }
+    ],
+    [
+      ":integrations/react/tests/providers.test.tsx",
+      { "duration": 6.92391699999996, "failed": true }
+    ],
+    [
+      ":integrations/react/tests/use-deps.test.tsx",
+      { "duration": 6.788583000000017, "failed": true }
+    ],
+    [
+      ":integrations/react/tests/create-component.test.tsx",
+      { "duration": 6.064875000000029, "failed": true }
+    ],
+    [
+      ":integrations/react/tests/reactive-scope-provider.test.tsx",
+      { "duration": 6.817250000000058, "failed": true }
+    ],
+    [
+      ":integrations/hono/tests/context-type-preservation.test.ts",
+      { "duration": 27.63495800000001, "failed": false }
+    ],
+    [":integrations/react/tests/hooks.test.tsx", { "duration": 5.485124999999925, "failed": true }],
+    [
+      ":integrations/hono/tests/middleware.test.ts",
+      { "duration": 34.34529100000003, "failed": false }
+    ],
+    [
+      ":integrations/react/tests/auto-scope-provider-name.test.tsx",
+      { "duration": 5.420583000000079, "failed": true }
+    ],
+    [
+      ":integrations/react/tests/errors.test.ts",
+      { "duration": 1.3116249999999923, "failed": false }
+    ],
+    [
+      ":libs/flow/core/tests/activities/manager.test.ts",
+      { "duration": 1221.975458, "failed": false }
+    ],
+    [
+      ":libs/flow/core/tests/examples/activity-api-showcase.test.ts",
+      { "duration": 517.2051250000001, "failed": false }
+    ],
+    [":libs/flow/core/tests/tracing.test.ts", { "duration": 6.6436669999999935, "failed": false }],
+    [
+      ":libs/flow/core/tests/activities/testing/activity-test-utils.test.ts",
+      { "duration": 31.920249999999996, "failed": false }
+    ],
+    [
+      ":libs/flow/core/tests/integration/adapter.test.ts",
+      { "duration": 356.933916, "failed": false }
+    ],
+    [
+      ":tooling/testing/tests/integration.test.ts",
+      { "duration": 13.038457999999991, "failed": false }
+    ],
+    [":libs/flow/core/tests/e2e.test.ts", { "duration": 4.777375000000006, "failed": false }],
+    [":libs/flow/core/tests/runner.test.ts", { "duration": 157.56704099999996, "failed": false }],
+    [
+      ":libs/flow/core/tests/activities/factory.test.ts",
+      { "duration": 6.226040999999981, "failed": false }
+    ],
+    [":libs/flow/core/tests/errors.test.ts", { "duration": 3.342000000000013, "failed": false }],
+    [
+      ":tooling/testing/tests/test-graph-builder.test.ts",
+      { "duration": 4.754458, "failed": false }
+    ],
+    [
+      ":tooling/testing/tests/use-test-container.test.ts",
+      { "duration": 20.266166, "failed": false }
+    ],
+    [
+      ":tooling/testing/tests/adapter-test-harness.test.ts",
+      { "duration": 3.2616669999999885, "failed": false }
+    ],
+    [
+      ":tooling/visualization/tests/visualization.test.ts",
+      { "duration": 7.048458000000011, "failed": false }
+    ],
+    [":libs/flow/core/tests/integration.test.ts", { "duration": 38.981042, "failed": false }],
+    [":libs/flow/core/tests/activities.test.ts", { "duration": 165.747208, "failed": false }],
+    [
+      ":tooling/testing/tests/graph-snapshot.test.ts",
+      { "duration": 10.65825000000001, "failed": false }
+    ],
+    [
+      ":libs/flow/core/tests/devtools/activity-metadata.test.ts",
+      { "duration": 3.929249999999996, "failed": false }
+    ],
+    [
+      ":tooling/testing/tests/graph-assertions.test.ts",
+      { "duration": 4.047333000000009, "failed": false }
+    ],
+    [
+      ":libs/flow/core/tests/activities/events.test.ts",
+      { "duration": 3.871417000000008, "failed": false }
+    ],
+    [
+      ":tooling/testing/tests/spied-mock-adapter.test.ts",
+      { "duration": 4.730000000000018, "failed": false }
+    ],
+    [
+      ":tooling/testing/tests/mock-adapter.test.ts",
+      { "duration": 5.911707999999976, "failed": false }
+    ],
+    [
+      ":packages/tracing/tests/integration/instrumentation/cross-container.test.ts",
+      { "duration": 7.998999999999995, "failed": false }
+    ],
+    [
+      ":packages/tracing/tests/unit/memory.test.ts",
+      { "duration": 19.877208999999993, "failed": false }
+    ],
+    [
+      ":packages/tracing/tests/unit/instrumentation/container.test.ts",
+      { "duration": 8.596792000000008, "failed": false }
+    ],
+    [
+      ":packages/tracing/tests/unit/instrumentation/hooks.test.ts",
+      { "duration": 6.612666999999988, "failed": false }
+    ],
+    [
+      ":packages/tracing-otel/tests/unit/span-adapter.test.ts",
+      { "duration": 4.818457999999993, "failed": false }
+    ],
+    [
+      ":packages/tracing-otel/tests/unit/batch-processor.test.ts",
+      { "duration": 13.477249999999998, "failed": false }
+    ],
+    [
+      ":packages/tracing/tests/unit/assertions.test.ts",
+      { "duration": 3.2970420000000047, "failed": false }
+    ],
+    [
+      ":packages/tracing/tests/unit/matchers.test.ts",
+      { "duration": 3.0978749999999877, "failed": false }
+    ],
+    [
+      ":packages/tracing/tests/unit/instrumentation/port-filtering.test.ts",
+      { "duration": 7.611542, "failed": false }
+    ],
+    [
+      ":packages/tracing/tests/unit/console.test.ts",
+      { "duration": 10.611125000000015, "failed": false }
+    ],
+    [
+      ":packages/tracing/tests/unit/instrumentation/span-stack.test.ts",
+      { "duration": 3.2791660000000036, "failed": false }
+    ],
+    [
+      ":packages/tracing-zipkin/tests/unit/zipkin-exporter.test.ts",
+      { "duration": 6.109917000000024, "failed": true }
+    ],
+    [
+      ":packages/tracing/tests/integration/tracing.test.ts",
+      { "duration": 9.21366599999999, "failed": false }
+    ],
+    [
+      ":packages/tracing/tests/unit/propagation.test.ts",
+      { "duration": 4.254959000000014, "failed": false }
+    ],
+    [
+      ":packages/tracing-otel/tests/unit/simple-processor.test.ts",
+      { "duration": 17.960999999999984, "failed": false }
+    ],
+    [
+      ":packages/tracing/tests/unit/id-generation.test.ts",
+      { "duration": 8.855250000000012, "failed": false }
+    ],
+    [
+      ":packages/tracing-datadog/tests/unit/datadog-bridge.test.ts",
+      { "duration": 5.148832999999996, "failed": false }
+    ],
+    [
+      ":integrations/hono/tests/tracing-middleware.test.ts",
+      { "duration": 39.76637500000004, "failed": false }
+    ],
+    [
+      ":packages/tracing-jaeger/tests/unit/jaeger-exporter.test.ts",
+      { "duration": 5.831040999999971, "failed": true }
+    ],
+    [
+      ":packages/tracing/tests/unit/noop.test.ts",
+      { "duration": 3.0446670000000324, "failed": false }
+    ],
+    [
+      ":packages/tracing/tests/integration/instrumentation/tree-instrumentation.test.ts",
+      { "duration": 10.484875000000017, "failed": false }
+    ],
+    [
+      ":packages/tracing/tests/benchmarks/noop-overhead.bench.ts",
+      { "duration": 1353.98675, "failed": false }
+    ],
+    [
+      ":packages/tracing/tests/benchmarks/memory-overhead.bench.ts",
+      { "duration": 1601.9585000000002, "failed": false }
+    ],
+    [
+      ":packages/tracing/tests/integration/instrumentation/dynamic-child-instrumentation.test.ts",
+      { "duration": 13.792541999999997, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/inspection/child-created-events.test.ts",
+      { "duration": 18.801457999999997, "failed": false }
+    ],
+    [
+      ":packages/runtime/tests/inspection/inspector-emit.test.ts",
+      { "duration": 2.4950000000000045, "failed": false }
+    ],
+    [
+      "@hex-di/core:packages/core/tests/unified-adapter.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/core:packages/core/tests/async-lifetime-enforcement.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/activities/factory.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/integration/adapter.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    ["@hex-di/flow:libs/flow/core/tests/machine.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      "@hex-di/flow:libs/flow/core/tests/activities/events.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    ["@hex-di/flow:libs/flow/core/tests/effects.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      "@hex-di/flow:libs/flow/core/tests/activities/port.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    ["@hex-di/flow:libs/flow/core/tests/types.test-d.ts", { "duration": 0, "failed": false }],
+    ["@hex-di/hono:integrations/hono/tests/types.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      "@hex-di/graph:packages/graph/tests/circular-dependency.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/captive-dependency.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/forward-reference-comprehensive.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    ["@hex-di/graph:packages/graph/tests/build.test-d.ts", { "duration": 0, "failed": false }],
+    ["@hex-di/graph:packages/graph/tests/validation.test-d.ts", { "duration": 0, "failed": false }],
+    ["@hex-di/graph:packages/graph/tests/provide.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      "@hex-di/graph:packages/graph/tests/override-validation-comprehensive.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/type-utilities.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/bidirectional-captive-comprehensive.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/port-name-extraction.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/error-messages.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/multi-error.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    ["@hex-di/graph:packages/graph/tests/soundness.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      "@hex-di/graph:packages/graph/tests/simplified-types.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/lifetime-level-inference-error.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/never-dual-semantics.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/error-parsing-discriminated-union.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/get-direct-deps-intersection.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/is-service-compatible-soundness.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/malformed-adapter-error.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    ["@hex-di/graph:packages/graph/tests/variance.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      "@hex-di/graph:packages/graph/tests/empty-state-invariants.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/forward-reference-marker.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/error-code-consistency.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/graph-builder.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/lazy-resolution.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/create-adapter.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/cast-soundness.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/adapter-provides-name-inference-error.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/branded-port-names.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/maxdepth-provenance.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/merge-conflict.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/error-message-consistency.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/merge-associativity.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/batch-captive-soundness.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/override-compatibility-edge-cases.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/depth-exceeded-soundness.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/any-builder-internals.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/merge-maxdepth-symmetry.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/batch-depth-exceeded.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/merge-parent-provides.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/duplicate-detection.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    ["@hex-di/graph:packages/graph/tests/adapter.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      "@hex-di/graph:packages/graph/tests/forward-ref-compile-time-gap.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/parameter-constraint-experiment.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/inference-error.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/batch-duplicates.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/debug-utilities.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/merge-intent.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/factory-contract-validation.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/provide-many-all-errors.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/captive-result-handlers.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    ["@hex-di/graph:packages/graph/tests/for-parent.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      "@hex-di/graph:packages/graph/tests/orphan-ports.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/batch-reverse-captive.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/depth-exceeded-provenance.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/lifetime-consistency.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/captive-result-handlers-inference-error.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/merged-graph-depth-exceeded.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/error-discriminated-union.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/depth-exceeded-distribution.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/depth-warning-consistency.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/get-direct-deps-ambiguity.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/tuple-preservation.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/adapter-requires-names-soundness.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/batch-self-dependency.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/bidirectional-lazy.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/add-many-edges-soundness.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/override-type-escape.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/batch-depth-provenance.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/async-adapter-batch-validation.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/depth-warning-tracking.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/forward-ref-diagnostic.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/merge-unsafe-override-preservation.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/depth-warning-visibility.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/malformed-adapter-reason.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/check-reverse-captive-soundness.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/circular-import-fix.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/depth-limit-error-provenance.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/depth-exceeded-branding.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/resolved-deps-soundness.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/async-lifetime-constraint.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/lazy-cycle-detection.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/lazy-captive-bug.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/hex008-missing-adapters.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/join-port-names-depth.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/adapter-requires-lazy.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/batch-captive-forward-ref.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/isolate-captive-check.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/lifetime-validation.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    ["@hex-di/graph:packages/graph/tests/repro.test-d.ts", { "duration": 0, "failed": false }],
+    ["@hex-di/react:integrations/react/tests/types.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      "@hex-di/react:integrations/react/tests/unified-provider.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/react:integrations/react/tests/runtime-resolver.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/react:integrations/react/tests/use-deps.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/react:integrations/react/tests/lazy-container-provider.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/react:integrations/react/tests/create-component.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    ["@hex-di/testing:tooling/testing/tests/types.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      "@hex-di/flow:libs/flow/core/tests/activities/manager.test.ts",
+      { "duration": 1336.1633749999999, "failed": false }
+    ],
+    [
+      "@hex-di/core:packages/core/tests/directed-ports.test.ts",
+      { "duration": 17.11500000000001, "failed": false }
+    ],
+    [
+      "@hex-di/core:packages/core/tests/unified-adapter.test.ts",
+      { "duration": 3.828708000000006, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/integration/adapter.test.ts",
+      { "duration": 365.3905, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/tracing.test.ts",
+      { "duration": 6.606875000000002, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/runner.test.ts",
+      { "duration": 163.10841599999992, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/activities/factory.test.ts",
+      { "duration": 5.301749999999998, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/e2e.test.ts",
+      { "duration": 7.902917000000002, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/examples/activity-api-showcase.test.ts",
+      { "duration": 527.6770839999999, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/activities/testing/activity-test-utils.test.ts",
+      { "duration": 57.17862500000001, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/integration.test.ts",
+      { "duration": 40.76670799999988, "failed": false }
+    ],
+    [
+      "@hex-di/core:packages/core/tests/uat-phase6.test.ts",
+      { "duration": 4.557082999999977, "failed": false }
+    ],
+    [
+      "@hex-di/core:packages/core/tests/context/variables.test.ts",
+      { "duration": 2.724917000000005, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/devtools/activity-metadata.test.ts",
+      { "duration": 4.625, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/errors.test.ts",
+      { "duration": 3.519874999999999, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/activities.test.ts",
+      { "duration": 169.462583, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/activities/events.test.ts",
+      { "duration": 3.384749999999997, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/snapshot.test.ts",
+      { "duration": 9.537832999999978, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/async-adapter.test.ts",
+      { "duration": 76.34474999999998, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/edge-cases-extended.test.ts",
+      { "duration": 7.898750000000007, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/error-recovery.test.ts",
+      { "duration": 11.846124999999972, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/concurrent.test.ts",
+      { "duration": 42.360000000000014, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/edge-cases/stress.test.ts",
+      { "duration": 5.644875000000013, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/malformed-config.test.ts",
+      { "duration": 5.615375000000029, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/inspection-summary.test.ts",
+      { "duration": 7.238125000000025, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/test-doubles.test.ts",
+      { "duration": 6.428333000000009, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/inspection-filtering.test.ts",
+      { "duration": 5.432792000000006, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/test-doubles-integration.test.ts",
+      { "duration": 5.649458999999979, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/performance.test.ts",
+      { "duration": 5356.960333, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/merge-options.test.ts",
+      { "duration": 3.9044170000000236, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/graph-builder.test.ts",
+      { "duration": 5.143292000000031, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/contract.test.ts",
+      { "duration": 8.397665999999987, "failed": false }
+    ],
+    [
+      "@hex-di/flow-react:libs/flow/react/tests/hooks.test.tsx",
+      { "duration": 78.8918749999998, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/inspection-phase3.test.ts",
+      { "duration": 14.881832999999972, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/stress.test.ts",
+      { "duration": 6.499250000000018, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/complexity.test.ts",
+      { "duration": 3.1014999999999873, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/determinism.test.ts",
+      { "duration": 6.954958000000033, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/runtime-error-codes.test.ts",
+      { "duration": 8.63983399999995, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/error-parsing-discriminated-union.test.ts",
+      { "duration": 8.201250000000016, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/property-based/merge-operations.test.ts",
+      { "duration": 54.745874999999955, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/traversal.test.ts",
+      { "duration": 11.16779200000002, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/build.test.ts",
+      { "duration": 5.380957999999964, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/test-builder.test.ts",
+      { "duration": 3.069958999999983, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/edge-cases/async-errors.test.ts",
+      { "duration": 11.33866599999999, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/complexity-api.test.ts",
+      { "duration": 2.284917000000007, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/property-based/builder-invariants.test.ts",
+      { "duration": 76.54833299999996, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/property-based/error-scenarios.test.ts",
+      { "duration": 41.609125000000006, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/depth-soundness.test.ts",
+      { "duration": 16.696166000000005, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/property-based/inspection.test.ts",
+      { "duration": 122.39162499999998, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/edge-cases/port-names.test.ts",
+      { "duration": 2.813999999999993, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/property-based/dependency-graph.test.ts",
+      { "duration": 95.53133299999996, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/property-based/adapter-creation.test.ts",
+      { "duration": 56.75908300000003, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/parent-child.test.ts",
+      { "duration": 3.891999999999996, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/integration/real-world.test.ts",
+      { "duration": 4.111084000000005, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/create-adapter.test.ts",
+      { "duration": 3.565125000000023, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/integration/multi-layer.test.ts",
+      { "duration": 2.4672499999999786, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/exports.test.ts",
+      { "duration": 3.08708299999995, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/integration/type-inference.test.ts",
+      { "duration": 4.605958000000044, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/build-validation.test.ts",
+      { "duration": 2.8195409999999868, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/lazy-resolution.test.ts",
+      { "duration": 2.0557909999999993, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/edge-cases/async-adapters.test.ts",
+      { "duration": 3.905583999999976, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/forward-ref-validation-gap.test.ts",
+      { "duration": 4.7079160000000115, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/integration/ports-compatibility.test.ts",
+      { "duration": 2.132499999999993, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/injectable-correlation.test.ts",
+      { "duration": 3.3259160000000065, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/edge-cases/deep-chains.test.ts",
+      { "duration": 2.7190410000000043, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/correlation-determinism.test.ts",
+      { "duration": 3.336624999999998, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/error-parsing-lastport.test.ts",
+      { "duration": 2.9467500000000086, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/depth-boundary.test.ts",
+      { "duration": 2.05895799999999, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/integration/complete-workflow.test.ts",
+      { "duration": 3.4198339999999803, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/hex008-runtime-consistency.test.ts",
+      { "duration": 5.551333, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/integration/error-recovery.test.ts",
+      { "duration": 2.952625000000012, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/integration/factory-deps.test.ts",
+      { "duration": 2.1369580000000497, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/integration/mixed-lifetime.test.ts",
+      { "duration": 2.216165999999987, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/edge-cases/factory-deps.test.ts",
+      { "duration": 2.6221669999999904, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/edge-cases/finalizers.test.ts",
+      { "duration": 2.2915420000000495, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/edge-cases/immutability.test.ts",
+      { "duration": 8.016707999999994, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/edge-cases/empty-graph.test.ts",
+      { "duration": 3.328542000000027, "failed": false }
+    ],
+    [
+      "@hex-di/hono:integrations/hono/tests/tracing-middleware.test.ts",
+      { "duration": 55.278334000000086, "failed": false }
+    ],
+    [
+      "@hex-di/hono:integrations/hono/tests/middleware.test.ts",
+      { "duration": 55.855583000000024, "failed": false }
+    ],
+    [
+      "@hex-di/hono:integrations/hono/tests/context-type-preservation.test.ts",
+      { "duration": 47.531791999999996, "failed": false }
+    ],
+    [
+      "@hex-di/graph-viz:tooling/graph-viz/tests/graph-viz.test.tsx",
+      { "duration": 296.34020799999985, "failed": false }
+    ],
+    [
+      "@hex-di/react:integrations/react/tests/child-container-provider.test.tsx",
+      { "duration": 196.70825000000013, "failed": false }
+    ],
+    [
+      "@hex-di/react:integrations/react/tests/factory.test.tsx",
+      { "duration": 19.793375000000083, "failed": false }
+    ],
+    [
+      "@hex-di/react:integrations/react/tests/lazy-container-provider.test.tsx",
+      { "duration": 152.1824999999999, "failed": false }
+    ],
+    [
+      "@hex-di/react:integrations/react/tests/strategic.test.tsx",
+      { "duration": 25.073750000000018, "failed": false }
+    ],
+    [
+      "@hex-di/react:integrations/react/tests/use-deps.test.tsx",
+      { "duration": 29.153749999999945, "failed": false }
+    ],
+    [
+      "@hex-di/react:integrations/react/tests/providers.test.tsx",
+      { "duration": 76.94766700000014, "failed": false }
+    ],
+    [
+      "@hex-di/react:integrations/react/tests/create-component.test.tsx",
+      { "duration": 33.24529199999995, "failed": false }
+    ],
+    [
+      "@hex-di/react:integrations/react/tests/tracing-hooks.test.tsx",
+      { "duration": 40.927250000000186, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/child-container.test.ts",
+      { "duration": 31.566250000000025, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/integration.test.ts",
+      { "duration": 122.24754199999995, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/inspector.test.ts",
+      { "duration": 12.955499999999972, "failed": false }
+    ],
+    [
+      "@hex-di/react:integrations/react/tests/reactive-scope-provider.test.tsx",
+      { "duration": 41.58854199999996, "failed": false }
+    ],
+    [
+      "@hex-di/react:integrations/react/tests/hooks.test.tsx",
+      { "duration": 22.30083300000001, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/resolution-hooks.test.ts",
+      { "duration": 40.872000000000014, "failed": false }
+    ],
+    [
+      "@hex-di/react:integrations/react/tests/tracing-provider.test.tsx",
+      { "duration": 15.281791999999996, "failed": false }
+    ],
+    [
+      "@hex-di/react:integrations/react/tests/auto-scope-provider-name.test.tsx",
+      { "duration": 12.049083999999993, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/async-resolution.test.ts",
+      { "duration": 170.15216700000002, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/hook-composition.test.ts",
+      { "duration": 9.836250000000007, "failed": false }
+    ],
+    [
+      "@hex-di/react:integrations/react/tests/errors.test.ts",
+      { "duration": 1.3631659999998647, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/disposal.test.ts",
+      { "duration": 309.725708, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/override.test.ts",
+      { "duration": 10.177250000000015, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/memory-cleanup.test.ts",
+      { "duration": 25.199917000000028, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/override-builder.test.ts",
+      { "duration": 14.342458000000022, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/inspection/child-created-events.test.ts",
+      { "duration": 23.613999999999976, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/scope.test.ts",
+      { "duration": 8.729041999999993, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/lifetime.test.ts",
+      { "duration": 6.63491700000003, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/lazy-container.test.ts",
+      { "duration": 13.345709, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/error-suggestions.test.ts",
+      { "duration": 4.578374999999994, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/memo-map.test.ts",
+      { "duration": 4.460624999999993, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/type-level-error-examples.test.ts",
+      { "duration": 6.27254099999999, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/override-tracking.test.ts",
+      { "duration": 6.17508399999997, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/errors.test.ts",
+      { "duration": 10.966624999999993, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/scope-lifecycle.test.ts",
+      { "duration": 11.506416999999999, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/port-resolution-type-safety.test.ts",
+      { "duration": 21.26437500000003, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/exports.test.ts",
+      { "duration": 3.5458750000000236, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/type-utilities.test.ts",
+      { "duration": 4.464832999999999, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/child-container-scopes.test.ts",
+      { "duration": 11.445875000000001, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/internal-access.test.ts",
+      { "duration": 5.033457999999996, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/container.test.ts",
+      { "duration": 6.675624999999968, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/plugins/property-api.test.ts",
+      { "duration": 5.367707999999993, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/scope-id-generator.test.ts",
+      { "duration": 2.300207999999998, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/resolution-context.test.ts",
+      { "duration": 2.761874999999975, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/id-generator.test.ts",
+      { "duration": 3.218333000000001, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/container-metadata.test.ts",
+      { "duration": 3.34699999999998, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/support/support.test.ts",
+      { "duration": 11.61095899999998, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/inspection/inspector-emit.test.ts",
+      { "duration": 2.736499999999978, "failed": false }
+    ],
+    [
+      "@hex-di/tracing:packages/tracing/tests/integration/instrumentation/dynamic-child-instrumentation.test.ts",
+      { "duration": 13.159125000000017, "failed": false }
+    ],
+    [
+      "@hex-di/tracing:packages/tracing/tests/unit/instrumentation/container.test.ts",
+      { "duration": 7.139874999999989, "failed": false }
+    ],
+    [
+      "@hex-di/tracing:packages/tracing/tests/unit/instrumentation/hooks.test.ts",
+      { "duration": 8.083583000000033, "failed": false }
+    ],
+    [
+      "@hex-di/testing:tooling/testing/tests/integration.test.ts",
+      { "duration": 19.988417000000027, "failed": false }
+    ],
+    [
+      "@hex-di/testing:tooling/testing/tests/test-graph-builder.test.ts",
+      { "duration": 5.050499999999943, "failed": false }
+    ],
+    [
+      "@hex-di/testing:tooling/testing/tests/use-test-container.test.ts",
+      { "duration": 20.910916999999927, "failed": false }
+    ],
+    [
+      "@hex-di/testing:tooling/testing/tests/graph-snapshot.test.ts",
+      { "duration": 11.514499999999998, "failed": false }
+    ],
+    [
+      "@hex-di/tracing:packages/tracing/tests/unit/memory.test.ts",
+      { "duration": 22.680541999999946, "failed": false }
+    ],
+    [
+      "@hex-di/testing:tooling/testing/tests/adapter-test-harness.test.ts",
+      { "duration": 4.416207999999983, "failed": false }
+    ],
+    [
+      "@hex-di/testing:tooling/testing/tests/spied-mock-adapter.test.ts",
+      { "duration": 5.507041999999956, "failed": false }
+    ],
+    [
+      "@hex-di/testing:tooling/testing/tests/graph-assertions.test.ts",
+      { "duration": 4.04366600000003, "failed": false }
+    ],
+    [
+      "@hex-di/testing:tooling/testing/tests/render-with-container.test.tsx",
+      { "duration": 26.651374999999916, "failed": false }
+    ],
+    [
+      "@hex-di/testing:tooling/testing/tests/mock-adapter.test.ts",
+      { "duration": 7.310790999999881, "failed": false }
+    ],
+    [
+      "@hex-di/tracing:packages/tracing/tests/integration/instrumentation/tree-instrumentation.test.ts",
+      { "duration": 9.002292000000011, "failed": false }
+    ],
+    [
+      "@hex-di/tracing:packages/tracing/tests/integration/instrumentation/cross-container.test.ts",
+      { "duration": 8.57162500000004, "failed": false }
+    ],
+    [
+      "@hex-di/tracing:packages/tracing/tests/unit/matchers.test.ts",
+      { "duration": 3.3829589999999996, "failed": false }
+    ],
+    [
+      "@hex-di/tracing:packages/tracing/tests/unit/assertions.test.ts",
+      { "duration": 3.690417000000025, "failed": false }
+    ],
+    [
+      "@hex-di/tracing:packages/tracing/tests/unit/instrumentation/port-filtering.test.ts",
+      { "duration": 3.573416000000009, "failed": false }
+    ],
+    [
+      "@hex-di/tracing:packages/tracing/tests/unit/console.test.ts",
+      { "duration": 11.34454199999999, "failed": false }
+    ],
+    [
+      "@hex-di/tracing:packages/tracing/tests/integration/tracing.test.ts",
+      { "duration": 12.332583, "failed": false }
+    ],
+    [
+      "@hex-di/tracing:packages/tracing/tests/unit/instrumentation/span-stack.test.ts",
+      { "duration": 3.4803750000000093, "failed": false }
+    ],
+    [
+      "@hex-di/tracing:packages/tracing/tests/unit/propagation.test.ts",
+      { "duration": 3.7375000000000114, "failed": false }
+    ],
+    [
+      "@hex-di/tracing:packages/tracing/tests/unit/id-generation.test.ts",
+      { "duration": 10.90141700000001, "failed": false }
+    ],
+    [
+      "@hex-di/tracing-datadog:packages/tracing-datadog/tests/unit/datadog-bridge.test.ts",
+      { "duration": 7.201166000000001, "failed": false }
+    ],
+    [
+      "@hex-di/tracing-jaeger:packages/tracing-jaeger/tests/unit/jaeger-exporter.test.ts",
+      { "duration": 17.13395799999998, "failed": false }
+    ],
+    [
+      "@hex-di/tracing:packages/tracing/tests/unit/noop.test.ts",
+      { "duration": 3.091167000000013, "failed": false }
+    ],
+    [
+      "@hex-di/tracing-otel:packages/tracing-otel/tests/unit/span-adapter.test.ts",
+      { "duration": 4.035041000000007, "failed": false }
+    ],
+    [
+      "@hex-di/tracing-otel:packages/tracing-otel/tests/unit/batch-processor.test.ts",
+      { "duration": 12.41508300000001, "failed": false }
+    ],
+    [
+      "@hex-di/tracing-otel:packages/tracing-otel/tests/unit/simple-processor.test.ts",
+      { "duration": 19.876542, "failed": false }
+    ],
+    [
+      "@hex-di/tracing-zipkin:packages/tracing-zipkin/tests/unit/zipkin-exporter.test.ts",
+      { "duration": 11.976791000000006, "failed": false }
+    ],
+    [
+      "@hex-di/visualization:tooling/visualization/tests/visualization.test.ts",
+      { "duration": 7.3985409999999945, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/inspection.test.ts",
+      { "duration": 6.502875000000017, "failed": false }
+    ],
+    ["@hex-di/flow:libs/flow/core/tests/runner.test-d.ts", { "duration": 0, "failed": false }],
+    ["@hex-di/saga:libs/saga/core/tests/runtime.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      "@hex-di/saga:libs/saga/core/tests/runner.test.ts",
+      { "duration": 513.0829170000001, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/runner-mutations.test.ts",
+      { "duration": 663.464917, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/runner-bridges.test.ts",
+      { "duration": 4.3206670000000145, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/runtime.test.ts",
+      { "duration": 2737.6842500000002, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/runner-branches.test.ts",
+      { "duration": 262.83154199999996, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/runner-extended.test.ts",
+      { "duration": 13.625208000000043, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/e2e/runtime.test.ts",
+      { "duration": 106.18045799999999, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/adapters.test.ts",
+      { "duration": 14.967333999999937, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/integration/instrumentation.test.ts",
+      { "duration": 8.03079200000002, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/unit/memory-logger.test.ts",
+      { "duration": 4.553833999999995, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/unit/scoped-logger.test.ts",
+      { "duration": 14.452875000000006, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/framework-integration.test.ts",
+      { "duration": 2.294583000000017, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/handler-formatter.test.ts",
+      { "duration": 8.090332999999987, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/unit/redaction-sampling.test.ts",
+      { "duration": 6.250332999999955, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/logger-port.test.ts",
+      { "duration": 5.2778749999999945, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/integration/tracing.test.ts",
+      { "duration": 6.748583999999994, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/testing-utils.test.ts",
+      { "duration": 8.555292000000009, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/core-types.test.ts",
+      { "duration": 1.8067079999999578, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/unit/testing-utils.test.ts",
+      { "duration": 1.9538329999999746, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/context.test.ts",
+      { "duration": 2.22608299999996, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/unit/formatting.test.ts",
+      { "duration": 7.188165999999967, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/unit/console-logger.test.ts",
+      { "duration": 3.3427919999999745, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/unit/context-utils.test.ts",
+      { "duration": 4.020375000000001, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/unit/noop-logger.test.ts",
+      { "duration": 3.185625000000016, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/unit/log-level.test.ts",
+      { "duration": 3.548833000000002, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/framework-react.test.tsx",
+      { "duration": 17.057292000000075, "failed": false }
+    ],
+    [
+      "@hex-di/core:packages/core/tests/library-inspector.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/core:packages/core/tests/port-category.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/flow-react:libs/flow/react/tests/hooks.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/states-guards.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/advanced-states.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    ["@hex-di/flow:libs/flow/core/tests/core-types.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      "@hex-di/flow:libs/flow/core/tests/machine-definition.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/advanced-patterns.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/core-types.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/logger-port.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/inspection.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/port-category.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    ["@hex-di/graph:packages/graph/tests/try-build.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      "@hex-di/query:libs/query/core/tests/integration/graph-validation.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/query-port.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/mutation-port.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/integration/cross-graph-query-deps.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    ["@hex-di/query:libs/query/core/tests/cache-key.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      "@hex-di/query-react:libs/query/react/tests/hooks.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/query-testing:packages/query-testing/tests/type-inference.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/result:packages/result/tests/core-types.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/result:packages/result/tests/combining.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/result:packages/result/tests/extraction.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/result:packages/result/tests/error-patterns.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/result:packages/result/tests/constructors.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    ["@hex-di/result:packages/result/tests/chaining.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      "@hex-di/result:packages/result/tests/result-async.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/result:packages/result/tests/type-guards.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/result:packages/result/tests/generators.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/result:packages/result/tests/transformations.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/saga-react:libs/saga/react/tests/use-saga.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/saga-definitions.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/step-definitions.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/error-handling.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    ["@hex-di/saga:libs/saga/core/tests/persistence.test-d.ts", { "duration": 0, "failed": false }],
+    ["@hex-di/saga:libs/saga/core/tests/saga-ports.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      "@hex-di/saga:libs/saga/core/tests/compensation.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/saga-adapters.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/state-ports.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/state-adapters.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/introspection.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    ["@hex-di/store:libs/store/core/tests/services.test-d.ts", { "duration": 0, "failed": false }],
+    ["@hex-di/store:libs/store/core/tests/errors.test-d.ts", { "duration": 0, "failed": false }],
+    ["@hex-di/store:libs/store/core/tests/types.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      "@hex-di/store:libs/store/core/tests/deep-readonly.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    ["@hex-di/store:libs/store/core/tests/effects.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      "@hex-di/store:libs/store/core/tests/action-map.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/store-react:libs/store/react/tests/react-hooks.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/core:packages/core/tests/port-category.test.ts",
+      { "duration": 2.0860829999999737, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/states-guards.test.ts",
+      { "duration": 6.745416999999975, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/advanced-patterns.test.ts",
+      { "duration": 31.581874999999968, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/advanced-states.test.ts",
+      { "duration": 9.579624999999965, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/e2e-scenarios.test.ts",
+      { "duration": 17.712458000000026, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/core-types.test.ts",
+      { "duration": 4.066709000000003, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/introspection/flow-inspector.test.ts",
+      { "duration": 6.788917000000026, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/machine-definition.test.ts",
+      { "duration": 23.102457999999956, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/effects-unit.test.ts",
+      { "duration": 6.142458000000033, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/integration/library-inspector-bridge.test.ts",
+      { "duration": 6.116041999999993, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/integration/di-executor-health.test.ts",
+      { "duration": 4.149042000000009, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/introspection/flow-tracing-hook.test.ts",
+      { "duration": 5.466167000000013, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/introspection/integration.test.ts",
+      { "duration": 4.860250000000008, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/introspection/flow-registry.test.ts",
+      { "duration": 3.553208999999981, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/introspection/circular-buffer.test.ts",
+      { "duration": 2.385832999999991, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/integration/inspector-adapter.test.ts",
+      { "duration": 4.800540999999981, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/integration/registry-adapter.test.ts",
+      { "duration": 2.1193750000000193, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/activities/port.test.ts",
+      { "duration": 1.6042910000000177, "failed": false }
+    ],
+    [
+      "@hex-di/flow-testing:libs/flow/testing/tests/flow-testing.test.ts",
+      { "duration": 589.4103749999999, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/try-build.test.ts",
+      { "duration": 4.328499999999963, "failed": false }
+    ],
+    [
+      "@hex-di/graph:packages/graph/tests/validation-result-structured.test.ts",
+      { "duration": 2.883166000000017, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/library-inspector-bridge.test.ts",
+      { "duration": 3.679042000000038, "failed": false }
+    ],
+    [
+      "@hex-di/logger-pino:packages/logger-pino/tests/handler.test.ts",
+      { "duration": 6.7519589999999425, "failed": false }
+    ],
+    [
+      "@hex-di/logger-bunyan:packages/logger-bunyan/tests/handler.test.ts",
+      { "duration": 6.195916000000011, "failed": false }
+    ],
+    [
+      "@hex-di/logger-winston:packages/logger-winston/tests/handler.test.ts",
+      { "duration": 7.126292000000035, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/query-inspector.test.ts",
+      { "duration": 259.19120799999996, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/query-client.test.ts",
+      { "duration": 442.5345, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/cache.test.ts",
+      { "duration": 1746.02275, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/query-observer.test.ts",
+      { "duration": 227.7789160000001, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/structural-sharing.test.ts",
+      { "duration": 11.274541999999997, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/cache-key.test.ts",
+      { "duration": 11.495375000000081, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/dehydration.test.ts",
+      { "duration": 5.188333, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/retry.test.ts",
+      { "duration": 9.501750000000015, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/integration/introspection.test.ts",
+      { "duration": 6.15908300000001, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/integration/dependent-queries.test.ts",
+      { "duration": 6.122749999999996, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/integration/hexdi-integration.test.ts",
+      { "duration": 9.257957999999974, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/query-client-mutation.test.ts",
+      { "duration": 4.661583000000007, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/integration/query-client-pipeline.test.ts",
+      { "duration": 4.500417000000027, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/e2e/streaming-ssr.test.ts",
+      { "duration": 5.297082999999986, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/dedup.test.ts",
+      { "duration": 74.38683300000002, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/query-state.test.ts",
+      { "duration": 2.969875000000002, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/integration/cache-pipeline.test.ts",
+      { "duration": 3.0220840000000067, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/mutation-adapter.test.ts",
+      { "duration": 2.6511659999999893, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/integration/optimistic-updates.test.ts",
+      { "duration": 4.026874999999961, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/integration/lifecycle.test.ts",
+      { "duration": 16.28720899999999, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/mutation-port.test.ts",
+      { "duration": 24.993707999999998, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/query-adapter.test.ts",
+      { "duration": 2.555666000000002, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/e2e/ssr.test.ts",
+      { "duration": 5.011750000000006, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/query-port.test.ts",
+      { "duration": 2.931874999999991, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/garbage-collection.test.ts",
+      { "duration": 3.8105839999999773, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/query-client-disposal.test.ts",
+      { "duration": 3.9292499999999677, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/integration/cache-persistence.test.ts",
+      { "duration": 41.225583, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/staleness.test.ts",
+      { "duration": 3.112792000000013, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/integration/polling.test.ts",
+      { "duration": 4.054957999999999, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/integration/parallel-queries.test.ts",
+      { "duration": 5.166792000000015, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/e2e/scope-lifecycle.test.ts",
+      { "duration": 4.3958749999999895, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/query-resolution-error.test.ts",
+      { "duration": 3.0347090000000208, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/integration/window-focus-reconnect.test.ts",
+      { "duration": 5.8973749999997835, "failed": false }
+    ],
+    [
+      "@hex-di/query-react:libs/query/react/tests/use-query-enhanced.test.tsx",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/query-react:libs/query/react/tests/use-infinite-query.test.tsx",
+      { "duration": 98.304167, "failed": false }
+    ],
+    [
+      "@hex-di/query-react:libs/query/react/tests/dehydration.test.tsx",
+      { "duration": 38.761290999999915, "failed": true }
+    ],
+    [
+      "@hex-di/query-react:libs/query/react/tests/e2e-react-lifecycle.test.tsx",
+      { "duration": 48.43341600000008, "failed": true }
+    ],
+    [
+      "@hex-di/query-react:libs/query/react/tests/hooks.test.tsx",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/query-react:libs/query/react/tests/use-queries.test.tsx",
+      { "duration": 54.05058299999996, "failed": false }
+    ],
+    [
+      "@hex-di/query-react:libs/query/react/tests/use-suspense-query.test.tsx",
+      { "duration": 690.023042, "failed": false }
+    ],
+    [
+      "@hex-di/query-react:libs/query/react/tests/e2e-suspense.test.tsx",
+      { "duration": 641.0612080000003, "failed": false }
+    ],
+    [
+      "@hex-di/query-react:libs/query/react/tests/e2e-dependent-queries.test.tsx",
+      { "duration": 29.586791999999832, "failed": true }
+    ],
+    [
+      "@hex-di/query-react:libs/query/react/tests/e2e-error-boundary.test.tsx",
+      { "duration": 6058.9755829999995, "failed": true }
+    ],
+    [
+      "@hex-di/query-testing:packages/query-testing/tests/mock-adapters.test.ts",
+      { "duration": 109.12995799999999, "failed": false }
+    ],
+    [
+      "@hex-di/query-testing:packages/query-testing/tests/cache-assertions.test.ts",
+      { "duration": 6.262417000000028, "failed": false }
+    ],
+    [
+      "@hex-di/query-testing:packages/query-testing/tests/test-containers.test.ts",
+      { "duration": 7.388207999999963, "failed": false }
+    ],
+    [
+      "@hex-di/query-testing:packages/query-testing/tests/spy-adapter.test.ts",
+      { "duration": 5.088666999999987, "failed": false }
+    ],
+    [
+      "@hex-di/query-testing:packages/query-testing/tests/assertions.test.ts",
+      { "duration": 8.412250000000085, "failed": false }
+    ],
+    [
+      "@hex-di/query-react:libs/query/react/tests/e2e-infinite-query.test.tsx",
+      { "duration": 42.49412500000017, "failed": false }
+    ],
+    [
+      "@hex-di/query-react:libs/query/react/tests/use-is-fetching.test.tsx",
+      { "duration": 138.70291700000007, "failed": false }
+    ],
+    [
+      "@hex-di/query-react:libs/query/react/tests/e2e-select-composition.test.tsx",
+      { "duration": 54.86237500000004, "failed": true }
+    ],
+    [
+      "@hex-di/query-testing:packages/query-testing/tests/react-helpers.test.tsx",
+      { "duration": 30.63175000000001, "failed": false }
+    ],
+    [
+      "@hex-di/result:packages/result/tests/result-async.test.ts",
+      { "duration": 12.280708000000004, "failed": false }
+    ],
+    [
+      "@hex-di/result:packages/result/tests/chaining.test.ts",
+      { "duration": 5.7771669999999915, "failed": false }
+    ],
+    [
+      "@hex-di/result:packages/result/tests/generators.test.ts",
+      { "duration": 3.6355000000000075, "failed": false }
+    ],
+    [
+      "@hex-di/result:packages/result/tests/error-patterns.test.ts",
+      { "duration": 2.4582090000000107, "failed": false }
+    ],
+    [
+      "@hex-di/result:packages/result/tests/constructors.test.ts",
+      { "duration": 5.861417000000017, "failed": false }
+    ],
+    [
+      "@hex-di/result:packages/result/tests/type-guards.test.ts",
+      { "duration": 5.221624999999989, "failed": false }
+    ],
+    [
+      "@hex-di/result:packages/result/tests/combining.test.ts",
+      { "duration": 3.3411660000000154, "failed": false }
+    ],
+    [
+      "@hex-di/result:packages/result/tests/transformations.test.ts",
+      { "duration": 2.633375000000001, "failed": false }
+    ],
+    [
+      "@hex-di/result:packages/result/tests/extraction.test.ts",
+      { "duration": 3.028290999999996, "failed": false }
+    ],
+    [
+      "@hex-di/result:packages/result/tests/core-types.test.ts",
+      { "duration": 15.551333999999997, "failed": false }
+    ],
+    [
+      "@hex-di/result:packages/result/tests/serialization.test.ts",
+      { "duration": 1.940041999999977, "failed": false }
+    ],
+    [
+      "@hex-di/result-testing:packages/result-testing/tests/matchers.test.ts",
+      { "duration": 3.87337500000001, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/try-methods.test.ts",
+      { "duration": 29.32895799999983, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/library-registry.test.ts",
+      { "duration": 10.518333000000041, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/integration/unified-inspection.test.ts",
+      { "duration": 6.9076670000000036, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/integration/library-auto-discovery.test.ts",
+      { "duration": 13.910792000000015, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/integration/library-lifecycle.test.ts",
+      { "duration": 29.10341599999998, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/unified-snapshot.test.ts",
+      { "duration": 10.577750000000037, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/library-inspector-guard.test.ts",
+      { "duration": 2.2278340000000014, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/library-registry-perf.test.ts",
+      { "duration": 8.665625000000006, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/introspection.test.ts",
+      { "duration": 9.181749999999994, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/introspection-mutations.test.ts",
+      { "duration": 11.80170799999999, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/persistence.test.ts",
+      { "duration": 14.672042000000005, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/compensation.test.ts",
+      { "duration": 5.440250000000049, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/resume.test.ts",
+      { "duration": 10.037084000000021, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/error-handling.test.ts",
+      { "duration": 3.953125, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/integration/di-integration.test.ts",
+      { "duration": 212.97925, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/e2e/persistence.test.ts",
+      { "duration": 9.720416, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/e2e/advanced-patterns.test.ts",
+      { "duration": 64.56324999999998, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/integration/library-inspector.test.ts",
+      { "duration": 17.131749999999954, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/step-definitions.test.ts",
+      { "duration": 4.028750000000002, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/integration/container-inspector.test.ts",
+      { "duration": 5.536040999999983, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/saga-registry.test.ts",
+      { "duration": 3.4194999999999993, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/e2e/compensation.test.ts",
+      { "duration": 7.806791999999973, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/saga-definitions.test.ts",
+      { "duration": 7.429458999999952, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/saga-ports.test.ts",
+      { "duration": 4.431125000000009, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/step-builder.test.ts",
+      { "duration": 2.371332999999993, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/saga-tracing-hook.test.ts",
+      { "duration": 4.012624999999986, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/saga-builder.test.ts",
+      { "duration": 2.519416000000035, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/saga-adapters.test.ts",
+      { "duration": 3.690832999999998, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/integration/inspector-adapter.test.ts",
+      { "duration": 3.5752500000000396, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/integration/registry-adapter.test.ts",
+      { "duration": 2.6077499999999816, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/introspection.test.ts",
+      { "duration": 20.057957999999985, "failed": false }
+    ],
+    [
+      "@hex-di/saga-testing:libs/saga/testing/tests/saga-testing.test.ts",
+      { "duration": 146.42545900000005, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/services.test.ts",
+      { "duration": 3987.326625, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/effects.test.ts",
+      { "duration": 695.8605839999998, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/reactivity.test.ts",
+      { "duration": 11.738749999999982, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/adapters.test.ts",
+      { "duration": 26.03525000000002, "failed": false }
+    ],
+    [
+      "@hex-di/saga-react:libs/saga/react/tests/hooks.test.tsx",
+      { "duration": 58.102957999999944, "failed": false }
+    ],
+    [
+      "@hex-di/saga-react:libs/saga/react/tests/integration/react-integration.test.tsx",
+      { "duration": 60.85358300000007, "failed": false }
+    ],
+    [
+      "@hex-di/saga-react:libs/saga/react/tests/use-saga-history.test.tsx",
+      { "duration": 50.63979199999994, "failed": false }
+    ],
+    [
+      "@hex-di/saga-react:libs/saga/react/tests/use-saga-status.test.tsx",
+      { "duration": 44.364874999999756, "failed": false }
+    ],
+    [
+      "@hex-di/saga-react:libs/saga/react/tests/saga-boundary.test.tsx",
+      { "duration": 29.462499999999864, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/advanced-patterns.test.ts",
+      { "duration": 60.428957999999966, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/errors.test.ts",
+      { "duration": 3.9459999999999695, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/integration/lifecycle.test.ts",
+      { "duration": 5.1904169999999965, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/integration/tracing-bridge.test.ts",
+      { "duration": 4.597999999999985, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/integration/reactivity.test.ts",
+      { "duration": 7.4379579999999805, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/tracing-hooks.test.ts",
+      { "duration": 176.87037499999997, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/scoped-instance-tracking.test.ts",
+      { "duration": 3.769541999999973, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/integration/container-lifecycle.test.ts",
+      { "duration": 4.331208000000004, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/store-registry.test.ts",
+      { "duration": 4.558542000000017, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/tracing-bridge.test.ts",
+      { "duration": 4.257499999999993, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/state-service.test.ts",
+      { "duration": 10.000374999999991, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/integration/effect-ports.test.ts",
+      { "duration": 11.757207999999991, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/lifecycle.test.ts",
+      { "duration": 6.272958999999986, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/integration/tracing.test.ts",
+      { "duration": 11.842417000000012, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/deep-freeze.test.ts",
+      { "duration": 4.860541999999981, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/integration/container-graph.test.ts",
+      { "duration": 8.137499999999989, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/hydration.test.ts",
+      { "duration": 26.313500000000033, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/e2e/cart-with-totals.test.ts",
+      { "duration": 7.667374999999993, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/batch-and-utils.test.ts",
+      { "duration": 6.044624999999996, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/derived-service.test.ts",
+      { "duration": 3.834166000000039, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/e2e/async-derived.test.ts",
+      { "duration": 13.28554200000002, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/e2e/counter.test.ts",
+      { "duration": 5.8501660000000015, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/linked-derived-service.test.ts",
+      { "duration": 6.226540999999997, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/action-map.test.ts",
+      { "duration": 8.750084000000015, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/atom-service.test.ts",
+      { "duration": 4.3495829999999955, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/deep-readonly.test.ts",
+      { "duration": 4.4981249999999875, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/e2e/todo-list.test.ts",
+      { "duration": 4.344625000000008, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/ports.test.ts",
+      { "duration": 4.541791999999987, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/discovery.test.ts",
+      { "duration": 2.7299999999999898, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/e2e/scope-lifecycle.test.ts",
+      { "duration": 4.685541000000001, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/e2e/temperature-converter.test.ts",
+      { "duration": 2.0959159999999883, "failed": false }
+    ],
+    [
+      "@hex-di/store-testing:libs/store/testing/tests/store-testing.test.ts",
+      { "duration": 84.58049999999992, "failed": false }
+    ],
+    [
+      "@hex-di/store-react:libs/store/react/tests/integration/react-e2e.test.tsx",
+      { "duration": 24.539250000000038, "failed": false }
+    ],
+    [
+      "@hex-di/store-react:libs/store/react/tests/e2e/react-rendering.test.tsx",
+      { "duration": 36.09266700000012, "failed": false }
+    ],
+    [
+      "@hex-di/store-react:libs/store/react/tests/scoped-state.test.tsx",
+      { "duration": 21.77520800000002, "failed": false }
+    ],
+    [
+      "@hex-di/store-react:libs/store/react/tests/integration/react-integration.test.tsx",
+      { "duration": 41.07891600000016, "failed": false }
+    ],
+    [
+      "@hex-di/store-react:libs/store/react/tests/use-async-derived-suspense.test.tsx",
+      { "duration": 27.828874999999925, "failed": false }
+    ],
+    [
+      "@hex-di/store-react:libs/store/react/tests/use-state-value.test.tsx",
+      { "duration": 36.371624999999995, "failed": false }
+    ],
+    [
+      "@hex-di/store-react:libs/store/react/tests/use-async-derived.test.tsx",
+      { "duration": 46.41212500000006, "failed": false }
+    ],
+    [
+      "@hex-di/store-react:libs/store/react/tests/use-atom.test.tsx",
+      { "duration": 26.553958999999963, "failed": false }
+    ],
+    [
+      "@hex-di/store-react:libs/store/react/tests/use-actions.test.tsx",
+      { "duration": 22.09612500000003, "failed": false }
+    ],
+    [
+      "@hex-di/store-react:libs/store/react/tests/use-state-port.test.tsx",
+      { "duration": 20.376666999999998, "failed": false }
+    ],
+    [
+      "@hex-di/store-react:libs/store/react/tests/use-derived.test.tsx",
+      { "duration": 35.85162500000001, "failed": false }
+    ],
+    ["@hex-di/flow:libs/flow/core/tests/builder.test-d.ts", { "duration": 0, "failed": false }],
+    ["@hex-di/flow:libs/flow/core/tests/actions.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      "@hex-di/flow:libs/flow/core/tests/parallel-states.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/history-states.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    ["@hex-di/flow:libs/flow/core/tests/spawn-port.test-d.ts", { "duration": 0, "failed": false }],
+    [
+      "@hex-di/query:libs/query/core/tests/query-client.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/query-adapter.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/streamed-query-adapter.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/mutation-adapter.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/validators.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/dependency-types.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/query-testing:libs/query/testing/tests/type-inference.test-d.ts",
+      { "duration": 0, "failed": false }
+    ],
+    [
+      "@hex-di/core:packages/core/tests/error-base.test.ts",
+      { "duration": 4.875041999999951, "failed": false }
+    ],
+    [
+      "@hex-di/core:packages/core/tests/directed-ports-mutants.test.ts",
+      { "duration": 8.164750000000026, "failed": false }
+    ],
+    [
+      "@hex-di/core:packages/core/tests/error-classes.test.ts",
+      { "duration": 19.522374999999954, "failed": false }
+    ],
+    [
+      "@hex-di/core:packages/core/tests/library-inspector-types.test.ts",
+      { "duration": 3.437416999999982, "failed": false }
+    ],
+    [
+      "@hex-di/core:packages/core/tests/unified-adapter-validation.test.ts",
+      { "duration": 4.69620900000001, "failed": false }
+    ],
+    [
+      "@hex-di/core:packages/core/tests/error-parsing.test.ts",
+      { "duration": 12.375165999999979, "failed": false }
+    ],
+    [
+      "@hex-di/core:packages/core/tests/lazy-port.test.ts",
+      { "duration": 1.9072080000000255, "failed": false }
+    ],
+    [
+      "@hex-di/core:packages/core/tests/adapter-guards.test.ts",
+      { "duration": 9.48516699999999, "failed": false }
+    ],
+    [
+      "@hex-di/core:packages/core/tests/resolution-error.test.ts",
+      { "duration": 6.921875, "failed": false }
+    ],
+    [
+      "@hex-di/core:packages/core/tests/tracing-types.test.ts",
+      { "duration": 2.3542919999999867, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/parallel-states.test.ts",
+      { "duration": 10.682290999999964, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/history-states.test.ts",
+      { "duration": 12.005457999999976, "failed": false }
+    ],
+    [
+      "@hex-di/core:packages/core/tests/correlation.test.ts",
+      { "duration": 3.220042000000035, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/builder.test.ts",
+      { "duration": 6.073584000000011, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/event-bus.test.ts",
+      { "duration": 7.535583000000003, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/integration/library-inspector-adapter.test.ts",
+      { "duration": 7.777250000000009, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/introspection/inspector-subscribe.test.ts",
+      { "duration": 4.385832999999991, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/spawn-port.test.ts",
+      { "duration": 2.8999999999999773, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/actions.test.ts",
+      { "duration": 4.6095000000000255, "failed": false }
+    ],
+    [
+      "@hex-di/flow:libs/flow/core/tests/integration/event-bus-adapter.test.ts",
+      { "duration": 2.195458000000002, "failed": false }
+    ],
+    [
+      "@hex-di/flow-react:libs/flow/react/tests/inspection-hooks.test.tsx",
+      { "duration": 25.482833000000028, "failed": false }
+    ],
+    [
+      "@hex-di/hono:integrations/hono/tests/inspection/request-id.test.ts",
+      { "duration": 34.92845799999998, "failed": false }
+    ],
+    [
+      "@hex-di/hono:integrations/hono/tests/inspection/diagnostic-routes.test.ts",
+      { "duration": 37.45504200000005, "failed": false }
+    ],
+    [
+      "@hex-di/hono:integrations/hono/tests/inspection/helpers.test.ts",
+      { "duration": 43.66958299999999, "failed": false }
+    ],
+    [
+      "@hex-di/logger:packages/logger/tests/inspection/library-inspector-adapter.test.ts",
+      { "duration": 2.4562919999999906, "failed": false }
+    ],
+    [
+      "@hex-di/logger-react:packages/logger-react/tests/framework-react.test.tsx",
+      { "duration": 16.086499999999887, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/mutation-observer.test.ts",
+      { "duration": 58.44758299999998, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/tracing/query-tracing-hook.test.ts",
+      { "duration": 4.745708000000008, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/tracing/query-client-tracing.test.ts",
+      { "duration": 5.456208000000004, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/integration/library-inspector-bridge.test.ts",
+      { "duration": 4.236791000000011, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/streamed-progressive.test.ts",
+      { "duration": 3.9669589999999744, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/streamed-query-adapter.test.ts",
+      { "duration": 6.234375, "failed": false }
+    ],
+    [
+      "@hex-di/query:libs/query/core/tests/tracing/tracing-bridge.test.ts",
+      { "duration": 3.095624999999984, "failed": false }
+    ],
+    [
+      "@hex-di/query-testing:libs/query/testing/tests/spy-adapter.test.ts",
+      { "duration": 8.716084000000023, "failed": false }
+    ],
+    [
+      "@hex-di/query-testing:libs/query/testing/tests/assertions.test.ts",
+      { "duration": 4.588666999999987, "failed": false }
+    ],
+    [
+      "@hex-di/query-testing:libs/query/testing/tests/mock-adapters.test.ts",
+      { "duration": 117.17100000000005, "failed": false }
+    ],
+    [
+      "@hex-di/query-testing:libs/query/testing/tests/test-containers.test.ts",
+      { "duration": 6.3450410000000375, "failed": false }
+    ],
+    [
+      "@hex-di/query-testing:libs/query/testing/tests/cache-assertions.test.ts",
+      { "duration": 6.976666000000023, "failed": false }
+    ],
+    [
+      "@hex-di/query-testing:libs/query/testing/tests/integration/test-utilities.test.ts",
+      { "duration": 3.8166250000000446, "failed": false }
+    ],
+    [
+      "@hex-di/query-testing:libs/query/testing/tests/react-helpers.test.tsx",
+      { "duration": 26.35033300000009, "failed": false }
+    ],
+    [
+      "@hex-di/react:integrations/react/tests/inspection-hooks.test.tsx",
+      { "duration": 26.75345799999991, "failed": false }
+    ],
+    [
+      "@hex-di/react:integrations/react/tests/use-tracing-summary.test.tsx",
+      { "duration": 35.21895799999993, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/mutation-killers-final.test.ts",
+      { "duration": 49.47404199999983, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/mutation-killers.test.ts",
+      { "duration": 57.731624999999894, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/mutation-killers-nocov.test.ts",
+      { "duration": 38.45804199999998, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/mutation-killers-5.test.ts",
+      { "duration": 38.31654200000003, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/mutation-killers-2.test.ts",
+      { "duration": 35.065124999999966, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/delegation-mutants.test.ts",
+      { "duration": 47.03595800000005, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/nocov-paths-mutants.test.ts",
+      { "duration": 42.058333999999945, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/container-factory-mutants.test.ts",
+      { "duration": 35.785041999999976, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/mutation-killers-3.test.ts",
+      { "duration": 15.980542000000014, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/mutation-killers-4.test.ts",
+      { "duration": 24.66104200000001, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/builtin-api-nocov-mutants.test.ts",
+      { "duration": 10.865000000000009, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/builtin-api-mutants.test.ts",
+      { "duration": 11.822791000000052, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/container-wrappers-mutants.test.ts",
+      { "duration": 30.100250000000017, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/wrappers-deep-mutants.test.ts",
+      { "duration": 34.882165999999984, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/container-child-impl-mutants.test.ts",
+      { "duration": 12.092624999999998, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/remaining-mutants.test.ts",
+      { "duration": 9.059082999999987, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/factory-deep-mutants.test.ts",
+      { "duration": 38.627792, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/builtin-api-deep-mutants.test.ts",
+      { "duration": 10.003874999999994, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/resolution-engine-mutants.test.ts",
+      { "duration": 49.33658300000002, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/wrappers-mutations.test.ts",
+      { "duration": 11.687999999999988, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/scope-impl-mutants.test.ts",
+      { "duration": 9.290458000000001, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/lazy-impl-deep-mutants.test.ts",
+      { "duration": 14.264624999999967, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/base-impl-mutations.test.ts",
+      { "duration": 8.794832999999983, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/base-impl-deep-mutants.test.ts",
+      { "duration": 10.390749999999969, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/container-base-impl-mutants.test.ts",
+      { "duration": 14.598833000000013, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/child-impl-deep-mutants.test.ts",
+      { "duration": 11.693041999999991, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/helpers-mutants.test.ts",
+      { "duration": 6.374666999999988, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/creation-mutants.test.ts",
+      { "duration": 15.627207999999996, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/hooks-runner-mutants.test.ts",
+      { "duration": 5.0282080000000065, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/factory-mutations.test.ts",
+      { "duration": 10.347708000000011, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/container-lazy-impl-mutants.test.ts",
+      { "duration": 9.60258300000001, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/inspection-builtin-api.test.ts",
+      { "duration": 10.44025000000002, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/typeguard-mutants.test.ts",
+      { "duration": 7.946834000000024, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/container-root-impl-mutants.test.ts",
+      { "duration": 7.130625000000009, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/root-impl-deep-mutants.test.ts",
+      { "duration": 12.580375000000004, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/internal-helpers-deep-mutants.test.ts",
+      { "duration": 6.029791999999986, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/container-factory-extended.test.ts",
+      { "duration": 7.443875000000048, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/async-initializer-mutants.test.ts",
+      { "duration": 18.60220799999999, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/hooks-runner.test.ts",
+      { "duration": 5.564750000000004, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/inspection-helpers.test.ts",
+      { "duration": 5.413624999999996, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/errors-extended.test.ts",
+      { "duration": 11.019708000000008, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/adapter-registry.test.ts",
+      { "duration": 9.893832999999972, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/lazy-impl-extended.test.ts",
+      { "duration": 8.369958000000054, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/internal-helpers-mutants.test.ts",
+      { "duration": 10.557874999999967, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/lifecycle-manager.test.ts",
+      { "duration": 4.303875000000005, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/inspection-creation.test.ts",
+      { "duration": 12.431874999999991, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/container-result-helpers-mutants.test.ts",
+      { "duration": 7.0404589999999985, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/memo-map-extended.test.ts",
+      { "duration": 4.185665999999969, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/container-wrapper-utils-mutants.test.ts",
+      { "duration": 9.368416999999965, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/resolution-engine.test.ts",
+      { "duration": 6.811624999999992, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/inheritance-resolver.test.ts",
+      { "duration": 7.2514170000000036, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/library-registry-extended.test.ts",
+      { "duration": 6.205709000000013, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/container-wrappers.test.ts",
+      { "duration": 13.384208999999998, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/async-initializer.test.ts",
+      { "duration": 35.07249999999999, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/scope-impl.test.ts",
+      { "duration": 10.710291999999981, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/resolution-core.test.ts",
+      { "duration": 28.610625, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/container-internal-types.test.ts",
+      { "duration": 5.503082999999947, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/async-engine.test.ts",
+      { "duration": 5.890375000000006, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/container-helpers.test.ts",
+      { "duration": 5.836541000000011, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/inspection-internal-helpers.test.ts",
+      { "duration": 2.660624999999982, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/result-helpers.test.ts",
+      { "duration": 3.8503749999999854, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/wrapper-utils.test.ts",
+      { "duration": 3.4306250000000205, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/inspect-function.test.ts",
+      { "duration": 5.911375000000021, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/inspection-type-guards.test.ts",
+      { "duration": 4.4799580000000105, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/string-similarity.test.ts",
+      { "duration": 2.391834000000017, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/scope-lifecycle-events.test.ts",
+      { "duration": 4.7423330000000306, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/util-type-guards.test.ts",
+      { "duration": 1.7379159999999843, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/inspection-symbols.test.ts",
+      { "duration": 2.3692499999999654, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/container-id-generator.test.ts",
+      { "duration": 1.9684579999999983, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/inspection-api.test.ts",
+      { "duration": 6.063166000000024, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/hooks.test.ts",
+      { "duration": 10.541708000000028, "failed": false }
+    ],
+    [
+      "@hex-di/runtime:packages/runtime/tests/unreachable.test.ts",
+      { "duration": 4.051125000000013, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/inspector-mutations-4.test.ts",
+      { "duration": 18.288832999999954, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/runtime-mutations.test.ts",
+      { "duration": 198.639, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/runner-mutations-3.test.ts",
+      { "duration": 286.846542, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/final-mutations.test.ts",
+      { "duration": 12.965124999999944, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/runner-mutations-2.test.ts",
+      { "duration": 22.801541000000043, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/inspector-mutations-3.test.ts",
+      { "duration": 24.50395900000001, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/introspection-mutations-2.test.ts",
+      { "duration": 12.855291999999963, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/integration-mutations.test.ts",
+      { "duration": 11.600750000000005, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/small-files-mutations.test.ts",
+      { "duration": 15.858374999999967, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/e2e/di-integration.test.ts",
+      { "duration": 11.65124999999989, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/integration/introspection.test.ts",
+      { "duration": 507.854084, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/property-based/compensation.test.ts",
+      { "duration": 94.10820799999999, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/integration/saga-adapters.test.ts",
+      { "duration": 7.807999999999993, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/integration/runtime.test.ts",
+      { "duration": 507.57995800000003, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/integration/persistence.test.ts",
+      { "duration": 23.65058399999998, "failed": false }
+    ],
+    [
+      "@hex-di/saga:libs/saga/core/tests/integration/library-inspector-adapter.test.ts",
+      { "duration": 3.4529580000000237, "failed": false }
+    ],
+    [
+      "@hex-di/saga-testing:libs/saga/testing/tests/integration/testing-utilities.test.ts",
+      { "duration": 13.615333000000192, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/inspection-mutations.test.ts",
+      { "duration": 14.480374999999981, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/async-derived-service.test.ts",
+      { "duration": 190.584375, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/mutation-killers-3.test.ts",
+      { "duration": 1721.0397079999998, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/mutation-killers-4.test.ts",
+      { "duration": 32.830959000000036, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/tracing-bridge-mutations.test.ts",
+      { "duration": 10.412083999999993, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/mutation-killers-2.test.ts",
+      { "duration": 530.33825, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/integration/library-inspector-bridge.test.ts",
+      { "duration": 4.251334000000014, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/mutation-killers.test.ts",
+      { "duration": 6.63741600000003, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/tracing-bridge-extended.test.ts",
+      { "duration": 9.907333999999992, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/inspector-scoped.test.ts",
+      { "duration": 8.155416999999971, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/integration/auto-recording.test.ts",
+      { "duration": 17.171583999999996, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/integration/auto-registration.test.ts",
+      { "duration": 26.177958999999987, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/cycle-detection.test.ts",
+      { "duration": 9.151749999999993, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/registry-adapter.test.ts",
+      { "duration": 3.5021250000000066, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/integration/auto-tracing.test.ts",
+      { "duration": 8.408166000000023, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/integration/mcp-resources.test.ts",
+      { "duration": 5.228166999999985, "failed": false }
+    ],
+    [
+      "@hex-di/store:libs/store/core/tests/integration/library-inspector-adapter.test.ts",
+      { "duration": 6.6965000000000146, "failed": false }
+    ],
+    [
+      "@hex-di/store-react:libs/store/react/tests/mutation-killers.test.tsx",
+      { "duration": 61.59570800000006, "failed": false }
+    ],
+    [
+      "@hex-di/store-testing:libs/store/testing/tests/mutation-killers.test.ts",
+      { "duration": 41.38162499999987, "failed": false }
+    ],
+    [
+      "@hex-di/tracing:packages/tracing/tests/inspection/aggregation.test.ts",
+      { "duration": 5.034499999999994, "failed": false }
+    ],
+    [
+      "@hex-di/tracing:packages/tracing/tests/inspection/query-api.test.ts",
+      { "duration": 4.797832999999997, "failed": false }
+    ],
+    [
+      "@hex-di/tracing:packages/tracing/tests/inspection/filter.test.ts",
+      { "duration": 2.4942920000000015, "failed": false }
+    ],
+    [
+      "@hex-di/tracing:packages/tracing/tests/inspection/adapters.test.ts",
+      { "duration": 2.531041999999985, "failed": false }
+    ],
+    [
+      "@hex-di/tracing:packages/tracing/tests/inspection/library-inspector-bridge.test.ts",
+      { "duration": 2.9806250000000034, "failed": false }
+    ]
+  ]
+}

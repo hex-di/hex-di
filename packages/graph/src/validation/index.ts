@@ -11,23 +11,30 @@
  *
  * All validation happens at compile-time via TypeScript's type system.
  *
+ * Error parsing utilities are re-exported from `@hex-di/core` (canonical source)
+ * with graph-prefixed aliases for backward compatibility.
+ *
  * @packageDocumentation
  */
 
 // Re-export all types from the types/ folder
 export * from "./types/index.js";
 
-// Re-export runtime utilities (error parsing)
+// =============================================================================
+// Re-export Runtime Error Parsing from @hex-di/core (canonical source)
+// =============================================================================
+
 export {
-  GraphErrorNumericCode,
-  GraphErrorCode,
-  isGraphError,
-  parseGraphError,
-} from "./error-parsing.js";
+  NumericErrorCode as GraphErrorNumericCode,
+  ErrorCode as GraphErrorCode,
+  isHexError as isGraphError,
+  parseError as parseGraphError,
+} from "@hex-di/core";
+
 export type {
-  GraphErrorNumericCodeType,
-  GraphErrorCodeType,
-  ParsedGraphError,
+  NumericErrorCodeType as GraphErrorNumericCodeType,
+  ErrorCodeType as GraphErrorCodeType,
+  ParsedError as ParsedGraphError,
   // Error detail types for discriminated union narrowing
   DuplicateAdapterDetails,
   CircularDependencyDetails,
@@ -72,4 +79,4 @@ export type {
   ParsedInvalidLazyPortError,
   ParsedMultipleErrorsError,
   ParsedUnknownErrorError,
-} from "./error-parsing.js";
+} from "@hex-di/core";

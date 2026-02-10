@@ -8,6 +8,8 @@
  */
 
 import type { Port, InferService, InspectorAPI, AdapterConstraint } from "@hex-di/core";
+import type { Result, ResultAsync } from "@hex-di/result";
+import type { ContainerError, DisposalError } from "../errors/index.js";
 import { OverrideBuilder } from "../container/override-builder.js";
 import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
 import { INTERNAL_ACCESS } from "../inspection/symbols.js";
@@ -186,6 +188,63 @@ export type ContainerMembers<
    * @throws {AsyncFactoryError} If the async factory function throws
    */
   resolveAsync<P extends TProvides | TExtends>(port: P): Promise<InferService<P>>;
+
+  /**
+   * Resolves a service instance, returning a Result instead of throwing.
+   *
+   * Same port constraints as `resolve()` - phase-dependent for async ports.
+   * Returns `Ok(service)` on success, `Err(ContainerError)` on failure.
+   *
+   * @typeParam P - The specific port type being resolved
+   * @param port - The port token to resolve
+   * @returns A Result containing the service instance or a ContainerError
+   */
+  tryResolve<
+    P extends TPhase extends "initialized"
+      ? TProvides | TExtends
+      : Exclude<TProvides | TExtends, TAsyncPorts>,
+  >(
+    port: P
+  ): Result<InferService<P>, ContainerError>;
+
+  /**
+   * Resolves a service instance asynchronously, returning a ResultAsync instead of throwing.
+   *
+   * Same port constraints as `resolveAsync()`.
+   * Returns `Ok(service)` on success, `Err(ContainerError)` on failure.
+   *
+   * @typeParam P - The specific port type being resolved
+   * @param port - The port token to resolve
+   * @returns A ResultAsync containing the service instance or a ContainerError
+   */
+  tryResolveAsync<P extends TProvides | TExtends>(
+    port: P
+  ): ResultAsync<InferService<P>, ContainerError>;
+
+  /**
+   * Disposes the container, returning a ResultAsync instead of throwing.
+   *
+   * Returns `Ok(void)` on clean disposal, `Err(DisposalError)` if finalizers threw.
+   *
+   * @returns A ResultAsync that resolves to void or a DisposalError
+   */
+  tryDispose(): ResultAsync<void, DisposalError>;
+
+  /**
+   * Initializes all async ports, returning a ResultAsync instead of throwing.
+   *
+   * **Only available on root containers** (when `TExtends extends never`).
+   * Same constraints as `initialize` — only on root, uninitialized containers.
+   * Returns `Ok(initializedContainer)` on success, `Err(ContainerError)` on failure.
+   *
+   * @returns A ResultAsync containing the initialized container or a ContainerError
+   */
+  // NOTE: Using [T] extends [never] to prevent distribution over the never type.
+  tryInitialize: [TExtends] extends [never]
+    ? TPhase extends "uninitialized"
+      ? () => ResultAsync<Container<TProvides, never, TAsyncPorts, "initialized">, ContainerError>
+      : never
+    : never;
 
   /**
    * Initializes all async ports in priority order.

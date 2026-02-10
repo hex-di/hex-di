@@ -305,19 +305,23 @@ export function defineEvents<const TDef extends EventDefinitionInput>(
 
     // Create the factory function
     const factory = (...args: readonly unknown[]): unknown => {
-      // Call the user's payload factory
-      const payload = (payloadFactory as (...args: readonly unknown[]) => Record<string, unknown>)(
-        ...args
-      );
+      // Call the user's payload factory using Function.prototype.apply.call
+      // to bypass the never[] parameter type (same pattern as guard/action invocation)
+      const payloadResult: unknown = Function.prototype.apply.call(payloadFactory, undefined, args);
 
       // Create the event object with type and spread payload
       const eventObject: Record<string, unknown> = {
         type: eventType,
       };
 
-      // Copy payload properties
-      for (const key of Object.keys(payload)) {
-        eventObject[key] = payload[key];
+      // Copy payload properties if result is an object
+      if (typeof payloadResult === "object" && payloadResult !== null) {
+        for (const key of Object.keys(payloadResult)) {
+          const desc = Object.getOwnPropertyDescriptor(payloadResult, key);
+          if (desc !== undefined) {
+            eventObject[key] = desc.value;
+          }
+        }
       }
 
       // Freeze the event object for immutability
@@ -335,6 +339,9 @@ export function defineEvents<const TDef extends EventDefinitionInput>(
     result[eventType] = factory;
   }
 
-  // Freeze the result object to prevent modification
-  return Object.freeze(result) as DefineEventsResult<TDef>;
+  // Freeze the result object to prevent modification.
+  // @ts-expect-error - Dynamic construction boundary: result is Record<string, unknown> populated
+  // with EventFactory objects via a for-of loop over def's keys. TypeScript cannot verify that
+  // the computed properties match DefineEventsResult<TDef> because properties are assigned dynamically.
+  return Object.freeze(result);
 }
