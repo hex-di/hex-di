@@ -865,7 +865,7 @@ describe("child-impl.ts - forked inheritance", () => {
     const childLogger = child.resolve(LoggerPort);
     // Forked means different identity but same values
     expect(childLogger).not.toBe(parentLogger);
-    expect(childLogger.extra).toBe("data");
+    expect((childLogger as any).extra).toBe("data");
   });
 
   it("forked with non-clonable adapter throws NonClonableForkedError", () => {

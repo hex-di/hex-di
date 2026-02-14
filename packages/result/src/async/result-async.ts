@@ -142,7 +142,7 @@ export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
 
   andThen<U, F>(f: (value: T) => Result<U, F>): ResultAsync<U, E | F>;
   andThen<U, F>(f: (value: T) => ResultAsync<U, F>): ResultAsync<U, E | F>;
-  // eslint-disable-next-line @typescript-eslint/unified-signatures -- overloads needed for correct inference
+
   andThen<U, F>(f: (value: T) => Result<U, F> | ResultAsync<U, F>): ResultAsync<U, E | F>;
   andThen<U, F>(f: (value: T) => Result<U, F> | ResultAsyncType<U, F>): ResultAsync<U, E | F> {
     return new ResultAsync(
@@ -158,7 +158,7 @@ export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
 
   orElse<U, F>(f: (error: E) => Result<U, F>): ResultAsync<T | U, F>;
   orElse<U, F>(f: (error: E) => ResultAsync<U, F>): ResultAsync<T | U, F>;
-  // eslint-disable-next-line @typescript-eslint/unified-signatures -- overloads needed for correct inference
+
   orElse<U, F>(f: (error: E) => Result<U, F> | ResultAsync<U, F>): ResultAsync<T | U, F>;
   orElse<U, F>(f: (error: E) => Result<U, F> | ResultAsyncType<U, F>): ResultAsync<T | U, F> {
     return new ResultAsync(

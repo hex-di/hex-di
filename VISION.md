@@ -136,11 +136,12 @@ HexDI's vision is the new car.
   │  ✓ PostgresDB    │              │  │  query: cache     │  │
   │  ✓ ConfigService │              │  │  saga: workflows  │  │
   │                  │              │  │  agent: AI tools  │  │
-  │  ✓ Exact         │              │  │  logger: pipeline │  │
-  │  ✓ Complete      │              │  └──────────────────┘  │
-  │  ✓ From the app  │              │                        │
-  │    itself        │              │   that knows itself)   │
-  └──────────────────┘              └────────────────────────┘
+  │  ✓ Exact         │              │  │  guard: authz     │  │
+  │  ✓ Complete      │              │  │  logger: pipeline │  │
+  │  ✓ From the app  │              │  └──────────────────┘  │
+  │    itself        │              │                        │
+  └──────────────────┘              │   that knows itself)   │
+                                    └────────────────────────┘
 ```
 
 ---
@@ -170,6 +171,7 @@ A self-aware HexDI application can answer these questions about itself, at runti
 | What data is cached?             | `@hex-di/query`   | Cache entries with freshness       |
 | What workflows are running?      | `@hex-di/saga`    | Saga step + compensation state     |
 | What AI tools are available?     | `@hex-di/agent`   | Tool registry with schemas         |
+| Who's authorized?                | `@hex-di/guard`   | Policies, decisions, audit entries |
 | What's being logged?             | `@hex-di/logger`  | Entry counts, error rate, handlers |
 
 No file parsing. No inference. No guessing. The application tells you directly.
@@ -177,41 +179,43 @@ No file parsing. No inference. No guessing. The application tells you directly.
 ### The Three Layers of Self-Knowledge
 
 ```
-  ┌─────────────────────────────────────────────────────┐
-  │              Layer 3: BEHAVIORAL                     │
-  │                                                      │
-  │  "What am I doing right now?"                       │
-  │                                                      │
-  │  Tracing: resolution spans, call chains, timing     │
-  │  Store: state transitions, action history            │
-  │  Query: fetch activity, cache hits/misses            │
-  │  Saga: workflow progress, step execution             │
-  │  Agent: tool invocations, LLM conversations          │
-  │  Logger: log entries, error rates, handler activity   │
-  │                                                      │
-  ├─────────────────────────────────────────────────────┤
-  │              Layer 2: STATE                          │
-  │                                                      │
-  │  "What is my current condition?"                    │
-  │                                                      │
-  │  Runtime: instantiated services, scope tree          │
-  │  Store: current values, computed derivations          │
-  │  Query: cached data, staleness, pending fetches      │
-  │  Saga: in-progress workflows, compensation state     │
-  │  Agent: active conversations, tool availability      │
-  │  Logger: active handlers, sampling config, redaction  │
-  │                                                      │
-  ├─────────────────────────────────────────────────────┤
-  │              Layer 1: STRUCTURE                      │
-  │                                                      │
-  │  "What am I made of?"                               │
-  │                                                      │
-  │  Graph: ports, adapters, dependency edges            │
-  │  Lifetimes: singleton, scoped, transient             │
-  │  Metadata: names, categories, tags, directions       │
-  │  Topology: layers, paths, cycles, complexity         │
-  │                                                      │
-  └─────────────────────────────────────────────────────┘
+  ┌─────────────────────────────────────────────────────────┐
+  │              Layer 3: BEHAVIORAL                         │
+  │                                                          │
+  │  "What am I doing right now?"                           │
+  │                                                          │
+  │  Tracing: resolution spans, call chains, timing         │
+  │  Store: state transitions, action history                │
+  │  Query: fetch activity, cache hits/misses                │
+  │  Saga: workflow progress, step execution                 │
+  │  Agent: tool invocations, LLM conversations              │
+  │  Guard: authorization evaluations, allow/deny patterns   │
+  │  Logger: log entries, error rates, handler activity       │
+  │                                                          │
+  ├─────────────────────────────────────────────────────────┤
+  │              Layer 2: STATE                              │
+  │                                                          │
+  │  "What is my current condition?"                        │
+  │                                                          │
+  │  Runtime: instantiated services, scope tree              │
+  │  Store: current values, computed derivations              │
+  │  Query: cached data, staleness, pending fetches          │
+  │  Saga: in-progress workflows, compensation state         │
+  │  Agent: active conversations, tool availability          │
+  │  Guard: active policies, recent decisions, audit entries  │
+  │  Logger: active handlers, sampling config, redaction      │
+  │                                                          │
+  ├─────────────────────────────────────────────────────────┤
+  │              Layer 1: STRUCTURE                          │
+  │                                                          │
+  │  "What am I made of?"                                   │
+  │                                                          │
+  │  Graph: ports, adapters, dependency edges                │
+  │  Lifetimes: singleton, scoped, transient                 │
+  │  Metadata: names, categories, tags, directions           │
+  │  Topology: layers, paths, cycles, complexity             │
+  │                                                          │
+  └─────────────────────────────────────────────────────────┘
 ```
 
 **Layer 1 (Structure)** is known at compile time and doesn't change at runtime. It's the application's DNA.
@@ -280,6 +284,9 @@ The analogy is precise. A biological nervous system:
     │  query: reports    │  │  agent: executes   │  │                    │
     │  data freshness    │  │  AI tool calls     │  │  flow: transitions │
     │                    │  │                    │  │  states on events   │
+    │  guard: reports    │  │                    │  │                    │
+    │  authorization     │  │                    │  │                    │
+    │                    │  │                    │  │                    │
     │  logger: reports   │  │                    │  │                    │
     │  log pipeline      │  │                    │  │                    │
     └────────────────────┘  └────────────────────┘  └────────────────────┘
@@ -383,6 +390,13 @@ This means the container doesn't just wire services -- it becomes the convergenc
   │  │         │  ─ human-in-the-loop approval state            │
   │  └─────────┘                                                 │
   │                                                              │
+  │  ┌─────────┐  "I know the authorization model"              │
+  │  │  guard  │  ─ active policies per port                    │
+  │  │         │  ─ recent authorization decisions               │
+  │  │         │  ─ permission statistics (allow/deny)           │
+  │  │         │  ─ audit trail entries                          │
+  │  └─────────┘                                                 │
+  │                                                              │
   │  ┌─────────┐  "I know the state machines"                   │
   │  │  flow   │  ─ current state of every machine              │
   │  │         │  ─ valid transitions from current state         │
@@ -395,6 +409,15 @@ This means the container doesn't just wire services -- it becomes the convergenc
   │  │         │  ─ error rate and threshold breaches            │
   │  │         │  ─ active handlers and their health             │
   │  │         │  ─ sampling and redaction statistics            │
+  │  └─────────┘                                                 │
+  │                                                              │
+  │  ┌─────────┐  "I know the outbound HTTP layer"              │
+  │  │  http-  │  ─ every outbound request and response         │
+  │  │  client │  ─ active in-flight requests                    │
+  │  │         │  ─ latency percentiles (P50/P95/P99)           │
+  │  │         │  ─ error rates and classification               │
+  │  │         │  ─ circuit breaker, rate limiter, cache state   │
+  │  │         │  ─ health status (healthy/degraded/unhealthy)  │
   │  └─────────┘                                                 │
   └─────────────────────────────────────────────────────────────┘
 ```
@@ -410,7 +433,9 @@ All of this knowledge converges at the container. Because every library register
 - **What's fetched** (from query)
 - **What's in progress** (from saga and flow)
 - **What's being logged** (from logger)
+- **What's communicated** (from http-client)
 - **What's possible** (from agent)
+- **Who's authorized** (from guard)
 
 No single library has the full picture. But the container, sitting at the center, sees everything.
 
@@ -424,23 +449,26 @@ Self-knowledge is valuable. But the real power comes when the application can **
 
 Anthropic's MCP is the primary protocol for AI-to-application communication. It defines how AI tools discover and interact with external data and capabilities.
 
+`@hex-di/mcp` is a **general-purpose MCP server framework** that models MCP capabilities as typed HexDI ports. Resources, tools, and prompts are declared as `McpResourcePort<T>`, `McpToolPort<I,O>`, and `McpPromptPort<A>` -- directed ports with `mcp-resource`, `mcp-tool`, and `mcp-prompt` categories. The server discovers capabilities automatically by walking the graph for these categories. The framework ships no domain-specific adapters; the inspection-specific MCP adapters (exposing container state, graph topology, tracing data) live in `@hex-di/devtools`. See `spec/mcp/` for the full framework specification.
+
 **How HexDI maps to MCP:**
 
 ```
-  MCP Concept          HexDI Equivalent
-  ───────────          ────────────────
-  Resources            Container snapshots, graph topology,
-                       store state, query cache contents,
-                       tracing spans, saga workflow state,
-                       logging snapshots, entry counts
+  MCP Concept          @hex-di/mcp Framework           @hex-di/devtools Adapters
+  ───────────          ─────────────────────           ─────────────────────────
+  Resources            McpResourcePort<T>              Graph topology, runtime
+                                                       snapshots, tracing spans,
+                                                       store/query/saga state
 
-  Tools                resolve(port), createScope(),
-                       inspect(), getState(), invalidateQuery(),
-                       retryStep(), approveAction()
+  Tools                McpToolPort<I,O>                resolve(), createScope(),
+                       (opt-in: enableTools)           inspect(), invalidateQuery()
 
-  Prompts              Contextual templates informed by
-                       application state ("debug this service"
-                       with full dependency context attached)
+  Prompts              McpPromptPort<A>                debug-service, analyze-error,
+                                                       optimize-graph
+
+  Server               createMcpServer(graph)          DevTools standalone server
+  Transport            StdioTransport / SseTransport   stdio for CLI, SSE for web
+  Discovery            Graph walk by port category     Auto from merged adapter graphs
 ```
 
 **Concrete MCP Server Example:**
@@ -687,7 +715,9 @@ Let's trace a complete scenario: a user reports that "order placement sometimes 
     "hexdi://tracing/recent",
     "hexdi://store/state",
     "hexdi://saga/workflows",
-    "hexdi://query/cache"
+    "hexdi://query/cache",
+    "hexdi://http/stats",
+    "hexdi://http/health"
   ]
 ```
 
@@ -969,39 +999,44 @@ The dependency graph + runtime state + behavioral traces form a **domain-specifi
 ### What Exists Today (Implemented)
 
 ```
-  ✅ @hex-di/core       Type system, ports, adapters
-  ✅ @hex-di/graph      Compile-time graph with full inspection
-                        (traversal, complexity, suggestions, serialization)
-  ✅ @hex-di/runtime    Container with snapshots, scope tree, lifecycle
-  ✅ @hex-di/tracing    W3C-compatible distributed tracing
-  🔄 @hex-di/tracing-otel  OpenTelemetry export bridge (in progress)
-  ✅ @hex-di/react      React integration
-  ✅ @hex-di/hono       Hono backend integration
-  ✅ @hex-di/flow       State machine runtime
-  ✅ @hex-di/logger     Structured logging with inspection
-                        (LoggerPort, handlers, context propagation,
-                         LoggerInspector with entry counts, error rates,
-                         sampling/redaction stats, MCP resource contracts)
+  ✅ @hex-di/core            Type system, ports, adapters
+  ✅ @hex-di/graph           Compile-time graph with full inspection
+                             (traversal, complexity, suggestions, serialization)
+  ✅ @hex-di/runtime         Container with snapshots, scope tree, lifecycle
+  ✅ @hex-di/result          Typed Result/ResultAsync with pattern matching
+  ✅ @hex-di/tracing         W3C-compatible distributed tracing
+  ✅ @hex-di/tracing-otel    OpenTelemetry export bridge (OTLP, batch processor)
+  ✅ @hex-di/tracing-datadog Datadog tracing bridge
+  ✅ @hex-di/tracing-jaeger  Jaeger tracing exporter
+  ✅ @hex-di/tracing-zipkin  Zipkin tracing exporter
+  ✅ @hex-di/react           React integration
+  ✅ @hex-di/flow            State machine runtime with activities
+  ✅ @hex-di/store           Reactive state with signals and inspection
+  ✅ @hex-di/query           Data fetching and caching with observers
+  ✅ @hex-di/saga            Workflow orchestration with compensation
+  ✅ @hex-di/logger          Structured logging with inspection
+                             (LoggerPort, handlers, context propagation,
+                              LoggerInspector with entry counts, error rates,
+                              sampling/redaction stats)
   ✅ @hex-di/logger-pino     Pino backend adapter
   ✅ @hex-di/logger-winston  Winston backend adapter
   ✅ @hex-di/logger-bunyan   Bunyan backend adapter
-  ✅ @hex-di/testing    Test utilities
-  ✅ @hex-di/visualization  Graph visualization (DOT, Mermaid)
 ```
 
-### What's Next (Planned)
+### What's Next (Planned — spec exists, no code yet)
 
 ```
-  📋 @hex-di/store      Reactive state with signals
-  📋 @hex-di/query      Data fetching and caching
-  📋 @hex-di/saga       Workflow orchestration with compensation
-  📋 @hex-di/agent      AI agent framework with tool ports
+  📋 @hex-di/guard           Authorization with guard(), policies, audit trail
+  📋 @hex-di/agent           AI agent framework with tool ports
+  📋 @hex-di/stream          Reactive stream processing
+  📋 @hex-di/hono            Hono backend integration
+  📋 @hex-di/visualization   Graph visualization (DOT, Mermaid)
 ```
 
 ### The Diagnostic Layer (Vision)
 
 ```
-  🔮 @hex-di/mcp        MCP server exposing all application knowledge
+  🔮 @hex-di/mcp        MCP server framework (ports, adapters, discovery)
   🔮 @hex-di/a2a        A2A agent card + skill publishing
   🔮 @hex-di/devtools   Visual dashboard for all application state
   🔮 @hex-di/health     Automated health assessment from graph + traces
@@ -1058,9 +1093,10 @@ The dependency graph + runtime state + behavioral traces form a **domain-specifi
   │   4. Knows what data it has         (query)              │
   │   5. Knows what processes are running (saga + flow)      │
   │   6. Knows what it can do           (agent)              │
-  │   7. Knows what it's logging        (logger)             │
-  │   8. Can tell you all of the above  (MCP + A2A)          │
-  │   9. Can act on that knowledge      (autonomic)          │
+  │   7. Knows who's authorized         (guard)              │
+  │   8. Knows what it's logging        (logger)             │
+  │   9. Can tell you all of the above  (MCP + A2A)          │
+  │  10. Can act on that knowledge      (autonomic)          │
   │                                                           │
   │   Not because someone instrumented it from the outside.  │
   │   Because self-knowledge is built into its foundation.   │

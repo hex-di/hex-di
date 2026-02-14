@@ -9,7 +9,7 @@
 
 import type { Port } from "@hex-di/core";
 import type { EventOf } from "../events.js";
-import type { ActivityPort, ActivityOutput, ActivityInput } from "../port.js";
+import type { ActivityPort, ActivityOutput, ActivityInput } from "../types.js";
 import type { PortDeps } from "@hex-di/core";
 import type { CleanupReason, ConfiguredActivity } from "../types.js";
 import { createTestEventSink } from "./event-sink.js";

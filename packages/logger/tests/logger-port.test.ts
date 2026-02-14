@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { LoggerPort, createMemoryLogger } from "../src/index.js";
+import { LoggerPort, LogHandlerPort, LogFormatterPort, createMemoryLogger } from "../src/index.js";
+import { LoggerInspectorPort } from "../src/inspection/inspector-port.js";
 import { getPortDirection, getPortMetadata } from "@hex-di/core";
 import type { MemoryLogger } from "../src/index.js";
 
@@ -12,15 +13,29 @@ describe("LoggerPort metadata", () => {
     expect(getPortDirection(LoggerPort)).toBe("outbound");
   });
 
-  it('LoggerPort.category is "infrastructure"', () => {
+  it('LoggerPort.category is "logger/logger"', () => {
     const metadata = getPortMetadata(LoggerPort);
-    expect(metadata?.category).toBe("infrastructure");
+    expect(metadata?.category).toBe("logger/logger");
   });
 
   it('LoggerPort.tags includes "logging" and "observability"', () => {
     const metadata = getPortMetadata(LoggerPort);
     expect(metadata?.tags).toContain("logging");
     expect(metadata?.tags).toContain("observability");
+  });
+});
+
+describe("logger port metadata category for library detection", () => {
+  it("LogHandlerPort sets category to logger/handler", () => {
+    expect(getPortMetadata(LogHandlerPort)?.category).toBe("logger/handler");
+  });
+
+  it("LogFormatterPort sets category to logger/formatter", () => {
+    expect(getPortMetadata(LogFormatterPort)?.category).toBe("logger/formatter");
+  });
+
+  it("LoggerInspectorPort sets category to logger/inspector", () => {
+    expect(getPortMetadata(LoggerInspectorPort)?.category).toBe("logger/inspector");
   });
 });
 

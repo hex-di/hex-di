@@ -7,6 +7,7 @@ function makeEntry(overrides: Partial<LogEntry> = {}): LogEntry {
     level: "info",
     message: "test message",
     timestamp: Date.now(),
+    sequence: 0,
     context: {},
     annotations: {},
     ...overrides,

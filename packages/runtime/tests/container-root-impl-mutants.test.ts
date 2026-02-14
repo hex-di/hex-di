@@ -175,8 +175,8 @@ describe("RootContainerImpl - initializeFromGraph", () => {
     const graph = GraphBuilder.create().provide(loggerAdapter).provide(dbAdapter).build();
     const container = createContainer({ graph, name: "Test" });
 
-    expect(container.hasAdapter(LoggerPort)).toBe(true);
-    expect(container.hasAdapter(DatabasePort)).toBe(true);
+    expect(container.has(LoggerPort)).toBe(true);
+    expect(container.has(DatabasePort)).toBe(true);
   });
 
   it("tracks async adapters for initialization", () => {
@@ -184,7 +184,6 @@ describe("RootContainerImpl - initializeFromGraph", () => {
       provides: DatabasePort,
       requires: [],
       lifetime: "singleton",
-      factoryKind: "async" as const,
       factory: async () => ({ query: vi.fn() }),
     });
     const graph = GraphBuilder.create().provide(asyncAdapter).build();
@@ -199,7 +198,6 @@ describe("RootContainerImpl - initializeFromGraph", () => {
       provides: DatabasePort,
       requires: [],
       lifetime: "singleton",
-      factoryKind: "async" as const,
       factory: async () => ({ query: vi.fn() }),
     });
     const graph = GraphBuilder.create().provide(asyncAdapter).build();
@@ -250,7 +248,6 @@ describe("RootContainerImpl - initialize", () => {
       provides: DatabasePort,
       requires: [],
       lifetime: "singleton",
-      factoryKind: "async" as const,
       factory: async () => ({ query: vi.fn() }),
     });
     const loggerAdapter = createAdapter({

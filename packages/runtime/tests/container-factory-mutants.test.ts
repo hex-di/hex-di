@@ -69,7 +69,6 @@ function makeAsyncDbAdapter() {
     provides: DatabasePort,
     requires: [],
     lifetime: "singleton",
-    factoryKind: "async" as const,
     factory: async () => ({ query: vi.fn() }),
   });
 }
@@ -264,13 +263,13 @@ describe("root container has/hasAdapter", () => {
   it("hasAdapter returns true for registered port", () => {
     const graph = GraphBuilder.create().provide(makeLoggerAdapter()).build();
     const container = createContainer({ graph, name: "TestApp" });
-    expect(container.hasAdapter(LoggerPort)).toBe(true);
+    expect(container.has(LoggerPort)).toBe(true);
   });
 
   it("hasAdapter returns false for unregistered port", () => {
     const graph = GraphBuilder.create().provide(makeLoggerAdapter()).build();
     const container = createContainer({ graph, name: "TestApp" });
-    expect(container.hasAdapter(DatabasePort)).toBe(false);
+    expect(container.has(DatabasePort)).toBe(false);
   });
 });
 
@@ -713,8 +712,8 @@ describe("initialized container methods", () => {
     const container = createContainer({ graph, name: "Test" });
     const initialized = await container.initialize();
 
-    expect(initialized.hasAdapter(LoggerPort)).toBe(true);
-    expect(initialized.hasAdapter(DatabasePort)).toBe(false);
+    expect(initialized.has(LoggerPort)).toBe(true);
+    expect(initialized.has(DatabasePort)).toBe(false);
   });
 
   it("dispose works", async () => {
@@ -923,7 +922,7 @@ describe("root container createChild", () => {
       lifetime: "singleton",
       factory: () => ({ log: mockLog }),
     });
-    const childGraph = GraphBuilder.create().override(overrideAdapter).build();
+    const childGraph = GraphBuilder.forParent(graph).override(overrideAdapter).build();
     const child = container.createChild(childGraph, { name: "Child" });
 
     child.resolve(LoggerPort).log("test");
@@ -1025,7 +1024,7 @@ describe("performance options", () => {
       lifetime: "singleton",
       factory: () => ({ log: vi.fn() }),
     });
-    const childGraph = GraphBuilder.create().override(overrideAdapter).build();
+    const childGraph = GraphBuilder.forParent(graph).override(overrideAdapter).build();
     const child = container.createChild(childGraph, {
       name: "Child",
       performance: { disableTimestamps: true },

@@ -5,11 +5,13 @@
  *
  * ## Error Code Ranges
  *
- * | Range    | Category                        |
- * |----------|---------------------------------|
- * | HEX001-009 | Graph validation errors       |
- * | HEX010-019 | Adapter configuration errors  |
- * | HEX020-025 | Runtime/container errors      |
+ * | Range          | Category                        |
+ * |----------------|---------------------------------|
+ * | HEX001-009     | Graph validation errors         |
+ * | HEX010-019     | Adapter configuration errors    |
+ * | HEX020-025     | Runtime/container errors        |
+ * | HEX026-028     | Validation/integrity errors     |
+ * | HEX_WARN_xxx   | Warning codes (non-fatal)       |
  *
  * @packageDocumentation
  */
@@ -85,6 +87,18 @@ export const NumericErrorCode = {
   ASYNC_INIT_REQUIRED: "HEX024",
   /** HEX025: Non-clonable adapter used with forked inheritance mode */
   NON_CLONABLE_FORKED: "HEX025",
+
+  // Validation errors (HEX026-028)
+  /** HEX026: Lazy port double-wrap attempt */
+  DOUBLE_LAZY_PORT: "HEX026",
+  /** HEX027: Adapter not frozen (tamper detection) */
+  UNFROZEN_ADAPTER: "HEX027",
+  /** HEX028: Port not frozen (tamper detection) */
+  UNFROZEN_PORT: "HEX028",
+
+  // Warning codes (HEX_WARN_xxx)
+  /** HEX_WARN_001: Container created without tracing configured */
+  TRACING_NOT_CONFIGURED: "HEX_WARN_001",
 } as const;
 
 /**
@@ -129,6 +143,14 @@ export const ErrorCode = {
   SCOPE_REQUIRED: "SCOPE_REQUIRED",
   ASYNC_INIT_REQUIRED: "ASYNC_INIT_REQUIRED",
   NON_CLONABLE_FORKED: "NON_CLONABLE_FORKED",
+
+  // Validation errors
+  DOUBLE_LAZY_PORT: "DOUBLE_LAZY_PORT",
+  UNFROZEN_ADAPTER: "UNFROZEN_ADAPTER",
+  UNFROZEN_PORT: "UNFROZEN_PORT",
+
+  // Warning codes
+  TRACING_NOT_CONFIGURED: "TRACING_NOT_CONFIGURED",
 
   // Meta error types
   MULTIPLE_ERRORS: "MULTIPLE_ERRORS",

@@ -68,11 +68,11 @@ describe("createEventEmitter (via InspectorAPI.subscribe/emit)", () => {
     const events: any[] = [];
     const unsub = inspector.subscribe((event: any) => events.push(event));
 
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
     expect(events).toHaveLength(1);
 
     unsub();
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 2 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 2 } as any);
     // After unsubscribe, no new events
     expect(events).toHaveLength(1);
   });
@@ -88,7 +88,7 @@ describe("createEventEmitter (via InspectorAPI.subscribe/emit)", () => {
     inspector.subscribe((event: any) => events.push(event));
 
     // Should not throw, second listener still called
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
     expect(events).toHaveLength(1);
   });
 
@@ -101,7 +101,7 @@ describe("createEventEmitter (via InspectorAPI.subscribe/emit)", () => {
     inspector.subscribe((event: any) => events1.push(event));
     inspector.subscribe((event: any) => events2.push(event));
 
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
     expect(events1).toHaveLength(1);
     expect(events2).toHaveLength(1);
   });
@@ -116,7 +116,7 @@ describe("createResultTracker (via InspectorAPI)", () => {
     const container = createTestContainer();
     const inspector = getInspector(container);
 
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 100 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 100 } as any);
 
     const stats = inspector.getResultStatistics("Logger");
     expect(stats).toBeDefined();
@@ -132,7 +132,7 @@ describe("createResultTracker (via InspectorAPI)", () => {
     const inspector = getInspector(container);
 
     const ts = 12345;
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "FACTORY_FAILED",
@@ -155,9 +155,9 @@ describe("createResultTracker (via InspectorAPI)", () => {
     const container = createTestContainer();
     const inspector = getInspector(container);
 
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 2 } as any);
-    inspector.emit({
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 2 } as any);
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E1",
@@ -182,19 +182,19 @@ describe("createResultTracker (via InspectorAPI)", () => {
     const container = createTestContainer();
     const inspector = getInspector(container);
 
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E1",
       timestamp: 1,
     } as any);
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E1",
       timestamp: 2,
     } as any);
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E2",
@@ -210,13 +210,13 @@ describe("createResultTracker (via InspectorAPI)", () => {
     const container = createTestContainer();
     const inspector = getInspector(container);
 
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E1",
       timestamp: 100,
     } as any);
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E2",
@@ -232,7 +232,7 @@ describe("createResultTracker (via InspectorAPI)", () => {
     const container = createTestContainer();
     const inspector = getInspector(container);
 
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E1",
@@ -251,8 +251,8 @@ describe("createResultTracker (via InspectorAPI)", () => {
     const container = createTestContainer();
     const inspector = getInspector(container);
 
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
-    inspector.emit({
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
+    inspector.emit?.({
       type: "result:err",
       portName: "Database",
       errorCode: "E1",
@@ -280,16 +280,16 @@ describe("createResultTracker (via InspectorAPI)", () => {
     const inspector = getInspector(container);
 
     // Logger: 1 ok, 0 err (0% error rate)
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
 
     // Database: 0 ok, 2 err (100% error rate)
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Database",
       errorCode: "E1",
       timestamp: 2,
     } as any);
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Database",
       errorCode: "E1",
@@ -306,8 +306,8 @@ describe("createResultTracker (via InspectorAPI)", () => {
     const container = createTestContainer();
     const inspector = getInspector(container);
 
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
-    inspector.emit({
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E1",
@@ -323,7 +323,7 @@ describe("createResultTracker (via InspectorAPI)", () => {
     const container = createTestContainer();
     const inspector = getInspector(container);
 
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E1",
@@ -338,7 +338,7 @@ describe("createResultTracker (via InspectorAPI)", () => {
     const container = createTestContainer();
     const inspector = getInspector(container);
 
-    inspector.emit({ type: "custom", data: "something" } as any);
+    inspector.emit?.({ type: "custom", data: "something" } as any);
 
     const all = inspector.getAllResultStatistics();
     expect(all.size).toBe(0);
@@ -907,7 +907,7 @@ describe("library inspector registry via builtin API", () => {
       dispose: disposeFn,
     };
     inspector.registerLibrary(lib);
-    inspector.disposeLibraries();
+    inspector.disposeLibraries?.();
 
     expect(disposeFn).toHaveBeenCalled();
     // After dispose, inspectors map should be empty
@@ -928,10 +928,10 @@ describe("library inspector registry via builtin API", () => {
     const container = createContainer({ graph, name: "Test" });
     const inspector = getInspector(container);
 
-    const returned = inspector.getContainer();
+    const returned = inspector.getContainer?.();
     expect(returned).toBeDefined();
     // Should have INTERNAL_ACCESS
-    expect(typeof returned[INTERNAL_ACCESS]).toBe("function");
+    expect(typeof (returned as any)[INTERNAL_ACCESS]).toBe("function");
   });
 });
 
@@ -957,7 +957,7 @@ describe("emitEvent integration", () => {
     const events: any[] = [];
     inspector.subscribe((event: any) => events.push(event));
 
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
 
     // Subscriber received the event
     expect(events).toHaveLength(1);

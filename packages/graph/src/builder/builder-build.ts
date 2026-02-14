@@ -3,7 +3,7 @@
  *
  * This module provides standalone functions for finalizing buildable graphs
  * into frozen Graph objects. Functions return Result types for recoverable
- * error handling, with throwing wrappers for backward compatibility.
+ * error handling, with throwing wrappers that preserve structured error payloads.
  *
  * ## Design Pattern
  *
@@ -27,8 +27,14 @@ import {
   formatCycleError,
   formatCaptiveError,
 } from "../graph/inspection/index.js";
-import { CyclicDependencyBuild, CaptiveDependencyBuild } from "../errors/index.js";
+import {
+  CyclicDependencyBuild,
+  CaptiveDependencyBuild,
+  GraphBuildException,
+} from "../errors/index.js";
 import type { GraphBuildError } from "../errors/index.js";
+import { emitAuditEvent } from "../audit/global-sink.js";
+import { createCorrelationIdGenerator } from "../graph/inspection/correlation.js";
 
 /**
  * Validates a buildable graph at runtime, returning a Result.
@@ -46,8 +52,6 @@ import type { GraphBuildError } from "../errors/index.js";
  *    - Checks that singletons don't depend on scoped/transient services
  *    - Run unconditionally as defense-in-depth against type system bypasses
  *
- * @pure No side effects.
- *
  * @param buildable - The graph state to validate
  * @returns `Ok(undefined)` if valid, `Err(GraphBuildError)` if invalid
  *
@@ -55,17 +59,45 @@ import type { GraphBuildError } from "../errors/index.js";
  */
 export function validateBuildable(buildable: BuildableGraph): Result<void, GraphBuildError> {
   const inspection = inspectGraph(buildable);
+  const auditGenerator = createCorrelationIdGenerator();
+  const auditCorrelationId = auditGenerator();
+  const timestamp = new Date().toISOString();
 
   // Check for cycles only when depth limit was exceeded (type system handles normal cases)
   if (inspection.depthLimitExceeded) {
     const cycle = detectCycleAtRuntime(buildable.adapters);
+
+    // Emit depth fallback provenance event
+    emitAuditEvent({
+      type: "graph.depth.fallback",
+      timestamp,
+      correlationId: auditCorrelationId,
+      maxChainDepth: inspection.maxChainDepth,
+      depthLimit: 50,
+      runtimeCycleDetected: cycle !== null,
+    });
+
     if (cycle) {
-      return err(
-        CyclicDependencyBuild({
-          cyclePath: cycle,
-          message: formatCycleError(cycle),
-        })
-      );
+      const buildError = CyclicDependencyBuild({
+        cyclePath: cycle,
+        message: formatCycleError(cycle),
+      });
+
+      emitAuditEvent({
+        type: "graph.validation.decision",
+        timestamp,
+        correlationId: auditCorrelationId,
+        validation: {
+          result: "fail",
+          errors: [
+            { tag: buildError._tag, message: buildError.message, details: { cyclePath: cycle } },
+          ],
+        },
+        cycleCheckPerformed: true,
+        captiveCheckPerformed: false,
+      });
+
+      return err(buildError);
     }
   }
 
@@ -74,21 +106,43 @@ export function validateBuildable(buildable: BuildableGraph): Result<void, Graph
   // even when depth limit is not exceeded.
   const captive = detectCaptiveAtRuntime(buildable.adapters);
   if (captive) {
-    return err(
-      CaptiveDependencyBuild({
-        dependentPort: captive.dependentPort,
-        dependentLifetime: captive.dependentLifetime,
-        captivePort: captive.captivePort,
-        captiveLifetime: captive.captiveLifetime,
-        message: formatCaptiveError(
-          captive.dependentPort,
-          captive.dependentLifetime,
-          captive.captivePort,
-          captive.captiveLifetime
-        ),
-      })
-    );
+    const buildError = CaptiveDependencyBuild({
+      dependentPort: captive.dependentPort,
+      dependentLifetime: captive.dependentLifetime,
+      captivePort: captive.captivePort,
+      captiveLifetime: captive.captiveLifetime,
+      message: formatCaptiveError(
+        captive.dependentPort,
+        captive.dependentLifetime,
+        captive.captivePort,
+        captive.captiveLifetime
+      ),
+    });
+
+    emitAuditEvent({
+      type: "graph.validation.decision",
+      timestamp,
+      correlationId: auditCorrelationId,
+      validation: {
+        result: "fail",
+        errors: [{ tag: buildError._tag, message: buildError.message, details: { ...captive } }],
+      },
+      cycleCheckPerformed: inspection.depthLimitExceeded,
+      captiveCheckPerformed: true,
+    });
+
+    return err(buildError);
   }
+
+  // Validation passed
+  emitAuditEvent({
+    type: "graph.validation.decision",
+    timestamp,
+    correlationId: auditCorrelationId,
+    validation: { result: "pass" },
+    cycleCheckPerformed: inspection.depthLimitExceeded,
+    captiveCheckPerformed: true,
+  });
 
   return ok(undefined);
 }
@@ -114,8 +168,6 @@ export interface BuiltGraph {
 /**
  * Builds a graph after validating dependencies at runtime, returning a Result.
  *
- * @pure Returns frozen Result. No side effects.
- *
  * @param buildable - The graph state to build
  * @returns `Ok(BuiltGraph)` if valid, `Err(GraphBuildError)` if invalid
  *
@@ -136,8 +188,6 @@ export function tryBuildGraph(buildable: BuildableGraph): Result<BuiltGraph, Gra
  * Used for child containers where dependencies may be satisfied by the parent.
  * Still performs cycle and captive detection as a safety net.
  *
- * @pure Returns frozen Result. No side effects.
- *
  * @param buildable - The graph state to build
  * @returns `Ok(BuiltGraph)` if valid, `Err(GraphBuildError)` if invalid
  *
@@ -155,25 +205,49 @@ export function tryBuildGraphFragment(
 }
 
 // =============================================================================
-// Throwing Build Functions (backward-compatible wrappers)
+// Throwing Build Functions
 // =============================================================================
 
 /**
  * Builds a graph after validating dependencies at runtime.
  *
- * @pure Returns frozen object. May throw for cycles or captive dependencies.
- *
  * @param buildable - The graph state to build
  * @returns A frozen graph object
- * @throws {Error} If a circular or captive dependency is detected at runtime
+ * @throws {GraphBuildException} If a circular or captive dependency is detected at runtime
  *
  * @internal
  */
 export function buildGraph(buildable: BuildableGraph): BuiltGraph {
   const result = tryBuildGraph(buildable);
   if (result.isErr()) {
-    throw new Error(result.error.message);
+    const timestamp = new Date().toISOString();
+    const generator = createCorrelationIdGenerator();
+    const correlationId = generator();
+
+    emitAuditEvent({
+      type: "graph.build.attempt",
+      timestamp,
+      correlationId,
+      adapterCount: buildable.adapters.length,
+      outcome: "failure",
+      error: {
+        tag: result.error._tag,
+        message: result.error.message,
+        details: { ...result.error },
+      },
+    });
+
+    throw new GraphBuildException(result.error);
   }
+
+  emitAuditEvent({
+    type: "graph.build.attempt",
+    timestamp: new Date().toISOString(),
+    correlationId: createCorrelationIdGenerator()(),
+    adapterCount: buildable.adapters.length,
+    outcome: "success",
+  });
+
   return result.value;
 }
 
@@ -183,18 +257,42 @@ export function buildGraph(buildable: BuildableGraph): BuiltGraph {
  * Used for child containers where dependencies may be satisfied by the parent.
  * Still performs cycle and captive detection as a safety net.
  *
- * @pure Returns frozen object. May throw for cycles or captive dependencies.
- *
  * @param buildable - The graph state to build
  * @returns A frozen graph object
- * @throws {Error} If a circular or captive dependency is detected at runtime
+ * @throws {GraphBuildException} If a circular or captive dependency is detected at runtime
  *
  * @internal
  */
 export function buildGraphFragment(buildable: BuildableGraph): BuiltGraph {
   const result = tryBuildGraphFragment(buildable);
   if (result.isErr()) {
-    throw new Error(result.error.message);
+    const timestamp = new Date().toISOString();
+    const generator = createCorrelationIdGenerator();
+    const correlationId = generator();
+
+    emitAuditEvent({
+      type: "graph.build.attempt",
+      timestamp,
+      correlationId,
+      adapterCount: buildable.adapters.length,
+      outcome: "failure",
+      error: {
+        tag: result.error._tag,
+        message: result.error.message,
+        details: { ...result.error },
+      },
+    });
+
+    throw new GraphBuildException(result.error);
   }
+
+  emitAuditEvent({
+    type: "graph.build.attempt",
+    timestamp: new Date().toISOString(),
+    correlationId: createCorrelationIdGenerator()(),
+    adapterCount: buildable.adapters.length,
+    outcome: "success",
+  });
+
   return result.value;
 }

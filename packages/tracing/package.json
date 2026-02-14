@@ -64,7 +64,8 @@
   "homepage": "https://github.com/hex-di/hex-di/tree/main/packages/tracing#readme",
   "dependencies": {},
   "devDependencies": {
-    "@hex-di/graph": "workspace:*"
+    "@hex-di/graph": "workspace:*",
+    "@types/node": "25.0.3"
   },
   "peerDependencies": {
     "@hex-di/core": "workspace:*",

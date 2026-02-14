@@ -54,6 +54,7 @@ describe("GraphInspection output snapshots", () => {
     const { correlationId: _correlationId, ...deterministicFields } = inspection;
     expect(deterministicFields).toMatchInlineSnapshot(`
       {
+        "actor": undefined,
         "adapterCount": 0,
         "dependencyMap": {},
         "depthLimitExceeded": false,
@@ -79,7 +80,7 @@ describe("GraphInspection output snapshots", () => {
       }
     `);
     // Verify correlationId format separately
-    expect(inspection.correlationId).toMatch(/^insp_\d+_[a-z0-9]+$/);
+    expect(inspection.correlationId).toMatch(/^insp_[a-z0-9]+_\d+_[a-z0-9]+$/);
   });
 
   it("snapshot: single adapter builder inspection", () => {
@@ -96,6 +97,7 @@ describe("GraphInspection output snapshots", () => {
     const { correlationId: _correlationId, ...deterministicFields } = inspection;
     expect(deterministicFields).toMatchInlineSnapshot(`
       {
+        "actor": undefined,
         "adapterCount": 1,
         "dependencyMap": {
           "Logger": [],
@@ -157,6 +159,7 @@ describe("GraphInspection output snapshots", () => {
     const { correlationId: _correlationId, ...deterministicFields } = inspection;
     expect(deterministicFields).toMatchInlineSnapshot(`
       {
+        "actor": undefined,
         "adapterCount": 1,
         "dependencyMap": {
           "Database": [
@@ -248,6 +251,7 @@ describe("GraphInspection output snapshots", () => {
     const { correlationId: _correlationId, ...deterministicFields } = inspection;
     expect(deterministicFields).toMatchInlineSnapshot(`
       {
+        "actor": undefined,
         "adapterCount": 4,
         "dependencyMap": {
           "Cache": [
@@ -351,6 +355,7 @@ describe("GraphInspection output snapshots", () => {
     const { correlationId: _correlationId, ...deterministicFields } = inspection;
     expect(deterministicFields).toMatchInlineSnapshot(`
       {
+        "actor": undefined,
         "adapterCount": 2,
         "dependencyMap": {
           "Config": [],
@@ -438,6 +443,7 @@ describe("inspectGraph() output snapshots", () => {
     const { correlationId: _correlationId, ...deterministicFields } = info;
     expect(deterministicFields).toMatchInlineSnapshot(`
       {
+        "actor": undefined,
         "adapterCount": 2,
         "dependencyMap": {
           "Database": [
@@ -512,6 +518,7 @@ describe("inspectGraph() output snapshots", () => {
     const { correlationId: _correlationId, ...deterministicFields } = info;
     expect(deterministicFields).toMatchInlineSnapshot(`
       {
+        "actor": undefined,
         "adapterCount": 1,
         "dependencyMap": {
           "UserService": [
@@ -781,6 +788,7 @@ describe("GraphErrorCode enum snapshot", () => {
         "CIRCULAR_DEPENDENCY": "CIRCULAR_DEPENDENCY",
         "DEPTH_LIMIT_EXCEEDED": "DEPTH_LIMIT_EXCEEDED",
         "DISPOSED_SCOPE": "DISPOSED_SCOPE",
+        "DOUBLE_LAZY_PORT": "DOUBLE_LAZY_PORT",
         "DUPLICATE_ADAPTER": "DUPLICATE_ADAPTER",
         "DUPLICATE_REQUIRES": "DUPLICATE_REQUIRES",
         "FACTORY_FAILED": "FACTORY_FAILED",
@@ -801,6 +809,9 @@ describe("GraphErrorCode enum snapshot", () => {
         "REVERSE_CAPTIVE_DEPENDENCY": "REVERSE_CAPTIVE_DEPENDENCY",
         "SCOPE_REQUIRED": "SCOPE_REQUIRED",
         "SELF_DEPENDENCY": "SELF_DEPENDENCY",
+        "TRACING_NOT_CONFIGURED": "TRACING_NOT_CONFIGURED",
+        "UNFROZEN_ADAPTER": "UNFROZEN_ADAPTER",
+        "UNFROZEN_PORT": "UNFROZEN_PORT",
         "UNKNOWN_ERROR": "UNKNOWN_ERROR",
       }
     `);

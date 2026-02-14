@@ -8,9 +8,22 @@
  * @packageDocumentation
  */
 
-import type { Span, SpanData, SpanExporter, SpanProcessor } from "@hex-di/tracing";
+import type { Span, SpanData, SpanExporter, SpanProcessor, TracingMetrics } from "@hex-di/tracing";
 import type { BatchSpanProcessorOptions } from "./types.js";
 import { logError, safeSetTimeout, safeClearTimeout, hasSetTimeout } from "../utils/globals.js";
+
+/**
+ * BatchSpanProcessor with metrics.
+ *
+ * Extends SpanProcessor with a getMetrics() method for monitoring
+ * pipeline health in GxP-regulated environments.
+ *
+ * @public
+ */
+export interface BatchSpanProcessorWithMetrics extends SpanProcessor {
+  /** Returns current pipeline metrics for monitoring */
+  getMetrics(): TracingMetrics;
+}
 
 /**
  * Default configuration values for BatchSpanProcessor.
@@ -19,6 +32,8 @@ const DEFAULT_MAX_QUEUE_SIZE = 2048;
 const DEFAULT_SCHEDULED_DELAY_MILLIS = 5000;
 const DEFAULT_EXPORT_TIMEOUT_MILLIS = 30000;
 const DEFAULT_MAX_EXPORT_BATCH_SIZE = 512;
+const DEFAULT_MAX_RETRY_ATTEMPTS = 3;
+const DEFAULT_BASE_RETRY_DELAY_MS = 1000;
 
 /**
  * Creates a BatchSpanProcessor that buffers and exports spans in batches.
@@ -73,16 +88,24 @@ const DEFAULT_MAX_EXPORT_BATCH_SIZE = 512;
 export function createBatchSpanProcessor(
   exporter: SpanExporter,
   options?: BatchSpanProcessorOptions
-): SpanProcessor {
+): BatchSpanProcessorWithMetrics {
   const maxQueueSize = options?.maxQueueSize ?? DEFAULT_MAX_QUEUE_SIZE;
   const scheduledDelayMillis = options?.scheduledDelayMillis ?? DEFAULT_SCHEDULED_DELAY_MILLIS;
   const exportTimeoutMillis = options?.exportTimeoutMillis ?? DEFAULT_EXPORT_TIMEOUT_MILLIS;
   const maxExportBatchSize = options?.maxExportBatchSize ?? DEFAULT_MAX_EXPORT_BATCH_SIZE;
+  const maxRetryAttempts = options?.maxRetryAttempts ?? DEFAULT_MAX_RETRY_ATTEMPTS;
+  const baseRetryDelayMs = options?.baseRetryDelayMs ?? DEFAULT_BASE_RETRY_DELAY_MS;
 
   // Internal state
   const spanBuffer: SpanData[] = [];
   let flushTimer: unknown = undefined;
   let isShutdown = false;
+
+  // GxP metrics
+  let _spansExported = 0;
+  let _spansDropped = 0;
+  let _exportFailures = 0;
+  let _exportSuccesses = 0;
 
   /**
    * Schedule a flush after scheduledDelayMillis if not already scheduled.
@@ -111,6 +134,41 @@ export function createBatchSpanProcessor(
   }
 
   /**
+   * Export a single batch with retry and exponential backoff.
+   */
+  async function exportWithRetry(batch: SpanData[]): Promise<void> {
+    for (let attempt = 0; attempt <= maxRetryAttempts; attempt++) {
+      try {
+        await exporter.export(batch);
+        _spansExported += batch.length;
+        _exportSuccesses++;
+        return;
+      } catch (err) {
+        if (attempt < maxRetryAttempts) {
+          // Exponential backoff before retry
+          const delay = baseRetryDelayMs * Math.pow(2, attempt);
+          if (hasSetTimeout()) {
+            await new Promise<void>(resolve => {
+              safeSetTimeout(resolve, delay);
+            });
+          }
+          logError(
+            `[hex-di/tracing-otel] BatchSpanProcessor export failed (attempt ${attempt + 1}/${maxRetryAttempts + 1}), retrying:`,
+            err
+          );
+        } else {
+          _exportFailures++;
+          _spansDropped += batch.length;
+          logError(
+            "[hex-di/tracing-otel] BatchSpanProcessor export failed after all retries:",
+            err
+          );
+        }
+      }
+    }
+  }
+
+  /**
    * Export buffered spans in batches.
    */
   async function flush(): Promise<void> {
@@ -121,12 +179,7 @@ export function createBatchSpanProcessor(
     // Export in batches to respect maxExportBatchSize
     while (spanBuffer.length > 0) {
       const batch = spanBuffer.splice(0, maxExportBatchSize);
-      try {
-        await exporter.export(batch);
-      } catch (err) {
-        logError("[hex-di/tracing-otel] BatchSpanProcessor export failed:", err);
-        // Continue with next batch despite error
-      }
+      await exportWithRetry(batch);
     }
   }
 
@@ -156,6 +209,7 @@ export function createBatchSpanProcessor(
       // Drop oldest span if buffer is full
       if (spanBuffer.length >= maxQueueSize) {
         spanBuffer.shift();
+        _spansDropped++;
       }
 
       // Add span to buffer
@@ -234,6 +288,20 @@ export function createBatchSpanProcessor(
       } catch (err) {
         logError("[hex-di/tracing-otel] BatchSpanProcessor shutdown error:", err);
       }
+    },
+
+    /**
+     * Returns current pipeline metrics for GxP monitoring.
+     *
+     * @returns Snapshot of spans exported, dropped, and export success/failure counts
+     */
+    getMetrics(): TracingMetrics {
+      return {
+        spansExported: _spansExported,
+        spansDropped: _spansDropped,
+        exportFailures: _exportFailures,
+        exportSuccesses: _exportSuccesses,
+      };
     },
   };
 }

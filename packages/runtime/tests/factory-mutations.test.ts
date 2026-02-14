@@ -369,8 +369,8 @@ describe("createContainer factory mutations", () => {
       const initialized = await container.initialize();
       expect(initialized.has(LoggerPort)).toBe(true);
       expect(initialized.has(DatabasePort)).toBe(false);
-      expect(initialized.hasAdapter(LoggerPort)).toBe(true);
-      expect(initialized.hasAdapter(DatabasePort)).toBe(false);
+      expect(initialized.has(LoggerPort)).toBe(true);
+      expect(initialized.has(DatabasePort)).toBe(false);
     });
 
     it("initialized container override works", async () => {

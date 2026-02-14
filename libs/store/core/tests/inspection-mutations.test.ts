@@ -13,7 +13,7 @@ import { createStoreInspectorImpl } from "../src/inspection/store-inspector-impl
 import type { PortRegistryEntry } from "../src/inspection/store-inspector-impl.js";
 import { createActionHistory } from "../src/inspection/action-history.js";
 import { createStoreRegistry } from "../src/inspection/store-registry.js";
-import type { StoreRegistryEntry } from "../src/inspection/store-registry.js";
+import type { StoreRegistryEntry } from "../src/types/inspection.js";
 import { StoreRegistryAdapter } from "../src/inspection/registry-adapter.js";
 import { StoreRegistryPort } from "../src/types/inspection.js";
 import type {

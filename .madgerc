@@ -1,0 +1,12 @@
+{
+  "fileExtensions": ["ts", "tsx"],
+  "excludeRegExp": [
+    "node_modules",
+    "\\.d\\.ts$",
+    "dist/",
+    "\\.stryker-tmp/",
+    "reports/",
+    "CONCEPT-"
+  ],
+  "tsConfig": "./tsconfig.json"
+}

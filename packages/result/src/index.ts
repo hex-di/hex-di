@@ -1,6 +1,12 @@
 /**
  * @hex-di/result - Rust-style Result type for TypeScript
  *
+ * PUBLIC API CONTRACT
+ * -------------------
+ * Everything exported from this file constitutes the public API.
+ * Internal modules (prefixed with `_`) are NOT part of the public API.
+ * Breaking changes to exported symbols follow semver major version bumps.
+ *
  * @packageDocumentation
  */
 
@@ -9,6 +15,7 @@
 // =============================================================================
 
 export type { Result, Ok, Err } from "./core/types.js";
+export { RESULT_BRAND } from "./core/brand.js";
 
 // =============================================================================
 // Factories

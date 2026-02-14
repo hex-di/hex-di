@@ -68,9 +68,9 @@ describe("MemoryTracer", () => {
 
     it("should record span start and end times", () => {
       const tracer = createMemoryTracer();
-      const before = Date.now();
+      const before = Date.now() - 1; // Allow for high-res timestamp precision
       tracer.withSpan("timed", () => {});
-      const after = Date.now();
+      const after = Date.now() + 1; // Allow for high-res timestamp precision
 
       const span = tracer.getCollectedSpans()[0];
       expect(span.startTime).toBeGreaterThanOrEqual(before);

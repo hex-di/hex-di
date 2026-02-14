@@ -170,7 +170,13 @@ export type InspectorEvent =
     }
   | { readonly type: "library"; readonly event: LibraryEvent }
   | { readonly type: "library-registered"; readonly name: string }
-  | { readonly type: "library-unregistered"; readonly name: string };
+  | { readonly type: "library-unregistered"; readonly name: string }
+  | { readonly type: "chain-registered"; readonly chainId: string }
+  | {
+      readonly type: "execution-added";
+      readonly chainId: string;
+      readonly executionId: string;
+    };
 
 /**
  * Listener function for inspector events.

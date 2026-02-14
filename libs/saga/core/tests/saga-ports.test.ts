@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createPort } from "@hex-di/core";
+import { createPort, getPortMetadata } from "@hex-di/core";
 import {
   sagaPort,
   sagaManagementPort,
@@ -188,6 +188,23 @@ describe("saga ports (DOD 3)", () => {
       const portA = sagaManagementPort<number>()({ name: "MgmtA" });
       const portB = sagaManagementPort<boolean>()({ name: "MgmtB" });
       expect(portA.__portName).not.toBe(portB.__portName);
+    });
+  });
+
+  describe("port metadata category for library detection", () => {
+    it("sagaPort sets category to saga/saga", () => {
+      const port = sagaPort<string, number>()({ name: "OrderSaga" });
+      expect(getPortMetadata(port)?.category).toBe("saga/saga");
+    });
+
+    it("sagaManagementPort sets category to saga/saga-management", () => {
+      const port = sagaManagementPort<number>()({ name: "OrderMgmt" });
+      expect(getPortMetadata(port)?.category).toBe("saga/saga-management");
+    });
+
+    it("SagaPersisterPort has saga category", () => {
+      const meta = getPortMetadata(SagaPersisterPort);
+      expect(meta?.category).toBe("saga/saga");
     });
   });
 });

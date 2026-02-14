@@ -8,7 +8,9 @@
  */
 
 import { describe, it, expect } from "vitest";
+import { getPortMetadata } from "@hex-di/core";
 import { activityPort } from "../../src/activities/port.js";
+import { createFlowPort } from "../../src/integration/port.js";
 
 // =============================================================================
 // Test Fixtures
@@ -51,9 +53,21 @@ describe("activityPort factory", () => {
     expect(typeof factory).toBe("function");
   });
 
-  it("port only has __portName at runtime", () => {
+  it("port only has __portName as enumerable key at runtime", () => {
     const port = activityPort<UserInput, UserOutput>()("Test");
     const keys = Object.keys(port);
     expect(keys).toEqual(["__portName"]);
+  });
+});
+
+describe("flow port metadata category for library detection", () => {
+  it("createFlowPort sets category to flow/flow", () => {
+    const port = createFlowPort<"a" | "b", "GO", object>("TestFlow");
+    expect(getPortMetadata(port)?.category).toBe("flow/flow");
+  });
+
+  it("activityPort sets category to flow/activity", () => {
+    const port = activityPort<UserInput, UserOutput>()("FetchUser");
+    expect(getPortMetadata(port)?.category).toBe("flow/activity");
   });
 });

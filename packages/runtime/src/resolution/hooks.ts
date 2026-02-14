@@ -10,7 +10,7 @@
 
 import type { Port } from "@hex-di/core";
 import type { Lifetime } from "@hex-di/core";
-import type { InheritanceMode } from "../types.js";
+import type { InheritanceMode } from "../types/inheritance.js";
 
 // =============================================================================
 // Hook Type Definitions

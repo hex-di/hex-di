@@ -10,6 +10,7 @@ import {
   createAsyncDerivedPort,
   createLinkedDerivedPort,
 } from "../src/index.js";
+import { getPortMetadata } from "@hex-di/core";
 import type { ActionMap, ActionReducer } from "../src/index.js";
 
 describe("createStatePort", () => {
@@ -124,5 +125,42 @@ describe("createLinkedDerivedPort", () => {
     });
 
     expect(port.__portName).toBe("Fahrenheit");
+  });
+});
+
+// =============================================================================
+// Library category detection
+// =============================================================================
+
+describe("port metadata category for library detection", () => {
+  it("createStatePort sets category to store/state", () => {
+    interface S {
+      count: number;
+    }
+    interface A extends ActionMap<S> {
+      inc: ActionReducer<S>;
+    }
+    const port = createStatePort<S, A>()({ name: "Counter" });
+    expect(getPortMetadata(port)?.category).toBe("store/state");
+  });
+
+  it("createAtomPort sets category to store/atom", () => {
+    const port = createAtomPort<string>()({ name: "Theme" });
+    expect(getPortMetadata(port)?.category).toBe("store/atom");
+  });
+
+  it("createDerivedPort sets category to store/derived", () => {
+    const port = createDerivedPort<number>()({ name: "Total" });
+    expect(getPortMetadata(port)?.category).toBe("store/derived");
+  });
+
+  it("createAsyncDerivedPort sets category to store/async-derived", () => {
+    const port = createAsyncDerivedPort<number>()({ name: "Rate" });
+    expect(getPortMetadata(port)?.category).toBe("store/async-derived");
+  });
+
+  it("createLinkedDerivedPort sets category to store/linked-derived", () => {
+    const port = createLinkedDerivedPort<number>()({ name: "Fahrenheit" });
+    expect(getPortMetadata(port)?.category).toBe("store/linked-derived");
   });
 });

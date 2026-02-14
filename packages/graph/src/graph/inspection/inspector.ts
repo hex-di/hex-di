@@ -38,6 +38,34 @@ import { detectCycleAtRuntime } from "./runtime-cycle-detection.js";
  * already-built graphs. Use this when you need to analyze a graph after
  * calling `build()`.
  *
+ * ## Time Complexity
+ *
+ * | Operation | Complexity | Notes |
+ * |-----------|------------|-------|
+ * | Port enumeration | O(A) | A = adapter count |
+ * | Dependency map construction | O(A * D) | D = avg dependencies per adapter |
+ * | Unsatisfied requirements | O(R) | R = total required ports |
+ * | Max chain depth (DFS) | O(A + E) | E = total edges |
+ * | Orphan port detection | O(P) | P = provided ports |
+ * | Disposal warnings | O(A * D) | For each adapter, scan dependencies |
+ * | Complexity score | O(E) | Sum of all dependency edges |
+ * | Unnecessary lazy detection | O(L * (A + E)) | L = lazy port count |
+ * | Suggestions | O(U + O + D) | U = unsatisfied, O = orphans, D = disposal warnings |
+ * | **Total** | **O(A * D + L * (A + E))** | Dominated by lazy analysis |
+ *
+ * ## Memory Complexity
+ *
+ * O(A + E) for the dependency map and auxiliary data structures.
+ *
+ * ## Scale Guidelines
+ *
+ * | Adapter Count | Expected Time | Notes |
+ * |--------------|---------------|-------|
+ * | 1-100 | < 1ms | Typical application |
+ * | 100-500 | 1-10ms | Large monolith |
+ * | 500-1000 | 10-50ms | Very large system, consider splitting |
+ * | 1000+ | 50ms+ | Not recommended; split into subgraphs |
+ *
  * ## Iteration Order Independence
  *
  * All computed properties are **order-independent** - they produce the same
@@ -233,6 +261,7 @@ export function inspectGraph(
     correlationId,
     ports: Object.freeze(ports.map(p => Object.freeze(p))),
     directionSummary: Object.freeze(directionSummary),
+    actor: options.actor ? Object.freeze({ ...options.actor }) : undefined,
   });
 }
 

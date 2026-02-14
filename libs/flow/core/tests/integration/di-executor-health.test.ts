@@ -14,7 +14,7 @@ import { createDIEffectExecutor } from "../../src/integration/di-executor.js";
 import { createActivityManager } from "../../src/activities/manager.js";
 import { Effect } from "../../src/effects/constructors.js";
 import type { HealthEvent } from "../../src/introspection/types.js";
-import type { ScopeResolver } from "../../src/integration/di-executor.js";
+import type { ScopeResolver } from "../../src/integration/types.js";
 
 // =============================================================================
 // Fixtures

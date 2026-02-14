@@ -216,7 +216,6 @@ describe("BaseContainerImpl resolve async init check", () => {
           provides: LoggerPort,
           requires: [],
           lifetime: "singleton",
-          factoryKind: "async" as const,
           factory: async () => ({ log: vi.fn() }),
         })
       )
@@ -239,7 +238,6 @@ describe("BaseContainerImpl resolveAsync with async adapter", () => {
           provides: LoggerPort,
           requires: [],
           lifetime: "singleton",
-          factoryKind: "async" as const,
           factory: async () => ({ log: vi.fn() }),
         })
       )
@@ -598,7 +596,7 @@ describe("BaseContainerImpl hasAdapter", () => {
       .build();
     const container = createContainer({ graph, name: "Test" });
 
-    expect(container.hasAdapter(LoggerPort)).toBe(true);
+    expect(container.has(LoggerPort)).toBe(true);
   });
 
   it("hasAdapter returns false for unregistered port", () => {
@@ -614,7 +612,7 @@ describe("BaseContainerImpl hasAdapter", () => {
       .build();
     const container = createContainer({ graph, name: "Test" });
 
-    expect(container.hasAdapter(DatabasePort)).toBe(false);
+    expect(container.has(DatabasePort)).toBe(false);
   });
 
   it("hasAdapter returns true for scoped port (unlike has)", () => {
@@ -630,7 +628,10 @@ describe("BaseContainerImpl hasAdapter", () => {
       .build();
     const container = createContainer({ graph, name: "Test" });
 
-    expect(container.hasAdapter(LoggerPort)).toBe(true);
+    // adapter exists in graph (verified via internal state)
+    const state = container[INTERNAL_ACCESS]();
+    expect(state.adapterMap.has(LoggerPort)).toBe(true);
+    // has returns false for scoped ports on root container (not yet resolved in a scope)
     expect(container.has(LoggerPort)).toBe(false);
   });
 });

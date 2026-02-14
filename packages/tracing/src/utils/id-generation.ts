@@ -30,6 +30,35 @@ for (let i = 0; i < 256; i++) {
 /** Cached crypto reference (resolved once at module load) */
 const _crypto = getCrypto();
 
+/** One-time warning flag for Math.random fallback */
+let _mathRandomWarningEmitted = false;
+
+/**
+ * Emit a one-time warning when falling back to Math.random().
+ * GxP requirement: transparent behavior for security-relevant degradation.
+ */
+function emitMathRandomWarning(): void {
+  if (_mathRandomWarningEmitted) return;
+  _mathRandomWarningEmitted = true;
+
+  if (typeof globalThis !== "undefined" && "console" in globalThis) {
+    const g: Record<string, unknown> = globalThis;
+    const cons = g.console;
+    if (cons && typeof cons === "object" && "warn" in cons) {
+      const warnFn: unknown = (cons as Record<string, unknown>).warn;
+      if (typeof warnFn === "function") {
+        (warnFn as (msg: string) => void).call(
+          cons,
+          "[hex-di/tracing] WARNING: crypto.getRandomValues() is unavailable. " +
+            "Falling back to Math.random() for trace/span ID generation. " +
+            "IDs will not be cryptographically secure. " +
+            "This may indicate a non-standard runtime environment."
+        );
+      }
+    }
+  }
+}
+
 // Span ID batch: 256 entries × 8 bytes = 2048 bytes
 const SPAN_BATCH_SIZE = 256;
 const _spanBatch = new Uint8Array(SPAN_BATCH_SIZE * 8);
@@ -44,6 +73,7 @@ function fillSpanBatch(): void {
   if (_crypto) {
     _crypto.getRandomValues(_spanBatch);
   } else {
+    emitMathRandomWarning();
     for (let i = 0; i < _spanBatch.length; i++) {
       _spanBatch[i] = Math.floor(Math.random() * 256);
     }
@@ -55,6 +85,7 @@ function fillTraceBatch(): void {
   if (_crypto) {
     _crypto.getRandomValues(_traceBatch);
   } else {
+    emitMathRandomWarning();
     for (let i = 0; i < _traceBatch.length; i++) {
       _traceBatch[i] = Math.floor(Math.random() * 256);
     }

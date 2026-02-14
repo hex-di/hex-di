@@ -19,6 +19,10 @@ export interface RateLimitConfig {
   readonly windowMs: number;
   readonly perLevel?: Partial<Record<LogLevel, number>>;
   readonly strategy?: "drop" | "sample"; // default: "drop"
+  /** Seedable random function for deterministic testing. Defaults to Math.random. */
+  readonly randomFn?: () => number;
+  /** Called when an entry is dropped by rate limiting. */
+  readonly onDrop?: (count: number, windowMs: number) => void;
 }
 
 /**
@@ -54,7 +58,8 @@ function isWithinLimit(
   if (counter.timestamps.length >= limit) {
     if (config.strategy === "sample") {
       // Sample: allow with probability inversely proportional to overflow
-      return Math.random() < limit / (counter.timestamps.length + 1);
+      const random = config.randomFn ?? Math.random;
+      return random() < limit / (counter.timestamps.length + 1);
     }
     return false;
   }
@@ -78,18 +83,24 @@ function recordEntry(counter: WindowCounter, now: number): void {
  */
 export function withRateLimit(logger: Logger, config: RateLimitConfig): Logger {
   const counter: WindowCounter = { timestamps: [] };
+  const droppedState = { count: 0 };
 
-  return createRateLimitedLogger(logger, config, counter);
+  return createRateLimitedLogger(logger, config, counter, droppedState);
 }
 
 function createRateLimitedLogger(
   logger: Logger,
   config: RateLimitConfig,
-  counter: WindowCounter
+  counter: WindowCounter,
+  droppedState: { count: number }
 ): Logger {
   function tryLog(level: LogLevel): boolean {
     const now = Date.now();
     if (!isWithinLimit(counter, level, config, now)) {
+      droppedState.count++;
+      if (config.onDrop) {
+        config.onDrop(droppedState.count, config.windowMs);
+      }
       return false;
     }
     recordEntry(counter, now);
@@ -150,11 +161,16 @@ function createRateLimitedLogger(
     },
 
     child(context: Partial<LogContext>): Logger {
-      return createRateLimitedLogger(logger.child(context), config, counter);
+      return createRateLimitedLogger(logger.child(context), config, counter, droppedState);
     },
 
     withAnnotations(annotations: Record<string, unknown>): Logger {
-      return createRateLimitedLogger(logger.withAnnotations(annotations), config, counter);
+      return createRateLimitedLogger(
+        logger.withAnnotations(annotations),
+        config,
+        counter,
+        droppedState
+      );
     },
 
     isLevelEnabled(level: LogLevel): boolean {

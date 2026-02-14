@@ -1,0 +1,552 @@
+# 06 - Subject
+
+<!-- Document Control
+| Property         | Value                                    |
+|------------------|------------------------------------------|
+| Document ID      | GUARD-06                                 |
+| Revision         | 1.0                                      |
+| Effective Date   | 2026-02-13                               |
+| Author           | HexDI Engineering                        |
+| Reviewer         | GxP Compliance Review                    |
+| Approved By      | Technical Lead, Quality Assurance Manager |
+| Classification   | GxP Functional Specification             |
+| Change History   | 1.0 (2026-02-13): Initial controlled release |
+-->
+
+_Previous: [05 - Policy Evaluator](./05-policy-evaluator.md)_
+
+---
+
+## 22. AuthSubject Interface
+
+The `AuthSubject` is the entity being authorized -- the "who" in "who can do what." It carries the subject's identity, roles, permissions, and arbitrary attributes for ABAC policies.
+
+### Type Definition
+
+```typescript
+/**
+ * The authorization subject -- the entity being authorized.
+ *
+ * Contains the subject's identity, roles, permissions, and attributes.
+ * This is the data that policies evaluate against.
+ */
+export interface AuthSubject {
+  /** Unique identifier for the subject. */
+  readonly id: string;
+  /** Role names assigned to the subject. */
+  readonly roles: readonly string[];
+  /** Flattened permission set for O(1) lookup at evaluation time. */
+  readonly permissions: ReadonlySet<string>;
+  /** Arbitrary attributes for attribute-based policies. */
+  readonly attributes: Readonly<Record<string, unknown>>;
+  /**
+   * How the subject authenticated.
+   *
+   * Examples: "password", "mfa", "certificate", "api-key", "sso", "anonymous".
+   * Non-authenticated contexts use "none".
+   * This field is required for audit compliance -- every authorization
+   * decision must record the authentication method of the subject.
+   */
+  readonly authenticationMethod: string;
+  /**
+   * ISO 8601 timestamp of when the subject's authentication occurred.
+   *
+   * Example: "2024-01-15T10:30:00.000Z"
+   * Used for audit trail correlation and session freshness checks.
+   * Non-authenticated contexts set this to the current time.
+   */
+  readonly authenticatedAt: string;
+  /**
+   * Identity provider that authenticated the subject.
+   *
+   * Examples: "okta", "azure-ad", "internal-ldap", "local".
+   * Used for audit trail provenance and cross-IdP correlation.
+   */
+  readonly identityProvider?: string;
+  /**
+   * Session identifier linking this subject to a specific session.
+   *
+   * Enables correlation between authorization decisions and the
+   * session lifecycle (login, refresh, logout). Used for audit trail
+   * queries such as "show all decisions made in session X."
+   */
+  readonly sessionId?: string;
+}
+```
+
+```
+REQUIREMENT: In GxP environments (gxp: true), AuthSubject fields MUST satisfy
+             the following minimum identity claim requirements:
+
+             1. **id (globally unique + IdP-traceable):** The id field MUST be
+                globally unique within the deployment and MUST be traceable to a
+                specific identity record in the Identity Provider (IdP). Transient
+                or session-scoped identifiers (e.g., opaque session tokens) MUST
+                NOT be used as subjectId in GxP environments.
+
+             2. **authenticationMethod (controlled vocabulary):** The
+                authenticationMethod field MUST use a value from the controlled
+                vocabulary defined below. Site-specific extensions are permitted
+                but MUST be documented in the validation plan (section 67).
+
+             3. **authenticatedAt (staleness window):** The authenticatedAt
+                timestamp MUST be within a configurable staleness window
+                (default: 24 hours) of the current time at the point of guard
+                evaluation. Subjects with authenticatedAt older than the staleness
+                window MUST be rejected with a Deny decision and reason "GxP:
+                authentication timestamp exceeds staleness window".
+
+             Reference: 21 CFR 11.10(d), 21 CFR 11.100(a), ALCOA+ Attributable.
+```
+
+```
+RECOMMENDED: The authenticationMethod field SHOULD use values from the following
+             controlled vocabulary:
+
+             | Value         | Description                                              |
+             |---------------|----------------------------------------------------------|
+             | `password`    | Username and password authentication                     |
+             | `mfa`         | Multi-factor authentication (password + second factor)   |
+             | `certificate` | X.509 client certificate authentication                  |
+             | `api-key`     | API key or service account credential                    |
+             | `sso`         | Single sign-on via SAML, OIDC, or similar federation     |
+             | `kerberos`    | Kerberos ticket-based authentication                     |
+             | `biometric`   | Biometric authentication (fingerprint, facial, etc.)     |
+             | `none`        | No authentication (rejected in GxP mode per section 22)  |
+
+             This vocabulary is extensible. Organizations MAY define site-specific
+             values (e.g., "smartcard", "hardware-token") provided they are
+             documented in the validation plan and consistently applied across
+             all SubjectProviderPort adapters.
+```
+
+```
+RECOMMENDED: SubjectProviderPort adapters SHOULD sanitize AuthSubject attribute
+             values before returning the subject for policy evaluation:
+
+             1. **Maximum value length:** Each attribute value SHOULD NOT exceed
+                1024 characters. Values exceeding this limit SHOULD be truncated
+                with a "[truncated]" suffix appended. A WARNING-level log MUST be
+                emitted when truncation occurs, including the attribute key,
+                original length, and truncated length.
+
+             2. **Character restrictions:** Attribute values SHOULD contain only
+                printable UTF-8 characters. Control characters (U+0000 through
+                U+001F and U+007F through U+009F) SHOULD NOT appear in attribute
+                values, with the exception of newline (U+000A) and horizontal tab
+                (U+0009) which are permitted. Disallowed control characters SHOULD
+                be replaced with the Unicode replacement character (U+FFFD). A
+                WARNING-level log MUST be emitted when character replacement
+                occurs, including the attribute key and the count of replaced
+                characters.
+
+             These sanitization rules prevent injection of control characters into
+             audit trail entries and ensure consistent serialization across storage
+             backends.
+```
+
+```
+REQUIREMENT: When gxp is true, SubjectProviderPort adapters MUST sanitize AuthSubject
+             attribute values before returning the subject for policy evaluation:
+
+             1. Maximum value length: Each attribute value MUST NOT exceed 1024
+                characters. Values exceeding this limit MUST be truncated with a
+                "[truncated]" suffix. A WARNING-level log MUST be emitted when
+                truncation occurs, including the attribute key, original length,
+                and truncated length.
+             2. Character restrictions: Attribute values MUST contain only printable
+                UTF-8 characters. Control characters (U+0000 through U+001F and
+                U+007F through U+009F), except newline (U+000A) and horizontal tab
+                (U+0009), MUST be replaced with the Unicode replacement character
+                (U+FFFD). A WARNING-level log MUST be emitted when character
+                replacement occurs.
+
+             These controls prevent injection of control characters into audit trail
+             entries, which could compromise audit trail legibility (ALCOA+ Legible)
+             or corrupt serialization (ALCOA+ Complete). IdP attribute values are an
+             external input boundary and require validation in GxP environments.
+             Reference: 21 CFR 11.10(e), ALCOA+ Legible principle, EU GMP Annex 11
+             section 9.
+```
+
+### Design Decisions
+
+**Permissions as `ReadonlySet<string>` at runtime.** At compile time, permissions are branded `Permission<TResource, TAction>` tokens. At runtime, the subject's permission set stores them as `"resource:action"` strings in a `ReadonlySet`. The evaluator compares by name string. This is intentional:
+
+1. Branded tokens provide compile-time safety for policy _definition_ (you cannot pass a typo to `hasPermission()`)
+2. Runtime evaluation operates on the flattened string set for O(1) lookup performance
+3. Dynamic permissions (from databases) degrade naturally to string representation
+
+**Roles as `readonly string[]`.** Role names are stored as an array of strings. The evaluator checks membership via `.includes()`. For most applications, role lists are small (3-10 entries), so linear scan is fast enough. If performance is a concern, the `PrecomputedSubject` converts this to a `ReadonlySet<string>`.
+
+**Attributes as `Readonly<Record<string, unknown>>.`** Attributes are an open-ended bag of key-value pairs. The matcher DSL (section 16) resolves attribute values by path. Common attributes include `department`, `organization`, `clearanceLevel`, `ipAddress`, `timeZone`.
+
+**Authentication provenance on every AuthSubject.** Every AuthSubject must declare its authentication provenance for audit compliance. Non-GxP users set `authenticationMethod` to `"none"` and `authenticatedAt` to the current time. This ensures that every authorization decision in the audit trail can be traced back to a specific authentication event, satisfying regulatory traceability requirements.
+
+```
+REQUIREMENT: SubjectProviderPort adapters MUST provide authenticatedAt in ISO 8601 UTC
+             format with the "Z" designator (e.g., "2024-01-15T10:30:00.000Z"). Local
+             timezone offsets (e.g., "+05:30") MUST NOT be used. This ensures timestamp
+             consistency with all other guard timestamps (Decision.evaluatedAt,
+             AuditEntry.timestamp, ElectronicSignature.signedAt) and prevents ambiguity
+             during cross-timezone audit trail review.
+             Reference: ALCOA+ Contemporaneous and Consistent principles.
+```
+
+```
+REQUIREMENT: When gxp is true, the guard evaluator MUST reject subjects whose
+             authenticationMethod is "none" or "anonymous" before policy evaluation
+             begins. The rejection MUST produce a Deny decision with reason
+             "GxP: anonymous or unauthenticated subjects are not permitted" and
+             the decision MUST be recorded in the audit trail. This prevents
+             unauthenticated access to GxP-protected resources.
+             Reference: 21 CFR 11.10(d), 21 CFR 11.100(a).
+```
+
+```typescript
+/**
+ * A GxP-validated AuthSubject that has passed identity verification.
+ * When `gxp: true`, all subjects MUST be validated via validateGxPSubject()
+ * before entering the guard evaluation pipeline.
+ */
+interface GxPAuthSubject extends AuthSubject {
+  readonly _brand: "GxPAuthSubject";
+  /** The subject has been validated: subjectId is non-empty, authenticationMethod is non-anonymous. */
+  readonly validated: true;
+}
+
+/**
+ * Validates an AuthSubject for GxP compliance.
+ * Rejects anonymous subjects (empty subjectId or authenticationMethod === "anonymous").
+ * Returns a branded GxPAuthSubject on success.
+ */
+function validateGxPSubject(subject: AuthSubject): Result<GxPAuthSubject, AccessDeniedError>;
+```
+
+```
+REQUIREMENT: When gxp is true, validateGxPSubject() MUST reject subjects where
+             subjectId is empty or authenticationMethod is "anonymous". The
+             rejection MUST return Err(AccessDeniedError) with code ACL014 and
+             reason "GxP mode requires authenticated, non-anonymous subjects".
+             The validated GxPAuthSubject type provides compile-time assurance
+             that downstream guard evaluation only processes verified subjects.
+             Reference: 21 CFR 11.10(d), ALCOA+ Attributable.
+```
+
+```
+REQUIREMENT: SubjectProvider adapters MUST validate the structural integrity of
+             AuthSubject fields before returning the subject for policy evaluation:
+             - `id` MUST be a non-empty string
+             - `roles` MUST be an array (may be empty for direct-permission models)
+             - `permissions` MUST be a Set (may be empty if all grants come from roles)
+             - `authenticationMethod` MUST be a non-empty string
+             - `authenticatedAt` MUST be a valid ISO 8601 UTC timestamp with the "Z"
+               designator (consistent with section 22 timestamp requirements)
+             If any field fails validation, the SubjectProvider MUST reject the subject
+             with a descriptive error (e.g., "SubjectProvider: id must be a non-empty
+             string") before policy evaluation begins. Invalid subjects MUST NOT reach
+             the guard evaluator.
+             Reference: EU GMP Annex 11 §6 (accuracy checks on data input).
+```
+
+> **React integration guidance:** When `useCan()` returns `undefined` (subject still loading), consuming components in security-sensitive contexts SHOULD treat this as a deny. Rendering protected content while the subject is unknown creates a window where unauthorized users may see GxP data. See section 41 for the `<Can>` component's `fallback` prop, which handles this case in JSX.
+
+### PrecomputedSubject
+
+```typescript
+/**
+ * A subject with precomputed lookup structures for fast evaluation.
+ *
+ * Created by SubjectProvider at subject-creation time. All downstream
+ * consumers use the precomputed form. The permission set is already
+ * flattened from roles, and roles are stored as a Set for O(1) lookup.
+ */
+export interface PrecomputedSubject extends AuthSubject {
+  /** Role names as a Set for O(1) membership check. */
+  readonly roleSet: ReadonlySet<string>;
+  /** Flattened permission strings ("resource:action") for O(1) lookup. */
+  readonly permissionSet: ReadonlySet<string>;
+}
+```
+
+The `PrecomputedSubject` is created once when the subject enters the system (e.g., when the JWT is decoded or the session is loaded). The precomputation includes:
+
+1. Flattening all role permissions via `flattenPermissions()` and merging with direct grants
+2. Storing the result as a `ReadonlySet<string>` for O(1) `has()` checks
+3. Converting the role array to a `ReadonlySet<string>` for O(1) role membership checks
+
+```typescript
+function precomputeSubject(raw: AuthSubject): PrecomputedSubject {
+  return {
+    ...raw,
+    roleSet: new Set(raw.roles),
+    permissionSet: flattenPermissions(raw.roles, raw.permissions),
+  };
+}
+```
+
+### Usage
+
+```typescript
+// Constructing a subject from a decoded JWT
+const subject: AuthSubject = {
+  id: decoded.sub,
+  roles: decoded.roles,
+  permissions: new Set(decoded.permissions),
+  attributes: {
+    department: decoded.department,
+    organization: decoded.org,
+    email: decoded.email,
+  },
+  authenticationMethod: "jwt",
+  authenticatedAt: decoded.iat
+    ? new Date(decoded.iat * 1000).toISOString()
+    : new Date().toISOString(),
+};
+
+// Precompute for fast evaluation
+const precomputed = precomputeSubject(subject);
+
+// Evaluate a policy
+const result = evaluate(policy, { subject: precomputed });
+```
+
+## 23. SubjectProviderPort
+
+The `SubjectProviderPort` is an outbound port with scoped lifetime. It provides the current authorization subject from the execution context. On the server side, this means extracting the subject from the HTTP request (JWT, session, headers). On the React side, the subject flows through React context instead (see section 24).
+
+### Port Definition
+
+```typescript
+/**
+ * Service interface for providing the current authorization subject.
+ *
+ * The subject provider resolves the "who" for authorization checks.
+ * It is a scoped port: each request scope gets its own subject.
+ */
+export interface SubjectProvider {
+  /** Returns the current authorization subject. */
+  getSubject(): AuthSubject;
+}
+
+/**
+ * Port for the subject provider.
+ *
+ * This is a well-known outbound port. The guard() wrapper injects
+ * this dependency to obtain the current authorization subject.
+ */
+export const SubjectProviderPort = createPort<"SubjectProvider", SubjectProvider>({
+  name: "SubjectProvider",
+  direction: "outbound",
+  category: "infrastructure",
+  description: "Provides the current authorization subject from execution context",
+});
+```
+
+### Why a Port?
+
+The subject provider is a port (not a function or a global) because:
+
+1. **Testability.** In tests, provide a `MemorySubjectProvider` that returns a fixed subject. No mocking.
+2. **Scope isolation.** Each request scope resolves its own subject. No global mutable state.
+3. **Graph visibility.** The subject provider appears in the dependency graph. The inspector can see which adapters depend on it.
+4. **Swappable.** Server-side: JWT adapter. Test: static adapter. Development: hardcoded admin adapter.
+
+### Synchronous `getSubject()`
+
+The `getSubject()` method is synchronous. This is critical for the guard architecture (architecture-review #3):
+
+- The subject is resolved once when the scope is created (from the request context)
+- Subsequent calls return the cached value
+- The guard wrapper calls `getSubject()` inside the factory, which must be synchronous to preserve adapter lifetimes
+
+If the subject requires an async lookup (e.g., database query), that lookup must happen before the scope is created. The `createSubjectAdapter` helper (section 24) accepts a synchronous factory for this reason.
+
+## 24. Scoped Subject Adapter
+
+### Server-Side: Scoped Adapter
+
+On the server side, the subject is resolved from the request context. The `createSubjectAdapter` helper creates a scoped adapter that calls a factory function to produce the subject.
+
+```typescript
+/**
+ * Creates a scoped adapter for SubjectProviderPort.
+ *
+ * The factory function receives the resolution context and returns
+ * the AuthSubject for the current scope. It is called once per scope
+ * (scoped lifetime caching ensures this).
+ *
+ * @param factory - Synchronous function that produces the AuthSubject
+ * @returns An adapter for SubjectProviderPort with scoped lifetime
+ */
+export function createSubjectAdapter(
+  factory: () => AuthSubject
+): Adapter<typeof SubjectProviderPort>;
+```
+
+### Usage: Express/Hono/Server
+
+```typescript
+import { createSubjectAdapter } from "@hex-di/guard";
+
+// In a Hono middleware or request handler:
+function createRequestScope(request: Request, container: Container): Scope {
+  const scope = container.createScope();
+
+  // Decode the JWT from the request headers
+  const token = request.headers.get("Authorization")?.replace("Bearer ", "");
+  const decoded = verifyJwt(token);
+
+  // Register the subject adapter for this scope
+  const subjectAdapter = createSubjectAdapter(() => ({
+    id: decoded.sub,
+    roles: decoded.roles,
+    permissions: new Set(decoded.permissions),
+    attributes: {
+      department: decoded.department,
+      organization: decoded.org,
+    },
+    authenticationMethod: "jwt",
+    authenticatedAt: decoded.iat
+      ? new Date(decoded.iat * 1000).toISOString()
+      : new Date().toISOString(),
+  }));
+
+  // Provide the adapter in the scope's graph
+  scope.provide(subjectAdapter);
+
+  return scope;
+}
+
+// Later, when resolving a guarded port:
+const userRepo = scope.resolve(UserRepoPort);
+// guard() calls SubjectProviderPort.getSubject() inside the factory
+// The subject comes from the JWT decoded above
+```
+
+```
+RECOMMENDED: When creating successive scopes for the same subjectId (e.g., on
+             token refresh or role change), SubjectProviderPort adapters SHOULD
+             log permission set changes between scope creations. The log entry
+             SHOULD include:
+             - subjectId
+             - timestamp (ISO 8601 UTC)
+             - added permissions (set difference: new − previous)
+             - removed permissions (set difference: previous − new)
+             - change attribution (e.g., token refresh, admin action, role sync)
+
+             This provides visibility into permission grants and revocations for
+             ALCOA+ Complete compliance. Permission change logging enables
+             auditors to reconstruct the full history of a subject's effective
+             permissions without querying external identity providers.
+             Reference: ALCOA+ Complete, 21 CFR 11.10(e).
+```
+
+### React-Side: Pure React Context (NOT DI Scope)
+
+On the React side, the subject is provided via pure React context. It does NOT create a DI scope. This is a critical architectural decision (architecture-review #5):
+
+**Why NOT a DI scope in React?**
+
+1. The existing React integration already has `HexDiAutoScopeProvider` for managing DI scopes. Adding another scope just for the subject creates unnecessary nesting.
+2. The subject is an authorization concept, not a DI lifecycle concept. It should flow through React context, not through the container.
+3. `useCan()` performs an in-memory set lookup -- it does not need to resolve anything from the container.
+
+```typescript
+// React-side: SubjectProvider is a React context provider
+import { SubjectProvider } from "@hex-di/guard/react";
+
+function App({ currentUser }: { currentUser: AuthSubject }) {
+  return (
+    <SubjectProvider subject={currentUser}>
+      <Dashboard />
+    </SubjectProvider>
+  );
+}
+```
+
+### Comparison: Server vs React
+
+| Aspect            | Server-Side                      | React-Side                              |
+| ----------------- | -------------------------------- | --------------------------------------- |
+| Subject source    | JWT, session, headers            | Props or API response                   |
+| Mechanism         | Scoped adapter via DI            | React context provider                  |
+| Creates DI scope? | No (uses existing request scope) | No                                      |
+| Evaluation        | `guard()` inside factory         | `useCan()` / `usePolicy()` in component |
+| Subject lifetime  | Request scope                    | React component tree lifetime           |
+| Type              | `SubjectProviderPort` (DI port)  | `SubjectContext` (React context)        |
+
+### Loading State
+
+On the React side, the subject may not be available immediately (e.g., fetched from an API after mount). The `SubjectProvider` accepts `AuthSubject | null`:
+
+```typescript
+function App() {
+  const [subject, setSubject] = useState<AuthSubject | null>(null);
+
+  useEffect(() => {
+    fetchCurrentUser().then(setSubject);
+  }, []);
+
+  return (
+    <SubjectProvider subject={subject}>
+      <Dashboard />
+    </SubjectProvider>
+  );
+}
+```
+
+When `subject` is `null`:
+
+- `useCan()` returns `undefined` (not `false` -- `undefined` means "loading")
+- `<Can>` renders its `fallback` prop (default: `null`)
+- `useSubject()` returns `null`
+- `usePolicy()` returns `undefined`
+
+This three-state model prevents the "flash of unauthorized content" problem (architecture-review #9).
+
+### Session Lifecycle Patterns
+
+```
+RECOMMENDED: Organizations deploying @hex-di/guard in environments with long-lived
+             sessions (WebSocket connections, background workers, single-page applications)
+             SHOULD implement the following session lifecycle controls:
+
+             1. **Inactivity timeout:** Delegate session timeout enforcement to the
+                Identity Provider (IdP). Configure maxScopeLifetimeMs on the guard
+                graph to bound the maximum scope duration independently of IdP session
+                lifetime. This provides defense-in-depth: the IdP handles session
+                expiration, while guard bounds the authorization scope lifetime.
+
+             2. **Concurrent session alerting:** When the same subjectId appears in
+                multiple active scopes simultaneously, the guard system SHOULD emit
+                a WARNING-level alert if the concurrent scope count exceeds a
+                configurable threshold (default: 2). This detects potential credential
+                sharing or session hijacking. The alert SHOULD include:
+                - subjectId
+                - current concurrent scope count
+                - scope creation timestamps
+                - threshold that was exceeded
+                The alert is advisory — it does NOT block scope creation. Organizations
+                SHOULD define escalation procedures for concurrent session alerts in
+                their security operations playbook.
+
+             Reference: 21 CFR 11.10(d), EU GMP Annex 11 §12.
+```
+
+```
+RECOMMENDED: When maxScopeLifetimeMs expires, subsequent guard evaluations
+             within the expired scope SHOULD receive Deny with error code
+             ACL013 (ScopeExpiredError). In-flight evaluations that began
+             before expiry SHOULD be allowed to complete. A WARNING-level
+             log SHOULD be emitted on scope expiry including the scopeId,
+             subject identity, and elapsed scope lifetime. Scope expiry
+             SHOULD trigger chain verification for the expiring scope
+             (cross-reference: 02-audit-trail-contract.md §61.4, chain
+             verification at scope disposal).
+             Reference: 21 CFR 11.10(d), EU GMP Annex 11 §12.
+```
+
+---
+
+_Next: [07 - Guard Adapter](./07-guard-adapter.md)_

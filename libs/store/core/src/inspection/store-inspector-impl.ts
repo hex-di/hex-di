@@ -18,6 +18,7 @@ import type {
   ActionHistoryEntry,
   ActionHistoryFilter,
   ActionHistoryConfig,
+  StoreRegistryEntry,
 } from "../types/inspection.js";
 // Re-export for consumers that import from this module
 export type { PortRegistryEntry, StoreInspectorInternal } from "../types/inspection.js";
@@ -32,7 +33,7 @@ import {
   __linkedDerivedAdapterBrand,
 } from "../adapters/brands.js";
 import { tryCatch } from "@hex-di/result";
-import type { StoreRegistry } from "./store-registry.js";
+import type { StoreRegistry } from "../types/inspection.js";
 
 // =============================================================================
 // Config
@@ -276,9 +277,7 @@ export function createStoreInspectorImpl(config?: StoreInspectorConfig): StoreIn
  * Both types share the same shape (PortSnapshot return type for getSnapshot).
  * @internal
  */
-function registryEntryToPortEntry(
-  regEntry: import("./store-registry.js").StoreRegistryEntry
-): PortRegistryEntry {
+function registryEntryToPortEntry(regEntry: StoreRegistryEntry): PortRegistryEntry {
   return {
     portName: regEntry.portName,
     adapter: regEntry.adapter,

@@ -182,6 +182,13 @@ function createLazyPortImpl<TName extends string, TPort extends Port<unknown, TN
 export function lazyPort<TName extends string, TPort extends Port<unknown, TName>>(
   port: TPort
 ): LazyPort<TPort> {
+  if (isLazyPort(port)) {
+    throw new TypeError(
+      `ERROR[HEX026]: Cannot create a lazy port from an already-lazy port '${port.__portName}'. ` +
+        `Use the original port instead: getOriginalPort(${port.__portName}).`
+    );
+  }
+
   const portName: TName = port.__portName;
   const lazyPortName: `Lazy${TName}` = `Lazy${portName}`;
 

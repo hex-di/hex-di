@@ -55,3 +55,7 @@ This is a monorepo using pnpm workspaces and Turborepo. Each package:
 ## Git Commits
 
 - **No Co-Authored-By signature** - Do not add the "Co-Authored-By: Claude" line to commit messages
+
+## NEVER DO
+
+never use git stash always try to follow the call chain do not stash the existing code

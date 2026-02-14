@@ -89,7 +89,29 @@ export function createWinstonHandler(options: WinstonHandlerOptions = {}): LogHa
     },
 
     async flush(): Promise<void> {
-      await new Promise<void>((resolve, reject) => {
+      // Non-destructive flush: drain all transport buffers without
+      // ending the logger. Logger remains usable after flush returns.
+      const drainPromises: Array<Promise<void>> = [];
+      for (const transport of logger.transports) {
+        if (transport.writableLength > 0) {
+          drainPromises.push(
+            new Promise<void>(resolve => {
+              transport.once("drain", resolve);
+              // Safety timeout to prevent indefinite hangs
+              setTimeout(resolve, 5000);
+            })
+          );
+        }
+      }
+      if (drainPromises.length > 0) {
+        await Promise.all(drainPromises);
+      }
+    },
+
+    async shutdown(): Promise<void> {
+      // Terminal operation: flush all pending data, then close.
+      // Logger should not be used after shutdown returns.
+      await new Promise<void>(resolve => {
         let finished = false;
         logger.on("finish", () => {
           if (!finished) {
@@ -97,19 +119,22 @@ export function createWinstonHandler(options: WinstonHandlerOptions = {}): LogHa
             resolve();
           }
         });
-        logger.on("error", (err: Error) => {
+        logger.on("error", () => {
           if (!finished) {
             finished = true;
-            reject(err);
+            resolve();
           }
         });
+        // Safety timeout
+        setTimeout(() => {
+          if (!finished) {
+            finished = true;
+            resolve();
+          }
+        }, 5000);
         logger.end();
       });
-    },
-
-    shutdown(): Promise<void> {
       logger.close();
-      return Promise.resolve();
     },
   };
 }

@@ -262,6 +262,8 @@ export function createZipkinExporter(options: ZipkinExporterOptions): SpanExport
      * Shutdown the exporter and release resources.
      *
      * Ensures all buffered spans are exported before cleanup.
+     * Includes a safety timeout (default: request timeout or 30s)
+     * to prevent indefinite hangs during shutdown.
      */
     async shutdown(): Promise<void> {
       if (isShutdown) {
@@ -270,8 +272,15 @@ export function createZipkinExporter(options: ZipkinExporterOptions): SpanExport
 
       isShutdown = true;
 
+      const shutdownTimeout = options.timeout ?? 30000;
+
       try {
-        await zipkinExporter.shutdown();
+        await Promise.race([
+          zipkinExporter.shutdown(),
+          new Promise<void>(resolve => {
+            setTimeout(resolve, shutdownTimeout);
+          }),
+        ]);
       } catch (error) {
         logError("[hex-di/tracing-zipkin] Shutdown failed:", error);
       }

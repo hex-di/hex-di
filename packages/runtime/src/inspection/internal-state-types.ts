@@ -11,7 +11,7 @@
 import type { Port } from "@hex-di/core";
 import type { Lifetime, FactoryKind } from "@hex-di/core";
 import { INTERNAL_ACCESS } from "./symbols.js";
-import type { InheritanceMode } from "../types.js";
+import type { InheritanceMode } from "../types/inheritance.js";
 
 // =============================================================================
 // Container Internal State

@@ -197,7 +197,15 @@ describe("buildTypedSnapshotFromInternal", () => {
     const runtimeSnapshot = {
       isDisposed: false,
       containerName: "Test",
-      singletons: [{ portName: "Logger", lifetime: "singleton" as const, isResolved: false }],
+      singletons: [
+        {
+          portName: "Logger",
+          lifetime: "singleton" as const,
+          isResolved: false,
+          resolvedAt: undefined,
+          resolutionOrder: undefined,
+        },
+      ],
       scopes: {
         id: "container",
         status: "active" as const,
@@ -353,6 +361,7 @@ describe("buildTypedSnapshotFromInternal", () => {
           lifetime: "singleton" as const,
           isResolved: false,
           resolvedAt: undefined,
+          resolutionOrder: undefined,
         },
       ],
       scopes: {

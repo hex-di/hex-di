@@ -54,6 +54,7 @@ export class CircularDependencyError extends ContainerError {
     const formattedChain = dependencyChain.join(" -> ");
     super(`Circular dependency detected: ${formattedChain}`);
     this.dependencyChain = Object.freeze([...dependencyChain]);
+    Object.freeze(this);
   }
 }
 
@@ -109,6 +110,7 @@ export class FactoryError extends ContainerError {
     super(`Factory for port '${portName}' threw: ${causeMessage}`);
     this.portName = portName;
     this.cause = cause;
+    Object.freeze(this);
   }
 }
 
@@ -154,6 +156,7 @@ export class DisposedScopeError extends ContainerError {
         `The scope has already been disposed and cannot be used for resolution.`
     );
     this.portName = portName;
+    Object.freeze(this);
   }
 }
 
@@ -203,6 +206,7 @@ export class ScopeRequiredError extends ContainerError {
         `Scoped ports must be resolved from a scope created via createScope().`
     );
     this.portName = portName;
+    Object.freeze(this);
   }
 }
 
@@ -258,6 +262,7 @@ export class AsyncFactoryError extends ContainerError {
     super(`Async factory for port '${portName}' failed: ${causeMessage}`);
     this.portName = portName;
     this.cause = cause;
+    Object.freeze(this);
   }
 }
 
@@ -312,6 +317,7 @@ export class AsyncInitializationRequiredError extends ContainerError {
         `Use resolveAsync() or call container.initialize() first.`
     );
     this.portName = portName;
+    Object.freeze(this);
   }
 }
 
@@ -373,5 +379,6 @@ export class NonClonableForkedError extends ContainerError {
         `Use 'shared' or 'isolated' mode, or mark the adapter as clonable if shallow cloning is safe.`
     );
     this.portName = portName;
+    Object.freeze(this);
   }
 }

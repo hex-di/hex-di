@@ -405,7 +405,7 @@ describe("createChildContainerWrapper property values", () => {
     const child = parent.createChild(childGraph, { name: "MyChild" });
 
     // parent accessor should return a valid container-like
-    const parentRef = child.parent;
+    const parentRef: any = child.parent;
     expect(parentRef).toBeDefined();
     expect(typeof parentRef.resolve).toBe("function");
   });
@@ -473,7 +473,7 @@ describe("child container wrapper resolution methods", () => {
         throw new Error("child boom");
       },
     });
-    const childGraph = GraphBuilder.create().override(childOverride).build();
+    const childGraph = GraphBuilder.forParent(graph).override(childOverride).build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
     const result = child.tryResolve(LoggerPort);
@@ -519,7 +519,7 @@ describe("child container wrapper resolution methods", () => {
     const childGraph = GraphBuilder.create().build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
-    expect(child.hasAdapter(LoggerPort)).toBe(true);
+    expect(child.has(LoggerPort)).toBe(true);
   });
 });
 

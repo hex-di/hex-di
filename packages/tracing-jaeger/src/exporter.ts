@@ -264,6 +264,8 @@ export function createJaegerExporter(options: JaegerExporterOptions): SpanExport
      * Shutdown the exporter and release resources.
      *
      * Ensures all buffered spans are exported before cleanup.
+     * Includes a safety timeout (default: request timeout or 30s)
+     * to prevent indefinite hangs during shutdown.
      */
     async shutdown(): Promise<void> {
       if (isShutdown) {
@@ -272,8 +274,15 @@ export function createJaegerExporter(options: JaegerExporterOptions): SpanExport
 
       isShutdown = true;
 
+      const shutdownTimeout = options.timeout ?? 30000;
+
       try {
-        await jaegerExporter.shutdown();
+        await Promise.race([
+          jaegerExporter.shutdown(),
+          new Promise<void>(resolve => {
+            setTimeout(resolve, shutdownTimeout);
+          }),
+        ]);
       } catch (error) {
         logError("[hex-di/tracing-jaeger] Shutdown failed:", error);
       }

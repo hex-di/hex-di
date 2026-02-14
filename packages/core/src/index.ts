@@ -33,6 +33,7 @@ export {
   isOutboundPort,
   getPortDirection,
   getPortMetadata,
+  assertPortFrozen,
 } from "./ports/directed.js";
 export type {
   PortDirection,
@@ -106,7 +107,13 @@ export { lazyPort, isLazyPort, getOriginalPort } from "./adapters/lazy.js";
 export type { LazyPort, IsLazyPort, UnwrapLazyPort } from "./adapters/lazy.js";
 
 // Type guards
-export { isAdapter, isLifetime, isFactoryKind } from "./adapters/guards.js";
+export {
+  isAdapter,
+  isLifetime,
+  isFactoryKind,
+  isAdapterFrozen,
+  assertAdapterFrozen,
+} from "./adapters/guards.js";
 
 // =============================================================================
 // Errors
@@ -212,8 +219,20 @@ export type {
   TraceRetentionPolicy,
   TracingOptions,
   TracingAPI,
+  TraceEvictionReason,
 } from "./inspection/tracing-types.js";
 export { DEFAULT_RETENTION_POLICY, hasTracingAccess } from "./inspection/tracing-types.js";
+
+// Tracing warning utilities
+export {
+  configureTracingWarning,
+  emitTracingWarning,
+  resetTracingWarning,
+  getTracingWarningConfig,
+  TRACING_NOT_CONFIGURED_CODE,
+  DEFAULT_TRACING_WARNING_CONFIG,
+} from "./inspection/tracing-warning.js";
+export type { TracingWarningConfig } from "./inspection/tracing-warning.js";
 
 // Graph inspection types
 export type {
@@ -261,7 +280,12 @@ export {
 // =============================================================================
 
 export type { IsNever, TupleToUnion, Prettify, InferenceError } from "./utils/type-utilities.js";
-export { generateCorrelationId } from "./utils/correlation.js";
+export {
+  generateCorrelationId,
+  configureCorrelationId,
+  resetCorrelationId,
+} from "./utils/correlation.js";
+export type { CorrelationIdConfig } from "./utils/correlation.js";
 
 // =============================================================================
 // Context

@@ -44,7 +44,25 @@ export interface TraceEntry {
   readonly portName: string;
   /** Service lifetime of the resolved adapter */
   readonly lifetime: Lifetime;
-  /** High-resolution timestamp when resolution started */
+  /**
+   * Timestamp when resolution started.
+   *
+   * ## Clock Source Contract
+   *
+   * This value is produced by the clock function configured on the container.
+   * The default clock is `performance.now()` (monotonic, high-resolution).
+   *
+   * | Clock Source       | Units          | Monotonic | Cross-Process |
+   * |--------------------|----------------|-----------|---------------|
+   * | `performance.now()`| milliseconds   | Yes       | No            |
+   * | `Date.now()`       | epoch ms       | No        | Yes           |
+   * | Custom             | user-defined   | Depends   | Depends       |
+   *
+   * For GxP cross-system correlation, use `Date.now()` or a synchronized clock.
+   * For local performance analysis, use `performance.now()` (default).
+   *
+   * @see TracingOptions - For clock configuration
+   */
   readonly startTime: number;
   /** Duration of the resolution in milliseconds */
   readonly duration: number;
@@ -154,6 +172,18 @@ export const DEFAULT_RETENTION_POLICY: TraceRetentionPolicy = {
 export interface TracingOptions {
   /** Custom retention policy configuration */
   readonly retentionPolicy?: Partial<TraceRetentionPolicy>;
+
+  /**
+   * Custom clock function for timestamp generation.
+   *
+   * @default performance.now (when available) or Date.now
+   *
+   * For GxP cross-system correlation, use:
+   * ```typescript
+   * { clock: () => Date.now() }
+   * ```
+   */
+  readonly clock?: () => number;
 }
 
 /**
@@ -178,7 +208,30 @@ export interface TracingAPI {
   pin(traceId: string): void;
   /** Unpins a trace, making it eligible for FIFO eviction */
   unpin(traceId: string): void;
+
+  /**
+   * Subscribes to trace eviction events.
+   *
+   * Called when traces are removed from the buffer due to:
+   * - FIFO eviction (buffer full)
+   * - Expiry (trace older than expiryMs)
+   * - Manual clear() call
+   *
+   * Use this callback to persist traces to durable storage
+   * before they are lost.
+   *
+   * @param callback - Called with evicted entries and eviction reason
+   * @returns Unsubscribe function
+   */
+  onEvict(
+    callback: (entries: readonly TraceEntry[], reason: TraceEvictionReason) => void
+  ): () => void;
 }
+
+/**
+ * Reason for trace eviction from the buffer.
+ */
+export type TraceEvictionReason = "fifo" | "expiry" | "clear";
 
 /**
  * Type guard to check if an object has tracing capabilities.

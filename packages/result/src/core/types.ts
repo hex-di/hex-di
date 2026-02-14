@@ -5,6 +5,8 @@
  * Ok/Err are interfaces, not classes — implemented as plain objects with closures.
  */
 
+import type { RESULT_BRAND } from "./brand.js";
+
 // Forward declaration for ResultAsync (populated in async module)
 export interface ResultAsync<T, E> extends PromiseLike<Result<T, E>> {
   map<U>(f: (value: T) => U | Promise<U>): ResultAsync<U, E>;
@@ -44,6 +46,7 @@ export interface ResultAsync<T, E> extends PromiseLike<Result<T, E>> {
 export interface Ok<T, E> {
   readonly _tag: "Ok";
   readonly value: T;
+  readonly [RESULT_BRAND]: true;
 
   // Type guards
   isOk(): this is Ok<T, E>;
@@ -95,6 +98,7 @@ export interface Ok<T, E> {
 export interface Err<T, E> {
   readonly _tag: "Err";
   readonly error: E;
+  readonly [RESULT_BRAND]: true;
 
   // Type guards
   isOk(): this is Ok<T, E>;

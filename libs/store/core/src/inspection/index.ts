@@ -7,7 +7,7 @@
  */
 
 export { createActionHistory } from "./action-history.js";
-export type { ActionHistory } from "./action-history.js";
+export type { ActionHistory } from "../types/inspection.js";
 
 export { buildSubscriberGraph } from "./subscriber-graph.js";
 export type { AdapterRegistration } from "./subscriber-graph.js";
@@ -36,7 +36,7 @@ export type {
   StoreRegistryEntry,
   StoreRegistryEvent,
   StoreRegistryListener,
-} from "./store-registry.js";
+} from "../types/inspection.js";
 
 export { StoreRegistryAdapter } from "./registry-adapter.js";
 

@@ -11,8 +11,53 @@
  */
 
 import type { Port, PortDeps } from "@hex-di/core";
-import type { ActivityPort, ActivityInput, ActivityOutput } from "./port.js";
 import type { TypedEventSink } from "./events.js";
+
+// =============================================================================
+// Activity Port Type
+// =============================================================================
+
+/**
+ * A port type for an Activity with typed input and output.
+ *
+ * This type extends the base Port type with phantom properties that carry
+ * the activity's input and output types at the type level.
+ *
+ * @typeParam TInput - The input type for the activity
+ * @typeParam TOutput - The output type of the activity
+ * @typeParam TName - The literal string type for the port name
+ */
+export type ActivityPort<TInput, TOutput, TName extends string> = Port<
+  Activity<TInput, TOutput>,
+  TName
+> & {
+  /** Phantom property carrying the activity's input type. */
+  readonly __activityInput: TInput;
+  /** Phantom property carrying the activity's output type. */
+  readonly __activityOutput: TOutput;
+};
+
+// =============================================================================
+// Activity Port Type Utilities
+// =============================================================================
+
+/**
+ * Extracts the input type from an ActivityPort.
+ *
+ * @typeParam P - The ActivityPort type to extract the input from
+ * @returns The activity input type, or `never` if P is not an ActivityPort
+ */
+export type ActivityInput<P> =
+  P extends ActivityPort<infer TInput, infer _TOutput, string> ? TInput : never;
+
+/**
+ * Extracts the output type from an ActivityPort.
+ *
+ * @typeParam P - The ActivityPort type to extract the output from
+ * @returns The activity output type, or `never` if P is not an ActivityPort
+ */
+export type ActivityOutput<P> =
+  P extends ActivityPort<infer _TInput, infer TOutput, string> ? TOutput : never;
 
 // =============================================================================
 // CleanupReason Type

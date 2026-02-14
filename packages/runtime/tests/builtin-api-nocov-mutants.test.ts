@@ -66,11 +66,11 @@ describe("event emitter subscribe/emit/unsubscribe", () => {
 
     expect(typeof unsub).toBe("function");
 
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
     expect(events.length).toBe(1);
 
     unsub();
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 2 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 2 } as any);
     expect(events.length).toBe(1); // unchanged after unsubscribe
   });
 
@@ -98,7 +98,7 @@ describe("event emitter subscribe/emit/unsubscribe", () => {
     inspector.subscribe(goodListener);
 
     // Should not throw despite throwing listener
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
 
     expect(goodEvents.length).toBe(1);
   });
@@ -122,7 +122,7 @@ describe("event emitter subscribe/emit/unsubscribe", () => {
     inspector.subscribe((e: any) => events1.push(e));
     inspector.subscribe((e: any) => events2.push(e));
 
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
 
     expect(events1.length).toBe(1);
     expect(events2.length).toBe(1);
@@ -153,7 +153,7 @@ describe("determineOrigin paths via getGraphData", () => {
       lifetime: "singleton",
       factory: () => ({ log: vi.fn() }),
     });
-    const childGraph = GraphBuilder.create().override(overrideAdapter).build();
+    const childGraph = GraphBuilder.forParent(parentGraph).override(overrideAdapter).build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
     const inspector = getInspector(child);
@@ -326,9 +326,9 @@ describe("result tracker exact counting", () => {
     const container = createContainer({ graph, name: "Test" });
     const inspector = getInspector(container);
 
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 2 } as any);
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 3 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 2 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 3 } as any);
 
     const stats = inspector.getResultStatistics("Logger");
     expect(stats).toBeDefined();
@@ -352,19 +352,19 @@ describe("result tracker exact counting", () => {
     const container = createContainer({ graph, name: "Test" });
     const inspector = getInspector(container);
 
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E1",
       timestamp: 1,
     } as any);
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E1",
       timestamp: 2,
     } as any);
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E2",
@@ -393,19 +393,19 @@ describe("result tracker exact counting", () => {
     const container = createContainer({ graph, name: "Test" });
     const inspector = getInspector(container);
 
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E1",
       timestamp: 1,
     } as any);
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E1",
       timestamp: 2,
     } as any);
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E2",
@@ -449,10 +449,10 @@ describe("result tracker exact counting", () => {
     const container = createContainer({ graph, name: "Test" });
     const inspector = getInspector(container);
 
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 2 } as any);
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 3 } as any);
-    inspector.emit({
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 2 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 3 } as any);
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E1",
@@ -499,7 +499,7 @@ describe("result tracker exact counting", () => {
     const inspector = getInspector(container);
 
     // Logger: 100% error
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E1",
@@ -507,7 +507,7 @@ describe("result tracker exact counting", () => {
     } as any);
 
     // Database: 0% error
-    inspector.emit({ type: "result:ok", portName: "Database", timestamp: 2 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Database", timestamp: 2 } as any);
 
     const result = inspector.getHighErrorRatePorts(0.5);
     expect(result.length).toBe(1);
@@ -528,8 +528,8 @@ describe("result tracker exact counting", () => {
     const container = createContainer({ graph, name: "Test" });
     const inspector = getInspector(container);
 
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
-    inspector.emit({
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
+    inspector.emit?.({
       type: "result:err",
       portName: "Database",
       errorCode: "E1",
@@ -564,13 +564,13 @@ describe("result tracker exact counting", () => {
     const container = createContainer({ graph, name: "Test" });
     const inspector = getInspector(container);
 
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E1",
       timestamp: 100,
     } as any);
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E2",
@@ -598,7 +598,7 @@ describe("result tracker exact counting", () => {
     const inspector = getInspector(container);
 
     // Emit a non-result event
-    inspector.emit({ type: "scope:created", scopeId: "s1", timestamp: 1 } as any);
+    inspector.emit?.({ type: "scope:created", scopeId: "s1", timestamp: 1 } as any);
 
     // Result tracker should have no entries
     const stats = inspector.getResultStatistics("Logger");
@@ -718,7 +718,7 @@ describe("getGraphData inheritanceMode and parentName details", () => {
       lifetime: "singleton",
       factory: () => ({ log: vi.fn() }),
     });
-    const childGraph = GraphBuilder.create().override(overrideAdapter).build();
+    const childGraph = GraphBuilder.forParent(parentGraph).override(overrideAdapter).build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
     const inspector = getInspector(child);
@@ -791,7 +791,7 @@ describe("getContainer", () => {
     const container = createContainer({ graph, name: "Test" });
     const inspector = getInspector(container);
 
-    const containerRef = inspector.getContainer();
+    const containerRef = inspector.getContainer?.();
     // The getContainer returns the InternalAccessible used at creation time
     expect(containerRef).toBeDefined();
     expect(typeof (containerRef as any)[INTERNAL_ACCESS]).toBe("function");
@@ -920,7 +920,7 @@ describe("library inspector registry", () => {
       dispose: dispose2,
     });
 
-    inspector.disposeLibraries();
+    inspector.disposeLibraries?.();
 
     expect(dispose1).toHaveBeenCalled();
     expect(dispose2).toHaveBeenCalled();

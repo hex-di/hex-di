@@ -88,6 +88,6 @@ export const LoggerPort = port<Logger>()({
   name: "Logger",
   direction: "outbound",
   description: "Structured logging service for context-aware log output",
-  category: "infrastructure",
+  category: "logger/logger",
   tags: ["logging", "observability"],
 });

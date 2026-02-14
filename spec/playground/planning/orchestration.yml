@@ -1,0 +1,17 @@
+task_groups:
+  - name: "Phase 0: Foundation (Tasks 1-3)"
+    claude_code_subagent: implementer
+  - name: "Phase 1: Shared Data Layer - devtools-ui (Tasks 4-8)"
+    claude_code_subagent: implementer
+  - name: "Phase 2: Panel System & Visualization - devtools-ui (Tasks 9-17)"
+    claude_code_subagent: implementer
+  - name: "Phase 3: Sandbox Infrastructure - playground (Tasks 18-23)"
+    claude_code_subagent: implementer
+  - name: "Phase 4: Code Editor - playground (Tasks 24-27)"
+    claude_code_subagent: implementer
+  - name: "Phase 5: Layout & Console - playground (Tasks 28-32)"
+    claude_code_subagent: implementer
+  - name: "Phase 6: Examples & Sharing (Tasks 33-34)"
+    claude_code_subagent: implementer
+  - name: "Phase 7: App Shell & Embedding (Tasks 35-38)"
+    claude_code_subagent: implementer

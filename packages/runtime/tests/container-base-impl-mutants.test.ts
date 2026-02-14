@@ -170,7 +170,6 @@ describe("BaseContainerImpl - async init required", () => {
       provides: DatabasePort,
       requires: [],
       lifetime: "singleton",
-      factoryKind: "async" as const,
       factory: async () => ({ query: vi.fn() }),
     });
     const graph = GraphBuilder.create().provide(asyncAdapter).build();
@@ -207,12 +206,12 @@ describe("BaseContainerImpl - resolve unregistered port", () => {
 describe("BaseContainerImpl - hasAdapter and getAdapter", () => {
   it("hasAdapter returns true for registered port", () => {
     const container = makeRootContainer();
-    expect(container.hasAdapter(LoggerPort)).toBe(true);
+    expect(container.has(LoggerPort)).toBe(true);
   });
 
   it("hasAdapter returns false for unregistered port", () => {
     const container = makeRootContainer();
-    expect(container.hasAdapter(DatabasePort)).toBe(false);
+    expect(container.has(DatabasePort)).toBe(false);
   });
 });
 

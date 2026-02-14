@@ -38,7 +38,7 @@ describe("container internal types and adapter access", () => {
     const container = createContainer({ graph, name: "Test" });
 
     // Container should have ADAPTER_ACCESS symbol
-    const adapterFn = container[ADAPTER_ACCESS];
+    const adapterFn = (container as any)[ADAPTER_ACCESS];
     expect(typeof adapterFn).toBe("function");
 
     // Should return adapter for registered port
@@ -56,7 +56,7 @@ describe("container internal types and adapter access", () => {
     const graph = GraphBuilder.create().provide(loggerAdapter).build();
     const container = createContainer({ graph, name: "Test" });
 
-    const adapterFn = container[ADAPTER_ACCESS];
+    const adapterFn = (container as any)[ADAPTER_ACCESS];
     const adapter = adapterFn(DatabasePort);
     expect(adapter).toBeUndefined();
   });
@@ -142,7 +142,7 @@ describe("container internal types and adapter access", () => {
       lifetime: "singleton",
       factory: () => ({ log: vi.fn() }),
     });
-    const childGraph = GraphBuilder.create().override(mockLoggerAdapter).build();
+    const childGraph = GraphBuilder.forParent(parentGraph).override(mockLoggerAdapter).build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
     const childState = child[INTERNAL_ACCESS]();

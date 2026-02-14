@@ -10,7 +10,7 @@ import { describe, it, expect } from "vitest";
 import { createStoreInspectorImpl } from "../src/inspection/store-inspector-impl.js";
 import type { PortRegistryEntry } from "../src/inspection/store-inspector-impl.js";
 import { createStoreRegistry } from "../src/inspection/store-registry.js";
-import type { StoreRegistryEntry } from "../src/inspection/store-registry.js";
+import type { StoreRegistryEntry } from "../src/types/inspection.js";
 import type {
   StatePortSnapshot,
   AtomPortSnapshot,

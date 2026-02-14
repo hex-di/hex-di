@@ -15,12 +15,8 @@
 import { describe, expectTypeOf, it } from "vitest";
 import type { Port } from "@hex-di/core";
 import type { Activity } from "../../src/activities/types.js";
-import {
-  activityPort,
-  type ActivityPort,
-  type ActivityInput,
-  type ActivityOutput,
-} from "../../src/activities/port.js";
+import { activityPort } from "../../src/activities/port.js";
+import type { ActivityPort, ActivityInput, ActivityOutput } from "../../src/activities/types.js";
 
 // =============================================================================
 // Test Types

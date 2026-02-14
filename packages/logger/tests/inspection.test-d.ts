@@ -30,6 +30,9 @@ describe("LoggerInspector type-level tests", () => {
       | "handler-added"
       | "handler-removed"
       | "snapshot-changed"
+      | "entries-dropped"
+      | "tracing-context-missing"
+      | "validation-warning"
     >();
   });
 });

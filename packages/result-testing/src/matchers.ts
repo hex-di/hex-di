@@ -20,8 +20,11 @@ import { expect } from "vitest";
  */
 export function expectOk<T, E>(result: Result<T, E>): T {
   expect(result._tag).toBe("Ok");
+  if (result._tag === "Err") {
+    throw new Error(`Expected Ok but got Err: ${JSON.stringify(result.error)}`);
+  }
   if (result._tag !== "Ok") {
-    throw new Error(`Expected Ok but got Err: ${JSON.stringify((result as Err<T, E>).error)}`);
+    throw new Error("Expected Ok but got unknown Result variant");
   }
   return result.value;
 }
@@ -35,8 +38,11 @@ export function expectOk<T, E>(result: Result<T, E>): T {
  */
 export function expectErr<T, E>(result: Result<T, E>): E {
   expect(result._tag).toBe("Err");
+  if (result._tag === "Ok") {
+    throw new Error(`Expected Err but got Ok: ${JSON.stringify(result.value)}`);
+  }
   if (result._tag !== "Err") {
-    throw new Error(`Expected Err but got Ok: ${JSON.stringify((result as Ok<T, E>).value)}`);
+    throw new Error("Expected Err but got unknown Result variant");
   }
   return result.error;
 }
@@ -108,9 +114,10 @@ export function setupResultMatchers(): void {
         };
       }
 
+      // received._tag === "Ok" but value mismatch (narrowed to Ok here)
       return {
         message: () =>
-          `expected result to be Ok(${formatValue(expected)}) but got Ok(${formatValue((received as Ok<unknown, unknown>).value)})`,
+          `expected result to be Ok(${formatValue(expected)}) but got Ok(${formatValue(received.value)})`,
         pass: false,
       };
     },
@@ -138,9 +145,10 @@ export function setupResultMatchers(): void {
         };
       }
 
+      // received._tag === "Err" but error mismatch (narrowed to Err here)
       return {
         message: () =>
-          `expected result to be Err(${formatValue(expected)}) but got Err(${formatValue((received as Err<unknown, unknown>).error)})`,
+          `expected result to be Err(${formatValue(expected)}) but got Err(${formatValue(received.error)})`,
         pass: false,
       };
     },

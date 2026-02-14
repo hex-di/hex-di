@@ -8,6 +8,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { getPortMetadata } from "@hex-di/core";
 import {
   createTracerLikeAdapter,
   TracerLikePort,
@@ -155,5 +156,11 @@ describe("tracerLikeAdapter", () => {
 
   it("has singleton lifetime", () => {
     expect(tracerLikeAdapter.lifetime).toBe("singleton");
+  });
+});
+
+describe("TracerLikePort metadata category for library detection", () => {
+  it("TracerLikePort sets category to tracing/bridge", () => {
+    expect(getPortMetadata(TracerLikePort)?.category).toBe("tracing/bridge");
   });
 });

@@ -15,6 +15,36 @@
 import type { SpanContext } from "../types/span.js";
 import { formatTraceparent, parseTraceparent } from "./parse.js";
 
+/** W3C Trace Context tracestate maximum length */
+const MAX_TRACESTATE_LENGTH = 512;
+
+/** W3C Trace Context tracestate maximum list-members */
+const MAX_TRACESTATE_MEMBERS = 32;
+
+/**
+ * Validates a tracestate header value per W3C Trace Context section 3.3.
+ *
+ * Checks:
+ * - Length does not exceed 512 characters
+ * - Not empty
+ * - No more than 32 comma-separated members
+ * - Each member contains a '=' separator (basic format check)
+ *
+ * @param value - The tracestate header value to validate
+ * @returns true if the value is a valid tracestate
+ */
+function isValidTracestate(value: string): boolean {
+  if (value.length === 0 || value.length > MAX_TRACESTATE_LENGTH) return false;
+  const members = value.split(",");
+  if (members.length > MAX_TRACESTATE_MEMBERS) return false;
+  for (const member of members) {
+    const trimmed = member.trim();
+    if (trimmed.length === 0) return false;
+    if (!trimmed.includes("=")) return false;
+  }
+  return true;
+}
+
 /**
  * Case-insensitive header lookup helper.
  *
@@ -89,10 +119,14 @@ export function extractTraceContext(
   const tracestate = getHeaderCaseInsensitive(headers, "tracestate");
 
   if (tracestate) {
-    return {
-      ...context,
-      traceState: tracestate,
-    };
+    if (isValidTracestate(tracestate)) {
+      return {
+        ...context,
+        traceState: tracestate,
+      };
+    }
+    // Invalid tracestate -- propagate context without it
+    return context;
   }
 
   return context;

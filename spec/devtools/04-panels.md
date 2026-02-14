@@ -1,10 +1,12 @@
 # 04 - Panel Specifications
 
-> Previous: [03-architecture.md](./03-architecture.md) | Next: [05-theming.md](./05-theming.md)
+> Previous: [03-panel-architecture.md](./03-panel-architecture.md) | Next: [05-visual-design.md](./05-visual-design.md)
 
-This document specifies the seven built-in panels (plus auto-discovered library panels) that compose the `@hex-di/devtools` overlay. Each panel is described in terms of its purpose, layout, data sources, TypeScript interfaces, interaction model, and rendering requirements. The panels are numbered as sections 8 through 15 (continuing from the architecture document's section numbering).
+This document specifies the built-in panels (plus auto-discovered library panels) that compose the `@hex-di/devtools` dashboard. Each panel is described in terms of its purpose, layout, data sources, TypeScript interfaces, interaction model, and rendering requirements. The panels are numbered as sections 8 through 15 (continuing from the architecture document's section numbering).
 
-All panels live under the `<DevToolsOverlay>` component and are rendered into a tab strip. Panels marked "always available" appear unconditionally. Panels marked "conditional" appear only when their data source is present. Panels marked "auto-discovered" appear dynamically as libraries register inspectors.
+All panels are rendered in the main content area of the dashboard, selected via the sidebar navigation. Panels marked "always available" appear unconditionally. Panels marked "conditional" appear only when their data source is present in the active connection's data. Panels marked "auto-discovered" appear dynamically as the connected app's libraries register inspectors.
+
+All panels receive data from a `RemoteInspectorAPI` instance that reconstructs the target app's inspector state from WebSocket messages. Panels use `useRemoteSnapshot()`, `useRemoteScopeTree()`, `useRemoteUnifiedSnapshot()`, and related hooks instead of the in-process `@hex-di/react` hooks.
 
 ---
 
@@ -17,7 +19,7 @@ All panels live under the `<DevToolsOverlay>` component and are rendered into a 
 - [Section 12: Library Panels and Event Log](#section-12-library-panels-and-event-log)
 - [Section 13: Unified Overview Panel](#section-13-unified-overview-panel)
 - [Section 14: Health & Diagnostics Panel](#section-14-health--diagnostics-panel)
-- [Section 15: Library Panel Roadmap](#section-15-library-panel-roadmap)
+- [Section 15: Dedicated Library Panel Specifications](#section-15-dedicated-library-panel-specifications)
 
 ---
 
@@ -61,7 +63,7 @@ Always available. This panel is visible for every container type (root, child, l
 
 The Container Panel consumes data from three InspectorAPI methods and two React hooks:
 
-**Primary snapshot data** comes from `useSnapshot()`, which returns a `ContainerSnapshot` (the discriminated union of `RootContainerSnapshot | ChildContainerSnapshot | LazyContainerSnapshot | ScopeSnapshot`). The snapshot provides:
+**Primary snapshot data** comes from `useRemoteSnapshot()`, which returns a `ContainerSnapshot` (the discriminated union of `RootContainerSnapshot | ChildContainerSnapshot | LazyContainerSnapshot | ScopeSnapshot`). The snapshot provides:
 
 - `snapshot.kind` -- the container type discriminant (`"root" | "child" | "lazy" | "scope"`), displayed in the Kind metric card.
 - `snapshot.phase` -- the current lifecycle phase, displayed in the Phase metric card. The valid phases differ by kind: root containers have `"uninitialized" | "initialized" | "disposing" | "disposed"`, child containers have `"initialized" | "disposing" | "disposed"`, lazy containers have `"unloaded" | "loading" | "loaded" | "disposing" | "disposed"`, and scopes have `"active" | "disposing" | "disposed"`.
@@ -71,7 +73,7 @@ The Container Panel consumes data from three InspectorAPI methods and two React 
 
 For root containers specifically, `snapshot.asyncAdaptersTotal` and `snapshot.asyncAdaptersInitialized` populate the Async metric card. For child containers, `snapshot.inheritanceModes` (a `ReadonlyMap<string, InheritanceMode>`) determines the inheritance indicator in each port row. For lazy containers, `snapshot.isLoaded` controls whether the Async card shows loading state.
 
-**Port registry data** comes from `inspector.getAdapterInfo()`, which returns `readonly AdapterInfo[]`. Each `AdapterInfo` contains:
+**Port registry data** comes from `remoteInspector.getAdapterInfo()`, which returns `readonly AdapterInfo[]`. Each `AdapterInfo` contains:
 
 ```typescript
 interface AdapterInfo {
@@ -84,13 +86,13 @@ interface AdapterInfo {
 
 The port table is built by iterating `getAdapterInfo()` and enriching each row with:
 
-- **Status**: Determined by calling `inspector.isResolved(portName)` for each port. Returns `true` (show "resolved"), `false` (show "pending"), or `"scope-required"` (show "scope-req").
-- **Error Rate**: Determined by calling `inspector.getResultStatistics(portName)` which returns `ResultStatistics | undefined`. When defined, the `errorRate` field (a number from 0 to 1) is displayed as a percentage. When undefined (no results recorded yet), display "--".
-- **Origin**: For child containers, determined from `inspector.getGraphData().adapters` which returns `VisualizableAdapter[]` entries including `origin: "own" | "inherited" | "overridden"`.
+- **Status**: Determined by calling `remoteInspector.isResolved(portName)` for each port. Returns `true` (show "resolved"), `false` (show "pending"), or `"scope-required"` (show "scope-req").
+- **Error Rate**: Determined by calling `remoteInspector.getResultStatistics(portName)` which returns `ResultStatistics | undefined`. When defined, the `errorRate` field (a number from 0 to 1) is displayed as a percentage. When undefined (no results recorded yet), display "--".
+- **Origin**: For child containers, determined from `remoteInspector.getGraphData().adapters` which returns `VisualizableAdapter[]` entries including `origin: "own" | "inherited" | "overridden"`.
 
-**Library list** comes from `useUnifiedSnapshot()` which returns a `UnifiedSnapshot`. The `registeredLibraries` field (a `readonly string[]`, alphabetically sorted) populates the "LIBRARIES REGISTERED" footer.
+**Library list** comes from `useRemoteUnifiedSnapshot()` which returns a `UnifiedSnapshot`. The `registeredLibraries` field (a `readonly string[]`, alphabetically sorted) populates the "LIBRARIES REGISTERED" footer.
 
-**Error highlighting** uses `inspector.getHighErrorRatePorts(0.1)` to identify ports with error rates above 10%. These ports receive a warning indicator `[!]` and the row is visually emphasized.
+**Error highlighting** uses `remoteInspector.getHighErrorRatePorts(0.1)` to identify ports with error rates above 10%. These ports receive a warning indicator `[!]` and the row is visually emphasized.
 
 ### 8.5 Container Panel Interfaces
 
@@ -99,7 +101,7 @@ The port table is built by iterating `getAdapterInfo()` and enriching each row w
  * Props for the ContainerPanel component.
  */
 interface ContainerPanelProps {
-  readonly inspector: InspectorAPI;
+  readonly remoteInspector: RemoteInspectorAPI;
   readonly theme: ResolvedTheme;
 }
 
@@ -148,7 +150,7 @@ interface ContainerMetrics {
 
 **Sort**: The port table supports sorting by clicking column headers. Sortable columns: Port Name (alphabetical), Lifetime (alphabetical), Status (resolved first, then pending, then scope-required), Error Rate (descending, undefined sorts last). Default sort is alphabetical by port name.
 
-**Auto-refresh**: The panel re-renders automatically via `useSyncExternalStore` when inspector events fire. No polling is used.
+**Auto-refresh**: The panel re-renders automatically via `useSyncExternalStore` when the `RemoteInspectorAPI` receives updated data over WebSocket. No polling is used.
 
 ### 8.7 Empty and Edge States
 
@@ -166,7 +168,7 @@ The Graph Panel renders an interactive dependency graph visualization showing ho
 
 ### 9.2 Availability
 
-Always available. The graph is derived from `inspector.getGraphData()` which is available on every container.
+Always available. The graph is derived from `remoteInspector.getGraphData()` which is available on every container.
 
 ### 9.3 Layout
 
@@ -199,7 +201,7 @@ Always available. The graph is derived from `inspector.getGraphData()` which is 
 
 ### 9.4 Data Sources
 
-**Graph structure** comes from `inspector.getGraphData()`, which returns a `ContainerGraphData`:
+**Graph structure** comes from `remoteInspector.getGraphData()`, which returns a `ContainerGraphData`:
 
 ```typescript
 interface ContainerGraphData {
@@ -227,9 +229,9 @@ interface VisualizableAdapter {
 
 Edges are derived from `dependencyNames`: for each adapter, an edge is drawn from the adapter's node to each of its dependency nodes.
 
-**Error overlays** use `inspector.getHighErrorRatePorts(0.1)` to add warning badges to nodes with elevated error rates.
+**Error overlays** use `remoteInspector.getHighErrorRatePorts(0.1)` to add warning badges to nodes with elevated error rates.
 
-**Resolution status** uses `inspector.isResolved(portName)` to show which nodes have been resolved at runtime (filled vs outline style).
+**Resolution status** uses `remoteInspector.isResolved(portName)` to show which nodes have been resolved at runtime (filled vs outline style).
 
 ### 9.5 Graph Rendering
 
@@ -268,7 +270,7 @@ Edges are derived from `dependencyNames`: for each adapter, an edge is drawn fro
  * Props for the GraphPanel component.
  */
 interface GraphPanelProps {
-  readonly inspector: InspectorAPI;
+  readonly remoteInspector: RemoteInspectorAPI;
   readonly theme: ResolvedTheme;
 }
 
@@ -344,7 +346,7 @@ Re-selecting a layout re-runs the dagre algorithm and animates nodes to their ne
 
 The Graph Panel includes a toggleable analysis sidebar that surfaces structural insights from `@hex-di/graph`'s `inspectGraph()` function. The sidebar is activated via an "Analysis" button in the graph toolbar and slides in from the right side of the graph area.
 
-**Data Source**: The sidebar calls `inspectGraph()` on the adapters from `inspector.getGraphData()`, producing a `GraphInspection` object. It also calls `detectAllCaptivesAtRuntime()` for captive dependency detection.
+**Data Source**: The sidebar calls `inspectGraph()` on the adapters from `remoteInspector.getGraphData()`, producing a `GraphInspection` object. It also calls `detectAllCaptivesAtRuntime()` for captive dependency detection.
 
 **Sidebar Sections**:
 
@@ -439,7 +441,7 @@ Always available. Even containers without active scopes display the root scope n
 
 ### 10.4 Data Sources
 
-**Tree structure** comes from `useScopeTree()`, which returns a `ScopeTree`:
+**Tree structure** comes from `useRemoteScopeTree()`, which returns a `ScopeTree`:
 
 ```typescript
 interface ScopeTree {
@@ -456,11 +458,11 @@ The tree is recursive: each `ScopeTree` node contains `children` which are thems
 
 **Scope detail** for the selected scope is derived directly from the `ScopeTree` node. The `resolvedPorts` array lists port names that have been resolved in that scope. The `resolvedCount` and `totalCount` provide the resolved ratio.
 
-**Real-time updates** come from inspector events. The `useScopeTree()` hook subscribes to inspector events via `useSyncExternalStore` and re-renders when:
+**Real-time updates** arrive via WebSocket from the devtools-client. The `useRemoteScopeTree()` hook subscribes to the `RemoteInspectorAPI`'s state via `useSyncExternalStore` and re-renders when:
 
-- `scope-created` events fire (a new child scope appears in the tree).
-- `scope-disposed` events fire (a scope's status changes to "disposed").
-- `snapshot-changed` events fire (resolved counts may have changed).
+- The devtools-client sends an updated scope tree after `scope-created` events fire (a new child scope appears in the tree).
+- The devtools-client sends an updated scope tree after `scope-disposed` events fire (a scope's status changes to "disposed").
+- The devtools-client sends an updated scope tree after `snapshot-changed` events fire (resolved counts may have changed).
 
 ### 10.5 Scope Tree Panel Interfaces
 
@@ -469,7 +471,7 @@ The tree is recursive: each `ScopeTree` node contains `children` which are thems
  * Props for the ScopeTreePanel component.
  */
 interface ScopeTreePanelProps {
-  readonly inspector: InspectorAPI;
+  readonly remoteInspector: RemoteInspectorAPI;
   readonly theme: ResolvedTheme;
 }
 
@@ -520,7 +522,7 @@ The tree starts with all first-level children of the root expanded and deeper le
 - Status: "active" or "disposed" with color indicator.
 - Parent: The ID of the parent scope (or "none" for root).
 - Created: The timestamp derived from the scope creation event (tracked internally). If unavailable, display "--".
-- Resolved Ports: A list of `resolvedPorts` from the `ScopeTree` node, each annotated with the port's lifetime (looked up from `inspector.getAdapterInfo()`).
+- Resolved Ports: A list of `resolvedPorts` from the `ScopeTree` node, each annotated with the port's lifetime (looked up from `remoteInspector.getAdapterInfo()`).
 - Children summary: Count of active children and disposed children.
 - Resolved ratio: `resolvedCount` / `totalCount`.
 
@@ -544,7 +546,7 @@ The Tracing Panel provides a timeline visualization of resolution spans collecte
 
 ### 11.2 Availability
 
-Conditional. This panel tab appears only when a library inspector named `"tracing"` is registered with the container. The panel checks `inspector.getLibraryInspector("tracing")` on each render cycle. When no tracing inspector is registered, the tab is hidden entirely (not grayed out -- removed from the tab strip).
+Conditional. This panel tab appears only when a library inspector named `"tracing"` is registered with the container. The panel checks `remoteInspector.getLibraryInspector("tracing")` on each render cycle. When no tracing inspector is registered, the tab is hidden entirely (not grayed out -- removed from the tab strip).
 
 ### 11.3 Layout
 
@@ -582,7 +584,7 @@ Conditional. This panel tab appears only when a library inspector named `"tracin
 
 The Tracing Panel accesses span data through two paths:
 
-**Summary metrics** come from `useTracingSummary()`, which returns:
+**Summary metrics** come from `useRemoteTracingSummary()`, which returns:
 
 ```typescript
 interface TracingSummary {
@@ -593,9 +595,9 @@ interface TracingSummary {
 }
 ```
 
-These four values populate the header metrics bar. When `useTracingSummary()` returns `undefined` (no tracing inspector registered), the entire panel is hidden.
+These four values populate the header metrics bar. When `useRemoteTracingSummary()` returns `undefined` (no tracing inspector registered), the entire panel is hidden.
 
-**Detailed span data** comes from `inspector.queryByLibrary("tracing")`, which returns `readonly LibraryQueryResult[]`. Each result entry has `{ library: "tracing", key: string, value: unknown }`. The tracing library inspector's snapshot provides `totalSpans`, `errorCount`, `averageDuration`, and `cacheHitRate` as top-level keys.
+**Detailed span data** comes from `remoteInspector.queryByLibrary("tracing")`, which returns `readonly LibraryQueryResult[]`. Each result entry has `{ library: "tracing", key: string, value: unknown }`. The tracing library inspector's snapshot provides `totalSpans`, `errorCount`, `averageDuration`, and `cacheHitRate` as top-level keys.
 
 For full span access, the panel needs to access the `TracingQueryAPI` through the tracing library inspector. The tracing inspector's snapshot is pull-only (no push events), so the panel re-queries on each render triggered by inspector event subscriptions.
 
@@ -631,7 +633,7 @@ Key attributes used for display:
  * Props for the TracingPanel component.
  */
 interface TracingPanelProps {
-  readonly inspector: InspectorAPI;
+  readonly remoteInspector: RemoteInspectorAPI;
   readonly theme: ResolvedTheme;
 }
 
@@ -752,7 +754,7 @@ Library Panels provide visibility into ecosystem libraries (Flow, Store, Saga, Q
 
 ### 12.2 Library Panels -- Availability
 
-Auto-discovered. Library panel tabs appear and disappear dynamically as libraries register and unregister their inspectors. The panel list is derived from `inspector.getLibraryInspectors()` which returns `ReadonlyMap<string, LibraryInspector>`. The tab strip watches for `library-registered` and `library-unregistered` inspector events to add/remove tabs.
+Auto-discovered. Library panel tabs appear and disappear dynamically as libraries register and unregister their inspectors. The panel list is derived from `remoteInspector.getLibraryInspectors()` which returns `ReadonlyMap<string, LibraryInspector>`. The tab strip watches for `library-registered` and `library-unregistered` inspector events to add/remove tabs.
 
 ### 12.3 Library Panels -- Default Layout (Snapshot Tree)
 
@@ -828,7 +830,7 @@ interface LibraryPanelProps {
   /** The library's current snapshot, re-fetched on each render. */
   readonly snapshot: Readonly<Record<string, unknown>>;
   /** The container's InspectorAPI for cross-cutting queries. */
-  readonly inspector: InspectorAPI;
+  readonly remoteInspector: RemoteInspectorAPI;
   /** The current DevTools theme for consistent styling. */
   readonly theme: ResolvedTheme;
 }
@@ -840,7 +842,7 @@ Custom panels are rendered within a sandboxed error boundary. If the custom pane
 
 ### 12.6 Library Panels -- Data Sources
 
-Each library panel calls `inspector.getLibraryInspector(name)` to get the `LibraryInspector` instance, then calls `getSnapshot()` on it to get the snapshot data. The panel re-renders when inspector events of type `"library"` fire with a matching `source` field, or when `"snapshot-changed"` fires.
+Each library panel calls `remoteInspector.getLibraryInspector(name)` to get the `LibraryInspector` instance, then calls `getSnapshot()` on it to get the snapshot data. The panel re-renders when inspector events of type `"library"` fire with a matching `source` field, or when `"snapshot-changed"` fires.
 
 The "Refresh" button in the toolbar forces a re-fetch of the snapshot by calling `getSnapshot()` again. This is useful for pull-only library inspectors (like the tracing inspector) that do not emit push events.
 
@@ -852,7 +854,7 @@ The "Refresh" button in the toolbar forces a re-fetch of the snapshot by calling
  */
 interface LibraryPanelProps {
   readonly libraryName: string;
-  readonly inspector: InspectorAPI;
+  readonly remoteInspector: RemoteInspectorAPI;
   readonly theme: ResolvedTheme;
 }
 
@@ -910,7 +912,7 @@ Always available.
 
 ### 12.12 Event Log Panel -- Data Sources
 
-The Event Log subscribes to the inspector's event stream via `inspector.subscribe(listener)`. Every `InspectorEvent` is captured and stored in an in-memory ring buffer.
+The Event Log subscribes to the `RemoteInspectorAPI`'s event stream via `remoteInspector.subscribe(listener)`. The devtools-client forwards every `InspectorEvent` from the target app over WebSocket, and the `RemoteInspectorAPI` replays them to subscribers. Every event is captured and stored in an in-memory ring buffer in the dashboard.
 
 The `InspectorEvent` discriminated union includes these event types (each mapped to a log entry):
 
@@ -971,7 +973,7 @@ The `summary` field is a human-readable string derived from the event type and i
  * Props for the EventLogPanel component.
  */
 interface EventLogPanelProps {
-  readonly inspector: InspectorAPI;
+  readonly remoteInspector: RemoteInspectorAPI;
   readonly theme: ResolvedTheme;
   readonly bufferSize?: number;
 }
@@ -1013,7 +1015,7 @@ interface EventRingBuffer {
 - "container": Show only container events.
 - One entry per registered library name (e.g., "flow", "store", "tracing").
 
-The library names are derived from `inspector.getLibraryInspectors().keys()` plus any library names seen in past events (to keep filter options available even after a library unregisters).
+The library names are derived from `remoteInspector.getLibraryInspectors().keys()` plus any library names seen in past events (to keep filter options available even after a library unregisters).
 
 **Event type filter dropdown**: Filters entries by `eventType` field. Options include "all" plus every distinct event type seen so far (e.g., "resolution", "scope-created", "result:err", etc.). The option list grows as new event types are encountered.
 
@@ -1082,7 +1084,7 @@ The following cross-panel navigation links exist:
 - **`portName`** -- Correlates port/adapter data across Container, Graph, and library panels. Any panel displaying a port name renders it as a clickable link to the Container or Graph panel.
 - **`traceId` / `spanId`** -- Correlates tracing data across Tracing and library panels. Any panel displaying a trace or span ID renders it as a clickable link to the Tracing panel with that trace filtered.
 
-All cross-panel navigation is implemented via a shared navigation context (a React context providing a `navigateTo(panel, selection)` callback). The tab strip switches to the target panel and the target panel scrolls to / highlights the specified item.
+All cross-panel navigation is implemented via a shared navigation context (a React context providing a `navigateTo(panel, selection)` callback). The sidebar navigation switches to the target panel and the target panel scrolls to / highlights the specified item.
 
 ---
 
@@ -1129,14 +1131,14 @@ Always available. This is the first tab in the panel (order: 0), appearing befor
 
 ### 13.4 Data Sources
 
-The Overview Panel consumes data from `inspector.getUnifiedSnapshot()` which returns a `UnifiedSnapshot` containing both `ContainerSnapshot` and all library snapshots.
+The Overview Panel consumes data from `remoteInspector.getUnifiedSnapshot()` which returns a `UnifiedSnapshot` containing both `ContainerSnapshot` and all library snapshots.
 
 **Container stat row**: Derived from `snapshot.container`:
 
 - Phase: `snapshot.container.phase`
-- Ports: total adapter count from `inspector.getAdapterInfo().length`
+- Ports: total adapter count from `remoteInspector.getAdapterInfo().length`
 - Resolved: count of resolved singletons from `snapshot.container.singletons`
-- Errors: count from `inspector.getHighErrorRatePorts(0.05)`
+- Errors: count from `remoteInspector.getHighErrorRatePorts(0.05)`
 
 **Library summary cards**: Derived from `snapshot.libraries`. Each card extracts headline metrics based on the library name:
 
@@ -1157,7 +1159,7 @@ The Overview Panel consumes data from `inspector.getUnifiedSnapshot()` which ret
  * Props for the OverviewPanel component.
  */
 interface OverviewPanelProps {
-  readonly inspector: InspectorAPI;
+  readonly remoteInspector: RemoteInspectorAPI;
   readonly theme: ResolvedTheme;
 }
 
@@ -1247,29 +1249,29 @@ Always available. Built-in panel with order: 7 (appears after library panels, be
 
 ### 14.4 Data Sources
 
-| Diagnostic Section       | InspectorAPI Methods                                                       | @hex-di/graph Functions                     |
-| ------------------------ | -------------------------------------------------------------------------- | ------------------------------------------- |
-| Graph Health Summary     | `inspector.getGraphData()`                                                 | `inspectGraph()`, `analyzeComplexity()`     |
-| Blast Radius Analysis    | `inspector.getGraphData()`, `inspector.queryLibraries()`                   | `getTransitiveDependents()`                 |
-| Captive Dependency Risks | `inspector.getGraphData()`                                                 | `detectAllCaptivesAtRuntime()`              |
-| Scope Leak Detection     | `inspector.getScopeTree()`                                                 | (heuristic, no graph function)              |
-| Error Hotspots           | `inspector.getHighErrorRatePorts(0.05)`, `inspector.getResultStatistics()` | (cross-referenced with tracing error spans) |
+| Diagnostic Section       | InspectorAPI Methods                                                                   | @hex-di/graph Functions                     |
+| ------------------------ | -------------------------------------------------------------------------------------- | ------------------------------------------- |
+| Graph Health Summary     | `remoteInspector.getGraphData()`                                                       | `inspectGraph()`, `analyzeComplexity()`     |
+| Blast Radius Analysis    | `remoteInspector.getGraphData()`, `remoteInspector.queryLibraries()`                   | `getTransitiveDependents()`                 |
+| Captive Dependency Risks | `remoteInspector.getGraphData()`                                                       | `detectAllCaptivesAtRuntime()`              |
+| Scope Leak Detection     | `remoteInspector.getScopeTree()`                                                       | (heuristic, no graph function)              |
+| Error Hotspots           | `remoteInspector.getHighErrorRatePorts(0.05)`, `remoteInspector.getResultStatistics()` | (cross-referenced with tracing error spans) |
 
 ### 14.5 Diagnostic Sections Detail
 
 **1. Graph Health Summary**: Displays the complexity score from `analyzeComplexity()` as a numeric value with a recommendation badge (`safe`/`monitor`/`consider-splitting`). Below the score: adapter count, maximum dependency chain depth, average fan-out. Shows count of suggestions, orphan ports, and captive dependencies. All suggestion types link to the Graph Analysis sidebar.
 
-**2. Blast Radius Analysis**: A port selector dropdown lists all registered ports. When a port is selected, the panel calls `getTransitiveDependents()` to show all ports that would be affected if the selected port fails or changes. Direct dependents are listed first, then transitive dependents. The panel also cross-references via `inspector.queryLibraries()` to show which libraries reference the selected port (e.g., "Flow: 2 machines reference this port").
+**2. Blast Radius Analysis**: A port selector dropdown lists all registered ports. When a port is selected, the panel calls `getTransitiveDependents()` to show all ports that would be affected if the selected port fails or changes. Direct dependents are listed first, then transitive dependents. The panel also cross-references via `remoteInspector.queryLibraries()` to show which libraries reference the selected port (e.g., "Flow: 2 machines reference this port").
 
 **3. Captive Dependency Risks**: Results from `detectAllCaptivesAtRuntime()`. Each captive dependency pair (singleton holding a scoped reference) is shown as a warning card. If no captive dependencies are detected, shows "(none detected)" in `--hex-success` color.
 
-**4. Scope Leak Detection**: Applies heuristics on `inspector.getScopeTree()`:
+**4. Scope Leak Detection**: Applies heuristics on `remoteInspector.getScopeTree()`:
 
 - **Age heuristic**: Any scope with `status: "active"` older than 5 minutes (configurable) is flagged as a potential leak.
 - **Children heuristic**: Any scope with more than 100 children (configurable) is flagged.
 - Scope age is estimated from the `scope-created` event timestamp tracked by the inspector.
 
-**5. Error Hotspots**: Calls `inspector.getHighErrorRatePorts(0.05)` (5% threshold) and for each high-error port, shows the error rate, last error code (from `getResultStatistics()`), and cross-references with tracing error spans if the tracing library inspector is available.
+**5. Error Hotspots**: Calls `remoteInspector.getHighErrorRatePorts(0.05)` (5% threshold) and for each high-error port, shows the error rate, last error code (from `getResultStatistics()`), and cross-references with tracing error spans if the tracing library inspector is available.
 
 ### 14.6 Health Panel Interfaces
 
@@ -1278,7 +1280,7 @@ Always available. Built-in panel with order: 7 (appears after library panels, be
  * Props for the HealthPanel component.
  */
 interface HealthPanelProps {
-  readonly inspector: InspectorAPI;
+  readonly remoteInspector: RemoteInspectorAPI;
   readonly theme: ResolvedTheme;
 }
 
@@ -1368,32 +1370,404 @@ Until `@hex-di/health` exists, the v0.1.0 panel's internal diagnostics are the c
 
 ---
 
-## Section 15: Library Panel Roadmap
+## Section 15: Dedicated Library Panel Specifications
 
-### 15.1 Purpose
+### 15.1 Overview
 
-This section outlines the evolution of library panels from generic JSON tree views (v0.1.0) to dedicated, domain-specific visualizations (future versions). In v0.1.0, all library panels render their snapshot as a collapsible JSON tree. Future versions will provide rich visualizations tailored to each library's domain.
+Each hex-di library ships a dedicated DevTools panel component at a `/devtools` entry point (e.g., `@hex-di/flow/devtools`). The dashboard discovers these via the `panelModule` field on `LibraryInspector`. When a library does not provide a `panelModule`, the generic JSON tree viewer from Section 12 is used. All dedicated panels described below are v0.1.0 scope -- they ship with their respective library packages, not with `@hex-di/devtools`.
 
-### 15.2 Roadmap Table
+### 15.2 Flow Panel (Statechart Visualization)
 
-| Library    | v0.1.0 Default Panel                 | Future Dedicated Panel                                                                                                                  |
-| ---------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **Flow**   | JSON tree of `FlowLibrarySnapshot`   | State machine diagram: statechart visualization showing current state, available transitions, active activities, and transition history |
-| **Store**  | JSON tree of `StoreLibrarySnapshot`  | Value inspector: state diff viewer, subscriber dependency graph, action timeline with undo/redo                                         |
-| **Saga**   | JSON tree of `SagaLibrarySnapshot`   | Workflow visualization: step sequence diagram, compensation track with status badges, retry counters, and elapsed time per step         |
-| **Query**  | JSON tree of `QueryLibrarySnapshot`  | Cache table: sortable key/status/freshness columns, staleness indicators, manual refetch button per entry, background refetch indicator |
-| **Logger** | JSON tree of `LoggerLibrarySnapshot` | Log stream: scrollable log entries with level colors, sampling rate indicator, error rate sparkline, and source filter                  |
+**Module**: `@hex-di/flow/devtools`
+**Inspiration**: Stately (stately.ai), XState Inspector
 
-### 15.3 Delivery Model
+**Purpose**: Visualize flow machines as interactive statecharts showing current state, available transitions, active activities, and transition history. The statechart is the primary view, not a JSON tree.
 
-Dedicated panels are shipped by each library package, not by `@hex-di/devtools`. Each library registers its custom panel component via the `LibraryPanelProvider` interface (see Section 12.5). This means:
+**Layout**:
 
-- `@hex-di/flow` ships its own state machine diagram panel component.
-- `@hex-di/store` ships its own value inspector panel component.
-- `@hex-di/devtools` does not need to depend on any library package.
-- New libraries can ship custom panels without modifying `@hex-di/devtools`.
+```
++-------------------------------------------------------------+
+| FLOW MACHINES                                     [Refresh]  |
++----------------------+--------------------------------------+
+| MACHINE LIST         | STATECHART                           |
+|                      |                                       |
+| ● OrderFlow          |    ┌─────────┐                       |
+|   state: processing  |    │  idle   │                       |
+|   scope: req-123     |    └────┬────┘                       |
+|                      |         │ start                       |
+| ○ CartFlow           |    ┌────▼────┐     ┌──────────┐     |
+|   state: idle        |    │processing├────►│ complete │     |
+|                      |    └────┬────┘     └──────────┘     |
+| ○ AuthFlow           |         │ error                      |
+|   state: authenticated|    ┌────▼────┐                      |
+|                      |    │ failed  │                       |
++----------------------+    └─────────┘                       |
+|                      |                                       |
+| ACTIVITY LOG         | Current: processing                  |
+| ─────────────────    | Activities: [payment-poll] (12s)     |
+| 14:30 processing     | Effect Stats:                        |
+| 14:29 validating     |   processPayment: 4 ok / 1 err      |
+| 14:28 idle→start     |   validateOrder: 12 ok / 0 err      |
++----------------------+--------------------------------------+
+```
 
-The JSON tree fallback always remains available. If a library's custom panel fails to render, the DevTools error boundary falls back to the JSON tree view.
+**Data Source**: `FlowLibrarySnapshot` from the library inspector. `machineCount`, `machines[]` (with portName, instanceId, machineId, state, scopeId), `healthEvents[]`, `effectStatistics`.
+
+**Key features**:
+
+- Left panel: machine list with current state badge, colored by health
+- Right panel: interactive statechart diagram (SVG) for the selected machine -- states as rounded rectangles, transitions as arrows, current state highlighted
+- Activity log: chronological list of recent state transitions
+- Effect statistics table: ok/err counts per effect name
+- Click a machine to select it and view its statechart
+- Click a state in the statechart to see entry/exit actions and guards
+- Cross-panel navigation: clicking `scopeId` navigates to Scope Tree panel
+
+**Interfaces**:
+
+```typescript
+interface FlowPanelProps extends LibraryPanelProps {
+  readonly snapshot: FlowLibrarySnapshot;
+}
+
+interface StatechartNode {
+  readonly stateId: string;
+  readonly label: string;
+  readonly isCurrent: boolean;
+  readonly isInitial: boolean;
+  readonly isFinal: boolean;
+  readonly x: number;
+  readonly y: number;
+}
+
+interface StatechartEdge {
+  readonly from: string;
+  readonly to: string;
+  readonly event: string;
+  readonly guard?: string;
+}
+```
+
+### 15.3 Query Panel (Cache Table)
+
+**Module**: `@hex-di/query/devtools`
+**Inspiration**: TanStack Query DevTools
+
+**Purpose**: Display the query cache as a sortable, filterable table showing query keys, status, freshness, and cache metadata. Users can manually trigger refetches and inspect individual query data.
+
+**Layout**:
+
+```
++-------------------------------------------------------------+
+| QUERY CACHE                              [Filter: ___]       |
++------+----------+----------+-----------+---------+-----------+
+| Key  | Status   | Updated  | Stale     | Cached  | Actions   |
++------+----------+----------+-----------+---------+-----------+
+| /users| success | 2s ago   | fresh     | yes     | [Refetch] |
+| /orders| loading | --       | --        | no      | [Cancel]  |
+| /auth | error   | 5m ago   | stale     | yes     | [Refetch] |
+| /cart | idle    | --       | --        | no      | --        |
++------+----------+----------+-----------+---------+-----------+
+|                                                              |
+| SELECTED: /users                                             |
+| Status: success | Last Updated: 14:32:00 | Stale Time: 30s  |
+| Data: { users: [...], total: 42 }                           |
+| Error: (none)                                                |
++-------------------------------------------------------------+
+```
+
+**Data Source**: `QueryLibrarySnapshot` from the library inspector. `queryCount`, `queries[]` (with key, status, lastUpdated, isCached), `cacheSize`, `cacheHitRate`.
+
+**Key features**:
+
+- Sortable columns: Key, Status, Updated, Staleness
+- Status-based color coding: success (green), loading (blue), error (red), idle (gray)
+- Stale indicator: "fresh" (green), "stale" (amber), computed from `lastUpdated` relative to configured stale time
+- Manual refetch button per query (sends action to client via WebSocket)
+- Click a row to see full query data in JSON tree viewer
+- Cache stats summary: total queries, cache size, hit rate percentage
+- Filter input for query key substring matching
+
+**Interfaces**:
+
+```typescript
+interface QueryPanelProps extends LibraryPanelProps {
+  readonly snapshot: QueryLibrarySnapshot;
+}
+
+interface QueryRowData {
+  readonly key: string;
+  readonly status: "idle" | "loading" | "success" | "error";
+  readonly lastUpdated: number | undefined;
+  readonly staleness: "fresh" | "stale" | "unknown";
+  readonly isCached: boolean;
+}
+```
+
+### 15.4 Store Panel (State Inspector + Diff Viewer)
+
+**Module**: `@hex-di/store/devtools`
+**Inspiration**: Redux DevTools
+
+**Purpose**: Inspect store state, track dispatched actions, and view state diffs between actions. Provides a dual-pane view with the action timeline on the left and the state/diff inspector on the right.
+
+**Layout**:
+
+```
++-------------------------------------------------------------+
+| STORES (5 registered)                         [Filter: ___]  |
++------+----------+----------+-----------+                     |
+| Name | State    | Actions  | Subs      |                     |
++------+----------+----------+-----------+                     |
+| cart | "loaded" | 42       | 3         |                     |
+| auth | "authed" | 8        | 2         |                     |
+| ui   | "open"   | 127      | 5         |                     |
++------+----------+----------+-----------+                     |
+|                                                              |
+| STORE: cart                          [State] [Diff] [Actions]|
++---------------------------+---------------------------------+
+| ACTION TIMELINE           | STATE INSPECTOR                  |
+|                           |                                  |
+| 14:32:05 ADD_ITEM        | {                                |
+| 14:32:03 SET_QUANTITY     |   items: [                       |
+| 14:32:01 LOAD_CART        |     { id: 1, qty: 2 },          |
+| 14:31:58 INIT             |     { id: 7, qty: 1 },          |
+|                           |   ],                             |
+| [Selected: ADD_ITEM]     |   total: 42.99                   |
+|                           | }                                |
++---------------------------+---------------------------------+
+```
+
+**Data Source**: `StoreLibrarySnapshot` from the library inspector. `storeCount`, `stores[]` (with portName, currentState, actionCount, subscriberCount), `totalDispatches`.
+
+**Key features**:
+
+- Store list table with current state, action count, subscriber count
+- Click a store to inspect it
+- Three view modes for selected store: State (JSON tree), Diff (side-by-side before/after for last action), Actions (chronological action list)
+- Action timeline: list of dispatched actions with timestamps
+- Click an action in the timeline to see the state diff it caused
+- State diff viewer: added keys in green, removed in red, changed in amber
+- Cross-panel navigation: clicking `traceId` on an action navigates to Tracing panel
+
+**Interfaces**:
+
+```typescript
+interface StorePanelProps extends LibraryPanelProps {
+  readonly snapshot: StoreLibrarySnapshot;
+}
+
+interface StoreActionEntry {
+  readonly actionType: string;
+  readonly timestamp: number;
+  readonly traceId?: string;
+  readonly stateBefore: Readonly<Record<string, unknown>>;
+  readonly stateAfter: Readonly<Record<string, unknown>>;
+}
+```
+
+### 15.5 Saga Panel (Pipeline Visualization)
+
+**Module**: `@hex-di/saga/devtools`
+**Inspiration**: Temporal UI, GitHub Actions workflow view
+
+**Purpose**: Visualize saga execution as a step-by-step pipeline showing progress through saga steps, compensation tracks, retry status, and timing.
+
+**Layout**:
+
+```
++-------------------------------------------------------------+
+| SAGAS                                                        |
++------+----------+----------+----------+-----------+          |
+| ID   | Status   | Step     | Started  | Duration  |          |
++------+----------+----------+----------+-----------+          |
+| ord-1| running  | payment  | 14:32:00 | 2.4s      |          |
+| ord-2| completed| --       | 14:31:00 | 1.8s      |          |
+| ord-3| failed   | shipping | 14:30:00 | 45s       |          |
++------+----------+----------+----------+-----------+          |
+|                                                              |
+| SAGA: ord-1 (running)                                        |
++-------------------------------------------------------------+
+| PIPELINE                                                     |
+|                                                              |
+| [validate] ──► [reserve] ──► [payment] ──► [shipping]       |
+|     ✓            ✓            ◉ (2.4s)       ○               |
+|                                                              |
+| COMPENSATION TRACK                                           |
+| [unreserve] ◄── [refund] ◄── (not triggered)                |
+|     ○              ○                                         |
+|                                                              |
+| STEP DETAIL: payment                                         |
+| Status: running | Retries: 0/3 | Elapsed: 2.4s              |
+| Port: PaymentGateway                                         |
++-------------------------------------------------------------+
+```
+
+**Data Source**: `SagaLibrarySnapshot` from the library inspector. `activeSagaCount`, `sagas[]` (with sagaId, currentStep, status, startedAt), `completedCount`, `failedCount`.
+
+**Key features**:
+
+- Saga list table: all sagas with status badges, current step, timing
+- Pipeline diagram: horizontal step sequence with status indicators (check for completed, filled circle for running, empty circle for pending)
+- Compensation track: reverse pipeline showing compensation steps, only visible when saga is compensating or failed
+- Step detail: when a step is selected, shows status, retry count, elapsed time, associated port name
+- Color coding: running (blue), completed (green), failed (red), compensating (amber)
+- Cross-panel navigation: clicking `portName` navigates to Container panel
+
+**Interfaces**:
+
+```typescript
+interface SagaPanelProps extends LibraryPanelProps {
+  readonly snapshot: SagaLibrarySnapshot;
+}
+
+interface PipelineStep {
+  readonly stepId: string;
+  readonly label: string;
+  readonly status: "pending" | "running" | "completed" | "failed" | "compensating";
+  readonly duration?: number;
+  readonly retryCount: number;
+  readonly maxRetries: number;
+  readonly portName?: string;
+}
+```
+
+### 15.6 Logger Panel (Log Stream)
+
+**Module**: `@hex-di/logger/devtools`
+**Inspiration**: pino-pretty, Datadog Log Explorer
+
+**Purpose**: Display a real-time scrolling log stream with level-based coloring, source filtering, and a structured data inspector for individual log entries.
+
+**Layout**:
+
+```
++-------------------------------------------------------------+
+| LOGGER                                                       |
+| Total: 8,412 | Errors: 24 (0.3%) | Rate: ~12/s             |
++-------------------------------------------------------------+
+| [Level: all v] [Source: all v] [Search: ___]    [Auto: ON]  |
++-------------------------------------------------------------+
+| Time       Level  Source         Message                     |
+| ────────── ────── ────────────── ────────────────────────── |
+| 14:32:05   INFO   OrderService   Order created: #1234       |
+| 14:32:04   DEBUG  PaymentSvc     Processing payment...      |
+| 14:32:03   ERROR  PaymentSvc     Payment timeout: PAY_001   |
+|   > { errorCode: "PAY_001", duration: 5002, ... }           |
+| 14:32:02   WARN   CacheManager   Cache miss ratio high: 34% |
+| 14:32:01   INFO   AuthService    User authenticated: u-789  |
++-------------------------------------------------------------+
+```
+
+**Data Source**: `LoggerLibrarySnapshot` from the library inspector. `loggerCount`, `totalEntries`, `entriesByLevel` (Record of level to count), `recentErrors[]` (with message, timestamp, source).
+
+**Key features**:
+
+- Scrolling log stream with auto-scroll (like the Events panel but for logger entries)
+- Level-based coloring: ERROR (red), WARN (amber), INFO (default), DEBUG (muted)
+- Level filter dropdown: show all, or filter to specific levels
+- Source filter dropdown: dynamically populated from seen log sources
+- Text search across message content
+- Click a row to expand and see structured data (JSON tree of the full log entry)
+- Summary bar: total entries, error count with percentage, approximate rate
+- Sparkline showing error rate over the last 60 seconds
+
+**Interfaces**:
+
+```typescript
+interface LoggerPanelProps extends LibraryPanelProps {
+  readonly snapshot: LoggerLibrarySnapshot;
+}
+
+interface LogEntryRow {
+  readonly timestamp: number;
+  readonly level: string;
+  readonly source: string;
+  readonly message: string;
+  readonly data?: Readonly<Record<string, unknown>>;
+}
+```
+
+### 15.7 Guard Panel (Authorization Dashboard)
+
+**Module**: `@hex-di/guard/devtools`
+**Inspiration**: AWS IAM Policy Simulator, Firebase Rules Playground
+
+**Purpose**: Display a comprehensive authorization dashboard showing active policies, recent authorization decisions with verdict coloring, an evaluation trace tree for individual decisions, and aggregated permission statistics. Enables developers to understand why access was granted or denied.
+
+**Layout**:
+
+```
++-------------------------------------------------------------+
+| GUARD                                                        |
+| Policies: 5 | Allows: 42 | Denies: 7 (14.3%)               |
++-------------------------------------------------------------+
+| [Verdict: all v] [Port: all v] [Subject: all v] [Search: _] |
++-------------------------------------------------------------+
+| Time       Verdict  Port            Subject    Policy        |
+| ────────── ──────── ─────────────── ────────── ──────────── |
+| 14:23:03   ALLOW    SettingsStore   admin-1    hasPerm(s:r)  |
+| 14:23:02   DENY     UserRepository  viewer-1   hasRole(adm)  |
+|   > allOf [DENY]                                             |
+|     hasPermission(user:read) [ALLOW]                         |
+|     hasRole('admin') [DENY]                                  |
+|       subject 'viewer-1' does not have role 'admin'          |
+| 14:23:01   ALLOW    UserRepository  admin-1    allOf(...)    |
++-------------------------------------------------------------+
+| POLICIES                                                     |
+| UserRepository     allOf(hasPermission(user:read), hasRole)  |
+|   .delete          hasRole('admin')                          |
+|   .update          allOf(hasPerm(user:write), hasAttr(...))  |
+| SettingsStore      hasPermission(settings:read)              |
++-------------------------------------------------------------+
+```
+
+**Data Source**: `GuardInspectionSnapshot` from the library inspector. `activePolicies` (Map of port name to serialized policy), `recentDecisions[]` (ring buffer of `GuardDecisionEntry` with timestamp, portName, subjectId, verdict, policy, reason, durationMs), `permissionStats` (totalAllows, totalDenies, byPort, bySubject).
+
+**Key features**:
+
+- Decisions table: real-time feed of authorization decisions with verdict badges (ALLOW green, DENY red)
+- Verdict, port, and subject filter dropdowns
+- Click a row to expand and see the full evaluation trace tree with color-coded allow/deny nodes
+- Active policies panel: which ports have policies, and the serialized policy string
+- Summary bar: total policies, allow count, deny count with percentage
+- Permission stats: allow/deny ratios by port and by subject
+- Cross-panel navigation: clicking `portName` navigates to Container panel
+
+**Interfaces**:
+
+```typescript
+interface GuardPanelProps extends LibraryPanelProps {
+  readonly snapshot: GuardInspectionSnapshot;
+}
+
+interface GuardDecisionRow {
+  readonly timestamp: string;
+  readonly portName: string;
+  readonly subjectId: string;
+  readonly verdict: "allow" | "deny";
+  readonly policy: string;
+  readonly reason: string;
+  readonly durationMs: number;
+}
+```
+
+### 15.8 Delivery Model
+
+Dedicated panels are shipped by each library package, not by `@hex-di/devtools`. Each library's `LibraryInspector` implementation sets `panelModule` to point to its devtools entry point:
+
+| Library          | panelModule               | Panel Type      | Detailed Spec                                      |
+| ---------------- | ------------------------- | --------------- | -------------------------------------------------- |
+| `@hex-di/flow`   | `@hex-di/flow/devtools`   | Statechart      | [panels/flow-panel.md](./panels/flow-panel.md)     |
+| `@hex-di/query`  | `@hex-di/query/devtools`  | Cache table     | [panels/query-panel.md](./panels/query-panel.md)   |
+| `@hex-di/store`  | `@hex-di/store/devtools`  | State inspector | [panels/store-panel.md](./panels/store-panel.md)   |
+| `@hex-di/saga`   | `@hex-di/saga/devtools`   | Pipeline        | [panels/saga-panel.md](./panels/saga-panel.md)     |
+| `@hex-di/logger` | `@hex-di/logger/devtools` | Log stream      | [panels/logger-panel.md](./panels/logger-panel.md) |
+| `@hex-di/guard`  | `@hex-di/guard/devtools`  | Authorization   | [panels/guard-panel.md](./panels/guard-panel.md)   |
+
+The dashboard dynamically imports these modules at runtime. Libraries that do not set `panelModule` fall back to the generic JSON tree viewer. If a dynamic import fails, the fallback is the same generic viewer with a console warning.
+
+The JSON tree fallback always remains available. If a library's custom panel throws during render, the DevTools error boundary falls back to the JSON tree view with an error banner: "Custom panel failed to render. Showing raw snapshot."
 
 ---
 
@@ -1401,14 +1775,16 @@ The JSON tree fallback always remains available. If a library's custom panel fai
 
 All panels share the same data refresh strategy:
 
-1. **Push-based reactivity**: Panels subscribe to inspector events via `useSyncExternalStore`. When any inspector event fires, the affected hooks re-compute their derived state, and React re-renders only the changed UI.
+1. **WebSocket-driven reactivity**: The devtools-client in the target app subscribes to `InspectorAPI` events and streams updates over WebSocket. The dashboard's `RemoteInspectorAPI` receives these messages and updates its internal state. Dashboard hooks (`useRemoteSnapshot`, `useRemoteScopeTree`, `useRemoteUnifiedSnapshot`, `useRemoteTracingSummary`) use `useSyncExternalStore` to subscribe to the `RemoteInspectorAPI`'s state, and React re-renders only the changed UI.
 
-2. **No polling**: No panel uses `setInterval` or `requestAnimationFrame` for data refresh. All updates are event-driven.
+2. **No polling**: No panel uses `setInterval` or `requestAnimationFrame` for data refresh. All updates are event-driven via WebSocket messages.
 
-3. **Snapshot stability**: The `useSyncExternalStore` hooks (useSnapshot, useScopeTree, useUnifiedSnapshot, useTracingSummary) employ referential stability checks -- they return the previous snapshot reference when the data has not changed, preventing unnecessary re-renders.
+3. **Snapshot stability**: The remote hooks employ referential stability checks -- they return the previous snapshot reference when the incoming data has not changed (compared by structure), preventing unnecessary re-renders.
 
-4. **Pull-on-demand for tracing**: The tracing library inspector is pull-only (no subscribe method). The Tracing Panel re-queries span data whenever any inspector event fires, since resolution events may have produced new spans. This is the one exception to pure push-based updates, but it is still event-triggered, not polled.
+4. **Pull-on-demand for tracing**: The tracing library inspector data is streamed alongside other data. The devtools-client performs pull queries on tracing data when inspector events fire, serializes them, and sends them over WebSocket. The dashboard's Tracing Panel receives this data through the same `RemoteInspectorAPI` subscription mechanism.
+
+5. **Connection-aware updates**: When the active connection changes (user switches to a different app in the sidebar), all panels re-render with the new `RemoteInspectorAPI` instance. When a connection is lost, panels display the last known state with a "disconnected" indicator. When the connection is restored, fresh data flows in automatically.
 
 ---
 
-> Previous: [03-architecture.md](./03-architecture.md) | Next: [05-theming.md](./05-theming.md)
+> Previous: [03-panel-architecture.md](./03-panel-architecture.md) | Next: [05-visual-design.md](./05-visual-design.md)

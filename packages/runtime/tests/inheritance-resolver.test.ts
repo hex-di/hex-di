@@ -239,7 +239,7 @@ describe("InheritanceResolver (via child container)", () => {
         lifetime: "singleton",
         factory: () => mockLogger,
       });
-      const childGraph = GraphBuilder.create().override(mockLoggerAdapter).build();
+      const childGraph = GraphBuilder.forParent(graph).override(mockLoggerAdapter).build();
       const child = parent.createChild(childGraph, { name: "Child" });
 
       const childLogger = child.resolve(LoggerPort);

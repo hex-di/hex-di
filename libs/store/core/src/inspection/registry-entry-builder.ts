@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { StoreRegistryEntry } from "./store-registry.js";
+import type { StoreRegistryEntry } from "../types/inspection.js";
 import type { PortSnapshot } from "../types/inspection.js";
 import type { StateServiceInternal } from "../services/state-service-impl.js";
 import type { AtomServiceInternal } from "../services/atom-service-impl.js";

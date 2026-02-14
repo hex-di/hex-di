@@ -274,9 +274,9 @@ describe("LazyContainer hasAdapter via loaded container", () => {
 
     const loaded = await lazy.load();
 
-    expect(loaded.hasAdapter(LoggerPort)).toBe(true);
-    expect(loaded.hasAdapter(DatabasePort)).toBe(true);
-    expect(loaded.hasAdapter(CachePort)).toBe(false);
+    expect(loaded.has(LoggerPort)).toBe(true);
+    expect(loaded.has(DatabasePort)).toBe(true);
+    expect(loaded.has(CachePort)).toBe(false);
   });
 });
 

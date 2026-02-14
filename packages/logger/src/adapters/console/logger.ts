@@ -15,6 +15,10 @@ import { shouldLog } from "../../types/log-level.js";
 import { mergeContext } from "../../utils/context.js";
 import { getFormatter } from "../../utils/formatting.js";
 import { getConsole } from "../../utils/globals.js";
+import { getStderr } from "../../utils/stderr.js";
+import { sanitizeMessage } from "../../utils/sanitize.js";
+import { sanitizeAnnotations } from "../../utils/validation.js";
+import { nextSequence } from "../../utils/sequence.js";
 
 /**
  * Console logger options.
@@ -58,6 +62,7 @@ class ConsoleLoggerImpl implements Logger {
   private readonly _context: LogContext;
   private readonly _baseAnnotations: Record<string, unknown>;
   private readonly _formatter: LogFormatter;
+  private _droppedCount = 0;
 
   constructor(
     minLevel: LogLevel,
@@ -183,19 +188,46 @@ class ConsoleLoggerImpl implements Logger {
 
     const entry: LogEntry = {
       level,
-      message,
+      message: sanitizeMessage(message),
       timestamp: Date.now(),
+      sequence: nextSequence(),
       context: this._context,
-      annotations: mergedAnnotations,
+      annotations: sanitizeAnnotations(mergedAnnotations),
       error,
     };
 
-    const formatted = this._formatter.format(entry);
-    const method = CONSOLE_METHOD[level];
+    let formatted: string;
+    try {
+      formatted = this._formatter.format(entry);
+    } catch (formatError: unknown) {
+      this._droppedCount++;
+      const fallback = getStderr();
+      if (fallback) {
+        const msg = formatError instanceof Error ? formatError.message : String(formatError);
+        fallback(
+          `[LOGGER FORMAT ERROR] Failed to format log entry: ${msg}. ` +
+            `Original entry: level=${entry.level} message=${entry.message}`
+        );
+      }
+      return;
+    }
 
+    const method = CONSOLE_METHOD[level];
     const cons = getConsole();
     if (cons) {
-      cons[method](formatted);
+      try {
+        cons[method](formatted);
+      } catch {
+        this._droppedCount++;
+      }
+    } else {
+      this._droppedCount++;
+      if (this._droppedCount === 1) {
+        const fallback = getStderr();
+        if (fallback) {
+          fallback("[LOGGER WARNING] Console unavailable. Log entries will be dropped.");
+        }
+      }
     }
   }
 }

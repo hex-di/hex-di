@@ -11,12 +11,18 @@
 
 import type { Graph } from "./types/graph-types.js";
 
+const VALID_LIFETIMES: ReadonlySet<string> = Object.freeze(
+  new Set(["singleton", "scoped", "transient"])
+);
+
 /**
- * Checks if a value conforms to the Graph structure.
+ * Checks if a value conforms to the Graph structure (deep validation).
  *
- * A Graph is a plain object with:
- * - `adapters`: Array of adapter objects
- * - `overridePortNames`: Set of port name strings
+ * Validates:
+ * - Top-level structure (adapters array, overridePortNames Set)
+ * - Each adapter has valid provides (object with __portName string)
+ * - Each adapter has valid requires (array of objects with __portName string)
+ * - Each adapter has a valid lifetime value
  *
  * @param value - The value to check
  * @returns `true` if the value conforms to Graph structure
@@ -37,10 +43,31 @@ export function isGraph(value: unknown): value is Graph {
   // Check adapters property
   if (!("adapters" in value) || !Array.isArray(value.adapters)) return false;
 
-  // Verify each adapter (shallow check - full validation would use isAdapter)
+  // Deep validation for each adapter
   for (const adapter of value.adapters) {
     if (adapter === null || typeof adapter !== "object") return false;
-    if (!("provides" in adapter) || !("requires" in adapter)) return false;
+
+    // Validate provides
+    if (
+      !("provides" in adapter) ||
+      adapter.provides === null ||
+      typeof adapter.provides !== "object"
+    )
+      return false;
+    if (!("__portName" in adapter.provides) || typeof adapter.provides.__portName !== "string")
+      return false;
+    if (adapter.provides.__portName.length === 0) return false;
+
+    // Validate requires
+    if (!("requires" in adapter) || !Array.isArray(adapter.requires)) return false;
+    for (const req of adapter.requires) {
+      if (req === null || typeof req !== "object") return false;
+      if (!("__portName" in req) || typeof req.__portName !== "string") return false;
+    }
+
+    // Validate lifetime
+    if (!("lifetime" in adapter) || typeof adapter.lifetime !== "string") return false;
+    if (!VALID_LIFETIMES.has(adapter.lifetime)) return false;
   }
 
   // Check overridePortNames property

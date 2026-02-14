@@ -139,6 +139,6 @@ export const SpanExporterPort = port<SpanExporter>()({
   name: "SpanExporter",
   direction: "outbound",
   description: "Exports completed spans to observability backends",
-  category: "infrastructure",
+  category: "tracing/exporter",
   tags: ["tracing", "observability", "export"],
 });

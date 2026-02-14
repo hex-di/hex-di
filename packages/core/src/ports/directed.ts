@@ -258,6 +258,25 @@ export function getPortMetadata(port: Port<unknown, string>): PortMetadata | und
 }
 
 // =============================================================================
+// Freeze Verification Guards
+// =============================================================================
+
+/**
+ * Asserts that a port object is frozen.
+ *
+ * @param port - The port to verify
+ * @throws {TypeError} If the port is not frozen
+ */
+export function assertPortFrozen(port: Port<unknown, string>): void {
+  if (!Object.isFrozen(port)) {
+    throw new TypeError(
+      `ERROR[HEX028]: Port '${port.__portName}' is not frozen. ` +
+        `Ports must be created via createPort() which freezes them.`
+    );
+  }
+}
+
+// =============================================================================
 // Re-exports for Convenience
 // =============================================================================
 

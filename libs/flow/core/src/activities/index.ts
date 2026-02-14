@@ -34,6 +34,13 @@ export type {
   ActivityConfig,
   ConfiguredActivity,
   ConfiguredActivityAny,
+
+  // Port type alias
+  ActivityPort,
+
+  // Type utilities
+  ActivityInput,
+  ActivityOutput,
 } from "./types.js";
 
 // =============================================================================
@@ -57,13 +64,6 @@ export {
 // =============================================================================
 
 export {
-  // Port type alias
-  type ActivityPort,
-
-  // Type utilities
-  type ActivityInput,
-  type ActivityOutput,
-
   // Port factory (curried API)
   activityPort,
 } from "./port.js";

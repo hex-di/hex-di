@@ -486,7 +486,7 @@ describe("lazy-impl.ts - dispose during loading", () => {
 
     const lazy = container.createLazyChild(
       () =>
-        new Promise(r => {
+        new Promise<any>(r => {
           resolveLoader = r;
         }),
       { name: "LazyChild" }
@@ -712,7 +712,7 @@ describe("builtin-api.ts - inspector API", () => {
       factory: () => ({ log: vi.fn() }),
     });
     // Use .override() on the GraphBuilder so overridePortNames is populated
-    const childGraph = GraphBuilder.create().override(overrideAdapter).build();
+    const childGraph = GraphBuilder.forParent(graph).override(overrideAdapter).build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
     const graphData = child.inspector.getGraphData();

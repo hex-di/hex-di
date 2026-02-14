@@ -13,6 +13,7 @@
 import { port } from "@hex-di/core";
 import type { Tracer } from "../ports/index.js";
 import type { Span } from "../types/index.js";
+import { warnTracingDisabled } from "../utils/tracing-warnings.js";
 
 // =============================================================================
 // TracerLike Interface
@@ -43,7 +44,7 @@ export interface TracerLike {
 export const TracerLikePort = port<TracerLike>()({
   name: "TracerLike",
   direction: "outbound",
-  category: "infrastructure",
+  category: "tracing/bridge",
   description: "Stack-based tracer bridge for library tracing hooks",
 });
 
@@ -61,6 +62,10 @@ export const TracerLikePort = port<TracerLike>()({
  * @returns A TracerLike compatible with all library tracing hooks
  */
 export function createTracerLikeAdapter(tracer: Tracer): TracerLike {
+  if (!tracer.isEnabled()) {
+    warnTracingDisabled("createTracerLikeAdapter");
+  }
+
   const spanStack: Span[] = [];
 
   return {

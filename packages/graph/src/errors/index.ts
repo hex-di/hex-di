@@ -20,5 +20,8 @@ export type {
   GraphValidationError,
 } from "./graph-build-errors.js";
 
+// Exception class
+export { GraphBuildException } from "./graph-build-exception.js";
+
 // Type guards
 export { isGraphBuildError } from "./guards.js";

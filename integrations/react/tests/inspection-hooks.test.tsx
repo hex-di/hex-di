@@ -94,14 +94,12 @@ function createMockInspector(): {
     }),
     getChildContainers: vi.fn().mockReturnValue([]),
     getAdapterInfo: vi.fn().mockReturnValue([]),
-    getGraphData: vi
-      .fn()
-      .mockReturnValue({
-        adapters: [],
-        containerName: "TestContainer",
-        kind: "root",
-        parentName: null,
-      }),
+    getGraphData: vi.fn().mockReturnValue({
+      adapters: [],
+      containerName: "TestContainer",
+      kind: "root",
+      parentName: null,
+    }),
     getResultStatistics: vi.fn().mockReturnValue(undefined),
     getAllResultStatistics: vi.fn().mockReturnValue(new Map()),
     getHighErrorRatePorts: vi.fn().mockReturnValue([]),
@@ -109,6 +107,9 @@ function createMockInspector(): {
     getLibraryInspectors: vi.fn().mockReturnValue(new Map()),
     getLibraryInspector: vi.fn().mockReturnValue(undefined),
     getUnifiedSnapshot: vi.fn().mockReturnValue(baseUnifiedSnapshot),
+    queryLibraries: vi.fn().mockReturnValue([]),
+    queryByLibrary: vi.fn().mockReturnValue([]),
+    queryByKey: vi.fn().mockReturnValue([]),
     isDisposed: false,
   };
 

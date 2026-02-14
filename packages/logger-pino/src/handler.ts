@@ -72,13 +72,27 @@ export function createPinoHandler(options: PinoHandlerOptions = {}): LogHandler 
     },
 
     flush(): Promise<void> {
-      logger.flush();
-      return Promise.resolve();
+      return new Promise<void>((resolve, reject) => {
+        logger.flush((err?: Error) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
     },
 
     shutdown(): Promise<void> {
-      logger.flush();
-      return Promise.resolve();
+      return new Promise<void>((resolve, reject) => {
+        logger.flush((err?: Error) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
     },
   };
 }

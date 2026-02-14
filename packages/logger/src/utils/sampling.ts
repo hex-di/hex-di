@@ -18,6 +18,10 @@ export interface SamplingConfig {
   readonly rate: number; // 0.0 to 1.0
   readonly perLevel?: Partial<Record<LogLevel, number>>;
   readonly alwaysLogErrors?: boolean; // default: true
+  /** Seedable random function for deterministic testing. Defaults to Math.random. */
+  readonly randomFn?: () => number;
+  /** Called when an entry is dropped by sampling. */
+  readonly onDrop?: (level: LogLevel, count: number) => void;
 }
 
 /**
@@ -31,7 +35,8 @@ function shouldSample(level: LogLevel, config: SamplingConfig): boolean {
   }
 
   const rate = config.perLevel?.[level] ?? config.rate;
-  return Math.random() < rate;
+  const random = config.randomFn ?? Math.random;
+  return random() < rate;
 }
 
 /**
@@ -42,27 +47,40 @@ function shouldSample(level: LogLevel, config: SamplingConfig): boolean {
  * @returns A new Logger with sampling applied
  */
 export function withSampling(logger: Logger, config: SamplingConfig): Logger {
+  let droppedCount = 0;
+
+  function tryLog(level: LogLevel): boolean {
+    if (shouldSample(level, config)) {
+      return true;
+    }
+    droppedCount++;
+    if (config.onDrop) {
+      config.onDrop(level, droppedCount);
+    }
+    return false;
+  }
+
   return {
     trace(message: string, annotations?: Record<string, unknown>): void {
-      if (shouldSample("trace", config)) {
+      if (tryLog("trace")) {
         logger.trace(message, annotations);
       }
     },
 
     debug(message: string, annotations?: Record<string, unknown>): void {
-      if (shouldSample("debug", config)) {
+      if (tryLog("debug")) {
         logger.debug(message, annotations);
       }
     },
 
     info(message: string, annotations?: Record<string, unknown>): void {
-      if (shouldSample("info", config)) {
+      if (tryLog("info")) {
         logger.info(message, annotations);
       }
     },
 
     warn(message: string, annotations?: Record<string, unknown>): void {
-      if (shouldSample("warn", config)) {
+      if (tryLog("warn")) {
         logger.warn(message, annotations);
       }
     },
@@ -72,7 +90,7 @@ export function withSampling(logger: Logger, config: SamplingConfig): Logger {
       errorOrAnnotations?: Error | Record<string, unknown>,
       annotations?: Record<string, unknown>
     ): void {
-      if (shouldSample("error", config)) {
+      if (tryLog("error")) {
         if (errorOrAnnotations instanceof Error) {
           logger.error(message, errorOrAnnotations, annotations);
         } else {
@@ -86,7 +104,7 @@ export function withSampling(logger: Logger, config: SamplingConfig): Logger {
       errorOrAnnotations?: Error | Record<string, unknown>,
       annotations?: Record<string, unknown>
     ): void {
-      if (shouldSample("fatal", config)) {
+      if (tryLog("fatal")) {
         if (errorOrAnnotations instanceof Error) {
           logger.fatal(message, errorOrAnnotations, annotations);
         } else {

@@ -279,6 +279,6 @@ export const TracerPort = port<Tracer>()({
   name: "Tracer",
   direction: "outbound",
   description: "Distributed tracing service for creating and managing spans",
-  category: "infrastructure",
+  category: "tracing/tracer",
   tags: ["tracing", "observability", "opentelemetry"],
 });

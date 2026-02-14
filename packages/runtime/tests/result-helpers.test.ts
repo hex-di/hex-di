@@ -124,7 +124,7 @@ describe("resolveResult", () => {
   });
 
   it("uses custom error mapper when provided", () => {
-    const customMapper = (err: unknown) => {
+    const customMapper = (err: unknown): any => {
       return new FactoryError("custom", err);
     };
     const result = resolveResult(() => {

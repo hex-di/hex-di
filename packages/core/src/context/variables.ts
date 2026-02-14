@@ -36,6 +36,23 @@ export interface ContextVariable<T> {
 /**
  * Creates a new context variable with the given name and optional default value.
  *
+ * ## Determinism Note
+ *
+ * This function uses `Symbol(name)` (local symbol, NOT `Symbol.for()`) to
+ * generate the variable's identity. This means:
+ *
+ * - **Intentionally non-reproducible**: Two calls with the same name produce
+ *   different variables. This is by design for collision avoidance.
+ * - **Identity by reference**: Variables must be shared by reference, not
+ *   recreated. Store the variable as a module-level constant.
+ * - **Not serializable**: Symbol-based identity cannot survive serialization.
+ *
+ * This is an **accepted non-determinism** justified by:
+ * 1. Context variables are created at module load time (once per process)
+ * 2. The same code path always creates the same set of variables
+ * 3. Collision avoidance outweighs reproducibility for this use case
+ * 4. `Symbol.for()` would create cross-module collisions (worse trade-off)
+ *
  * @typeParam T - The type of value this context variable will hold
  * @param name - Human-readable name for debugging (appears in Symbol description)
  * @param defaultValue - Optional default value when context is not set

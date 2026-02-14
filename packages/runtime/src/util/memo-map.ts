@@ -12,6 +12,8 @@
  */
 
 import type { Port, InferService } from "@hex-di/core";
+import { monotonicNow } from "./monotonic-time.js";
+import { FinalizerTimeoutError } from "../errors/index.js";
 // =============================================================================
 // Configuration Types
 // =============================================================================
@@ -23,6 +25,64 @@ import type { Port, InferService } from "@hex-di/core";
 export interface MemoMapConfig {
   /** Whether to capture timestamps (default: true) */
   readonly captureTimestamps?: boolean;
+}
+
+/**
+ * Options for controlling disposal behavior.
+ * @internal
+ */
+export interface DisposalOptions {
+  /** Maximum time in ms to wait for each individual finalizer. Default: 30_000 */
+  readonly finalizerTimeoutMs?: number;
+  /** Callback invoked when a finalizer exceeds the timeout. */
+  readonly onFinalizerTimeout?: (portName: string, timeoutMs: number) => void;
+}
+
+/**
+ * Wraps a possibly-async finalizer result with a timeout.
+ *
+ * If the finalizer returns void (synchronous), resolves immediately.
+ * If the finalizer returns a Promise that doesn't settle within timeoutMs,
+ * rejects with FinalizerTimeoutError.
+ *
+ * @param maybePromise - The finalizer result (void or Promise<void>)
+ * @param timeoutMs - Maximum wait time in milliseconds
+ * @param portName - Port name for error reporting
+ * @returns A promise that resolves when the finalizer completes or rejects on timeout
+ * @internal
+ */
+/**
+ * Access setTimeout/clearTimeout via globalThis to avoid requiring @types/node.
+ */
+const _timers = globalThis as unknown as {
+  setTimeout: (fn: () => void, ms: number) => unknown;
+  clearTimeout: (id: unknown) => void;
+};
+
+function withTimeout(
+  maybePromise: void | Promise<void>,
+  timeoutMs: number,
+  portName: string
+): Promise<void> {
+  if (maybePromise === undefined || !(maybePromise instanceof Promise)) {
+    return Promise.resolve();
+  }
+  return new Promise<void>((resolve, reject) => {
+    const timer = _timers.setTimeout(() => {
+      reject(new FinalizerTimeoutError(portName, timeoutMs));
+    }, timeoutMs);
+
+    maybePromise.then(
+      () => {
+        _timers.clearTimeout(timer);
+        resolve();
+      },
+      (err: unknown) => {
+        _timers.clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
 }
 
 // =============================================================================
@@ -154,6 +214,13 @@ export class MemoMap {
   private readonly config: MemoMapConfig;
 
   /**
+   * Tracks in-flight async factory calls for deduplication.
+   * Prevents double-factory-execution when two async resolution
+   * paths converge before either completes.
+   */
+  private readonly pendingAsync: Map<Port<unknown, string>, Promise<unknown>> = new Map();
+
+  /**
    * Creates a new MemoMap instance.
    *
    * @param parent - Optional parent MemoMap for singleton inheritance.
@@ -212,7 +279,7 @@ export class MemoMap {
       port,
       instance,
       finalizer,
-      resolvedAt: this.config.captureTimestamps !== false ? Date.now() : 0,
+      resolvedAt: this.config.captureTimestamps !== false ? monotonicNow() : 0,
       resolutionOrder: this.resolutionCounter++,
     };
     this.cache.set(port, entry);
@@ -263,7 +330,7 @@ export class MemoMap {
       port,
       instance,
       finalizer,
-      resolvedAt: this.config.captureTimestamps !== false ? Date.now() : 0,
+      resolvedAt: this.config.captureTimestamps !== false ? monotonicNow() : 0,
       resolutionOrder: this.resolutionCounter++,
     };
     this.cache.set(port, entry);
@@ -312,15 +379,40 @@ export class MemoMap {
       return cached.instance;
     }
 
-    // Create new instance asynchronously
+    // Check pending (deduplication): reuse in-flight factory call
+    const pending = this.pendingAsync.get(port);
+    if (pending !== undefined) {
+      return pending as Promise<InferService<P>>;
+    }
+
+    // Create and track the pending promise
+    const promise = this._executeMemoizeAsync(port, factory, finalizer);
+    this.pendingAsync.set(port, promise);
+
+    try {
+      return await promise;
+    } finally {
+      this.pendingAsync.delete(port);
+    }
+  }
+
+  /**
+   * Executes the async factory, caches the result, and returns the instance.
+   * Separated from getOrElseMemoizeAsync to support deduplication.
+   * @internal
+   */
+  private async _executeMemoizeAsync<P extends Port<unknown, string>>(
+    port: P,
+    factory: () => Promise<InferService<P>>,
+    finalizer?: Finalizer<InferService<P>>
+  ): Promise<InferService<P>> {
     const instance = await factory();
 
-    // Cache the instance
     const entry: CacheEntry<P> = {
       port,
       instance,
       finalizer,
-      resolvedAt: this.config.captureTimestamps !== false ? Date.now() : 0,
+      resolvedAt: this.config.captureTimestamps !== false ? monotonicNow() : 0,
       resolutionOrder: this.resolutionCounter++,
     };
     this.cache.set(port, entry);
@@ -453,11 +545,12 @@ export class MemoMap {
    * }
    * ```
    */
-  async dispose(): Promise<void> {
+  async dispose(options?: DisposalOptions): Promise<void> {
     // Mark as disposed early to prevent new entries
     this.disposed = true;
 
     const errors: unknown[] = [];
+    const timeoutMs = options?.finalizerTimeoutMs ?? 30_000;
 
     // Iterate in reverse order (LIFO - last created first disposed)
     for (let i = this.creationOrder.length - 1; i >= 0; i--) {
@@ -466,9 +559,13 @@ export class MemoMap {
       // With noUncheckedIndexedAccess, entry can be undefined
       if (entry !== undefined && entry.finalizer !== undefined) {
         try {
-          // Await the finalizer (handles both sync and async)
-          await entry.finalizer(entry.instance);
+          // Wrap with timeout to prevent indefinite blocking
+          await withTimeout(entry.finalizer(entry.instance), timeoutMs, entry.port.__portName);
         } catch (error) {
+          // Report timeout specifically if callback is configured
+          if (error instanceof FinalizerTimeoutError) {
+            options?.onFinalizerTimeout?.(entry.port.__portName, timeoutMs);
+          }
           // Collect error but continue disposing
           errors.push(error);
         }

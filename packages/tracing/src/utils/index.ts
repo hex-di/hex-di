@@ -23,3 +23,12 @@ export { getHighResTimestamp, formatDuration } from "./timing.js";
 
 // Cross-platform global types
 export type { CryptoLike, PerformanceLike, ConsoleLike } from "./globals.js";
+
+// Attribute filtering
+export { createAttributeFilter } from "./attribute-filter.js";
+
+// Filtering processor
+export { createFilteringProcessor } from "./filtering-processor.js";
+
+// Tracing warnings
+export { warnTracingDisabled, suppressTracingWarnings } from "./tracing-warnings.js";

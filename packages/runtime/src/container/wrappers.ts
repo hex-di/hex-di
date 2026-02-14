@@ -9,6 +9,7 @@ import { tryCatch, fromPromise } from "@hex-di/result";
 import { OverrideBuilder, type ContainerForOverride } from "./override-builder.js";
 import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
 import { mapToContainerError, mapToDisposalError, emitResultEvent } from "./result-helpers.js";
+import { ContainerError } from "../errors/index.js";
 import type {
   Container,
   ContainerMembers,
@@ -182,7 +183,28 @@ export function createChildContainerWrapper<
 
   // Child containers are always initialized, so resolve accepts all ports
   function resolve<P extends TProvides | TExtends>(port: P): InferService<P> {
-    return impl.resolve(port);
+    try {
+      const value = impl.resolve(port);
+      if (childContainer.inspector?.emit) {
+        childContainer.inspector.emit({
+          type: "result:ok",
+          portName: port.__portName,
+          timestamp: Date.now(),
+        });
+      }
+      return value;
+    } catch (e: unknown) {
+      if (childContainer.inspector?.emit) {
+        const errorCode = e instanceof ContainerError ? e.code : "UNKNOWN";
+        childContainer.inspector.emit({
+          type: "result:err",
+          portName: port.__portName,
+          errorCode,
+          timestamp: Date.now(),
+        });
+      }
+      throw e;
+    }
   }
 
   // Map from individual handlers to their uninstall functions
@@ -216,8 +238,30 @@ export function createChildContainerWrapper<
   const childContainer: ChildContainerInternals = {
     override: overrideMethod,
     resolve,
-    resolveAsync: <P extends TProvides | TExtends>(port: P): Promise<InferService<P>> =>
-      impl.resolveAsync(port),
+    resolveAsync: async <P extends TProvides | TExtends>(port: P): Promise<InferService<P>> => {
+      try {
+        const value = await impl.resolveAsync(port);
+        if (childContainer.inspector?.emit) {
+          childContainer.inspector.emit({
+            type: "result:ok",
+            portName: port.__portName,
+            timestamp: Date.now(),
+          });
+        }
+        return value;
+      } catch (e: unknown) {
+        if (childContainer.inspector?.emit) {
+          const errorCode = e instanceof ContainerError ? e.code : "UNKNOWN";
+          childContainer.inspector.emit({
+            type: "result:err",
+            portName: port.__portName,
+            errorCode,
+            timestamp: Date.now(),
+          });
+        }
+        throw e;
+      }
+    },
     tryResolve: <P extends TProvides | TExtends>(port: P) => {
       const result = tryCatch(() => impl.resolve(port), mapToContainerError);
       emitResultEvent(childContainer.inspector, port.__portName, result);

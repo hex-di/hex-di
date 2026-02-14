@@ -355,6 +355,17 @@ export interface GraphInspection {
    * Summary counts of ports by direction.
    */
   readonly directionSummary: DirectionSummary;
+
+  /**
+   * Actor identity, if provided via InspectOptions.
+   *
+   * For GxP audit trail attribution (ALCOA+ "Attributable" principle).
+   */
+  readonly actor?: {
+    readonly type: "user" | "system" | "process";
+    readonly id: string;
+    readonly name?: string;
+  };
 }
 
 /**
@@ -473,6 +484,13 @@ export interface GraphInspectionJSON {
   readonly ports: readonly PortInfo[];
   /** Summary counts of ports by direction */
   readonly directionSummary: DirectionSummary;
+
+  /** Actor identity, if provided via InspectOptions */
+  readonly actor?: {
+    readonly type: "user" | "system" | "process";
+    readonly id: string;
+    readonly name?: string;
+  };
 }
 
 /**
@@ -579,4 +597,16 @@ export interface InspectOptions {
    * - Shared context: Reuse a generator across multiple inspections
    */
   readonly generator?: (seed?: string) => string;
+
+  /**
+   * Optional actor identity for audit trail attribution.
+   *
+   * When provided, the actor is included in the inspection result
+   * and can be carried through to audit events and structured logs.
+   */
+  readonly actor?: {
+    readonly type: "user" | "system" | "process";
+    readonly id: string;
+    readonly name?: string;
+  };
 }

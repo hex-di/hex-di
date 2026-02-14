@@ -21,6 +21,7 @@ export {
   type MutationExecutor,
   type FetchContext,
   type MutationContext,
-  type MutationEffects,
   type StreamedFetcher,
 } from "./types.js";
+
+export type { MutationEffects } from "./mutation-effects.js";

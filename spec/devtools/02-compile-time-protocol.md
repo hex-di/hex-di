@@ -11,6 +11,7 @@ interface LibraryInspector {
   getSnapshot(): Readonly<Record<string, unknown>>;
   subscribe?(listener: LibraryEventListener): () => void;
   dispose?(): void;
+  readonly panelModule?: string;
 }
 ```
 
@@ -64,6 +65,7 @@ interface TypedLibraryInspector<
   getSnapshot(): Readonly<TSnapshot>;
   subscribe?(listener: LibraryEventListener): () => void;
   dispose?(): void;
+  readonly panelModule?: string;
 }
 ```
 
@@ -77,6 +79,7 @@ TypedLibraryInspector<"flow", FlowLibrarySnapshot>
   |    extends  Readonly<Record<string, unknown>>           OK (covariant return)
   |  subscribe?: same signature                              OK
   |  dispose?: same signature                                OK
+  |  panelModule?: string  extends  string | undefined       OK
   |
   +---> assignable to LibraryInspector                       OK
 ```
@@ -92,6 +95,32 @@ This means:
 ### Placement
 
 `TypedLibraryInspector` is defined in `@hex-di/core` alongside `LibraryInspector` in `src/inspection/library-inspector-types.ts`. It is a pure type export (no runtime code).
+
+### panelModule Field
+
+The optional `panelModule` field on both `LibraryInspector` and `TypedLibraryInspector` specifies a module path that the DevTools dashboard can dynamically import to obtain a dedicated panel component for that library. When provided, the dashboard calls `import(panelModule)` and uses the module's default export as the panel component instead of the generic JSON tree viewer.
+
+The `panelModule` value is a bare module specifier (e.g., `"@hex-di/flow/devtools"`) that must be resolvable by the dashboard's bundler. The devtools-client serializes this field as part of the library inspector metadata sent during the handshake, so the dashboard can resolve dedicated panels without any build-time dependency on the library package.
+
+If the dynamic import fails (module not installed, network error, invalid export), the dashboard falls back to the generic JSON tree viewer with no user-visible error beyond a console warning. Libraries are not required to provide a `panelModule`; the field is fully optional.
+
+```
+Library Author                    devtools-client                  Dashboard
+==============                    ===============                  =========
+
+1. Set panelModule:               2. Serializes panelModule        3. Receives panelModule
+   "@hex-di/flow/devtools"           as metadata string in            as part of library
+   on FlowLibraryInspector           the library-inspectors           inspector data
+                                     WebSocket message
+                                                                   4. import("@hex-di/flow/devtools")
+                                                                      -> FlowDevToolsPanel component
+
+                                                                   5. Renders FlowDevToolsPanel
+                                                                      instead of generic tree viewer
+
+                                                                   6. On import failure:
+                                                                      Falls back to JSON tree viewer
+```
 
 ## 4.3 Typed Library Inspector Port Factory
 
@@ -124,6 +153,7 @@ function createTypedLibraryInspectorPort<
   readonly name: TName;
   readonly description?: string;
   readonly tags?: readonly string[];
+  readonly panelModule?: string;
 }): DirectedPort<TypedLibraryInspector<TName, TSnapshot>, TName, "outbound", "library-inspector">;
 ```
 
@@ -181,7 +211,11 @@ interface FlowLibrarySnapshot {
 const FlowLibraryInspectorPort = createTypedLibraryInspectorPort<
   "FlowLibraryInspector",
   FlowLibrarySnapshot
->({ name: "FlowLibraryInspector", description: "Library inspector bridge for flow machines" });
+>({
+  name: "FlowLibraryInspector",
+  description: "Library inspector bridge for flow machines",
+  panelModule: "@hex-di/flow/devtools",
+});
 ```
 
 ### Tracing Library
@@ -199,7 +233,11 @@ interface TracingLibrarySnapshot {
 const TracingLibraryInspectorPort = createTypedLibraryInspectorPort<
   "TracingLibraryInspector",
   TracingLibrarySnapshot
->({ name: "TracingLibraryInspector", description: "Library inspector bridge for tracing" });
+>({
+  name: "TracingLibraryInspector",
+  description: "Library inspector bridge for tracing",
+  panelModule: "@hex-di/tracing/devtools",
+});
 ```
 
 ### Store Library
@@ -471,7 +509,7 @@ function asTypedSnapshot<TLibraries extends Record<string, Readonly<Record<strin
 ): TypedUnifiedSnapshot<TLibraries>;
 ```
 
-This function is the single point where the type gap is bridged. It is implemented in `@hex-di/devtools` (not in `@hex-di/core`) because it is a DevTools concern, not a core protocol concern.
+This function is the single point where the type gap is bridged. It is implemented in `@hex-di/devtools` (the dashboard package, not in `@hex-di/core`) because it is a DevTools concern, not a core protocol concern. On the dashboard side, it operates on the deserialized JSON from WebSocket messages. On the client side, the devtools-client does not need this utility -- it sends the raw `UnifiedSnapshot` as JSON.
 
 ## 5.3 Multi-Library Composition Example
 
@@ -519,14 +557,17 @@ type AppLibraryNames = ExtractLibraryNames<AppProvides>;
 // "FlowLibraryInspector" | "TracingLibraryInspector" | "StoreLibraryInspector" | "SagaLibraryInspector"
 ```
 
-### asTypedSnapshot() Usage in a React Component
+### asTypedSnapshot() Usage in the Dashboard
+
+On the dashboard side, `asTypedSnapshot()` operates on deserialized JSON received over WebSocket from the devtools-client. The `RemoteInspectorAPI` provides the `UnifiedSnapshot` as a plain JSON object, and `asTypedSnapshot()` narrows the type without runtime cost:
 
 ```typescript
-import { useUnifiedSnapshot } from "@hex-di/react";
+import { useRemoteUnifiedSnapshot } from "@hex-di/devtools";
 import { asTypedSnapshot } from "@hex-di/devtools";
 
-function DashboardWidget() {
-  const snapshot = useUnifiedSnapshot();
+function DashboardWidget({ connectionId }: { readonly connectionId: string }) {
+  const snapshot = useRemoteUnifiedSnapshot(connectionId);
+  if (!snapshot) return null;
   const typed = asTypedSnapshot<AppLibraries>(snapshot);
 
   // Full autocomplete and type safety on library snapshots
@@ -546,6 +587,10 @@ function DashboardWidget() {
 }
 ```
 
+On the client side, the devtools-client serializes the `UnifiedSnapshot` from the local `InspectorAPI` and sends it as a JSON WebSocket message. The typed shapes are preserved through serialization because all snapshot fields are plain data (no functions, no class instances).
+
+````
+
 ### AvailablePanels Compile-Time Panel Union
 
 ```typescript
@@ -562,7 +607,7 @@ function navigateToPanel(panel: AppPanels): void {
 navigateToPanel("FlowLibraryInspector"); // OK
 navigateToPanel("container"); // OK
 navigateToPanel("QueryLibraryInspector"); // Compile error: Query not in graph
-```
+````
 
 ### Compile Error Examples
 
@@ -754,7 +799,7 @@ type PanelDataMap<TProvides> = {
 A React hook can use this mapping:
 
 ```typescript
-function usePanelData<TProvides, TPanel extends AvailablePanels<TProvides>>(
+function useRemotePanelData<TProvides, TPanel extends AvailablePanels<TProvides>>(
   panel: TPanel
 ): PanelDataMap<TProvides>[TPanel];
 ```
@@ -886,5 +931,5 @@ Phase 4: Remaining libraries (Store, Query, Saga, Logger) migrate to typed
 
 ---
 
-**Previous:** [01 - Overview and Architecture](./01-overview.md)
-**Next:** [03 - Visual Design Specification](./03-visual-design.md)
+**Previous:** [01 - Overview and Philosophy](./01-overview.md)
+**Next:** [03 - Panel Architecture](./03-panel-architecture.md)

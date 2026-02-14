@@ -11,15 +11,25 @@ import type { Logger } from "../ports/logger.js";
 import type { LogLevel } from "../types/log-level.js";
 import { extractContextFromHeaders } from "../utils/context.js";
 
+/** Minimal globalThis.crypto interface for environments without DOM types. */
+declare const crypto: undefined | { randomUUID?: () => string };
+
 /**
- * Generates a simple unique request ID from timestamp and random value.
- * Avoids dependency on node:crypto for portability across runtimes.
+ * Generates a unique request ID.
+ *
+ * Uses crypto.randomUUID() when available (Node 19+, Deno, Bun,
+ * Cloudflare Workers, browsers). Falls back to timestamp-based
+ * generation for older runtimes.
  */
 function generateRequestId(): string {
-  const time = Date.now().toString(36);
-  const random = Math.random().toString(36).slice(2, 10);
-  return `${time}-${random}`;
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // Fallback: monotonic counter to avoid Math.random() non-determinism
+  return `req_${Date.now().toString(36)}_${(requestIdCounter++).toString(36)}`;
 }
+
+let requestIdCounter = 0;
 
 /**
  * Minimal Hono context type for structural compatibility.

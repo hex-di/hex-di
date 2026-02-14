@@ -651,6 +651,12 @@ export class DisposalError extends ContainerError {
   readonly causes: readonly unknown[];
 
   /**
+   * The original error that triggered this disposal failure.
+   * Set via Object.defineProperty when an originalError is provided.
+   */
+  declare readonly cause: unknown | undefined;
+
+  /**
    * Creates a new DisposalError.
    *
    * @param message - The error message describing what went wrong
@@ -700,5 +706,121 @@ export class DisposalError extends ContainerError {
     }
     const message = extractErrorMessage(err);
     return new DisposalError(`Disposal failed: ${message}`, [err], err);
+  }
+}
+
+// =============================================================================
+// FinalizerTimeoutError
+// =============================================================================
+
+/**
+ * Error thrown when a finalizer exceeds the configured timeout during disposal.
+ *
+ * This error is collected alongside other finalizer errors in the AggregateError
+ * thrown by MemoMap.dispose(). It indicates a resource cleanup that hung.
+ *
+ * @remarks
+ * - This is NOT a programming error - timeout failures are runtime conditions
+ * - The finalizer may still be running in the background after timeout
+ * - The port name identifies which service's cleanup hung
+ *
+ * @example
+ * ```typescript
+ * const result = await container.tryDispose();
+ * if (result.isErr()) {
+ *   for (const cause of result.error.causes) {
+ *     if (cause instanceof FinalizerTimeoutError) {
+ *       console.warn(`Cleanup hung for ${cause.portName}`);
+ *     }
+ *   }
+ * }
+ * ```
+ */
+export class FinalizerTimeoutError extends ContainerError {
+  readonly code = "FINALIZER_TIMEOUT" as const;
+  readonly isProgrammingError = false as const;
+
+  /** The name of the port whose finalizer timed out. */
+  readonly portName: string;
+
+  /** The timeout duration in milliseconds. */
+  readonly timeoutMs: number;
+
+  /**
+   * Creates a new FinalizerTimeoutError.
+   *
+   * @param portName - The name of the port whose finalizer timed out
+   * @param timeoutMs - The timeout duration in milliseconds
+   */
+  constructor(portName: string, timeoutMs: number) {
+    super(
+      `Finalizer for port '${portName}' timed out after ${timeoutMs}ms. ` +
+        `The resource may not have been properly cleaned up.`
+    );
+    this.portName = portName;
+    this.timeoutMs = timeoutMs;
+  }
+}
+
+// =============================================================================
+// ScopeDepthExceededError
+// =============================================================================
+
+/**
+ * Error thrown when creating a scope would exceed the maximum allowed nesting depth.
+ *
+ * @remarks
+ * - This is a programming error - indicates runaway scope creation
+ * - The default max depth is 64, configurable via container options
+ * - Usually indicates a recursive createScope() call or missing scope reuse
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   deeplyNestedScope.createScope();
+ * } catch (error) {
+ *   if (error instanceof ScopeDepthExceededError) {
+ *     console.log(`Max depth ${error.maxDepth} exceeded`);
+ *   }
+ * }
+ * ```
+ */
+export class ScopeDepthExceededError extends ContainerError {
+  readonly code = "SCOPE_DEPTH_EXCEEDED" as const;
+  readonly isProgrammingError = true as const;
+
+  /** The depth that was attempted. */
+  readonly attemptedDepth: number;
+
+  /** The maximum allowed depth. */
+  readonly maxDepth: number;
+
+  /**
+   * Creates a new ScopeDepthExceededError.
+   *
+   * @param attemptedDepth - The depth that was attempted
+   * @param maxDepth - The maximum allowed depth
+   */
+  constructor(attemptedDepth: number, maxDepth: number) {
+    super(
+      `Cannot create scope at depth ${attemptedDepth}: maximum scope depth is ${maxDepth}. ` +
+        `This usually indicates a recursive scope creation pattern.`
+    );
+    this.attemptedDepth = attemptedDepth;
+    this.maxDepth = maxDepth;
+
+    this.suggestion =
+      "To fix excessive scope nesting:\n" +
+      "1. Reuse existing scopes instead of creating new ones per operation\n" +
+      "2. Use flat scope structures (sibling scopes instead of nested)\n" +
+      "3. Increase maxScopeDepth in container options if deep nesting is intentional\n\n" +
+      "Example - configure max depth:\n" +
+      "```typescript\n" +
+      "const container = createContainer({\n" +
+      "  graph,\n" +
+      "  name: 'App',\n" +
+      "  safety: { maxScopeDepth: 128 },\n" +
+      "});\n" +
+      "```";
   }
 }

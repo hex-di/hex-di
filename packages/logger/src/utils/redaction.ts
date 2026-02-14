@@ -17,6 +17,8 @@ import type { LogContext } from "../types/log-entry.js";
 export interface RedactionConfig {
   readonly paths: ReadonlyArray<string>;
   readonly censor?: string | ((value: unknown) => unknown);
+  /** Regular expression patterns to redact within log messages. */
+  readonly messagePatterns?: ReadonlyArray<RegExp>;
 }
 
 /**
@@ -42,6 +44,25 @@ function applyCensor(
     return censor(value);
   }
   return censor ?? DEFAULT_CENSOR;
+}
+
+/**
+ * Redacts patterns from a log message string.
+ */
+function redactMessage(
+  message: string,
+  patterns: ReadonlyArray<RegExp> | undefined,
+  censor: string | ((value: unknown) => unknown) | undefined
+): string {
+  if (!patterns || patterns.length === 0) {
+    return message;
+  }
+  const censorStr = typeof censor === "string" ? censor : DEFAULT_CENSOR;
+  let result = message;
+  for (const pattern of patterns) {
+    result = result.replace(pattern, censorStr);
+  }
+  return result;
 }
 
 /**
@@ -136,21 +157,25 @@ export function withRedaction(logger: Logger, config: RedactionConfig): Logger {
     return redactRecord(context, config);
   }
 
+  function redactMsg(message: string): string {
+    return redactMessage(message, config.messagePatterns, config.censor);
+  }
+
   return {
     trace(message: string, annotations?: Record<string, unknown>): void {
-      logger.trace(message, redactAnnotations(annotations));
+      logger.trace(redactMsg(message), redactAnnotations(annotations));
     },
 
     debug(message: string, annotations?: Record<string, unknown>): void {
-      logger.debug(message, redactAnnotations(annotations));
+      logger.debug(redactMsg(message), redactAnnotations(annotations));
     },
 
     info(message: string, annotations?: Record<string, unknown>): void {
-      logger.info(message, redactAnnotations(annotations));
+      logger.info(redactMsg(message), redactAnnotations(annotations));
     },
 
     warn(message: string, annotations?: Record<string, unknown>): void {
-      logger.warn(message, redactAnnotations(annotations));
+      logger.warn(redactMsg(message), redactAnnotations(annotations));
     },
 
     error(
@@ -159,9 +184,9 @@ export function withRedaction(logger: Logger, config: RedactionConfig): Logger {
       annotations?: Record<string, unknown>
     ): void {
       if (errorOrAnnotations instanceof Error) {
-        logger.error(message, errorOrAnnotations, redactAnnotations(annotations));
+        logger.error(redactMsg(message), errorOrAnnotations, redactAnnotations(annotations));
       } else {
-        logger.error(message, redactAnnotations(errorOrAnnotations));
+        logger.error(redactMsg(message), redactAnnotations(errorOrAnnotations));
       }
     },
 
@@ -171,9 +196,9 @@ export function withRedaction(logger: Logger, config: RedactionConfig): Logger {
       annotations?: Record<string, unknown>
     ): void {
       if (errorOrAnnotations instanceof Error) {
-        logger.fatal(message, errorOrAnnotations, redactAnnotations(annotations));
+        logger.fatal(redactMsg(message), errorOrAnnotations, redactAnnotations(annotations));
       } else {
-        logger.fatal(message, redactAnnotations(errorOrAnnotations));
+        logger.fatal(redactMsg(message), redactAnnotations(errorOrAnnotations));
       }
     },
 

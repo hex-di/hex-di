@@ -7,28 +7,11 @@
  */
 
 import type {
+  ActionHistory,
   ActionHistoryEntry,
   ActionHistoryFilter,
   ActionHistoryConfig,
 } from "../types/inspection.js";
-
-// =============================================================================
-// ActionHistory
-// =============================================================================
-
-export interface ActionHistory {
-  /** Record a new action entry. Returns true if recorded, false if skipped. */
-  record(entry: ActionHistoryEntry): boolean;
-
-  /** Query entries with optional filter */
-  query(filter?: ActionHistoryFilter): readonly ActionHistoryEntry[];
-
-  /** Clear all recorded entries */
-  clear(): void;
-
-  /** Current entry count */
-  readonly size: number;
-}
 
 // =============================================================================
 // Reservoir Sampling State

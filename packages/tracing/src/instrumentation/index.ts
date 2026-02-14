@@ -29,3 +29,9 @@ export { evaluatePortFilter, isPredicateFilter, isDeclarativeFilter } from "./ty
 export { DEFAULT_INSTRUMENT_OPTIONS } from "./types.js";
 export { matchesPortPattern, shouldTracePort } from "./utils.js";
 export { pushSpan, popSpan, getActiveSpan, clearStack, getStackDepth } from "./span-stack.js";
+
+// =============================================================================
+// Async Context
+// =============================================================================
+
+export { initAsyncSpanContext, runInAsyncContext } from "./async-context.js";

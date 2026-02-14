@@ -18,6 +18,7 @@ const jsonFormatter: LogFormatter = {
       level: entry.level,
       message: entry.message,
       timestamp: new Date(entry.timestamp).toISOString(),
+      sequence: entry.sequence,
     };
 
     if (Object.keys(entry.context).length > 0) {
@@ -41,7 +42,18 @@ const jsonFormatter: LogFormatter = {
       obj.spanId = entry.spans[0].spanId;
     }
 
-    return JSON.stringify(obj);
+    try {
+      return JSON.stringify(obj);
+    } catch {
+      // Fallback for circular references or non-serializable values
+      return JSON.stringify({
+        level: entry.level,
+        message: entry.message,
+        timestamp: new Date(entry.timestamp).toISOString(),
+        sequence: entry.sequence,
+        _serializationError: true,
+      });
+    }
   },
 };
 

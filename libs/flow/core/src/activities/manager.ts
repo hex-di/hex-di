@@ -27,7 +27,7 @@ import type {
 } from "./types.js";
 import type { Port, PortDeps } from "@hex-di/core";
 import type { TypedEventSink } from "./events.js";
-import type { ActivityPort, ActivityInput } from "./port.js";
+import type { ActivityPort, ActivityInput } from "./types.js";
 import { ActivityNotFound, DisposeError } from "../errors/index.js";
 
 // =============================================================================

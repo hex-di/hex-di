@@ -228,7 +228,7 @@ describe("InspectorAPI (builtin-api)", () => {
       const unsub = inspector.subscribe((event: any) => events.push(event));
 
       // Emit a custom event via inspector
-      inspector.emit({ type: "test" } as any);
+      inspector.emit?.({ type: "test" } as any);
 
       unsub();
       expect(events.length).toBeGreaterThanOrEqual(1);
@@ -244,7 +244,7 @@ describe("InspectorAPI (builtin-api)", () => {
       const events: any[] = [];
       inspector.subscribe((event: any) => events.push(event));
 
-      inspector.emit({ type: "custom-event" as any, data: "test" } as any);
+      inspector.emit?.({ type: "custom-event" as any, data: "test" } as any);
 
       expect(events.length).toBeGreaterThanOrEqual(1);
     });
@@ -334,7 +334,7 @@ describe("InspectorAPI (builtin-api)", () => {
       const container = createContainer({ graph, name: "Test" });
       const inspector = getInspector(container);
 
-      inspector.emit({ type: "result:ok", portName: "Logger", timestamp: Date.now() } as any);
+      inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: Date.now() } as any);
 
       const stats = inspector.getResultStatistics("Logger");
       expect(stats).toBeDefined();
@@ -347,7 +347,7 @@ describe("InspectorAPI (builtin-api)", () => {
       const container = createContainer({ graph, name: "Test" });
       const inspector = getInspector(container);
 
-      inspector.emit({
+      inspector.emit?.({
         type: "result:err",
         portName: "Logger",
         errorCode: "FACTORY_FAILED",
@@ -368,8 +368,8 @@ describe("InspectorAPI (builtin-api)", () => {
       const container = createContainer({ graph, name: "Test" });
       const inspector = getInspector(container);
 
-      inspector.emit({ type: "result:ok", portName: "Logger", timestamp: Date.now() } as any);
-      inspector.emit({
+      inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: Date.now() } as any);
+      inspector.emit?.({
         type: "result:err",
         portName: "Database",
         errorCode: "FACTORY_FAILED",
@@ -386,19 +386,19 @@ describe("InspectorAPI (builtin-api)", () => {
       const inspector = getInspector(container);
 
       // Emit 2 errors and 1 ok for Logger (66% error rate)
-      inspector.emit({
+      inspector.emit?.({
         type: "result:err",
         portName: "Logger",
         errorCode: "FACTORY_FAILED",
         timestamp: Date.now(),
       } as any);
-      inspector.emit({
+      inspector.emit?.({
         type: "result:err",
         portName: "Logger",
         errorCode: "FACTORY_FAILED",
         timestamp: Date.now(),
       } as any);
-      inspector.emit({ type: "result:ok", portName: "Logger", timestamp: Date.now() } as any);
+      inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: Date.now() } as any);
 
       const highError = inspector.getHighErrorRatePorts(0.5);
       expect(highError.length).toBe(1);

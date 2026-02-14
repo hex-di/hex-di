@@ -95,7 +95,7 @@ describe("BaseContainerImpl mutation targets", () => {
       const graph = GraphBuilder.create().provide(adapter).build();
       const container = createContainer({ graph, name: "Test" });
 
-      expect(container.hasAdapter(LoggerPort)).toBe(true);
+      expect(container.has(LoggerPort)).toBe(true);
     });
 
     it("returns false for unregistered port", () => {
@@ -108,7 +108,7 @@ describe("BaseContainerImpl mutation targets", () => {
       const graph = GraphBuilder.create().provide(adapter).build();
       const container = createContainer({ graph, name: "Test" });
 
-      expect(container.hasAdapter(DatabasePort)).toBe(false);
+      expect(container.has(DatabasePort)).toBe(false);
     });
   });
 
@@ -569,7 +569,7 @@ describe("BaseContainerImpl mutation targets", () => {
       const child = parent.createChild(childGraph, { name: "Child" });
 
       // parent property should be the parent container wrapper
-      const childParent = child.parent;
+      const childParent: any = child.parent;
       expect(childParent).toBeDefined();
       expect(typeof childParent.resolve).toBe("function");
     });

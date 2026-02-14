@@ -79,5 +79,6 @@ export function inspectionToJSON(
     correlationId: inspection.correlationId,
     ports: [...inspection.ports],
     directionSummary: { ...inspection.directionSummary },
+    actor: inspection.actor ? { ...inspection.actor } : undefined,
   };
 }

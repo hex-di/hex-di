@@ -116,3 +116,39 @@ export function isAdapter(value: unknown): value is AdapterConstraint {
 
   return true;
 }
+
+// =============================================================================
+// Freeze Verification Guards
+// =============================================================================
+
+/**
+ * Checks if an adapter is frozen (integrity verified).
+ *
+ * Adapters created via `createAdapter()` are always frozen. An unfrozen
+ * adapter indicates manual construction that bypassed validation.
+ *
+ * @param adapter - The adapter to check
+ * @returns `true` if the adapter is frozen
+ */
+export function isAdapterFrozen(adapter: AdapterConstraint): boolean {
+  return Object.isFrozen(adapter);
+}
+
+/**
+ * Asserts that an adapter is frozen, throwing if not.
+ *
+ * Call this at consumption boundaries (e.g., graph builder, container)
+ * to ensure adapters have not been tampered with.
+ *
+ * @param adapter - The adapter to verify
+ * @throws {TypeError} If the adapter is not frozen
+ */
+export function assertAdapterFrozen(adapter: AdapterConstraint): void {
+  if (!Object.isFrozen(adapter)) {
+    throw new TypeError(
+      `ERROR[HEX027]: Adapter for port '${adapter.provides.__portName}' is not frozen. ` +
+        `Adapters must be created via createAdapter() which freezes them. ` +
+        `Manually constructed adapters are not allowed for GxP compliance.`
+    );
+  }
+}

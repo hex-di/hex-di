@@ -8,8 +8,7 @@
  */
 
 import type { Port } from "@hex-di/core";
-import type { ActivityPort } from "./port.js";
-import type { ActivityConfig, ConfiguredActivity } from "./types.js";
+import type { ActivityPort, ActivityConfig, ConfiguredActivity } from "./types.js";
 
 // =============================================================================
 // Activity Factory

@@ -79,7 +79,7 @@ export function sagaPort<TInput, TOutput, TError = never>(): <const TName extend
       createPort<TName, { execute: (input: TInput) => unknown }>({
         name: config.name,
         description: config.description,
-        category: "saga",
+        category: "saga/saga",
       })
     );
   };
@@ -107,7 +107,7 @@ export function sagaManagementPort<TOutput, TError = never>(): <const TName exte
       createPort<TName, { resume: (id: string) => unknown }>({
         name: config.name,
         description: config.description,
-        category: "saga",
+        category: "saga/saga-management",
       })
     );
   };
@@ -123,7 +123,7 @@ export function sagaManagementPort<TOutput, TError = never>(): <const TName exte
 export const SagaPersisterPort = createPort<"SagaPersister", SagaPersister>({
   name: "SagaPersister",
   description: "Persistence layer for saga execution state",
-  category: "saga",
+  category: "saga/saga",
 });
 
 // =============================================================================
@@ -136,7 +136,7 @@ export const SagaPersisterPort = createPort<"SagaPersister", SagaPersister>({
 export const SagaRegistryPort = createPort<"SagaRegistry", SagaRegistry>({
   name: "SagaRegistry",
   description: "Registry for tracking live saga executions",
-  category: "saga",
+  category: "saga/saga",
 });
 
 // =============================================================================
@@ -149,7 +149,7 @@ export const SagaRegistryPort = createPort<"SagaRegistry", SagaRegistry>({
 export const SagaInspectorPort = createPort<"SagaInspector", SagaInspector>({
   name: "SagaInspector",
   description: "Read-only introspection API for saga state and history",
-  category: "saga",
+  category: "saga/saga",
 });
 
 // =============================================================================

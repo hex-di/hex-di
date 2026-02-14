@@ -13,7 +13,7 @@ import type { AnyStepDefinition } from "../step/types.js";
 import type { SagaOptions, AnySagaDefinition } from "../saga/types.js";
 import type { SagaPersister } from "../ports/types.js";
 import type { SagaEventListener } from "./types.js";
-import type { SagaTracingHook } from "../introspection/types.js";
+import type { SagaTracingHook } from "../shared/tracing-types.js";
 
 // =============================================================================
 // Mutable Trace Types (internal bookkeeping during execution)

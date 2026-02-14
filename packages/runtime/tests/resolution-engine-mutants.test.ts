@@ -525,7 +525,7 @@ describe("InheritanceResolver (mutant killing)", () => {
       const modes = new Map<string, any>(); // default = shared
       const resolver = new InheritanceResolver(parent, modes);
 
-      const result = resolver.resolveWithCallback(LoggerPort, vi.fn());
+      const result: any = resolver.resolveWithCallback(LoggerPort, vi.fn() as any);
       expect(result).toBeDefined();
       expect(result.portName).toBe("Logger");
     });
@@ -536,8 +536,8 @@ describe("InheritanceResolver (mutant killing)", () => {
       const modes = new Map<string, any>();
       const resolver = new InheritanceResolver(parent, modes);
 
-      const first = resolver.resolveWithCallback(LoggerPort, vi.fn());
-      const second = resolver.resolveWithCallback(LoggerPort, vi.fn());
+      const first = resolver.resolveWithCallback(LoggerPort, vi.fn() as any);
+      const second = resolver.resolveWithCallback(LoggerPort, vi.fn() as any);
       expect(first).toBe(second);
     });
   });
@@ -549,7 +549,7 @@ describe("InheritanceResolver (mutant killing)", () => {
       const modes = new Map([["Logger", "forked" as const]]);
       const resolver = new InheritanceResolver(parent, modes);
 
-      const result = resolver.resolveWithCallback(LoggerPort, vi.fn());
+      const result: any = resolver.resolveWithCallback(LoggerPort, vi.fn() as any);
       expect(result).toBeDefined();
       // Should be different reference (cloned)
       const parentInstance = parent.resolveInternal(LoggerPort);
@@ -564,8 +564,8 @@ describe("InheritanceResolver (mutant killing)", () => {
       const modes = new Map([["Logger", "forked" as const]]);
       const resolver = new InheritanceResolver(parent, modes);
 
-      const first = resolver.resolveWithCallback(LoggerPort, vi.fn());
-      const second = resolver.resolveWithCallback(LoggerPort, vi.fn());
+      const first = resolver.resolveWithCallback(LoggerPort, vi.fn() as any);
+      const second = resolver.resolveWithCallback(LoggerPort, vi.fn() as any);
       expect(first).toBe(second);
     });
 
@@ -575,7 +575,9 @@ describe("InheritanceResolver (mutant killing)", () => {
       const modes = new Map([["Logger", "forked" as const]]);
       const resolver = new InheritanceResolver(parent, modes);
 
-      expect(() => resolver.resolveWithCallback(LoggerPort, vi.fn())).toThrow(/clonable|forked/i);
+      expect(() => resolver.resolveWithCallback(LoggerPort, vi.fn() as any)).toThrow(
+        /clonable|forked/i
+      );
     });
 
     it("throws NonClonableForkedError when adapter is undefined", () => {
@@ -583,7 +585,9 @@ describe("InheritanceResolver (mutant killing)", () => {
       const modes = new Map([["Logger", "forked" as const]]);
       const resolver = new InheritanceResolver(parent, modes);
 
-      expect(() => resolver.resolveWithCallback(LoggerPort, vi.fn())).toThrow(/clonable|forked/i);
+      expect(() => resolver.resolveWithCallback(LoggerPort, vi.fn() as any)).toThrow(
+        /clonable|forked/i
+      );
     });
   });
 
@@ -597,7 +601,7 @@ describe("InheritanceResolver (mutant killing)", () => {
       const isolatedInstance = { log: vi.fn(), isolated: true };
       const callback = vi.fn().mockReturnValue(isolatedInstance);
 
-      const result = resolver.resolveWithCallback(LoggerPort, callback);
+      const result = resolver.resolveWithCallback(LoggerPort, callback as any);
       expect(callback).toHaveBeenCalledWith(LoggerPort, adapter);
       expect(result).toBe(isolatedInstance);
     });
@@ -608,7 +612,7 @@ describe("InheritanceResolver (mutant killing)", () => {
       const resolver = new InheritanceResolver(parent, modes);
 
       const callback = vi.fn();
-      const result = resolver.resolveWithCallback(LoggerPort, callback);
+      const result: any = resolver.resolveWithCallback(LoggerPort, callback as any);
 
       // Callback should NOT be called
       expect(callback).not.toHaveBeenCalled();
@@ -627,7 +631,7 @@ describe("InheritanceResolver (mutant killing)", () => {
       const modes = new Map<string, any>();
       const resolver = new InheritanceResolver(parent, modes);
 
-      const result = resolver.resolveSharedInternal(LoggerPort);
+      const result: any = resolver.resolveSharedInternal(LoggerPort);
       expect(result).toBeDefined();
       expect(result.portName).toBe("Logger");
     });

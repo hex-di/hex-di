@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { getPortMetadata } from "@hex-di/core";
 import {
   createMutationPort,
   isMutationPort,
@@ -149,5 +150,12 @@ describe("createMutationPort (inline creation — mutation testing)", () => {
     });
     expect(port.config.name).toBe("InlineConfig");
     expect(port.config.effects).toEqual({ invalidates: [] });
+  });
+});
+
+describe("mutation port metadata category for library detection", () => {
+  it("createMutationPort sets category to query/mutation", () => {
+    const port = createMutationPort<string>()({ name: "TestMutation" });
+    expect(getPortMetadata(port)?.category).toBe("query/mutation");
   });
 });

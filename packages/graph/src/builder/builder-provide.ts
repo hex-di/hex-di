@@ -123,6 +123,6 @@ export function addOverrideAdapter(
 
   return {
     adapters: Object.freeze([...buildable.adapters, adapter]),
-    overridePortNames: newOverrides,
+    overridePortNames: Object.freeze(newOverrides),
   };
 }

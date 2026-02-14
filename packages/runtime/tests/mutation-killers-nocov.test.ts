@@ -327,8 +327,8 @@ describe("inspection/builtin-api.ts - NoCoverage mutants", () => {
       const inspector = container.inspector;
 
       // Emit ok events
-      inspector.emit({ type: "result:ok", portName: "Logger", timestamp: Date.now() });
-      inspector.emit({ type: "result:ok", portName: "Logger", timestamp: Date.now() });
+      inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: Date.now() });
+      inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: Date.now() });
 
       const stats = inspector.getResultStatistics("Logger");
       expect(stats).toBeDefined();
@@ -343,19 +343,19 @@ describe("inspection/builtin-api.ts - NoCoverage mutants", () => {
       const container = createContainer({ graph, name: "Root" });
       const inspector = container.inspector;
 
-      inspector.emit({
+      inspector.emit?.({
         type: "result:err",
         portName: "Logger",
         errorCode: "FACTORY_FAILED",
         timestamp: 1000,
       });
-      inspector.emit({
+      inspector.emit?.({
         type: "result:err",
         portName: "Logger",
         errorCode: "FACTORY_FAILED",
         timestamp: 2000,
       });
-      inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 3000 });
+      inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 3000 });
 
       const stats = inspector.getResultStatistics("Logger");
       expect(stats).toBeDefined();
@@ -383,8 +383,8 @@ describe("inspection/builtin-api.ts - NoCoverage mutants", () => {
       const container = createContainer({ graph, name: "Root" });
       const inspector = container.inspector;
 
-      inspector.emit({ type: "result:ok", portName: "Logger", timestamp: Date.now() });
-      inspector.emit({
+      inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: Date.now() });
+      inspector.emit?.({
         type: "result:err",
         portName: "Database",
         errorCode: "FACTORY_FAILED",
@@ -405,8 +405,8 @@ describe("inspection/builtin-api.ts - NoCoverage mutants", () => {
       const inspector = container.inspector;
 
       // Logger: 1 err / 2 total = 50% error rate
-      inspector.emit({ type: "result:ok", portName: "Logger", timestamp: Date.now() });
-      inspector.emit({
+      inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: Date.now() });
+      inspector.emit?.({
         type: "result:err",
         portName: "Logger",
         errorCode: "X",
@@ -414,19 +414,19 @@ describe("inspection/builtin-api.ts - NoCoverage mutants", () => {
       });
 
       // Database: 3 err / 3 total = 100% error rate
-      inspector.emit({
+      inspector.emit?.({
         type: "result:err",
         portName: "Database",
         errorCode: "X",
         timestamp: Date.now(),
       });
-      inspector.emit({
+      inspector.emit?.({
         type: "result:err",
         portName: "Database",
         errorCode: "X",
         timestamp: Date.now(),
       });
-      inspector.emit({
+      inspector.emit?.({
         type: "result:err",
         portName: "Database",
         errorCode: "X",
@@ -459,11 +459,11 @@ describe("inspection/builtin-api.ts - NoCoverage mutants", () => {
         events.push(event);
       });
 
-      inspector.emit({ type: "result:ok", portName: "Logger", timestamp: Date.now() });
+      inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: Date.now() });
       expect(events.length).toBe(1);
 
       unsubscribe();
-      inspector.emit({ type: "result:ok", portName: "Logger", timestamp: Date.now() });
+      inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: Date.now() });
       expect(events.length).toBe(1); // No new event after unsubscribe
     });
 
@@ -478,7 +478,7 @@ describe("inspection/builtin-api.ts - NoCoverage mutants", () => {
       });
       inspector.subscribe(goodListener);
 
-      inspector.emit({ type: "result:ok", portName: "Logger", timestamp: Date.now() });
+      inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: Date.now() });
       // Good listener still called despite bad listener throwing
       expect(goodListener).toHaveBeenCalledOnce();
     });
@@ -558,7 +558,7 @@ describe("inspection/builtin-api.ts - NoCoverage mutants", () => {
       };
 
       inspector.registerLibrary(mockLibrary);
-      inspector.disposeLibraries();
+      inspector.disposeLibraries?.();
       expect(disposeFn).toHaveBeenCalledOnce();
     });
   });
@@ -1477,7 +1477,6 @@ describe("container/factory.ts - NoCoverage error paths", () => {
         requires: [],
         lifetime: "singleton",
         factory: async () => ({ query: vi.fn() }),
-        factoryKind: "async",
       });
       const graph = GraphBuilder.create().provide(asyncAdapter).build();
       const container = createContainer({ graph, name: "Root" });
@@ -1902,7 +1901,6 @@ describe("container/root-impl.ts - NoCoverage error paths", () => {
         requires: [],
         lifetime: "singleton",
         factory: async () => ({ query: vi.fn() }),
-        factoryKind: "async",
       });
       const graph = GraphBuilder.create().provide(asyncAdapter).build();
       const container = createContainer({ graph, name: "Root" });
@@ -2401,7 +2399,6 @@ describe("container naming properties", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async",
     });
     const graph = GraphBuilder.create().provide(asyncAdapter).build();
     const container = createContainer({ graph, name: "AsyncApp" });

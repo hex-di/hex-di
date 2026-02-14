@@ -10,6 +10,7 @@
 
 import { describe, it, expect } from "vitest";
 import * as TracingExports from "../../src/index.js";
+import { getPortMetadata } from "@hex-di/core";
 import {
   createMemoryTracer,
   parseTraceparent,
@@ -281,6 +282,15 @@ describe("public API surface", () => {
       "TracerLikePort",
       "createTracerLikeAdapter",
       "tracerLikeAdapter",
+      // GxP: Attribute filtering
+      "createAttributeFilter",
+      "createFilteringProcessor",
+      // GxP: Tracing warnings
+      "warnTracingDisabled",
+      "suppressTracingWarnings",
+      // GxP: Async context
+      "initAsyncSpanContext",
+      "runInAsyncContext",
     ];
 
     // Verify all expected exports exist
@@ -291,5 +301,19 @@ describe("public API surface", () => {
     // Verify no unexpected exports
     const actualExports = Object.keys(exports);
     expect(actualExports.sort()).toEqual(expectedExports.sort());
+  });
+});
+
+describe("tracing port metadata category for library detection", () => {
+  it("TracerPort sets category to tracing/tracer", () => {
+    expect(getPortMetadata(TracerPort)?.category).toBe("tracing/tracer");
+  });
+
+  it("SpanProcessorPort sets category to tracing/processor", () => {
+    expect(getPortMetadata(SpanProcessorPort)?.category).toBe("tracing/processor");
+  });
+
+  it("SpanExporterPort sets category to tracing/exporter", () => {
+    expect(getPortMetadata(SpanExporterPort)?.category).toBe("tracing/exporter");
   });
 });

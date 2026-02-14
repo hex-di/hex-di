@@ -58,7 +58,7 @@ export function createStatePort<TState, TActions extends ActionMap<TState>>(): <
     config: PortConfig<TName>
   ): StatePortDef<TName, TState, TActions>;
   function factory<const TName extends string>(config: PortConfig<TName>): unknown {
-    return createPort<TName, unknown>(config);
+    return createPort<TName, unknown>({ ...config, category: "store/state" });
   }
   return factory;
 }
@@ -84,7 +84,7 @@ export function createAtomPort<TValue>(): <const TName extends string>(
     config: PortConfig<TName>
   ): AtomPortDef<TName, TValue>;
   function factory<const TName extends string>(config: PortConfig<TName>): unknown {
-    return createPort<TName, unknown>(config);
+    return createPort<TName, unknown>({ ...config, category: "store/atom" });
   }
   return factory;
 }
@@ -110,7 +110,7 @@ export function createDerivedPort<TResult>(): <const TName extends string>(
     config: PortConfig<TName>
   ): DerivedPortDef<TName, TResult>;
   function factory<const TName extends string>(config: PortConfig<TName>): unknown {
-    return createPort<TName, unknown>(config);
+    return createPort<TName, unknown>({ ...config, category: "store/derived" });
   }
   return factory;
 }
@@ -136,7 +136,7 @@ export function createAsyncDerivedPort<TResult, E = never>(): <const TName exten
     config: PortConfig<TName>
   ): AsyncDerivedPortDef<TName, TResult, E>;
   function factory<const TName extends string>(config: PortConfig<TName>): unknown {
-    return createPort<TName, unknown>(config);
+    return createPort<TName, unknown>({ ...config, category: "store/async-derived" });
   }
   return factory;
 }
@@ -162,7 +162,7 @@ export function createLinkedDerivedPort<TResult>(): <const TName extends string>
     config: PortConfig<TName>
   ): LinkedDerivedPortDef<TName, TResult>;
   function factory<const TName extends string>(config: PortConfig<TName>): unknown {
-    return createPort<TName, unknown>(config);
+    return createPort<TName, unknown>({ ...config, category: "store/linked-derived" });
   }
   return factory;
 }

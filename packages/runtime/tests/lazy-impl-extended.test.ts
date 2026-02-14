@@ -155,7 +155,7 @@ describe("LazyContainerImpl", () => {
 
   it("resolve loads and resolves the port", async () => {
     const parent = createTestParent();
-    const lazy = new LazyContainerImpl(
+    const lazy: any = new LazyContainerImpl(
       parent,
       async () => GraphBuilder.create().provide(createDatabaseAdapter()).build(),
       { name: "LazyChild" }
@@ -167,7 +167,7 @@ describe("LazyContainerImpl", () => {
 
   it("resolve resolves parent ports too", async () => {
     const parent = createTestParent();
-    const lazy = new LazyContainerImpl(
+    const lazy: any = new LazyContainerImpl(
       parent,
       async () => GraphBuilder.create().provide(createDatabaseAdapter()).build(),
       { name: "LazyChild" }
@@ -179,7 +179,7 @@ describe("LazyContainerImpl", () => {
 
   it("resolveAsync delegates to load + resolveAsync", async () => {
     const parent = createTestParent();
-    const lazy = new LazyContainerImpl(
+    const lazy: any = new LazyContainerImpl(
       parent,
       async () => GraphBuilder.create().provide(createDatabaseAdapter()).build(),
       { name: "LazyChild" }
@@ -190,7 +190,7 @@ describe("LazyContainerImpl", () => {
 
   it("tryResolve returns ResultAsync", async () => {
     const parent = createTestParent();
-    const lazy = new LazyContainerImpl(
+    const lazy: any = new LazyContainerImpl(
       parent,
       async () => GraphBuilder.create().provide(createDatabaseAdapter()).build(),
       { name: "LazyChild" }
@@ -202,7 +202,7 @@ describe("LazyContainerImpl", () => {
 
   it("tryResolveAsync returns ResultAsync", async () => {
     const parent = createTestParent();
-    const lazy = new LazyContainerImpl(
+    const lazy: any = new LazyContainerImpl(
       parent,
       async () => GraphBuilder.create().provide(createDatabaseAdapter()).build(),
       { name: "LazyChild" }
@@ -275,7 +275,7 @@ describe("LazyContainerImpl", () => {
     const lazy = new LazyContainerImpl(
       parent,
       () =>
-        new Promise((_resolve, reject) => {
+        new Promise<any>((_resolve, reject) => {
           rejectFn = () => reject(new Error("load failed"));
         }),
       { name: "LazyChild" }

@@ -93,7 +93,8 @@ describe("wrapper-utils.ts mutation killers", () => {
         lifetime: "singleton",
         factory: () => ({ query: vi.fn() }),
       });
-      const graph = GraphBuilder.create()
+      const parentGraph = GraphBuilder.create().provide(makeLoggerAdapter()).build();
+      const graph = GraphBuilder.forParent(parentGraph)
         .override(overrideAdapter)
         .provide(extensionAdapter)
         .build();
@@ -935,7 +936,7 @@ describe("builtin-api.ts getGraphData adapter detail", () => {
       lifetime: "singleton",
       factory: () => ({ log: () => "overridden" }),
     });
-    const childGraph = GraphBuilder.create().override(overrideAdapter).build();
+    const childGraph = GraphBuilder.forParent(graph).override(overrideAdapter).build();
     const child = container.createChild(childGraph, { name: "Child" });
 
     const inspector = (child as any).inspector;
@@ -996,7 +997,6 @@ describe("root container async initialization", () => {
       provides: LoggerPort,
       requires: [],
       lifetime: "singleton",
-      factoryKind: "async",
       factory: async () => ({ log: vi.fn() }),
     });
     const graph = GraphBuilder.create().provide(adapter).build();
@@ -1011,7 +1011,6 @@ describe("root container async initialization", () => {
       provides: LoggerPort,
       requires: [],
       lifetime: "singleton",
-      factoryKind: "async",
       factory: async () => ({ log: vi.fn() }),
     });
     const graph = GraphBuilder.create().provide(adapter).build();

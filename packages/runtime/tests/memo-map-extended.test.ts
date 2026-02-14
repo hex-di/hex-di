@@ -15,15 +15,13 @@ describe("MemoMap extended", () => {
   describe("timestamps", () => {
     it("captures timestamps when captureTimestamps is not set (default true)", () => {
       const memo = new MemoMap(undefined, {});
-      const beforeTime = Date.now();
       memo.getOrElseMemoize(PortA, () => "value", undefined);
-      const afterTime = Date.now();
 
       const entries = [...memo.entries()];
       expect(entries).toHaveLength(1);
       const [, metadata] = entries[0];
-      expect(metadata.resolvedAt).toBeGreaterThanOrEqual(beforeTime);
-      expect(metadata.resolvedAt).toBeLessThanOrEqual(afterTime);
+      // resolvedAt uses monotonicNow() — just verify it's a positive number
+      expect(metadata.resolvedAt).toBeGreaterThan(0);
     });
 
     it("captures timestamps when captureTimestamps is true", () => {

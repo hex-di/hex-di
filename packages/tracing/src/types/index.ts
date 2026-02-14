@@ -12,3 +12,9 @@ export type { AttributeValue, Attributes } from "./attributes";
 
 // Status and kind types
 export type { SpanKind, SpanStatus } from "./status";
+
+// Attribute filter types
+export type { AttributeFilterConfig } from "./attribute-filter";
+
+// Tracing metrics types
+export type { TracingMetrics } from "./tracing-metrics";

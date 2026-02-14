@@ -393,7 +393,7 @@ describe("MergeResultAllErrors type", () => {
       AnyBuilderInternals
     >;
 
-    // With no provides, should succeed (returns a GraphBuilder)
-    expectTypeOf<TestMergeResultAllErrors>().toHaveProperty("provide");
+    // With no provides, should succeed (returns a GraphBuilderSignature)
+    expectTypeOf<TestMergeResultAllErrors>().toHaveProperty("__provides");
   });
 });

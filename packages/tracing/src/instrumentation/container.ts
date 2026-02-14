@@ -13,6 +13,7 @@ import type { Tracer } from "../ports/tracer.js";
 import { pushSpan, popSpan } from "./span-stack.js";
 import type { AutoInstrumentOptions, HookableContainer } from "./types.js";
 import { evaluatePortFilter } from "./types.js";
+import { warnTracingDisabled } from "../utils/tracing-warnings.js";
 
 /**
  * WeakMap tracking installed cleanup functions per container.
@@ -95,6 +96,7 @@ export function instrumentContainer(
   // When tracer.isEnabled() returns false, the container has no tracing
   // hooks registered, resulting in zero resolution overhead.
   if (!tracer.isEnabled()) {
+    warnTracingDisabled("instrumentContainer");
     return () => {
       // No-op cleanup - no hooks were registered
     };

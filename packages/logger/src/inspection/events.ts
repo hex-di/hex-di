@@ -33,4 +33,14 @@ export type LoggerInspectorEvent =
   | { readonly type: "redaction-applied"; readonly fieldPath: string; readonly count: number }
   | { readonly type: "handler-added"; readonly handler: HandlerInfo }
   | { readonly type: "handler-removed"; readonly handlerName: string }
-  | { readonly type: "snapshot-changed" };
+  | { readonly type: "snapshot-changed" }
+  | {
+      readonly type: "entries-dropped";
+      readonly count: number;
+      readonly reason: "rate-limit" | "console-unavailable" | "handler-error";
+    }
+  | {
+      readonly type: "tracing-context-missing";
+      readonly field: "correlationId" | "traceId" | "spanId";
+    }
+  | { readonly type: "validation-warning"; readonly field: string; readonly reason: string };

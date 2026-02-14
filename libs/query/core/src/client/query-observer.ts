@@ -198,8 +198,8 @@ export function createQueryObserver<TData, TParams, TError, TName extends string
   const initialEntry = client.cache.get(port, params);
   currentState = deriveState(initialEntry);
 
-  // Subscribe to cache events
-  const unsubscribeCache = client.cache.subscribe(() => {
+  // Subscribe to cache events (mutable for re-activation after destroy)
+  let unsubscribeCache = client.cache.subscribe(() => {
     notify();
   });
 
@@ -223,6 +223,14 @@ export function createQueryObserver<TData, TParams, TError, TName extends string
 
   const observer: QueryObserver<TData, TError> = {
     subscribe(listener: (state: QueryState<TData, TError>) => void): () => void {
+      // Re-activate if destroyed (handles React StrictMode unmount/remount cycle)
+      if (destroyed) {
+        destroyed = false;
+        unsubscribeCache = client.cache.subscribe(() => {
+          notify();
+        });
+        client.cache.incrementObservers(port, params);
+      }
       listeners.add(listener);
       return () => {
         listeners.delete(listener);

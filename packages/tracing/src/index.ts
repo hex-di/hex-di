@@ -34,6 +34,8 @@ export type {
   SpanEvent,
   SpanKind,
   SpanStatus,
+  AttributeFilterConfig,
+  TracingMetrics,
 } from "./types/index.js";
 
 // =============================================================================
@@ -55,7 +57,7 @@ export {
   createConsoleTracer,
   ConsoleTracer,
 } from "./adapters/index.js";
-export type { ConsoleTracerOptions } from "./adapters/index.js";
+export type { ConsoleTracerOptions, MemoryTracerOptions } from "./adapters/index.js";
 
 // =============================================================================
 // W3C Trace Context
@@ -85,6 +87,10 @@ export {
   isValidSpanId,
   getHighResTimestamp,
   formatDuration,
+  createAttributeFilter,
+  createFilteringProcessor,
+  warnTracingDisabled,
+  suppressTracingWarnings,
 } from "./utils/index.js";
 
 // =============================================================================
@@ -106,6 +112,8 @@ export {
   getActiveSpan,
   clearStack,
   getStackDepth,
+  initAsyncSpanContext,
+  runInAsyncContext,
 } from "./instrumentation/index.js";
 
 export type {

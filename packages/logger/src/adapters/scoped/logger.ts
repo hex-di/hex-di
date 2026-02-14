@@ -13,6 +13,10 @@ import type { LogLevel } from "../../types/log-level.js";
 import type { LogEntry, LogContext } from "../../types/log-entry.js";
 import { shouldLog } from "../../types/log-level.js";
 import { mergeContext } from "../../utils/context.js";
+import { getStderr } from "../../utils/stderr.js";
+import { sanitizeMessage } from "../../utils/sanitize.js";
+import { sanitizeAnnotations } from "../../utils/validation.js";
+import { nextSequence } from "../../utils/sequence.js";
 
 /**
  * Parses the overloaded error/fatal method arguments.
@@ -142,6 +146,8 @@ class HandlerLoggerImpl implements Logger {
     }
   }
 
+  private static _correlationWarningEmitted = false;
+
   private _log(
     level: LogLevel,
     message: string,
@@ -150,6 +156,25 @@ class HandlerLoggerImpl implements Logger {
   ): void {
     if (!shouldLog(level, this._minLevel)) {
       return;
+    }
+
+    // Warn once if correlationId is missing on warn/error/fatal
+    if (
+      !HandlerLoggerImpl._correlationWarningEmitted &&
+      (level === "warn" || level === "error" || level === "fatal") &&
+      !this._context.correlationId
+    ) {
+      HandlerLoggerImpl._correlationWarningEmitted = true;
+      const fallback = getStderr();
+      if (fallback) {
+        fallback(
+          "[LOGGER TRACING] Log entry at level=" +
+            level +
+            " has no correlationId in context. " +
+            "For GxP audit trail completeness, ensure correlationId is set via child() or middleware. " +
+            "This warning appears once per process."
+        );
+      }
     }
 
     const mergedAnnotations: Record<string, unknown> = {};
@@ -164,14 +189,27 @@ class HandlerLoggerImpl implements Logger {
 
     const entry: LogEntry = {
       level,
-      message,
+      message: sanitizeMessage(message),
       timestamp: Date.now(),
+      sequence: nextSequence(),
       context: this._context,
-      annotations: mergedAnnotations,
+      annotations: sanitizeAnnotations(mergedAnnotations),
       error,
     };
 
-    this._handler.handle(entry);
+    try {
+      this._handler.handle(entry);
+    } catch (handlerError: unknown) {
+      const errorMessage =
+        handlerError instanceof Error ? handlerError.message : String(handlerError);
+      const fallback = getStderr();
+      if (fallback) {
+        fallback(
+          `[LOGGER HANDLER ERROR] Failed to handle log entry: ${errorMessage}. ` +
+            `Original entry: level=${entry.level} message=${entry.message}`
+        );
+      }
+    }
   }
 }
 

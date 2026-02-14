@@ -1,6 +1,6 @@
 # 6. Panel Architecture
 
-This section specifies the internal architecture of the `@hex-di/devtools` panel system: how panels are structured, how they plug into the shell, how state is managed, and how the component tree is organized. The devtools is a self-contained React application that renders as an overlay inside the host application, consuming the existing `InspectorAPI` from `@hex-di/core` and the reactive hooks from `@hex-di/react`.
+This section specifies the internal architecture of the `@hex-di/devtools` panel system: how panels are structured, how they plug into the shell, how state is managed, and how the component tree is organized. The devtools is a standalone web dashboard application that connects to one or more target applications over WebSocket, consuming a `RemoteInspectorAPI` that mirrors the `InspectorAPI` from `@hex-di/core`.
 
 > **Previous**: [Section 5 -- Visual Design & Wireframes](./02-visual-design.md)
 > **Next**: [Section 8 -- Individual Panel Specifications](./04-panel-specs.md)
@@ -9,19 +9,18 @@ This section specifies the internal architecture of the `@hex-di/devtools` panel
 
 ## 6.1 Architectural Overview
 
-The devtools is structured as four nested layers, each with a single responsibility:
+The dashboard is structured as four nested layers, each with a single responsibility:
 
 ```
 +-----------------------------------------------------------------------+
-|  <HexDevTools>                                                        |
-|  Root entry point. Accepts configuration props. Renders nothing       |
-|  in production unless explicitly enabled.                             |
+|  <DashboardApp>                                                       |
+|  Root entry point. Bootstraps the standalone application.             |
 |                                                                       |
 |  +-------------------------------------------------------------------+|
-|  |  <DevToolsProvider>                                                ||
-|  |  Internal state context. Manages open/closed, active tab,         ||
-|  |  panel height, theme, event log filters. Persists to              ||
-|  |  localStorage. NOT connected to user application state.           ||
+|  |  <ConnectionProvider>                                              ||
+|  |  Manages WebSocket connections to target applications.            ||
+|  |  Maintains a registry of connected apps, handles reconnection,   ||
+|  |  and exposes RemoteInspectorAPI instances per connection.         ||
 |  |                                                                    ||
 |  |  +---------------------------------------------------------------+||
 |  |  |  <ThemeProvider>                                               |||
@@ -29,17 +28,17 @@ The devtools is structured as four nested layers, each with a single responsibil
 |  |  |  matchMedia. Provides CSS custom properties.                  |||
 |  |  |                                                                |||
 |  |  |  +-----------------------------------------------------------+|||
-|  |  |  |  <TriggerButton />     (when panel is closed)             ||||
-|  |  |  |  <PanelShell>          (when panel is open)               ||||
-|  |  |  |    <ResizeHandle />                                       ||||
-|  |  |  |    <PanelHeader>                                          ||||
-|  |  |  |      <TabBar />                                           ||||
-|  |  |  |      <HeaderActions />                                    ||||
-|  |  |  |    </PanelHeader>                                         ||||
-|  |  |  |    <PanelContent>                                         ||||
-|  |  |  |      {activePanel.component}                              ||||
-|  |  |  |    </PanelContent>                                        ||||
-|  |  |  |  </PanelShell>                                            ||||
+|  |  |  |  <DashboardLayout>                                        ||||
+|  |  |  |    <Sidebar>                                              ||||
+|  |  |  |      <AppList />       (connected applications)           ||||
+|  |  |  |      <PanelNav />      (panel navigation)                 ||||
+|  |  |  |    </Sidebar>                                             ||||
+|  |  |  |    <Main>                                                 ||||
+|  |  |  |      <ConnectionHeader />  (active app name, status,     ||||
+|  |  |  |                             latency)                      ||||
+|  |  |  |      <PanelContent />      (active panel)                 ||||
+|  |  |  |    </Main>                                                ||||
+|  |  |  |  </DashboardLayout>                                       ||||
 |  |  |  +-----------------------------------------------------------+|||
 |  |  +---------------------------------------------------------------+||
 |  +-------------------------------------------------------------------+|
@@ -48,13 +47,13 @@ The devtools is structured as four nested layers, each with a single responsibil
 
 The key design decisions:
 
-1. **Isolation** -- The devtools manages its own state in a dedicated React context. It never writes to the host application's state, never injects global styles, and never interferes with the host's React tree beyond occupying a portal-rendered DOM node.
+1. **Standalone application** -- The dashboard runs as its own web application, served by a lightweight local server. It connects to target applications over WebSocket, meaning the devtools never exist inside the target application's React tree, DOM, or JavaScript bundle.
 
-2. **Plugin panels** -- Each panel (Container, Graph, Scopes, Events, Tracing, and library-specific panels) implements a uniform `DevToolsPanel` interface. The shell does not know what panels exist at compile time; it discovers them at runtime.
+2. **Multi-application support** -- The dashboard can connect to multiple running applications simultaneously. Each connection appears in the sidebar's AppList, and the user switches between them. Only one connection is active at a time; the active connection's `RemoteInspectorAPI` is passed to panels.
 
-3. **Lazy activation** -- Only the active panel is mounted. Inactive panels are fully unmounted, releasing their subscriptions and DOM nodes. The event log is the sole exception: it maintains a background ring buffer regardless of active tab.
+3. **Plugin panels** -- Each panel (Container, Graph, Scopes, Events, Tracing, and library-specific panels) implements a uniform `DevToolsPanel` interface. The shell does not know what panels exist at compile time; it discovers them at runtime.
 
-4. **Progressive disclosure** -- The trigger button is the only visible element when the panel is closed. The full panel UI appears only on interaction.
+4. **Lazy activation** -- Only the active panel is mounted. Inactive panels are fully unmounted, releasing their subscriptions and DOM nodes. The event log is the sole exception: it maintains a background ring buffer regardless of active tab.
 
 ---
 
@@ -66,21 +65,20 @@ Every panel -- built-in or custom -- implements this interface:
 
 ```typescript
 interface DevToolsPanel {
-  /** Unique panel identifier. Used as the tab key and localStorage persistence key. */
+  /** Unique panel identifier. Used as the nav key and localStorage persistence key. */
   readonly id: string;
 
-  /** Human-readable label displayed in the tab bar. */
+  /** Human-readable label displayed in the panel navigation. */
   readonly label: string;
 
   /**
-   * Tab icon. A single Unicode character, emoji, or a React component
-   * that renders an inline SVG icon. When the viewport is narrow
-   * (below 600px), only the icon is shown.
+   * Navigation icon. A single Unicode character, emoji, or a React component
+   * that renders an inline SVG icon.
    */
   readonly icon: string | React.ComponentType<{ readonly size: number }>;
 
   /**
-   * Tab ordering. Lower numbers appear further left.
+   * Navigation ordering. Lower numbers appear higher in the sidebar.
    * Built-in panels use multiples of 10 (0, 10, 20, 30, 40).
    * Custom panels should use values >= 100 to appear after built-ins.
    * Library panels are auto-assigned starting at 200.
@@ -98,8 +96,11 @@ Every panel component receives these props from the shell:
 
 ```typescript
 interface PanelProps {
-  /** The inspector API for querying container state. */
-  readonly inspector: InspectorAPI;
+  /** The remote inspector API for querying container state over WebSocket. */
+  readonly remoteInspector: RemoteInspectorAPI;
+
+  /** The active connection identifier. */
+  readonly connectionId: string;
 
   /** The resolved theme (always "light" or "dark", never "system"). */
   readonly theme: ResolvedTheme;
@@ -114,17 +115,17 @@ interface PanelProps {
 type ResolvedTheme = "light" | "dark";
 ```
 
-The `width` and `height` values represent the usable content area inside the panel (excluding the tab bar and resize handle). Panels use these to make layout decisions -- for example, the Graph panel uses `width` and `height` to size its SVG viewport, and the Events panel uses `height` to calculate how many log entries to virtualize.
+The `width` and `height` values represent the usable content area inside the main panel region (excluding the sidebar and connection header). Panels use these to make layout decisions -- for example, the Graph panel uses `width` and `height` to size its SVG viewport, and the Events panel uses `height` to calculate how many log entries to virtualize.
 
 ### 6.2.3 Panel Registration
 
 Panels are registered through three channels, merged in this priority order:
 
 1. **Built-in panels** -- Always present. Defined internally by the devtools package.
-2. **Library panels** -- Auto-discovered from `inspector.getLibraryInspectors()`. A new panel is created whenever a `library-registered` event fires, and removed on `library-unregistered`.
-3. **Custom panels** -- Passed via the `panels` prop on `<HexDevTools>`. These are user-defined panels for application-specific debugging views.
+2. **Library panels** -- Auto-discovered from `remoteInspector.getLibraryInspectors()`. A new panel is created whenever a `library-registered` event fires, and removed on `library-unregistered`.
+3. **Custom panels** -- Registered via the dashboard configuration. These are user-defined panels for application-specific debugging views.
 
-The final tab order is determined by sorting all registered panels by their `order` field. Ties are broken alphabetically by `id`.
+The final navigation order is determined by sorting all registered panels by their `order` field. Ties are broken alphabetically by `id`.
 
 ### 6.2.4 Panel Deduplication
 
@@ -134,7 +135,7 @@ If a custom panel shares the same `id` as a built-in or library panel, the custo
 
 ## 6.3 Built-in Panels
 
-The devtools ships with seven built-in panels. Each panel is a self-contained React component that consumes `PanelProps` and internally uses the appropriate inspector hooks.
+The devtools ships with seven built-in panels. Each panel is a self-contained React component that consumes `PanelProps` and internally uses the appropriate remote inspector hooks.
 
 ### 6.3.1 Panel Registry
 
@@ -150,7 +151,7 @@ The devtools ships with seven built-in panels. Each panel is a self-contained Re
 
 ### 6.3.2 Container Panel (order: 5)
 
-Data source: `inspector.getSnapshot()` via `useSnapshot()` hook and `inspector.getAllResultStatistics()`.
+Data source: `remoteInspector.getSnapshot()` via `useRemoteSnapshot()` hook and `remoteInspector.getAllResultStatistics()`.
 
 Displays:
 
@@ -164,7 +165,7 @@ Displays:
 
 ### 6.3.3 Graph Panel (order: 10)
 
-Data source: `inspector.getGraphData()` -- called once on mount and refreshed on `snapshot-changed` events only when the adapter count changes.
+Data source: `remoteInspector.getGraphData()` -- called once on mount and refreshed on `snapshot-changed` events only when the adapter count changes.
 
 Displays:
 
@@ -177,7 +178,7 @@ Displays:
 
 ### 6.3.4 Scopes Panel (order: 20)
 
-Data source: `inspector.getScopeTree()` via `useScopeTree()` hook.
+Data source: `remoteInspector.getScopeTree()` via `useRemoteScopeTree()` hook.
 
 Displays:
 
@@ -188,7 +189,7 @@ Displays:
 
 ### 6.3.5 Events Panel (order: 30)
 
-Data source: `inspector.subscribe()` -- events are buffered in a ring buffer that persists across tab switches.
+Data source: `remoteInspector.subscribe()` -- events are buffered in a ring buffer that persists across panel switches.
 
 Displays:
 
@@ -199,13 +200,13 @@ Displays:
 - Filter bar: type checkboxes, text search across event properties
 - Clear and pause/resume controls
 
-The event ring buffer is the one piece of state that survives panel unmounting. It is owned by the `DevToolsProvider` context, not by the Events panel component. This ensures events are captured even while viewing other tabs.
+The event ring buffer is the one piece of state that survives panel unmounting. It is owned by the `ConnectionProvider` context (per connection), not by the Events panel component. This ensures events are captured even while viewing other panels.
 
 ### 6.3.6 Tracing Panel (order: 40)
 
-Data source: `inspector.getLibraryInspector("tracing")` via `useTracingSummary()` hook.
+Data source: `remoteInspector.getLibraryInspector("tracing")` via `useRemoteTracingSummary()` hook.
 
-**Conditional rendering**: This panel is only included in the tab bar when a tracing library inspector is registered. The devtools listens for `library-registered` and `library-unregistered` events with `name === "tracing"` to toggle the panel's visibility.
+**Conditional rendering**: This panel is only included in the navigation when a tracing library inspector is registered. The devtools listens for `library-registered` and `library-unregistered` events with `name === "tracing"` to toggle the panel's visibility.
 
 Displays:
 
@@ -219,7 +220,7 @@ Displays:
 
 ### 6.4.1 Discovery Mechanism
 
-When the devtools mounts, it reads `inspector.getLibraryInspectors()` to get the initial set of registered libraries. It then subscribes to inspector events and watches for:
+When the dashboard activates a connection, it reads `remoteInspector.getLibraryInspectors()` to get the initial set of registered libraries. It then subscribes to remote inspector events and watches for:
 
 - `{ type: "library-registered", name }` -- Creates a new panel for the library
 - `{ type: "library-unregistered", name }` -- Removes the library's panel
@@ -229,7 +230,7 @@ Each discovered library gets a panel with:
 ```typescript
 {
   id: `library:${inspector.name}`,
-  label: inspector.name,          // Capitalized in the tab bar
+  label: inspector.name,          // Capitalized in the navigation
   icon: inspector.name[0].toUpperCase(),
   order: 200 + alphabeticalIndex, // Sorted alphabetically, starting at 200
   component: LibraryPanel,        // Generic tree-view component
@@ -270,19 +271,34 @@ The tree view is a recursive component that handles:
 
 ### 6.4.3 Custom Library Panel Components
 
-Libraries can provide a custom panel component instead of the generic tree view. The mechanism for this is a convention on the `LibraryInspector` snapshot:
+Libraries can provide a dedicated panel component instead of the generic tree view. The mechanism is the `panelModule` field on the `LibraryInspector` interface:
 
 ```typescript
-// In the library's snapshot:
-{
-  __devtools_panel?: React.ComponentType<PanelProps>;
-  // ... other snapshot data
-}
+// In the library's inspector implementation:
+const flowInspector: LibraryInspector = {
+  name: "flow",
+  getSnapshot() {
+    /* ... */
+  },
+  panelModule: "@hex-di/flow/devtools",
+};
 ```
 
-When the devtools detects a `__devtools_panel` property on a library's snapshot that is a function (checked via `typeof`), it uses that component instead of the generic `LibraryPanel`. This allows libraries like `@hex-di/flow` to provide a rich, domain-specific panel (e.g., a state machine visualizer) while simpler libraries fall back to the tree view.
+When the devtools discovers a library inspector with a `panelModule` string, it dynamically imports the module:
 
-The `__devtools_panel` property is read once when the library panel is first created and is not re-read on subsequent snapshots. To update the panel component, the library must re-register its inspector.
+```typescript
+const mod = await import(inspector.panelModule);
+const PanelComponent = mod.default; // React component conforming to LibraryPanelProps
+```
+
+If the import succeeds, the resolved component is used instead of the generic `LibraryPanel`. If the import fails (module not installed, invalid export), the dashboard falls back to the generic JSON tree viewer with a console warning. The import is attempted once per library per connection; the resolved component is cached.
+
+This approach means:
+
+- Library packages ship their panel components at a `/devtools` entry point (e.g., `@hex-di/flow/devtools`)
+- The dashboard has no build-time dependency on any library package
+- The panel module is resolved at runtime by the dashboard's bundler
+- New libraries can ship custom panels without modifying `@hex-di/devtools`
 
 ---
 
@@ -290,21 +306,18 @@ The `__devtools_panel` property is read once when the library panel is first cre
 
 ### 6.5.1 State Shape
 
-The devtools maintains internal state in a dedicated React context, completely isolated from the host application:
+The dashboard maintains internal state in a dedicated React context, completely isolated from any target application:
 
 ```typescript
 interface DevToolsState {
-  /** Whether the panel is currently open. */
-  readonly isOpen: boolean;
-
-  /** The id of the currently active panel tab. */
+  /** The id of the currently active panel. */
   readonly activePanel: string;
 
-  /** Panel height in pixels (persisted across sessions). */
-  readonly panelHeight: number;
+  /** The connection id of the currently active target application. */
+  readonly activeConnectionId: string | undefined;
 
-  /** Position of the floating trigger button. */
-  readonly triggerPosition: TriggerPosition;
+  /** Free-text filter applied to the connection list in the sidebar. */
+  readonly connectionFilter: string;
 
   /** Theme preference. "system" resolves to light/dark via matchMedia. */
   readonly theme: "light" | "dark" | "system";
@@ -323,18 +336,15 @@ interface EventLogFilter {
   /** Free-text search query applied across all event properties. */
   readonly searchQuery: string;
 }
-
-type TriggerPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 ```
 
 ### 6.5.2 Default State
 
 ```typescript
 const DEFAULT_STATE: DevToolsState = {
-  isOpen: false,
   activePanel: "container",
-  panelHeight: 400,
-  triggerPosition: "bottom-right",
+  activeConnectionId: undefined,
+  connectionFilter: "",
   theme: "system",
   eventLogFilter: {
     enabledTypes: new Set(),
@@ -344,33 +354,35 @@ const DEFAULT_STATE: DevToolsState = {
 };
 ```
 
-Defaults can be overridden by `HexDevToolsProps` (e.g., `defaultOpen`, `defaultHeight`, `triggerPosition`, `theme`). Props override defaults, and localStorage overrides props for fields that are persisted.
+Defaults can be overridden by persisted localStorage state. localStorage overrides defaults for fields that are persisted.
 
 ### 6.5.3 Persistence Strategy
 
-State is persisted to `localStorage` under the key `hex-di:devtools`. Only a subset of the state is persisted:
+State is persisted across two storage mechanisms -- `localStorage` for global preferences shared across all dashboard tabs, and `sessionStorage` for per-tab state that should remain independent per dashboard instance:
 
-| Field             | Persisted | Reason                                         |
-| ----------------- | --------- | ---------------------------------------------- |
-| `isOpen`          | Yes       | Remembers panel visibility across page reloads |
-| `activePanel`     | Yes       | Remembers which tab was last viewed            |
-| `panelHeight`     | Yes       | Remembers user's height preference             |
-| `triggerPosition` | No        | Controlled by props                            |
-| `theme`           | Yes       | Remembers user's theme preference              |
-| `eventLogFilter`  | No        | Filters are ephemeral per session              |
-| `eventLogPaused`  | No        | Pause state is ephemeral per session           |
+| Field                | Storage        | Reason                                                 |
+| -------------------- | -------------- | ------------------------------------------------------ |
+| `activePanel`        | sessionStorage | Per-tab: each dashboard tab can view a different panel |
+| `activeConnectionId` | sessionStorage | Per-tab: each tab can inspect a different app          |
+| `connectionFilter`   | Not persisted  | Ephemeral per session                                  |
+| `theme`              | localStorage   | Global: theme change propagates to all tabs            |
+| `eventLogFilter`     | Not persisted  | Ephemeral per session                                  |
+| `eventLogPaused`     | Not persisted  | Ephemeral per session                                  |
 
 The persistence format is JSON. On read, the deserializer validates the shape and discards any corrupted or incompatible data, falling back to defaults. The serializer writes on every state change, debounced by 500ms to avoid excessive writes.
 
 ```typescript
-const STORAGE_KEY = "hex-di:devtools";
+// Global preferences (localStorage, shared across tabs)
+const GLOBAL_STORAGE_KEYS = {
+  sidebarWidth: "hex-devtools:sidebar-width",
+  theme: "hex-devtools:theme",
+};
 
-interface PersistedState {
-  readonly isOpen: boolean;
-  readonly activePanel: string;
-  readonly panelHeight: number;
-  readonly theme: "light" | "dark" | "system";
-}
+// Per-tab state (sessionStorage, independent per dashboard instance)
+const TAB_STORAGE_KEYS = {
+  activePanel: "hex-devtools:tab",
+  activeConnection: "hex-devtools:active-connection",
+};
 ```
 
 ### 6.5.4 State Context
@@ -390,20 +402,22 @@ Actions follow a discriminated union pattern:
 
 ```typescript
 type DevToolsAction =
-  | { readonly type: "toggle-panel" }
-  | { readonly type: "open-panel" }
-  | { readonly type: "close-panel" }
   | { readonly type: "set-active-panel"; readonly panelId: string }
-  | { readonly type: "set-panel-height"; readonly height: number }
+  | { readonly type: "set-active-connection"; readonly connectionId: string }
+  | { readonly type: "set-connection-filter"; readonly filter: string }
+  | { readonly type: "add-connection"; readonly connectionId: string; readonly appName: string }
+  | { readonly type: "remove-connection"; readonly connectionId: string }
   | { readonly type: "set-theme"; readonly theme: "light" | "dark" | "system" }
   | { readonly type: "set-event-filter"; readonly filter: EventLogFilter }
   | { readonly type: "toggle-event-pause" }
   | { readonly type: "clear-event-log" };
 ```
 
+When `add-connection` fires and there is no `activeConnectionId`, the newly added connection is automatically selected as active. When `remove-connection` fires for the active connection, the active connection is set to the next available connection, or `undefined` if none remain.
+
 ### 6.5.5 Event Log Buffer
 
-The event log buffer is a fixed-size ring buffer maintained by the `DevToolsProvider`. It subscribes to `inspector.subscribe()` on mount and captures all events regardless of which panel is active.
+The event log buffer is a fixed-size ring buffer maintained by the `ConnectionProvider` on a per-connection basis. Each connection subscribes to `remoteInspector.subscribe()` on establishment and captures all events regardless of which panel is active.
 
 ```typescript
 interface EventLogBuffer {
@@ -429,12 +443,12 @@ interface TimestampedEvent {
 }
 ```
 
-The buffer capacity is configurable via `HexDevToolsProps`:
+The buffer capacity is configurable via `DevToolsClientConfig`:
 
 ```typescript
-interface HexDevToolsProps {
-  // ... other props
-  readonly eventBufferSize?: number; // Default: 500
+interface DevToolsClientConfig {
+  // ... other fields
+  readonly bufferSize?: number; // Default: 1000
 }
 ```
 
@@ -444,127 +458,153 @@ When the buffer is full, the oldest event is discarded (FIFO). The `totalDropped
 
 ## 6.6 Configuration API
 
-### 6.6.1 HexDevToolsProps
+### 6.6.1 DevToolsServerConfig
 
-The root `<HexDevTools>` component accepts the following props:
+The dashboard server is started with the following configuration:
 
 ```typescript
-interface HexDevToolsProps {
-  /**
-   * The InspectorAPI to consume. If omitted, the devtools attempts
-   * to read from the nearest InspectorProvider via useInspector().
-   * If neither is available, the devtools renders nothing and logs
-   * a console warning (development mode only).
-   */
-  readonly inspector?: InspectorAPI;
+interface DevToolsServerConfig {
+  /** Port to serve the dashboard UI and WebSocket endpoint on. Default: 4200 */
+  readonly port?: number;
 
-  /**
-   * Whether the devtools is enabled. When false, the component
-   * renders nothing (not even the trigger button).
-   *
-   * Default: process.env.NODE_ENV !== "production"
-   */
-  readonly enabled?: boolean;
+  /** Host to bind to. Default: "localhost" */
+  readonly host?: string;
 
-  /**
-   * Whether the panel starts open on first render.
-   * Overridden by localStorage if the user has previously
-   * interacted with the panel.
-   *
-   * Default: false
-   */
-  readonly defaultOpen?: boolean;
-
-  /**
-   * Default panel height in pixels.
-   * Overridden by localStorage if the user has previously resized.
-   *
-   * Default: 400
-   */
-  readonly defaultHeight?: number;
-
-  /**
-   * Position of the floating trigger button.
-   *
-   * Default: "bottom-right"
-   */
-  readonly triggerPosition?: TriggerPosition;
-
-  /**
-   * Keyboard shortcut to toggle the panel.
-   * Uses the Mousetrap-style format: modifier keys separated by +,
-   * e.g., "ctrl+shift+d", "meta+shift+d".
-   *
-   * Default: "ctrl+shift+d"
-   */
-  readonly hotkey?: string;
-
-  /**
-   * Additional custom panels to register alongside built-in panels.
-   * Custom panels with the same id as a built-in panel replace it.
-   *
-   * Default: []
-   */
-  readonly panels?: readonly DevToolsPanel[];
-
-  /**
-   * Theme preference. "system" uses the OS-level prefers-color-scheme.
-   * Overridden by localStorage if the user has previously changed
-   * the theme via the panel's theme toggle.
-   *
-   * Default: "system"
-   */
-  readonly theme?: "light" | "dark" | "system";
-
-  /**
-   * Maximum number of events retained in the event log buffer.
-   *
-   * Default: 500
-   */
-  readonly eventBufferSize?: number;
+  /** Whether to automatically open the dashboard in the default browser on start. Default: true */
+  readonly openBrowser?: boolean;
 }
 ```
 
-### 6.6.2 Usage Example
+### 6.6.2 DevToolsClientConfig
+
+Each target application configures its devtools client with the following:
 
 ```typescript
-import { HexDevTools } from "@hex-di/devtools";
+interface DevToolsClientConfig {
+  /** WebSocket URL of the dashboard server. Default: "ws://localhost:4200" */
+  readonly serverUrl?: string;
+
+  /** Human-readable application name displayed in the dashboard sidebar. */
+  readonly appName: string;
+
+  /** Application type, used for icon and grouping in the sidebar. */
+  readonly appType: "react" | "node" | "unknown";
+
+  /**
+   * Unique instance identifier for this app instance. Distinguishes
+   * multiple browser tabs or Node.js processes running the same app.
+   * Auto-generated if omitted (sessionStorage UUID for browser, process UUID for Node.js).
+   */
+  readonly instanceId?: string;
+
+  /**
+   * Environment metadata sent during handshake. Auto-populated if omitted:
+   * - Browser: url from location.href, title from document.title
+   * - Node.js: pid from process.pid, argv from process.argv.slice(0, 2)
+   */
+  readonly metadata?: ConnectionMetadata;
+
+  /** Whether to automatically reconnect on disconnection. Default: true */
+  readonly reconnect?: boolean;
+
+  /** Interval between reconnection attempts in milliseconds. Default: 3000 */
+  readonly reconnectInterval?: number;
+
+  /** Maximum number of events retained in the client-side event buffer. Default: 1000 */
+  readonly bufferSize?: number;
+}
+```
+
+### 6.6.3 MCP Server Integration
+
+The DevTools server can optionally expose its inspection data through MCP in addition to the WebSocket dashboard. This uses the `@hex-di/mcp` framework (see [`spec/mcp/`](../mcp/README.md)) to compose the inspection MCP adapters into a server.
+
+When `enableMcp` is true in the server config, the DevTools server:
+
+1. Builds an MCP adapter graph from the inspection adapters (34 resources, 18 tools, 5 prompts).
+2. Calls `createMcpServer(graph, options)` from `@hex-di/mcp` with the configured transport.
+3. Starts the MCP server alongside the WebSocket dashboard server.
+
+The MCP transport is configurable:
+
+- **stdio** (default for CLI usage) -- `npx @hex-di/devtools --mcp` starts an MCP server on stdio for Claude Code integration.
+- **SSE** -- `npx @hex-di/devtools --mcp --mcp-transport sse --mcp-port 3001` starts an SSE-based MCP server for web tools.
+
+The MCP server and the WebSocket dashboard share the same `InspectorAPI` data. They are parallel consumers of the container's self-knowledge, running in the same process.
+
+```typescript
+interface DevToolsServerConfig {
+  // ... existing fields (port, host, openBrowser)
+
+  /** Whether to start an MCP server alongside the dashboard. Default: false */
+  readonly enableMcp?: boolean;
+
+  /** MCP transport type. Default: "stdio" */
+  readonly mcpTransport?: "stdio" | "sse";
+
+  /** Port for SSE MCP transport. Only used when mcpTransport is "sse". Default: 3001 */
+  readonly mcpPort?: number;
+}
+```
+
+### 6.6.4 Server Usage Example
+
+```typescript
+import { startDevToolsServer } from "@hex-di/devtools/server";
+
+await startDevToolsServer({
+  port: 4200,
+  host: "localhost",
+  openBrowser: true,
+});
+```
+
+### 6.6.5 Client Usage Example
+
+```typescript
+import { connectDevTools } from "@hex-di/devtools/client";
+
+const disconnect = connectDevTools(container.inspector, {
+  appName: "Order Service",
+  appType: "node",
+  serverUrl: "ws://localhost:4200",
+  reconnect: true,
+  bufferSize: 1000,
+});
+
+// Later, to disconnect:
+disconnect();
+```
+
+### 6.6.6 React Client Usage Example
+
+```typescript
+import { DevToolsClientProvider } from "@hex-di/devtools/react";
 
 function App() {
   return (
-    <>
-      <InspectorProvider inspector={container.inspector}>
-        <MainApplication />
-        <HexDevTools
-          defaultOpen={false}
-          triggerPosition="bottom-left"
-          hotkey="ctrl+shift+d"
-          theme="system"
-          panels={[myCustomPanel]}
-        />
-      </InspectorProvider>
-    </>
+    <InspectorProvider inspector={container.inspector}>
+      <DevToolsClientProvider
+        appName="Shopping App"
+        appType="react"
+        serverUrl="ws://localhost:4200"
+      />
+      <MainApplication />
+    </InspectorProvider>
   );
 }
 ```
 
-### 6.6.3 Production Gating
+The `<DevToolsClientProvider>` component reads the inspector from the nearest `InspectorProvider` context and establishes the WebSocket connection on mount. It renders no visible DOM elements.
 
-When `enabled` is `false` (or defaults to `false` in production):
+### 6.6.7 Production Gating
 
-- The component returns `null` immediately
-- No contexts are created
-- No subscriptions are established
-- No event listeners are attached
-- The component tree-shakes cleanly if the bundler eliminates dead code
+The client-side `connectDevTools` function and `<DevToolsClientProvider>` component both accept an optional `enabled` parameter (defaults to `process.env.NODE_ENV !== "production"`). When `enabled` is `false`:
 
-The check is performed at the top of `<HexDevTools>` before any hooks execute. This is achieved by rendering a wrapper component that conditionally renders the real devtools:
-
-```
-<HexDevTools enabled={...}>
-  |- if !enabled: return null (no hooks)
-  |- if enabled: <HexDevToolsInternal> (all hooks here)
-```
+- No WebSocket connection is established
+- No event subscriptions are created
+- No data is transmitted
+- The function/component tree-shakes cleanly if the bundler eliminates dead code
 
 ---
 
@@ -586,7 +626,7 @@ interface ThemeContextValue {
 
 ### 6.7.2 CSS Strategy
 
-The devtools uses CSS custom properties scoped to a root wrapper element. The wrapper has a unique `data-hex-devtools` attribute that all internal selectors scope to, preventing style leakage into the host application.
+The dashboard uses CSS custom properties scoped to a root wrapper element. The wrapper has a unique `data-hex-devtools` attribute that all internal selectors scope to.
 
 ```
 [data-hex-devtools] {
@@ -610,15 +650,13 @@ Two sets of values are defined -- one for `[data-hex-devtools="light"]` and one 
 
 ### 6.7.3 Style Isolation
 
-All devtools styles are scoped using the `[data-hex-devtools]` attribute selector. No global styles are injected. The devtools wrapper sets `all: initial` on itself to reset inherited styles from the host application, then re-applies its own baseline.
-
-Styles are delivered as a single CSS string injected into a `<style>` element inside the devtools wrapper (not into `<head>`). This ensures the styles are cleaned up when the devtools unmounts.
+Since the dashboard is a standalone application, style isolation from a host application is not a concern. However, the `[data-hex-devtools]` scoping is still used to maintain a clean CSS architecture and to allow the same component library to be reused if embedded tooling is ever needed. Styles are delivered as a standard CSS file loaded by the dashboard application.
 
 ---
 
 # 7. Component Tree
 
-This section details the full component hierarchy, data flow, lifecycle, and performance characteristics of the devtools component tree.
+This section details the full component hierarchy, data flow, lifecycle, and performance characteristics of the dashboard component tree.
 
 > **Previous**: [Section 6 -- Panel Architecture](#6-panel-architecture)
 > **Next**: [Section 8 -- Individual Panel Specifications](./04-panel-specs.md)
@@ -628,132 +666,186 @@ This section details the full component hierarchy, data flow, lifecycle, and per
 ## 7.1 Full Component Tree
 
 ```
-<HexDevTools>
+<DashboardApp>
   |
-  |-- [production guard: if !enabled, return null]
-  |
-  <HexDevToolsInternal>
+  <ConnectionProvider>                       [1] WebSocket connection manager
     |
-    <DevToolsProvider>                        [1] Internal state context + event buffer
+    <DevToolsProvider>                       [2] Internal state context + event buffers
       |
-      <InspectorBridge>                       [2] Auto-detects inspector from context or props
+      <PanelRegistry>                        [3] Merges built-in + library + custom panels
         |
-        <PanelRegistry>                       [3] Merges built-in + library + custom panels
+        <ThemeProvider>                       [4] Resolves system theme, provides CSS vars
           |
-          <ThemeProvider>                      [4] Resolves system theme, provides CSS vars
+          <DashboardWrapper                  [5] Root DOM node with data-hex-devtools attr
+            data-hex-devtools={resolvedTheme}>
             |
-            <DevToolsWrapper                  [5] Root DOM node with data-hex-devtools attr
-              data-hex-devtools={resolvedTheme}>
+            +-- <KeyboardHandler />          [6] Global keyboard shortcut listener
+            |
+            <DashboardLayout>                [7] CSS grid: sidebar + main
               |
-              +-- <KeyboardHandler />         [6] Global keyboard shortcut listener
+              +-- <Sidebar>                  [8] Left sidebar panel
+              |     |
+              |     +-- <ConnectionFilter    [9] Text input for filtering connections
+              |     |     value={connectionFilter}
+              |     |     onChange={setConnectionFilter}
+              |     |   />
+              |     |
+              |     +-- <AppList>            [10] Connected application list
+              |     |     |
+              |     |     +-- {connections.map(conn =>
+              |     |           <AppListItem
+              |     |             key={conn.connectionId}
+              |     |             displayLabel={conn.displayLabel}
+              |     |             appType={conn.appType}
+              |     |             status={conn.status}       ("connected" | "stale" | "disconnected")
+              |     |             latency={conn.latencyMs}
+              |     |             metadata={conn.metadata}   (url, title, pid, argv)
+              |     |             active={conn.connectionId === activeConnectionId}
+              |     |             onClick={() => setActiveConnection(conn.connectionId)}
+              |     |           />
+              |     |         )}
+              |     |
+              |     +-- <PanelNav>           [11] Vertical panel navigation
+              |           |
+              |           +-- <NavItem id="overview"   order={0}   active={...} />
+              |           +-- <NavItem id="container"  order={5}   active={...} />
+              |           +-- <NavItem id="graph"      order={10}  active={...} />
+              |           +-- <NavItem id="scopes"     order={20}  active={...} />
+              |           +-- <NavItem id="events"     order={30}  active={...} />
+              |           +-- <NavItem id="tracing"    order={40}  active={...} />
+              |           |     [conditional: only if tracing inspector registered]
+              |           +-- <NavItem id="health"     order={50}  active={...} />
+              |           |
+              |           +-- {libraryPanels.map(panel =>
+              |           |     <NavItem id={panel.id} order={panel.order} active={...} />
+              |           |   )}
+              |           |
+              |           +-- {customPanels.map(panel =>
+              |                 <NavItem id={panel.id} order={panel.order} active={...} />
+              |               )}
               |
-              +-- [if !isOpen]:
-              |   <TriggerButton              [7] Floating button, positioned via CSS
-              |     position={triggerPosition}
-              |     onClick={togglePanel}
-              |   />
-              |
-              +-- [if isOpen]:
-                  <PanelShell>                [8] Bottom-anchored panel container
+              +-- <Main>                     [12] Main content area
                     |
-                    +-- <ResizeHandle         [9] Drag handle (horizontal bar at top)
-                    |     onResize={setHeight}
-                    |     minHeight={200}
-                    |     maxHeight={viewportHeight * 0.8}
+                    +-- <ConnectionHeader>   [13] Active connection info bar
+                    |     |
+                    |     +-- <AppNameBadge   [14] App name + type icon
+                    |     |     name={activeConnection.appName}
+                    |     |     type={activeConnection.appType}
+                    |     |   />
+                    |     +-- <ConnectionStatus  [15] Live status indicator
+                    |     |     status={activeConnection.status}
+                    |     |     latency={activeConnection.latency}
+                    |     |   />
+                    |     +-- <HeaderActions>  [16] Right-aligned action buttons
+                    |           |
+                    |           +-- <ThemeToggle />    [17] Light/dark toggle icon
+                    |
+                    +-- [if !activeConnectionId]:
+                    |   <EmptyState            [18] No connection placeholder
+                    |     message="No application connected."
+                    |     instructions="Start a target app with devtools client enabled."
                     |   />
                     |
-                    +-- <PanelHeader>         [10] Fixed header bar
-                    |     |
-                    |     +-- <TabBar>        [11] Horizontal scrollable tab strip
-                    |     |     |
-                    |     |     +-- <Tab id="container"  order={0}   active={...} />
-                    |     |     +-- <Tab id="graph"      order={10}  active={...} />
-                    |     |     +-- <Tab id="scopes"     order={20}  active={...} />
-                    |     |     +-- <Tab id="events"     order={30}  active={...} />
-                    |     |     +-- <Tab id="tracing"    order={40}  active={...} />
-                    |     |     |     [conditional: only if tracing inspector registered]
-                    |     |     |
-                    |     |     +-- {libraryPanels.map(panel =>
-                    |     |           <Tab id={panel.id} order={panel.order} active={...} />
-                    |     |         )}
-                    |     |     |
-                    |     |     +-- {customPanels.map(panel =>
-                    |     |           <Tab id={panel.id} order={panel.order} active={...} />
-                    |     |         )}
-                    |     |
-                    |     +-- <HeaderActions>  [12] Right-aligned action buttons
-                    |           |
-                    |           +-- <ThemeToggle />    [13] Light/dark toggle icon
-                    |           +-- <CloseButton />    [14] Close panel (X icon)
-                    |
-                    +-- <PanelContent>         [15] Active panel renderer
+                    +-- [if activeConnectionId]:
+                        <PanelContent>         [19] Active panel renderer
                           |
                           +-- {React.createElement(
                                 activePanel.component,
-                                { inspector, theme, width, height }
+                                { remoteInspector, connectionId, theme, width, height }
                               )}
                           |
                           |  One of:
-                          |  +-- <ContainerPanel />    (id: "container")
-                          |  +-- <GraphPanel />        (id: "graph")
-                          |  +-- <ScopesPanel />       (id: "scopes")
-                          |  +-- <EventsPanel />       (id: "events")
-                          |  +-- <TracingPanel />       (id: "tracing")
-                          |  +-- <LibraryPanel />       (id: "library:*")
-                          |  +-- <CustomPanel />        (user-provided)
+                          |  +-- <OverviewPanel />       (id: "overview")
+                          |  +-- <ContainerPanel />      (id: "container")
+                          |  +-- <GraphPanel />          (id: "graph")
+                          |  +-- <ScopesPanel />         (id: "scopes")
+                          |  +-- <EventsPanel />         (id: "events")
+                          |  +-- <TracingPanel />        (id: "tracing")
+                          |  +-- <HealthPanel />         (id: "health")
+                          |  +-- <LibraryPanel />        (id: "library:*")
+                          |  +-- <CustomPanel />         (user-provided)
 ```
 
 ### Component Numbering Key
 
-| #   | Component        | Responsibility                                             |
-| --- | ---------------- | ---------------------------------------------------------- |
-| 1   | DevToolsProvider | useReducer for state, event ring buffer, localStorage sync |
-| 2   | InspectorBridge  | Reads inspector from props or InspectorContext             |
-| 3   | PanelRegistry    | Merges panel sources, handles library panel auto-discovery |
-| 4   | ThemeProvider    | matchMedia subscription, system theme resolution           |
-| 5   | DevToolsWrapper  | Root DOM element, style scope, portal target               |
-| 6   | KeyboardHandler  | useEffect with global keydown listener                     |
-| 7   | TriggerButton    | Floating FAB with position CSS                             |
-| 8   | PanelShell       | Fixed-position bottom panel, height from state             |
-| 9   | ResizeHandle     | Pointer event handlers for drag-to-resize                  |
-| 10  | PanelHeader      | Flexbox row: tabs on left, actions on right                |
-| 11  | TabBar           | Horizontal scroll container with overflow indicators       |
-| 12  | HeaderActions    | Grouped action buttons                                     |
-| 13  | ThemeToggle      | Dispatches set-theme action, cycles light/dark/system      |
-| 14  | CloseButton      | Dispatches close-panel action                              |
-| 15  | PanelContent     | Measures dimensions, renders active panel component        |
+| #   | Component          | Responsibility                                                   |
+| --- | ------------------ | ---------------------------------------------------------------- |
+| 1   | ConnectionProvider | WebSocket connection lifecycle, reconnection, RemoteInspectorAPI |
+| 2   | DevToolsProvider   | useReducer for state, event ring buffers, localStorage sync      |
+| 3   | PanelRegistry      | Merges panel sources, handles library panel auto-discovery       |
+| 4   | ThemeProvider      | matchMedia subscription, system theme resolution                 |
+| 5   | DashboardWrapper   | Root DOM element, style scope                                    |
+| 6   | KeyboardHandler    | useEffect with global keydown listener                           |
+| 7   | DashboardLayout    | CSS grid defining sidebar + main areas                           |
+| 8   | Sidebar            | Left sidebar containing app list and panel navigation            |
+| 9   | ConnectionFilter   | Text input for filtering the connection list                     |
+| 10  | AppList            | List of connected target applications with status indicators     |
+| 11  | PanelNav           | Vertical navigation listing all available panels                 |
+| 12  | Main               | Main content area to the right of the sidebar                    |
+| 13  | ConnectionHeader   | Top bar showing active connection name, status, and latency      |
+| 14  | AppNameBadge       | App name with type icon (React, Node, etc.)                      |
+| 15  | ConnectionStatus   | Live connection status dot + latency display                     |
+| 16  | HeaderActions      | Grouped action buttons (theme toggle, etc.)                      |
+| 17  | ThemeToggle        | Dispatches set-theme action, cycles light/dark/system            |
+| 18  | EmptyState         | Placeholder shown when no connection is active                   |
+| 19  | PanelContent       | Measures dimensions, renders active panel component              |
 
 ---
 
 ## 7.2 Data Flow
 
-### 7.2.1 Inspector Data Flow
+### 7.2.1 Remote Inspector Data Flow
 
-Data flows from the `InspectorAPI` through hooks into panel components. Each panel subscribes only to the data it needs:
+Data flows from target applications through WebSocket into the dashboard. The full path is:
 
 ```
-InspectorAPI
-(from @hex-di/react InspectorContext or HexDevToolsProps.inspector)
+Target Application
     |
-    |  Pull-based (via useSyncExternalStore hooks)
+    +-- InspectorAPI (local, in target app process)
+    |
+    v
+devtools-client (in target app)
+    |
+    +-- Serializes inspector events and query responses
+    +-- Sends over WebSocket connection
+    |
+    v
+WebSocket Transport
+    |
+    v
+Dashboard WebSocket Server
+    |
+    +-- Receives messages, routes to correct connection
+    |
+    v
+RemoteInspectorAPI (in dashboard, per connection)
+    |
+    +-- Mirrors the InspectorAPI interface
+    +-- Methods return Promises (async over WebSocket)
+    +-- Event subscription delivers events as they arrive
+    |
+    v
+Dashboard React hooks
+    |
+    |  Pull-based (via hooks wrapping RemoteInspectorAPI)
     |  +=======================================================+
     |  |                                                       |
-    |  +-- useSnapshot()                                       |
+    |  +-- useRemoteSnapshot()                                       |
     |  |     Returns: ContainerSnapshot                        |
     |  |     Consumers: ContainerPanel                         |
-    |  |     Re-renders: on any inspector event                |
+    |  |     Re-renders: on any snapshot-changed event         |
     |  |                                                       |
-    |  +-- useScopeTree()                                      |
+    |  +-- useRemoteScopeTree()                                      |
     |  |     Returns: ScopeTree                                |
     |  |     Consumers: ScopesPanel                            |
     |  |     Re-renders: on scope-created, scope-disposed      |
     |  |                                                       |
-    |  +-- useUnifiedSnapshot()                                |
+    |  +-- useRemoteUnifiedSnapshot()                                |
     |  |     Returns: UnifiedSnapshot                          |
     |  |     Consumers: LibraryPanel (generic tree view)       |
-    |  |     Re-renders: on any inspector event                |
+    |  |     Re-renders: on any snapshot-changed event         |
     |  |                                                       |
-    |  +-- useTracingSummary()                                 |
+    |  +-- useRemoteTracingSummary()                                 |
     |  |     Returns: TracingSummary | undefined                |
     |  |     Consumers: TracingPanel                           |
     |  |     Re-renders: on tracing snapshot change            |
@@ -761,36 +853,39 @@ InspectorAPI
     |  |                                                       |
     |  +=======================================================+
     |
-    |  One-time queries (called imperatively)
+    |  One-time queries (async, called imperatively)
     |  +=======================================================+
     |  |                                                       |
-    |  +-- inspector.getGraphData()                            |
-    |  |     Returns: ContainerGraphData                       |
+    |  +-- remoteInspector.getGraphData()                      |
+    |  |     Returns: Promise<ContainerGraphData>              |
     |  |     Consumers: GraphPanel                             |
     |  |     Called: on mount + when adapter count changes      |
     |  |                                                       |
-    |  +-- inspector.getAllResultStatistics()                   |
-    |  |     Returns: ReadonlyMap<string, ResultStatistics>    |
+    |  +-- remoteInspector.getAllResultStatistics()             |
+    |  |     Returns: Promise<ReadonlyMap<string, ResultStats>>|
     |  |     Consumers: ContainerPanel                         |
     |  |     Called: on mount + on result:ok/result:err events  |
     |  |                                                       |
-    |  +-- inspector.getLibraryInspectors()                    |
-    |  |     Returns: ReadonlyMap<string, LibraryInspector>    |
+    |  +-- remoteInspector.getLibraryInspectors()              |
+    |  |     Returns: Promise<ReadonlyMap<string, LibInspector>|
     |  |     Consumers: PanelRegistry                          |
     |  |     Called: on mount + on library-registered events    |
     |  |                                                       |
     |  +=======================================================+
     |
-    |  Push-based (subscription)
+    |  Push-based (subscription via WebSocket)
     |  +=======================================================+
     |  |                                                       |
-    |  +-- inspector.subscribe(listener)                       |
+    |  +-- remoteInspector.subscribe(listener)                 |
     |        Returns: () => void (unsubscribe)                 |
-    |        Consumers: DevToolsProvider (event ring buffer)   |
-    |        Lifetime: mount to unmount of DevToolsProvider    |
-    |        Note: Single subscription shared by all panels    |
+    |        Consumers: ConnectionProvider (event ring buffer)  |
+    |        Lifetime: connection open to connection close      |
+    |        Note: Single subscription per connection           |
     |                                                          |
     |  +=======================================================+
+    |
+    v
+Panels (ContainerPanel, GraphPanel, EventsPanel, etc.)
 ```
 
 ### 7.2.2 State Data Flow
@@ -800,73 +895,68 @@ Internal state flows from the `DevToolsProvider` through context to all child co
 ```
 DevToolsProvider (useReducer)
     |
-    +-- state.isOpen ---------> TriggerButton (visibility)
-    |                    +----> PanelShell (visibility)
+    +-- state.activeConnectionId -> AppList (active highlight)
+    |                         +--> ConnectionHeader (which connection to display)
+    |                         +--> PanelContent (which RemoteInspectorAPI to pass)
     |
-    +-- state.activePanel ----> TabBar (active tab highlight)
-    |                    +----> PanelContent (which component to render)
+    +-- state.connectionFilter --> AppList (filtered connection list)
     |
-    +-- state.panelHeight ----> PanelShell (CSS height)
-    |                    +----> PanelContent (height prop to active panel)
+    +-- state.activePanel -------> PanelNav (active nav highlight)
+    |                        +---> PanelContent (which component to render)
     |
-    +-- state.theme ----------> ThemeProvider (resolved theme)
-    |                    +----> PanelContent (theme prop to active panel)
+    +-- state.theme -------------> ThemeProvider (resolved theme)
+    |                        +---> PanelContent (theme prop to active panel)
     |
-    +-- state.eventLogFilter -> EventsPanel (filter state)
+    +-- state.eventLogFilter ----> EventsPanel (filter state)
     |
-    +-- state.eventLogPaused -> EventsPanel (pause indicator)
+    +-- state.eventLogPaused ----> EventsPanel (pause indicator)
     |
-    +-- eventLog.events ------> EventsPanel (rendered event list)
+    +-- eventLog.events ---------> EventsPanel (rendered event list)
 ```
 
 ### 7.2.3 User Interaction Flow
 
 ```
-User clicks trigger button
+User clicks an application in the AppList
     |
     v
-TriggerButton.onClick
+AppListItem.onClick
     |
     v
-dispatch({ type: "toggle-panel" })
+dispatch({ type: "set-active-connection", connectionId })
     |
     v
-Reducer: isOpen = !isOpen
+Reducer: activeConnectionId = connectionId
     |
     v
 DevToolsProvider re-renders
     |
-    +-- TriggerButton unmounts (isOpen = true)
-    +-- PanelShell mounts with slide-up animation
+    +-- AppList highlights the selected connection
+    +-- ConnectionHeader updates with new app name and status
+    +-- PanelContent remounts active panel with new RemoteInspectorAPI
          |
-         +-- Active panel component mounts
-         +-- Panel subscribes to inspector data via hooks
+         +-- Active panel component re-subscribes to the new connection's data
 ```
 
 ```
-User drags resize handle
+User clicks a panel in the PanelNav
     |
     v
-ResizeHandle.onPointerMove (while dragging)
+NavItem.onClick
     |
     v
-Calculate new height = viewportHeight - pointerY
+dispatch({ type: "set-active-panel", panelId })
     |
     v
-Clamp: max(200, min(height, viewportHeight * 0.8))
+Reducer: activePanel = panelId
     |
     v
-dispatch({ type: "set-panel-height", height })
+DevToolsProvider re-renders
     |
-    v
-Reducer: panelHeight = height
-    |
-    v
-PanelShell re-renders with new height
-    |
-    +-- PanelContent re-renders with new height prop
-    +-- Active panel receives updated height prop
-    +-- localStorage write (debounced 500ms)
+    +-- PanelNav highlights the selected panel
+    +-- PanelContent unmounts previous panel, mounts new panel
+         |
+         +-- New panel component mounts and subscribes to data via hooks
 ```
 
 ---
@@ -876,79 +966,72 @@ PanelShell re-renders with new height
 ### 7.3.1 Mount Phase
 
 ```
-1. <HexDevTools> renders
+1. <DashboardApp> renders
    |
-   +-- Check enabled prop (default: process.env.NODE_ENV !== "production")
-   |   If false: return null, no further work
+2. <ConnectionProvider> mounts
    |
-2. <DevToolsProvider> mounts
+   +-- Opens WebSocket server listener (if running in Electron or server mode)
+   |   OR connects to existing server (if running as web client)
+   |
+   +-- Initializes empty connection registry
+   |
+3. <DevToolsProvider> mounts
    |
    +-- Read localStorage("hex-di:devtools")
-   |   Parse JSON, validate shape, merge with defaults and props
+   |   Parse JSON, validate shape, merge with defaults
    |
    +-- Initialize useReducer with merged initial state
    |
-   +-- Create event ring buffer (capacity from props or default 500)
+4. <PanelRegistry> mounts
    |
-   +-- Subscribe to inspector.subscribe() for event capture
-   |   Events flow into ring buffer regardless of isOpen state
+   +-- Build initial sorted panel list from built-in panels
+   |   (Library panels are discovered per-connection when one becomes active)
    |
-3. <PanelRegistry> mounts
-   |
-   +-- Read inspector.getLibraryInspectors() for initial library set
-   +-- Build sorted panel list: built-in + library + custom
-   +-- Subscribe to inspector events for library-registered/unregistered
-   |
-4. <ThemeProvider> mounts
+5. <ThemeProvider> mounts
    |
    +-- If theme === "system": subscribe to matchMedia change event
    +-- Resolve initial theme
    |
-5. <KeyboardHandler> mounts
+6. <KeyboardHandler> mounts
    |
-   +-- Attach global keydown listener for hotkey
+   +-- Attach global keydown listener for shortcuts
    |
-6. If isOpen (from persisted state):
+7. <DashboardLayout> mounts
    |
-   +-- <PanelShell> mounts (no animation on initial render)
-   +-- Active panel component mounts and begins data subscription
-   |
-   If !isOpen:
-   |
-   +-- <TriggerButton> mounts at configured position
+   +-- <Sidebar> renders with empty AppList (no connections yet)
+   +-- <Main> renders with EmptyState placeholder
 ```
 
-### 7.3.2 Open Phase
+### 7.3.2 Connection Established Phase
 
 ```
-1. User triggers open (click trigger button OR press hotkey)
+1. Target application calls connectDevTools(inspector, config)
    |
-2. dispatch({ type: "open-panel" })
+2. Client establishes WebSocket connection to dashboard server
    |
-3. state.isOpen becomes true
+3. Handshake: client sends { appName, appType, instanceId, metadata } identification
    |
-4. <TriggerButton> unmounts
+4. ConnectionProvider receives new connection
    |
-5. <PanelShell> mounts
+   +-- Creates RemoteInspectorAPI instance for the connection
+   +-- Creates event ring buffer for the connection
+   +-- Subscribes to remoteInspector.subscribe() for event capture
    |
-   +-- CSS transition: transform translateY(100%) -> translateY(0)
-   |   Duration: 200ms ease-out
+5. dispatch({ type: "add-connection", connectionId, appName })
    |
-6. <PanelContent> mounts
+6. If no activeConnectionId exists:
    |
-   +-- Measures content area dimensions via ResizeObserver
-   +-- Renders activePanel.component with measured width/height
-   |
-7. Active panel component mounts
-   |
-   +-- Calls appropriate hooks (useSnapshot, useScopeTree, etc.)
-   +-- Hooks call useSyncExternalStore -> subscribe to inspector
+   +-- Auto-select this connection as active
+   +-- Read remoteInspector.getLibraryInspectors() for library panels
+   +-- PanelRegistry updates with library panels for this connection
+   +-- ConnectionHeader displays app name and status
+   +-- Active panel component mounts with the new RemoteInspectorAPI
 ```
 
 ### 7.3.3 Tab Switch Phase
 
 ```
-1. User clicks a different tab
+1. User clicks a different panel in PanelNav
    |
 2. dispatch({ type: "set-active-panel", panelId: newId })
    |
@@ -967,53 +1050,76 @@ PanelShell re-renders with new height
 
 Panels are not cached or kept alive. Each mount is a fresh render. This trades a small mount cost for significant memory savings -- inactive panels hold no DOM nodes, no subscriptions, and no stale data.
 
-### 7.3.4 Close Phase
+### 7.3.4 Connection Switch Phase
 
 ```
-1. User triggers close (click close button, press Escape, or press hotkey)
+1. User clicks a different application in AppList
    |
-2. dispatch({ type: "close-panel" })
+2. dispatch({ type: "set-active-connection", connectionId: newId })
    |
-3. state.isOpen becomes false
+3. state.activeConnectionId changes
    |
-4. <PanelShell> begins exit animation
+4. PanelRegistry re-reads library inspectors for the new connection
    |
-   +-- CSS transition: transform translateY(0) -> translateY(100%)
-   |   Duration: 150ms ease-in
+5. ConnectionHeader updates with new app name, status, latency
    |
-5. After animation completes (onTransitionEnd):
+6. <PanelContent> re-renders with the new connection's RemoteInspectorAPI
    |
-   +-- <PanelShell> unmounts
-   +-- Active panel component unmounts (hooks unsubscribe)
+   +-- Active panel component unmounts (old connection hooks unsubscribe)
+   +-- Active panel component mounts (new connection hooks subscribe)
    |
-6. <TriggerButton> mounts
-   |
-7. Event ring buffer continues capturing events (owned by DevToolsProvider)
-   |
-8. localStorage write (debounced)
+7. Event log switches to the new connection's ring buffer
 ```
 
-### 7.3.5 Unmount Phase
+### 7.3.5 Connection Lost Phase
 
 ```
-1. <HexDevTools> unmounts (or enabled becomes false)
+1. WebSocket connection drops (network error, target app exits)
+   |
+2. ConnectionProvider updates connection status to "reconnecting"
+   |
+3. AppList shows reconnecting indicator for the affected connection
+   |
+4. If reconnect is enabled (default: true):
+   |
+   +-- Retry connection at reconnectInterval (default: 3000ms)
+   +-- On success: status returns to "connected", data streams resume
+   +-- On failure: continue retrying
+   |
+5. If target app is gone permanently:
+   |
+   +-- After sustained failure, status remains "reconnecting"
+   +-- User can manually remove the connection
+   +-- OR: connection is removed automatically when the target app sends a clean disconnect
+   |
+6. dispatch({ type: "remove-connection", connectionId })
+   |
+   +-- If this was the active connection:
+       +-- Auto-select next available connection, or undefined
+       +-- Panel content updates accordingly
+```
+
+### 7.3.6 Unmount Phase
+
+```
+1. Dashboard window/tab closes
    |
 2. <DevToolsProvider> unmounts
    |
-   +-- Event ring buffer subscription unsubscribes from inspector
    +-- Save state to localStorage (immediate, not debounced)
    |
-3. <ThemeProvider> unmounts
+3. <ConnectionProvider> unmounts
+   |
+   +-- All WebSocket connections are closed cleanly
+   +-- All event ring buffer subscriptions unsubscribe
+   |
+4. <ThemeProvider> unmounts
    |
    +-- matchMedia change listener removed
    |
-4. <KeyboardHandler> unmounts
+5. <KeyboardHandler> unmounts
    |
    +-- Global keydown listener removed
-   |
-5. All panel components unmount (if panel was open)
-   |
-6. <style> element removed from DOM (styles cleaned up)
 ```
 
 ---
@@ -1022,11 +1128,11 @@ Panels are not cached or kept alive. Each mount is a fresh render. This trades a
 
 ### 7.4.1 Lazy Panel Rendering
 
-Only the active panel's component is mounted. All other panels have zero runtime cost. When switching tabs, the previous panel fully unmounts and the new panel mounts fresh. This means:
+Only the active panel's component is mounted. All other panels have zero runtime cost. When switching panels, the previous panel fully unmounts and the new panel mounts fresh. This means:
 
 - **Memory**: Only one panel's DOM tree and hook subscriptions exist at any time
-- **CPU**: Only one panel processes inspector events
-- **Trade-off**: Tab switches incur a small mount cost (~1-5ms for built-in panels)
+- **CPU**: Only one panel processes remote inspector events
+- **Trade-off**: Panel switches incur a small mount cost (~1-5ms for built-in panels)
 
 ### 7.4.2 Event Log Ring Buffer
 
@@ -1035,10 +1141,10 @@ The event log uses a fixed-capacity ring buffer implemented as a pre-allocated a
 - **Insertion**: O(1) -- write at tail, increment tail mod capacity
 - **Iteration**: O(n) -- read from head to tail
 - **Memory**: Fixed at `capacity * sizeof(TimestampedEvent)`, never grows
-- **Default capacity**: 500 events
+- **Default capacity**: 1000 events per connection
 - **Overflow**: Oldest events silently discarded, `totalDropped` counter incremented
 
-The buffer is a plain object (not React state) to avoid re-rendering the DevToolsProvider on every event. The EventsPanel reads from the buffer in its render cycle via a ref.
+The buffer is a plain object (not React state) to avoid re-rendering the ConnectionProvider on every event. The EventsPanel reads from the buffer in its render cycle via a ref.
 
 ### 7.4.3 Graph Layout
 
@@ -1051,23 +1157,38 @@ The Graph panel computes a force-directed layout using `requestAnimationFrame`:
 
 ### 7.4.4 Subscription Management
 
-The devtools creates exactly one `inspector.subscribe()` subscription, managed by the `DevToolsProvider`. Individual panels do not subscribe directly to the inspector's event stream. Instead:
+Each connection creates exactly one `remoteInspector.subscribe()` subscription, managed by the `ConnectionProvider`. Individual panels do not subscribe directly to the remote inspector's event stream. Instead:
 
-- **Event buffering**: All events flow into the ring buffer via the single subscription
-- **Hook-based data**: Panels use `useSyncExternalStore` hooks (useSnapshot, useScopeTree, etc.) which internally subscribe. These subscriptions are created/destroyed with panel mount/unmount.
-- **No tearing**: All hooks use `useSyncExternalStore`, which is the React-recommended pattern for external store integration. This prevents tearing during concurrent rendering.
+- **Event buffering**: All events flow into the per-connection ring buffer via the single subscription
+- **Hook-based data**: Panels use hooks (useSnapshot, useScopeTree, etc.) which internally manage subscriptions to the `RemoteInspectorAPI`. These subscriptions are created/destroyed with panel mount/unmount.
+- **Connection switching**: When the active connection changes, the active panel unmounts and remounts, causing hook subscriptions to cleanly transfer to the new connection's `RemoteInspectorAPI`.
 
-### 7.4.5 Resize Performance
+### 7.4.5 WebSocket Message Batching
 
-The resize handle uses pointer events (not mouse events) for better touch support. During a drag:
+The devtools client in the target application batches inspector events before sending them over the WebSocket to reduce message overhead:
 
-- `pointerdown`: Capture pointer, set dragging flag
-- `pointermove`: Calculate new height, dispatch immediately (no debounce during drag)
-- `pointerup`: Release pointer, clear dragging flag, trigger localStorage persist (debounced)
+- **Batch window**: 16ms (one frame at 60fps). Events are collected during the window and sent as a single WebSocket message.
+- **Batch size limit**: 50 events. If 50 events accumulate before the window closes, the batch is sent immediately.
+- **Flush on disconnect**: Any pending events are flushed when the WebSocket connection is closing.
+- **Binary encoding**: Event batches are serialized as JSON arrays. Individual events are not compressed, but batching reduces per-message overhead (WebSocket framing, TCP headers).
 
-The panel height is applied via inline `style` on the PanelShell element for maximum update speed. CSS transitions are disabled during active dragging and re-enabled on pointer up.
+### 7.4.6 Connection Multiplexing
 
-### 7.4.6 Tree View Virtualization
+The dashboard server handles multiple simultaneous connections efficiently:
+
+- **Per-connection isolation**: Each connection has its own WebSocket, RemoteInspectorAPI, and event buffer. A slow or misbehaving connection does not affect others.
+- **Inactive connection throttling**: Connections that are not currently active (not selected in the sidebar) still receive and buffer events, but their data is not processed by React hooks. This means inactive connections consume only buffer memory, not CPU.
+- **Connection limit**: The server accepts up to 20 simultaneous connections. Additional connection attempts are rejected with a descriptive error message.
+
+### 7.4.7 Stale Connection Detection
+
+The dashboard detects and handles stale connections:
+
+- **Heartbeat**: The WebSocket connection sends a ping every 5 seconds. If no pong is received within 10 seconds, the connection is marked as stale.
+- **Latency tracking**: Round-trip time is measured on each heartbeat and displayed in the ConnectionHeader and AppList. Latency above 500ms triggers a warning indicator.
+- **Auto-cleanup**: Connections that have been in "reconnecting" state for more than 60 seconds without successful reconnection are automatically removed from the sidebar (with a notification).
+
+### 7.4.8 Tree View Virtualization
 
 The generic `LibraryPanel` tree view and the `ScopesPanel` tree view both use windowed rendering for large data sets:
 
@@ -1083,40 +1204,33 @@ The generic `LibraryPanel` tree view and the `ScopesPanel` tree view both use wi
 
 These shortcuts work regardless of focus state, captured via a `keydown` listener on `document`:
 
-| Shortcut       | Action                  | Condition     |
-| -------------- | ----------------------- | ------------- |
-| `Ctrl+Shift+D` | Toggle panel open/close | Always        |
-| `Escape`       | Close panel             | Panel is open |
+| Shortcut                  | Action                             | Condition               |
+| ------------------------- | ---------------------------------- | ----------------------- |
+| `Ctrl+1` through `Ctrl+9` | Switch to connection N (1-indexed) | At least one connection |
 
-The global hotkey (`Ctrl+Shift+D` by default) is configurable via the `hotkey` prop. The shortcut parser supports:
+Connection numbering follows the visual order in the AppList (top to bottom). If connection N does not exist (e.g., `Ctrl+5` when there are only 3 connections), the shortcut is ignored.
 
-- Modifier keys: `ctrl`, `shift`, `alt`, `meta`
-- Regular keys: any single character or named key (`escape`, `enter`, etc.)
-- Separator: `+`
-- Case-insensitive
+### 7.5.2 Panel Navigation Shortcuts
 
-On macOS, `ctrl` maps to the Control key (not Command). Use `meta` for Command.
+These shortcuts are always active since the dashboard is a standalone application:
 
-### 7.5.2 Panel-Scoped Shortcuts
+| Shortcut                        | Action                        | Condition                 |
+| ------------------------------- | ----------------------------- | ------------------------- |
+| `Alt+1` through `Alt+9`         | Switch to panel N (1-indexed) | At least one panel exists |
+| `Alt+ArrowUp` / `Alt+ArrowDown` | Move to previous/next panel   | Always                    |
+| `/`                             | Focus event log search input  | Events panel is active    |
+| `Ctrl+K`                        | Focus event log search input  | Events panel is active    |
 
-These shortcuts only work when the devtools panel has focus (any element inside `[data-hex-devtools]` is focused):
-
-| Shortcut                  | Action                       | Condition                 |
-| ------------------------- | ---------------------------- | ------------------------- |
-| `Ctrl+1` through `Ctrl+9` | Switch to tab N (1-indexed)  | Panel is open and focused |
-| `/`                       | Focus event log search input | Events panel is active    |
-| `Ctrl+K`                  | Focus event log search input | Events panel is active    |
-
-Tab numbering follows the visual tab order (left to right). If tab N does not exist (e.g., `Ctrl+7` when there are only 5 tabs), the shortcut is ignored.
+Panel numbering follows the visual navigation order (top to bottom in the sidebar). If panel N does not exist, the shortcut is ignored.
 
 ### 7.5.3 Implementation
 
 The `KeyboardHandler` component attaches a single `keydown` listener to `document` in a `useEffect`. The handler:
 
-1. Checks if the event matches the global hotkey -- if so, toggle panel and `preventDefault()`
-2. Checks if the event is `Escape` and panel is open -- if so, close panel
-3. Checks if the event target is inside `[data-hex-devtools]` (panel-scoped shortcuts)
-4. If inside, checks for `Ctrl+1..9` or `/` shortcuts
+1. Checks if the event matches `Ctrl+1..9` -- if so, switch to connection N and `preventDefault()`
+2. Checks if the event matches `Alt+1..9` -- if so, switch to panel N and `preventDefault()`
+3. Checks if the event matches `Alt+ArrowUp/Down` -- if so, move to previous/next panel
+4. Checks for `/` or `Ctrl+K` shortcuts for event log search
 
 The handler does not call `preventDefault()` for panel-scoped shortcuts if the event target is an `<input>` or `<textarea>` (to avoid interfering with text input). The `/` shortcut is only intercepted when the active element is not an input field.
 
@@ -1126,93 +1240,32 @@ The handler does not call `preventDefault()` for panel-scoped shortcuts if the e
 
 ### 7.6.1 Breakpoints
 
-The devtools adapts to viewport width using three responsive breakpoints. These are checked via `ResizeObserver` on the panel wrapper, not CSS media queries (since the devtools is embedded in an application and media queries would respond to the full viewport, not the panel's available space).
+The dashboard adapts to viewport width using two responsive breakpoints. These are checked via `ResizeObserver` on the dashboard wrapper element.
 
-| Viewport Width | Behavior                                                    |
-| -------------- | ----------------------------------------------------------- |
-| >= 600px       | **Full mode** -- Tabs show icon + label. Full panel layout. |
-| 400px -- 599px | **Compact mode** -- Tabs show icon only. Labels hidden.     |
-| < 400px        | **Overlay mode** -- Panel becomes a full-screen overlay.    |
+| Viewport Width | Behavior                                                      |
+| -------------- | ------------------------------------------------------------- |
+| >= 800px       | **Full layout** -- Sidebar visible + main content area.       |
+| < 800px        | **Collapsed layout** -- Sidebar collapses to icons-only rail. |
 
-### 7.6.2 Full Mode (>= 600px)
+### 7.6.2 Full Layout (>= 800px)
 
-Standard layout as described in the component tree. Tabs display both icon and label. The panel is bottom-anchored with configurable height.
+Standard layout as described in the component tree. The sidebar displays the full AppList with connection names, status indicators, and latency values. The PanelNav shows icon + label for each panel. The main content area takes the remaining width.
 
-### 7.6.3 Compact Mode (400px -- 599px)
+The sidebar width is fixed at 260px. The main content area fills the remaining space.
 
-Identical to full mode except:
+### 7.6.3 Collapsed Layout (< 800px)
 
-- Tab labels are hidden; only icons are shown
-- Tab tooltips appear on hover/focus to show the label
-- Header actions icons shrink from 24px to 20px
-- Panel padding decreases from 16px to 8px
+The sidebar collapses to a narrow rail (48px wide):
 
-### 7.6.4 Overlay Mode (< 400px)
+- AppList shows only the app type icon (React, Node, unknown) with a colored status dot
+- PanelNav shows only icons, no labels
+- Hovering over a sidebar item shows a tooltip with the full name/label
+- Clicking a connection or panel item works identically to the full layout
+- A toggle button at the top of the sidebar allows temporarily expanding it as a floating overlay (not an app-wide overlay, just the sidebar expanding over the main content). Clicking outside or selecting an item collapses it again.
 
-The panel switches from bottom-anchored to a full-screen overlay:
+### 7.6.4 Panel Content Responsive Behavior
 
-- The panel covers the entire viewport (`position: fixed; inset: 0`)
-- The resize handle is hidden (no resizing in overlay mode)
-- A back/close button appears prominently in the header
-- The trigger button position adapts to avoid the notch area on mobile devices
-
-### 7.6.5 Panel Height Constraints
-
-Regardless of responsive mode, the panel height is always clamped:
-
-```
-minimumHeight = 200px
-maximumHeight = Math.floor(viewportHeight * 0.8)
-```
-
-The maximum is recalculated on viewport resize (via ResizeObserver on the `document.documentElement`). If the current `panelHeight` exceeds the new maximum, it is clamped down automatically.
-
----
-
-## 7.7 DOM Rendering Strategy
-
-### 7.7.1 Portal Rendering
-
-The devtools renders into a React portal appended to `document.body`. This ensures:
-
-- The devtools is not affected by CSS transforms, overflow, or z-index stacking contexts in the host application
-- The devtools always renders on top of the host application
-- The devtools does not interfere with the host's layout flow
-
-The portal container element is created on mount and removed on unmount:
-
-```
-document.body
-  |
-  +-- [host application root]
-  |
-  +-- <div data-hex-devtools-portal>      [created by HexDevTools]
-        |
-        <DevToolsWrapper data-hex-devtools="light|dark">
-          ... (full component tree)
-```
-
-### 7.7.2 Z-Index Strategy
-
-The devtools uses a high z-index to ensure visibility:
-
-- Trigger button: `z-index: 99999`
-- Panel shell: `z-index: 99998`
-- Panel overlay (mobile): `z-index: 99999`
-
-These values are intentionally high but static. The devtools does not attempt to detect the host application's z-index range.
-
-### 7.7.3 SSR Safety
-
-All DOM-dependent operations are guarded with `typeof window !== "undefined"` checks:
-
-- Portal creation
-- localStorage access
-- matchMedia subscription
-- Global event listeners
-- ResizeObserver
-
-The devtools renders `null` during SSR and hydrates on the client. This matches the pattern used by the existing `DevToolsBridge` component in `@hex-di/react`.
+Individual panels receive `width` and `height` props and are responsible for their own internal responsive behavior. The Graph panel, for example, adjusts its SVG viewport, and the Events panel adjusts its column layout. Panel-specific responsive breakpoints are defined in each panel's specification (Section 8).
 
 ---
 

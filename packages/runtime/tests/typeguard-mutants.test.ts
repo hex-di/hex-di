@@ -94,7 +94,7 @@ describe("isContainerParent - exercised via child.parent getter", () => {
     const childGraph = GraphBuilder.create().build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
-    const p = child.parent;
+    const p: any = child.parent;
     // Assert specific properties exist and are functions, killing each ConditionalExpression -> false
     expect(p).not.toBeNull();
     expect(typeof p).toBe("object");
@@ -112,7 +112,7 @@ describe("isContainerParent - exercised via child.parent getter", () => {
     const child = parent.createChild(childGraph, { name: "Child" });
 
     // If isContainerParent returned false, this would throw "Invalid container parent reference"
-    const p = child.parent;
+    const p: any = child.parent;
     expect(p).toBe(parent);
   });
 
@@ -121,7 +121,7 @@ describe("isContainerParent - exercised via child.parent getter", () => {
     const childGraph = GraphBuilder.create().build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
-    const p = child.parent;
+    const p: any = child.parent;
     const logger = p.resolve(LoggerPort);
     expect(typeof logger.log).toBe("function");
   });
@@ -131,7 +131,7 @@ describe("isContainerParent - exercised via child.parent getter", () => {
     const childGraph = GraphBuilder.create().build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
-    const p = child.parent;
+    const p: any = child.parent;
     const logger = await p.resolveAsync(LoggerPort);
     expect(typeof logger.log).toBe("function");
   });
@@ -148,7 +148,7 @@ describe("isContainerParent - exercised via child.parent getter", () => {
     const childGraph = GraphBuilder.create().build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
-    const p = child.parent;
+    const p: any = child.parent;
     const scope = p.createScope("test");
     expect(scope).toBeDefined();
     const logger = scope.resolve(LoggerPort);
@@ -160,7 +160,7 @@ describe("isContainerParent - exercised via child.parent getter", () => {
     const childGraph = GraphBuilder.create().build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
-    const p = child.parent;
+    const p: any = child.parent;
     // We can't actually dispose the parent through the child reference
     // in a non-destructive way, but we verify the function is callable
     expect(typeof p.dispose).toBe("function");
@@ -171,7 +171,7 @@ describe("isContainerParent - exercised via child.parent getter", () => {
     const childGraph = GraphBuilder.create().build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
-    const p = child.parent;
+    const p: any = child.parent;
     expect(p.has(LoggerPort)).toBe(true);
     const unknownPort = port<unknown>()({ name: "Unknown" });
     expect(p.has(unknownPort)).toBe(false);
@@ -182,7 +182,7 @@ describe("isContainerParent - exercised via child.parent getter", () => {
     const childGraph = GraphBuilder.create().build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
-    const p = child.parent;
+    const p: any = child.parent;
     expect(p.isDisposed).toBe(false);
   });
 
@@ -193,7 +193,7 @@ describe("isContainerParent - exercised via child.parent getter", () => {
     const grandchildGraph = GraphBuilder.create().build();
     const grandchild = child.createChild(grandchildGraph, { name: "Grandchild" });
 
-    const p = grandchild.parent;
+    const p: any = grandchild.parent;
     expect(p).toBe(child);
     expect(p.name).toBe("Child");
   });

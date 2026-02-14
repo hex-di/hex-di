@@ -8,6 +8,7 @@
  * @packageDocumentation
  */
 
+import { createPort } from "@hex-di/core";
 import type { DirectedPort } from "@hex-di/core";
 import type { QueryFetcher } from "./types.js";
 import type { QueryDefaults } from "../types/options.js";
@@ -121,11 +122,18 @@ export function createQueryPort<TData, TParams = void, TError = Error>(): <
   return <const TName extends string, const TDependsOn extends ReadonlyArray<AnyQueryPort> = []>(
     config: QueryPortConfig<TData, TParams, TError, TName, TDependsOn>
   ): QueryPort<TName, TData, TParams, TError, TDependsOn> => {
-    // BRAND_CAST: Branded type boundary -- frozen object structurally matches
-    // QueryPort but needs phantom type branding (error type, port symbol).
+    // Create a proper DirectedPort base so metadata (including category)
+    // flows through to VisualizableAdapter for library detection.
+    const base = createPort<TName, QueryFetcher<TData, TParams, TError>, "inbound">({
+      name: config.name,
+      direction: "inbound",
+      category: "query/query",
+    });
+    // BRAND_CAST: Branded type boundary -- merge DirectedPort base with
+    // QueryPort-specific fields (phantom error type, port symbol, config).
     return brandAsQueryPort<TName, TData, TParams, TError, TDependsOn>(
       Object.freeze({
-        __portName: config.name,
+        ...base,
         [QUERY_PORT_SYMBOL]: true,
         config: Object.freeze({
           ...config,

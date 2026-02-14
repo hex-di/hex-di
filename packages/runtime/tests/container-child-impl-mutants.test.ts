@@ -46,7 +46,7 @@ const DatabasePort = port<Database>()({ name: "Database" });
 const CachePort = port<Cache>()({ name: "Cache" });
 const UserServicePort = port<UserService>()({ name: "UserService" });
 
-function makeRootContainer() {
+function makeRootGraph() {
   const loggerAdapter = createAdapter({
     provides: LoggerPort,
     requires: [],
@@ -59,7 +59,11 @@ function makeRootContainer() {
     lifetime: "singleton",
     factory: () => ({ query: vi.fn() }),
   });
-  const graph = GraphBuilder.create().provide(loggerAdapter).provide(dbAdapter).build();
+  return GraphBuilder.create().provide(loggerAdapter).provide(dbAdapter).build();
+}
+
+function makeRootContainer() {
+  const graph = makeRootGraph();
   return createContainer({ graph, name: "Root" });
 }
 
@@ -111,7 +115,8 @@ describe("ChildContainerImpl - basic properties via wrapper", () => {
 
 describe("ChildContainerImpl - initializeFromParent", () => {
   it("overrides are marked as local and as overrides", () => {
-    const parent = makeRootContainer();
+    const parentGraph = makeRootGraph();
+    const parent = createContainer({ graph: parentGraph, name: "Root" });
     const mockLogFn = vi.fn();
     const overrideAdapter = createAdapter({
       provides: LoggerPort,
@@ -119,7 +124,7 @@ describe("ChildContainerImpl - initializeFromParent", () => {
       lifetime: "singleton",
       factory: () => ({ log: mockLogFn }),
     });
-    const childGraph = GraphBuilder.create().override(overrideAdapter).build();
+    const childGraph = GraphBuilder.forParent(parentGraph).override(overrideAdapter).build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
     // Override should be used when resolving
@@ -159,14 +164,15 @@ describe("ChildContainerImpl - initializeFromParent", () => {
 
 describe("ChildContainerImpl - hook management", () => {
   it("installHooks adds hooks that fire during resolution", () => {
-    const parent = makeRootContainer();
+    const parentGraph = makeRootGraph();
+    const parent = createContainer({ graph: parentGraph, name: "Root" });
     const transientAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
       lifetime: "transient",
       factory: () => ({ log: vi.fn() }),
     });
-    const childGraph = GraphBuilder.create().override(transientAdapter).build();
+    const childGraph = GraphBuilder.forParent(parentGraph).override(transientAdapter).build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
     const beforeFn = vi.fn();
@@ -176,14 +182,15 @@ describe("ChildContainerImpl - hook management", () => {
   });
 
   it("uninstallHooks removes hooks from firing", () => {
-    const parent = makeRootContainer();
+    const parentGraph = makeRootGraph();
+    const parent = createContainer({ graph: parentGraph, name: "Root" });
     const transientAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
       lifetime: "transient",
       factory: () => ({ log: vi.fn() }),
     });
-    const childGraph = GraphBuilder.create().override(transientAdapter).build();
+    const childGraph = GraphBuilder.forParent(parentGraph).override(transientAdapter).build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
     const beforeFn = vi.fn();
@@ -247,7 +254,7 @@ describe("ChildContainerImpl - getParent", () => {
     const childGraph = GraphBuilder.create().build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
-    const parentRef = child.parent;
+    const parentRef: any = child.parent;
     expect(parentRef).toBeDefined();
     expect(typeof parentRef.resolve).toBe("function");
   });
@@ -273,7 +280,8 @@ describe("ChildContainerImpl - initialize rejects", () => {
 
 describe("ChildContainerImpl - resolution: local vs inherited", () => {
   it("resolves local override port directly", () => {
-    const parent = makeRootContainer();
+    const parentGraph = makeRootGraph();
+    const parent = createContainer({ graph: parentGraph, name: "Root" });
     const mockLog = vi.fn();
     const overrideAdapter = createAdapter({
       provides: LoggerPort,
@@ -281,7 +289,7 @@ describe("ChildContainerImpl - resolution: local vs inherited", () => {
       lifetime: "singleton",
       factory: () => ({ log: mockLog }),
     });
-    const childGraph = GraphBuilder.create().override(overrideAdapter).build();
+    const childGraph = GraphBuilder.forParent(parentGraph).override(overrideAdapter).build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
     child.resolve(LoggerPort).log("local");
@@ -562,7 +570,7 @@ describe("ChildContainerImpl - disposal", () => {
       factory: () => ({ log: vi.fn() }),
       finalizer,
     });
-    const childGraph = GraphBuilder.create().override(overrideAdapter).build();
+    const childGraph = GraphBuilder.forParent(graph).override(overrideAdapter).build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
     child.resolve(LoggerPort);
@@ -593,7 +601,7 @@ describe("ChildContainerImpl - scoped port handling", () => {
       lifetime: "scoped",
       factory: () => ({ log: vi.fn() }),
     });
-    const childGraph = GraphBuilder.create().override(overrideAdapter).build();
+    const childGraph = GraphBuilder.forParent(graph).override(overrideAdapter).build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
     expect(() => child.resolve(LoggerPort)).toThrow(ScopeRequiredError);
@@ -615,7 +623,7 @@ describe("ChildContainerImpl - scoped port handling", () => {
       lifetime: "scoped",
       factory: () => ({ log: vi.fn() }),
     });
-    const childGraph = GraphBuilder.create().override(overrideAdapter).build();
+    const childGraph = GraphBuilder.forParent(graph).override(overrideAdapter).build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
     const scope = child.createScope("test");
@@ -631,14 +639,15 @@ describe("ChildContainerImpl - scoped port handling", () => {
 describe("ChildContainerImpl - dynamic hooks runner", () => {
   it("beforeResolve hooks fire in order on child", () => {
     const order: string[] = [];
-    const parent = makeRootContainer();
+    const parentGraph = makeRootGraph();
+    const parent = createContainer({ graph: parentGraph, name: "Root" });
     const transientAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
       lifetime: "transient",
       factory: () => ({ log: vi.fn() }),
     });
-    const childGraph = GraphBuilder.create().override(transientAdapter).build();
+    const childGraph = GraphBuilder.forParent(parentGraph).override(transientAdapter).build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
     child.addHook("beforeResolve", () => order.push("first"));
@@ -650,14 +659,15 @@ describe("ChildContainerImpl - dynamic hooks runner", () => {
 
   it("afterResolve hooks fire in reverse order on child", () => {
     const order: string[] = [];
-    const parent = makeRootContainer();
+    const parentGraph = makeRootGraph();
+    const parent = createContainer({ graph: parentGraph, name: "Root" });
     const transientAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
       lifetime: "transient",
       factory: () => ({ log: vi.fn() }),
     });
-    const childGraph = GraphBuilder.create().override(transientAdapter).build();
+    const childGraph = GraphBuilder.forParent(parentGraph).override(transientAdapter).build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
     child.addHook("afterResolve", () => order.push("first"));

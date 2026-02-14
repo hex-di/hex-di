@@ -83,7 +83,11 @@ describe("parseChildGraph", () => {
     });
 
     // Build a graph with Logger as override and Database as extension
-    const childGraph = GraphBuilder.create().override(loggerAdapter).override(dbAdapter).build();
+    const parentGraph = GraphBuilder.create().provide(loggerAdapter).provide(dbAdapter).build();
+    const childGraph = GraphBuilder.forParent(parentGraph)
+      .override(loggerAdapter)
+      .override(dbAdapter)
+      .build();
 
     const { overrides, extensions } = parseChildGraph(childGraph);
 

@@ -25,7 +25,8 @@ import { Effect } from "../src/effects/constructors.js";
 import type { EffectAny } from "../src/effects/types.js";
 import { createMachineRunner, type MachineSnapshot } from "../src/runner/index.js";
 import { createActivityManager, type ActivityManager } from "../src/activities/index.js";
-import { createDIEffectExecutor, type ScopeResolver } from "../src/integration/di-executor.js";
+import { createDIEffectExecutor } from "../src/integration/di-executor.js";
+import type { ScopeResolver } from "../src/integration/types.js";
 import { FlowMemoryCollector, createTracingRunner } from "../src/tracing/index.js";
 
 // =============================================================================

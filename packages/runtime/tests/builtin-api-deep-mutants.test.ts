@@ -583,8 +583,8 @@ describe("result statistics edge cases", () => {
     const container = createContainer({ graph, name: "Test" });
     const inspector = getInspector(container);
 
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 2 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 2 } as any);
 
     const stats = inspector.getResultStatistics("Logger");
     expect(stats!.errorRate).toBe(0);
@@ -607,13 +607,13 @@ describe("result statistics edge cases", () => {
     const container = createContainer({ graph, name: "Test" });
     const inspector = getInspector(container);
 
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E1",
       timestamp: 1,
     } as any);
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E2",
@@ -642,8 +642,8 @@ describe("result statistics edge cases", () => {
     const inspector = getInspector(container);
 
     // 1 ok, 1 err -> 50% error rate
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
-    inspector.emit({
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E1",
@@ -673,7 +673,7 @@ describe("result statistics edge cases", () => {
     const container = createContainer({ graph, name: "Test" });
     const inspector = getInspector(container);
 
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
 
     const all = inspector.getAllResultStatistics();
     const stats = all.get("Logger")!;
@@ -694,7 +694,7 @@ describe("result statistics edge cases", () => {
     const container = createContainer({ graph, name: "Test" });
     const inspector = getInspector(container);
 
-    inspector.emit({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
+    inspector.emit?.({ type: "result:ok", portName: "Logger", timestamp: 1 } as any);
 
     const stats = inspector.getResultStatistics("Logger");
     expect(stats!.lastError).toBeUndefined();
@@ -714,7 +714,7 @@ describe("result statistics edge cases", () => {
     const container = createContainer({ graph, name: "Test" });
     const inspector = getInspector(container);
 
-    inspector.emit({
+    inspector.emit?.({
       type: "result:err",
       portName: "Logger",
       errorCode: "E1",

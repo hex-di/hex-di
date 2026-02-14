@@ -13,6 +13,6 @@ import type { LoggerInspector } from "./inspector.js";
 export const LoggerInspectorPort = port<LoggerInspector>()({
   name: "LoggerInspector",
   direction: "outbound",
-  category: "infrastructure",
+  category: "logger/inspector",
   tags: ["logging", "observability", "inspection"],
 });

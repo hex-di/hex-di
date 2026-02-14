@@ -355,6 +355,7 @@ describe("createBatchSpanProcessor", () => {
     const processor = createBatchSpanProcessor(errorExporter, {
       maxExportBatchSize: 10,
       scheduledDelayMillis: 5000,
+      maxRetryAttempts: 0,
     });
 
     processor.onEnd(createTestSpan("span1"));

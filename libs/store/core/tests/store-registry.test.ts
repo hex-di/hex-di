@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi } from "vitest";
 import { createStoreRegistry } from "../src/inspection/store-registry.js";
-import type { StoreRegistryEntry, StoreRegistryEvent } from "../src/inspection/store-registry.js";
+import type { StoreRegistryEntry, StoreRegistryEvent } from "../src/types/inspection.js";
 import type { StatePortSnapshot } from "../src/types/inspection.js";
 
 // =============================================================================

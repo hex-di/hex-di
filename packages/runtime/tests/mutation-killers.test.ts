@@ -18,7 +18,12 @@
  * - resolution/hooks-runner.ts
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { port, createAdapter, type LibraryInspector } from "@hex-di/core";
+import {
+  port,
+  createAdapter,
+  type LibraryInspector,
+  type LibraryEventListener,
+} from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
 import { ADAPTER_ACCESS, INTERNAL_ACCESS, HOOKS_ACCESS } from "../src/inspection/symbols.js";
@@ -134,7 +139,6 @@ describe("internal-types type guards (mutation killers)", () => {
         provides: LoggerPort,
         requires: [],
         lifetime: "singleton",
-        factoryKind: "async",
         factory: async () => ({ log: vi.fn() }),
       });
       const result = isAsyncAdapter(adapter);
@@ -169,7 +173,6 @@ describe("internal-types type guards (mutation killers)", () => {
         provides: LoggerPort,
         requires: [],
         lifetime: "singleton",
-        factoryKind: "async",
         factory: async () => ({ log: vi.fn() }),
       });
       expect(() => assertSyncAdapter(adapter, "Logger")).toThrow(AsyncInitializationRequiredError);
@@ -500,8 +503,8 @@ describe("wrappers.ts mutation killers", () => {
       const childGraph = GraphBuilder.create().build();
       const child = container.createChild(childGraph, { name: "Child" });
 
-      expect(child.hasAdapter(LoggerPort)).toBe(true);
-      expect(child.hasAdapter(DatabasePort)).toBe(false);
+      expect(child.has(LoggerPort)).toBe(true);
+      expect(child.has(DatabasePort)).toBe(false);
     });
 
     it("child name and parentName are correct", () => {
@@ -589,7 +592,7 @@ describe("wrappers.ts mutation killers", () => {
           throw new Error("child boom");
         },
       });
-      const childGraph = GraphBuilder.create().override(overrideAdapter).build();
+      const childGraph = GraphBuilder.forParent(graph).override(overrideAdapter).build();
       const child = container.createChild(childGraph, { name: "Child" });
 
       const result = child.tryResolve(LoggerPort);
@@ -780,8 +783,8 @@ describe("factory.ts mutation killers", () => {
       const graph = makeSimpleGraph();
       const container = createContainer({ graph, name: "Test" });
 
-      expect(container.hasAdapter(LoggerPort)).toStrictEqual(true);
-      expect(container.hasAdapter(DatabasePort)).toStrictEqual(false);
+      expect(container.has(LoggerPort)).toStrictEqual(true);
+      expect(container.has(DatabasePort)).toStrictEqual(false);
     });
 
     it("isInitialized returns false before initialize()", () => {
@@ -1259,7 +1262,7 @@ describe("lazy-impl.ts mutation killers", () => {
     });
 
     it("dispose during load waits for load to complete", async () => {
-      let resolveLoad: ((value: any) => void) | undefined;
+      let resolveLoad: (() => void) | undefined;
       const dbAdapter = createAdapter({
         provides: DatabasePort,
         requires: [],
@@ -1271,7 +1274,7 @@ describe("lazy-impl.ts mutation killers", () => {
 
       const lazy = container.createLazyChild(
         () =>
-          new Promise(resolve => {
+          new Promise<any>(resolve => {
             resolveLoad = () => {
               const childGraph = GraphBuilder.create().provide(dbAdapter).build();
               resolve(childGraph);
@@ -1286,7 +1289,7 @@ describe("lazy-impl.ts mutation killers", () => {
       const disposePromise = lazy.dispose();
 
       // Complete the load
-      resolveLoad!();
+      if (resolveLoad) resolveLoad();
 
       await loadPromise.catch(() => {});
       await disposePromise;
@@ -1921,7 +1924,7 @@ describe("library-registry.ts mutation killers", () => {
       name,
       getSnapshot: () => Object.freeze({ status: "ok" }),
       dispose: vi.fn(),
-      subscribe: (listener: (event: unknown) => void) => {
+      subscribe: (listener: LibraryEventListener) => {
         return () => {};
       },
     };
@@ -1949,7 +1952,7 @@ describe("library-registry.ts mutation killers", () => {
       (call: any) => call[0].type === "library-registered"
     );
     expect(registeredEvent).toBeDefined();
-    expect(registeredEvent[0].name).toBe("test-lib");
+    expect((registeredEvent as any)[0].name).toBe("test-lib");
   });
 
   it("unregister function emits library-unregistered event", () => {
@@ -1964,7 +1967,7 @@ describe("library-registry.ts mutation killers", () => {
       (call: any) => call[0].type === "library-unregistered"
     );
     expect(unregisteredEvent).toBeDefined();
-    expect(unregisteredEvent[0].name).toBe("test-lib");
+    expect((unregisteredEvent as any)[0].name).toBe("test-lib");
   });
 
   it("unregister is idempotent", () => {
@@ -2056,7 +2059,7 @@ describe("library-registry.ts mutation killers", () => {
   it("subscribe forwards library events to container", () => {
     const registry = createLibraryRegistry();
     const emitEvent = vi.fn();
-    let capturedListener: ((event: unknown) => void) | undefined;
+    let capturedListener: LibraryEventListener | undefined;
     const lib: LibraryInspector = {
       name: "event-lib",
       getSnapshot: () => Object.freeze({}),
@@ -2069,11 +2072,11 @@ describe("library-registry.ts mutation killers", () => {
     registry.registerLibrary(lib, emitEvent);
 
     // Simulate a library event
-    capturedListener!({ type: "custom-event" });
+    capturedListener!({ type: "custom-event" } as any);
 
     const libraryEvent = emitEvent.mock.calls.find((call: any) => call[0].type === "library");
     expect(libraryEvent).toBeDefined();
-    expect(libraryEvent[0].event).toEqual({ type: "custom-event" });
+    expect((libraryEvent as any)[0].event).toEqual({ type: "custom-event" });
   });
 });
 
@@ -2343,7 +2346,6 @@ describe("async-initializer.ts mutation killers", () => {
         provides: LoggerPort,
         requires: [],
         lifetime: "singleton",
-        factoryKind: "async",
         factory: async () => ({ log: vi.fn() }),
       });
       init.registerAdapter(adapter);
@@ -2363,7 +2365,6 @@ describe("async-initializer.ts mutation killers", () => {
         provides: LoggerPort,
         requires: [],
         lifetime: "singleton",
-        factoryKind: "async",
         factory: async () => ({ log: vi.fn() }),
       });
       init.registerAdapter(adapter);
@@ -2388,7 +2389,6 @@ describe("async-initializer.ts mutation killers", () => {
         provides: LoggerPort,
         requires: [],
         lifetime: "singleton",
-        factoryKind: "async",
         factory: async () => ({ log: vi.fn() }),
       });
       init.registerAdapter(adapter);
@@ -2407,7 +2407,6 @@ describe("async-initializer.ts mutation killers", () => {
         provides: LoggerPort,
         requires: [],
         lifetime: "singleton",
-        factoryKind: "async",
         factory: async () => ({ log: vi.fn() }),
       });
       init.registerAdapter(adapter);
@@ -2427,7 +2426,6 @@ describe("async-initializer.ts mutation killers", () => {
         provides: LoggerPort,
         requires: [],
         lifetime: "singleton",
-        factoryKind: "async",
         factory: async () => ({ log: vi.fn() }),
       });
       init.registerAdapter(adapter);
@@ -2456,14 +2454,12 @@ describe("async-initializer.ts mutation killers", () => {
         provides: LoggerPort,
         requires: [],
         lifetime: "singleton",
-        factoryKind: "async",
         factory: async () => ({ log: vi.fn() }),
       });
       const dbAdapter = createAdapter({
         provides: DatabasePort,
         requires: [LoggerPort] as const,
         lifetime: "singleton",
-        factoryKind: "async",
         factory: async () => ({ query: vi.fn() }),
       });
 
@@ -2530,7 +2526,7 @@ describe("inspection/creation.ts mutation killers", () => {
 
       const loggerEntry = snapshot.singletons.find((s: any) => s.portName === "Logger");
       expect(loggerEntry).toBeDefined();
-      expect(loggerEntry.isResolved).toBe(true);
+      expect((loggerEntry as any).isResolved).toBe(true);
     });
   });
 
@@ -2637,7 +2633,6 @@ describe("async-engine.ts mutation killers", () => {
         provides: LoggerPort,
         requires: [],
         lifetime: "singleton",
-        factoryKind: "async",
         factory: async () => {
           factoryCallCount++;
           return { log: vi.fn() };
@@ -2663,7 +2658,6 @@ describe("async-engine.ts mutation killers", () => {
         provides: LoggerPort,
         requires: [],
         lifetime: "singleton",
-        factoryKind: "async",
         factory: async () => {
           throw new Error("factory boom");
         },
@@ -2701,7 +2695,7 @@ describe("inspection/helpers.ts mutation killers", () => {
         lifetime: "singleton",
         factory: () => ({ log: () => "overridden" }),
       });
-      const childGraph = GraphBuilder.create().override(overrideAdapter).build();
+      const childGraph = GraphBuilder.forParent(graph).override(overrideAdapter).build();
       const child = container.createChild(childGraph, { name: "Child" });
 
       const inspector = (child as any).inspector;
@@ -2821,7 +2815,7 @@ describe("base-impl.ts additional mutation killers", () => {
       const childGraph = GraphBuilder.create().build();
       const child = container.createChild(childGraph, { name: "Child" });
 
-      const parent = child.parent;
+      const parent: any = child.parent;
       expect(typeof parent.resolve).toBe("function");
       expect(typeof parent.resolveAsync).toBe("function");
       expect(typeof parent.createScope).toBe("function");

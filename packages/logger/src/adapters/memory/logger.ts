@@ -11,6 +11,7 @@ import type { LogLevel } from "../../types/log-level.js";
 import type { LogEntry, LogContext } from "../../types/log-entry.js";
 import { shouldLog } from "../../types/log-level.js";
 import { mergeContext } from "../../utils/context.js";
+import { nextSequence } from "../../utils/sequence.js";
 
 /**
  * Extended Logger interface with testing methods.
@@ -51,17 +52,20 @@ class MemoryLoggerImpl implements MemoryLogger {
   private readonly _context: LogContext;
   private readonly _baseAnnotations: Record<string, unknown>;
   private readonly _minLevel: LogLevel;
+  private readonly _maxEntries: number;
 
   constructor(
     entries: LogEntry[],
     context: LogContext = {},
     baseAnnotations: Record<string, unknown> = {},
-    minLevel: LogLevel = "trace"
+    minLevel: LogLevel = "trace",
+    maxEntries: number = 10_000
   ) {
     this._entries = entries;
     this._context = context;
     this._baseAnnotations = baseAnnotations;
     this._minLevel = minLevel;
+    this._maxEntries = maxEntries;
   }
 
   trace(message: string, annotations?: Record<string, unknown>): void {
@@ -103,7 +107,8 @@ class MemoryLoggerImpl implements MemoryLogger {
       this._entries,
       mergeContext(this._context, context),
       this._baseAnnotations,
-      this._minLevel
+      this._minLevel,
+      this._maxEntries
     );
   }
 
@@ -115,7 +120,13 @@ class MemoryLoggerImpl implements MemoryLogger {
     for (const key in annotations) {
       merged[key] = annotations[key];
     }
-    return new MemoryLoggerImpl(this._entries, this._context, merged, this._minLevel);
+    return new MemoryLoggerImpl(
+      this._entries,
+      this._context,
+      merged,
+      this._minLevel,
+      this._maxEntries
+    );
   }
 
   isLevelEnabled(level: LogLevel): boolean {
@@ -194,11 +205,15 @@ class MemoryLoggerImpl implements MemoryLogger {
       level,
       message,
       timestamp: Date.now(),
+      sequence: nextSequence(),
       context: this._context,
       annotations: mergedAnnotations,
       error,
     };
 
+    if (this._maxEntries > 0 && this._entries.length >= this._maxEntries) {
+      this._entries.shift();
+    }
     this._entries.push(entry);
   }
 }
@@ -211,6 +226,10 @@ class MemoryLoggerImpl implements MemoryLogger {
  * @param minLevel - Minimum log level (default: "trace")
  * @returns A new MemoryLogger instance
  */
-export function createMemoryLogger(minLevel: LogLevel = "trace"): MemoryLogger {
-  return new MemoryLoggerImpl([], {}, {}, minLevel);
+export function createMemoryLogger(
+  minLevel: LogLevel = "trace",
+  options?: { maxEntries?: number }
+): MemoryLogger {
+  const maxEntries = options?.maxEntries ?? 10_000;
+  return new MemoryLoggerImpl([], {}, {}, minLevel, maxEntries);
 }

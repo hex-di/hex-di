@@ -173,8 +173,20 @@ describe("buildTypedSnapshotFromInternal", () => {
   it("converts singletons with proper resolvedAt fallback", () => {
     const snapshot = makeRuntimeSnapshot({
       singletons: [
-        { portName: "A", isResolved: true, resolvedAt: 100, lifetime: "singleton" },
-        { portName: "B", isResolved: false, resolvedAt: undefined, lifetime: "singleton" },
+        {
+          portName: "A",
+          isResolved: true,
+          resolvedAt: 100,
+          lifetime: "singleton",
+          resolutionOrder: 0,
+        },
+        {
+          portName: "B",
+          isResolved: false,
+          resolvedAt: undefined,
+          lifetime: "singleton",
+          resolutionOrder: undefined,
+        },
       ],
     });
     const state = makeInternalState();

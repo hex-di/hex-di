@@ -15,6 +15,12 @@ export default tseslint.config(
       },
     },
   },
+  {
+    files: ["src/async/result-async.ts"],
+    rules: {
+      "@typescript-eslint/unified-signatures": "off",
+    },
+  },
   ...testConfig,
   ...typeLevelTestConfig,
 );

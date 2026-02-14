@@ -1,21 +1,18 @@
 import type { Result, ResultAsync } from "./types.js";
+import { RESULT_BRAND } from "./brand.js";
 
 /**
  * Standalone type guard: checks if an unknown value is a Result.
- * Uses structural checking — no instanceof.
+ *
+ * Uses a Symbol brand check -- only objects created by ok() or err() pass.
+ * This is stronger than structural checking and eliminates false positives
+ * from objects that happen to share the { _tag, value/error } shape.
  */
 export function isResult(value: unknown): value is Result<unknown, unknown> {
   if (value === null || value === undefined || typeof value !== "object") {
     return false;
   }
-  // After `in` check, TS narrows value to have the property
-  if ("_tag" in value && "value" in value && value._tag === "Ok") {
-    return true;
-  }
-  if ("_tag" in value && "error" in value && value._tag === "Err") {
-    return true;
-  }
-  return false;
+  return RESULT_BRAND in value;
 }
 
 /**

@@ -14,6 +14,7 @@ import type { Lifetime } from "@hex-di/core";
 import type { ResolutionHooks, ResolutionHookContext, ContainerKind } from "./hooks.js";
 import type { InheritanceMode } from "../types.js";
 import type { MemoMap } from "../util/memo-map.js";
+import { monotonicNow } from "../util/monotonic-time.js";
 
 // =============================================================================
 // Types
@@ -164,10 +165,12 @@ export class HooksRunner {
     );
 
     if (this.hooks.beforeResolve !== undefined) {
-      this.hooks.beforeResolve(context);
+      // Freeze a snapshot for beforeResolve to prevent external mutation
+      const snapshot = Object.freeze({ ...context });
+      this.hooks.beforeResolve(snapshot as ResolutionHookContext);
     }
 
-    const startTime = Date.now();
+    const startTime = monotonicNow();
     this._parentPorts.push(port);
     this._parentStartTimes.push(startTime);
 
@@ -217,10 +220,12 @@ export class HooksRunner {
     );
 
     if (this.hooks.beforeResolve !== undefined) {
-      this.hooks.beforeResolve(context);
+      // Freeze a snapshot for beforeResolve to prevent external mutation
+      const snapshot = Object.freeze({ ...context });
+      this.hooks.beforeResolve(snapshot as ResolutionHookContext);
     }
 
-    const startTime = Date.now();
+    const startTime = monotonicNow();
     this._parentPorts.push(port);
     this._parentStartTimes.push(startTime);
 
@@ -288,9 +293,10 @@ export class HooksRunner {
     this._parentStartTimes.pop();
 
     if (this.hooks.afterResolve !== undefined) {
-      // Mutate in-place instead of creating new object via spread
-      context.duration = Date.now() - startTime;
+      // Mutate in-place, then freeze before handing to external code
+      context.duration = monotonicNow() - startTime;
       context.error = error;
+      Object.freeze(context);
       this.hooks.afterResolve(context as ResolutionHookContext);
     }
   }

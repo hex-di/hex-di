@@ -21,7 +21,7 @@ import {
   createLinkedDerivedPort,
 } from "../../src/ports/index.js";
 import { ResultAsync } from "@hex-di/result";
-import type { StoreRegistry } from "../../src/inspection/store-registry.js";
+import type { StoreRegistry } from "../../src/types/inspection.js";
 import type { StoreInspectorInternal } from "../../src/types/inspection.js";
 
 // =============================================================================

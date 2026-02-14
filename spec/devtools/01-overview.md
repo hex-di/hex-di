@@ -2,9 +2,25 @@
 
 ## 1. Overview
 
-`@hex-di/devtools` is an in-app overlay panel for inspecting HexDI applications at runtime. It renders as a toggleable bottom panel with a floating trigger button -- the same pattern used by React Query DevTools, Jotai DevTools, and TanStack Router DevTools. Drop a single `<HexDevTools />` component into your React tree, and it provides visual access to everything the container knows about itself: registered services, dependency graphs, scope hierarchies, resolution traces, library-specific state, and the unified snapshot.
+`@hex-di/devtools` is a standalone web dashboard for inspecting HexDI applications at runtime. It runs as its own process on a dedicated port (default `localhost:4200`) and connects to target applications over WebSocket. Target apps -- whether React frontends or Node.js backends -- install a lightweight client library (`@hex-di/devtools-client`) that wraps the container's self-knowledge and streams it to the dashboard.
 
-The devtools overlay consumes the existing inspection infrastructure built into `@hex-di/core` and `@hex-di/runtime`:
+Launch the dashboard with `npx @hex-di/devtools`. Connect a target app by adding a few lines of code:
+
+```typescript
+// In a Node.js app
+import { connectDevTools } from "@hex-di/devtools-client";
+connectDevTools(container.inspector, { appName: "api-server", appType: "node" });
+
+// In a React app
+import { DevToolsClientProvider } from "@hex-di/devtools-client/react";
+<DevToolsClientProvider config={{ appName: "web-app", appType: "react" }}>
+  <App />
+</DevToolsClientProvider>
+```
+
+The dashboard provides visual access to everything the container knows about itself: registered services, dependency graphs, scope hierarchies, resolution traces, library-specific state, and the unified snapshot. Multiple apps can connect simultaneously, with a connection sidebar for switching between them.
+
+The devtools consumes the existing inspection infrastructure built into `@hex-di/core` and `@hex-di/runtime`:
 
 - **InspectorAPI** (`container.inspector`) -- pull-based queries for container snapshots, scope trees, adapter info, graph data, result statistics, and library inspector registry
 - **UnifiedSnapshot** -- aggregated view combining `ContainerSnapshot` with all registered `LibraryInspector` snapshots
@@ -12,52 +28,51 @@ The devtools overlay consumes the existing inspection infrastructure built into 
 - **TracingAPI** -- resolution trace entries with filtering, statistics, and real-time subscription
 - **LibraryInspector protocol** -- the extensible protocol that ecosystem libraries (Flow, Store, Query, Saga, Agent, Logger) implement to report their domain-specific state
 
-The devtools does not add new inspection capabilities to the container. It visualizes the self-knowledge that already exists. Every panel in the devtools maps directly to an `InspectorAPI` method or a `LibraryInspector` snapshot.
+The devtools does not add new inspection capabilities to the container. It visualizes the self-knowledge that already exists. Every panel in the dashboard maps directly to an `InspectorAPI` method or a `LibraryInspector` snapshot.
 
 ### 1.1 Goals
 
-1. **Zero-config** -- Drop `<HexDevTools />` into your component tree inside an `InspectorProvider`. No configuration, no port registration, no adapter wiring. The devtools discovers available data automatically from the `InspectorAPI`.
+1. **Zero-config client** -- Install `@hex-di/devtools-client`, call `connectDevTools(inspector, config)`. No port registration, no adapter wiring. The client discovers available data automatically from the `InspectorAPI` and streams it to the dashboard.
 
-2. **Compile-time aware** -- The typed `LibraryInspector` protocol (Section 4) ensures that library snapshot shapes are known to TypeScript at build time. DevTools panels can render library-specific data with full type safety, not just `Record<string, unknown>`.
+2. **Framework-agnostic client** -- The transport client works in React, Node.js, Hono, Express, or any JavaScript environment. It has no React dependency at its core. A `DevToolsClientProvider` React component is provided as an optional convenience wrapper.
 
-3. **Plugin-based panels** -- Each registered `LibraryInspector` gets its own panel tab in the devtools. The container panel, graph panel, scope tree panel, and tracing panel are built-in. Library panels are auto-discovered from `inspector.getLibraryInspectors()`.
+3. **Multi-target inspection** -- Connect multiple applications to a single dashboard simultaneously. A React frontend and its Node.js backend can both connect, giving a unified view of the entire system's DI state.
 
-4. **Production-safe** -- The entire `@hex-di/devtools` package tree-shakes away when the component is not rendered. The inspection infrastructure (`InspectorAPI`, hooks) remains available for MCP and other diagnostic consumers, but the visual overlay adds zero bytes to production bundles when conditionally excluded.
+4. **Compile-time aware** -- The typed `LibraryInspector` protocol (Section 4) ensures that library snapshot shapes are known to TypeScript at build time. DevTools panels can render library-specific data with full type safety, not just `Record<string, unknown>`.
 
-5. **Framework-aligned** -- Pure React components consuming the existing `@hex-di/react` hooks (`useInspector`, `useSnapshot`, `useScopeTree`, `useUnifiedSnapshot`, `useTracingSummary`). No custom state management, no external dependencies beyond React itself.
+5. **Plugin-based panels** -- Each registered `LibraryInspector` gets its own panel in the dashboard. The container panel, graph panel, scope tree panel, and tracing panel are built-in. Library panels are auto-discovered from the inspector data arriving over WebSocket.
 
-6. **Self-contained styling** -- All styles are inline or CSS-in-JS (no external stylesheets, no CSS modules, no build tool requirements). The devtools overlay renders in an isolated layer that does not interfere with application styles.
+6. **Standalone application** -- The dashboard runs as its own process, completely decoupled from the target application's framework, build system, and runtime. No React dependency in the target app (unless it's already a React app). No style conflicts, no z-index battles, no bundle size impact on the target app.
 
 ### 1.2 Non-Goals (v0.1.0)
 
-1. **Not a browser extension** -- The devtools is an in-app overlay, not a Chrome/Firefox extension. A browser extension that communicates via `DevToolsBridge` and `window.postMessage` is a future concern.
+1. **Not a browser extension** -- The devtools is a standalone dashboard, not a Chrome/Firefox extension. A browser extension that communicates via the same WebSocket protocol is a future concern.
 
 2. **Not time-travel debugging** -- Replaying past states requires the Store library's action history and Flow's serialization. This is deferred until those libraries ship their inspectors.
 
 3. **Not a performance profiler** -- The tracing panel shows resolution timelines and statistics, but it is not a flame graph profiler. Deeper performance analysis is deferred.
 
-4. **Not remote inspection** -- Remote inspection over the network is MCP's responsibility (see VISION.md Phase 4). DevTools runs in the same browser tab as the application.
-
-5. **Not network/HTTP inspection** -- HTTP request/response monitoring is outside DI scope. Query library panels may show fetch status, but raw network traffic is not displayed.
-
-6. **Not a standalone/remote dashboard** -- DevTools 0.1.0 is in-process only: it runs in the same browser tab as the application. A remote standalone mode (WebSocket/SSE transport as described in VISION.md Phase 4) is deferred to a future `@hex-di/devtools-server` package. See Appendix C8 for rationale.
+4. **Not network/HTTP inspection** -- HTTP request/response monitoring is outside DI scope. Query library panels may show fetch status, but raw network traffic is not displayed.
 
 ### 1.3 When to Use
 
-| Use DevTools                                                        | Do Not Use DevTools                              |
-| ------------------------------------------------------------------- | ------------------------------------------------ |
-| During development to understand container state                    | In production bundles (tree-shake it out)        |
-| To debug resolution failures and missing adapters                   | For automated monitoring (use MCP/OTel instead)  |
-| To visualize dependency graph topology                              | For network traffic analysis                     |
-| To monitor library state (Flow machines, Store values, Query cache) | For performance profiling (use browser DevTools) |
-| To inspect scope hierarchies and lifecycle                          | For CI/CD pipeline inspection                    |
-| To trace resolution timing and cache hit rates                      | For log aggregation (use Logger inspectors)      |
+| Use DevTools                                                        | Do Not Use DevTools                               |
+| ------------------------------------------------------------------- | ------------------------------------------------- |
+| During development to understand container state                    | In production bundles (tree-shake the client out) |
+| To debug resolution failures and missing adapters                   | For automated monitoring (use MCP/OTel instead)   |
+| To visualize dependency graph topology                              | For network traffic analysis                      |
+| To monitor library state (Flow machines, Store values, Query cache) | For performance profiling (use browser DevTools)  |
+| To inspect scope hierarchies and lifecycle                          | For CI/CD pipeline inspection                     |
+| To trace resolution timing and cache hit rates                      | For log aggregation (use Logger inspectors)       |
+| To inspect Node.js backend container state from a browser           | For production health dashboards (use Grafana)    |
 
 ### 1.4 Key Insight
 
 VISION.md describes two diagnostic interfaces for the self-aware application: the **diagnostic port** (MCP/A2A -- for AI agents and external tools) and the **dashboard** (for human developers). DevTools is the dashboard.
 
-Both consume the same self-knowledge infrastructure. The `InspectorAPI` and `LibraryInspector` protocol are the shared data layer. MCP serializes this data as JSON resources and tools for AI consumption. DevTools renders it as interactive visual panels for human consumption. Neither adds new inspection capabilities -- they are both consumers of the container's existing self-knowledge.
+All three consumers -- MCP, the DevTools client, and the DevTools dashboard -- consume the same self-knowledge infrastructure. The `InspectorAPI` and `LibraryInspector` protocol are the shared data layer. MCP serializes this data as JSON resources and tools for AI consumption. The DevTools client serializes and streams it over WebSocket. The DevTools dashboard renders it as interactive visual panels for human consumption. None of them add new inspection capabilities -- they are all consumers of the container's existing self-knowledge.
+
+The MCP Server in the diagram below is built with the `@hex-di/mcp` framework (see [`spec/mcp/`](../mcp/README.md)). `@hex-di/mcp` provides the typed port definitions (`McpResourcePort<T>`, `McpToolPort<I,O>`, `McpPromptPort<A>`), adapter contracts, server factory (`createMcpServer()`), and transport abstractions. The DevTools standalone server uses this framework to expose its 34 resources, 18 tools, and 5 prompts for container/library inspection as MCP capabilities alongside its WebSocket dashboard.
 
 ```
                     +------------------------------------------+
@@ -66,35 +81,48 @@ Both consume the same self-knowledge infrastructure. The `InspectorAPI` and `Lib
                     |  InspectorAPI    LibraryInspector[]       |
                     |  ContainerGraphData   TracingAPI          |
                     |  UnifiedSnapshot   ResultStatistics       |
-                    +------------------+-----------------------+
-                                       |
-                          +------------+------------+
-                          |                         |
-                +---------v---------+     +---------v---------+
-                |    MCP Server     |     |   DevTools Panel   |
-                |                   |     |                    |
-                |  AI agents query  |     |  Humans see live   |
-                |  structured JSON  |     |  interactive UI    |
-                |  resources        |     |  panels            |
-                |                   |     |                    |
-                |  (the OBD-II port)|     |  (the dashboard)   |
-                +-------------------+     +--------------------+
+                    +------+---------------+-------------------+
+                           |               |
+              +------------+       +-------+--------+
+              |                    |                |
+    +---------v---------+  +------v------+  +------v--------------+
+    |    MCP Server     |  |  DevTools   |  |  DevTools Dashboard |
+    |                   |  |  Client     |  |                     |
+    |  AI agents query  |  |  Serializes |  |  Receives data via  |
+    |  structured JSON  |  |  & streams  |  |  WebSocket, renders |
+    |  resources        |  |  over WS    |  |  interactive panels |
+    |                   |  |             |  |                     |
+    |  (the OBD-II port)|  | (the cable) |  |  (the dashboard)    |
+    +-------------------+  +-------------+  +---------------------+
 ```
 
 ### 1.5 Scope of Version 0.1.0
 
 **Ships in 0.1.0:**
 
-- `<HexDevTools />` main component with toggleable bottom panel
-- Floating trigger button with position configuration
-- Resizable panel shell with drag handle
-- Tab bar for panel navigation
-- Built-in panels: Container overview, Dependency graph, Scope tree, Tracing timeline, Event log
-- Auto-discovered library panels from `LibraryInspector` registry
+- `@hex-di/devtools` standalone dashboard application
+- CLI entry point: `npx @hex-di/devtools` (starts WebSocket server + Vite dev server)
+- Built-in WebSocket server for receiving client connections
+- Connection sidebar for managing multiple connected apps
+- Full-page dashboard layout with sidebar navigation
+- Built-in panels: Unified Overview, Container overview, Dependency graph, Scope tree, Tracing timeline, Health & Diagnostics, Event log
+- Auto-discovered library panels from `LibraryInspector` data
+- Instance identification (instanceId per tab/process, ConnectionMetadata, displayLabel)
+- Subscription-based push protocol (subscribe/unsubscribe alongside request-response)
+- Dedicated library panels via panelModule dynamic import (Flow statechart, Query cache table, Store state inspector, Saga pipeline, Logger log stream)
+- localStorage/sessionStorage split for multi-dashboard-tab support
 - Light and dark themes with system preference detection
 - Design token system for consistent styling
-- Keyboard shortcut to toggle panel (configurable, default: Ctrl+Shift+D)
-- Panel state persistence via `localStorage` (open/closed, active tab, panel height)
+- Keyboard shortcuts for panel navigation
+- Dashboard state persistence: global prefs in localStorage (theme, sidebar width), per-tab navigation in sessionStorage (active connection, active panel)
+
+- `@hex-di/devtools-client` transport library
+- `connectDevTools()` function for Node.js / plain JS usage
+- `DevToolsClientProvider` React component for React usage
+- Auto-reconnection with configurable interval
+- Message buffering during disconnection (configurable buffer size)
+- Instance identification: auto-generated instanceId + metadata (URL/title for browser, PID/argv for Node.js)
+- Inspector event subscription and streaming
 
 **Deferred to future versions:**
 
@@ -119,39 +147,42 @@ VISION.md defines MCP as the OBD-II diagnostic port -- the standardized interfac
 
 This separation means:
 
-- DevTools never bypasses the `InspectorAPI`. It calls the same methods that MCP would call.
-- DevTools never stores its own copy of application state. It subscribes to inspector events and re-renders.
+- DevTools never bypasses the `InspectorAPI`. The client calls the same methods that MCP would call.
+- DevTools never stores its own copy of application state. The client subscribes to inspector events and streams them.
 - DevTools can be removed without losing any diagnostic capability. MCP, OTel export, and programmatic inspection all continue to work.
 
 **Principle 2: Every Library Has a Voice**
 
-Each library that implements the `LibraryInspector` protocol gets its own dedicated panel tab in the devtools. The devtools does not interpret or transform library data. It provides a rendering surface and lets each library present itself.
+Each library that implements the `LibraryInspector` protocol gets its own dedicated panel in the dashboard. The devtools does not interpret or transform library data. It provides a rendering surface and lets each library present itself.
 
-When `@hex-di/flow` registers a `FlowInspector`, the devtools discovers it via `inspector.getLibraryInspectors()` and renders a "Flow" tab. When `@hex-di/query` registers a `QueryInspector`, a "Query" tab appears. Libraries that are not installed produce no tabs. The panel set is dynamic and reflects the actual libraries registered with the container.
+When `@hex-di/flow` registers a `FlowInspector`, the client streams its snapshot to the dashboard, which discovers it and renders a "Flow" panel. When `@hex-di/query` registers a `QueryInspector`, a "Query" panel appears. Libraries that are not installed produce no panels. The panel set is dynamic and reflects the actual libraries registered with each connected container.
 
-For built-in panels (Container, Graph, Scope Tree, Tracing), the devtools has first-party rendering logic. For library panels, it renders the library's snapshot data in a generic key-value explorer with the option for libraries to provide custom panel components via a `renderPanel` method on their inspector.
+For built-in panels (Container, Graph, Scope Tree, Tracing), the dashboard has first-party rendering logic. For library panels, it renders the library's snapshot data in a generic key-value explorer with the option for libraries to provide custom panel components.
+
+Beyond the generic key-value explorer, each library can ship a dedicated panel component at a `/devtools` entry point (e.g., `@hex-di/flow/devtools`). The `LibraryInspector` protocol's `panelModule` field tells the dashboard which module to dynamically import. The Flow library provides a statechart visualizer, Query provides a cache table (like TanStack Query DevTools), Store provides a state inspector with diff viewer (like Redux DevTools), Saga provides a pipeline visualization, and Logger provides a structured log stream. Libraries that don't provide a `panelModule` fall back to the generic tree view.
 
 **Principle 3: Compile-Time Truth**
 
 The typed `LibraryInspector` protocol (Section 4) ensures that TypeScript knows at build time which libraries are inspectable and what shape their snapshots take. This is not just a runtime convenience -- it is a compile-time contract.
 
-When a developer registers a `FlowInspector` with the container, TypeScript knows the snapshot contains `machineCount`, `machines`, `healthEvents`. DevTools panels can render these fields with full type inference. No `unknown` casting, no runtime shape discovery, no "hope the data looks right" rendering.
+When a developer registers a `FlowInspector` with the container, TypeScript knows the snapshot contains `machineCount`, `machines`, `healthEvents`. The devtools-client serializes these fields with known shapes. The dashboard deserializes and renders them with full type inference. No `unknown` casting, no runtime shape discovery, no "hope the data looks right" rendering.
 
-**Principle 4: Zero Production Cost**
+**Principle 4: Zero Cost = Separate Process**
 
-The `@hex-di/devtools` package is a React component library with no side effects at import time. If `<HexDevTools />` is not rendered (e.g., behind a `process.env.NODE_ENV === 'development'` check or a dynamic import), the entire package tree-shakes away from production bundles.
+The DevTools dashboard runs as a separate process, not embedded in the target application. This provides true zero-cost inspection:
 
-The inspection infrastructure (`InspectorAPI`, `useSnapshot`, `useUnifiedSnapshot`) remains in production because it serves other consumers (MCP, programmatic inspection, health checks). But the visual overlay -- components, themes, visualizations, styles -- adds zero bytes when not used.
+- The dashboard's React components, theme system, visualization libraries, and WebSocket server add zero bytes to the target application's bundle.
+- The `@hex-di/devtools-client` is the only dependency added to the target app. It is lightweight (serialization + WebSocket transport, no UI code).
+- In production, excluding `connectDevTools()` (or guarding it with `process.env.NODE_ENV`) removes all devtools overhead. The inspection infrastructure (`InspectorAPI`, hooks) remains available for MCP and other diagnostic consumers.
+- No style conflicts, no z-index battles, no React version conflicts, no SSR issues.
 
-**Principle 5: Composition Over Configuration**
+**Principle 5: Transport-Agnostic Architecture**
 
-DevTools follows the same architectural pattern as the rest of HexDI: ports and adapters. Each panel is conceptually an adapter that provides a visual representation of a port's inspection data.
+The dashboard consumes data through a `RemoteInspectorAPI` that mirrors the local `InspectorAPI` interface. The panels don't know (or care) whether their data comes from a local in-process inspector or a remote WebSocket connection. This architecture means:
 
-- The `InspectorAPI` is the "port" -- it defines what data is queryable.
-- Each panel is an "adapter" -- it defines how that data is rendered.
-- The panel shell is the "container" -- it manages panel lifecycle and tab navigation.
-
-This means new panels can be added by registering new `LibraryInspector` instances with the container. No devtools configuration changes are needed.
+- The same panel components could be reused in a future in-app overlay mode.
+- Different transport mechanisms (WebSocket, SSE, HTTP polling) could be swapped without changing panel code.
+- The `RemoteInspectorAPI` adapter is the single integration point between transport and UI.
 
 ### 2.2 Nervous System Mapping
 
@@ -169,116 +200,104 @@ The Event Log Panel is cross-cutting: it captures nerve impulses from every cate
 The Unified Overview Panel (Section 13) and Health & Diagnostics Panel (Section 14) sit at the convergence point described in VISION.md §5: they synthesize data from all nerve categories into a single diagnostic surface.
 
 ```
-                         ┌─────────────────────────┐
-                         │    Diagnostic Ports      │
-                         │  MCP Server    DevTools  │
-                         └────────────┬────────────┘
-                                      │
-                         ┌────────────▼────────────┐
-                         │  Central Nerve Cluster   │
-                         │  ┌─────────────────────┐ │
-                         │  │ Container Panel     │ │
-                         │  │ Graph Panel         │ │
-                         │  │ Scope Tree Panel    │ │
-                         │  └─────────────────────┘ │
-                         └─────┬──────┬──────┬─────┘
-                               │      │      │
-               ┌───────────────┘      │      └───────────────┐
-               │                      │                      │
-    ┌──────────▼──────────┐ ┌────────▼────────┐ ┌──────────▼──────────┐
-    │   Sensory Nerves    │ │  Motor Nerves   │ │   Reflex Arcs       │
-    │                     │ │                 │ │                     │
-    │  Tracing Panel      │ │  Store Panel    │ │  Saga Panel         │
-    │  Query Panel        │ │  Agent Panel    │ │  Flow Panel         │
-    │  Logger Panel       │ │                 │ │                     │
-    └─────────────────────┘ └─────────────────┘ └─────────────────────┘
-               │                      │                      │
-               └──────────────────────┼──────────────────────┘
-                                      │
-                         ┌────────────▼────────────┐
-                         │  Cross-Cutting Panels    │
-                         │  Event Log (all signals) │
-                         │  Overview (convergence)  │
-                         │  Health (diagnostics)    │
-                         └─────────────────────────┘
+                         +---------------------------+
+                         |    Diagnostic Consumers    |
+                         |  MCP   Client   Dashboard  |
+                         +-------------+-------------+
+                                       |
+                         +-------------v-------------+
+                         |  Central Nerve Cluster     |
+                         |  +---------------------+  |
+                         |  | Container Panel     |  |
+                         |  | Graph Panel         |  |
+                         |  | Scope Tree Panel    |  |
+                         |  +---------------------+  |
+                         +-----+------+------+-------+
+                               |      |      |
+               +---------------+      |      +---------------+
+               |                      |                      |
+    +----------v----------+ +---------v--------+ +-----------v----------+
+    |   Sensory Nerves    | |  Motor Nerves    | |   Reflex Arcs        |
+    |                     | |                  | |                      |
+    |  Tracing Panel      | |  Store Panel     | |  Saga Panel          |
+    |  Query Panel        | |  Agent Panel     | |  Flow Panel          |
+    |  Logger Panel       | |                  | |                      |
+    +---------------------+ +------------------+ +----------------------+
+               |                      |                      |
+               +----------------------+----------------------+
+                                      |
+                         +------------v-------------+
+                         |  Cross-Cutting Panels     |
+                         |  Event Log (all signals)  |
+                         |  Overview (convergence)   |
+                         |  Health (diagnostics)     |
+                         +---------------------------+
 ```
 
 ### 2.3 Architecture Overview
 
 ```
-+----------------------------------------------------------------------+
-|                        APPLICATION LAYER                              |
-|                                                                       |
-|  function App() {                                                     |
-|    return (                                                           |
-|      <HexDiContainerProvider container={container}>                   |
-|        <InspectorProvider inspector={container.inspector}>            |
-|          <MainContent />                                              |
-|          <HexDevTools />    <-- Single line to add devtools           |
-|        </InspectorProvider>                                           |
-|      </HexDiContainerProvider>                                        |
-|    );                                                                 |
-|  }                                                                    |
-|                                                                       |
-+-------------------------------+--------------------------------------+
-                                |
-                  renders as    |
-                                v
-+-------------------------------+--------------------------------------+
-|                                                                       |
-|  +------------------------------------------------------------------+|
-|  |                    Application Content                            ||
-|  |                                                                    ||
-|  |  (Your app renders here, unaffected by devtools)                  ||
-|  |                                                                    ||
-|  +------------------------------------------------------------------+|
-|  +------------------------------------------------------------------+|
-|  |  HexDI DevTools                                          [_][X]  ||
-|  |  +------+-------+--------+--------+--------+--------+           ||
-|  |  | Home | Graph | Scopes | Traces | Flow   | Events |           ||
-|  |  +------+-------+--------+--------+--------+--------+           ||
-|  |                                                                    ||
-|  |  [Active panel content rendered here]                             ||
-|  |                                                                    ||
-|  |  - Container overview with phase, singleton count, scope count    ||
-|  |  - OR dependency graph visualization                              ||
-|  |  - OR scope tree hierarchy                                        ||
-|  |  - OR tracing timeline with resolution spans                      ||
-|  |  - OR library-specific panel (auto-discovered)                    ||
-|  |  - OR real-time event log                                         ||
-|  |                                                                    ||
-|  +------------------------------------------------------------------+|
-|                                                         [HexDI Logo] | <-- Trigger button
-+----------------------------------------------------------------------+
+Target Application(s)                      DevTools Dashboard
+(React / Node.js / Hono / Express)         (localhost:4200)
+
++---------------------------------------+  +---------------------------------------+
+|                                       |  |                                       |
+|  +--------+    @hex-di/devtools-client|  |  @hex-di/devtools                     |
+|  |Container|                          |  |                                       |
+|  |  .inspector                        |  |  +---+---------------------------+    |
+|  |  InspectorAPI                      |  |  |   | Connection Header         |    |
+|  +----+---+                           |  |  | S |  app: "api-server" (node) |    |
+|       |                               |  |  | I |  status: connected        |    |
+|       v                               |  |  | D +---------------------------+    |
+|  +----+---+                           |  |  | E |                           |    |
+|  |connectDevTools()                   |  |  | B | Active Panel Content      |    |
+|  |  subscribes to events              |  |  | A |                           |    |
+|  |  serializes snapshots    WebSocket |  |  | R | - Container overview      |    |
+|  |  buffers on disconnect  ---------> |  |  |   | - Dependency graph        |    |
+|  +--------+                           |  |  | A | - Scope tree             |    |
+|           |                           |  |  | P | - Tracing timeline       |    |
+|           v                           |  |  | P | - Library panels         |    |
+|  Auto-reconnection                    |  |  | S | - Event log              |    |
+|  on disconnect                        |  |  |   |                           |    |
+|                                       |  |  +---+---------------------------+    |
++---------------------------------------+  +---------------------------------------+
 ```
 
 ### 2.4 Data Flow
 
 ```
-  InspectorAPI                @hex-di/react hooks           DevTools panels
-  (pull + push)               (reactive bridge)             (visual rendering)
-       |                           |                              |
-       v                           v                              v
-  +----------+              +--------------+              +---------------+
-  | inspector|  subscribe   | useSnapshot  |  re-render   | ContainerPanel|
-  | .get     |------------->| useScopeTree |------------->| GraphPanel    |
-  | Snapshot |   events     | useUnified   |   on state   | ScopePanel    |
-  | .get     |              | Snapshot     |   change     | TracingPanel  |
-  | ScopeTree|              | useTracing   |              | LibraryPanel  |
-  | .get     |              | Summary      |              | EventLogPanel |
-  | Unified  |              | useInspector |              +---------------+
-  | Snapshot |              +--------------+
-  | .get     |
-  | GraphData|     Library inspectors
-  | .get     |     also flow through
-  | Library  |     getLibraryInspectors()
-  | Inspector|     and getUnifiedSnapshot()
-  +----------+
+  Target App                     Transport                 Dashboard
+  (InspectorAPI)                 (devtools-client)          (RemoteInspectorAPI -> Panels)
+       |                              |                          |
+       v                              v                          v
+  +----------+                 +--------------+           +---------------+
+  | inspector|  subscribe     | connectDev   |  WebSocket | RemoteInspect |
+  | .get     |--------------->| Tools()      |---------->| orAPI         |
+  | Snapshot |   events       |              |  messages  |               |
+  | .get     |                | serializes   |           | useRemote     |
+  | ScopeTree|  pull on event | snapshots,   |           | Snapshot()    |
+  | .get     |--------------->| events,      |---------->| useRemote     |
+  | Unified  |                | graph data   |           | ScopeTree()   |
+  | Snapshot |                |              |           | useRemote     |
+  | .get     |                | buffers on   |           | UnifiedSnap() |
+  | GraphData|                | disconnect   |           | useConnections|
+  | .get     |                |              |           |  ()           |
+  | Library  |                | reconnects   |           +-------+-------+
+  | Inspector|                | automatically|                   |
+  +----------+                +--------------+                   v
+                                                          +---------------+
+                                                          | ContainerPanel|
+                                                          | GraphPanel    |
+                                                          | ScopePanel    |
+                                                          | TracingPanel  |
+                                                          | LibraryPanel  |
+                                                          | EventLogPanel |
+                                                          +---------------+
 ```
 
-All data flows through the existing `InspectorAPI` and `@hex-di/react` hooks. DevTools adds no new data sources, no new subscriptions to the container, and no new event types. It is a pure consumer of the inspection infrastructure.
+The devtools-client subscribes to the target app's `InspectorAPI` events and performs pull queries when events fire. It serializes the data as JSON and streams it over WebSocket to the dashboard. The dashboard's `RemoteInspectorAPI` reconstructs the inspector interface from the incoming messages, and the dashboard's React hooks consume it identically to how the `@hex-di/react` hooks consume a local `InspectorAPI`.
 
-**Shared data contract with Hono diagnostic routes**: The `@hex-di/hono` integration exposes the same `InspectorAPI` data through HTTP endpoints (`/hexdi/health`, `/hexdi/snapshot`, `/hexdi/ports`, `/hexdi/scopes`, `/hexdi/graph`, `/hexdi/unified`). DevTools panels and Hono diagnostic routes consume the same underlying methods (`inspector.getSnapshot()`, `inspector.getScopeTree()`, `inspector.getGraphData()`, `inspector.getUnifiedSnapshot()`). This shared contract means any data visible in DevTools is also available programmatically through Hono routes, and vice versa. The future REST Diagnostic API (Phase 4) will formalize this alignment.
+**Shared data contract with Hono diagnostic routes**: The `@hex-di/hono` integration exposes the same `InspectorAPI` data through HTTP endpoints (`/hexdi/health`, `/hexdi/snapshot`, `/hexdi/ports`, `/hexdi/scopes`, `/hexdi/graph`, `/hexdi/unified`). DevTools, Hono routes, and MCP all consume the same underlying methods. This shared contract means any data visible in DevTools is also available programmatically through Hono routes and MCP resources.
 
 ### 2.5 Before and After
 
@@ -306,13 +325,21 @@ Developer: "Why did this resolution fail?"
 Developer: "What's the Flow machine state?"
   -> Resolve the FlowPort manually, call snapshot()
   -> Repeat for every machine instance
+
+Developer: "What's happening in my Node.js backend?"
+  -> SSH into the server, add console.log statements
+  -> Redeploy, reproduce the issue, read logs
 ```
 
 **After DevTools: The Informed Developer**
 
-The developer opens the devtools overlay and sees everything at a glance:
+The developer runs `npx @hex-di/devtools`, connects their apps, and sees everything at a glance:
 
 ```
+Dashboard shows two connected apps: "web-app" (React) and "api-server" (Node)
+
+Developer selects "api-server" in the sidebar:
+
 Developer opens Container panel:
   -> Phase: initialized, 12 singletons resolved, 3 scopes active
   -> Error rate: 0.2% (PaymentPort at 2.1% -- highlighted)
@@ -331,6 +358,9 @@ Developer opens Tracing panel:
   -> Average duration: 2.4ms, cache hit rate: 78%
   -> Slow resolutions highlighted (PaymentPort: 340ms avg)
 
+Developer switches to "web-app" in the sidebar:
+  -> Sees the React frontend's container state side-by-side
+
 Developer opens Flow panel (auto-discovered):
   -> 3 active machines: OrderFlow (paying), CartFlow (idle), AuthFlow (authenticated)
   -> Running activities: payment-polling (12s elapsed)
@@ -338,33 +368,50 @@ Developer opens Flow panel (auto-discovered):
 
 ### 2.6 Comparison with Similar Tools
 
-| Feature             | React Query DevTools | Jotai DevTools  | Redux DevTools     | HexDI DevTools            |
-| ------------------- | -------------------- | --------------- | ------------------ | ------------------------- |
-| Deployment          | In-app overlay       | In-app overlay  | Browser extension  | In-app overlay            |
-| Scope               | Query cache only     | Atom state only | Redux store only   | Entire DI ecosystem       |
-| Dependency graph    | No                   | No              | No                 | Yes (interactive)         |
-| Scope hierarchy     | No                   | No              | No                 | Yes (tree view)           |
-| Resolution tracing  | No                   | No              | Action replay      | Yes (timeline)            |
-| Library plugins     | No                   | No              | Middleware-based   | LibraryInspector protocol |
-| Type safety         | Partial              | Partial         | Partial            | Full (typed snapshots)    |
-| Production overhead | Tree-shakeable       | Tree-shakeable  | Separate extension | Tree-shakeable            |
+| Feature             | React Query DevTools | Jotai DevTools  | Redux DevTools     | Jaeger UI      | HexDI DevTools                               |
+| ------------------- | -------------------- | --------------- | ------------------ | -------------- | -------------------------------------------- |
+| Deployment          | In-app overlay       | In-app overlay  | Browser extension  | Standalone app | Standalone dashboard                         |
+| Scope               | Query cache only     | Atom state only | Redux store only   | Tracing only   | Entire DI ecosystem                          |
+| Server inspection   | No                   | No              | No                 | Yes            | Yes                                          |
+| Multi-app           | No                   | No              | No                 | Yes            | Yes                                          |
+| Dependency graph    | No                   | No              | No                 | DAG view       | Yes (interactive)                            |
+| Scope hierarchy     | No                   | No              | No                 | No             | Yes (tree view)                              |
+| Resolution tracing  | No                   | No              | Action replay      | Yes            | Yes (timeline)                               |
+| Library plugins     | No                   | No              | Middleware-based   | No             | LibraryInspector protocol + dedicated panels |
+| Type safety         | Partial              | Partial         | Partial            | None           | Full (typed snapshots)                       |
+| Production overhead | Tree-shakeable       | Tree-shakeable  | Separate extension | Separate app   | Separate app + client                        |
 
-The key differentiator is scope: existing devtools inspect one library's state. HexDI DevTools inspects the entire application through the unified self-knowledge system. Because every library in the ecosystem reports through the `LibraryInspector` protocol, DevTools has visibility into all of them from a single panel.
+The key differentiator is scope: existing devtools inspect one library's state. HexDI DevTools inspects the entire application through the unified self-knowledge system. Because every library in the ecosystem reports through the `LibraryInspector` protocol, DevTools has visibility into all of them from a single dashboard. And because it's a standalone app, it works equally well with frontend and backend applications.
 
 ---
 
 ## 3. Package Structure
 
+### 3.1 `@hex-di/devtools` (Dashboard)
+
 ```
-integrations/devtools/
+packages/devtools/
 +-- src/
 |   +-- index.ts                    # Public API exports
+|   +-- cli.ts                      # CLI entry point (npx @hex-di/devtools)
+|   +-- server/
+|   |   +-- websocket-server.ts    # WebSocket server for client connections
+|   |   +-- connection-manager.ts  # Manages connected clients, heartbeat, stale detection
+|   |   +-- message-router.ts     # Routes incoming messages to RemoteInspectorAPI instances
+|   +-- remote/
+|   |   +-- remote-inspector.ts   # RemoteInspectorAPI implementation (from WS messages)
+|   |   +-- message-types.ts      # ClientToServerMessage, ServerToClientMessage unions
+|   |   +-- deserializer.ts       # JSON deserialization for inspector data types
 |   +-- components/
-|   |   +-- hex-devtools.tsx        # Main entry component <HexDevTools />
-|   |   +-- trigger-button.tsx      # Floating toggle button
-|   |   +-- panel-shell.tsx         # Bottom panel container with resize
-|   |   +-- tab-bar.tsx             # Horizontal tab navigation
-|   |   +-- panel-content.tsx       # Active panel renderer (switch on tab)
+|   |   +-- dashboard-app.tsx     # Root dashboard component
+|   |   +-- dashboard-layout.tsx  # Sidebar + Main layout
+|   |   +-- sidebar/
+|   |   |   +-- app-list.tsx      # Connected applications list
+|   |   |   +-- panel-nav.tsx     # Vertical panel navigation
+|   |   |   +-- connection-status.tsx # Connection status indicator
+|   |   +-- main/
+|   |   |   +-- connection-header.tsx # Active app name, status, latency
+|   |   |   +-- panel-content.tsx    # Active panel renderer
 |   |   +-- status-badge.tsx        # Phase/health status indicator
 |   |   +-- search-bar.tsx          # Panel-level search/filter input
 |   |   +-- empty-state.tsx         # Placeholder for panels with no data
@@ -376,14 +423,24 @@ integrations/devtools/
 |   |   +-- tracing-panel.tsx       # Resolution tracing timeline
 |   |   +-- library-panel.tsx       # Generic library inspector panel renderer
 |   |   +-- event-log-panel.tsx     # Real-time event stream
+|   |   +-- overview-panel.tsx      # Unified overview (convergence point)
+|   |   +-- health-panel.tsx        # Health & diagnostics
 |   +-- hooks/
-|   |   +-- use-devtools-state.ts   # Internal devtools state (open/closed, active tab, height)
-|   |   +-- use-panel-registry.ts   # Registered panel plugins (built-in + library)
-|   |   +-- use-library-panels.ts   # Auto-detected library panels from inspector
-|   |   +-- use-persisted-state.ts  # localStorage persistence for panel state
+|   |   +-- use-remote-inspector.ts  # RemoteInspectorAPI for a connection
+|   |   +-- use-remote-snapshot.ts   # ContainerSnapshot from remote
+|   |   +-- use-remote-scope-tree.ts # ScopeTree from remote
+|   |   +-- use-remote-unified-snapshot.ts # UnifiedSnapshot from remote
+|   |   +-- use-connections.ts       # All active connections
+|   |   +-- use-active-connection.ts # Currently selected connection
+|   |   +-- use-dashboard-state.ts   # Internal dashboard state (active panel, sidebar)
+|   |   +-- use-panel-registry.ts    # Registered panels (built-in + library)
+|   |   +-- use-library-panels.ts    # Auto-detected library panels from remote data
+|   |   +-- use-persisted-state.ts   # localStorage persistence for dashboard state
 |   |   +-- use-keyboard-shortcut.ts # Keyboard shortcut listener
 |   +-- context/
-|   |   +-- devtools-context.tsx    # Internal devtools context (state, dispatch)
+|   |   +-- connection-context.tsx  # Connection management context
+|   |   +-- dashboard-context.tsx   # Dashboard state context (active panel, etc.)
+|   |   +-- navigation-context.tsx  # Cross-panel navigation context
 |   |   +-- theme-context.tsx       # Theme (light/dark) context
 |   +-- visualization/
 |   |   +-- graph-renderer.tsx      # Dependency graph rendering (dagre layout + SVG)
@@ -398,8 +455,34 @@ integrations/devtools/
 |   |   +-- light.ts               # Light theme token values
 |   |   +-- dark.ts                # Dark theme token values
 |   |   +-- use-theme.ts           # Hook for accessing current theme tokens
-|   +-- types.ts                    # Panel plugin types, DevToolsConfig, internal types
-|   +-- constants.ts                # Default config values, z-index, animation durations
+|   +-- types.ts                    # Panel plugin types, config, internal types
+|   +-- constants.ts                # Default config values, animation durations
++-- package.json
++-- tsconfig.json
++-- tsconfig.build.json
++-- vitest.config.ts
++-- eslint.config.js
++-- vite.config.ts                  # Vite config for dashboard app
+```
+
+### 3.2 `@hex-di/devtools-client` (Transport Client)
+
+```
+packages/devtools-client/
++-- src/
+|   +-- index.ts                    # Public API: connectDevTools, DevToolsClientConfig, etc.
+|   +-- react.ts                    # React entry: DevToolsClientProvider
+|   +-- transport/
+|   |   +-- websocket-transport.ts # WebSocket connection, send, reconnect
+|   |   +-- message-buffer.ts     # Ring buffer for messages during disconnect
+|   |   +-- serializer.ts         # Serializes InspectorAPI data to JSON messages
+|   +-- bridge/
+|   |   +-- inspector-bridge.ts   # Subscribes to InspectorAPI, triggers serialization
+|   |   +-- event-forwarder.ts    # Forwards InspectorEvents to transport
+|   +-- react/
+|   |   +-- devtools-client-provider.tsx  # React convenience wrapper
+|   +-- types.ts                    # DevToolsClientConfig, DevToolsConnection, message types
+|   +-- constants.ts                # Default server URL, reconnect interval, buffer size
 +-- package.json
 +-- tsconfig.json
 +-- tsconfig.build.json
@@ -407,86 +490,105 @@ integrations/devtools/
 +-- eslint.config.js
 ```
 
-### 3.1 Dependency Graph
+### 3.3 Dependency Graph
 
 ```
-@hex-di/devtools -------> @hex-di/react -------> @hex-di/core
-       |                       |                       |
-       |                       v                       v
-       |                  @hex-di/runtime         @hex-di/graph
-       |
-       +--- dagre (layout only, no rendering framework)
+@hex-di/devtools (dashboard)           @hex-di/devtools-client (transport)
+       |                                       |
+       +--- react (dashboard UI)               +--- @hex-di/core (peer: InspectorAPI types)
+       +--- ws (WebSocket server)              +--- @hex-di/runtime (peer: Container types)
+       +--- vite (dev server + build)          +--- @hex-di/react (optional peer: Provider)
+       +--- dagre (graph layout)
+                                               No dependency on @hex-di/devtools
+@hex-di/devtools has NO dependency             @hex-di/devtools has NO dependency
+on @hex-di/core, runtime, or react.            on @hex-di/devtools-client.
+It receives all data over WebSocket.           They communicate only via WebSocket protocol.
 ```
 
-`@hex-di/devtools` has exactly one non-HexDI dependency: `dagre` (or a lightweight equivalent) for computing dependency graph layouts. All rendering is pure SVG generated by React components. No D3, no Canvas libraries, no heavy visualization frameworks.
+### 3.4 Package Roles
 
-### 3.2 Package Roles
+| Package                   | Role                                                                                                        | Framework Dependency  |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------- |
+| `@hex-di/devtools`        | Standalone dashboard: panels, visualization, theme, WebSocket server, CLI                                   | `react` >= 18         |
+| `@hex-di/devtools-client` | Transport client: serialization, WebSocket transport, reconnection, buffering                               | None (React optional) |
+| `@hex-di/core`            | Inspection types: `InspectorAPI`, `UnifiedSnapshot`, `LibraryInspector`, `ContainerGraphData`, `TracingAPI` | None                  |
+| `@hex-di/react`           | Reactive hooks: `useInspector`, `useSnapshot`, `useScopeTree`, `useUnifiedSnapshot`, `useTracingSummary`    | `react` >= 18         |
+| `@hex-di/runtime`         | Container implementation: `container.inspector` accessor                                                    | None                  |
 
-| Package            | Role                                                                                                        | Framework Dependency |
-| ------------------ | ----------------------------------------------------------------------------------------------------------- | -------------------- |
-| `@hex-di/devtools` | Visual overlay: panels, visualization, theme system                                                         | `react` >= 18        |
-| `@hex-di/core`     | Inspection types: `InspectorAPI`, `UnifiedSnapshot`, `LibraryInspector`, `ContainerGraphData`, `TracingAPI` | None                 |
-| `@hex-di/react`    | Reactive hooks: `useInspector`, `useSnapshot`, `useScopeTree`, `useUnifiedSnapshot`, `useTracingSummary`    | `react` >= 18        |
-| `@hex-di/runtime`  | Container implementation: `container.inspector` accessor                                                    | None                 |
+### 3.5 Exports
 
-### 3.3 Peer Dependencies
-
-| Package            | Dependencies            | Peer Dependencies                                                 |
-| ------------------ | ----------------------- | ----------------------------------------------------------------- |
-| `@hex-di/devtools` | `dagre` (layout engine) | `react` >= 18, `@hex-di/core`, `@hex-di/runtime`, `@hex-di/react` |
-
-### 3.4 Exports
-
-The public API surface of `@hex-di/devtools` is intentionally minimal:
+**`@hex-di/devtools` exports:**
 
 ```
-Exports from @hex-di/devtools:
+CLI:
+  npx @hex-di/devtools             -- Starts the dashboard (WS server + Vite dev server)
 
-Components:
-  HexDevTools          -- Main entry component (the only required export)
+Types (for panel plugin authors):
+  PanelDefinition                  -- Panel plugin interface for custom panels
+  PanelProps                       -- Props received by panel components
+  RemoteInspectorAPI               -- Remote inspector interface
+  DevToolsServerConfig             -- Server configuration options
+  DevToolsTheme                    -- Theme token type (for custom themes)
+```
+
+**`@hex-di/devtools-client` exports:**
+
+```
+Functions:
+  connectDevTools                  -- Connect an InspectorAPI to the dashboard
+
+React Components:
+  DevToolsClientProvider           -- React convenience wrapper (from "@hex-di/devtools-client/react")
 
 Types:
-  HexDevToolsProps     -- Props for the main component
-  DevToolsConfig       -- Configuration options (position, theme, shortcuts)
-  PanelDefinition      -- Panel plugin interface for custom panels
-  DevToolsTheme        -- Theme token type (for custom themes)
+  DevToolsClientConfig             -- Client configuration options
+  DevToolsConnection               -- Connection handle (status, disconnect)
 ```
 
-Users import `HexDevTools` and render it inside an `InspectorProvider`. Everything else is internal.
-
-### 3.5 What Exists Today vs. What is New
+### 3.6 What Exists Today vs. What is New
 
 ```
-EXISTING INFRASTRUCTURE             NEW in @hex-di/devtools
+EXISTING INFRASTRUCTURE             NEW in @hex-di/devtools + devtools-client
 +-----------------------------------+-----------------------------------+
-| @hex-di/core                      | <HexDevTools /> overlay component |
-|   InspectorAPI                    | Trigger button (floating toggle)  |
-|   ContainerSnapshot               | Panel shell (resizable bottom)    |
-|   ScopeTree                       | Tab bar navigation                |
-|   UnifiedSnapshot                 | Container overview panel          |
-|   LibraryInspector protocol       | Dependency graph visualization    |
-|   LibraryEvent                    | Scope tree panel                  |
-|   ContainerGraphData              | Tracing timeline panel            |
-|   VisualizableAdapter             | Library panel (auto-discovered)   |
-|   TracingAPI / TraceEntry         | Event log panel                   |
-|   ResultStatistics                | Light/dark theme system           |
-| @hex-di/react                     | Design token architecture         |
-|   InspectorProvider               | dagre-based graph layout          |
-|   useInspector                    | SVG graph renderer                |
-|   useSnapshot                     | Keyboard shortcut handling        |
-|   useScopeTree                    | localStorage panel persistence    |
-|   useUnifiedSnapshot              |                                   |
-|   useTracingSummary               | DEFERRED                          |
-|   DevToolsBridge                  +-----------------------------------+
-| @hex-di/runtime                   | Browser extension                 |
-|   container.inspector accessor    | Time-travel debugging             |
-+-----------------------------------+ Performance flame graphs           |
+| @hex-di/core                      | @hex-di/devtools (dashboard)      |
+|   InspectorAPI                    |   CLI entry point                 |
+|   ContainerSnapshot               |   WebSocket server                |
+|   ScopeTree                       |   RemoteInspectorAPI              |
+|   UnifiedSnapshot                 |   Connection management           |
+|   LibraryInspector protocol       |   Full-page dashboard layout      |
+|   LibraryEvent                    |   Sidebar (apps + panel nav)      |
+|   ContainerGraphData              |   Container overview panel        |
+|   VisualizableAdapter             |   Dependency graph visualization  |
+|   TracingAPI / TraceEntry         |   Scope tree panel                |
+|   ResultStatistics                |   Tracing timeline panel          |
+| @hex-di/react                     |   Library panels (auto-discovered)|
+|   InspectorProvider               |   Event log panel                 |
+|   useInspector                    |   Overview panel                  |
+|   useSnapshot                     |   Health & Diagnostics panel      |
+|   useScopeTree                    |   Light/dark theme system         |
+|   useUnifiedSnapshot              |   Design token architecture       |
+|   useTracingSummary               |   dagre-based graph layout        |
+|   DevToolsBridge                  |   SVG graph renderer              |
+| @hex-di/runtime                   |                                   |
+|   container.inspector accessor    | @hex-di/devtools-client           |
++-----------------------------------+   connectDevTools() function      |
+                                    |   DevToolsClientProvider          |
+                                    |   WebSocket transport             |
+                                    |   Auto-reconnection               |
+                                    |   Message buffering               |
+                                    |   Inspector event forwarding      |
+                                    |                                   |
+                                    | DEFERRED                          |
+                                    +-----------------------------------+
+                                    | Browser extension                 |
+                                    | Time-travel debugging             |
+                                    | Performance flame graphs          |
                                     | Custom panel plugin API (rich)    |
                                     | Panel export/import               |
                                     +-----------------------------------+
 ```
 
-The key point: all inspection data already exists. DevTools is a pure rendering layer on top of the existing infrastructure. No new container APIs, no new event types, no new inspection protocols are needed for v0.1.0 (the typed `LibraryInspector` protocol enhancement in Section 4 improves the existing protocol but does not replace it).
+The key point: all inspection data already exists. The devtools-client is a serialization + transport layer, and the dashboard is a rendering layer. No new container APIs, no new event types, no new inspection protocols are needed for v0.1.0 (the typed `LibraryInspector` protocol enhancement in Section 4 improves the existing protocol but does not replace it).
 
 ---
 

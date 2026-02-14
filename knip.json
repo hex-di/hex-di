@@ -15,10 +15,68 @@
         "tests/**/*.test-d.ts",
         "tests/**/*.bench.ts"
       ],
-      "project": ["src/**/*.ts", "tests/**/*.ts"],
-      "ignore": ["**/dist/**", "**/*.d.ts", "**/CONCEPT-*.ts"]
+      "project": ["src/**/*.{ts,tsx}", "tests/**/*.{ts,tsx}"],
+      "ignore": ["**/dist/**", "**/*.d.ts", "**/CONCEPT-*.ts", "**/.stryker-tmp/**"]
+    },
+    "integrations/*": {
+      "entry": [
+        "src/index.ts",
+        "src/advanced.ts",
+        "src/**/index.ts",
+        "tests/**/*.test.{ts,tsx}",
+        "tests/**/*.test-d.ts",
+        "tests/**/*.bench.ts"
+      ],
+      "project": ["src/**/*.{ts,tsx}", "tests/**/*.{ts,tsx}"],
+      "ignore": ["**/dist/**", "**/*.d.ts", "**/CONCEPT-*.ts", "**/.stryker-tmp/**"]
+    },
+    "libs/*/*": {
+      "entry": [
+        "src/index.ts",
+        "src/advanced.ts",
+        "src/**/index.ts",
+        "tests/**/*.test.{ts,tsx}",
+        "tests/**/*.test-d.ts",
+        "tests/**/*.bench.ts"
+      ],
+      "project": ["src/**/*.{ts,tsx}", "tests/**/*.{ts,tsx}"],
+      "ignore": ["**/dist/**", "**/*.d.ts", "**/CONCEPT-*.ts", "**/.stryker-tmp/**"]
+    },
+    "tooling/*": {
+      "entry": [
+        "src/index.ts",
+        "src/advanced.ts",
+        "src/**/index.ts",
+        "tests/**/*.test.{ts,tsx}",
+        "tests/**/*.test-d.ts",
+        "tests/**/*.bench.ts"
+      ],
+      "project": ["src/**/*.{ts,tsx}", "tests/**/*.{ts,tsx}"],
+      "ignore": ["**/dist/**", "**/*.d.ts", "**/CONCEPT-*.ts", "**/.stryker-tmp/**"]
+    },
+    "testing/*": {
+      "entry": [
+        "src/index.ts",
+        "src/advanced.ts",
+        "src/**/index.ts",
+        "tests/**/*.test.{ts,tsx}",
+        "tests/**/*.test-d.ts",
+        "tests/**/*.bench.ts"
+      ],
+      "project": ["src/**/*.{ts,tsx}", "tests/**/*.{ts,tsx}"],
+      "ignore": ["**/dist/**", "**/*.d.ts", "**/CONCEPT-*.ts", "**/.stryker-tmp/**"]
     },
     "examples/*": {
+      "entry": ["src/index.{ts,tsx}", "src/main.{ts,tsx}", "src/server.ts"],
+      "project": ["src/**/*.{ts,tsx}"],
+      "ignore": ["**/dist/**", "**/*.d.ts"]
+    },
+    "examples/pokenerve/*": {
+      "entry": ["src/index.{ts,tsx}", "src/main.{ts,tsx}", "src/server.ts"],
+      "project": ["src/**/*.{ts,tsx}"],
+      "ignore": ["**/dist/**", "**/*.d.ts"]
+    },
+    "presentations/*/app": {
       "entry": ["src/index.{ts,tsx}", "src/main.{ts,tsx}"],
       "project": ["src/**/*.{ts,tsx}"],
       "ignore": ["**/dist/**", "**/*.d.ts"]
@@ -26,5 +84,5 @@
   },
   "ignoreWorkspaces": ["website"],
   "ignoreDependencies": ["@types/*"],
-  "ignore": ["**/dist/**", "**/*.d.ts", "**/node_modules/**"]
+  "ignore": ["**/dist/**", "**/*.d.ts", "**/node_modules/**", "**/.stryker-tmp/**"]
 }

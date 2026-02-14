@@ -49,7 +49,7 @@ import type {
   OverrideWithoutParentErrorMessage,
 } from "../../validation/types/index.js";
 import type { IsNever } from "@hex-di/core";
-import type { GraphBuilder } from "../builder.js";
+import type { GraphBuilderSignature } from "./builder-signature.js";
 import type {
   AnyBuilderInternals,
   BoolOr,
@@ -86,7 +86,7 @@ type UnifiedMergeResultSuccess<
   OOverrides,
   OInternals extends AnyBuilderInternals,
   TResolvedMaxDepth extends number,
-> = GraphBuilder<
+> = GraphBuilderSignature<
   TProvides | OProvides,
   TRequires | ORequires,
   TAsyncPorts | OAsyncPorts,

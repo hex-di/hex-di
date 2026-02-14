@@ -330,49 +330,65 @@ const processor = createBatchSpanProcessor(exporter);
 
 ---
 
-### 4.2 MCP Server (0% → 100%) — NEW PACKAGE
+### 4.2 MCP Server Framework — NEW PACKAGE
 
-**Status:** Not started. This is a new package to be created.
+**Status:** Specified. See `spec/mcp/` for the full framework specification.
 
 **Package:** `packages/mcp/`
 
-**Purpose:** Expose HexDI application knowledge through Model Context Protocol (MCP) for AI dev tools.
+**Purpose:** General-purpose MCP server framework using HexDI port/adapter architecture. MCP resources, tools, and prompts are modeled as typed HexDI ports (`McpResourcePort<T>`, `McpToolPort<I,O>`, `McpPromptPort<A>`) with category-based auto-discovery. The framework ships no domain-specific adapters -- the inspection-specific adapters (Sections 4.2.2-4.2.7 below) are implemented in `@hex-di/devtools` using this framework.
+
+**Specification:** [`spec/mcp/`](../../spec/mcp/README.md) -- 7 documents covering port types, adapter patterns, server creation, transport, API reference, and definition of done.
 
 #### 4.2.1 Package Setup
 
-**Dependencies:**
+> **Framework specification:** See [`spec/mcp/`](../../spec/mcp/README.md) for the full `@hex-di/mcp` framework design.
 
-- `@modelcontextprotocol/sdk` — MCP SDK (peer dependency or direct)
-- `@hex-di/runtime` — Container inspection
-- `@hex-di/graph` — Graph topology
-- `@hex-di/tracing` — Tracing data (if available)
+**`@hex-di/mcp` (Framework) Dependencies:**
 
-**Package Structure:**
+- `@modelcontextprotocol/sdk` — MCP SDK (peer dependency)
+- `@hex-di/core` — Port definitions, directed ports, categories (peer)
+- `@hex-di/graph` — Graph builder for composing MCP adapter graphs (peer)
+
+Note: The framework has **no dependency** on `@hex-di/runtime`, `@hex-di/tracing`, or any library package. It provides typed port definitions (`McpResourcePort<T>`, `McpToolPort<I,O>`, `McpPromptPort<A>`), adapter contracts (`ResourceHandler`, `ToolHandler`, `PromptHandler`), server factory (`createMcpServer()`), and transport abstractions (`StdioTransport`, `SseTransport`).
+
+**`@hex-di/devtools` implements the inspection-specific MCP adapters** (Sections 4.2.2-4.2.7 below) using the `@hex-di/mcp` framework. The DevTools standalone server composes these adapters into a graph and passes it to `createMcpServer()`.
+
+**Framework Package Structure:**
 
 ```
 packages/mcp/
 ├── src/
-│   ├── index.ts                    # Public API: createMcpServer()
-│   ├── server.ts                   # MCP server implementation
-│   ├── resources/
-│   │   ├── graph-resources.ts      # Graph topology resources
-│   │   ├── runtime-resources.ts    # Runtime state resources
-│   │   ├── tracing-resources.ts    # Tracing data resources
-│   │   └── library-resources.ts    # Flow/store/query/saga/agent
-│   ├── tools/
-│   │   ├── resolve-tool.ts         # hexdi://resolve
-│   │   ├── inspect-tool.ts         # hexdi://inspect
-│   │   ├── scope-tool.ts           # hexdi://createScope
-│   │   └── query-tool.ts           # hexdi://invalidateQuery
-│   ├── prompts/
-│   │   └── debug-prompts.ts        # Contextual debug templates
-│   └── types.ts                    # MCP-specific types
+│   ├── index.ts                    # Public API exports
+│   ├── ports/
+│   │   ├── resource-port.ts       # McpResourcePort type + factory
+│   │   ├── tool-port.ts           # McpToolPort type + factory
+│   │   ├── prompt-port.ts         # McpPromptPort type + factory
+│   │   └── categories.ts          # Port category constants
+│   ├── server/
+│   │   ├── create-server.ts       # createMcpServer() factory
+│   │   ├── discovery.ts           # Graph walk for MCP ports by category
+│   │   └── registration.ts        # Registers discovered ports with MCP SDK
+│   ├── transport/
+│   │   ├── stdio.ts               # StdioTransport adapter
+│   │   └── sse.ts                 # SseTransport adapter
+│   ├── handlers/
+│   │   ├── resource-handler.ts    # ResourceHandler interface
+│   │   ├── tool-handler.ts        # ToolHandler interface
+│   │   └── prompt-handler.ts      # PromptHandler interface
+│   └── errors/
+│       ├── codes.ts               # MCP error codes
+│       └── classes.ts             # McpServerError, McpHandlerError
 ├── tests/
-│   ├── resources.test.ts
-│   ├── tools.test.ts
-│   └── integration.test.ts
+│   ├── ports/
+│   ├── server/
+│   ├── transport/
+│   ├── handlers/
+│   └── integration/
 └── package.json
 ```
+
+**Inspection Adapters** (implemented in `@hex-di/devtools`, not `@hex-di/mcp`):
 
 #### 4.2.2 MCP Resources — Graph
 
@@ -1351,6 +1367,26 @@ packages/a2a/
         "Create a new scope named 'test-scope'",
         "Invalidate the user query cache"
       ]
+    },
+    {
+      "id": "diagnose-http-issue",
+      "name": "Diagnose HTTP Issue",
+      "description": "Analyzes HTTP request history, error patterns, circuit breaker state, and latency trends",
+      "examples": [
+        "Why are requests to the payments API failing?",
+        "What is causing high latency on outbound HTTP calls?",
+        "Are there any circuit breakers tripped?"
+      ]
+    },
+    {
+      "id": "http-health-check",
+      "name": "HTTP Health Check",
+      "description": "Reports health status of all HTTP endpoints including circuit breakers, error rates, and latency",
+      "examples": [
+        "What is the health of our HTTP clients?",
+        "Are all external APIs healthy?",
+        "Show me HTTP client health status"
+      ]
     }
   ]
 }
@@ -1473,6 +1509,64 @@ packages/a2a/
   result?: unknown;
   error?: string;
   trace?: TraceData;
+}
+```
+
+**diagnose-http-issue** _(contributed by `@hex-di/http-client`)_
+
+**Skill ID:** `diagnose-http-issue`
+
+**Description:** Analyzes HTTP request history, error patterns, circuit breaker state, and latency trends to diagnose connectivity and performance issues with outbound HTTP endpoints.
+
+**Input:**
+
+```typescript
+{
+  urlPattern?: string; // Optional URL pattern to scope the diagnosis (substring match)
+  timeRangeMs?: number; // How far back to analyze in milliseconds. Default: 300000 (5 minutes)
+}
+```
+
+**Output:**
+
+```typescript
+{
+  answer: string; // Natural language diagnosis
+  data: {
+    health: HttpClientHealth;
+    errorRate: number;
+    latencyPercentiles: { p50: number; p95: number; p99: number };
+    circuitBreakers: Record<string, CircuitBreakerSnapshot>;
+    recentErrors: readonly HttpHistoryEntry[];
+    recommendations: string[];
+  };
+}
+```
+
+**http-health-check** _(contributed by `@hex-di/http-client`)_
+
+**Skill ID:** `http-health-check`
+
+**Description:** Reports the current health status of all HTTP endpoints, including circuit breaker states, error rates, latency percentiles, and rate limiter utilization.
+
+**Input:**
+
+```typescript
+{
+  includeHistory?: boolean; // Whether to include recent request history. Default: false
+}
+```
+
+**Output:**
+
+```typescript
+{
+  answer: string; // Summary health report
+  data: {
+    health: HttpClientHealth;
+    snapshot: HttpClientSnapshot;
+    combinatorChain: readonly CombinatorInfo[];
+  };
 }
 ```
 

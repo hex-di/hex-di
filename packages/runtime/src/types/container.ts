@@ -10,15 +10,14 @@
 import type { Port, InferService, InspectorAPI, AdapterConstraint } from "@hex-di/core";
 import type { Result, ResultAsync } from "@hex-di/result";
 import type { ContainerError, DisposalError } from "../errors/index.js";
-import { OverrideBuilder } from "../container/override-builder.js";
 import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
 import { INTERNAL_ACCESS } from "../inspection/symbols.js";
 import type { ContainerInternalState } from "../inspection/internal-state-types.js";
 import type { ContainerPhase, ContainerKind, CreateChildOptions } from "./options.js";
 import { ContainerBrand } from "./brands.js";
-import type { LazyContainer } from "./lazy-container.js";
 import type { Scope } from "./scope.js";
 import type { HookType, HookHandler } from "../resolution/hooks.js";
+import type { ValidateOverrideAdapter } from "./override-types.js";
 
 // =============================================================================
 // Container Type (Unified: Root + Child)
@@ -587,4 +586,203 @@ export type ContainerMembers<
    * @internal Use createInspector() for a higher-level inspection API
    */
   readonly [INTERNAL_ACCESS]: () => ContainerInternalState;
+};
+
+// =============================================================================
+// Override Builder Type
+// =============================================================================
+
+/**
+ * Public interface for the override builder.
+ *
+ * Defined here alongside Container because they are mutually recursive:
+ * Container.override() returns OverrideBuilder, and OverrideBuilder.build()
+ * returns Container. Co-locating them avoids a circular module dependency.
+ *
+ * The OverrideBuilder class in container/override-builder.ts structurally
+ * matches this interface.
+ *
+ * @typeParam TProvides - Union of port types provided by the base graph
+ * @typeParam TOverrides - Union of port types that have been overridden
+ * @typeParam TAsyncPorts - Union of async port types from base graph
+ * @typeParam TPhase - Initialization phase of the base container
+ */
+export interface OverrideBuilder<
+  TProvides extends Port<unknown, string>,
+  TOverrides extends Port<unknown, string> = never,
+  TAsyncPorts extends Port<unknown, string> = never,
+  TPhase extends ContainerPhase = "initialized",
+> {
+  /**
+   * Adds an adapter override to the builder.
+   *
+   * Returns a new OverrideBuilder instance with the adapter added.
+   * Validates at compile time that the adapter's port exists in the graph.
+   */
+  override<A extends AdapterConstraint>(
+    adapter: A
+  ): ValidateOverrideAdapter<TProvides, A> extends AdapterConstraint
+    ? OverrideBuilder<TProvides, TOverrides, TAsyncPorts, TPhase>
+    : ValidateOverrideAdapter<TProvides, A>;
+
+  /**
+   * Builds the child container with accumulated overrides.
+   *
+   * Creates a child container that inherits all parent ports but resolves
+   * overridden ports using the provided adapters.
+   */
+  build(): Container<TProvides, never, TAsyncPorts, "initialized">;
+}
+
+// =============================================================================
+// Lazy Container Type
+// =============================================================================
+
+/**
+ * A lazy-loading container wrapper that defers graph loading until first use.
+ *
+ * LazyContainer is returned by `container.createLazyChild()` and enables
+ * code-splitting for dependency injection graphs. The graph is loaded
+ * asynchronously on the first call to `resolve()` or `load()`.
+ *
+ * Defined here alongside Container because they are mutually recursive:
+ * Container.createLazyChild() returns LazyContainer, and LazyContainer.load()
+ * returns Container.
+ *
+ * @typeParam TProvides - Union of Port types inherited from the parent container.
+ * @typeParam TExtends - Union of Port types added by the lazy-loaded graph.
+ * @typeParam TAsyncPorts - Union of Port types that have async factories.
+ *
+ * @remarks
+ * - All resolution methods return Promises since graph loading is async
+ * - `load()` can be called to pre-load the graph before resolution
+ * - `has()` delegates to parent before loading, includes child graph ports after
+ * - Concurrent `load()` calls share the same loading promise (deduplication)
+ * - Disposing before load completes marks as disposed without error
+ *
+ * @see {@link Container.createLazyChild} - Factory method that creates LazyContainer
+ * @see {@link Container.createChildAsync} - Alternative that returns Promise<Container>
+ */
+export type LazyContainer<
+  TProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string> = never,
+  TAsyncPorts extends Port<unknown, string> = never,
+> = LazyContainerMembers<TProvides, TExtends, TAsyncPorts>;
+
+/**
+ * Internal type containing LazyContainer method definitions.
+ * @internal
+ */
+type LazyContainerMembers<
+  TProvides extends Port<unknown, string>,
+  TExtends extends Port<unknown, string>,
+  TAsyncPorts extends Port<unknown, string>,
+> = {
+  /**
+   * Resolves a service instance for the given port asynchronously.
+   *
+   * On first call, loads the graph and creates the child container.
+   * Subsequent calls use the cached container for resolution.
+   *
+   * @typeParam P - The specific port type being resolved
+   * @param port - The port token to resolve
+   * @returns A promise that resolves to the service instance
+   *
+   * @throws {DisposedScopeError} If the lazy container has been disposed
+   * @throws {CircularDependencyError} If a circular dependency is detected
+   * @throws {FactoryError} If the adapter's factory function throws
+   */
+  resolve<P extends TProvides | TExtends>(port: P): Promise<InferService<P>>;
+
+  /**
+   * Resolves a service instance for the given port asynchronously.
+   *
+   * Alias for `resolve()` - both methods behave identically since
+   * graph loading is inherently asynchronous.
+   *
+   * @typeParam P - The specific port type being resolved
+   * @param port - The port token to resolve
+   * @returns A promise that resolves to the service instance
+   */
+  resolveAsync<P extends TProvides | TExtends>(port: P): Promise<InferService<P>>;
+
+  /**
+   * Resolves a service instance, returning a ResultAsync instead of throwing.
+   *
+   * Returns `Ok(service)` on success, `Err(ContainerError)` on failure.
+   * Always returns ResultAsync since graph loading is inherently asynchronous.
+   *
+   * @typeParam P - The specific port type being resolved
+   * @param port - The port token to resolve
+   * @returns A ResultAsync containing the service instance or a ContainerError
+   */
+  tryResolve<P extends TProvides | TExtends>(port: P): ResultAsync<InferService<P>, ContainerError>;
+
+  /**
+   * Resolves a service instance asynchronously, returning a ResultAsync instead of throwing.
+   *
+   * Alias for `tryResolve()` since both methods are async.
+   *
+   * @typeParam P - The specific port type being resolved
+   * @param port - The port token to resolve
+   * @returns A ResultAsync containing the service instance or a ContainerError
+   */
+  tryResolveAsync<P extends TProvides | TExtends>(
+    port: P
+  ): ResultAsync<InferService<P>, ContainerError>;
+
+  /**
+   * Disposes the lazy container, returning a ResultAsync instead of throwing.
+   *
+   * Returns `Ok(void)` on clean disposal, `Err(DisposalError)` if finalizers threw.
+   *
+   * @returns A ResultAsync that resolves to void or a DisposalError
+   */
+  tryDispose(): ResultAsync<void, DisposalError>;
+
+  /**
+   * Explicitly loads the graph and returns the underlying container.
+   *
+   * Use this method to pre-load the graph in the background, access the sync
+   * container API after loading, or control when loading occurs.
+   *
+   * Concurrent calls share the same loading promise (deduplication).
+   *
+   * @returns A promise that resolves to the loaded child container
+   *
+   * @throws {DisposedScopeError} If the lazy container has been disposed
+   */
+  load(): Promise<Container<TProvides, TExtends, TAsyncPorts, "initialized">>;
+
+  /**
+   * Whether the graph has been loaded and the container is ready.
+   */
+  readonly isLoaded: boolean;
+
+  /**
+   * Whether the lazy container has been disposed.
+   */
+  readonly isDisposed: boolean;
+
+  /**
+   * Checks if a port is available for resolution.
+   *
+   * Before loading: Delegates to parent container.
+   * After loading: Includes both parent and child graph ports.
+   *
+   * @param port - The port token to check
+   * @returns true if the port can be resolved
+   */
+  has(port: Port<unknown, string>): boolean;
+
+  /**
+   * Disposes the lazy container.
+   *
+   * If the graph is loaded, disposes the underlying child container.
+   * If loading is in progress, waits for load completion then disposes.
+   * If not yet loaded, marks as disposed without loading.
+   *
+   * @returns A promise that resolves when disposal is complete
+   */
+  dispose(): Promise<void>;
 };

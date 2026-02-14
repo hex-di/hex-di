@@ -27,7 +27,7 @@ export const LogFormatterPort = port<LogFormatter>()({
   name: "LogFormatter",
   direction: "outbound",
   description: "Log entry formatter for text-based output",
-  category: "infrastructure",
+  category: "logger/formatter",
   tags: ["logging", "observability"],
 });
 

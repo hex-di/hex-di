@@ -11,6 +11,9 @@
  * - **Parallel safety**: Multiple generators can run without conflicts
  * - **Dependency injection**: Pass generators as dependencies
  *
+ * Counter-based IDs use the format: `insp_{processId}_{counter}_{suffix}`
+ * where processId is a random prefix unique to each generator.
+ *
  * @packageDocumentation
  */
 
@@ -20,13 +23,22 @@ import {
   type CorrelationIdGenerator,
 } from "../src/graph/inspection/correlation.js";
 
+/** Matches the counter-based correlation ID format */
+const COUNTER_ID_PATTERN = /^insp_[a-z0-9]+_(\d+)_[a-z0-9]+$/;
+
+function extractCounter(id: string): number {
+  const match = COUNTER_ID_PATTERN.exec(id);
+  if (!match) throw new Error(`ID does not match expected pattern: ${id}`);
+  return Number(match[1]);
+}
+
 describe("createCorrelationIdGenerator()", () => {
   describe("creates isolated generators", () => {
     it("should create a generator that starts at 0", () => {
       const generate = createCorrelationIdGenerator();
 
-      expect(generate()).toBe("insp_0_0000");
-      expect(generate()).toBe("insp_1_0001");
+      expect(extractCounter(generate())).toBe(0);
+      expect(extractCounter(generate())).toBe(1);
     });
 
     it("should create independent generators with their own counters", () => {
@@ -34,13 +46,13 @@ describe("createCorrelationIdGenerator()", () => {
       const gen2 = createCorrelationIdGenerator();
 
       // Both start at 0
-      expect(gen1()).toBe("insp_0_0000");
-      expect(gen2()).toBe("insp_0_0000");
+      expect(extractCounter(gen1())).toBe(0);
+      expect(extractCounter(gen2())).toBe(0);
 
       // Each increments independently
-      expect(gen1()).toBe("insp_1_0001");
-      expect(gen1()).toBe("insp_2_0002");
-      expect(gen2()).toBe("insp_1_0001");
+      expect(extractCounter(gen1())).toBe(1);
+      expect(extractCounter(gen1())).toBe(2);
+      expect(extractCounter(gen2())).toBe(1);
     });
 
     it("should not share state between generators", () => {
@@ -53,7 +65,7 @@ describe("createCorrelationIdGenerator()", () => {
       gen1();
 
       // gen2 should still start at 0
-      expect(gen2()).toBe("insp_0_0000");
+      expect(extractCounter(gen2())).toBe(0);
     });
   });
 
@@ -74,7 +86,7 @@ describe("createCorrelationIdGenerator()", () => {
       generate("seed-2"); // Seeded call
 
       // Counter should still be at 0
-      expect(generate()).toBe("insp_0_0000");
+      expect(extractCounter(generate())).toBe(0);
     });
 
     it("different seeds produce different IDs", () => {
@@ -116,7 +128,7 @@ describe("CorrelationIdGenerator type", () => {
     const result1 = processWithCorrelation("test1", gen);
     const result2 = processWithCorrelation("test2", gen);
 
-    expect(result1.correlationId).toBe("insp_0_0000");
-    expect(result2.correlationId).toBe("insp_1_0001");
+    expect(extractCounter(result1.correlationId)).toBe(0);
+    expect(extractCounter(result2.correlationId)).toBe(1);
   });
 });

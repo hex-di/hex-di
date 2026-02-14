@@ -15,7 +15,7 @@ import type { EffectAny } from "../effects/types.js";
 import type { ActivityManager } from "../activities/manager.js";
 import type { EventSink } from "../activities/types.js";
 import type { TypedEventSink } from "../activities/events.js";
-import type { ActivityRegistry, ActivityDepsResolver } from "./adapter.js";
+import type { ActivityRegistry, ActivityDepsResolver, ScopeResolver } from "./types.js";
 import type { FlowEventBus } from "../event-bus/index.js";
 import type { HealthEvent } from "../introspection/types.js";
 import type {
@@ -108,27 +108,6 @@ function buildTypedEvent(type: string, payload: unknown): { readonly type: strin
     return eventObj;
   }
   return undefined;
-}
-
-// =============================================================================
-// Scope Resolver Interface
-// =============================================================================
-
-/**
- * A minimal interface for resolving ports from a scope.
- *
- * This interface matches the Scope.resolve() method signature, allowing
- * the DIEffectExecutor to work with either a real Scope or a mock resolver.
- */
-export interface ScopeResolver {
-  /**
-   * Resolves a service instance for the given port.
-   *
-   * @typeParam P - The specific port type being resolved
-   * @param port - The port token to resolve
-   * @returns The service instance for the given port
-   */
-  resolve<P extends Port<unknown, string>>(port: P): InferService<P>;
 }
 
 // =============================================================================

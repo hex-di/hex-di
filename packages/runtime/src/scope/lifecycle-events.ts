@@ -42,6 +42,13 @@ export type ScopeSubscription = () => void;
  */
 export type ScopeDisposalState = "active" | "disposing" | "disposed";
 
+/**
+ * Callback for reporting lifecycle listener errors.
+ * Called when a lifecycle event listener throws during emission.
+ * The error is reported but never re-thrown to avoid disrupting disposal.
+ */
+export type LifecycleErrorReporter = (error: unknown, event: ScopeLifecycleEvent) => void;
+
 // =============================================================================
 // Lifecycle Emitter
 // =============================================================================
@@ -57,6 +64,18 @@ export type ScopeDisposalState = "active" | "disposing" | "disposed";
 export class ScopeLifecycleEmitter {
   private readonly listeners: Set<ScopeLifecycleListener> = new Set();
   private state: ScopeDisposalState = "active";
+  private readonly errorReporter: LifecycleErrorReporter | undefined;
+
+  /**
+   * Creates a new ScopeLifecycleEmitter.
+   *
+   * @param errorReporter - Optional callback for reporting listener errors.
+   *   When provided, listener errors are reported via this callback.
+   *   When undefined, listener errors are silently swallowed.
+   */
+  constructor(errorReporter?: LifecycleErrorReporter) {
+    this.errorReporter = errorReporter;
+  }
 
   /**
    * Subscribe to scope lifecycle events.
@@ -93,7 +112,8 @@ export class ScopeLifecycleEmitter {
    *
    * @remarks
    * Events are emitted synchronously for React concurrent mode compatibility.
-   * Listener errors are caught and swallowed to prevent disrupting disposal.
+   * Listener errors are caught and reported (if a reporter is configured)
+   * but never re-thrown to prevent disrupting disposal.
    */
   emit(event: ScopeLifecycleEvent): void {
     if (event === "disposing") {
@@ -106,9 +126,15 @@ export class ScopeLifecycleEmitter {
     for (const listener of this.listeners) {
       try {
         listener(event);
-      } catch {
-        // Swallow listener errors to prevent disrupting disposal
-        // In production, this would be logged to an error reporter
+      } catch (error: unknown) {
+        // Route to reporter if configured; never rethrow
+        if (this.errorReporter !== undefined) {
+          try {
+            this.errorReporter(error, event);
+          } catch {
+            // Reporter itself failed; truly swallow to prevent infinite loops
+          }
+        }
       }
     }
   }

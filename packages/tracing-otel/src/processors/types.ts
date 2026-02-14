@@ -54,6 +54,26 @@ export interface BatchSpanProcessorOptions {
    * @default 512
    */
   maxExportBatchSize?: number;
+
+  /**
+   * Maximum number of export retry attempts on failure.
+   *
+   * When an export batch fails, the processor retries with
+   * exponential backoff up to this many times before dropping
+   * the batch.
+   *
+   * @default 3
+   */
+  maxRetryAttempts?: number;
+
+  /**
+   * Base delay in milliseconds for retry backoff.
+   *
+   * Actual delay is: baseRetryDelayMs * 2^(attemptNumber - 1)
+   *
+   * @default 1000 (1 second)
+   */
+  baseRetryDelayMs?: number;
 }
 
 /**

@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { getPortMetadata } from "@hex-di/core";
 import {
   createQueryPort,
   isQueryPort,
@@ -141,5 +142,17 @@ describe("createQueryPort (inline creation — mutation testing)", () => {
     const port = createQueryPort<string>()({ name: "WithDep", dependsOn: [dep] });
     expect(port.config.dependsOn).toEqual([dep]);
     expect(port.config.dependsOn).toHaveLength(1);
+  });
+});
+
+describe("query port metadata category for library detection", () => {
+  it("createQueryPort sets category to query/query", () => {
+    const port = createQueryPort<string>()({ name: "TestQuery" });
+    expect(getPortMetadata(port)?.category).toBe("query/query");
+  });
+
+  it("createQueryPort sets direction to inbound", () => {
+    const port = createQueryPort<string>()({ name: "Inbound" });
+    expect(getPortMetadata(port)).toBeDefined();
   });
 });

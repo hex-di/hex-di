@@ -7,8 +7,10 @@
  * @packageDocumentation
  */
 
+import { createPort } from "@hex-di/core";
 import type { DirectedPort } from "@hex-di/core";
-import type { MutationExecutor, MutationEffects } from "./types.js";
+import type { MutationExecutor } from "./types.js";
+import type { MutationEffects } from "./mutation-effects.js";
 import type { MutationDefaults } from "../types/options.js";
 
 // =============================================================================
@@ -110,11 +112,18 @@ export function createMutationPort<TData, TInput = void, TError = Error, TContex
   return <const TName extends string>(
     config: MutationPortConfig<TData, TInput, TError, TContext, TName>
   ): MutationPort<TName, TData, TInput, TError, TContext> => {
-    // BRAND_CAST: Branded type boundary -- frozen object structurally matches
-    // MutationPort but needs phantom type branding.
+    // Create a proper DirectedPort base so metadata (including category)
+    // flows through to VisualizableAdapter for library detection.
+    const base = createPort<TName, MutationExecutor<TData, TInput, TError>, "inbound">({
+      name: config.name,
+      direction: "inbound",
+      category: "query/mutation",
+    });
+    // BRAND_CAST: Branded type boundary -- merge DirectedPort base with
+    // MutationPort-specific fields (phantom types, port symbol, config).
     return brandAsMutationPort<TName, TData, TInput, TError, TContext>(
       Object.freeze({
-        __portName: config.name,
+        ...base,
         [MUTATION_PORT_SYMBOL]: true,
         config: Object.freeze({ ...config }),
       })

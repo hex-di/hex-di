@@ -20,11 +20,13 @@ import type {
   MemoMapSnapshot,
   MemoEntrySnapshot,
 } from "../inspection/internal-state-types.js";
-import { DisposedScopeError } from "../errors/index.js";
-import type { ScopeContainerAccess } from "../container/impl.js";
+import { DisposedScopeError, ScopeDepthExceededError } from "../errors/index.js";
+import type { DisposalOptions } from "../util/memo-map.js";
+import type { ScopeContainerAccess } from "../container/internal-types.js";
 import { unreachable } from "../util/unreachable.js";
 import {
   ScopeLifecycleEmitter,
+  type LifecycleErrorReporter,
   type ScopeLifecycleListener,
   type ScopeSubscription,
   type ScopeDisposalState,
@@ -134,21 +136,32 @@ export class ScopeImpl<
   private readonly parentScope: ScopeImpl<TProvides, TAsyncPorts, TPhase> | null;
   private readonly lifecycleEmitter: ScopeLifecycleEmitter;
   private readonly unregisterFromContainer: (() => void) | undefined;
+  private readonly depth: number;
+  private readonly maxDepth: number;
+  private readonly disposalOptions: DisposalOptions | undefined;
+  private readonly errorReporter: LifecycleErrorReporter | undefined;
 
   constructor(
     container: ScopeContainerAccess<TProvides>,
     singletonMemo: MemoMap,
     parentScope: ScopeImpl<TProvides, TAsyncPorts, TPhase> | null = null,
     unregisterFromContainer?: () => void,
-    name?: string
+    name?: string,
+    maxDepth: number = 64,
+    disposalOptions?: DisposalOptions,
+    errorReporter?: LifecycleErrorReporter
   ) {
     this.name = name;
     this.id = generateScopeId(name);
     this.container = container;
     this.scopedMemo = singletonMemo.fork();
     this.parentScope = parentScope;
-    this.lifecycleEmitter = new ScopeLifecycleEmitter();
+    this.lifecycleEmitter = new ScopeLifecycleEmitter(errorReporter);
     this.unregisterFromContainer = unregisterFromContainer;
+    this.depth = parentScope !== null ? parentScope.depth + 1 : 0;
+    this.maxDepth = maxDepth;
+    this.disposalOptions = disposalOptions;
+    this.errorReporter = errorReporter;
   }
 
   resolve<P extends TProvides>(port: P): InferService<P> {
@@ -168,12 +181,18 @@ export class ScopeImpl<
   }
 
   createScope(name?: string): Scope<TProvides, TAsyncPorts, TPhase> {
+    if (this.depth + 1 > this.maxDepth) {
+      throw new ScopeDepthExceededError(this.depth + 1, this.maxDepth);
+    }
     const child = new ScopeImpl<TProvides, TAsyncPorts, TPhase>(
       this.container,
       this.container.getSingletonMemo(),
       this,
       undefined,
-      name
+      name,
+      this.maxDepth,
+      this.disposalOptions,
+      this.errorReporter
     );
     this.childScopes.add(child);
     return createScopeWrapper(child);
@@ -210,7 +229,7 @@ export class ScopeImpl<
       await child.dispose();
     }
     this.childScopes.clear();
-    await this.scopedMemo.dispose();
+    await this.scopedMemo.dispose(this.disposalOptions);
     if (this.parentScope !== null) {
       this.parentScope.childScopes.delete(this);
     } else if (this.unregisterFromContainer !== undefined) {

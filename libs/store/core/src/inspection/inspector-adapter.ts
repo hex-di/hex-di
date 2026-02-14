@@ -19,7 +19,7 @@ import {
   StoreRegistryPort,
 } from "../types/inspection.js";
 import { createStoreInspectorImpl } from "./store-inspector-impl.js";
-import type { StoreRegistry } from "./store-registry.js";
+import type { StoreRegistry } from "../types/inspection.js";
 
 // =============================================================================
 // Config

@@ -247,7 +247,7 @@ describe("wrappers.ts - isContainerParent via child.parent", () => {
     const childGraph = GraphBuilder.create().build();
     const child = container.createChild(childGraph, { name: "Child" });
 
-    const parent = child.parent;
+    const parent: any = child.parent;
     expect(typeof parent.resolve).toBe("function");
     expect(typeof parent.resolveAsync).toBe("function");
     expect(typeof parent.createScope).toBe("function");
@@ -269,7 +269,7 @@ describe("wrappers.ts - isContainerParent via child.parent", () => {
     const childGraph = GraphBuilder.create().build();
     const child = container.createChild(childGraph, { name: "Child" });
 
-    const logger = child.parent.resolve(LoggerPort);
+    const logger = (child.parent as any).resolve(LoggerPort);
     expect(typeof logger.log).toBe("function");
   });
 });
@@ -1133,14 +1133,13 @@ describe("async-engine.ts - edge cases", () => {
   });
 
   it("scoped async resolution caches within scope", async () => {
-    const adapter = createAdapter({
+    const adapter: any = createAdapter({
       provides: LoggerPort,
       requires: [],
       lifetime: "scoped",
-      factoryKind: "async",
       factory: async () => ({ log: vi.fn() }),
     });
-    const graph = GraphBuilder.create().provide(adapter).build();
+    const graph: any = GraphBuilder.create().provide(adapter).build();
     const container = createContainer({ graph, name: "Test" });
 
     const scope = container.createScope("test-scope");
@@ -1155,7 +1154,6 @@ describe("async-engine.ts - edge cases", () => {
       provides: LoggerPort,
       requires: [],
       lifetime: "singleton",
-      factoryKind: "async",
       factory: async () => ({ log: vi.fn() }),
     });
     const graph = GraphBuilder.create().provide(adapter).build();
@@ -1181,7 +1179,6 @@ describe("async-engine.ts - edge cases", () => {
       provides: LoggerPort,
       requires: [],
       lifetime: "singleton",
-      factoryKind: "async",
       factory: async () => {
         throw new FactoryError("Logger", new Error("inner"));
       },

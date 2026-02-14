@@ -126,8 +126,8 @@ describe("ProvideManyResultAllErrors type", () => {
       readonly [typeof AdapterA]
     >;
 
-    // Should be a GraphBuilder, not a string
-    expectTypeOf<Result>().toHaveProperty("provide");
+    // Should be a GraphBuilderSignature (success), not a string
+    expectTypeOf<Result>().toHaveProperty("__provides");
   });
 
   it("should return single error for intra-batch duplicate", () => {

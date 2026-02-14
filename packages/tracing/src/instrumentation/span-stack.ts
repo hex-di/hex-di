@@ -12,23 +12,35 @@
  */
 
 import type { Span } from "../types/index.js";
+import { getAsyncLocalStore } from "./async-context.js";
 
 /**
  * Module-level span stack for tracking active spans.
  *
  * @remarks
- * This is a module-scoped array, not exported. All access is through
- * the exported functions (pushSpan, popSpan, getActiveSpan, clearStack).
+ * When AsyncLocalStorage is initialized (via initAsyncSpanContext()),
+ * each async context gets its own isolated span stack, preventing
+ * cross-request trace corruption. Falls back to a global stack
+ * for browsers and edge runtimes.
+ *
+ * All access is through the exported functions
+ * (pushSpan, popSpan, getActiveSpan, clearStack).
  *
  * The stack maintains spans in LIFO order:
  * - `pushSpan()` adds a span to the top
  * - `popSpan()` removes and returns the top span
  * - `getActiveSpan()` returns the top span without removing it
- *
- * This simple design works for synchronous resolution and provides
- * the foundation for distributed tracing across container boundaries.
  */
-const spanStack: Span[] = [];
+const globalStack: Span[] = [];
+
+/**
+ * Get the current span stack (async-local or global fallback).
+ */
+function getStack(): Span[] {
+  const store = getAsyncLocalStore();
+  if (store) return store.stack;
+  return globalStack;
+}
 
 /**
  * Pushes a span onto the stack, making it the active span.
@@ -52,7 +64,7 @@ const spanStack: Span[] = [];
  * ```
  */
 export function pushSpan(span: Span): void {
-  spanStack.push(span);
+  getStack().push(span);
 }
 
 /**
@@ -72,7 +84,7 @@ export function pushSpan(span: Span): void {
  * ```
  */
 export function popSpan(): Span | undefined {
-  return spanStack.pop();
+  return getStack().pop();
 }
 
 /**
@@ -92,7 +104,8 @@ export function popSpan(): Span | undefined {
  * ```
  */
 export function getActiveSpan(): Span | undefined {
-  return spanStack.length > 0 ? spanStack[spanStack.length - 1] : undefined;
+  const stack = getStack();
+  return stack.length > 0 ? stack[stack.length - 1] : undefined;
 }
 
 /**
@@ -109,7 +122,7 @@ export function getActiveSpan(): Span | undefined {
  * ```
  */
 export function clearStack(): void {
-  spanStack.length = 0;
+  getStack().length = 0;
 }
 
 /**
@@ -129,5 +142,5 @@ export function clearStack(): void {
  * ```
  */
 export function getStackDepth(): number {
-  return spanStack.length;
+  return getStack().length;
 }

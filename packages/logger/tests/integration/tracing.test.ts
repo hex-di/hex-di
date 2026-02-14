@@ -27,6 +27,7 @@ function makeEntry(overrides: Partial<LogEntry> = {}): LogEntry {
     level: "info",
     message: "test message",
     timestamp: new Date("2024-01-15T10:30:00.000Z").getTime(),
+    sequence: 0,
     context: {},
     annotations: {},
     ...overrides,

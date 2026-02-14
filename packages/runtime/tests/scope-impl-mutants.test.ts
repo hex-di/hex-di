@@ -35,7 +35,7 @@ const ReqCtxPort = port<ReqCtx>()({ name: "ReqCtx" });
 const DbConnPort = port<DbConn>()({ name: "DbConn" });
 
 function makeContainer(opts: { scoped?: boolean; singleton?: boolean } = {}) {
-  let builder = GraphBuilder.create();
+  let builder: any = GraphBuilder.create();
   if (opts.singleton !== false) {
     builder = builder.provide(
       createAdapter({

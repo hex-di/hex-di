@@ -194,7 +194,6 @@ describe("RootContainerImpl adapter registration", () => {
           provides: LoggerPort,
           requires: [],
           lifetime: "singleton",
-          factoryKind: "async" as const,
           factory: async () => ({ log: vi.fn() }),
         })
       )
@@ -219,7 +218,6 @@ describe("RootContainerImpl initialize with async adapters", () => {
           provides: LoggerPort,
           requires: [],
           lifetime: "singleton",
-          factoryKind: "async" as const,
           factory: async () => {
             factoryCallCount++;
             return { log: vi.fn() };

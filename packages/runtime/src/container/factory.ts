@@ -9,7 +9,7 @@ import { tryCatch, fromPromise, type ResultAsync } from "@hex-di/result";
 import { OverrideBuilder, type ContainerForOverride } from "./override-builder.js";
 import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
 import { mapToContainerError, mapToDisposalError, emitResultEvent } from "./result-helpers.js";
-import type { ContainerError } from "../errors/index.js";
+import { ContainerError } from "../errors/index.js";
 import type {
   HooksInstaller,
   HookType,
@@ -133,6 +133,9 @@ export function createContainer<
 ): Container<TProvides, never, TAsyncPorts, "uninitialized"> {
   const { graph, name, hooks, performance } = config;
 
+  // Emit tracing warning if no hooks configured
+  emitTracingWarning(name, hooks, performance);
+
   // Create late-binding hooks holder with array for dynamic composition
   // This allows hooks to be installed AFTER container creation via wrappers
   const hooksHolder: HooksHolder = { hookSources: [] };
@@ -152,6 +155,43 @@ export function createContainer<
 
   // Create wrapper with hooks holder for dynamic hook installation
   return createUninitializedContainerWrapper(impl, name, hooks, hooksHolder);
+}
+
+/**
+ * Emits a one-time warning when no resolution hooks are configured.
+ * Suppressed in production (NODE_ENV=production) or when opted out
+ * via performance.disableTracingWarnings.
+ * @internal
+ */
+function emitTracingWarning(
+  containerName: string,
+  hooks: ResolutionHooks | undefined,
+  performance: RuntimePerformanceOptions | undefined
+): void {
+  if (performance?.disableTracingWarnings === true) {
+    return;
+  }
+  // Never warn in production
+  const gp = globalThis as Record<string, unknown>;
+  const proc = gp.process as { env?: Record<string, string | undefined> } | undefined;
+  if (proc?.env?.NODE_ENV === "production") {
+    return;
+  }
+  // Only warn if no hooks are configured at creation time
+  if (hooks !== undefined) {
+    return;
+  }
+  // Use globalThis.console to avoid TS issues in environments without dom lib
+  const g = globalThis as Record<string, unknown>;
+  const cons = g.console as { warn?: (msg: string) => void } | undefined;
+  if (cons && typeof cons.warn === "function") {
+    cons.warn(
+      `[@hex-di/runtime] Container "${containerName}" created without resolution hooks. ` +
+        `For GxP-compliant observability, configure hooks via createContainer({ hooks: ... }) ` +
+        `or use @hex-di/tracing instrumentContainer(). ` +
+        `Set performance.disableTracingWarnings to suppress this warning.`
+    );
+  }
 }
 
 /**
@@ -213,7 +253,28 @@ function createUninitializedContainerWrapper<
   const handlerToUninstall = new WeakMap<AnyHookHandler, () => void>();
 
   function resolve<P extends Exclude<TProvides, TAsyncPorts>>(port: P): InferService<P> {
-    return impl.resolve(port);
+    try {
+      const value = impl.resolve(port);
+      if (container.inspector?.emit) {
+        container.inspector.emit({
+          type: "result:ok",
+          portName: port.__portName,
+          timestamp: Date.now(),
+        });
+      }
+      return value;
+    } catch (e: unknown) {
+      if (container.inspector?.emit) {
+        const errorCode = e instanceof ContainerError ? e.code : "UNKNOWN";
+        container.inspector.emit({
+          type: "result:err",
+          portName: port.__portName,
+          errorCode,
+          timestamp: Date.now(),
+        });
+      }
+      throw e;
+    }
   }
 
   // Override method defined using a function declaration pattern.
@@ -235,8 +296,30 @@ function createUninitializedContainerWrapper<
 
   const container: UninitializedContainerInternals<TProvides, TAsyncPorts> = {
     resolve,
-    resolveAsync: <P extends TProvides>(port: P): Promise<InferService<P>> =>
-      impl.resolveAsync(port),
+    resolveAsync: async <P extends TProvides>(port: P): Promise<InferService<P>> => {
+      try {
+        const value = await impl.resolveAsync(port);
+        if (container.inspector?.emit) {
+          container.inspector.emit({
+            type: "result:ok",
+            portName: port.__portName,
+            timestamp: Date.now(),
+          });
+        }
+        return value;
+      } catch (e: unknown) {
+        if (container.inspector?.emit) {
+          const errorCode = e instanceof ContainerError ? e.code : "UNKNOWN";
+          container.inspector.emit({
+            type: "result:err",
+            portName: port.__portName,
+            errorCode,
+            timestamp: Date.now(),
+          });
+        }
+        throw e;
+      }
+    },
     tryResolve: <P extends Exclude<TProvides, TAsyncPorts>>(port: P) => {
       const result = tryCatch(() => impl.resolve(port), mapToContainerError);
       emitResultEvent(container.inspector, port.__portName, result);
@@ -370,6 +453,13 @@ function createUninitializedContainerWrapper<
     has: (port): port is TProvides => impl.has(port),
     hasAdapter: port => impl.hasAdapter(port),
     addHook: <T extends HookType>(type: T, handler: HookHandler<T>): void => {
+      // Guard: If same handler already registered, uninstall previous first
+      const existingUninstall = handlerToUninstall.get(handler);
+      if (existingUninstall !== undefined) {
+        existingUninstall();
+        handlerToUninstall.delete(handler);
+      }
+
       // Create a ResolutionHooks object with just this handler
       const hooks: ResolutionHooks =
         type === "beforeResolve"
@@ -484,7 +574,28 @@ function createInitializedContainerWrapper<
   handlerToUninstall: WeakMap<AnyHookHandler, () => void>
 ): Container<TProvides, never, TAsyncPorts, "initialized"> {
   function resolve<P extends TProvides>(port: P): InferService<P> {
-    return impl.resolve(port);
+    try {
+      const value = impl.resolve(port);
+      if (container.inspector?.emit) {
+        container.inspector.emit({
+          type: "result:ok",
+          portName: port.__portName,
+          timestamp: Date.now(),
+        });
+      }
+      return value;
+    } catch (e: unknown) {
+      if (container.inspector?.emit) {
+        const errorCode = e instanceof ContainerError ? e.code : "UNKNOWN";
+        container.inspector.emit({
+          type: "result:err",
+          portName: port.__portName,
+          errorCode,
+          timestamp: Date.now(),
+        });
+      }
+      throw e;
+    }
   }
 
   // Override method defined using a function declaration pattern.
@@ -506,8 +617,30 @@ function createInitializedContainerWrapper<
 
   const container: InitializedContainerInternals<TProvides, TAsyncPorts> = {
     resolve,
-    resolveAsync: <P extends TProvides>(port: P): Promise<InferService<P>> =>
-      impl.resolveAsync(port),
+    resolveAsync: async <P extends TProvides>(port: P): Promise<InferService<P>> => {
+      try {
+        const value = await impl.resolveAsync(port);
+        if (container.inspector?.emit) {
+          container.inspector.emit({
+            type: "result:ok",
+            portName: port.__portName,
+            timestamp: Date.now(),
+          });
+        }
+        return value;
+      } catch (e: unknown) {
+        if (container.inspector?.emit) {
+          const errorCode = e instanceof ContainerError ? e.code : "UNKNOWN";
+          container.inspector.emit({
+            type: "result:err",
+            portName: port.__portName,
+            errorCode,
+            timestamp: Date.now(),
+          });
+        }
+        throw e;
+      }
+    },
     tryResolve: <P extends TProvides>(port: P) => {
       const result = tryCatch(() => impl.resolve(port), mapToContainerError);
       emitResultEvent(container.inspector, port.__portName, result);
@@ -614,6 +747,13 @@ function createInitializedContainerWrapper<
     has: (port): port is TProvides => impl.has(port),
     hasAdapter: port => impl.hasAdapter(port),
     addHook: <T extends HookType>(type: T, handler: HookHandler<T>): void => {
+      // Guard: If same handler already registered, uninstall previous first
+      const existingUninstall = handlerToUninstall.get(handler);
+      if (existingUninstall !== undefined) {
+        existingUninstall();
+        handlerToUninstall.delete(handler);
+      }
+
       // Create a ResolutionHooks object with just this handler
       const hooks: ResolutionHooks =
         type === "beforeResolve"

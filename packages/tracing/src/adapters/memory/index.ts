@@ -54,4 +54,5 @@
 
 export { MemoryTracerAdapter } from "./adapter.js";
 export { MemoryTracer, createMemoryTracer } from "./tracer.js";
+export type { MemoryTracerOptions } from "./tracer.js";
 export { MemorySpan } from "./span.js";

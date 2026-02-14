@@ -4,6 +4,14 @@
  * The compile-time validation layer of HexDI.
  * Provides type-safe dependency injection with actionable compile-time errors.
  *
+ * ## API Stability Tiers
+ *
+ * | Tier | Import Path | Stability | Policy |
+ * |------|-------------|-----------|--------|
+ * | Primary | `@hex-di/graph` | Stable | Semver-protected; breaking changes require major version bump |
+ * | Advanced | `@hex-di/graph/advanced` | Stable | Semver-protected; additions may occur in minor versions |
+ * | Internal | `@hex-di/graph/internal` | Unstable | May change without notice in any version; not for external consumption |
+ *
  * ## Quick Start
  *
  * ```typescript
@@ -26,12 +34,6 @@
  *   .provide(loggerAdapter)
  *   .build();
  * ```
- *
- * ## Export Tiers
- *
- * - **Primary** (`@hex-di/graph`): Core graph building and inference
- * - **Advanced** (`@hex-di/graph/advanced`): Validation, inspection, error parsing
- * - **Internal** (`@hex-di/graph/internal`): Library authors, debugging, unstable API
  *
  * Note: Ports, adapters, and errors are now in `@hex-di/core`.
  *
@@ -77,6 +79,7 @@ export type {
 } from "./errors/index.js";
 
 export { isGraphBuildError } from "./errors/index.js";
+export { GraphBuildException } from "./errors/index.js";
 
 // =============================================================================
 // Pretty View Symbol (for IDE type display)

@@ -37,7 +37,7 @@ const DatabasePort = port<Database>()({ name: "Database" });
 const RequestCtxPort = port<RequestCtx>()({ name: "RequestCtx" });
 
 function makeContainer(opts: { singletons?: boolean; scoped?: boolean; name?: string } = {}) {
-  let builder = GraphBuilder.create();
+  let builder: any = GraphBuilder.create();
 
   builder = builder.provide(
     createAdapter({

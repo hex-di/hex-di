@@ -29,6 +29,8 @@ export interface LogEntry {
   readonly level: LogLevel;
   readonly message: string;
   readonly timestamp: number;
+  /** Monotonic sequence number, unique per process. Enables ordering and gap detection. */
+  readonly sequence: number;
   readonly context: LogContext;
   readonly annotations: Readonly<Record<string, unknown>>;
   readonly error?: Error;
@@ -36,4 +38,9 @@ export interface LogEntry {
     readonly traceId: string;
     readonly spanId: string;
   }>;
+  /** Optional tamper-evidence hash chain. Populated by withIntegrity() wrapper. */
+  readonly integrity?: {
+    readonly hash: string;
+    readonly previousHash: string;
+  };
 }

@@ -7,6 +7,7 @@
  */
 
 import type { Ok, Err, Result, ResultAsync } from "./types.js";
+import { RESULT_BRAND } from "./brand.js";
 
 // Lazy accessor for ResultAsync to avoid circular deps at module load time.
 // Populated by the async module on import.
@@ -54,6 +55,7 @@ export function ok<T>(value: T): Ok<T, never> {
   const self: Ok<T, never> = {
     _tag: "Ok",
     value,
+    [RESULT_BRAND]: true,
 
     // Type guards — must use method shorthand for type predicates
     isOk(): this is Ok<T, never> {
@@ -172,6 +174,7 @@ export function ok<T>(value: T): Ok<T, never> {
     },
   };
 
+  Object.freeze(self);
   return self;
 }
 
@@ -179,6 +182,7 @@ export function err<E>(error: E): Err<never, E> {
   const self: Err<never, E> = {
     _tag: "Err",
     error,
+    [RESULT_BRAND]: true,
 
     // Type guards
     isOk(): this is Ok<never, E> {
@@ -294,5 +298,6 @@ export function err<E>(error: E): Err<never, E> {
     },
   };
 
+  Object.freeze(self);
   return self;
 }

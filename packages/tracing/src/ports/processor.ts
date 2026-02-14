@@ -162,6 +162,6 @@ export const SpanProcessorPort = port<SpanProcessor>()({
   name: "SpanProcessor",
   direction: "outbound",
   description: "Processes span lifecycle events and coordinates exports",
-  category: "infrastructure",
+  category: "tracing/processor",
   tags: ["tracing", "observability", "processing"],
 });

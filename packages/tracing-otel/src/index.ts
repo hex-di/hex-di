@@ -36,6 +36,7 @@ export {
 
 // Processors
 export { createBatchSpanProcessor } from "./processors/batch.js";
+export type { BatchSpanProcessorWithMetrics } from "./processors/batch.js";
 export { createSimpleSpanProcessor } from "./processors/simple.js";
 export type { BatchSpanProcessorOptions, SimpleSpanProcessorOptions } from "./processors/types.js";
 

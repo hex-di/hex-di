@@ -129,6 +129,16 @@ By making every library report its state, behavior, and capabilities back to the
 - ✅ LoggerLibraryInspectorAdapter — frozen singleton for auto-discovery (`packages/logger/src/inspection/library-inspector-adapter.ts`)
 - ❌ MCP resource exposure not yet wired
 
+**Guard Library (0% implementation — spec complete):**
+
+- ✅ Spec exists (`spec/guard/`) with full design (sections 05-16)
+- ❌ Package doesn't exist (`packages/guard/` missing)
+- ❌ GuardInspector not implemented
+- ❌ GuardLibraryInspectorPort not implemented
+- ❌ GuardLibraryInspectorAdapter not implemented
+- ❌ MCP resource exposure not implemented
+- ❌ A2A skills not wired
+
 **Unified Knowledge Model (~80% complete):**
 
 - ✅ ContainerInspector exists (`packages/runtime/src/inspection/`)
@@ -140,8 +150,8 @@ By making every library report its state, behavior, and capabilities back to the
 - ✅ `inspector.getUnifiedSnapshot()` combines container + all registered libraries
 - ✅ isLibraryInspector type guard
 - ✅ createLibraryInspectorPort helper
-- ✅ All library bridges: Flow, Store, Query, Saga, Logger, Tracing
-- ✅ All frozen adapters for auto-discovery: Flow, Store, Query, Saga, Logger, Tracing
+- ✅ All library bridges: Flow, Store, Query, Saga, Logger, Tracing (Guard: pending implementation)
+- ✅ All frozen adapters for auto-discovery: Flow, Store, Query, Saga, Logger, Tracing (Guard: pending implementation)
 - ✅ Auto-discovery via `afterResolve` hook for ports with `category: "library-inspector"`
 - ❌ Cross-library event bus not yet unified
 - ❌ Unified query API across libraries not yet implemented
@@ -164,6 +174,7 @@ By making every library report its state, behavior, and capabilities back to the
 - Saga: running workflows, compensation state, failure points
 - Agent: tool registry, conversation history, approval state
 - Logger: entry counts, error rates, handler health, sampling/redaction stats
+- Guard: active policies, recent decisions, permission stats, audit entries
 
 **Complete Integration:**
 
@@ -2135,6 +2146,23 @@ export type LibrarySource =
 4. ~~**No Query Library (3.6)**~~ — ✅ Fully implemented in `libs/query/`
 5. ~~**No Unified Model (3.9)**~~ — ✅ Partially implemented (registry + unified snapshot working)
 
+### HTTP Client Library (0% — spec complete, awaiting implementation)
+
+The HTTP client library (`@hex-di/http-client`) has a complete spec at `spec/http-client/` with full Phase 3 reporting specified:
+
+- **HttpClientInspector** — Pull-based query API for request history, latency stats, active requests (spec §54)
+- **HttpClientLibraryInspectorPort** — Bridge into ecosystem-wide `LibraryInspector` protocol (spec §49)
+  - Returns `name: "http-client"`, frozen snapshots, wrapped events with `source: "http-client"`
+  - `HttpClientLibraryInspectorAdapter` — frozen singleton, auto-registered via `afterResolve` hook
+- **Health derivation** — Computed from error rate, circuit breaker state, latency (spec §54)
+  - `"healthy"` / `"degraded"` / `"unhealthy"` with human-readable reasons
+- **Combinator chain introspection** — Symbol-keyed metadata on wrapped clients (spec §54)
+- **Combinator state reporting** — Circuit breaker, rate limiter, cache state visible in snapshot (spec §65-67)
+- **MCP resource mappings** — 8 URIs including `hexdi://http/health`, `hexdi://http/circuit-breakers` (spec §57)
+- **A2A skill definitions** — `diagnose-http-issue`, `http-health-check` (spec §57)
+
+**Status:** Spec complete. No implementation code yet. All interfaces, snapshot types, health rules, and 206 DoD tests are specified.
+
 ### Remaining Gaps
 
 1. **Agent Library Missing (3.8)**
@@ -2211,6 +2239,7 @@ Phase 3 is the **critical convergence point** where HexDI transforms from a DI c
 **What remains:**
 
 - **Agent Library** (0%): Spec exists but no implementation — separate multi-week effort
+- **Guard Library** (0%): Spec complete (16 sections) but no implementation — separate multi-week effort
 - **Unified Model**: Cross-library unified query API, cross-library event bus
 - **Example app** demonstrating full auto-discovery chain
 

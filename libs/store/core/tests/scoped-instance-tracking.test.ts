@@ -218,9 +218,7 @@ describe("StoreInspectorImpl with registry auto-discovery", () => {
   });
 
   it("subscribes for future registry changes", () => {
-    type Listener = (
-      event: import("../src/inspection/store-registry.js").StoreRegistryEvent
-    ) => void;
+    type Listener = (event: import("../src/types/inspection.js").StoreRegistryEvent) => void;
     const listeners: Listener[] = [];
 
     const mockRegistry = {

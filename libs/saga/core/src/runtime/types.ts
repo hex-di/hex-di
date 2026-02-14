@@ -8,7 +8,7 @@ import type { ResultAsync } from "@hex-di/result";
 import type { SagaSuccess, SagaError, ManagementError, SagaStatus } from "../errors/types.js";
 import type { AnySagaDefinition } from "../saga/types.js";
 import type { SagaPersister } from "../ports/types.js";
-import type { SagaTracingHook, TracerLike } from "../introspection/types.js";
+import type { SagaTracingHook, TracerLike } from "../shared/tracing-types.js";
 
 // =============================================================================
 // SagaEvent types

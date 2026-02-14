@@ -62,6 +62,46 @@ import { logError, mapSpanKindToDataDog } from "./utils.js";
  * const hexTracer = createTracer({ processor });
  * ```
  */
+/**
+ * Topological sort of spans so parents appear before children.
+ *
+ * DataDog requires parent spans to be started before child spans
+ * reference them. This ensures the activeSpans map always has the
+ * parent available when processing a child.
+ *
+ * Falls back to original order for spans without parent relationships.
+ */
+function topoSortSpans(spans: ReadonlyArray<SpanData>): SpanData[] {
+  const spanMap = new Map<string, SpanData>();
+  for (const span of spans) {
+    spanMap.set(span.context.spanId, span);
+  }
+
+  const result: SpanData[] = [];
+  const visited = new Set<string>();
+
+  function visit(span: SpanData): void {
+    if (visited.has(span.context.spanId)) return;
+    visited.add(span.context.spanId);
+
+    // Visit parent first if it's in this batch
+    if (span.parentSpanId) {
+      const parent = spanMap.get(span.parentSpanId);
+      if (parent) {
+        visit(parent);
+      }
+    }
+
+    result.push(span);
+  }
+
+  for (const span of spans) {
+    visit(span);
+  }
+
+  return result;
+}
+
 export function createDataDogBridge(config: DataDogBridgeConfig): SpanExporter {
   const { tracer, serviceName, environment, version } = config;
 
@@ -85,7 +125,10 @@ export function createDataDogBridge(config: DataDogBridgeConfig): SpanExporter {
 
       return Promise.resolve().then(() => {
         try {
-          for (const hexSpan of spans) {
+          // Sort spans so parents are exported before children.
+          // DataDog requires parent spans to exist before children reference them.
+          const sorted = topoSortSpans(spans);
+          for (const hexSpan of sorted) {
             try {
               // Find parent span if this is a child span
               const parentSpan = hexSpan.parentSpanId
@@ -214,6 +257,7 @@ export function createDataDogBridge(config: DataDogBridgeConfig): SpanExporter {
      * Shutdown the exporter and release resources.
      *
      * Ensures all buffered spans are flushed to DataDog agent before cleanup.
+     * Includes a 30-second safety timeout to prevent indefinite hangs.
      */
     async shutdown(): Promise<void> {
       if (isShutdown) {
@@ -226,12 +270,18 @@ export function createDataDogBridge(config: DataDogBridgeConfig): SpanExporter {
         const result = tracer.flush();
         // Handle both Promise and void returns
         if (result && typeof result === "object" && "then" in result) {
-          await result;
+          await Promise.race([
+            result,
+            new Promise<void>(resolve => {
+              setTimeout(resolve, 30000);
+            }),
+          ]);
         }
         // Clear active spans map
         activeSpans.clear();
       } catch (error) {
         logError("[hex-di/tracing-datadog] DataDog shutdown failed:", error);
+        activeSpans.clear();
       }
     },
   };

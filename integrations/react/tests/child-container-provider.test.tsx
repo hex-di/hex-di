@@ -87,6 +87,9 @@ function createMockScope(name: string = "scoped-test-service"): TestScope {
   const mockScope: TestScope = {
     resolve: mockResolve,
     resolveAsync: mockResolveAsync,
+    tryResolve: vi.fn(),
+    tryResolveAsync: vi.fn(),
+    tryDispose: vi.fn(),
     createScope: mockCreateScope,
     dispose: mockDispose,
     has: vi.fn().mockReturnValue(true),
@@ -166,12 +169,19 @@ function createMockContainer(): TestContainer {
       libraries: {},
       registeredLibraries: [],
     }),
+    queryLibraries: vi.fn().mockReturnValue([]),
+    queryByLibrary: vi.fn().mockReturnValue([]),
+    queryByKey: vi.fn().mockReturnValue([]),
     isDisposed: false,
   };
 
   const mockContainer: TestContainer = {
     resolve: mockResolve,
     resolveAsync: mockResolveAsync,
+    tryResolve: vi.fn(),
+    tryResolveAsync: vi.fn(),
+    tryDispose: vi.fn(),
+    tryInitialize: vi.fn(),
     createScope: mockCreateScope,
     createChild: mockCreateChild,
     createChildAsync: vi.fn(),

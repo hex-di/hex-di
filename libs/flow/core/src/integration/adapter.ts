@@ -13,8 +13,13 @@ import { ok, err } from "@hex-di/result";
 import type { Machine } from "../machine/types.js";
 import { createMachineRunner } from "../runner/create-runner.js";
 import { createActivityManager } from "../activities/manager.js";
-import { createDIEffectExecutor, type ScopeResolver } from "./di-executor.js";
-import type { FlowService } from "./types.js";
+import { createDIEffectExecutor } from "./di-executor.js";
+import type {
+  FlowService,
+  ScopeResolver,
+  ActivityRegistry,
+  ActivityDepsResolver,
+} from "./types.js";
 import type { FlowPort } from "./port.js";
 import type { PortDeps } from "@hex-di/core";
 import type { ConfiguredActivityAny } from "../activities/types.js";
@@ -631,12 +636,6 @@ function validateActivitiesAtRuntime(
 }
 
 /**
- * Activity registry type for looking up activities by port name.
- * @internal
- */
-export type ActivityRegistry = ReadonlyMap<string, ConfiguredActivityAny>;
-
-/**
  * Builds a registry mapping activity port names to activities.
  *
  * @param activities - The activities array from config
@@ -658,14 +657,6 @@ function buildActivityRegistry(
 
   return registry;
 }
-
-/**
- * Activity deps resolver function type.
- * @internal
- */
-export type ActivityDepsResolver = <TRequires extends readonly Port<unknown, string>[]>(
-  requires: TRequires
-) => PortDeps<TRequires>;
 
 /**
  * Creates a resolver function that extracts activity dependencies from

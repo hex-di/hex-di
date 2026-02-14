@@ -19,6 +19,23 @@ import type {
 import { MemorySpan } from "./span.js";
 
 /**
+ * Options for creating a MemoryTracer.
+ *
+ * @public
+ */
+export interface MemoryTracerOptions {
+  /** Maximum spans to retain (FIFO eviction). @default 10000 */
+  readonly maxSpans?: number;
+  /** Default attributes applied to all spans. @default {} */
+  readonly defaultAttributes?: Attributes;
+  /**
+   * Callback invoked when a span is evicted due to buffer overflow.
+   * Receives the evicted span data and the running total of dropped spans.
+   */
+  readonly onDrop?: (spanData: SpanData, droppedCount: number) => void;
+}
+
+/**
  * MemoryTracer - In-memory implementation of the Tracer interface.
  *
  * Collects all completed spans in memory for testing and debugging.
@@ -73,18 +90,50 @@ export class MemoryTracer implements Tracer {
   /** Bound onEnd callback to avoid creating closures per span */
   private readonly _onSpanEnd: (spanData: SpanData) => void;
 
+  /** Running count of spans dropped due to buffer overflow */
+  private _droppedSpanCount = 0;
+
+  /** Optional callback invoked when a span is evicted */
+  private readonly _onDrop: ((spanData: SpanData, droppedCount: number) => void) | undefined;
+
   /**
    * Creates a new MemoryTracer.
    *
-   * @param maxSpans - Maximum spans to retain (default: 10000)
-   * @param defaultAttributes - Attributes applied to all spans (default: {})
+   * @param options - Configuration options (or maxSpans number for legacy compat)
+   * @param defaultAttributes - Default attributes (only used with numeric first arg)
    */
-  constructor(maxSpans = 10000, defaultAttributes: Attributes = {}) {
+  constructor(options?: MemoryTracerOptions | number, defaultAttributes?: Attributes) {
+    // Support both new options object and legacy positional args
+    let maxSpans: number;
+    let attrs: Attributes;
+    let onDrop: ((spanData: SpanData, droppedCount: number) => void) | undefined;
+
+    if (typeof options === "number") {
+      maxSpans = options;
+      attrs = defaultAttributes ?? {};
+      onDrop = undefined;
+    } else {
+      maxSpans = options?.maxSpans ?? 10000;
+      attrs = options?.defaultAttributes ?? {};
+      onDrop = options?.onDrop;
+    }
+
     this._maxSpans = maxSpans;
     this._spans = new Array(maxSpans);
-    this._defaultAttributes = defaultAttributes;
-    this._hasDefaultAttributes = Object.keys(defaultAttributes).length > 0;
+    this._defaultAttributes = attrs;
+    this._hasDefaultAttributes = Object.keys(attrs).length > 0;
     this._onSpanEnd = this._collectSpan.bind(this);
+    this._onDrop = onDrop;
+  }
+
+  /**
+   * Number of spans dropped due to buffer overflow.
+   *
+   * For GxP audit trails: compare this with total span count to
+   * assess data completeness.
+   */
+  get droppedSpanCount(): number {
+    return this._droppedSpanCount;
   }
 
   /**
@@ -244,7 +293,11 @@ export class MemoryTracer implements Tracer {
     for (const key in attributes) {
       merged[key] = attributes[key];
     }
-    return new MemoryTracer(this._maxSpans, merged);
+    return new MemoryTracer({
+      maxSpans: this._maxSpans,
+      defaultAttributes: merged,
+      onDrop: this._onDrop,
+    });
   }
 
   /**
@@ -287,6 +340,7 @@ export class MemoryTracer implements Tracer {
     this._head = 0;
     this._tail = 0;
     this._size = 0;
+    this._droppedSpanCount = 0;
     this._spans.fill(undefined);
 
     // Reset span stack
@@ -302,6 +356,9 @@ export class MemoryTracer implements Tracer {
    * @internal
    */
   private _collectSpan(spanData: SpanData): void {
+    // Save the evicted span BEFORE overwriting (when full, tail == head)
+    const evictedSpan = this._size >= this._maxSpans ? this._spans[this._head] : undefined;
+
     // Write at tail position
     this._spans[this._tail] = spanData;
     this._tail = (this._tail + 1) % this._maxSpans;
@@ -310,8 +367,13 @@ export class MemoryTracer implements Tracer {
     if (this._size < this._maxSpans) {
       this._size++;
     } else {
-      // Buffer full, advance head to maintain FIFO
+      // Buffer full -- record the drop for GxP audit trail
       this._head = (this._head + 1) % this._maxSpans;
+      this._droppedSpanCount++;
+
+      if (this._onDrop && evictedSpan !== undefined) {
+        this._onDrop(evictedSpan, this._droppedSpanCount);
+      }
     }
   }
 
@@ -344,8 +406,8 @@ export class MemoryTracer implements Tracer {
  *
  * Convenience factory for creating memory tracers in tests.
  *
- * @param maxSpans - Maximum spans to retain (default: 10000)
- * @param defaultAttributes - Attributes applied to all spans (default: {})
+ * @param options - Configuration options (or maxSpans number for legacy compat)
+ * @param defaultAttributes - Default attributes (only used with numeric first arg)
  * @returns A new MemoryTracer instance
  *
  * @example
@@ -360,11 +422,20 @@ export class MemoryTracer implements Tracer {
  * tracer.clear();
  * ```
  *
+ * @example With drop tracking
+ * ```typescript
+ * const drops: SpanData[] = [];
+ * const tracer = createMemoryTracer({
+ *   maxSpans: 100,
+ *   onDrop: (span) => drops.push(span),
+ * });
+ * ```
+ *
  * @public
  */
 export function createMemoryTracer(
-  maxSpans = 10000,
-  defaultAttributes: Attributes = {}
+  options?: MemoryTracerOptions | number,
+  defaultAttributes?: Attributes
 ): MemoryTracer {
-  return new MemoryTracer(maxSpans, defaultAttributes);
+  return new MemoryTracer(options, defaultAttributes);
 }

@@ -10,8 +10,6 @@
 import { createPort, createLibraryInspectorPort } from "@hex-di/core";
 import type { DirectedPort } from "@hex-di/core";
 import type { EffectFailedError, AsyncDerivedSelectError } from "../errors/tagged-errors.js";
-import type { StoreRegistry } from "../inspection/store-registry.js";
-import type { ActionHistory } from "../inspection/action-history.js";
 import type { StoreTracingHook } from "../integration/tracing-bridge.js";
 
 // =============================================================================
@@ -153,6 +151,105 @@ export interface ActionHistoryConfig {
     readonly actionNames?: readonly string[];
   };
 }
+
+// =============================================================================
+// ActionHistory
+// =============================================================================
+
+export interface ActionHistory {
+  /** Record a new action entry. Returns true if recorded, false if skipped. */
+  record(entry: ActionHistoryEntry): boolean;
+
+  /** Query entries with optional filter */
+  query(filter?: ActionHistoryFilter): readonly ActionHistoryEntry[];
+
+  /** Clear all recorded entries */
+  clear(): void;
+
+  /** Current entry count */
+  readonly size: number;
+}
+
+// =============================================================================
+// StoreRegistryEntry
+// =============================================================================
+
+/**
+ * Entry representing a registered store port in the registry.
+ */
+export interface StoreRegistryEntry {
+  readonly portName: string;
+  readonly adapter: object;
+  readonly lifetime: "singleton" | "scoped";
+  readonly requires: readonly string[];
+  readonly writesTo: readonly string[];
+  getSnapshot: () => PortSnapshot;
+  getSubscriberCount: () => number;
+  getHasEffects: () => boolean;
+}
+
+// =============================================================================
+// StoreRegistryEvent
+// =============================================================================
+
+/**
+ * Event emitted by the StoreRegistry when ports are registered/unregistered.
+ */
+export type StoreRegistryEvent =
+  | { readonly type: "port-registered"; readonly entry: StoreRegistryEntry }
+  | { readonly type: "port-unregistered"; readonly portName: string }
+  | {
+      readonly type: "scoped-port-registered";
+      readonly scopeId: string;
+      readonly entry: StoreRegistryEntry;
+    }
+  | { readonly type: "scope-unregistered"; readonly scopeId: string };
+
+/**
+ * Listener callback for registry events.
+ */
+export type StoreRegistryListener = (event: StoreRegistryEvent) => void;
+
+// =============================================================================
+// StoreRegistry Interface
+// =============================================================================
+
+/**
+ * Registry for tracking store port instances.
+ */
+export interface StoreRegistry {
+  /** Register a singleton port entry. */
+  register(entry: StoreRegistryEntry): void;
+
+  /** Unregister a singleton port by name. */
+  unregister(portName: string): void;
+
+  /** Register a scoped port entry under a scope ID. */
+  registerScoped(scopeId: string, entry: StoreRegistryEntry): void;
+
+  /** Remove all port entries for a given scope ID. */
+  unregisterScope(scopeId: string): void;
+
+  /** Get all singleton entries. */
+  getAll(): readonly StoreRegistryEntry[];
+
+  /** Get all scoped entries for a given scope ID. */
+  getAllScoped(scopeId: string): readonly StoreRegistryEntry[];
+
+  /** Get a singleton entry by port name. */
+  get(portName: string): StoreRegistryEntry | undefined;
+
+  /** Subscribe to registry events. */
+  subscribe(listener: StoreRegistryListener): Unsubscribe;
+
+  /** Dispose the registry, clearing all entries and listeners. */
+  dispose(): void;
+}
+
+/**
+ * Function to unsubscribe from notifications.
+ */
+export type Unsubscribe = () => void;
 
 // =============================================================================
 // SubscriberGraph

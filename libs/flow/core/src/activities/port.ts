@@ -11,150 +11,29 @@
  * @packageDocumentation
  */
 
-import { type Port } from "@hex-di/core";
-import type { Activity } from "./types.js";
+import { createPort } from "@hex-di/core";
+import type { ActivityPort } from "./types.js";
 
 // =============================================================================
-// Activity Port Type
-// =============================================================================
-
-/**
- * A port type for an Activity with typed input and output.
- *
- * This type extends the base Port type with phantom properties that carry
- * the activity's input and output types at the type level. These phantom
- * properties enable type utilities to extract I/O types without accessing
- * the underlying Activity interface.
- *
- * @typeParam TInput - The input type for the activity
- * @typeParam TOutput - The output type of the activity
- * @typeParam TName - The literal string type for the port name
- *
- * @remarks
- * The `__activityInput` and `__activityOutput` properties are phantom types:
- * - They exist only at the type level for compile-time inference
- * - They have no runtime representation (zero overhead)
- * - They enable direct type extraction via indexed access types
- *
- * @example
- * ```typescript
- * // Create an activity port
- * const FetchUserPort = activityPort<{ userId: string }, User>()('FetchUser');
- *
- * // Extract types via phantom properties
- * type Input = typeof FetchUserPort['__activityInput'];   // { userId: string }
- * type Output = typeof FetchUserPort['__activityOutput']; // User
- *
- * // Or use the utility types
- * type Input2 = ActivityInput<typeof FetchUserPort>;
- * type Output2 = ActivityOutput<typeof FetchUserPort>;
- * ```
- */
-export type ActivityPort<TInput, TOutput, TName extends string> = Port<
-  Activity<TInput, TOutput>,
-  TName
-> & {
-  /**
-   * Phantom property carrying the activity's input type.
-   * Exists only at the type level for compile-time inference.
-   */
-  readonly __activityInput: TInput;
-
-  /**
-   * Phantom property carrying the activity's output type.
-   * Exists only at the type level for compile-time inference.
-   */
-  readonly __activityOutput: TOutput;
-};
-
-// =============================================================================
-// Type Utilities
+// Branded Type Boundary
 // =============================================================================
 
 /**
- * Extracts the input type from an ActivityPort.
+ * BRAND_CAST: Single documented coercion point for ActivityPort branded types.
  *
- * This utility type uses conditional type inference to extract the input
- * type parameter from an ActivityPort. For non-ActivityPort types, it
- * returns `never`.
+ * Bridges the type gap between the runtime DirectedPort (from createPort) and
+ * the phantom-branded ActivityPort type. The phantom properties (__activityInput,
+ * __activityOutput, __brand) exist only at the type level for inference.
  *
- * @typeParam P - The ActivityPort type to extract the input from
- * @returns The activity input type, or `never` if P is not an ActivityPort
- *
- * @example
- * ```typescript
- * const FetchUserPort = activityPort<{ userId: string }, User>()('FetchUser');
- *
- * type Input = ActivityInput<typeof FetchUserPort>;
- * // Input = { userId: string }
- * ```
+ * Uses function overloads (the branded type boundary pattern) so the typed
+ * overload declares the return type while the implementation returns the
+ * object as-is.
  */
-export type ActivityInput<P> =
-  P extends ActivityPort<infer TInput, infer _TOutput, string> ? TInput : never;
-
-/**
- * Extracts the output type from an ActivityPort.
- *
- * This utility type uses conditional type inference to extract the output
- * type parameter from an ActivityPort. For non-ActivityPort types, it
- * returns `never`.
- *
- * @typeParam P - The ActivityPort type to extract the output from
- * @returns The activity output type, or `never` if P is not an ActivityPort
- *
- * @example
- * ```typescript
- * const FetchUserPort = activityPort<{ userId: string }, User>()('FetchUser');
- *
- * type Output = ActivityOutput<typeof FetchUserPort>;
- * // Output = User
- * ```
- */
-export type ActivityOutput<P> =
-  P extends ActivityPort<infer _TInput, infer TOutput, string> ? TOutput : never;
-
-// =============================================================================
-// Internal Port Creation Helper
-// =============================================================================
-
-/**
- * Creates an ActivityPort value with phantom type parameters.
- *
- * ## SAFETY DOCUMENTATION
- *
- * The ActivityPort type has properties that exist ONLY at the type level:
- * - `[__brand]`: The Port's brand property for nominal typing
- * - `__activityInput`: Phantom property for input type inference
- * - `__activityOutput`: Phantom property for output type inference
- *
- * At runtime, only `__portName` exists on the frozen object.
- *
- * This is safe because:
- *
- * 1. **Phantom properties are never accessed at runtime**: The `__activityInput`
- *    and `__activityOutput` properties are used exclusively for compile-time
- *    type inference via indexed access types and conditional types.
- *
- * 2. **Brand is never accessed**: The `__brand` symbol property is used only
- *    for compile-time nominal typing discrimination.
- *
- * 3. **Immutability guaranteed**: `Object.freeze()` prevents any mutation,
- *    ensuring the runtime object cannot be modified to invalidate type assumptions.
- *
- * 4. **Single creation point**: This is the ONLY location where ActivityPort
- *    values are created, ensuring all ports have consistent structure.
- *
- * 5. **Phantom type pattern**: This follows the well-established phantom type
- *    pattern where type parameters carry compile-time information without
- *    runtime representation. See: https://wiki.haskell.org/Phantom_type
- *
- * @internal - Not part of public API. Use activityPort() instead.
- */
-function unsafeCreateActivityPort<TInput, TOutput, TName extends string>(
-  name: TName
-): ActivityPort<TInput, TOutput, TName> {
-  // @ts-expect-error - Intentional phantom type gap: __brand, __activityInput, and __activityOutput exist only at type level
-  return Object.freeze({ __portName: name });
+function brandAsActivityPort<TInput, TOutput, TName extends string>(port: {
+  readonly __portName: TName;
+}): ActivityPort<TInput, TOutput, TName>;
+function brandAsActivityPort(port: object): object {
+  return port;
 }
 
 // =============================================================================
@@ -231,6 +110,10 @@ export function activityPort<TInput, TOutput>(): <const TName extends string>(
   name: TName
 ) => ActivityPort<TInput, TOutput, TName> {
   return <const TName extends string>(name: TName): ActivityPort<TInput, TOutput, TName> => {
-    return unsafeCreateActivityPort<TInput, TOutput, TName>(name);
+    const base = createPort<TName, { execute: (input: TInput) => Promise<TOutput> }>({
+      name,
+      category: "flow/activity",
+    });
+    return brandAsActivityPort<TInput, TOutput, TName>(base);
   };
 }

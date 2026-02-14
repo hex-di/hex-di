@@ -7,27 +7,9 @@
  * @packageDocumentation
  */
 
-import type { LogLevel } from "../types/log-level.js";
 import type { Logger } from "../ports/logger.js";
+import type { AutoLogOptions } from "./types.js";
 import { createLoggingHook } from "./hook.js";
-
-/**
- * Options for automatic container resolution logging.
- */
-export interface AutoLogOptions {
-  /** Log level for successful resolutions (default: "debug"). */
-  readonly resolutionLevel?: LogLevel;
-  /** Log level for resolution errors (default: "error"). */
-  readonly errorLevel?: LogLevel;
-  /** Filter which ports to log. Returns true to include (default: skips Logger and LogHandler). */
-  readonly portFilter?: (portName: string) => boolean;
-  /** Whether to include timing information for resolutions. */
-  readonly includeTiming?: boolean;
-  /** Minimum resolution duration in ms before logging (only when includeTiming is true). */
-  readonly minDurationMs?: number;
-  /** Whether to log scope lifecycle events (creation/disposal). */
-  readonly logScopeLifecycle?: boolean;
-}
 
 /**
  * Minimal container interface for instrumentation.

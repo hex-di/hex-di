@@ -162,8 +162,8 @@ describe("wrapper delegation: createChild parentLike fields are not undefined", 
     const childGraph = GraphBuilder.create().build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
-    expect(child.hasAdapter(LoggerPort)).toBe(true);
-    expect(child.hasAdapter(CachePort)).toBe(false);
+    expect(child.has(LoggerPort)).toBe(true);
+    expect(child.has(CachePort)).toBe(false);
   });
 
   it("root container createChild - parentLike ADAPTER_ACCESS returns adapter (kills factory.ts L308)", () => {
@@ -237,8 +237,8 @@ describe("wrapper delegation: child container createChild parentLike (wrappers.t
     const grandchildGraph = GraphBuilder.create().build();
     const grandchild = child.createChild(grandchildGraph, { name: "GC" });
 
-    expect(grandchild.hasAdapter(LoggerPort)).toBe(true);
-    expect(grandchild.hasAdapter(CachePort)).toBe(false);
+    expect(grandchild.has(LoggerPort)).toBe(true);
+    expect(grandchild.has(CachePort)).toBe(false);
   });
 
   it("grandchild dispose works via unregisterChildContainer delegation (L267)", async () => {
@@ -297,7 +297,6 @@ describe("initialized container wrapper delegation", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create().provide(scopedAdapter).provide(asyncDbAdapter).build();
     const uninit = createContainer({ graph, name: "Root" });
@@ -316,7 +315,6 @@ describe("initialized container wrapper delegation", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create()
       .provide(makeSingletonLoggerAdapter())
@@ -342,7 +340,6 @@ describe("initialized container wrapper delegation", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create()
       .provide(makeSingletonLoggerAdapter())
@@ -364,7 +361,6 @@ describe("initialized container wrapper delegation", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create()
       .provide(makeSingletonLoggerAdapter())
@@ -437,7 +433,6 @@ describe("root container addHook/removeHook", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create()
       .provide(makeTransientLoggerAdapter())
@@ -604,7 +599,7 @@ describe("child-impl.ts: inherited resolution paths", () => {
     const childGraph = GraphBuilder.create().build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
-    expect(() => child.resolve(CachePort)).toThrow();
+    expect(() => (child as any).resolve(CachePort)).toThrow();
   });
 });
 
@@ -690,7 +685,7 @@ describe("child-impl.ts: resolveAsyncInternalFallback", () => {
     const childGraph = GraphBuilder.create().build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
-    await expect(child.resolveAsync(CachePort)).rejects.toThrow("No adapter registered");
+    await expect((child as any).resolveAsync(CachePort)).rejects.toThrow("No adapter registered");
   });
 });
 
@@ -851,7 +846,7 @@ describe("lazy-impl.ts: edge cases", () => {
     let resolveLoader!: (g: any) => void;
     const lazy = parent.createLazyChild(
       () =>
-        new Promise(resolve => {
+        new Promise<any>(resolve => {
           resolveLoader = resolve;
         }),
       { name: "Lazy" }
@@ -929,7 +924,6 @@ describe("root-impl.ts: edge cases", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create().provide(asyncDbAdapter).build();
     const container = createContainer({ graph, name: "Root" });
@@ -946,12 +940,14 @@ describe("root-impl.ts: edge cases", () => {
 
   it("root resolveInternalFallback throws for unknown ports (kills L111-112)", () => {
     const container = makeRootContainer();
-    expect(() => container.resolve(CachePort)).toThrow("No adapter registered");
+    expect(() => (container as any).resolve(CachePort)).toThrow("No adapter registered");
   });
 
   it("root resolveAsyncInternalFallback rejects for unknown ports (kills L115-116)", async () => {
     const container = makeRootContainer();
-    await expect(container.resolveAsync(CachePort)).rejects.toThrow("No adapter registered");
+    await expect((container as any).resolveAsync(CachePort)).rejects.toThrow(
+      "No adapter registered"
+    );
   });
 });
 
@@ -981,7 +977,6 @@ describe("root container wrapper property values", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create().provide(asyncDbAdapter).build();
     const container = createContainer({ graph, name: "Root" });
@@ -1007,8 +1002,8 @@ describe("root container wrapper property values", () => {
 
   it("root.hasAdapter returns boolean", () => {
     const container = makeRootContainer();
-    expect(container.hasAdapter(LoggerPort)).toBe(true);
-    expect(container.hasAdapter(CachePort)).toBe(false);
+    expect(container.has(LoggerPort)).toBe(true);
+    expect(container.has(CachePort)).toBe(false);
   });
 
   it("root INTERNAL_ACCESS returns state", () => {
@@ -1115,7 +1110,6 @@ describe("root container override method", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create()
       .provide(makeSingletonLoggerAdapter())
@@ -1166,7 +1160,6 @@ describe("root container createChildAsync and createLazyChild", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create()
       .provide(makeSingletonLoggerAdapter())
@@ -1189,7 +1182,6 @@ describe("root container createChildAsync and createLazyChild", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create()
       .provide(makeSingletonLoggerAdapter())

@@ -20,6 +20,9 @@ export type {
   InferFlowServiceState,
   InferFlowServiceEvent,
   InferFlowServiceContext,
+  ScopeResolver,
+  ActivityRegistry,
+  ActivityDepsResolver,
 } from "./types.js";
 
 export {
@@ -43,20 +46,13 @@ export {
   createDIEffectExecutor,
   type DIEffectExecutor,
   type DIEffectExecutorConfig,
-  type ScopeResolver,
 } from "./di-executor.js";
 
 // =============================================================================
 // Flow Adapter
 // =============================================================================
 
-export {
-  createFlowAdapter,
-  type FlowAdapterConfig,
-  type FlowAdapter,
-  type ActivityRegistry,
-  type ActivityDepsResolver,
-} from "./adapter.js";
+export { createFlowAdapter, type FlowAdapterConfig, type FlowAdapter } from "./adapter.js";
 
 // =============================================================================
 // Metadata

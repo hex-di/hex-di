@@ -19,6 +19,7 @@ export {
   createMemoryTracer,
   MemorySpan,
 } from "./memory/index.js";
+export type { MemoryTracerOptions } from "./memory/index.js";
 
 // Console adapter - human-readable output for development
 export { ConsoleTracerAdapter, createConsoleTracer, ConsoleTracer } from "./console/index.js";

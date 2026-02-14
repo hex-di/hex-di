@@ -73,7 +73,7 @@ export function mergeGraphs(first: BuildableGraph, second: BuildableGraph): Buil
 
   return {
     adapters: Object.freeze([...first.adapters, ...second.adapters]),
-    overridePortNames: mergedOverrides,
+    overridePortNames: Object.freeze(mergedOverrides),
   };
 }
 

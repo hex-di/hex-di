@@ -303,8 +303,20 @@ describe("buildTypedSnapshot", () => {
   it("converts singletons with resolvedAt", () => {
     const snapshot = makeRuntimeSnapshot({
       singletons: [
-        { portName: "Logger", isResolved: true, resolvedAt: 12345, lifetime: "singleton" },
-        { portName: "Database", isResolved: false, resolvedAt: undefined, lifetime: "singleton" },
+        {
+          portName: "Logger",
+          isResolved: true,
+          resolvedAt: 12345,
+          lifetime: "singleton",
+          resolutionOrder: 0,
+        },
+        {
+          portName: "Database",
+          isResolved: false,
+          resolvedAt: undefined,
+          lifetime: "singleton",
+          resolutionOrder: undefined,
+        },
       ],
     });
     const result = buildTypedSnapshot(snapshot, "root", makeRootContainer());

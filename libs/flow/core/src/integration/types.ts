@@ -11,9 +11,15 @@
 
 import type { Result } from "@hex-di/result";
 import type { ResultAsync } from "@hex-di/result";
-import { port, createLibraryInspectorPort, type Port } from "@hex-di/core";
+import {
+  port,
+  createLibraryInspectorPort,
+  type Port,
+  type InferService,
+  type PortDeps,
+} from "@hex-di/core";
 import type { MachineSnapshot } from "../runner/types.js";
-import type { ActivityStatus } from "../activities/types.js";
+import type { ActivityStatus, ConfiguredActivityAny } from "../activities/types.js";
 import type { EffectAny } from "../effects/types.js";
 import type { TransitionError, EffectExecutionError, DisposeError } from "../errors/index.js";
 import type { FlowInspector, FlowRegistry } from "../introspection/types.js";
@@ -269,3 +275,38 @@ export const FlowEventBusPort: Port<FlowEventBus, "FlowEventBus"> = port<FlowEve
   description: "Cross-machine event pub/sub bus",
   category: "flow",
 });
+
+// =============================================================================
+// Shared Types (extracted to break adapter.ts ↔ di-executor.ts cycle)
+// =============================================================================
+
+/**
+ * A minimal interface for resolving ports from a scope.
+ *
+ * This interface matches the Scope.resolve() method signature, allowing
+ * the DIEffectExecutor to work with either a real Scope or a mock resolver.
+ */
+export interface ScopeResolver {
+  /**
+   * Resolves a service instance for the given port.
+   *
+   * @typeParam P - The specific port type being resolved
+   * @param port - The port token to resolve
+   * @returns The service instance for the given port
+   */
+  resolve<P extends Port<unknown, string>>(port: P): InferService<P>;
+}
+
+/**
+ * Activity registry type for looking up activities by port name.
+ * @internal
+ */
+export type ActivityRegistry = ReadonlyMap<string, ConfiguredActivityAny>;
+
+/**
+ * Activity deps resolver function type.
+ * @internal
+ */
+export type ActivityDepsResolver = <TRequires extends readonly Port<unknown, string>[]>(
+  requires: TRequires
+) => PortDeps<TRequires>;

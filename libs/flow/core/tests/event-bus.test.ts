@@ -14,7 +14,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { createFlowEventBus } from "../src/event-bus/flow-event-bus.js";
 import type { FlowEvent } from "../src/event-bus/flow-event-bus.js";
-import { createDIEffectExecutor, type ScopeResolver } from "../src/integration/di-executor.js";
+import { createDIEffectExecutor } from "../src/integration/di-executor.js";
+import type { ScopeResolver } from "../src/integration/types.js";
 import { createActivityManager } from "../src/activities/manager.js";
 import { createBasicExecutor } from "../src/runner/executor.js";
 import { defineMachine } from "../src/machine/define-machine.js";

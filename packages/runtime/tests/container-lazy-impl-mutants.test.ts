@@ -214,7 +214,7 @@ describe("LazyContainerImpl - performLoad behavior", () => {
     const lazy = new LazyContainerImpl(
       parent,
       () =>
-        new Promise(resolve => {
+        new Promise<any>(resolve => {
           resolveLoader = resolve;
         }),
       { name: "Lazy" }
@@ -265,7 +265,7 @@ describe("LazyContainerImpl - performLoad behavior", () => {
 describe("LazyContainerImpl - resolve", () => {
   it("resolve loads graph and resolves port", async () => {
     const parent = makeParent();
-    const lazy = new LazyContainerImpl(parent, async () => makeDbGraph(), {
+    const lazy: any = new LazyContainerImpl(parent, async () => makeDbGraph(), {
       name: "Lazy",
     });
 
@@ -276,7 +276,7 @@ describe("LazyContainerImpl - resolve", () => {
 
   it("resolve can also resolve parent ports", async () => {
     const parent = makeParent();
-    const lazy = new LazyContainerImpl(parent, async () => makeDbGraph(), {
+    const lazy: any = new LazyContainerImpl(parent, async () => makeDbGraph(), {
       name: "Lazy",
     });
 
@@ -287,7 +287,7 @@ describe("LazyContainerImpl - resolve", () => {
 
   it("resolveAsync loads graph and resolves port", async () => {
     const parent = makeParent();
-    const lazy = new LazyContainerImpl(parent, async () => makeDbGraph(), {
+    const lazy: any = new LazyContainerImpl(parent, async () => makeDbGraph(), {
       name: "Lazy",
     });
 
@@ -303,7 +303,7 @@ describe("LazyContainerImpl - resolve", () => {
 describe("LazyContainerImpl - try methods", () => {
   it("tryResolve returns Ok on success", async () => {
     const parent = makeParent();
-    const lazy = new LazyContainerImpl(parent, async () => makeDbGraph(), {
+    const lazy: any = new LazyContainerImpl(parent, async () => makeDbGraph(), {
       name: "Lazy",
     });
 
@@ -313,7 +313,7 @@ describe("LazyContainerImpl - try methods", () => {
 
   it("tryResolve returns Err on failure", async () => {
     const parent = makeParent();
-    const lazy = new LazyContainerImpl(
+    const lazy: any = new LazyContainerImpl(
       parent,
       async () => {
         throw new Error("load fail");
@@ -327,7 +327,7 @@ describe("LazyContainerImpl - try methods", () => {
 
   it("tryResolveAsync returns Ok on success", async () => {
     const parent = makeParent();
-    const lazy = new LazyContainerImpl(parent, async () => makeDbGraph(), {
+    const lazy: any = new LazyContainerImpl(parent, async () => makeDbGraph(), {
       name: "Lazy",
     });
 
@@ -420,7 +420,7 @@ describe("LazyContainerImpl - dispose", () => {
     const lazy = new LazyContainerImpl(
       parent,
       () =>
-        new Promise(resolve => {
+        new Promise<any>(resolve => {
           resolveLoader = resolve;
         }),
       { name: "Lazy" }
@@ -447,7 +447,7 @@ describe("LazyContainerImpl - dispose", () => {
     const lazy = new LazyContainerImpl(
       parent,
       () =>
-        new Promise((_resolve, reject) => {
+        new Promise<any>((_resolve, reject) => {
           rejectLoader = reject;
         }),
       { name: "Lazy" }

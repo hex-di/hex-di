@@ -29,6 +29,6 @@ import type { TracingQueryAPI } from "./types.js";
 export const TracingQueryApiPort = port<TracingQueryAPI>()({
   name: "TracingQueryApi",
   direction: "outbound",
-  category: "infrastructure",
+  category: "tracing/tracer",
   tags: ["tracing", "inspection"],
 });

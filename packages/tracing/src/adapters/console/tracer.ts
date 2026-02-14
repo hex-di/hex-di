@@ -15,6 +15,7 @@ import type { ConsoleTracerOptions } from "./formatter.js";
 import { formatSpan } from "./formatter.js";
 import { generateTraceId, generateSpanId } from "../../utils/id-generation.js";
 import { getStdoutTTY, getConsole } from "../../utils/globals.js";
+import { getHighResTimestamp } from "../../utils/timing.js";
 
 /**
  * Span implementation for ConsoleTracer.
@@ -45,7 +46,7 @@ class ConsoleSpan implements Span {
   ) {
     this._name = name;
     this._kind = options?.kind ?? "internal";
-    this._startTime = options?.startTime ?? Date.now();
+    this._startTime = options?.startTime ?? getHighResTimestamp();
     this._attributes = { ...defaultAttributes, ...options?.attributes };
     this._events = [];
     this._links = options?.links ?? [];
@@ -117,7 +118,7 @@ class ConsoleSpan implements Span {
 
     this.addEvent({
       name: "exception",
-      time: Date.now(),
+      time: getHighResTimestamp(),
       attributes: {
         "exception.type": exception instanceof Error ? exception.constructor.name : "string",
         "exception.message": errorMessage,
@@ -138,7 +139,7 @@ class ConsoleSpan implements Span {
       name: this._name,
       kind: this._kind,
       startTime: this._startTime,
-      endTime: endTime ?? Date.now(),
+      endTime: endTime ?? getHighResTimestamp(),
       status: this._status,
       attributes: this._attributes,
       events: this._events,

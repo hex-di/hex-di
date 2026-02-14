@@ -73,7 +73,11 @@ export interface GraphSuggestion {
     | "depth_warning"
     | "orphan_port"
     | "disposal_warning"
-    | "unnecessary_lazy";
+    | "unnecessary_lazy"
+    | "saga_step_without_compensation"
+    | "saga_long_timeout_without_persistence"
+    | "saga_no_retry_on_external_port"
+    | "saga_singleton_with_scoped_deps";
   /** The port name this suggestion relates to */
   readonly portName: string;
   /** Human-readable description of the issue */

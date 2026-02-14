@@ -181,22 +181,22 @@ describe("ports/factory.ts — port names and categories", () => {
     expect(SagaInspectorPort.__portName.length).toBeGreaterThan(0);
   });
 
-  it("SagaPersisterPort has category 'saga' in metadata", () => {
+  it("SagaPersisterPort has category 'saga/saga' in metadata", () => {
     const meta = getPortMetadata(SagaPersisterPort);
     expect(meta).toBeDefined();
-    expect(meta.category).toBe("saga");
+    expect(meta.category).toBe("saga/saga");
   });
 
-  it("SagaRegistryPort has category 'saga' in metadata", () => {
+  it("SagaRegistryPort has category 'saga/saga' in metadata", () => {
     const meta = getPortMetadata(SagaRegistryPort);
     expect(meta).toBeDefined();
-    expect(meta.category).toBe("saga");
+    expect(meta.category).toBe("saga/saga");
   });
 
-  it("SagaInspectorPort has category 'saga' in metadata", () => {
+  it("SagaInspectorPort has category 'saga/saga' in metadata", () => {
     const meta = getPortMetadata(SagaInspectorPort);
     expect(meta).toBeDefined();
-    expect(meta.category).toBe("saga");
+    expect(meta.category).toBe("saga/saga");
   });
 
   it("sagaPort factory creates a port with correct name and category", () => {
@@ -207,7 +207,7 @@ describe("ports/factory.ts — port names and categories", () => {
     expect(port.__portName).toBe("OrderSaga");
     expect(port.__portName.length).toBeGreaterThan(0);
     const meta = getPortMetadata(port);
-    expect(meta.category).toBe("saga");
+    expect(meta.category).toBe("saga/saga");
   });
 
   it("sagaPort factory creates a frozen port", () => {
@@ -223,7 +223,7 @@ describe("ports/factory.ts — port names and categories", () => {
     expect(port.__portName).toBe("OrderSagaMgmt");
     expect(port.__portName.length).toBeGreaterThan(0);
     const meta = getPortMetadata(port);
-    expect(meta.category).toBe("saga");
+    expect(meta.category).toBe("saga/saga-management");
   });
 
   it("sagaManagementPort factory creates a frozen port", () => {

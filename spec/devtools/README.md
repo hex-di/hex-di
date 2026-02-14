@@ -1,35 +1,47 @@
 # HexDI DevTools Specification
 
-**Package:** `@hex-di/devtools`
+**Packages:** `@hex-di/devtools` + `@hex-di/devtools-client`
 **Version:** 0.1.0
 **Status:** Draft
 **Created:** 2026-02-09
-**Last Updated:** 2026-02-09
+**Last Updated:** 2026-02-10
 
 ---
 
 ## Summary
 
-`@hex-di/devtools` is an in-app overlay panel for inspecting HexDI applications at runtime. It provides a visual dashboard that consumes the container's self-knowledge -- `InspectorAPI`, `UnifiedSnapshot`, `ContainerGraphData`, `TracingAPI`, and the `LibraryInspector` protocol -- to give developers a real-time, interactive view of their entire DI ecosystem. Like React Query DevTools or Jotai DevTools, but for the full HexDI nervous system.
+HexDI DevTools is a **standalone web dashboard** for inspecting HexDI applications at runtime. It runs as its own process on a dedicated port (e.g., `localhost:4200`) and connects to target applications over WebSocket. Target apps — whether React frontends or Node.js backends — install a lightweight client library that wraps the container's self-knowledge (`InspectorAPI`, `UnifiedSnapshot`, `ContainerGraphData`, `TracingAPI`, `LibraryInspector` protocol) and streams it to the dashboard for visual, interactive inspection.
 
-The devtools overlay is the **dashboard** described in VISION.md. MCP is the OBD-II diagnostic port for AI agents; DevTools is the instrument cluster for human developers. Both consume the same self-knowledge infrastructure, but DevTools renders it as interactive, visual panels inside the running application.
+The DevTools dashboard is the **dashboard** described in VISION.md. MCP is the OBD-II diagnostic port for AI agents; DevTools is the instrument cluster for human developers. Both consume the same self-knowledge infrastructure, but DevTools renders it as interactive visual panels in a standalone application that can inspect any HexDI-powered process.
 
 ## Packages
 
-| Package            | Description                                                                                                                               |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `@hex-di/devtools` | Core devtools overlay panel, built-in panels, visualization components, and theme system                                                  |
-| `@hex-di/core`     | Enhanced with typed `LibraryInspector` protocol (compile-time snapshot shapes, `createLibraryInspectorPort` factory)                      |
-| `@hex-di/react`    | Existing inspection hooks consumed by devtools (`useInspector`, `useSnapshot`, `useScopeTree`, `useUnifiedSnapshot`, `useTracingSummary`) |
+| Package                   | Description                                                                                                                                                               |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@hex-di/devtools`        | Standalone Vite + React web dashboard. Built-in WebSocket server, all visualization panels, connection management, theme system, CLI entry point (`npx @hex-di/devtools`) |
+| `@hex-di/devtools-client` | Lightweight zero-UI transport library. Wraps `InspectorAPI`, serializes data, streams via WebSocket. Auto-reconnection + message buffering. Works in React and Node.js    |
+| `@hex-di/core`            | Enhanced with typed `LibraryInspector` protocol (compile-time snapshot shapes, `createLibraryInspectorPort` factory)                                                      |
 
 ## Dependencies
+
+### `@hex-di/devtools` (Dashboard)
+
+| Package | Type   | Description                                |
+| ------- | ------ | ------------------------------------------ |
+| `react` | direct | React >= 18 (dashboard UI framework)       |
+| `ws`    | direct | WebSocket server for receiving client data |
+| `vite`  | direct | Dev server and build tool                  |
+| `dagre` | direct | Graph layout engine for dependency graph   |
+
+The dashboard has **no peer dependencies** on `@hex-di/core`, `@hex-di/runtime`, or `@hex-di/react`. It receives all data over WebSocket as serialized JSON. It is a fully standalone application.
+
+### `@hex-di/devtools-client` (Client)
 
 | Package           | Type | Description                                                                                                                       |
 | ----------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------- |
 | `@hex-di/core`    | peer | `InspectorAPI`, `UnifiedSnapshot`, `ContainerSnapshot`, `ScopeTree`, `LibraryInspector`, `ContainerGraphData`, `TracingAPI` types |
 | `@hex-di/runtime` | peer | `Container`, `Scope` types for resolution context                                                                                 |
-| `@hex-di/react`   | peer | `InspectorProvider`, `useInspector`, `useSnapshot`, `useScopeTree`, `useUnifiedSnapshot`, `useTracingSummary` hooks               |
-| `react`           | peer | React >= 18 (for `useSyncExternalStore`, concurrent features)                                                                     |
+| `@hex-di/react`   | peer | _(optional)_ `InspectorProvider` context for the `DevToolsClientProvider` convenience wrapper                                     |
 
 ## Table of Contents
 
@@ -58,7 +70,7 @@ The devtools overlay is the **dashboard** described in VISION.md. MCP is the OBD
 12. [Library Panels and Event Log](./04-panels.md#section-12-library-panels-and-event-log)
 13. [Unified Overview Panel](./04-panels.md#section-13-unified-overview-panel)
 14. [Health & Diagnostics Panel](./04-panels.md#section-14-health--diagnostics-panel)
-15. [Library Panel Roadmap](./04-panels.md#section-15-library-panel-roadmap)
+15. [Dedicated Library Panel Specifications](./04-panels.md#section-15-dedicated-library-panel-specifications)
 
 ### [05 - Visual Design](./05-visual-design.md)
 

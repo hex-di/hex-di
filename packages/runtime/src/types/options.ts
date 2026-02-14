@@ -183,6 +183,70 @@ export interface RuntimePerformanceOptions {
    * You lose timing information but retain the resolution event log.
    */
   readonly disableTimestamps?: boolean;
+
+  /**
+   * Suppress warnings about missing tracing hooks.
+   *
+   * When true, the runtime will not emit console.warn about missing
+   * resolution hooks at container creation time.
+   *
+   * @default false
+   */
+  readonly disableTracingWarnings?: boolean;
+}
+
+/**
+ * Safety-related options for container runtime behavior.
+ *
+ * These options configure protective limits and error reporting
+ * for GxP-compliant deployments.
+ *
+ * @example
+ * ```typescript
+ * const container = createContainer({
+ *   graph,
+ *   name: "App",
+ *   safety: {
+ *     maxScopeDepth: 128,
+ *     finalizerTimeoutMs: 10_000,
+ *     onLifecycleError: (err, event) => logger.error("Lifecycle error", { err, event }),
+ *   },
+ * });
+ * ```
+ */
+export interface RuntimeSafetyOptions {
+  /**
+   * Maximum allowed scope nesting depth.
+   * Throws ScopeDepthExceededError when exceeded.
+   *
+   * @default 64
+   */
+  readonly maxScopeDepth?: number;
+
+  /**
+   * Maximum time in ms to wait for each finalizer during disposal.
+   * Throws FinalizerTimeoutError when exceeded.
+   *
+   * @default 30_000
+   */
+  readonly finalizerTimeoutMs?: number;
+
+  /**
+   * Callback invoked when a lifecycle listener throws during event emission.
+   * The error is swallowed after reporting to prevent disrupting disposal.
+   *
+   * When undefined, lifecycle listener errors are silently swallowed.
+   *
+   * @default undefined
+   */
+  readonly onLifecycleError?: (error: unknown, event: string) => void;
+
+  /**
+   * Callback invoked when a finalizer times out during disposal.
+   *
+   * @default undefined
+   */
+  readonly onFinalizerTimeout?: (portName: string, timeoutMs: number) => void;
 }
 
 /**
@@ -398,6 +462,13 @@ export interface CreateChildOptions<TProvides extends Port<unknown, string> = ne
    * ```
    */
   readonly performance?: RuntimePerformanceOptions;
+
+  /**
+   * Safety-related options for protective limits and error reporting.
+   *
+   * @default { maxScopeDepth: 64, finalizerTimeoutMs: 30_000 }
+   */
+  readonly safety?: RuntimeSafetyOptions;
 }
 
 // =============================================================================
@@ -530,6 +601,13 @@ export interface CreateContainerConfig<
    * ```
    */
   readonly graph: Graph<TProvides, Port<unknown, string>>;
+
+  /**
+   * Safety-related options for protective limits and error reporting.
+   *
+   * @default { maxScopeDepth: 64, finalizerTimeoutMs: 30_000 }
+   */
+  readonly safety?: RuntimeSafetyOptions;
 
   /**
    * Container name - serves as both identifier and display label.

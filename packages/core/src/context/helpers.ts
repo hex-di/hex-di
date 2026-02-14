@@ -72,6 +72,24 @@ export function getContext<T>(
 ): T | undefined {
   const value = context.get(variable.id);
   if (value !== undefined) {
+    /**
+     * SAFETY DOCUMENTATION
+     *
+     * The value retrieved from the map is typed as `unknown` because
+     * Map<symbol, unknown> erases the value type. However, this retrieval
+     * is type-sound because:
+     *
+     * 1. The symbol key (`variable.id`) is unique per ContextVariable instance
+     *    (created via `Symbol(name)`, not `Symbol.for()`)
+     * 2. The only way to set a value for this key is through `withContext(variable, value)`
+     *    which constrains `value: T` to match the variable's type parameter
+     * 3. Therefore, any value stored under `variable.id` is guaranteed to be `T`
+     * 4. External code cannot forge a ContextVariable with the same symbol
+     *
+     * This is the ONLY unavoidable `as T` in @hex-di/core. It exists because
+     * TypeScript's Map type cannot express per-key type relationships
+     * (heterogeneous maps). This is a known TypeScript limitation.
+     */
     return value as T;
   }
   return variable.defaultValue;

@@ -23,6 +23,35 @@ type FactoryKindPlaceholder = FactoryKind;
 type ClonablePlaceholder = boolean;
 
 /**
+ * Structural shape for extracting TProvides from an adapter without matching
+ * the contravariant `factory` field.
+ *
+ * When `dts-bundle-generator` creates flat type bundles for the playground,
+ * each package gets its own copy of the `Adapter` type. Pattern-matching
+ * `TAdapter extends Adapter<infer TProvides, Port<unknown, string>, ...>` fixes
+ * `TRequires` at a concrete type, which causes `ResolvedDeps<Port<unknown, string>>`
+ * to resolve to `{ [key: string]: unknown }`. The `factory` field becomes
+ * `(deps: { [key: string]: unknown }) => ...`, and function parameter contravariance
+ * prevents matching against concrete deps like `{ Config: Config; Logger: Logger }`.
+ *
+ * This structural type extracts TProvides from the `provides` property only
+ * (covariant, non-optional), avoiding the factory field entirely.
+ *
+ * Note: Only used for TProvides extraction. Other extractors (TRequires, TLifetime, etc.)
+ * fix TProvides (not TRequires) as the placeholder, so the factory return type becomes
+ * `unknown` (covariant-compatible) and no contravariance issue occurs.
+ *
+ * @internal
+ */
+type AdapterProvidesShape<TProvides> = {
+  readonly provides: TProvides;
+  readonly requires: readonly unknown[];
+  readonly lifetime: string;
+  readonly factoryKind: FactoryKind;
+  readonly clonable: boolean;
+};
+
+/**
  * Extracts the **Port type** from an Adapter's `provides` property.
  *
  * Returns the full `Port<TService, TName>` type, not just the name string.
@@ -43,15 +72,7 @@ type ClonablePlaceholder = boolean;
  * ```
  */
 export type InferAdapterProvides<TAdapter> =
-  TAdapter extends Adapter<
-    infer TProvides,
-    InferPlaceholder,
-    LifetimePlaceholder,
-    FactoryKindPlaceholder,
-    ClonablePlaceholder
-  >
-    ? TProvides
-    : never;
+  TAdapter extends AdapterProvidesShape<infer TProvides> ? TProvides : never;
 
 /**
  * Extracts the **Port type union** from an Adapter's `requires` array.
@@ -102,13 +123,7 @@ export type InferAdapterRequires<TAdapter> =
  * ```
  */
 export type InferManyProvides<TAdapters> = TAdapters extends readonly (infer TElement)[]
-  ? TElement extends Adapter<
-      infer TProvides,
-      InferPlaceholder,
-      LifetimePlaceholder,
-      FactoryKindPlaceholder,
-      ClonablePlaceholder
-    >
+  ? TElement extends AdapterProvidesShape<infer TProvides>
     ? TProvides
     : never
   : never;
@@ -149,13 +164,7 @@ export type InferManyRequires<TAdapters> = TAdapters extends readonly (infer TEl
  * @typeParam A - Tuple of adapters
  */
 export type InferManyAsyncPorts<TAdapters> = TAdapters extends readonly (infer TElement)[]
-  ? TElement extends Adapter<
-      infer TProvides,
-      InferPlaceholder,
-      LifetimePlaceholder,
-      "async",
-      ClonablePlaceholder
-    >
+  ? TElement extends AdapterProvidesShape<infer TProvides> & { readonly factoryKind: "async" }
     ? TProvides
     : never
   : never;
@@ -236,13 +245,7 @@ export type IsClonableAdapter<TAdapter> = InferClonable<TAdapter> extends true ?
  * ```
  */
 export type DebugInferAdapterProvides<TAdapter> =
-  TAdapter extends Adapter<
-    infer TProvides,
-    InferPlaceholder,
-    LifetimePlaceholder,
-    FactoryKindPlaceholder,
-    ClonablePlaceholder
-  >
+  TAdapter extends AdapterProvidesShape<infer TProvides>
     ? TProvides
     : InferenceError<
         "InferAdapterProvides",
@@ -305,13 +308,7 @@ export type DebugInferAdapterLifetime<TAdapter> =
  * @returns Union of provided Ports, or `InferenceError` if not a valid adapter array
  */
 export type DebugInferManyProvides<TAdapters> = TAdapters extends readonly (infer TElement)[]
-  ? TElement extends Adapter<
-      infer TProvides,
-      InferPlaceholder,
-      LifetimePlaceholder,
-      FactoryKindPlaceholder,
-      ClonablePlaceholder
-    >
+  ? TElement extends AdapterProvidesShape<infer TProvides>
     ? TProvides
     : InferenceError<"InferManyProvides", "Array element is not a valid Adapter type.", TElement>
   : InferenceError<

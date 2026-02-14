@@ -86,42 +86,42 @@ describe("isContainerParent type guard (via child.parent access)", () => {
   it("child.parent has resolve function", () => {
     const parent = makeRootContainer();
     const child = parent.createChild(GraphBuilder.create().build(), { name: "C" });
-    const parentRef = child.parent;
+    const parentRef: any = child.parent;
     expect(typeof parentRef.resolve).toBe("function");
   });
 
   it("child.parent has resolveAsync function", () => {
     const parent = makeRootContainer();
     const child = parent.createChild(GraphBuilder.create().build(), { name: "C" });
-    const parentRef = child.parent;
+    const parentRef: any = child.parent;
     expect(typeof parentRef.resolveAsync).toBe("function");
   });
 
   it("child.parent has createScope function", () => {
     const parent = makeRootContainer();
     const child = parent.createChild(GraphBuilder.create().build(), { name: "C" });
-    const parentRef = child.parent;
+    const parentRef: any = child.parent;
     expect(typeof parentRef.createScope).toBe("function");
   });
 
   it("child.parent has dispose function", () => {
     const parent = makeRootContainer();
     const child = parent.createChild(GraphBuilder.create().build(), { name: "C" });
-    const parentRef = child.parent;
+    const parentRef: any = child.parent;
     expect(typeof parentRef.dispose).toBe("function");
   });
 
   it("child.parent has has function", () => {
     const parent = makeRootContainer();
     const child = parent.createChild(GraphBuilder.create().build(), { name: "C" });
-    const parentRef = child.parent;
+    const parentRef: any = child.parent;
     expect(typeof parentRef.has).toBe("function");
   });
 
   it("child.parent has isDisposed property", () => {
     const parent = makeRootContainer();
     const child = parent.createChild(GraphBuilder.create().build(), { name: "C" });
-    const parentRef = child.parent;
+    const parentRef: any = child.parent;
     expect("isDisposed" in parentRef).toBe(true);
     expect(parentRef.isDisposed).toBe(false);
   });
@@ -402,8 +402,8 @@ describe("child container createChild internal delegation", () => {
 
     const grandchild = child.createChild(GraphBuilder.create().build(), { name: "Grandchild" });
 
-    expect(grandchild.hasAdapter(LoggerPort)).toBe(true);
-    expect(grandchild.hasAdapter(CachePort)).toBe(false);
+    expect(grandchild.has(LoggerPort)).toBe(true);
+    expect(grandchild.has(CachePort)).toBe(false);
   });
 
   it("grandchild parentLike[ADAPTER_ACCESS] delegates to child impl", () => {
@@ -520,7 +520,7 @@ describe("child container tryResolve/tryResolveAsync emit inspector events", () 
         throw new Error("child boom");
       },
     });
-    const childGraph = GraphBuilder.create().override(overrideAdapter).build();
+    const childGraph = GraphBuilder.forParent(graph).override(overrideAdapter).build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
     const events: any[] = [];

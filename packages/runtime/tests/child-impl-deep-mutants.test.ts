@@ -44,12 +44,17 @@ const DatabasePort = port<Database>()({ name: "Database" });
 const CachePort = port<Cache>()({ name: "Cache" });
 const ConfigPort = port<Config>()({ name: "Config" });
 
-function makeRoot(...adapters: any[]) {
+function makeRootGraph(...adapters: any[]) {
   let builder: any = GraphBuilder.create();
   for (const a of adapters) {
     builder = builder.provide(a);
   }
-  return createContainer({ graph: builder.build(), name: "Root" });
+  return builder.build();
+}
+
+function makeRoot(...adapters: any[]) {
+  const graph = makeRootGraph(...adapters);
+  return createContainer({ graph, name: "Root" });
 }
 
 // =============================================================================
@@ -103,14 +108,14 @@ describe("ChildContainerImpl override vs extension registration", () => {
     const parentLog = vi.fn();
     const childLog = vi.fn();
 
-    const parent = makeRoot(
-      createAdapter({
-        provides: LoggerPort,
-        requires: [],
-        lifetime: "singleton",
-        factory: () => ({ log: parentLog }),
-      })
-    );
+    const parentAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: parentLog }),
+    });
+    const parentGraph = GraphBuilder.create().provide(parentAdapter).build();
+    const parent = createContainer({ graph: parentGraph, name: "Root" });
 
     const overrideAdapter = createAdapter({
       provides: LoggerPort,
@@ -118,9 +123,12 @@ describe("ChildContainerImpl override vs extension registration", () => {
       lifetime: "singleton",
       factory: () => ({ log: childLog }),
     });
-    const child = parent.createChild(GraphBuilder.create().override(overrideAdapter).build(), {
-      name: "C",
-    });
+    const child = parent.createChild(
+      GraphBuilder.forParent(parentGraph).override(overrideAdapter).build(),
+      {
+        name: "C",
+      }
+    );
 
     child.resolve(LoggerPort).log("test");
     expect(childLog).toHaveBeenCalledWith("test");
@@ -149,27 +157,30 @@ describe("ChildContainerImpl override vs extension registration", () => {
 
     expect(child.has(DatabasePort)).toBe(true);
     expect(child.has(LoggerPort)).toBe(true);
-    expect(child.hasAdapter(DatabasePort)).toBe(true);
+    expect(child.has(DatabasePort)).toBe(true);
   });
 
   it("override adapter is reflected in overridePorts", () => {
-    const parent = makeRoot(
-      createAdapter({
-        provides: LoggerPort,
-        requires: [],
-        lifetime: "singleton",
-        factory: () => ({ log: vi.fn() }),
-      })
-    );
+    const parentAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: vi.fn() }),
+    });
+    const parentGraph = GraphBuilder.create().provide(parentAdapter).build();
+    const parent = createContainer({ graph: parentGraph, name: "Root" });
     const overrideAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
       lifetime: "singleton",
       factory: () => ({ log: vi.fn() }),
     });
-    const child = parent.createChild(GraphBuilder.create().override(overrideAdapter).build(), {
-      name: "C",
-    });
+    const child = parent.createChild(
+      GraphBuilder.forParent(parentGraph).override(overrideAdapter).build(),
+      {
+        name: "C",
+      }
+    );
     const state = child[INTERNAL_ACCESS]();
     expect(state.overridePorts.has("Logger")).toBe(true);
   });
@@ -184,16 +195,16 @@ describe("ChildContainerImpl resolve: local override vs parent fallback", () => 
     const parentLog = vi.fn();
     const childLog = vi.fn();
 
-    const parent = makeRoot(
-      createAdapter({
-        provides: LoggerPort,
-        requires: [],
-        lifetime: "singleton",
-        factory: () => ({ log: parentLog }),
-      })
-    );
+    const parentAdapter = createAdapter({
+      provides: LoggerPort,
+      requires: [],
+      lifetime: "singleton",
+      factory: () => ({ log: parentLog }),
+    });
+    const parentGraph = GraphBuilder.create().provide(parentAdapter).build();
+    const parent = createContainer({ graph: parentGraph, name: "Root" });
     const child = parent.createChild(
-      GraphBuilder.create()
+      GraphBuilder.forParent(parentGraph)
         .override(
           createAdapter({
             provides: LoggerPort,

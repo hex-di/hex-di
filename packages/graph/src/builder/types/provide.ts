@@ -73,7 +73,7 @@ import type {
   HandleReverseCaptiveResult,
 } from "../../validation/types/index.js";
 import type { IsNever } from "@hex-di/core";
-import type { GraphBuilder } from "../builder.js";
+import type { GraphBuilderSignature } from "./builder-signature.js";
 import type {
   DirectAdapterLifetime,
   AnyBuilderInternals,
@@ -110,7 +110,7 @@ export type ProvideResultSuccess<
   TOverrides,
   TInternalState extends AnyBuilderInternals,
   TAdapter extends AdapterConstraint,
-> = GraphBuilder<
+> = GraphBuilderSignature<
   TProvides | InferAdapterProvides<TAdapter>,
   TRequires | TransformLazyToOriginal<InferAdapterRequires<TAdapter>>,
   TAsyncPorts,
@@ -146,7 +146,7 @@ export type ProvideResultSuccessWithDepthWarning<
   TInternalState extends AnyBuilderInternals,
   TAdapter extends AdapterConstraint,
   TWarningPort extends string,
-> = GraphBuilder<
+> = GraphBuilderSignature<
   TProvides | InferAdapterProvides<TAdapter>,
   TRequires | TransformLazyToOriginal<InferAdapterRequires<TAdapter>>,
   TAsyncPorts,
@@ -530,7 +530,7 @@ export type CheckDuplicate<
  * +-----------+-----------------+
  *             v
  * +-----------------------------+
- * | 4. ProvideResultSuccess    | -> GraphBuilder<updated>
+ * | 4. ProvideResultSuccess    | -> GraphBuilderSignature<updated>
  * +-----------------------------+
  * ```
  *
@@ -563,7 +563,7 @@ export type ProvideUncheckedResult<
   TOverrides,
   TInternalState extends AnyBuilderInternals,
   TAdapter extends AdapterConstraint,
-> = GraphBuilder<
+> = GraphBuilderSignature<
   TProvides | InferAdapterProvides<TAdapter>,
   TRequires | TransformLazyToOriginal<InferAdapterRequires<TAdapter>>,
   | TAsyncPorts
@@ -742,7 +742,7 @@ type ProvideAsyncResultSuccess<
   TOverrides,
   TInternalState extends AnyBuilderInternals,
   TAdapter extends AdapterConstraint & { readonly factoryKind: "async" },
-> = GraphBuilder<
+> = GraphBuilderSignature<
   TProvides | InferAdapterProvides<TAdapter>,
   TRequires | TransformLazyToOriginal<InferAdapterRequires<TAdapter>>,
   TAsyncPorts | InferAdapterProvides<TAdapter>,
@@ -771,7 +771,7 @@ type ProvideAsyncResultSuccessWithDepthWarning<
   TInternalState extends AnyBuilderInternals,
   TAdapter extends AdapterConstraint & { readonly factoryKind: "async" },
   TWarningPort extends string,
-> = GraphBuilder<
+> = GraphBuilderSignature<
   TProvides | InferAdapterProvides<TAdapter>,
   TRequires | TransformLazyToOriginal<InferAdapterRequires<TAdapter>>,
   TAsyncPorts | InferAdapterProvides<TAdapter>,
@@ -1040,7 +1040,7 @@ type CheckBatchCaptiveDependencies<
       >,
       // Success: return new builder with updated types
       // Note: Lazy requirements are transformed to original ports
-      GraphBuilder<
+      GraphBuilderSignature<
         TProvides | InferManyProvides<TAdapters>,
         TRequires | TransformLazyToOriginal<InferManyRequires<TAdapters>>,
         TAsyncPorts | InferManyAsyncPorts<TAdapters>,
@@ -1234,7 +1234,7 @@ export type ProvideManyResultAllErrors<
     readonly string[]
     ? Errors["length"] extends 0
       ? // No errors - return success (same result as ProvideManyResult success case)
-        GraphBuilder<
+        GraphBuilderSignature<
           TProvides | InferManyProvides<TAdapters>,
           TRequires | TransformLazyToOriginal<InferManyRequires<TAdapters>>,
           TAsyncPorts | InferManyAsyncPorts<TAdapters>,

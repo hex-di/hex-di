@@ -19,6 +19,12 @@ import type {
   SpanKind,
 } from "../../types/index.js";
 import { generateTraceId, generateSpanId } from "../../utils/index.js";
+import { getHighResTimestamp } from "../../utils/timing.js";
+
+/** Maximum attribute key length (enforced at write time) */
+const MAX_KEY_LENGTH = 256;
+/** Maximum string attribute value length (enforced at write time) */
+const MAX_VALUE_LENGTH = 4096;
 
 /** Shared empty arrays to avoid allocating new ones per span */
 const EMPTY_LINKS: ReadonlyArray<SpanContext> = Object.freeze([]);
@@ -139,8 +145,8 @@ export class MemorySpan implements Span {
       traceState: parentContext?.traceState,
     };
 
-    // Set start time (use explicit time or current time)
-    this._startTime = startTime ?? Date.now();
+    // Set start time (use explicit time or high-res current time)
+    this._startTime = startTime ?? getHighResTimestamp();
   }
 
   /**
@@ -152,10 +158,19 @@ export class MemorySpan implements Span {
    */
   setAttribute(key: string, value: AttributeValue): this {
     if (this._recording) {
+      // Enforce key length limit
+      if (key.length > MAX_KEY_LENGTH) {
+        return this;
+      }
       if (this._attributes === undefined) {
         this._attributes = {};
       }
-      this._attributes[key] = value;
+      // Enforce value size limit for strings
+      if (typeof value === "string" && value.length > MAX_VALUE_LENGTH) {
+        this._attributes[key] = value.slice(0, MAX_VALUE_LENGTH) + "[TRUNCATED]";
+      } else {
+        this._attributes[key] = value;
+      }
     }
     return this;
   }
@@ -201,7 +216,7 @@ export class MemorySpan implements Span {
    * @returns this for method chaining
    */
   setStatus(status: SpanStatus): this {
-    if (this._recording) {
+    if (this._recording && this._status !== "ok") {
       this._status = status;
     }
     return this;
@@ -226,7 +241,7 @@ export class MemorySpan implements Span {
 
     this.addEvent({
       name: "exception",
-      time: Date.now(),
+      time: getHighResTimestamp(),
       attributes: {
         "exception.type": exceptionType,
         "exception.message": exceptionMessage,
@@ -250,7 +265,7 @@ export class MemorySpan implements Span {
     }
 
     this._recording = false;
-    const finalEndTime = endTime ?? Date.now();
+    const finalEndTime = endTime ?? getHighResTimestamp();
 
     const spanData = this._toSpanData(finalEndTime);
     this._onEnd(spanData);

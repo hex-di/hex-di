@@ -11,6 +11,7 @@
 import type { Logger } from "../ports/logger.js";
 import type { LogLevel } from "../types/log-level.js";
 import type { LogContext } from "../types/log-entry.js";
+import { getStderr } from "../utils/stderr.js";
 
 /**
  * Span information for log entry correlation.
@@ -80,11 +81,24 @@ export function withSpanInjection(
   logger: Logger,
   spanProvider: SpanProvider = createSpanProvider()
 ): Logger {
+  let noSpanWarningEmitted = false;
+
   function enrichAnnotations(
     annotations: Record<string, unknown> | undefined
   ): Record<string, unknown> | undefined {
     const spans = spanProvider();
     if (!spans || spans.length === 0) {
+      if (!noSpanWarningEmitted) {
+        noSpanWarningEmitted = true;
+        const fallback = getStderr();
+        if (fallback) {
+          fallback(
+            "[LOGGER TRACING] No active tracing span found. Log entries will not " +
+              "include traceId/spanId. Configure a SpanProvider for full tracing context. " +
+              "This warning appears once per withSpanInjection() instance."
+          );
+        }
+      }
       return annotations;
     }
     return mergeSpanAnnotations(annotations, spans);

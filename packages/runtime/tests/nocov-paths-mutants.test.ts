@@ -73,8 +73,12 @@ function makeCacheAdapter() {
   });
 }
 
+function makeRootGraph() {
+  return GraphBuilder.create().provide(makeLoggerAdapter()).provide(makeDbAdapter()).build();
+}
+
 function makeRootContainer() {
-  const graph = GraphBuilder.create().provide(makeLoggerAdapter()).provide(makeDbAdapter()).build();
+  const graph = makeRootGraph();
   return createContainer({ graph, name: "Root" });
 }
 
@@ -101,14 +105,15 @@ describe("builtin-api.ts: determineOrigin via getGraphData", () => {
   });
 
   it("child container overridden port has origin 'overridden' (kills L82-83)", () => {
-    const parent = makeRootContainer();
+    const parentGraph = makeRootGraph();
+    const parent = createContainer({ graph: parentGraph, name: "Root" });
     const overrideAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
       lifetime: "singleton",
       factory: () => ({ log: vi.fn() }),
     });
-    const childGraph = GraphBuilder.create().override(overrideAdapter).build();
+    const childGraph = GraphBuilder.forParent(parentGraph).override(overrideAdapter).build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
     const graphData = child.inspector.getGraphData();
@@ -803,12 +808,12 @@ describe("builtin-api.ts: inspector disposeLibraries", () => {
     const container = makeRootContainer();
     expect(typeof container.inspector.disposeLibraries).toBe("function");
     // Should not throw
-    container.inspector.disposeLibraries!();
+    container.inspector.disposeLibraries?.();
   });
 
   it("getContainer returns the container", () => {
     const container = makeRootContainer();
-    const returnedContainer = container.inspector.getContainer();
+    const returnedContainer = container.inspector.getContainer?.();
     expect(returnedContainer).toBe(container);
   });
 });
@@ -903,7 +908,6 @@ describe("factory.ts: tryInitialize", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create().provide(asyncDbAdapter).build();
     const container = createContainer({ graph, name: "Root" });
@@ -921,7 +925,6 @@ describe("factory.ts: tryInitialize", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create().provide(asyncDbAdapter).build();
     const container = createContainer({ graph, name: "Root" });
@@ -947,7 +950,6 @@ describe("factory.ts: initialize idempotency", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create().provide(asyncDbAdapter).build();
     const container = createContainer({ graph, name: "Root" });
@@ -969,7 +971,6 @@ describe("factory.ts: initialized container properties", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create()
       .provide(makeLoggerAdapter())
@@ -991,7 +992,6 @@ describe("factory.ts: initialized container properties", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create().provide(asyncDbAdapter).build();
     const uninit = createContainer({ graph, name: "Root" });
@@ -1006,7 +1006,6 @@ describe("factory.ts: initialized container properties", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create().provide(asyncDbAdapter).build();
     const uninit = createContainer({ graph, name: "Root" });
@@ -1021,7 +1020,6 @@ describe("factory.ts: initialized container properties", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create().provide(asyncDbAdapter).build();
     const uninit = createContainer({ graph, name: "Root" });
@@ -1036,7 +1034,6 @@ describe("factory.ts: initialized container properties", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create().provide(asyncDbAdapter).build();
     const uninit = createContainer({ graph, name: "Root" });
@@ -1051,7 +1048,6 @@ describe("factory.ts: initialized container properties", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create()
       .provide(makeLoggerAdapter())
@@ -1070,7 +1066,6 @@ describe("factory.ts: initialized container properties", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create()
       .provide(makeLoggerAdapter())
@@ -1089,7 +1084,6 @@ describe("factory.ts: initialized container properties", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create()
       .provide(makeLoggerAdapter())
@@ -1108,7 +1102,6 @@ describe("factory.ts: initialized container properties", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create()
       .provide(makeLoggerAdapter())
@@ -1127,7 +1120,6 @@ describe("factory.ts: initialized container properties", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create()
       .provide(makeLoggerAdapter())
@@ -1146,7 +1138,6 @@ describe("factory.ts: initialized container properties", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create()
       .provide(makeLoggerAdapter())
@@ -1165,7 +1156,6 @@ describe("factory.ts: initialized container properties", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create()
       .provide(makeLoggerAdapter())
@@ -1174,8 +1164,8 @@ describe("factory.ts: initialized container properties", () => {
     const uninit = createContainer({ graph, name: "Root" });
     const initialized = await uninit.initialize();
 
-    expect(initialized.hasAdapter(LoggerPort)).toBe(true);
-    expect(initialized.hasAdapter(CachePort)).toBe(false);
+    expect(initialized.has(LoggerPort)).toBe(true);
+    expect(initialized.has(CachePort)).toBe(false);
   });
 
   it("initialized container INTERNAL_ACCESS returns state", async () => {
@@ -1184,7 +1174,6 @@ describe("factory.ts: initialized container properties", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create()
       .provide(makeLoggerAdapter())
@@ -1205,7 +1194,6 @@ describe("factory.ts: initialized container properties", () => {
       requires: [],
       lifetime: "singleton",
       factory: async () => ({ query: vi.fn() }),
-      factoryKind: "async" as const,
     });
     const graph = GraphBuilder.create()
       .provide(makeLoggerAdapter())
@@ -1245,14 +1233,15 @@ describe("child-impl.ts: getInternalState includes child-specific fields", () =>
   });
 
   it("child internal state has overridePorts", () => {
-    const parent = makeRootContainer();
+    const parentGraph = makeRootGraph();
+    const parent = createContainer({ graph: parentGraph, name: "Root" });
     const overrideAdapter = createAdapter({
       provides: LoggerPort,
       requires: [],
       lifetime: "singleton",
       factory: () => ({ log: vi.fn() }),
     });
-    const childGraph = GraphBuilder.create().override(overrideAdapter).build();
+    const childGraph = GraphBuilder.forParent(parentGraph).override(overrideAdapter).build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
     const state = child[INTERNAL_ACCESS]();

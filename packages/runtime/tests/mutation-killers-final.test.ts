@@ -179,7 +179,7 @@ describe("base-impl.ts - resolve paths with adapter checks", () => {
     // Kills: L268 ConditionalExpression -> false
     const graph = makeSimpleGraph();
     const container = createContainer({ graph, name: "Test" });
-    expect(() => container.resolve(DatabasePort)).toThrow();
+    expect(() => (container as any).resolve(DatabasePort)).toThrow();
   });
 
   it("has returns false when getAdapter returns undefined", () => {
@@ -482,7 +482,7 @@ describe("child-impl.ts - resolveInternalFallback", () => {
     const child = container.createChild(childGraph, { name: "Child" });
 
     // CachePort is not in parent or child - should throw with port name
-    expect(() => child.resolve(CachePort)).toThrow("Cache");
+    expect(() => (child as any).resolve(CachePort)).toThrow("Cache");
   });
 });
 
@@ -644,7 +644,7 @@ describe("factory.ts - wrapper method delegation", () => {
     const container = createContainer({ graph, name: "Test" });
     expect(container.has(LoggerPort)).toBe(true);
     expect(container.has(DatabasePort)).toBe(false);
-    expect(container.hasAdapter(LoggerPort)).toBe(true);
+    expect(container.has(LoggerPort)).toBe(true);
   });
 });
 
@@ -710,7 +710,6 @@ describe("factory.ts - library inspector auto-discovery", () => {
 
     const mockLib: LibraryInspector = {
       name: "TestLib",
-      version: "1.0.0",
       getSnapshot: () => ({ data: "test" }),
       subscribe: _listener => () => {},
     };
@@ -905,8 +904,8 @@ describe("factory.ts - initialized container wrapper delegation", () => {
 
     expect(initialized.has(LoggerPort)).toBe(true);
     expect(initialized.has(CachePort)).toBe(false);
-    expect(initialized.hasAdapter(LoggerPort)).toBe(true);
-    expect(initialized.hasAdapter(CachePort)).toBe(false);
+    expect(initialized.has(LoggerPort)).toBe(true);
+    expect(initialized.has(CachePort)).toBe(false);
   });
 
   it("initialized container createScope works", async () => {
@@ -1012,7 +1011,7 @@ describe("factory.ts - initialized container wrapper delegation", () => {
     expect(state).toBeDefined();
     expect(state.disposed).toBe(false);
 
-    const adapter = initialized[ADAPTER_ACCESS](LoggerPort);
+    const adapter = (initialized as any)[ADAPTER_ACCESS](LoggerPort);
     expect(adapter).toBeDefined();
   });
 });
@@ -1917,7 +1916,7 @@ describe("builtin-api.ts - inspector API", () => {
       lifetime: "singleton",
       factory: () => ({ log: vi.fn() }),
     });
-    const childGraph = GraphBuilder.create().override(overrideAdapter).build();
+    const childGraph = GraphBuilder.forParent(graph).override(overrideAdapter).build();
     const child = container.createChild(childGraph, { name: "Child" });
 
     const graphData = child.inspector.getGraphData();
@@ -1955,7 +1954,7 @@ describe("builtin-api.ts - inspector API", () => {
     const container = createContainer({ graph, name: "Test" });
 
     // Try resolving a port that doesn't exist
-    container.tryResolve(DatabasePort);
+    (container as any).tryResolve(DatabasePort);
 
     const stats = container.inspector.getResultStatistics("Database");
     expect(stats).toBeDefined();
@@ -1970,7 +1969,7 @@ describe("builtin-api.ts - inspector API", () => {
 
     // Generate errors for a port
     for (let i = 0; i < 5; i++) {
-      container.tryResolve(DatabasePort);
+      (container as any).tryResolve(DatabasePort);
     }
 
     const highError = container.inspector.getHighErrorRatePorts(0.5);
@@ -2309,7 +2308,7 @@ describe("wrappers.ts - child internal access symbols", () => {
     const childGraph = GraphBuilder.create().provide(makeDatabaseAdapter()).build();
     const child = container.createChild(childGraph, { name: "Child" });
 
-    const adapter = child[ADAPTER_ACCESS](DatabasePort);
+    const adapter = (child as any)[ADAPTER_ACCESS](DatabasePort);
     expect(adapter).toBeDefined();
     expect(adapter?.provides).toBe(DatabasePort);
   });
@@ -2425,7 +2424,7 @@ describe("builtin-api.ts - result tracker threshold edge", () => {
     // 2 ok, 1 err = 33% error rate
     container.tryResolve(LoggerPort); // ok
     container.tryResolve(LoggerPort); // ok
-    container.tryResolve(DatabasePort); // err
+    (container as any).tryResolve(DatabasePort); // err
 
     const stats = container.inspector.getResultStatistics("Database");
     expect(stats?.errCount).toBe(1);
@@ -2448,7 +2447,7 @@ describe("builtin-api.ts - result tracker threshold edge", () => {
     const container = createContainer({ graph, name: "Test" });
 
     container.tryResolve(LoggerPort);
-    container.tryResolve(DatabasePort);
+    (container as any).tryResolve(DatabasePort);
 
     const allStats = container.inspector.getAllResultStatistics();
     expect(allStats.size).toBeGreaterThanOrEqual(1);
@@ -2520,7 +2519,7 @@ describe("builtin-api.ts - emit and subscribe", () => {
     container.inspector.subscribe(e => events.push(e));
 
     // Emit directly
-    container.inspector.emit({ type: "result:ok", portName: "Test", timestamp: Date.now() });
+    container.inspector.emit?.({ type: "result:ok", portName: "Test", timestamp: Date.now() });
 
     expect(events.length).toBe(1);
     expect((events[0] as { type: string }).type).toBe("result:ok");
@@ -3002,7 +3001,7 @@ describe("base-impl.ts - resolveAsync adapter checks", () => {
     // Kills: L306 ConditionalExpression -> false (would skip error throw)
     const graph = makeSimpleGraph();
     const container = createContainer({ graph, name: "Test" });
-    await expect(container.resolveAsync(DatabasePort)).rejects.toThrow();
+    await expect((container as any).resolveAsync(DatabasePort)).rejects.toThrow();
   });
 });
 
@@ -3199,7 +3198,7 @@ describe("wrappers.ts - child tryResolveAsync", () => {
     const childGraph = GraphBuilder.create().provide(makeDatabaseAdapter()).build();
     const child = container.createChild(childGraph, { name: "Child" });
 
-    const result = await child.tryResolveAsync(CachePort);
+    const result = await (child as any).tryResolveAsync(CachePort);
     expect(result.isErr()).toBe(true);
   });
 });
@@ -3311,9 +3310,11 @@ describe("base-impl.ts - has() scoped port behavior", () => {
     const graph = GraphBuilder.create().provide(scopedLogger).build();
     const container = createContainer({ graph, name: "Root" });
 
-    // Root container has the adapter but scoped ports are not resolvable from root
+    // Root container has the adapter but scoped ports are not resolvable from root (has)
     expect(container.has(LoggerPort)).toBe(false);
-    expect(container.hasAdapter(LoggerPort)).toBe(true);
+    // Adapter exists in graph (verified via internal state)
+    const state = container[INTERNAL_ACCESS]();
+    expect(state.adapterMap.has(LoggerPort)).toBe(true);
   });
 
   it("has returns true for non-scoped port on root container", () => {
@@ -3510,7 +3511,7 @@ describe("factory.ts - uninitialized container wrapper arrow functions", () => {
     const graph = makeSimpleGraph();
     const container = createContainer({ graph, name: "Test" });
 
-    const result = await container.tryResolveAsync(DatabasePort);
+    const result = await (container as any).tryResolveAsync(DatabasePort);
     expect(result.isErr()).toBe(true);
   });
 });
@@ -3610,9 +3611,9 @@ describe("wrappers.ts - child has/hasAdapter delegation", () => {
     const childGraph = GraphBuilder.create().provide(makeDatabaseAdapter()).build();
     const child = container.createChild(childGraph, { name: "Child" });
 
-    expect(child.hasAdapter(DatabasePort)).toBe(true);
-    expect(child.hasAdapter(LoggerPort)).toBe(true);
-    expect(child.hasAdapter(CachePort)).toBe(false);
+    expect(child.has(DatabasePort)).toBe(true);
+    expect(child.has(LoggerPort)).toBe(true);
+    expect(child.has(CachePort)).toBe(false);
   });
 
   it("child has returns false for missing port", () => {
@@ -3722,7 +3723,7 @@ describe("builtin-api.ts - errorRate division", () => {
     container.tryResolve(LoggerPort); // ok
     container.tryResolve(LoggerPort); // ok
     container.tryResolve(LoggerPort); // ok
-    container.tryResolve(DatabasePort); // err
+    (container as any).tryResolve(DatabasePort); // err
 
     const loggerStats = container.inspector.getResultStatistics("Logger");
     expect(loggerStats?.okCount).toBe(3);
@@ -3742,7 +3743,7 @@ describe("builtin-api.ts - errorRate division", () => {
     const container = createContainer({ graph, name: "Test" });
 
     // Trigger errors for tracking
-    container.tryResolve(DatabasePort); // err - FACTORY_FAILED or similar
+    (container as any).tryResolve(DatabasePort); // err - FACTORY_FAILED or similar
 
     const stats = container.inspector.getResultStatistics("Database");
     expect(stats).toBeDefined();
@@ -3781,7 +3782,7 @@ describe("builtin-api.ts - determineOrigin", () => {
       lifetime: "singleton",
       factory: () => ({ log: vi.fn() }),
     });
-    const childGraph = GraphBuilder.create().override(overrideLogger).build();
+    const childGraph = GraphBuilder.forParent(graph).override(overrideLogger).build();
     const child = container.createChild(childGraph, { name: "Child" });
 
     const graphData = child.inspector.getGraphData();

@@ -17,9 +17,8 @@ export { ContainerBrand, ScopeBrand } from "./brands.js";
 // Container and Scope Types
 // =============================================================================
 
-export type { Container, ContainerMembers } from "./container.js";
+export type { Container, ContainerMembers, OverrideBuilder, LazyContainer } from "./container.js";
 export type { Scope, ScopeMembers } from "./scope.js";
-export type { LazyContainer } from "./lazy-container.js";
 
 // =============================================================================
 // Options and Configuration Types
@@ -33,6 +32,7 @@ export type {
   CreateContainerConfig,
   CreateChildOptions,
   RuntimePerformanceOptions,
+  RuntimeSafetyOptions,
 } from "./options.js";
 
 // =============================================================================

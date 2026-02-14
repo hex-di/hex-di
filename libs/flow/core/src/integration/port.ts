@@ -90,5 +90,5 @@ export function createFlowPort<
   TContext,
   const TName extends string = string,
 >(name: TName): FlowPort<TState, TEvent, TContext, TName> {
-  return port<FlowService<TState, TEvent, TContext>>()({ name });
+  return port<FlowService<TState, TEvent, TContext>>()({ name, category: "flow/flow" });
 }

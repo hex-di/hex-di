@@ -154,11 +154,11 @@ function createTestFlowService(
 
   const executor = createDIEffectExecutor({
     // Use type assertion since we're in test code
-    scope: scopeResolver as import("../../src/integration/di-executor.js").ScopeResolver,
+    scope: scopeResolver as import("../../src/integration/types.js").ScopeResolver,
     activityManager,
     activityRegistry,
     activityDepsResolver:
-      activityDepsResolver as import("../../src/integration/adapter.js").ActivityDepsResolver,
+      activityDepsResolver as import("../../src/integration/types.js").ActivityDepsResolver,
   });
 
   const runner = createMachineRunner(testMachine, {
@@ -537,11 +537,11 @@ describe("FlowAdapter with activities", () => {
       };
 
       const executor = createDIEffectExecutor({
-        scope: scopeResolver as import("../../src/integration/di-executor.js").ScopeResolver,
+        scope: scopeResolver as import("../../src/integration/types.js").ScopeResolver,
         activityManager,
         activityRegistry,
         activityDepsResolver:
-          activityDepsResolver as import("../../src/integration/adapter.js").ActivityDepsResolver,
+          activityDepsResolver as import("../../src/integration/types.js").ActivityDepsResolver,
       });
 
       const runner = createMachineRunner(machineWithUnknownActivity, {

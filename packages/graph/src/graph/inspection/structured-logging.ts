@@ -199,17 +199,25 @@ export function toStructuredLogs(
   }
 
   // Summary entry (always info level)
+  const summaryData: Record<string, string | number | boolean | readonly string[]> = {
+    adapterCount: inspection.adapterCount,
+    unsatisfiedCount: inspection.unsatisfiedRequirements.length,
+    maxChainDepth: inspection.maxChainDepth,
+    typeComplexityScore: inspection.typeComplexityScore,
+    isComplete: inspection.isComplete,
+  };
+  if (inspection.actor) {
+    summaryData.actorType = inspection.actor.type;
+    summaryData.actorId = inspection.actor.id;
+    if (inspection.actor.name !== undefined) {
+      summaryData.actorName = inspection.actor.name;
+    }
+  }
   addEntry({
     level: "info",
     event: "graph.inspection.summary",
     message: inspection.summary,
-    data: {
-      adapterCount: inspection.adapterCount,
-      unsatisfiedCount: inspection.unsatisfiedRequirements.length,
-      maxChainDepth: inspection.maxChainDepth,
-      typeComplexityScore: inspection.typeComplexityScore,
-      isComplete: inspection.isComplete,
-    },
+    data: summaryData,
     correlationId,
   });
 

@@ -69,13 +69,24 @@ import type {
   ValidationResult,
 } from "../graph/types/inspection.js";
 
-// Import type-level validation types directly from source files to avoid circular imports
-// through the barrel file (types/index.ts). The barrel re-exports from inspection.ts
-// which imports from merge.ts which imports GraphBuilder, creating a cycle.
 import type { EmptyDependencyGraph, EmptyLifetimeMap } from "./types/state.js";
+import type { PrettyBuilder } from "./types/inspection.js";
+import type { GraphBuilderSignature } from "./types/builder-signature.js";
 import type { ProvideResultAllErrors, ProvideManyResult } from "./types/provide.js";
 import type { MergeResult, OverrideResult } from "./types/merge.js";
-import type { PrettyBuilder } from "./types/inspection.js";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ToBuilder: converts GraphBuilderSignature → GraphBuilder at method boundaries.
+//
+// The result types in types/provide.ts and types/merge.ts resolve to
+// GraphBuilderSignature<...> (to avoid circular imports). This mapped type
+// converts them back to the full GraphBuilder class at the public API surface,
+// preserving error string literals unchanged.
+// ─────────────────────────────────────────────────────────────────────────────
+type ToBuilder<T> =
+  T extends GraphBuilderSignature<infer P, infer R, infer A, infer O, infer I>
+    ? GraphBuilder<P, R, A, O, I>
+    : T;
 
 // Import brand symbols from shared symbols module
 import { GRAPH_BUILDER_BRAND } from "../symbols/index.js";
@@ -111,8 +122,6 @@ export type {
   BuilderInternals,
   DefaultInternals,
 } from "./types/state.js";
-export type { ProvideResult, ProvideResultAllErrors, ProvideManyResult } from "./types/provide.js";
-export type { MergeResult, MergeOptions, OverrideResult } from "./types/merge.js";
 export type {
   // Inspection types
   ValidationState,
@@ -426,10 +435,10 @@ export class GraphBuilder<
    */
   private constructor(
     adapters: readonly AdapterConstraint[],
-    overridePortNames: ReadonlySet<string> = new Set()
+    overridePortNames: ReadonlySet<string> = Object.freeze(new Set<string>())
   ) {
     this.adapters = Object.freeze([...adapters]);
-    this.overridePortNames = overridePortNames;
+    this.overridePortNames = Object.freeze(overridePortNames);
     Object.freeze(this);
   }
 
@@ -460,7 +469,7 @@ export class GraphBuilder<
    * @pure Returns new GraphBuilder instance; no side effects.
    */
   static create(): GraphBuilder<never, never, never, never, DefaultInternals> {
-    return new GraphBuilder([], new Set());
+    return new GraphBuilder([], Object.freeze(new Set<string>()));
   }
 
   /**
@@ -482,8 +491,8 @@ export class GraphBuilder<
       TDepth,
       TExtended
     > => ({
-      create: () => new GraphBuilder([], new Set()),
-      forParent: () => new GraphBuilder([], new Set()),
+      create: () => new GraphBuilder([], Object.freeze(new Set<string>())),
+      forParent: () => new GraphBuilder([], Object.freeze(new Set<string>())),
       withExtendedDepth: () => createFactory<true>(),
     });
     return createFactory<false>();
@@ -510,8 +519,8 @@ export class GraphBuilder<
    */
   static withExtendedDepth(): ExtendedDepthFactory {
     return {
-      create: () => new GraphBuilder([], new Set()),
-      forParent: () => new GraphBuilder([], new Set()),
+      create: () => new GraphBuilder([], Object.freeze(new Set<string>())),
+      forParent: () => new GraphBuilder([], Object.freeze(new Set<string>())),
       withExtendedDepth: () => GraphBuilder.withExtendedDepth(),
     };
   }
@@ -537,7 +546,7 @@ export class GraphBuilder<
       false
     > // DefaultMaxDepth=50
   > {
-    return new GraphBuilder([], new Set());
+    return new GraphBuilder([], Object.freeze(new Set<string>()));
   }
 
   // =============================================================================
@@ -553,7 +562,9 @@ export class GraphBuilder<
    */
   provide<A extends AdapterConstraint>(
     adapter: A
-  ): ProvideResultAllErrors<TProvides, TRequires, TAsyncPorts, TOverrides, TInternalState, A>;
+  ): ToBuilder<
+    ProvideResultAllErrors<TProvides, TRequires, TAsyncPorts, TOverrides, TInternalState, A>
+  >;
   provide<A extends AdapterConstraint>(
     adapter: A
   ): GraphBuilder<unknown, unknown, unknown, unknown, AnyBuilderInternals> | string {
@@ -568,7 +579,7 @@ export class GraphBuilder<
    */
   provideMany<const A extends readonly AdapterConstraint[]>(
     adapters: A
-  ): ProvideManyResult<TProvides, TRequires, TAsyncPorts, TOverrides, TInternalState, A>;
+  ): ToBuilder<ProvideManyResult<TProvides, TRequires, TAsyncPorts, TOverrides, TInternalState, A>>;
   provideMany<A extends readonly AdapterConstraint[]>(adapters: A): unknown {
     const state = addManyAdapters(this, adapters);
     return GraphBuilder.fromState(state);
@@ -581,7 +592,7 @@ export class GraphBuilder<
    */
   override<A extends AdapterConstraint>(
     adapter: A
-  ): OverrideResult<TProvides, TRequires, TAsyncPorts, TOverrides, TInternalState, A>;
+  ): ToBuilder<OverrideResult<TProvides, TRequires, TAsyncPorts, TOverrides, TInternalState, A>>;
   override<A extends AdapterConstraint>(adapter: A): unknown {
     const state = addOverrideAdapter(this, adapter);
     return GraphBuilder.fromState(state);
@@ -598,17 +609,19 @@ export class GraphBuilder<
    */
   merge<OProvides, ORequires, OAsyncPorts, OOverrides, OInternals extends AnyBuilderInternals>(
     other: GraphBuilder<OProvides, ORequires, OAsyncPorts, OOverrides, OInternals>
-  ): MergeResult<
-    TProvides,
-    TRequires,
-    TAsyncPorts,
-    TOverrides,
-    TInternalState,
-    OProvides,
-    ORequires,
-    OAsyncPorts,
-    OOverrides,
-    OInternals
+  ): ToBuilder<
+    MergeResult<
+      TProvides,
+      TRequires,
+      TAsyncPorts,
+      TOverrides,
+      TInternalState,
+      OProvides,
+      ORequires,
+      OAsyncPorts,
+      OOverrides,
+      OInternals
+    >
   >;
   merge<OProvides, ORequires, OAsyncPorts, OOverrides, OInternals extends AnyBuilderInternals>(
     other: GraphBuilder<OProvides, ORequires, OAsyncPorts, OOverrides, OInternals>

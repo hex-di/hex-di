@@ -73,12 +73,24 @@ import type { OtlpHttpExporterOptions } from "./types.js";
  * ```
  */
 export function createOtlpHttpExporter(options?: OtlpHttpExporterOptions): SpanExporter {
+  const url = options?.url ?? "http://localhost:4318/v1/traces";
+
+  // GxP: Warn when using non-HTTPS endpoints for non-localhost URLs
+  if (url.startsWith("http://") && !url.includes("localhost") && !url.includes("127.0.0.1")) {
+    logError(
+      "[hex-di/tracing-otel] WARNING: OTLP endpoint uses HTTP (not HTTPS). " +
+        `URL: ${url}. ` +
+        "Trace data may be transmitted in cleartext. " +
+        "For production, use HTTPS to protect telemetry data in transit."
+    );
+  }
+
   // Create Resource from config if provided
   const resource = options?.resource ? createResource(options.resource) : undefined;
 
   // Create underlying OpenTelemetry OTLP exporter
   const otlpExporter = new OTLPTraceExporter({
-    url: options?.url ?? "http://localhost:4318/v1/traces",
+    url,
     headers: options?.headers,
     timeoutMillis: options?.timeout ?? 10000,
   });

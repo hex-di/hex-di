@@ -239,3 +239,28 @@ export type { IsAsyncAdapter } from "./validation/types/init-priority.js";
 
 export type { PortsByCategory, HasCategory } from "./builder/types/inspection.js";
 export type { InferPortCategory } from "@hex-di/core";
+
+// =============================================================================
+// Audit Trail
+// =============================================================================
+
+export type {
+  AuditActor,
+  AuditSink,
+  AuditEvent,
+  AuditBuildAttemptEvent,
+  AuditValidationDecisionEvent,
+  AuditInspectionEvent,
+  AuditDepthFallbackEvent,
+  AuditErrorRecord,
+  ValidationOutcome,
+} from "./audit/index.js";
+
+export { setAuditSink, clearAuditSink, hasAuditSink } from "./audit/index.js";
+
+// =============================================================================
+// Port Name Validation
+// =============================================================================
+
+export type { PortNameValidationResult } from "./validation/port-name-validation.js";
+export { validatePortName } from "./validation/port-name-validation.js";

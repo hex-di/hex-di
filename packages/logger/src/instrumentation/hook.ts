@@ -7,16 +7,7 @@
  */
 
 import type { Logger } from "../ports/logger.js";
-import type { AutoLogOptions } from "./container.js";
-
-/**
- * Hook object for container resolution lifecycle events.
- */
-export interface LoggingHook {
-  readonly beforeResolve?: (portName: string) => void;
-  readonly afterResolve?: (portName: string, instance: unknown) => void;
-  readonly onError?: (portName: string, error: Error) => void;
-}
+import type { AutoLogOptions, LoggingHook } from "./types.js";
 
 /**
  * Creates a logging hook that logs container resolution events.

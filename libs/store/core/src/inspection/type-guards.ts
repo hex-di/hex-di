@@ -8,7 +8,7 @@
  */
 
 import type { StoreInspectorInternal } from "../types/inspection.js";
-import type { StoreRegistry } from "./store-registry.js";
+import type { StoreRegistry } from "../types/inspection.js";
 import type { StoreTracingHook } from "../integration/tracing-bridge.js";
 
 // =============================================================================

@@ -66,8 +66,23 @@ export {
   withRedaction,
   withSampling,
   withRateLimit,
+  getStderr,
+  sanitizeMessage,
+  sanitizeStringValue,
+  sanitizeAnnotations,
+  nextSequence,
+  resetSequence,
+  computeEntryHash,
+  withIntegrity,
 } from "./utils/index.js";
-export type { RedactionConfig, SamplingConfig, RateLimitConfig } from "./utils/index.js";
+export type {
+  RedactionConfig,
+  SamplingConfig,
+  RateLimitConfig,
+  ValidationConfig,
+  IntegrityConfig,
+  IntegrityInfo,
+} from "./utils/index.js";
 
 // =============================================================================
 // Instrumentation
