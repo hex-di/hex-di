@@ -1,0 +1,99 @@
+{
+  "name": "@hex-di/playground",
+  "version": "0.2.1",
+  "description": "Interactive browser-based playground for experimenting with HexDI dependency injection patterns",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "generate:types": "tsx scripts/bundle-playground-types.ts",
+    "prebuild": "tsx scripts/bundle-playground-types.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "lint": "eslint . --cache",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:types": "vitest run --typecheck",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "dependency-injection",
+    "di",
+    "hexagonal-architecture",
+    "playground",
+    "editor",
+    "sandbox",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hex-di/hex-di.git",
+    "directory": "tooling/playground"
+  },
+  "bugs": {
+    "url": "https://github.com/hex-di/hex-di/issues"
+  },
+  "homepage": "https://github.com/hex-di/hex-di/tree/main/tooling/playground#readme",
+  "dependencies": {
+    "@hex-di/core": "workspace:*",
+    "@hex-di/devtools-ui": "workspace:*",
+    "@hex-di/graph": "workspace:*",
+    "@hex-di/runtime": "workspace:*",
+    "@hex-di/result": "workspace:*",
+    "@hex-di/flow": "workspace:*",
+    "@hex-di/store": "workspace:*",
+    "@hex-di/query": "workspace:*",
+    "@hex-di/saga": "workspace:*",
+    "@hex-di/tracing": "workspace:*",
+    "@hex-di/logger": "workspace:*",
+    "esbuild-wasm": "^0.25.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.7.0",
+    "monaco-editor": "^0.52.0",
+    "pako": "^2.1.0"
+  },
+  "peerDependencies": {
+    "react": "^18 || ^19",
+    "typescript": ">=5.0"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.0.0",
+    "@types/pako": "^2.0.3",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.1.2",
+    "dts-bundle-generator": "^9.5.0",
+    "jsdom": "^24.0.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "vite": "^7.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "sideEffects": false
+}

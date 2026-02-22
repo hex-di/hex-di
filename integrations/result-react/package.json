@@ -1,0 +1,111 @@
+{
+  "name": "@hex-di/result-react",
+  "version": "0.2.1",
+  "description": "React bindings for @hex-di/result - hooks, components, and utilities for Result-driven UIs",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./adapters": {
+      "import": {
+        "types": "./dist/adapters/index.d.ts",
+        "default": "./dist/adapters/index.js"
+      }
+    },
+    "./server": {
+      "import": {
+        "types": "./dist/server/index.d.ts",
+        "default": "./dist/server/index.js"
+      }
+    },
+    "./testing": {
+      "import": {
+        "types": "./dist/testing/index.d.ts",
+        "default": "./dist/testing/index.js"
+      }
+    },
+    "./internal/*": null
+  },
+  "files": [
+    "dist",
+    "src",
+    "!src/**/*.test.ts",
+    "!src/**/*.test.tsx",
+    "!dist/**/*.test.*",
+    "!dist/tsconfig.tsbuildinfo"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "lint": "eslint . --cache",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:types": "vitest run --typecheck",
+    "typecheck": "tsc --noEmit",
+    "test:cucumber": "cucumber-js"
+  },
+  "dependencies": {
+    "@hex-di/result": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "@hex-di/result": ">=0.2.0",
+    "typescript": ">=5.0"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    },
+    "@tanstack/react-query": {
+      "optional": true
+    },
+    "swr": {
+      "optional": true
+    },
+    "@storybook/react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.6",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@tanstack/react-query": "^5.80.6",
+    "swr": "^2.3.3",
+    "jsdom": "^26.1.0",
+    "@hex-di/result-testing": "workspace:*",
+    "@cucumber/cucumber": "^12.6.0",
+    "tsx": "^4.19.4"
+  },
+  "keywords": [
+    "result",
+    "react",
+    "hooks",
+    "error-handling",
+    "typescript",
+    "type-safe"
+  ],
+  "author": "Mohammad AL Mechkor <medalmechkor@gmail.com>",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hex-di/hex-di.git",
+    "directory": "integrations/result-react"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "sideEffects": false
+}

@@ -190,6 +190,10 @@ describe("InspectorEvent library variants", () => {
           return "registered";
         case "library-unregistered":
           return "unregistered";
+        case "chain-registered":
+          return "chain-registered";
+        case "execution-added":
+          return "execution-added";
         default: {
           // If all variants are covered, event should be `never`
           assertType<never>(event);

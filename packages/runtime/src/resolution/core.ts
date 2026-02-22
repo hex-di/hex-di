@@ -160,6 +160,31 @@ export async function resolveWithMemoAsync<P extends Port<unknown, string>>(
 }
 
 /**
+ * Defense-in-depth: unwraps Result-like factory returns at runtime.
+ *
+ * Since `build()` enforces `TErrors = never` at compile time, all factories
+ * in a valid graph should either return `T` directly (infallible) or have been
+ * wrapped by `adapterOrDie`/`adapterOrElse` (which handle Results internally).
+ *
+ * However, if type checking was bypassed (e.g., `provideUnchecked()`), a factory
+ * might return a raw Result. This function provides a runtime safety net by
+ * unwrapping Ok values and throwing Err values.
+ *
+ * @param value - The raw factory return value
+ * @returns The unwrapped value if Result-like, or the value itself
+ *
+ * @internal
+ */
+export function unwrapResultDefense(value: unknown): unknown {
+  if (typeof value === "object" && value !== null && "_tag" in value) {
+    const tagged = value as { _tag: string; value?: unknown; error?: unknown };
+    if (tagged._tag === "Ok") return tagged.value;
+    if (tagged._tag === "Err") throw tagged.error;
+  }
+  return value;
+}
+
+/**
  * Builds the dependencies record for a factory call.
  *
  * Shared logic for resolving all required dependencies and building

@@ -321,8 +321,8 @@ type Port<T, TName extends string> = {
   readonly __portName: TName; // Exists at runtime
 };
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
-const AuditorPort = createPort<"Auditor", Logger>("Auditor");
+const LoggerPort  = port<Logger>()({ name: "Logger" });
+const AuditorPort = port<Logger>()({ name: "Auditor" });
 // Now LoggerPort and AuditorPort are incompatible types!
 ```
 
@@ -330,7 +330,7 @@ const AuditorPort = createPort<"Auditor", Logger>("Auditor");
 
 The `unique symbol` type guarantees this symbol cannot be recreated elsewhere. Each declaration creates a truly unique type.
 
-**Where to find it:** `packages/ports/src/index.ts`
+**Where to find it:** `packages/core/src/ports/factory.ts`
 
 ---
 

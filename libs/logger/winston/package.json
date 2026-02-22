@@ -1,0 +1,61 @@
+{
+  "name": "@hex-di/logger-winston",
+  "version": "0.2.1",
+  "description": "Winston backend adapter for @hex-di/logger",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "lint": "eslint . --cache",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:types": "vitest run --typecheck",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "winston",
+    "logging",
+    "structured-logging",
+    "hexagonal-architecture",
+    "dependency-injection"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hex-di/hex-di.git",
+    "directory": "libs/logger/winston"
+  },
+  "dependencies": {
+    "winston": "^3.17.0"
+  },
+  "peerDependencies": {
+    "@hex-di/core": "workspace:*",
+    "@hex-di/logger": "workspace:*"
+  },
+  "devDependencies": {
+    "@hex-di/logger": "workspace:*"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "sideEffects": false
+}

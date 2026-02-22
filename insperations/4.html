@@ -1,0 +1,534 @@
+<html lang="en" vid="0">
+
+<head vid="1">
+  <meta charset="UTF-8" vid="2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" vid="3">
+  <title vid="4">HexDI - Tactical Dependency Injection</title>
+  <script src="https://cdn.tailwindcss.com" vid="5"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" vid="6">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" vid="7">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&amp;family=Inter:wght@300;400;500;600&amp;family=Rajdhani:wght@400;500;600;700&amp;display=swap"
+    rel="stylesheet" vid="8">
+  <script vid="9">
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Rajdhani', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          },
+          colors: {
+            hex: {
+              bg: '#020408',
+              surface: '#08101C',
+              primary: '#00F0FF',
+              primaryLight: '#5FFFFF',
+              primaryDark: '#008F99',
+              accent: '#FF5E00',
+              accentDark: '#CC4A00',
+              text: '#DAE6F0',
+              muted: '#586E85',
+            }
+          },
+          backgroundImage: {
+            'grid-pattern': 'linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px)',
+            'radial-spotlight': 'radial-gradient(circle at center, rgba(0, 240, 255, 0.15) 0%, rgba(2, 4, 8, 0) 75%)',
+            'accent-spotlight': 'radial-gradient(circle at center, rgba(255, 94, 0, 0.1) 0%, rgba(2, 4, 8, 0) 70%)',
+          },
+          animation: {
+            'spin-slow': 'spin 20s linear infinite',
+            'float': 'float 6s ease-in-out infinite',
+            'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'scanline': 'scanline 8s linear infinite',
+            'fade-up': 'fade-up 1s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            'particle-float': 'particle-float 15s linear infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': {transform: 'translateY(0) rotateX(20deg) rotateZ(-10deg)'},
+              '50%': {transform: 'translateY(-20px) rotateX(25deg) rotateZ(-5deg)'},
+            },
+            'fade-up': {
+              '0%': {opacity: '0', transform: 'translateY(40px)'},
+              '100%': {opacity: '1', transform: 'translateY(0)'}
+            },
+            'particle-float': {
+              '0%': {transform: 'translateY(0) translateX(0)', opacity: '0'},
+              '10%': {opacity: '0.4'},
+              '90%': {opacity: '0.4'},
+              '100%': {transform: 'translateY(-100vh) translateX(20px)', opacity: '0'}
+            },
+            scanline: {
+              '0%': {transform: 'translateY(-100%)'},
+              '100%': {transform: 'translateY(100%)'}
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style vid="10">
+    body {
+      background-color: #020408;
+      color: #DAE6F0;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .bg-grid {
+      background-size: 40px 40px;
+      background-image:
+        linear-gradient(to right, rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+    }
+
+    .perspective-container {
+      perspective: 2000px;
+    }
+
+    .depth-card {
+      transform-style: preserve-3d;
+      transition: transform 0.5s ease-out;
+      box-shadow: 20px 20px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    .depth-card:hover {
+      transform: translateZ(20px) rotateY(-5deg);
+    }
+
+    .particle {
+      position: absolute;
+      background: #00F0FF;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(1px);
+    }
+
+    .stagger-1 {
+      animation-delay: 0.1s;
+    }
+
+    .stagger-2 {
+      animation-delay: 0.2s;
+    }
+
+    .stagger-3 {
+      animation-delay: 0.3s;
+    }
+
+    .stagger-4 {
+      animation-delay: 0.4s;
+    }
+
+    .hud-card {
+      background: rgba(8, 16, 28, 0.4);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 240, 255, 0.1);
+      position: relative;
+    }
+
+    .fade-in-on-scroll {
+      opacity: 0;
+    }
+
+    .reveal {
+      animation: fade-up 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .clip-path-slant {
+      clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%);
+    }
+  </style>
+</head>
+
+<body class="bg-hex-bg bg-grid selection:bg-hex-primary selection:text-black font-sans" vid="11">
+
+
+  <div class="fixed inset-0 overflow-hidden pointer-events-none z-0" vid="12">
+    <div class="particle w-1 h-1 stagger-1 animate-particle-float" style="left: 10%; bottom: -5%;" vid="13"></div>
+    <div class="particle w-2 h-2 stagger-3 animate-particle-float" style="left: 25%; bottom: -10%;" vid="14"></div>
+    <div class="particle w-1 h-1 stagger-2 animate-particle-float" style="left: 45%; bottom: -8%;" vid="15"></div>
+    <div class="particle w-3 h-3 stagger-4 animate-particle-float" style="left: 70%; bottom: -15%;" vid="16"></div>
+    <div class="particle w-1 h-1 stagger-1 animate-particle-float" style="left: 85%; bottom: -12%;" vid="17"></div>
+    <div class="particle w-2 h-2 stagger-2 animate-particle-float" style="left: 95%; bottom: -5%;" vid="18"></div>
+  </div>
+
+  <nav class="fixed top-0 w-full z-50 border-b border-hex-primary/20 bg-hex-bg/80 backdrop-blur-xl" vid="19">
+    <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between" vid="20">
+      <div class="flex items-center gap-3" vid="21">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+          class="text-hex-primary drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]" vid="22">
+          <path d="M12 2L21 7V17L12 22L3 17V7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" vid="23"></path>
+          <circle cx="12" cy="12" r="3" fill="currentColor" vid="24"></circle>
+        </svg>
+        <span class="font-display font-bold text-2xl tracking-widest text-white uppercase" vid="25">Hex<span
+            class="text-hex-primary" vid="26">DI</span></span>
+      </div>
+      <div class="hidden md:flex gap-8 text-xs font-mono tracking-widest text-hex-muted uppercase" vid="27">
+        <a href="#features" class="hover:text-hex-primary transition-colors" vid="28">[Features]</a>
+        <a href="#architecture" class="hover:text-hex-primary transition-colors" vid="29">[Architecture]</a>
+        <a href="#docs" class="hover:text-hex-primary transition-colors" vid="30">[Docs]</a>
+      </div>
+      <div class="flex gap-4 items-center" vid="31">
+        <div
+          class="hidden sm:flex items-center gap-2 text-[10px] text-hex-primary border border-hex-primary/30 px-2 py-1 bg-hex-primary/5"
+          vid="32">
+          <div class="w-1.5 h-1.5 bg-hex-accent rounded-full animate-pulse" vid="33"></div>
+          SYS.ONLINE
+        </div>
+        <a href="https://github.com" target="_blank" class="text-hex-muted hover:text-white transition-colors" vid="34">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24" vid="35">
+            <path
+              d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+              vid="36"></path>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+
+  <header class="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden" vid="37">
+    <div
+      class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1200px] h-[1200px] bg-radial-spotlight pointer-events-none opacity-60"
+      vid="38"></div>
+    <div class="absolute inset-0 bg-[length:100%_2px,3px_100%] pointer-events-none opacity-10"
+      style="background-image: linear-gradient(rgba(18,16,20,0) 50%,rgba(0,0,0,0.5) 50%), linear-gradient(90deg,rgba(0,240,255,0.05),transparent,rgba(0,240,255,0.05))"
+      vid="39"></div>
+
+    <div class="max-w-7xl mx-auto px-6 w-full grid lg:grid-cols-2 gap-20 items-center relative z-10" vid="40">
+      <div class="space-y-8 reveal stagger-1" vid="41">
+        <div
+          class="inline-flex items-center gap-2 px-3 py-1 border border-hex-accent/50 bg-hex-accent/5 text-hex-accent text-xs font-mono tracking-widest uppercase"
+          vid="42">
+          <span class="w-1.5 h-1.5 rounded-none bg-hex-accent animate-pulse shadow-[0_0_12px_#FF5E00]" vid="43"></span>
+          Compile-Time Safety v2.0
+        </div>
+
+        <h1 class="font-display font-bold text-5xl md:text-8xl leading-[0.85] tracking-tighter text-white uppercase"
+          vid="44">
+          THE COMPILER <br vid="45"> REVIEWS THE <br vid="46">
+          <span
+            class="text-transparent bg-clip-text bg-gradient-to-r from-hex-primary via-hex-primaryLight to-hex-primary drop-shadow-[0_0_20px_rgba(0,240,255,0.4)]"
+            vid="47">ARCHITECTURE.</span>
+        </h1>
+
+        <p class="text-xl text-hex-muted max-w-xl font-mono leading-relaxed border-l-2 border-hex-primary/40 pl-6 py-2"
+          vid="48">
+          // STOP DEBUGGING "SERVICE NOT FOUND" AT RUNTIME.<br vid="49">
+          HexDI is a zero-overhead injection engine.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-6 pt-6" vid="50">
+          <button
+            class="px-10 py-5 bg-hex-primary/10 border border-hex-primary text-hex-primary font-bold font-display uppercase tracking-widest hover:bg-hex-primary hover:text-black transition-all group shadow-[0_0_30px_rgba(0,240,255,0.2)] hover:shadow-[0_0_50px_rgba(0,240,255,0.4)] clip-path-slant"
+            vid="51">
+            Initialize
+          </button>
+          <button
+            class="px-10 py-5 border border-hex-muted/30 text-hex-muted font-bold font-display uppercase tracking-widest hover:border-hex-primary hover:text-hex-primary transition-all group relative"
+            vid="52">
+            Documentation
+          </button>
+        </div>
+      </div>
+
+
+      <div class="relative flex items-center justify-center min-h-[600px] reveal stagger-3 perspective-container"
+        vid="53">
+        <div class="absolute inset-0 bg-radial-spotlight opacity-40 blur-3xl scale-150" vid="54"></div>
+        <div class="w-full h-full animate-float" vid="55">
+          <svg class="w-full h-full max-w-[550px] filter drop-shadow-[0_40px_60px_rgba(0,0,0,0.8)]"
+            viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg" vid="56">
+            <defs vid="57">
+              <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%" vid="58">
+                <stop offset="0%" stop-color="#00F0FF" stop-opacity="0.0" vid="59"></stop>
+                <stop offset="50%" stop-color="#00F0FF" stop-opacity="0.9" vid="60"></stop>
+                <stop offset="100%" stop-color="#00F0FF" stop-opacity="0.0" vid="61"></stop>
+              </linearGradient>
+            </defs>
+
+            <path d="M200 100 L286.6 150 L286.6 250 L200 300 L113.4 250 L113.4 150 Z" stroke="rgba(0, 240, 255, 0.4)"
+              stroke-width="2" fill="rgba(0, 240, 255, 0.05)" vid="62"></path>
+            <g class="animate-[pulse_4s_ease-in-out_infinite]" vid="63">
+              <circle cx="200" cy="100" r="8" fill="#020408" stroke="#FF5E00" stroke-width="3" vid="64"></circle>
+              <text x="200" y="80" text-anchor="middle" fill="#FF5E00" font-family="Rajdhani" font-size="12"
+                font-weight="700" letter-spacing="2" vid="65">CONTAINER</text>
+
+              <circle cx="286.6" cy="150" r="5" fill="#00F0FF" vid="66"></circle>
+              <text x="315" y="150" fill="#00F0FF" font-family="Fira Code" font-size="10" vid="67">SERVICE</text>
+
+              <circle cx="113.4" cy="250" r="5" fill="#00F0FF" vid="68"></circle>
+              <text x="85" y="250" text-anchor="end" fill="#00F0FF" font-family="Fira Code" font-size="10"
+                vid="69">ADAPTER</text>
+            </g>
+
+            <path d="M200 100 L286.6 150" stroke="url(#lineGrad)" stroke-width="3" vid="70"></path>
+            <path d="M113.4 250 L113.4 150" stroke="url(#lineGrad)" stroke-width="3" vid="71"></path>
+
+            <circle cx="200" cy="200" r="40" fill="url(#nodeGlow)" class="animate-pulse opacity-50" vid="72"></circle>
+            <circle cx="200" cy="200" r="12" stroke="#00F0FF" stroke-width="2" fill="none" vid="73"></circle>
+            <path d="M185 200 h30 M200 185 v30" stroke="#00F0FF" stroke-width="1.5" vid="74"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 reveal stagger-4"
+      vid="75">
+      <span class="text-[10px] uppercase tracking-[0.4em] font-mono text-hex-primary" vid="76">Scroll</span>
+      <div class="w-[1px] h-16 bg-gradient-to-b from-hex-primary to-transparent" vid="77"></div>
+    </div>
+  </header>
+
+
+  <section id="features" class="py-40 relative bg-[#020408]" vid="78">
+    <div
+      class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[800px] bg-accent-spotlight pointer-events-none opacity-40"
+      vid="79"></div>
+
+    <div class="max-w-7xl mx-auto px-6 relative z-10" vid="80">
+      <div class="mb-24 flex items-end gap-6 border-b border-white/5 pb-8 reveal stagger-1" vid="81">
+        <div class="h-3 w-3 bg-hex-primary shadow-[0_0_15px_rgba(0,240,255,0.8)]" vid="82"></div>
+        <h2 class="text-4xl md:text-5xl font-display font-bold uppercase tracking-tight text-white" vid="83">System
+          <span class="text-hex-muted" vid="84">Protocols</span></h2>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8" vid="85">
+
+        <div class="hud-card p-10 group reveal stagger-1 depth-card" vid="86">
+          <div
+            class="w-14 h-14 flex items-center justify-center mb-8 text-hex-primary border border-hex-primary/30 bg-hex-primary/5 group-hover:border-hex-primary group-hover:bg-hex-primary/20 transition-all duration-500"
+            vid="87">
+            <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="88">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" vid="89"></path>
+            </svg>
+          </div>
+          <h3 class="text-2xl font-bold font-display uppercase tracking-wide mb-4 text-white" vid="90">Compile-Time
+            Validation</h3>
+          <p class="text-hex-muted leading-relaxed font-mono text-sm" vid="91">Dependency graph cycles and missing
+            tokens are detected during build sequence. Zero production errors.</p>
+        </div>
+
+        <div class="hud-card p-10 group reveal stagger-2 depth-card" vid="92">
+          <div
+            class="w-14 h-14 flex items-center justify-center mb-8 text-hex-accent border border-hex-accent/30 bg-hex-accent/5 group-hover:border-hex-accent group-hover:bg-hex-accent/20 transition-all duration-500"
+            vid="93">
+            <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="94">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"
+                vid="95"></path>
+            </svg>
+          </div>
+          <h3 class="text-2xl font-bold font-display uppercase tracking-wide mb-4 text-white" vid="96">Zero Runtime
+            Overhead</h3>
+          <p class="text-hex-muted leading-relaxed font-mono text-sm" vid="97">Optimized factory code generation.
+            Reflection protocols disabled. Dynamic lookups disabled.</p>
+        </div>
+
+        <div class="hud-card p-10 group reveal stagger-3 depth-card" vid="98">
+          <div
+            class="w-14 h-14 flex items-center justify-center mb-8 text-purple-400 border border-purple-500/30 bg-purple-500/5 group-hover:border-purple-400 group-hover:bg-purple-500/20 transition-all duration-500"
+            vid="99">
+            <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="100">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" vid="101"></path>
+            </svg>
+          </div>
+          <h3 class="text-2xl font-bold font-display uppercase tracking-wide mb-4 text-white" vid="102">Deep Type
+            Inference</h3>
+          <p class="text-hex-muted leading-relaxed font-mono text-sm" vid="103">Seamless TypeScript generic integration.
+            Interface contract enforcement active.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <section id="architecture" class="py-40 relative bg-hex-bg overflow-hidden" vid="104">
+    <div class="absolute inset-0 bg-radial-spotlight opacity-20 pointer-events-none" vid="105"></div>
+    <div class="max-w-7xl mx-auto px-6 relative z-10" vid="106">
+      <div class="text-center mb-24 reveal stagger-1" vid="107">
+        <h2 class="text-4xl font-display font-bold mb-6 uppercase text-white tracking-widest" vid="108">Module <span
+            class="text-hex-primary" vid="109">Architecture</span></h2>
+        <p class="text-hex-muted max-w-2xl mx-auto font-mono text-sm" vid="110">Core runtime &lt; 2KB. Select modules as
+          required.</p>
+      </div>
+
+      <div class="relative w-full max-w-5xl mx-auto aspect-[16/9] mb-20 perspective-container reveal stagger-2"
+        vid="111">
+
+        <div
+          class="w-full h-full bg-[#0A1424]/40 border border-hex-primary/20 rounded-xl p-12 backdrop-blur-md shadow-[0_60px_100px_rgba(0,0,0,0.9)] transform rotateX(10deg) rotateY(-5deg)"
+          vid="112">
+          <svg viewBox="0 0 800 400" class="w-full h-full filter drop-shadow-[0_20px_20px_rgba(0,0,0,0.5)]" vid="113">
+            <defs vid="114">
+              <filter id="glow-heavy" vid="115">
+                <feGaussianBlur stdDeviation="6" result="blur" vid="116"></feGaussianBlur>
+                <feComposite in="SourceGraphic" in2="blur" operator="over" vid="117"></feComposite>
+              </filter>
+            </defs>
+
+            <path d="M400 150 L400 110" stroke="#00F0FF" stroke-width="2" stroke-dasharray="10 5" opacity="0.3"
+              vid="118"></path>
+            <path d="M250 200 L340 200" stroke="#00F0FF" stroke-width="2" stroke-dasharray="10 5" opacity="0.3"
+              vid="119"></path>
+
+
+            <g transform="translate(350, 150)" filter="url(#glow-heavy)" vid="120">
+              <rect width="100" height="100" fill="#0B1624" stroke="#00F0FF" stroke-width="3" rx="4" vid="121"></rect>
+              <text x="50" y="45" text-anchor="middle" fill="white" font-family="Rajdhani" font-weight="700"
+                font-size="16" vid="122">HEX-DI</text>
+              <text x="50" y="65" text-anchor="middle" fill="#00F0FF" font-family="Fira Code" font-size="10"
+                vid="123">CORE</text>
+            </g>
+
+
+            <g transform="translate(140, 175)" vid="124">
+              <rect width="90" height="50" fill="rgba(0,240,255,0.05)" stroke="#00F0FF" stroke-width="1.5" rx="4"
+                vid="125"></rect>
+              <text x="45" y="30" text-anchor="middle" fill="#00F0FF" font-family="Rajdhani" font-weight="700"
+                font-size="12" vid="126">REACT</text>
+            </g>
+            <g transform="translate(570, 175)" vid="127">
+              <rect width="90" height="50" fill="rgba(255,94,0,0.05)" stroke="#FF5E00" stroke-width="1.5" rx="4"
+                vid="128"></rect>
+              <text x="45" y="30" text-anchor="middle" fill="#FF5E00" font-family="Rajdhani" font-weight="700"
+                font-size="12" vid="129">TESTING</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="py-40 bg-[#05080F] border-y border-hex-primary/10 relative" vid="130">
+    <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-20 items-center" vid="131">
+      <div class="space-y-10 reveal stagger-1" vid="132">
+        <h2 class="text-4xl font-display font-bold uppercase text-white tracking-wide" vid="133">Execution <span
+            class="text-hex-primary" vid="134">Preview</span></h2>
+        <p class="text-hex-muted font-mono text-lg leading-relaxed" vid="135">HexDI analyzes constructor signatures to
+          construct the resolution graph. Standard TypeScript types are sufficient.</p>
+        <div class="space-y-6 font-mono text-sm text-gray-400" vid="136">
+          <div class="flex items-center gap-4 reveal stagger-2" vid="137">
+            <span class="text-hex-primary border border-hex-primary/30 px-2 py-0.5" vid="138">OK</span> No decorators
+            required
+          </div>
+          <div class="flex items-center gap-4 reveal stagger-3" vid="139">
+            <span class="text-hex-primary border border-hex-primary/30 px-2 py-0.5" vid="140">OK</span> 100% Type Safe
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal stagger-3" vid="141">
+        <div
+          class="depth-card rounded-lg overflow-hidden border border-hex-primary/20 bg-[#020408] shadow-[0_80px_120px_rgba(0,0,0,0.7)]"
+          vid="142">
+          <div class="flex items-center justify-between px-6 py-3 bg-[#0A1420] border-b border-hex-primary/10"
+            vid="143">
+            <div class="flex gap-2" vid="144">
+              <div class="w-3 h-3 rounded-full bg-red-500/30" vid="145"></div>
+              <div class="w-3 h-3 rounded-full bg-yellow-500/30" vid="146"></div>
+              <div class="w-3 h-3 rounded-full bg-green-500/30" vid="147"></div>
+            </div>
+            <span class="text-xs text-hex-muted font-mono" vid="148">app.container.ts</span>
+          </div>
+          <div class="p-8 overflow-x-auto relative" vid="149">
+            <div
+              class="absolute inset-0 bg-gradient-to-b from-transparent via-hex-primary/5 to-transparent h-[40px] w-full animate-scanline pointer-events-none"
+              vid="150"></div>
+            <pre class="font-mono text-sm leading-relaxed" vid="151"><code class="language-typescript" vid="152"><span
+                  class="token keyword" vid="153">import</span> { Container } <span class="token keyword"
+                  vid="154">from</span> <span class="token string" vid="155">'@hex-di/core'</span>;
+
+                <span class="token keyword" vid="156">class</span> <span class="token class-name"
+                  vid="157">UserRepository</span> {
+                <span class="token keyword" vid="158">constructor</span>(<span class="token keyword"
+                  vid="159">private</span> db: <span class="token class-name" vid="160">Database</span>) {}
+                }
+
+                <span class="token comment" vid="161">// Composition root</span>
+                <span class="token keyword" vid="162">const</span> container = <span class="token keyword"
+                  vid="163">new</span> <span class="token class-name" vid="164">Container</span>();
+                container.<span class="token function" vid="165">register</span>(<span class="token class-name"
+                  vid="166">Database</span>);
+                container.<span class="token function" vid="167">register</span>(<span class="token class-name"
+                  vid="168">UserRepository</span>);
+
+                <span class="token keyword" vid="169">const</span> root = container.<span class="token function"
+                  vid="170">build</span>();
+              </code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="py-60 relative overflow-hidden" vid="171">
+    <div class="absolute inset-0 bg-radial-spotlight opacity-80 pointer-events-none scale-150" vid="172"></div>
+    <div
+      class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1400px] h-[1400px] bg-accent-spotlight opacity-10 pointer-events-none"
+      vid="173"></div>
+
+    <div class="max-w-5xl mx-auto px-6 text-center relative z-10 reveal stagger-1" vid="174">
+      <h2 class="text-5xl md:text-7xl font-display font-bold mb-8 text-white uppercase tracking-tighter" vid="175">READY
+        FOR THE <br vid="176"> <span class="text-hex-primary drop-shadow-[0_0_20px_rgba(0,240,255,0.6)]"
+          vid="177">TRANSITION?</span></h2>
+      <p class="text-hex-muted text-xl mb-14 max-w-2xl mx-auto font-mono leading-relaxed" vid="178">Deploy the most
+        rigid dependency architecture ever built for TypeScript.</p>
+      <div class="flex flex-col sm:flex-row gap-8 justify-center items-center" vid="179">
+        <button
+          class="px-12 py-6 bg-hex-primary text-black font-bold font-display uppercase tracking-[0.2em] hover:bg-white hover:scale-105 transition-all shadow-[0_0_40px_rgba(0,240,255,0.5)] clip-path-slant"
+          vid="180">
+          Initialize System
+        </button>
+        <button
+          class="px-12 py-6 border border-hex-primary/40 text-hex-primary font-bold font-display uppercase tracking-[0.2em] hover:bg-hex-primary/5 transition-all"
+          vid="181">
+          View Benchmarks
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="py-20 border-t border-hex-primary/10 bg-[#010204] text-center relative z-10" vid="182">
+    <div class="flex items-center justify-center gap-3 mb-6 text-hex-primary/60" vid="183">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" vid="184">
+        <path d="M12 2L21 7V17L12 22L3 17V7L12 2Z" stroke="currentColor" stroke-width="2" vid="185"></path>
+      </svg>
+      <span class="font-display font-bold uppercase tracking-[0.4em] text-sm" vid="186">HexDI</span>
+    </div>
+    <p class="text-hex-muted text-[10px] font-mono tracking-widest uppercase opacity-40" vid="187">© 2024 HexDI Open
+      Source. Terminal session ending... // END OF LINE</p>
+  </footer>
+
+  <script vid="188">
+
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('reveal');
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.fade-in-on-scroll, section h2, .hud-card, header div').forEach(el => {
+      el.classList.add('fade-in-on-scroll');
+      observer.observe(el);
+    });
+  </script>
+
+</body>
+
+</html>

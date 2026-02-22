@@ -1,0 +1,71 @@
+# Agent OS Standards Index
+
+react:
+  react-async-provider:
+    description: HexDiAsyncContainerProvider compound component pattern for async initialization
+  react-create-typed-hooks:
+    description: createTypedHooks<TProvides>() — isolated type-safe integration factory
+  react-providers:
+    description: HexDiContainerProvider (caller owns lifecycle) and HexDiAutoScopeProvider (scope per mount)
+  react-strict-mode:
+    description: Deferred scope disposal pattern for StrictMode — only relevant for custom scope providers
+  react-use-port:
+    description: usePort resolves from nearest resolver, memoized per (resolver, port), scoped port rules
+
+runtime:
+  async-factory-detection:
+    description: Only async () => {} syntax detected as async; () => Promise.resolve() is treated as sync
+  container-child:
+    description: createChild / createChildAsync / createLazyChild and inheritance modes
+  container-override:
+    description: container.override(adapter).build() — for tests/middleware, not production graph composition
+  container-phases:
+    description: "uninitialized vs initialized phase, initialize(), scope phase-freeze gotcha"
+  container-resolve-variants:
+    description: resolve / tryResolve / resolveAsync / tryResolveAsync and common errors
+  container-scopes:
+    description: createScope, scoped vs singleton resolution, ScopeRequiredError, dispose order
+
+testing:
+  test-assertion-utilities:
+    description: assertSpanExists / assertLogEntry — structured matchers, throw with diagnostic on failure
+  test-container-setup:
+    description: Full inline pipeline per test — no shared test helper exists
+  test-isolation-lifecycle:
+    description: "dispose() per test, beforeEach/afterEach for shared state, clearStack() for tracing only"
+  test-memory-adapters:
+    description: MemoryLoggerAdapter / MemoryTracerAdapter — transient lifetime, .clear(), .getEntries()/.getCollectedSpans()
+
+graph:
+  graph-build-variants:
+    description: "build() vs tryBuild() vs buildFragment() vs tryBuildFragment() — when to use each"
+  graph-composition-flow:
+    description: Full pipeline — GraphBuilder.create → .provide → .build → createContainer
+  graph-sub-graph-merge:
+    description: Sub-graph builder pattern — export unbuilt builders, merge at root, build once
+
+adapters:
+  adapter-deps-access:
+    description: Deps accessed by port name field in factory; positional for class
+  adapter-factory-vs-class:
+    description: factory for custom wiring, class for pure constructor injection
+  adapter-lifetime:
+    description: "Lifetime semantics: singleton/scoped/transient rules, async constraint, captive dependency"
+
+libs:
+  lib-dependencies:
+    description: peerDependencies rules for hex-di packages, react, vitest, and vendor backends
+  lib-index-structure:
+    description: Root index.ts banner-sectioned export structure; section order and required format
+  lib-src-layout:
+    description: src/ directory layout conventions and what each directory is for
+  lib-sub-packages:
+    description: Sub-package splitting rules (core/react/testing/vendor) for bundle opt-out
+
+ports:
+  port-category:
+    description: Category naming convention (library/role format) and reserved categories
+  port-direction:
+    description: Inbound vs outbound direction semantics in hexagonal architecture
+  port-factory-api:
+    description: port() vs createPort() API choice and required metadata fields

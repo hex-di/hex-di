@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/react-showcase",
-  "version": "0.0.0",
+  "version": "0.2.1",
   "private": true,
   "description": "React showcase app demonstrating all hex-di library features",
   "type": "module",

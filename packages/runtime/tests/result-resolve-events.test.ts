@@ -47,7 +47,6 @@ function createAsyncDatabaseAdapter() {
     provides: DatabasePort,
     requires: [],
     lifetime: "singleton",
-    async: true,
     factory: async () => ({ query: vi.fn() }),
   });
 }
@@ -57,7 +56,6 @@ function createFailingAsyncDatabaseAdapter() {
     provides: DatabasePort,
     requires: [],
     lifetime: "singleton",
-    async: true,
     factory: async () => {
       throw new Error("Async factory failure");
     },

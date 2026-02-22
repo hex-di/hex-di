@@ -310,20 +310,15 @@ class HooksRunner {
     const startTime = Date.now();
     this.parentStack.push({ port, startTime });
 
-    let error: Error | null = null;
-    try {
-      return fn();
-    } catch (e) {
-      error = e instanceof Error ? e : new Error(String(e));
-      throw e;
-    } finally {
-      this.parentStack.pop();
-      this.hooks.afterResolve?.({
-        ...context,
-        duration: Date.now() - startTime,
-        error,
-      });
-    }
+    const result = tryCatch(fn, (e) => e instanceof Error ? e : new Error(String(e)));
+    this.parentStack.pop();
+    this.hooks.afterResolve?.({
+      ...context,
+      duration: Date.now() - startTime,
+      error: result.isErr() ? result.error : null,
+    });
+    if (result.isErr()) throw result.error;
+    return result.value;
   }
 
   private createContext(

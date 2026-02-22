@@ -2,6 +2,22 @@ import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
+interface PostCssOptions {
+  plugins: unknown[];
+  [key: string]: unknown;
+}
+
+function tailwindPlugin() {
+  return {
+    name: 'docusaurus-tailwindcss',
+    configurePostCss(postcssOptions: PostCssOptions): PostCssOptions {
+      postcssOptions.plugins.push(require('@tailwindcss/postcss'));
+      postcssOptions.plugins.push(require('autoprefixer'));
+      return postcssOptions;
+    },
+  };
+}
+
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
@@ -31,6 +47,8 @@ const config: Config = {
   // GitHub pages deployment config.
   organizationName: 'leaderiop', // GitHub org/user name
   projectName: 'hex-di', // repo name
+
+  plugins: [tailwindPlugin],
 
   onBrokenLinks: 'throw',
 

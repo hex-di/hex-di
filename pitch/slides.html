@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HexDI — Hexagonal Architecture, Enforced</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:   #0f1f3d;
+  --blue:   #1a3a6e;
+  --mid:    #2255a4;
+  --bright: #4f9cf5;
+  --accent: #e8294a;
+  --green:  #0a7c4e;
+  --amber:  #b45309;
+  --light:  #f4f6fb;
+  --text:   #1a1f2e;
+  --muted:  #64748b;
+  --border: #dde3ee;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif;
+  background: #070e1c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Deck & slides ── */
+.deck { width: 960px; height: 540px; position: relative; }
+
+.slide {
+  position: absolute; inset: 0;
+  display: none;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0,0,0,.6);
+}
+.slide.active { display: flex; flex-direction: column; }
+
+/* ── Themes ── */
+.dark  { background: var(--navy); color: #fff; }
+.light { background: var(--light); color: var(--text); }
+.white { background: #fff; color: var(--text); }
+
+/* ── Top stripe ── */
+.stripe {
+  height: 5px; flex-shrink: 0;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--mid) 55%, var(--bright) 100%);
+}
+
+/* ── Footer ── */
+.foot {
+  flex-shrink: 0; padding: 7px 24px;
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 10px; letter-spacing: .09em; text-transform: uppercase;
+}
+.foot.dark-foot  { background: rgba(0,0,0,.25); color: rgba(255,255,255,.35); }
+.foot.light-foot { background: #e8ecf5; color: var(--muted); }
+
+/* ── Body area ── */
+.body { flex: 1; display: flex; flex-direction: column; padding: 36px 52px 24px; overflow: hidden; }
+.body.hero { justify-content: center; padding: 52px 64px 32px; }
+
+/* ── Typography ── */
+.eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .15em;
+  text-transform: uppercase; opacity: .55; margin-bottom: 18px;
+}
+h1 { font-size: 46px; font-weight: 800; line-height: 1.1; margin-bottom: 20px; }
+h1 em { color: var(--bright); font-style: normal; }
+h1 .red { color: #ff6b7a; font-style: normal; }
+h2 { font-size: 24px; font-weight: 700; color: var(--blue); margin-bottom: 4px; }
+.sub { font-size: 14px; color: var(--muted); margin-bottom: 22px; }
+.lead { font-size: 18px; line-height: 1.6; opacity: .82; max-width: 680px; }
+.lead strong { color: var(--bright); font-weight: 600; }
+
+/* ── Quote ── */
+.quote {
+  border-left: 3px solid var(--accent);
+  padding: 13px 20px;
+  font-size: 15px; font-style: italic;
+  color: var(--muted); background: #fff;
+  border-radius: 0 6px 6px 0; margin-top: 18px;
+}
+.quote.dark-q {
+  background: rgba(255,255,255,.07);
+  border-color: var(--accent); color: rgba(255,255,255,.65);
+}
+
+/* ── Stat row ── */
+.stats { display: flex; gap: 12px; margin-bottom: 20px; }
+.stat {
+  flex: 1; background: var(--blue); color: #fff;
+  border-radius: 8px; padding: 16px 14px; text-align: center;
+}
+.stat .n { font-size: 34px; font-weight: 800; color: var(--bright); line-height: 1; }
+.stat .l { font-size: 11px; opacity: .7; margin-top: 5px; line-height: 1.35; }
+
+/* ── Three-col layout ── */
+.cols { display: flex; gap: 14px; flex: 1; }
+.col  { flex: 1; }
+
+/* ── Cards ── */
+.card {
+  border-radius: 8px; padding: 18px 20px;
+  height: 100%; display: flex; flex-direction: column;
+}
+.card h3 {
+  font-size: 12px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; margin-bottom: 12px;
+}
+.card ul { list-style: none; flex: 1; }
+.card ul li {
+  font-size: 13px; line-height: 1.55; margin-bottom: 9px;
+  padding-left: 16px; position: relative;
+}
+.card ul li::before { content: "—"; position: absolute; left: 0; opacity: .4; }
+
+.red-card   { background: #fff1f3; border-left: 3px solid var(--accent); }
+.red-card h3 { color: var(--accent); }
+.blue-card  { background: #eef4ff; border-left: 3px solid var(--mid); }
+.blue-card h3 { color: var(--mid); }
+.green-card { background: #f0faf5; border-left: 3px solid var(--green); }
+.green-card h3 { color: var(--green); }
+.dark-card  { background: var(--blue); color: #fff; }
+.dark-card h3 { color: var(--bright); }
+.dark-card ul li::before { opacity: .3; }
+.gray-card  { background: #f8f9fb; border: 1px solid var(--border); }
+.gray-card h3 { color: var(--muted); }
+
+/* ── Timeline (slide 1) ── */
+.timeline { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.t-item {
+  display: flex; align-items: flex-start; gap: 16px;
+  background: #fff; border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 16px;
+}
+.t-item.bad  { border-left: 3px solid var(--accent); background: #fff8f9; }
+.t-item.note { border-left: 3px solid var(--amber);  background: #fffbf0; }
+.sprint {
+  flex-shrink: 0; font-size: 10px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted); padding-top: 2px; min-width: 56px;
+}
+.t-text { font-size: 13px; line-height: 1.5; color: var(--text); }
+.t-text strong { color: var(--accent); }
+
+/* ── Adapter grid (slide 3) ── */
+.adapter-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; flex: 1;
+}
+.adapter {
+  display: flex; align-items: center; gap: 14px;
+  background: #fff; border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 16px;
+}
+.adapter-tool {
+  flex-shrink: 0; width: 72px;
+  font-size: 13px; font-weight: 700; color: var(--text);
+}
+.adapter-arrow { flex-shrink: 0; font-size: 18px; color: var(--muted); }
+.adapter-port  { font-family: monospace; font-size: 12px; color: var(--mid); font-weight: 600; }
+.adapter-note  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* ── Error table (slide 4) ── */
+.err-list { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.err-row {
+  display: flex; align-items: center; gap: 14px;
+  background: #fff; border: 1px solid var(--border);
+  border-radius: 8px; padding: 11px 16px;
+}
+.err-badge {
+  flex-shrink: 0; padding: 3px 10px; border-radius: 4px;
+  font-size: 10px; font-weight: 700; letter-spacing: .07em;
+  text-transform: uppercase; white-space: nowrap;
+}
+.err-badge.compile { background: #d1fae5; color: #065f46; }
+.err-badge.runtime { background: #fee2e2; color: #991b1b; }
+.err-badge.none    { background: #f1f5f9; color: var(--muted); }
+.err-label { font-size: 13px; font-weight: 600; color: var(--text); min-width: 200px; }
+.err-desc  { font-size: 12px; color: var(--muted); flex: 1; }
+code {
+  font-family: "SF Mono", Consolas, monospace;
+  font-size: 11px; background: #f0f4ff;
+  padding: 1px 5px; border-radius: 3px; color: var(--mid);
+}
+
+/* ── Graph slide ── */
+.graph-area {
+  flex: 1; display: flex; gap: 16px;
+}
+.graph-box {
+  flex: 1.4; background: var(--navy); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden; min-height: 0;
+}
+.graph-svg { width: 100%; height: 100%; }
+.graph-questions {
+  flex: 1; display: flex; flex-direction: column; gap: 9px;
+  justify-content: center;
+}
+.q-item {
+  background: #fff; border: 1px solid var(--border);
+  border-radius: 7px; padding: 10px 14px;
+}
+.q-item .q { font-size: 12px; font-style: italic; color: var(--text); margin-bottom: 3px; }
+.q-item .a { font-size: 11px; color: var(--green); font-weight: 600; }
+
+/* ── Comparison table ── */
+.cmp {
+  width: 100%; border-collapse: collapse;
+  font-size: 12.5px; flex: 1;
+}
+.cmp th {
+  background: var(--blue); color: #fff;
+  padding: 9px 14px; text-align: left; font-weight: 600;
+  font-size: 12px;
+}
+.cmp th:first-child { border-radius: 6px 0 0 0; }
+.cmp th:last-child  { border-radius: 0 6px 0 0; }
+.cmp td {
+  padding: 9px 14px; border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.cmp tr:nth-child(even) td { background: #f8f9fb; }
+.cmp td:first-child { font-weight: 600; color: var(--blue); font-size: 12px; }
+.cmp th.hl, .cmp td.hl { background: #eef4ff !important; }
+.yes { color: var(--green); font-weight: 700; }
+.no  { color: var(--accent); font-weight: 600; }
+.meh { color: var(--amber); font-weight: 600; }
+
+/* ── Ask slide ── */
+.ask-row { display: flex; gap: 16px; margin-top: 20px; flex: 1; }
+.ask-box {
+  flex: 1; border-radius: 8px; padding: 20px 24px;
+}
+.ask-box h3 {
+  font-size: 11px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; margin-bottom: 14px;
+}
+.ask-box ul { list-style: none; }
+.ask-box ul li {
+  font-size: 14px; line-height: 1.6; margin-bottom: 10px;
+  padding-left: 24px; position: relative;
+}
+.ask-box ul li::before { position: absolute; left: 0; font-weight: 700; }
+.cost { background: rgba(255,255,255,.07); }
+.cost h3 { color: rgba(255,255,255,.45); }
+.cost ul li { color: rgba(255,255,255,.8); }
+.cost ul li::before { content: "↗"; color: rgba(255,255,255,.35); }
+.gain { background: rgba(10,124,78,.15); border: 1px solid rgba(10,124,78,.3); }
+.gain h3 { color: #4ade80; }
+.gain ul li { color: rgba(255,255,255,.85); }
+.gain ul li::before { content: "✓"; color: #4ade80; }
+
+/* ── Nav ── */
+.nav {
+  position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(255,255,255,.08); backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,.12); border-radius: 32px;
+  padding: 7px 18px; color: #fff; font-size: 12px; user-select: none;
+}
+.nav button {
+  background: rgba(255,255,255,.14); border: none; color: #fff;
+  border-radius: 50%; width: 28px; height: 28px; font-size: 15px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.nav button:hover { background: rgba(255,255,255,.28); }
+.nav button:disabled { opacity: .25; cursor: default; }
+#counter { min-width: 48px; text-align: center; opacity: .7; }
+</style>
+</head>
+<body>
+<div class="deck">
+
+<!-- ══════════════════════════════════════════════════
+     SLIDE 0 — HOOK
+══════════════════════════════════════════════════ -->
+<div class="slide active dark">
+  <div class="stripe"></div>
+  <div class="body hero">
+    <div class="eyebrow">HexDI &nbsp;·&nbsp; Hexagonal Architecture, Enforced</div>
+    <h1>The pattern<br>everyone agrees on.<br><em>Finally, the tooling.</em></h1>
+    <p class="lead" style="margin-top:8px;">
+      Hexagonal Architecture works. The problem is that without tooling,<br>
+      it is just a convention — and <strong>conventions always drift.</strong>
+    </p>
+  </div>
+  <div class="foot dark-foot"><span>HexDI</span><span>Confidential</span></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SLIDE 1 — WHAT HAPPENS WITHOUT TOOLING
+══════════════════════════════════════════════════ -->
+<div class="slide white">
+  <div class="stripe"></div>
+  <div class="body">
+    <h2>What happens to every project without tooling</h2>
+    <p class="sub">The team agrees on the pattern. Then real life happens.</p>
+    <div class="timeline">
+      <div class="t-item bad">
+        <span class="sprint">Sprint 3</span>
+        <span class="t-text">A junior developer queries the database directly — bypassing the Repository port. <strong>Nobody catches it in review.</strong></span>
+      </div>
+      <div class="t-item bad">
+        <span class="sprint">Sprint 7</span>
+        <span class="t-text">A contractor adds a service with direct imports instead of port declarations. <strong>The boundary is gone.</strong></span>
+      </div>
+      <div class="t-item bad">
+        <span class="sprint">Sprint 12</span>
+        <span class="t-text">An AI coding tool generates a new feature matching the patterns it has seen — <strong>including the three that bypass the ports.</strong></span>
+      </div>
+      <div class="t-item bad">
+        <span class="sprint">Sprint 18</span>
+        <span class="t-text">The architecture diagram in Confluence hasn't been updated in four months. <strong>Nobody knows which version is true.</strong></span>
+      </div>
+      <div class="t-item note">
+        <span class="sprint" style="color:var(--amber);">Result</span>
+        <span class="t-text" style="font-weight:600;">The pattern survived one sprint. The boundary is now a polite suggestion. This is not a discipline problem — it is a tooling problem. <em>Conventions drift. Constraints do not.</em></span>
+      </div>
+    </div>
+  </div>
+  <div class="foot light-foot"><span>HexDI</span><span>The Problem</span></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SLIDE 2 — WHAT HEXDI IS
+══════════════════════════════════════════════════ -->
+<div class="slide white">
+  <div class="stripe"></div>
+  <div class="body">
+    <h2>What HexDI is</h2>
+    <p class="sub">The tooling layer that turns Hexagonal Architecture from a convention into a structural constraint.</p>
+    <div class="cols">
+      <div class="col">
+        <div class="card blue-card" style="margin-bottom:12px;">
+          <h3>Boundaries enforced</h3>
+          <ul>
+            <li>Every external dependency is declared as a typed port</li>
+            <li>There is no mechanism to bypass a port — the factory only receives what is declared</li>
+            <li>Violations are compile errors, not code review comments</li>
+          </ul>
+        </div>
+        <div class="card blue-card">
+          <h3>Architecture live</h3>
+          <ul>
+            <li>The dependency graph is a real object generated from the running code</li>
+            <li>Always accurate — it is the code, not a diagram</li>
+            <li>Queryable, exportable, AI-readable</li>
+          </ul>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card green-card" style="margin-bottom:12px;">
+          <h3>Tools swappable in one line</h3>
+          <ul>
+            <li>Change Pino to Winston: one line in the GraphBuilder</li>
+            <li>The compiler confirms every consumer is satisfied</li>
+            <li>Business logic is completely untouched</li>
+          </ul>
+        </div>
+        <div class="card dark-card">
+          <h3>Keep your existing tools</h3>
+          <ul>
+            <li>HexDI does not replace Pino, React Query, or XState</li>
+            <li>It gives them clean boundaries via adapters</li>
+            <li>Your team keeps what it knows — with enforced architecture around it</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot light-foot"><span>HexDI</span><span>The Solution</span></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SLIDE 3 — KEEP YOUR TOOLS
+══════════════════════════════════════════════════ -->
+<div class="slide white">
+  <div class="stripe"></div>
+  <div class="body">
+    <h2>Keep your tools. Clean your architecture.</h2>
+    <p class="sub">HexDI does not replace your ecosystem — it gives every tool a clean boundary via a typed adapter.</p>
+    <div class="adapter-grid">
+      <div class="adapter">
+        <div class="adapter-tool">Pino</div>
+        <div class="adapter-arrow">→</div>
+        <div>
+          <div class="adapter-port">@hex-di/logger-pino</div>
+          <div class="adapter-note">Pino behind <code>LoggerPort</code> — swap to Winston in one line</div>
+        </div>
+      </div>
+      <div class="adapter">
+        <div class="adapter-tool">React Query</div>
+        <div class="adapter-arrow">→</div>
+        <div>
+          <div class="adapter-port">@hex-di/query</div>
+          <div class="adapter-note">Port-keyed queries — the port <em>is</em> the query key, type-safe</div>
+        </div>
+      </div>
+      <div class="adapter">
+        <div class="adapter-tool">XState</div>
+        <div class="adapter-arrow">→</div>
+        <div>
+          <div class="adapter-port">@hex-di/flow</div>
+          <div class="adapter-note">State machine effects as port invocations — fully testable</div>
+        </div>
+      </div>
+      <div class="adapter">
+        <div class="adapter-tool">OpenTelemetry</div>
+        <div class="adapter-arrow">→</div>
+        <div>
+          <div class="adapter-port">@hex-di/tracing-otel</div>
+          <div class="adapter-note">Trace adapter behind <code>TracerPort</code> — swap to Datadog, one line</div>
+        </div>
+      </div>
+      <div class="adapter">
+        <div class="adapter-tool">Your ORM</div>
+        <div class="adapter-arrow">→</div>
+        <div>
+          <div class="adapter-port">DatabasePort (you define it)</div>
+          <div class="adapter-note">Write the adapter once — swap the ORM without touching business logic</div>
+        </div>
+      </div>
+      <div class="adapter">
+        <div class="adapter-tool">Any API</div>
+        <div class="adapter-arrow">→</div>
+        <div>
+          <div class="adapter-port">Your port name</div>
+          <div class="adapter-note">Every external dependency becomes swappable — vendor lock-in eliminated</div>
+        </div>
+      </div>
+    </div>
+    <div class="quote" style="margin-top:14px; font-size:13px;">
+      Business logic never imports Pino. It imports <code>LoggerPort</code>. That difference is everything.
+    </div>
+  </div>
+  <div class="foot light-foot"><span>HexDI</span><span>The Adapter Story</span></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SLIDE 4 — THE COMPILER AS ARCHITECT
+══════════════════════════════════════════════════ -->
+<div class="slide white">
+  <div class="stripe"></div>
+  <div class="body">
+    <h2>The compiler is the architect on call — 24 / 7</h2>
+    <p class="sub">Today your hexagonal boundaries are enforced by documentation, code review, and culture. All three fail. This does not.</p>
+    <div class="err-list">
+      <div class="err-row">
+        <span class="err-badge compile">Compile</span>
+        <span class="err-label">Service bypasses a port</span>
+        <span class="err-desc">No bypass mechanism exists — the factory only receives declared port dependencies</span>
+      </div>
+      <div class="err-row">
+        <span class="err-badge compile">Compile</span>
+        <span class="err-label">Missing dependency</span>
+        <span class="err-desc"><code>MissingDependencyError&lt;typeof DatabasePort&gt;</code> — exact port named, exact location</span>
+      </div>
+      <div class="err-row">
+        <span class="err-badge compile">Compile</span>
+        <span class="err-label">Circular dependency</span>
+        <span class="err-desc">Full chain shown: <code>A → B → C → A</code> — caught before any code runs</span>
+      </div>
+      <div class="err-row">
+        <span class="err-badge compile">Compile</span>
+        <span class="err-label">Wrong lifetime scope</span>
+        <span class="err-desc">Singleton depending on scoped service — a classic production bug, caught structurally</span>
+      </div>
+      <div class="err-row">
+        <span class="err-badge runtime">Runtime</span>
+        <span class="err-label">NestJS / InversifyJS today</span>
+        <span class="err-desc">All of the above reach staging, production, or an audit before anyone notices</span>
+      </div>
+    </div>
+    <div class="quote" style="margin-top:14px; font-size:13px;">
+      Contractors follow the rules. New hires follow the rules. AI-generated code follows the rules. Or the code does not compile.
+    </div>
+  </div>
+  <div class="foot light-foot"><span>HexDI</span><span>Compile-Time Enforcement</span></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SLIDE 5 — ARCHITECTURE AS LIVE OBJECT
+══════════════════════════════════════════════════ -->
+<div class="slide white">
+  <div class="stripe"></div>
+  <div class="body">
+    <h2>The architecture is a live object, not a diagram</h2>
+    <p class="sub">Generated from the running code. Always accurate. Queryable on demand.</p>
+    <div class="graph-area">
+      <div class="graph-box">
+        <!-- Simple inline SVG dependency graph -->
+        <svg class="graph-svg" viewBox="0 0 340 260" xmlns="http://www.w3.org/2000/svg">
+          <!-- edges -->
+          <line x1="170" y1="52" x2="90"  y2="118" stroke="#2255a4" stroke-width="1.5" stroke-dasharray="4 3" opacity=".5"/>
+          <line x1="170" y1="52" x2="170" y2="118" stroke="#2255a4" stroke-width="1.5" stroke-dasharray="4 3" opacity=".5"/>
+          <line x1="170" y1="52" x2="252" y2="118" stroke="#2255a4" stroke-width="1.5" stroke-dasharray="4 3" opacity=".5"/>
+          <line x1="90"  y1="142" x2="90"  y2="195" stroke="#0a7c4e" stroke-width="1.5" stroke-dasharray="4 3" opacity=".5"/>
+          <line x1="170" y1="142" x2="170" y2="195" stroke="#0a7c4e" stroke-width="1.5" stroke-dasharray="4 3" opacity=".5"/>
+          <line x1="252" y1="142" x2="252" y2="195" stroke="#0a7c4e" stroke-width="1.5" stroke-dasharray="4 3" opacity=".5"/>
+          <!-- root -->
+          <rect x="120" y="28" width="100" height="30" rx="5" fill="#2255a4"/>
+          <text x="170" y="48" text-anchor="middle" fill="#fff" font-size="12" font-family="monospace" font-weight="600">OrderService</text>
+          <!-- mid layer -->
+          <rect x="40"  y="118" width="100" height="26" rx="5" fill="#1a3a6e"/>
+          <text x="90"  y="135" text-anchor="middle" fill="#7eb8ff" font-size="11" font-family="monospace">PaymentPort</text>
+          <rect x="120" y="118" width="100" height="26" rx="5" fill="#1a3a6e"/>
+          <text x="170" y="135" text-anchor="middle" fill="#7eb8ff" font-size="11" font-family="monospace">LoggerPort</text>
+          <rect x="202" y="118" width="100" height="26" rx="5" fill="#1a3a6e"/>
+          <text x="252" y="135" text-anchor="middle" fill="#7eb8ff" font-size="11" font-family="monospace">DatabasePort</text>
+          <!-- adapters -->
+          <rect x="40"  y="195" width="100" height="26" rx="5" fill="#0a3020"/>
+          <text x="90"  y="212" text-anchor="middle" fill="#4ade80" font-size="10" font-family="monospace">StripeAdapter</text>
+          <rect x="120" y="195" width="100" height="26" rx="5" fill="#0a3020"/>
+          <text x="170" y="212" text-anchor="middle" fill="#4ade80" font-size="10" font-family="monospace">PinoAdapter</text>
+          <rect x="202" y="195" width="100" height="26" rx="5" fill="#0a3020"/>
+          <text x="252" y="212" text-anchor="middle" fill="#4ade80" font-size="10" font-family="monospace">PrismaAdapter</text>
+          <!-- labels -->
+          <text x="170" y="248" text-anchor="middle" fill="rgba(255,255,255,.3)" font-size="9" font-family="sans-serif">Generated from code · Always accurate</text>
+        </svg>
+      </div>
+      <div class="graph-questions">
+        <div class="q-item">
+          <div class="q">"What does <code>OrderService</code> depend on?"</div>
+          <div class="a">✓ Instant graph query — structural truth</div>
+        </div>
+        <div class="q-item">
+          <div class="q">"Which services can reach the payment layer?"</div>
+          <div class="a">✓ Graph traversal — not a grep through files</div>
+        </div>
+        <div class="q-item">
+          <div class="q">"What breaks if I change <code>DatabasePort</code>?"</div>
+          <div class="a">✓ All dependents — found in milliseconds</div>
+        </div>
+        <div class="q-item">
+          <div class="q">"Show me the architecture for the audit"</div>
+          <div class="a">✓ Export to Mermaid / DOT — generated, not written</div>
+        </div>
+        <div class="q-item">
+          <div class="q">AI assistant: "What ports exist for logging?"</div>
+          <div class="a">✓ MCP server answers from the live graph</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot light-foot"><span>HexDI</span><span>Living Architecture</span></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SLIDE 6 — AI ANGLE
+══════════════════════════════════════════════════ -->
+<div class="slide white">
+  <div class="stripe"></div>
+  <div class="body">
+    <h2>The AI problem has a structural solution</h2>
+    <p class="sub">AI tools are pattern-matchers. In an unstructured codebase, they match bad patterns too.</p>
+    <div class="cols">
+      <div class="col">
+        <div class="card red-card" style="height:auto; margin-bottom:12px;">
+          <h3>Without HexDI</h3>
+          <ul>
+            <li>AI infers architecture from the files it sees — including the exceptions</li>
+            <li>AI-generated code bypasses ports silently — no mechanism to prevent it</li>
+            <li>Review burden explodes — humans must catch every structural mistake</li>
+            <li>METR 2025: experienced developers are <strong>19% slower</strong> with AI tools — because review takes longer than writing</li>
+          </ul>
+        </div>
+        <div class="card gray-card" style="height:auto;">
+          <h3>The root cause</h3>
+          <ul>
+            <li>AI generates fast. Structural validation is slow and human.</li>
+            <li>The bottleneck is not writing code — it is knowing whether the code is correct.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card green-card" style="height: calc(100% - 0px);">
+          <h3>With HexDI</h3>
+          <ul>
+            <li>Every boundary is explicit — the AI sees typed ports, not implicit imports</li>
+            <li>The MCP server gives AI live access to the graph — it knows valid wiring before generating</li>
+            <li>The compiler validates AI output — wrong boundaries are compile errors before commit</li>
+            <li>Code review focuses on business logic — structural correctness is handled by the machine</li>
+            <li>AI generates consistent architecture because the structure is explicit and enforced</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot light-foot"><span>HexDI</span><span>AI + Architecture</span></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SLIDE 7 — COMPETITIVE POSITION
+══════════════════════════════════════════════════ -->
+<div class="slide white">
+  <div class="stripe"></div>
+  <div class="body">
+    <h2>A position nobody else occupies</h2>
+    <p class="sub">HexDI does not compete with NestJS on features. It occupies a different category: hexagonal architecture as enforced infrastructure.</p>
+    <table class="cmp">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th class="hl">HexDI</th>
+          <th>NestJS</th>
+          <th>InversifyJS</th>
+          <th>Manual Hexagonal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Hexagonal Architecture enforced</td>
+          <td class="hl yes">✓ Structural</td>
+          <td class="meh">⚠ Different pattern</td>
+          <td class="no">✗ DI only</td>
+          <td class="no">✗ Convention only</td>
+        </tr>
+        <tr>
+          <td>Compile-time validation</td>
+          <td class="hl yes">✓ Full</td>
+          <td class="no">✗ Runtime</td>
+          <td class="no">✗ Runtime</td>
+          <td class="no">✗ None</td>
+        </tr>
+        <tr>
+          <td>Keep your existing tools</td>
+          <td class="hl yes">✓ Adapters for all</td>
+          <td class="no">✗ Uses its own</td>
+          <td class="meh">⚠ DI only, no bridges</td>
+          <td class="yes">✓ No enforcement</td>
+        </tr>
+        <tr>
+          <td>Architecture as live object</td>
+          <td class="hl yes">✓ Queryable graph</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+        </tr>
+        <tr>
+          <td>AI-readable architecture</td>
+          <td class="hl yes">✓ MCP server</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+        </tr>
+        <tr>
+          <td>Framework lock-in</td>
+          <td class="hl yes">✓ None</td>
+          <td class="no">✗ Strong</td>
+          <td class="yes">✓ None</td>
+          <td class="yes">✓ None</td>
+        </tr>
+        <tr>
+          <td>Swap any implementation</td>
+          <td class="hl yes">1 line</td>
+          <td class="no">Module migration</td>
+          <td class="meh">Moderate</td>
+          <td class="no">Full refactor</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot light-foot"><span>HexDI</span><span>Competitive</span></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SLIDE 8 — THE ASK
+══════════════════════════════════════════════════ -->
+<div class="slide dark">
+  <div class="stripe"></div>
+  <div class="body hero">
+    <div class="eyebrow">The Ask</div>
+    <h1>One project.<br>One decision.<br><em>Permanent architecture.</em></h1>
+    <div class="ask-row">
+      <div class="ask-box cost">
+        <h3>Cost of adopting</h3>
+        <ul>
+          <li>One week of project setup</li>
+          <li>Learning curve: days, not months</li>
+          <li>A codebase where boundaries enforce themselves</li>
+        </ul>
+      </div>
+      <div class="ask-box gain">
+        <h3>What you get</h3>
+        <ul>
+          <li>Hexagonal Architecture that survives team changes</li>
+          <li>Every tool swappable in one line — forever</li>
+          <li>AI code structurally validated — not manually reviewed</li>
+          <li>Architecture visible, live, and auditable at any time</li>
+        </ul>
+      </div>
+    </div>
+    <div class="quote dark-q" style="margin-top:20px;">
+      Hexagonal Architecture works. HexDI makes it work permanently — not just for the sprint you introduced it.
+    </div>
+  </div>
+  <div class="foot dark-foot"><span>HexDI</span><span>hex-di.dev</span></div>
+</div>
+
+</div><!-- .deck -->
+
+<!-- Navigation -->
+<div class="nav">
+  <button id="prev" onclick="go(-1)" disabled>‹</button>
+  <span id="counter">1 / 9</span>
+  <button id="next" onclick="go(1)">›</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let cur = 0;
+  const N = slides.length;
+
+  function show(n) {
+    slides[cur].classList.remove('active');
+    cur = Math.max(0, Math.min(n, N - 1));
+    slides[cur].classList.add('active');
+    document.getElementById('counter').textContent = `${cur + 1} / ${N}`;
+    document.getElementById('prev').disabled = cur === 0;
+    document.getElementById('next').disabled = cur === N - 1;
+  }
+
+  function go(d) { show(cur + d); }
+
+  document.addEventListener('keydown', e => {
+    if (['ArrowRight','ArrowDown',' '].includes(e.key)) { e.preventDefault(); go(1); }
+    if (['ArrowLeft','ArrowUp'].includes(e.key))         { e.preventDefault(); go(-1); }
+    if (e.key === 'Home') show(0);
+    if (e.key === 'End')  show(N - 1);
+  });
+</script>
+</body>
+</html>

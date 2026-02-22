@@ -67,8 +67,8 @@ describe("Extraction - Type Level", () => {
   // DoD 6 type #9
   it("toJSON return type matches discriminated union shape", () => {
     const okJson = ok(42).toJSON();
-    expectTypeOf(okJson).toEqualTypeOf<{ _tag: "Ok"; value: number }>();
+    expectTypeOf(okJson).toEqualTypeOf<{ _tag: "Ok"; _schemaVersion: 1; value: number }>();
     const errJson = err("x").toJSON();
-    expectTypeOf(errJson).toEqualTypeOf<{ _tag: "Err"; error: string }>();
+    expectTypeOf(errJson).toEqualTypeOf<{ _tag: "Err"; _schemaVersion: 1; error: string }>();
   });
 });

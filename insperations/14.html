@@ -1,0 +1,295 @@
+<html lang="en" vid="0">
+
+<head vid="1">
+  <meta charset="UTF-8" vid="2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" vid="3">
+  <title vid="4">HexDI - Mobile First DI</title>
+  <script src="https://cdn.tailwindcss.com" vid="5"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" vid="6">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" vid="7">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&amp;family=Inter:wght@300;400;500;600&amp;family=Rajdhani:wght@400;500;600;700&amp;display=swap"
+    rel="stylesheet" vid="8">
+  <script vid="9">
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Rajdhani', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          },
+          colors: {
+            hex: {
+              bg: '#020408',
+              surface: '#08101C',
+              primary: '#00F0FF',
+              primaryLight: '#5FFFFF',
+              primaryDark: '#008F99',
+              accent: '#FF5E00',
+              accentDark: '#CC4A00',
+              text: '#DAE6F0',
+              muted: '#586E85',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style vid="10">
+    body {
+      background-color: #020408;
+      color: #DAE6F0;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    .bg-grid {
+      background-size: 30px 30px;
+      background-image:
+        linear-gradient(to right, rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
+    }
+
+    .mobile-snap-container {
+      scroll-snap-type: y mandatory;
+      overflow-y: scroll;
+      height: 100vh;
+      scrollbar-width: none;
+    }
+
+    .mobile-snap-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    .snap-section {
+      scroll-snap-align: start;
+      height: 100vh;
+      width: 100%;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .horizontal-scroll {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      gap: 1rem;
+      padding: 0 1.5rem;
+    }
+
+    .horizontal-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .horizontal-card {
+      scroll-snap-align: center;
+      min-width: 85vw;
+      background: rgba(8, 16, 28, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(0, 240, 255, 0.15);
+      padding: 2rem;
+      border-radius: 4px;
+    }
+
+    .bottom-nav-anchor {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, #020408 80%, transparent);
+      padding: 1.5rem;
+      z-index: 100;
+      border-top: 1px solid rgba(0, 240, 255, 0.1);
+    }
+
+    .clip-path-slant {
+      clip-path: polygon(0 0, 100% 0, 92% 100%, 0% 100%);
+    }
+
+    @keyframes scanline {
+      0% {
+        transform: translateY(-100%);
+      }
+
+      100% {
+        transform: translateY(100vh);
+      }
+    }
+
+    .scanline {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100px;
+      background: linear-gradient(to bottom, transparent, rgba(0, 240, 255, 0.05), transparent);
+      animation: scanline 4s linear infinite;
+      pointer-events: none;
+      z-index: 50;
+    }
+  </style>
+</head>
+
+<body class="bg-hex-bg bg-grid font-sans" vid="11">
+
+  <div class="scanline" vid="12"></div>
+
+  <nav
+    class="fixed top-0 w-full z-50 bg-hex-bg/40 backdrop-blur-md px-6 py-4 flex justify-between items-center border-b border-hex-primary/10"
+    vid="13">
+    <div class="flex items-center gap-2" vid="14">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="text-hex-primary" vid="15">
+        <path d="M12 2L21 7V17L12 22L3 17V7L12 2Z" stroke="currentColor" stroke-width="2" vid="16"></path>
+        <circle cx="12" cy="12" r="3" fill="currentColor" vid="17"></circle>
+      </svg>
+      <span class="font-display font-bold text-lg tracking-widest text-white uppercase" vid="18">Hex<span
+          class="text-hex-primary" vid="19">DI</span></span>
+    </div>
+    <div class="text-[10px] text-hex-primary border border-hex-primary/30 px-2 py-1 bg-hex-primary/5 font-mono"
+      vid="20">
+      v2.4.0
+    </div>
+  </nav>
+
+  <main class="mobile-snap-container" vid="21">
+
+    <section class="snap-section flex flex-col justify-center items-center px-6 text-center" vid="22">
+      <div
+        class="mb-6 inline-flex items-center gap-2 px-3 py-1 border border-hex-accent/40 bg-hex-accent/5 text-hex-accent text-[9px] font-mono tracking-[0.2em] uppercase"
+        vid="23">
+        <span class="w-1.5 h-1.5 bg-hex-accent rounded-full animate-pulse" vid="24"></span>
+        STABLE_PROTOCOL
+      </div>
+
+      <h1 class="font-display font-bold text-5xl leading-[0.9] tracking-tighter text-white uppercase mb-6" vid="25">
+        COMPILE_TIME <br vid="26">
+        <span class="text-hex-primary drop-shadow-[0_0_15px_rgba(0,240,255,0.4)]" vid="27">STRUCTURAL</span> <br
+          vid="28">
+        <span class="text-hex-muted/40 text-4xl" vid="29">INTEGRITY.</span>
+      </h1>
+
+      <div class="relative max-w-xs mx-auto text-center" vid="30">
+        <p class="text-sm text-hex-muted font-mono leading-relaxed px-4" vid="31">
+          High-performance structural dependency injection engine for TypeScript.
+        </p>
+      </div>
+
+
+      <div class="absolute bottom-40 w-full flex justify-center opacity-20" vid="32">
+        <div class="w-[1px] h-12 bg-hex-primary animate-bounce" vid="33"></div>
+      </div>
+    </section>
+
+
+    <section class="snap-section flex flex-col justify-center" vid="34">
+      <h2 class="px-6 text-xs font-mono text-hex-primary uppercase tracking-[0.4em] mb-6" vid="35">01_SYSTEM_PROTOCOLS
+      </h2>
+      <div class="horizontal-scroll" vid="36">
+        <div class="horizontal-card" vid="37">
+          <div
+            class="w-10 h-10 flex items-center justify-center mb-6 text-hex-primary border border-hex-primary/30 bg-hex-primary/5"
+            vid="38">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="39">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" vid="40"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold font-display uppercase tracking-wider mb-2 text-white" vid="41">Compile
+            Validation</h3>
+          <p class="text-hex-muted text-xs leading-relaxed font-mono" vid="42">Advanced AST analysis identifies circular
+            dependencies during build time. Zero runtime overhead.</p>
+        </div>
+        <div class="horizontal-card" vid="43">
+          <div
+            class="w-10 h-10 flex items-center justify-center mb-6 text-hex-accent border border-hex-accent/30 bg-hex-accent/5"
+            vid="44">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="45">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"
+                vid="46"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold font-display uppercase tracking-wider mb-2 text-white" vid="47">Optimized Speed
+          </h3>
+          <p class="text-hex-muted text-xs leading-relaxed font-mono" vid="48">Pre-calculated resolution paths remove
+            dynamic lookups. Near-native performance.</p>
+        </div>
+        <div class="horizontal-card" vid="49">
+          <div
+            class="w-10 h-10 flex items-center justify-center mb-6 text-purple-400 border border-purple-400/30 bg-purple-400/5"
+            vid="50">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="51">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" vid="52"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold font-display uppercase tracking-wider mb-2 text-white" vid="53">Type Assurance
+          </h3>
+          <p class="text-hex-muted text-xs leading-relaxed font-mono" vid="54">Full TypeScript inference across
+            boundaries. No decorators required.</p>
+        </div>
+      </div>
+    </section>
+
+
+    <section class="snap-section flex flex-col justify-center" vid="55">
+      <h2 class="px-6 text-xs font-mono text-hex-primary uppercase tracking-[0.4em] mb-6" vid="56">02_CODE_STREAM</h2>
+      <div class="px-6" vid="57">
+        <div class="rounded bg-[#020408] border border-hex-primary/20 overflow-hidden shadow-2xl" vid="58">
+          <div class="px-4 py-2 bg-[#0A1420] border-b border-hex-primary/20 flex justify-between" vid="59">
+            <span class="text-[9px] text-hex-muted font-mono" vid="60">APP.CONTAINER.TS</span>
+            <div class="flex gap-1" vid="61">
+              <div class="w-2 h-2 rounded-full bg-red-500/30" vid="62"></div>
+              <div class="w-2 h-2 rounded-full bg-green-500/30" vid="63"></div>
+            </div>
+          </div>
+          <div class="p-4 overflow-x-auto" vid="64">
+            <pre class="font-mono text-[10px] leading-tight text-gray-400" vid="65"><span class="text-hex-primary"
+                vid="66">const</span> container = <span class="text-hex-primary" vid="67">new</span> Container();
+              container.register(Database);
+              container.register(UserRepository);
+
+              <span class="text-hex-accent" vid="68">// Build graph at compile time</span>
+              <span class="text-hex-primary" vid="69">const</span> root = container.build();
+            </pre>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+
+  <div class="bottom-nav-anchor" vid="70">
+    <div class="flex flex-col gap-3" vid="71">
+      <button
+        class="w-full py-4 bg-hex-primary text-black font-bold font-display uppercase tracking-[0.2em] clip-path-slant flex items-center justify-center gap-2"
+        vid="72">
+        Initialize_SYS
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="73">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" vid="74">
+          </path>
+        </svg>
+      </button>
+      <div class="flex gap-3" vid="75">
+        <button
+          class="flex-1 py-3 border border-hex-muted/30 text-hex-muted text-[10px] font-bold font-display uppercase tracking-widest bg-hex-surface/40"
+          vid="76">
+          Documentation
+        </button>
+        <button class="px-4 py-3 border border-hex-muted/30 text-hex-muted flex items-center justify-center" vid="77">
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24" vid="78">
+            <path
+              d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+              vid="79"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</body>
+
+</html>

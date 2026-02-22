@@ -55,6 +55,7 @@ import type {
   GetParentProvides,
   GetMaxDepth,
   GetDepthExceededWarning,
+  GetErrors,
 } from "./types/state.js";
 import {
   inspectGraph,
@@ -746,9 +747,11 @@ export class GraphBuilder<
    * @pure Returns new frozen Graph; original builder unchanged. May throw for deep cycles.
    * @throws {Error} At runtime if a circular dependency is detected when type-level limit exceeded.
    */
-  build(): [UnsatisfiedDependencies<TProvides, TRequires>] extends [never]
-    ? Graph<TProvides, TAsyncPorts, TOverrides>
-    : `ERROR[HEX008]: Missing adapters for ${JoinPortNames<UnsatisfiedDependencies<TProvides, TRequires>>}. Call .provide() first.`;
+  build(): [GetErrors<TInternalState>] extends [never]
+    ? [UnsatisfiedDependencies<TProvides, TRequires>] extends [never]
+      ? Graph<TProvides, TAsyncPorts, TOverrides>
+      : `ERROR[HEX008]: Missing adapters for ${JoinPortNames<UnsatisfiedDependencies<TProvides, TRequires>>}. Call .provide() first.`
+    : `ERROR: Unhandled adapter error channels detected. Use adapterOrDie(adapter) or adapterOrElse(adapter, fallbackAdapter) to handle fallible adapters before providing them to the graph.`;
   build(): BuiltGraph | string {
     return buildGraph(this);
   }
@@ -772,9 +775,11 @@ export class GraphBuilder<
    *
    * @pure Returns new frozen Result; original builder unchanged.
    */
-  tryBuild(): [UnsatisfiedDependencies<TProvides, TRequires>] extends [never]
-    ? Result<Graph<TProvides, TAsyncPorts, TOverrides>, GraphBuildError>
-    : `ERROR[HEX008]: Missing adapters for ${JoinPortNames<UnsatisfiedDependencies<TProvides, TRequires>>}. Call .provide() first.`;
+  tryBuild(): [GetErrors<TInternalState>] extends [never]
+    ? [UnsatisfiedDependencies<TProvides, TRequires>] extends [never]
+      ? Result<Graph<TProvides, TAsyncPorts, TOverrides>, GraphBuildError>
+      : `ERROR[HEX008]: Missing adapters for ${JoinPortNames<UnsatisfiedDependencies<TProvides, TRequires>>}. Call .provide() first.`
+    : `ERROR: Unhandled adapter error channels detected. Use adapterOrDie(adapter) or adapterOrElse(adapter, fallbackAdapter) to handle fallible adapters before providing them to the graph.`;
   tryBuild(): Result<BuiltGraph, GraphBuildError> | string {
     return tryBuildGraph(this);
   }

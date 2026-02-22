@@ -1,0 +1,632 @@
+<html lang="en" vid="0">
+
+<head vid="1">
+  <meta charset="UTF-8" vid="2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" vid="3">
+  <title vid="4">HexDI - Cybernetic Dependency Injection</title>
+  <script src="https://cdn.tailwindcss.com" vid="5"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" vid="6">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" vid="7">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&amp;family=Inter:wght@300;400;500;600&amp;family=Rajdhani:wght@400;500;600;700&amp;display=swap"
+    rel="stylesheet" vid="8">
+  <script vid="9">
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Rajdhani', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          },
+          colors: {
+            hex: {
+              bg: '#010306',
+              surface: '#050a14',
+              primary: '#00F0FF',
+              primaryLight: '#5FFFFF',
+              primaryDark: '#008F99',
+              accent: '#FF0055',
+              neonPurple: '#BC13FE',
+              text: '#DAE6F0',
+              muted: '#586E85',
+            }
+          },
+          animation: {
+            'spin-slow': 'spin 20s linear infinite',
+            'float': 'float 6s ease-in-out infinite',
+            'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'scanline': 'scanline 4s linear infinite',
+            'stream-y': 'stream-y 10s linear infinite',
+            'chroma': 'chroma 2s infinite',
+            'hex-pattern': 'hex-pattern 60s linear infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': {transform: 'translateY(0)'},
+              '50%': {transform: 'translateY(-10px)'},
+            },
+            'pulse-glow': {
+              '0%, 100%': {opacity: '0.4', boxShadow: '0 0 5px rgba(0, 240, 255, 0.2)'},
+              '50%': {opacity: '1', boxShadow: '0 0 30px rgba(0, 240, 255, 0.6)'},
+            },
+            scanline: {
+              '0%': {transform: 'translateY(-100%)'},
+              '100%': {transform: 'translateY(100%)'}
+            },
+            'stream-y': {
+              '0%': {transform: 'translateY(-100%)'},
+              '100%': {transform: 'translateY(100%)'}
+            },
+            chroma: {
+              '0%, 100%': {textShadow: '2px 0 0 rgba(255,0,85,0.5), -2px 0 0 rgba(0,240,255,0.5)'},
+              '50%': {textShadow: '-2px 0 0 rgba(255,0,85,0.5), 2px 0 0 rgba(0,240,255,0.5)'}
+            },
+            'hex-pattern': {
+              '0%': {backgroundPosition: '0 0'},
+              '100%': {backgroundPosition: '1000px 1000px'}
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style vid="10">
+    body {
+      background-color: #010306;
+      color: #DAE6F0;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .bg-hex-tessellation {
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='104' viewBox='0 0 60 104' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0l30 17.32v34.64L30 69.28 0 51.96V17.32L30 0zM0 86.6l30 17.32 30-17.32v-17.32L30 51.96 0 69.28v17.32z' fill='%2300f0ff' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+      animation: hex-pattern 120s linear infinite;
+    }
+
+    .chromatic-text {
+      animation: chroma 3s infinite;
+      position: relative;
+    }
+
+    .neon-underglow-primary {
+      box-shadow: 0 10px 30px -10px rgba(0, 240, 255, 0.4);
+      transition: all 0.3s ease;
+    }
+
+    .neon-underglow-primary:hover {
+      box-shadow: 0 15px 40px -5px rgba(0, 240, 255, 0.7);
+    }
+
+    .neon-underglow-accent {
+      box-shadow: 0 10px 30px -10px rgba(255, 0, 85, 0.4);
+    }
+
+    .hud-card {
+      background: rgba(5, 10, 20, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      position: relative;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .hud-card::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: -1px;
+      width: 15px;
+      height: 15px;
+      border-top: 2px solid #00F0FF;
+      border-left: 2px solid #00F0FF;
+    }
+
+    .hud-card:hover {
+      border-color: rgba(0, 240, 255, 0.6);
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px -15px rgba(0, 240, 255, 0.4);
+    }
+
+    .data-stream {
+      position: absolute;
+      width: 1px;
+      background: linear-gradient(to bottom, transparent, #00F0FF, transparent);
+      height: 300px;
+      opacity: 0.3;
+      filter: blur(1px);
+    }
+
+    .clip-path-slant {
+      clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
+    }
+
+    .radial-fog {
+      background: radial-gradient(circle at center, transparent 30%, #010306 100%);
+    }
+  </style>
+</head>
+
+<body class="bg-hex-bg bg-hex-tessellation selection:bg-hex-primary selection:text-black" vid="11">
+
+
+  <div class="fixed inset-0 pointer-events-none overflow-hidden z-0" vid="12">
+    <div class="data-stream animate-stream-y left-[10%] top-[-20%]" style="animation-delay: 0s; height: 50vh;" vid="13">
+    </div>
+    <div class="data-stream animate-stream-y left-[45%] top-[-50%]"
+      style="animation-delay: 3s; height: 80vh; opacity: 0.1;" vid="14"></div>
+    <div class="data-stream animate-stream-y left-[85%] top-[-10%]" style="animation-delay: 6s; height: 60vh;" vid="15">
+    </div>
+    <div class="data-stream animate-stream-y left-[25%] top-[-40%]" style="animation-delay: 1s; opacity: 0.15;"
+      vid="16"></div>
+    <div class="data-stream animate-stream-y left-[70%] top-[-60%]" style="animation-delay: 8s; opacity: 0.2;" vid="17">
+    </div>
+  </div>
+
+  <nav class="fixed top-0 w-full z-50 border-b border-hex-primary/30 bg-hex-bg/80 backdrop-blur-xl" vid="18">
+    <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between" vid="19">
+      <div class="flex items-center gap-3" vid="20">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+          class="text-hex-primary drop-shadow-[0_0_12px_rgba(0,240,255,1)]" vid="21">
+          <path d="M12 2L21 7V17L12 22L3 17V7L12 2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+            vid="22"></path>
+          <path d="M12 8L15.5 10V14L12 16L8.5 14V10L12 8Z" fill="currentColor" vid="23"></path>
+        </svg>
+        <span class="font-display font-bold text-2xl tracking-tighter text-white uppercase italic" vid="24">HEX<span
+            class="text-hex-primary chromatic-text" vid="25">DI</span></span>
+      </div>
+      <div class="hidden md:flex gap-8 text-[11px] font-mono tracking-[0.2em] text-hex-muted uppercase" vid="26">
+        <a href="#features" class="hover:text-hex-primary transition-all hover:tracking-[0.3em] duration-300" vid="27">[
+          FEATURES ]</a>
+        <a href="#architecture" class="hover:text-hex-primary transition-all hover:tracking-[0.3em] duration-300"
+          vid="28">[ ARCHITECTURE ]</a>
+        <a href="#docs" class="hover:text-hex-primary transition-all hover:tracking-[0.3em] duration-300" vid="29">[
+          DOCUMENTATION ]</a>
+      </div>
+      <div class="flex gap-4 items-center" vid="30">
+        <div
+          class="hidden sm:flex items-center gap-2 text-[10px] text-hex-primary border border-hex-primary/30 px-3 py-1.5 bg-hex-primary/5 neon-underglow-primary"
+          vid="31">
+          <div class="w-2 h-2 bg-hex-primary rounded-none animate-pulse shadow-[0_0_8px_#00F0FF]" vid="32"></div>
+          LINK_ESTABLISHED
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <header class="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden" vid="33">
+    <div
+      class="absolute inset-0 bg-gradient-to-b from-transparent via-hex-primary/5 to-transparent pointer-events-none z-10 opacity-20 animate-scanline"
+      vid="34"></div>
+
+    <div class="max-w-7xl mx-auto px-6 w-full grid lg:grid-cols-2 gap-12 items-center relative z-10" vid="35">
+      <div class="space-y-10" vid="36">
+        <div
+          class="inline-flex items-center gap-3 px-4 py-1.5 border-l-4 border-hex-accent bg-hex-accent/10 text-hex-accent text-[10px] font-mono tracking-[0.25em] uppercase"
+          vid="37">
+          STATUS: COMPILE_SAFETY_V2.0_ENGAGED
+        </div>
+
+        <h1
+          class="font-display font-bold text-6xl md:text-8xl leading-[0.85] tracking-tighter text-white uppercase italic"
+          vid="38">
+          THE COMPILER <br vid="39">
+          REVIEWS THE <br vid="40">
+          <span class="chromatic-text text-hex-primary" vid="41">ARCHITECTURE.</span>
+        </h1>
+
+        <p class="text-xl text-hex-muted max-w-xl font-mono text-sm leading-relaxed border-l-2 border-hex-accent/50 pl-6"
+          vid="42">
+          <span class="text-hex-accent" vid="43">ERR_HANDLING:</span> TERMINATE RUNTIME FAILURES.<br vid="44">
+          HEXDI IS A ZERO-OVERHEAD NEURAL LINK FOR YOUR DEPENDENCY GRAPH. VALIDATE BEFORE EXECUTION.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-6 pt-6" vid="45">
+          <button
+            class="px-10 py-5 bg-hex-primary text-black font-bold font-display uppercase tracking-[0.2em] hover:bg-white transition-all duration-500 clip-path-slant neon-underglow-primary group"
+            vid="46">
+            <span class="relative z-10 flex items-center gap-3" vid="47">
+              INITIALIZE_SYSTEM
+              <svg class="w-5 h-5 group-hover:translate-x-2 transition-transform" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24" vid="48">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"
+                  vid="49"></path>
+              </svg>
+            </span>
+          </button>
+          <button
+            class="px-10 py-5 border border-hex-muted/30 text-hex-muted font-bold font-display uppercase tracking-[0.2em] hover:border-hex-accent hover:text-hex-accent transition-all duration-500 relative overflow-hidden group clip-path-slant"
+            vid="50">
+            <span
+              class="absolute inset-0 bg-hex-accent/5 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500"
+              vid="51"></span>
+            <span class="relative" vid="52">FETCH_DOCS</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="relative flex items-center justify-center min-h-[500px]" vid="53">
+
+        <div class="absolute inset-0 bg-hex-primary/5 blur-[100px] rounded-full animate-pulse-glow" vid="54"></div>
+        <div class="relative z-20 transform scale-125 perspective-[1000px]" vid="55">
+          <svg class="w-full h-full max-w-[500px] animate-float drop-shadow-[0_0_50px_rgba(0,240,255,0.4)]"
+            style="transform: rotateX(25deg) rotateY(-15deg);" viewBox="0 0 400 400" vid="56">
+
+            <circle cx="200" cy="200" r="80" fill="none" stroke="#00F0FF" stroke-width="0.5" stroke-dasharray="10 5"
+              class="animate-spin-slow" vid="57"></circle>
+            <circle cx="200" cy="200" r="40" fill="rgba(0,240,255,0.1)" stroke="#00F0FF" stroke-width="2" vid="58">
+            </circle>
+
+
+            <g class="text-hex-primary font-mono text-[8px] font-bold" vid="59">
+              <line x1="200" y1="100" x2="200" y2="300" stroke="#00F0FF" stroke-width="0.5" opacity="0.4" vid="60">
+              </line>
+              <line x1="100" y1="200" x2="300" y2="200" stroke="#00F0FF" stroke-width="0.5" opacity="0.4" vid="61">
+              </line>
+
+              <circle cx="200" cy="80" r="5" fill="#FF0055" class="animate-pulse shadow-[0_0_15px_#FF0055]" vid="62">
+              </circle>
+              <text x="200" y="65" text-anchor="middle" fill="#FF0055" vid="63">ROOT_CONTAINER</text>
+
+              <circle cx="320" cy="200" r="4" fill="#00F0FF" vid="64"></circle>
+              <text x="330" y="205" vid="65">EXT_SERVICE</text>
+
+              <circle cx="80" cy="200" r="4" fill="#00F0FF" vid="66"></circle>
+              <text x="70" y="205" text-anchor="end" vid="67">LOCAL_PORT</text>
+
+              <circle cx="200" cy="320" r="4" fill="#00F0FF" vid="68"></circle>
+              <text x="200" y="340" text-anchor="middle" vid="69">SECURE_DB</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section id="features" class="py-40 relative" vid="70">
+    <div class="max-w-7xl mx-auto px-6 relative z-10" vid="71">
+      <div class="mb-24 flex items-center gap-6" vid="72">
+        <div class="h-10 w-2 bg-hex-primary animate-pulse" vid="73"></div>
+        <h2 class="text-5xl md:text-6xl font-display font-bold uppercase tracking-tighter text-white italic" vid="74">
+          CORE_<span class="text-hex-muted" vid="75">PROTOCOLS</span>
+        </h2>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8" vid="76">
+
+        <div class="hud-card p-10 neon-underglow-primary group" vid="77">
+          <div
+            class="w-14 h-14 flex items-center justify-center mb-8 text-hex-primary border-r-4 border-b-4 border-hex-primary/30 bg-hex-primary/5 group-hover:bg-hex-primary group-hover:text-black transition-all duration-500"
+            vid="78">
+            <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="79">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                vid="80"></path>
+            </svg>
+          </div>
+          <h3 class="text-2xl font-bold font-display uppercase tracking-wider mb-4 text-white chromatic-text" vid="81">
+            BINARY_VALIDATION</h3>
+          <p class="text-hex-muted text-sm leading-relaxed font-mono opacity-80" vid="82">GRAPH CYCLES DETECTED DURING
+            PRE-FLIGHT. ZERO RUNTIME EXCEPTIONS TOLERATED IN THIS SECTOR.</p>
+        </div>
+
+
+        <div class="hud-card p-10 neon-underglow-accent group border-hex-accent/20" vid="83">
+          <div
+            class="w-14 h-14 flex items-center justify-center mb-8 text-hex-accent border-r-4 border-b-4 border-hex-accent/30 bg-hex-accent/5 group-hover:bg-hex-accent group-hover:text-black transition-all duration-500"
+            vid="84">
+            <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="85">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"
+                vid="86"></path>
+            </svg>
+          </div>
+          <h3 class="text-2xl font-bold font-display uppercase tracking-wider mb-4 text-white chromatic-text" vid="87">
+            ZERO_LAG_RUNTIME</h3>
+          <p class="text-hex-muted text-sm leading-relaxed font-mono opacity-80" vid="88">OPTIMIZED FACTORY GEN. NO
+            REFLECTION PROXY OVERHEAD. RAW PERFORMANCE FOR HIGH-FREQ SYSTEMS.</p>
+        </div>
+
+
+        <div class="hud-card p-10 group border-hex-neonPurple/20 hover:shadow-[0_20px_40px_-15px_rgba(188,19,254,0.4)]"
+          vid="89">
+          <div
+            class="w-14 h-14 flex items-center justify-center mb-8 text-hex-neonPurple border-r-4 border-b-4 border-hex-neonPurple/30 bg-hex-neonPurple/5 group-hover:bg-hex-neonPurple group-hover:text-black transition-all duration-500"
+            vid="90">
+            <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="91">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" vid="92"></path>
+            </svg>
+          </div>
+          <h3 class="text-2xl font-bold font-display uppercase tracking-wider mb-4 text-white chromatic-text" vid="93">
+            NEURAL_TYPE_LINK</h3>
+          <p class="text-hex-muted text-sm leading-relaxed font-mono opacity-80" vid="94">DEEP TYPESCRIPT INFERENCE
+            ENGINE. AUTOMATIC CONTRACT ENFORCEMENT ACROSS THE ENTIRE STACK.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <div class="relative h-64 overflow-hidden" vid="95">
+    <div class="absolute inset-0 bg-gradient-to-b from-hex-bg via-hex-primary/5 to-[#05080F]" vid="96"></div>
+    <div class="data-stream animate-stream-y left-[50%] h-full opacity-40" vid="97"></div>
+  </div>
+
+  <section class="py-32 bg-[#05080F] border-y border-hex-primary/20 relative" vid="98">
+    <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-5 gap-16 items-center" vid="99">
+      <div class="lg:col-span-2 space-y-8" vid="100">
+        <h2 class="text-4xl font-display font-bold uppercase text-white italic" vid="101">LIVE_<span
+            class="text-hex-primary chromatic-text" vid="102">FEED</span></h2>
+        <p class="text-hex-muted font-mono text-sm leading-loose" vid="103">HEXDI PARSES YOUR CONSTRUCTOR ARCHITECTURE
+          IN REAL-TIME. NO ANNOTATIONS. NO DECORATORS. PURE DATA STRUCTURES.</p>
+
+        <div class="grid grid-cols-1 gap-4" vid="104">
+          <div class="flex items-center gap-4 p-4 border border-hex-primary/10 bg-hex-primary/5 neon-underglow-primary"
+            vid="105">
+            <span class="text-hex-primary font-mono text-xs" vid="106">01</span>
+            <span class="text-white font-display font-bold uppercase tracking-widest text-sm"
+              vid="107">ZERO_REFLECT_PROTO</span>
+          </div>
+          <div
+            class="flex items-center gap-4 p-4 border border-hex-accent/10 bg-hex-accent/5 shadow-[0_5px_15px_-5px_rgba(255,0,85,0.3)]"
+            vid="108">
+            <span class="text-hex-accent font-mono text-xs" vid="109">02</span>
+            <span class="text-white font-display font-bold uppercase tracking-widest text-sm"
+              vid="110">INSTANT_AST_PARSING</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="lg:col-span-3" vid="111">
+        <div
+          class="rounded-none overflow-hidden border border-hex-primary/30 bg-black/80 shadow-[0_0_50px_rgba(0,0,0,1)] relative"
+          vid="112">
+          <div class="flex items-center justify-between px-6 py-3 bg-hex-primary/10 border-b border-hex-primary/20"
+            vid="113">
+            <div class="flex gap-2" vid="114">
+              <div class="w-2 h-2 rounded-full bg-hex-accent" vid="115"></div>
+              <div class="w-2 h-2 rounded-full bg-yellow-500" vid="116"></div>
+              <div class="w-2 h-2 rounded-full bg-hex-primary" vid="117"></div>
+            </div>
+            <span class="text-[10px] text-hex-primary font-mono tracking-widest uppercase"
+              vid="118">uplink://terminal_01/main.ts</span>
+          </div>
+          <div class="p-8 font-mono text-xs leading-relaxed text-gray-400 relative" vid="119">
+            <div
+              class="absolute inset-0 pointer-events-none opacity-5 bg-[linear-gradient(rgba(0,240,255,0.2)_1px,transparent_1px)] bg-[length:100%_4px]"
+              vid="120"></div>
+            <pre vid="121"><span class="text-hex-accent" vid="122">import</span> { Container } <span
+                class="text-hex-accent" vid="123">from</span> <span class="text-hex-primary"
+                vid="124">'@hex-di/core'</span>;
+
+              <span class="text-hex-primary" vid="125">class</span> <span class="text-white" vid="126">NeuralLink</span>
+              {
+              <span class="text-hex-accent" vid="127">constructor</span>(<span class="text-hex-muted"
+                vid="128">private</span> <span class="text-hex-primary" vid="129">buffer</span>: <span
+                class="text-white" vid="130">DataStream</span>) {}
+
+              <span class="text-hex-muted" vid="131">async</span> <span class="text-hex-primary" vid="132">sync</span>()
+              {
+              <span class="text-hex-muted" vid="133">// TRANSMIT DATA AT 0.001ms</span>
+              }
+              }
+
+              <span class="text-hex-muted" vid="134">// INITIALIZE CONTAINER SECTOR</span>
+              <span class="text-hex-accent" vid="135">const</span> container = <span class="text-hex-accent"
+                vid="136">new</span> <span class="text-white" vid="137">Container</span>();
+              container.<span class="text-hex-primary" vid="138">register</span>(<span class="text-white"
+                vid="139">NeuralLink</span>);
+
+              <span class="text-hex-muted" vid="140">// BUILD &amp; VERIFY INTEGRITY</span>
+              <span class="text-hex-accent" vid="141">const</span> sector = container.<span class="text-hex-primary"
+                vid="142">build</span>();
+            </pre>
+          </div>
+          <div class="h-2 bg-hex-bg w-full" vid="143">
+            <div class="h-full bg-hex-primary animate-[pulse_1s_infinite]" style="width: 65%" vid="144"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="architecture" class="py-40 relative bg-hex-bg overflow-hidden" vid="145">
+
+    <div class="absolute inset-0 opacity-10 pointer-events-none radial-fog" vid="146">
+      <div class="bg-hex-tessellation h-full w-full" vid="147"></div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-6 relative z-10" vid="148">
+      <div class="text-center mb-32" vid="149">
+        <h2 class="text-5xl font-display font-bold mb-6 uppercase text-white italic tracking-tighter" vid="150">
+          NEURAL_<span class="text-hex-primary chromatic-text" vid="151">TOPOLOGY</span></h2>
+        <p class="text-hex-muted max-w-2xl mx-auto font-mono text-xs tracking-widest uppercase opacity-60" vid="152">
+          DECENTRALIZED MODULE ARCHITECTURE. LOAD ONLY NECESSARY SECTORS.</p>
+      </div>
+
+
+      <div
+        class="relative w-full max-w-5xl mx-auto mb-24 p-12 bg-black/40 border-y border-hex-primary/10 backdrop-blur-md"
+        vid="153">
+        <svg viewBox="0 0 800 400" class="w-full h-auto drop-shadow-[0_0_30px_rgba(0,240,255,0.15)]" vid="154">
+          <defs vid="155">
+            <filter id="neonBlur" x="-20%" y="-20%" width="140%" height="140%" vid="156">
+              <feGaussianBlur stdDeviation="5" result="blur" vid="157"></feGaussianBlur>
+              <feMerge vid="158">
+                <feMergeNode in="blur" vid="159"></feMergeNode>
+                <feMergeNode in="SourceGraphic" vid="160"></feMergeNode>
+              </feMerge>
+            </filter>
+          </defs>
+
+
+          <g transform="translate(325, 125)" filter="url(#neonBlur)" vid="161">
+            <path d="M75 0 L150 43 L150 130 L75 173 L0 130 L0 43 Z" fill="rgba(0,240,255,0.05)" stroke="#00F0FF"
+              stroke-width="2" vid="162"></path>
+            <text x="75" y="80" text-anchor="middle" fill="white" font-family="Rajdhani" font-weight="bold"
+              font-size="24" vid="163">CORE_01</text>
+            <text x="75" y="110" text-anchor="middle" fill="#00F0FF" font-family="Fira Code" font-size="10" tracking="2"
+              vid="164">@hex-di/core</text>
+          </g>
+
+
+          <path d="M400 125 V50" stroke="#00F0FF" stroke-width="1" stroke-dasharray="4 4" opacity="0.5" vid="165">
+          </path>
+          <path d="M400 298 V350" stroke="#00F0FF" stroke-width="1" stroke-dasharray="4 4" opacity="0.5" vid="166">
+          </path>
+          <path d="M325 211 H150" stroke="#FF0055" stroke-width="1" stroke-dasharray="4 4" opacity="0.5" vid="167">
+          </path>
+          <path d="M475 211 H650" stroke="#BC13FE" stroke-width="1" stroke-dasharray="4 4" opacity="0.5" vid="168">
+          </path>
+
+
+          <g transform="translate(350, 0)" vid="169">
+            <rect width="100" height="50" fill="black" stroke="#00F0FF" stroke-width="1" vid="170"></rect>
+            <text x="50" y="30" text-anchor="middle" fill="#00F0FF" font-family="Rajdhani" font-size="12"
+              font-weight="bold" vid="171">GRAPH_ANALYZER</text>
+          </g>
+          <g transform="translate(350, 350)" vid="172">
+            <rect width="100" height="50" fill="black" stroke="#00F0FF" stroke-width="1" vid="173"></rect>
+            <text x="50" y="30" text-anchor="middle" fill="#00F0FF" font-family="Rajdhani" font-size="12"
+              font-weight="bold" vid="174">RUNTIME_GEN</text>
+          </g>
+          <g transform="translate(50, 186)" vid="175">
+            <rect width="100" height="50" fill="black" stroke="#FF0055" stroke-width="1" vid="176"></rect>
+            <text x="50" y="30" text-anchor="middle" fill="#FF0055" font-family="Rajdhani" font-size="12"
+              font-weight="bold" vid="177">REACT_HOOKS</text>
+          </g>
+          <g transform="translate(650, 186)" vid="178">
+            <rect width="100" height="50" fill="black" stroke="#BC13FE" stroke-width="1" vid="179"></rect>
+            <text x="50" y="30" text-anchor="middle" fill="#BC13FE" font-family="Rajdhani" font-size="12"
+              font-weight="bold" vid="180">TEST_MOCKS</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="grid md:grid-cols-4 gap-6" vid="181">
+        <div class="p-6 border-b-2 border-hex-primary/40 bg-hex-primary/5 hover:bg-hex-primary/10 transition-colors"
+          vid="182">
+          <h4 class="font-mono text-hex-primary text-xs mb-3 uppercase tracking-tighter" vid="183">SECTOR_CORE</h4>
+          <p class="text-[10px] text-gray-500 font-mono" vid="184">BASE ARCHITECTURE &amp; CONTAINER LOGIC.</p>
+        </div>
+        <div class="p-6 border-b-2 border-hex-primary/40 bg-hex-primary/5 hover:bg-hex-primary/10 transition-colors"
+          vid="185">
+          <h4 class="font-mono text-hex-primary text-xs mb-3 uppercase tracking-tighter" vid="186">SECTOR_GRAPH</h4>
+          <p class="text-[10px] text-gray-500 font-mono" vid="187">AST DEPENDENCY MAPPING (DEV_ONLY).</p>
+        </div>
+        <div class="p-6 border-b-2 border-hex-accent/40 bg-hex-accent/5 hover:bg-hex-accent/10 transition-colors"
+          vid="188">
+          <h4 class="font-mono text-hex-accent text-xs mb-3 uppercase tracking-tighter" vid="189">SECTOR_REACT</h4>
+          <p class="text-[10px] text-gray-500 font-mono" vid="190">HOOKS &amp; CONTEXT INJECTION LAYER.</p>
+        </div>
+        <div
+          class="p-6 border-b-2 border-hex-neonPurple/40 bg-hex-neonPurple/5 hover:bg-hex-neonPurple/10 transition-colors"
+          vid="191">
+          <h4 class="font-mono text-hex-neonPurple text-xs mb-3 uppercase tracking-tighter" vid="192">SECTOR_TEST</h4>
+          <p class="text-[10px] text-gray-500 font-mono" vid="193">SIMULATION &amp; MOCKING UTILITIES.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-40 bg-black/60 relative border-t border-hex-primary/10" vid="194">
+    <div class="max-w-5xl mx-auto px-6 text-center" vid="195">
+      <blockquote class="text-4xl md:text-6xl font-display font-bold leading-[0.9] mb-20 uppercase italic" vid="196">
+        <span class="block text-hex-accent text-sm mb-6 tracking-[0.5em]" vid="197">// PROTOCOL_OVERRIDE</span>
+        CONVENTIONS ARE FOR <br vid="198">
+        THE WEAK. <span class="text-hex-primary chromatic-text" vid="199">CONSTRAINTS ARE <br vid="200">FOR THE
+          SECURE.</span>
+      </blockquote>
+
+      <div class="grid md:grid-cols-2 gap-10 text-left" vid="201">
+        <div class="p-10 border border-hex-accent bg-hex-accent/5 neon-underglow-accent relative overflow-hidden"
+          vid="202">
+          <div
+            class="absolute top-0 right-0 p-3 text-[10px] font-mono text-hex-accent border-b border-l border-hex-accent/50"
+            vid="203">LEGACY_FAULT</div>
+          <h4
+            class="text-hex-accent font-bold mb-6 flex items-center gap-3 uppercase tracking-widest font-display text-xl"
+            vid="204">
+            DIRTY_INJECTION
+          </h4>
+          <p class="text-xs text-hex-accent/60 mb-6 font-mono leading-relaxed" vid="205">RUNTIME NULL POINTERS. CIRCULAR
+            HELL. REBOOT NECESSARY. SYSTEM INSTABILITY DETECTED.</p>
+          <div class="font-mono text-[10px] text-hex-accent bg-black p-3 border-l-2 border-hex-accent" vid="206">FATAL:
+            ServiceNotFound [E_505]</div>
+        </div>
+
+        <div class="p-10 border border-hex-primary bg-hex-primary/5 neon-underglow-primary relative overflow-hidden"
+          vid="207">
+          <div
+            class="absolute top-0 right-0 p-3 text-[10px] font-mono text-hex-primary border-b border-l border-hex-primary/50"
+            vid="208">HEX_ENFORCED</div>
+          <h4
+            class="text-hex-primary font-bold mb-6 flex items-center gap-3 uppercase tracking-widest font-display text-xl"
+            vid="209">
+            STRUCTURAL_GRID
+          </h4>
+          <p class="text-xs text-hex-primary/60 mb-6 font-mono leading-relaxed" vid="210">COMPILE-TIME ANALYSIS REJECTS
+            IMPURE GRAPHS. PREVENTATIVE MAINTENANCE INHERENT.</p>
+          <div class="font-mono text-[10px] text-hex-primary bg-black p-3 border-l-2 border-hex-primary" vid="211">INFO:
+            DependencyGraphVerified [0.0ms]</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-48 px-6 relative overflow-hidden" vid="212">
+    <div class="absolute inset-0 bg-hex-tessellation opacity-5" vid="213"></div>
+    <div
+      class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-hex-primary to-transparent opacity-50"
+      vid="214"></div>
+
+    <div
+      class="max-w-6xl mx-auto bg-hex-surface/40 p-16 md:p-32 relative border border-hex-primary/20 backdrop-blur-3xl text-center neon-underglow-primary"
+      vid="215">
+      <div class="absolute top-0 left-0 w-32 h-32 border-t-4 border-l-4 border-hex-primary" vid="216"></div>
+      <div class="absolute bottom-0 right-0 w-32 h-32 border-b-4 border-r-4 border-hex-primary" vid="217"></div>
+
+      <div class="relative z-10 space-y-12" vid="218">
+        <h2
+          class="text-6xl md:text-8xl font-display font-bold text-white uppercase italic tracking-tighter leading-[0.8]"
+          vid="219">
+          UPGRADE YOUR <br vid="220">
+          <span class="chromatic-text text-hex-primary" vid="221">ARCHITECTURE_</span>
+        </h2>
+        <p class="text-hex-muted text-xl max-w-2xl mx-auto font-mono uppercase tracking-[0.2em] opacity-80" vid="222">
+          ELIMINATE RUNTIME ERROR_LOGS FOREVER.</p>
+        <div class="flex flex-col sm:flex-row gap-8 justify-center items-center" vid="223">
+          <button
+            class="px-14 py-6 bg-hex-primary text-black font-bold font-display uppercase tracking-[0.3em] hover:bg-white hover:tracking-[0.4em] transition-all duration-500 clip-path-slant neon-underglow-primary"
+            vid="224">
+            CONNECT_SYSTEM
+          </button>
+          <button
+            class="px-14 py-6 bg-transparent border-2 border-hex-accent text-hex-accent font-bold font-display uppercase tracking-[0.3em] hover:bg-hex-accent hover:text-black transition-all duration-500 clip-path-slant"
+            vid="225">
+            SIMULATE_ENV
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="py-20 border-t border-hex-primary/10 bg-[#010306] relative z-10" vid="226">
+    <div class="max-w-7xl mx-auto px-6 flex flex-col items-center" vid="227">
+      <div class="flex items-center gap-4 mb-10 text-hex-primary group" vid="228">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+          class="group-hover:rotate-180 transition-transform duration-1000" vid="229">
+          <path d="M12 2L21 7V17L12 22L3 17V7L12 2Z" stroke="currentColor" stroke-width="1" vid="230"></path>
+          <circle cx="12" cy="12" r="2" fill="currentColor" vid="231"></circle>
+        </svg>
+        <span class="font-display font-bold text-3xl uppercase italic tracking-widest" vid="232">HEX<span
+            class="text-white" vid="233">DI</span></span>
+      </div>
+      <p class="text-hex-muted text-[10px] font-mono tracking-[0.4em] uppercase opacity-50" vid="234">© 2077
+        HEXDI_NETWORKS. ALL RIGHTS RECLAIMED. // END_OF_TRANSMISSION</p>
+    </div>
+  </footer>
+
+</body>
+
+</html>

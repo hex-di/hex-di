@@ -1,0 +1,429 @@
+<html lang="en" vid="0">
+
+<head vid="1">
+  <meta charset="UTF-8" vid="2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" vid="3">
+  <title vid="4">HexDI - Structural Dependency Injection</title>
+  <script src="https://cdn.tailwindcss.com" vid="5"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" vid="6">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" vid="7">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&amp;family=Inter:wght@300;400;500;600&amp;family=Rajdhani:wght@400;500;600;700&amp;display=swap"
+    rel="stylesheet" vid="8">
+  <script vid="9">
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Rajdhani', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          },
+          colors: {
+            hex: {
+              bg: '#020408',
+              surface: '#08101C',
+              primary: '#00F0FF',
+              primaryLight: '#5FFFFF',
+              primaryDark: '#008F99',
+              accent: '#FF5E00',
+              accentDark: '#CC4A00',
+              text: '#DAE6F0',
+              muted: '#586E85',
+            }
+          },
+          backgroundImage: {
+            'grid-pattern': 'linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px)',
+            'radar-gradient': 'radial-gradient(circle at center, rgba(0, 240, 255, 0.12) 0%, rgba(2, 4, 8, 0) 70%)',
+            'holo-shimmer': 'linear-gradient(45deg, transparent 25%, rgba(0,240,255,0.1) 50%, transparent 75%)',
+          },
+          animation: {
+            'spin-slow': 'spin 20s linear infinite',
+            'float': 'float 6s ease-in-out infinite',
+            'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'scanline': 'scanline 6s linear infinite',
+            'scanline-fast': 'scanline 3s linear infinite',
+            'holo-slide': 'holo-slide 3s ease-in-out infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': {transform: 'translateY(0) rotateX(20deg) rotateZ(-10deg)'},
+              '50%': {transform: 'translateY(-20px) rotateX(22deg) rotateZ(-8deg)'},
+            },
+            'pulse-glow': {
+              '0%, 100%': {opacity: '0.4', boxShadow: '0 0 5px rgba(0, 240, 255, 0.2)'},
+              '50%': {opacity: '1', boxShadow: '0 0 20px rgba(0, 240, 255, 0.6)'},
+            },
+            scanline: {
+              '0%': {transform: 'translateY(-100%)'},
+              '100%': {transform: 'translateY(100%)'}
+            },
+            'holo-slide': {
+              '0%': {backgroundPosition: '-200% 0'},
+              '100%': {backgroundPosition: '200% 0'}
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style vid="10">
+    body {
+      background-color: #020408;
+      color: #DAE6F0;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .bg-grid {
+      background-size: 40px 40px;
+      background-image:
+        linear-gradient(to right, rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
+    }
+
+    .bg-grid-large {
+      background-size: 160px 160px;
+      background-image:
+        linear-gradient(to right, rgba(0, 240, 255, 0.08) 1.5px, transparent 1.5px),
+        linear-gradient(to bottom, rgba(0, 240, 255, 0.08) 1.5px, transparent 1.5px);
+    }
+
+    .hud-card {
+      background: rgba(8, 16, 28, 0.4);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(0, 240, 255, 0.1);
+      position: relative;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .hud-card::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: -1px;
+      width: 15px;
+      height: 15px;
+      border-top: 2px solid #00F0FF;
+      border-left: 2px solid #00F0FF;
+      transition: all 0.4s ease;
+      z-index: 10;
+    }
+
+    .hud-card::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      right: -1px;
+      width: 15px;
+      height: 15px;
+      border-bottom: 2px solid #00F0FF;
+      border-right: 2px solid #00F0FF;
+      transition: all 0.4s ease;
+      z-index: 10;
+    }
+
+    .hud-card:hover {
+      transform: translateY(-5px) scale(1.02);
+      background: rgba(0, 240, 255, 0.08);
+      border-color: rgba(0, 240, 255, 0.6);
+      box-shadow: 0 10px 30px rgba(0, 240, 255, 0.15);
+    }
+
+    .holo-element {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .holo-element::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(115deg, transparent 0%, transparent 40%, rgba(0, 240, 255, 0.2) 50%, transparent 60%, transparent 100%);
+      background-size: 300% 100%;
+      animation: holo-slide 4s infinite linear;
+      pointer-events: none;
+    }
+
+    .section-scanline {
+      position: absolute;
+      inset: 0;
+      height: 100px;
+      background: linear-gradient(to bottom, transparent, rgba(0, 240, 255, 0.05), transparent);
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .clip-path-slant {
+      clip-path: polygon(0 0, 100% 0, 90% 100%, 0% 100%);
+    }
+
+    .tactical-border-r {
+      border-right: 1px solid rgba(0, 240, 255, 0.2);
+      box-shadow: 4px 0 30px -10px rgba(0, 240, 255, 0.2);
+    }
+  </style>
+</head>
+
+<body class="bg-hex-bg bg-grid selection:bg-hex-primary selection:text-black scroll-smooth flex" vid="11">
+
+  <div class="fixed inset-0 bg-grid-large opacity-30 pointer-events-none z-0" vid="12"></div>
+  <div
+    class="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_0%,rgba(2,4,8,0.8)_100%)] pointer-events-none z-0"
+    vid="13"></div>
+
+  <aside
+    class="fixed left-0 top-0 bottom-0 w-64 z-[100] tactical-border-r bg-hex-bg/90 backdrop-blur-xl flex flex-col p-8"
+    vid="14">
+    <div class="flex items-center gap-3 group cursor-pointer mb-16" vid="15">
+      <div class="relative" vid="16">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+          class="text-hex-primary drop-shadow-[0_0_12px_rgba(0,240,255,1)] group-hover:rotate-90 transition-transform duration-500"
+          vid="17">
+          <path d="M12 2L21 7V17L12 22L3 17V7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" vid="18"></path>
+          <circle cx="12" cy="12" r="3" fill="currentColor" vid="19"></circle>
+        </svg>
+        <div class="absolute inset-0 bg-hex-primary/20 blur-xl rounded-full scale-150 animate-pulse" vid="20"></div>
+      </div>
+      <span class="font-display font-bold text-2xl tracking-widest text-white uppercase" vid="21">Hex<span
+          class="text-hex-primary" vid="22">DI</span></span>
+    </div>
+
+    <nav class="flex flex-col gap-8 text-[11px] font-mono tracking-[0.2em] text-hex-muted uppercase flex-grow" vid="23">
+      <a href="#features" class="relative group py-2" vid="24">
+        <span class="group-hover:text-hex-primary transition-colors" vid="25">[01_Features]</span>
+        <span class="absolute bottom-0 left-0 w-0 h-[1px] bg-hex-primary transition-all duration-300 group-hover:w-full"
+          vid="26"></span>
+      </a>
+      <a href="#architecture" class="relative group py-2" vid="27">
+        <span class="group-hover:text-hex-primary transition-colors" vid="28">[02_Architecture]</span>
+        <span class="absolute bottom-0 left-0 w-0 h-[1px] bg-hex-primary transition-all duration-300 group-hover:w-full"
+          vid="29"></span>
+      </a>
+      <a href="#docs" class="relative group py-2" vid="30">
+        <span class="group-hover:text-hex-primary transition-colors" vid="31">[03_Docs]</span>
+        <span class="absolute bottom-0 left-0 w-0 h-[1px] bg-hex-primary transition-all duration-300 group-hover:w-full"
+          vid="32"></span>
+      </a>
+    </nav>
+
+    <div class="mt-auto space-y-6" vid="33">
+      <div
+        class="flex items-center gap-3 text-[10px] text-hex-primary border border-hex-primary/30 px-3 py-1.5 bg-hex-primary/5 holo-element"
+        vid="34">
+        <div class="w-1.5 h-1.5 bg-hex-primary rounded-full animate-ping" vid="35"></div>
+        SYS.ONLINE_v2.4
+      </div>
+      <div class="flex items-center justify-between" vid="36">
+        <a href="https://github.com" target="_blank"
+          class="p-2 text-hex-muted hover:text-hex-primary hover:bg-hex-primary/10 rounded transition-all" vid="37">
+          <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24" vid="38">
+            <path
+              d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+              vid="39"></path>
+          </svg>
+        </a>
+        <span class="text-[9px] font-mono text-hex-muted opacity-40" vid="40">v2.4.0_LTS</span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="flex-grow ml-64" vid="41">
+    <header class="relative min-h-screen flex items-center overflow-hidden" vid="42">
+      <div class="section-scanline animate-scanline" vid="43"></div>
+
+      <div class="absolute inset-0 z-0 opacity-20 pointer-events-none" vid="44" onmousemove="handleParallax(event)">
+        <div
+          class="absolute top-1/2 left-2/3 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] border border-hex-primary/10 rounded-full animate-spin-slow"
+          vid="45"></div>
+        <div id="parallax-container"
+          class="absolute top-1/2 left-2/3 -translate-x-1/2 -translate-y-1/2 w-full max-w-[800px] aspect-square flex items-center justify-center transition-transform duration-200"
+          vid="46">
+          <svg class="w-full h-full animate-float drop-shadow-[0_0_60px_rgba(0,240,255,0.2)]" viewBox="0 0 400 400"
+            fill="none" xmlns="http://www.w3.org/2000/svg" vid="47">
+            <defs vid="48">
+              <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%" vid="49">
+                <stop offset="0%" stop-color="#00F0FF" stop-opacity="0.0" vid="50"></stop>
+                <stop offset="50%" stop-color="#00F0FF" stop-opacity="0.9" vid="51"></stop>
+                <stop offset="100%" stop-color="#00F0FF" stop-opacity="0.0" vid="52"></stop>
+              </linearGradient>
+              <radialGradient id="nodeGlow" vid="53">
+                <stop offset="0%" stop-color="#00F0FF" stop-opacity="0.8" vid="54"></stop>
+                <stop offset="100%" stop-color="#00F0FF" stop-opacity="0.0" vid="55"></stop>
+              </radialGradient>
+            </defs>
+            <path d="M200 100 L286.6 150 L286.6 250 L200 300 L113.4 250 L113.4 150 Z" stroke="rgba(0, 240, 255, 0.3)"
+              stroke-width="1.5" fill="rgba(0, 240, 255, 0.03)" vid="56"></path>
+            <g class="animate-[pulse_5s_ease-in-out_infinite]" vid="57">
+              <circle cx="200" cy="100" r="8" fill="#020408" stroke="#FF5E00" stroke-width="3" vid="58"></circle>
+              <circle cx="286.6" cy="150" r="6" fill="#00F0FF" vid="59"></circle>
+              <circle cx="286.6" cy="250" r="6" fill="#00F0FF" vid="60"></circle>
+              <circle cx="200" cy="300" r="6" fill="#00F0FF" vid="61"></circle>
+              <circle cx="113.4" cy="250" r="6" fill="#00F0FF" vid="62"></circle>
+              <circle cx="113.4" cy="150" r="6" fill="#00F0FF" vid="63"></circle>
+            </g>
+            <path d="M200 100 L286.6 150 L286.6 250 L200 300 L113.4 250 L113.4 150 L200 100" stroke="url(#lineGrad)"
+              stroke-width="3" vid="64"></path>
+            <circle cx="200" cy="200" r="45" fill="url(#nodeGlow)" class="animate-pulse" vid="65"></circle>
+          </svg>
+        </div>
+      </div>
+
+      <div class="max-w-7xl mx-auto px-16 w-full relative z-20" vid="66">
+        <div class="max-w-3xl space-y-12" vid="67">
+          <div
+            class="inline-flex items-center gap-3 px-4 py-2 border border-hex-accent/50 bg-hex-accent/10 text-hex-accent text-[10px] font-mono tracking-[0.4em] uppercase shadow-[0_0_20px_rgba(255,94,0,0.15)] holo-element"
+            vid="68">
+            <span class="w-2 h-2 bg-hex-accent animate-pulse shadow-[0_0_12px_#FF5E00]" vid="69"></span>
+            STABLE_PROTOCOL :: V2.4.0_LTS
+          </div>
+
+          <h1
+            class="font-display font-bold text-7xl md:text-9xl leading-[0.85] tracking-tighter text-white uppercase drop-shadow-2xl"
+            vid="70">
+            COMPILE_TIME <br vid="71">
+            <span
+              class="text-transparent bg-clip-text bg-gradient-to-r from-hex-primary via-hex-primaryLight to-hex-primary drop-shadow-[0_0_25px_rgba(0,240,255,0.4)]"
+              vid="72">STRUCTURAL</span> <br vid="73">
+            <span class="text-hex-muted/40 text-5xl md:text-8xl" vid="74">INTEGRITY.</span>
+          </h1>
+
+          <div class="relative group" vid="75">
+            <div
+              class="absolute -left-6 top-0 bottom-0 w-1 bg-gradient-to-b from-hex-primary via-hex-primary/50 to-transparent"
+              vid="76"></div>
+            <p class="text-xl text-hex-muted font-light leading-relaxed font-mono pl-8" vid="77">
+              <span class="text-hex-primary/40 text-xs block mb-3" vid="78">// INIT_SEQUENCE_01</span>
+              HexDI is a high-performance structural dependency injection engine for TypeScript.
+              It maps the entire application topology before execution to prevent runtime failures.
+            </p>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-8 pt-8" vid="79">
+            <button
+              class="relative group px-12 py-6 bg-hex-primary text-black font-bold font-display uppercase tracking-widest hover:bg-white transition-all overflow-hidden clip-path-slant shadow-[0_0_30px_rgba(0,240,255,0.3)]"
+              vid="80">
+              <span class="relative z-10 flex items-center gap-3" vid="81">
+                Initialize
+                <svg class="w-6 h-6 transition-transform duration-300 group-hover:translate-x-2" fill="none"
+                  stroke="currentColor" viewBox="0 0 24 24" vid="82">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"
+                    vid="83"></path>
+                </svg>
+              </span>
+              <div class="absolute inset-0 bg-holo-shimmer animate-holo-slide pointer-events-none" vid="84"></div>
+            </button>
+            <button
+              class="px-12 py-6 border border-hex-muted/30 text-hex-muted font-bold font-display uppercase tracking-widest hover:border-hex-primary hover:text-hex-primary transition-all relative overflow-hidden group backdrop-blur-sm"
+              vid="85">
+              <span
+                class="absolute inset-0 bg-hex-primary/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500"
+                vid="86"></span>
+              <span class="relative" vid="87">Documentation</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="absolute bottom-12 right-12 flex flex-col items-end gap-4 group" vid="88">
+        <span class="text-[10px] uppercase tracking-[0.5em] font-mono text-hex-primary" vid="89">Scroll_System</span>
+        <div class="w-[1px] h-20 bg-gradient-to-b from-hex-primary via-hex-primary to-transparent animate-bounce"
+          vid="90"></div>
+      </div>
+    </header>
+
+    <section id="features" class="py-40 relative bg-[#020408] overflow-hidden" vid="91">
+      <div class="section-scanline animate-scanline delay-1000" vid="92"></div>
+      <div class="max-w-7xl mx-auto px-16 relative z-10" vid="93">
+        <div class="mb-24 flex items-center gap-6 border-b border-hex-primary/10 pb-8" vid="94">
+          <div class="h-4 w-4 bg-hex-primary shadow-[0_0_15px_rgba(0,240,255,0.8)]" vid="95"></div>
+          <h2 class="text-4xl md:text-5xl font-display font-bold uppercase tracking-widest text-white" vid="96">
+            SYSTEM_OPERATIONAL_<span class="text-hex-primary" vid="97">PROTOCOLS</span></h2>
+          <div class="flex-grow h-[1px] bg-gradient-to-r from-hex-primary/40 to-transparent ml-4" vid="98"></div>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8" vid="99">
+          <div class="hud-card p-10 group" vid="100">
+            <div
+              class="w-16 h-16 flex items-center justify-center mb-8 text-hex-primary border-2 border-hex-primary/20 bg-hex-primary/5 group-hover:border-hex-primary transition-all duration-500 relative"
+              vid="101">
+              <div class="absolute inset-0 bg-hex-primary/10 scale-0 group-hover:scale-100 transition-transform"
+                vid="102"></div>
+              <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="103">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" vid="104"></path>
+              </svg>
+            </div>
+            <h3
+              class="text-2xl font-bold font-display uppercase tracking-widest mb-4 text-white group-hover:text-hex-primary transition-colors"
+              vid="105">Compile Validation</h3>
+            <p class="text-hex-muted text-sm leading-relaxed font-mono opacity-80" vid="106">Advanced AST analysis
+              identifies circular dependencies and missing tokens during build time. Zero runtime overhead.</p>
+          </div>
+
+          <div class="hud-card p-10 group" vid="107">
+            <div
+              class="w-16 h-16 flex items-center justify-center mb-8 text-hex-accent border-2 border-hex-accent/20 bg-hex-accent/5 group-hover:border-hex-accent transition-all duration-500 relative"
+              vid="108">
+              <div class="absolute inset-0 bg-hex-accent/10 scale-0 group-hover:scale-100 transition-transform"
+                vid="109"></div>
+              <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="110">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"
+                  vid="111"></path>
+              </svg>
+            </div>
+            <h3
+              class="text-2xl font-bold font-display uppercase tracking-widest mb-4 text-white group-hover:text-hex-accent transition-colors"
+              vid="112">Optimized Speed</h3>
+            <p class="text-hex-muted text-sm leading-relaxed font-mono opacity-80" vid="113">Pre-calculated resolution
+              paths remove the need for dynamic lookups. Benchmarked at near-native performance.</p>
+          </div>
+
+          <div class="hud-card p-10 group" vid="114">
+            <div
+              class="w-16 h-16 flex items-center justify-center mb-8 text-purple-400 border-2 border-purple-500/20 bg-purple-500/5 group-hover:border-purple-400 transition-all duration-500 relative"
+              vid="115">
+              <div class="absolute inset-0 bg-purple-500/10 scale-0 group-hover:scale-100 transition-transform"
+                vid="116"></div>
+              <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="117">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" vid="118"></path>
+              </svg>
+            </div>
+            <h3
+              class="text-2xl font-bold font-display uppercase tracking-widest mb-4 text-white group-hover:text-purple-400 transition-colors"
+              vid="119">Type Assurance</h3>
+            <p class="text-hex-muted text-sm leading-relaxed font-mono opacity-80" vid="120">Full TypeScript inference
+              across constructor boundaries. No decorators required to maintain type safety.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer
+      class="py-16 border-t border-hex-primary/10 bg-[#020408] px-16 relative z-20 flex justify-between items-center"
+      vid="121">
+      <p class="text-hex-muted text-[10px] font-mono tracking-widest uppercase opacity-60" vid="122">© 2024
+        HEXDI_DISTRIBUTION :: MIT_LICENSE</p>
+      <div class="flex items-center gap-4 text-hex-primary opacity-50" vid="123">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" vid="124">
+          <path d="M12 2L21 7V17L12 22L3 17V7L12 2Z" stroke="currentColor" stroke-width="2" vid="125"></path>
+        </svg>
+        <span class="font-display font-bold text-sm uppercase tracking-widest" vid="126">HexDI_OS</span>
+      </div>
+    </footer>
+  </main>
+
+  <script vid="127">
+    function handleParallax(e) {
+      const container = document.getElementById('parallax-container');
+      const x = (window.innerWidth / 2 - e.pageX) / 60;
+      const y = (window.innerHeight / 2 - e.pageY) / 60;
+      container.style.transform = `rotateX(${20 - y}deg) rotateY(${x}deg) rotateZ(-10deg)`;
+    }
+  </script>
+</body>
+
+</html>

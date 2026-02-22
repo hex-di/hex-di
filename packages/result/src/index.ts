@@ -48,6 +48,9 @@ export { all } from "./combinators/all.js";
 export { allSettled } from "./combinators/all-settled.js";
 export { any } from "./combinators/any.js";
 export { collect } from "./combinators/collect.js";
+export { partition } from "./combinators/partition.js";
+export { forEach } from "./combinators/for-each.js";
+export { zipOrAccumulate } from "./combinators/zip-or-accumulate.js";
 
 // =============================================================================
 // Generators
@@ -56,11 +59,38 @@ export { collect } from "./combinators/collect.js";
 export { safeTry } from "./generators/safe-try.js";
 
 // =============================================================================
+// Do Notation
+// =============================================================================
+
+export { bind, let_ } from "./do/bind.js";
+
+// =============================================================================
 // Error Patterns
 // =============================================================================
 
 export { createError } from "./errors/create-error.js";
+export { createErrorGroup } from "./errors/create-error-group.js";
 export { assertNever } from "./errors/assert-never.js";
+
+// =============================================================================
+// Option
+// =============================================================================
+
+export type { Some, None, Option } from "./option/types.js";
+export { OPTION_BRAND } from "./option/brand.js";
+export { some, none } from "./option/option.js";
+export { isOption } from "./option/guards.js";
+export { fromOptionJSON } from "./option/from-option-json.js";
+export type { OptionJSON } from "./option/from-option-json.js";
+
+// =============================================================================
+// Interop
+// =============================================================================
+
+export { fromJSON } from "./interop/from-json.js";
+export type { ResultJSON } from "./interop/from-json.js";
+export { toSchema } from "./interop/to-schema.js";
+export type { StandardSchemaV1 } from "./interop/to-schema.js";
 
 // =============================================================================
 // Type Utilities
@@ -79,4 +109,5 @@ export type {
   InferOkRecord,
   InferOkUnion,
   InferErrTuple,
+  NonEmptyArray,
 } from "./type-utils.js";

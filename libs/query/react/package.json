@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/query-react",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "React integration for @hex-di/query - type-safe hooks for queries, mutations, and cache management",
   "type": "module",
   "main": "./dist/index.js",

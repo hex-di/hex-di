@@ -7,8 +7,25 @@ type InferErrUnionFromRecord<R extends Record<string, Result<unknown, unknown>>>
 >;
 
 /**
- * Combines a record of Results into a Result of a record.
- * Short-circuits on first Err.
+ * Combines a record of Results into a Result of a record. Short-circuits on the first Err.
+ *
+ * If all values are Ok, returns Ok with a record mapping each key to its unwrapped value.
+ * If any value is Err, returns the first Err encountered. Iteration order follows
+ * `Object.keys()` (standard JavaScript property ordering).
+ *
+ * @example
+ * ```ts
+ * import { ok, err, collect } from '@hex-di/result';
+ *
+ * const success = collect({ name: ok("Alice"), age: ok(30) });
+ * // => Ok({ name: "Alice", age: 30 })
+ *
+ * const failed = collect({ name: ok("Alice"), age: err("invalid") });
+ * // => Err("invalid")
+ * ```
+ *
+ * @since v1.0.0
+ * @see spec/result/behaviors/05-composition.md — BEH-05-004
  */
 export function collect<R extends Record<string, Result<unknown, unknown>>>(
   results: R

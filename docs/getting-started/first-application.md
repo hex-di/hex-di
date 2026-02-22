@@ -23,7 +23,7 @@ Create a new directory and initialize the project:
 mkdir hexdi-tasks
 cd hexdi-tasks
 pnpm init
-pnpm add @hex-di/ports @hex-di/graph @hex-di/runtime typescript tsx
+pnpm add hex-di typescript tsx
 ```
 
 Create `tsconfig.json`:
@@ -51,6 +51,8 @@ Create `src/types.ts`:
  * These define WHAT services do, not HOW they do it.
  */
 
+import type { Result } from '@hex-di/result';
+
 export interface Task {
   id: string;
   title: string;
@@ -74,9 +76,9 @@ export interface TaskStore {
 
 export interface TaskService {
   listTasks(): Task[];
-  createTask(title: string): Task;
-  completeTask(id: string): void;
-  deleteTask(id: string): void;
+  createTask(title: string): Result<Task, string>;
+  completeTask(id: string): Result<void, string>;
+  deleteTask(id: string): Result<void, string>;
 }
 ```
 
@@ -90,17 +92,17 @@ Create `src/ports.ts`:
  * Ports are the "contracts" in our dependency injection system.
  */
 
-import { createPort } from '@hex-di/ports';
+import { port } from '@hex-di/core';
 import type { Logger, TaskStore, TaskService } from './types.js';
 
 // Logger port - singleton service for logging
-export const LoggerPort = createPort<'Logger', Logger>('Logger');
+export const LoggerPort = port<Logger>()({ name: 'Logger' });
 
 // TaskStore port - singleton service for task persistence
-export const TaskStorePort = createPort<'TaskStore', TaskStore>('TaskStore');
+export const TaskStorePort = port<TaskStore>()({ name: 'TaskStore' });
 
 // TaskService port - the main service consumers interact with
-export const TaskServicePort = createPort<'TaskService', TaskService>('TaskService');
+export const TaskServicePort = port<TaskService>()({ name: 'TaskService' });
 
 // Type representing all ports in our app
 export type AppPorts =
@@ -119,7 +121,8 @@ Create `src/adapters.ts`:
  * Adapters define HOW services work and what they depend on.
  */
 
-import { createAdapter } from '@hex-di/graph';
+import { createAdapter } from '@hex-di/core';
+import { ok, err } from '@hex-di/result';
 import { LoggerPort, TaskStorePort, TaskServicePort } from './ports.js';
 import type { Task, Logger, TaskStore, TaskService } from './types.js';
 
@@ -235,26 +238,28 @@ export const TaskServiceAdapter = createAdapter({
       createTask: (title) => {
         if (!title.trim()) {
           Logger.error('Cannot create task with empty title');
-          throw new Error('Task title cannot be empty');
+          return err('Task title cannot be empty');
         }
         Logger.info(`Creating task: "${title}"`);
-        return TaskStore.add(title);
+        return ok(TaskStore.add(title));
       },
 
       completeTask: (id) => {
         Logger.info(`Completing task: ${id}`);
         const success = TaskStore.complete(id);
         if (!success) {
-          throw new Error(`Task not found: ${id}`);
+          return err(`Task not found: ${id}`);
         }
+        return ok(undefined);
       },
 
       deleteTask: (id) => {
         Logger.info(`Deleting task: ${id}`);
         const success = TaskStore.delete(id);
         if (!success) {
-          throw new Error(`Task not found: ${id}`);
+          return err(`Task not found: ${id}`);
         }
+        return ok(undefined);
       }
     };
   }
@@ -304,20 +309,36 @@ import { appGraph } from './graph.js';
 import { TaskServicePort, LoggerPort } from './ports.js';
 
 // Create the container from our validated graph
-const container = createContainer(appGraph);
+const container = createContainer({ graph: appGraph, name: "App" });
 
-// Get our services
-const logger = container.resolve(LoggerPort);
-const taskService = container.resolve(TaskServicePort);
-
-// Use the task service
 async function main() {
+  // Resolve services — tryResolve returns Result<T, ContainerError>, never throws
+  const loggerResult = container.tryResolve(LoggerPort);
+  if (loggerResult.isErr()) {
+    console.error('Failed to resolve Logger:', loggerResult.error);
+    await container.tryDispose();
+    return;
+  }
+  const logger = loggerResult.value;
+
+  const taskServiceResult = container.tryResolve(TaskServicePort);
+  if (taskServiceResult.isErr()) {
+    logger.error('Failed to resolve TaskService');
+    await container.tryDispose();
+    return;
+  }
+  const taskService = taskServiceResult.value;
+
   logger.info('=== Task Management Demo ===');
 
-  // Create some tasks
+  // Create some tasks — createTask returns Result<Task, string>
   const task1 = taskService.createTask('Learn HexDI');
   const task2 = taskService.createTask('Build an app');
   const task3 = taskService.createTask('Write tests');
+
+  if (task1.isErr()) { logger.error(task1.error); await container.tryDispose(); return; }
+  if (task2.isErr()) { logger.error(task2.error); await container.tryDispose(); return; }
+  if (task3.isErr()) { logger.error(task3.error); await container.tryDispose(); return; }
 
   // List all tasks
   console.log('\nAll tasks:');
@@ -325,11 +346,17 @@ async function main() {
     console.log(`  - [${task.completed ? 'x' : ' '}] ${task.title} (${task.id})`);
   });
 
-  // Complete a task
-  taskService.completeTask(task1.id);
+  // Complete a task — completeTask returns Result<void, string>
+  taskService.completeTask(task1.value.id).match(
+    () => {},
+    (error) => logger.error(`Failed to complete task: ${error}`),
+  );
 
-  // Delete a task
-  taskService.deleteTask(task3.id);
+  // Delete a task — deleteTask returns Result<void, string>
+  taskService.deleteTask(task3.value.id).match(
+    () => {},
+    (error) => logger.error(`Failed to delete task: ${error}`),
+  );
 
   // List tasks again
   console.log('\nTasks after updates:');
@@ -338,7 +365,7 @@ async function main() {
   });
 
   // Cleanup
-  await container.dispose();
+  await container.tryDispose();
   logger.info('Application shutdown complete');
 }
 
@@ -415,7 +442,7 @@ Try these experiments:
 
 2. **Resolve a port not in the graph:**
    ```typescript
-   const unknownPort = createPort<'Unknown', { foo: string }>('Unknown');
+   const unknownPort = port<{ foo: string }>()({ name: 'Unknown' });
    container.resolve(unknownPort); // Compile error!
    ```
 

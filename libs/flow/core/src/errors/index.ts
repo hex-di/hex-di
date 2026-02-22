@@ -23,6 +23,7 @@ export {
   DuplicateActivityPort,
   ActivityNotFrozen,
   PortNotAvailable,
+  type FlowAdapterCreationError,
   type FlowAdapterError,
   DisposeError,
   ActivityNotFound,

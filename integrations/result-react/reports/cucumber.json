@@ -1,0 +1,2119 @@
+[
+  {
+    "description": "  Pattern-matching and action wrapping for server components.",
+    "elements": [
+      {
+        "description": "",
+        "id": "server-utilities;matchresult-calls-ok-handler-on-ok",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "matchResult calls ok handler on Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 6,
+            "name": "an Ok result with value \"hello\"",
+            "match": {
+              "location": "features/steps/server.ts:14"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 158750
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 7,
+            "name": "I call matchResult with ok handler returning length and err handler returning -1",
+            "match": {
+              "location": "features/steps/server.ts:56"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 59458
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 8,
+            "name": "the output is 5",
+            "match": {
+              "location": "features/steps/server.ts:87"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 32000
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R07-001",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "server-utilities;matchresult-calls-err-handler-on-err",
+        "keyword": "Scenario",
+        "line": 11,
+        "name": "matchResult calls err handler on Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 12,
+            "name": "an Err result with error \"fail\"",
+            "match": {
+              "location": "features/steps/server.ts:18"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 61041
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 13,
+            "name": "I call matchResult with ok handler returning length and err handler returning -1",
+            "match": {
+              "location": "features/steps/server.ts:56"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 24167
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 14,
+            "name": "the output is -1",
+            "match": {
+              "location": "features/steps/server.ts:87"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13707
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R07-001",
+            "line": 10
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "server-utilities;matchresultasync-resolves-ok-handler-on-ok",
+        "keyword": "Scenario",
+        "line": 17,
+        "name": "matchResultAsync resolves Ok handler on Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 18,
+            "name": "a ResultAsync.ok(\"data\")",
+            "match": {
+              "location": "features/steps/server.ts:22"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 40416
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 19,
+            "name": "I call matchResultAsync with ok handler returning uppercase and err handler returning \"fallback\"",
+            "match": {
+              "location": "features/steps/server.ts:63"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 269458
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 20,
+            "name": "the output is \"DATA\"",
+            "match": {
+              "location": "features/steps/server.ts:91"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 22458
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R07-002",
+            "line": 16
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "server-utilities;matchresultasync-resolves-err-handler-on-err",
+        "keyword": "Scenario",
+        "line": 23,
+        "name": "matchResultAsync resolves Err handler on Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 24,
+            "name": "a ResultAsync.err(\"oops\")",
+            "match": {
+              "location": "features/steps/server.ts:26"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 36625
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 25,
+            "name": "I call matchResultAsync with ok handler returning uppercase and err handler returning \"fallback\"",
+            "match": {
+              "location": "features/steps/server.ts:63"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 37874
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 26,
+            "name": "the output is \"fallback\"",
+            "match": {
+              "location": "features/steps/server.ts:91"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17208
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R07-002",
+            "line": 22
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "server-utilities;matchoption-calls-some-handler-on-some",
+        "keyword": "Scenario",
+        "line": 29,
+        "name": "matchOption calls some handler on Some",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 30,
+            "name": "a Some option with value \"Alice\"",
+            "match": {
+              "location": "features/steps/server.ts:30"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 49792
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 31,
+            "name": "I call matchOption with some handler returning greeting and none handler returning \"Guest\"",
+            "match": {
+              "location": "features/steps/server.ts:70"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 36958
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 32,
+            "name": "the output is \"Hello, Alice\"",
+            "match": {
+              "location": "features/steps/server.ts:91"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13374
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R07-003",
+            "line": 28
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "server-utilities;matchoption-calls-none-handler-on-none",
+        "keyword": "Scenario",
+        "line": 35,
+        "name": "matchOption calls none handler on None",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 36,
+            "name": "a None option",
+            "match": {
+              "location": "features/steps/server.ts:34"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 39957
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 37,
+            "name": "I call matchOption with some handler returning greeting and none handler returning \"Guest\"",
+            "match": {
+              "location": "features/steps/server.ts:70"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15334
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 38,
+            "name": "the output is \"Guest\"",
+            "match": {
+              "location": "features/steps/server.ts:91"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8750
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R07-003",
+            "line": 34
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "server-utilities;resultaction-returns-ok-on-success",
+        "keyword": "Scenario",
+        "line": 41,
+        "name": "resultAction returns Ok on success",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 42,
+            "name": "a resultAction wrapping a doubling function",
+            "match": {
+              "location": "features/steps/server.ts:38"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 20457
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 43,
+            "name": "I execute the action with argument 21",
+            "match": {
+              "location": "features/steps/server.ts:77"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 52708
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 44,
+            "name": "the result is Ok with value 42",
+            "match": {
+              "location": "features/steps/server.ts:95"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 21916
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R07-004",
+            "line": 40
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "server-utilities;resultaction-returns-err-on-rejection",
+        "keyword": "Scenario",
+        "line": 47,
+        "name": "resultAction returns Err on rejection",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 48,
+            "name": "a resultAction wrapping a throwing function",
+            "match": {
+              "location": "features/steps/server.ts:45"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13541
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 49,
+            "name": "I execute the action with argument \"bad\"",
+            "match": {
+              "location": "features/steps/server.ts:81"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 62250
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 50,
+            "name": "the result is Err",
+            "match": {
+              "location": "features/steps/server.ts:100"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12125
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R07-004",
+            "line": 46
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "server-utilities",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Server Utilities",
+    "tags": [],
+    "uri": "features/01-server.feature"
+  },
+  {
+    "description": "  Bridge Result-returning functions to TanStack Query and SWR.",
+    "elements": [
+      {
+        "description": "",
+        "id": "adapters;toqueryfn-resolves-with-ok-value",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "toQueryFn resolves with Ok value",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 6,
+            "name": "a ResultAsync-returning function that succeeds with \"hello\"",
+            "match": {
+              "location": "features/steps/adapters.ts:15"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16875
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 7,
+            "name": "I wrap it with toQueryFn and call it",
+            "match": {
+              "location": "features/steps/adapters.ts:41"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 42082
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 8,
+            "name": "the output resolves to \"hello\"",
+            "match": {
+              "location": "features/steps/adapters.ts:83"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12125
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R05-001",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "adapters;toqueryfn-throws-err-value",
+        "keyword": "Scenario",
+        "line": 11,
+        "name": "toQueryFn throws Err value",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 12,
+            "name": "a ResultAsync-returning function that fails with \"boom\"",
+            "match": {
+              "location": "features/steps/adapters.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15749
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 13,
+            "name": "I wrap it with toQueryFn and call it",
+            "match": {
+              "location": "features/steps/adapters.ts:41"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 25582
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 14,
+            "name": "the output rejects with \"boom\"",
+            "match": {
+              "location": "features/steps/adapters.ts:87"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 11875
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R05-001",
+            "line": 10
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "adapters;toqueryoptions-returns-querykey-and-queryfn",
+        "keyword": "Scenario",
+        "line": 17,
+        "name": "toQueryOptions returns queryKey and queryFn",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 18,
+            "name": "a ResultAsync-returning function that succeeds with \"alice\"",
+            "match": {
+              "location": "features/steps/adapters.ts:15"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6916
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 19,
+            "name": "I call toQueryOptions with a query key",
+            "match": {
+              "location": "features/steps/adapters.ts:50"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16375
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 20,
+            "name": "the output has the expected queryKey",
+            "match": {
+              "location": "features/steps/adapters.ts:91"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 565790
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 21,
+            "name": "the queryFn resolves to \"alice\"",
+            "match": {
+              "location": "features/steps/adapters.ts:95"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 33374
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R05-002",
+            "line": 16
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "adapters;tomutationfn-resolves-with-ok-value",
+        "keyword": "Scenario",
+        "line": 24,
+        "name": "toMutationFn resolves with Ok value",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 25,
+            "name": "a ResultAsync mutation function that succeeds",
+            "match": {
+              "location": "features/steps/adapters.ts:23"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 11208
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 26,
+            "name": "I wrap it with toMutationFn and call it with \"alice\"",
+            "match": {
+              "location": "features/steps/adapters.ts:54"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 55707
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 27,
+            "name": "the output resolves to \"saved: alice\"",
+            "match": {
+              "location": "features/steps/adapters.ts:83"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7083
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R05-004",
+            "line": 23
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "adapters;tomutationfn-throws-err-value",
+        "keyword": "Scenario",
+        "line": 30,
+        "name": "toMutationFn throws Err value",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 31,
+            "name": "a ResultAsync mutation function that fails",
+            "match": {
+              "location": "features/steps/adapters.ts:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9083
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 32,
+            "name": "I wrap it with toMutationFn and call it with \"alice\"",
+            "match": {
+              "location": "features/steps/adapters.ts:54"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 32125
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 33,
+            "name": "the output rejects with \"fail\"",
+            "match": {
+              "location": "features/steps/adapters.ts:87"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6709
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R05-004",
+            "line": 29
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "adapters;tomutationoptions-returns-mutationfn-that-resolves-with-ok-value",
+        "keyword": "Scenario",
+        "line": 36,
+        "name": "toMutationOptions returns mutationFn that resolves with Ok value",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 37,
+            "name": "a ResultAsync mutation function that succeeds",
+            "match": {
+              "location": "features/steps/adapters.ts:23"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4416
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 38,
+            "name": "I wrap it with toMutationOptions and call it with \"bob\"",
+            "match": {
+              "location": "features/steps/adapters.ts:63"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 52500
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 39,
+            "name": "the output resolves to \"saved: bob\"",
+            "match": {
+              "location": "features/steps/adapters.ts:83"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6750
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R05-005",
+            "line": 35
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "adapters;tomutationoptions-returns-mutationfn-that-throws-err-value",
+        "keyword": "Scenario",
+        "line": 42,
+        "name": "toMutationOptions returns mutationFn that throws Err value",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 43,
+            "name": "a ResultAsync mutation function that fails",
+            "match": {
+              "location": "features/steps/adapters.ts:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4374
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 44,
+            "name": "I wrap it with toMutationOptions and call it with \"bob\"",
+            "match": {
+              "location": "features/steps/adapters.ts:63"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 26292
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 45,
+            "name": "the output rejects with \"fail\"",
+            "match": {
+              "location": "features/steps/adapters.ts:87"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6249
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R05-005",
+            "line": 41
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "adapters;toswrfetcher-resolves-with-ok-value",
+        "keyword": "Scenario",
+        "line": 48,
+        "name": "toSwrFetcher resolves with Ok value",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 49,
+            "name": "a key-based ResultAsync function that succeeds",
+            "match": {
+              "location": "features/steps/adapters.ts:31"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10332
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 50,
+            "name": "I wrap it with toSwrFetcher and call it with \"users\"",
+            "match": {
+              "location": "features/steps/adapters.ts:72"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 47499
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 51,
+            "name": "the output resolves to \"data-users\"",
+            "match": {
+              "location": "features/steps/adapters.ts:83"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6166
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R05-003",
+            "line": 47
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "adapters;toswrfetcher-throws-err-value",
+        "keyword": "Scenario",
+        "line": 54,
+        "name": "toSwrFetcher throws Err value",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 55,
+            "name": "a key-based ResultAsync function that fails",
+            "match": {
+              "location": "features/steps/adapters.ts:35"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8957
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 56,
+            "name": "I wrap it with toSwrFetcher and call it with \"users\"",
+            "match": {
+              "location": "features/steps/adapters.ts:72"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 19999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 57,
+            "name": "the output rejects with \"not found\"",
+            "match": {
+              "location": "features/steps/adapters.ts:87"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 5999
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R05-003",
+            "line": 53
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "adapters",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Adapters",
+    "tags": [],
+    "uri": "features/02-adapters.feature"
+  },
+  {
+    "description": "  Client-side utility functions for wrapping async actions.",
+    "elements": [
+      {
+        "description": "",
+        "id": "utilities;fromaction-wraps-successful-async-function-in-ok",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "fromAction wraps successful async function in Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 6,
+            "name": "an async function that returns \"success\"",
+            "match": {
+              "location": "features/steps/utilities.ts:8"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12292
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 7,
+            "name": "I wrap it with fromAction and call it",
+            "match": {
+              "location": "features/steps/utilities.ts:24"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 41375
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 8,
+            "name": "the result is Ok with value \"success\"",
+            "match": {
+              "location": "features/steps/utilities.ts:36"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14334
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R04-001",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "utilities;fromaction-wraps-throwing-async-function-in-err",
+        "keyword": "Scenario",
+        "line": 11,
+        "name": "fromAction wraps throwing async function in Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 12,
+            "name": "an async function that throws \"failure\"",
+            "match": {
+              "location": "features/steps/utilities.ts:12"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12457
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 13,
+            "name": "I wrap it with fromAction and call it",
+            "match": {
+              "location": "features/steps/utilities.ts:24"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 33041
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 14,
+            "name": "the result is Err with error \"failure\"",
+            "match": {
+              "location": "features/steps/utilities.ts:41"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15416
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R04-001",
+            "line": 10
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "utilities;fromaction-preserves-argument-types",
+        "keyword": "Scenario",
+        "line": 17,
+        "name": "fromAction preserves argument types",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 18,
+            "name": "an async function accepting name and age",
+            "match": {
+              "location": "features/steps/utilities.ts:18"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9042
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 19,
+            "name": "I wrap it with fromAction and call it with \"Alice\" and 30",
+            "match": {
+              "location": "features/steps/utilities.ts:29"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 32417
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 20,
+            "name": "the result is Ok with value containing name \"Alice\" and age 30",
+            "match": {
+              "location": "features/steps/utilities.ts:48"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16665
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R04-001",
+            "line": 16
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "utilities",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Utilities",
+    "tags": [],
+    "uri": "features/03-utilities.feature"
+  },
+  {
+    "description": "  Renders Ok or Err branch based on Result variant.",
+    "elements": [
+      {
+        "description": "",
+        "id": "match-component;match-renders-ok-branch-for-ok-result",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "Match renders ok branch for Ok result",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 6,
+            "name": "a React tree with Match and an Ok result \"Alice\"",
+            "match": {
+              "location": "features/steps/match.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 2648667
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 7,
+            "name": "the rendered output contains \"Hello, Alice\"",
+            "match": {
+              "location": "features/steps/match.ts:41"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 38167
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R01-001",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "match-component;match-renders-err-branch-for-err-result",
+        "keyword": "Scenario",
+        "line": 10,
+        "name": "Match renders err branch for Err result",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 11,
+            "name": "a React tree with Match and an Err result \"not found\"",
+            "match": {
+              "location": "features/steps/match.ts:25"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 174792
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 12,
+            "name": "the rendered output contains \"Error: not found\"",
+            "match": {
+              "location": "features/steps/match.ts:41"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13124
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R01-001",
+            "line": 9
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "match-component;match-updates-when-result-changes-from-ok-to-err",
+        "keyword": "Scenario",
+        "line": 15,
+        "name": "Match updates when result changes from Ok to Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 16,
+            "name": "a React tree with Match and an Ok result \"Bob\"",
+            "match": {
+              "location": "features/steps/match.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 113083
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 17,
+            "name": "the rendered output contains \"Hello, Bob\"",
+            "match": {
+              "location": "features/steps/match.ts:41"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9999
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R01-001",
+            "line": 14
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "match-component",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Match Component",
+    "tags": [],
+    "uri": "features/04-match.feature"
+  },
+  {
+    "description": "  Hooks for eager and lazy async Result operations.",
+    "elements": [
+      {
+        "description": "",
+        "id": "async-hooks;useresultasync-resolves-ok",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "useResultAsync resolves Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 6,
+            "name": "a useResultAsync hook with a function returning Ok \"data\"",
+            "match": {
+              "location": "features/steps/async-hooks.ts:41"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 26040
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 7,
+            "name": "the async operation resolves",
+            "match": {
+              "location": "features/steps/async-hooks.ts:94"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 96917
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 8,
+            "name": "the hook result is Ok with value \"data\"",
+            "match": {
+              "location": "features/steps/async-hooks.ts:133"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 21290
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "isLoading is false",
+            "match": {
+              "location": "features/steps/async-hooks.ts:158"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 11457
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R02-001",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "async-hooks;useresultasync-resolves-err",
+        "keyword": "Scenario",
+        "line": 12,
+        "name": "useResultAsync resolves Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 13,
+            "name": "a useResultAsync hook with a function returning Err \"fail\"",
+            "match": {
+              "location": "features/steps/async-hooks.ts:54"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 18209
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 14,
+            "name": "the async operation resolves",
+            "match": {
+              "location": "features/steps/async-hooks.ts:94"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 32499
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 15,
+            "name": "the hook result is Err with error \"fail\"",
+            "match": {
+              "location": "features/steps/async-hooks.ts:143"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16041
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R02-001",
+            "line": 11
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "async-hooks;useresultaction-starts-idle-and-executes-on-demand",
+        "keyword": "Scenario",
+        "line": 18,
+        "name": "useResultAction starts idle and executes on demand",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 19,
+            "name": "a useResultAction hook with a function returning Ok \"done\"",
+            "match": {
+              "location": "features/steps/async-hooks.ts:64"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 18416
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 20,
+            "name": "the hook result is undefined",
+            "match": {
+              "location": "features/steps/async-hooks.ts:153"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13958
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 21,
+            "name": "I execute the action",
+            "match": {
+              "location": "features/steps/async-hooks.ts:119"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 28291
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 22,
+            "name": "the hook result is Ok with value \"done\"",
+            "match": {
+              "location": "features/steps/async-hooks.ts:133"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6916
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R02-002",
+            "line": 17
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "async-hooks;useresultsuspense-returns-a-resolved-result",
+        "keyword": "Scenario",
+        "line": 25,
+        "name": "useResultSuspense returns a resolved Result",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 26,
+            "name": "a useResultSuspense hook inside Suspense with Ok \"loaded\"",
+            "match": {
+              "location": "features/steps/async-hooks.ts:74"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 27,
+            "name": "the async operation resolves",
+            "match": {
+              "location": "features/steps/async-hooks.ts:94"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 28,
+            "name": "the hook result is Ok with value \"loaded\"",
+            "match": {
+              "location": "features/steps/async-hooks.ts:133"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6416
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R02-003",
+            "line": 24
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "async-hooks;createresultresource-preloads-and-reads",
+        "keyword": "Scenario",
+        "line": 31,
+        "name": "createResultResource preloads and reads",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 32,
+            "name": "a createResultResource with Ok \"cached\"",
+            "match": {
+              "location": "features/steps/async-hooks.ts:84"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 31833
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 33,
+            "name": "I preload the resource",
+            "match": {
+              "location": "features/steps/async-hooks.ts:127"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 31624
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 34,
+            "name": "the async operation resolves",
+            "match": {
+              "location": "features/steps/async-hooks.ts:94"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 50412749
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 35,
+            "name": "reading the resource returns Ok with value \"cached\"",
+            "match": {
+              "location": "features/steps/async-hooks.ts:165"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 54083
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R02-004",
+            "line": 30
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "async-hooks",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Async Hooks",
+    "tags": [],
+    "uri": "features/05-async-hooks.feature"
+  },
+  {
+    "description": "  Hooks for managing, composing, and transitioning Result state.",
+    "elements": [
+      {
+        "description": "",
+        "id": "composition-hooks;useresult-starts-undefined-with-no-initial-value",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "useResult starts undefined with no initial value",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 6,
+            "name": "a useResult hook with no initial value",
+            "match": {
+              "location": "features/steps/composition-hooks.ts:13"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 21791
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 7,
+            "name": "the hook result is undefined",
+            "match": {
+              "location": "features/steps/async-hooks.ts:153"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8083
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R03-001",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "composition-hooks;useresult-setok-updates-to-ok",
+        "keyword": "Scenario",
+        "line": 10,
+        "name": "useResult setOk updates to Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 11,
+            "name": "a useResult hook with no initial value",
+            "match": {
+              "location": "features/steps/composition-hooks.ts:13"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13291
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 12,
+            "name": "I call setOk with \"hello\"",
+            "match": {
+              "location": "features/steps/composition-hooks.ts:82"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 23957
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 13,
+            "name": "the hook result is Ok with value \"hello\"",
+            "match": {
+              "location": "features/steps/async-hooks.ts:133"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 11124
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R03-001",
+            "line": 9
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "composition-hooks;useresult-seterr-updates-to-err",
+        "keyword": "Scenario",
+        "line": 16,
+        "name": "useResult setErr updates to Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 17,
+            "name": "a useResult hook with no initial value",
+            "match": {
+              "location": "features/steps/composition-hooks.ts:13"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6041
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 18,
+            "name": "I call setErr with \"bad\"",
+            "match": {
+              "location": "features/steps/composition-hooks.ts:89"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 25417
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 19,
+            "name": "the hook result is Err with error \"bad\"",
+            "match": {
+              "location": "features/steps/async-hooks.ts:143"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10291
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R03-001",
+            "line": 15
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "composition-hooks;useresult-reset-returns-to-undefined",
+        "keyword": "Scenario",
+        "line": 22,
+        "name": "useResult reset returns to undefined",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 23,
+            "name": "a useResult hook with no initial value",
+            "match": {
+              "location": "features/steps/composition-hooks.ts:13"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7916
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 24,
+            "name": "I call setOk with \"temp\"",
+            "match": {
+              "location": "features/steps/composition-hooks.ts:82"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12334
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 25,
+            "name": "I call reset",
+            "match": {
+              "location": "features/steps/composition-hooks.ts:96"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13125
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 26,
+            "name": "the hook result is undefined",
+            "match": {
+              "location": "features/steps/async-hooks.ts:153"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7124
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R03-001",
+            "line": 21
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "composition-hooks;useoptimisticresult-returns-authoritative-result",
+        "keyword": "Scenario",
+        "line": 29,
+        "name": "useOptimisticResult returns authoritative result",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 30,
+            "name": "a useOptimisticResult hook with authoritative Ok \"confirmed\"",
+            "match": {
+              "location": "features/steps/composition-hooks.ts:54"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 37583
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 31,
+            "name": "the hook result is Ok with value \"confirmed\"",
+            "match": {
+              "location": "features/steps/async-hooks.ts:133"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8583
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R03-002",
+            "line": 28
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "composition-hooks;useoptimisticresult-applies-optimistic-update",
+        "keyword": "Scenario",
+        "line": 34,
+        "name": "useOptimisticResult applies optimistic update",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 35,
+            "name": "a useOptimisticResult hook with authoritative Ok \"confirmed\"",
+            "match": {
+              "location": "features/steps/composition-hooks.ts:54"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13874
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 36,
+            "name": "I apply optimistic value \"optimistic\"",
+            "match": {
+              "location": "features/steps/composition-hooks.ts:100"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 20624
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 37,
+            "name": "the hook result is Ok with value \"optimistic\"",
+            "match": {
+              "location": "features/steps/async-hooks.ts:133"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7874
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R03-002",
+            "line": 33
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "composition-hooks;useresulttransition-starts-with-undefined-result",
+        "keyword": "Scenario",
+        "line": 40,
+        "name": "useResultTransition starts with undefined result",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 41,
+            "name": "a useResultTransition hook",
+            "match": {
+              "location": "features/steps/composition-hooks.ts:69"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 11375
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 42,
+            "name": "the hook result is undefined",
+            "match": {
+              "location": "features/steps/async-hooks.ts:153"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 5957
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R03-004",
+            "line": 39
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "composition-hooks;useresulttransition-resolves-to-ok",
+        "keyword": "Scenario",
+        "line": 45,
+        "name": "useResultTransition resolves to Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 46,
+            "name": "a useResultTransition hook",
+            "match": {
+              "location": "features/steps/composition-hooks.ts:69"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 5583
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 47,
+            "name": "I start a transition returning Ok \"transitioned\"",
+            "match": {
+              "location": "features/steps/composition-hooks.ts:111"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 46624
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 48,
+            "name": "the hook result is Ok with value \"transitioned\"",
+            "match": {
+              "location": "features/steps/async-hooks.ts:133"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8083
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R03-004",
+            "line": 44
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "composition-hooks;usesafetry-composes-ok-results",
+        "keyword": "Scenario",
+        "line": 51,
+        "name": "useSafeTry composes Ok results",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 52,
+            "name": "a useSafeTry hook yielding Ok \"a\" and Ok \"b\"",
+            "match": {
+              "location": "features/steps/composition-hooks.ts:24"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 95624
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 53,
+            "name": "the hook result is Ok with value \"ab\"",
+            "match": {
+              "location": "features/steps/async-hooks.ts:133"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7583
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R03-003",
+            "line": 50
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "composition-hooks;usesafetry-short-circuits-on-err",
+        "keyword": "Scenario",
+        "line": 56,
+        "name": "useSafeTry short-circuits on Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 57,
+            "name": "a useSafeTry hook yielding Ok \"a\" then Err \"fail\"",
+            "match": {
+              "location": "features/steps/composition-hooks.ts:39"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 55333
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 58,
+            "name": "the hook result is Err with error \"fail\"",
+            "match": {
+              "location": "features/steps/async-hooks.ts:143"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7666
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-R03-003",
+            "line": 55
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "composition-hooks",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Composition Hooks",
+    "tags": [],
+    "uri": "features/06-composition-hooks.feature"
+  }
+]

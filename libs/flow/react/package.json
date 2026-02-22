@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/flow-react",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "React integration for @hex-di/flow - type-safe hooks for state machines, useMachine, useSelector, useSend",
   "type": "module",
   "main": "./dist/index.js",

@@ -3,9 +3,8 @@
   "compilerOptions": {
     "rootDir": ".",
     "outDir": "./dist",
-    "composite": true,
-    "lib": ["ES2022"]
+    "composite": true
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.json", "tests/**/*.ts", "package.json"],
   "exclude": ["node_modules", "dist"]
 }

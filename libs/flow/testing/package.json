@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/flow-testing",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "Testing utilities for @hex-di/flow - test harnesses, assertions, and mock utilities",
   "type": "module",
   "main": "./dist/index.js",

@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/runtime",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "Runtime layer for HexDI - immutable containers, scope hierarchy, and type-safe service resolution",
   "type": "module",
   "main": "./dist/index.js",

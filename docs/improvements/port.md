@@ -5,12 +5,12 @@
 Three separate functions for creating ports:
 
 ```typescript
-// Basic port (no direction)
-createPort<"Logger", Logger>("Logger");
+// Basic port (no direction) — 2-arg string form
+// createPort<"Logger", Logger>("Logger");  // removed in v0.2.0
 
-// Directed ports (separate functions)
-createInboundPort<"UserService", UserService>({ name: "UserService" });
-createOutboundPort<"Logger", Logger>({ name: "Logger" });
+// Directed ports (separate functions) — also removed
+// createInboundPort<"UserService", UserService>({ name: "UserService" });
+// createOutboundPort<"Logger", Logger>({ name: "Logger" });
 ```
 
 **Problems:**
@@ -21,18 +21,30 @@ createOutboundPort<"Logger", Logger>({ name: "Logger" });
 
 ---
 
-## Proposed API
+## Implemented API
 
-Single unified function with rich configuration:
+Single unified function with rich configuration (implemented in v0.2.0):
 
 ```typescript
-createPort<TName, TService>({
+// Builder pattern (preferred — infers name as literal type)
+import { port } from '@hex-di/core';
+const LoggerPort = port<Logger>()({ name: 'Logger' });
+
+// Alternative: explicit generics
+import { createPort } from '@hex-di/core';
+const LoggerPort = createPort<'Logger', Logger>({ name: 'Logger' });
+```
+
+Both accept the same config object:
+
+```typescript
+{
   name: TName,                         // Required
   direction?: 'inbound' | 'outbound',  // Default: 'outbound'
   description?: string,                // Optional
   category?: string,                   // Optional
   tags?: string[]                      // Optional
-})
+}
 ```
 
 ---
@@ -42,30 +54,20 @@ createPort<TName, TService>({
 ```typescript
 type PortDirection = "inbound" | "outbound";
 
-type PortConfig<TName extends string, TDirection extends PortDirection = "outbound"> = {
-  readonly name: TName;
-  readonly direction?: TDirection;
-  readonly description?: string;
-  readonly category?: string;
-  readonly tags?: readonly string[];
-};
-
-type Port<T, TName extends string, TDirection extends PortDirection = "outbound"> = {
-  readonly [__brand]: [T, TName, TDirection];
+// Returned type is DirectedPort (not Port)
+type DirectedPort<T, TName extends string, TDirection extends PortDirection = "outbound", TCategory extends string = string> = {
   readonly __portName: TName;
-  readonly __direction: TDirection;
-
-  // Runtime accessible
-  readonly name: TName;
-  readonly direction: TDirection;
-  readonly description: string | undefined;
-  readonly category: string | undefined;
-  readonly tags: readonly string[];
+  readonly [__direction_brand]: TDirection;
+  // Runtime accessible via getPortMetadata()
 };
 
-function createPort<TName extends string, T, TDirection extends PortDirection = "outbound">(
-  config: PortConfig<TName, TDirection>
-): Port<T, TName, TDirection>;
+// createPort overloads
+function createPort<TName extends string, TService>(
+  config: { name: TName; direction?: PortDirection; description?: string; category?: string; tags?: readonly string[] }
+): DirectedPort<TService, TName, "outbound">;
+
+// Builder — preferred for literal name inference
+function port<TService>(): (config: { name: string; direction?: PortDirection; ... }) => DirectedPort<TService, ...>;
 ```
 
 ---
@@ -143,19 +145,19 @@ OUTBOUND (70-80%)              INBOUND (20-30%)
 ### Outbound Ports (Common - No Direction Needed)
 
 ```typescript
-// Minimal
-const ConfigPort = createPort<"Config", Config>({
-  name: "Config",
-});
+import { port, createPort } from '@hex-di/core';
+
+// Minimal (builder — preferred)
+const ConfigPort = port<Config>()({ name: "Config" });
 
 // With description
-const LoggerPort = createPort<"Logger", Logger>({
+const LoggerPort = port<Logger>()({
   name: "Logger",
   description: "Structured JSON logging",
   category: "observability",
 });
 
-// Full metadata
+// Full metadata (explicit generics form)
 const UserRepositoryPort = createPort<"UserRepository", UserRepository>({
   name: "UserRepository",
   description: "User persistence layer",
@@ -181,7 +183,9 @@ const CachePort = createPort<"Cache", CacheService>({
 ### Inbound Ports (Explicit Direction)
 
 ```typescript
-const CreateUserPort = createPort<"CreateUser", CreateUserUseCase>({
+import { port } from '@hex-di/core';
+
+const CreateUserPort = port<CreateUserUseCase>()({
   name: "CreateUser",
   direction: "inbound",
   description: "Creates a new user account with email verification",
@@ -189,7 +193,7 @@ const CreateUserPort = createPort<"CreateUser", CreateUserUseCase>({
   tags: ["user", "registration", "auth"],
 });
 
-const GetUserByIdPort = createPort<"GetUserById", GetUserByIdQuery>({
+const GetUserByIdPort = port<GetUserByIdQuery>()({
   name: "GetUserById",
   direction: "inbound",
   description: "Retrieves user profile by ID",
@@ -197,7 +201,7 @@ const GetUserByIdPort = createPort<"GetUserById", GetUserByIdQuery>({
   tags: ["user", "profile"],
 });
 
-const CheckoutWorkflowPort = createPort<"CheckoutWorkflow", CheckoutWorkflow>({
+const CheckoutWorkflowPort = port<CheckoutWorkflow>()({
   name: "CheckoutWorkflow",
   direction: "inbound",
   description: "Handles complete checkout process including payment",
@@ -291,15 +295,20 @@ Rich metadata enables better graph visualization:
 ## Migration Path
 
 ```typescript
-// Old API
-createPort<"Logger", Logger>("Logger");
-createInboundPort<"UserService", UserService>({ name: "UserService" });
-createOutboundPort<"Logger", Logger>({ name: "Logger" });
+// Old API (removed)
+// createPort<"Logger", Logger>("Logger");  // 2-arg string form
+// createInboundPort<"UserService", UserService>({ name: "UserService" });
+// createOutboundPort<"Logger", Logger>({ name: "Logger" });
 
-// New API
-createPort<"Logger", Logger>({ name: "Logger" });
-createPort<"UserService", UserService>({ name: "UserService", direction: "inbound" });
-createPort<"Logger", Logger>({ name: "Logger" }); // outbound is default
+// Current API — builder (preferred, literal name inference)
+import { port } from '@hex-di/core';
+const LoggerPort = port<Logger>()({ name: "Logger" });
+const UserServicePort = port<UserService>()({ name: "UserService", direction: "inbound" });
+
+// Current API — explicit generics
+import { createPort } from '@hex-di/core';
+const LoggerPort = createPort<"Logger", Logger>({ name: "Logger" });
+const UserServicePort = createPort<"UserService", UserService>({ name: "UserService", direction: "inbound" });
 ```
 
 ---

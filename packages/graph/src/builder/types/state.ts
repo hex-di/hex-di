@@ -178,6 +178,7 @@ export type DirectAdapterLifetime<TAdapter> = TAdapter extends { lifetime: "sing
  * @typeParam TUnsafeDepthOverride - When true, depth-exceeded is a WARNING not ERROR
  * @typeParam TDepthExceededWarning - Tracks ports where depth was exceeded (never if none)
  * @typeParam TUncheckedUsed - Tracks whether provideUnchecked() was used (safety marker)
+ * @typeParam TErrors - Accumulated error channel types from fallible adapters (never if all handled)
  */
 export interface BuilderInternals<
   out TDepGraph = EmptyDependencyGraph,
@@ -187,6 +188,7 @@ export interface BuilderInternals<
   out TUnsafeDepthOverride extends boolean = false,
   out TDepthExceededWarning extends string = never,
   out TUncheckedUsed extends boolean = false,
+  out TErrors = never,
 > {
   /** Type-level dependency map for cycle detection */
   readonly depGraph: TDepGraph;
@@ -210,6 +212,12 @@ export interface BuilderInternals<
    * Tooling can inspect this to warn about incomplete type-level guarantees.
    */
   readonly uncheckedUsed: TUncheckedUsed;
+  /**
+   * Accumulated error channel types from fallible adapters.
+   * If never, all adapters are infallible or errors have been handled.
+   * If non-never, `build()` will produce a compile error requiring error handling.
+   */
+  readonly errors: TErrors;
 }
 
 /**
@@ -222,7 +230,8 @@ export type DefaultInternals = BuilderInternals<
   DefaultMaxDepth, // 50 - maximum recursion depth for cycle detection
   false,
   never,
-  false // uncheckedUsed: no provideUnchecked() calls yet
+  false, // uncheckedUsed: no provideUnchecked() calls yet
+  never  // errors: no unhandled error channels
 >;
 
 /**
@@ -280,7 +289,8 @@ export type AnyBuilderInternals = BuilderInternals<
   number,
   boolean,
   string,
-  boolean
+  boolean,
+  unknown
 >;
 
 // =============================================================================
@@ -351,6 +361,16 @@ export type GetDepthExceededWarning<T extends AnyBuilderInternals> = T["depthExc
 export type GetUncheckedUsed<T extends AnyBuilderInternals> = T["uncheckedUsed"];
 
 /**
+ * Extracts the accumulated error channel types from BuilderInternals.
+ *
+ * Returns the union of all unhandled error types from fallible adapters,
+ * or `never` if all adapters are infallible or errors have been handled.
+ *
+ * @internal
+ */
+export type GetErrors<T extends AnyBuilderInternals> = T["errors"];
+
+/**
  * Creates a new BuilderInternals with an updated dependency graph.
  *
  * Uses indexed access for simplicity.
@@ -364,7 +384,8 @@ export type WithDepGraph<T extends AnyBuilderInternals, TNewDepGraph> = BuilderI
   T["maxDepth"],
   T["unsafeDepthOverride"],
   T["depthExceededWarning"],
-  T["uncheckedUsed"]
+  T["uncheckedUsed"],
+  T["errors"]
 >;
 
 /**
@@ -379,7 +400,8 @@ export type WithLifetimeMap<T extends AnyBuilderInternals, TNewLifetimeMap> = Bu
   T["maxDepth"],
   T["unsafeDepthOverride"],
   T["depthExceededWarning"],
-  T["uncheckedUsed"]
+  T["uncheckedUsed"],
+  T["errors"]
 >;
 
 /**
@@ -398,7 +420,8 @@ export type WithDepGraphAndLifetimeMap<
   T["maxDepth"],
   T["unsafeDepthOverride"],
   T["depthExceededWarning"],
-  T["uncheckedUsed"]
+  T["uncheckedUsed"],
+  T["errors"]
 >;
 
 /**
@@ -416,7 +439,8 @@ export type WithParentProvides<
   T["maxDepth"],
   T["unsafeDepthOverride"],
   T["depthExceededWarning"],
-  T["uncheckedUsed"]
+  T["uncheckedUsed"],
+  T["errors"]
 >;
 
 /**
@@ -434,7 +458,8 @@ export type WithMaxDepth<
   TNewMaxDepth,
   T["unsafeDepthOverride"],
   T["depthExceededWarning"],
-  T["uncheckedUsed"]
+  T["uncheckedUsed"],
+  T["errors"]
 >;
 
 /**
@@ -452,7 +477,8 @@ export type WithExtendedDepth<
   T["maxDepth"],
   TNewExtendedDepth,
   T["depthExceededWarning"],
-  T["uncheckedUsed"]
+  T["uncheckedUsed"],
+  T["errors"]
 >;
 
 /**
@@ -472,7 +498,8 @@ export type WithDepthExceededWarning<
   T["maxDepth"],
   T["unsafeDepthOverride"],
   T["depthExceededWarning"] | TNewDepthExceededWarning,
-  T["uncheckedUsed"]
+  T["uncheckedUsed"],
+  T["errors"]
 >;
 
 /**
@@ -490,7 +517,27 @@ export type WithUncheckedUsed<T extends AnyBuilderInternals> = BuilderInternals<
   T["maxDepth"],
   T["unsafeDepthOverride"],
   T["depthExceededWarning"],
-  true
+  true,
+  T["errors"]
+>;
+
+/**
+ * Creates a new BuilderInternals with additional error channel types.
+ *
+ * Unions the new error types with existing accumulated errors.
+ * Used by provide operations to track unhandled adapter error channels.
+ *
+ * @internal
+ */
+export type WithErrors<T extends AnyBuilderInternals, TNewErrors> = BuilderInternals<
+  T["depGraph"],
+  T["lifetimeMap"],
+  T["parentProvides"],
+  T["maxDepth"],
+  T["unsafeDepthOverride"],
+  T["depthExceededWarning"],
+  T["uncheckedUsed"],
+  T["errors"] | TNewErrors
 >;
 
 /**
@@ -513,7 +560,8 @@ export type WithDepGraphLifetimeAndWarning<
   T["maxDepth"],
   T["unsafeDepthOverride"],
   T["depthExceededWarning"] | TWarningPort,
-  T["uncheckedUsed"]
+  T["uncheckedUsed"],
+  T["errors"]
 >;
 
 // =============================================================================
@@ -613,5 +661,6 @@ export type UnifiedMergeInternals<
   TResolvedMaxDepth,
   BoolOr<GetExtendedDepth<T1>, GetExtendedDepth<T2>>,
   GetDepthExceededWarning<T1> | GetDepthExceededWarning<T2>,
-  BoolOr<GetUncheckedUsed<T1>, GetUncheckedUsed<T2>>
+  BoolOr<GetUncheckedUsed<T1>, GetUncheckedUsed<T2>>,
+  GetErrors<T1> | GetErrors<T2>
 >;

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { ok, err } from "../src/index.js";
 import type { Result } from "../src/index.js";
 import { createError } from "../src/errors/create-error.js";
+import { createErrorGroup } from "../src/errors/create-error-group.js";
 import { assertNever } from "../src/errors/assert-never.js";
 
 describe("Error Patterns", () => {
@@ -14,7 +15,7 @@ describe("Error Patterns", () => {
   });
 
   // DoD 10 #2
-  it("createError('NotFound') returns factory producing { _tag: 'NotFound' }", () => {
+  it("BEH-08-001: createError('NotFound') returns factory producing { _tag: 'NotFound' }", () => {
     const NotFound = createError("NotFound");
     const error = NotFound({});
     expect(error._tag).toBe("NotFound");
@@ -30,7 +31,7 @@ describe("Error Patterns", () => {
   });
 
   // --- Mutation gap: createError returns frozen object ---
-  it("createError factory produces frozen (immutable) objects", () => {
+  it("INV-7: createError factory produces frozen (immutable) objects", () => {
     const NotFound = createError("NotFound");
     const error = NotFound({ id: "123" });
     expect(Object.isFrozen(error)).toBe(true);
@@ -49,7 +50,7 @@ describe("Error Patterns", () => {
   });
 
   // DoD 10 #4
-  it("assertNever throws on non-exhaustive match", () => {
+  it("BEH-08-002: assertNever throws on non-exhaustive match", () => {
     type MyError = { _tag: "A" } | { _tag: "B" };
 
     function handle(e: MyError): string {
@@ -145,5 +146,123 @@ describe("Error Patterns", () => {
     if (result.isErr()) {
       expect(result.error._tag).toBe("E3");
     }
+  });
+
+  // BEH-08-004: Error severity classification convention for GxP
+  it("BEH-08-004: createError _tag supports discriminated union patterns for severity classification", () => {
+    const Critical = createError("Critical");
+    const Major = createError("Major");
+    const Minor = createError("Minor");
+
+    type SeverityError =
+      | ReturnType<typeof Critical>
+      | ReturnType<typeof Major>
+      | ReturnType<typeof Minor>;
+
+    function classifySeverity(error: SeverityError): "critical" | "major" | "minor" {
+      switch (error._tag) {
+        case "Critical":
+          return "critical";
+        case "Major":
+          return "major";
+        case "Minor":
+          return "minor";
+        default:
+          return assertNever(error);
+      }
+    }
+
+    expect(classifySeverity(Critical({}))).toBe("critical");
+    expect(classifySeverity(Major({}))).toBe("major");
+    expect(classifySeverity(Minor({}))).toBe("minor");
+
+    // Verify the _tag property is present and correct on each severity level
+    expect(Critical({})._tag).toBe("Critical");
+    expect(Major({})._tag).toBe("Major");
+    expect(Minor({})._tag).toBe("Minor");
+  });
+});
+
+describe("BEH-08-003: createErrorGroup", () => {
+  it("create produces error with _namespace and _tag", () => {
+    const Http = createErrorGroup("HttpError");
+    const NotFound = Http.create("NotFound");
+    const error = NotFound({ url: "/api", status: 404 });
+    expect(error._namespace).toBe("HttpError");
+    expect(error._tag).toBe("NotFound");
+    expect(error.url).toBe("/api");
+    expect(error.status).toBe(404);
+  });
+
+  it("created errors are frozen (INV-7)", () => {
+    const Http = createErrorGroup("HttpError");
+    const NotFound = Http.create("NotFound");
+    const error = NotFound({ status: 404 });
+    expect(Object.isFrozen(error)).toBe(true);
+  });
+
+  it(".is() returns true for matching namespace", () => {
+    const Http = createErrorGroup("HttpError");
+    const NotFound = Http.create("NotFound");
+    const error = NotFound({ status: 404 });
+    expect(Http.is(error)).toBe(true);
+  });
+
+  it(".is() returns false for non-matching namespace", () => {
+    const Http = createErrorGroup("HttpError");
+    const Db = createErrorGroup("DbError");
+    const NotFound = Http.create("NotFound");
+    const error = NotFound({ status: 404 });
+    expect(Db.is(error)).toBe(false);
+  });
+
+  it(".is() returns false for objects without _namespace", () => {
+    const Http = createErrorGroup("HttpError");
+    expect(Http.is({ _tag: "NotFound" })).toBe(false);
+  });
+
+  it(".is() returns false for null/undefined/non-objects", () => {
+    const Http = createErrorGroup("HttpError");
+    expect(Http.is(null)).toBe(false);
+    expect(Http.is(undefined)).toBe(false);
+    expect(Http.is("string")).toBe(false);
+    expect(Http.is(42)).toBe(false);
+  });
+
+  it(".isTag() returns true for matching namespace and tag", () => {
+    const Http = createErrorGroup("HttpError");
+    const NotFound = Http.create("NotFound");
+    const error = NotFound({ status: 404 });
+    expect(Http.isTag("NotFound")(error)).toBe(true);
+  });
+
+  it(".isTag() returns false for matching namespace but wrong tag", () => {
+    const Http = createErrorGroup("HttpError");
+    const NotFound = Http.create("NotFound");
+    const error = NotFound({ status: 404 });
+    expect(Http.isTag("Timeout")(error)).toBe(false);
+  });
+
+  it(".isTag() returns false for wrong namespace", () => {
+    const Http = createErrorGroup("HttpError");
+    const Db = createErrorGroup("DbError");
+    const ConnLost = Db.create("ConnectionLost");
+    const error = ConnLost({ host: "db.example.com" });
+    expect(Http.isTag("ConnectionLost")(error)).toBe(false);
+  });
+
+  it("two groups produce independent errors", () => {
+    const Http = createErrorGroup("HttpError");
+    const Db = createErrorGroup("DbError");
+    const NotFound = Http.create("NotFound");
+    const ConnLost = Db.create("ConnectionLost");
+
+    const httpErr = NotFound({ url: "/api" });
+    const dbErr = ConnLost({ host: "db.example.com" });
+
+    expect(Http.is(httpErr)).toBe(true);
+    expect(Http.is(dbErr)).toBe(false);
+    expect(Db.is(dbErr)).toBe(true);
+    expect(Db.is(httpErr)).toBe(false);
   });
 });

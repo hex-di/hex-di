@@ -4,9 +4,9 @@ import type { Result } from "../src/index.js";
 import { safeTry } from "../src/generators/safe-try.js";
 import { ResultAsync } from "../src/async/result-async.js";
 
-describe("Generators", () => {
+describe("BEH-07-001: Generators", () => {
   // DoD 9 #1
-  it("safeTry sync: all Ok yields produce final Ok", () => {
+  it("BEH-07-003: safeTry sync: all Ok yields produce final Ok", () => {
     const result = safeTry(function* () {
       const a = yield* ok(1);
       const b = yield* ok(2);
@@ -18,7 +18,7 @@ describe("Generators", () => {
   });
 
   // DoD 9 #2
-  it("safeTry sync: first Err yield short-circuits", () => {
+  it("BEH-07-001: safeTry sync: first Err yield short-circuits", () => {
     const result = safeTry(function* () {
       const a = yield* ok(1);
       const _b = yield* err("fail");
@@ -30,7 +30,7 @@ describe("Generators", () => {
   });
 
   // DoD 9 #3
-  it("safeTry sync: intermediate Ok values are extracted by yield*", () => {
+  it("BEH-07-005: safeTry sync: intermediate Ok values are extracted by yield*", () => {
     const result = safeTry(function* () {
       const name = yield* ok("Alice");
       const age = yield* ok(30);
@@ -43,7 +43,7 @@ describe("Generators", () => {
   });
 
   // DoD 9 #4
-  it("safeTry sync: error type is union of all yielded Err types", () => {
+  it("BEH-07-005: safeTry sync: error type is union of all yielded Err types", () => {
     type E1 = { _tag: "E1" };
     type E2 = { _tag: "E2" };
 
@@ -67,7 +67,7 @@ describe("Generators", () => {
   });
 
   // DoD 9 #5
-  it("safeTry async: all Ok yields produce final Ok", async () => {
+  it("BEH-07-003: safeTry async: all Ok yields produce final Ok", async () => {
     const result = safeTry(async function* () {
       const a = yield* ok(1);
       const b = yield* ok(2);
@@ -79,7 +79,7 @@ describe("Generators", () => {
   });
 
   // DoD 9 #6
-  it("safeTry async: first Err yield short-circuits", async () => {
+  it("BEH-07-001: safeTry async: first Err yield short-circuits", async () => {
     const result = safeTry(async function* () {
       const _a = yield* ok(1);
       const _b = yield* err("async-fail");
@@ -91,7 +91,7 @@ describe("Generators", () => {
   });
 
   // DoD 9 #7
-  it("safeTry async: can yield* both Result and ResultAsync (via await)", async () => {
+  it("BEH-07-003: safeTry async: can yield* both Result and ResultAsync (via await)", async () => {
     const result = safeTry(async function* () {
       const a = yield* ok(10); // sync Result
       const b = yield* await ResultAsync.ok(20); // async ResultAsync → await → Result
@@ -103,7 +103,7 @@ describe("Generators", () => {
   });
 
   // DoD 9 #8
-  it("safeTry async: returns ResultAsync", async () => {
+  it("BEH-07-003: safeTry async: returns ResultAsync", async () => {
     const result = safeTry(async function* () {
       const v = yield* ok(42);
       return ok(v);
@@ -115,7 +115,7 @@ describe("Generators", () => {
   });
 
   // --- Mutation gap: async generator cleanup ---
-  it("safeTry async: generator cleanup runs on early return", async () => {
+  it("BEH-07-004: safeTry async: generator cleanup runs on early return", async () => {
     const cleanup = vi.fn();
 
     const result = safeTry(async function* () {
@@ -135,7 +135,7 @@ describe("Generators", () => {
   });
 
   // DoD 9 #9
-  it("Ok [Symbol.iterator] yields the Ok value", () => {
+  it("BEH-07-002: Ok [Symbol.iterator] yields the Ok value", () => {
     const iter = ok(42)[Symbol.iterator]();
     const result = iter.next();
     expect(result.done).toBe(true);
@@ -143,7 +143,7 @@ describe("Generators", () => {
   });
 
   // DoD 9 #10
-  it("Err [Symbol.iterator] yields early return with Err", () => {
+  it("BEH-07-002: Err [Symbol.iterator] yields early return with Err", () => {
     const e = err("bad");
     const iter = e[Symbol.iterator]();
     const result = iter.next();
@@ -152,7 +152,7 @@ describe("Generators", () => {
   });
 
   // --- Mutation gap: Ok iterator return() method ---
-  it("Ok iterator return() produces done result with given value", () => {
+  it("BEH-07-002: Ok iterator return() produces done result with given value", () => {
     const iter = ok(42)[Symbol.iterator]();
     const result = iter.return(99);
     expect(result.done).toBe(true);
@@ -160,19 +160,19 @@ describe("Generators", () => {
   });
 
   // --- Mutation gap: Ok iterator throw() method ---
-  it("Ok iterator throw() re-throws the error", () => {
+  it("BEH-07-002: Ok iterator throw() re-throws the error", () => {
     const iter = ok(42)[Symbol.iterator]();
     expect(() => iter.throw(new Error("test"))).toThrow("test");
   });
 
   // --- Mutation gap: Ok iterator [Symbol.iterator] returns self ---
-  it("Ok iterator [Symbol.iterator]() returns self", () => {
+  it("BEH-07-002: Ok iterator [Symbol.iterator]() returns self", () => {
     const iter = ok(42)[Symbol.iterator]();
     expect(iter[Symbol.iterator]()).toBe(iter);
   });
 
   // --- Mutation gap: Err iterator continues with error after yield ---
-  it("Err iterator throws unreachable on second next()", () => {
+  it("INV-4: Err iterator throws unreachable on second next()", () => {
     const e = err("bad");
     const iter = e[Symbol.iterator]();
     iter.next(); // first yields the Err
@@ -180,7 +180,7 @@ describe("Generators", () => {
   });
 
   // DoD 9 #11
-  it("Generator cleanup runs on early return", () => {
+  it("BEH-07-004: Generator cleanup runs on early return", () => {
     const cleanup = vi.fn();
 
     const result = safeTry(function* () {
@@ -198,7 +198,7 @@ describe("Generators", () => {
   });
 
   // DoD 9 #12
-  it("Nested safeTry calls compose correctly", () => {
+  it("BEH-07-005: Nested safeTry calls compose correctly", () => {
     function inner(n: number): Result<number, string> {
       return safeTry(function* () {
         const v = yield* ok(n * 2);

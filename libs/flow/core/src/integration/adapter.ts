@@ -23,7 +23,7 @@ import type {
 import type { FlowPort } from "./port.js";
 import type { PortDeps } from "@hex-di/core";
 import type { ConfiguredActivityAny } from "../activities/types.js";
-import type { FlowAdapterError } from "../errors/index.js";
+import type { FlowAdapterCreationError } from "../errors/index.js";
 import { DuplicateActivityPort, ActivityNotFrozen } from "../errors/index.js";
 import type {
   FlowRegistry,
@@ -291,7 +291,7 @@ export type FlowAdapter<
  * @typeParam TLifetime - The lifetime scope for the adapter
  *
  * @param config - The adapter configuration
- * @returns Result containing a FlowAdapter on success, or FlowAdapterError on failure
+ * @returns Result containing a FlowAdapter on success, or FlowAdapterCreationError on failure
  *
  * @remarks
  * The default lifetime is 'scoped', which means each scope gets its own
@@ -356,7 +356,7 @@ export function createFlowAdapter<
   const TLifetime extends Lifetime = "scoped",
 >(
   config: FlowAdapterConfig<TProvides, TRequires, TActivities, TLifetime>
-): Result<FlowAdapter<TProvides, TRequires, TLifetime>, FlowAdapterError> {
+): Result<FlowAdapter<TProvides, TRequires, TLifetime>, FlowAdapterCreationError> {
   const {
     provides,
     requires,
@@ -609,12 +609,12 @@ export function createFlowAdapter<
  * - No duplicate activity port names
  * - All activities are frozen (immutable)
  *
- * @returns Result<void, FlowAdapterError> - Ok on success, Err with specific error on failure
+ * @returns Result<void, FlowAdapterCreationError> - Ok on success, Err with specific error on failure
  * @internal
  */
 function validateActivitiesAtRuntime(
   activities: readonly ConfiguredActivityAny[]
-): Result<void, FlowAdapterError> {
+): Result<void, FlowAdapterCreationError> {
   const seenPortNames = new Set<string>();
 
   for (const act of activities) {

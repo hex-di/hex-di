@@ -1,9 +1,13 @@
 import type { Result, ResultAsync as ResultAsyncType } from "../core/types.js";
 import { ok, err, _setResultAsyncImpl } from "../core/result.js";
+import type { InferOkUnion, InferErrUnion } from "../type-utils.js";
 import { all } from "../combinators/all.js";
 import { allSettled } from "../combinators/all-settled.js";
 import { any } from "../combinators/any.js";
 import { collect } from "../combinators/collect.js";
+import { partition } from "../combinators/partition.js";
+import { forEach } from "../combinators/for-each.js";
+import { zipOrAccumulate } from "../combinators/zip-or-accumulate.js";
 
 // Helper to resolve a Result | ResultAsync to a Promise<Result>
 function toPromiseResult<T, E>(value: Result<T, E> | ResultAsyncType<T, E>): Promise<Result<T, E>> {
@@ -23,11 +27,29 @@ async function resolveValue<T>(value: T | Promise<T>): Promise<T> {
 }
 
 /**
- * ResultAsync<T, E> wraps a Promise<Result<T, E>> and provides
- * method chaining for async operations. Implements PromiseLike
- * so it can be awaited directly.
+ * Wraps a `Promise<Result<T, E>>` and provides method chaining for async operations.
  *
- * Invariant: the internal promise NEVER rejects.
+ * `ResultAsync` implements `PromiseLike<Result<T, E>>` so it can be awaited directly.
+ * The internal promise never rejects -- all errors are captured as `Err` variants.
+ * Instances can only be created via static factory methods (`ok`, `err`, `fromPromise`,
+ * `fromSafePromise`, `fromThrowable`, `fromCallback`, `fromResult`).
+ *
+ * @example
+ * ```ts
+ * import { ResultAsync } from '@hex-di/result';
+ *
+ * const result = ResultAsync.fromPromise(
+ *   fetch("/api/data").then(r => r.json()),
+ *   (e) => `Fetch failed: ${e}`
+ * );
+ *
+ * const value = await result
+ *   .map(data => data.name)
+ *   .unwrapOr("unknown");
+ * ```
+ *
+ * @since v1.0.0
+ * @see spec/result/behaviors/06-async.md — BEH-06-001
  */
 export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
   readonly #promise: Promise<Result<T, E>>;
@@ -38,14 +60,60 @@ export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
 
   // --- Static constructors ---
 
+  /**
+   * Creates a `ResultAsync` wrapping an `Ok` value.
+   *
+   * @example
+   * ```ts
+   * import { ResultAsync } from '@hex-di/result';
+   *
+   * const result = ResultAsync.ok(42);
+   * const inner = await result; // Ok(42)
+   * ```
+   *
+   * @since v1.0.0
+   * @see spec/result/behaviors/06-async.md — BEH-06-003
+   */
   static ok<T>(value: T): ResultAsync<T, never> {
     return new ResultAsync(Promise.resolve(ok(value)));
   }
 
+  /**
+   * Creates a `ResultAsync` wrapping an `Err` value.
+   *
+   * @example
+   * ```ts
+   * import { ResultAsync } from '@hex-di/result';
+   *
+   * const result = ResultAsync.err("not found");
+   * const inner = await result; // Err("not found")
+   * ```
+   *
+   * @since v1.0.0
+   * @see spec/result/behaviors/06-async.md — BEH-06-003
+   */
   static err<E>(error: E): ResultAsync<never, E> {
     return new ResultAsync(Promise.resolve(err(error)));
   }
 
+  /**
+   * Wraps a `Promise<T>` that might reject into a `ResultAsync`.
+   *
+   * Resolution produces `Ok(value)`. Rejection produces `Err(mapErr(reason))`.
+   *
+   * @example
+   * ```ts
+   * import { ResultAsync } from '@hex-di/result';
+   *
+   * const result = ResultAsync.fromPromise(
+   *   fetch("/api/users").then(r => r.json()),
+   *   (error) => `Request failed: ${error}`
+   * );
+   * ```
+   *
+   * @since v1.0.0
+   * @see spec/result/behaviors/06-async.md — BEH-06-003
+   */
   static fromPromise<T, E>(promise: Promise<T>, mapErr: (error: unknown) => E): ResultAsync<T, E> {
     return new ResultAsync(
       promise.then(
@@ -55,6 +123,23 @@ export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
     );
   }
 
+  /**
+   * Wraps a `Promise<T>` that is guaranteed to never reject into a `ResultAsync`.
+   *
+   * Resolution produces `Ok(value)`. Since the promise never rejects, the error
+   * type is `never`.
+   *
+   * @example
+   * ```ts
+   * import { ResultAsync } from '@hex-di/result';
+   *
+   * const result = ResultAsync.fromSafePromise(Promise.resolve(42));
+   * const inner = await result; // Ok(42)
+   * ```
+   *
+   * @since v1.0.0
+   * @see spec/result/behaviors/06-async.md — BEH-06-003
+   */
   static fromSafePromise<T>(promise: Promise<T>): ResultAsync<T, never> {
     return new ResultAsync(promise.then(value => ok(value)));
   }
@@ -77,11 +162,59 @@ export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
     return new ResultAsync(promise);
   }
 
+  /**
+   * Wraps an async function that might throw into a function returning `ResultAsync`.
+   *
+   * Returns a new function with the same parameter types that returns `ResultAsync`
+   * instead of `Promise`. Rejections are caught and mapped via `mapErr`.
+   *
+   * @example
+   * ```ts
+   * import { ResultAsync } from '@hex-di/result';
+   *
+   * const safeReadFile = ResultAsync.fromThrowable(
+   *   async (path: string) => fs.promises.readFile(path, "utf-8"),
+   *   (error) => `Read failed: ${error}`
+   * );
+   *
+   * const result = safeReadFile("config.json");
+   * // ResultAsync<string, string>
+   * ```
+   *
+   * @since v1.0.0
+   * @see spec/result/behaviors/06-async.md — BEH-06-003
+   */
   static fromThrowable<A extends readonly unknown[], T, E>(
     fn: (...args: A) => Promise<T>,
     mapErr: (error: unknown) => E
   ): (...args: A) => ResultAsync<T, E> {
     return (...args: A) => ResultAsync.fromPromise(fn(...args), mapErr);
+  }
+
+  static fromCallback<T, E>(
+    fn: (callback: (error: E | null, value: T) => void) => void,
+  ): ResultAsync<T, E> {
+    return new ResultAsync(
+      new Promise<Result<T, E>>((resolve) => {
+        fn((error, value) => {
+          if (error !== null && error !== undefined) {
+            resolve(err(error));
+          } else {
+            resolve(ok(value));
+          }
+        });
+      }),
+    );
+  }
+
+  static race<R extends readonly ResultAsync<unknown, unknown>[]>(
+    ...results: R
+  ): ResultAsync<InferOkUnion<R>, InferErrUnion<R>> {
+    return new ResultAsync(
+      Promise.race(results.map((r) => r.#promise)) as Promise<
+        Result<InferOkUnion<R>, InferErrUnion<R>>
+      >,
+    );
   }
 
   // --- Static combinators ---
@@ -90,6 +223,9 @@ export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
   static allSettled = allSettled;
   static any = any;
   static collect = collect;
+  static partition = partition;
+  static forEach = forEach;
+  static zipOrAccumulate = zipOrAccumulate;
 
   // --- PromiseLike ---
 
@@ -140,10 +276,6 @@ export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
 
   // --- Chaining ---
 
-  andThen<U, F>(f: (value: T) => Result<U, F>): ResultAsync<U, E | F>;
-  andThen<U, F>(f: (value: T) => ResultAsync<U, F>): ResultAsync<U, E | F>;
-
-  andThen<U, F>(f: (value: T) => Result<U, F> | ResultAsync<U, F>): ResultAsync<U, E | F>;
   andThen<U, F>(f: (value: T) => Result<U, F> | ResultAsyncType<U, F>): ResultAsync<U, E | F> {
     return new ResultAsync(
       this.#promise.then(async (result): Promise<Result<U, E | F>> => {
@@ -156,10 +288,6 @@ export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
     );
   }
 
-  orElse<U, F>(f: (error: E) => Result<U, F>): ResultAsync<T | U, F>;
-  orElse<U, F>(f: (error: E) => ResultAsync<U, F>): ResultAsync<T | U, F>;
-
-  orElse<U, F>(f: (error: E) => Result<U, F> | ResultAsync<U, F>): ResultAsync<T | U, F>;
   orElse<U, F>(f: (error: E) => Result<U, F> | ResultAsyncType<U, F>): ResultAsync<T | U, F> {
     return new ResultAsync(
       this.#promise.then(async (result): Promise<Result<T | U, F>> => {
@@ -270,6 +398,14 @@ export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
     return f(result.error);
   }
 
+  async orDie(): Promise<T> {
+    const result = await this.#promise;
+    if (result._tag === "Ok") {
+      return result.value;
+    }
+    throw result.error;
+  }
+
   async toNullable(): Promise<T | null> {
     const result = await this.#promise;
     return result._tag === "Ok" ? result.value : null;
@@ -320,7 +456,7 @@ export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
     );
   }
 
-  async toJSON(): Promise<{ _tag: "Ok"; value: T } | { _tag: "Err"; error: E }> {
+  async toJSON(): Promise<{ _tag: "Ok"; _schemaVersion: 1; value: T } | { _tag: "Err"; _schemaVersion: 1; error: E }> {
     const result = await this.#promise;
     return result.toJSON();
   }

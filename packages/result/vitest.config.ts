@@ -7,5 +7,13 @@ export default defineProject({
       enabled: true,
       include: ["tests/**/*.test-d.ts"],
     },
+    coverage: {
+      provider: "v8",
+      thresholds: {
+        lines: 95,
+        branches: 90,
+        functions: 100,
+      },
+    },
   },
 });

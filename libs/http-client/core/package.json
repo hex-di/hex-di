@@ -1,0 +1,63 @@
+{
+  "name": "@hex-di/http-client",
+  "version": "0.1.0",
+  "description": "Platform-agnostic HTTP client for HexDI - type-safe, composable, transport-agnostic",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./ports": {
+      "import": {
+        "types": "./dist/ports/index.d.ts",
+        "default": "./dist/ports/index.js"
+      },
+      "require": {
+        "types": "./dist/ports/index.d.cts",
+        "default": "./dist/ports/index.cjs"
+      }
+    }
+  },
+  "files": ["dist", "src"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "lint": "eslint . --cache",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:types": "vitest run --typecheck",
+    "typecheck": "tsc --noEmit",
+    "test:mutation": "stryker run"
+  },
+  "keywords": ["http", "http-client", "hexagonal-architecture", "dependency-injection", "typescript"],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hex-di/hex-di.git",
+    "directory": "libs/http-client/core"
+  },
+  "bugs": { "url": "https://github.com/hex-di/hex-di/issues" },
+  "homepage": "https://github.com/hex-di/hex-di/tree/main/libs/http-client/core#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "@hex-di/graph": "workspace:*",
+    "@stryker-mutator/core": "^9.5.1",
+    "@stryker-mutator/vitest-runner": "^9.5.1"
+  },
+  "peerDependencies": {
+    "@hex-di/core": "workspace:*",
+    "@hex-di/result": "workspace:*"
+  },
+  "engines": { "node": ">=18.0.0" },
+  "sideEffects": false
+}

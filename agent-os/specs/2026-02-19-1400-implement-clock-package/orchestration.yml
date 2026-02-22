@@ -1,0 +1,11 @@
+task_groups:
+  - name: Infrastructure
+    claude_code_subagent: implementer
+  - name: Core Implementation
+    claude_code_subagent: implementer
+  - name: API Surface
+    claude_code_subagent: implementer
+  - name: Testing
+    claude_code_subagent: implementer
+  - name: Workspace Integration
+    claude_code_subagent: implementer

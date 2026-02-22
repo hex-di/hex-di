@@ -349,7 +349,7 @@ const tenantContainers = new Map<string, Container>();
 function getTenantContainer(tenantId: string) {
   if (!tenantContainers.has(tenantId)) {
     const graph = createTenantGraph(tenantId);
-    tenantContainers.set(tenantId, createContainer(graph));
+    tenantContainers.set(tenantId, createContainer({ graph, name: tenantId }));
   }
   return tenantContainers.get(tenantId)!;
 }
@@ -357,44 +357,39 @@ function getTenantContainer(tenantId: string) {
 
 ## Merging Graphs
 
-While HexDI doesn't have built-in merge, you can compose:
+Use `.merge()` to compose independent graph builders into one:
 
 ```typescript
-// Instead of merging, use composition
-const graphA = GraphBuilder.create()
+import { GraphBuilder } from '@hex-di/graph';
+
+// Define sub-graph builders (do NOT call .build() yet)
+const infrastructureBuilder = GraphBuilder.create()
   .provide(LoggerAdapter)
   .provide(ConfigAdapter);
 
-const graphB = GraphBuilder.create()
+const dataBuilder = GraphBuilder.create()
   .provide(DatabaseAdapter)
   .provide(CacheAdapter);
 
-// Can't merge directly, but can compose
-const combined = GraphBuilder.create()
-  // Copy from A
-  .provide(LoggerAdapter)
-  .provide(ConfigAdapter)
-  // Copy from B
-  .provide(DatabaseAdapter)
-  .provide(CacheAdapter)
+// Merge at the root — build once
+const appGraph = GraphBuilder.create()
+  .merge(infrastructureBuilder)
+  .merge(dataBuilder)
+  .provide(UserServiceAdapter)
   .build();
 ```
 
-For true merging, extract adapters to arrays:
+**Key rule:** Export unbuilt builders from sub-modules. Merge them at the composition root. Call `.build()` exactly once on the final merged builder.
+
+You can also use `provideMany()` to register multiple adapters at once as an alternative:
 
 ```typescript
 const infrastructureAdapters = [LoggerAdapter, ConfigAdapter];
 const dataAdapters = [DatabaseAdapter, CacheAdapter];
-const serviceAdapters = [UserServiceAdapter, OrderServiceAdapter];
 
-const allAdapters = [
-  ...infrastructureAdapters,
-  ...dataAdapters,
-  ...serviceAdapters,
-];
-
-const graph = allAdapters
-  .reduce((builder, adapter) => builder.provide(adapter), GraphBuilder.create())
+const graph = GraphBuilder.create()
+  .provideMany([...infrastructureAdapters, ...dataAdapters])
+  .provide(UserServiceAdapter)
   .build();
 ```
 

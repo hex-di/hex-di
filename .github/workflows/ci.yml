@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Allow other workflows (e.g. publish.yml) to run CI as a prerequisite gate
+  workflow_call:
 
 jobs:
   lint:
@@ -17,6 +19,7 @@ jobs:
           node-version: "20"
           cache: "pnpm"
       - run: pnpm install --frozen-lockfile
+      - run: pnpm check:readmes
       - run: pnpm lint
 
   typecheck:
@@ -43,3 +46,4 @@ jobs:
           cache: "pnpm"
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
+      - run: pnpm --filter @hex-di/guard-features test

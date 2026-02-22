@@ -1,0 +1,471 @@
+<html lang="en" vid="0">
+
+<head vid="1">
+  <meta charset="UTF-8" vid="2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" vid="3">
+  <title vid="4">HexDI - Structural Dependency Injection</title>
+  <script src="https://cdn.tailwindcss.com" vid="5"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" vid="6">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" vid="7">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&amp;family=Inter:wght@300;400;500;600&amp;family=Rajdhani:wght@400;500;600;700&amp;display=swap"
+    rel="stylesheet" vid="8">
+  <script vid="9">
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Rajdhani', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          },
+          colors: {
+            hex: {
+              bg: '#020408',
+              surface: '#08101C',
+              primary: '#00F0FF',
+              primaryLight: '#5FFFFF',
+              primaryDark: '#008F99',
+              accent: '#FF5E00',
+              accentDark: '#CC4A00',
+              text: '#DAE6F0',
+              muted: '#586E85',
+            }
+          },
+          backgroundImage: {
+            'grid-pattern': 'linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px)',
+            'radar-gradient': 'radial-gradient(circle at center, rgba(0, 240, 255, 0.12) 0%, rgba(2, 4, 8, 0) 70%)',
+            'holo-shimmer': 'linear-gradient(45deg, transparent 25%, rgba(0,240,255,0.1) 50%, transparent 75%)',
+          },
+          animation: {
+            'spin-slow': 'spin 20s linear infinite',
+            'float': 'float 6s ease-in-out infinite',
+            'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'scanline': 'scanline 6s linear infinite',
+            'holo-slide': 'holo-slide 3s ease-in-out infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': {transform: 'translateY(0) rotateX(20deg) rotateZ(-10deg)'},
+              '50%': {transform: 'translateY(-20px) rotateX(22deg) rotateZ(-8deg)'},
+            },
+            scanline: {
+              '0%': {transform: 'translateY(-100%)'},
+              '100%': {transform: 'translateY(100%)'}
+            },
+            'holo-slide': {
+              '0%': {backgroundPosition: '-200% 0'},
+              '100%': {backgroundPosition: '200% 0'}
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style vid="10">
+    body {
+      background-color: #020408;
+      color: #DAE6F0;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .bg-grid {
+      background-size: 40px 40px;
+      background-image:
+        linear-gradient(to right, rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
+    }
+
+    .hud-card {
+      background: rgba(8, 16, 28, 0.4);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(0, 240, 255, 0.1);
+      position: relative;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .hud-card::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: -1px;
+      width: 15px;
+      height: 15px;
+      border-top: 2px solid #00F0FF;
+      border-left: 2px solid #00F0FF;
+      transition: all 0.4s ease;
+    }
+
+    .hud-card::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      right: -1px;
+      width: 15px;
+      height: 15px;
+      border-bottom: 2px solid #00F0FF;
+      border-right: 2px solid #00F0FF;
+      transition: all 0.4s ease;
+    }
+
+    .section-scanline {
+      position: absolute;
+      inset: 0;
+      height: 100px;
+      background: linear-gradient(to bottom, transparent, rgba(0, 240, 255, 0.05), transparent);
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .clip-path-slant {
+      clip-path: polygon(0 0, 100% 0, 92% 100%, 0% 100%);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(0, 240, 255, 0.02);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(0, 240, 255, 0.2);
+    }
+
+    .toc-item.active {
+      color: #00F0FF;
+      background: rgba(0, 240, 255, 0.05);
+      border-right: 2px solid #00F0FF;
+    }
+
+    .toc-item.active .toc-preview {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .content-section {
+      scroll-margin-top: 80px;
+    }
+  </style>
+</head>
+
+<body class="bg-hex-bg bg-grid" vid="11">
+
+  <nav
+    class="fixed top-0 w-full z-[100] border-b border-hex-primary/20 bg-hex-bg/90 backdrop-blur-xl h-20 flex items-center justify-between px-8"
+    vid="12">
+    <div class="flex items-center gap-3 group cursor-pointer" vid="13">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+        class="text-hex-primary drop-shadow-[0_0_8px_rgba(0,240,255,1)]" vid="14">
+        <path d="M12 2L21 7V17L12 22L3 17V7L12 2Z" stroke="currentColor" stroke-width="2" vid="15"></path>
+        <circle cx="12" cy="12" r="3" fill="currentColor" vid="16"></circle>
+      </svg>
+      <span class="font-display font-bold text-xl tracking-widest text-white uppercase" vid="17">Hex<span
+          class="text-hex-primary" vid="18">DI</span></span>
+    </div>
+    <div class="flex items-center gap-6" vid="19">
+      <div
+        class="flex items-center gap-2 text-[10px] text-hex-primary border border-hex-primary/30 px-3 py-1 bg-hex-primary/5 font-mono"
+        vid="20">
+        <div class="w-1 h-1 bg-hex-primary rounded-full animate-ping" vid="21"></div>
+        V2.4.0_LTS
+      </div>
+      <a href="https://github.com" class="p-2 text-hex-muted hover:text-hex-primary transition-all" vid="22">
+        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24" vid="23">
+          <path
+            d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+            vid="24"></path>
+        </svg>
+      </a>
+    </div>
+  </nav>
+
+  <div class="flex h-screen pt-20" vid="25">
+
+    <aside class="w-80 border-r border-hex-primary/10 flex flex-col bg-hex-bg/50 backdrop-blur-md z-50 shrink-0"
+      vid="26">
+      <div class="p-6 border-b border-hex-primary/10" vid="27">
+        <span class="text-[10px] font-mono text-hex-muted tracking-[0.3em] uppercase" vid="28">Map_Exploration</span>
+      </div>
+      <nav class="flex-1 overflow-y-auto custom-scrollbar py-4" vid="29">
+        <ul class="space-y-1" vid="30">
+          <li vid="31">
+            <a href="#hero"
+              class="toc-item flex flex-col p-6 transition-all border-r-2 border-transparent hover:bg-hex-primary/5 group"
+              vid="32">
+              <span class="font-display font-bold text-sm tracking-widest uppercase mb-2" vid="33">01. Initialize</span>
+              <p class="toc-preview text-[10px] font-mono text-hex-muted opacity-50 transform -translateX-4 transition-all duration-300"
+                vid="34">
+                STARTUP_SEQUENCE :: Core engine mapping and structural integrity check.
+              </p>
+            </a>
+          </li>
+          <li vid="35">
+            <a href="#features"
+              class="toc-item flex flex-col p-6 transition-all border-r-2 border-transparent hover:bg-hex-primary/5 group"
+              vid="36">
+              <span class="font-display font-bold text-sm tracking-widest uppercase mb-2" vid="37">02. Protocols</span>
+              <p class="toc-preview text-[10px] font-mono text-hex-muted opacity-50 transform -translateX-4 transition-all duration-300"
+                vid="38">
+                SYSTEM_OPS :: Exploration of compile-time validation and lifecycle scopes.
+              </p>
+            </a>
+          </li>
+          <li vid="39">
+            <a href="#code"
+              class="toc-item flex flex-col p-6 transition-all border-r-2 border-transparent hover:bg-hex-primary/5 group"
+              vid="40">
+              <span class="font-display font-bold text-sm tracking-widest uppercase mb-2" vid="41">03. Code
+                Stream</span>
+              <p class="toc-preview text-[10px] font-mono text-hex-muted opacity-50 transform -translateX-4 transition-all duration-300"
+                vid="42">
+                STREAM_VALIDATION :: Structural dependency mapping via AST analysis.
+              </p>
+            </a>
+          </li>
+          <li vid="43">
+            <a href="#architecture"
+              class="toc-item flex flex-col p-6 transition-all border-r-2 border-transparent hover:bg-hex-primary/5 group"
+              vid="44">
+              <span class="font-display font-bold text-sm tracking-widest uppercase mb-2" vid="45">04. Topology</span>
+              <p class="toc-preview text-[10px] font-mono text-hex-muted opacity-50 transform -translateX-4 transition-all duration-300"
+                vid="46">
+                NETWORK_MAP :: Visualizing node network and core engine runtime.
+              </p>
+            </a>
+          </li>
+          <li vid="47">
+            <a href="#lifetimes"
+              class="toc-item flex flex-col p-6 transition-all border-r-2 border-transparent hover:bg-hex-primary/5 group"
+              vid="48">
+              <span class="font-display font-bold text-sm tracking-widest uppercase mb-2" vid="49">05. Lifetimes</span>
+              <p class="toc-preview text-[10px] font-mono text-hex-muted opacity-50 transform -translateX-4 transition-all duration-300"
+                vid="50">
+                STATE_SCALING :: Singleton, Scoped, and Transient resolution modes.
+              </p>
+            </a>
+          </li>
+        </ul>
+      </nav>
+      <div class="p-6 border-t border-hex-primary/10" vid="51">
+        <div class="flex items-center gap-2 text-[9px] font-mono text-hex-accent" vid="52">
+          <span class="animate-pulse" vid="53">●</span> SYS_STATUS: OPERATIONAL
+        </div>
+      </div>
+    </aside>
+
+
+    <main id="content-scroll" class="flex-1 overflow-y-auto custom-scrollbar relative" vid="54">
+
+      <section id="hero"
+        class="content-section min-h-screen relative flex items-center p-12 overflow-hidden border-b border-hex-primary/10"
+        vid="55">
+        <div class="section-scanline animate-scanline" vid="56"></div>
+        <div class="max-w-4xl space-y-8 relative z-10" vid="57">
+          <div
+            class="inline-flex items-center gap-3 px-4 py-2 border border-hex-accent/50 bg-hex-accent/10 text-hex-accent text-[10px] font-mono tracking-[0.4em] uppercase"
+            vid="58">
+            STABLE_PROTOCOL :: V2.4.0_LTS
+          </div>
+          <h1 class="font-display font-bold text-6xl md:text-8xl leading-none text-white uppercase" vid="59">
+            COMPILE_TIME <br vid="60">
+            <span class="text-hex-primary drop-shadow-[0_0_15px_rgba(0,240,255,0.4)]" vid="61">STRUCTURAL</span> <br
+              vid="62">
+            <span class="text-hex-muted/40" vid="63">INTEGRITY.</span>
+          </h1>
+          <p class="text-lg text-hex-muted font-mono text-sm max-w-xl border-l-2 border-hex-primary pl-6" vid="64">
+            HexDI is a high-performance structural dependency injection engine for TypeScript.
+            It maps the entire application topology before execution to prevent runtime failures.
+          </p>
+          <div class="flex gap-4 pt-4" vid="65">
+            <button
+              class="px-8 py-4 bg-hex-primary text-black font-bold font-display uppercase tracking-widest clip-path-slant shadow-[0_0_20px_rgba(0,240,255,0.3)]"
+              vid="66">Initialize</button>
+            <button
+              class="px-8 py-4 border border-hex-muted/30 text-hex-muted font-bold font-display uppercase tracking-widest hover:border-hex-primary hover:text-hex-primary transition-all"
+              vid="67">Docs</button>
+          </div>
+        </div>
+
+        <div class="absolute right-0 top-1/2 -translate-y-1/2 opacity-20 pointer-events-none scale-75" vid="68">
+          <div class="w-[600px] h-[600px] border border-hex-primary/20 rounded-full animate-spin-slow" vid="69"></div>
+          <div class="absolute inset-0 bg-radar-gradient" vid="70"></div>
+        </div>
+      </section>
+
+
+      <section id="features" class="content-section py-32 px-12 border-b border-hex-primary/10" vid="71">
+        <div class="mb-16" vid="72">
+          <h2 class="text-3xl font-display font-bold uppercase tracking-widest text-white" vid="73">
+            SYSTEM_OPERATIONAL_<span class="text-hex-primary" vid="74">PROTOCOLS</span></h2>
+          <div class="h-1 w-20 bg-hex-primary mt-4" vid="75"></div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-6" vid="76">
+          <div class="hud-card p-8" vid="77">
+            <div class="text-hex-primary mb-4" vid="78">
+              <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="79">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" vid="80"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold font-display uppercase mb-2 text-white" vid="81">Compile Validation</h3>
+            <p class="text-hex-muted text-xs font-mono" vid="82">Advanced AST analysis identifies circular dependencies
+              during build time. Zero runtime overhead.</p>
+          </div>
+          <div class="hud-card p-8" vid="83">
+            <div class="text-hex-accent mb-4" vid="84">
+              <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="85">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"
+                  vid="86"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold font-display uppercase mb-2 text-white" vid="87">Optimized Speed</h3>
+            <p class="text-hex-muted text-xs font-mono" vid="88">Pre-calculated resolution paths remove dynamic lookups.
+              Benchmarked at near-native performance.</p>
+          </div>
+        </div>
+      </section>
+
+
+      <section id="code" class="content-section py-32 px-12 bg-hex-surface/10 border-b border-hex-primary/10" vid="89">
+        <div class="grid lg:grid-cols-2 gap-12 items-center" vid="90">
+          <div class="space-y-6" vid="91">
+            <h2 class="text-3xl font-display font-bold uppercase text-white" vid="92">CODE_STREAM <span
+                class="text-hex-primary" vid="93">VALIDATION</span></h2>
+            <p class="text-hex-muted font-mono text-sm" vid="94">The engine parses native TypeScript syntax to build a
+              virtual dependency map. It identifies resolution paths at development time.</p>
+            <div class="space-y-2" vid="95">
+              <div class="flex items-center gap-4 p-3 border border-hex-primary/20 text-[10px] font-mono text-white"
+                vid="96">
+                <span class="text-hex-primary" vid="97">01</span> NO_DECORATOR_OVERHEAD
+              </div>
+              <div class="flex items-center gap-4 p-3 border border-hex-primary/20 text-[10px] font-mono text-white"
+                vid="98">
+                <span class="text-hex-primary" vid="99">02</span> STRICT_TYPE_COMPLIANCE
+              </div>
+            </div>
+          </div>
+          <div class="hud-card overflow-hidden bg-black/60" vid="100">
+            <div class="px-4 py-2 bg-[#0A1420] border-b border-hex-primary/10 flex justify-between items-center"
+              vid="101">
+              <span class="text-[9px] font-mono text-hex-muted uppercase" vid="102">CORE_RUNNER.TS</span>
+              <div class="flex gap-1" vid="103">
+                <div class="w-2 h-2 rounded-full bg-red-500/30" vid="104"></div>
+                <div class="w-2 h-2 rounded-full bg-yellow-500/30" vid="105"></div>
+                <div class="w-2 h-2 rounded-full bg-green-500/30" vid="106"></div>
+              </div>
+            </div>
+            <pre class="p-6 text-[11px] font-mono text-hex-primaryLight leading-relaxed overflow-x-auto" vid="107"><code
+                vid="108">import { Container } from '@hex-di/core';
+
+                class Database {
+                connect() { /* LOGIC */ }
+                }
+
+                const container = new Container();
+                container.register(Database);
+                const root = container.build();</code></pre>
+          </div>
+        </div>
+      </section>
+
+
+      <section id="architecture" class="content-section py-32 px-12 border-b border-hex-primary/10" vid="109">
+        <div class="text-center mb-16" vid="110">
+          <h2 class="text-3xl font-display font-bold uppercase text-white" vid="111">NODE_NETWORK <span
+              class="text-hex-primary" vid="112">TOPOLOGY</span></h2>
+        </div>
+        <div class="max-w-3xl mx-auto border border-hex-primary/20 bg-hex-surface/30 p-8 rounded-lg relative group"
+          vid="113">
+          <svg viewBox="0 0 800 300" class="w-full h-auto" vid="114">
+            <g transform="translate(350, 100)" vid="115">
+              <rect x="0" y="0" width="100" height="80" rx="2" fill="#0B1624" stroke="#00F0FF" stroke-width="2"
+                vid="116"></rect>
+              <text x="50" y="45" text-anchor="middle" fill="white" font-family="Rajdhani" font-weight="bold"
+                font-size="14" vid="117">@HEX-DI</text>
+            </g>
+            <path d="M400 180 L400 240" stroke="#00F0FF" stroke-width="1" stroke-dasharray="4" vid="118"></path>
+            <g transform="translate(350, 240)" vid="119">
+              <rect x="0" y="0" width="100" height="40" rx="2" fill="rgba(8, 16, 28, 0.8)" stroke="#586E85"
+                stroke-width="1" vid="120"></rect>
+              <text x="50" y="25" text-anchor="middle" fill="#586E85" font-family="Fira Code" font-size="9"
+                vid="121">RUNTIME_V8</text>
+            </g>
+          </svg>
+        </div>
+      </section>
+
+
+      <section id="lifetimes" class="content-section py-32 px-12" vid="122">
+        <h2 class="text-3xl font-display font-bold uppercase text-white mb-12" vid="123">LIFETIME_STATE_<span
+            class="text-hex-primary" vid="124">SCALING</span></h2>
+        <div class="grid lg:grid-cols-3 gap-6" vid="125">
+          <div class="hud-card p-6" vid="126">
+            <h3 class="text-lg font-bold font-display uppercase text-blue-400 mb-2" vid="127">Singleton</h3>
+            <p class="text-[10px] font-mono text-hex-muted mb-4" vid="128">Persistent for the application lifetime.</p>
+            <div class="bg-black/40 p-3 font-mono text-[9px] border-l-2 border-blue-500" vid="129">lifecycle:
+              'singleton'</div>
+          </div>
+          <div class="hud-card p-6" vid="130">
+            <h3 class="text-lg font-bold font-display uppercase text-hex-primary mb-2" vid="131">Scoped</h3>
+            <p class="text-[10px] font-mono text-hex-muted mb-4" vid="132">Created per request or sub-graph.</p>
+            <div class="bg-black/40 p-3 font-mono text-[9px] border-l-2 border-hex-primary" vid="133">lifecycle:
+              'scoped'</div>
+          </div>
+          <div class="hud-card p-6" vid="134">
+            <h3 class="text-lg font-bold font-display uppercase text-hex-accent mb-2" vid="135">Transient</h3>
+            <p class="text-[10px] font-mono text-hex-muted mb-4" vid="136">Instantiated on every injection.</p>
+            <div class="bg-black/40 p-3 font-mono text-[9px] border-l-2 border-hex-accent" vid="137">lifecycle:
+              'transient'</div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="py-12 border-t border-hex-primary/10 bg-hex-bg text-center" vid="138">
+        <p class="text-hex-muted text-[10px] font-mono tracking-widest uppercase" vid="139">© 2024 HEXDI_DISTRIBUTION ::
+          MIT_LICENSE</p>
+      </footer>
+    </main>
+  </div>
+
+  <script vid="140">
+    const sections = document.querySelectorAll('.content-section');
+    const tocItems = document.querySelectorAll('.toc-item');
+    const mainContent = document.getElementById('content-scroll');
+
+    mainContent.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        if (mainContent.scrollTop >= sectionTop - 120) {
+          current = section.getAttribute('id');
+        }
+      });
+
+      tocItems.forEach(item => {
+        item.classList.remove('active');
+        if (item.getAttribute('href').slice(1) === current) {
+          item.classList.add('active');
+        }
+      });
+    });
+
+    tocItems.forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetId = item.getAttribute('href');
+        const targetSection = document.querySelector(targetId);
+        mainContent.scrollTo({
+          top: targetSection.offsetTop - 80,
+          behavior: 'smooth'
+        });
+      });
+    });
+  </script>
+
+</body>
+
+</html>

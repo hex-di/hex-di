@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/visualization",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "Graph visualization utilities for HexDI - DOT and Mermaid export",
   "type": "module",
   "main": "./dist/index.js",

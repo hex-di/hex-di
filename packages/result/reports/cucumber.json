@@ -1,0 +1,5456 @@
+[
+  {
+    "description": "  Core type definitions, brand symbol, and type guard functions.",
+    "elements": [
+      {
+        "description": "",
+        "id": "types-and-guards;result_brand-is-a-unique-symbol-on-ok",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "RESULT_BRAND is a unique symbol on Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 6,
+            "name": "an Ok result with value 42",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 247416
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 7,
+            "name": "the result carries the RESULT_BRAND symbol",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:47"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 28415
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-01-001",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "types-and-guards;result_brand-is-a-unique-symbol-on-err",
+        "keyword": "Scenario",
+        "line": 10,
+        "name": "RESULT_BRAND is a unique symbol on Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 11,
+            "name": "an Err result with error \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 75500
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 12,
+            "name": "the result carries the RESULT_BRAND symbol",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:47"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 45666
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-01-001",
+            "line": 9
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "types-and-guards;ok()-creates-an-ok-variant",
+        "keyword": "Scenario",
+        "line": 15,
+        "name": "ok() creates an Ok variant",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 16,
+            "name": "I create ok(42)",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:37"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 51500
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 17,
+            "name": "the result _tag is \"Ok\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:52"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 48583
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 18,
+            "name": "the result value is 42",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:57"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17457
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-01-007",
+            "line": 14
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "types-and-guards;err()-creates-an-err-variant",
+        "keyword": "Scenario",
+        "line": 21,
+        "name": "err() creates an Err variant",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 22,
+            "name": "I create err(\"fail\")",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:41"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 22667
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 23,
+            "name": "the result _tag is \"Err\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:52"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 18540
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 24,
+            "name": "the result error is \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:67"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 27540
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-01-008",
+            "line": 20
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "types-and-guards;isresult-accepts-genuine-results",
+        "keyword": "Scenario",
+        "line": 27,
+        "name": "isResult accepts genuine Results",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 28,
+            "name": "an Ok result with value 1",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17666
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 29,
+            "name": "isResult returns true",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:77"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 19958
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-01-009",
+            "line": 26
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "types-and-guards;isresult-rejects-plain-objects",
+        "keyword": "Scenario",
+        "line": 32,
+        "name": "isResult rejects plain objects",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 33,
+            "name": "a plain object with _tag \"Ok\" and value 42",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:23"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 24499
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 34,
+            "name": "isResult returns false",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:81"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14374
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-01-009",
+            "line": 31
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "types-and-guards;isresultasync-accepts-resultasync",
+        "keyword": "Scenario",
+        "line": 37,
+        "name": "isResultAsync accepts ResultAsync",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 38,
+            "name": "a ResultAsync.ok(42)",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 40291
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 39,
+            "name": "isResultAsync returns true",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:85"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16375
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-01-010",
+            "line": 36
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "types-and-guards;isresultasync-rejects-plain-promise",
+        "keyword": "Scenario",
+        "line": 42,
+        "name": "isResultAsync rejects plain Promise",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 43,
+            "name": "a plain Promise resolving to 42",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:31"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17583
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 44,
+            "name": "isResultAsync returns false",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:89"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15458
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-01-010",
+            "line": 41
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "types-and-guards;isok()-returns-true-for-ok",
+        "keyword": "Scenario",
+        "line": 47,
+        "name": "isOk() returns true for Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 48,
+            "name": "an Ok result with value 1",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12166
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 49,
+            "name": "isOk() returns true",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:93"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14583
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 50,
+            "name": "isErr() returns false",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:105"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15292
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-01-011",
+            "line": 46
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "types-and-guards;iserr()-returns-true-for-err",
+        "keyword": "Scenario",
+        "line": 53,
+        "name": "isErr() returns true for Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 54,
+            "name": "an Err result with error \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13874
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 55,
+            "name": "isOk() returns false",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:97"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10125
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 56,
+            "name": "isErr() returns true",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:101"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8582
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-01-011",
+            "line": 52
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "types-and-guards",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Types and Guards",
+    "tags": [],
+    "uri": "features/01-types-and-guards.feature"
+  },
+  {
+    "description": "  Helper constructors for creating Results from various sources.",
+    "elements": [
+      {
+        "description": "",
+        "id": "creation-constructors;fromthrowable-wraps-a-successful-function",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "fromThrowable wraps a successful function",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 6,
+            "name": "I call fromThrowable with a function returning 42",
+            "match": {
+              "location": "features/steps/creation.ts:12"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 36207
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 7,
+            "name": "the result is Ok(42)",
+            "match": {
+              "location": "features/steps/creation.ts:73"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16957
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-02-001",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "creation-constructors;fromthrowable-wraps-a-throwing-function",
+        "keyword": "Scenario",
+        "line": 10,
+        "name": "fromThrowable wraps a throwing function",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 11,
+            "name": "I call fromThrowable with a function that throws \"boom\"",
+            "match": {
+              "location": "features/steps/creation.ts:16"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 39167
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 12,
+            "name": "the result is Err with a mapped error",
+            "match": {
+              "location": "features/steps/creation.ts:81"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8624
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-02-001",
+            "line": 9
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "creation-constructors;trycatch-wraps-a-successful-function",
+        "keyword": "Scenario",
+        "line": 15,
+        "name": "tryCatch wraps a successful function",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 16,
+            "name": "I call tryCatch with a function returning 42",
+            "match": {
+              "location": "features/steps/creation.ts:25"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 20041
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 17,
+            "name": "the result is Ok(42)",
+            "match": {
+              "location": "features/steps/creation.ts:73"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4833
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-02-002",
+            "line": 14
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "creation-constructors;trycatch-wraps-a-throwing-function",
+        "keyword": "Scenario",
+        "line": 20,
+        "name": "tryCatch wraps a throwing function",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 21,
+            "name": "I call tryCatch with a function that throws \"boom\"",
+            "match": {
+              "location": "features/steps/creation.ts:29"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 24958
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 22,
+            "name": "the result is Err with a mapped error",
+            "match": {
+              "location": "features/steps/creation.ts:81"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 3917
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-02-002",
+            "line": 19
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "creation-constructors;fromnullable-with-a-non-null-value",
+        "keyword": "Scenario",
+        "line": 25,
+        "name": "fromNullable with a non-null value",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 26,
+            "name": "I call fromNullable with value 42",
+            "match": {
+              "location": "features/steps/creation.ts:38"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 18332
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 27,
+            "name": "the result is Ok(42)",
+            "match": {
+              "location": "features/steps/creation.ts:73"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4374
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-02-003",
+            "line": 24
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "creation-constructors;fromnullable-with-null",
+        "keyword": "Scenario",
+        "line": 30,
+        "name": "fromNullable with null",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 31,
+            "name": "I call fromNullable with null",
+            "match": {
+              "location": "features/steps/creation.ts:42"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13040
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 32,
+            "name": "the result is Err with the nullable error",
+            "match": {
+              "location": "features/steps/creation.ts:86"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7708
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-02-003",
+            "line": 29
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "creation-constructors;frompredicate-with-a-passing-predicate",
+        "keyword": "Scenario",
+        "line": 35,
+        "name": "fromPredicate with a passing predicate",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 36,
+            "name": "I call fromPredicate with value 10 and predicate \"x > 0\"",
+            "match": {
+              "location": "features/steps/creation.ts:48"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 35083
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 37,
+            "name": "the result is Ok(10)",
+            "match": {
+              "location": "features/steps/creation.ts:73"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4915
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-02-004",
+            "line": 34
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "creation-constructors;frompredicate-with-a-failing-predicate",
+        "keyword": "Scenario",
+        "line": 40,
+        "name": "fromPredicate with a failing predicate",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 41,
+            "name": "I call fromPredicate with value -1 and predicate \"x > 0\"",
+            "match": {
+              "location": "features/steps/creation.ts:48"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15582
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 42,
+            "name": "the result is Err with the predicate error",
+            "match": {
+              "location": "features/steps/creation.ts:91"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16208
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-02-004",
+            "line": 39
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "creation-constructors;frompromise-with-a-resolved-promise",
+        "keyword": "Scenario",
+        "line": 45,
+        "name": "fromPromise with a resolved promise",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 46,
+            "name": "I call fromPromise with a promise resolving to 42",
+            "match": {
+              "location": "features/steps/creation.ts:54"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 31790
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 47,
+            "name": "the async result is Ok(42)",
+            "match": {
+              "location": "features/steps/creation.ts:96"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 289417
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-02-005",
+            "line": 44
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "creation-constructors;frompromise-with-a-rejected-promise",
+        "keyword": "Scenario",
+        "line": 50,
+        "name": "fromPromise with a rejected promise",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 51,
+            "name": "I call fromPromise with a promise rejecting with \"boom\"",
+            "match": {
+              "location": "features/steps/creation.ts:58"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 38415
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 52,
+            "name": "the async result is Err with a mapped error",
+            "match": {
+              "location": "features/steps/creation.ts:104"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 24374
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-02-005",
+            "line": 49
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "creation-constructors;fromsafepromise-with-a-resolved-promise",
+        "keyword": "Scenario",
+        "line": 55,
+        "name": "fromSafePromise with a resolved promise",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 56,
+            "name": "I call fromSafePromise with a promise resolving to ok(42)",
+            "match": {
+              "location": "features/steps/creation.ts:62"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 26999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 57,
+            "name": "the async result is Ok(42)",
+            "match": {
+              "location": "features/steps/creation.ts:96"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13208
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-02-006",
+            "line": 54
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "creation-constructors;fromasyncthrowable-wraps-an-async-function",
+        "keyword": "Scenario",
+        "line": 60,
+        "name": "fromAsyncThrowable wraps an async function",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 61,
+            "name": "I call fromAsyncThrowable with an async function returning 42",
+            "match": {
+              "location": "features/steps/creation.ts:66"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 35833
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 62,
+            "name": "the async result is Ok(42)",
+            "match": {
+              "location": "features/steps/creation.ts:96"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14374
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-02-007",
+            "line": 59
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "creation-constructors",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Creation Constructors",
+    "tags": [],
+    "uri": "features/02-creation.feature"
+  },
+  {
+    "description": "  Methods that transform Result values.",
+    "elements": [
+      {
+        "description": "",
+        "id": "transformations;map-transforms-ok-value",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "map transforms Ok value",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 6,
+            "name": "an Ok result with value 2",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10792
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 7,
+            "name": "I map with \"x * 3\"",
+            "match": {
+              "location": "features/steps/transformation.ts:8"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 21584
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 8,
+            "name": "the result is Ok(6)",
+            "match": {
+              "location": "features/steps/creation.ts:73"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4500
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-03-001",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "transformations;map-is-no-op-on-err",
+        "keyword": "Scenario",
+        "line": 11,
+        "name": "map is no-op on Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 12,
+            "name": "an Err result with error \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 11834
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 13,
+            "name": "I map with \"x * 3\"",
+            "match": {
+              "location": "features/steps/transformation.ts:8"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 11750
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 14,
+            "name": "the result is Err(\"fail\")",
+            "match": {
+              "location": "features/steps/transformation.ts:58"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16375
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-03-001",
+            "line": 10
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "transformations;maperr-transforms-err-error",
+        "keyword": "Scenario",
+        "line": 17,
+        "name": "mapErr transforms Err error",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 18,
+            "name": "an Err result with error \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12333
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 19,
+            "name": "I mapErr with \"e.toUpperCase()\"",
+            "match": {
+              "location": "features/steps/transformation.ts:12"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 21292
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 20,
+            "name": "the result is Err(\"FAIL\")",
+            "match": {
+              "location": "features/steps/transformation.ts:58"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 5541
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-03-002",
+            "line": 16
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "transformations;maperr-is-no-op-on-ok",
+        "keyword": "Scenario",
+        "line": 23,
+        "name": "mapErr is no-op on Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 24,
+            "name": "an Ok result with value 42",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8916
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 25,
+            "name": "I mapErr with \"e.toUpperCase()\"",
+            "match": {
+              "location": "features/steps/transformation.ts:12"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9333
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 26,
+            "name": "the result is Ok(42)",
+            "match": {
+              "location": "features/steps/creation.ts:73"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4750
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-03-002",
+            "line": 22
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "transformations;flip-swaps-ok-to-err",
+        "keyword": "Scenario",
+        "line": 29,
+        "name": "flip swaps Ok to Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 30,
+            "name": "an Ok result with value 42",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8291
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 31,
+            "name": "I flip the result",
+            "match": {
+              "location": "features/steps/transformation.ts:18"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16083
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 32,
+            "name": "the result _tag is \"Err\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:52"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7082
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 33,
+            "name": "the result error is 42",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:72"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13207
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-03-005",
+            "line": 28
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "transformations;flip-swaps-err-to-ok",
+        "keyword": "Scenario",
+        "line": 36,
+        "name": "flip swaps Err to Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 37,
+            "name": "an Err result with error \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9915
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 38,
+            "name": "I flip the result",
+            "match": {
+              "location": "features/steps/transformation.ts:18"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14416
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 39,
+            "name": "the result _tag is \"Ok\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:52"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 5791
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 40,
+            "name": "the result value is \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:62"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12375
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-03-005",
+            "line": 35
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "transformations;andthen-chains-on-ok",
+        "keyword": "Scenario",
+        "line": 43,
+        "name": "andThen chains on Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 44,
+            "name": "an Ok result with value 2",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8125
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 45,
+            "name": "I andThen with \"x => ok(x + 1)\"",
+            "match": {
+              "location": "features/steps/transformation.ts:24"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 20540
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 46,
+            "name": "the result is Ok(3)",
+            "match": {
+              "location": "features/steps/creation.ts:73"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 5042
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-03-006",
+            "line": 42
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "transformations;andthen-short-circuits-on-err",
+        "keyword": "Scenario",
+        "line": 49,
+        "name": "andThen short-circuits on Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 50,
+            "name": "an Err result with error \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9791
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 51,
+            "name": "I andThen with \"x => ok(x + 1)\"",
+            "match": {
+              "location": "features/steps/transformation.ts:24"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8708
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 52,
+            "name": "the result is Err(\"fail\")",
+            "match": {
+              "location": "features/steps/transformation.ts:58"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 5875
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-03-006",
+            "line": 48
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "transformations;orelse-recovers-on-err",
+        "keyword": "Scenario",
+        "line": 55,
+        "name": "orElse recovers on Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 56,
+            "name": "an Err result with error \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9042
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 57,
+            "name": "I orElse with \"e => ok(0)\"",
+            "match": {
+              "location": "features/steps/transformation.ts:28"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 18374
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 58,
+            "name": "the result is Ok(0)",
+            "match": {
+              "location": "features/steps/creation.ts:73"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4166
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-03-007",
+            "line": 54
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "transformations;orelse-is-no-op-on-ok",
+        "keyword": "Scenario",
+        "line": 61,
+        "name": "orElse is no-op on Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 62,
+            "name": "an Ok result with value 42",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7374
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 63,
+            "name": "I orElse with \"e => ok(0)\"",
+            "match": {
+              "location": "features/steps/transformation.ts:28"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7625
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 64,
+            "name": "the result is Ok(42)",
+            "match": {
+              "location": "features/steps/creation.ts:73"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4958
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-03-007",
+            "line": 60
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "transformations;andtee-executes-side-effect-on-ok",
+        "keyword": "Scenario",
+        "line": 67,
+        "name": "andTee executes side effect on Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 68,
+            "name": "an Ok result with value 42",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8249
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 69,
+            "name": "I andTee with a side-effect function",
+            "match": {
+              "location": "features/steps/transformation.ts:34"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15792
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 70,
+            "name": "the side effect was called with 42",
+            "match": {
+              "location": "features/steps/transformation.ts:66"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13082
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 71,
+            "name": "the result is Ok(42)",
+            "match": {
+              "location": "features/steps/creation.ts:73"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6332
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-03-008",
+            "line": 66
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "transformations;ortee-executes-side-effect-on-err",
+        "keyword": "Scenario",
+        "line": 74,
+        "name": "orTee executes side effect on Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 75,
+            "name": "an Err result with error \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9916
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 76,
+            "name": "I orTee with a side-effect function",
+            "match": {
+              "location": "features/steps/transformation.ts:40"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17709
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 77,
+            "name": "the side effect was called with \"fail\"",
+            "match": {
+              "location": "features/steps/transformation.ts:70"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12082
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 78,
+            "name": "the result is Err(\"fail\")",
+            "match": {
+              "location": "features/steps/transformation.ts:58"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 11541
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-03-009",
+            "line": 73
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "transformations;and-returns-other-on-ok",
+        "keyword": "Scenario",
+        "line": 81,
+        "name": "and returns other on Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 82,
+            "name": "an Ok result with value 1",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 11208
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 83,
+            "name": "I call and with ok(2)",
+            "match": {
+              "location": "features/steps/transformation.ts:48"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 24916
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 84,
+            "name": "the result is Ok(2)",
+            "match": {
+              "location": "features/steps/creation.ts:73"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4750
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-03-013",
+            "line": 80
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "transformations;or-returns-other-on-err",
+        "keyword": "Scenario",
+        "line": 87,
+        "name": "or returns other on Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 88,
+            "name": "an Err result with error \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12667
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 89,
+            "name": "I call or with ok(2)",
+            "match": {
+              "location": "features/steps/transformation.ts:52"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 18457
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 90,
+            "name": "the result is Ok(2)",
+            "match": {
+              "location": "features/steps/creation.ts:73"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4541
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-03-014",
+            "line": 86
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "transformations",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Transformations",
+    "tags": [],
+    "uri": "features/03-transformation.feature"
+  },
+  {
+    "description": "  Methods that extract values from Results.",
+    "elements": [
+      {
+        "description": "",
+        "id": "extraction;match-extracts-ok-value",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "match extracts Ok value",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 6,
+            "name": "an Ok result with value 42",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8290
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 7,
+            "name": "I match with onOk \"v => v * 2\" and onErr \"e => 0\"",
+            "match": {
+              "location": "features/steps/extraction.ts:7"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 29207
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 8,
+            "name": "the extracted value is 84",
+            "match": {
+              "location": "features/steps/extraction.ts:44"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9624
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-04-001",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "extraction;match-extracts-err-error",
+        "keyword": "Scenario",
+        "line": 11,
+        "name": "match extracts Err error",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 12,
+            "name": "an Err result with error \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10125
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 13,
+            "name": "I match with onOk \"v => v\" and onErr \"e => e.length\"",
+            "match": {
+              "location": "features/steps/extraction.ts:7"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13916
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 14,
+            "name": "the extracted value is 4",
+            "match": {
+              "location": "features/steps/extraction.ts:44"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4334
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-04-001",
+            "line": 10
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "extraction;unwrapor-returns-value-for-ok",
+        "keyword": "Scenario",
+        "line": 17,
+        "name": "unwrapOr returns value for Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 18,
+            "name": "an Ok result with value 42",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8333
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 19,
+            "name": "I unwrapOr with default 0",
+            "match": {
+              "location": "features/steps/extraction.ts:16"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 11584
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 20,
+            "name": "the extracted value is 42",
+            "match": {
+              "location": "features/steps/extraction.ts:44"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4291
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-04-002",
+            "line": 16
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "extraction;unwrapor-returns-default-for-err",
+        "keyword": "Scenario",
+        "line": 23,
+        "name": "unwrapOr returns default for Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 24,
+            "name": "an Err result with error \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12334
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 25,
+            "name": "I unwrapOr with default 0",
+            "match": {
+              "location": "features/steps/extraction.ts:16"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7207
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 26,
+            "name": "the extracted value is 0",
+            "match": {
+              "location": "features/steps/extraction.ts:44"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4124
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-04-002",
+            "line": 22
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "extraction;tonullable-returns-value-for-ok",
+        "keyword": "Scenario",
+        "line": 29,
+        "name": "toNullable returns value for Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 30,
+            "name": "an Ok result with value 42",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8292
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 31,
+            "name": "I call toNullable",
+            "match": {
+              "location": "features/steps/extraction.ts:22"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9459
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 32,
+            "name": "the extracted value is 42",
+            "match": {
+              "location": "features/steps/extraction.ts:44"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4166
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-04-006",
+            "line": 28
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "extraction;tonullable-returns-null-for-err",
+        "keyword": "Scenario",
+        "line": 35,
+        "name": "toNullable returns null for Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 36,
+            "name": "an Err result with error \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9334
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 37,
+            "name": "I call toNullable",
+            "match": {
+              "location": "features/steps/extraction.ts:22"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9208
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 38,
+            "name": "the extracted value is null",
+            "match": {
+              "location": "features/steps/extraction.ts:48"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9542
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-04-006",
+            "line": 34
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "extraction;toundefined-returns-value-for-ok",
+        "keyword": "Scenario",
+        "line": 41,
+        "name": "toUndefined returns value for Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 42,
+            "name": "an Ok result with value 42",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8582
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 43,
+            "name": "I call toUndefined",
+            "match": {
+              "location": "features/steps/extraction.ts:26"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12790
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 44,
+            "name": "the extracted value is 42",
+            "match": {
+              "location": "features/steps/extraction.ts:44"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4083
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-04-007",
+            "line": 40
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "extraction;toundefined-returns-undefined-for-err",
+        "keyword": "Scenario",
+        "line": 47,
+        "name": "toUndefined returns undefined for Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 48,
+            "name": "an Err result with error \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9833
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 49,
+            "name": "I call toUndefined",
+            "match": {
+              "location": "features/steps/extraction.ts:26"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6332
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 50,
+            "name": "the extracted value is undefined",
+            "match": {
+              "location": "features/steps/extraction.ts:52"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7625
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-04-007",
+            "line": 46
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "extraction;intotuple-returns-[value,-null]-for-ok",
+        "keyword": "Scenario",
+        "line": 53,
+        "name": "intoTuple returns [value, null] for Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 54,
+            "name": "an Ok result with value 42",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13082
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 55,
+            "name": "I call intoTuple",
+            "match": {
+              "location": "features/steps/extraction.ts:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 56,
+            "name": "the tuple is [42, null]",
+            "match": {
+              "location": "features/steps/extraction.ts:57"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 631374
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-04-008",
+            "line": 52
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "extraction;intotuple-returns-[null,-error]-for-err",
+        "keyword": "Scenario",
+        "line": 59,
+        "name": "intoTuple returns [null, error] for Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 60,
+            "name": "an Err result with error \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10082
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 61,
+            "name": "I call intoTuple",
+            "match": {
+              "location": "features/steps/extraction.ts:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10458
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 62,
+            "name": "the tuple is [null, \"fail\"]",
+            "match": {
+              "location": "features/steps/extraction.ts:61"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14625
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-04-008",
+            "line": 58
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "extraction;tojson-serializes-ok",
+        "keyword": "Scenario",
+        "line": 65,
+        "name": "toJSON serializes Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 66,
+            "name": "an Ok result with value 42",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9041
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 67,
+            "name": "I call toJSON",
+            "match": {
+              "location": "features/steps/extraction.ts:38"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13542
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 68,
+            "name": "the JSON has _tag \"Ok\" and value 42",
+            "match": {
+              "location": "features/steps/extraction.ts:65"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13500
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-04-010",
+            "line": 64
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "extraction;tojson-serializes-err",
+        "keyword": "Scenario",
+        "line": 71,
+        "name": "toJSON serializes Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 72,
+            "name": "an Err result with error \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16166
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 73,
+            "name": "I call toJSON",
+            "match": {
+              "location": "features/steps/extraction.ts:38"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9708
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 74,
+            "name": "the JSON has _tag \"Err\" and error \"fail\"",
+            "match": {
+              "location": "features/steps/extraction.ts:70"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17333
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-04-010",
+            "line": 70
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "extraction",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Extraction",
+    "tags": [],
+    "uri": "features/04-extraction.feature"
+  },
+  {
+    "description": "  Combinator functions for working with collections of Results.",
+    "elements": [
+      {
+        "description": "",
+        "id": "composition;all-with-all-ok-results",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "all with all Ok results",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 6,
+            "name": "a list of Ok results [1, 2, 3]",
+            "match": {
+              "location": "features/steps/composition.ts:9"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 35458
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 7,
+            "name": "I call all",
+            "match": {
+              "location": "features/steps/composition.ts:39"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 27333
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 8,
+            "name": "the result is Ok([1, 2, 3])",
+            "match": {
+              "location": "features/steps/composition.ts:67"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17082
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-05-001",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "composition;all-with-one-err",
+        "keyword": "Scenario",
+        "line": 11,
+        "name": "all with one Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 12,
+            "name": "a list containing ok(1), err(\"fail\"), ok(3)",
+            "match": {
+              "location": "features/steps/composition.ts:13"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 25749
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 13,
+            "name": "I call all",
+            "match": {
+              "location": "features/steps/composition.ts:39"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8417
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 14,
+            "name": "the result is Err(\"fail\")",
+            "match": {
+              "location": "features/steps/transformation.ts:58"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6542
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-05-001",
+            "line": 10
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "composition;allsettled-collects-all-errors-without-short-circuit",
+        "keyword": "Scenario",
+        "line": 17,
+        "name": "allSettled collects all errors without short-circuit",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 18,
+            "name": "a list containing ok(1), err(\"fail\"), ok(3)",
+            "match": {
+              "location": "features/steps/composition.ts:13"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17874
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 19,
+            "name": "I call allSettled",
+            "match": {
+              "location": "features/steps/composition.ts:43"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 30708
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 20,
+            "name": "the result is Err with all errors collected",
+            "match": {
+              "location": "features/steps/composition.ts:74"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7582
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-05-002",
+            "line": 16
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "composition;any-with-at-least-one-ok",
+        "keyword": "Scenario",
+        "line": 23,
+        "name": "any with at least one Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 24,
+            "name": "a list containing err(\"a\"), ok(2), err(\"c\")",
+            "match": {
+              "location": "features/steps/composition.ts:17"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 29625
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 25,
+            "name": "I call any",
+            "match": {
+              "location": "features/steps/composition.ts:47"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 21749
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 26,
+            "name": "the result is Ok(2)",
+            "match": {
+              "location": "features/steps/creation.ts:73"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6750
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-05-003",
+            "line": 22
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "composition;any-with-all-err",
+        "keyword": "Scenario",
+        "line": 29,
+        "name": "any with all Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 30,
+            "name": "a list of Err results [\"a\", \"b\", \"c\"]",
+            "match": {
+              "location": "features/steps/composition.ts:21"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 29749
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 31,
+            "name": "I call any",
+            "match": {
+              "location": "features/steps/composition.ts:47"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7749
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 32,
+            "name": "the result is Err with all errors",
+            "match": {
+              "location": "features/steps/composition.ts:78"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8958
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-05-003",
+            "line": 28
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "composition;partition-separates-ok-and-err",
+        "keyword": "Scenario",
+        "line": 35,
+        "name": "partition separates Ok and Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 36,
+            "name": "a list containing ok(1), err(\"a\"), ok(3), err(\"b\")",
+            "match": {
+              "location": "features/steps/composition.ts:25"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 37582
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 37,
+            "name": "I call partition",
+            "match": {
+              "location": "features/steps/composition.ts:51"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 22375
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 38,
+            "name": "the Ok partition is [1, 3]",
+            "match": {
+              "location": "features/steps/composition.ts:82"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 21042
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 39,
+            "name": "the Err partition is [\"a\", \"b\"]",
+            "match": {
+              "location": "features/steps/composition.ts:87"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 22792
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-05-005",
+            "line": 34
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "composition;foreach-maps-items-with-result-returning-function",
+        "keyword": "Scenario",
+        "line": 42,
+        "name": "forEach maps items with Result-returning function",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 43,
+            "name": "items [1, 2, 3]",
+            "match": {
+              "location": "features/steps/composition.ts:29"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13749
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 44,
+            "name": "I call forEach with \"x => ok(x * 2)\"",
+            "match": {
+              "location": "features/steps/composition.ts:55"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 47790
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 45,
+            "name": "the result is Ok([2, 4, 6])",
+            "match": {
+              "location": "features/steps/composition.ts:67"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12332
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-05-006",
+            "line": 41
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "composition;foreach-short-circuits-on-first-err",
+        "keyword": "Scenario",
+        "line": 48,
+        "name": "forEach short-circuits on first Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 49,
+            "name": "items with a negative value",
+            "match": {
+              "location": "features/steps/composition.ts:33"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9041
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 50,
+            "name": "I call forEach with a function that fails on negative",
+            "match": {
+              "location": "features/steps/composition.ts:59"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 24917
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 51,
+            "name": "the result is Err",
+            "match": {
+              "location": "features/steps/composition.ts:92"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6792
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-05-006",
+            "line": 47
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "composition",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Composition",
+    "tags": [],
+    "uri": "features/05-composition.feature"
+  },
+  {
+    "description": "  ResultAsync for handling asynchronous Result operations.",
+    "elements": [
+      {
+        "description": "",
+        "id": "async-result;resultasync-wraps-a-promise-of-result",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "ResultAsync wraps a Promise of Result",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 6,
+            "name": "a ResultAsync.ok(42)",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14624
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 7,
+            "name": "I await the ResultAsync",
+            "match": {
+              "location": "features/steps/async.ts:10"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 36000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 8,
+            "name": "the awaited result is Ok(42)",
+            "match": {
+              "location": "features/steps/async.ts:14"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 24125
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-06-001",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "async-result;resultasync-is-promiselike",
+        "keyword": "Scenario",
+        "line": 11,
+        "name": "ResultAsync is PromiseLike",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 12,
+            "name": "a ResultAsync.ok(42)",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14041
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 13,
+            "name": "it can be awaited with await",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:109"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 18500
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-06-002",
+            "line": 10
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "async-result;resultasync.ok-creates-an-async-ok",
+        "keyword": "Scenario",
+        "line": 16,
+        "name": "ResultAsync.ok creates an async Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 17,
+            "name": "I create ResultAsync.ok(42)",
+            "match": {
+              "location": "features/steps/async.ts:22"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14040
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 18,
+            "name": "the async result is Ok(42)",
+            "match": {
+              "location": "features/steps/creation.ts:96"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15416
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-06-003",
+            "line": 15
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "async-result;resultasync.err-creates-an-async-err",
+        "keyword": "Scenario",
+        "line": 21,
+        "name": "ResultAsync.err creates an async Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 22,
+            "name": "I create ResultAsync.err(\"fail\")",
+            "match": {
+              "location": "features/steps/async.ts:26"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 25458
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 23,
+            "name": "the async result is Err(\"fail\")",
+            "match": {
+              "location": "features/steps/creation.ts:109"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 36125
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-06-003",
+            "line": 20
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "async-result;resultasync.map-transforms-ok-value",
+        "keyword": "Scenario",
+        "line": 26,
+        "name": "ResultAsync.map transforms Ok value",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 27,
+            "name": "a ResultAsync.ok(2)",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17708
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 28,
+            "name": "I async map with \"x * 3\"",
+            "match": {
+              "location": "features/steps/async.ts:30"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 41209
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 29,
+            "name": "the async result is Ok(6)",
+            "match": {
+              "location": "features/steps/creation.ts:96"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 33833
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-06-006",
+            "line": 25
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "async-result;resultasync.map-is-no-op-on-err",
+        "keyword": "Scenario",
+        "line": 32,
+        "name": "ResultAsync.map is no-op on Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 33,
+            "name": "a ResultAsync.err(\"fail\")",
+            "match": {
+              "location": "features/steps/async.ts:6"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 23166
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 34,
+            "name": "I async map with \"x * 3\"",
+            "match": {
+              "location": "features/steps/async.ts:30"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 11084
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 35,
+            "name": "the async result is Err(\"fail\")",
+            "match": {
+              "location": "features/steps/creation.ts:109"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17874
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-06-006",
+            "line": 31
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "async-result;resultasync.andthen-chains",
+        "keyword": "Scenario",
+        "line": 38,
+        "name": "ResultAsync.andThen chains",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 39,
+            "name": "a ResultAsync.ok(2)",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 40,
+            "name": "I async andThen with \"x => ResultAsync.ok(x + 1)\"",
+            "match": {
+              "location": "features/steps/async.ts:34"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 39875
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 41,
+            "name": "the async result is Ok(3)",
+            "match": {
+              "location": "features/steps/creation.ts:96"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9457
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-06-007",
+            "line": 37
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "async-result;resultasync.match-extracts-value",
+        "keyword": "Scenario",
+        "line": 44,
+        "name": "ResultAsync.match extracts value",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 45,
+            "name": "a ResultAsync.ok(42)",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7165
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 46,
+            "name": "I async match with onOk \"v => v * 2\" and onErr \"e => 0\"",
+            "match": {
+              "location": "features/steps/async.ts:38"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 30374
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 47,
+            "name": "the extracted async value is 84",
+            "match": {
+              "location": "features/steps/async.ts:49"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7834
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-06-008",
+            "line": 43
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "async-result;sync-result-toasync-bridge",
+        "keyword": "Scenario",
+        "line": 50,
+        "name": "Sync Result toAsync bridge",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 51,
+            "name": "an Ok result with value 42",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8041
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 52,
+            "name": "I call toAsync",
+            "match": {
+              "location": "features/steps/async.ts:45"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 24042
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 53,
+            "name": "the async result is Ok(42)",
+            "match": {
+              "location": "features/steps/creation.ts:96"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7917
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-06-010",
+            "line": 49
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "async-result",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Async Result",
+    "tags": [],
+    "uri": "features/06-async.feature"
+  },
+  {
+    "description": "  Generator-based control flow with safeTry.",
+    "elements": [
+      {
+        "description": "",
+        "id": "generators;safetry-with-all-ok-yields",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "safeTry with all Ok yields",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 6,
+            "name": "I run safeTry yielding ok(1) and ok(2)",
+            "match": {
+              "location": "features/steps/generators.ts:6"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 79292
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 7,
+            "name": "the safeTry result is Ok(3)",
+            "match": {
+              "location": "features/steps/generators.ts:47"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16791
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-07-001",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "generators;safetry-short-circuits-on-err",
+        "keyword": "Scenario",
+        "line": 10,
+        "name": "safeTry short-circuits on Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 11,
+            "name": "I run safeTry yielding ok(1) then err(\"stop\")",
+            "match": {
+              "location": "features/steps/generators.ts:14"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 50375
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 12,
+            "name": "the safeTry result is Err(\"stop\")",
+            "match": {
+              "location": "features/steps/generators.ts:54"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12500
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-07-001",
+            "line": 9
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "generators;yield*-extracts-ok-value",
+        "keyword": "Scenario",
+        "line": 15,
+        "name": "yield* extracts Ok value",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 16,
+            "name": "I yield* ok(42) inside safeTry",
+            "match": {
+              "location": "features/steps/generators.ts:22"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 32999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 17,
+            "name": "the yielded value is 42",
+            "match": {
+              "location": "features/steps/generators.ts:61"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8500
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-07-002",
+            "line": 14
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "generators;runner-calls-generator.return()-on-err",
+        "keyword": "Scenario",
+        "line": 20,
+        "name": "Runner calls generator.return() on Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 21,
+            "name": "I run safeTry with an Err and code after yield",
+            "match": {
+              "location": "features/steps/generators.ts:30"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 34249
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 22,
+            "name": "the code after yield is not reached",
+            "match": {
+              "location": "features/steps/generators.ts:65"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9374
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-07-003",
+            "line": 19
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "generators;generator-cleanup-on-early-exit",
+        "keyword": "Scenario",
+        "line": 25,
+        "name": "Generator cleanup on early exit",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 26,
+            "name": "I run safeTry that encounters Err",
+            "match": {
+              "location": "features/steps/generators.ts:40"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 27375
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 27,
+            "name": "the generator is properly cleaned up",
+            "match": {
+              "location": "features/steps/generators.ts:69"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9333
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-07-004",
+            "line": 24
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "generators",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Generators",
+    "tags": [],
+    "uri": "features/07-generators.feature"
+  },
+  {
+    "description": "  Tagged error creation and exhaustive matching.",
+    "elements": [
+      {
+        "description": "",
+        "id": "error-patterns;createerror-creates-a-tagged-error",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "createError creates a tagged error",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 6,
+            "name": "I create an error with tag \"NotFound\" and fields resource=\"User\"",
+            "match": {
+              "location": "features/steps/error-patterns.ts:6"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 30124
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 7,
+            "name": "the error has _tag \"NotFound\"",
+            "match": {
+              "location": "features/steps/error-patterns.ts:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the error has field resource \"User\"",
+            "match": {
+              "location": "features/steps/error-patterns.ts:35"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10458
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "the error is frozen",
+            "match": {
+              "location": "features/steps/error-patterns.ts:39"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8459
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-08-001",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "error-patterns;assertnever-throws-on-unexpected-value",
+        "keyword": "Scenario",
+        "line": 12,
+        "name": "assertNever throws on unexpected value",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 13,
+            "name": "I call assertNever with a value",
+            "match": {
+              "location": "features/steps/error-patterns.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 27666
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 14,
+            "name": "it throws an error",
+            "match": {
+              "location": "features/steps/error-patterns.ts:43"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7458
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-08-002",
+            "line": 11
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "error-patterns;createerrorgroup-creates-namespaced-errors",
+        "keyword": "Scenario",
+        "line": 17,
+        "name": "createErrorGroup creates namespaced errors",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 18,
+            "name": "I create an error group \"Auth\" with error \"Expired\"",
+            "match": {
+              "location": "features/steps/error-patterns.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 36374
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 19,
+            "name": "the error has _tag \"Expired\"",
+            "match": {
+              "location": "features/steps/error-patterns.ts:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 5375
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 20,
+            "name": "the error has _namespace \"Auth\"",
+            "match": {
+              "location": "features/steps/error-patterns.ts:31"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10458
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 21,
+            "name": "the error is frozen",
+            "match": {
+              "location": "features/steps/error-patterns.ts:39"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 3708
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-08-003",
+            "line": 16
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "error-patterns;createerrorgroup-is()-checks",
+        "keyword": "Scenario",
+        "line": 24,
+        "name": "createErrorGroup is() checks",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 25,
+            "name": "I create an error group \"Auth\" with error \"Expired\"",
+            "match": {
+              "location": "features/steps/error-patterns.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 26,
+            "name": "the group is() recognizes the error",
+            "match": {
+              "location": "features/steps/error-patterns.ts:47"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14042
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-08-003",
+            "line": 23
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "error-patterns",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Error Patterns",
+    "tags": [],
+    "uri": "features/08-error-patterns.feature"
+  },
+  {
+    "description": "  Optional value handling with Some and None.",
+    "elements": [
+      {
+        "description": "",
+        "id": "option-type;option_brand-is-a-unique-symbol",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "OPTION_BRAND is a unique symbol",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 6,
+            "name": "OPTION_BRAND is a symbol",
+            "match": {
+              "location": "features/steps/option.ts:38"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8540
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-09-001",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "option-type;some()-creates-a-some-variant",
+        "keyword": "Scenario",
+        "line": 9,
+        "name": "some() creates a Some variant",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 10,
+            "name": "I create some(42)",
+            "match": {
+              "location": "features/steps/option.ts:17"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 38625
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 11,
+            "name": "the option _tag is \"Some\"",
+            "match": {
+              "location": "features/steps/option.ts:42"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10749
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 12,
+            "name": "the option value is 42",
+            "match": {
+              "location": "features/steps/option.ts:46"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10333
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-09-005",
+            "line": 8
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "option-type;none()-creates-a-none-variant",
+        "keyword": "Scenario",
+        "line": 15,
+        "name": "none() creates a None variant",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 16,
+            "name": "I create none()",
+            "match": {
+              "location": "features/steps/option.ts:21"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 34665
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 17,
+            "name": "the option _tag is \"None\"",
+            "match": {
+              "location": "features/steps/option.ts:42"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8165
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-09-006",
+            "line": 14
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "option-type;isoption-accepts-genuine-some",
+        "keyword": "Scenario",
+        "line": 20,
+        "name": "isOption accepts genuine Some",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 21,
+            "name": "a some(42)",
+            "match": {
+              "location": "features/steps/option.ts:9"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12458
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 22,
+            "name": "isOption returns true",
+            "match": {
+              "location": "features/steps/option.ts:50"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12249
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-09-007",
+            "line": 19
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "option-type;isoption-accepts-genuine-none",
+        "keyword": "Scenario",
+        "line": 25,
+        "name": "isOption accepts genuine None",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 26,
+            "name": "a none()",
+            "match": {
+              "location": "features/steps/option.ts:13"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6582
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 27,
+            "name": "isOption returns true",
+            "match": {
+              "location": "features/steps/option.ts:50"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 3040
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-09-007",
+            "line": 24
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "option-type;isoption-rejects-plain-objects",
+        "keyword": "Scenario",
+        "line": 30,
+        "name": "isOption rejects plain objects",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 31,
+            "name": "a plain object with _tag \"Some\" and value 42",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:23"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 11832
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 32,
+            "name": "isOption returns false",
+            "match": {
+              "location": "features/steps/option.ts:54"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9749
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-09-007",
+            "line": 29
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "option-type;option.fromnullable-with-value",
+        "keyword": "Scenario",
+        "line": 35,
+        "name": "Option.fromNullable with value",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 36,
+            "name": "I call Option.fromNullable with 42",
+            "match": {
+              "location": "features/steps/option.ts:25"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14165
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 37,
+            "name": "the option is Some(42)",
+            "match": {
+              "location": "features/steps/option.ts:58"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9208
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-09-008",
+            "line": 34
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "option-type;option.fromnullable-with-null",
+        "keyword": "Scenario",
+        "line": 40,
+        "name": "Option.fromNullable with null",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 41,
+            "name": "I call Option.fromNullable with null",
+            "match": {
+              "location": "features/steps/option.ts:29"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6458
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 42,
+            "name": "the option is None",
+            "match": {
+              "location": "features/steps/option.ts:63"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7166
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-09-008",
+            "line": 39
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "option-type",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Option Type",
+    "tags": [],
+    "uri": "features/09-option.feature"
+  },
+  {
+    "description": "  Curried standalone functions that delegate to Result methods.",
+    "elements": [
+      {
+        "description": "",
+        "id": "standalone-functions;standalone-map-delegates-to-result.map",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "Standalone map delegates to Result.map",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 6,
+            "name": "an Ok result with value 2",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8500
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 7,
+            "name": "I apply standalone map with \"x * 3\"",
+            "match": {
+              "location": "features/steps/standalone-functions.ts:10"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 27875
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 8,
+            "name": "the result is Ok(6)",
+            "match": {
+              "location": "features/steps/creation.ts:73"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4625
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-10-001",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "standalone-functions;pipe-chains-standalone-functions",
+        "keyword": "Scenario",
+        "line": 11,
+        "name": "pipe chains standalone functions",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 12,
+            "name": "an Ok result with value 2",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7625
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 13,
+            "name": "I pipe through map \"x + 1\" and map \"x * 2\"",
+            "match": {
+              "location": "features/steps/standalone-functions.ts:14"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 35750
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 14,
+            "name": "the result is Ok(6)",
+            "match": {
+              "location": "features/steps/creation.ts:73"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 11792
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-10-002",
+            "line": 10
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "standalone-functions;standalone-andthen-delegates",
+        "keyword": "Scenario",
+        "line": 17,
+        "name": "Standalone andThen delegates",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 18,
+            "name": "an Ok result with value 2",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7249
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 19,
+            "name": "I apply standalone andThen with \"x => ok(x + 1)\"",
+            "match": {
+              "location": "features/steps/standalone-functions.ts:22"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 23750
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 20,
+            "name": "the result is Ok(3)",
+            "match": {
+              "location": "features/steps/creation.ts:73"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 3750
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-10-003",
+            "line": 16
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "standalone-functions;standalone-unwrapor-delegates",
+        "keyword": "Scenario",
+        "line": 23,
+        "name": "Standalone unwrapOr delegates",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 24,
+            "name": "an Err result with error \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9874
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 25,
+            "name": "I apply standalone unwrapOr with default 0",
+            "match": {
+              "location": "features/steps/standalone-functions.ts:26"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14332
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 26,
+            "name": "the extracted value is 0",
+            "match": {
+              "location": "features/steps/extraction.ts:44"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 5042
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-10-003",
+            "line": 22
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "standalone-functions",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Standalone Functions",
+    "tags": [],
+    "uri": "features/10-standalone-functions.feature"
+  },
+  {
+    "description": "  Operations that throw on unexpected variants.",
+    "elements": [
+      {
+        "description": "",
+        "id": "unsafe-operations;unwraperror-contains-context",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "UnwrapError contains context",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 6,
+            "name": "an Err result with error \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10041
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 7,
+            "name": "I call unwrap",
+            "match": {
+              "location": "features/steps/unsafe.ts:6"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 37125
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 8,
+            "name": "it throws an UnwrapError with context _tag \"Err\"",
+            "match": {
+              "location": "features/steps/unsafe.ts:43"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12999
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-11-001",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "unsafe-operations;unwrap-returns-value-for-ok",
+        "keyword": "Scenario",
+        "line": 11,
+        "name": "unwrap returns value for Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 12,
+            "name": "an Ok result with value 42",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7959
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 13,
+            "name": "I call unwrap",
+            "match": {
+              "location": "features/steps/unsafe.ts:6"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 3499
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 14,
+            "name": "the unwrapped value is 42",
+            "match": {
+              "location": "features/steps/unsafe.ts:30"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7249
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-11-002",
+            "line": 10
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "unsafe-operations;unwrap-throws-for-err",
+        "keyword": "Scenario",
+        "line": 17,
+        "name": "unwrap throws for Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 18,
+            "name": "an Err result with error \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8041
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 19,
+            "name": "I call unwrap",
+            "match": {
+              "location": "features/steps/unsafe.ts:6"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7458
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 20,
+            "name": "it throws an UnwrapError",
+            "match": {
+              "location": "features/steps/unsafe.ts:38"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8582
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-11-002",
+            "line": 16
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "unsafe-operations;unwraperr-returns-error-for-err",
+        "keyword": "Scenario",
+        "line": 23,
+        "name": "unwrapErr returns error for Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 24,
+            "name": "an Err result with error \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8792
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 25,
+            "name": "I call unwrapErr",
+            "match": {
+              "location": "features/steps/unsafe.ts:14"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13083
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 26,
+            "name": "the unwrapped error is \"fail\"",
+            "match": {
+              "location": "features/steps/unsafe.ts:34"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9791
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-11-003",
+            "line": 22
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "unsafe-operations;unwraperr-throws-for-ok",
+        "keyword": "Scenario",
+        "line": 29,
+        "name": "unwrapErr throws for Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 30,
+            "name": "an Ok result with value 42",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7834
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 31,
+            "name": "I call unwrapErr",
+            "match": {
+              "location": "features/steps/unsafe.ts:14"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7958
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 32,
+            "name": "it throws an UnwrapError",
+            "match": {
+              "location": "features/steps/unsafe.ts:38"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 3207
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-11-003",
+            "line": 28
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "unsafe-operations;expect-throws-unwraperror-with-custom-message",
+        "keyword": "Scenario",
+        "line": 35,
+        "name": "expect throws UnwrapError with custom message",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 36,
+            "name": "an Err result with error \"fail\"",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 25959
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 37,
+            "name": "I call expect with message \"should have value\"",
+            "match": {
+              "location": "features/steps/unsafe.ts:22"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 41083
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 38,
+            "name": "it throws an UnwrapError with message \"should have value\"",
+            "match": {
+              "location": "features/steps/unsafe.ts:48"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 19791
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-11-004",
+            "line": 34
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "unsafe-operations",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Unsafe Operations",
+    "tags": [],
+    "uri": "features/11-unsafe.feature"
+  },
+  {
+    "description": "  Imperative-style Result composition with bind and let_.",
+    "elements": [
+      {
+        "description": "",
+        "id": "do-notation;result.do-starts-an-empty-accumulator",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "Result.Do starts an empty accumulator",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 6,
+            "name": "I start with Result.Do",
+            "match": {
+              "location": "features/steps/do-notation.ts:7"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16707
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 7,
+            "name": "the accumulator is an empty Ok record",
+            "match": {
+              "location": "features/steps/do-notation.ts:34"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 32832
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-12-001",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "do-notation;bind-adds-a-value-to-the-accumulator",
+        "keyword": "Scenario",
+        "line": 10,
+        "name": "bind adds a value to the accumulator",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 11,
+            "name": "I start with Result.Do and bind \"x\" to ok(1)",
+            "match": {
+              "location": "features/steps/do-notation.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 48584
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 12,
+            "name": "the accumulator contains x = 1",
+            "match": {
+              "location": "features/steps/do-notation.ts:41"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 11874
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-12-002",
+            "line": 9
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "do-notation;bind-short-circuits-on-err",
+        "keyword": "Scenario",
+        "line": 15,
+        "name": "bind short-circuits on Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 16,
+            "name": "I start with Result.Do and bind \"x\" to err(\"fail\")",
+            "match": {
+              "location": "features/steps/do-notation.ts:16"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 24875
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 17,
+            "name": "the result is Err(\"fail\")",
+            "match": {
+              "location": "features/steps/transformation.ts:58"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7459
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-12-002",
+            "line": 14
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "do-notation;let_-adds-a-computed-value",
+        "keyword": "Scenario",
+        "line": 20,
+        "name": "let_ adds a computed value",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 21,
+            "name": "I start with Result.Do, bind \"x\" to ok(2), and let_ \"y\" as \"x * 3\"",
+            "match": {
+              "location": "features/steps/do-notation.ts:21"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 68582
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 22,
+            "name": "the accumulator contains y = 6",
+            "match": {
+              "location": "features/steps/do-notation.ts:48"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12291
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-12-003",
+            "line": 19
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "do-notation;do-notation-works-with-pipe",
+        "keyword": "Scenario",
+        "line": 25,
+        "name": "Do notation works with pipe",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 26,
+            "name": "I pipe Result.Do through bind and let_",
+            "match": {
+              "location": "features/steps/do-notation.ts:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 45915
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 27,
+            "name": "the result accumulates all values",
+            "match": {
+              "location": "features/steps/do-notation.ts:55"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16500
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-12-005",
+            "line": 24
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "do-notation",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Do Notation",
+    "tags": [],
+    "uri": "features/12-do-notation.feature"
+  },
+  {
+    "description": "  Serialization and schema interoperability.",
+    "elements": [
+      {
+        "description": "",
+        "id": "interop;fromjson-deserializes-ok",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "fromJSON deserializes Ok",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 6,
+            "name": "I call fromJSON with an Ok JSON containing value 42",
+            "match": {
+              "location": "features/steps/interop.ts:6"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 29165
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 7,
+            "name": "the result is Ok(42)",
+            "match": {
+              "location": "features/steps/creation.ts:73"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 5125
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-13-001",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "interop;fromjson-deserializes-err",
+        "keyword": "Scenario",
+        "line": 10,
+        "name": "fromJSON deserializes Err",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 11,
+            "name": "I call fromJSON with an Err JSON containing error \"fail\"",
+            "match": {
+              "location": "features/steps/interop.ts:10"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 21999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 12,
+            "name": "the result is Err(\"fail\")",
+            "match": {
+              "location": "features/steps/transformation.ts:58"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7583
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-13-001",
+            "line": 9
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "interop;fromjson-rejects-invalid-shape",
+        "keyword": "Scenario",
+        "line": 15,
+        "name": "fromJSON rejects invalid shape",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 16,
+            "name": "I call fromJSON with an invalid JSON",
+            "match": {
+              "location": "features/steps/interop.ts:14"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 28624
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 17,
+            "name": "it throws a TypeError",
+            "match": {
+              "location": "features/steps/interop.ts:34"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8332
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-13-001",
+            "line": 14
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "interop;toschema-creates-a-standard-schema",
+        "keyword": "Scenario",
+        "line": 20,
+        "name": "toSchema creates a Standard Schema",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 21,
+            "name": "I call toSchema with a validator",
+            "match": {
+              "location": "features/steps/interop.ts:22"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 26166
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 22,
+            "name": "the schema validates Ok inputs",
+            "match": {
+              "location": "features/steps/interop.ts:38"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 18124
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 23,
+            "name": "the schema rejects invalid inputs",
+            "match": {
+              "location": "features/steps/interop.ts:44"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6832
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-13-002",
+            "line": 19
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "interop;result-survives-structuredclone",
+        "keyword": "Scenario",
+        "line": 26,
+        "name": "Result survives structuredClone",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 27,
+            "name": "an Ok result with value 42",
+            "match": {
+              "location": "features/steps/types-and-guards.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8458
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 28,
+            "name": "I call toJSON then fromJSON",
+            "match": {
+              "location": "features/steps/interop.ts:29"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12583
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 29,
+            "name": "the round-tripped result is Ok(42)",
+            "match": {
+              "location": "features/steps/interop.ts:48"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9833
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-13-003",
+            "line": 25
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "interop;option-json-round-trip",
+        "keyword": "Scenario",
+        "line": 32,
+        "name": "Option JSON round-trip",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 33,
+            "name": "a some(42)",
+            "match": {
+              "location": "features/steps/option.ts:9"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6666
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 34,
+            "name": "I serialize and deserialize the option",
+            "match": {
+              "location": "features/steps/option.ts:33"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 25291
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 35,
+            "name": "the round-tripped option is Some(42)",
+            "match": {
+              "location": "features/steps/option.ts:67"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 20166
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-13-006",
+            "line": 31
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "interop",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Interop",
+    "tags": [],
+    "uri": "features/13-interop.feature"
+  },
+  {
+    "description": "  Performance measurement suite validation.",
+    "elements": [
+      {
+        "description": "",
+        "id": "benchmarks;benchmark-tooling-is-vitest-bench",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "Benchmark tooling is Vitest Bench",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 6,
+            "name": "the benchmark files use vitest bench API",
+            "match": {
+              "location": "features/steps/benchmarks.ts:10"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 55625
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-14-001",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "benchmarks;construction-benchmark-exists",
+        "keyword": "Scenario",
+        "line": 9,
+        "name": "Construction benchmark exists",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 10,
+            "name": "a construction benchmark file exists",
+            "match": {
+              "location": "features/steps/benchmarks.ts:15"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14541
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-14-002",
+            "line": 8
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "benchmarks;method-chain-benchmark-exists",
+        "keyword": "Scenario",
+        "line": 13,
+        "name": "Method chain benchmark exists",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 14,
+            "name": "a method chain benchmark file exists",
+            "match": {
+              "location": "features/steps/benchmarks.ts:20"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14665
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-14-002",
+            "line": 12
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "benchmarks;benchmark-files-are-in-bench/-directory",
+        "keyword": "Scenario",
+        "line": 17,
+        "name": "Benchmark files are in bench/ directory",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 18,
+            "name": "benchmark files exist under the bench directory",
+            "match": {
+              "location": "features/steps/benchmarks.ts:25"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9915
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@BEH-14-005",
+            "line": 16
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "benchmarks",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Benchmarks",
+    "tags": [],
+    "uri": "features/14-benchmarks.feature"
+  }
+]

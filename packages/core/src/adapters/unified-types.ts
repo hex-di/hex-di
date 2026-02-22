@@ -97,7 +97,9 @@ export type IsAsyncFactory<TFactory> = TFactory extends (...args: never[]) => in
     ? false // Throwing factories (return never) are not async
     : R extends Promise<unknown>
       ? true
-      : false
+      : R extends PromiseLike<unknown>
+        ? true
+        : false
   : false;
 
 /**
@@ -117,8 +119,50 @@ export type IsAsyncFactory<TFactory> = TFactory extends (...args: never[]) => in
  * at the config level when trying to use async factory with non-singleton.
  */
 export type AllowedFactoryReturn<TService, TLifetime extends string> = TLifetime extends "singleton"
-  ? TService | Promise<TService>
-  : TService; // No Promise for scoped/transient
+  ? TService | Promise<TService> | FactoryResult<TService> | Promise<FactoryResult<TService>> | PromiseLike<FactoryResult<TService>>
+  : TService | FactoryResult<TService>;
+
+// =============================================================================
+// Factory Result Type (duck-typed structural match for @hex-di/result)
+// =============================================================================
+
+/**
+ * Structural type matching Result<T, E> for fallible factory returns.
+ *
+ * Allows factory functions to return Result values directly.
+ * The error type `E` flows through the adapter's `TError` type parameter,
+ * requiring explicit handling via `adapterOrDie()` or `adapterOrElse()`
+ * before the adapter can be used in a graph.
+ *
+ * Uses duck-typing so `@hex-di/core` has no dependency on `@hex-di/result`.
+ */
+export type FactoryResult<T, E = unknown> =
+  | { readonly _tag: "Ok"; readonly value: T }
+  | { readonly _tag: "Err"; readonly error: E };
+
+/**
+ * Infers the error type from a factory return type.
+ *
+ * - If the return contains `{ _tag: "Err"; error: E }`, extracts `E`
+ * - For plain `T` returns, yields `never` (infallible factory)
+ * - For `Promise<...>`, unwraps the Promise first
+ *
+ * Uses structural matching so `@hex-di/core` has no dependency on `@hex-di/result`.
+ *
+ * @internal
+ */
+export type InferFactoryError<TReturn> =
+  [TReturn] extends [never]
+    ? never
+    : unknown extends TReturn // guards against `any` — `any` is not a Result
+      ? never
+      : TReturn extends Promise<infer TInner>
+        ? InferFactoryError<TInner>
+        : TReturn extends PromiseLike<infer TInner>
+          ? InferFactoryError<TInner>
+          : TReturn extends { readonly _tag: "Err"; readonly error: infer E }
+            ? E
+            : never;
 
 /**
  * Enforces singleton lifetime for async factories at compile time.
@@ -215,7 +259,11 @@ export interface FactoryConfig<
   TRequires extends readonly Port<unknown, string>[],
   TFactory extends (
     deps: PortDeps<TRequires>
-  ) => InferService<TProvides> | Promise<InferService<TProvides>>,
+  ) => InferService<TProvides>
+     | Promise<InferService<TProvides>>
+     | FactoryResult<InferService<TProvides>>
+     | Promise<FactoryResult<InferService<TProvides>>>
+     | PromiseLike<FactoryResult<InferService<TProvides>>>,
 > extends BaseUnifiedConfig<TProvides, TRequires> {
   /**
    * Factory function that creates the service instance.

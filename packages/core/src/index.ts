@@ -82,9 +82,11 @@ export type {
   InferAdapterProvides,
   InferAdapterRequires,
   InferAdapterLifetime,
+  InferAdapterError,
   InferManyProvides,
   InferManyRequires,
   InferManyAsyncPorts,
+  InferManyErrors,
   InferClonable,
   IsClonableAdapter,
 } from "./adapters/inference.js";
@@ -93,12 +95,17 @@ export type {
 export {
   createAdapter,
   createAdapter as createUnifiedAdapter,
+  adapterOrDie,
+  adapterOrElse,
   type PortsToServices,
   type BothFactoryAndClassError,
   type NeitherFactoryNorClassError,
   type AsyncLifetimeError,
+  type IsAsyncFactory,
   type BaseUnifiedConfig,
   type FactoryConfig,
+  type FactoryResult,
+  type InferFactoryError,
   type ClassConfig,
 } from "./adapters/unified.js";
 

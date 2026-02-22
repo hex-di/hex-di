@@ -3,12 +3,31 @@ import { err } from "../core/result.js";
 import { ResultAsync as ResultAsyncClass } from "../async/result-async.js";
 
 /**
- * safeTry uses JavaScript generators to emulate Rust's `?` operator.
- * Inside a safeTry block, `yield*` on a Result either extracts the
- * Ok value or early-returns the Err.
+ * Uses JavaScript generators to emulate Rust's `?` operator for early error returns.
  *
- * Sync overload: generator function returns Result<T, E>
- * Async overload: async generator function returns ResultAsync<T, E>
+ * Inside a `safeTry` block, `yield*` on a Result either extracts the Ok value (allowing
+ * the generator to continue) or early-returns the Err (cleaning up the generator via
+ * `gen.return()`). The generator function must return a `Result<T, E>` as its final value.
+ *
+ * Supports both sync generators (returning `Result`) and async generators (returning
+ * `ResultAsync`). Dispatch is determined by checking `Symbol.asyncIterator` on the generator.
+ *
+ * @example
+ * ```ts
+ * import { ok, err, safeTry } from '@hex-di/result';
+ *
+ * const result = safeTry(function* () {
+ *   const a = yield* ok(1);       // a = 1
+ *   const b = yield* ok(2);       // b = 2
+ *   const c = yield* err("oops"); // early return: Err("oops")
+ *   // This line is never reached
+ *   return ok(a + b + c);
+ * });
+ * // result => Err("oops")
+ * ```
+ *
+ * @since v1.0.0
+ * @see spec/result/behaviors/07-generators.md — BEH-07-001
  */
 
 /** Extract E from Err<never, E> or union of Err<never, E1> | Err<never, E2> */

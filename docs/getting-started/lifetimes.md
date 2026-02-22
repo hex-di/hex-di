@@ -47,7 +47,7 @@ const LoggerAdapter = createAdapter({
 ### Behavior
 
 ```typescript
-const container = createContainer(graph);
+const container = createContainer({ graph, name: "App" });
 
 // First resolution creates the instance
 const logger1 = container.resolve(LoggerPort);
@@ -109,7 +109,7 @@ const UserSessionAdapter = createAdapter({
 ### Behavior
 
 ```typescript
-const container = createContainer(graph);
+const container = createContainer({ graph, name: "App" });
 
 // Cannot resolve scoped services from root container
 // container.resolve(UserSessionPort); // Error: ScopeRequiredError
@@ -128,8 +128,8 @@ const session2 = scope2.resolve(UserSessionPort);
 console.log(session1a === session2); // false - different scopes
 
 // Don't forget to dispose!
-await scope1.dispose();
-await scope2.dispose();
+await scope1.tryDispose();
+await scope2.tryDispose();
 ```
 
 ### Scoped Dependencies
@@ -188,7 +188,7 @@ const NotificationAdapter = createAdapter({
 ### Behavior
 
 ```typescript
-const container = createContainer(graph);
+const container = createContainer({ graph, name: "App" });
 
 // Each resolution creates a new instance
 const notif1 = container.resolve(NotificationPort);
@@ -267,15 +267,17 @@ HexDI helps prevent this with compile-time validation in strict mode.
 ### HTTP Request Pattern
 
 ```typescript
+import { fromPromise } from '@hex-di/result';
+
 async function handleRequest(req: Request, res: Response) {
   const scope = container.createScope();
-  try {
-    const userService = scope.resolve(UserServicePort);
-    const result = await userService.processRequest(req);
-    res.json(result);
-  } finally {
-    await scope.dispose();
-  }
+  const result = await scope.tryResolve(UserServicePort)
+    .asyncAndThen((userService) => fromPromise(userService.processRequest(req), (e) => e));
+  await scope.tryDispose();
+  result.match(
+    (data) => res.json(data),
+    (error) => res.status(500).json({ error: String(error) }),
+  );
 }
 ```
 
@@ -296,14 +298,14 @@ function UserDashboard() {
 ### Worker Thread Pattern
 
 ```typescript
-function processJob(jobId: string) {
+import { fromPromise } from '@hex-di/result';
+
+async function processJob(jobId: string) {
   const scope = container.createScope();
-  try {
-    const processor = scope.resolve(JobProcessorPort);
-    return processor.process(jobId);
-  } finally {
-    scope.dispose();
-  }
+  const result = await scope.tryResolve(JobProcessorPort)
+    .asyncAndThen((processor) => fromPromise(processor.process(jobId), (e) => e));
+  await scope.tryDispose();
+  return result;
 }
 ```
 
@@ -349,7 +351,7 @@ const scope = container.createScope();
 const userSession = scope.resolve(UserSessionPort); // scoped
 const logger = scope.resolve(LoggerPort);           // singleton
 
-await scope.dispose();
+await scope.tryDispose();
 // Only userSession's finalizer is called
 // logger (singleton) stays alive
 ```
@@ -361,7 +363,7 @@ When the container is disposed:
 2. Singleton finalizers are called (LIFO)
 
 ```typescript
-await container.dispose();
+await container.tryDispose();
 // All singleton finalizers called
 // Container can no longer resolve services
 ```

@@ -186,7 +186,22 @@ export type PortNotAvailable = Readonly<{
 }>;
 
 /**
- * Union of all errors that can occur during adapter creation.
+ * Errors that can occur during FlowAdapter construction
+ * (i.e. inside `createFlowAdapter`).
+ *
+ * This is the narrowed subset of `FlowAdapterError` that the factory
+ * can actually produce.
+ */
+export type FlowAdapterCreationError =
+  | DuplicateActivityPort
+  | ActivityNotFrozen;
+
+/**
+ * Union of all errors related to flow adapter creation and validation.
+ *
+ * Includes construction errors (`FlowAdapterCreationError`) plus errors
+ * produced by utility functions like `computeFlowMetadata` and runtime
+ * port resolution.
  */
 export type FlowAdapterError =
   | MetadataInvalid

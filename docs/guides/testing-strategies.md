@@ -105,6 +105,7 @@ Override specific adapters while keeping the rest of the production graph:
 ```typescript
 import { TestGraphBuilder, createMockAdapter } from "@hex-di/testing";
 import { createContainer } from "@hex-di/runtime";
+import { fromPromise } from "@hex-di/result";
 import { appGraph } from "../src/di/graph";
 import { LoggerPort, DatabasePort } from "../src/di/ports";
 
@@ -129,16 +130,16 @@ describe("UserService integration", () => {
       .build();
 
     // Create container from test graph
-    const container = createContainer(testGraph);
+    const container = createContainer({ graph: testGraph, name: "Test" });
 
-    try {
-      const userService = container.resolve(UserServicePort);
-      const user = await userService.createUser("Test User");
+    const result = await container.tryResolve(UserServicePort)
+      .asyncAndThen((userService) =>
+        fromPromise(userService.createUser("Test User"), (e) => e),
+      );
+    await container.tryDispose();
 
-      expect(user.id).toBe("2");
-    } finally {
-      await container.dispose();
-    }
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) expect(result.value.id).toBe("2");
   });
 });
 ```
@@ -308,7 +309,7 @@ const snapshot = serializeGraph(appGraph);
 Automatic container lifecycle management:
 
 ```typescript
-import { useTestContainer } from "@hex-di/testing";
+import { useTestContainer } from "@hex-di/testing/vitest";
 import { appGraph } from "../src/di/graph";
 
 describe("UserService", () => {
@@ -331,7 +332,7 @@ describe("UserService", () => {
 ### Custom Test Graph per Test
 
 ```typescript
-import { useTestContainer } from "@hex-di/testing";
+import { useTestContainer } from "@hex-di/testing/vitest";
 
 describe("UserService with mock database", () => {
   const mockDatabase = createMockAdapter(DatabasePort, {
@@ -451,7 +452,7 @@ const service = harness.invoke();
 // Test service directly
 
 // Less ideal - requires full container
-const container = createContainer(graph);
+const container = createContainer({ graph, name: "App" });
 const service = container.resolve(MyPort);
 ```
 
@@ -498,7 +499,7 @@ const { container } = useTestContainer(() => graph);
 
 // Manual cleanup
 afterEach(async () => {
-  await container.dispose();
+  await container.tryDispose();
 });
 ```
 
@@ -523,8 +524,8 @@ import {
   createAdapterTest,
   TestGraphBuilder,
   createMockAdapter,
-  useTestContainer,
 } from "@hex-di/testing";
+import { useTestContainer } from "@hex-di/testing/vitest";
 import { ChatServiceAdapter } from "../src/di/adapters";
 import { appGraph } from "../src/di/graph";
 import { LoggerPort, UserSessionPort, MessageStorePort, ChatServicePort } from "../src/di/ports";

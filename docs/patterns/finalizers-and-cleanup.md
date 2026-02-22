@@ -143,7 +143,7 @@ const EventBusAdapter = createAdapter({
         if (!handlers.has(event)) {
           handlers.set(event, []);
         }
-        handlers.get(event)!.push(handler);
+        handlers.get(event)?.push(handler);
         emitter.on(event, handler);
       },
       emit: (event: string, data: unknown) => {
@@ -265,12 +265,13 @@ await container.dispose();
 To handle errors explicitly:
 
 ```typescript
+import { fromPromise } from '@hex-di/result';
+
 finalizer: async (service) => {
-  try {
-    await service.close();
-  } catch (error) {
-    console.error('Failed to close service:', error);
-    // Don't re-throw - allow other finalizers to run
+  const result = await fromPromise(service.close(), (e) => e);
+  if (result.isErr()) {
+    console.error('Failed to close service:', result.error);
+    // Don't re-throw — allow other finalizers to run
   }
 }
 ```
@@ -280,14 +281,14 @@ finalizer: async (service) => {
 ### Basic Disposal
 
 ```typescript
-const container = createContainer(graph);
+const container = createContainer({ graph, name: "App" });
 
 // Use container...
-const service = container.resolve(ServicePort);
-await service.doWork();
+const serviceResult = container.tryResolve(ServicePort);
+if (serviceResult.isOk()) await serviceResult.value.doWork();
 
 // Cleanup
-await container.dispose();
+await container.tryDispose();
 ```
 
 ### Disposing with Active Scopes
@@ -295,7 +296,7 @@ await container.dispose();
 Dispose scopes before container:
 
 ```typescript
-const container = createContainer(graph);
+const container = createContainer({ graph, name: "App" });
 const scopes: Scope[] = [];
 
 // Track scopes
@@ -308,17 +309,17 @@ function createRequestScope() {
 // Cleanup
 async function shutdown() {
   // Dispose all scopes first
-  await Promise.all(scopes.map(s => s.dispose()));
+  await Promise.all(scopes.map(s => s.tryDispose()));
 
   // Then dispose container
-  await container.dispose();
+  await container.tryDispose();
 }
 ```
 
 ### Graceful Shutdown
 
 ```typescript
-const container = createContainer(graph);
+const container = createContainer({ graph, name: "App" });
 let isShuttingDown = false;
 
 // Graceful shutdown handler
@@ -338,7 +339,7 @@ process.on('SIGTERM', async () => {
   ]);
 
   // Dispose container
-  await container.dispose();
+  await container.tryDispose();
 
   console.log('Shutdown complete');
   process.exit(0);
@@ -350,40 +351,38 @@ process.on('SIGTERM', async () => {
 ### Manual Scope Management
 
 ```typescript
+import { fromPromise } from '@hex-di/result';
+
 async function handleRequest(req: Request) {
   const scope = container.createScope();
-
-  try {
-    const service = scope.resolve(RequestServicePort);
-    return await service.process(req);
-  } finally {
-    // Always dispose
-    await scope.dispose();
-  }
+  const result = await scope.tryResolve(RequestServicePort)
+    .asyncAndThen((service) => fromPromise(service.process(req), (e) => e));
+  await scope.tryDispose();
+  return result;
 }
 ```
 
 ### Auto-Disposal with Resources
 
 ```typescript
-// Using async disposal pattern
-async function withScope<T>(
+import { fromPromise } from '@hex-di/result';
+import type { Result } from '@hex-di/result';
+
+async function withScope<T, E>(
   container: Container,
-  fn: (scope: Scope) => Promise<T>
-): Promise<T> {
+  fn: (scope: Scope) => Promise<Result<T, E>>,
+): Promise<Result<T, E>> {
   const scope = container.createScope();
-  try {
-    return await fn(scope);
-  } finally {
-    await scope.dispose();
-  }
+  const result = await fn(scope);
+  await scope.tryDispose();
+  return result;
 }
 
 // Usage
-const result = await withScope(container, async (scope) => {
-  const service = scope.resolve(ServicePort);
-  return service.doWork();
-});
+const result = await withScope(container, (scope) =>
+  scope.tryResolve(ServicePort)
+    .asyncAndThen((service) => fromPromise(service.doWork(), (e) => e)),
+);
 ```
 
 ## React Cleanup
@@ -412,15 +411,21 @@ function useScopedService<T>(port: Port<T, string>): T {
   const serviceRef = useRef<T | null>(null);
 
   useEffect(() => {
-    scopeRef.current = container.createScope();
-    serviceRef.current = scopeRef.current.resolve(port);
+    const scope = container.createScope();
+    scopeRef.current = scope;
+    scope.tryResolve(port).match(
+      (service) => { serviceRef.current = service; },
+      (error) => { console.error('Failed to resolve service:', error); },
+    );
 
     return () => {
-      scopeRef.current?.dispose();
+      void scopeRef.current?.tryDispose();
     };
   }, [container, port]);
 
-  return serviceRef.current!;
+  const service = serviceRef.current;
+  if (service === null) throw new Error('Service not yet initialized');
+  return service;
 }
 ```
 
@@ -493,12 +498,15 @@ const UserRepositoryAdapter = createAdapter({
 ```typescript
 describe('DatabaseAdapter finalizer', () => {
   it('closes the connection pool', async () => {
-    const container = createContainer(graph);
-    const db = container.resolve(DatabasePort);
+    const container = createContainer({ graph, name: "App" });
+    const dbResult = container.tryResolve(DatabasePort);
+    expect(dbResult.isOk()).toBe(true);
+    if (!dbResult.isOk()) return;
+    const db = dbResult.value;
 
     expect(db.pool.ended).toBe(false);
 
-    await container.dispose();
+    await container.tryDispose();
 
     expect(db.pool.ended).toBe(true);
   });

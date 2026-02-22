@@ -167,7 +167,7 @@ const testGraph = TestGraphBuilder.from(productionGraph)
   .override(mockDatabase)
   .build();
 
-const container = createContainer(testGraph);
+const container = createContainer({ graph: testGraph, name: "Test" });
 ```
 
 ### InferTestGraphProvides
@@ -273,9 +273,13 @@ interface GraphSnapshot {
 }
 
 interface AdapterSnapshot {
-  portName: string;
+  port: string;       // port name
   lifetime: Lifetime;
-  dependencies: string[];
+  requires: string[]; // sorted alphabetically
+}
+
+interface SerializeGraphOptions {
+  preserveOrder?: boolean; // default: false (sorts alphabetically)
 }
 ```
 
@@ -292,9 +296,52 @@ describe('graph structure', () => {
 
 ## Vitest Integration
 
+The Vitest-specific utilities are available at the `@hex-di/testing/vitest` subpath. They require Vitest as a peer dependency and use `beforeEach`/`afterEach` under the hood.
+
+### createSpiedMockAdapter
+
+Creates a mock adapter with all methods automatically wrapped as `vi.fn()`.
+
+```typescript
+function createSpiedMockAdapter<
+  P extends Port<unknown, string>,
+  TLifetime extends Lifetime = 'singleton'
+>(
+  port: P,
+  implementation?: Partial<InferService<P>>,
+  options?: MockAdapterOptions<TLifetime>
+): SpiedAdapter<P, TLifetime>
+```
+
+**Returns:**
+
+```typescript
+interface SpiedAdapter<P, TLifetime> {
+  adapter: Adapter<P, never, TLifetime>;   // pass to TestGraphBuilder.override()
+  implementation: SpiedService<P>;          // vi.fn() spies for assertions
+}
+```
+
+**Example:**
+
+```typescript
+import { createSpiedMockAdapter } from '@hex-di/testing/vitest';
+import { TestGraphBuilder } from '@hex-di/testing';
+
+// All methods are auto-wrapped as vi.fn()
+const { adapter: mockLogger, implementation } = createSpiedMockAdapter(LoggerPort);
+
+const testGraph = TestGraphBuilder.from(appGraph)
+  .override(mockLogger)
+  .build();
+
+// After running code...
+expect(implementation.log).toHaveBeenCalledWith('hello');
+```
+
 ### useTestContainer
 
-Creates a container with automatic lifecycle management for tests.
+Vitest hook that creates a fresh container before each test and disposes it after.
 
 ```typescript
 function useTestContainer<TProvides extends Port<unknown, string>>(
@@ -308,7 +355,7 @@ function useTestContainer<TProvides extends Port<unknown, string>>(
 **Example:**
 
 ```typescript
-import { useTestContainer } from '@hex-di/testing';
+import { useTestContainer } from '@hex-di/testing/vitest';
 
 describe('UserService', () => {
   const { container, scope } = useTestContainer(() => testGraph);
@@ -336,6 +383,7 @@ function createTestContainer<TProvides extends Port<unknown, string>>(
   graph: Graph<TProvides>
 ): {
   container: Container<TProvides>;
+  scope: Scope<TProvides>;
   dispose: () => Promise<void>;
 }
 ```
@@ -343,18 +391,20 @@ function createTestContainer<TProvides extends Port<unknown, string>>(
 **Example:**
 
 ```typescript
+import { createTestContainer } from '@hex-di/testing/vitest';
+
 describe('manual cleanup', () => {
+  let cleanup: () => Promise<void>;
   let container: Container<AppPorts>;
-  let dispose: () => Promise<void>;
 
   beforeEach(() => {
     const result = createTestContainer(testGraph);
     container = result.container;
-    dispose = result.dispose;
+    cleanup = result.dispose;
   });
 
   afterEach(async () => {
-    await dispose();
+    await cleanup();
   });
 
   it('works', () => {
@@ -420,15 +470,15 @@ describe('MessageInput', () => {
 ## Complete Example
 
 ```typescript
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   createAdapterTest,
   createMockAdapter,
   TestGraphBuilder,
-  useTestContainer,
   assertGraphComplete,
   serializeGraph
 } from '@hex-di/testing';
+import { useTestContainer } from '@hex-di/testing/vitest';
 
 // Unit test adapter
 describe('ChatServiceAdapter', () => {

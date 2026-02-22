@@ -34,13 +34,13 @@ const UserServiceAdapter = createAdapter({
 
 ### Port Type Inference
 
-`createPort<'Name', Service>('Name')` captures both the name and service type:
+`port<Service>()({ name: 'Name' })` captures both the name (as a literal type) and service type:
 
 ```typescript
-const LoggerPort = createPort<"Logger", Logger>("Logger");
+const LoggerPort = port<Logger>()({ name: "Logger" });
 
 // TypeScript sees:
-// LoggerPort: Port<Logger, 'Logger'>
+// LoggerPort: DirectedPort<Logger, 'Logger', 'outbound'>
 ```
 
 The name becomes a literal type, not just `string`.
@@ -86,7 +86,7 @@ const builder3 = builder2.provide(UserServiceAdapter);
 Container knows which ports can be resolved:
 
 ```typescript
-const container = createContainer(graph);
+const container = createContainer({ graph, name: "App" });
 // container: Container<typeof LoggerPort | typeof DatabasePort | ...>
 
 const logger = container.resolve(LoggerPort);
@@ -103,9 +103,9 @@ HexDI exports utilities for extracting type information.
 ### Port Utilities
 
 ```typescript
-import { InferService, InferPortName } from "@hex-di/ports";
+import { port, type InferService, type InferPortName, type InferPortDirection } from "@hex-di/core";
 
-const LoggerPort = createPort<"Logger", Logger>("Logger");
+const LoggerPort = port<Logger>()({ name: "Logger" });
 
 // Extract service type from port
 type LoggerServiceType = InferService<typeof LoggerPort>;
@@ -114,6 +114,10 @@ type LoggerServiceType = InferService<typeof LoggerPort>;
 // Extract port name
 type LoggerPortName = InferPortName<typeof LoggerPort>;
 // LoggerPortName = 'Logger'
+
+// Extract direction
+type LoggerDirection = InferPortDirection<typeof LoggerPort>;
+// LoggerDirection = 'outbound'
 ```
 
 ### Adapter Utilities
@@ -176,9 +180,9 @@ Define a union type of all ports in your application:
 
 ```typescript
 // In ports.ts
-export const LoggerPort = createPort<"Logger", Logger>("Logger");
-export const DatabasePort = createPort<"Database", Database>("Database");
-export const UserServicePort = createPort<"UserService", UserService>("UserService");
+export const LoggerPort      = port<Logger>()({ name: "Logger" });
+export const DatabasePort    = port<Database>()({ name: "Database" });
+export const UserServicePort = port<UserService>()({ name: "UserService" });
 
 // Union of all ports
 export type AppPorts = typeof LoggerPort | typeof DatabasePort | typeof UserServicePort;
@@ -217,11 +221,11 @@ const graph = GraphBuilder.create()
 Error message:
 
 ```
-Argument of type '[]' is not assignable to parameter of type
-'[error: MissingDependencyError<typeof LoggerPort | typeof DatabasePort>]'.
+Type '"ERROR[HEX008]: Missing adapters for Logger | Database. Call .provide() first."'
+is not assignable to type 'Graph<...>'.
 ```
 
-The error shows exactly which ports are missing.
+The error shows exactly which ports are missing with an actionable fix message.
 
 ### Duplicate Provider Error
 
@@ -232,8 +236,8 @@ const graph = GraphBuilder.create().provide(LoggerAdapter).provide(AnotherLogger
 Error message:
 
 ```
-Type 'DuplicateProviderError<typeof LoggerPort>' is not assignable to type
-'GraphBuilder<...>'.
+Type '"ERROR[HEX001]: Duplicate adapter for \'Logger\'. Fix: Remove one .provide() call,
+or use .override() for child graphs."' is not assignable to type 'GraphBuilder<...>'.
 ```
 
 ### Invalid Resolution Error
@@ -370,7 +374,7 @@ The `const` modifier preserves literal types:
 
 ```typescript
 // createPort uses const internally
-const LoggerPort = createPort<"Logger", Logger>("Logger");
+const LoggerPort = port<Logger>()({ name: "Logger" });
 // Name is literal 'Logger', not string
 ```
 

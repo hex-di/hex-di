@@ -30,18 +30,18 @@ Define all ports in one file for easy discovery:
 
 ```typescript
 // src/di/ports.ts
-import { createPort } from '@hex-di/ports';
+import { port } from '@hex-di/core';
 import type { Logger, Database, UserService, Config } from '../types';
 
 // Infrastructure ports
-export const LoggerPort = createPort<'Logger', Logger>('Logger');
-export const ConfigPort = createPort<'Config', Config>('Config');
+export const LoggerPort  = port<Logger>()({ name: 'Logger' });
+export const ConfigPort  = port<Config>()({ name: 'Config' });
 
 // Data layer ports
-export const DatabasePort = createPort<'Database', Database>('Database');
+export const DatabasePort = port<Database>()({ name: 'Database' });
 
 // Application services
-export const UserServicePort = createPort<'UserService', UserService>('UserService');
+export const UserServicePort = port<UserService>()({ name: 'UserService' });
 
 // Type for all ports
 export type AppPorts =
@@ -57,7 +57,7 @@ Define all adapters with their dependencies:
 
 ```typescript
 // src/di/adapters.ts
-import { createAdapter } from '@hex-di/graph';
+import { createAdapter } from '@hex-di/core';
 import { LoggerPort, ConfigPort, DatabasePort, UserServicePort } from './ports';
 
 export const LoggerAdapter = createAdapter({
@@ -161,14 +161,14 @@ src/
 
 ```typescript
 // src/domains/users/ports.ts
-import { createPort } from '@hex-di/ports';
+import { port } from '@hex-di/core';
 import type { UserService, UserRepository } from './types';
 
-export const UserServicePort = createPort<'UserService', UserService>('UserService');
-export const UserRepositoryPort = createPort<'UserRepository', UserRepository>('UserRepository');
+export const UserServicePort    = port<UserService>()({ name: 'UserService' });
+export const UserRepositoryPort = port<UserRepository>()({ name: 'UserRepository' });
 
 // src/domains/users/adapters.ts
-import { createAdapter } from '@hex-di/graph';
+import { createAdapter } from '@hex-di/core';
 import { UserServicePort, UserRepositoryPort } from './ports';
 import { LoggerPort, DatabasePort } from '../../infrastructure/ports';
 
@@ -358,10 +358,12 @@ packages/
 
 ```typescript
 // packages/core/src/ports/index.ts
-export const LoggerPort = createPort<'Logger', Logger>('Logger');
-export const ConfigPort = createPort<'Config', Config>('Config');
+import { port } from '@hex-di/core';
+export const LoggerPort = port<Logger>()({ name: 'Logger' });
+export const ConfigPort = port<Config>()({ name: 'Config' });
 
 // packages/core/src/adapters/index.ts
+import { createAdapter } from '@hex-di/core';
 export const ConsoleLoggerAdapter = createAdapter({
   provides: LoggerPort,
   requires: [],
@@ -418,7 +420,7 @@ Use `Adapter` suffix with implementation hint:
 
 ```typescript
 // Good - ports just define contracts
-export const LoggerPort = createPort<'Logger', Logger>('Logger');
+export const LoggerPort = port<Logger>()({ name: 'Logger' });
 
 // Avoid - don't put implementation details in port files
 ```
@@ -442,8 +444,8 @@ export const UserServiceAdapter = createAdapter({
 
 ```typescript
 // Good - clear mapping
-const UserServicePort = createPort<'UserService', UserService>('UserService');
-const AuthServicePort = createPort<'AuthService', AuthService>('AuthService');
+const UserServicePort = port<UserService>()({ name: 'UserService' });
+const AuthServicePort = port<AuthService>()({ name: 'AuthService' });
 
 // Avoid - multiple services in one port
 ```

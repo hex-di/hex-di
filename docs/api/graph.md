@@ -83,15 +83,18 @@ type Deps = ResolvedDeps<typeof LoggerPort | typeof DatabasePort>;
 // { Logger: Logger; Database: Database }
 ```
 
-### `Graph<TProvides>`
+### `Graph<TProvides, TAsyncPorts, TOverrides>`
 
 The validated dependency graph returned by `GraphBuilder.build()`.
 
 ```typescript
-type Graph<TProvides extends Port<unknown, string> | never> = {
+interface Graph<out TProvides = never, out TAsyncPorts = never, out TOverrides = never> {
   readonly adapters: readonly Adapter<...>[];
+  readonly overridePortNames: ReadonlySet<string>;
   readonly __provides: TProvides;
-};
+  readonly __asyncPorts: TAsyncPorts;
+  readonly __overrides: TOverrides;
+}
 ```
 
 ## Functions
@@ -170,10 +173,7 @@ const DatabaseAdapter = createAdapter({
 An immutable builder for constructing dependency graphs with compile-time validation.
 
 ```typescript
-class GraphBuilder<
-  TProvides extends Port<unknown, string> | never = never,
-  TRequires extends Port<unknown, string> | never = never
-> {
+class GraphBuilder<TProvides = never, TRequires = never, ...> {
   readonly adapters: readonly Adapter<...>[];
 
   static create(): GraphBuilder<never, never>;
@@ -182,11 +182,19 @@ class GraphBuilder<
     adapter: A
   ): ProvideResult<TProvides, TRequires, A>;
 
-  build(
-    ..._: IsSatisfied<TProvides, TRequires> extends true
-      ? []
-      : [error: MissingDependencyError<...>]
-  ): Graph<TProvides>;
+  merge<OtherProvides, OtherRequires>(
+    builder: GraphBuilder<OtherProvides, OtherRequires>
+  ): GraphBuilder<TProvides | OtherProvides, TRequires | OtherRequires>;
+
+  // Returns Graph directly — compile error if deps unsatisfied
+  build(): [UnsatisfiedDependencies<TProvides, TRequires>] extends [never]
+    ? Graph<TProvides>
+    : `ERROR[HEX008]: Missing adapters for ${string}. Call .provide() first.`;
+
+  // Returns Result<Graph, GraphBuildError> — compile error if deps unsatisfied
+  tryBuild(): [UnsatisfiedDependencies<TProvides, TRequires>] extends [never]
+    ? Result<Graph<TProvides>, GraphBuildError>
+    : `ERROR[HEX008]: Missing adapters for ${string}. Call .provide() first.`;
 }
 ```
 
@@ -216,24 +224,52 @@ builder3.adapters.length; // 2
 
 **Return Type:**
 - Success: `GraphBuilder` with accumulated types
-- Duplicate: `DuplicateProviderError<Port>`
+- Duplicate: `"ERROR[HEX001]: Duplicate adapter for 'Logger'. Fix: Remove one .provide() call."`
 
 #### builder.build()
 
-Validates and builds the dependency graph.
+Validates and builds the dependency graph. Returns `Graph<TProvides>` when all dependencies are satisfied. When dependencies are missing, the return type becomes a template literal error string — this makes passing the result to `createContainer` a compile error.
 
 ```typescript
-// Complete graph - succeeds
+// Complete graph - build() returns Graph<...>
 const graph = GraphBuilder.create()
   .provide(LoggerAdapter)
   .provide(UserServiceAdapter)
   .build();
 
-// Incomplete graph - compile error
-const graph = GraphBuilder.create()
+const container = createContainer({ graph, name: "App" }); // OK
+
+// Incomplete graph - build() return type is an error string
+const bad = GraphBuilder.create()
   .provide(UserServiceAdapter) // requires Logger
-  .build(); // Error!
+  .build();
+// Type: "ERROR[HEX008]: Missing adapters for Logger. Call .provide() first."
+// Passing this to createContainer is a compile error
 ```
+
+#### builder.tryBuild()
+
+Like `build()` but returns `Result<Graph<TProvides>, GraphBuildError>` for explicit error handling. Useful when runtime errors (e.g. circular dependencies exceeding type-level detection depth) need to be caught as values.
+
+```typescript
+import { createContainer } from "@hex-di/runtime";
+
+const result = GraphBuilder.create()
+  .provide(LoggerAdapter)
+  .provide(UserServiceAdapter)
+  .tryBuild();
+
+if (result.isErr()) {
+  console.error("Graph build failed:", result.error.message);
+  process.exit(1);
+}
+
+const container = createContainer({ graph: result.value, name: "App" });
+```
+
+**When to use `tryBuild()` vs `build()`:**
+- Use `build()` for straightforward cases — the type system catches missing deps at compile time
+- Use `tryBuild()` when you want explicit runtime error handling as a `Result` value
 
 ## Type Utilities
 
@@ -318,40 +354,47 @@ type Result = ValidGraph<TProvides, TRequires>;
 // { __valid: false; __missing: ... }
 ```
 
-## Error Types
+## Compile-Time Error Messages
 
-### `MissingDependencyError<MissingPorts>`
+HexDI uses **template literal return types** to surface errors directly in your IDE. When a method call is invalid, its return type becomes an error string — making the call site a compile error wherever the result is used.
 
-Compile-time error type for missing dependencies.
+### Missing Dependencies
 
-```typescript
-type Error = MissingDependencyError<typeof LoggerPort>;
-// {
-//   __valid: false;
-//   __errorBrand: 'MissingDependencyError';
-//   __message: 'Missing dependencies: Logger';
-//   __missing: typeof LoggerPort;
-// }
+When `build()` or `tryBuild()` is called with unsatisfied dependencies:
+
+```
+"ERROR[HEX008]: Missing adapters for Logger | Database. Call .provide() first."
 ```
 
-### `DuplicateProviderError<DuplicatePort>`
+### Duplicate Provider
 
-Compile-time error type for duplicate providers.
+When `.provide()` is called with a port that's already provided:
 
-```typescript
-type Error = DuplicateProviderError<typeof LoggerPort>;
-// {
-//   __valid: false;
-//   __errorBrand: 'DuplicateProviderError';
-//   __message: 'Duplicate provider for: Logger';
-//   __duplicate: typeof LoggerPort;
-// }
+```
+"ERROR[HEX001]: Duplicate adapter for 'Logger'. Fix: Remove one .provide() call, or use .override() for child graphs."
+```
+
+### Circular Dependency
+
+When a cycle is detected at the type level:
+
+```
+"ERROR[HEX002]: Circular dependency: UserService -> Database -> Cache -> UserService. Fix: Use lazyPort(Database) in UserServiceAdapter, ..."
+```
+
+### Captive Dependency
+
+When a longer-lived service depends on a shorter-lived one:
+
+```
+"ERROR[HEX003]: Captive dependency: Singleton 'UserCache' cannot depend on Scoped 'RequestContext'. Fix: Change 'UserCache' to Scoped/Transient, or change 'RequestContext' to Singleton."
 ```
 
 ## Re-exports
 
-`@hex-di/graph` re-exports from `@hex-di/ports`:
+`@hex-di/graph` re-exports from `@hex-di/core`:
 - `Port`
+- `DirectedPort`
 - `InferService`
 - `InferPortName`
 
@@ -359,7 +402,7 @@ type Error = DuplicateProviderError<typeof LoggerPort>;
 
 ```typescript
 import { createAdapter, GraphBuilder } from '@hex-di/graph';
-import { createPort } from '@hex-di/ports';
+import { port } from '@hex-di/core';
 
 // Define interfaces
 interface Logger {
@@ -371,8 +414,8 @@ interface UserService {
 }
 
 // Create ports
-const LoggerPort = createPort<'Logger', Logger>('Logger');
-const UserServicePort = createPort<'UserService', UserService>('UserService');
+const LoggerPort = port<Logger>()({ name: 'Logger' });
+const UserServicePort = port<UserService>()({ name: 'UserService' });
 
 // Create adapters
 const LoggerAdapter = createAdapter({
@@ -399,4 +442,6 @@ const graph = GraphBuilder.create()
   .provide(LoggerAdapter)
   .provide(UserServiceAdapter)
   .build();
+
+const container = createContainer({ graph, name: "App" });
 ```

@@ -79,6 +79,7 @@ describe("Depth warning inspection utilities", () => {
       unsafeDepthOverride: true;
       depthExceededWarning: "DeepPort";
       uncheckedUsed: false;
+      errors: never;
     };
     type Warning = GetDepthExceededWarning<TestInternals>;
     expectTypeOf<Warning>().toEqualTypeOf<"DeepPort">();
@@ -94,6 +95,7 @@ describe("Depth warning inspection utilities", () => {
       unsafeDepthOverride: false;
       depthExceededWarning: never;
       uncheckedUsed: false;
+      errors: never;
     };
     type Warning = GetDepthExceededWarning<TestInternals>;
     type IsWarningNever = IsNever<Warning>;
@@ -110,6 +112,7 @@ describe("Depth warning inspection utilities", () => {
       unsafeDepthOverride: true;
       depthExceededWarning: "Port1" | "Port2";
       uncheckedUsed: false;
+      errors: never;
     };
     type Warning = GetDepthExceededWarning<TestInternals>;
     expectTypeOf<Warning>().toEqualTypeOf<"Port1" | "Port2">();

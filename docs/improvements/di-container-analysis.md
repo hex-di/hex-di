@@ -66,19 +66,23 @@ The architecture demonstrates excellent modularity:
 
 ### 6. **Override Mechanism ✅**
 
-The `withOverrides` feature provides a clean way to temporarily replace services:
-
-- Isolated override context with its own memoization
-- Stack-based context management for nested overrides
-- No mutation of parent container state
-- Proper cleanup through disposal
+The override mechanism provides a clean way to replace services for testing or child container scenarios. Overrides are applied at the graph level via `GraphBuilder.override()`, producing a new graph (and container) with the replacement adapter:
 
 ```typescript
-container.withOverrides({ Logger: () => new MockLogger() }, () => {
-  // MockLogger used within this scope
-  const service = container.resolve(ServicePort);
-});
+import { GraphBuilder } from '@hex-di/graph';
+import { createContainer } from '@hex-di/runtime';
+
+// Create a test graph with mock overrides
+const testGraph = GraphBuilder.create()
+  .provide(LoggerAdapter)
+  .provide(DatabaseAdapter)
+  .override(MockLoggerAdapter)  // replaces LoggerAdapter
+  .build();
+
+const testContainer = createContainer({ graph: testGraph, name: "Test" });
 ```
+
+> **Note:** There is no `container.withOverrides()` method. Overrides are always applied at the graph/build level, not at runtime. This ensures type safety and deterministic behavior.
 
 ## Areas for Improvement
 

@@ -12,10 +12,12 @@ This guide covers HexDI's error hierarchy and best practices for handling errors
 
 HexDI distinguishes between two types of errors:
 
-1. **Programming Errors** - Bugs in your code that should be fixed (e.g., circular dependencies)
-2. **Runtime Errors** - External failures that may need recovery (e.g., factory threw an exception)
+1. **Programming Errors** — Bugs in your code that should be fixed (e.g., circular dependencies)
+2. **Runtime Errors** — External failures that may need recovery (e.g., factory threw an exception)
 
 All errors include an `isProgrammingError` flag to help you decide how to handle them.
+
+> **Result-first:** Prefer `container.tryResolve()` over `container.resolve()`. The `try*` variants return `Result<T, ContainerError>` and never throw, eliminating the need for try/catch.
 
 ## Error Hierarchy
 
@@ -42,14 +44,12 @@ Base class for all container errors.
 ```typescript
 import { ContainerError } from "@hex-di/runtime";
 
-try {
-  container.resolve(SomePort);
-} catch (error) {
-  if (error instanceof ContainerError) {
-    console.log("Code:", error.code);
-    console.log("Message:", error.message);
-    console.log("Is programming error:", error.isProgrammingError);
-  }
+const result = container.tryResolve(SomePort);
+if (result.isErr()) {
+  const { error } = result;
+  console.log("Code:", error.code);
+  console.log("Message:", error.message);
+  console.log("Is programming error:", error.isProgrammingError);
 }
 ```
 
@@ -61,9 +61,9 @@ Thrown when services depend on each other in a cycle.
 import { CircularDependencyError } from "@hex-di/runtime";
 
 // Example: A depends on B, B depends on A
-try {
-  container.resolve(ServiceAPort);
-} catch (error) {
+const result = container.tryResolve(ServiceAPort);
+if (result.isErr()) {
+  const { error } = result;
   if (error instanceof CircularDependencyError) {
     console.log("Code:", error.code); // 'CIRCULAR_DEPENDENCY'
     console.log("Chain:", error.dependencyChain);
@@ -94,9 +94,9 @@ Thrown when an adapter's factory function throws an exception.
 ```typescript
 import { FactoryError } from "@hex-di/runtime";
 
-try {
-  container.resolve(DatabasePort);
-} catch (error) {
+const result = container.tryResolve(DatabasePort);
+if (result.isErr()) {
+  const { error } = result;
   if (error instanceof FactoryError) {
     console.log("Code:", error.code); // 'FACTORY_FAILED'
     console.log("Port:", error.portName); // 'Database'
@@ -127,13 +127,13 @@ Thrown when trying to resolve from a disposed scope.
 import { DisposedScopeError } from "@hex-di/runtime";
 
 const scope = container.createScope();
-await scope.dispose();
+await scope.tryDispose();
 
-try {
-  scope.resolve(UserSessionPort); // Scope is already disposed!
-} catch (error) {
+const result = scope.tryResolve(UserSessionPort); // Scope is already disposed!
+if (result.isErr()) {
+  const { error } = result;
   if (error instanceof DisposedScopeError) {
-    console.log("Code:", error.code); // 'SCOPE_DISPOSED'
+    console.log("Code:", error.code); // 'DISPOSED_SCOPE'
     console.log("Is programming error:", error.isProgrammingError); // true
   }
 }
@@ -141,7 +141,7 @@ try {
 
 **Properties:**
 
-- `code: 'SCOPE_DISPOSED'`
+- `code: 'DISPOSED_SCOPE'`
 - `isProgrammingError: true`
 
 **How to Fix:**
@@ -158,9 +158,9 @@ Thrown when trying to resolve a scoped service from the root container.
 import { ScopeRequiredError } from "@hex-di/runtime";
 
 // UserSession is scoped, but we're resolving from root container
-try {
-  container.resolve(UserSessionPort);
-} catch (error) {
+const result = container.tryResolve(UserSessionPort);
+if (result.isErr()) {
+  const { error } = result;
   if (error instanceof ScopeRequiredError) {
     console.log("Code:", error.code); // 'SCOPE_REQUIRED'
     console.log("Port:", error.portName); // 'UserSession'
@@ -187,20 +187,24 @@ try {
 | ----------------------- | --------------------- | ----------------- |
 | CircularDependencyError | `CIRCULAR_DEPENDENCY` | Yes               |
 | FactoryError            | `FACTORY_FAILED`      | No                |
-| DisposedScopeError      | `SCOPE_DISPOSED`      | Yes               |
+| DisposedScopeError      | `DISPOSED_SCOPE`      | Yes               |
 | ScopeRequiredError      | `SCOPE_REQUIRED`      | Yes               |
 
 ## Handling Patterns
 
 ### Pattern 1: Switch on Error Code
 
-```typescript
-import { ContainerError } from "@hex-di/runtime";
+Use `resolveResult` for exhaustive switching — it returns `Result<T, ResolutionError>` where `ResolutionError` is a discriminated union keyed by `code`:
 
-try {
-  const service = container.resolve(SomePort);
-} catch (error) {
-  if (error instanceof ContainerError) {
+```typescript
+import { resolveResult, FactoryError } from "@hex-di/runtime";
+
+const result = resolveResult(() => container.resolve(SomePort));
+result.match(
+  (service) => {
+    // use service
+  },
+  (error) => {
     switch (error.code) {
       case "CIRCULAR_DEPENDENCY":
         console.error("Fix your dependency graph!");
@@ -212,37 +216,31 @@ try {
       case "SCOPE_REQUIRED":
         console.error("Need a scope for this service");
         throw error;
-      case "SCOPE_DISPOSED":
+      case "DISPOSED_SCOPE":
         console.error("Scope was already disposed");
         throw error;
     }
-  }
-  throw error;
-}
+  },
+);
 ```
 
 ### Pattern 2: Handle Programming vs Runtime Errors
 
 ```typescript
-import { ContainerError } from "@hex-di/runtime";
-
-function resolveService(port) {
-  try {
-    return container.resolve(port);
-  } catch (error) {
-    if (error instanceof ContainerError) {
+function resolveService<P extends AppPorts>(port: P): InferService<P> | null {
+  return container.tryResolve(port).match(
+    (service) => service,
+    (error) => {
       if (error.isProgrammingError) {
-        // Log and re-throw - this is a bug
+        // Log and re-throw — this is a bug
         console.error("Programming error:", error.message);
         throw error;
-      } else {
-        // Handle gracefully - this is an external failure
-        console.warn("Service unavailable:", error.message);
-        return null; // Or fallback value
       }
-    }
-    throw error;
-  }
+      // Handle gracefully — this is an external failure
+      console.warn("Service unavailable:", error.message);
+      return null; // Or fallback value
+    },
+  );
 }
 ```
 
@@ -250,20 +248,20 @@ function resolveService(port) {
 
 ```typescript
 import { FactoryError } from "@hex-di/runtime";
+import type { Result, ContainerError } from "@hex-di/runtime";
 
-async function resolveWithRetry(port, maxRetries = 3) {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return container.resolve(port);
-    } catch (error) {
-      if (error instanceof FactoryError && attempt < maxRetries) {
-        console.warn(`Attempt ${attempt} failed, retrying...`);
-        await delay(1000 * attempt); // Exponential backoff
-        continue;
-      }
-      throw error;
-    }
+async function resolveWithRetry<P extends AppPorts>(
+  port: P,
+  maxRetries = 3,
+): Promise<Result<InferService<P>, ContainerError>> {
+  let last = container.tryResolve(port);
+  for (let attempt = 1; attempt < maxRetries && last.isErr(); attempt++) {
+    if (!(last.error instanceof FactoryError)) break; // Only retry factory failures
+    console.warn(`Attempt ${attempt} failed, retrying...`);
+    await delay(1000 * attempt); // Exponential backoff
+    last = container.tryResolve(port);
   }
+  return last;
 }
 ```
 
@@ -322,7 +320,7 @@ HexDI catches many errors at compile time, not runtime.
 const graph = GraphBuilder.create()
   .provide(UserServiceAdapter) // requires Logger, Database
   .build();
-// TypeScript Error: MissingDependencyError<typeof LoggerPort | typeof DatabasePort>
+// Type: "ERROR[HEX008]: Missing adapters for Logger | Database. Call .provide() first."
 ```
 
 **How to Read:**
@@ -337,7 +335,7 @@ const graph = GraphBuilder.create()
   .provide(LoggerAdapter)
   .provide(AnotherLoggerAdapter) // Same port!
   .build();
-// TypeScript Error: DuplicateProviderError<typeof LoggerPort>
+// Type: "ERROR[HEX001]: Duplicate adapter for 'Logger'. Fix: Remove one .provide() call."
 ```
 
 **How to Fix:**
@@ -386,15 +384,15 @@ if (error instanceof FactoryError) {
 metrics.increment(`di.error.${error.code}`);
 ```
 
-### 4. Document Expected Errors
+### 4. Document Possible Errors
 
 ```typescript
 /**
  * Resolves the database service.
- * @throws {FactoryError} If database connection fails
+ * @returns Result containing the service or FactoryError if the connection fails.
  */
-function getDatabase() {
-  return container.resolve(DatabasePort);
+function getDatabase(): Result<DatabaseService, ContainerError> {
+  return container.tryResolve(DatabasePort);
 }
 ```
 
@@ -414,7 +412,7 @@ describe("error handling", () => {
 
     const graph = GraphBuilder.create().provide(badAdapter).build();
 
-    const container = createContainer(graph);
+    const container = createContainer({ graph, name: "App" });
 
     expect(() => container.resolve(TestPort)).toThrow(FactoryError);
   });

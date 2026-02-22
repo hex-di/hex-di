@@ -39,9 +39,10 @@ function scopeMiddleware(container: Container) {
 
     // Dispose scope when response finishes
     res.on('finish', () => {
-      scope.dispose().catch(err => {
-        console.error('Scope disposal error:', err);
-      });
+      void scope.tryDispose().match(
+        () => {},
+        (error) => { console.error('Scope disposal error:', error); },
+      );
     });
 
     next();
@@ -52,8 +53,12 @@ function scopeMiddleware(container: Container) {
 app.use(scopeMiddleware(container));
 
 app.get('/users/:id', async (req, res) => {
-  const userService = req.diScope.resolve(UserServicePort);
-  const user = await userService.getUser(req.params.id);
+  const userServiceResult = req.diScope.tryResolve(UserServicePort);
+  if (userServiceResult.isErr()) {
+    res.status(500).json({ error: 'Service unavailable' });
+    return;
+  }
+  const user = await userServiceResult.value.getUser(req.params.id);
   res.json(user);
 });
 ```
@@ -85,8 +90,10 @@ app.use((req, res, next) => {
   req.diScope = scope;
 
   // Initialize context with request data
-  const context = scope.resolve(RequestContextPort);
-  context.userId = req.user?.id;
+  scope.tryResolve(RequestContextPort).match(
+    (context) => { context.userId = req.user?.id; },
+    (error) => { console.error('Failed to resolve RequestContext:', error); },
+  );
 
   next();
 });
@@ -104,24 +111,25 @@ class SessionManager {
   constructor(private container: Container) {}
 
   getSession(userId: string): Scope {
-    if (!this.sessions.has(userId)) {
-      const scope = this.container.createScope();
+    let scope = this.sessions.get(userId);
+    if (scope === undefined) {
+      scope = this.container.createScope();
       this.sessions.set(userId, scope);
     }
-    return this.sessions.get(userId)!;
+    return scope;
   }
 
-  async endSession(userId: string) {
+  async endSession(userId: string): Promise<void> {
     const scope = this.sessions.get(userId);
     if (scope) {
-      await scope.dispose();
+      await scope.tryDispose();
       this.sessions.delete(userId);
     }
   }
 
-  async endAllSessions() {
+  async endAllSessions(): Promise<void> {
     await Promise.all(
-      Array.from(this.sessions.values()).map(s => s.dispose())
+      Array.from(this.sessions.values()).map(s => s.tryDispose())
     );
     this.sessions.clear();
   }
@@ -137,8 +145,10 @@ app.use((req, res, next) => {
 });
 
 app.get('/profile', (req, res) => {
-  const profile = req.userScope.resolve(UserProfilePort);
-  res.json(profile);
+  req.userScope.tryResolve(UserProfilePort).match(
+    (profile) => res.json(profile),
+    (error) => res.status(500).json({ error: String(error) }),
+  );
 });
 ```
 
@@ -225,7 +235,7 @@ function UserEditModal({ userId, onClose }) {
 
 ```typescript
 interface TransactionContext {
-  transaction: DatabaseTransaction;
+  begin(): Promise<DatabaseTransaction>;
   commit(): Promise<void>;
   rollback(): Promise<void>;
 }
@@ -234,28 +244,29 @@ const TransactionContextAdapter = createAdapter({
   provides: TransactionContextPort,
   requires: [DatabasePort, LoggerPort],
   lifetime: 'scoped',
-  factory: async (deps) => {
-    const tx = await deps.Database.beginTransaction();
-    deps.Logger.log('Transaction started');
+  factory: (deps) => {
+    let activeTx: DatabaseTransaction | null = null;
 
     return {
-      transaction: tx,
+      begin: async () => {
+        activeTx = await deps.Database.beginTransaction();
+        deps.Logger.log('Transaction started');
+        return activeTx;
+      },
       commit: async () => {
-        await tx.commit();
+        await activeTx?.commit();
         deps.Logger.log('Transaction committed');
       },
       rollback: async () => {
-        await tx.rollback();
+        await activeTx?.rollback();
         deps.Logger.log('Transaction rolled back');
-      }
+      },
     };
   },
   finalizer: async (ctx) => {
     // Auto-rollback on scope dispose if not committed
-    if (ctx.transaction.isActive) {
-      await ctx.rollback();
-    }
-  }
+    await ctx.rollback();
+  },
 });
 ```
 
@@ -298,6 +309,8 @@ const RequestTraceAdapter = createAdapter({
 
 ### User Preferences
 
+> **Note:** Async factories are always singleton. If scoped services need async data, fetch lazily inside the service's methods rather than in the factory.
+
 ```typescript
 interface UserPreferences {
   theme: 'light' | 'dark';
@@ -309,18 +322,21 @@ const UserPreferencesAdapter = createAdapter({
   provides: UserPreferencesPort,
   requires: [UserSessionPort, DatabasePort],
   lifetime: 'scoped',
-  factory: async (deps) => {
-    const prefs = await deps.Database.query(
-      'SELECT * FROM user_preferences WHERE user_id = ?',
-      [deps.UserSession.user.id]
-    );
+  factory: (deps) => {
+    let cached: UserPreferences | null = null;
 
-    return prefs ?? {
-      theme: 'light',
-      language: 'en',
-      notifications: true
+    return {
+      get: async (): Promise<UserPreferences> => {
+        if (!cached) {
+          cached = await deps.Database.query(
+            'SELECT * FROM user_preferences WHERE user_id = ?',
+            [deps.UserSession.user.id]
+          ) ?? { theme: 'light', language: 'en', notifications: true };
+        }
+        return cached;
+      },
     };
-  }
+  },
 });
 ```
 
@@ -355,7 +371,12 @@ app.use((req, res, next) => {
   req.scope = scope;
 
   // Ensure disposal
-  const cleanup = () => scope.dispose().catch(console.error);
+  const cleanup = () => {
+    void scope.tryDispose().match(
+      () => {},
+      (error) => { console.error(error); },
+    );
+  };
   res.on('finish', cleanup);
   res.on('close', cleanup);
 
@@ -363,17 +384,17 @@ app.use((req, res, next) => {
 });
 ```
 
-### Try-Finally Pattern
+### Result Pattern
 
 ```typescript
-async function processRequest(data) {
+import { fromPromise } from '@hex-di/result';
+
+async function processRequest(data: RequestData) {
   const scope = container.createScope();
-  try {
-    const service = scope.resolve(ProcessorPort);
-    return await service.process(data);
-  } finally {
-    await scope.dispose();
-  }
+  const result = await scope.tryResolve(ProcessorPort)
+    .asyncAndThen((service) => fromPromise(service.process(data), (e) => e));
+  await scope.tryDispose();
+  return result;
 }
 ```
 
@@ -388,7 +409,7 @@ function ScopedComponent() {
     scopeRef.current = container.createScope();
 
     return () => {
-      scopeRef.current?.dispose();
+      void scopeRef.current?.tryDispose();
     };
   }, [container]);
 
@@ -463,12 +484,10 @@ class WorkerPool {
 
   async processJob(job: Job) {
     const scope = this.container.createScope();
-    try {
-      const processor = scope.resolve(JobProcessorPort);
-      return await processor.process(job);
-    } finally {
-      await scope.dispose();
-    }
+    const result = await scope.tryResolve(JobProcessorPort)
+      .asyncAndThen((processor) => fromPromise(processor.process(job), (e) => e));
+    await scope.tryDispose();
+    return result;
   }
 }
 ```
@@ -478,14 +497,14 @@ class WorkerPool {
 ### 1. Minimize Scope Lifetime
 
 ```typescript
+import { fromPromise } from '@hex-di/result';
+
 // Good - scope only for request duration
-async function handleRequest(req) {
+async function handleRequest(req: Request) {
   const scope = container.createScope();
-  try {
-    return await processRequest(scope, req);
-  } finally {
-    await scope.dispose();
-  }
+  const result = await fromPromise(processRequest(scope, req), (e) => e);
+  await scope.tryDispose();
+  return result;
 }
 
 // Avoid - long-lived scopes

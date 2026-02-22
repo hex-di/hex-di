@@ -26,9 +26,11 @@ import type {
   AdapterConstraint,
   InferAdapterProvides,
   InferAdapterRequires,
+  InferAdapterError,
   InferManyProvides,
   InferManyRequires,
   InferManyAsyncPorts,
+  InferManyErrors,
 } from "@hex-di/core";
 import type {
   HasOverlap,
@@ -84,6 +86,7 @@ import type {
   WithDepGraphAndLifetimeMap,
   WithDepGraphLifetimeAndWarning,
   WithUncheckedUsed,
+  WithErrors,
 } from "./state.js";
 
 // =============================================================================
@@ -115,18 +118,21 @@ export type ProvideResultSuccess<
   TRequires | TransformLazyToOriginal<InferAdapterRequires<TAdapter>>,
   TAsyncPorts,
   TOverrides,
-  WithDepGraphAndLifetimeMap<
-    TInternalState,
-    AddEdge<
-      GetDepGraph<TInternalState>,
-      AdapterProvidesName<TAdapter>,
-      AdapterRequiresNames<TAdapter>
+  WithErrors<
+    WithDepGraphAndLifetimeMap<
+      TInternalState,
+      AddEdge<
+        GetDepGraph<TInternalState>,
+        AdapterProvidesName<TAdapter>,
+        AdapterRequiresNames<TAdapter>
+      >,
+      AddLifetime<
+        GetLifetimeMap<TInternalState>,
+        AdapterProvidesName<TAdapter>,
+        DirectAdapterLifetime<TAdapter>
+      >
     >,
-    AddLifetime<
-      GetLifetimeMap<TInternalState>,
-      AdapterProvidesName<TAdapter>,
-      DirectAdapterLifetime<TAdapter>
-    >
+    InferAdapterError<TAdapter>
   >
 >;
 
@@ -151,19 +157,22 @@ export type ProvideResultSuccessWithDepthWarning<
   TRequires | TransformLazyToOriginal<InferAdapterRequires<TAdapter>>,
   TAsyncPorts,
   TOverrides,
-  WithDepGraphLifetimeAndWarning<
-    TInternalState,
-    AddEdge<
-      GetDepGraph<TInternalState>,
-      AdapterProvidesName<TAdapter>,
-      AdapterRequiresNames<TAdapter>
+  WithErrors<
+    WithDepGraphLifetimeAndWarning<
+      TInternalState,
+      AddEdge<
+        GetDepGraph<TInternalState>,
+        AdapterProvidesName<TAdapter>,
+        AdapterRequiresNames<TAdapter>
+      >,
+      AddLifetime<
+        GetLifetimeMap<TInternalState>,
+        AdapterProvidesName<TAdapter>,
+        DirectAdapterLifetime<TAdapter>
+      >,
+      TWarningPort
     >,
-    AddLifetime<
-      GetLifetimeMap<TInternalState>,
-      AdapterProvidesName<TAdapter>,
-      DirectAdapterLifetime<TAdapter>
-    >,
-    TWarningPort
+    InferAdapterError<TAdapter>
   >
 >;
 
@@ -570,20 +579,24 @@ export type ProvideUncheckedResult<
   | (TAdapter extends { factoryKind: "async" } ? InferAdapterProvides<TAdapter> : never),
   TOverrides,
   // Set uncheckedUsed=true to track that provideUnchecked() was used
-  WithUncheckedUsed<
-    WithDepGraphAndLifetimeMap<
-      TInternalState,
-      AddEdge<
-        GetDepGraph<TInternalState>,
-        AdapterProvidesName<TAdapter>,
-        AdapterRequiresNames<TAdapter>
-      >,
-      AddLifetime<
-        GetLifetimeMap<TInternalState>,
-        AdapterProvidesName<TAdapter>,
-        DirectAdapterLifetime<TAdapter>
+  // Also accumulate adapter error channel
+  WithErrors<
+    WithUncheckedUsed<
+      WithDepGraphAndLifetimeMap<
+        TInternalState,
+        AddEdge<
+          GetDepGraph<TInternalState>,
+          AdapterProvidesName<TAdapter>,
+          AdapterRequiresNames<TAdapter>
+        >,
+        AddLifetime<
+          GetLifetimeMap<TInternalState>,
+          AdapterProvidesName<TAdapter>,
+          DirectAdapterLifetime<TAdapter>
+        >
       >
-    >
+    >,
+    InferAdapterError<TAdapter>
   >
 >;
 
@@ -709,7 +722,7 @@ export type ProvideResultAllErrors<
   CollectAdapterErrors<TProvides, TInternalState, TAdapter> extends infer Errors extends
     readonly string[]
     ? Errors["length"] extends 0
-      ? // No errors - return success (same as ProvideResult success case)
+      ? // No errors - return success (ProvideResultSuccess handles error accumulation)
         ProvideResultSuccess<
           TProvides,
           TRequires,
@@ -747,14 +760,17 @@ type ProvideAsyncResultSuccess<
   TRequires | TransformLazyToOriginal<InferAdapterRequires<TAdapter>>,
   TAsyncPorts | InferAdapterProvides<TAdapter>,
   TOverrides,
-  WithDepGraphAndLifetimeMap<
-    TInternalState,
-    AddEdge<
-      GetDepGraph<TInternalState>,
-      AdapterProvidesName<TAdapter>,
-      AdapterRequiresNames<TAdapter>
+  WithErrors<
+    WithDepGraphAndLifetimeMap<
+      TInternalState,
+      AddEdge<
+        GetDepGraph<TInternalState>,
+        AdapterProvidesName<TAdapter>,
+        AdapterRequiresNames<TAdapter>
+      >,
+      AddLifetime<GetLifetimeMap<TInternalState>, AdapterProvidesName<TAdapter>, "singleton">
     >,
-    AddLifetime<GetLifetimeMap<TInternalState>, AdapterProvidesName<TAdapter>, "singleton">
+    InferAdapterError<TAdapter>
   >
 >;
 
@@ -776,15 +792,18 @@ type ProvideAsyncResultSuccessWithDepthWarning<
   TRequires | TransformLazyToOriginal<InferAdapterRequires<TAdapter>>,
   TAsyncPorts | InferAdapterProvides<TAdapter>,
   TOverrides,
-  WithDepGraphLifetimeAndWarning<
-    TInternalState,
-    AddEdge<
-      GetDepGraph<TInternalState>,
-      AdapterProvidesName<TAdapter>,
-      AdapterRequiresNames<TAdapter>
+  WithErrors<
+    WithDepGraphLifetimeAndWarning<
+      TInternalState,
+      AddEdge<
+        GetDepGraph<TInternalState>,
+        AdapterProvidesName<TAdapter>,
+        AdapterRequiresNames<TAdapter>
+      >,
+      AddLifetime<GetLifetimeMap<TInternalState>, AdapterProvidesName<TAdapter>, "singleton">,
+      TWarningPort
     >,
-    AddLifetime<GetLifetimeMap<TInternalState>, AdapterProvidesName<TAdapter>, "singleton">,
-    TWarningPort
+    InferAdapterError<TAdapter>
   >
 >;
 
@@ -1045,10 +1064,13 @@ type CheckBatchCaptiveDependencies<
         TRequires | TransformLazyToOriginal<InferManyRequires<TAdapters>>,
         TAsyncPorts | InferManyAsyncPorts<TAdapters>,
         TOverrides,
-        WithDepGraphAndLifetimeMap<
-          TInternalState,
-          AddManyEdges<GetDepGraph<TInternalState>, TAdapters>,
-          AddManyLifetimes<GetLifetimeMap<TInternalState>, TAdapters>
+        WithErrors<
+          WithDepGraphAndLifetimeMap<
+            TInternalState,
+            AddManyEdges<GetDepGraph<TInternalState>, TAdapters>,
+            AddManyLifetimes<GetLifetimeMap<TInternalState>, TAdapters>
+          >,
+          InferManyErrors<TAdapters>
         >
       >
     >
@@ -1239,10 +1261,13 @@ export type ProvideManyResultAllErrors<
           TRequires | TransformLazyToOriginal<InferManyRequires<TAdapters>>,
           TAsyncPorts | InferManyAsyncPorts<TAdapters>,
           TOverrides,
-          WithDepGraphAndLifetimeMap<
-            TInternalState,
-            AddManyEdges<GetDepGraph<TInternalState>, TAdapters>,
-            AddManyLifetimes<GetLifetimeMap<TInternalState>, TAdapters>
+          WithErrors<
+            WithDepGraphAndLifetimeMap<
+              TInternalState,
+              AddManyEdges<GetDepGraph<TInternalState>, TAdapters>,
+              AddManyLifetimes<GetLifetimeMap<TInternalState>, TAdapters>
+            >,
+            InferManyErrors<TAdapters>
           >
         >
       : // Has errors - return multi-error message

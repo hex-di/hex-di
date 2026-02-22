@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker/master/packages/core/schema/stryker-schema.json",
+  "packageManager": "pnpm",
+  "reporters": ["html", "clear-text", "progress"],
+  "plugins": ["@stryker-mutator/vitest-runner"],
+  "testRunner": "vitest",
+  "coverageAnalysis": "perTest",
+  "vitest": {
+    "related": false
+  },
+  "mutate": [
+    "src/gxp.ts"
+  ],
+  "ignorePatterns": ["dist", "node_modules", "features"],
+  "thresholds": {
+    "high": 80,
+    "low": 70,
+    "break": 70
+  },
+  "concurrency": 4,
+  "timeoutMS": 10000,
+  "disableTypeChecks": "**/*.ts"
+}

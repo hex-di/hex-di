@@ -1,45 +1,42 @@
 ---
 title: Getting Started
-description: Learn how to install and configure HexDI in your TypeScript project with step-by-step guidance.
+description: Install HexDI and learn how structural dependency injection works in TypeScript.
 sidebar_position: 1
 ---
 
 # Getting Started with HexDI
 
-This section will guide you through installing and using HexDI in your TypeScript project.
+Today, teams discover architectural mistakes in three places: code review, staging, or production. Code review depends on a reviewer noticing the problem. Staging catches what review missed. Production catches everything else.
+
+HexDI moves architectural discovery to a fourth place: **the compiler**.
+
+Missing a dependency? Compile error. Circular dependency? Compile error. Resolving a port that isn't in the graph? Compile error. The category of "wiring is wrong" errors ceases to exist at runtime.
+
+This isn't a linter rule that can be suppressed. It's a type system guarantee that holds as long as TypeScript does.
+
+---
 
 ## Prerequisites
 
 - Node.js 18.0 or later
-- TypeScript 5.0 or later
+- TypeScript 5.0 or later with `strict: true`
 - A package manager (pnpm, npm, or yarn)
 
-## Sections
+---
 
-1. **[Installation](./installation.md)** - Install HexDI packages and configure TypeScript
-2. **[Core Concepts](./core-concepts.md)** - Understand ports, adapters, graphs, and containers
-3. **[First Application](./first-application.md)** - Build a complete working example step-by-step
-4. **[Lifetimes](./lifetimes.md)** - Master singleton, scoped, and transient service lifetimes
-5. **[TypeScript Integration](./typescript-integration.md)** - Leverage type inference and utilities
+## The Core Model
 
-## Quick Overview
-
-HexDI uses four main concepts to manage dependencies:
+HexDI builds your application around four concepts:
 
 ```
 Port → Adapter → Graph → Container
 ```
 
-1. **Port** - A typed token that represents a service contract
-2. **Adapter** - An implementation of a port with its dependencies declared
-3. **Graph** - A validated collection of adapters (validated at compile-time)
-4. **Container** - A runtime resolver that creates service instances
-
 ```typescript
-// 1. Port - the contract
-const LoggerPort = createPort<'Logger', Logger>('Logger');
+// Port: a contract (not an implementation)
+const LoggerPort = port<Logger>()({ name: 'Logger' });
 
-// 2. Adapter - the implementation
+// Adapter: an implementation with explicit dependencies
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,
   requires: [],
@@ -47,56 +44,29 @@ const LoggerAdapter = createAdapter({
   factory: () => ({ log: console.log })
 });
 
-// 3. Graph - validated composition
+// Graph: validated at compile time
+// If it builds, every dependency is satisfied.
 const graph = GraphBuilder.create()
   .provide(LoggerAdapter)
   .build();
 
-// 4. Container - runtime resolution
-const container = createContainer(graph);
+// Container: runtime resolution
+const container = createContainer({ graph, name: "App" });
 const logger = container.resolve(LoggerPort);
 ```
 
-## What Makes HexDI Different?
+The graph is not a runtime object you hope is correct. It's a type-level constraint the compiler enforces. You cannot build a graph with missing dependencies. You cannot resolve a port that isn't in the graph. The architecture is structurally correct by construction.
 
-### Compile-Time Validation
+---
 
-Unlike other DI frameworks that fail at runtime, HexDI catches errors at compile time:
+## Sections
 
-```typescript
-// This fails to compile - not at runtime!
-const graph = GraphBuilder.create()
-  .provide(UserServiceAdapter) // requires Logger
-  .build(); // Error: Missing dependencies: Logger
-```
+1. **[Installation](./installation.md)** — One command to install everything
+2. **[Core Concepts](./core-concepts.md)** — Ports, adapters, graphs, containers, scopes
+3. **[First Application](./first-application.md)** — A complete working example
+4. **[Lifetimes](./lifetimes.md)** — Singleton, scoped, and transient lifetimes
+5. **[TypeScript Integration](./typescript-integration.md)** — Type inference and utilities
 
-### Full Type Inference
+---
 
-No decorators, no explicit types, no configuration files:
-
-```typescript
-// TypeScript infers everything
-const adapter = createAdapter({
-  provides: MyPort,
-  requires: [LoggerPort],
-  lifetime: 'scoped',
-  factory: (deps) => {
-    deps.Logger.log('Hello'); // TypeScript knows this is valid
-    return { /* ... */ };
-  }
-});
-```
-
-### Immutable Composition
-
-GraphBuilder is immutable - each `provide()` returns a new builder:
-
-```typescript
-const base = GraphBuilder.create().provide(LoggerAdapter);
-const withDb = base.provide(DatabaseAdapter);    // base unchanged
-const withCache = base.provide(CacheAdapter);   // base unchanged
-```
-
-## Next Steps
-
-Start with [Installation](./installation.md) to set up your project.
+Start with [Installation](./installation.md).

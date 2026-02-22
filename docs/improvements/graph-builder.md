@@ -318,13 +318,13 @@ Pass 2: Validate complete graph (captive, lifetime constraints)
 
 ## Breaking Changes
 
-1. Remove `provideAsync()` - use `provide()` (auto-detects)
-2. Remove `provideFirstError()` - use `provide()` (all-errors)
-3. Remove `provideUnchecked()` - remove entirely
-4. Remove `mergeWith()` - use `merge()` (always max depth)
-5. Rename `withUnsafeDepthOverride()` → `withExtendedDepth()`
-6. Add `override()` lifetime validation (HEX022)
-7. Add bidirectional captive validation
+1. ✓ Remove `provideAsync()` - use `provide()` (auto-detects)
+2. ✓ Remove `provideFirstError()` - use `provide()` (all-errors)
+3. ✓ Remove `provideUnchecked()` - removed entirely
+4. ✓ Remove `mergeWith()` - use `merge()` (always max depth)
+5. ✓ Rename `withUnsafeDepthOverride()` → `withExtendedDepth()`
+6. [ ] Add `override()` lifetime validation (HEX022)
+7. [ ] Add bidirectional captive validation
 
 ---
 
@@ -336,13 +336,13 @@ Pass 2: Validate complete graph (captive, lifetime constraints)
 - [x] Fix `parentProvides` merge bug (preserve both parents)
 - [x] Fix `UnsafeDepthOverride` merge (OR both flags)
 
-### Phase 2: Method Removal
+### Phase 2: Method Removal ✓
 
-- [ ] Remove `provideAsync()`
-- [ ] Remove `provideFirstError()`
-- [ ] Remove `provideUnchecked()`
-- [ ] Remove `mergeWith()`
-- [ ] Rename `withUnsafeDepthOverride()` → `withExtendedDepth()`
+- [x] Remove `provideAsync()` — `provide()` auto-detects async factories
+- [x] Remove `provideFirstError()`
+- [x] Remove `provideUnchecked()`
+- [x] Remove `mergeWith()` — replaced by `merge()` (always max depth)
+- [x] Rename `withUnsafeDepthOverride()` → `withExtendedDepth()`
 
 ### Phase 3: Type-Level Async Detection
 
@@ -391,26 +391,28 @@ Pass 2: Validate complete graph (captive, lifetime constraints)
 
 ## Usage Example
 
-### Before
+### Before (old API)
 
 ```typescript
+// provideAsync() no longer exists — removed in Phase 2
 const graph = GraphBuilder.create()
   .provide(ConfigAdapter)
   .provide(LoggerAdapter)
-  .provideAsync(DatabaseAdapter) // Must remember async!
-  .provideAsync(CacheAdapter) // Must remember async!
+  .provideAsync(DatabaseAdapter) // old: had to know it's async
+  .provideAsync(CacheAdapter)    // old: had to know it's async
   .provide(UserServiceAdapter)
   .build();
 ```
 
-### After
+### After (current API)
 
 ```typescript
+// provide() auto-detects async from factory return type
 const graph = GraphBuilder.create()
   .provide(ConfigAdapter)
   .provide(LoggerAdapter)
-  .provide(DatabaseAdapter) // Auto-detected as async
-  .provide(CacheAdapter) // Auto-detected as async
+  .provide(DatabaseAdapter) // auto-detected as async
+  .provide(CacheAdapter)    // auto-detected as async
   .provide(UserServiceAdapter)
   .build();
 ```

@@ -18,7 +18,7 @@ import type { RuntimeAdapterFor } from "../container/internal-types.js";
 import { assertSyncAdapter } from "../container/internal-types.js";
 import { HooksRunner, checkCacheHit } from "./hooks-runner.js";
 import type { InheritanceMode } from "../types.js";
-import { resolveWithMemo, buildDependencies } from "./core.js";
+import { resolveWithMemo, buildDependencies, unwrapResultDefense } from "./core.js";
 
 // Note: MemoMap is still needed as a parameter type
 
@@ -178,7 +178,7 @@ export class ResolutionEngine {
         const deps = buildDependencies(adapter.requires, requiredPort =>
           this.resolveDependency(requiredPort, scopedMemo, scopeId, scopeName)
         );
-        return adapter.factory(deps);
+        return unwrapResultDefense(adapter.factory(deps)) as InferService<P>;
       } catch (e) {
         if (e instanceof ContainerError) {
           throw e;

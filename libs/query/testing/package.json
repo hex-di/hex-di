@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/query-testing",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "Testing utilities for @hex-di/query - mock adapters, spy adapters, and assertion helpers",
   "type": "module",
   "main": "./dist/index.js",

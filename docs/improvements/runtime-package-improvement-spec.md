@@ -228,19 +228,27 @@ export function freezeWrapper<T extends object>(wrapper: T): Readonly<T> {
 
 ---
 
-### 3.2 Type-Safe withOverrides API
+### 3.2 Type-Safe Override API
 
-**Problem**: Override map uses string keys, losing type safety
+> **Note:** `container.withOverrides()` does not exist in the current implementation. Overrides are applied at the **graph level** via `GraphBuilder.override()`, which produces a new, fully-typed graph and container. This is intentional — it preserves compile-time safety and deterministic resolution.
 
-**Current State**:
+**Current Mechanism**:
 
 ```typescript
-// Typos not caught at compile time!
-container.withOverrides(
-  { "Loggerr": () => mockLogger },  // Typo not detected
-  () => { ... }
-);
+import { GraphBuilder } from '@hex-di/graph';
+import { createContainer } from '@hex-di/runtime';
+
+// Create a test container with mock overrides at the graph level
+const testGraph = GraphBuilder.create()
+  .provide(LoggerAdapter)
+  .provide(DatabaseAdapter)
+  .override(MockLoggerAdapter)  // type-safe: MockLoggerAdapter must satisfy LoggerPort
+  .build();
+
+const testContainer = createContainer({ graph: testGraph, name: "Test" });
 ```
+
+**Problem**: The `.override()` API on `GraphBuilder` already provides type safety, but the ergonomics could be improved for test scenarios where only a subset of adapters need to be replaced.
 
 **Files Affected**:
 
@@ -248,84 +256,24 @@ container.withOverrides(
 - `/src/container/base-impl.ts`
 - `/src/types.ts`
 
-**Solution**:
+**Potential Enhancement** (post-current-API):
 
-Update override types to support port-keyed maps:
+A `TestGraphBuilder` utility in `@hex-di/testing` already wraps this pattern:
 
 ```typescript
-// types.ts - Add new override types
+import { TestGraphBuilder } from '@hex-di/testing';
 
-/**
- * Type-safe override map using Port objects as keys.
- * Ensures override factories return compatible service types.
- */
-export type TypeSafeOverrideMap<TProvides extends Port<unknown, string>> = {
-  [P in TProvides as P["__portName"]]?: () => InferService<P>;
-};
-
-/**
- * Override entry with port reference for validation.
- */
-export type OverrideEntry<P extends Port<unknown, string>> = {
-  readonly port: P;
-  readonly factory: () => InferService<P>;
-};
-
-/**
- * Builder for type-safe overrides.
- */
-export interface OverrideBuilder<TProvides extends Port<unknown, string>> {
-  override<P extends TProvides>(
-    port: P,
-    factory: () => InferService<P>
-  ): OverrideBuilder<TProvides>;
-
-  build(): ReadonlyMap<string, () => unknown>;
-}
+const testGraph = TestGraphBuilder.from(appGraph)
+  .override(MockLoggerAdapter)
+  .build();
 ```
-
-Update `withOverrides` signature:
-
-````typescript
-// base-impl.ts - Updated withOverrides
-
-/**
- * Execute a function with temporary service overrides.
- *
- * @example
- * ```typescript
- * // Type-safe: port object ensures correct factory return type
- * container.withOverrides(
- *   overrides => overrides
- *     .override(LoggerPort, () => mockLogger)
- *     .override(DatabasePort, () => mockDb),
- *   () => {
- *     // Overrides active here
- *   }
- * );
- * ```
- */
-withOverrides<R>(
-  configure: (builder: OverrideBuilder<TProvides>) => OverrideBuilder<TProvides>,
-  fn: () => R
-): R;
-
-// Backward compatible overload (deprecated)
-/** @deprecated Use builder pattern for type safety */
-withOverrides<R>(
-  overrides: Record<string, () => unknown>,
-  fn: () => R
-): R;
-````
 
 **Acceptance Criteria**:
 
-- [ ] New `OverrideBuilder` interface defined
-- [ ] `withOverrides` accepts builder function
-- [ ] Port-based overrides catch type mismatches at compile time
-- [ ] Backward compatible with string-based overrides (deprecated)
-- [ ] Tests updated to use new pattern
-- [ ] JSDoc examples updated
+- [ ] Document that `container.withOverrides()` does not exist
+- [ ] Ensure `.override()` on `GraphBuilder` has full JSDoc coverage
+- [ ] Add examples of `TestGraphBuilder` override patterns in testing docs
+- [ ] Verify `override()` catches incompatible adapter types at compile time
 
 ---
 
@@ -852,66 +800,23 @@ Trade-off: Slightly more complex disposal logic
 
 ---
 
-### 4.7 Improve createContainer Options API
+### 4.7 createContainer Options API
 
-**Problem**: Two separate options parameters
-
-**Current State**:
+> **Note:** `createContainer` already accepts a single options object as its second parameter. The proposed "AFTER" API is the current form:
 
 ```typescript
-createContainer(
-  graph,
-  { name: "App" },           // CreateContainerOptions
-  { hooks: { ... } }         // ContainerOptions (confusing!)
-);
+// Current API — already implemented
+createContainer(graph, { name: "App" });
+// With hooks:
+createContainer(graph, { name: "App", hooks: { beforeResolve: ... } });
 ```
 
-**Solution**:
-
-Merge into single options object:
-
-```typescript
-// BEFORE:
-export function createContainer<...>(
-  graph: Graph<...>,
-  containerOptions: CreateContainerOptions,
-  hookOptions?: ContainerOptions
-): Container<...>;
-
-// AFTER:
-export interface CreateContainerOptions {
-  /** Container name for debugging */
-  name: string;
-  /** DevTools configuration */
-  devtools?: ContainerDevToolsOptions;
-  /** Resolution hooks */
-  hooks?: ResolutionHooks;
-}
-
-export function createContainer<...>(
-  graph: Graph<...>,
-  options: CreateContainerOptions
-): Container<...>;
-```
-
-**Backward Compatibility**:
-
-```typescript
-// Support old signature with deprecation warning
-/** @deprecated Use single options object */
-export function createContainer<...>(
-  graph: Graph<...>,
-  containerOptions: CreateContainerOptions,
-  hookOptions?: { hooks?: ResolutionHooks }
-): Container<...>;
-```
+**Problem identified**: Documentation or internal usages that show a two-parameter form (graph + separate options + hookOptions) are incorrect. The actual signature takes a single `{ name, hooks?, devtools? }` options object.
 
 **Acceptance Criteria**:
 
-- [ ] Single options parameter
-- [ ] Backward compatible overload (deprecated)
-- [ ] All tests updated
-- [ ] Migration guide provided
+- [ ] Verify all docs and examples use `createContainer(graph, { name })` form
+- [ ] Remove any references to a two-parameter options form in documentation
 
 ---
 

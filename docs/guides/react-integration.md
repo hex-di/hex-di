@@ -11,7 +11,7 @@ This guide covers integrating HexDI with React applications using `@hex-di/react
 ## Installation
 
 ```bash
-pnpm add @hex-di/react
+pnpm add hex-di @hex-di/react
 ```
 
 ## Overview
@@ -54,7 +54,7 @@ export const useScope = typedHooks.useScope;
 import { createContainer } from "@hex-di/runtime";
 import { appGraph } from "./graph";
 
-export const container = createContainer(appGraph);
+export const container = createContainer({ graph: appGraph, name: "App" });
 ```
 
 ### 3. Wrap Your App with ContainerProvider
@@ -128,7 +128,7 @@ function RequestHandler() {
 
   useEffect(() => {
     return () => {
-      scope.dispose();
+      void scope.tryDispose();
     };
   }, [scope]);
 
@@ -208,8 +208,10 @@ function NotificationButton() {
 
   const handleClick = () => {
     // Resolve a transient service
-    const notification = container.resolve(NotificationPort);
-    notification.send('Button clicked!');
+    container.tryResolve(NotificationPort).match(
+      (notification) => { notification.send('Button clicked!'); },
+      (error) => { console.error('Failed to resolve notification:', error); },
+    );
   };
 
   return <button onClick={handleClick}>Notify</button>;
@@ -342,8 +344,10 @@ function NotificationDemo() {
 
   const handleClick = () => {
     // Each call creates a new instance
-    const notif = container.resolve(NotificationPort);
-    setInstances(prev => [...prev, notif.instanceId]);
+    container.tryResolve(NotificationPort).match(
+      (notif) => { setInstances(prev => [...prev, notif.instanceId]); },
+      (error) => { console.error('Failed to resolve notification:', error); },
+    );
   };
 
   return (
@@ -393,7 +397,7 @@ Combine HexDI with other state management:
 ```typescript
 function App() {
   const [user, setUser] = useState(null);
-  const container = useMemo(() => createContainer(graph), []);
+  const container = useMemo(() => createContainer({ graph, name: "App" }), []);
 
   // Update adapter factory state before scope creation
   const handleLogin = (userData) => {
@@ -476,18 +480,18 @@ const hooks = createTypedHooks<AppPorts>();
 Create a new container per request:
 
 ```typescript
+import { fromPromise } from '@hex-di/result';
+
 // Next.js example
 export async function getServerSideProps(context) {
-  const container = createContainer(graph);
-
-  try {
-    const dataService = container.resolve(DataServicePort);
-    const data = await dataService.fetchData();
-
-    return { props: { data } };
-  } finally {
-    await container.dispose();
-  }
+  const container = createContainer({ graph, name: "SSR" });
+  const result = await container.tryResolve(DataServicePort)
+    .asyncAndThen((dataService) => fromPromise(dataService.fetchData(), (e) => e));
+  await container.tryDispose();
+  return result.match(
+    (data) => ({ props: { data } }),
+    (error) => ({ notFound: true }),
+  );
 }
 ```
 
@@ -498,9 +502,12 @@ Pass initial data to avoid refetching:
 ```typescript
 function App({ initialData }) {
   const container = useMemo(() => {
-    const c = createContainer(graph);
+    const c = createContainer({ graph, name: "App" });
     // Hydrate with server data
-    c.resolve(DataStorePort).hydrate(initialData);
+    c.tryResolve(DataStorePort).match(
+      (store) => { store.hydrate(initialData); },
+      (error) => { console.error('Failed to hydrate data store:', error); },
+    );
     return c;
   }, []);
 
@@ -512,40 +519,15 @@ function App({ initialData }) {
 }
 ```
 
-## DevTools Integration
-
-Add the DevTools component for debugging:
-
-```typescript
-import { DevToolsFloating } from '@hex-di/devtools';
-import { appGraph } from './di/graph';
-import { container } from './di/container';
-
-function App() {
-  return (
-    <ContainerProvider container={container}>
-      <MyApp />
-      {process.env.NODE_ENV === 'development' && (
-        <DevToolsFloating
-          graph={appGraph}
-          container={container}
-          position="bottom-right"
-        />
-      )}
-    </ContainerProvider>
-  );
-}
-```
-
 ## Complete Example
 
 ```typescript
 // di/ports.ts
-import { createPort } from '@hex-di/ports';
+import { port } from '@hex-di/core';
 
-export const LoggerPort = createPort<'Logger', Logger>('Logger');
-export const UserSessionPort = createPort<'UserSession', UserSession>('UserSession');
-export const ChatServicePort = createPort<'ChatService', ChatService>('ChatService');
+export const LoggerPort      = port<Logger>()({ name: 'Logger' });
+export const UserSessionPort = port<UserSession>()({ name: 'UserSession' });
+export const ChatServicePort = port<ChatService>()({ name: 'ChatService' });
 
 export type AppPorts =
   | typeof LoggerPort
@@ -562,7 +544,7 @@ export const { ContainerProvider, AutoScopeProvider, usePort } = hooks;
 // di/container.ts
 import { createContainer } from '@hex-di/runtime';
 import { appGraph } from './graph';
-export const container = createContainer(appGraph);
+export const container = createContainer({ graph: appGraph, name: "App" });
 
 // App.tsx
 import { ContainerProvider, AutoScopeProvider } from './di/hooks';

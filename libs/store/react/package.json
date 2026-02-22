@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/store-react",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "React integration for @hex-di/store - type-safe hooks for state, atoms, derived values, and async derived",
   "type": "module",
   "main": "./dist/index.js",

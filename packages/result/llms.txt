@@ -1,0 +1,673 @@
+# @hex-di/result
+
+> Rust-style Result type for TypeScript — errors as values with full type safety, immutability, and composable error handling.
+
+## Package Metadata
+
+- **Version**: 0.2.0
+- **License**: MIT
+- **Module format**: ESM only (`"type": "module"`)
+- **Side effects**: None (`"sideEffects": false`)
+- **Node**: >= 18.0.0
+- **TypeScript**: >= 5.6 (optional peer dependency)
+- **Repository**: https://github.com/hex-di/result.git (directory: `packages/result`)
+
+## Installation
+
+```
+npm install @hex-di/result
+```
+
+## Design Philosophy
+
+1. **No exceptions** — Errors are values, not control flow. Throwing is reserved for truly unrecoverable bugs (`expect`, `assertNever`).
+2. **Immutability** — Every `Result` and `Option` instance is `Object.freeze()`d at creation. No mutation is possible.
+3. **Phantom types** — `ok()` returns `Ok<T, never>` and `err()` returns `Err<never, E>`. The `never` parameters are assignable to any type, enabling free composition without explicit type annotations.
+4. **Discriminated unions** — `Result<T, E> = Ok<T, E> | Err<T, E>` with `_tag: "Ok" | "Err"` as the discriminant. TypeScript narrows correctly after `isOk()` / `isErr()`.
+5. **Closures over classes** — `Ok` and `Err` are plain objects with closure-captured methods, not class instances. No `this` binding issues, no prototype chain.
+6. **Brand validation** — A unique `Symbol("Result")` brand prevents structural fakes from passing `isResult()`.
+
+## Core Types
+
+### `Result<T, E> = Ok<T, E> | Err<T, E>`
+
+Discriminated union. TypeScript narrows via `_tag`, `isOk()`, or `isErr()`.
+
+### `Ok<T, E>` interface
+
+```ts
+interface Ok<T, E> {
+  readonly _tag: "Ok";
+  readonly value: T;
+  readonly [RESULT_BRAND]: true;
+}
+```
+
+### `Err<T, E>` interface
+
+```ts
+interface Err<T, E> {
+  readonly _tag: "Err";
+  readonly error: E;
+  readonly [RESULT_BRAND]: true;
+}
+```
+
+### `Option<T> = Some<T> | None`
+
+Discriminated union for presence/absence. TypeScript narrows via `_tag`, `isSome()`, or `isNone()`.
+
+### `ResultAsync<T, E>`
+
+Class wrapping `Promise<Result<T, E>>`. Implements `PromiseLike<Result<T, E>>`. Internal promise never rejects.
+
+## Factory Functions
+
+```ts
+function ok<T>(value: T): Ok<T, never>
+function err<E>(error: E): Err<never, E>
+function some<T>(value: T): Some<T>
+function none(): None  // returns frozen singleton
+
+function isResult(value: unknown): value is Result<unknown, unknown>
+function isResultAsync(value: unknown): value is ResultAsync<unknown, unknown>
+function isOption(value: unknown): value is Option<unknown>
+```
+
+## Constructors
+
+```ts
+// Immediate execution (zero-arg)
+function fromThrowable<T, E>(fn: () => T, mapErr: (error: unknown) => E): Result<T, E>
+// Wrapping (multi-arg) — returns a safe wrapper function
+function fromThrowable<A extends readonly unknown[], T, E>(
+  fn: (...args: A) => T, mapErr: (error: unknown) => E
+): (...args: A) => Result<T, E>
+
+// Always executes immediately (zero-arg only)
+function tryCatch<T, E>(fn: () => T, mapErr: (error: unknown) => E): Result<T, E>
+
+function fromNullable<T, E>(value: T | null | undefined, onNullable: () => E): Result<T, E>
+
+// Supports type guard predicates for narrowing
+function fromPredicate<T, U extends T, E>(
+  value: T, predicate: (value: T) => value is U, onFalse: (value: T) => E
+): Result<U, E>
+function fromPredicate<T, E>(
+  value: T, predicate: (value: T) => boolean, onFalse: (value: T) => E
+): Result<T, E>
+
+function fromPromise<T, E>(promise: Promise<T>, mapErr: (error: unknown) => E): ResultAsync<T, E>
+function fromSafePromise<T>(promise: Promise<T>): ResultAsync<T, never>
+function fromAsyncThrowable<A extends readonly unknown[], T, E>(
+  fn: (...args: A) => Promise<T>, mapErr: (error: unknown) => E
+): (...args: A) => ResultAsync<T, E>
+```
+
+## Result Instance Methods
+
+### Type Guards
+
+```ts
+isOk(): this is Ok<T, E>
+isErr(): this is Err<T, E>
+isOkAnd(predicate: (value: T) => boolean): boolean
+isErrAnd(predicate: (error: E) => boolean): boolean
+```
+
+### Transformations
+
+```ts
+map<U>(f: (value: T) => U): Result<U, E>
+mapErr<F>(f: (error: E) => F): Result<T, F>
+mapBoth<U, F>(onOk: (value: T) => U, onErr: (error: E) => F): Result<U, F>
+flatten<U, E2>(this: Ok<Result<U, E2>, E>): Result<U, E | E2>
+flip(): Result<E, T>
+```
+
+### Logical Combinators
+
+```ts
+and<U, F>(other: Result<U, F>): Result<U, E | F>
+or<U, F>(other: Result<U, F>): Result<T | U, F>
+```
+
+### Chaining
+
+```ts
+andThen<U, F>(f: (value: T) => Result<U, F>): Result<U, E | F>
+orElse<U, F>(f: (error: E) => Result<U, F>): Result<T | U, F>
+andTee(f: (value: T) => void): Result<T, E>        // swallows exceptions from f
+orTee(f: (error: E) => void): Result<T, E>          // swallows exceptions from f
+andThrough<F>(f: (value: T) => Result<unknown, F>): Result<T, E | F>
+inspect(f: (value: T) => void): Result<T, E>
+inspectErr(f: (error: E) => void): Result<T, E>
+```
+
+### Extraction
+
+```ts
+match<A, B>(onOk: (value: T) => A, onErr: (error: E) => B): A | B
+unwrapOr<U>(defaultValue: U): T | U
+unwrapOrElse<U>(f: (error: E) => U): T | U
+mapOr<U>(defaultValue: U, f: (value: T) => U): U
+mapOrElse<U>(defaultF: (error: E) => U, f: (value: T) => U): U
+contains(value: T): boolean
+containsErr(error: E): boolean
+expect(message: string): T        // throws UnwrapError on Err
+expectErr(message: string): E     // throws UnwrapError on Ok
+```
+
+### Conversion
+
+```ts
+toNullable(): T | null
+toUndefined(): T | undefined
+intoTuple(): [null, T] | [E, null]
+merge(): T | E
+```
+
+### Async Bridges
+
+```ts
+toAsync(): ResultAsync<T, E>
+asyncMap<U>(f: (value: T) => Promise<U>): ResultAsync<U, E>
+asyncAndThen<U, F>(f: (value: T) => ResultAsync<U, F>): ResultAsync<U, E | F>
+```
+
+### Option Bridges
+
+```ts
+toOption(): Option<T>          // Ok → Some(value), Err → None
+toOptionErr(): Option<E>       // Ok → None, Err → Some(error)
+transpose<U>(this: Ok<Option<U>, E>): Option<Result<U, E>>
+```
+
+### Serialization
+
+```ts
+toJSON(): { _tag: "Ok"; _schemaVersion: 1; value: T }
+       | { _tag: "Err"; _schemaVersion: 1; error: E }
+```
+
+### Generator Protocol
+
+```ts
+// Ok: returns value immediately (done: true on first next())
+// Err: yields self then throws "unreachable: generator continued after yield in Err"
+[Symbol.iterator](): Generator<Err<never, E>, T, unknown>
+```
+
+## ResultAsync
+
+### Static Constructors
+
+```ts
+ResultAsync.ok<T>(value: T): ResultAsync<T, never>
+ResultAsync.err<E>(error: E): ResultAsync<never, E>
+ResultAsync.fromPromise<T, E>(promise: Promise<T>, mapErr: (error: unknown) => E): ResultAsync<T, E>
+ResultAsync.fromSafePromise<T>(promise: Promise<T>): ResultAsync<T, never>
+ResultAsync.fromResult<T, E>(promise: Promise<Result<T, E>>): ResultAsync<T, E>
+ResultAsync.fromThrowable<A extends readonly unknown[], T, E>(
+  fn: (...args: A) => Promise<T>, mapErr: (error: unknown) => E
+): (...args: A) => ResultAsync<T, E>
+ResultAsync.fromCallback<T, E>(
+  fn: (callback: (error: E | null, value: T) => void) => void
+): ResultAsync<T, E>
+ResultAsync.race<R extends readonly ResultAsync<unknown, unknown>[]>(
+  ...results: R
+): ResultAsync<InferOkUnion<R>, InferErrUnion<R>>
+```
+
+### Static Combinators
+
+```ts
+ResultAsync.all         // same as standalone all()
+ResultAsync.allSettled  // same as standalone allSettled()
+ResultAsync.any         // same as standalone any()
+ResultAsync.collect     // same as standalone collect()
+ResultAsync.partition   // same as standalone partition()
+ResultAsync.forEach     // same as standalone forEach()
+ResultAsync.zipOrAccumulate  // same as standalone zipOrAccumulate()
+```
+
+### Instance Methods
+
+All instance methods mirror the sync Result API but accept `Promise`-returning callbacks and return `ResultAsync` or `Promise`:
+
+```ts
+map<U>(f: (value: T) => U | Promise<U>): ResultAsync<U, E>
+mapErr<F>(f: (error: E) => F | Promise<F>): ResultAsync<T, F>
+mapBoth<U, F>(onOk: ..., onErr: ...): ResultAsync<U, F>
+andThen<U, F>(f: (value: T) => Result<U, F> | ResultAsync<U, F>): ResultAsync<U, E | F>
+orElse<U, F>(f: (error: E) => Result<U, F> | ResultAsync<U, F>): ResultAsync<T | U, F>
+andTee(f: (value: T) => void | Promise<void>): ResultAsync<T, E>
+orTee(f: (error: E) => void | Promise<void>): ResultAsync<T, E>
+andThrough<F>(f: (value: T) => Result<unknown, F> | ResultAsync<unknown, F>): ResultAsync<T, E | F>
+inspect(f: (value: T) => void): ResultAsync<T, E>
+inspectErr(f: (error: E) => void): ResultAsync<T, E>
+match<A, B>(onOk: ..., onErr: ...): Promise<A | B>
+unwrapOr<U>(defaultValue: U): Promise<T | U>
+unwrapOrElse<U>(f: (error: E) => U): Promise<T | U>
+toNullable(): Promise<T | null>
+toUndefined(): Promise<T | undefined>
+intoTuple(): Promise<[null, T] | [E, null]>
+merge(): Promise<T | E>
+flatten<U>(this: ResultAsync<Result<U, E>, E>): ResultAsync<U, E>
+flip(): ResultAsync<E, T>
+toJSON(): Promise<{ _tag: "Ok"; _schemaVersion: 1; value: T } | { _tag: "Err"; _schemaVersion: 1; error: E }>
+```
+
+## Combinators
+
+```ts
+function all<R extends readonly Result<unknown, unknown>[]>(
+  ...results: R
+): Result<InferOkTuple<R>, InferErrUnion<R>>
+// Short-circuits on first Err
+
+function allSettled<R extends readonly Result<unknown, unknown>[]>(
+  ...results: R
+): Result<InferOkTuple<R>, InferErrUnion<R>[]>
+// Collects ALL errors (no short-circuit), error is E[]
+
+function any<R extends readonly Result<unknown, unknown>[]>(
+  ...results: R
+): Result<InferOkUnion<R>, InferErrTuple<R>>
+// Short-circuits on first Ok, collects all errors on failure
+
+function collect<R extends Record<string, Result<unknown, unknown>>>(
+  record: R
+): Result<{ [K in keyof R]: InferOk<R[K]> }, InferErr<R[keyof R]>>
+// Record combinator, short-circuits on first Err
+
+function partition<T, E>(
+  results: readonly Result<T, E>[]
+): [T[], E[]]
+// Splits into Ok/Err arrays, returns plain tuple (not Result)
+
+function forEach<T, U, E>(
+  items: readonly T[], f: (item: T) => Result<U, E>
+): Result<U[], E>
+// Maps with short-circuit on first Err
+
+function zipOrAccumulate<R extends readonly Result<unknown, unknown>[]>(
+  ...results: R
+): Result<InferOkTuple<R>, NonEmptyArray<InferErrUnion<R>>>
+// Like allSettled but error is NonEmptyArray<E> (guaranteed at least one)
+```
+
+## Generators (safeTry)
+
+Emulates Rust's `?` operator using JavaScript generators. `yield*` on an `Ok` extracts the value; `yield*` on an `Err` early-returns it.
+
+```ts
+// Sync overload
+function safeTry<Y extends Err<never, unknown>, T, RE>(
+  generator: () => Generator<Y, Result<T, RE>, unknown>
+): Result<T, ExtractErrType<Y> | RE>
+
+// Async overload
+function safeTry<Y extends Err<never, unknown>, T, RE>(
+  generator: () => AsyncGenerator<Y, Result<T, RE>, unknown>
+): ResultAsync<T, ExtractErrType<Y> | RE>
+```
+
+Example:
+
+```ts
+const result = safeTry(function* () {
+  const a = yield* ok(1);        // a = 1
+  const b = yield* ok(2);        // b = 2
+  const c = yield* err("oops");  // early return: Err("oops")
+  return ok(a + b + c);          // never reached
+});
+// result => Err("oops")
+```
+
+## Do Notation
+
+Build up a typed context object one field at a time using `.andThen()` chains. Start with `ok({})`:
+
+```ts
+function bind<N extends string, Ctx extends Record<string, unknown>, T, E>(
+  name: Exclude<N, keyof Ctx>,
+  f: (ctx: Ctx) => Result<T, E>
+): (ctx: Ctx) => Result<Ctx & { readonly [K in N]: T }, E>
+
+function let_<N extends string, Ctx extends Record<string, unknown>, T>(
+  name: Exclude<N, keyof Ctx>,
+  f: (ctx: Ctx) => T
+): (ctx: Ctx) => Result<Ctx & { readonly [K in N]: T }, never>
+```
+
+Example:
+
+```ts
+const result = ok({})
+  .andThen(bind("x", () => ok(1)))
+  .andThen(bind("y", ({ x }) => ok(x + 1)))
+  .andThen(let_("sum", ({ x, y }) => x + y));
+// => Ok({ x: 1, y: 2, sum: 3 })
+```
+
+## Option Type
+
+### Factories
+
+```ts
+function some<T>(value: T): Some<T>
+function none(): None
+function isOption(value: unknown): value is Option<unknown>
+```
+
+### Some Instance Methods
+
+```ts
+isSome(): true
+isNone(): false
+isSomeAnd(predicate: (value: T) => boolean): boolean
+map<U>(f: (value: T) => U): Some<U>
+filter(predicate: (value: T) => boolean): Option<T>
+flatten<U>(this: Some<Option<U>>): Option<U>
+zip<U>(other: Option<U>): Option<[T, U]>
+zipWith<U, R>(other: Option<U>, f: (a: T, b: U) => R): Option<R>
+andThen<U>(f: (value: T) => Option<U>): Option<U>
+orElse(f: () => Option<T>): Some<T>
+match<A, B>(onSome: (value: T) => A, onNone: () => B): A
+unwrapOr<U>(defaultValue: U): T
+expect(message: string): T
+toResult<E>(onNone: () => E): Ok<T, E>
+toNullable(): T
+toUndefined(): T
+toJSON(): { _tag: "Some"; _schemaVersion: 1; value: T }
+transpose<U, E>(this: Some<Result<U, E>>): Result<Some<U>, E>
+```
+
+### None Instance Methods
+
+All transformations return `None`. Extraction methods return defaults or throw.
+
+```ts
+isSome(): false
+isNone(): true
+map<U>(f: (value: never) => U): None
+filter(...): None
+flatten(): None
+zip(...): None
+zipWith(...): None
+andThen(...): None
+orElse<T>(f: () => Option<T>): Option<T>
+match<A, B>(onSome: ..., onNone: () => B): B
+unwrapOr<U>(defaultValue: U): U
+expect(message: string): never  // throws UnwrapError
+toResult<E>(onNone: () => E): Err<never, E>
+toNullable(): null
+toUndefined(): undefined
+toJSON(): { _tag: "None"; _schemaVersion: 1 }
+transpose(): Ok<None, never>
+```
+
+### Option Serialization
+
+```ts
+type OptionJSON<T> =
+  | { _tag: "Some"; _schemaVersion?: number; value: T }
+  | { _tag: "None"; _schemaVersion?: number }
+
+function fromOptionJSON<T>(json: OptionJSON<T>): Option<T>
+```
+
+## Error Utilities
+
+```ts
+function createError<Tag extends string>(tag: Tag):
+  <Fields extends Record<string, unknown>>(fields: Fields) =>
+    Readonly<{ _tag: Tag } & Fields>
+// Returns frozen tagged error objects
+
+function createErrorGroup<NS extends string>(namespace: NS): {
+  create: <Tag extends string>(tag: Tag) =>
+    <Fields extends Record<string, unknown>>(fields: Fields) =>
+      Readonly<{ _namespace: NS; _tag: Tag } & Fields>;
+  is: (value: unknown) => value is Readonly<{ _namespace: NS; _tag: string }>;
+  isTag: <Tag extends string>(tag: Tag) =>
+    (value: unknown) => value is Readonly<{ _namespace: NS; _tag: Tag }>;
+}
+// Two-level discriminant: _namespace + _tag. All outputs frozen.
+
+function assertNever(value: never, message?: string): never
+// Exhaustiveness check for discriminated union switch statements
+```
+
+## Unsafe Operations
+
+Import from `@hex-di/result/unsafe` to make usage explicit.
+
+```ts
+function unwrap<T, E>(result: Result<T, E>): T
+// Throws UnwrapError if Err
+
+function unwrapErr<T, E>(result: Result<T, E>): E
+// Throws UnwrapError if Ok
+
+class UnwrapError extends Error {
+  readonly context: { readonly _tag: "Ok" | "Err"; readonly value: unknown };
+  constructor(message: string, context: { _tag: "Ok" | "Err"; value: unknown });
+}
+```
+
+## Functional API (`@hex-di/result/fn`)
+
+Curried, data-last versions of all Result instance methods. Each delegates to the corresponding instance method (no independent logic). Use with `pipe()`.
+
+```ts
+function pipe<A>(value: A): A
+function pipe<A, B>(value: A, f1: (a: A) => B): B
+// ... overloaded up to 11 functions
+
+function map<T, U>(f: (value: T) => U): (result: Result<T, unknown>) => Result<U, unknown>
+function mapErr<E, F>(f: (error: E) => F): (result: Result<unknown, E>) => Result<unknown, F>
+function mapBoth<T, E, U, F>(onOk: ..., onErr: ...): (result: ...) => ...
+function andThen<T, U, F>(f: (value: T) => Result<U, F>): (result: ...) => ...
+function orElse<E, U, F>(f: (error: E) => Result<U, F>): (result: ...) => ...
+function match<T, E, A, B>(onOk: ..., onErr: ...): (result: ...) => A | B
+function unwrapOr<U>(defaultValue: U): (result: ...) => ...
+function flatten(): (result: ...) => ...
+function flip(): (result: ...) => ...
+function and<U, F>(other: Result<U, F>): (result: ...) => ...
+function or<U, F>(other: Result<U, F>): (result: ...) => ...
+function mapOr<U>(defaultValue: U, f: ...): (result: ...) => U
+function mapOrElse<U>(defaultF: ..., f: ...): (result: ...) => U
+function contains<T>(value: T): (result: ...) => boolean
+function containsErr<E>(error: E): (result: ...) => boolean
+function inspect<T>(f: (value: T) => void): (result: ...) => ...
+function inspectErr<E>(f: (error: E) => void): (result: ...) => ...
+function toNullable(): (result: ...) => T | null
+function toUndefined(): (result: ...) => T | undefined
+function intoTuple(): (result: ...) => [null, T] | [E, null]
+function merge(): (result: ...) => T | E
+function toOption(): (result: ...) => Option<T>
+function toOptionErr(): (result: ...) => Option<E>
+function toJSON(): (result: ...) => ResultJSON<T, E>
+```
+
+Example:
+
+```ts
+import { ok } from "@hex-di/result";
+import { pipe, map, andThen, unwrapOr } from "@hex-di/result/fn";
+
+const value = pipe(
+  ok(21),
+  map(n => n * 2),
+  unwrapOr(0)
+);
+// value === 42
+```
+
+## Type Utilities
+
+```ts
+type InferOk<R>          // Extract T from Result<T, E> or ResultAsync<T, E>
+type InferErr<R>         // Extract E from Result<T, E> or ResultAsync<T, E>
+type InferAsyncOk<R>     // Extract T from ResultAsync<T, E>
+type InferAsyncErr<R>    // Extract E from ResultAsync<T, E>
+type IsResult<T>         // true if T is Result, false otherwise
+type IsResultAsync<T>    // true if T is ResultAsync, false otherwise
+type FlattenResult<R>    // Unwrap nested Result<Result<T, E1>, E2> → Result<T, E1 | E2>
+type InferOkTuple<T>     // Map tuple of Results to tuple of Ok types
+type InferErrUnion<T>    // Union of Err types from tuple of Results
+type InferOkRecord<R>    // Map record of Results to record of Ok types
+type InferOkUnion<T>     // Union of Ok types from tuple of Results
+type InferErrTuple<T>    // Map tuple of Results to tuple of Err types
+type NonEmptyArray<T>    // [T, ...T[]] — at least one element
+```
+
+## Serialization
+
+### Result JSON format
+
+```ts
+type ResultJSON<T, E> =
+  | { _tag: "Ok"; _schemaVersion?: number; value: T }
+  | { _tag: "Err"; _schemaVersion?: number; error: E }
+
+function fromJSON<T, E>(json: ResultJSON<T, E>): Result<T, E>
+// Throws TypeError if _tag is neither "Ok" nor "Err"
+```
+
+### Standard Schema V1
+
+```ts
+function toSchema<T, E>(
+  validate: (input: unknown) => Result<T, E>
+): StandardSchemaV1<unknown, T>
+// Wraps a Result-returning validator as a StandardSchemaV1 schema
+```
+
+## Subpath Exports
+
+| Subpath | Contents |
+|---------|----------|
+| `@hex-di/result` | Full public API (re-exports everything) |
+| `@hex-di/result/fn` | All standalone curried functions + `pipe()` |
+| `@hex-di/result/fn/*` | Individual standalone functions (max tree-shaking) |
+| `@hex-di/result/async` | `ResultAsync` class |
+| `@hex-di/result/combinators` | `all`, `allSettled`, `any`, `collect`, `partition`, `forEach`, `zipOrAccumulate` |
+| `@hex-di/result/errors` | `createError`, `createErrorGroup`, `assertNever` |
+| `@hex-di/result/option` | `Option`, `Some`, `None`, `some`, `none`, `isOption`, `fromOptionJSON` |
+| `@hex-di/result/unsafe` | `unwrap`, `unwrapErr`, `UnwrapError` |
+| `@hex-di/result/internal/*` | **Blocked** (`null`) — prevents importing internals |
+
+## Key Invariants
+
+1. **INV-1**: All `Result` instances are `Object.freeze()`d at creation. No mutation possible.
+2. **INV-2**: `ResultAsync` internal promise never rejects — it always resolves to a `Result`.
+3. **INV-3**: Brand `Symbol("Result")` prevents structural fakes from passing `isResult()`.
+4. **INV-4**: `Err` generator throws `"unreachable: generator continued after yield in Err"` if iterated past the yield point.
+5. **INV-5**: `andTee`/`orTee` catch and suppress all exceptions from `f`. Original `Result` returned unchanged.
+6. **INV-6**: `ok(value)` returns `Ok<T, never>`, `err(error)` returns `Err<never, E>`. Phantom `never` enables free composition.
+7. **INV-7**: `createError` output is `Object.freeze()`d.
+8. **INV-8**: `toAsync()`/`asyncMap()`/`asyncAndThen()` require `ResultAsync` to be registered (import from `@hex-di/result`, not directly from core).
+9. **INV-9**: `ResultAsync` instances carry `Symbol("ResultAsync")` brand checked by `isResultAsync()`.
+10. **INV-10**: All `Option` instances are `Object.freeze()`d at creation.
+11. **INV-11**: Brand `Symbol("Option")` prevents structural fakes from passing `isOption()`.
+12. **INV-12**: `UnwrapError` includes `.context` with `{ _tag, value }` for structured debugging.
+13. **INV-13**: `"./internal/*": null` in exports blocks all internal module imports.
+14. **INV-14**: Every standalone function in `fn/*` delegates to the corresponding instance method — no independent logic.
+
+## Common Patterns
+
+### Basic error handling
+
+```ts
+import { ok, err, type Result } from "@hex-di/result";
+
+function divide(a: number, b: number): Result<number, string> {
+  if (b === 0) return err("division by zero");
+  return ok(a / b);
+}
+
+const result = divide(10, 2);
+if (result.isOk()) {
+  console.log(result.value); // 5 — TypeScript narrows to Ok
+}
+```
+
+### Method chaining
+
+```ts
+const name = getUserResult()
+  .map(user => user.name)
+  .mapErr(e => `User error: ${e}`)
+  .unwrapOr("Anonymous");
+```
+
+### Pattern matching with match
+
+```ts
+const message = result.match(
+  value => `Success: ${value}`,
+  error => `Failed: ${error}`
+);
+```
+
+### Composing multiple results
+
+```ts
+import { all, collect } from "@hex-di/result";
+
+// Tuple combinator
+const tuple = all(getName(), getAge(), getEmail());
+// Result<[string, number, string], Error>
+
+// Record combinator
+const record = collect({ name: getName(), age: getAge() });
+// Result<{ name: string; age: number }, Error>
+```
+
+### Generator-based early return
+
+```ts
+import { safeTry, ok, err } from "@hex-di/result";
+
+const result = safeTry(function* () {
+  const user = yield* getUser(id);       // early returns on Err
+  const profile = yield* getProfile(user); // early returns on Err
+  return ok({ user, profile });
+});
+```
+
+### Tagged error discrimination
+
+```ts
+import { createErrorGroup, err } from "@hex-di/result";
+
+const DbError = createErrorGroup("DbError");
+const NotFound = DbError.create("NotFound");
+const Timeout = DbError.create("Timeout");
+
+const result = err(NotFound({ table: "users", id: "123" }));
+
+result.mapErr(e => {
+  if (DbError.isTag("NotFound")(e)) {
+    // e is { _namespace: "DbError", _tag: "NotFound", table: string, id: string }
+  }
+});
+```
+
+## Important Notes for AI Assistants
+
+1. **No class-based extension**: `Ok` and `Err` are interfaces implemented as plain frozen objects. You cannot extend them with `class MyResult extends Ok`. Use composition instead.
+2. **Phantom types matter**: `ok(42)` is `Ok<number, never>`, not `Ok<number, unknown>`. The `never` enables assignment to any `Result<number, E>` without casts.
+3. **Frozen instances**: You cannot add properties to or modify a `Result`/`Option` after creation. `Object.freeze()` is called in every factory.
+4. **Import from the package, not from core**: Direct imports from `core/result.ts` skip the lazy `ResultAsync` registration, causing runtime errors on `toAsync()`, `asyncMap()`, and `asyncAndThen()`. Always import from `@hex-di/result`.
+5. **`partition` returns a plain tuple**: Unlike other combinators, `partition` returns `[T[], E[]]`, not a `Result`.
+6. **`none()` is a singleton**: All calls return the same frozen object reference. `none() === none()` is `true`.
+7. **`andTee`/`orTee` swallow exceptions**: They are side-effect-only operations. If you need the side-effect's result to affect the chain, use `andThen`/`andThrough` instead.
+8. **`fromThrowable` has two overloads**: Zero-arg functions execute immediately; multi-arg functions return a wrapped function. `tryCatch` always executes immediately.
+9. **`safeTry` dispatches on `Symbol.asyncIterator`**: Sync generators return `Result`, async generators return `ResultAsync`.
+10. **Standalone functions (`fn/*`) have no independent logic**: They are thin curried wrappers that call instance methods. Behavioral parity is guaranteed.
+11. **`ResultAsync` is a class** (the only class in the library): It has a private constructor — create instances only via static methods or `toAsync()`.
+12. **`toJSON()`/`fromJSON()` round-trip**: Serialization preserves `_tag` and `_schemaVersion: 1`. `fromJSON` restores a fully branded, frozen `Result` with all methods.

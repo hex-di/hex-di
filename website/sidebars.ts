@@ -131,8 +131,8 @@ const sidebars: SidebarsConfig = {
       items: [
         {
           type: "doc",
-          id: "api/ports",
-          label: "@hex-di/ports",
+          id: "api/core",
+          label: "hex-di (core)",
         },
         {
           type: "doc",

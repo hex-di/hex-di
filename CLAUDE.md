@@ -24,6 +24,17 @@ When encountering TypeScript errors:
 - **No unused variables** - Remove or prefix with `_` if intentionally unused
 - **Explicit return types** for public functions
 
+## Error Handling (Rust-Style)
+
+- **Never throw from factory functions** — all construction errors must flow through `Result<T, E>` and the TError channel
+- **Each factory has its own construction error type** — factory error types are not shared across factories unless the factories return the exact same error variants (full to full match)
+- **Error classification**:
+  - Factory construction errors → `Result<T, FactorySpecificError>`
+  - Port method runtime errors → `Result<T, E>` (may share types within a service)
+  - Framework invariant violations (duplicates, cycles) → compile-time type errors where possible
+- **Error types are frozen** — all error objects returned from factories must be `Object.freeze()`d
+- **Each error type has a unique `_tag`** — enables pattern matching and discriminated unions
+
 ## ESLint
 
 Each package has its own `eslint.config.js`. Run lint before committing:

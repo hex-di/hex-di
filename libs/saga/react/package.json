@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/saga-react",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "React integration for @hex-di/saga - type-safe hooks for executing, monitoring, and recovering sagas",
   "type": "module",
   "main": "./dist/index.js",

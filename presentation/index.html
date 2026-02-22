@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HexDI — Self-Aware Applications</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Rajdhani', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          },
+          colors: {
+            hex: {
+              bg: '#020408',
+              surface: '#08101C',
+              primary: '#00F0FF',
+              primaryLight: '#5FFFFF',
+              primaryDark: '#008F99',
+              accent: '#FF5E00',
+              accentDark: '#CC4A00',
+              text: '#DAE6F0',
+              muted: '#586E85',
+            }
+          },
+          animation: {
+            'spin-slow': 'spin 20s linear infinite',
+            'float': 'float 6s ease-in-out infinite',
+            'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'scanline': 'scanline 6s linear infinite',
+            'holo-slide': 'holo-slide 3s ease-in-out infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0) rotateX(10deg)' },
+              '50%': { transform: 'translateY(-20px) rotateX(12deg)' },
+            },
+            'pulse-glow': {
+              '0%, 100%': { opacity: '0.4', boxShadow: '0 0 5px rgba(0,240,255,0.2)' },
+              '50%': { opacity: '1', boxShadow: '0 0 20px rgba(0,240,255,0.6)' },
+            },
+            scanline: {
+              '0%': { transform: 'translateY(-100%)' },
+              '100%': { transform: 'translateY(100%)' }
+            },
+            'holo-slide': {
+              '0%': { backgroundPosition: '-200% 0' },
+              '100%': { backgroundPosition: '200% 0' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #020408;
+      color: #DAE6F0;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .horizontal-scroll-container {
+      display: flex;
+      height: 100vh;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .horizontal-scroll-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    .scroll-section {
+      width: 100vw;
+      height: 100vh;
+      flex-shrink: 0;
+      scroll-snap-align: start;
+      position: relative;
+      padding: 5rem 6vw 4rem;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .bg-grid {
+      background-size: 40px 40px;
+      background-image:
+        linear-gradient(to right, rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
+    }
+
+    .hud-card {
+      background: rgba(8, 16, 28, 0.7);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(0, 240, 255, 0.15);
+      position: relative;
+    }
+
+    .hud-card::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: -1px;
+      width: 10px;
+      height: 10px;
+      border-top: 2px solid #00F0FF;
+      border-left: 2px solid #00F0FF;
+    }
+
+    .hud-card::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      right: -1px;
+      width: 10px;
+      height: 10px;
+      border-bottom: 2px solid #00F0FF;
+      border-right: 2px solid #00F0FF;
+    }
+
+    .hud-card-red::before { border-top-color: rgba(239,68,68,0.8); border-left-color: rgba(239,68,68,0.8); }
+    .hud-card-red::after  { border-bottom-color: rgba(239,68,68,0.8); border-right-color: rgba(239,68,68,0.8); }
+
+    .section-header {
+      border-left: 4px solid #00F0FF;
+      padding-left: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .progress-line {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      z-index: 100;
+      padding: 8px 16px;
+      background: rgba(8, 16, 28, 0.7);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(0, 240, 255, 0.2);
+    }
+
+    .progress-dot {
+      width: 40px;
+      height: 3px;
+      background: rgba(0, 240, 255, 0.15);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .progress-dot.active {
+      background: #00F0FF;
+      box-shadow: 0 0 10px #00F0FF;
+    }
+
+    .clip-path-slant {
+      clip-path: polygon(0 0, 100% 0, 95% 100%, 0% 100%);
+    }
+
+    /* Syntax highlighting */
+    .tk-keyword { color: #FF5E00; }
+    .tk-fn      { color: #00F0FF; }
+    .tk-str     { color: #A6E22E; }
+    .tk-cls     { color: #F92672; }
+    .tk-cmt     { color: #586E85; font-style: italic; }
+    .tk-type    { color: #66D9EF; }
+    .tk-num     { color: #AE81FF; }
+    .tk-op      { color: #F8F8F2; }
+    .tk-prop    { color: #A6E22E; }
+
+    /* Terminal window */
+    .terminal-window {
+      background: rgba(2, 4, 8, 0.95);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .terminal-window::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: -1px;
+      width: 10px; height: 10px;
+      border-top: 2px solid #00F0FF;
+      border-left: 2px solid #00F0FF;
+    }
+
+    .terminal-window::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; right: -1px;
+      width: 10px; height: 10px;
+      border-bottom: 2px solid #00F0FF;
+      border-right: 2px solid #00F0FF;
+    }
+
+    .scanline-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(transparent 50%, rgba(0, 240, 255, 0.015) 50%);
+      background-size: 100% 4px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .scanline-beam {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 60px;
+      background: linear-gradient(to bottom, transparent, rgba(0, 240, 255, 0.03), transparent);
+      animation: scanline 6s linear infinite;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* Layer diagram */
+    .layer-block {
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      background: rgba(0, 240, 255, 0.03);
+      position: relative;
+      padding: 1rem 1.5rem;
+    }
+
+    .layer-block::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: -1px;
+      width: 8px; height: 8px;
+      border-top: 2px solid #00F0FF;
+      border-left: 2px solid #00F0FF;
+    }
+
+    /* Phase progress bar */
+    .phase-bar-track {
+      height: 8px;
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid rgba(0, 240, 255, 0.15);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .phase-bar-fill {
+      height: 100%;
+      background: #00F0FF;
+      box-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+      transition: width 1s ease;
+    }
+
+    .phase-bar-fill-amber {
+      background: #FF5E00;
+      box-shadow: 0 0 8px rgba(255, 94, 0, 0.6);
+    }
+
+    .phase-bar-fill-dim {
+      background: rgba(0, 240, 255, 0.3);
+      box-shadow: none;
+    }
+
+    /* Comparison table */
+    .comp-table th, .comp-table td {
+      padding: 0.5rem 1rem;
+      text-align: center;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.08);
+      font-size: 0.7rem;
+      font-family: 'Fira Code', monospace;
+    }
+
+    .comp-table th {
+      color: #586E85;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+    }
+
+    .comp-table td.hexdi-col {
+      color: #00F0FF;
+      font-weight: 600;
+    }
+
+    .comp-table tr:hover td {
+      background: rgba(0, 240, 255, 0.03);
+    }
+
+    /* Quote glow */
+    .quote-glow {
+      text-shadow: 0 0 30px rgba(0, 240, 255, 0.3), 0 0 60px rgba(0, 240, 255, 0.1);
+    }
+
+    /* Hex graph SVG animation */
+    @keyframes node-pulse {
+      0%, 100% { opacity: 0.6; r: 5; }
+      50% { opacity: 1; r: 7; }
+    }
+
+    .hex-node { animation: node-pulse 2s ease-in-out infinite; }
+    .hex-node-2 { animation: node-pulse 2s ease-in-out infinite 0.4s; }
+    .hex-node-3 { animation: node-pulse 2s ease-in-out infinite 0.8s; }
+    .hex-node-4 { animation: node-pulse 2s ease-in-out infinite 1.2s; }
+    .hex-node-5 { animation: node-pulse 2s ease-in-out infinite 1.6s; }
+
+    @keyframes edge-flow {
+      0% { stroke-dashoffset: 100; }
+      100% { stroke-dashoffset: 0; }
+    }
+
+    .hex-edge {
+      stroke-dasharray: 6 4;
+      animation: edge-flow 3s linear infinite;
+    }
+
+    /* Tactical border */
+    .tactical-border-b {
+      border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+      box-shadow: 0 4px 20px -10px rgba(0, 240, 255, 0.3);
+    }
+
+    /* Numeric badge */
+    .num-badge {
+      font-family: 'Fira Code', monospace;
+      font-size: 2.5rem;
+      font-weight: 600;
+      color: rgba(0, 240, 255, 0.15);
+      line-height: 1;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Slide 1 special heading */
+    .blind-heading {
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      font-size: clamp(2rem, 4.5vw, 4.5rem);
+      line-height: 1.0;
+      letter-spacing: -0.02em;
+      color: #fff;
+      text-transform: uppercase;
+    }
+
+    .blind-sub {
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 500;
+      font-size: clamp(1rem, 2vw, 1.6rem);
+      color: #586E85;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 1.5rem;
+    }
+  </style>
+</head>
+
+<body class="bg-hex-bg selection:bg-hex-primary selection:text-black">
+
+  <!-- Fixed background layers -->
+  <div class="fixed inset-0 bg-grid opacity-30 pointer-events-none z-0"></div>
+  <div class="fixed inset-0 pointer-events-none z-0" style="background: radial-gradient(circle at 50% 50%, transparent 0%, rgba(2,4,8,0.85) 100%);"></div>
+
+  <!-- Fixed nav -->
+  <nav class="fixed top-0 w-full z-[100] tactical-border-b bg-hex-bg/90 backdrop-blur-xl">
+    <div class="max-w-[1920px] mx-auto px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="text-hex-primary drop-shadow-[0_0_8px_rgba(0,240,255,1)]">
+          <path d="M12 2L21 7V17L12 22L3 17V7L12 2Z" stroke="currentColor" stroke-width="2"/>
+          <circle cx="12" cy="12" r="3" fill="currentColor"/>
+        </svg>
+        <span class="font-display font-bold text-xl tracking-widest text-white uppercase">Hex<span class="text-hex-primary">DI</span></span>
+      </div>
+      <div class="flex items-center gap-6">
+        <div class="text-[9px] text-hex-muted font-mono tracking-widest uppercase" id="nav-slide-title">HOOK</div>
+        <div class="text-[9px] text-hex-muted font-mono tracking-widest uppercase border-l border-hex-muted/30 pl-6">[NAVIGATE: ← → KEYS]</div>
+        <div class="flex items-center gap-2 text-[10px] text-hex-primary border border-hex-primary/30 px-3 py-1 bg-hex-primary/5 font-mono">
+          <div class="w-1.5 h-1.5 bg-hex-primary rounded-full animate-ping"></div>
+          SYS.ONLINE
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Progress dots -->
+  <div class="progress-line" id="progress-container">
+    <div class="progress-dot active" data-index="0"></div>
+    <div class="progress-dot" data-index="1"></div>
+    <div class="progress-dot" data-index="2"></div>
+    <div class="progress-dot" data-index="3"></div>
+    <div class="progress-dot" data-index="4"></div>
+    <div class="progress-dot" data-index="5"></div>
+    <div class="progress-dot" data-index="6"></div>
+    <div class="progress-dot" data-index="7"></div>
+    <div class="progress-dot" data-index="8"></div>
+    <div class="progress-dot" data-index="9"></div>
+    <div class="progress-dot" data-index="10"></div>
+    <div class="progress-dot" data-index="11"></div>
+  </div>
+
+  <!-- Horizontal scroll container -->
+  <main class="horizontal-scroll-container" id="scroll-main">
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SLIDE 1 — HOOK: The Question -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section class="scroll-section">
+      <div class="max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-16 items-center">
+        <!-- Left: text -->
+        <div class="space-y-8">
+          <div class="inline-flex items-center gap-3 px-4 py-2 border border-hex-primary/30 bg-hex-primary/5 text-hex-primary text-[10px] font-mono tracking-[0.3em] uppercase">
+            <span class="w-2 h-2 bg-hex-primary animate-pulse"></span>
+            HexDI :: Self-Aware Applications
+          </div>
+          <h1 class="blind-heading">Your application handles<br><span class="text-hex-primary">millions</span> of requests.</h1>
+          <p class="blind-sub">But it cannot answer a single<br>question about itself.</p>
+          <div class="space-y-3 pt-4 font-mono text-xs">
+            <div class="flex items-center gap-4">
+              <span class="text-hex-text/70 tracking-widest uppercase w-44">Developer knows...</span>
+              <span class="text-hex-text/50 text-[10px]">architecture · intent · dependencies</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="text-hex-text/70 tracking-widest uppercase w-44">Ops platform knows...</span>
+              <span class="text-hex-text/50 text-[10px]">CPU · memory · network · restarts</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="text-hex-text/70 tracking-widest uppercase w-44">App knows...</span>
+              <span class="text-red-500/70 text-[10px] font-bold tracking-widest">NOTHING</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: animated hex SVG -->
+        <div class="relative flex items-center justify-center">
+          <div class="absolute inset-0 rounded-full opacity-10 animate-spin-slow" style="background: radial-gradient(circle at center, rgba(0,240,255,0.2) 0%, transparent 70%);"></div>
+          <svg class="w-full max-w-md animate-float drop-shadow-[0_0_40px_rgba(0,240,255,0.2)]" viewBox="0 0 400 400" fill="none">
+            <!-- Outer hexagon -->
+            <path d="M200 60 L322 130 L322 270 L200 340 L78 270 L78 130 Z" stroke="#00F0FF" stroke-width="1" fill="rgba(0,240,255,0.02)"/>
+            <!-- Inner hexagon -->
+            <path d="M200 115 L270 155 L270 235 L200 275 L130 235 L130 155 Z" stroke="rgba(0,240,255,0.3)" stroke-width="1" fill="rgba(0,240,255,0.03)"/>
+            <!-- Center node -->
+            <circle cx="200" cy="195" r="16" stroke="#00F0FF" stroke-width="2" fill="rgba(0,240,255,0.1)"/>
+            <path d="M188 195 h24 M200 183 v24" stroke="#00F0FF" stroke-width="1.5" opacity="0.8"/>
+            <!-- Satellite nodes -->
+            <circle cx="200" cy="75" r="6" fill="#FF5E00" class="hex-node"/>
+            <circle cx="305" cy="135" r="5" fill="#00F0FF" class="hex-node-2"/>
+            <circle cx="305" cy="255" r="5" fill="#00F0FF" class="hex-node-3"/>
+            <circle cx="200" cy="315" r="6" fill="#FF5E00" class="hex-node-4"/>
+            <circle cx="95" cy="255" r="5" fill="#00F0FF" class="hex-node-5"/>
+            <circle cx="95" cy="135" r="5" fill="#00F0FF" class="hex-node"/>
+            <!-- Edges -->
+            <line x1="200" y1="195" x2="200" y2="91" stroke="rgba(0,240,255,0.4)" stroke-width="1" class="hex-edge"/>
+            <line x1="200" y1="195" x2="298" y2="147" stroke="rgba(0,240,255,0.4)" stroke-width="1" class="hex-edge"/>
+            <line x1="200" y1="195" x2="298" y2="243" stroke="rgba(0,240,255,0.4)" stroke-width="1" class="hex-edge"/>
+            <line x1="200" y1="195" x2="200" y2="299" stroke="rgba(0,240,255,0.4)" stroke-width="1" class="hex-edge"/>
+            <line x1="200" y1="195" x2="102" y2="243" stroke="rgba(0,240,255,0.4)" stroke-width="1" class="hex-edge"/>
+            <line x1="200" y1="195" x2="102" y2="147" stroke="rgba(0,240,255,0.4)" stroke-width="1" class="hex-edge"/>
+            <!-- Labels -->
+            <text x="200" y="55" text-anchor="middle" fill="rgba(0,240,255,0.5)" font-family="Fira Code" font-size="9">LoggerPort</text>
+            <text x="340" y="140" fill="rgba(0,240,255,0.5)" font-family="Fira Code" font-size="9">DbPort</text>
+            <text x="340" y="260" fill="rgba(0,240,255,0.5)" font-family="Fira Code" font-size="9">CachePort</text>
+            <text x="170" y="335" fill="rgba(0,240,255,0.5)" font-family="Fira Code" font-size="9">AuthPort</text>
+            <text x="28" y="260" fill="rgba(0,240,255,0.5)" font-family="Fira Code" font-size="9">PayPort</text>
+            <text x="28" y="140" fill="rgba(0,240,255,0.5)" font-family="Fira Code" font-size="9">EventPort</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SLIDE 2 — THE PROBLEM: Software Is Blind -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section class="scroll-section">
+      <div class="max-w-7xl mx-auto w-full space-y-6">
+        <div class="section-header">
+          <span class="text-hex-primary font-mono text-xs tracking-widest uppercase">Protocol_01</span>
+          <h2 class="text-4xl font-display font-bold text-white uppercase mt-1">The Problem</h2>
+        </div>
+        <div class="grid grid-cols-3 gap-5">
+          <div class="hud-card p-6 space-y-3">
+            <div class="text-[10px] font-mono text-hex-primary tracking-widest uppercase border-b border-hex-primary/20 pb-2">Developer</div>
+            <div class="space-y-1.5 font-mono text-xs text-hex-muted">
+              <div class="flex items-center gap-2"><span class="w-1 h-1 bg-hex-primary/40 rounded-full inline-block"></span>Architecture & intent</div>
+              <div class="flex items-center gap-2"><span class="w-1 h-1 bg-hex-primary/40 rounded-full inline-block"></span>Source code & logic</div>
+              <div class="flex items-center gap-2"><span class="w-1 h-1 bg-hex-primary/40 rounded-full inline-block"></span>Dependency contracts</div>
+            </div>
+          </div>
+          <div class="hud-card p-6 space-y-3">
+            <div class="text-[10px] font-mono text-hex-primary tracking-widest uppercase border-b border-hex-primary/20 pb-2">Ops Platform</div>
+            <div class="space-y-1.5 font-mono text-xs text-hex-muted">
+              <div class="flex items-center gap-2"><span class="w-1 h-1 bg-hex-accent/40 rounded-full inline-block"></span>CPU, memory, network</div>
+              <div class="flex items-center gap-2"><span class="w-1 h-1 bg-hex-accent/40 rounded-full inline-block"></span>Container restarts</div>
+              <div class="flex items-center gap-2"><span class="w-1 h-1 bg-hex-accent/40 rounded-full inline-block"></span>Deployment config</div>
+            </div>
+          </div>
+          <div class="hud-card p-6 space-y-3">
+            <div class="text-[10px] font-mono text-hex-primary tracking-widest uppercase border-b border-hex-primary/20 pb-2">Monitoring</div>
+            <div class="space-y-1.5 font-mono text-xs text-hex-muted">
+              <div class="flex items-center gap-2"><span class="w-1 h-1 bg-indigo-400/40 rounded-full inline-block"></span>Error rates, latency</div>
+              <div class="flex items-center gap-2"><span class="w-1 h-1 bg-indigo-400/40 rounded-full inline-block"></span>External metrics</div>
+              <div class="flex items-center gap-2"><span class="w-1 h-1 bg-indigo-400/40 rounded-full inline-block"></span>Alerting thresholds</div>
+            </div>
+          </div>
+        </div>
+        <!-- The gap -->
+        <div class="hud-card border-red-500/30 p-5 space-y-2" style="border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.03);">
+          <div class="hud-card-red"></div>
+          <div class="flex items-center gap-4">
+            <span class="font-mono text-xs text-hex-muted/60 tracking-widest uppercase w-44 flex-shrink-0">Application knows:</span>
+            <span class="font-display font-bold text-3xl text-red-400 tracking-widest uppercase">NOTHING ABOUT ITSELF</span>
+          </div>
+        </div>
+        <div class="max-w-3xl space-y-2">
+          <p class="font-mono text-xs text-hex-muted leading-relaxed">When something breaks, teams reconstruct the picture from artifacts: read source files to understand architecture, parse logs to trace what happened, inspect memory dumps to find state, question colleagues to understand intent.</p>
+          <p class="font-mono text-xs text-hex-accent/80">This isn't a tooling problem. It's a <strong>foundational</strong> problem.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SLIDE 3 — ANALOGY: The Old Mechanic -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section class="scroll-section">
+      <div class="max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-12 items-center">
+        <!-- Left -->
+        <div class="space-y-6">
+          <div class="section-header">
+            <span class="text-hex-primary font-mono text-xs tracking-widest uppercase">Protocol_02</span>
+            <h2 class="text-4xl font-display font-bold text-white uppercase mt-1">Thirty Years Ago</h2>
+          </div>
+          <div class="terminal-window p-5">
+            <div class="scanline-overlay"></div>
+            <div class="relative z-10 space-y-3">
+              <div class="text-hex-muted/50 font-mono text-[10px]">// The passive car</div>
+
+              <!-- Two-entity visual diagram -->
+              <div class="flex items-stretch gap-0">
+
+                <!-- CAR entity -->
+                <div class="flex-1 border border-hex-accent/20 bg-hex-accent/5">
+                  <div class="border-b border-hex-accent/15 px-3 py-2 flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-hex-accent/60 flex-shrink-0"></span>
+                    <span class="text-hex-accent font-mono text-xs font-bold tracking-widest">CAR</span>
+                  </div>
+                  <div class="px-3 py-3 space-y-2">
+                    <div class="flex items-center gap-2">
+                      <svg width="8" height="8" viewBox="0 0 8 8" class="flex-shrink-0">
+                        <line x1="1" y1="1" x2="7" y2="7" stroke="#ef4444" stroke-width="1.5" stroke-opacity="0.45"/>
+                        <line x1="7" y1="1" x2="1" y2="7" stroke="#ef4444" stroke-width="1.5" stroke-opacity="0.45"/>
+                      </svg>
+                      <span class="font-mono text-[10px] text-hex-muted/55">No sensors</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <svg width="8" height="8" viewBox="0 0 8 8" class="flex-shrink-0">
+                        <line x1="1" y1="1" x2="7" y2="7" stroke="#ef4444" stroke-width="1.5" stroke-opacity="0.45"/>
+                        <line x1="7" y1="1" x2="1" y2="7" stroke="#ef4444" stroke-width="1.5" stroke-opacity="0.45"/>
+                      </svg>
+                      <span class="font-mono text-[10px] text-hex-muted/55">No reports</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <svg width="8" height="8" viewBox="0 0 8 8" class="flex-shrink-0">
+                        <line x1="1" y1="1" x2="7" y2="7" stroke="#ef4444" stroke-width="1.5" stroke-opacity="0.45"/>
+                        <line x1="7" y1="1" x2="1" y2="7" stroke="#ef4444" stroke-width="1.5" stroke-opacity="0.45"/>
+                      </svg>
+                      <span class="font-mono text-[10px] text-hex-muted/55">No knowledge</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Bidirectional arrow connector -->
+                <div class="flex items-center justify-center flex-shrink-0" style="width: 76px;">
+                  <svg width="76" height="36" viewBox="0 0 76 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="10" y1="18" x2="66" y2="18" stroke="#00F0FF" stroke-width="1" stroke-opacity="0.35"/>
+                    <path d="M12 15 L5 18 L12 21" stroke="#00F0FF" stroke-width="1" stroke-opacity="0.45" fill="none" stroke-linejoin="round"/>
+                    <path d="M64 15 L71 18 L64 21" stroke="#00F0FF" stroke-width="1" stroke-opacity="0.45" fill="none" stroke-linejoin="round"/>
+                    <text x="38" y="12" text-anchor="middle" font-family="'Fira Code',monospace" font-size="6" fill="#00F0FF" fill-opacity="0.28" letter-spacing="0.5">OBSERVE</text>
+                  </svg>
+                </div>
+
+                <!-- MECHANIC entity -->
+                <div class="flex-1 border border-hex-primary/20 bg-hex-primary/5">
+                  <div class="border-b border-hex-primary/15 px-3 py-2 flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-hex-primary/60 flex-shrink-0"></span>
+                    <span class="text-hex-primary font-mono text-xs font-bold tracking-widest">MECHANIC</span>
+                  </div>
+                  <div class="px-3 py-3 space-y-2">
+                    <div class="flex items-center gap-2">
+                      <span class="w-1 h-1 rounded-full bg-hex-primary/35 flex-shrink-0"></span>
+                      <span class="font-mono text-[10px] text-hex-text/60">Opens hood</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="w-1 h-1 rounded-full bg-hex-primary/35 flex-shrink-0"></span>
+                      <span class="font-mono text-[10px] text-hex-text/60">Listens</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="w-1 h-1 rounded-full bg-hex-primary/35 flex-shrink-0"></span>
+                      <span class="font-mono text-[10px] text-hex-text/60">Wiggles wires</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="w-1 h-1 rounded-full bg-hex-accent/35 flex-shrink-0"></span>
+                      <span class="font-mono text-[10px] text-hex-accent/60">Guesses</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Subtext -->
+              <div class="text-center font-mono text-[9px] text-hex-muted/28 tracking-widest uppercase pt-1">
+                No structured interface · External observation only
+              </div>
+            </div>
+          </div>
+          <div class="inline-flex items-center gap-3 px-4 py-2 border border-red-500/30 bg-red-500/5 text-red-400 text-[10px] font-mono tracking-[0.2em] uppercase">
+            <span class="w-2 h-2 bg-red-500 animate-pulse rounded-full"></span>
+            Diagnosis: PROBABILISTIC — Based on external observation
+          </div>
+        </div>
+
+        <!-- Right: terminal steps -->
+        <div class="space-y-4">
+          <div class="font-mono text-xs text-hex-muted/60 tracking-widest uppercase mb-4">Mechanic's workflow</div>
+          <div class="space-y-3">
+            <div class="hud-card p-4 flex items-start gap-4">
+              <span class="num-badge">01</span>
+              <div>
+                <div class="text-hex-text text-sm font-mono">Opens hood</div>
+                <div class="text-hex-muted text-xs font-mono mt-1">External inspection only. No interface with car.</div>
+              </div>
+            </div>
+            <div class="hud-card p-4 flex items-start gap-4">
+              <span class="num-badge">02</span>
+              <div>
+                <div class="text-hex-text text-sm font-mono">Listens to engine</div>
+                <div class="text-hex-muted text-xs font-mono mt-1">Heuristic pattern matching from experience.</div>
+              </div>
+            </div>
+            <div class="hud-card p-4 flex items-start gap-4">
+              <span class="num-badge">03</span>
+              <div>
+                <div class="text-hex-text text-sm font-mono">Wiggles wires</div>
+                <div class="text-hex-muted text-xs font-mono mt-1">Trial and error without structured data.</div>
+              </div>
+            </div>
+            <div class="hud-card p-4 flex items-start gap-4">
+              <span class="num-badge">04</span>
+              <div>
+                <div class="text-hex-text text-sm font-mono">Makes educated guess</div>
+                <div class="text-hex-muted text-xs font-mono mt-1 text-hex-accent/70">Three parts replaced before finding the real issue.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SLIDE 4 — ANALOGY: The New Car -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section class="scroll-section">
+      <div class="max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-12 items-center">
+        <!-- Left: diagram -->
+        <div class="space-y-6">
+          <div class="section-header">
+            <span class="text-hex-primary font-mono text-xs tracking-widest uppercase">Protocol_03</span>
+            <h2 class="text-4xl font-display font-bold text-white uppercase mt-1">Today</h2>
+          </div>
+          <div class="terminal-window p-5">
+            <div class="scanline-overlay"></div>
+            <div class="scanline-beam"></div>
+            <div class="relative z-10 space-y-3">
+              <div class="text-hex-muted/50 font-mono text-[10px]">// The self-reporting car</div>
+
+              <!-- Two-entity visual diagram -->
+              <div class="flex items-stretch gap-0">
+
+                <!-- CAR entity (cyan) -->
+                <div class="flex-1 border border-hex-primary/20 bg-hex-primary/5">
+                  <div class="border-b border-hex-primary/15 px-3 py-2 flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-hex-primary/60 flex-shrink-0"></span>
+                    <span class="text-hex-primary font-mono text-xs font-bold tracking-widest">CAR</span>
+                  </div>
+                  <div class="px-3 py-3 space-y-2">
+                    <div class="flex items-center gap-2">
+                      <svg width="8" height="8" viewBox="0 0 8 8" class="flex-shrink-0">
+                        <path d="M1 4.5 L3 7 L7 1.5" stroke="#22c55e" stroke-width="1.5" stroke-opacity="0.55" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                      <span class="font-mono text-[10px] text-hex-text/60">Own sensors</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <svg width="8" height="8" viewBox="0 0 8 8" class="flex-shrink-0">
+                        <path d="M1 4.5 L3 7 L7 1.5" stroke="#22c55e" stroke-width="1.5" stroke-opacity="0.55" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                      <span class="font-mono text-[10px] text-hex-text/60">Structured data</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <svg width="8" height="8" viewBox="0 0 8 8" class="flex-shrink-0">
+                        <path d="M1 4.5 L3 7 L7 1.5" stroke="#22c55e" stroke-width="1.5" stroke-opacity="0.55" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                      <span class="font-mono text-[10px] text-hex-text/60">Self-knowledge</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Unidirectional arrow connector -->
+                <div class="flex items-center justify-center flex-shrink-0" style="width: 76px;">
+                  <svg width="76" height="36" viewBox="0 0 76 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="10" y1="18" x2="64" y2="18" stroke="#00F0FF" stroke-width="1" stroke-opacity="0.35"/>
+                    <path d="M62 15 L69 18 L62 21" stroke="#00F0FF" stroke-width="1" stroke-opacity="0.55" fill="none" stroke-linejoin="round"/>
+                    <text x="38" y="12" text-anchor="middle" font-family="'Fira Code',monospace" font-size="6" fill="#00F0FF" fill-opacity="0.28" letter-spacing="0.5">REPORTS</text>
+                  </svg>
+                </div>
+
+                <!-- COMPUTER entity (orange) -->
+                <div class="flex-1 border border-hex-accent/20 bg-hex-accent/5">
+                  <div class="border-b border-hex-accent/15 px-3 py-2 flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-hex-accent/60 flex-shrink-0"></span>
+                    <span class="text-hex-accent font-mono text-xs font-bold tracking-widest">COMPUTER</span>
+                  </div>
+                  <div class="px-3 py-3 space-y-2">
+                    <div class="flex items-center gap-2">
+                      <span class="w-1 h-1 rounded-full bg-hex-accent/35 flex-shrink-0"></span>
+                      <span class="font-mono text-[10px] text-hex-text/60">OBD-II port</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="w-1 h-1 rounded-full bg-hex-accent/35 flex-shrink-0"></span>
+                      <span class="font-mono text-[10px] text-hex-text/60">Direct query</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="w-1 h-1 rounded-full bg-hex-primary/35 flex-shrink-0"></span>
+                      <span class="font-mono text-[10px] text-hex-primary/60">Exact answer</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Subtext -->
+              <div class="text-center font-mono text-[9px] text-hex-muted/28 tracking-widest uppercase pt-1">
+                Structured interface · Direct query · Exact answer
+              </div>
+            </div>
+          </div>
+          <div class="terminal-window p-4 font-mono text-xs">
+            <div class="relative z-10 space-y-1">
+              <div class="text-hex-muted/60 mb-2">&gt; CONNECTING TO VEHICLE...</div>
+              <div><span class="text-hex-muted/60 w-36 inline-block">Cylinder 3:</span><span class="text-red-400 font-bold">MISFIRE</span></div>
+              <div><span class="text-hex-muted/60 w-36 inline-block">O2 sensor bank 2:</span><span class="text-hex-accent font-bold">OUT OF RANGE</span></div>
+              <div><span class="text-hex-muted/60 w-36 inline-block">Catalytic conv.:</span><span class="text-hex-accent font-bold">EFFICIENCY BELOW THRESHOLD</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: key insight -->
+        <div class="space-y-6">
+          <div class="inline-flex items-center gap-3 px-4 py-2 border border-hex-primary/40 bg-hex-primary/8 text-hex-primary text-[10px] font-mono tracking-[0.2em] uppercase">
+            <span class="w-2 h-2 bg-hex-primary animate-ping rounded-full"></span>
+            Diagnosis: DETERMINISTIC — Based on the car's own knowledge
+          </div>
+          <div class="hud-card p-8 space-y-4">
+            <div class="text-hex-primary font-mono text-[10px] tracking-widest uppercase border-b border-hex-primary/20 pb-2">Key Insight</div>
+            <p class="font-display font-bold text-3xl text-white leading-tight">
+              The car didn't guess.<br>
+              It <span class="text-hex-primary quote-glow italic">knew.</span>
+            </p>
+            <p class="font-mono text-xs text-hex-muted leading-relaxed">Not the technician's intuition — the car's own sensors, reporting through a standardized interface.</p>
+          </div>
+          <div class="hud-card p-5 space-y-2">
+            <div class="font-mono text-xs text-hex-muted/60 tracking-widest uppercase">The shift</div>
+            <div class="grid grid-cols-2 gap-4 text-xs font-mono mt-3">
+              <div class="space-y-1">
+                <div class="text-red-400/60 text-[10px] tracking-widest uppercase">Before</div>
+                <div class="text-hex-muted">External observation</div>
+                <div class="text-hex-muted">Probabilistic diagnosis</div>
+                <div class="text-hex-muted">Three wrong guesses</div>
+              </div>
+              <div class="space-y-1">
+                <div class="text-hex-primary text-[10px] tracking-widest uppercase">After</div>
+                <div class="text-hex-text">Internal self-report</div>
+                <div class="text-hex-text">Deterministic diagnosis</div>
+                <div class="text-hex-text">Exact root cause</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SLIDE 5 — THE PARALLEL: AI Tools vs HexDI -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section class="scroll-section">
+      <div class="max-w-7xl mx-auto w-full space-y-6">
+        <div class="section-header">
+          <span class="text-hex-primary font-mono text-xs tracking-widest uppercase">Protocol_04</span>
+          <h2 class="text-4xl font-display font-bold text-white uppercase mt-1">The Software Parallel</h2>
+        </div>
+        <div class="grid grid-cols-2 gap-8">
+          <!-- Left: old AI -->
+          <div class="hud-card hud-card-red p-6 space-y-4" style="border-color: rgba(239,68,68,0.3);">
+            <div class="inline-block text-[10px] font-mono text-red-400 border border-red-500/30 px-2 py-1 tracking-widest uppercase">AI Tool · Today</div>
+            <div class="terminal-window p-4 font-mono text-[11px]">
+              <div class="space-y-1">
+                <div class="text-hex-muted/60 mb-2">// What Claude Code does now:</div>
+                <div><span class="text-hex-muted/50">1. </span><span class="text-hex-muted">Reads src/checkout/service.ts</span></div>
+                <div><span class="text-hex-muted/50">2. </span><span class="text-hex-muted">Reads src/payment/gateway.ts</span></div>
+                <div><span class="text-hex-muted/50">3. </span><span class="text-hex-muted">Reads src/config/database.ts</span></div>
+                <div class="mt-2 text-hex-muted/60">4. Infers: <span class="text-yellow-400/70">"It might be the connection</span></div>
+                <div class="text-yellow-400/70 pl-8">pool, or the payment timeout,</div>
+                <div class="text-yellow-400/70 pl-8">or possibly N+1 queries..."</div>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2 text-[10px] font-mono">
+              <span class="border border-red-500/30 text-red-400 px-2 py-0.5">⚠ Heuristic</span>
+              <span class="border border-red-500/30 text-red-400 px-2 py-0.5">⚠ May be wrong</span>
+              <span class="border border-red-500/30 text-red-400 px-2 py-0.5">⚠ Incomplete</span>
+            </div>
+          </div>
+
+          <!-- Right: HexDI AI -->
+          <div class="hud-card p-6 space-y-4" style="border-color: rgba(0,240,255,0.3);">
+            <div class="inline-block text-[10px] font-mono text-hex-primary border border-hex-primary/30 px-2 py-1 tracking-widest uppercase">AI Tool + HexDI</div>
+            <div class="terminal-window p-4 font-mono text-[11px]">
+              <div class="space-y-1">
+                <div class="text-hex-muted/60 mb-2">// What Claude Code gets with HexDI:</div>
+                <div><span class="text-hex-muted/50">1. </span><span class="text-hex-muted">Queries </span><span class="text-hex-primary">hexdi://tracing/slow-resolutions</span></div>
+                <div class="pl-5 text-hex-text/80">→ PaymentGatewayAdapter avg <span class="text-hex-accent">340ms</span></div>
+                <div class="mt-1"><span class="text-hex-muted/50">2. </span><span class="text-hex-muted">Queries </span><span class="text-hex-primary">hexdi://saga/workflows?status=failed</span></div>
+                <div class="pl-5 text-hex-text/80">→ <span class="text-red-400">14 OrderSaga failures</span>, all at processPayment</div>
+                <div class="mt-1 text-hex-text/80 pl-3">States: <span class="text-hex-text">"Increase timeout from 5s to 8s"</span></div>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2 text-[10px] font-mono">
+              <span class="border border-hex-primary/30 text-hex-primary px-2 py-0.5">✓ Exact</span>
+              <span class="border border-hex-primary/30 text-hex-primary px-2 py-0.5">✓ Complete</span>
+              <span class="border border-hex-primary/30 text-hex-primary px-2 py-0.5">✓ From the app itself</span>
+            </div>
+          </div>
+        </div>
+        <div class="hud-card p-4 max-w-2xl">
+          <p class="font-mono text-xs text-hex-muted"><span class="text-hex-primary font-bold">HexDI</span> is the OBD-II port for software. The AI doesn't guess — it queries the running application through its own diagnostic port.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SLIDE 6 — WHAT IS HEXDI: The DI Framework -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section class="scroll-section">
+      <div class="max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-10 items-start">
+        <!-- Left: concept -->
+        <div class="space-y-5">
+          <div class="section-header">
+            <span class="text-hex-primary font-mono text-xs tracking-widest uppercase">Protocol_05</span>
+            <h2 class="text-3xl font-display font-bold text-white uppercase mt-1">HexDI: The OBD-II Port for Software</h2>
+          </div>
+          <div class="hud-card p-5 space-y-3">
+            <p class="font-mono text-xs text-hex-muted leading-relaxed">The DI container is the <span class="text-hex-primary font-bold">one component that touches everything</span> in your application. It wires every service, manages every lifetime, creates every scope.</p>
+            <p class="font-mono text-xs text-hex-muted">HexDI makes that unique position count.</p>
+          </div>
+          <div class="space-y-2">
+            <div class="flex items-center gap-3 font-mono text-xs">
+              <span class="w-2 h-2 bg-hex-primary flex-shrink-0"></span>
+              <span class="text-hex-text">Type-safe — ports define strict contracts</span>
+            </div>
+            <div class="flex items-center gap-3 font-mono text-xs">
+              <span class="w-2 h-2 bg-hex-primary flex-shrink-0"></span>
+              <span class="text-hex-text">Compile-time validated — errors before runtime</span>
+            </div>
+            <div class="flex items-center gap-3 font-mono text-xs">
+              <span class="w-2 h-2 bg-hex-primary flex-shrink-0"></span>
+              <span class="text-hex-text">Lifecycle managed — singleton, scoped, transient</span>
+            </div>
+          </div>
+          <div class="hud-card p-4 space-y-1 border-red-500/20" style="border-color: rgba(0,240,255,0.3); background: rgba(0,240,255,0.03);">
+            <div class="font-mono text-[10px] text-hex-muted/60 tracking-widest uppercase mb-2">Compile-time guarantees</div>
+            <div class="font-mono text-xs space-y-1">
+              <div class="text-hex-muted">Missing dep? <span class="text-red-400">TypeScript error.</span></div>
+              <div class="text-hex-muted">Circular dep? <span class="text-red-400">TypeScript error.</span></div>
+              <div class="text-hex-muted">Wrong lifetime? <span class="text-red-400">TypeScript error.</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: code -->
+        <div class="terminal-window p-5 font-mono text-[11px] leading-relaxed">
+          <div class="scanline-overlay"></div>
+          <div class="scanline-beam"></div>
+          <div class="terminal-window p-2 mb-3 flex items-center gap-2 text-[10px]" style="border: none; background: transparent;">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500/60"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-yellow-500/60"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-green-500/60"></span>
+            <span class="text-hex-muted/50 ml-2 text-[9px] tracking-widest">graph.ts</span>
+          </div>
+          <div class="relative z-10 space-y-0.5">
+            <div class="text-hex-muted/50"><span class="tk-cmt">// 1. Define contracts as typed ports</span></div>
+            <div><span class="tk-keyword">const</span> LoggerPort = <span class="tk-fn">port</span>&lt;<span class="tk-type">Logger</span>&gt;()({</div>
+            <div class="pl-4"><span class="tk-prop">name</span>: <span class="tk-str">"Logger"</span>, <span class="tk-prop">direction</span>: <span class="tk-str">"outbound"</span></div>
+            <div>});</div>
+            <div class="mt-2"><span class="tk-keyword">const</span> DatabasePort = <span class="tk-fn">port</span>&lt;<span class="tk-type">Database</span>&gt;()({</div>
+            <div class="pl-4"><span class="tk-prop">name</span>: <span class="tk-str">"Database"</span></div>
+            <div>});</div>
+            <div class="mt-3 text-hex-muted/50"><span class="tk-cmt">// 2. Implement adapters with explicit deps</span></div>
+            <div><span class="tk-keyword">const</span> dbAdapter = <span class="tk-fn">createAdapter</span>({</div>
+            <div class="pl-4"><span class="tk-prop">provides</span>: DatabasePort,</div>
+            <div class="pl-4"><span class="tk-prop">requires</span>: [LoggerPort],  <span class="tk-cmt">// ← compile-time graph</span></div>
+            <div class="pl-4"><span class="tk-prop">lifetime</span>: <span class="tk-str">"singleton"</span>,</div>
+            <div class="pl-4"><span class="tk-prop">factory</span>: ({ Logger }) =&gt; ({</div>
+            <div class="pl-8"><span class="tk-prop">query</span>: <span class="tk-keyword">async</span> (sql) =&gt; {</div>
+            <div class="pl-12">Logger.<span class="tk-fn">log</span>(<span class="tk-str">`query: <span class="tk-type">${sql}</span>`</span>);</div>
+            <div class="pl-8">}</div>
+            <div class="pl-4">}),</div>
+            <div>});</div>
+            <div class="mt-3 text-hex-muted/50"><span class="tk-cmt">// 3. Build &amp; validate — fails at compile time</span></div>
+            <div><span class="tk-keyword">const</span> graph = GraphBuilder.<span class="tk-fn">create</span>()</div>
+            <div class="pl-4">.<span class="tk-fn">provide</span>(loggerAdapter)</div>
+            <div class="pl-4">.<span class="tk-fn">provide</span>(dbAdapter)</div>
+            <div class="pl-4">.<span class="tk-fn">build</span>();</div>
+            <div class="mt-3 text-hex-muted/50"><span class="tk-cmt">// 4. Resolve</span></div>
+            <div><span class="tk-keyword">const</span> db = container.<span class="tk-fn">resolve</span>(DatabasePort);</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SLIDE 7 — THE ECOSYSTEM -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section class="scroll-section">
+      <div class="max-w-7xl mx-auto w-full space-y-5">
+        <div class="section-header">
+          <span class="text-hex-primary font-mono text-xs tracking-widest uppercase">Protocol_06</span>
+          <h2 class="text-4xl font-display font-bold text-white uppercase mt-1">The Ecosystem</h2>
+        </div>
+        <p class="font-mono text-xs text-hex-muted max-w-2xl">Not just a container — every library reports its state back through the same system. All knowledge converges at the container.</p>
+        <div class="grid grid-cols-5 gap-3">
+          <div class="hud-card p-3 space-y-1">
+            <div class="text-hex-primary text-[10px] font-mono font-bold tracking-wide">@hex-di/graph</div>
+            <div class="text-hex-muted text-[10px] font-mono leading-relaxed">topology · edges · complexity</div>
+          </div>
+          <div class="hud-card p-3 space-y-1">
+            <div class="text-hex-primary text-[10px] font-mono font-bold tracking-wide">@hex-di/runtime</div>
+            <div class="text-hex-muted text-[10px] font-mono leading-relaxed">instantiated services · scope tree</div>
+          </div>
+          <div class="hud-card p-3 space-y-1">
+            <div class="text-hex-primary text-[10px] font-mono font-bold tracking-wide">@hex-di/tracing</div>
+            <div class="text-hex-muted text-[10px] font-mono leading-relaxed">spans · timing · error chains</div>
+          </div>
+          <div class="hud-card p-3 space-y-1">
+            <div class="text-hex-primary text-[10px] font-mono font-bold tracking-wide">@hex-di/store</div>
+            <div class="text-hex-muted text-[10px] font-mono leading-relaxed">reactive values · transitions</div>
+          </div>
+          <div class="hud-card p-3 space-y-1">
+            <div class="text-hex-primary text-[10px] font-mono font-bold tracking-wide">@hex-di/query</div>
+            <div class="text-hex-muted text-[10px] font-mono leading-relaxed">cache · freshness · in-flight</div>
+          </div>
+          <div class="hud-card p-3 space-y-1">
+            <div class="text-hex-accent text-[10px] font-mono font-bold tracking-wide">@hex-di/saga</div>
+            <div class="text-hex-muted text-[10px] font-mono leading-relaxed">workflows · compensation chains</div>
+          </div>
+          <div class="hud-card p-3 space-y-1">
+            <div class="text-hex-accent text-[10px] font-mono font-bold tracking-wide">@hex-di/flow</div>
+            <div class="text-hex-muted text-[10px] font-mono leading-relaxed">state machines · event queues</div>
+          </div>
+          <div class="hud-card p-3 space-y-1">
+            <div class="text-hex-accent text-[10px] font-mono font-bold tracking-wide">@hex-di/logger</div>
+            <div class="text-hex-muted text-[10px] font-mono leading-relaxed">entry counts · error rate · handlers</div>
+          </div>
+          <div class="hud-card p-3 space-y-1">
+            <div class="text-hex-accent text-[10px] font-mono font-bold tracking-wide">@hex-di/guard</div>
+            <div class="text-hex-muted text-[10px] font-mono leading-relaxed">policies · decisions · audit trail</div>
+          </div>
+          <div class="hud-card p-3 space-y-1">
+            <div class="text-hex-accent text-[10px] font-mono font-bold tracking-wide">@hex-di/agent</div>
+            <div class="text-hex-muted text-[10px] font-mono leading-relaxed">tools · schemas · conversations</div>
+          </div>
+        </div>
+
+        <!-- Convergence diagram -->
+        <div class="flex items-center gap-0 justify-center pt-2">
+          <div class="flex flex-col gap-1 items-end">
+            <div class="w-24 h-px bg-hex-primary/30 relative"><div class="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 bg-hex-primary rounded-full"></div></div>
+            <div class="w-24 h-px bg-hex-primary/30 relative"><div class="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 bg-hex-primary rounded-full"></div></div>
+            <div class="w-24 h-px bg-hex-primary/30 relative"><div class="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 bg-hex-primary rounded-full"></div></div>
+          </div>
+          <div class="hud-card px-5 py-3 mx-2 text-center" style="border-color: rgba(0,240,255,0.4);">
+            <div class="text-hex-primary font-display font-bold text-lg tracking-widest uppercase">Container</div>
+            <div class="text-hex-muted text-[10px] font-mono mt-1">Sees Everything</div>
+          </div>
+          <div class="flex flex-col gap-1 items-start">
+            <div class="w-24 h-px bg-hex-accent/30 relative"><div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1 bg-hex-accent rounded-full"></div></div>
+            <div class="w-24 h-px bg-hex-accent/30 relative"><div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1 bg-hex-accent rounded-full"></div></div>
+            <div class="w-24 h-px bg-hex-accent/30 relative"><div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1 bg-hex-accent rounded-full"></div></div>
+          </div>
+        </div>
+        <p class="text-center font-mono text-[10px] text-hex-muted/60 italic">No single library has the full picture. The container, sitting at the center, sees everything.</p>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SLIDE 8 — THREE LAYERS OF SELF-KNOWLEDGE -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section class="scroll-section">
+      <div class="max-w-7xl mx-auto w-full grid lg:grid-cols-5 gap-8 items-center">
+        <!-- Left: layers (3/5) -->
+        <div class="lg:col-span-3 space-y-5">
+          <div class="section-header">
+            <span class="text-hex-primary font-mono text-xs tracking-widest uppercase">Protocol_07</span>
+            <h2 class="text-4xl font-display font-bold text-white uppercase mt-1">Three Layers of Self-Knowledge</h2>
+          </div>
+          <div class="space-y-2">
+            <!-- Layer 3 -->
+            <div class="layer-block" style="margin-left: 2rem;">
+              <div class="flex items-baseline gap-3 mb-2">
+                <span class="font-mono text-[10px] text-hex-muted/50 tracking-widest uppercase">Layer 3</span>
+                <span class="font-display font-bold text-xl text-hex-primary tracking-wider uppercase">BEHAVIORAL</span>
+                <span class="font-mono text-xs text-hex-muted/60 italic">"What am I doing?"</span>
+              </div>
+              <p class="font-mono text-[11px] text-hex-muted leading-relaxed">Resolution traces · state transitions · workflow progress · authorization log · log pipeline stats · tool invocations</p>
+            </div>
+            <!-- Layer 2 -->
+            <div class="layer-block" style="margin-left: 1rem;">
+              <div class="flex items-baseline gap-3 mb-2">
+                <span class="font-mono text-[10px] text-hex-muted/50 tracking-widest uppercase">Layer 2</span>
+                <span class="font-display font-bold text-xl text-hex-primary tracking-wider uppercase">STATE</span>
+                <span class="font-mono text-xs text-hex-muted/60 italic">"What condition am I in?"</span>
+              </div>
+              <p class="font-mono text-[11px] text-hex-muted leading-relaxed">Instantiated services · scope tree · cached data · active machines · running sagas · active policies</p>
+            </div>
+            <!-- Layer 1 -->
+            <div class="layer-block">
+              <div class="flex items-baseline gap-3 mb-2">
+                <span class="font-mono text-[10px] text-hex-muted/50 tracking-widest uppercase">Layer 1</span>
+                <span class="font-display font-bold text-xl text-hex-primary tracking-wider uppercase">STRUCTURE</span>
+                <span class="font-mono text-xs text-hex-muted/60 italic">"What am I made of?"</span>
+              </div>
+              <p class="font-mono text-[11px] text-hex-muted leading-relaxed">Ports &amp; adapters · dependency edges · lifetimes · topology · complexity score</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: callouts (2/5) -->
+        <div class="lg:col-span-2 space-y-4">
+          <div class="hud-card p-5 space-y-2">
+            <div class="text-hex-primary font-mono text-[10px] tracking-widest uppercase">Layer 1 — DNA</div>
+            <p class="font-mono text-[11px] text-hex-muted leading-relaxed">Known at compile time, validated before a single line of code runs. The immutable structural foundation.</p>
+          </div>
+          <div class="hud-card p-5 space-y-2">
+            <div class="text-hex-primary font-mono text-[10px] tracking-widest uppercase">Layer 2 — Condition</div>
+            <p class="font-mono text-[11px] text-hex-muted leading-relaxed">Continuously updated as services are resolved, scopes are created, and state changes at runtime.</p>
+          </div>
+          <div class="hud-card p-5 space-y-2">
+            <div class="text-hex-primary font-mono text-[10px] tracking-widest uppercase">Layer 3 — Memory</div>
+            <p class="font-mono text-[11px] text-hex-muted leading-relaxed">The timeline of everything that happened: what order, how long, and what failed. Complete history.</p>
+          </div>
+          <div class="hud-card p-4 mt-4" style="border-color: rgba(0,240,255,0.3); background: rgba(0,240,255,0.03);">
+            <p class="font-mono text-[11px] text-hex-primary">Together: a complete, queryable model of the running application.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SLIDE 9 — DIAGNOSTIC PORT IN ACTION -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section class="scroll-section">
+      <div class="max-w-7xl mx-auto w-full space-y-4">
+        <div class="section-header">
+          <span class="text-hex-primary font-mono text-xs tracking-widest uppercase">Protocol_08</span>
+          <h2 class="text-4xl font-display font-bold text-white uppercase mt-1">The Diagnostic Port in Action</h2>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 border border-hex-accent/50 bg-hex-accent/8 text-hex-accent text-[10px] font-mono tracking-[0.2em] uppercase">
+            <span class="w-1.5 h-1.5 bg-hex-accent rounded-full animate-pulse"></span>
+            Scenario: Order placement sometimes fails
+          </div>
+        </div>
+        <div class="terminal-window p-5 font-mono text-[11px] leading-relaxed">
+          <div class="scanline-overlay"></div>
+          <div class="scanline-beam"></div>
+          <div class="terminal-window p-2 flex items-center gap-2 text-[10px] mb-3" style="border:none; background:transparent;">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500/60"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-yellow-500/60"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-green-500/60"></span>
+            <span class="text-hex-muted/50 ml-2 text-[9px] tracking-widest">diagnostic-session.log</span>
+          </div>
+          <div class="relative z-10 grid grid-cols-2 gap-x-8 gap-y-4">
+            <!-- Step 1 -->
+            <div class="space-y-1">
+              <div class="text-hex-primary font-bold">Step 1: <span class="text-hex-muted/60 font-normal">[QUERY] Graph topology</span></div>
+              <div class="text-hex-muted pl-2"><span class="text-hex-primary/60">hexdi://</span>graph/topology?filter=category:order</div>
+              <div class="pl-2 mt-1">
+                <div class="text-hex-text/80">→ OrderSaga: 5 steps, 3 compensations</div>
+                <div class="text-hex-muted/60">→ validate → reserve → <span class="text-hex-accent">pay</span> → ship → confirm</div>
+                <div class="text-hex-muted/60">→ compensations: releaseInventory, refundPayment</div>
+              </div>
+            </div>
+            <!-- Step 2 -->
+            <div class="space-y-1">
+              <div class="text-hex-primary font-bold">Step 2: <span class="text-hex-muted/60 font-normal">[QUERY] Recent failures</span></div>
+              <div class="text-hex-muted pl-2"><span class="text-hex-primary/60">hexdi://</span>tracing/errors?saga=OrderSaga&amp;last=24h</div>
+              <div class="pl-2 mt-1">
+                <div class="text-red-400">→ 14 failures. All at: processPayment</div>
+                <div class="text-hex-muted/60">→ Error: PaymentGatewayTimeout (&gt;5000ms)</div>
+                <div class="text-hex-text/80">→ Compensations: releaseInventory executed ×14</div>
+                <div class="text-hex-text/80">→ Data integrity: INTACT</div>
+              </div>
+            </div>
+            <!-- Step 3 -->
+            <div class="space-y-1">
+              <div class="text-hex-primary font-bold">Step 3: <span class="text-hex-muted/60 font-normal">[QUERY] Payment performance</span></div>
+              <div class="text-hex-muted pl-2"><span class="text-hex-primary/60">hexdi://</span>tracing/spans?port=PaymentPort&amp;last=100</div>
+              <div class="pl-2 mt-1">
+                <div class="text-hex-text/80">→ avg_duration_ms: <span class="text-hex-accent">1,240</span></div>
+                <div class="text-hex-text/80">→ p99_duration_ms: <span class="text-red-400 font-bold">5,020</span></div>
+                <div class="text-red-400">→ All failures at exactly 5,000ms boundary</div>
+              </div>
+            </div>
+            <!-- Step 4 -->
+            <div class="space-y-1">
+              <div class="text-hex-primary font-bold">Step 4: <span class="text-hex-muted/60 font-normal">[DIAGNOSIS]</span></div>
+              <div class="pl-2 mt-1">
+                <div class="text-hex-text/80">PaymentGateway P99 reached 5s timeout boundary.</div>
+                <div class="text-hex-text/80">14% of orders fail at payment. Data integrity: intact.</div>
+                <div class="text-hex-primary mt-1 font-bold">Recommend: increase timeout to 8s,</div>
+                <div class="text-hex-primary">add retry with exponential backoff.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="inline-flex items-center gap-3 px-5 py-2.5 border border-hex-accent/40 bg-hex-accent/8">
+          <span class="w-2 h-2 bg-hex-accent rounded-full animate-pulse"></span>
+          <span class="font-mono text-xs text-hex-accent font-bold tracking-wide">The AI read zero source files.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SLIDE 10 — ROADMAP: 5 Phases -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section class="scroll-section">
+      <div class="max-w-7xl mx-auto w-full space-y-5">
+        <div class="section-header">
+          <span class="text-hex-primary font-mono text-xs tracking-widest uppercase">Protocol_09</span>
+          <h2 class="text-4xl font-display font-bold text-white uppercase mt-1">From Container to Consciousness</h2>
+        </div>
+        <div class="space-y-3">
+          <!-- Phase 1 -->
+          <div class="hud-card p-5 grid grid-cols-12 gap-5 items-center">
+            <div class="col-span-2">
+              <div class="text-[10px] font-mono text-hex-muted/50 tracking-widest uppercase">Phase 1</div>
+              <div class="font-display font-bold text-lg text-white uppercase tracking-wide">Plumbing</div>
+            </div>
+            <div class="col-span-7">
+              <div class="phase-bar-track mb-2">
+                <div class="phase-bar-fill" style="width: 100%;"></div>
+              </div>
+              <div class="font-mono text-xs text-hex-muted">Type-safe DI. Container wires services. Compile-time validated. Ports, adapters, lifetimes, scopes.</div>
+            </div>
+            <div class="col-span-3 text-right">
+              <span class="font-mono text-xs font-bold text-hex-primary">100%</span>
+              <span class="ml-2 text-hex-primary">✅</span>
+              <div class="text-[10px] font-mono text-hex-muted/60 mt-1">COMPLETE</div>
+            </div>
+          </div>
+          <!-- Phase 2 -->
+          <div class="hud-card p-5 grid grid-cols-12 gap-5 items-center">
+            <div class="col-span-2">
+              <div class="text-[10px] font-mono text-hex-muted/50 tracking-widest uppercase">Phase 2</div>
+              <div class="font-display font-bold text-lg text-white uppercase tracking-wide">Awareness</div>
+            </div>
+            <div class="col-span-7">
+              <div class="phase-bar-track mb-2">
+                <div class="phase-bar-fill" style="width: 100%;"></div>
+              </div>
+              <div class="font-mono text-xs text-hex-muted">Container knows itself. Graph inspection, runtime snapshots, resolution tracing, Inspector API.</div>
+            </div>
+            <div class="col-span-3 text-right">
+              <span class="font-mono text-xs font-bold text-hex-primary">100%</span>
+              <span class="ml-2 text-hex-primary">✅</span>
+              <div class="text-[10px] font-mono text-hex-muted/60 mt-1">COMPLETE</div>
+            </div>
+          </div>
+          <!-- Phase 3 -->
+          <div class="hud-card p-5 grid grid-cols-12 gap-5 items-center" style="border-color: rgba(255,94,0,0.3); background: rgba(255,94,0,0.03);">
+            <div class="col-span-2">
+              <div class="text-[10px] font-mono text-hex-muted/50 tracking-widest uppercase">Phase 3</div>
+              <div class="font-display font-bold text-lg text-white uppercase tracking-wide">Reporting</div>
+            </div>
+            <div class="col-span-7">
+              <div class="phase-bar-track mb-2">
+                <div class="phase-bar-fill phase-bar-fill-amber" style="width: 90%;"></div>
+              </div>
+              <div class="font-mono text-xs text-hex-muted">Every library reports what it knows. Store, query, saga, flow, logger, tracing — all feeding back to the central system.</div>
+            </div>
+            <div class="col-span-3 text-right">
+              <span class="font-mono text-xs font-bold text-hex-accent">~90%</span>
+              <span class="ml-2">⚡</span>
+              <div class="text-[10px] font-mono text-hex-accent/60 mt-1 font-bold">CRITICAL PATH</div>
+            </div>
+          </div>
+          <!-- Phase 4 -->
+          <div class="hud-card p-5 grid grid-cols-12 gap-5 items-center">
+            <div class="col-span-2">
+              <div class="text-[10px] font-mono text-hex-muted/50 tracking-widest uppercase">Phase 4</div>
+              <div class="font-display font-bold text-lg text-white uppercase tracking-wide">Comm.</div>
+            </div>
+            <div class="col-span-7">
+              <div class="phase-bar-track mb-2">
+                <div class="phase-bar-fill" style="width: 40%;"></div>
+              </div>
+              <div class="font-mono text-xs text-hex-muted">MCP server, A2A agent card, OTel export, REST diagnostics, DevTools dashboard. AI tools query the app. OTel: ✅ done.</div>
+            </div>
+            <div class="col-span-3 text-right">
+              <span class="font-mono text-xs font-bold text-hex-text">40%</span>
+              <span class="ml-2">🔧</span>
+              <div class="text-[10px] font-mono text-hex-muted/60 mt-1">IN PROGRESS</div>
+            </div>
+          </div>
+          <!-- Phase 5 -->
+          <div class="hud-card p-5 grid grid-cols-12 gap-5 items-center" style="opacity: 0.7;">
+            <div class="col-span-2">
+              <div class="text-[10px] font-mono text-hex-muted/50 tracking-widest uppercase">Phase 5</div>
+              <div class="font-display font-bold text-lg text-white uppercase tracking-wide">Autonomy</div>
+            </div>
+            <div class="col-span-7">
+              <div class="phase-bar-track mb-2">
+                <div class="phase-bar-fill phase-bar-fill-dim" style="width: 0%;"></div>
+              </div>
+              <div class="font-mono text-xs text-hex-muted">Auto-healing via saga compensations. Auto-optimization from trace data. MAPE-K loop closes completely.</div>
+            </div>
+            <div class="col-span-3 text-right">
+              <span class="font-mono text-xs font-bold text-hex-muted">0%</span>
+              <span class="ml-2">📋</span>
+              <div class="text-[10px] font-mono text-hex-muted/60 mt-1">PLANNED</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 font-mono text-[10px] text-hex-accent">
+          <div class="w-3 h-3 border-2 border-hex-accent rotate-45"></div>
+          <span class="tracking-widest uppercase">YOU ARE HERE → Phase 3→4 transition</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SLIDE 11 — WHY NOW: Three Forces Converging -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section class="scroll-section">
+      <div class="max-w-7xl mx-auto w-full space-y-5">
+        <div class="section-header">
+          <span class="text-hex-primary font-mono text-xs tracking-widest uppercase">Protocol_10</span>
+          <h2 class="text-3xl font-display font-bold text-white uppercase mt-1">Why This Hasn't Existed Before — Until Now</h2>
+        </div>
+        <div class="grid grid-cols-3 gap-5 mb-4">
+          <div class="hud-card p-6 space-y-3">
+            <span class="num-badge">01</span>
+            <div class="font-display font-bold text-lg text-white uppercase tracking-wide">Type-Level Dependency Graphs</div>
+            <p class="font-mono text-xs text-hex-muted leading-relaxed">TypeScript makes the graph a first-class, introspectable data structure — not just implicit wiring. Compile-time validation was the missing key.</p>
+          </div>
+          <div class="hud-card p-6 space-y-3">
+            <span class="num-badge">02</span>
+            <div class="font-display font-bold text-lg text-white uppercase tracking-wide">AI Protocols Now Exist</div>
+            <p class="font-mono text-xs text-hex-muted leading-relaxed">MCP (Anthropic, 2024) and A2A (Google, 2025) define how AI agents discover and query external systems. Without consumers, self-knowledge had no value. Now consumers exist.</p>
+          </div>
+          <div class="hud-card p-6 space-y-3">
+            <span class="num-badge">03</span>
+            <div class="font-display font-bold text-lg text-white uppercase tracking-wide">Ecosystem-Wide Commitment</div>
+            <p class="font-mono text-xs text-hex-muted leading-relaxed">Every library — state, fetching, workflows, AI — designed for introspection from day one. This requires building the entire ecosystem. That is what HexDI is doing.</p>
+          </div>
+        </div>
+
+        <!-- Comparison table -->
+        <div class="terminal-window p-4 overflow-x-auto">
+          <div class="font-mono text-[10px] text-hex-muted/60 tracking-widest uppercase mb-3">Competitive comparison</div>
+          <table class="comp-table w-full">
+            <thead>
+              <tr>
+                <th class="text-left pl-0">Capability</th>
+                <th>Spring</th>
+                <th>Angular</th>
+                <th>Effect</th>
+                <th class="text-hex-primary">HexDI</th>
+              </tr>
+            </thead>
+            <tbody class="text-hex-muted">
+              <tr><td class="text-left pl-0 text-hex-muted/70">Compile-time graph validation</td><td>✗</td><td>✗</td><td>Partial</td><td class="hexdi-col">✓</td></tr>
+              <tr><td class="text-left pl-0 text-hex-muted/70">Runtime dependency graph API</td><td>Partial</td><td>Partial</td><td>✗</td><td class="hexdi-col">✓ Full</td></tr>
+              <tr><td class="text-left pl-0 text-hex-muted/70">Graph traversal &amp; analysis</td><td>✗</td><td>✗</td><td>✗</td><td class="hexdi-col">✓</td></tr>
+              <tr><td class="text-left pl-0 text-hex-muted/70">Resolution tracing (spans)</td><td>✗</td><td>✗</td><td>Yes (fibers)</td><td class="hexdi-col">✓</td></tr>
+              <tr><td class="text-left pl-0 text-hex-muted/70">MCP / A2A diagnostic port</td><td>✗</td><td>✗</td><td>✗</td><td class="hexdi-col text-hex-accent">Building →</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SLIDE 12 — END STATE: The Vision -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section class="scroll-section">
+      <div class="max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-12 items-center">
+        <!-- Left: 10-point list -->
+        <div class="space-y-5">
+          <div class="section-header">
+            <span class="text-hex-primary font-mono text-xs tracking-widest uppercase">Protocol_11</span>
+            <h2 class="text-4xl font-display font-bold text-white uppercase mt-1">The End State</h2>
+          </div>
+          <div class="space-y-1.5 font-mono text-xs">
+            <div class="flex items-baseline gap-3">
+              <span class="text-hex-primary/40 w-6 text-right flex-shrink-0">1.</span>
+              <span class="text-hex-text">Knows what it's made of</span>
+              <span class="text-hex-muted/50 ml-1">→ graph</span>
+            </div>
+            <div class="flex items-baseline gap-3">
+              <span class="text-hex-primary/40 w-6 text-right flex-shrink-0">2.</span>
+              <span class="text-hex-text">Knows what it's doing</span>
+              <span class="text-hex-muted/50 ml-1">→ tracing</span>
+            </div>
+            <div class="flex items-baseline gap-3">
+              <span class="text-hex-primary/40 w-6 text-right flex-shrink-0">3.</span>
+              <span class="text-hex-text">Knows what state it's in</span>
+              <span class="text-hex-muted/50 ml-1">→ runtime + store</span>
+            </div>
+            <div class="flex items-baseline gap-3">
+              <span class="text-hex-primary/40 w-6 text-right flex-shrink-0">4.</span>
+              <span class="text-hex-text">Knows what data it has</span>
+              <span class="text-hex-muted/50 ml-1">→ query</span>
+            </div>
+            <div class="flex items-baseline gap-3">
+              <span class="text-hex-primary/40 w-6 text-right flex-shrink-0">5.</span>
+              <span class="text-hex-text">Knows what processes are live</span>
+              <span class="text-hex-muted/50 ml-1">→ saga + flow</span>
+            </div>
+            <div class="flex items-baseline gap-3">
+              <span class="text-hex-primary/40 w-6 text-right flex-shrink-0">6.</span>
+              <span class="text-hex-text">Knows what it can do</span>
+              <span class="text-hex-muted/50 ml-1">→ agent</span>
+            </div>
+            <div class="flex items-baseline gap-3">
+              <span class="text-hex-primary/40 w-6 text-right flex-shrink-0">7.</span>
+              <span class="text-hex-text">Knows who's authorized</span>
+              <span class="text-hex-muted/50 ml-1">→ guard</span>
+            </div>
+            <div class="flex items-baseline gap-3">
+              <span class="text-hex-primary/40 w-6 text-right flex-shrink-0">8.</span>
+              <span class="text-hex-text">Knows what it's logging</span>
+              <span class="text-hex-muted/50 ml-1">→ logger</span>
+            </div>
+            <div class="flex items-baseline gap-3">
+              <span class="text-hex-primary/40 w-6 text-right flex-shrink-0">9.</span>
+              <span class="text-hex-text">Can tell you all of the above</span>
+              <span class="text-hex-muted/50 ml-1">→ MCP + A2A</span>
+            </div>
+            <div class="flex items-baseline gap-3">
+              <span class="text-hex-primary/40 w-6 text-right flex-shrink-0">10.</span>
+              <span class="text-hex-primary font-bold">Can act on that knowledge</span>
+              <span class="text-hex-primary/60 ml-1">→ autonomic</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: quote + CTAs -->
+        <div class="space-y-8">
+          <div class="hud-card p-8 space-y-4" style="border-color: rgba(0,240,255,0.3);">
+            <blockquote class="font-display font-bold text-2xl text-white leading-snug quote-glow">
+              "Not because someone instrumented it from the outside.<br>
+              <span class="text-hex-primary">Because self-knowledge is built into its foundation."</span>
+            </blockquote>
+          </div>
+
+          <div class="flex flex-col gap-3">
+            <a href="https://github.com/hex-di" target="_blank"
+              class="flex items-center justify-center gap-3 px-10 py-4 bg-hex-primary text-black font-bold font-display uppercase tracking-widest clip-path-slant shadow-[0_0_20px_rgba(0,240,255,0.3)] hover:bg-hex-primaryLight transition-all">
+              EXPLORE_HEXDI →
+            </a>
+            <a href="https://github.com/hex-di" target="_blank"
+              class="flex items-center justify-center gap-3 px-10 py-4 border border-hex-muted/30 text-hex-muted font-bold font-display uppercase tracking-widest hover:border-hex-primary hover:text-hex-primary transition-all">
+              VIEW_GITHUB
+            </a>
+          </div>
+
+          <div class="font-mono text-[10px] text-hex-muted/40 tracking-widest text-center">
+            HexDI :: Phase 3 of 5 complete :: Building the nervous system
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main><!-- /#scroll-main -->
+
+  <script>
+    const scrollMain = document.getElementById('scroll-main');
+    const dots = document.querySelectorAll('.progress-dot');
+    const navTitle = document.getElementById('nav-slide-title');
+
+    const slideTitles = [
+      'HOOK',
+      'PROBLEM',
+      'OLD PARADIGM',
+      'NEW PARADIGM',
+      'THE PARALLEL',
+      'HEXDI',
+      'ECOSYSTEM',
+      'SELF-KNOWLEDGE',
+      'DIAGNOSTIC PORT',
+      'ROADMAP',
+      'WHY NOW',
+      'VISION'
+    ];
+
+    let currentIndex = 0;
+    const TOTAL = 12;
+
+    function updateUI(idx) {
+      currentIndex = Math.max(0, Math.min(TOTAL - 1, idx));
+      dots.forEach((d, i) => {
+        d.classList.toggle('active', i === currentIndex);
+      });
+      if (navTitle) navTitle.textContent = slideTitles[currentIndex] || '';
+    }
+
+    function scrollToSlide(idx) {
+      const target = Math.max(0, Math.min(TOTAL - 1, idx));
+      scrollMain.scrollLeft = target * window.innerWidth;
+    }
+
+    // Scroll event → update dots
+    scrollMain.addEventListener('scroll', () => {
+      const idx = Math.round(scrollMain.scrollLeft / window.innerWidth);
+      updateUI(idx);
+    }, { passive: true });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        scrollToSlide(currentIndex + 1);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        scrollToSlide(currentIndex - 1);
+      }
+    });
+
+    // Click on dots
+    dots.forEach((dot) => {
+      dot.addEventListener('click', () => {
+        const idx = parseInt(dot.dataset.index, 10);
+        scrollToSlide(idx);
+      });
+    });
+
+    // Init
+    updateUI(0);
+  </script>
+
+</body>
+</html>

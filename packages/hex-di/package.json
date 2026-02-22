@@ -1,0 +1,69 @@
+{
+  "name": "hex-di",
+  "version": "0.2.1",
+  "description": "Type-safe dependency injection with hexagonal architecture — umbrella package for the full HexDI stack",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "lint": "eslint . --cache",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "dependency-injection",
+    "di",
+    "hexagonal-architecture",
+    "ports",
+    "adapters",
+    "typescript",
+    "type-safe",
+    "ioc",
+    "container"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hex-di/hex-di.git",
+    "directory": "packages/hex-di"
+  },
+  "bugs": {
+    "url": "https://github.com/hex-di/hex-di/issues"
+  },
+  "homepage": "https://github.com/hex-di/hex-di#readme",
+  "dependencies": {
+    "@hex-di/core": "workspace:*",
+    "@hex-di/graph": "workspace:*",
+    "@hex-di/runtime": "workspace:*"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "sideEffects": false
+}

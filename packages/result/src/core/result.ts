@@ -7,7 +7,10 @@
  */
 
 import type { Ok, Err, Result, ResultAsync } from "./types.js";
+import type { Option } from "../option/types.js";
 import { RESULT_BRAND } from "./brand.js";
+import { UnwrapError } from "../unsafe/unwrap-error.js";
+import { some, none } from "../option/option.js";
 
 // Lazy accessor for ResultAsync to avoid circular deps at module load time.
 // Populated by the async module on import.
@@ -51,6 +54,29 @@ function createOkIterator<T>(value: T): Generator<never, T, unknown> {
   return iterator;
 }
 
+/**
+ * Creates a frozen {@link Ok} instance containing the given value.
+ *
+ * The returned object is a plain object implementing the `Ok<T, never>` interface.
+ * All methods are closures capturing `value`. The object is stamped with
+ * `[RESULT_BRAND]: true` and frozen via `Object.freeze()` before being returned.
+ *
+ * @typeParam T - The type of the success value.
+ * @param value - The success value to wrap.
+ * @returns A frozen `Ok<T, never>` instance.
+ *
+ * @example
+ * ```ts
+ * import { ok } from '@hex-di/result';
+ *
+ * const result = ok(42);
+ * console.log(result.isOk());  // true
+ * console.log(result.value);   // 42
+ * ```
+ *
+ * @since v1.0.0
+ * @see {@link spec/result/behaviors/01-types-and-guards.md | BEH-01-007}
+ */
 export function ok<T>(value: T): Ok<T, never> {
   const self: Ok<T, never> = {
     _tag: "Ok",
@@ -86,6 +112,14 @@ export function ok<T>(value: T): Ok<T, never> {
     },
     flip() {
       return err(value);
+    },
+
+    // Logical combinators
+    and(other) {
+      return other;
+    },
+    or() {
+      return self;
     },
 
     // Chaining
@@ -131,11 +165,26 @@ export function ok<T>(value: T): Ok<T, never> {
     unwrapOrElse() {
       return value;
     },
+    mapOr(_defaultValue, f) {
+      return f(value);
+    },
+    mapOrElse(_defaultF, f) {
+      return f(value);
+    },
+    contains(v) {
+      return value === v;
+    },
+    containsErr() {
+      return false;
+    },
     expect() {
       return value;
     },
     expectErr(message) {
-      throw new Error(message);
+      throw new UnwrapError(message, { _tag: "Ok", value });
+    },
+    orDie() {
+      return value;
     },
 
     // Conversion
@@ -163,9 +212,26 @@ export function ok<T>(value: T): Ok<T, never> {
       return f(value);
     },
 
+    // Option bridges
+    toOption() {
+      return some(value);
+    },
+    toOptionErr() {
+      return none();
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    transpose(this: Ok<Option<any>, never>): any {
+      // this.value is an Option: Some(v) → some(ok(v)), None → none()
+      const inner = this.value;
+      if (inner.isSome()) {
+        return some(ok(inner.value));
+      }
+      return none();
+    },
+
     // Serialization
     toJSON() {
-      return { _tag: "Ok", value };
+      return { _tag: "Ok" as const, _schemaVersion: 1, value };
     },
 
     // Generator protocol — Ok returns value immediately (done: true)
@@ -178,6 +244,29 @@ export function ok<T>(value: T): Ok<T, never> {
   return self;
 }
 
+/**
+ * Creates a frozen {@link Err} instance containing the given error.
+ *
+ * The returned object is a plain object implementing the `Err<never, E>` interface.
+ * All methods are closures capturing `error`. The object is stamped with
+ * `[RESULT_BRAND]: true` and frozen via `Object.freeze()` before being returned.
+ *
+ * @typeParam E - The type of the error value.
+ * @param error - The error value to wrap.
+ * @returns A frozen `Err<never, E>` instance.
+ *
+ * @example
+ * ```ts
+ * import { err } from '@hex-di/result';
+ *
+ * const result = err('something went wrong');
+ * console.log(result.isErr());  // true
+ * console.log(result.error);    // 'something went wrong'
+ * ```
+ *
+ * @since v1.0.0
+ * @see {@link spec/result/behaviors/01-types-and-guards.md | BEH-01-008}
+ */
 export function err<E>(error: E): Err<never, E> {
   const self: Err<never, E> = {
     _tag: "Err",
@@ -213,6 +302,14 @@ export function err<E>(error: E): Err<never, E> {
     },
     flip() {
       return ok(error);
+    },
+
+    // Logical combinators
+    and() {
+      return self;
+    },
+    or(other) {
+      return other;
     },
 
     // Chaining
@@ -254,11 +351,26 @@ export function err<E>(error: E): Err<never, E> {
     unwrapOrElse(f) {
       return f(error);
     },
+    mapOr(defaultValue) {
+      return defaultValue;
+    },
+    mapOrElse(defaultF) {
+      return defaultF(error);
+    },
+    contains() {
+      return false;
+    },
+    containsErr(e) {
+      return error === e;
+    },
     expect(message) {
-      throw new Error(message);
+      throw new UnwrapError(message, { _tag: "Err", value: error });
     },
     expectErr() {
       return error;
+    },
+    orDie(): never {
+      throw error;
     },
 
     // Conversion
@@ -286,9 +398,20 @@ export function err<E>(error: E): Err<never, E> {
       return getResultAsync().err(error);
     },
 
+    // Option bridges
+    toOption() {
+      return none();
+    },
+    toOptionErr() {
+      return some(error);
+    },
+    transpose() {
+      return some(self);
+    },
+
     // Serialization
     toJSON() {
-      return { _tag: "Err", error };
+      return { _tag: "Err" as const, _schemaVersion: 1, error };
     },
 
     // Generator protocol

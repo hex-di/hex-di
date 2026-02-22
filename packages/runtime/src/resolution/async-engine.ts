@@ -19,7 +19,7 @@ import { AsyncFactoryError, ContainerError } from "../errors/index.js";
 import type { RuntimeAdapterFor } from "../container/internal-types.js";
 import { HooksRunner, checkCacheHit } from "./hooks-runner.js";
 import type { InheritanceMode } from "../types.js";
-import { getMemoForLifetime, buildDependenciesAsync } from "./core.js";
+import { getMemoForLifetime, buildDependenciesAsync, unwrapResultDefense } from "./core.js";
 
 // =============================================================================
 // Types
@@ -288,8 +288,8 @@ export class AsyncResolutionEngine {
       const deps = await buildDependenciesAsync(adapter.requires, requiredPort =>
         this.resolveDependency(requiredPort, scopedMemo, scopeId, scopeName)
       );
-      const instance = await adapter.factory(deps);
-      return instance;
+      const raw = await adapter.factory(deps);
+      return unwrapResultDefense(raw) as InferService<P>;
     } catch (e) {
       if (e instanceof ContainerError) {
         throw e;

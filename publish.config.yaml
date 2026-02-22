@@ -1,0 +1,26 @@
+# Packages approved for public npm release.
+#
+# Only packages listed here are built and published by the release workflow
+# (.github/workflows/publish.yml). Everything else in the monorepo is ignored
+# by the publisher, regardless of its version.
+#
+# To approve a new package:
+#   1. Verify it passes all tests and typechecks locally
+#   2. Set its initial version in package.json
+#   3. Add its npm name to this list
+#   4. Open a PR — the CI gate will validate before merge
+
+packages:
+  - "@hex-di/result"
+  - "@hex-di/result-testing"
+  - "@hex-di/result-react"
+  - "@hex-di/core"
+  - "@hex-di/graph"
+  - "@hex-di/runtime"
+  - "@hex-di/testing"
+  - "@hex-di/react"
+  - "hex-di"
+  - "@hex-di/guard"
+  - "@hex-di/guard-testing"
+  - "@hex-di/guard-react"
+  - "@hex-di/guard-validation"

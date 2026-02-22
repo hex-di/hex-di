@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/result",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "Rust-style Result type for TypeScript - errors as values with full type safety",
   "type": "module",
   "main": "./dist/index.js",
@@ -10,16 +10,60 @@
       "import": {
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
       }
-    }
+    },
+    "./fn": {
+      "import": {
+        "types": "./dist/fn/index.d.ts",
+        "default": "./dist/fn/index.js"
+      }
+    },
+    "./fn/*": {
+      "import": {
+        "types": "./dist/fn/*.d.ts",
+        "default": "./dist/fn/*.js"
+      }
+    },
+    "./async": {
+      "import": {
+        "types": "./dist/async/result-async.d.ts",
+        "default": "./dist/async/result-async.js"
+      }
+    },
+    "./combinators": {
+      "import": {
+        "types": "./dist/combinators/index.d.ts",
+        "default": "./dist/combinators/index.js"
+      }
+    },
+    "./errors": {
+      "import": {
+        "types": "./dist/errors/index.d.ts",
+        "default": "./dist/errors/index.js"
+      }
+    },
+    "./option": {
+      "import": {
+        "types": "./dist/option/index.d.ts",
+        "default": "./dist/option/index.js"
+      }
+    },
+    "./unsafe": {
+      "import": {
+        "types": "./dist/unsafe/index.d.ts",
+        "default": "./dist/unsafe/index.js"
+      }
+    },
+    "./internal/*": null
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "!src/**/*.test.ts",
+    "!src/**/__fixtures__",
+    "!dist/**/*.test.*",
+    "!dist/**/__fixtures__",
+    "!dist/tsconfig.tsbuildinfo"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -29,11 +73,16 @@
     "test:watch": "vitest",
     "test:mutation": "stryker run",
     "test:types": "vitest run --typecheck",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "bench": "vitest bench",
+    "test:cucumber": "cucumber-js"
   },
   "devDependencies": {
+    "@cucumber/cucumber": "^12.6.0",
     "@stryker-mutator/core": "^9.5.1",
-    "@stryker-mutator/vitest-runner": "^9.5.1"
+    "@stryker-mutator/vitest-runner": "^9.5.1",
+    "@vitest/coverage-v8": "^4.0.18",
+    "tsx": "^4.21.0"
   },
   "keywords": [
     "result",
@@ -44,15 +93,18 @@
     "functional",
     "monadic"
   ],
-  "author": "",
+  "author": "Mohammad AL Mechkor <medalmechkor@gmail.com>",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/hex-di/hex-di.git",
     "directory": "packages/result"
   },
   "peerDependencies": {
-    "typescript": ">=5.0"
+    "typescript": ">=5.6"
   },
   "peerDependenciesMeta": {
     "typescript": {

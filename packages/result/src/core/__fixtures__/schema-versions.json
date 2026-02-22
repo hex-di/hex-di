@@ -1,0 +1,44 @@
+[
+  {
+    "schemaVersion": 1,
+    "description": "v1.0.0 Ok — with _schemaVersion field",
+    "json": { "_tag": "Ok", "_schemaVersion": 1, "value": 42 },
+    "expectedTag": "Ok",
+    "expectedPayload": 42
+  },
+  {
+    "schemaVersion": 1,
+    "description": "v1.0.0 Err — with _schemaVersion field",
+    "json": { "_tag": "Err", "_schemaVersion": 1, "error": "fail" },
+    "expectedTag": "Err",
+    "expectedPayload": "fail"
+  },
+  {
+    "schemaVersion": 0,
+    "description": "Legacy Ok — no _schemaVersion field",
+    "json": { "_tag": "Ok", "value": 42 },
+    "expectedTag": "Ok",
+    "expectedPayload": 42
+  },
+  {
+    "schemaVersion": 0,
+    "description": "Legacy Err — no _schemaVersion field",
+    "json": { "_tag": "Err", "error": "fail" },
+    "expectedTag": "Err",
+    "expectedPayload": "fail"
+  },
+  {
+    "schemaVersion": 1,
+    "description": "v1.0.0 Some — Option serialization",
+    "json": { "_tag": "Some", "_schemaVersion": 1, "value": "hello" },
+    "expectedTag": "Some",
+    "expectedPayload": "hello"
+  },
+  {
+    "schemaVersion": 1,
+    "description": "v1.0.0 None — Option serialization",
+    "json": { "_tag": "None", "_schemaVersion": 1 },
+    "expectedTag": "None",
+    "expectedPayload": null
+  }
+]

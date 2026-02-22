@@ -8,9 +8,9 @@
  */
 
 import type { Port, InferService } from "../ports/types.js";
-import type { Adapter, Lifetime, ResolvedDeps, PortDeps } from "./types.js";
+import type { Adapter, Lifetime, FactoryKind, ResolvedDeps, PortDeps } from "./types.js";
 import type { TupleToUnion } from "../utils/type-utilities.js";
-import type { IsAsyncFactory, EnforceAsyncLifetime } from "./unified-types.js";
+import type { IsAsyncFactory, EnforceAsyncLifetime, FactoryResult, InferFactoryError } from "./unified-types.js";
 import {
   SYNC,
   ASYNC,
@@ -29,9 +29,12 @@ export type {
   BothFactoryAndClassError,
   NeitherFactoryNorClassError,
   AsyncLifetimeError,
+  IsAsyncFactory,
   BaseUnifiedConfig,
   FactoryConfig,
+  FactoryResult,
   ClassConfig,
+  InferFactoryError,
 } from "./unified-types.js";
 
 // =============================================================================
@@ -119,6 +122,66 @@ function isPortLike(value: unknown): value is PortLike {
     return false;
   }
   return typeof value.__portName === "string";
+}
+
+/**
+ * Duck-typed Ok variant of a Result-like return value.
+ * @internal
+ */
+interface ResultLikeOk {
+  readonly _tag: "Ok";
+  readonly value: unknown;
+}
+
+/**
+ * Duck-typed Err variant of a Result-like return value.
+ * @internal
+ */
+interface ResultLikeErr {
+  readonly _tag: "Err";
+  readonly error: unknown;
+}
+
+/**
+ * Union of duck-typed Result-like variants.
+ * @internal
+ */
+type ResultLike = ResultLikeOk | ResultLikeErr;
+
+/**
+ * Type guard to check if a value is a Result-like object (has `_tag: "Ok" | "Err"`).
+ *
+ * Uses duck-typing so `@hex-di/core` has no dependency on `@hex-di/result`.
+ * When detected, `createAdapter` unwraps the Result: extracting `.value` on Ok,
+ * throwing `.error` on Err.
+ *
+ * @internal
+ */
+function isResultLike(value: unknown): value is ResultLike {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  if (!("_tag" in value)) {
+    return false;
+  }
+  return value._tag === "Ok" || value._tag === "Err";
+}
+
+/**
+ * Type guard to check if a value is a PromiseLike (thenable) object.
+ *
+ * Used to detect `ResultAsync` and other thenable returns from factories
+ * that aren't declared `async` but return PromiseLike values.
+ *
+ * @internal
+ */
+function isThenable(value: unknown): value is PromiseLike<unknown> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "then" in value &&
+    typeof (value as Record<string, unknown>)["then"] === "function"
+  );
 }
 
 /**
@@ -259,7 +322,7 @@ export function createAdapter<
   TProvides extends Port<unknown, string>,
   TFactory extends (
     deps: ResolvedDeps<never>
-  ) => InferService<TProvides> | Promise<InferService<TProvides>>,
+  ) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>,
 >(config: {
   readonly provides: TProvides;
   readonly factory: TFactory;
@@ -273,7 +336,8 @@ export function createAdapter<
   Singleton,
   IsAsyncFactory<TFactory> extends true ? Async : Sync,
   False,
-  EmptyRequires
+  EmptyRequires,
+  InferFactoryError<ReturnType<TFactory>>
 >;
 
 /**
@@ -292,7 +356,7 @@ export function createAdapter<
   const TRequires extends readonly Port<unknown, string>[],
   TFactory extends (
     deps: PortDeps<TRequires>
-  ) => InferService<TProvides> | Promise<InferService<TProvides>>,
+  ) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>,
 >(config: {
   readonly provides: TProvides;
   readonly requires: TRequires;
@@ -306,7 +370,8 @@ export function createAdapter<
   Singleton,
   IsAsyncFactory<TFactory> extends true ? Async : Sync,
   False,
-  TRequires
+  TRequires,
+  InferFactoryError<ReturnType<TFactory>>
 >;
 
 /**
@@ -330,7 +395,7 @@ export function createAdapter<
   const TLifetime extends Lifetime,
   TFactory extends (
     deps: ResolvedDeps<never>
-  ) => InferService<TProvides> | Promise<InferService<TProvides>>,
+  ) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>,
 >(config: {
   readonly provides: TProvides;
   readonly lifetime: TLifetime;
@@ -344,7 +409,8 @@ export function createAdapter<
   EnforceAsyncLifetime<TFactory, TLifetime>,
   IsAsyncFactory<TFactory> extends true ? Async : Sync,
   False,
-  EmptyRequires
+  EmptyRequires,
+  InferFactoryError<ReturnType<TFactory>>
 >;
 
 /**
@@ -370,7 +436,7 @@ export function createAdapter<
   const TLifetime extends Lifetime,
   TFactory extends (
     deps: PortDeps<TRequires>
-  ) => InferService<TProvides> | Promise<InferService<TProvides>>,
+  ) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>,
 >(config: {
   readonly provides: TProvides;
   readonly requires: TRequires;
@@ -384,7 +450,8 @@ export function createAdapter<
   EnforceAsyncLifetime<TFactory, TLifetime>,
   IsAsyncFactory<TFactory> extends true ? Async : Sync,
   False,
-  TRequires
+  TRequires,
+  InferFactoryError<ReturnType<TFactory>>
 >;
 
 /**
@@ -403,7 +470,7 @@ export function createAdapter<
   const TClonable extends boolean,
   TFactory extends (
     deps: ResolvedDeps<never>
-  ) => InferService<TProvides> | Promise<InferService<TProvides>>,
+  ) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>,
 >(config: {
   readonly provides: TProvides;
   readonly clonable: TClonable;
@@ -417,7 +484,8 @@ export function createAdapter<
   Singleton,
   IsAsyncFactory<TFactory> extends true ? Async : Sync,
   TClonable,
-  EmptyRequires
+  EmptyRequires,
+  InferFactoryError<ReturnType<TFactory>>
 >;
 
 /**
@@ -438,7 +506,7 @@ export function createAdapter<
   const TClonable extends boolean,
   TFactory extends (
     deps: PortDeps<TRequires>
-  ) => InferService<TProvides> | Promise<InferService<TProvides>>,
+  ) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>,
 >(config: {
   readonly provides: TProvides;
   readonly requires: TRequires;
@@ -452,7 +520,8 @@ export function createAdapter<
   Singleton,
   IsAsyncFactory<TFactory> extends true ? Async : Sync,
   TClonable,
-  TRequires
+  TRequires,
+  InferFactoryError<ReturnType<TFactory>>
 >;
 
 /**
@@ -478,7 +547,7 @@ export function createAdapter<
   const TClonable extends boolean,
   TFactory extends (
     deps: ResolvedDeps<never>
-  ) => InferService<TProvides> | Promise<InferService<TProvides>>,
+  ) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>,
 >(config: {
   readonly provides: TProvides;
   readonly lifetime: TLifetime;
@@ -492,7 +561,8 @@ export function createAdapter<
   EnforceAsyncLifetime<TFactory, TLifetime>,
   IsAsyncFactory<TFactory> extends true ? Async : Sync,
   TClonable,
-  EmptyRequires
+  EmptyRequires,
+  InferFactoryError<ReturnType<TFactory>>
 >;
 
 /**
@@ -519,7 +589,7 @@ export function createAdapter<
   const TClonable extends boolean,
   TFactory extends (
     deps: PortDeps<TRequires>
-  ) => InferService<TProvides> | Promise<InferService<TProvides>>,
+  ) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>,
 >(config: {
   readonly provides: TProvides;
   readonly requires: TRequires;
@@ -533,7 +603,8 @@ export function createAdapter<
   EnforceAsyncLifetime<TFactory, TLifetime>,
   IsAsyncFactory<TFactory> extends true ? Async : Sync,
   TClonable,
-  TRequires
+  TRequires,
+  InferFactoryError<ReturnType<TFactory>>
 >;
 
 // =============================================================================
@@ -834,7 +905,8 @@ export function createAdapter(config: {
   Lifetime,
   typeof SYNC | typeof ASYNC,
   boolean,
-  readonly Port<unknown, string>[]
+  readonly Port<unknown, string>[],
+  unknown
 > {
   // Validate mutual exclusion: exactly one of factory or class must be provided
   const hasFactory = config.factory !== undefined;
@@ -873,12 +945,14 @@ export function createAdapter(config: {
       return new ClassConstructor(...args);
     };
   } else if (config.factory !== undefined) {
-    // Factory variant: use provided factory
+    // Factory variant: detect async, pass through factory as-is.
+    // Result returns are NOT auto-unwrapped here. Factories that return Result
+    // will have TError != never on the Adapter type. Users must handle errors
+    // via adapterOrDie() or adapterOrElse() before providing to a graph.
+    // The runtime engine has defense-in-depth unwrapping for safety.
+    const isAsyncFactory = config.factory.constructor.name === "AsyncFunction";
+    factoryKind = isAsyncFactory ? ASYNC : SYNC;
     factory = config.factory;
-    // Detect async factories at runtime by checking constructor name
-    // Note: This detects `async () => {}` but not `() => Promise.resolve()`
-    // For the latter, users should use provideAsync() on GraphBuilder
-    factoryKind = config.factory.constructor.name === "AsyncFunction" ? ASYNC : SYNC;
   } else {
     // This should never happen due to validation above, but TypeScript needs exhaustiveness
     throw new TypeError("Unreachable: either factory or class must be defined");
@@ -890,13 +964,13 @@ export function createAdapter(config: {
   // Enforce singleton lifetime for async factories
   const effectiveLifetime = isAsync ? SINGLETON : lifetime;
 
-  // Call validation
+  // Call validation (use original config.factory for type check, fallback to wrapped for class variant)
   assertValidAdapterConfig(
     {
       provides: config.provides,
       requires,
       lifetime: effectiveLifetime,
-      factory,
+      factory: config.factory ?? factory,
       finalizer: config.finalizer,
     },
     isAsync
@@ -921,4 +995,222 @@ export function createAdapter(config: {
   }
 
   return Object.freeze(baseAdapter);
+}
+
+// =============================================================================
+// Error Channel Handlers
+// =============================================================================
+
+/**
+ * Unwraps a Result-like value if it is Ok, otherwise returns the value as-is.
+ * Does NOT handle Err — only use when value is known to be Ok or non-Result.
+ * @internal
+ */
+function unwrapIfResult(value: unknown): unknown {
+  if (isResultLike(value) && value._tag === "Ok") {
+    return value.value;
+  }
+  return value;
+}
+
+/**
+ * Unwraps a Result-like value, throwing on Err.
+ * @internal
+ */
+function unwrapResultOrDie(raw: unknown): unknown {
+  if (isResultLike(raw)) {
+    if (raw._tag === "Err") throw raw.error;
+    return raw.value;
+  }
+  return raw;
+}
+
+/**
+ * Runtime adapter shape used internally by error channel handlers.
+ * Uses a wider factory type than AdapterConstraint to enable calling.
+ * @internal
+ */
+interface RuntimeAdapter {
+  readonly provides: Port<unknown, string>;
+  readonly requires: readonly Port<unknown, string>[];
+  readonly lifetime: Lifetime;
+  readonly factoryKind: FactoryKind;
+  readonly factory: (deps: Record<string, unknown>) => unknown | Promise<unknown>;
+  readonly clonable: boolean;
+  finalizer?(instance: never): void | Promise<void>;
+}
+
+/**
+ * Clones an adapter with a new factory function, preserving all other properties.
+ * @internal
+ */
+function cloneAdapterWithFactory(
+  adapter: RuntimeAdapter,
+  factory: (deps: Record<string, unknown>) => unknown | Promise<unknown>,
+): RuntimeAdapter {
+  const result = {
+    provides: adapter.provides,
+    requires: adapter.requires,
+    lifetime: adapter.lifetime,
+    factoryKind: adapter.factoryKind,
+    factory,
+    clonable: adapter.clonable,
+  };
+
+  if (adapter.finalizer !== undefined) {
+    return Object.freeze({ ...result, finalizer: adapter.finalizer });
+  }
+
+  return Object.freeze(result);
+}
+
+/**
+ * Wraps a fallible adapter so that `Err` results are thrown as exceptions.
+ *
+ * Takes an adapter whose factory returns `Result<T, E>` (TError != never)
+ * and returns a new adapter with `TError = never`. The wrapped factory
+ * extracts `.value` on `Ok` and throws `.error` on `Err`.
+ *
+ * @example
+ * ```typescript
+ * const FallibleAdapter = createAdapter({
+ *   provides: DbPort,
+ *   factory: () => connectToDb(), // returns Result<Db, DbError>
+ * });
+ *
+ * // FallibleAdapter has TError = DbError
+ * // adapterOrDie wraps it so TError = never (throws on Err)
+ * graph.provide(adapterOrDie(FallibleAdapter));
+ * ```
+ */
+export function adapterOrDie<
+  TProvides,
+  TRequires,
+  TLifetime extends string,
+  TFactoryKind extends FactoryKind,
+  TClonable extends boolean,
+  TRequiresTuple extends readonly unknown[],
+  TError,
+>(
+  adapter: Adapter<TProvides, TRequires, TLifetime, TFactoryKind, TClonable, TRequiresTuple, TError>
+): Adapter<TProvides, TRequires, TLifetime, TFactoryKind, TClonable, TRequiresTuple, never>;
+export function adapterOrDie(adapter: RuntimeAdapter): RuntimeAdapter {
+  const userFactory = adapter.factory;
+  const wrappedFactory = adapter.factoryKind === ASYNC
+    ? async (deps: Record<string, unknown>): Promise<unknown> => {
+        const raw = await userFactory(deps);
+        return unwrapResultOrDie(raw);
+      }
+    : (deps: Record<string, unknown>): unknown => {
+        const raw = userFactory(deps);
+        return unwrapResultOrDie(raw);
+      };
+
+  return cloneAdapterWithFactory(adapter, wrappedFactory);
+}
+
+/**
+ * Wraps a fallible adapter with an infallible fallback adapter.
+ *
+ * Takes a primary adapter whose factory returns `Result<T, E>` (TError != never)
+ * and a fallback adapter that provides the same port with `TError = never`.
+ * Returns a new adapter with `TError = never` that tries the primary factory
+ * first, and on `Err` invokes the fallback factory.
+ *
+ * Both adapters must provide the same port. The fallback adapter must be
+ * infallible (TError = never). Requirements from both adapters are merged.
+ *
+ * @example
+ * ```typescript
+ * const RedisAdapter = createAdapter({
+ *   provides: CachePort,
+ *   factory: (): Result<Cache, RedisError> => connectToRedis(),
+ * });
+ *
+ * const InMemoryCacheAdapter = createAdapter({
+ *   provides: CachePort,
+ *   factory: () => new InMemoryCache(),
+ * });
+ *
+ * // On error, fall back to in-memory cache
+ * graph.provide(adapterOrElse(RedisAdapter, InMemoryCacheAdapter));
+ * ```
+ */
+export function adapterOrElse<
+  TProvides,
+  TRequires1,
+  TLifetime1 extends string,
+  TFactoryKind1 extends FactoryKind,
+  TClonable1 extends boolean,
+  TRequiresTuple1 extends readonly unknown[],
+  TError,
+  TRequires2,
+  TLifetime2 extends string,
+  TFactoryKind2 extends FactoryKind,
+  TClonable2 extends boolean,
+  TRequiresTuple2 extends readonly unknown[],
+>(
+  adapter: Adapter<TProvides, TRequires1, TLifetime1, TFactoryKind1, TClonable1, TRequiresTuple1, TError>,
+  fallback: Adapter<TProvides, TRequires2, TLifetime2, TFactoryKind2, TClonable2, TRequiresTuple2, never>,
+): Adapter<
+  TProvides,
+  TRequires1 | TRequires2,
+  TLifetime1,
+  TFactoryKind1 extends "async" ? "async" : TFactoryKind2 extends "async" ? "async" : TFactoryKind1,
+  TClonable1,
+  readonly [...TRequiresTuple1, ...TRequiresTuple2],
+  never
+>;
+export function adapterOrElse(
+  adapter: RuntimeAdapter,
+  fallback: RuntimeAdapter,
+): RuntimeAdapter {
+  const primaryFactory = adapter.factory;
+  const fallbackFactory = fallback.factory;
+  const isAsync = adapter.factoryKind === ASYNC || fallback.factoryKind === ASYNC;
+
+  const wrappedFactory = isAsync
+    ? async (deps: Record<string, unknown>): Promise<unknown> => {
+        const raw = primaryFactory(deps);
+        const resolved = isThenable(raw) ? await raw : raw;
+        if (isResultLike(resolved) && resolved._tag === "Err") {
+          const fb = fallbackFactory(deps);
+          const fbResolved = isThenable(fb) ? await fb : fb;
+          return unwrapIfResult(fbResolved);
+        }
+        return unwrapIfResult(resolved);
+      }
+    : (deps: Record<string, unknown>): unknown => {
+        const raw = primaryFactory(deps);
+        if (isResultLike(raw) && raw._tag === "Err") {
+          return unwrapIfResult(fallbackFactory(deps));
+        }
+        return unwrapIfResult(raw);
+      };
+
+  // Merge requires arrays (dedup by port name)
+  const seenNames = new Set<string>();
+  const mergedRequires: Port<unknown, string>[] = [];
+  for (const p of [...adapter.requires, ...fallback.requires]) {
+    const name = p.__portName;
+    if (!seenNames.has(name)) {
+      seenNames.add(name);
+      mergedRequires.push(p);
+    }
+  }
+
+  const result = {
+    provides: adapter.provides,
+    requires: mergedRequires,
+    lifetime: adapter.lifetime,
+    factoryKind: isAsync ? ASYNC : adapter.factoryKind,
+    factory: wrappedFactory,
+    clonable: adapter.clonable,
+  };
+
+  if (adapter.finalizer !== undefined) {
+    return Object.freeze({ ...result, finalizer: adapter.finalizer });
+  }
+
+  return Object.freeze(result);
 }

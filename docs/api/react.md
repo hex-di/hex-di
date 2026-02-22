@@ -48,10 +48,11 @@ const {
   ContainerProvider,
   ScopeProvider,
   AutoScopeProvider,
+  AsyncContainerProvider,
   usePort,
+  usePortOptional,
   useContainer,
   useScope,
-  usePortOptional
 } = createTypedHooks<AppPorts>();
 ```
 
@@ -63,13 +64,14 @@ The return type of `createTypedHooks()`.
 
 ```typescript
 interface TypedReactIntegration<TProvides extends Port<unknown, string>> {
-  ContainerProvider: React.FC<ContainerProviderProps<TProvides>>;
-  ScopeProvider: React.FC<ScopeProviderProps<TProvides>>;
-  AutoScopeProvider: React.FC<AutoScopeProviderProps>;
+  ContainerProvider: React.FC<HexDiContainerProviderProps<TProvides>>;
+  ScopeProvider: React.FC<HexDiScopeProviderProps<TProvides>>;
+  AutoScopeProvider: React.FC<HexDiAutoScopeProviderProps>;
+  AsyncContainerProvider: HexDiAsyncContainerProviderComponent<TProvides>;
   usePort: <P extends TProvides>(port: P) => InferService<P>;
-  useContainer: () => Container<TProvides>;
-  useScope: () => Scope<TProvides>;
   usePortOptional: <P extends TProvides>(port: P) => InferService<P> | undefined;
+  useContainer: () => Resolver<TProvides>;
+  useScope: () => Resolver<TProvides>;
 }
 ```
 
@@ -80,7 +82,7 @@ interface TypedReactIntegration<TProvides extends Port<unknown, string>> {
 Provides the container to the component tree.
 
 ```typescript
-interface ContainerProviderProps<TProvides> {
+interface HexDiContainerProviderProps<TProvides> {
   container: Container<TProvides>;
   children: React.ReactNode;
 }
@@ -93,7 +95,7 @@ import { createContainer } from '@hex-di/runtime';
 import { ContainerProvider } from './di/hooks';
 import { appGraph } from './di/graph';
 
-const container = createContainer(appGraph);
+const container = createContainer({ graph: appGraph, name: "App" });
 
 function App() {
   return (
@@ -109,8 +111,8 @@ function App() {
 Provides a manually-managed scope to children.
 
 ```typescript
-interface ScopeProviderProps<TProvides> {
-  scope: Scope<TProvides>;
+interface HexDiScopeProviderProps<TProvides> {
+  scope: Resolver<TProvides>;
   children: React.ReactNode;
 }
 ```
@@ -124,7 +126,7 @@ function RequestHandler() {
 
   useEffect(() => {
     return () => {
-      scope.dispose();
+      void scope.tryDispose();
     };
   }, [scope]);
 
@@ -141,7 +143,8 @@ function RequestHandler() {
 Automatically creates and disposes a scope on mount/unmount.
 
 ```typescript
-interface AutoScopeProviderProps {
+interface HexDiAutoScopeProviderProps {
+  name?: string;
   children: React.ReactNode;
 }
 ```
@@ -171,6 +174,51 @@ function App() {
       {/* New scope created when userId changes */}
       <Dashboard />
     </AutoScopeProvider>
+  );
+}
+```
+
+### AsyncContainerProvider
+
+Handles async container initialization with loading/error/ready states.
+
+```typescript
+interface HexDiAsyncContainerProviderProps<TProvides> {
+  container: LazyContainer<TProvides>; // container.initialize() called internally
+  children: React.ReactNode;
+  loadingFallback?: React.ReactNode;
+  errorFallback?: (error: Error) => React.ReactNode;
+}
+```
+
+**Simple mode** (built-in loading/error UI):
+
+```typescript
+function App() {
+  return (
+    <AsyncContainerProvider container={lazyContainer}>
+      <MyApp />
+    </AsyncContainerProvider>
+  );
+}
+```
+
+**Compound Component mode** (custom loading/error/ready UI):
+
+```typescript
+function App() {
+  return (
+    <AsyncContainerProvider container={lazyContainer}>
+      <AsyncContainerProvider.Loading>
+        <Spinner />
+      </AsyncContainerProvider.Loading>
+      <AsyncContainerProvider.Error>
+        {(error) => <ErrorBanner message={error.message} />}
+      </AsyncContainerProvider.Error>
+      <AsyncContainerProvider.Ready>
+        <MyApp />
+      </AsyncContainerProvider.Ready>
+    </AsyncContainerProvider>
   );
 }
 ```
@@ -293,6 +341,159 @@ function OptionalFeature() {
 }
 ```
 
+### useDeps
+
+Resolves multiple ports in a single call.
+
+```typescript
+function useDeps<T extends Partial<Record<string, TProvides>>>(
+  ports: T
+): { [K in keyof T]: T[K] extends TProvides ? InferService<T[K]> : never }
+```
+
+**Example:**
+
+```typescript
+function Dashboard() {
+  const { logger, userService } = useDeps({
+    logger: LoggerPort,
+    userService: UserServicePort,
+  });
+
+  // ...
+}
+```
+
+## Global Package Exports
+
+In addition to the `createTypedHooks()` factory, `@hex-di/react` exports global components for use without type constraints (e.g., in testing utilities or library code).
+
+### Provider Components
+
+```typescript
+import {
+  HexDiContainerProvider,
+  HexDiScopeProvider,
+  HexDiAutoScopeProvider,
+  HexDiAsyncContainerProvider,
+  HexDiLazyContainerProvider,
+  ReactiveScopeProvider,
+  InspectorProvider,
+  TracingProvider,
+} from '@hex-di/react';
+```
+
+| Component | Purpose |
+|-----------|---------|
+| `HexDiContainerProvider` | Root container context |
+| `HexDiScopeProvider` | Manual scope context |
+| `HexDiAutoScopeProvider` | Automatic scope lifecycle |
+| `HexDiAsyncContainerProvider` | Async container initialization |
+| `HexDiLazyContainerProvider` | Deferred graph loading (code splitting) |
+| `ReactiveScopeProvider` | Externally-disposed scope with automatic unmount |
+| `InspectorProvider` | Container inspection context |
+| `TracingProvider` | Distributed tracing context |
+
+### Tracing Hooks
+
+```typescript
+import { useTracer, useSpan, useTracedCallback } from '@hex-di/react';
+```
+
+**`useTracer()`** — Access the tracer from `TracingProvider`:
+
+```typescript
+function MyComponent() {
+  const tracer = useTracer();
+  const span = tracer.startSpan('my-operation');
+  // ...
+}
+```
+
+**`useSpan()`** — Get the currently active span:
+
+```typescript
+function MyComponent() {
+  const span = useSpan();
+  span?.setAttribute('user.id', userId);
+}
+```
+
+**`useTracedCallback(name, fn)`** — Wrap a callback in an auto-managed span:
+
+```typescript
+function MyButton() {
+  const handleClick = useTracedCallback('button.click', async () => {
+    await doWork();
+  });
+
+  return <button onClick={handleClick}>Submit</button>;
+}
+```
+
+### Inspection Hooks
+
+All inspection hooks require an `InspectorProvider` ancestor.
+
+```typescript
+import { useInspector, useSnapshot, useScopeTree, useUnifiedSnapshot } from '@hex-di/react';
+```
+
+**`useInspector()`** — Access the `InspectorAPI` instance directly.
+
+**`useSnapshot()`** — Reactive container snapshot (re-renders on change):
+
+```typescript
+function DebugPanel() {
+  const snapshot = useSnapshot();
+
+  return (
+    <ul>
+      {snapshot.services.map(s => (
+        <li key={s.portName}>{s.portName}: {s.lifetime}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+**`useScopeTree()`** — Reactive scope hierarchy.
+
+**`useUnifiedSnapshot()`** — Reactive unified snapshot combining container + library data.
+
+### DevTools Bridge
+
+```typescript
+import { DevToolsBridge } from '@hex-di/react';
+
+// Forwards inspector events to browser DevTools extension
+function App() {
+  return (
+    <InspectorProvider inspector={inspector}>
+      <DevToolsBridge />
+      <MyApp />
+    </InspectorProvider>
+  );
+}
+```
+
+### createComponent
+
+Declarative component definition with explicit DI dependencies:
+
+```typescript
+import { createComponent } from '@hex-di/react';
+
+const UserProfile = createComponent({
+  requires: [UserServicePort, LoggerPort],
+  component: ({ UserService, Logger }) => {
+    const user = UserService.getCurrentUser();
+    Logger.log('ProfileRendered');
+    return <div>{user.name}</div>;
+  },
+});
+```
+
 ## Error Classes
 
 ### MissingProviderError
@@ -307,15 +508,16 @@ class MissingProviderError extends Error {
 
 **Example:**
 
+`MissingProviderError` is thrown during render and propagates to the nearest React Error Boundary — it cannot be caught inline in a component body. Wrap the component tree in a `ContainerProvider` to prevent it:
+
 ```typescript
-function BadComponent() {
-  try {
-    const logger = usePort(LoggerPort);
-  } catch (error) {
-    if (error instanceof MissingProviderError) {
-      console.error(`Missing ${error.providerType}Provider`);
-    }
-  }
+function App() {
+  return (
+    // Provides the container to all children — prevents MissingProviderError
+    <ContainerProvider container={container}>
+      <Dashboard />
+    </ContainerProvider>
+  );
 }
 ```
 
@@ -398,14 +600,17 @@ function MessageList() {
 - Create containers per request on server
 
 ```typescript
+import { fromPromise } from '@hex-di/result';
+
 // Server-side
 export async function getServerSideProps() {
-  const container = createContainer(graph);
-  try {
-    const data = await container.resolve(DataPort).fetch();
-    return { props: { data } };
-  } finally {
-    await container.dispose();
-  }
+  const container = createContainer({ graph, name: "App" });
+  const result = await container.tryResolve(DataPort)
+    .asyncAndThen((dataService) => fromPromise(dataService.fetch(), (e) => e));
+  await container.tryDispose();
+  return result.match(
+    (data) => ({ props: { data } }),
+    () => ({ notFound: true }),
+  );
 }
 ```

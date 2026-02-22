@@ -13,7 +13,6 @@ import type { Result } from "@hex-di/result";
 import type { MachineAny } from "../machine/types.js";
 import type { StateNodeAny } from "../machine/state-node.js";
 import { MetadataInvalid } from "../errors/index.js";
-import type { FlowAdapterError } from "../errors/index.js";
 
 // =============================================================================
 // TransitionDetail Type
@@ -115,7 +114,7 @@ export function isFlowMetadata(value: unknown): value is FlowAdapterMetadata {
 export function computeFlowMetadata(
   machine: MachineAny,
   activityPortNames: readonly string[] = []
-): Result<FlowAdapterMetadata, FlowAdapterError> {
+): Result<FlowAdapterMetadata, MetadataInvalid> {
   const statesRecord = machine.states;
 
   if (typeof statesRecord !== "object" || statesRecord === null) {

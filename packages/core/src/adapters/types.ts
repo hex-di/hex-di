@@ -174,7 +174,8 @@ export type PortDeps<TRequires extends readonly Port<unknown, string>[]> = Resol
  *   "singleton",        // TLifetime: instance lifetime
  *   "sync",             // TFactoryKind: synchronous factory
  *   false,              // TClonable: not safe to shallow-clone
- *   readonly []         // TRequiresTuple: empty tuple (computed from TRequires)
+ *   readonly [],        // TRequiresTuple: empty tuple (computed from TRequires)
+ *   never               // TError: no error channel (infallible factory)
  * >;
  * ```
  */
@@ -187,11 +188,12 @@ export type Adapter<
   out TRequiresTuple extends readonly unknown[] = [TRequires] extends [never]
     ? readonly []
     : readonly TRequires[],
+  out TError = never,
 > = {
   /**
    * Brand property for nominal typing.
    */
-  readonly [__adapterBrand]?: [TProvides, TRequires, TLifetime, TFactoryKind, TClonable];
+  readonly [__adapterBrand]?: [TProvides, TRequires, TLifetime, TFactoryKind, TClonable, TError];
 
   /**
    * The port this adapter provides/implements.

@@ -1,111 +1,82 @@
 ---
 title: Core Concepts
-description: Understand the fundamental concepts of HexDI including Ports, Adapters, Graphs, Containers, and Scopes.
+description: Understand the fundamental concepts of HexDI — ports as contracts, adapters as explicit dependency declarations, graphs as structural constraints.
 sidebar_position: 2
 ---
 
 # Core Concepts
 
-This guide explains the fundamental concepts in HexDI: Ports, Adapters, Graphs, Containers, and Scopes.
+HexDI is built around a single insight: if your dependency graph is a first-class TypeScript object, the compiler can validate it. Architecture becomes a constraint, not a convention.
 
-## The HexDI Mental Model
-
-HexDI follows a simple flow:
+The core model:
 
 ```
-Define Interface → Create Port → Create Adapter → Build Graph → Create Container → Resolve Service
+Port → Adapter → Graph → Container
 ```
 
-Let's explore each concept in detail.
+---
 
 ## Ports
 
-A **Port** is a typed token that represents a service contract. It serves two purposes:
-
-1. **Runtime identifier** - A unique token to look up services
-2. **Type carrier** - Carries the service interface type at compile time
-
-### Creating Ports
+A **Port** is a contract. It defines what a service *is*, not how it works. It's also a typed token — a unique runtime identifier that carries the service's interface type at the type level.
 
 ```typescript
-import { createPort } from '@hex-di/ports';
+import { port } from '@hex-di/core';
 
-// Define the service interface
 interface Logger {
   log(message: string): void;
   warn(message: string): void;
   error(message: string): void;
 }
 
-// Create a port
-// createPort<'PortName', ServiceInterface>('PortName')
-const LoggerPort = createPort<'Logger', Logger>('Logger');
+// The port is the contract.
+// The name is inferred as a literal type — "Logger" — enabling structural validation.
+const LoggerPort = port<Logger>()({ name: 'Logger' });
 ```
 
-### Port Naming Convention
-
-The port name (string) should match the type parameter:
-
-```typescript
-// Good - names match
-const LoggerPort = createPort<'Logger', Logger>('Logger');
-const DatabasePort = createPort<'Database', Database>('Database');
-
-// Avoid - inconsistent naming
-const LoggerPort = createPort<'Log', Logger>('Logger'); // Confusing
-```
-
-### Why Ports?
-
-Ports provide **nominal typing**. Two ports with the same interface are still distinct:
+Ports are **nominal**. Two ports with the same interface are still distinct:
 
 ```typescript
 interface Logger {
   log(message: string): void;
 }
 
-const ConsoleLoggerPort = createPort<'ConsoleLogger', Logger>('ConsoleLogger');
-const FileLoggerPort = createPort<'FileLogger', Logger>('FileLogger');
+const ConsoleLoggerPort = port<Logger>()({ name: 'ConsoleLogger' });
+const FileLoggerPort    = port<Logger>()({ name: 'FileLogger' });
 
-// These are type-incompatible even though Logger interface is the same
-// container.resolve(ConsoleLoggerPort) !== container.resolve(FileLoggerPort)
+// These are type-incompatible even though Logger interface is identical.
+// The compiler distinguishes them by name, not structure.
 ```
+
+Ports belong to your domain — they describe what your application needs, without specifying which technology provides it.
+
+---
 
 ## Adapters
 
-An **Adapter** implements a port and declares its dependencies. It's the "how" to the port's "what".
-
-### Creating Adapters
+An **Adapter** is an implementation of a port. Crucially, it also declares what it depends on — making the entire dependency graph explicit and machine-readable.
 
 ```typescript
-import { createAdapter } from '@hex-di/graph';
+import { createAdapter } from '@hex-di/core';
 
 const ConsoleLoggerAdapter = createAdapter({
-  provides: LoggerPort,      // Which port this implements
-  requires: [],              // Dependencies (none here)
-  lifetime: 'singleton',     // Instance lifecycle
-  factory: () => ({          // How to create the service
-    log: (msg) => console.log(`[INFO] ${msg}`),
-    warn: (msg) => console.warn(`[WARN] ${msg}`),
+  provides: LoggerPort,       // Which contract this implements
+  requires: [],               // Declared dependencies (none here)
+  lifetime: 'singleton',      // Instance lifecycle
+  factory: () => ({           // How to create the service
+    log:   (msg) => console.log(`[INFO] ${msg}`),
+    warn:  (msg) => console.warn(`[WARN] ${msg}`),
     error: (msg) => console.error(`[ERROR] ${msg}`)
   })
 });
 ```
 
-### Adapters with Dependencies
-
-The `requires` array declares which ports this adapter depends on:
+When an adapter has dependencies, they are declared explicitly in `requires`. TypeScript infers the `deps` type automatically — no manual annotations needed:
 
 ```typescript
-interface UserService {
-  getUser(id: string): Promise<User>;
-}
-
-const UserServicePort = createPort<'UserService', UserService>('UserService');
-
 const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
-  requires: [LoggerPort, DatabasePort],  // Declare dependencies
+  requires: [LoggerPort, DatabasePort],  // Declare what you need
   lifetime: 'scoped',
   factory: (deps) => {
     // deps is automatically typed as:
@@ -113,49 +84,30 @@ const UserServiceAdapter = createAdapter({
     return {
       getUser: async (id) => {
         deps.Logger.log(`Fetching user ${id}`);
-        const result = await deps.Database.query(
-          'SELECT * FROM users WHERE id = ?',
-          [id]
-        );
-        return result;
+        return deps.Database.query('SELECT * FROM users WHERE id = ?', [id]);
       }
     };
   }
 });
 ```
 
-### Adapter Configuration
+**This declaration is not documentation — it's the graph.** Every `requires` entry becomes an edge in the dependency graph that the compiler validates.
 
-| Property | Required | Description |
-|----------|----------|-------------|
-| `provides` | Yes | The port this adapter implements |
-| `requires` | Yes | Array of dependency ports (use `[]` for none) |
-| `lifetime` | Yes | `'singleton'`, `'scoped'`, or `'transient'` |
-| `factory` | Yes | Function that creates the service instance |
-| `finalizer` | No | Cleanup function called on disposal |
+### Adapter configuration
 
-### Finalizers
+| Property    | Required | Description |
+|-------------|----------|-------------|
+| `provides`  | Yes      | The port this adapter implements |
+| `requires`  | Yes      | Declared dependency ports (use `[]` for none) |
+| `lifetime`  | Yes      | `'singleton'`, `'scoped'`, or `'transient'` |
+| `factory`   | Yes      | Factory function; receives resolved dependencies |
+| `finalizer` | No       | Cleanup function called on container/scope disposal |
 
-Adapters can specify cleanup logic:
-
-```typescript
-const DatabaseAdapter = createAdapter({
-  provides: DatabasePort,
-  requires: [],
-  lifetime: 'singleton',
-  factory: () => new DatabasePool(),
-  finalizer: async (pool) => {
-    await pool.close();
-    console.log('Database pool closed');
-  }
-});
-```
+---
 
 ## Graphs
 
-A **Graph** is a validated collection of adapters. GraphBuilder composes adapters and validates dependencies at compile time.
-
-### Building Graphs
+A **Graph** is a structurally validated collection of adapters. It is not built at runtime from a config file — it is constructed at compile time via a type-checked builder.
 
 ```typescript
 import { GraphBuilder } from '@hex-di/graph';
@@ -167,257 +119,196 @@ const graph = GraphBuilder.create()
   .build();
 ```
 
-### Compile-Time Validation
+### Structural validation
 
-The graph validates that all dependencies are satisfied:
+The graph enforces two invariants at compile time:
+
+**Every declared dependency must be provided:**
 
 ```typescript
-// This compiles - all dependencies are provided
+// This compiles — all dependencies are provided
 const validGraph = GraphBuilder.create()
-  .provide(LoggerAdapter)      // provides Logger
-  .provide(DatabaseAdapter)    // provides Database
-  .provide(UserServiceAdapter) // requires Logger, Database ✓
+  .provide(LoggerAdapter)       // provides Logger
+  .provide(DatabaseAdapter)     // provides Database
+  .provide(UserServiceAdapter)  // requires Logger, Database ✓
   .build();
 
-// This fails to compile - missing dependencies
+// This fails to compile — UserServiceAdapter requires Logger and Database
 const invalidGraph = GraphBuilder.create()
-  .provide(UserServiceAdapter) // requires Logger, Database
-  .build(); // Error: MissingDependencyError<typeof LoggerPort | typeof DatabasePort>
+  .provide(UserServiceAdapter)  // requires Logger, Database
+  .build(); // Error: "ERROR[HEX008]: Missing adapters for Logger | Database. Call .provide() first."
 ```
 
-### Immutable Builder Pattern
-
-Each `provide()` returns a NEW builder instance:
-
-```typescript
-const builder1 = GraphBuilder.create();
-const builder2 = builder1.provide(LoggerAdapter);
-const builder3 = builder2.provide(DatabaseAdapter);
-
-// builder1 still has 0 adapters
-// builder2 has 1 adapter (Logger)
-// builder3 has 2 adapters (Logger, Database)
-```
-
-This enables safe composition patterns:
-
-```typescript
-// Create a base graph
-const base = GraphBuilder.create()
-  .provide(LoggerAdapter)
-  .provide(ConfigAdapter);
-
-// Branch for different features
-const withUsers = base.provide(UserServiceAdapter);
-const withOrders = base.provide(OrderServiceAdapter);
-
-// base is unchanged by either branch
-```
-
-### Duplicate Detection
-
-Providing the same port twice causes a compile error:
+**Each port can only be provided once:**
 
 ```typescript
 const graph = GraphBuilder.create()
   .provide(LoggerAdapter)
   .provide(AnotherLoggerAdapter) // Same port!
   .build();
-// Error: DuplicateProviderError<typeof LoggerPort>
+// Error: "ERROR[HEX001]: Duplicate adapter for 'Logger'. Fix: Remove one .provide() call."
 ```
+
+### Immutable builder
+
+Each `provide()` returns a new builder. The original is unchanged. This enables safe branching:
+
+```typescript
+const base = GraphBuilder.create()
+  .provide(LoggerAdapter)
+  .provide(ConfigAdapter);
+
+// Different implementations for different environments
+const devGraph  = base.provide(InMemoryDatabaseAdapter).build();
+const prodGraph = base.provide(PostgresDatabaseAdapter).build();
+// base is unchanged by either branch
+```
+
+The graph is **the architecture as a live, queryable object** — not a diagram that drifts away from the code.
+
+---
 
 ## Containers
 
-A **Container** is the runtime resolver that creates service instances from a graph.
-
-### Creating Containers
+A **Container** is the runtime resolver that creates service instances from a validated graph.
 
 ```typescript
 import { createContainer } from '@hex-di/runtime';
 
-const container = createContainer(graph);
+const container = createContainer({ graph, name: "App" });
 ```
 
-### Resolving Services
+Resolving a service returns a fully-typed instance:
 
 ```typescript
-// Resolve a service
 const logger = container.resolve(LoggerPort);
+// type: Logger — TypeScript knows this is valid
 
-// Type is inferred
-logger.log('Hello!'); // TypeScript knows this is valid
+logger.log('Hello!');
 
-// Invalid ports are compile errors
-container.resolve(UnknownPort); // Error: not in graph
+// Resolving a port not in the graph is a compile error:
+container.resolve(UnknownPort); // TypeScript Error
 ```
 
-### Container Lifecycle
+Containers are disposed when the application shuts down. Finalizers run in reverse dependency order:
 
 ```typescript
-const container = createContainer(graph);
-
-// Use services...
-const logger = container.resolve(LoggerPort);
-
-// Cleanup when done (calls finalizers in reverse order)
-await container.dispose();
+await container.tryDispose();
 ```
+
+---
 
 ## Scopes
 
-A **Scope** is a child container for managing scoped service lifetimes.
-
-### Why Scopes?
-
-Scoped services need boundaries - typically per HTTP request or per user session:
+A **Scope** is a child container for managing the lifecycle of scoped services. Scoped services are created once per scope and disposed when the scope is disposed.
 
 ```typescript
-// Scoped service - one instance per scope
-const UserSessionAdapter = createAdapter({
-  provides: UserSessionPort,
-  requires: [],
-  lifetime: 'scoped',
-  factory: () => ({ userId: getCurrentUserId() })
-});
-```
+const container = createContainer({ graph, name: "App" });
 
-### Creating Scopes
-
-```typescript
-const container = createContainer(graph);
-
-// Create a scope for this request
+// Per-request scope
 const scope = container.createScope();
 
-// Resolve scoped services
-const session = scope.resolve(UserSessionPort);
-
-// Dispose when request is complete
-await scope.dispose();
+const session = scope.resolve(UserSessionPort); // one instance for this scope
+// ... handle request ...
+await scope.tryDispose(); // session is disposed, finalizers run
 ```
 
-### Scope Behavior
+### Lifetime behavior
 
-| Lifetime | Root Container | Scope |
-|----------|---------------|-------|
-| `singleton` | Created once, cached | Same instance from container |
-| `scoped` | Error (requires scope) | Created once per scope |
-| `transient` | Fresh each time | Fresh each time |
+| Lifetime      | Root Container          | Scope                        |
+|---------------|-------------------------|------------------------------|
+| `singleton`   | Created once, cached    | Same instance from container |
+| `scoped`      | Error (requires scope)  | Created once per scope       |
+| `transient`   | Fresh each resolution   | Fresh each resolution        |
 
 ```typescript
-// Singletons are shared
+// Singletons are shared across all scopes
 const logger1 = container.resolve(LoggerPort);
+const scope   = container.createScope();
 const logger2 = scope.resolve(LoggerPort);
 logger1 === logger2; // true
 
-// Scoped instances are isolated
-const scope1 = container.createScope();
-const scope2 = container.createScope();
+// Scoped instances are isolated per scope
+const scope1   = container.createScope();
+const scope2   = container.createScope();
 const session1 = scope1.resolve(UserSessionPort);
 const session2 = scope2.resolve(UserSessionPort);
 session1 === session2; // false
-
-// Request instances are always fresh
-const notif1 = scope.resolve(NotificationPort);
-const notif2 = scope.resolve(NotificationPort);
-notif1 === notif2; // false
 ```
 
-## Putting It All Together
+---
 
-Here's a complete example showing all concepts:
+## Putting It Together
 
 ```typescript
-import { createPort } from '@hex-di/ports';
-import { createAdapter, GraphBuilder } from '@hex-di/graph';
+import { port, createAdapter } from '@hex-di/core';
+import { GraphBuilder } from '@hex-di/graph';
 import { createContainer } from '@hex-di/runtime';
+import { fromPromise } from '@hex-di/result';
 
-// 1. Define interfaces
-interface Logger {
-  log(message: string): void;
-}
+// Contracts
+interface Logger     { log(msg: string): void; }
+interface UserService { getUser(id: string): Promise<{ id: string; name: string }>; }
 
-interface UserSession {
-  userId: string;
-}
+const LoggerPort      = port<Logger>()({ name: 'Logger' });
+const UserServicePort = port<UserService>()({ name: 'UserService' });
 
-interface UserService {
-  getCurrentUser(): Promise<User>;
-}
-
-// 2. Create ports
-const LoggerPort = createPort<'Logger', Logger>('Logger');
-const UserSessionPort = createPort<'UserSession', UserSession>('UserSession');
-const UserServicePort = createPort<'UserService', UserService>('UserService');
-
-// 3. Create adapters
+// Implementations with explicit dependency declarations
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,
   requires: [],
   lifetime: 'singleton',
-  factory: () => ({
-    log: (msg) => console.log(`[App] ${msg}`)
-  })
-});
-
-const UserSessionAdapter = createAdapter({
-  provides: UserSessionPort,
-  requires: [],
-  lifetime: 'scoped',
-  factory: () => ({
-    userId: 'user-123' // In real app, from request context
-  })
+  factory: () => ({ log: (msg) => console.log(`[App] ${msg}`) })
 });
 
 const UserServiceAdapter = createAdapter({
   provides: UserServicePort,
-  requires: [LoggerPort, UserSessionPort],
+  requires: [LoggerPort],       // explicit declaration — this edge is in the graph
   lifetime: 'scoped',
   factory: (deps) => ({
-    getCurrentUser: async () => {
-      deps.Logger.log(`Getting user ${deps.UserSession.userId}`);
-      return { id: deps.UserSession.userId, name: 'Alice' };
+    getUser: async (id) => {
+      deps.Logger.log(`Getting user ${id}`);
+      return { id, name: 'Alice' };
     }
   })
 });
 
-// 4. Build graph (compile-time validated)
+// Structurally validated graph — fails to compile if any dependency is missing
 const graph = GraphBuilder.create()
   .provide(LoggerAdapter)
-  .provide(UserSessionAdapter)
   .provide(UserServiceAdapter)
   .build();
 
-// 5. Create container
-const container = createContainer(graph);
+// Runtime resolution
+const container = createContainer({ graph, name: "App" });
 
-// 6. Use in request handler
 async function handleRequest() {
   const scope = container.createScope();
-  try {
-    const userService = scope.resolve(UserServicePort);
-    const user = await userService.getCurrentUser();
-    console.log('Current user:', user);
-  } finally {
-    await scope.dispose();
-  }
+  const result = await scope.tryResolve(UserServicePort)
+    .asyncAndThen((userService) => fromPromise(userService.getUser('user-1'), (e) => e));
+  await scope.tryDispose();
+  result.match(
+    (user) => console.log('User:', user),
+    (error) => console.error('Failed:', error),
+  );
 }
 
 handleRequest();
 ```
 
+---
+
 ## Summary
 
-| Concept | Purpose | Created With |
-|---------|---------|--------------|
-| Port | Service contract + runtime token | `createPort()` |
-| Adapter | Implementation + dependencies | `createAdapter()` |
-| Graph | Validated adapter collection | `GraphBuilder.create().provide().build()` |
-| Container | Runtime service resolver | `createContainer()` |
-| Scope | Lifetime boundary for scoped services | `container.createScope()` |
+| Concept   | What it is                               | Created with                              |
+|-----------|------------------------------------------|-------------------------------------------|
+| Port      | A contract — what a service does         | `port<T>()({ name })`                    |
+| Adapter   | An implementation with declared deps     | `createAdapter({ provides, requires, … })` |
+| Graph     | A compile-time-validated wiring          | `GraphBuilder.create().provide(…).build()` |
+| Container | A runtime resolver                       | `createContainer({ graph, name })`        |
+| Scope     | A lifetime boundary for scoped services  | `container.createScope()`                 |
 
-## Next Steps
+---
 
-- Learn about [Lifetimes](./lifetimes.md) in detail
-- Build your [First Application](./first-application.md)
-- Explore [TypeScript Integration](./typescript-integration.md)
+- Next: [First Application](./first-application.md)
+- Or dive into: [Lifetimes](./lifetimes.md) · [TypeScript Integration](./typescript-integration.md)

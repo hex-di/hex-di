@@ -186,6 +186,52 @@ export type InferAdapterLifetime<TAdapter> =
     : never;
 
 /**
+ * Extracts the **error channel type** from an Adapter.
+ *
+ * Returns the `TError` type parameter, which represents the error type
+ * that the adapter's factory can produce via `Result<T, E>` returns.
+ *
+ * - `never` means the factory is infallible (returns `T` directly)
+ * - Any other type means the factory is fallible and must be handled
+ *   via `adapterOrDie()` or `adapterOrElse()` before providing to a graph
+ *
+ * @typeParam TAdapter - The Adapter type to extract from
+ * @returns The error channel type, or `never` if infallible
+ */
+export type InferAdapterError<TAdapter> =
+  TAdapter extends Adapter<
+    InferPlaceholder,
+    InferPlaceholder,
+    LifetimePlaceholder,
+    FactoryKindPlaceholder,
+    ClonablePlaceholder,
+    readonly unknown[],
+    infer TError
+  >
+    ? TError
+    : never;
+
+/**
+ * Extracts the union of error channel types from an array of adapters.
+ *
+ * @typeParam TAdapters - Tuple or readonly array of Adapter types
+ * @returns Union of all error types, or `never` if all are infallible
+ */
+export type InferManyErrors<TAdapters> = TAdapters extends readonly (infer TElement)[]
+  ? TElement extends Adapter<
+      InferPlaceholder,
+      InferPlaceholder,
+      LifetimePlaceholder,
+      FactoryKindPlaceholder,
+      ClonablePlaceholder,
+      readonly unknown[],
+      infer TError
+    >
+    ? TError
+    : never
+  : never;
+
+/**
  * Extracts the clonable status from an adapter type.
  *
  * @typeParam TAdapter - The adapter type to extract from

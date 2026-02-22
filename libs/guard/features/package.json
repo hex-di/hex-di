@@ -1,0 +1,26 @@
+{
+  "name": "@hex-di/guard-features",
+  "version": "0.1.0",
+  "description": "Cucumber BDD acceptance tests for @hex-di/guard (DoD 22)",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --import tsx/esm node_modules/@cucumber/cucumber/bin/cucumber-js -i step-definitions/world.ts -i step-definitions/guard.steps.ts -i step-definitions/signature.steps.ts -i step-definitions/rebac.steps.ts",
+    "test:dry": "node --import tsx/esm node_modules/@cucumber/cucumber/bin/cucumber-js --dry-run -i step-definitions/world.ts -i step-definitions/guard.steps.ts -i step-definitions/signature.steps.ts -i step-definitions/rebac.steps.ts",
+    "test:tags": "node --import tsx/esm node_modules/@cucumber/cucumber/bin/cucumber-js -i step-definitions/world.ts -i step-definitions/guard.steps.ts -i step-definitions/signature.steps.ts -i step-definitions/rebac.steps.ts --tags",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hex-di/guard": "workspace:*",
+    "@hex-di/guard-testing": "workspace:*",
+    "@hex-di/result": "workspace:*"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "^11.2.0",
+    "@types/node": "25.0.3",
+    "tsx": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

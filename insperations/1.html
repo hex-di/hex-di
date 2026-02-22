@@ -1,0 +1,865 @@
+<html lang="en" vid="0">
+
+<head vid="1">
+  <meta charset="UTF-8" vid="2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" vid="3">
+  <title vid="4">HexDI - Structural Dependency Injection</title>
+  <script src="https://cdn.tailwindcss.com" vid="5"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" vid="6">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" vid="7">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&amp;family=Inter:wght@300;400;500;600&amp;family=Rajdhani:wght@400;500;600;700&amp;display=swap"
+    rel="stylesheet" vid="8">
+  <script vid="9">
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Rajdhani', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          },
+          colors: {
+            hex: {
+              bg: '#020408',
+              surface: '#08101C',
+              primary: '#00F0FF',
+              primaryLight: '#5FFFFF',
+              primaryDark: '#008F99',
+              accent: '#FF5E00',
+              accentDark: '#CC4A00',
+              text: '#DAE6F0',
+              muted: '#586E85',
+            }
+          },
+          backgroundImage: {
+            'grid-pattern': 'linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px)',
+            'radar-gradient': 'radial-gradient(circle at center, rgba(0, 240, 255, 0.08) 0%, rgba(2, 4, 8, 0) 70%)',
+          },
+          animation: {
+            'spin-slow': 'spin 20s linear infinite',
+            'float': 'float 6s ease-in-out infinite',
+            'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'scanline': 'scanline 8s linear infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': {transform: 'translateY(0)'},
+              '50%': {transform: 'translateY(-10px)'},
+            },
+            'pulse-glow': {
+              '0%, 100%': {opacity: '0.4', boxShadow: '0 0 5px rgba(0, 240, 255, 0.2)'},
+              '50%': {opacity: '1', boxShadow: '0 0 20px rgba(0, 240, 255, 0.6)'},
+            },
+            scanline: {
+              '0%': {transform: 'translateY(-100%)'},
+              '100%': {transform: 'translateY(100%)'}
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style vid="10">
+    body {
+      background-color: #020408;
+      color: #DAE6F0;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .bg-grid {
+      background-size: 40px 40px;
+      background-image:
+        linear-gradient(to right, rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
+    }
+
+    .hud-card {
+      background: rgba(8, 16, 28, 0.7);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(0, 240, 255, 0.15);
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .hud-card::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: -1px;
+      width: 10px;
+      height: 10px;
+      border-top: 2px solid #00F0FF;
+      border-left: 2px solid #00F0FF;
+      transition: all 0.3s ease;
+    }
+
+    .hud-card::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      right: -1px;
+      width: 10px;
+      height: 10px;
+      border-bottom: 2px solid #00F0FF;
+      border-right: 2px solid #00F0FF;
+      transition: all 0.3s ease;
+    }
+
+    .hud-card:hover {
+      background: rgba(0, 240, 255, 0.05);
+      border-color: rgba(0, 240, 255, 0.4);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.1);
+    }
+
+    .hud-card:hover::before,
+    .hud-card:hover::after {
+      width: 100%;
+      height: 100%;
+      opacity: 0.5;
+    }
+
+    .token.keyword {
+      color: #FF5E00;
+    }
+
+    .token.function {
+      color: #00F0FF;
+    }
+
+    .token.string {
+      color: #A6E22E;
+    }
+
+    .token.class-name {
+      color: #F92672;
+    }
+
+    .token.comment {
+      color: #586E85;
+      font-style: italic;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #020408;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #00F0FF;
+    }
+
+    .delay-100 {
+      animation-delay: 100ms;
+    }
+
+    .delay-200 {
+      animation-delay: 200ms;
+    }
+
+    .delay-300 {
+      animation-delay: 300ms;
+    }
+
+    .tactical-border-b {
+      border-bottom: 1px solid rgba(0, 240, 255, 0.3);
+      box-shadow: 0 4px 20px -10px rgba(0, 240, 255, 0.5);
+    }
+  </style>
+</head>
+
+<body class="bg-hex-bg bg-grid selection:bg-hex-primary selection:text-black" vid="11">
+
+
+  <nav class="fixed top-0 w-full z-50 tactical-border-b bg-hex-bg/90 backdrop-blur-md" vid="12">
+    <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between" vid="13">
+      <div class="flex items-center gap-3" vid="14">
+
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+          class="text-hex-primary drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]" vid="15">
+          <path d="M12 2L21 7V17L12 22L3 17V7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" vid="16"></path>
+          <circle cx="12" cy="12" r="3" fill="currentColor" vid="17"></circle>
+        </svg>
+        <span class="font-display font-bold text-2xl tracking-widest text-white uppercase" vid="18">Hex<span
+            class="text-hex-primary" vid="19">DI</span></span>
+      </div>
+      <div class="hidden md:flex gap-8 text-xs font-mono tracking-widest text-hex-muted uppercase" vid="20">
+        <a href="#features"
+          class="hover:text-hex-primary transition-colors hover:drop-shadow-[0_0_5px_rgba(0,240,255,0.5)]"
+          vid="21">[Features]</a>
+        <a href="#architecture"
+          class="hover:text-hex-primary transition-colors hover:drop-shadow-[0_0_5px_rgba(0,240,255,0.5)]"
+          vid="22">[Architecture]</a>
+        <a href="#docs" class="hover:text-hex-primary transition-colors hover:drop-shadow-[0_0_5px_rgba(0,240,255,0.5)]"
+          vid="23">[Docs]</a>
+      </div>
+      <div class="flex gap-4 items-center" vid="24">
+        <div
+          class="hidden sm:flex items-center gap-2 text-[10px] text-hex-primary border border-hex-primary/30 px-2 py-1 bg-hex-primary/5"
+          vid="25">
+          <div class="w-1.5 h-1.5 bg-hex-accent rounded-full animate-pulse" vid="26"></div>
+          SYS.ONLINE
+        </div>
+        <a href="https://github.com" target="_blank"
+          class="hidden sm:block text-hex-muted hover:text-white transition-colors" vid="27">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24" vid="28">
+            <path
+              d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+              vid="29"></path>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+
+  <div
+    class="fixed top-24 left-6 text-[10px] text-hex-primary/50 uppercase tracking-widest font-mono hidden xl:block pointer-events-none z-0 border-l border-hex-primary/30 pl-2"
+    vid="30">
+    Build: Stable<br vid="31">
+    <span class="text-hex-accent" vid="32">v2.4.0</span>
+  </div>
+  <div
+    class="fixed top-24 right-6 text-[10px] text-hex-primary/50 uppercase tracking-widest font-mono hidden xl:block pointer-events-none z-0 border-r border-hex-primary/30 pr-2 text-right"
+    vid="33">
+    System: Rigid<br vid="34">
+    Scope: Global
+  </div>
+
+
+  <header class="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden" vid="35">
+
+
+    <div
+      class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-radar-gradient pointer-events-none"
+      vid="36"></div>
+    <div
+      class="absolute inset-0 bg-[linear-gradient(rgba(18,16,20,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-[1] bg-[length:100%_2px,3px_100%] pointer-events-none opacity-20"
+      vid="37"></div>
+
+    <div class="max-w-7xl mx-auto px-6 w-full grid lg:grid-cols-2 gap-12 items-center relative z-10" vid="38">
+
+      <div class="space-y-8" vid="39">
+        <div
+          class="inline-flex items-center gap-2 px-3 py-1 border border-hex-accent/50 bg-hex-accent/10 text-hex-accent text-xs font-mono tracking-widest uppercase"
+          vid="40">
+          <span class="w-1.5 h-1.5 rounded-none bg-hex-accent animate-pulse shadow-[0_0_8px_#FF5E00]" vid="41"></span>
+          Compile-Time Safety v2.0
+        </div>
+
+        <h1 class="font-display font-bold text-5xl md:text-7xl leading-[0.9] tracking-tight text-white uppercase"
+          vid="42">
+          The compiler reviews the <span
+            class="text-transparent bg-clip-text bg-gradient-to-r from-hex-primary to-hex-primaryLight drop-shadow-[0_0_10px_rgba(0,240,255,0.3)]"
+            vid="43">architecture.</span> <br vid="44">
+          <span class="text-hex-muted text-4xl md:text-6xl" vid="45">You review the logic.</span>
+        </h1>
+
+        <p class="text-lg text-hex-muted max-w-xl font-light leading-relaxed font-mono text-sm border-l-2 border-hex-primary/20 pl-4"
+          vid="46">
+          // STOP DEBUGGING "SERVICE NOT FOUND" AT RUNTIME.<br vid="47">
+          HexDI is a zero-overhead dependency injection library that validates your entire graph before you even run
+          <code class="text-hex-primary" vid="48">node</code>.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-4 pt-4" vid="49">
+          <button
+            class="px-8 py-4 bg-hex-primary/10 border border-hex-primary text-hex-primary font-bold font-display uppercase tracking-widest hover:bg-hex-primary hover:text-black transition-all flex items-center gap-2 group shadow-[0_0_15px_rgba(0,240,255,0.2)] hover:shadow-[0_0_30px_rgba(0,240,255,0.5)] clip-path-slant"
+            vid="50">
+            Initialize
+            <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor"
+              viewBox="0 0 24 24" vid="51">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"
+                vid="52"></path>
+            </svg>
+          </button>
+          <button
+            class="px-8 py-4 border border-hex-muted/30 text-hex-muted font-bold font-display uppercase tracking-widest hover:border-hex-primary hover:text-hex-primary transition-all relative overflow-hidden group"
+            vid="53">
+            <span
+              class="absolute inset-0 bg-hex-primary/5 translate-y-full group-hover:translate-y-0 transition-transform"
+              vid="54"></span>
+            <span class="relative" vid="55">Documentation</span>
+          </button>
+        </div>
+
+
+        <div
+          class="mt-8 flex items-center gap-3 p-4 bg-[#050A10] border border-hex-primary/20 rounded-sm max-w-md font-mono text-sm shadow-[0_0_20px_rgba(0,0,0,0.5)] relative"
+          vid="56">
+
+          <div class="absolute top-0 left-0 w-2 h-2 border-t border-l border-hex-primary" vid="57"></div>
+          <div class="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-hex-primary" vid="58"></div>
+
+          <span class="text-hex-accent" vid="59">$</span>
+          <span class="text-gray-400" vid="60">npm install</span>
+          <span class="text-hex-primary" vid="61">@hex-di/core</span>
+          <button class="ml-auto text-hex-muted hover:text-white transition-colors" aria-label="Copy command" vid="62">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="63">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                vid="64"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+
+      <div class="relative flex items-center justify-center min-h-[500px]" vid="65">
+
+        <div class="absolute inset-0 flex items-center justify-center perspective-[1000px]" vid="66">
+
+          <svg class="w-full h-full max-w-[500px] animate-float drop-shadow-[0_0_30px_rgba(0,240,255,0.15)]"
+            style="transform: rotateX(20deg) rotateZ(-10deg);" viewBox="0 0 400 400" fill="none"
+            xmlns="http://www.w3.org/2000/svg" vid="67">
+            <defs vid="68">
+              <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%" vid="69">
+                <stop offset="0%" stop-color="#00F0FF" stop-opacity="0.0" vid="70"></stop>
+                <stop offset="50%" stop-color="#00F0FF" stop-opacity="0.8" vid="71"></stop>
+                <stop offset="100%" stop-color="#00F0FF" stop-opacity="0.0" vid="72"></stop>
+              </linearGradient>
+              <radialGradient id="nodeGlow" vid="73">
+                <stop offset="0%" stop-color="#00F0FF" stop-opacity="0.6" vid="74"></stop>
+                <stop offset="100%" stop-color="#00F0FF" stop-opacity="0.0" vid="75"></stop>
+              </radialGradient>
+            </defs>
+
+
+            <path d="M200 100 L286.6 150 L286.6 250 L200 300 L113.4 250 L113.4 150 Z" stroke="rgba(0, 240, 255, 0.2)"
+              stroke-width="1" fill="rgba(0, 240, 255, 0.02)" vid="76"></path>
+
+
+            <g class="animate-[pulse_4s_ease-in-out_infinite]" vid="77">
+
+              <circle cx="200" cy="100" r="6" fill="#020408" stroke="#FF5E00" stroke-width="2" vid="78"></circle>
+              <text x="200" y="85" text-anchor="middle" fill="#FF5E00" font-family="Fira Code" font-size="10"
+                letter-spacing="1" vid="79">CONTAINER</text>
+
+
+              <circle cx="286.6" cy="150" r="4" fill="#00F0FF" vid="80"></circle>
+              <text x="310" y="150" fill="#00F0FF" font-family="Fira Code" font-size="10" letter-spacing="1"
+                vid="81">SERVICE</text>
+
+
+              <circle cx="286.6" cy="250" r="4" fill="#00F0FF" vid="82"></circle>
+              <text x="310" y="250" fill="#00F0FF" font-family="Fira Code" font-size="10" letter-spacing="1"
+                vid="83">REPO</text>
+
+
+              <circle cx="200" cy="300" r="4" fill="#00F0FF" vid="84"></circle>
+              <text x="200" y="325" text-anchor="middle" fill="#00F0FF" font-family="Fira Code" font-size="10"
+                letter-spacing="1" vid="85">DB</text>
+
+
+              <circle cx="113.4" cy="250" r="4" fill="#00F0FF" vid="86"></circle>
+              <text x="90" y="250" text-anchor="end" fill="#00F0FF" font-family="Fira Code" font-size="10"
+                letter-spacing="1" vid="87">ADAPTER</text>
+
+
+              <circle cx="113.4" cy="150" r="4" fill="#00F0FF" vid="88"></circle>
+              <text x="90" y="150" text-anchor="end" fill="#00F0FF" font-family="Fira Code" font-size="10"
+                letter-spacing="1" vid="89">PORT</text>
+            </g>
+
+
+            <path d="M200 100 L286.6 150" stroke="url(#lineGrad)" stroke-width="2" vid="90"></path>
+            <path d="M286.6 150 L286.6 250" stroke="url(#lineGrad)" stroke-width="2" vid="91"></path>
+            <path d="M286.6 250 L200 300" stroke="url(#lineGrad)" stroke-width="2" vid="92"></path>
+            <path d="M200 300 L113.4 250" stroke="url(#lineGrad)" stroke-width="2" vid="93"></path>
+            <path d="M113.4 250 L113.4 150" stroke="url(#lineGrad)" stroke-width="2" vid="94"></path>
+            <path d="M113.4 150 L200 100" stroke="url(#lineGrad)" stroke-width="2" vid="95"></path>
+
+
+            <path d="M200 100 L200 200" stroke="#00F0FF" stroke-width="1" stroke-dasharray="2 4" opacity="0.3" vid="96">
+            </path>
+            <path d="M286.6 150 L200 200" stroke="#00F0FF" stroke-width="1" stroke-dasharray="2 4" opacity="0.3"
+              vid="97"></path>
+            <path d="M113.4 250 L200 200" stroke="#00F0FF" stroke-width="1" stroke-dasharray="2 4" opacity="0.3"
+              vid="98"></path>
+
+
+            <circle cx="200" cy="200" r="30" fill="url(#nodeGlow)" class="animate-pulse" vid="99"></circle>
+            <circle cx="200" cy="200" r="10" stroke="#00F0FF" stroke-width="1" fill="none" vid="100"></circle>
+            <path d="M190 200 h20 M200 190 v20" stroke="#00F0FF" stroke-width="1" opacity="0.5" vid="101"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-50" vid="102">
+      <span class="text-[10px] uppercase tracking-widest font-mono text-hex-primary" vid="103">Scroll</span>
+      <div class="w-[1px] h-12 bg-gradient-to-b from-hex-primary to-transparent" vid="104"></div>
+    </div>
+  </header>
+
+
+  <section id="features" class="py-32 relative bg-[#020408]" vid="105">
+
+    <div class="absolute inset-0 pointer-events-none"
+      style="background-image: linear-gradient(0deg, transparent 24%, rgba(0, 240, 255, .03) 25%, rgba(0, 240, 255, .03) 26%, transparent 27%, transparent 74%, rgba(0, 240, 255, .03) 75%, rgba(0, 240, 255, .03) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(0, 240, 255, .03) 25%, rgba(0, 240, 255, .03) 26%, transparent 27%, transparent 74%, rgba(0, 240, 255, .03) 75%, rgba(0, 240, 255, .03) 76%, transparent 77%, transparent); background-size: 50px 50px;"
+      vid="106"></div>
+
+    <div class="max-w-7xl mx-auto px-6 relative z-10" vid="107">
+      <div class="mb-16 flex items-end gap-4 border-b border-white/5 pb-4" vid="108">
+        <div class="h-2 w-2 bg-hex-primary" vid="109"></div>
+        <h2 class="text-3xl md:text-4xl font-display font-bold uppercase tracking-wide text-white" vid="110">System
+          <span class="text-hex-muted" vid="111">Protocols</span></h2>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6" vid="112">
+
+        <div class="hud-card p-8 group" vid="113">
+          <div
+            class="w-12 h-12 flex items-center justify-center mb-6 text-hex-primary border border-hex-primary/30 bg-hex-primary/5 group-hover:bg-hex-primary/20 transition-colors"
+            vid="114">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="115">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" vid="116"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold font-display uppercase tracking-wide mb-2 text-white" vid="117">Compile-Time
+            Validation</h3>
+          <p class="text-hex-muted text-sm leading-relaxed font-mono" vid="118">Dependency graph cycles and missing
+            tokens are detected during build sequence. Zero production errors.</p>
+        </div>
+
+        <div class="hud-card p-8 group delay-100" vid="119">
+          <div
+            class="w-12 h-12 flex items-center justify-center mb-6 text-hex-accent border border-hex-accent/30 bg-hex-accent/5 group-hover:bg-hex-accent/20 transition-colors"
+            vid="120">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="121">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"
+                vid="122"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold font-display uppercase tracking-wide mb-2 text-white" vid="123">Zero Runtime
+            Overhead</h3>
+          <p class="text-hex-muted text-sm leading-relaxed font-mono" vid="124">Optimized factory code generation.
+            Reflection protocols disabled. Dynamic lookups disabled.</p>
+        </div>
+
+        <div class="hud-card p-8 group delay-200" vid="125">
+          <div
+            class="w-12 h-12 flex items-center justify-center mb-6 text-purple-400 border border-purple-500/30 bg-purple-500/5 group-hover:bg-purple-500/20 transition-colors"
+            vid="126">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="127">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" vid="128"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold font-display uppercase tracking-wide mb-2 text-white" vid="129">Deep Type
+            Inference</h3>
+          <p class="text-hex-muted text-sm leading-relaxed font-mono" vid="130">Seamless TypeScript generic integration.
+            Interface contract enforcement active.</p>
+        </div>
+
+        <div class="hud-card p-8 group" vid="131">
+          <div
+            class="w-12 h-12 flex items-center justify-center mb-6 text-blue-400 border border-blue-500/30 bg-blue-500/5 group-hover:bg-blue-500/20 transition-colors"
+            vid="132">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="133">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                vid="134"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold font-display uppercase tracking-wide mb-2 text-white" vid="135">React Integration
+          </h3>
+          <p class="text-hex-muted text-sm leading-relaxed font-mono" vid="136">Context-based scoping hooks engaged.
+            <code class="text-xs text-blue-300" vid="137">useService()</code> operational.</p>
+        </div>
+
+        <div class="hud-card p-8 group delay-100" vid="138">
+          <div
+            class="w-12 h-12 flex items-center justify-center mb-6 text-indigo-400 border border-indigo-500/30 bg-indigo-500/5 group-hover:bg-indigo-500/20 transition-colors"
+            vid="139">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="140">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                vid="141"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold font-display uppercase tracking-wide mb-2 text-white" vid="142">Immutable
+            Composition</h3>
+          <p class="text-hex-muted text-sm leading-relaxed font-mono" vid="143">Container sealed post-construction.
+            Runtime mutation prevented. Integrity verified.</p>
+        </div>
+
+        <div class="hud-card p-8 group delay-200" vid="144">
+          <div
+            class="w-12 h-12 flex items-center justify-center mb-6 text-pink-400 border border-pink-500/30 bg-pink-500/5 group-hover:bg-pink-500/20 transition-colors"
+            vid="145">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="146">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" vid="147"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold font-display uppercase tracking-wide mb-2 text-white" vid="148">Explicit
+            Lifetimes</h3>
+          <p class="text-hex-muted text-sm leading-relaxed font-mono" vid="149">Granular lifecycle control: Singleton,
+            Scoped (Request), Transient (Instance). Precise object management.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="py-24 bg-[#05080F] border-y border-hex-primary/20 relative" vid="150">
+    <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-5 gap-12 items-center" vid="151">
+      <div class="lg:col-span-2 space-y-6" vid="152">
+        <h2 class="text-3xl font-display font-bold uppercase text-white" vid="153">Execution <span
+            class="text-hex-primary" vid="154">Preview</span></h2>
+        <p class="text-hex-muted font-mono text-sm" vid="155">HexDI analyzes constructor signatures to construct the
+          resolution graph. Standard TypeScript types are sufficient.</p>
+
+        <ul class="space-y-4 font-mono text-sm text-gray-400 border-l border-hex-primary/20 pl-4" vid="156">
+          <li class="flex items-center gap-3" vid="157">
+            <span class="text-hex-primary" vid="158">[OK]</span> No decorators required
+          </li>
+          <li class="flex items-center gap-3" vid="159">
+            <span class="text-hex-primary" vid="160">[OK]</span> 100% Type Safe
+          </li>
+          <li class="flex items-center gap-3" vid="161">
+            <span class="text-hex-primary" vid="162">[OK]</span> IntelliSense Active
+          </li>
+        </ul>
+      </div>
+
+      <div class="lg:col-span-3" vid="163">
+        <div
+          class="rounded-sm overflow-hidden border border-hex-primary/30 bg-[#020408] shadow-[0_0_30px_rgba(0,0,0,0.5)] relative"
+          vid="164">
+
+          <div class="flex items-center justify-between px-4 py-2 bg-[#0A1420] border-b border-hex-primary/30"
+            vid="165">
+            <div class="flex gap-1" vid="166">
+              <span class="text-[10px] text-hex-muted uppercase font-mono" vid="167">TERMINAL_01</span>
+            </div>
+            <span class="text-xs text-hex-primary font-mono ml-4" vid="168">app.container.ts</span>
+          </div>
+          <div class="p-6 overflow-x-auto relative" vid="169">
+
+            <div
+              class="absolute inset-0 bg-gradient-to-b from-transparent via-hex-primary/5 to-transparent h-[10px] w-full animate-scanline pointer-events-none"
+              vid="170"></div>
+
+            <pre class="font-mono text-sm leading-relaxed" vid="171"><code class="language-typescript" vid="172"><span
+                  class="token keyword" vid="173">import</span> { Container, Service } <span class="token keyword"
+                  vid="174">from</span> <span class="token string" vid="175">'@hex-di/core'</span>;
+
+                <span class="token keyword" vid="176">class</span> <span class="token class-name"
+                  vid="177">Database</span> {
+                <span class="token function" vid="178">connect</span>() { <span class="token comment" vid="179">/* ...
+                  */</span> }
+                }
+
+                <span class="token keyword" vid="180">class</span> <span class="token class-name"
+                  vid="181">UserRepository</span> {
+                <span class="token keyword" vid="182">constructor</span>(<span class="token keyword"
+                  vid="183">private</span> db: <span class="token class-name" vid="184">Database</span>) {}
+
+                <span class="token function" vid="185">find</span>(id: <span class="token keyword"
+                  vid="186">string</span>) {
+                <span class="token keyword" vid="187">return</span> <span class="token keyword"
+                  vid="188">this</span>.db.<span class="token function" vid="189">query</span>(<span
+                  class="token string" vid="190">`SELECT * FROM users...`</span>);
+                }
+                }
+
+                <span class="token comment" vid="191">// Define the composition root</span>
+                <span class="token keyword" vid="192">const</span> container = <span class="token keyword"
+                  vid="193">new</span> <span class="token class-name" vid="194">Container</span>();
+
+                <span class="token comment" vid="195">// Register services</span>
+                container.<span class="token function" vid="196">register</span>(<span class="token class-name"
+                  vid="197">Database</span>);
+                container.<span class="token function" vid="198">register</span>(<span class="token class-name"
+                  vid="199">UserRepository</span>);
+
+                <span class="token comment" vid="200">// Validate &amp; Build (Compile-time check)</span>
+                <span class="token keyword" vid="201">const</span> root = container.<span class="token function"
+                  vid="202">build</span>();
+
+                <span class="token keyword" vid="203">const</span> userRepo = root.<span class="token function"
+                  vid="204">resolve</span>(<span class="token class-name" vid="205">UserRepository</span>);
+              </code></pre>
+          </div>
+
+          <div class="h-1 bg-hex-primary/20 w-full flex" vid="206">
+            <div class="h-full w-1/4 bg-hex-primary/50" vid="207"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <section id="architecture" class="py-32 relative overflow-hidden bg-hex-bg" vid="208">
+    <div class="max-w-7xl mx-auto px-6" vid="209">
+      <div class="text-center mb-16" vid="210">
+        <h2 class="text-3xl font-display font-bold mb-4 uppercase text-white" vid="211">Module <span
+            class="text-hex-primary" vid="212">Architecture</span></h2>
+        <p class="text-hex-muted max-w-2xl mx-auto font-mono text-sm" vid="213">Core runtime &lt; 2KB. Select modules as
+          required.</p>
+      </div>
+
+
+      <div
+        class="relative w-full max-w-4xl mx-auto aspect-video mb-12 border border-hex-primary/20 rounded-sm bg-hex-surface/30 p-8 flex items-center justify-center backdrop-blur-sm"
+        vid="214">
+
+        <div class="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-hex-primary" vid="215"></div>
+        <div class="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-hex-primary" vid="216"></div>
+        <div class="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-hex-primary" vid="217"></div>
+        <div class="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-hex-primary" vid="218"></div>
+
+        <svg viewBox="0 0 800 400" class="w-full h-full" vid="219">
+
+          <defs vid="220">
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"
+              markerUnits="strokeWidth" vid="221">
+              <path d="M0,0 L0,6 L9,3 z" fill="#00F0FF" vid="222"></path>
+            </marker>
+          </defs>
+
+
+          <g transform="translate(350, 150)" vid="223">
+            <path d="M10,0 H90 L100,10 V90 L90,100 H10 L0,90 V10 L10,0 Z" fill="#0B1624" stroke="#00F0FF"
+              stroke-width="2" vid="224"></path>
+            <text x="50" y="55" text-anchor="middle" fill="white" font-family="Rajdhani" font-weight="bold"
+              font-size="14" vid="225">@hex-di</text>
+            <text x="50" y="75" text-anchor="middle" fill="#00F0FF" font-family="Fira Code" font-size="10"
+              vid="226">CORE</text>
+          </g>
+
+
+          <g transform="translate(350, 300)" vid="227">
+            <rect x="0" y="0" width="100" height="60" fill="transparent" stroke="#586E85" stroke-width="1"
+              stroke-dasharray="4 4" vid="228"></rect>
+            <text x="50" y="35" text-anchor="middle" fill="#586E85" font-family="Fira Code" font-size="10"
+              vid="229">RUNTIME</text>
+          </g>
+
+
+          <g transform="translate(350, 40)" vid="230">
+            <rect x="0" y="0" width="100" height="60" fill="transparent" stroke="#586E85" stroke-width="1"
+              stroke-dasharray="4 4" vid="231"></rect>
+            <text x="50" y="35" text-anchor="middle" fill="#586E85" font-family="Fira Code" font-size="10"
+              vid="232">GRAPH</text>
+          </g>
+
+
+          <g transform="translate(150, 170)" vid="233">
+            <path d="M0,0 H90 L100,10 V60 H0 V0 Z" fill="#0B1624" stroke="#00F0FF" stroke-width="1" vid="234"></path>
+            <text x="50" y="35" text-anchor="middle" fill="#00F0FF" font-family="Rajdhani" font-weight="bold"
+              font-size="12" vid="235">REACT</text>
+          </g>
+
+
+          <g transform="translate(550, 170)" vid="236">
+            <path d="M0,0 H100 V50 L90,60 H0 V0 Z" fill="#0B1624" stroke="#FF5E00" stroke-width="1" vid="237"></path>
+            <text x="50" y="35" text-anchor="middle" fill="#FF5E00" font-family="Rajdhani" font-weight="bold"
+              font-size="12" vid="238">TESTING</text>
+          </g>
+
+
+          <path d="M400 150 L400 110" stroke="#00F0FF" stroke-width="1" marker-end="url(#arrow)" vid="239"></path>
+          <path d="M400 250 L400 290" stroke="#00F0FF" stroke-width="1" marker-end="url(#arrow)" vid="240"></path>
+          <path d="M250 200 L340 200" stroke="#00F0FF" stroke-width="1" marker-end="url(#arrow)" vid="241"></path>
+          <path d="M550 200 L460 200" stroke="#00F0FF" stroke-width="1" marker-end="url(#arrow)" vid="242"></path>
+
+        </svg>
+      </div>
+
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4" vid="243">
+        <div class="p-4 border border-hex-primary/20 bg-hex-surface/50 hover:bg-hex-primary/10 transition-colors"
+          vid="244">
+          <h4 class="font-mono text-hex-primary text-sm mb-2 uppercase border-b border-hex-primary/20 pb-1" vid="245">
+            @hex-di/core</h4>
+          <p class="text-xs text-gray-400" vid="246">Container, Service decorators, public API.</p>
+        </div>
+        <div class="p-4 border border-hex-primary/20 bg-hex-surface/50 hover:bg-hex-primary/10 transition-colors"
+          vid="247">
+          <h4 class="font-mono text-hex-primary text-sm mb-2 uppercase border-b border-hex-primary/20 pb-1" vid="248">
+            @hex-di/graph</h4>
+          <p class="text-xs text-gray-400" vid="249">Dev-only AST analysis engine.</p>
+        </div>
+        <div class="p-4 border border-hex-primary/20 bg-hex-surface/50 hover:bg-hex-primary/10 transition-colors"
+          vid="250">
+          <h4 class="font-mono text-hex-primary text-sm mb-2 uppercase border-b border-hex-primary/20 pb-1" vid="251">
+            @hex-di/react</h4>
+          <p class="text-xs text-gray-400" vid="252">Component integration hooks &amp; Provider.</p>
+        </div>
+        <div class="p-4 border border-hex-accent/20 bg-hex-surface/50 hover:bg-hex-accent/10 transition-colors"
+          vid="253">
+          <h4 class="font-mono text-hex-accent text-sm mb-2 uppercase border-b border-hex-accent/20 pb-1" vid="254">
+            @hex-di/testing</h4>
+          <p class="text-xs text-gray-400" vid="255">Mocking utilities &amp; snapshot tools.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="py-24 bg-[#020408] border-t border-hex-primary/20" vid="256">
+    <div class="max-w-7xl mx-auto px-6" vid="257">
+      <h2 class="text-3xl font-display font-bold mb-12 uppercase text-white" vid="258">Lifetime <span
+          class="text-hex-primary" vid="259">Scopes</span></h2>
+
+      <div class="grid lg:grid-cols-3 gap-8" vid="260">
+
+
+        <div class="hud-card p-8 group hover:border-blue-400" vid="261">
+          <div class="absolute top-2 right-2 p-1" vid="262">
+            <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse" vid="263"></div>
+          </div>
+          <h3 class="text-xl font-bold font-display uppercase tracking-widest mb-4 text-blue-400" vid="264">Singleton
+          </h3>
+          <p class="text-hex-muted text-sm mb-6 font-mono" vid="265">1 Instance / Application.</p>
+          <div class="bg-black/50 p-3 border-l-2 border-blue-500 font-mono text-xs" vid="266">
+            <span class="text-blue-300" vid="267">.register</span>(AuthService, {<br vid="268">
+            &nbsp;&nbsp;lifecycle: <span class="text-hex-accent" vid="269">'singleton'</span><br vid="270">
+            })
+          </div>
+        </div>
+
+
+        <div class="hud-card p-8 group hover:border-hex-primary" vid="271">
+          <div class="absolute top-2 right-2 p-1" vid="272">
+            <div class="w-2 h-2 bg-hex-primary rounded-full animate-pulse" vid="273"></div>
+          </div>
+          <h3 class="text-xl font-bold font-display uppercase tracking-widest mb-4 text-hex-primary" vid="274">Scoped
+          </h3>
+          <p class="text-hex-muted text-sm mb-6 font-mono" vid="275">1 Instance / Scope (Request).</p>
+          <div class="bg-black/50 p-3 border-l-2 border-hex-primary font-mono text-xs" vid="276">
+            <span class="text-hex-primary" vid="277">.register</span>(RequestContext, {<br vid="278">
+            &nbsp;&nbsp;lifecycle: <span class="text-hex-accent" vid="279">'scoped'</span><br vid="280">
+            })
+          </div>
+        </div>
+
+
+        <div class="hud-card p-8 group hover:border-hex-accent" vid="281">
+          <div class="absolute top-2 right-2 p-1" vid="282">
+            <div class="w-2 h-2 bg-hex-accent rounded-full animate-pulse" vid="283"></div>
+          </div>
+          <h3 class="text-xl font-bold font-display uppercase tracking-widest mb-4 text-hex-accent" vid="284">Transient
+          </h3>
+          <p class="text-hex-muted text-sm mb-6 font-mono" vid="285">New Instance / Injection.</p>
+          <div class="bg-black/50 p-3 border-l-2 border-hex-accent font-mono text-xs" vid="286">
+            <span class="text-hex-accent" vid="287">.register</span>(JobRunner, {<br vid="288">
+            &nbsp;&nbsp;lifecycle: <span class="text-hex-accent" vid="289">'transient'</span><br vid="290">
+            })
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="py-32 relative bg-hex-bg" vid="291">
+    <div class="max-w-5xl mx-auto px-6 text-center" vid="292">
+      <blockquote class="text-3xl md:text-5xl font-display font-bold leading-tight mb-16 uppercase" vid="293">
+        <span class="block text-hex-muted text-xl mb-4 tracking-widest" vid="294">// SYSTEM STATUS</span>
+        Conventions enforced by hope. <br vid="295">
+        <span class="text-hex-primary drop-shadow-[0_0_8px_rgba(0,240,255,0.5)]" vid="296">Constraints enforced by
+          code.</span>
+      </blockquote>
+
+      <div class="grid md:grid-cols-2 gap-8 text-left" vid="297">
+
+        <div class="p-8 border border-red-500/50 bg-red-900/5 relative overflow-hidden" vid="298">
+          <div class="absolute top-0 right-0 p-2 text-xs font-mono text-red-500 border-b border-l border-red-500/50"
+            vid="299">RUNTIME_ERR</div>
+          <h4 class="text-red-500 font-bold mb-4 flex items-center gap-2 uppercase tracking-wide font-display"
+            vid="300">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="301">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" vid="302"></path>
+            </svg>
+            Legacy Protocol
+          </h4>
+          <p class="text-sm text-gray-400 mb-4 font-mono" vid="303">Run app. Crash on 'UserService'. Repair. Restart.
+            Crash on circular dependency.</p>
+          <div class="font-mono text-xs text-red-400 bg-red-950/30 p-2 border-l-2 border-red-500" vid="304">Error:
+            Service not found.</div>
+        </div>
+
+
+        <div class="p-8 border border-hex-primary/50 bg-hex-primary/5 relative overflow-hidden" vid="305">
+          <div
+            class="absolute top-0 right-0 p-2 text-xs font-mono text-hex-primary border-b border-l border-hex-primary/50"
+            vid="306">COMPILE_OK</div>
+          <h4 class="text-hex-primary font-bold mb-4 flex items-center gap-2 uppercase tracking-wide font-display"
+            vid="307">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" vid="308">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" vid="309"></path>
+            </svg>
+            HexDI Protocol
+          </h4>
+          <p class="text-sm text-gray-400 mb-4 font-mono" vid="310">Save file. Compiler identifies structural weakness
+            immediately. Build halted.</p>
+          <div class="font-mono text-xs text-hex-primary bg-hex-primary/10 p-2 border-l-2 border-hex-primary" vid="311">
+            TS2322: Circular dependency detected: A -&gt; B -&gt; A</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="py-24 px-6 relative" vid="312">
+    <div class="absolute inset-0 bg-radar-gradient pointer-events-none opacity-50" vid="313"></div>
+    <div
+      class="max-w-6xl mx-auto border border-hex-primary/30 bg-[#06101F] p-12 md:p-20 relative overflow-hidden text-center backdrop-blur-sm"
+      vid="314">
+
+
+      <div class="absolute top-0 left-0 w-20 h-20 border-t-2 border-l-2 border-hex-primary" vid="315"></div>
+      <div class="absolute bottom-0 right-0 w-20 h-20 border-b-2 border-r-2 border-hex-primary" vid="316"></div>
+
+      <div class="relative z-10" vid="317">
+        <h2 class="text-4xl md:text-5xl font-display font-bold mb-6 text-white uppercase tracking-wider" vid="318">Let
+          the compiler be your <span class="text-hex-primary" vid="319">architect</span>.</h2>
+        <p class="text-hex-text text-lg mb-10 max-w-2xl mx-auto font-mono" vid="320">Standardize dependency injection.
+          Scalable. Safe. Instant.</p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center" vid="321">
+          <button
+            class="px-10 py-4 bg-hex-primary text-black font-bold font-display uppercase tracking-widest hover:bg-white transition-colors shadow-[0_0_20px_rgba(0,240,255,0.4)] clip-path-slant"
+            vid="322">
+            Initialize System
+          </button>
+          <button
+            class="px-10 py-4 bg-transparent border border-hex-primary/50 text-hex-primary font-bold font-display uppercase tracking-widest hover:bg-hex-primary/10 transition-colors"
+            vid="323">
+            View Examples
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <footer class="py-12 border-t border-hex-primary/20 bg-[#020408] text-center relative z-10" vid="324">
+    <div class="flex items-center justify-center gap-2 mb-4 text-hex-primary" vid="325">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" vid="326">
+        <path d="M12 2L21 7V17L12 22L3 17V7L12 2Z" stroke="currentColor" stroke-width="2" vid="327"></path>
+        <circle cx="12" cy="12" r="3" fill="currentColor" vid="328"></circle>
+      </svg>
+      <span class="font-display font-bold uppercase tracking-widest" vid="329">HexDI</span>
+    </div>
+    <p class="text-hex-muted text-xs font-mono" vid="330">© 2023 HexDI Open Source. MIT License. // END OF LINE</p>
+  </footer>
+
+
+</body>
+
+</html>
