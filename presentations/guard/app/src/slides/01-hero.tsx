@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Animate } from "../components/animate";
 
 function ShieldSVG(): ReactNode {
   return (
@@ -55,45 +56,57 @@ export function HeroSlide(): ReactNode {
   return (
     <section id="hero" className="min-h-screen flex items-center justify-center relative">
       <div className="text-center">
-        <div className="flex justify-center mb-8">
-          <ShieldSVG />
-        </div>
+        <Animate variant="scale-in" duration={800} delay={200}>
+          <div className="flex justify-center mb-8">
+            <ShieldSVG />
+          </div>
+        </Animate>
 
-        <div className="mb-4">
-          <span className="font-mono text-base tracking-[0.3em] uppercase text-hex-primary/60">
-            HexDI Framework //
-          </span>
-        </div>
-
-        <h1 className="font-display font-bold text-7xl tracking-wide mb-3">
-          <span className="text-hex-text">@hex-di/</span>
-          <span className="text-hex-primary text-glow-cyan">guard</span>
-        </h1>
-
-        <p className="font-display text-2xl text-hex-muted tracking-wide mb-8 max-w-2xl mx-auto">
-          Type-safe authorization for hexagonal architectures
-        </p>
-
-        <div className="flex justify-center gap-4 flex-wrap">
-          {[
-            "Permission Tokens",
-            "Role DAG",
-            "Policy Combinators",
-            "React Integration",
-            "GxP Compliance",
-          ].map(tag => (
-            <span
-              key={tag}
-              className="font-mono text-sm tracking-[0.15em] uppercase px-3 py-1 border border-hex-primary/20 bg-hex-primary/5 text-hex-primary/80"
-            >
-              {tag}
+        <Animate variant="fade-up" delay={350}>
+          <div className="mb-4">
+            <span className="font-mono text-base tracking-[0.3em] uppercase text-hex-primary/60">
+              HexDI Framework //
             </span>
-          ))}
-        </div>
+          </div>
+        </Animate>
 
-        <div className="mt-12 font-mono text-sm tracking-[0.2em] uppercase text-hex-muted/50">
-          Scroll to explore
-        </div>
+        <Animate variant="fade-up" delay={500}>
+          <h1 className="font-display font-bold text-7xl tracking-wide mb-3">
+            <span className="text-hex-text">@hex-di/</span>
+            <span className="text-hex-primary text-glow-cyan">guard</span>
+          </h1>
+        </Animate>
+
+        <Animate variant="fade-up" delay={650}>
+          <p className="font-display text-2xl text-hex-muted tracking-wide mb-8 max-w-2xl mx-auto">
+            Type-safe authorization for hexagonal architectures
+          </p>
+        </Animate>
+
+        <Animate variant="fade-in" delay={800}>
+          <div className="flex justify-center gap-4 flex-wrap">
+            {[
+              "Permission Tokens",
+              "Role DAG",
+              "Policy Combinators",
+              "React Integration",
+              "GxP Compliance",
+            ].map(tag => (
+              <span
+                key={tag}
+                className="font-mono text-sm tracking-[0.15em] uppercase px-3 py-1 border border-hex-primary/20 bg-hex-primary/5 text-hex-primary/80"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        </Animate>
+
+        <Animate variant="fade-in" delay={1000}>
+          <div className="mt-12 font-mono text-sm tracking-[0.2em] uppercase text-hex-muted/50">
+            Scroll to explore
+          </div>
+        </Animate>
       </div>
     </section>
   );

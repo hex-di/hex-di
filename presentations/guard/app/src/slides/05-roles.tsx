@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Animate } from "../components/animate";
 import { Section } from "../components/section";
 import { CodeBlock } from "../components/code-block";
 import { HudCard } from "../components/hud-card";
@@ -177,114 +178,122 @@ function RoleDagSvg(): ReactNode {
 export function RolesSlide(): ReactNode {
   return (
     <Section id="roles" number={5} label="Access Model" title="Roles & Inheritance">
-      <p className="text-hex-muted text-lg leading-relaxed mb-6 max-w-4xl">
-        Roles are <span className="text-hex-accent">directed acyclic graphs</span> (DAGs), not flat
-        lists. A role can inherit from other roles, accumulating their permissions. Cycle detection
-        runs at construction time. The{" "}
-        <code className="text-hex-accent font-mono text-base">flattenPermissions()</code> function
-        traverses the DAG to collect all effective permissions.
-      </p>
+      <Animate variant="fade-up" delay={100}>
+        <p className="text-hex-muted text-lg leading-relaxed mb-6 max-w-4xl">
+          Roles are <span className="text-hex-accent">directed acyclic graphs</span> (DAGs), not
+          flat lists. A role can inherit from other roles, accumulating their permissions. Cycle
+          detection runs at construction time. The{" "}
+          <code className="text-hex-accent font-mono text-base">flattenPermissions()</code> function
+          traverses the DAG to collect all effective permissions.
+        </p>
+      </Animate>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
-        <div>
-          <CodeBlock title="createRole()">
-            <span className="syn-keyword">import</span> {"{"}{" "}
-            <span className="syn-function">createRole</span> {"}"}{" "}
-            <span className="syn-keyword">from</span>{" "}
-            <span className="syn-string">'@hex-di/guard'</span>
-            {"\n"}
-            {"\n"}
-            <span className="syn-comment">// Writer — no permissions</span>
-            {"\n"}
-            <span className="syn-keyword">const</span> <span className="syn-property">Writer</span>{" "}
-            = <span className="syn-function">createRole</span>({"{"}
-            {"\n"}
-            {"  "}
-            <span className="syn-property">name</span>: <span className="syn-string">'writer'</span>
-            ,{"\n"}
-            {"  "}
-            <span className="syn-property">permissions</span>: []{"\n"}
-            {"})"}
-            {"\n"}
-            {"\n"}
-            <span className="syn-comment">// Manager — inherits Writer</span>
-            {"\n"}
-            <span className="syn-keyword">const</span> <span className="syn-property">Manager</span>{" "}
-            = <span className="syn-function">createRole</span>({"{"}
-            {"\n"}
-            {"  "}
-            <span className="syn-property">name</span>:{" "}
-            <span className="syn-string">'manager'</span>,{"\n"}
-            {"  "}
-            <span className="syn-property">permissions</span>: [{"\n"}
-            {"    "}
-            <span className="syn-property">UserPerms</span>.
-            <span className="syn-property">manage</span>,{"\n"}
-            {"    "}
-            <span className="syn-property">BrandPerms</span>.
-            <span className="syn-property">manage</span>,{"\n"}
-            {"  "}],{"\n"}
-            {"  "}
-            <span className="syn-property">inherits</span>: [
-            <span className="syn-property">Writer</span>]{"\n"}
-            {"})"}
-            {"\n"}
-            {"\n"}
-            <span className="syn-comment">// Admin — explicit, no inheritance</span>
-            {"\n"}
-            <span className="syn-keyword">const</span> <span className="syn-property">Admin</span> ={" "}
-            <span className="syn-function">createRole</span>({"{"}
-            {"\n"}
-            {"  "}
-            <span className="syn-property">name</span>: <span className="syn-string">'admin'</span>,
-            {"\n"}
-            {"  "}
-            <span className="syn-property">permissions</span>: [{"\n"}
-            {"    "}
-            <span className="syn-property">UserPerms</span>.
-            <span className="syn-property">manage</span>,{"\n"}
-            {"    "}
-            <span className="syn-property">BrandPerms</span>.
-            <span className="syn-property">delete</span>,{"\n"}
-            {"    "}
-            <span className="syn-property">BrandPerms</span>.
-            <span className="syn-property">add</span>,{"\n"}
-            {"  "}]{"\n"}
-            {"})"}
-          </CodeBlock>
-        </div>
+        <Animate variant="fade-in">
+          <div>
+            <CodeBlock title="createRole()">
+              <span className="syn-keyword">import</span> {"{"}{" "}
+              <span className="syn-function">createRole</span> {"}"}{" "}
+              <span className="syn-keyword">from</span>{" "}
+              <span className="syn-string">'@hex-di/guard'</span>
+              {"\n"}
+              {"\n"}
+              <span className="syn-comment">// Writer — no permissions</span>
+              {"\n"}
+              <span className="syn-keyword">const</span>{" "}
+              <span className="syn-property">Writer</span> ={" "}
+              <span className="syn-function">createRole</span>({"{"}
+              {"\n"}
+              {"  "}
+              <span className="syn-property">name</span>:{" "}
+              <span className="syn-string">'writer'</span>,{"\n"}
+              {"  "}
+              <span className="syn-property">permissions</span>: []{"\n"}
+              {"})"}
+              {"\n"}
+              {"\n"}
+              <span className="syn-comment">// Manager — inherits Writer</span>
+              {"\n"}
+              <span className="syn-keyword">const</span>{" "}
+              <span className="syn-property">Manager</span> ={" "}
+              <span className="syn-function">createRole</span>({"{"}
+              {"\n"}
+              {"  "}
+              <span className="syn-property">name</span>:{" "}
+              <span className="syn-string">'manager'</span>,{"\n"}
+              {"  "}
+              <span className="syn-property">permissions</span>: [{"\n"}
+              {"    "}
+              <span className="syn-property">UserPerms</span>.
+              <span className="syn-property">manage</span>,{"\n"}
+              {"    "}
+              <span className="syn-property">BrandPerms</span>.
+              <span className="syn-property">manage</span>,{"\n"}
+              {"  "}],{"\n"}
+              {"  "}
+              <span className="syn-property">inherits</span>: [
+              <span className="syn-property">Writer</span>]{"\n"}
+              {"})"}
+              {"\n"}
+              {"\n"}
+              <span className="syn-comment">// Admin — explicit, no inheritance</span>
+              {"\n"}
+              <span className="syn-keyword">const</span> <span className="syn-property">Admin</span>{" "}
+              = <span className="syn-function">createRole</span>({"{"}
+              {"\n"}
+              {"  "}
+              <span className="syn-property">name</span>:{" "}
+              <span className="syn-string">'admin'</span>,{"\n"}
+              {"  "}
+              <span className="syn-property">permissions</span>: [{"\n"}
+              {"    "}
+              <span className="syn-property">UserPerms</span>.
+              <span className="syn-property">manage</span>,{"\n"}
+              {"    "}
+              <span className="syn-property">BrandPerms</span>.
+              <span className="syn-property">delete</span>,{"\n"}
+              {"    "}
+              <span className="syn-property">BrandPerms</span>.
+              <span className="syn-property">add</span>,{"\n"}
+              {"  "}]{"\n"}
+              {"})"}
+            </CodeBlock>
+          </div>
+        </Animate>
 
-        <div>
-          <HudCard className="mb-4">
-            <span className="font-display font-semibold text-hex-accent text-lg tracking-wide block mb-3">
-              DAG Inheritance Model
-            </span>
-            <RoleDagSvg />
-          </HudCard>
+        <Animate variant="fade-in" delay={100}>
+          <div>
+            <HudCard className="mb-4">
+              <span className="font-display font-semibold text-hex-accent text-lg tracking-wide block mb-3">
+                DAG Inheritance Model
+              </span>
+              <RoleDagSvg />
+            </HudCard>
 
-          <HudCard variant="accent">
-            <div className="flex items-center gap-2 mb-2">
-              <span
-                className="num-badge"
-                style={{
-                  borderColor: "rgba(255,94,0,0.3)",
-                  background: "rgba(255,94,0,0.08)",
-                  color: "#FF5E00",
-                }}
-              >
-                !
-              </span>
-              <span className="font-display font-semibold text-hex-accent text-lg">
-                Cycle Detection
-              </span>
-            </div>
-            <p className="font-mono text-base text-hex-muted leading-relaxed">
-              If <code className="text-hex-accent">Role A inherits B</code> and{" "}
-              <code className="text-hex-accent">B inherits A</code>, construction returns{" "}
-              <code className="text-hex-accent">CircularRoleInheritanceError</code> via Result.
-            </p>
-          </HudCard>
-        </div>
+            <HudCard variant="accent">
+              <div className="flex items-center gap-2 mb-2">
+                <span
+                  className="num-badge"
+                  style={{
+                    borderColor: "rgba(255,94,0,0.3)",
+                    background: "rgba(255,94,0,0.08)",
+                    color: "#FF5E00",
+                  }}
+                >
+                  !
+                </span>
+                <span className="font-display font-semibold text-hex-accent text-lg">
+                  Cycle Detection
+                </span>
+              </div>
+              <p className="font-mono text-base text-hex-muted leading-relaxed">
+                If <code className="text-hex-accent">Role A inherits B</code> and{" "}
+                <code className="text-hex-accent">B inherits A</code>, construction returns{" "}
+                <code className="text-hex-accent">CircularRoleInheritanceError</code> via Result.
+              </p>
+            </HudCard>
+          </div>
+        </Animate>
       </div>
     </Section>
   );
