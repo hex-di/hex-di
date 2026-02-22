@@ -178,9 +178,9 @@ function buildScopeTreeNode(scopeState: ScopeInternalState, totalCount: number):
  */
 // Overload 1: Full Container type with generics (for type inference)
 export function createInspector<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown> = never,
+  TAsyncPorts extends Port<string, unknown> = never,
   TPhase extends ContainerPhase = ContainerPhase,
 >(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): ContainerInspector;
 // Overload 2: Minimal InternalAccessible interface (for DevTools registry)

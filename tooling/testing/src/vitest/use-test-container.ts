@@ -27,7 +27,7 @@ import { createContainer } from "@hex-di/runtime";
  *
  * @typeParam TProvides - Union of Port types provided by the graph
  */
-export interface UseTestContainerResult<TProvides extends Port<unknown, string>> {
+export interface UseTestContainerResult<TProvides extends Port<string, unknown>> {
   /**
    * The container instance created from the graph factory.
    *
@@ -62,7 +62,7 @@ export interface UseTestContainerResult<TProvides extends Port<unknown, string>>
  *
  * @typeParam TProvides - Union of Port types provided by the graph
  */
-export interface TestContainerResult<TProvides extends Port<unknown, string>> {
+export interface TestContainerResult<TProvides extends Port<string, unknown>> {
   /**
    * The container instance created from the graph.
    *
@@ -161,7 +161,7 @@ export interface TestContainerResult<TProvides extends Port<unknown, string>> {
  * @see {@link createTestContainer} - For manual lifecycle management without hooks
  * @see {@link TestGraphBuilder} - For creating test graphs with overrides
  */
-export function useTestContainer<TProvides extends Port<unknown, string>>(
+export function useTestContainer<TProvides extends Port<string, unknown>>(
   graphFactory: () => Graph<TProvides>
 ): UseTestContainerResult<TProvides> {
   // Mutable storage for current test's container and scope
@@ -272,7 +272,7 @@ export function useTestContainer<TProvides extends Port<unknown, string>>(
  *
  * @see {@link useTestContainer} - For automatic lifecycle management with Vitest hooks
  */
-export function createTestContainer<TProvides extends Port<unknown, string>>(
+export function createTestContainer<TProvides extends Port<string, unknown>>(
   graph: Graph<TProvides>
 ): TestContainerResult<TProvides> {
   const container = createContainer({ graph, name: "Test" });

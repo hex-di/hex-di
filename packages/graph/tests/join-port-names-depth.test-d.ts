@@ -14,16 +14,16 @@ import type { JoinPortNames } from "../src/validation/types/error-messages.js";
 import type { Port } from "@hex-di/core";
 
 // Create a union of 10 ports (realistic large case)
-type Port1 = Port<{ test: () => void }, "Port1">;
-type Port2 = Port<{ test: () => void }, "Port2">;
-type Port3 = Port<{ test: () => void }, "Port3">;
-type Port4 = Port<{ test: () => void }, "Port4">;
-type Port5 = Port<{ test: () => void }, "Port5">;
-type Port6 = Port<{ test: () => void }, "Port6">;
-type Port7 = Port<{ test: () => void }, "Port7">;
-type Port8 = Port<{ test: () => void }, "Port8">;
-type Port9 = Port<{ test: () => void }, "Port9">;
-type Port10 = Port<{ test: () => void }, "Port10">;
+type Port1 = Port<"Port1", { test: () => void }>;
+type Port2 = Port<"Port2", { test: () => void }>;
+type Port3 = Port<"Port3", { test: () => void }>;
+type Port4 = Port<"Port4", { test: () => void }>;
+type Port5 = Port<"Port5", { test: () => void }>;
+type Port6 = Port<"Port6", { test: () => void }>;
+type Port7 = Port<"Port7", { test: () => void }>;
+type Port8 = Port<"Port8", { test: () => void }>;
+type Port9 = Port<"Port9", { test: () => void }>;
+type Port10 = Port<"Port10", { test: () => void }>;
 
 type TenPorts = Port1 | Port2 | Port3 | Port4 | Port5 | Port6 | Port7 | Port8 | Port9 | Port10;
 

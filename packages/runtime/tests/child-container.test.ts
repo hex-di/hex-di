@@ -378,7 +378,7 @@ describe("ChildContainer.extend()", () => {
     // Parent cannot resolve extended port (this is a type-level constraint)
     // At runtime, parent doesn't have the adapter so it would throw
     // Cast to test runtime behavior with an unregistered port
-    const resolve = container.resolve as (port: Port<unknown, string>) => unknown;
+    const resolve = container.resolve as (port: Port<string, unknown>) => unknown;
     expect(() => resolve(ConfigPort)).toThrow();
   });
 

@@ -36,7 +36,7 @@ import type { StoreAdapterResult } from "./brands.js";
  */
 export function createAsyncDerivedAdapter<
   TPort extends AsyncDerivedPortDef<string, unknown, unknown>,
-  const TRequires extends readonly Port<unknown, string>[],
+  const TRequires extends readonly Port<string, unknown>[],
 >(config: {
   readonly provides: TPort;
   readonly requires: TRequires;
@@ -51,7 +51,7 @@ export function createAsyncDerivedAdapter<
 }): StoreAdapterResult<InferPortName<TPort> & string>;
 export function createAsyncDerivedAdapter(config: {
   readonly provides: AsyncDerivedPortDef<string, unknown, unknown>;
-  readonly requires: readonly Port<unknown, string>[];
+  readonly requires: readonly Port<string, unknown>[];
   readonly select: (deps: Record<string, unknown>) => ResultAsync<unknown, unknown>;
   readonly staleTime?: number;
   readonly retryCount?: number;

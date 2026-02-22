@@ -131,7 +131,7 @@ describe("createPort() with inbound direction (PORT-01)", () => {
       direction: "inbound",
     });
 
-    expectTypeOf(testPort).toMatchTypeOf<InboundPort<UserService, "UserService">>();
+    expectTypeOf(testPort).toMatchTypeOf<InboundPort<"UserService", UserService>>();
   });
 });
 
@@ -204,7 +204,7 @@ describe("createPort() with outbound direction (PORT-02)", () => {
       name: "UserRepository",
     });
 
-    expectTypeOf(testPort).toMatchTypeOf<OutboundPort<UserRepository, "UserRepository">>();
+    expectTypeOf(testPort).toMatchTypeOf<OutboundPort<"UserRepository", UserRepository>>();
   });
 });
 
@@ -323,11 +323,11 @@ describe("isDirectedPort() type guard (PORT-04)", () => {
     });
 
     // Before narrowing - port is InboundPort
-    expectTypeOf(testPort).toMatchTypeOf<InboundPort<Logger, "TestPort">>();
+    expectTypeOf(testPort).toMatchTypeOf<InboundPort<"TestPort", Logger>>();
 
     if (isDirectedPort(testPort)) {
       // After narrowing - still DirectedPort
-      expectTypeOf(testPort).toMatchTypeOf<DirectedPort<unknown, string, PortDirection>>();
+      expectTypeOf(testPort).toMatchTypeOf<DirectedPort<string, unknown, PortDirection>>();
     }
   });
 });
@@ -367,23 +367,23 @@ describe("isInboundPort() and isOutboundPort() guards", () => {
   });
 
   it("type narrowing is specific to direction for isInboundPort", () => {
-    const testPort: Port<Logger, string> = port<Logger>()({
+    const testPort: Port<string, Logger> = port<Logger>()({
       name: "TestPort",
       direction: "inbound",
     });
 
     if (isInboundPort(testPort)) {
-      expectTypeOf(testPort).toMatchTypeOf<InboundPort<unknown, string>>();
+      expectTypeOf(testPort).toMatchTypeOf<InboundPort<string, unknown>>();
     }
   });
 
   it("type narrowing is specific to direction for isOutboundPort", () => {
-    const testPort: Port<UserRepository, string> = port<UserRepository>()({
+    const testPort: Port<string, UserRepository> = port<UserRepository>()({
       name: "TestPort",
     });
 
     if (isOutboundPort(testPort)) {
-      expectTypeOf(testPort).toMatchTypeOf<OutboundPort<unknown, string>>();
+      expectTypeOf(testPort).toMatchTypeOf<OutboundPort<string, unknown>>();
     }
   });
 });
@@ -423,14 +423,14 @@ describe("Backward compatibility (PORT-05)", () => {
     expectTypeOf<Name>().toEqualTypeOf<"UserRepository">();
   });
 
-  it("directed port assignable to Port<unknown, string>", () => {
+  it("directed port assignable to Port<string, unknown>", () => {
     const inbound = port<Logger>()({
       name: "TestPort",
       direction: "inbound",
     });
 
     // Should compile - directed port is assignable to base Port
-    const basePort: Port<unknown, string> = inbound;
+    const basePort: Port<string, unknown> = inbound;
     expect(basePort.__portName).toBe("TestPort");
   });
 
@@ -451,37 +451,37 @@ describe("Backward compatibility (PORT-05)", () => {
 
 describe("Type-level utilities", () => {
   it("IsDirectedPort<InboundPort> is true", () => {
-    type Result = IsDirectedPort<InboundPort<Logger, "Logger">>;
+    type Result = IsDirectedPort<InboundPort<"Logger", Logger>>;
     expectTypeOf<Result>().toEqualTypeOf<true>();
   });
 
   it("IsDirectedPort<OutboundPort> is true", () => {
-    type Result = IsDirectedPort<OutboundPort<UserRepository, "UserRepo">>;
+    type Result = IsDirectedPort<OutboundPort<"UserRepo", UserRepository>>;
     expectTypeOf<Result>().toEqualTypeOf<true>();
   });
 
   it("IsDirectedPort<Port> is false", () => {
-    type Result = IsDirectedPort<Port<Logger, "Logger">>;
+    type Result = IsDirectedPort<Port<"Logger", Logger>>;
     expectTypeOf<Result>().toEqualTypeOf<false>();
   });
 
   it("InferPortDirection extracts direction for inbound", () => {
-    type Direction = InferPortDirection<InboundPort<Logger, "Logger">>;
+    type Direction = InferPortDirection<InboundPort<"Logger", Logger>>;
     expectTypeOf<Direction>().toEqualTypeOf<"inbound">();
   });
 
   it("InferPortDirection extracts direction for outbound", () => {
-    type Direction = InferPortDirection<OutboundPort<UserRepository, "UserRepo">>;
+    type Direction = InferPortDirection<OutboundPort<"UserRepo", UserRepository>>;
     expectTypeOf<Direction>().toEqualTypeOf<"outbound">();
   });
 
   it("InferPortMetadata extracts metadata type", () => {
-    type Meta = InferPortMetadata<InboundPort<Logger, "Logger">>;
+    type Meta = InferPortMetadata<InboundPort<"Logger", Logger>>;
     expectTypeOf<Meta>().toEqualTypeOf<PortMetadata>();
   });
 
   it("InferPortDirection returns never for regular Port", () => {
-    type Direction = InferPortDirection<Port<Logger, "Logger">>;
+    type Direction = InferPortDirection<Port<"Logger", Logger>>;
     expectTypeOf<Direction>().toEqualTypeOf<never>();
   });
 });
@@ -560,7 +560,7 @@ describe("integration with adapters", () => {
     expect(adapter.lifetime).toBe("singleton");
 
     // Type inference works
-    expectTypeOf(adapter.provides).toMatchTypeOf<InboundPort<UserService, "UserService">>();
+    expectTypeOf(adapter.provides).toMatchTypeOf<InboundPort<"UserService", UserService>>();
   });
 
   it("directed ports work in requires array", () => {
@@ -754,14 +754,14 @@ describe("Unified createPort() with object config", () => {
       const LoggerPort = createPort({ name: "Logger" });
 
       // With full inference, TService is unknown but name literal is preserved
-      expectTypeOf(LoggerPort).toMatchTypeOf<DirectedPort<unknown, "Logger", "outbound">>();
+      expectTypeOf(LoggerPort).toMatchTypeOf<DirectedPort<"Logger", unknown, "outbound">>();
     });
 
     it("is assignable to base Port (full inference)", () => {
       const LoggerPort = createPort({ name: "Logger" });
 
       // DirectedPort extends Port, so this should work
-      expectTypeOf(LoggerPort).toMatchTypeOf<Port<unknown, "Logger">>();
+      expectTypeOf(LoggerPort).toMatchTypeOf<Port<"Logger", unknown>>();
     });
 
     it("works with InferService when service type provided", () => {
@@ -840,7 +840,7 @@ describe("port() builder for service-typed ports", () => {
     const LoggerPort = port<Logger>()({ name: "Logger" });
 
     // Full type check
-    expectTypeOf(LoggerPort).toEqualTypeOf<DirectedPort<Logger, "Logger", "outbound">>();
+    expectTypeOf(LoggerPort).toEqualTypeOf<DirectedPort<"Logger", Logger, "outbound">>();
   });
 
   it("allows different port names with same service", () => {

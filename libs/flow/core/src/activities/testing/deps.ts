@@ -139,7 +139,7 @@ export class MissingMockError extends Error {
  * await TaskActivity.execute(input, { deps, sink, signal });
  * ```
  */
-export function createTestDeps<TRequires extends readonly Port<unknown, string>[]>(
+export function createTestDeps<TRequires extends readonly Port<string, unknown>[]>(
   requires: TRequires,
   mocks: Partial<PortDeps<TRequires>>
 ): PortDeps<TRequires> {
@@ -181,6 +181,6 @@ export function createTestDeps<TRequires extends readonly Port<unknown, string>[
  *
  * Maps each port in the requires tuple to its expected mock type.
  */
-export type MocksFor<TRequires extends readonly Port<unknown, string>[]> = {
+export type MocksFor<TRequires extends readonly Port<string, unknown>[]> = {
   [P in TRequires[number] as InferPortName<P> & string]: InferService<P>;
 };

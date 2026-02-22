@@ -740,9 +740,9 @@ export interface MockAdapterOptions<TPort> {
  * ```
  */
 export function createMockAdapter<TService extends object, TName extends string>(
-  port: Port<TService, TName>,
+  port: Port<TName, TService>,
   options: MockAdapterOptions<TService> = {}
-): Adapter<Port<TService, TName>, never, Lifetime, "sync" | "async", boolean> {
+): Adapter<Port<TName, TService>, never, Lifetime, "sync" | "async", boolean> {
   const { lifetime = "singleton", clonable = false, async: isAsync = false } = options;
 
   // Create a stub implementation that returns empty/noop values
@@ -757,7 +757,7 @@ export function createMockAdapter<TService extends object, TName extends string>
     },
   });
 
-  type ReturnType = Adapter<Port<TService, TName>, never, Lifetime, "sync" | "async", boolean>;
+  type ReturnType = Adapter<Port<TName, TService>, never, Lifetime, "sync" | "async", boolean>;
 
   if (isAsync) {
     // Cast needed because createAdapter returns EnforceAsyncLifetime which is wider than Lifetime

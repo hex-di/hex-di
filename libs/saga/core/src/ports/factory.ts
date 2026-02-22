@@ -34,7 +34,7 @@ const SAGA_PORT_KIND = Symbol.for("@hex-di/saga/SagaPortKind");
  * Also injects a runtime kind symbol for isSagaPort() type guard.
  */
 function brandAsSagaPort<TName extends string, TInput, TOutput, TError>(
-  port: Port<{ execute: (input: TInput) => unknown }, TName>
+  port: Port<TName, { execute: (input: TInput) => unknown }>
 ): SagaPort<TName, TInput, TOutput, TError>;
 function brandAsSagaPort(port: object): object {
   return Object.freeze({ ...port, [SAGA_PORT_KIND]: "execution" });
@@ -47,7 +47,7 @@ function brandAsSagaPort(port: object): object {
  * Also injects a runtime kind symbol for isSagaManagementPort() type guard.
  */
 function brandAsSagaManagementPort<TName extends string, TOutput, TError>(
-  port: Port<{ resume: (id: string) => unknown }, TName>
+  port: Port<TName, { resume: (id: string) => unknown }>
 ): SagaManagementPort<TName, TOutput, TError>;
 function brandAsSagaManagementPort(port: object): object {
   return Object.freeze({ ...port, [SAGA_PORT_KIND]: "management" });

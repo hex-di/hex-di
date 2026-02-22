@@ -22,9 +22,9 @@ import { ADAPTER_ACCESS } from "../inspection/symbols.js";
  */
 export type RuntimeAdapter = AdapterConstraint;
 
-export type RuntimeAdapterFor<P extends Port<unknown, string>> = Adapter<
+export type RuntimeAdapterFor<P extends Port<string, unknown>> = Adapter<
   P,
-  Port<unknown, string> | never,
+  Port<string, unknown> | never,
   Lifetime,
   FactoryKind,
   boolean
@@ -34,23 +34,23 @@ export type RuntimeAdapterFor<P extends Port<unknown, string>> = Adapter<
 // Type Guards for Adapters
 // =============================================================================
 
-export function isAdapterForPort<P extends Port<unknown, string>>(
+export function isAdapterForPort<P extends Port<string, unknown>>(
   adapter: RuntimeAdapter,
   port: P
 ): adapter is RuntimeAdapterFor<P> {
   return adapter.provides === port;
 }
 
-export function isAsyncAdapter<P extends Port<unknown, string>>(
+export function isAsyncAdapter<P extends Port<string, unknown>>(
   adapter: RuntimeAdapterFor<P>
-): adapter is Adapter<P, Port<unknown, string> | never, Lifetime, "async"> {
+): adapter is Adapter<P, Port<string, unknown> | never, Lifetime, "async"> {
   return adapter.factoryKind === "async";
 }
 
-export function assertSyncAdapter<P extends Port<unknown, string>>(
+export function assertSyncAdapter<P extends Port<string, unknown>>(
   adapter: RuntimeAdapterFor<P>,
   portName: string
-): asserts adapter is Adapter<P, Port<unknown, string> | never, Lifetime, "sync"> {
+): asserts adapter is Adapter<P, Port<string, unknown> | never, Lifetime, "sync"> {
   if (adapter.factoryKind === "async") {
     throw new AsyncInitializationRequiredError(portName);
   }
@@ -61,7 +61,7 @@ export function assertSyncAdapter<P extends Port<unknown, string>>(
 // =============================================================================
 
 export interface ParentStackEntry {
-  readonly port: Port<unknown, string>;
+  readonly port: Port<string, unknown>;
   readonly startTime: number;
 }
 
@@ -74,13 +74,13 @@ export interface HooksState {
 // Forked Entry Types
 // =============================================================================
 
-export interface ForkedEntry<P extends Port<unknown, string>> {
+export interface ForkedEntry<P extends Port<string, unknown>> {
   readonly port: P;
   readonly instance: InferService<P>;
 }
 
-export function isForkedEntryForPort<P extends Port<unknown, string>>(
-  entry: ForkedEntry<Port<unknown, string>>,
+export function isForkedEntryForPort<P extends Port<string, unknown>>(
+  entry: ForkedEntry<Port<string, unknown>>,
   port: P
 ): entry is ForkedEntry<P> {
   return entry.port === port;
@@ -154,17 +154,17 @@ export interface DisposableChild {
 // =============================================================================
 
 export interface ParentContainerLike<
-  TProvides extends Port<unknown, string>,
-  _TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  _TAsyncPorts extends Port<string, unknown>,
 > {
   resolveInternal: <P extends TProvides>(port: P) => InferService<P>;
   resolveAsyncInternal: <P extends TProvides>(port: P) => Promise<InferService<P>>;
-  [ADAPTER_ACCESS]: (port: Port<unknown, string>) => RuntimeAdapter | undefined;
+  [ADAPTER_ACCESS]: (port: Port<string, unknown>) => RuntimeAdapter | undefined;
   registerChildContainer(child: DisposableChild): void;
   unregisterChildContainer(child: DisposableChild): void;
   originalParent: unknown;
-  has(port: Port<unknown, string>): boolean;
-  hasAdapter(port: Port<unknown, string>): boolean;
+  has(port: Port<string, unknown>): boolean;
+  hasAdapter(port: Port<string, unknown>): boolean;
 }
 
 // =============================================================================
@@ -175,11 +175,11 @@ export interface ParentContainerLike<
  * Configuration for creating a root container from a Graph.
  */
 export interface RootContainerConfig<
-  TProvides extends Port<unknown, string>,
-  _TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  _TAsyncPorts extends Port<string, unknown>,
 > {
   kind: "root";
-  graph: Graph<TProvides, Port<unknown, string>>;
+  graph: Graph<TProvides, Port<string, unknown>>;
   /**
    * Human-readable container name for DevTools display.
    */
@@ -195,13 +195,13 @@ export interface RootContainerConfig<
  * Configuration for creating a child container from a parent.
  */
 export interface ChildContainerConfig<
-  TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
 > {
   kind: "child";
   parent: ParentContainerLike<TProvides, TAsyncPorts>;
-  overrides: ReadonlyMap<Port<unknown, string>, RuntimeAdapter>;
-  extensions: ReadonlyMap<Port<unknown, string>, RuntimeAdapter>;
+  overrides: ReadonlyMap<Port<string, unknown>, RuntimeAdapter>;
+  extensions: ReadonlyMap<Port<string, unknown>, RuntimeAdapter>;
   inheritanceModes: ReadonlyMap<string, InheritanceMode>;
   /**
    * Unique identifier for this child container.
@@ -223,8 +223,8 @@ export interface ChildContainerConfig<
 }
 
 export type ContainerConfig<
-  TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
 > = RootContainerConfig<TProvides, TAsyncPorts> | ChildContainerConfig<TProvides, TAsyncPorts>;
 
 // =============================================================================
@@ -235,13 +235,13 @@ export type ContainerConfig<
  * Internal methods shared by Container wrappers.
  * @internal
  */
-export interface InternalContainerMethods<TProvides extends Port<unknown, string>> {
+export interface InternalContainerMethods<TProvides extends Port<string, unknown>> {
   resolveInternal: <P extends TProvides>(port: P) => InferService<P>;
   resolveAsyncInternal: <P extends TProvides>(port: P) => Promise<InferService<P>>;
-  [ADAPTER_ACCESS]: (port: Port<unknown, string>) => RuntimeAdapter | undefined;
+  [ADAPTER_ACCESS]: (port: Port<string, unknown>) => RuntimeAdapter | undefined;
   registerChildContainer(child: DisposableChild): void;
   unregisterChildContainer(child: DisposableChild): void;
-  hasAdapter(port: Port<unknown, string>): boolean;
+  hasAdapter(port: Port<string, unknown>): boolean;
 }
 
 /**
@@ -249,7 +249,7 @@ export interface InternalContainerMethods<TProvides extends Port<unknown, string
  * Using an interface allows proper type variance.
  * @internal
  */
-export interface ScopeContainerAccess<TProvides extends Port<unknown, string>> {
+export interface ScopeContainerAccess<TProvides extends Port<string, unknown>> {
   resolveInternal<P extends TProvides>(
     port: P,
     scopedMemo: MemoMap,
@@ -263,6 +263,6 @@ export interface ScopeContainerAccess<TProvides extends Port<unknown, string>> {
     scopeName?: string
   ): Promise<InferService<P>>;
   getSingletonMemo(): MemoMap;
-  has(port: Port<unknown, string>): boolean;
-  hasAdapter(port: Port<unknown, string>): boolean;
+  has(port: Port<string, unknown>): boolean;
+  hasAdapter(port: Port<string, unknown>): boolean;
 }

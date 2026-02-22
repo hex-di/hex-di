@@ -23,8 +23,8 @@ import { BaseContainerImpl } from "./base-impl.js";
  * @internal
  */
 export class RootContainerImpl<
-  TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown> = never,
 > extends BaseContainerImpl<TProvides, never, TAsyncPorts> {
   protected readonly isRoot = true as const;
   private readonly containerNameValue: string;
@@ -47,8 +47,8 @@ export class RootContainerImpl<
   }
 
   private static createHooksRunner<
-    TProvides extends Port<unknown, string>,
-    TAsyncPorts extends Port<unknown, string>,
+    TProvides extends Port<string, unknown>,
+    TAsyncPorts extends Port<string, unknown>,
   >(config: RootContainerConfig<TProvides, TAsyncPorts>): HooksRunner | null {
     const { options } = config;
     if (options?.hooks?.beforeResolve !== undefined || options?.hooks?.afterResolve !== undefined) {
@@ -108,11 +108,11 @@ export class RootContainerImpl<
     throw new Error(`No adapter registered for port '${port.__portName}'`);
   }
 
-  protected resolveInternalFallback(_port: Port<unknown, string>, portName: string): never {
+  protected resolveInternalFallback(_port: Port<string, unknown>, portName: string): never {
     throw new Error(`No adapter registered for port '${portName}'`);
   }
 
-  protected resolveAsyncInternalFallback(port: Port<unknown, string>): Promise<never> {
+  protected resolveAsyncInternalFallback(port: Port<string, unknown>): Promise<never> {
     return Promise.reject(new Error(`No adapter registered for port '${port.__portName}'`));
   }
 }

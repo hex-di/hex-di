@@ -34,7 +34,7 @@ import type { Port, AdapterConstraint, Lifetime, FactoryKind } from "@hex-di/cor
 // Experimental Types
 // =============================================================================
 
-type InferAdapterPortName<A> = A extends { provides: Port<unknown, infer Name> } ? Name : never;
+type InferAdapterPortName<A> = A extends { provides: Port<infer Name, unknown> } ? Name : never;
 
 // Must handle `never` specially because `never extends X` is always true
 type HasOverlap<A extends string, B extends string> = [A] extends [never]
@@ -67,7 +67,7 @@ interface Database {
 }
 
 interface MockLoggerAdapter {
-  readonly provides: Port<Logger, "Logger">;
+  readonly provides: Port<"Logger", Logger>;
   readonly requires: readonly [];
   readonly lifetime: Lifetime;
   readonly factoryKind: FactoryKind;
@@ -76,7 +76,7 @@ interface MockLoggerAdapter {
 }
 
 interface MockDatabaseAdapter {
-  readonly provides: Port<Database, "Database">;
+  readonly provides: Port<"Database", Database>;
   readonly requires: readonly [];
   readonly lifetime: Lifetime;
   readonly factoryKind: FactoryKind;

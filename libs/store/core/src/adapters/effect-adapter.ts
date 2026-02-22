@@ -19,9 +19,9 @@ import type { StoreAdapterResult } from "./brands.js";
 
 export interface CreateEffectAdapterConfig<
   TName extends string = string,
-  TRequires extends readonly Port<unknown, string>[] = readonly Port<unknown, string>[],
+  TRequires extends readonly Port<string, unknown>[] = readonly Port<string, unknown>[],
 > {
-  readonly provides: Port<ActionEffect, TName>;
+  readonly provides: Port<TName, ActionEffect>;
   readonly requires?: TRequires;
   readonly factory: (deps: PortDeps<TRequires>) => ActionEffect;
   readonly inspection?: boolean;
@@ -35,11 +35,11 @@ export interface CreateEffectAdapterConfig<
  */
 export function createEffectAdapter<
   TName extends string,
-  const TRequires extends readonly Port<unknown, string>[] = readonly [],
+  const TRequires extends readonly Port<string, unknown>[] = readonly [],
 >(config: CreateEffectAdapterConfig<TName, TRequires>): StoreAdapterResult<TName>;
 export function createEffectAdapter(config: {
-  readonly provides: Port<ActionEffect, string>;
-  readonly requires?: readonly Port<unknown, string>[];
+  readonly provides: Port<string, ActionEffect>;
+  readonly requires?: readonly Port<string, unknown>[];
   readonly factory: (deps: Record<string, unknown>) => ActionEffect;
   readonly inspection?: boolean;
 }): AdapterConstraint {

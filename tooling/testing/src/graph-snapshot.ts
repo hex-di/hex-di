@@ -166,7 +166,7 @@ export interface SerializeGraphOptions {
  * ```
  */
 export function serializeGraph(
-  graph: Graph<Port<unknown, string> | never, Port<unknown, string> | never>,
+  graph: Graph<Port<string, unknown> | never, Port<string, unknown> | never>,
   options?: SerializeGraphOptions
 ): GraphSnapshot {
   const preserveOrder = options?.preserveOrder ?? false;
@@ -179,7 +179,7 @@ export function serializeGraph(
     // Extract required port names and sort them alphabetically
     // Type assertion needed because `requires` is typed as `readonly Port[]`
     // which is a branded type with __portName
-    const requires = adapter.requires.map((port: Port<unknown, string>) => port.__portName).sort();
+    const requires = adapter.requires.map((port: Port<string, unknown>) => port.__portName).sort();
 
     return {
       port: portName,

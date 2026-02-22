@@ -32,8 +32,8 @@ import type { Adapter, Lifetime, FactoryKind } from "@hex-di/core";
  * ```
  */
 export interface FeatureBundle<
-  TProvides extends Port<unknown, string> = Port<unknown, string>,
-  TRequires extends Port<unknown, string> = Port<unknown, string>,
+  TProvides extends Port<string, unknown> = Port<string, unknown>,
+  TRequires extends Port<string, unknown> = Port<string, unknown>,
 > {
   /** Unique identifier for the feature */
   readonly name: string;
@@ -43,16 +43,16 @@ export interface FeatureBundle<
 
   /** Sync adapters to register with the graph */
   readonly adapters: readonly Adapter<
-    Port<unknown, string>,
-    Port<unknown, string> | never,
+    Port<string, unknown>,
+    Port<string, unknown> | never,
     Lifetime,
     "sync"
   >[];
 
   /** Async adapters (auto-detected by provide()) */
   readonly asyncAdapters: readonly Adapter<
-    Port<unknown, string>,
-    Port<unknown, string> | never,
+    Port<string, unknown>,
+    Port<string, unknown> | never,
     Lifetime,
     "async"
   >[];
@@ -90,8 +90,8 @@ export interface FeatureBundle<
  * ```
  */
 export interface Plugin<
-  TProvides extends Port<unknown, string> = Port<unknown, string>,
-  TRequires extends Port<unknown, string> | never = never,
+  TProvides extends Port<string, unknown> = Port<string, unknown>,
+  TRequires extends Port<string, unknown> | never = never,
 > {
   /** Unique identifier for this plugin (convention: "@scope/plugin-name") */
   readonly id: string;
@@ -104,8 +104,8 @@ export interface Plugin<
 
   /** The adapters this plugin contributes */
   readonly adapters: readonly Adapter<
-    Port<unknown, string>,
-    Port<unknown, string> | never,
+    Port<string, unknown>,
+    Port<string, unknown> | never,
     Lifetime,
     FactoryKind
   >[];
@@ -138,8 +138,8 @@ export interface Plugin<
  */
 export function createPlugin<
   const TAdapters extends readonly Adapter<
-    Port<unknown, string>,
-    Port<unknown, string> | never,
+    Port<string, unknown>,
+    Port<string, unknown> | never,
     Lifetime,
     FactoryKind
   >[],
@@ -182,20 +182,20 @@ export function createPlugin<
  * ```
  */
 export function createFeature<
-  TProvides extends Port<unknown, string> = Port<unknown, string>,
-  TRequires extends Port<unknown, string> = Port<unknown, string>,
+  TProvides extends Port<string, unknown> = Port<string, unknown>,
+  TRequires extends Port<string, unknown> = Port<string, unknown>,
 >(config: {
   readonly name: string;
   readonly description?: string;
   readonly adapters?: readonly Adapter<
-    Port<unknown, string>,
-    Port<unknown, string> | never,
+    Port<string, unknown>,
+    Port<string, unknown> | never,
     Lifetime,
     "sync"
   >[];
   readonly asyncAdapters?: readonly Adapter<
-    Port<unknown, string>,
-    Port<unknown, string> | never,
+    Port<string, unknown>,
+    Port<string, unknown> | never,
     Lifetime,
     "async"
   >[];

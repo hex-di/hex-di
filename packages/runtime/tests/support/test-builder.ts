@@ -43,7 +43,7 @@ import {
 // Types
 // =============================================================================
 
-type AnyPort = Port<unknown, string>;
+type AnyPort = Port<string, unknown>;
 
 interface AdapterEntry {
   port: AnyPort;

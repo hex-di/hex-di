@@ -46,7 +46,7 @@ describe("Phase 6 UAT: Core Port API", () => {
     it("returns correct DirectedPort type", () => {
       const LoggerPort = port<Logger>()({ name: "Logger" });
 
-      expectTypeOf(LoggerPort).toEqualTypeOf<DirectedPort<Logger, "Logger", "outbound">>();
+      expectTypeOf(LoggerPort).toEqualTypeOf<DirectedPort<"Logger", Logger, "outbound">>();
     });
   });
 
@@ -235,7 +235,7 @@ describe("Phase 6 UAT: Core Port API", () => {
 
       // Verify types
       expectTypeOf(FullPort).toEqualTypeOf<
-        DirectedPort<Logger, "FullLogger", "outbound", "infrastructure">
+        DirectedPort<"FullLogger", Logger, "outbound", "infrastructure">
       >();
     });
 

@@ -28,8 +28,8 @@ import { ResolverContext, type RuntimeResolverContextValue } from "../context/re
  * @typeParam TProvides - Union of Port types the scope can resolve
  */
 export interface ReactiveScopeProviderProps<
-  TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown> = never,
   TPhase extends "uninitialized" | "initialized" = "uninitialized",
 > {
   /**
@@ -143,8 +143,8 @@ export interface ReactiveScopeProviderProps<
  * ```
  */
 export function ReactiveScopeProvider<
-  TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown> = never,
   TPhase extends "uninitialized" | "initialized" = "uninitialized",
 >({
   scope,

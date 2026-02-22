@@ -213,7 +213,7 @@ export interface DIEffectExecutor extends EffectExecutor {
  */
 interface InvokeEffectShape {
   readonly _tag: "Invoke";
-  readonly port: Port<unknown, string>;
+  readonly port: Port<string, unknown>;
   readonly method: string;
   readonly args: readonly unknown[];
 }

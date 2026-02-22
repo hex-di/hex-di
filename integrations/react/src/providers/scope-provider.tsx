@@ -21,7 +21,7 @@ import { toRuntimeScopeRef } from "../internal/runtime-refs.js";
  *
  * @typeParam TProvides - Union of Port types that the scope can resolve
  */
-export interface HexDiScopeProviderProps<TProvides extends Port<unknown, string>> {
+export interface HexDiScopeProviderProps<TProvides extends Port<string, unknown>> {
   /**
    * The externally managed Scope instance to provide to the React tree.
    *
@@ -72,7 +72,7 @@ export interface HexDiScopeProviderProps<TProvides extends Port<unknown, string>
  * }
  * ```
  */
-export function HexDiScopeProvider<TProvides extends Port<unknown, string>>({
+export function HexDiScopeProvider<TProvides extends Port<string, unknown>>({
   scope,
   children,
 }: HexDiScopeProviderProps<TProvides>): React.ReactNode {

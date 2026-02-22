@@ -80,7 +80,7 @@ export function createPort<
   const TCategory extends string = string,
 >(
   config: PortConfig & { name: TName; direction: TDirection; category?: TCategory }
-): DirectedPort<TService, TName, TDirection, TCategory>;
+): DirectedPort<TName, TService, TDirection, TCategory>;
 
 // Overload 2: Name and service explicit, direction defaults to outbound
 // createPort<'Logger', Logger>({ name: 'Logger' })
@@ -90,15 +90,15 @@ export function createPort<
   const TCategory extends string = string,
 >(
   config: PortConfig & { name: TName; category?: TCategory }
-): DirectedPort<TService, TName, "outbound", TCategory>;
+): DirectedPort<TName, TService, "outbound", TCategory>;
 
 // Overload 3: Full inference - TService is unknown, TName inferred from config
 // createPort({ name: 'Logger' })
 export function createPort<const TConfig extends PortConfig>(
   config: TConfig
 ): DirectedPort<
-  unknown,
   TConfig["name"],
+  unknown,
   TConfig extends { direction: infer D extends PortDirection } ? D : "outbound",
   TConfig extends { category: infer C extends string } ? C : string
 >;
@@ -109,7 +109,7 @@ export function createPort<
   TService,
   TDirection extends PortDirection,
   TCategory extends string,
->(config: PortConfig & { name: TName }): DirectedPort<TService, TName, TDirection, TCategory> {
+>(config: PortConfig & { name: TName }): DirectedPort<TName, TService, TDirection, TCategory> {
   const direction = (config.direction ?? "outbound") as TDirection;
   const metadata: PortMetadata = Object.freeze({
     description: config.description,
@@ -123,7 +123,7 @@ export function createPort<
     [METADATA_KEY]: metadata,
   });
 
-  return createDirectedPortImpl<TService, TName, TDirection, TCategory>(runtime);
+  return createDirectedPortImpl<TName, TService, TDirection, TCategory>(runtime);
 }
 
 // =============================================================================
@@ -145,11 +145,11 @@ export function createPort<
  *
  * // Name "Logger" is inferred as literal type
  * const LoggerPort = port<Logger>()({ name: "Logger" });
- * // Type: DirectedPort<Logger, "Logger", "outbound">
+ * // Type: DirectedPort<"Logger", Logger, "outbound">
  *
  * // With direction
  * const RequestPort = port<Request>()({ name: "Request", direction: "inbound" });
- * // Type: DirectedPort<Request, "Request", "inbound">
+ * // Type: DirectedPort<"Request", Request, "inbound">
  * ```
  *
  * @typeParam TService - The service interface type
@@ -158,15 +158,15 @@ export function createPort<
 export function port<TService>(): <const TConfig extends PortConfig>(
   config: TConfig
 ) => DirectedPort<
-  TService,
   TConfig["name"],
+  TService,
   TConfig extends { direction: infer D extends PortDirection } ? D : "outbound",
   TConfig extends { category: infer C extends string } ? C : string
 > {
   return <const TConfig extends PortConfig>(config: TConfig) => {
     return createPort(config) as DirectedPort<
-      TService,
       TConfig["name"],
+      TService,
       TConfig extends { direction: infer D extends PortDirection } ? D : "outbound",
       TConfig extends { category: infer C extends string } ? C : string
     >;

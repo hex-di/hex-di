@@ -28,7 +28,7 @@ export interface UseFlowHealthOptions {
  * @returns The latest health events
  */
 export function useFlowHealth(
-  inspectorPort: Port<FlowInspector, string>,
+  inspectorPort: Port<string, FlowInspector>,
   options?: UseFlowHealthOptions
 ): readonly HealthEvent[] {
   const inspector = usePort(inspectorPort);

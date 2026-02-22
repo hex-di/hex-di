@@ -56,7 +56,7 @@ export interface StreamedQueryAdapterConfigWithDeps<
   TParams,
   TError,
   TChunk,
-  TRequires extends ReadonlyArray<Port<unknown, string>>,
+  TRequires extends ReadonlyArray<Port<string, unknown>>,
 > {
   readonly requires: TRequires;
   readonly factory: (deps: PortDeps<TRequires>) => StreamedFetcher<TData, TParams, TError, TChunk>;
@@ -102,7 +102,7 @@ export function createStreamedQueryAdapter<
   TError,
   TChunk,
   TName extends string,
-  TRequires extends ReadonlyArray<Port<unknown, string>>,
+  TRequires extends ReadonlyArray<Port<string, unknown>>,
 >(
   port: AnyQueryPort & { readonly __portName: TName },
   config: StreamedQueryAdapterConfigWithDeps<TData, TParams, TError, TChunk, TRequires>
@@ -118,7 +118,7 @@ export function createStreamedQueryAdapter(
         unknown,
         unknown,
         unknown,
-        ReadonlyArray<Port<unknown, string>>
+        ReadonlyArray<Port<string, unknown>>
       >
 ): AdapterConstraint {
   // Helper: wraps a StreamedFetcher into a QueryFetcher that consumes

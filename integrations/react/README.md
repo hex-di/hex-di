@@ -29,14 +29,14 @@ const LoggerPort = port<Logger>()({ name: "Logger" });
 type AppPorts = typeof LoggerPort;
 
 // Create typed React integration
-const { HexDiContainerProvider, usePort } = createTypedHooks<AppPorts>();
+const { ContainerProvider, usePort } = createTypedHooks<AppPorts>();
 
 // Use in your React app
 function App() {
   return (
-    <HexDiContainerProvider container={container}>
+    <ContainerProvider container={container}>
       <MyComponent />
-    </HexDiContainerProvider>
+    </ContainerProvider>
   );
 }
 
@@ -79,7 +79,7 @@ import { instrumentContainer, createConsoleTracer } from "@hex-di/tracing";
 import { HexDiContainerProvider, TracingProvider } from "@hex-di/react";
 
 const tracer = createConsoleTracer({ colorize: true });
-const container = createContainer(graph);
+const container = createContainer({ graph, name: "App" });
 
 // Instrument container to trace all service resolutions
 instrumentContainer(container, tracer, {
@@ -442,7 +442,7 @@ import type { LoggerPort, UserServicePort } from "./ports";
 
 type AppPorts = typeof LoggerPort | typeof UserServicePort;
 
-const { HexDiContainerProvider, usePort } = createTypedHooks<AppPorts>();
+const { ContainerProvider, usePort } = createTypedHooks<AppPorts>();
 
 function UserList() {
   // Type-safe: TypeScript validates UserServicePort exists in AppPorts

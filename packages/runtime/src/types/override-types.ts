@@ -19,15 +19,15 @@ import type { PortNotInGraphError, MissingDependenciesError } from "./validation
  * Extracts port name from a Port type.
  * @internal
  */
-type InferPortName<P> = P extends Port<unknown, infer TName> ? TName : never;
+type InferPortName<P> = P extends Port<infer TName, unknown> ? TName : never;
 
 /**
  * Checks if a port union contains all required ports.
  * @internal
  */
 type HasAllPorts<
-  TRequired extends Port<unknown, string>,
-  TAvailable extends Port<unknown, string>,
+  TRequired extends Port<string, unknown>,
+  TAvailable extends Port<string, unknown>,
 > = TRequired extends never ? true : TRequired extends TAvailable ? true : false;
 
 /**
@@ -35,8 +35,8 @@ type HasAllPorts<
  * @internal
  */
 type UnsatisfiedDependencies<
-  TRequired extends Port<unknown, string>,
-  TAvailable extends Port<unknown, string>,
+  TRequired extends Port<string, unknown>,
+  TAvailable extends Port<string, unknown>,
 > = Exclude<TRequired, TAvailable>;
 
 /**
@@ -58,7 +58,7 @@ type UnsatisfiedDependencies<
  * ```
  */
 export type ValidateOverrideAdapter<
-  TGraphProvides extends Port<unknown, string>,
+  TGraphProvides extends Port<string, unknown>,
   TAdapter extends AdapterConstraint,
 > =
   InferAdapterProvides<TAdapter> extends TGraphProvides
@@ -84,7 +84,7 @@ export type ValidateOverrideAdapter<
  * ```
  */
 export type ValidateAdapterDependencies<
-  TGraphProvides extends Port<unknown, string>,
+  TGraphProvides extends Port<string, unknown>,
   TAdapter extends AdapterConstraint,
 > =
   HasAllPorts<InferAdapterRequires<TAdapter>, TGraphProvides> extends true
@@ -106,8 +106,8 @@ export type ValidateAdapterDependencies<
  * @internal
  */
 export type OverrideBuilderState<
-  TProvides extends Port<unknown, string>,
-  TOverrides extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TOverrides extends Port<string, unknown> = never,
 > = {
   readonly __provides: TProvides;
   readonly __overrides: TOverrides;

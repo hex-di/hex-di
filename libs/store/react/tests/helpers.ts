@@ -21,7 +21,7 @@ import type {
 export const INTERNAL_ACCESS = Symbol.for("hex-di/internal-access");
 
 export function createMockContainer(services: Map<string, unknown>): any {
-  const mockResolve = vi.fn().mockImplementation((port: Port<unknown, string>) => {
+  const mockResolve = vi.fn().mockImplementation((port: Port<string, unknown>) => {
     const name = (port as any).__portName ?? (port as any).name;
     const svc = services.get(name);
     if (svc) return svc;
@@ -32,7 +32,7 @@ export function createMockContainer(services: Map<string, unknown>): any {
     resolve: mockResolve,
     resolveAsync: vi
       .fn()
-      .mockImplementation((port: Port<unknown, string>) => Promise.resolve(mockResolve(port))),
+      .mockImplementation((port: Port<string, unknown>) => Promise.resolve(mockResolve(port))),
     createScope: vi.fn(),
     dispose: vi.fn().mockResolvedValue(undefined),
     has: vi.fn().mockReturnValue(true),
@@ -50,7 +50,7 @@ export function createMockContainer(services: Map<string, unknown>): any {
     resolve: mockResolve,
     resolveAsync: vi
       .fn()
-      .mockImplementation((port: Port<unknown, string>) => Promise.resolve(mockResolve(port))),
+      .mockImplementation((port: Port<string, unknown>) => Promise.resolve(mockResolve(port))),
     createScope: vi.fn().mockReturnValue(mockScope),
     createChild: vi.fn(),
     dispose: vi.fn().mockResolvedValue(undefined),

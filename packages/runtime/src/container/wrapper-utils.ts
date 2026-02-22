@@ -75,15 +75,15 @@ export function attachBuiltinAPIs(
  * @internal
  */
 export function parseChildGraph<
-  TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+  TChildGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>,
 >(
   childGraph: TChildGraph
 ): {
-  overrides: Map<Port<unknown, string>, RuntimeAdapter>;
-  extensions: Map<Port<unknown, string>, RuntimeAdapter>;
+  overrides: Map<Port<string, unknown>, RuntimeAdapter>;
+  extensions: Map<Port<string, unknown>, RuntimeAdapter>;
 } {
-  const overrides = new Map<Port<unknown, string>, RuntimeAdapter>();
-  const extensions = new Map<Port<unknown, string>, RuntimeAdapter>();
+  const overrides = new Map<Port<string, unknown>, RuntimeAdapter>();
+  const extensions = new Map<Port<string, unknown>, RuntimeAdapter>();
 
   for (const adapter of childGraph.adapters) {
     const portName = adapter.provides.__portName;
@@ -107,7 +107,7 @@ export function parseChildGraph<
  *
  * @internal
  */
-export function parseInheritanceModes<TProvides extends Port<unknown, string>>(
+export function parseInheritanceModes<TProvides extends Port<string, unknown>>(
   inheritanceModes?: InheritanceModeConfig<TProvides>
 ): Map<string, InheritanceMode> {
   const map = new Map<string, InheritanceMode>();
@@ -127,12 +127,12 @@ export function parseInheritanceModes<TProvides extends Port<unknown, string>>(
  * @internal
  */
 export function createChildContainerConfig<
-  TParentProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TParentProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
 >(
   parentLike: ParentContainerLike<TParentProvides, TAsyncPorts>,
-  overrides: Map<Port<unknown, string>, RuntimeAdapter>,
-  extensions: Map<Port<unknown, string>, RuntimeAdapter>,
+  overrides: Map<Port<string, unknown>, RuntimeAdapter>,
+  extensions: Map<Port<string, unknown>, RuntimeAdapter>,
   inheritanceModesMap: Map<string, InheritanceMode>,
   childName: string,
   parentName: string,

@@ -10,7 +10,7 @@
  * Port name extraction was previously scattered across multiple files with
  * slightly different implementations:
  *
- * - `cycle/detection.ts`: Used `Port<unknown, infer TName>`
+ * - `cycle/detection.ts`: Used `Port<infer TName, unknown>`
  * - `self-dependency.ts`: Used `{ __portName: infer TName }`
  * - `captive/detection.ts`: Used `{ __portName: infer TName } extends string`
  *
@@ -33,9 +33,9 @@
  * 3. **Consistency**: All extraction paths now use identical logic, eliminating
  *    the risk of divergent behavior.
  *
- * ## Why Not `Port<unknown, infer TName>`?
+ * ## Why Not `Port<infer TName, unknown>`?
  *
- * While more specific, `Port<unknown, infer>` requires the `__brand` property which:
+ * While more specific, `Port<infer TName, unknown>` requires the `__brand` property which:
  * - Doesn't exist in simplified mock types used for internal testing
  * - Provides no additional safety for name extraction (we only need `__portName`)
  * - Would require extensive test fixture updates for no tangible benefit

@@ -68,8 +68,8 @@ export interface LogEntry {
  * 1. The same service interface type \`T\`
  * 2. The same port name \`TName\`
  *
- * @typeParam T - The service interface type (phantom type - exists only at compile time)
  * @typeParam TName - The literal string type for the port name (defaults to \`string\`)
+ * @typeParam T - The service interface type (phantom type - exists only at compile time)
  *
  * @remarks
  * - The \`__brand\` property carries both the service type and name in a tuple
@@ -88,8 +88,8 @@ export interface LogEntry {
  * }
  *
  * // Create typed port tokens
- * type ConsoleLoggerPort = Port<Logger, 'ConsoleLogger'>;
- * type FileLoggerPort = Port<Logger, 'FileLogger'>;
+ * type ConsoleLoggerPort = Port<'ConsoleLogger', Logger>;
+ * type FileLoggerPort = Port<'FileLogger', Logger>;
  *
  * // These are type-incompatible despite same interface
  * declare const consolePort: ConsoleLoggerPort;
@@ -104,15 +104,15 @@ export interface LogEntry {
  * type LoggerPortType = typeof LoggerPort;
  * \`\`\`
  */
-export type Port<T, TName extends string> = {
+export type Port<TName extends string, T> = {
 	/**
 	 * Brand property for nominal typing.
-	 * Contains a tuple of [ServiceType, PortName] at the type level.
+	 * Contains a tuple of [PortName, ServiceType] at the type level.
 	 * Value is undefined at runtime.
 	 */
 	readonly __brand: [
-		T,
-		TName
+		TName,
+		T
 	];
 	/**
 	 * The port name, exposed for debugging and error messages.
@@ -184,7 +184,7 @@ export type NotAPortError<T> = {
  * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * \`\`\`
  */
-export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPortError<P>;
+export type InferService<P> = P extends Port<infer _TName, infer T> ? T : NotAPortError<P>;
 /**
  * Extracts the port name literal type from a Port type.
  *
@@ -218,7 +218,7 @@ export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPo
  * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * \`\`\`
  */
-export type InferPortName<P> = P extends Port<infer _T, infer TName> ? TName : NotAPortError<P>;
+export type InferPortName<P> = P extends Port<infer TName, infer _T> ? TName : NotAPortError<P>;
 declare const __metadataKey: unique symbol;
 /**
  * Discriminator for hexagonal architecture port types.
@@ -269,8 +269,8 @@ export interface PortMetadata {
  * DirectedPorts are structurally compatible with base Ports, enabling gradual
  * adoption without breaking existing code.
  *
- * @typeParam TService - The service interface type (phantom type)
  * @typeParam TName - The literal string type for the port name
+ * @typeParam TService - The service interface type (phantom type)
  * @typeParam TDirection - 'inbound' or 'outbound'
  *
  * @see {@link InboundPort} - Convenience alias for inbound directed ports
@@ -281,13 +281,13 @@ export interface PortMetadata {
  * @example
  * \`\`\`typescript
  * // DirectedPort is assignable to Port (backward compatible)
- * const port: DirectedPort<Logger, 'Logger', 'inbound'> = createInboundPort({
+ * const port: DirectedPort<'Logger', Logger, 'inbound'> = createInboundPort({
  *   name: 'Logger',
  * });
- * const basePort: Port<Logger, 'Logger'> = port; // OK
+ * const basePort: Port<'Logger', Logger> = port; // OK
  * \`\`\`
  */
-export type DirectedPort<TService, TName extends string, TDirection extends PortDirection, TCategory extends string = string> = Port<TService, TName> & {
+export type DirectedPort<TName extends string, TService, TDirection extends PortDirection, TCategory extends string = string> = Port<TName, TService> & {
 	readonly __directionBrand: TDirection;
 	readonly __metadataKey: PortMetadata;
 	readonly __categoryBrand: TCategory;
@@ -586,7 +586,7 @@ export interface Logger {
 /**
  * Logger port for DI registration.
  */
-export declare const LoggerPort: DirectedPort<Logger, "Logger", "outbound", "logger/logger">;
+export declare const LoggerPort: DirectedPort<"Logger", Logger, "outbound", "logger/logger">;
 /**
  * Handler that processes log entries.
  */
@@ -620,7 +620,7 @@ export interface LogHandler {
 /**
  * Log handler port for DI registration.
  */
-export declare const LogHandlerPort: DirectedPort<LogHandler, "LogHandler", "outbound", "logger/handler">;
+export declare const LogHandlerPort: DirectedPort<"LogHandler", LogHandler, "outbound", "logger/handler">;
 /**
  * Formatter for log entries.
  */
@@ -633,7 +633,7 @@ export interface LogFormatter {
 /**
  * Log formatter port for DI registration.
  */
-export declare const LogFormatterPort: DirectedPort<LogFormatter, "LogFormatter", "outbound", "logger/formatter">;
+export declare const LogFormatterPort: DirectedPort<"LogFormatter", LogFormatter, "outbound", "logger/formatter">;
 /**
  * Built-in formatter types.
  */
@@ -649,7 +649,7 @@ export type FormatterType = "json" | "pretty" | "minimal";
  * All logging operations are no-ops, ensuring zero performance impact
  * when logging is disabled.
  */
-export declare const NoOpLoggerAdapter: Adapter<DirectedPort<Logger, "Logger", "outbound", "logger/logger">, never, "singleton", "sync", false, readonly [
+export declare const NoOpLoggerAdapter: Adapter<DirectedPort<"Logger", Logger, "outbound", "logger/logger">, never, "singleton", "sync", false, readonly [
 ], never>;
 /**
  * Singleton no-op logger that does nothing.
@@ -670,7 +670,7 @@ export declare const NOOP_LOGGER: Logger;
  * Provides LoggerPort implementation with in-memory log collection.
  * Uses transient lifetime for test isolation.
  */
-export declare const MemoryLoggerAdapter: Adapter<DirectedPort<Logger, "Logger", "outbound", "logger/logger">, never, "transient", "sync", false, readonly [
+export declare const MemoryLoggerAdapter: Adapter<DirectedPort<"Logger", Logger, "outbound", "logger/logger">, never, "transient", "sync", false, readonly [
 ], never>;
 /**
  * Extended Logger interface with testing methods.
@@ -706,7 +706,7 @@ export declare function createMemoryLogger(minLevel?: LogLevel, options?: {
  *
  * Provides LoggerPort implementation with console output for development.
  */
-export declare const ConsoleLoggerAdapter: Adapter<DirectedPort<Logger, "Logger", "outbound", "logger/logger">, never, "singleton", "sync", false, readonly [
+export declare const ConsoleLoggerAdapter: Adapter<DirectedPort<"Logger", Logger, "outbound", "logger/logger">, never, "singleton", "sync", false, readonly [
 ], never>;
 /**
  * Console logger options.
@@ -737,8 +737,8 @@ export declare function createConsoleLogger(options?: ConsoleLoggerOptions): Log
  * Provides LoggerPort implementation backed by a LogHandler.
  * Uses scoped lifetime for request-level isolation.
  */
-export declare const ScopedLoggerAdapter: Adapter<DirectedPort<Logger, "Logger", "outbound", "logger/logger">, DirectedPort<LogHandler, "LogHandler", "outbound", "logger/handler">, "scoped", "sync", false, readonly [
-	DirectedPort<LogHandler, "LogHandler", "outbound", "logger/handler">
+export declare const ScopedLoggerAdapter: Adapter<DirectedPort<"Logger", Logger, "outbound", "logger/logger">, DirectedPort<"LogHandler", LogHandler, "outbound", "logger/handler">, "scoped", "sync", false, readonly [
+	DirectedPort<"LogHandler", LogHandler, "outbound", "logger/handler">
 ], never>;
 /**
  * Creates a new handler-backed Logger instance.
@@ -1330,11 +1330,11 @@ export declare function createLoggerInspectorAdapter(options?: CreateLoggerInspe
 /**
  * Port for the LoggerInspector service.
  */
-export declare const LoggerInspectorPort: DirectedPort<LoggerInspector, "LoggerInspector", "outbound", "logger/inspector">;
+export declare const LoggerInspectorPort: DirectedPort<"LoggerInspector", LoggerInspector, "outbound", "logger/inspector">;
 /**
  * Port for the Logger library inspector bridge.
  */
-export declare const LoggerLibraryInspectorPort: DirectedPort<LibraryInspector, "LoggerLibraryInspector", "outbound", "library-inspector">;
+export declare const LoggerLibraryInspectorPort: DirectedPort<"LoggerLibraryInspector", LibraryInspector, "outbound", "library-inspector">;
 /**
  * Creates a LibraryInspector that bridges the LoggerInspector
  * into the container's unified inspection protocol.

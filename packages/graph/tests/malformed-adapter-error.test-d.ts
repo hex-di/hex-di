@@ -43,7 +43,7 @@ import type { IsNever } from "@hex-di/core";
  * An adapter missing the lifetime property entirely.
  */
 type MissingLifetime = {
-  readonly provides: Port<{ test: () => void }, "Test">;
+  readonly provides: Port<"Test", { test: () => void }>;
   readonly requires: readonly [];
   readonly factory: () => { test: () => void };
 };
@@ -53,7 +53,7 @@ type AdapterMissingLifetime = MissingLifetime;
  * An adapter with an invalid lifetime value (not 'singleton' | 'scoped' | 'transient').
  */
 type InvalidLifetime = {
-  readonly provides: Port<{ test: () => void }, "Test">;
+  readonly provides: Port<"Test", { test: () => void }>;
   readonly requires: readonly [];
   readonly lifetime: "invalid-lifetime";
   readonly factory: () => { test: () => void };
@@ -69,7 +69,7 @@ type CompletelyMalformedAdapter = { invalid: true };
  * A valid adapter for comparison.
  */
 type ValidAdapter = {
-  readonly provides: Port<{ log: () => void }, "Logger">;
+  readonly provides: Port<"Logger", { log: () => void }>;
   readonly requires: readonly [];
   readonly lifetime: "singleton";
   readonly factory: () => { log: () => void };
@@ -205,8 +205,8 @@ describe("WouldAnyBeCaptive with malformed adapters", () => {
 
     // Singleton depending on scoped = captive
     type SingletonDependingOnScoped = {
-      readonly provides: Port<{ getUser: () => void }, "UserService">;
-      readonly requires: readonly [Port<{ query: () => void }, "Database">];
+      readonly provides: Port<"UserService", { getUser: () => void }>;
+      readonly requires: readonly [Port<"Database", { query: () => void }>];
       readonly lifetime: "singleton";
       readonly factory: () => { getUser: () => void };
     };
@@ -231,7 +231,7 @@ describe("GraphBuilder.provideMany with malformed adapters", () => {
     // MalformedAdapterErrorMessage by ProvideManyResult
 
     type MalformedAdapterType = {
-      readonly provides: Port<{ test: () => void }, "Test">;
+      readonly provides: Port<"Test", { test: () => void }>;
       readonly requires: readonly [];
       // lifetime is missing at type level!
       readonly factory: () => { test: () => void };

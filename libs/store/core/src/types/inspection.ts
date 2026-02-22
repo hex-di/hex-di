@@ -350,7 +350,7 @@ export interface StoreInspectorInternal extends StoreInspectorAPI {
 /**
  * Port definition for container registration of StoreInspectorAPI.
  */
-export const StoreInspectorPort: DirectedPort<StoreInspectorAPI, "StoreInspector", "outbound"> =
+export const StoreInspectorPort: DirectedPort<"StoreInspector", StoreInspectorAPI, "outbound"> =
   createPort<"StoreInspector", StoreInspectorAPI>({ name: "StoreInspector" });
 
 export type StoreInspectorPortDef = typeof StoreInspectorPort;
@@ -365,8 +365,8 @@ export type StoreInspectorPortDef = typeof StoreInspectorPort;
  * and auto-record actions.
  */
 export const StoreInspectorInternalPort: DirectedPort<
-  StoreInspectorInternal,
   "StoreInspectorInternal",
+  StoreInspectorInternal,
   "outbound"
 > = createPort<"StoreInspectorInternal", StoreInspectorInternal>({
   name: "StoreInspectorInternal",
@@ -384,7 +384,7 @@ export type StoreInspectorInternalPortDef = typeof StoreInspectorInternalPort;
  * When registered in a graph, enables auto-discovery of store port adapters
  * without manual `registerPort()` calls.
  */
-export const StoreRegistryPort: DirectedPort<StoreRegistry, "StoreRegistry", "outbound"> =
+export const StoreRegistryPort: DirectedPort<"StoreRegistry", StoreRegistry, "outbound"> =
   createPort<"StoreRegistry", StoreRegistry>({ name: "StoreRegistry" });
 
 export type StoreRegistryPortDef = typeof StoreRegistryPort;
@@ -397,7 +397,7 @@ export type StoreRegistryPortDef = typeof StoreRegistryPort;
  * Port definition for the store tracing hook.
  * When registered in a graph, enables distributed tracing for store operations.
  */
-export const StoreTracingHookPort: DirectedPort<StoreTracingHook, "StoreTracingHook", "outbound"> =
+export const StoreTracingHookPort: DirectedPort<"StoreTracingHook", StoreTracingHook, "outbound"> =
   createPort<"StoreTracingHook", StoreTracingHook>({ name: "StoreTracingHook" });
 
 export type StoreTracingHookPortDef = typeof StoreTracingHookPort;

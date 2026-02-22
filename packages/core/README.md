@@ -18,12 +18,12 @@ TypeScript 5.0 or later is required (peer dependency).
 
 ## Concepts
 
-| Concept | Description |
-|---------|-------------|
-| **Port** | A branded token that names a service interface. Two ports with the same interface but different names are type-incompatible. |
-| **DirectedPort** | A port annotated with a hexagonal direction (`'inbound'` for use-case interfaces, `'outbound'` for infrastructure interfaces). |
-| **Adapter** | Binds a port to a concrete implementation via a factory function or class constructor, with a declared lifetime and dependency list. |
-| **LazyPort** | Wraps a port so its dependency is injected as a thunk `() => T`, enabling bidirectional (normally circular) relationships. |
+| Concept          | Description                                                                                                                          |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **Port**         | A branded token that names a service interface. Two ports with the same interface but different names are type-incompatible.         |
+| **DirectedPort** | A port annotated with a hexagonal direction (`'inbound'` for use-case interfaces, `'outbound'` for infrastructure interfaces).       |
+| **Adapter**      | Binds a port to a concrete implementation via a factory function or class constructor, with a declared lifetime and dependency list. |
+| **LazyPort**     | Wraps a port so its dependency is injected as a thunk `() => T`, enabling bidirectional (normally circular) relationships.           |
 
 ## Ports
 
@@ -42,7 +42,7 @@ interface UserRepository {
   findById(id: string): Promise<{ id: string; name: string } | null>;
 }
 
-// Inferred type: DirectedPort<Logger, "Logger", "outbound">
+// Inferred type: DirectedPort<"Logger", Logger, "outbound">
 const LoggerPort = port<Logger>()({ name: "Logger" });
 
 // Inbound (use-case) port with metadata
@@ -62,7 +62,7 @@ When you need full control over the type parameters:
 ```typescript
 import { createPort } from "@hex-di/core";
 
-// Type: DirectedPort<Logger, "Logger", "outbound">
+// Type: DirectedPort<"Logger", Logger, "outbound">
 const LoggerPort = createPort<"Logger", Logger>({ name: "Logger" });
 
 // With direction
@@ -77,22 +77,34 @@ Direction defaults to `'outbound'` when omitted. Both factories produce frozen o
 ### Type utilities
 
 ```typescript
-import type { InferService, InferPortName, InferPortDirection, InboundPorts, OutboundPorts } from "@hex-di/core";
+import type {
+  InferService,
+  InferPortName,
+  InferPortDirection,
+  InboundPorts,
+  OutboundPorts,
+} from "@hex-di/core";
 
-type LoggerService = InferService<typeof LoggerPort>;   // Logger
-type PortName     = InferPortName<typeof LoggerPort>;   // "Logger"
-type Direction    = InferPortDirection<typeof LoggerPort>; // "outbound"
+type LoggerService = InferService<typeof LoggerPort>; // Logger
+type PortName = InferPortName<typeof LoggerPort>; // "Logger"
+type Direction = InferPortDirection<typeof LoggerPort>; // "outbound"
 ```
 
 ### Runtime port inspection
 
 ```typescript
-import { isDirectedPort, isInboundPort, isOutboundPort, getPortDirection, getPortMetadata } from "@hex-di/core";
+import {
+  isDirectedPort,
+  isInboundPort,
+  isOutboundPort,
+  getPortDirection,
+  getPortMetadata,
+} from "@hex-di/core";
 
-isDirectedPort(LoggerPort);          // true
-isOutboundPort(LoggerPort);          // true
-getPortDirection(LoggerPort);        // "outbound"
-getPortMetadata(LoggerPort).description; // "Application logging"
+isDirectedPort(LoggerPort); // true
+isOutboundPort(LoggerPort); // true
+getPortDirection(LoggerPort); // "outbound"
+getPortMetadata(LoggerPort)?.description; // "Application logging"
 ```
 
 ## Adapters
@@ -104,7 +116,7 @@ import { createAdapter, port } from "@hex-di/core";
 
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,
-  factory: () => ({ log: (msg) => console.log(msg) }),
+  factory: () => ({ log: msg => console.log(msg) }),
   // defaults: requires: [], lifetime: "singleton", clonable: false
 });
 
@@ -127,10 +139,12 @@ Class constructors receive dependencies in the same order as the `requires` tupl
 class UserServiceImpl implements UserService {
   constructor(
     private logger: Logger,
-    private database: Database,
+    private database: Database
   ) {}
 
-  getUser(id: string) { /* ... */ }
+  getUser(id: string) {
+    /* ... */
+  }
 }
 
 const UserServiceAdapter = createAdapter({
@@ -164,17 +178,17 @@ Called when the container or scope is disposed:
 const DatabaseAdapter = createAdapter({
   provides: DatabasePort,
   factory: async () => createConnection(process.env.DB_URL),
-  finalizer: async (db) => db.disconnect(),
+  finalizer: async db => db.disconnect(),
 });
 ```
 
 ### Lifetimes
 
-| Value | Behaviour |
-|-------|-----------|
+| Value         | Behaviour                                                           |
+| ------------- | ------------------------------------------------------------------- |
 | `"singleton"` | One instance per container, shared across all resolutions (default) |
-| `"scoped"` | One instance per scope, isolated from parent and sibling scopes |
-| `"transient"` | New instance on every resolution |
+| `"scoped"`    | One instance per scope, isolated from parent and sibling scopes     |
+| `"transient"` | New instance on every resolution                                    |
 
 ### Clonable flag
 
@@ -203,8 +217,8 @@ const NotificationAdapter = createAdapter({
   }),
 });
 
-isLazyPort(LazyUserService);          // true
-getOriginalPort(LazyUserService);     // UserServicePort
+isLazyPort(LazyUserService); // true
+getOriginalPort(LazyUserService); // UserServicePort
 ```
 
 ## Error handling
@@ -228,13 +242,13 @@ if (parsed?.code === ErrorCode.DUPLICATE_ADAPTER) {
 
 ### Error code ranges
 
-| Range | Category |
-|-------|----------|
-| `HEX001–009` | Graph validation (circular deps, captive deps, duplicates, …) |
-| `HEX010–019` | Adapter configuration (missing provides, invalid factory, …) |
-| `HEX020–025` | Runtime / container errors (disposed scope, async init, …) |
-| `HEX026–028` | Integrity / tamper detection |
-| `HEX_WARN_001` | Warning: tracing not configured |
+| Range          | Category                                                      |
+| -------------- | ------------------------------------------------------------- |
+| `HEX001–009`   | Graph validation (circular deps, captive deps, duplicates, …) |
+| `HEX010–019`   | Adapter configuration (missing provides, invalid factory, …)  |
+| `HEX020–025`   | Runtime / container errors (disposed scope, async init, …)    |
+| `HEX026–028`   | Integrity / tamper detection                                  |
+| `HEX_WARN_001` | Warning: tracing not configured                               |
 
 ### Concrete error classes
 
@@ -261,16 +275,14 @@ Type-safe key-value pairs for passing runtime configuration through the DI graph
 import { createContextVariable, withContext, getContext } from "@hex-di/core";
 
 const requestId = createContextVariable<string>("requestId");
-const timeout   = createContextVariable("timeout", 5000); // default 5000
+const timeout = createContextVariable("timeout", 5000); // default 5000
 
 // Build a context map
-const ctx = new Map([
-  [requestId.id, withContext(requestId, "req-abc-123").value],
-]);
+const ctx = new Map([[requestId.id, withContext(requestId, "req-abc-123").value]]);
 
 // Retrieve values
-const id      = getContext(ctx, requestId); // "req-abc-123"
-const timeMs  = getContext(ctx, timeout);   // 5000 (default)
+const id = getContext(ctx, requestId); // "req-abc-123"
+const timeMs = getContext(ctx, timeout); // 5000 (default)
 ```
 
 Each variable uses a local `Symbol` for its identity, so two variables created with the same name string are always distinct.
@@ -309,61 +321,61 @@ Key types exported:
 
 ### Ports
 
-| Export | Kind | Description |
-|--------|------|-------------|
-| `port<T>()` | function | Curried builder for service-typed ports |
-| `createPort(config)` | function | Direct port factory with explicit overloads |
-| `isDirectedPort(p)` | function | Runtime guard for directed ports |
-| `isInboundPort(p)` | function | Runtime guard for inbound ports |
-| `isOutboundPort(p)` | function | Runtime guard for outbound ports |
-| `getPortDirection(p)` | function | Returns `'inbound'` or `'outbound'` |
-| `getPortMetadata(p)` | function | Returns `PortMetadata` |
-| `Port<T, TName>` | type | Branded port type |
-| `DirectedPort<T, N, D>` | type | Port with direction |
-| `InboundPort<T, N>` | type | Alias for `DirectedPort<T, N, 'inbound'>` |
-| `OutboundPort<T, N>` | type | Alias for `DirectedPort<T, N, 'outbound'>` |
-| `InferService<P>` | type | Extract service type from port |
-| `InferPortName<P>` | type | Extract port name literal from port |
-| `InferPortDirection<P>` | type | Extract direction from directed port |
-| `InboundPorts<P>` | type | Filter union to only inbound ports |
-| `OutboundPorts<P>` | type | Filter union to only outbound ports |
+| Export                  | Kind     | Description                                 |
+| ----------------------- | -------- | ------------------------------------------- |
+| `port<T>()`             | function | Curried builder for service-typed ports     |
+| `createPort(config)`    | function | Direct port factory with explicit overloads |
+| `isDirectedPort(p)`     | function | Runtime guard for directed ports            |
+| `isInboundPort(p)`      | function | Runtime guard for inbound ports             |
+| `isOutboundPort(p)`     | function | Runtime guard for outbound ports            |
+| `getPortDirection(p)`   | function | Returns `'inbound'` or `'outbound'`         |
+| `getPortMetadata(p)`    | function | Returns `PortMetadata \| undefined`         |
+| `Port<TName, T>`        | type     | Branded port type                           |
+| `DirectedPort<N, T, D>` | type     | Port with direction                         |
+| `InboundPort<N, T>`     | type     | Alias for `DirectedPort<N, T, 'inbound'>`   |
+| `OutboundPort<N, T>`    | type     | Alias for `DirectedPort<N, T, 'outbound'>`  |
+| `InferService<P>`       | type     | Extract service type from port              |
+| `InferPortName<P>`      | type     | Extract port name literal from port         |
+| `InferPortDirection<P>` | type     | Extract direction from directed port        |
+| `InboundPorts<P>`       | type     | Filter union to only inbound ports          |
+| `OutboundPorts<P>`      | type     | Filter union to only outbound ports         |
 
 ### Adapters
 
-| Export | Kind | Description |
-|--------|------|-------------|
-| `createAdapter(config)` | function | Unified adapter factory (factory or class variant) |
-| `lazyPort(port)` | function | Wrap a port for deferred resolution |
-| `isLazyPort(p)` | function | Runtime guard for lazy ports |
-| `getOriginalPort(lazy)` | function | Extract original port from lazy port |
-| `isAdapter(v)` | function | Runtime guard for adapter objects |
-| `isAdapterFrozen(a)` | function | Tamper-detection check |
-| `Adapter<...>` | type | Branded adapter type |
-| `Lifetime` | type | `"singleton" \| "scoped" \| "transient"` |
-| `FactoryKind` | type | `"sync" \| "async"` |
-| `ResolvedDeps<TRequires>` | type | Dependency object type from a requires union |
-| `PortDeps<TRequires>` | type | Dependency object type from a requires tuple |
-| `SINGLETON`, `SCOPED`, `TRANSIENT` | const | Literal-typed lifetime constants |
-| `SYNC`, `ASYNC` | const | Literal-typed factory kind constants |
+| Export                             | Kind     | Description                                        |
+| ---------------------------------- | -------- | -------------------------------------------------- |
+| `createAdapter(config)`            | function | Unified adapter factory (factory or class variant) |
+| `lazyPort(port)`                   | function | Wrap a port for deferred resolution                |
+| `isLazyPort(p)`                    | function | Runtime guard for lazy ports                       |
+| `getOriginalPort(lazy)`            | function | Extract original port from lazy port               |
+| `isAdapter(v)`                     | function | Runtime guard for adapter objects                  |
+| `isAdapterFrozen(a)`               | function | Tamper-detection check                             |
+| `Adapter<...>`                     | type     | Branded adapter type                               |
+| `Lifetime`                         | type     | `"singleton" \| "scoped" \| "transient"`           |
+| `FactoryKind`                      | type     | `"sync" \| "async"`                                |
+| `ResolvedDeps<TRequires>`          | type     | Dependency object type from a requires union       |
+| `PortDeps<TRequires>`              | type     | Dependency object type from a requires tuple       |
+| `SINGLETON`, `SCOPED`, `TRANSIENT` | const    | Literal-typed lifetime constants                   |
+| `SYNC`, `ASYNC`                    | const    | Literal-typed factory kind constants               |
 
 ### Errors
 
-| Export | Kind | Description |
-|--------|------|-------------|
-| `isHexError(msg)` | function | Check if string is a HexDI error/warning |
-| `parseError(msg)` | function | Parse error message into structured info |
-| `ContainerError` | class | Base error class |
-| `CircularDependencyError` | class | Circular dep detected |
-| `FactoryError` | class | Factory threw during instantiation |
-| `DisposedScopeError` | class | Resolution from disposed scope |
-| `ScopeRequiredError` | class | Scoped port resolved from root |
-| `AsyncFactoryError` | class | Async factory threw |
-| `AsyncInitializationRequiredError` | class | Async port resolved without init |
-| `NonClonableForkedError` | class | Non-clonable adapter in forked scope |
-| `ErrorCode` | const | Structured string error codes |
-| `NumericErrorCode` | const | `HEXxxx` formatted codes |
-| `isResolutionError(e)` | function | Guard for `ResolutionError` union |
-| `toResolutionError(e)` | function | Convert thrown value to `ResolutionError` |
+| Export                             | Kind     | Description                               |
+| ---------------------------------- | -------- | ----------------------------------------- |
+| `isHexError(msg)`                  | function | Check if string is a HexDI error/warning  |
+| `parseError(msg)`                  | function | Parse error message into structured info  |
+| `ContainerError`                   | class    | Base error class                          |
+| `CircularDependencyError`          | class    | Circular dep detected                     |
+| `FactoryError`                     | class    | Factory threw during instantiation        |
+| `DisposedScopeError`               | class    | Resolution from disposed scope            |
+| `ScopeRequiredError`               | class    | Scoped port resolved from root            |
+| `AsyncFactoryError`                | class    | Async factory threw                       |
+| `AsyncInitializationRequiredError` | class    | Async port resolved without init          |
+| `NonClonableForkedError`           | class    | Non-clonable adapter in forked scope      |
+| `ErrorCode`                        | const    | Structured string error codes             |
+| `NumericErrorCode`                 | const    | `HEXxxx` formatted codes                  |
+| `isResolutionError(e)`             | function | Guard for `ResolutionError` union         |
+| `toResolutionError(e)`             | function | Convert thrown value to `ResolutionError` |
 
 ## License
 

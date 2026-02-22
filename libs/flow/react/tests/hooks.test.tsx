@@ -364,11 +364,11 @@ function createMockFlowService(initialSnapshot: MachineSnapshot<TestState, TestC
 /**
  * Creates a mock container for testing.
  */
-function createMockContainer<P extends Port<unknown, string>>(
+function createMockContainer<P extends Port<string, unknown>>(
   flowService: TestFlowService,
   testPort: P
 ): any {
-  const mockResolve = vi.fn().mockImplementation((p: Port<unknown, string>) => {
+  const mockResolve = vi.fn().mockImplementation((p: Port<string, unknown>) => {
     const pName = (p as { name?: string }).name;
     const tName = (testPort as { name?: string }).name;
     if (pName === tName) {
@@ -379,7 +379,7 @@ function createMockContainer<P extends Port<unknown, string>>(
 
   const mockScope = {
     resolve: mockResolve,
-    resolveAsync: vi.fn().mockImplementation((p: Port<unknown, string>) => {
+    resolveAsync: vi.fn().mockImplementation((p: Port<string, unknown>) => {
       return Promise.resolve(mockResolve(p));
     }),
     createScope: vi.fn(),
@@ -397,7 +397,7 @@ function createMockContainer<P extends Port<unknown, string>>(
 
   return {
     resolve: mockResolve,
-    resolveAsync: vi.fn().mockImplementation((p: Port<unknown, string>) => {
+    resolveAsync: vi.fn().mockImplementation((p: Port<string, unknown>) => {
       return Promise.resolve(mockResolve(p));
     }),
     createScope: vi.fn().mockReturnValue(mockScope),

@@ -7,6 +7,7 @@
 
 import { describe, it, expect, vi } from "vitest";
 import { port, createAdapter } from "../src/index.js";
+import { ResultAsync } from "@hex-di/result";
 
 // =============================================================================
 // Test Ports
@@ -334,21 +335,23 @@ describe("createAdapter - mutual exclusion", () => {
 // =============================================================================
 
 describe("createAdapter - async factory detection", () => {
-  it("detects async factory and sets factoryKind to 'async'", () => {
+  it("ResultAsync-returning factory is detected as sync at runtime", () => {
     const adapter = createAdapter({
       provides: LoggerPort,
-      factory: async () => ({ log: vi.fn() }),
+      factory: () => ResultAsync.ok({ log: vi.fn() }),
     });
-    expect(adapter.factoryKind).toBe("async");
+    // ResultAsync-returning factories are sync at runtime (no async keyword)
+    expect(adapter.factoryKind).toBe("sync");
   });
 
-  it("enforces singleton lifetime for async factories", () => {
-    // Even though we pass "transient", async forces singleton
+  it("ResultAsync-returning factory compiles only with singleton lifetime", () => {
     const adapter = createAdapter({
       provides: LoggerPort,
-      lifetime: "transient" as any,
-      factory: async () => ({ log: vi.fn() }),
+      factory: () => ResultAsync.ok({ log: vi.fn() }),
     });
+    // factoryKind is "sync" at runtime (no async keyword)
+    expect(adapter.factoryKind).toBe("sync");
+    // Default lifetime is singleton
     expect(adapter.lifetime).toBe("singleton");
   });
 

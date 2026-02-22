@@ -58,7 +58,7 @@ import { toTypedResolver } from "../internal/runtime-refs.js";
  * ```
  */
 export function useContainer<
-  TProvides extends Port<unknown, string> = Port<unknown, string>,
+  TProvides extends Port<string, unknown> = Port<string, unknown>,
 >(): Resolver<TProvides> {
   const context = useContext(ContainerContext);
 

@@ -30,7 +30,7 @@ export interface UseFlowTimelineOptions {
  * @returns The latest transition events
  */
 export function useFlowTimeline(
-  inspectorPort: Port<FlowInspector, string>,
+  inspectorPort: Port<string, FlowInspector>,
   options?: UseFlowTimelineOptions
 ): readonly FlowTransitionEventAny[] {
   const inspector = usePort(inspectorPort);

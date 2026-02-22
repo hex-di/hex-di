@@ -94,7 +94,7 @@ function createMockInspector(): {
 const InspectorPort = port<FlowInspector>()({ name: "FlowInspector" });
 
 function createMockContainer(inspector: FlowInspector): any {
-  const mockResolve = vi.fn().mockImplementation((p: Port<unknown, string>) => {
+  const mockResolve = vi.fn().mockImplementation((p: Port<string, unknown>) => {
     if (p.__portName === "FlowInspector") {
       return inspector;
     }
@@ -105,7 +105,7 @@ function createMockContainer(inspector: FlowInspector): any {
     resolve: mockResolve,
     resolveAsync: vi
       .fn()
-      .mockImplementation((p: Port<unknown, string>) => Promise.resolve(mockResolve(p))),
+      .mockImplementation((p: Port<string, unknown>) => Promise.resolve(mockResolve(p))),
     createScope: vi.fn(),
     dispose: vi.fn().mockResolvedValue(undefined),
     has: vi.fn().mockReturnValue(true),
@@ -123,7 +123,7 @@ function createMockContainer(inspector: FlowInspector): any {
     resolve: mockResolve,
     resolveAsync: vi
       .fn()
-      .mockImplementation((p: Port<unknown, string>) => Promise.resolve(mockResolve(p))),
+      .mockImplementation((p: Port<string, unknown>) => Promise.resolve(mockResolve(p))),
     createScope: vi.fn().mockReturnValue(mockScope),
     createChild: vi.fn(),
     dispose: vi.fn().mockResolvedValue(undefined),

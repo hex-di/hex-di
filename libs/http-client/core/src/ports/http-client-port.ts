@@ -73,37 +73,37 @@ export interface HttpClient {
   /** Send a GET request. */
   readonly get: (
     url: string | URL,
-    options?: RequestOptions,
+    options?: RequestOptions
   ) => ResultAsync<HttpResponse, HttpRequestError>;
 
   /** Send a POST request. */
   readonly post: (
     url: string | URL,
-    options?: RequestOptionsWithBody,
+    options?: RequestOptionsWithBody
   ) => ResultAsync<HttpResponse, HttpRequestError>;
 
   /** Send a PUT request. */
   readonly put: (
     url: string | URL,
-    options?: RequestOptionsWithBody,
+    options?: RequestOptionsWithBody
   ) => ResultAsync<HttpResponse, HttpRequestError>;
 
   /** Send a PATCH request. */
   readonly patch: (
     url: string | URL,
-    options?: RequestOptionsWithBody,
+    options?: RequestOptionsWithBody
   ) => ResultAsync<HttpResponse, HttpRequestError>;
 
   /** Send a DELETE request. */
   readonly del: (
     url: string | URL,
-    options?: RequestOptions,
+    options?: RequestOptions
   ) => ResultAsync<HttpResponse, HttpRequestError>;
 
   /** Send a HEAD request. */
   readonly head: (
     url: string | URL,
-    options?: RequestOptions,
+    options?: RequestOptions
   ) => ResultAsync<HttpResponse, HttpRequestError>;
 }
 
@@ -155,7 +155,7 @@ export const HttpClientPort = port<HttpClient>()({
  *
  * @see §28 of the http-client spec
  */
-export type InferHttpClient<T> = [T] extends [DirectedPort<infer TService, string, "outbound">]
+export type InferHttpClient<T> = [T] extends [DirectedPort<string, infer TService, "outbound">]
   ? TService extends HttpClient
     ? TService
     : InferenceError<"InferHttpClient", "Port service type does not extend HttpClient.", T>

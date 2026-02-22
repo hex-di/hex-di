@@ -36,7 +36,7 @@ interface Service {
   name: string;
 }
 
-function makePort(name: string): Port<Service, string> {
+function makePort(name: string): Port<string, Service> {
   return port<Service>()({ name });
 }
 
@@ -50,7 +50,7 @@ function makeAdapter(name: string): AdapterConstraint {
   });
 }
 
-function makeAdapterWithDeps(name: string, depPorts: Port<Service, string>[]): AdapterConstraint {
+function makeAdapterWithDeps(name: string, depPorts: Port<string, Service>[]): AdapterConstraint {
   const port = makePort(name);
   return createAdapter({
     provides: port,
@@ -310,7 +310,7 @@ describe("performance: inspect()", () => {
 
   it("inspect() of deep chain completes in < 10ms", () => {
     // Create a 50-level deep chain
-    const ports: Port<Service, string>[] = [];
+    const ports: Port<string, Service>[] = [];
     const adapters: AdapterConstraint[] = [];
 
     for (let i = 0; i < 50; i++) {

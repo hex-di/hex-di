@@ -14,6 +14,7 @@
 
 import { describe, it, expectTypeOf } from "vitest";
 import { port, createAdapter, createPort, type AsyncLifetimeError } from "../src/index.js";
+import { ResultAsync } from "@hex-di/result";
 
 // =============================================================================
 // Test Fixtures
@@ -34,12 +35,12 @@ const DepPort = port<DepService>()({ name: "Dep" });
 // ASYNC-01: Async + scoped = Error
 // =============================================================================
 
-describe("ASYNC-01: async factory with scoped lifetime", () => {
+describe("ASYNC-01: ResultAsync factory with scoped lifetime", () => {
   it("produces error type in lifetime position", () => {
     const adapter = createAdapter({
       provides: TestPort,
       lifetime: "scoped",
-      factory: async () => ({ doWork: () => {} }),
+      factory: () => ResultAsync.ok({ doWork: () => {} }),
     });
 
     // Lifetime should be the error type, not "scoped"
@@ -50,7 +51,7 @@ describe("ASYNC-01: async factory with scoped lifetime", () => {
     const adapter = createAdapter({
       provides: TestPort,
       lifetime: "scoped",
-      factory: async () => ({ doWork: () => {} }),
+      factory: () => ResultAsync.ok({ doWork: () => {} }),
     });
 
     expectTypeOf(
@@ -63,9 +64,9 @@ describe("ASYNC-01: async factory with scoped lifetime", () => {
       provides: TestPort,
       requires: [DepPort],
       lifetime: "scoped",
-      factory: async deps => {
+      factory: deps => {
         void deps.Dep.getValue();
-        return { doWork: () => {} };
+        return ResultAsync.ok({ doWork: () => {} });
       },
     });
 
@@ -77,12 +78,12 @@ describe("ASYNC-01: async factory with scoped lifetime", () => {
 // ASYNC-02: Async + transient = Error
 // =============================================================================
 
-describe("ASYNC-02: async factory with transient lifetime", () => {
+describe("ASYNC-02: ResultAsync factory with transient lifetime", () => {
   it("produces error type in lifetime position", () => {
     const adapter = createAdapter({
       provides: TestPort,
       lifetime: "transient",
-      factory: async () => ({ doWork: () => {} }),
+      factory: () => ResultAsync.ok({ doWork: () => {} }),
     });
 
     expectTypeOf(adapter.lifetime).toEqualTypeOf<AsyncLifetimeError<"transient">>();
@@ -92,7 +93,7 @@ describe("ASYNC-02: async factory with transient lifetime", () => {
     const adapter = createAdapter({
       provides: TestPort,
       lifetime: "transient",
-      factory: async () => ({ doWork: () => {} }),
+      factory: () => ResultAsync.ok({ doWork: () => {} }),
     });
 
     expectTypeOf(
@@ -106,7 +107,7 @@ describe("ASYNC-02: async factory with transient lifetime", () => {
       requires: [],
       lifetime: "transient",
       clonable: false,
-      factory: async () => ({ doWork: () => {} }),
+      factory: () => ResultAsync.ok({ doWork: () => {} }),
     });
 
     expectTypeOf(adapter.lifetime).toEqualTypeOf<AsyncLifetimeError<"transient">>();
@@ -117,12 +118,12 @@ describe("ASYNC-02: async factory with transient lifetime", () => {
 // ASYNC-03: Async + singleton = OK
 // =============================================================================
 
-describe("ASYNC-03: async factory with singleton lifetime", () => {
+describe("ASYNC-03: ResultAsync factory with singleton lifetime", () => {
   it("compiles successfully with singleton lifetime", () => {
     const adapter = createAdapter({
       provides: TestPort,
       lifetime: "singleton",
-      factory: async () => ({ doWork: () => {} }),
+      factory: () => ResultAsync.ok({ doWork: () => {} }),
     });
 
     // Should be the actual "singleton" type, not error
@@ -136,9 +137,9 @@ describe("ASYNC-03: async factory with singleton lifetime", () => {
       requires: [DepPort],
       lifetime: "singleton",
       clonable: true,
-      factory: async deps => {
+      factory: deps => {
         void deps.Dep.getValue();
-        return { doWork: () => {} };
+        return ResultAsync.ok({ doWork: () => {} });
       },
     });
 
@@ -152,11 +153,11 @@ describe("ASYNC-03: async factory with singleton lifetime", () => {
 // ASYNC-04: Async + omitted lifetime = OK (defaults to singleton)
 // =============================================================================
 
-describe("ASYNC-04: async factory with lifetime omitted", () => {
+describe("ASYNC-04: ResultAsync factory with lifetime omitted", () => {
   it("compiles with default singleton lifetime", () => {
     const adapter = createAdapter({
       provides: TestPort,
-      factory: async () => ({ doWork: () => {} }),
+      factory: () => ResultAsync.ok({ doWork: () => {} }),
     });
 
     expectTypeOf(adapter.lifetime).toEqualTypeOf<"singleton">();
@@ -167,9 +168,9 @@ describe("ASYNC-04: async factory with lifetime omitted", () => {
     const adapter = createAdapter({
       provides: TestPort,
       requires: [DepPort],
-      factory: async deps => {
+      factory: deps => {
         void deps.Dep.getValue();
-        return { doWork: () => {} };
+        return ResultAsync.ok({ doWork: () => {} });
       },
     });
 

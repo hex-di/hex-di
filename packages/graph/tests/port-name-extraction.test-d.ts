@@ -8,7 +8,7 @@
  *
  * Three different patterns existed for extracting port names:
  *
- * 1. `Port<unknown, infer TName>` - Uses full Port type matching
+ * 1. `Port<infer TName, unknown>` - Uses full Port type matching
  * 2. `{ __portName: infer TName }` - Uses structural property matching
  * 3. `{ __portName: infer TName } extends string` - Adds string constraint
  *
@@ -39,15 +39,15 @@ interface TestService {
 
 /** Valid adapter with provides and requires */
 type ValidAdapter = {
-  readonly provides: Port<TestService, "TestService">;
-  readonly requires: readonly [Port<unknown, "Logger">, Port<unknown, "Config">];
+  readonly provides: Port<"TestService", TestService>;
+  readonly requires: readonly [Port<"Logger", unknown>, Port<"Config", unknown>];
   readonly lifetime: "singleton";
   readonly factory: () => TestService;
 };
 
 /** Adapter with no requirements */
 type AdapterNoRequires = {
-  readonly provides: Port<TestService, "TestService">;
+  readonly provides: Port<"TestService", TestService>;
   readonly requires: readonly [];
   readonly lifetime: "singleton";
   readonly factory: () => TestService;
@@ -55,8 +55,8 @@ type AdapterNoRequires = {
 
 /** Adapter with single requirement */
 type AdapterSingleRequire = {
-  readonly provides: Port<TestService, "TestService">;
-  readonly requires: readonly [Port<unknown, "Logger">];
+  readonly provides: Port<"TestService", TestService>;
+  readonly requires: readonly [Port<"Logger", unknown>];
   readonly lifetime: "singleton";
   readonly factory: () => TestService;
 };
@@ -74,7 +74,7 @@ type WrongProvidesType = {
 
 /** Adapter with non-Port in requires array */
 type InvalidRequiresAdapter = {
-  readonly provides: Port<TestService, "TestService">;
+  readonly provides: Port<"TestService", TestService>;
   readonly requires: readonly [string, number];
   readonly lifetime: "singleton";
   readonly factory: () => TestService;
@@ -82,8 +82,8 @@ type InvalidRequiresAdapter = {
 
 /** Adapter with mixed valid/invalid requires */
 type MixedRequiresAdapter = {
-  readonly provides: Port<TestService, "TestService">;
-  readonly requires: readonly [Port<unknown, "Logger">, string];
+  readonly provides: Port<"TestService", TestService>;
+  readonly requires: readonly [Port<"Logger", unknown>, string];
   readonly lifetime: "singleton";
   readonly factory: () => TestService;
 };
@@ -120,8 +120,8 @@ describe("AdapterProvidesName", () => {
   });
 
   it("should handle union of adapters by distributing", () => {
-    type AdapterA = { provides: Port<unknown, "A">; requires: readonly [] };
-    type AdapterB = { provides: Port<unknown, "B">; requires: readonly [] };
+    type AdapterA = { provides: Port<"A", unknown>; requires: readonly [] };
+    type AdapterB = { provides: Port<"B", unknown>; requires: readonly [] };
     type Union = AdapterA | AdapterB;
 
     // Should distribute over union
@@ -177,10 +177,10 @@ describe("AdapterRequiresNames", () => {
   });
 
   it("should handle union of adapters by distributing", () => {
-    type AdapterA = { provides: Port<unknown, "A">; requires: readonly [Port<unknown, "X">] };
+    type AdapterA = { provides: Port<"A", unknown>; requires: readonly [Port<"X", unknown>] };
     type AdapterB = {
-      provides: Port<unknown, "B">;
-      requires: readonly [Port<unknown, "Y">, Port<unknown, "Z">];
+      provides: Port<"B", unknown>;
+      requires: readonly [Port<"Y", unknown>, Port<"Z", unknown>];
     };
     type Union = AdapterA | AdapterB;
 
@@ -232,9 +232,9 @@ describe("Pattern Equivalence", () => {
   });
 
   it("should produce same results for real Port types as Pattern 1", () => {
-    // Pattern 1 used: Port<unknown, infer TName>
+    // Pattern 1 used: Port<infer TName, unknown>
     // Both patterns should work equivalently for real Port types
-    type Pattern1Result<T> = T extends { provides: Port<unknown, infer TName> } ? TName : never;
+    type Pattern1Result<T> = T extends { provides: Port<infer TName, unknown> } ? TName : never;
 
     // For adapters with real Port types, both patterns produce same result
     expectTypeOf<Pattern1Result<ValidAdapter>>().toEqualTypeOf<AdapterProvidesName<ValidAdapter>>();
@@ -249,7 +249,7 @@ describe("Edge Cases", () => {
   it("should handle adapter with generic port name", () => {
     // Port with non-literal string name
     type GenericAdapter = {
-      provides: Port<unknown, string>;
+      provides: Port<string, unknown>;
       requires: readonly [];
     };
 
@@ -259,8 +259,8 @@ describe("Edge Cases", () => {
 
   it("should handle deeply nested adapter type", () => {
     type DeepAdapter = {
-      provides: Port<{ nested: { value: TestService } }, "DeepService">;
-      requires: readonly [Port<{ another: { level: unknown } }, "DeepDep">];
+      provides: Port<"DeepService", { nested: { value: TestService } }>;
+      requires: readonly [Port<"DeepDep", { another: { level: unknown } }>];
     };
 
     expectTypeOf<AdapterProvidesName<DeepAdapter>>().toEqualTypeOf<"DeepService">();
@@ -270,8 +270,8 @@ describe("Edge Cases", () => {
   it("should handle readonly modifier correctly", () => {
     // Ensure readonly arrays in requires work correctly
     type ReadonlyAdapter = {
-      provides: Port<TestService, "ReadonlyTest">;
-      requires: readonly [Port<unknown, "Dep1">, Port<unknown, "Dep2">];
+      provides: Port<"ReadonlyTest", TestService>;
+      requires: readonly [Port<"Dep1", unknown>, Port<"Dep2", unknown>];
     };
 
     expectTypeOf<AdapterRequiresNames<ReadonlyAdapter>>().toEqualTypeOf<"Dep1" | "Dep2">();
@@ -280,8 +280,8 @@ describe("Edge Cases", () => {
   it("should handle mutable array type in requires", () => {
     // Some adapters might have mutable arrays (shouldn't break extraction)
     type MutableAdapter = {
-      provides: Port<TestService, "MutableTest">;
-      requires: [Port<unknown, "Dep1">, Port<unknown, "Dep2">];
+      provides: Port<"MutableTest", TestService>;
+      requires: [Port<"Dep1", unknown>, Port<"Dep2", unknown>];
     };
 
     expectTypeOf<AdapterRequiresNames<MutableAdapter>>().toEqualTypeOf<"Dep1" | "Dep2">();

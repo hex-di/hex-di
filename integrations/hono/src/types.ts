@@ -14,9 +14,9 @@ import { DEFAULT_CONTAINER_KEY, DEFAULT_SCOPE_KEY } from "./constants.js";
  * @typeParam ContainerKey - Context key used to store the container
  */
 export type HexHonoVariables<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown> = never,
+  TAsyncPorts extends Port<string, unknown> = never,
   TPhase extends ContainerPhase = "uninitialized",
   ScopeKey extends string = typeof DEFAULT_SCOPE_KEY,
   ContainerKey extends string = typeof DEFAULT_CONTAINER_KEY,
@@ -30,9 +30,9 @@ export type HexHonoVariables<
  * `const app = new Hono<HexHonoEnv<AppPorts>>()`.
  */
 export type HexHonoEnv<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown> = never,
+  TAsyncPorts extends Port<string, unknown> = never,
   TPhase extends ContainerPhase = "uninitialized",
   ScopeKey extends string = typeof DEFAULT_SCOPE_KEY,
   ContainerKey extends string = typeof DEFAULT_CONTAINER_KEY,
@@ -50,9 +50,9 @@ export type HexHonoEnv<
  */
 export type WithHexDi<
   E extends Env,
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown> = never,
+  TAsyncPorts extends Port<string, unknown> = never,
   TPhase extends ContainerPhase = "uninitialized",
   ScopeKey extends string = typeof DEFAULT_SCOPE_KEY,
   ContainerKey extends string = typeof DEFAULT_CONTAINER_KEY,

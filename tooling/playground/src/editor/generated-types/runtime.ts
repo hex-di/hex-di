@@ -472,8 +472,8 @@ export declare const ScopeBrand: unique symbol;
  * 1. The same service interface type \`T\`
  * 2. The same port name \`TName\`
  *
- * @typeParam T - The service interface type (phantom type - exists only at compile time)
  * @typeParam TName - The literal string type for the port name (defaults to \`string\`)
+ * @typeParam T - The service interface type (phantom type - exists only at compile time)
  *
  * @remarks
  * - The \`__brand\` property carries both the service type and name in a tuple
@@ -492,8 +492,8 @@ export declare const ScopeBrand: unique symbol;
  * }
  *
  * // Create typed port tokens
- * type ConsoleLoggerPort = Port<Logger, 'ConsoleLogger'>;
- * type FileLoggerPort = Port<Logger, 'FileLogger'>;
+ * type ConsoleLoggerPort = Port<'ConsoleLogger', Logger>;
+ * type FileLoggerPort = Port<'FileLogger', Logger>;
  *
  * // These are type-incompatible despite same interface
  * declare const consolePort: ConsoleLoggerPort;
@@ -508,15 +508,15 @@ export declare const ScopeBrand: unique symbol;
  * type LoggerPortType = typeof LoggerPort;
  * \`\`\`
  */
-export type Port<T, TName extends string> = {
+export type Port<TName extends string, T> = {
 	/**
 	 * Brand property for nominal typing.
-	 * Contains a tuple of [ServiceType, PortName] at the type level.
+	 * Contains a tuple of [PortName, ServiceType] at the type level.
 	 * Value is undefined at runtime.
 	 */
 	readonly __brand: [
-		T,
-		TName
+		TName,
+		T
 	];
 	/**
 	 * The port name, exposed for debugging and error messages.
@@ -588,7 +588,7 @@ export type NotAPortError<T> = {
  * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * \`\`\`
  */
-export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPortError<P>;
+export type InferService<P> = P extends Port<infer _TName, infer T> ? T : NotAPortError<P>;
 /**
  * Extracts the port name literal type from a Port type.
  *
@@ -622,7 +622,7 @@ export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPo
  * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * \`\`\`
  */
-export type InferPortName<P> = P extends Port<infer _T, infer TName> ? TName : NotAPortError<P>;
+export type InferPortName<P> = P extends Port<infer TName, infer _T> ? TName : NotAPortError<P>;
 /**
  * Discriminator for sync vs async factory functions.
  */
@@ -817,14 +817,14 @@ out TFactoryKind extends FactoryKind = "sync", out TClonable extends boolean = f
 export interface AdapterConstraint {
 	/**
 	 * The port this adapter provides (read-only, covariant).
-	 * Uses Port<unknown, string> as the widest Port type.
+	 * Uses Port<string, unknown> as the widest Port type.
 	 */
-	readonly provides: Port<unknown, string>;
+	readonly provides: Port<string, unknown>;
 	/**
 	 * The ports this adapter depends on (read-only, covariant).
 	 * Each element is a Port with \`__portName\` for runtime identification.
 	 */
-	readonly requires: readonly Port<unknown, string>[];
+	readonly requires: readonly Port<string, unknown>[];
 	/**
 	 * The lifetime scope (fixed union, all values assignable).
 	 */
@@ -848,7 +848,7 @@ export interface AdapterConstraint {
 	 */
 	finalizer?(instance: never): void | Promise<void>;
 }
-export type InferPlaceholder = Port<unknown, string>;
+export type InferPlaceholder = Port<string, unknown>;
 export type LifetimePlaceholder = Lifetime;
 export type FactoryKindPlaceholder = FactoryKind;
 export type ClonablePlaceholder = boolean;
@@ -858,8 +858,8 @@ export type ClonablePlaceholder = boolean;
  *
  * When \`dts-bundle-generator\` creates flat type bundles for the playground,
  * each package gets its own copy of the \`Adapter\` type. Pattern-matching
- * \`TAdapter extends Adapter<infer TProvides, Port<unknown, string>, ...>\` fixes
- * \`TRequires\` at a concrete type, which causes \`ResolvedDeps<Port<unknown, string>>\`
+ * \`TAdapter extends Adapter<infer TProvides, Port<string, unknown>, ...>\` fixes
+ * \`TRequires\` at a concrete type, which causes \`ResolvedDeps<Port<string, unknown>>\`
  * to resolve to \`{ [key: string]: unknown }\`. The \`factory\` field becomes
  * \`(deps: { [key: string]: unknown }) => ...\`, and function parameter contravariance
  * prevents matching against concrete deps like \`{ Config: Config; Logger: Logger }\`.
@@ -2532,7 +2532,7 @@ export type InferGraphAsyncPorts<TGraph> = TGraph extends {
  * import type { ContainerInternalState, Container } from '@hex-di/runtime';
  * import type { Port } from '@hex-di/core';
  *
- * function inspectContainer(container: Container<Port<unknown, string>>) {
+ * function inspectContainer(container: Container<Port<string, unknown>>) {
  *   // No cast needed - Container type includes [INTERNAL_ACCESS] property
  *   const snapshot = container[INTERNAL_ACCESS]();
  *   console.log('Disposed:', snapshot.disposed);
@@ -2641,7 +2641,7 @@ type InheritanceMode\$1 = "shared" | "forked" | "isolated";
  * Extracts port names from a union of Port types.
  * @internal
  */
-export type ExtractPortNames<T extends Port<unknown, string>> = T extends Port<infer _S, infer TName> ? TName : never;
+export type ExtractPortNames<T extends Port<string, unknown>> = T extends Port<infer TName, infer _S> ? TName : never;
 /**
  * Valid inheritance mode configuration map.
  * Keys are restricted to port names from TProvides.
@@ -2658,7 +2658,7 @@ export type ExtractPortNames<T extends Port<unknown, string>> = T extends Port<i
  * });
  * \`\`\`
  */
-export type InheritanceModeConfig<TProvides extends Port<unknown, string>> = {
+export type InheritanceModeConfig<TProvides extends Port<string, unknown>> = {
 	[K in ExtractPortNames<TProvides>]?: InheritanceMode\$1;
 };
 /**
@@ -2684,7 +2684,7 @@ export interface ContainerInternalState {
 	/** Array of child container internal states */
 	readonly childContainers: readonly ContainerInternalState[];
 	/** Map of port to adapter information */
-	readonly adapterMap: ReadonlyMap<Port<unknown, string>, AdapterInfo\$1>;
+	readonly adapterMap: ReadonlyMap<Port<string, unknown>, AdapterInfo\$1>;
 	/**
 	 * Parent container's internal state for inherited resolution tracking.
 	 *
@@ -2746,7 +2746,7 @@ export interface MemoMapSnapshot {
  */
 export interface MemoEntrySnapshot {
 	/** The port this entry is keyed by */
-	readonly port: Port<unknown, string>;
+	readonly port: Port<string, unknown>;
 	/** Port name for display */
 	readonly portName: string;
 	/** Timestamp when the instance was resolved */
@@ -2962,7 +2962,7 @@ export interface ResolutionHookContext {
 	 * The port being resolved.
 	 * Can be used to identify the service type.
 	 */
-	readonly port: Port<unknown, string>;
+	readonly port: Port<string, unknown>;
 	/**
 	 * Name of the port being resolved.
 	 * Convenience property equivalent to \`port.__portName\`.
@@ -2988,7 +2988,7 @@ export interface ResolutionHookContext {
 	 * The parent port if this is a nested dependency resolution.
 	 * null for top-level resolutions initiated by user code.
 	 */
-	readonly parentPort: Port<unknown, string> | null;
+	readonly parentPort: Port<string, unknown> | null;
 	/**
 	 * Whether this resolution will be served from cache.
 	 * true if instance already exists (singleton/scoped), false for fresh creation.
@@ -3622,7 +3622,7 @@ export interface CreateContainerOptions {
  *
  * @see {@link InheritanceModeConfig} - Per-port inheritance mode configuration
  */
-export interface CreateChildOptions<TProvides extends Port<unknown, string> = never> {
+export interface CreateChildOptions<TProvides extends Port<string, unknown> = never> {
 	/**
 	 * Container name - serves as both identifier and display label.
 	 *
@@ -3800,7 +3800,7 @@ export interface CreateChildOptions<TProvides extends Port<unknown, string> = ne
  * @see {@link CreateContainerOptions} - Separate options interface (alternative API)
  * @see {@link ResolutionHooks} - Hook interface for lifecycle instrumentation
  */
-export interface CreateContainerConfig<TProvides extends Port<unknown, string>, _TAsyncPorts extends Port<unknown, string> = never> {
+export interface CreateContainerConfig<TProvides extends Port<string, unknown>, _TAsyncPorts extends Port<string, unknown> = never> {
 	/**
 	 * The validated ServiceGraph containing all adapters.
 	 *
@@ -3817,7 +3817,7 @@ export interface CreateContainerConfig<TProvides extends Port<unknown, string>, 
 	 * const container = createContainer({ graph, name: "App" });
 	 * \`\`\`
 	 */
-	readonly graph: Graph<TProvides, Port<unknown, string>>;
+	readonly graph: Graph<TProvides, Port<string, unknown>>;
 	/**
 	 * Safety-related options for protective limits and error reporting.
 	 *
@@ -4060,13 +4060,13 @@ export type ScopeDisposalState = "active" | "disposing" | "disposed";
  * const db = lateScope.resolve(AsyncPort); // OK: scope created after initialization
  * \`\`\`
  */
-export type Scope<TProvides extends Port<unknown, string>, TAsyncPorts extends Port<unknown, string> = never, TPhase extends ContainerPhase\$1 = "uninitialized"> = ScopeMembers<TProvides, TAsyncPorts, TPhase>;
+export type Scope<TProvides extends Port<string, unknown>, TAsyncPorts extends Port<string, unknown> = never, TPhase extends ContainerPhase\$1 = "uninitialized"> = ScopeMembers<TProvides, TAsyncPorts, TPhase>;
 /**
  * Internal type containing Scope method definitions.
  * Exported for use in scope/impl.ts where scope objects are created.
  * @internal
  */
-export type ScopeMembers<TProvides extends Port<unknown, string>, TAsyncPorts extends Port<unknown, string>, TPhase extends ContainerPhase\$1> = {
+export type ScopeMembers<TProvides extends Port<string, unknown>, TAsyncPorts extends Port<string, unknown>, TPhase extends ContainerPhase\$1> = {
 	/**
 	 * Resolves a service instance for the given port synchronously.
 	 *
@@ -4166,7 +4166,7 @@ export type ScopeMembers<TProvides extends Port<unknown, string>, TAsyncPorts ex
 	 * @param port - The port token to check
 	 * @returns true if the port is provided by this scope or its container
 	 */
-	has(port: Port<unknown, string>): boolean;
+	has(port: Port<string, unknown>): boolean;
 	/**
 	 * Subscribe to scope lifecycle events.
 	 *
@@ -4226,12 +4226,12 @@ export type ScopeMembers<TProvides extends Port<unknown, string>, TAsyncPorts ex
 	 */
 	readonly [INTERNAL_ACCESS]: () => ScopeInternalState;
 };
-type InferPortName\$1<P> = P extends Port<unknown, infer TName> ? TName : never;
+type InferPortName\$1<P> = P extends Port<infer TName, unknown> ? TName : never;
 /**
  * Converts a union of Port types to a comma-separated string of names.
  * @internal
  */
-export type PortUnionToString<P extends Port<unknown, string>> = P extends never ? "(empty graph)" : InferPortName\$1<P>;
+export type PortUnionToString<P extends Port<string, unknown>> = P extends never ? "(empty graph)" : InferPortName\$1<P>;
 /**
  * Error message when attempting to override a port that doesn't exist in the graph.
  *
@@ -4255,7 +4255,7 @@ export type PortUnionToString<P extends Port<unknown, string>> = P extends never
  * //     .build();
  * \`\`\`
  */
-export type PortNotInGraphError<TPortName extends string, TAvailable extends Port<unknown, string>> = \`ERROR[TYPE-01]: Port '\${TPortName}' not found in graph.
+export type PortNotInGraphError<TPortName extends string, TAvailable extends Port<string, unknown>> = \`ERROR[TYPE-01]: Port '\${TPortName}' not found in graph.
 
 Available ports: \${PortUnionToString<TAvailable>}
 
@@ -4290,7 +4290,7 @@ Example:
  * //     .build();
  * \`\`\`
  */
-export type MissingDependenciesError<TPortName extends string, TMissing extends Port<unknown, string>> = \`ERROR[TYPE-02]: Override adapter for '\${TPortName}' has unsatisfied dependencies.
+export type MissingDependenciesError<TPortName extends string, TMissing extends Port<string, unknown>> = \`ERROR[TYPE-02]: Override adapter for '\${TPortName}' has unsatisfied dependencies.
 
 Missing: \${PortUnionToString<TMissing>}
 
@@ -4301,17 +4301,17 @@ Example:
 	.provide(\${PortUnionToString<TMissing>}Adapter)  // Add missing dependency
 	.provide(\${TPortName}Adapter)
 	.build();\`;
-type InferPortName\$2<P> = P extends Port<unknown, infer TName> ? TName : never;
+type InferPortName\$2<P> = P extends Port<infer TName, unknown> ? TName : never;
 /**
  * Checks if a port union contains all required ports.
  * @internal
  */
-export type HasAllPorts<TRequired extends Port<unknown, string>, TAvailable extends Port<unknown, string>> = TRequired extends never ? true : TRequired extends TAvailable ? true : false;
+export type HasAllPorts<TRequired extends Port<string, unknown>, TAvailable extends Port<string, unknown>> = TRequired extends never ? true : TRequired extends TAvailable ? true : false;
 /**
  * Calculates which required ports are missing from available ports.
  * @internal
  */
-export type UnsatisfiedDependencies<TRequired extends Port<unknown, string>, TAvailable extends Port<unknown, string>> = Exclude<TRequired, TAvailable>;
+export type UnsatisfiedDependencies<TRequired extends Port<string, unknown>, TAvailable extends Port<string, unknown>> = Exclude<TRequired, TAvailable>;
 /**
  * Validates that an adapter's port exists in the graph.
  *
@@ -4330,7 +4330,7 @@ export type UnsatisfiedDependencies<TRequired extends Port<unknown, string>, TAv
  * // If MockLoggerAdapter provides UnknownPort: PortNotInGraphError
  * \`\`\`
  */
-export type ValidateOverrideAdapter<TGraphProvides extends Port<unknown, string>, TAdapter extends AdapterConstraint> = InferAdapterProvides<TAdapter> extends TGraphProvides ? ValidateAdapterDependencies<TGraphProvides, TAdapter> : PortNotInGraphError<InferPortName\$2<InferAdapterProvides<TAdapter>>, TGraphProvides>;
+export type ValidateOverrideAdapter<TGraphProvides extends Port<string, unknown>, TAdapter extends AdapterConstraint> = InferAdapterProvides<TAdapter> extends TGraphProvides ? ValidateAdapterDependencies<TGraphProvides, TAdapter> : PortNotInGraphError<InferPortName\$2<InferAdapterProvides<TAdapter>>, TGraphProvides>;
 /**
  * Validates that an adapter's required ports are satisfied.
  *
@@ -4349,7 +4349,7 @@ export type ValidateOverrideAdapter<TGraphProvides extends Port<unknown, string>
  * // If UserServiceAdapter requires [ConfigPort]: MissingDependenciesError
  * \`\`\`
  */
-export type ValidateAdapterDependencies<TGraphProvides extends Port<unknown, string>, TAdapter extends AdapterConstraint> = HasAllPorts<InferAdapterRequires<TAdapter>, TGraphProvides> extends true ? TAdapter : MissingDependenciesError<InferPortName\$2<InferAdapterProvides<TAdapter>>, UnsatisfiedDependencies<InferAdapterRequires<TAdapter>, TGraphProvides>>;
+export type ValidateAdapterDependencies<TGraphProvides extends Port<string, unknown>, TAdapter extends AdapterConstraint> = HasAllPorts<InferAdapterRequires<TAdapter>, TGraphProvides> extends true ? TAdapter : MissingDependenciesError<InferPortName\$2<InferAdapterProvides<TAdapter>>, UnsatisfiedDependencies<InferAdapterRequires<TAdapter>, TGraphProvides>>;
 /**
  * A branded container type that provides type-safe service resolution.
  *
@@ -4452,13 +4452,13 @@ export type ValidateAdapterDependencies<TGraphProvides extends Port<unknown, str
  * const logger = child.resolve(LoggerPort); // OK: from TProvides (overridden)
  * \`\`\`
  */
-export type Container<TProvides extends Port<unknown, string>, TExtends extends Port<unknown, string> = never, TAsyncPorts extends Port<unknown, string> = never, TPhase extends ContainerPhase\$1 = "uninitialized"> = ContainerMembers<TProvides, TExtends, TAsyncPorts, TPhase>;
+export type Container<TProvides extends Port<string, unknown>, TExtends extends Port<string, unknown> = never, TAsyncPorts extends Port<string, unknown> = never, TPhase extends ContainerPhase\$1 = "uninitialized"> = ContainerMembers<TProvides, TExtends, TAsyncPorts, TPhase>;
 /**
  * Internal type containing Container method definitions.
  * Exported for use in factory.ts where container objects are created.
  * @internal
  */
-export type ContainerMembers<TProvides extends Port<unknown, string>, TExtends extends Port<unknown, string>, TAsyncPorts extends Port<unknown, string>, TPhase extends ContainerPhase\$1> = {
+export type ContainerMembers<TProvides extends Port<string, unknown>, TExtends extends Port<string, unknown>, TAsyncPorts extends Port<string, unknown>, TPhase extends ContainerPhase\$1> = {
 	/**
 	 * Resolves a service instance for the given port synchronously.
 	 *
@@ -4602,7 +4602,7 @@ export type ContainerMembers<TProvides extends Port<unknown, string>, TExtends e
 	 * child.kind       // "child"
 	 * \`\`\`
 	 */
-	createChild<TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>>(childGraph: TChildGraph, options: CreateChildOptions<TProvides | TExtends>): Container<TProvides | TExtends, Exclude<InferGraphProvides<TChildGraph>, TProvides | TExtends>, TAsyncPorts | InferGraphAsyncPorts<TChildGraph>, "initialized">;
+	createChild<TChildGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>>(childGraph: TChildGraph, options: CreateChildOptions<TProvides | TExtends>): Container<TProvides | TExtends, Exclude<InferGraphProvides<TChildGraph>, TProvides | TExtends>, TAsyncPorts | InferGraphAsyncPorts<TChildGraph>, "initialized">;
 	/**
 	 * Creates a child container asynchronously from a graph loader.
 	 *
@@ -4626,7 +4626,7 @@ export type ContainerMembers<TProvides extends Port<unknown, string>, TExtends e
 	 * const service = pluginContainer.resolve(PluginPort);
 	 * \`\`\`
 	 */
-	createChildAsync<TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>>(graphLoader: () => Promise<TChildGraph>, options: CreateChildOptions<TProvides | TExtends>): Promise<Container<TProvides | TExtends, Exclude<InferGraphProvides<TChildGraph>, TProvides | TExtends>, TAsyncPorts | InferGraphAsyncPorts<TChildGraph>, "initialized">>;
+	createChildAsync<TChildGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>>(graphLoader: () => Promise<TChildGraph>, options: CreateChildOptions<TProvides | TExtends>): Promise<Container<TProvides | TExtends, Exclude<InferGraphProvides<TChildGraph>, TProvides | TExtends>, TAsyncPorts | InferGraphAsyncPorts<TChildGraph>, "initialized">>;
 	/**
 	 * Creates a lazy-loading child container wrapper.
 	 *
@@ -4654,7 +4654,7 @@ export type ContainerMembers<TProvides extends Port<unknown, string>, TExtends e
 	 * console.log(lazyPlugin.isLoaded); // true
 	 * \`\`\`
 	 */
-	createLazyChild<TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>>(graphLoader: () => Promise<TChildGraph>, options: CreateChildOptions<TProvides | TExtends>): LazyContainer<TProvides | TExtends, Exclude<InferGraphProvides<TChildGraph>, TProvides | TExtends>, TAsyncPorts | InferGraphAsyncPorts<TChildGraph>>;
+	createLazyChild<TChildGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>>(graphLoader: () => Promise<TChildGraph>, options: CreateChildOptions<TProvides | TExtends>): LazyContainer<TProvides | TExtends, Exclude<InferGraphProvides<TChildGraph>, TProvides | TExtends>, TAsyncPorts | InferGraphAsyncPorts<TChildGraph>>;
 	/**
 	 * Disposes the container and all singleton instances.
 	 *
@@ -4678,7 +4678,7 @@ export type ContainerMembers<TProvides extends Port<unknown, string>, TExtends e
 	 * @param port - The port token to check
 	 * @returns true if the port is provided by this container or its parent
 	 */
-	has(port: Port<unknown, string>): boolean;
+	has(port: Port<string, unknown>): boolean;
 	/**
 	 * Container name - serves as both identifier and display label.
 	 *
@@ -4706,7 +4706,7 @@ export type ContainerMembers<TProvides extends Port<unknown, string>, TExtends e
 		TExtends
 	] extends [
 		never
-	] ? never : Container<TProvides, Port<unknown, string>, TAsyncPorts, TPhase>;
+	] ? never : Container<TProvides, Port<string, unknown>, TAsyncPorts, TPhase>;
 	/**
 	 * Inspector API for container state inspection and DevTools integration.
 	 *
@@ -4836,7 +4836,7 @@ export type ContainerMembers<TProvides extends Port<unknown, string>, TExtends e
  * @typeParam TAsyncPorts - Union of async port types from base graph
  * @typeParam TPhase - Initialization phase of the base container
  */
-export interface OverrideBuilder<TProvides extends Port<unknown, string>, TOverrides extends Port<unknown, string> = never, TAsyncPorts extends Port<unknown, string> = never, TPhase extends ContainerPhase\$1 = "initialized"> {
+export interface OverrideBuilder<TProvides extends Port<string, unknown>, TOverrides extends Port<string, unknown> = never, TAsyncPorts extends Port<string, unknown> = never, TPhase extends ContainerPhase\$1 = "initialized"> {
 	/**
 	 * Adds an adapter override to the builder.
 	 *
@@ -4877,12 +4877,12 @@ export interface OverrideBuilder<TProvides extends Port<unknown, string>, TOverr
  * @see {@link Container.createLazyChild} - Factory method that creates LazyContainer
  * @see {@link Container.createChildAsync} - Alternative that returns Promise<Container>
  */
-export type LazyContainer<TProvides extends Port<unknown, string>, TExtends extends Port<unknown, string> = never, TAsyncPorts extends Port<unknown, string> = never> = LazyContainerMembers<TProvides, TExtends, TAsyncPorts>;
+export type LazyContainer<TProvides extends Port<string, unknown>, TExtends extends Port<string, unknown> = never, TAsyncPorts extends Port<string, unknown> = never> = LazyContainerMembers<TProvides, TExtends, TAsyncPorts>;
 /**
  * Internal type containing LazyContainer method definitions.
  * @internal
  */
-export type LazyContainerMembers<TProvides extends Port<unknown, string>, TExtends extends Port<unknown, string>, TAsyncPorts extends Port<unknown, string>> = {
+export type LazyContainerMembers<TProvides extends Port<string, unknown>, TExtends extends Port<string, unknown>, TAsyncPorts extends Port<string, unknown>> = {
 	/**
 	 * Resolves a service instance for the given port asynchronously.
 	 *
@@ -4968,7 +4968,7 @@ export type LazyContainerMembers<TProvides extends Port<unknown, string>, TExten
 	 * @param port - The port token to check
 	 * @returns true if the port can be resolved
 	 */
-	has(port: Port<unknown, string>): boolean;
+	has(port: Port<string, unknown>): boolean;
 	/**
 	 * Disposes the lazy container.
 	 *
@@ -5095,7 +5095,7 @@ export type InferScopeProvides<T> = T extends Scope<infer P, infer _A, infer _Ph
  * // true
  * \`\`\`
  */
-export type IsResolvable<TContainer, TPort extends Port<unknown, string>> = TPort extends InferContainerEffectiveProvides<TContainer> | InferScopeProvides<TContainer> ? true : false;
+export type IsResolvable<TContainer, TPort extends Port<string, unknown>> = TPort extends InferContainerEffectiveProvides<TContainer> | InferScopeProvides<TContainer> ? true : false;
 /**
  * Extracts the service type for a given port from a container or scope.
  *
@@ -5140,7 +5140,7 @@ export type IsResolvable<TContainer, TPort extends Port<unknown, string>> = TPor
  * // ExtendService type
  * \`\`\`
  */
-export type ServiceFromContainer<TContainer, TPort extends Port<unknown, string>> = IsResolvable<TContainer, TPort> extends true ? InferService<TPort> : never;
+export type ServiceFromContainer<TContainer, TPort extends Port<string, unknown>> = IsResolvable<TContainer, TPort> extends true ? InferService<TPort> : never;
 /**
  * Checks if a container is a root container (TExtends = never).
  *
@@ -5338,7 +5338,7 @@ export declare function getContextVariableOrDefault<T>(context: TypeSafeContext,
  * // Results in deterministic order: [CachePort, DatabasePort, LoggerPort]
  * \`\`\`
  */
-export declare function portComparator(portA: Port<unknown, string>, portB: Port<unknown, string>): number;
+export declare function portComparator(portA: Port<string, unknown>, portB: Port<string, unknown>): number;
 /**
  * Type guard to check if a value is a valid Port.
  *
@@ -5358,12 +5358,12 @@ export declare function portComparator(portA: Port<unknown, string>, portB: Port
  * const LoggerPort = createPort<Logger>({ name: 'Logger' });
  *
  * if (isPort(value)) {
- *   // value is now typed as Port<unknown, string>
+ *   // value is now typed as Port<string, unknown>
  *   console.log(value.__portName);
  * }
  * \`\`\`
  */
-export declare function isPort(value: unknown): value is Port<unknown, string>;
+export declare function isPort(value: unknown): value is Port<string, unknown>;
 /**
  * Type guard to check if a value is a specific Port type.
  *
@@ -5387,7 +5387,7 @@ export declare function isPort(value: unknown): value is Port<unknown, string>;
  * }
  * \`\`\`
  */
-export declare function isPortNamed<TName extends string>(value: unknown, expectedName: TName): value is Port<unknown, TName>;
+export declare function isPortNamed<TName extends string>(value: unknown, expectedName: TName): value is Port<TName, unknown>;
 /**
  * Shared internal type guards for the runtime package.
  * @internal
@@ -5423,7 +5423,7 @@ export declare function isRecord(value: unknown): value is Record<PropertyKey, u
  * });
  * \`\`\`
  */
-export declare function createContainer<TProvides extends Port<unknown, string>, TAsyncPorts extends Port<unknown, string> = never>(config: CreateContainerConfig<TProvides, TAsyncPorts>): Container<TProvides, never, TAsyncPorts, "uninitialized">;
+export declare function createContainer<TProvides extends Port<string, unknown>, TAsyncPorts extends Port<string, unknown> = never>(config: CreateContainerConfig<TProvides, TAsyncPorts>): Container<TProvides, never, TAsyncPorts, "uninitialized">;
 /**
  * Thunk type for lazy container access.
  * Zero runtime overhead - just a function call.
@@ -5457,9 +5457,9 @@ export type ContainerThunk<T> = () => T;
  * @typeParam TProvides - Union of port types the container provides
  * @typeParam TAsyncPorts - Union of async port types
  */
-export interface ContainerForOverride<TProvides extends Port<unknown, string>, TAsyncPorts extends Port<unknown, string>> {
+export interface ContainerForOverride<TProvides extends Port<string, unknown>, TAsyncPorts extends Port<string, unknown>> {
 	readonly name: string;
-	createChild<TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>>(childGraph: TChildGraph, options: {
+	createChild<TChildGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>>(childGraph: TChildGraph, options: {
 		readonly name: string;
 	}): Container<TProvides, Exclude<InferGraphProvides<TChildGraph>, TProvides>, TAsyncPorts | InferGraphAsyncPorts<TChildGraph>, "initialized">;
 }
@@ -5498,7 +5498,7 @@ export interface ContainerForOverride<TProvides extends Port<unknown, string>, T
  * container.override(UnknownAdapter); // ERROR: Port 'Unknown' not found in graph
  * \`\`\`
  */
-declare class OverrideBuilder\$1<TProvides extends Port<unknown, string>, TOverrides extends Port<unknown, string> = never, TAsyncPorts extends Port<unknown, string> = never, TPhase extends "uninitialized" | "initialized" = "initialized"> {
+declare class OverrideBuilder\$1<TProvides extends Port<string, unknown>, TOverrides extends Port<string, unknown> = never, TAsyncPorts extends Port<string, unknown> = never, TPhase extends "uninitialized" | "initialized" = "initialized"> {
 	/**
 	 * Phantom type property for provided ports.
 	 * @internal
@@ -5683,7 +5683,7 @@ export type CaptiveDependencyErrorLegacy<TMessage extends string> = {
  * // Result = CaptiveDependencyErrorLegacy<"Singleton 'UserService' cannot depend on Scoped 'Database'">
  * \`\`\`
  */
-export type ValidateCaptiveDependency<TAdapter extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>, TRequiredAdapter extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>> = IsCaptive<LifetimeLevel<InferAdapterLifetime<TAdapter>>, LifetimeLevel<InferAdapterLifetime<TRequiredAdapter>>> extends true ? CaptiveDependencyErrorLegacy<\`\${LocalLifetimeName<LifetimeLevel<InferAdapterLifetime<TAdapter>>>} '\${InferPortName<InferAdapterProvides<TAdapter>>}' cannot depend on \${LocalLifetimeName<LifetimeLevel<InferAdapterLifetime<TRequiredAdapter>>>} '\${InferPortName<InferAdapterProvides<TRequiredAdapter>>}'\`> : TAdapter;
+export type ValidateCaptiveDependency<TAdapter extends Adapter<Port<string, unknown>, Port<string, unknown> | never, Lifetime>, TRequiredAdapter extends Adapter<Port<string, unknown>, Port<string, unknown> | never, Lifetime>> = IsCaptive<LifetimeLevel<InferAdapterLifetime<TAdapter>>, LifetimeLevel<InferAdapterLifetime<TRequiredAdapter>>> extends true ? CaptiveDependencyErrorLegacy<\`\${LocalLifetimeName<LifetimeLevel<InferAdapterLifetime<TAdapter>>>} '\${InferPortName<InferAdapterProvides<TAdapter>>}' cannot depend on \${LocalLifetimeName<LifetimeLevel<InferAdapterLifetime<TRequiredAdapter>>>} '\${InferPortName<InferAdapterProvides<TRequiredAdapter>>}'\`> : TAdapter;
 /**
  * Validates all dependencies of an adapter against captive dependency rules.
  *
@@ -5704,9 +5704,9 @@ export type ValidateCaptiveDependency<TAdapter extends Adapter<Port<unknown, str
  *
  * @see {@link ValidateCaptiveDependency} - Single dependency validation
  */
-export type ValidateAllDependencies<TAdapter extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>, TAdapters extends readonly Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>[]> = TAdapters extends readonly [
-	infer First extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>,
-	...infer Rest extends readonly Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>[]
+export type ValidateAllDependencies<TAdapter extends Adapter<Port<string, unknown>, Port<string, unknown> | never, Lifetime>, TAdapters extends readonly Adapter<Port<string, unknown>, Port<string, unknown> | never, Lifetime>[]> = TAdapters extends readonly [
+	infer First extends Adapter<Port<string, unknown>, Port<string, unknown> | never, Lifetime>,
+	...infer Rest extends readonly Adapter<Port<string, unknown>, Port<string, unknown> | never, Lifetime>[]
 ] ? ValidateCaptiveDependency<TAdapter, First> extends TAdapter ? ValidateAllDependencies<TAdapter, Rest> : ValidateCaptiveDependency<TAdapter, First> : TAdapter;
 /**
  * Safely access the internal state accessor from a container.
@@ -5778,7 +5778,7 @@ export declare function getInternalAccessor(container: InternalAccessible): () =
  *
  * @throws {Error} If the container doesn't expose INTERNAL_ACCESS
  */
-export declare function createInspector<TProvides extends Port<unknown, string>, TExtends extends Port<unknown, string> = never, TAsyncPorts extends Port<unknown, string> = never, TPhase extends ContainerPhase\$1 = ContainerPhase\$1>(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): ContainerInspector;
+export declare function createInspector<TProvides extends Port<string, unknown>, TExtends extends Port<string, unknown> = never, TAsyncPorts extends Port<string, unknown> = never, TPhase extends ContainerPhase\$1 = ContainerPhase\$1>(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): ContainerInspector;
 export declare function createInspector(container: InternalAccessible): ContainerInspector;
 /**
  * Creates an InspectorAPI from a container.
@@ -5825,7 +5825,7 @@ declare function createInspector\$1(container: InternalAccessible): InspectorAPI
  * }
  * \`\`\`
  */
-export type ContainerWithInspector<TProvides extends Port<unknown, string> = Port<unknown, string>, TExtends extends Port<unknown, string> = never, TAsyncPorts extends Port<unknown, string> = never, TPhase extends ContainerPhase\$1 = ContainerPhase\$1> = Container<TProvides, TExtends, TAsyncPorts, TPhase> & {
+export type ContainerWithInspector<TProvides extends Port<string, unknown> = Port<string, unknown>, TExtends extends Port<string, unknown> = never, TAsyncPorts extends Port<string, unknown> = never, TPhase extends ContainerPhase\$1 = ContainerPhase\$1> = Container<TProvides, TExtends, TAsyncPorts, TPhase> & {
 	readonly [INSPECTOR]: InspectorAPI;
 };
 /**
@@ -5848,7 +5848,7 @@ export type ContainerWithInspector<TProvides extends Port<unknown, string> = Por
  * }
  * \`\`\`
  */
-export declare function hasInspector<TProvides extends Port<unknown, string>, TExtends extends Port<unknown, string>, TAsyncPorts extends Port<unknown, string>, TPhase extends ContainerPhase\$1>(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): container is ContainerWithInspector<TProvides, TExtends, TAsyncPorts, TPhase>;
+export declare function hasInspector<TProvides extends Port<string, unknown>, TExtends extends Port<string, unknown>, TAsyncPorts extends Port<string, unknown>, TPhase extends ContainerPhase\$1>(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): container is ContainerWithInspector<TProvides, TExtends, TAsyncPorts, TPhase>;
 /**
  * Safely extract InspectorAPI from a container if InspectorPlugin is registered.
  *
@@ -5872,7 +5872,7 @@ export declare function hasInspector<TProvides extends Port<unknown, string>, TE
  * const snapshot = getInspectorAPI(container)?.getSnapshot();
  * \`\`\`
  */
-export declare function getInspectorAPI<TProvides extends Port<unknown, string>, TExtends extends Port<unknown, string>, TAsyncPorts extends Port<unknown, string>, TPhase extends ContainerPhase\$1>(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): InspectorAPI | undefined;
+export declare function getInspectorAPI<TProvides extends Port<string, unknown>, TExtends extends Port<string, unknown>, TAsyncPorts extends Port<string, unknown>, TPhase extends ContainerPhase\$1>(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): InspectorAPI | undefined;
 /**
  * Detects the container kind from a container instance.
  *
@@ -5887,7 +5887,7 @@ export declare function getInspectorAPI<TProvides extends Port<unknown, string>,
  *
  * @internal
  */
-export declare function detectContainerKind<TProvides extends Port<unknown, string>, TExtends extends Port<unknown, string>, TAsyncPorts extends Port<unknown, string>, TPhase extends ContainerPhase\$1>(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): ContainerKind;
+export declare function detectContainerKind<TProvides extends Port<string, unknown>, TExtends extends Port<string, unknown>, TAsyncPorts extends Port<string, unknown>, TPhase extends ContainerPhase\$1>(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): ContainerKind;
 /**
  * Detects the current phase of a container based on its kind and state.
  *
@@ -5898,7 +5898,7 @@ export declare function detectContainerKind<TProvides extends Port<unknown, stri
  *
  * @internal
  */
-export declare function detectPhase<TProvides extends Port<unknown, string>, TExtends extends Port<unknown, string>, TAsyncPorts extends Port<unknown, string>, TPhase extends ContainerPhase\$1>(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>, runtimeSnapshot: ContainerSnapshot\$1, kind: ContainerKind): ContainerPhase;
+export declare function detectPhase<TProvides extends Port<string, unknown>, TExtends extends Port<string, unknown>, TAsyncPorts extends Port<string, unknown>, TPhase extends ContainerPhase\$1>(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>, runtimeSnapshot: ContainerSnapshot\$1, kind: ContainerKind): ContainerPhase;
 /**
  * Builds a typed ContainerSnapshot from runtime inspector data.
  *
@@ -5921,7 +5921,7 @@ export declare function detectPhase<TProvides extends Port<unknown, string>, TEx
  * }
  * \`\`\`
  */
-export declare function buildTypedSnapshot<TProvides extends Port<unknown, string>, TExtends extends Port<unknown, string>, TAsyncPorts extends Port<unknown, string>, TPhase extends ContainerPhase\$1>(runtimeSnapshot: ContainerSnapshot\$1, kind: ContainerKind, container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): ContainerSnapshot;
+export declare function buildTypedSnapshot<TProvides extends Port<string, unknown>, TExtends extends Port<string, unknown>, TAsyncPorts extends Port<string, unknown>, TPhase extends ContainerPhase\$1>(runtimeSnapshot: ContainerSnapshot\$1, kind: ContainerKind, container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): ContainerSnapshot;
 /**
  * Inspects a container and returns a full snapshot of its state.
  *
@@ -5948,7 +5948,7 @@ export declare function buildTypedSnapshot<TProvides extends Port<unknown, strin
  * console.log('Kind:', snapshot.kind);
  * \`\`\`
  */
-export declare function inspect<TProvides extends Port<unknown, string>, TExtends extends Port<unknown, string> = never, TAsyncPorts extends Port<unknown, string> = never, TPhase extends ContainerPhase\$1 = "uninitialized">(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): ContainerSnapshot;
+export declare function inspect<TProvides extends Port<string, unknown>, TExtends extends Port<string, unknown> = never, TAsyncPorts extends Port<string, unknown> = never, TPhase extends ContainerPhase\$1 = "uninitialized">(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): ContainerSnapshot;
 /**
  * Executes a resolution function and returns a Result with a narrower ResolutionError type.
  *

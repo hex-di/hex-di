@@ -119,7 +119,11 @@ export type IsAsyncFactory<TFactory> = TFactory extends (...args: never[]) => in
  * at the config level when trying to use async factory with non-singleton.
  */
 export type AllowedFactoryReturn<TService, TLifetime extends string> = TLifetime extends "singleton"
-  ? TService | Promise<TService> | FactoryResult<TService> | Promise<FactoryResult<TService>> | PromiseLike<FactoryResult<TService>>
+  ?
+      | TService
+      | FactoryResult<TService>
+      | PromiseLike<TService>
+      | PromiseLike<FactoryResult<TService>>
   : TService | FactoryResult<TService>;
 
 // =============================================================================
@@ -151,18 +155,17 @@ export type FactoryResult<T, E = unknown> =
  *
  * @internal
  */
-export type InferFactoryError<TReturn> =
-  [TReturn] extends [never]
+export type InferFactoryError<TReturn> = [TReturn] extends [never]
+  ? never
+  : unknown extends TReturn // guards against `any` — `any` is not a Result
     ? never
-    : unknown extends TReturn // guards against `any` — `any` is not a Result
-      ? never
-      : TReturn extends Promise<infer TInner>
+    : TReturn extends Promise<infer TInner>
+      ? InferFactoryError<TInner>
+      : TReturn extends PromiseLike<infer TInner>
         ? InferFactoryError<TInner>
-        : TReturn extends PromiseLike<infer TInner>
-          ? InferFactoryError<TInner>
-          : TReturn extends { readonly _tag: "Err"; readonly error: infer E }
-            ? E
-            : never;
+        : TReturn extends { readonly _tag: "Err"; readonly error: infer E }
+          ? E
+          : never;
 
 /**
  * Enforces singleton lifetime for async factories at compile time.
@@ -205,8 +208,8 @@ import type { Lifetime, PortDeps } from "./types.js";
  * @typeParam TRequires - Tuple of required port dependencies
  */
 export interface BaseUnifiedConfig<
-  TProvides extends Port<unknown, string>,
-  TRequires extends readonly Port<unknown, string>[],
+  TProvides extends Port<string, unknown>,
+  TRequires extends readonly Port<string, unknown>[],
 > {
   /**
    * The port this adapter provides/implements.
@@ -255,15 +258,16 @@ export interface BaseUnifiedConfig<
  * @typeParam TFactory - The factory function type
  */
 export interface FactoryConfig<
-  TProvides extends Port<unknown, string>,
-  TRequires extends readonly Port<unknown, string>[],
+  TProvides extends Port<string, unknown>,
+  TRequires extends readonly Port<string, unknown>[],
   TFactory extends (
     deps: PortDeps<TRequires>
-  ) => InferService<TProvides>
-     | Promise<InferService<TProvides>>
-     | FactoryResult<InferService<TProvides>>
-     | Promise<FactoryResult<InferService<TProvides>>>
-     | PromiseLike<FactoryResult<InferService<TProvides>>>,
+  ) =>
+    | InferService<TProvides>
+    | Promise<InferService<TProvides>>
+    | FactoryResult<InferService<TProvides>>
+    | Promise<FactoryResult<InferService<TProvides>>>
+    | PromiseLike<FactoryResult<InferService<TProvides>>>,
 > extends BaseUnifiedConfig<TProvides, TRequires> {
   /**
    * Factory function that creates the service instance.
@@ -288,8 +292,8 @@ export interface FactoryConfig<
  * @typeParam TClass - The class constructor type
  */
 export interface ClassConfig<
-  TProvides extends Port<unknown, string>,
-  TRequires extends readonly Port<unknown, string>[],
+  TProvides extends Port<string, unknown>,
+  TRequires extends readonly Port<string, unknown>[],
   TClass extends new (...args: unknown[]) => InferService<TProvides>,
 > extends BaseUnifiedConfig<TProvides, TRequires> {
   /**

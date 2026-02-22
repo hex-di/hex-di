@@ -22,9 +22,9 @@ import { resetSequence, nextSequence } from "./sequence.js";
  */
 export interface TestAdapterConfig<TService extends object, TName extends string> {
   /** The port this adapter provides */
-  readonly port: Port<TService, TName>;
+  readonly port: Port<TName, TService>;
   /** Ports this adapter requires (defaults to []) */
-  readonly requires?: readonly Port<unknown, string>[];
+  readonly requires?: readonly Port<string, unknown>[];
   /** Lifetime scope (defaults to "singleton") */
   readonly lifetime?: Lifetime;
   /** Custom factory (defaults to Proxy-based stub) */
@@ -64,8 +64,8 @@ export class TestContext {
   private readonly adapters = new Map<
     string,
     Adapter<
-      Port<unknown, string>,
-      Port<unknown, string> | never,
+      Port<string, unknown>,
+      Port<string, unknown> | never,
       Lifetime,
       "sync" | "async",
       boolean
@@ -106,7 +106,7 @@ export class TestContext {
    * Creates a port with optional service interface.
    * Useful for creating test-specific ports.
    */
-  createPort<TName extends string, TService extends object>(name: TName): Port<TService, TName> {
+  createPort<TName extends string, TService extends object>(name: TName): Port<TName, TService> {
     return coreCreatePort<TName, TService>({ name });
   }
 
@@ -119,7 +119,7 @@ export class TestContext {
    */
   createAdapter<TService extends object, TName extends string>(
     config: TestAdapterConfig<TService, TName>
-  ): Adapter<Port<TService, TName>, never, Lifetime, "sync", false> {
+  ): Adapter<Port<TName, TService>, never, Lifetime, "sync", false> {
     const { port, requires = [], lifetime = "singleton" } = config;
 
     const factory =
@@ -145,11 +145,11 @@ export class TestContext {
     // Cast needed because EnforceAsyncLifetime is a conditional type that doesn't simplify for generic TService
     this.adapters.set(
       port.__portName,
-      adapter as Adapter<Port<TService, TName>, never, Lifetime, "sync", false>
+      adapter as Adapter<Port<TName, TService>, never, Lifetime, "sync", false>
     );
 
     // Return type needs assertion due to requires type complexity
-    return adapter as Adapter<Port<TService, TName>, never, Lifetime, "sync", false>;
+    return adapter as Adapter<Port<TName, TService>, never, Lifetime, "sync", false>;
   }
 
   /**
@@ -158,8 +158,8 @@ export class TestContext {
   getAdapters(): ReadonlyMap<
     string,
     Adapter<
-      Port<unknown, string>,
-      Port<unknown, string> | never,
+      Port<string, unknown>,
+      Port<string, unknown> | never,
       Lifetime,
       "sync" | "async",
       boolean
@@ -175,8 +175,8 @@ export class TestContext {
     portName: string
   ):
     | Adapter<
-        Port<unknown, string>,
-        Port<unknown, string> | never,
+        Port<string, unknown>,
+        Port<string, unknown> | never,
         Lifetime,
         "sync" | "async",
         boolean

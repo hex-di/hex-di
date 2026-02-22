@@ -34,7 +34,7 @@ import { getMemoForLifetime, buildDependenciesAsync, unwrapResultDefense } from 
  * @internal
  */
 export type AsyncDependencyResolver = (
-  port: Port<unknown, string>,
+  port: Port<string, unknown>,
   scopedMemo: MemoMap,
   scopeId: string | null,
   scopeName?: string
@@ -73,7 +73,7 @@ export class AsyncResolutionEngine {
    * Inner map: scopeId → promise
    */
   private readonly pendingResolutions: Map<
-    Port<unknown, string>,
+    Port<string, unknown>,
     Map<string | null, Promise<unknown>>
   > = new Map();
 
@@ -112,7 +112,7 @@ export class AsyncResolutionEngine {
    * @param inheritanceMode - Inheritance mode for child container resolutions
    * @returns Promise resolving to the service instance with full type inference
    */
-  resolve<P extends Port<unknown, string>>(
+  resolve<P extends Port<string, unknown>>(
     port: P,
     adapter: RuntimeAdapterFor<P>,
     scopedMemo: MemoMap,
@@ -149,7 +149,7 @@ export class AsyncResolutionEngine {
   /**
    * Core async resolution with deduplication.
    */
-  private resolveCore<P extends Port<unknown, string>>(
+  private resolveCore<P extends Port<string, unknown>>(
     port: P,
     adapter: RuntimeAdapterFor<P>,
     scopedMemo: MemoMap,
@@ -201,7 +201,7 @@ export class AsyncResolutionEngine {
   /**
    * Creates a pending resolution promise with hook wrapping and cleanup.
    */
-  private createPendingResolutionPromise<P extends Port<unknown, string>>(
+  private createPendingResolutionPromise<P extends Port<string, unknown>>(
     port: P,
     adapter: RuntimeAdapterFor<P>,
     scopedMemo: MemoMap,
@@ -240,7 +240,7 @@ export class AsyncResolutionEngine {
   /**
    * Executes the actual async resolution with optional memoization.
    */
-  private executeAsyncResolution<P extends Port<unknown, string>>(
+  private executeAsyncResolution<P extends Port<string, unknown>>(
     port: P,
     adapter: RuntimeAdapterFor<P>,
     scopedMemo: MemoMap,
@@ -258,7 +258,7 @@ export class AsyncResolutionEngine {
   /**
    * Cleans up pending resolution tracking after completion.
    */
-  private cleanupPending(port: Port<unknown, string>, scopeId: string | null): void {
+  private cleanupPending(port: Port<string, unknown>, scopeId: string | null): void {
     const currentPending = this.pendingResolutions.get(port);
     if (currentPending) {
       currentPending.delete(scopeId);
@@ -274,7 +274,7 @@ export class AsyncResolutionEngine {
    * Uses shared `buildDependenciesAsync` utility for consistent dependency resolution.
    * Dependencies are resolved concurrently for optimal performance.
    */
-  private async createInstanceAsync<P extends Port<unknown, string>>(
+  private async createInstanceAsync<P extends Port<string, unknown>>(
     port: P,
     adapter: RuntimeAdapterFor<P>,
     scopedMemo: MemoMap,

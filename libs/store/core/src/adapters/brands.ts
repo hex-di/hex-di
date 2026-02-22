@@ -24,7 +24,7 @@ import type { Adapter, Port, Lifetime } from "@hex-di/core";
  * TRequiresTuple computation, preventing false self-dependency detection.
  */
 export type StoreAdapterResult<TName extends string = string> = Adapter<
-  Port<unknown, TName>,
+  Port<TName, unknown>,
   never,
   Lifetime,
   "sync",

@@ -33,12 +33,12 @@ import { resolveWithMemo, buildDependencies, unwrapResultDefense } from "./core.
  * which is the factory's expected deps parameter type. The factory knows how to
  * extract the correct types from this record.
  *
- * This matches the container's `resolveInternal(port: Port<unknown, string>): unknown` overload.
+ * This matches the container's `resolveInternal(port: Port<string, unknown>): unknown` overload.
  *
  * @internal
  */
 export type SyncDependencyResolver = (
-  port: Port<unknown, string>,
+  port: Port<string, unknown>,
   scopedMemo: MemoMap,
   scopeId: string | null,
   scopeName?: string
@@ -105,7 +105,7 @@ export class ResolutionEngine {
    * @param inheritanceMode - Inheritance mode for child container resolutions
    * @returns The resolved service instance with full type inference
    */
-  resolve<P extends Port<unknown, string>>(
+  resolve<P extends Port<string, unknown>>(
     port: P,
     adapter: RuntimeAdapterFor<P>,
     scopedMemo: MemoMap,
@@ -138,7 +138,7 @@ export class ResolutionEngine {
    *
    * Uses shared `resolveWithMemo` utility for consistent lifetime handling.
    */
-  private resolveCore<P extends Port<unknown, string>>(
+  private resolveCore<P extends Port<string, unknown>>(
     port: P,
     adapter: RuntimeAdapterFor<P>,
     scopedMemo: MemoMap,
@@ -160,7 +160,7 @@ export class ResolutionEngine {
    *
    * Uses shared `buildDependencies` utility for consistent dependency resolution.
    */
-  private createInstance<P extends Port<unknown, string>>(
+  private createInstance<P extends Port<string, unknown>>(
     port: P,
     adapter: RuntimeAdapterFor<P>,
     scopedMemo: MemoMap,
@@ -178,7 +178,9 @@ export class ResolutionEngine {
         const deps = buildDependencies(adapter.requires, requiredPort =>
           this.resolveDependency(requiredPort, scopedMemo, scopeId, scopeName)
         );
-        return unwrapResultDefense(adapter.factory(deps)) as InferService<P>;
+        const raw = adapter.factory(deps);
+
+        return unwrapResultDefense<InferService<P>>(raw);
       } catch (e) {
         if (e instanceof ContainerError) {
           throw e;

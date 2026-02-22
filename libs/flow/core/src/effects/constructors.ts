@@ -167,7 +167,7 @@ export const Effect = {
    * // Effect.invoke(UserServicePort, "getUser", [123]);
    * ```
    */
-  invoke<TPort extends Port<unknown, string>, TMethod extends MethodNames<InferService<TPort>>>(
+  invoke<TPort extends Port<string, unknown>, TMethod extends MethodNames<InferService<TPort>>>(
     port: TPort,
     method: TMethod,
     args: MethodParams<InferService<TPort>, TMethod> extends readonly unknown[]

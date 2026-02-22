@@ -30,9 +30,9 @@ import { INSPECTOR } from "./symbols.js";
  * ```
  */
 export type ContainerWithInspector<
-  TProvides extends Port<unknown, string> = Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown> = Port<string, unknown>,
+  TExtends extends Port<string, unknown> = never,
+  TAsyncPorts extends Port<string, unknown> = never,
   TPhase extends ContainerPhase = ContainerPhase,
 > = Container<TProvides, TExtends, TAsyncPorts, TPhase> & {
   readonly [INSPECTOR]: InspectorAPI;
@@ -63,9 +63,9 @@ export type ContainerWithInspector<
  * ```
  */
 export function hasInspector<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
 >(
   container: Container<TProvides, TExtends, TAsyncPorts, TPhase>
@@ -101,9 +101,9 @@ export function hasInspector<
  * ```
  */
 export function getInspectorAPI<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
 >(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): InspectorAPI | undefined {
   if (hasInspector(container)) {

@@ -80,12 +80,12 @@ type ContainerThunk<T> = () => T;
  * @typeParam TAsyncPorts - Union of async port types
  */
 export interface ContainerForOverride<
-  TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
 > {
   readonly name: string;
   createChild<
-    TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+    TChildGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>,
   >(
     childGraph: TChildGraph,
     options: { readonly name: string }
@@ -133,9 +133,9 @@ export interface ContainerForOverride<
  * ```
  */
 export class OverrideBuilder<
-  TProvides extends Port<unknown, string>,
-  TOverrides extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TOverrides extends Port<string, unknown> = never,
+  TAsyncPorts extends Port<string, unknown> = never,
   TPhase extends "uninitialized" | "initialized" = "initialized",
 > {
   /**

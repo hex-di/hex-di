@@ -86,14 +86,14 @@ interface AsyncContainerContextValue {
  *
  * @typeParam TProvides - Union of Port types that the container can resolve
  */
-export interface HexDiAsyncContainerProviderProps<TProvides extends Port<unknown, string>> {
+export interface HexDiAsyncContainerProviderProps<TProvides extends Port<string, unknown>> {
   /**
    * The uninitialized Container instance to initialize and provide.
    * Must be created with createContainer() and NOT yet initialized.
    * Uses root container type (TExtends = never) since only root containers
    * have the initialize() method.
    */
-  readonly container: Container<TProvides, never, Port<unknown, string>, "uninitialized">;
+  readonly container: Container<TProvides, never, Port<string, unknown>, "uninitialized">;
 
   /**
    * React children - can be compound components or regular children.
@@ -313,7 +313,7 @@ function DefaultError({ error }: { error: Error }): ReactNode {
  *
  * @internal
  */
-function HexDiAsyncContainerProviderRoot<TProvides extends Port<unknown, string>>({
+function HexDiAsyncContainerProviderRoot<TProvides extends Port<string, unknown>>({
   container,
   children,
   loadingFallback,
@@ -476,7 +476,7 @@ export const HexDiAsyncContainerProvider = Object.assign(HexDiAsyncContainerProv
 /**
  * Type for the HexDiAsyncContainerProvider component with compound components.
  */
-export type HexDiAsyncContainerProviderComponent<TProvides extends Port<unknown, string>> = {
+export type HexDiAsyncContainerProviderComponent<TProvides extends Port<string, unknown>> = {
   (props: HexDiAsyncContainerProviderProps<TProvides>): ReactNode;
   Loading: typeof Loading;
   Error: typeof ErrorComponent;

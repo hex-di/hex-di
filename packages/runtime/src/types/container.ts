@@ -126,9 +126,9 @@ import type { ValidateOverrideAdapter } from "./override-types.js";
  * ```
  */
 export type Container<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown> = never,
+  TAsyncPorts extends Port<string, unknown> = never,
   TPhase extends ContainerPhase = "uninitialized",
 > = ContainerMembers<TProvides, TExtends, TAsyncPorts, TPhase>;
 
@@ -138,9 +138,9 @@ export type Container<
  * @internal
  */
 export type ContainerMembers<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
 > = {
   /**
@@ -313,7 +313,7 @@ export type ContainerMembers<
    * ```
    */
   createChild<
-    TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+    TChildGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>,
   >(
     childGraph: TChildGraph,
     options: CreateChildOptions<TProvides | TExtends>
@@ -348,7 +348,7 @@ export type ContainerMembers<
    * ```
    */
   createChildAsync<
-    TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+    TChildGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>,
   >(
     graphLoader: () => Promise<TChildGraph>,
     options: CreateChildOptions<TProvides | TExtends>
@@ -389,7 +389,7 @@ export type ContainerMembers<
    * ```
    */
   createLazyChild<
-    TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+    TChildGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>,
   >(
     graphLoader: () => Promise<TChildGraph>,
     options: CreateChildOptions<TProvides | TExtends>
@@ -424,7 +424,7 @@ export type ContainerMembers<
    * @param port - The port token to check
    * @returns true if the port is provided by this container or its parent
    */
-  has(port: Port<unknown, string>): boolean;
+  has(port: Port<string, unknown>): boolean;
 
   /**
    * Container name - serves as both identifier and display label.
@@ -455,7 +455,7 @@ export type ContainerMembers<
   // NOTE: Using [T] extends [never] to prevent distribution over the never type.
   readonly parent: [TExtends] extends [never]
     ? never
-    : Container<TProvides, Port<unknown, string>, TAsyncPorts, TPhase>;
+    : Container<TProvides, Port<string, unknown>, TAsyncPorts, TPhase>;
 
   // =========================================================================
   // Built-in Plugin APIs (always present, zero ceremony access)
@@ -608,9 +608,9 @@ export type ContainerMembers<
  * @typeParam TPhase - Initialization phase of the base container
  */
 export interface OverrideBuilder<
-  TProvides extends Port<unknown, string>,
-  TOverrides extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TOverrides extends Port<string, unknown> = never,
+  TAsyncPorts extends Port<string, unknown> = never,
   TPhase extends ContainerPhase = "initialized",
 > {
   /**
@@ -664,9 +664,9 @@ export interface OverrideBuilder<
  * @see {@link Container.createChildAsync} - Alternative that returns Promise<Container>
  */
 export type LazyContainer<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown> = never,
+  TAsyncPorts extends Port<string, unknown> = never,
 > = LazyContainerMembers<TProvides, TExtends, TAsyncPorts>;
 
 /**
@@ -674,9 +674,9 @@ export type LazyContainer<
  * @internal
  */
 type LazyContainerMembers<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
 > = {
   /**
    * Resolves a service instance for the given port asynchronously.
@@ -773,7 +773,7 @@ type LazyContainerMembers<
    * @param port - The port token to check
    * @returns true if the port can be resolved
    */
-  has(port: Port<unknown, string>): boolean;
+  has(port: Port<string, unknown>): boolean;
 
   /**
    * Disposes the lazy container.

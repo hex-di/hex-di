@@ -52,9 +52,9 @@ interface HasInternalAccess {
  * ```
  */
 export function inspect<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown> = never,
+  TAsyncPorts extends Port<string, unknown> = never,
   TPhase extends ContainerPhase = "uninitialized",
 >(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): ContainerSnapshot {
   // Access internal state via symbol

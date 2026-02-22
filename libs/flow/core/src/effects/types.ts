@@ -164,7 +164,7 @@ interface BaseEffect<TKind extends string> {
  * ```
  */
 export interface InvokeEffect<
-  TPort extends Port<unknown, string>,
+  TPort extends Port<string, unknown>,
   TMethod extends MethodNames<InferService<TPort>>,
   TArgs extends readonly unknown[],
 > extends BaseEffect<"Invoke"> {

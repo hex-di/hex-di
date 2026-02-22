@@ -44,12 +44,12 @@ export function consumeLazyFlag(): boolean {
  * @internal
  */
 export interface LazyContainerParent<
-  TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown> = never,
 > {
-  has(port: Port<unknown, string>): boolean;
+  has(port: Port<string, unknown>): boolean;
   createChild<
-    TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+    TChildGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>,
   >(
     childGraph: TChildGraph,
     options: CreateChildOptions<TProvides>
@@ -70,11 +70,11 @@ export interface LazyContainerParent<
  * @internal
  */
 export class LazyContainerImpl<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
-  TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>> =
-    Graph<TExtends, Port<unknown, string>, Port<unknown, string>>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown> = never,
+  TAsyncPorts extends Port<string, unknown> = never,
+  TChildGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>> =
+    Graph<TExtends, Port<string, unknown>, Port<string, unknown>>,
 > implements LazyContainer<TProvides, TExtends, TAsyncPorts> {
   private container: Container<TProvides, TExtends, TAsyncPorts, "initialized"> | null = null;
   private loadPromise: Promise<Container<TProvides, TExtends, TAsyncPorts, "initialized">> | null =
@@ -209,7 +209,7 @@ export class LazyContainerImpl<
    * Before loading: Delegates to parent container.
    * After loading: Delegates to loaded child container.
    */
-  has(port: Port<unknown, string>): boolean {
+  has(port: Port<string, unknown>): boolean {
     if (this.container !== null) {
       return this.container.has(port);
     }

@@ -186,14 +186,14 @@ describe("BaseContainerImpl - async init required", () => {
 describe("BaseContainerImpl - resolve unregistered port", () => {
   it("resolve throws for unregistered port on root", () => {
     const container = makeRootContainer();
-    const resolve = container.resolve as (port: Port<unknown, string>) => unknown;
+    const resolve = container.resolve as (port: Port<string, unknown>) => unknown;
     expect(() => resolve(DatabasePort)).toThrow(/No adapter registered/);
   });
 
   it("resolveAsync rejects for unregistered port on root", async () => {
     const container = makeRootContainer();
     const resolveAsync = container.resolveAsync as (
-      port: Port<unknown, string>
+      port: Port<string, unknown>
     ) => Promise<unknown>;
     await expect(resolveAsync(DatabasePort)).rejects.toThrow(/No adapter registered/);
   });

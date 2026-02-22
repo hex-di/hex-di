@@ -39,7 +39,7 @@ import type { Resolver } from "./core.js";
  * // "Logger" | "Database"
  * ```
  */
-export type ExtractPortNames<T> = T extends Port<infer _S, infer TName> ? TName : never;
+export type ExtractPortNames<T> = T extends Port<infer TName, infer _S> ? TName : never;
 
 // =============================================================================
 // Inheritance Mode Validation Types
@@ -56,8 +56,8 @@ export type ExtractPortNames<T> = T extends Port<infer _S, infer TName> ? TName 
  * @typeParam TOverrides - Ports overridden by child graph
  */
 export type ValidInheritanceKeys<
-  TParentProvides extends Port<unknown, string>,
-  TOverrides extends Port<unknown, string> = never,
+  TParentProvides extends Port<string, unknown>,
+  TOverrides extends Port<string, unknown> = never,
 > = Exclude<ExtractPortNames<TParentProvides>, ExtractPortNames<TOverrides>>;
 
 /**
@@ -81,8 +81,8 @@ export type ValidInheritanceKeys<
  * ```
  */
 export type ValidatedInheritanceModes<
-  TParentProvides extends Port<unknown, string>,
-  TOverrides extends Port<unknown, string> = never,
+  TParentProvides extends Port<string, unknown>,
+  TOverrides extends Port<string, unknown> = never,
 > = {
   [K in ValidInheritanceKeys<TParentProvides, TOverrides>]?: InheritanceMode;
 };
@@ -93,8 +93,8 @@ export type ValidatedInheritanceModes<
  * Same as ValidatedInheritanceModes but with readonly properties.
  */
 export type StrictInheritanceModeConfig<
-  TParentProvides extends Port<unknown, string>,
-  TOverrides extends Port<unknown, string> = never,
+  TParentProvides extends Port<string, unknown>,
+  TOverrides extends Port<string, unknown> = never,
 > = {
   readonly [K in ValidInheritanceKeys<TParentProvides, TOverrides>]?: InheritanceMode;
 };
@@ -146,8 +146,8 @@ export type ValidateInheritanceModeKeys<
  * @typeParam TExtends - Ports extended from parent (for child containers)
  */
 export interface ContainerProviderContainerProps<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown> = never,
 > {
   /**
    * Pre-created container instance (root or child).
@@ -182,8 +182,8 @@ export interface ContainerProviderContainerProps<
  * @typeParam TGraph - The child graph type
  */
 export interface ContainerProviderGraphProps<
-  TParentProvides extends Port<unknown, string>,
-  TGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+  TParentProvides extends Port<string, unknown>,
+  TGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>,
 > {
   /**
    * Container is not allowed when using graph mode.
@@ -230,8 +230,8 @@ export interface ContainerProviderGraphProps<
  * @typeParam TAsyncPorts - Ports that require async initialization
  */
 export interface AsyncContainerProviderContainerProps<
-  TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> = Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown> = Port<string, unknown>,
 > {
   /**
    * Uninitialized container to initialize and provide.
@@ -276,8 +276,8 @@ export interface AsyncContainerProviderContainerProps<
  * @typeParam TGraph - The child graph type
  */
 export interface AsyncContainerProviderGraphProps<
-  TParentProvides extends Port<unknown, string>,
-  TGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+  TParentProvides extends Port<string, unknown>,
+  TGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>,
 > {
   /**
    * Container is not allowed when using graph mode.
@@ -326,11 +326,11 @@ export interface AsyncContainerProviderGraphProps<
  *
  * @typeParam TProvides - Ports captured by the factory
  */
-export interface TypedContainerProviderComponent<TProvides extends Port<unknown, string>> {
+export interface TypedContainerProviderComponent<TProvides extends Port<string, unknown>> {
   /**
    * Container mode - accepts a pre-created container.
    */
-  <TExtends extends Port<unknown, string> = never>(
+  <TExtends extends Port<string, unknown> = never>(
     props: ContainerProviderContainerProps<TProvides, TExtends>
   ): ReactNode;
 
@@ -338,7 +338,7 @@ export interface TypedContainerProviderComponent<TProvides extends Port<unknown,
    * Graph mode - creates child container from graph using parent from context.
    * TProvides is used as TParentProvides for inheritance validation.
    */
-  <TGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>>(
+  <TGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>>(
     props: ContainerProviderGraphProps<TProvides, TGraph>
   ): ReactNode;
 }
@@ -348,18 +348,18 @@ export interface TypedContainerProviderComponent<TProvides extends Port<unknown,
  *
  * @typeParam TProvides - Ports captured by the factory
  */
-export interface TypedAsyncContainerProviderComponent<TProvides extends Port<unknown, string>> {
+export interface TypedAsyncContainerProviderComponent<TProvides extends Port<string, unknown>> {
   /**
    * Container mode - accepts an uninitialized container.
    */
-  <TAsyncPorts extends Port<unknown, string> = Port<unknown, string>>(
+  <TAsyncPorts extends Port<string, unknown> = Port<string, unknown>>(
     props: AsyncContainerProviderContainerProps<TProvides, TAsyncPorts>
   ): ReactNode;
 
   /**
    * Graph mode - creates async child container from graph.
    */
-  <TGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>>(
+  <TGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>>(
     props: AsyncContainerProviderGraphProps<TProvides, TGraph>
   ): ReactNode;
 
@@ -396,8 +396,8 @@ export interface TypedAsyncContainerProviderComponent<TProvides extends Port<unk
  * @typeParam TChildGraph - The child graph type
  */
 export interface ChildTypedReactIntegration<
-  TParentProvides extends Port<unknown, string>,
-  TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+  TParentProvides extends Port<string, unknown>,
+  TChildGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>,
 > {
   /**
    * ContainerProvider pre-configured for this child graph.
@@ -444,8 +444,8 @@ export interface ChildTypedReactIntegration<
  * the parent's TProvides with the graph's overrides excluded.
  */
 export interface ChildContainerProviderComponent<
-  TParentProvides extends Port<unknown, string>,
-  TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+  TParentProvides extends Port<string, unknown>,
+  TChildGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>,
 > {
   (props: {
     /**
@@ -463,8 +463,8 @@ export interface ChildContainerProviderComponent<
  * AsyncContainerProvider for a specific child graph.
  */
 export interface ChildAsyncContainerProviderComponent<
-  TParentProvides extends Port<unknown, string>,
-  TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+  TParentProvides extends Port<string, unknown>,
+  TChildGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>,
 > {
   (props: {
     readonly inheritanceModes?: StrictInheritanceModeConfig<
@@ -493,7 +493,7 @@ export interface ChildAsyncContainerProviderComponent<
  *
  * @typeParam TProvides - Ports captured by this factory instance
  */
-export interface ExtendedTypedReactIntegration<TProvides extends Port<unknown, string>> {
+export interface ExtendedTypedReactIntegration<TProvides extends Port<string, unknown>> {
   /**
    * ContainerProvider with dual-mode support.
    */
@@ -564,7 +564,7 @@ export interface ExtendedTypedReactIntegration<TProvides extends Port<unknown, s
    * ```
    */
   createChildHooks<
-    TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+    TChildGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>,
   >(
     childGraph: TChildGraph
   ): ChildTypedReactIntegration<TProvides, TChildGraph>;
@@ -577,17 +577,17 @@ export interface ExtendedTypedReactIntegration<TProvides extends Port<unknown, s
 /**
  * Runtime props union for type guards.
  */
-type RuntimeProviderProps<TProvides extends Port<unknown, string>> =
+type RuntimeProviderProps<TProvides extends Port<string, unknown>> =
   | ContainerProviderContainerProps<TProvides>
   | ContainerProviderGraphProps<
       TProvides,
-      Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>
+      Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>
     >;
 
 /**
  * Type guard to check if props are container mode.
  */
-export function isContainerMode<TProvides extends Port<unknown, string>>(
+export function isContainerMode<TProvides extends Port<string, unknown>>(
   props: RuntimeProviderProps<TProvides>
 ): props is ContainerProviderContainerProps<TProvides> {
   return "container" in props && props.container !== undefined;
@@ -597,8 +597,8 @@ export function isContainerMode<TProvides extends Port<unknown, string>>(
  * Type guard to check if props are graph mode.
  */
 export function isGraphMode<
-  TParentProvides extends Port<unknown, string>,
-  TGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+  TParentProvides extends Port<string, unknown>,
+  TGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>,
 >(
   props: RuntimeProviderProps<TParentProvides>
 ): props is ContainerProviderGraphProps<TParentProvides, TGraph> {

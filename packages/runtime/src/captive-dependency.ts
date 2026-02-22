@@ -191,8 +191,8 @@ type CaptiveDependencyErrorLegacy<TMessage extends string> = {
  * ```
  */
 export type ValidateCaptiveDependency<
-  TAdapter extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>,
-  TRequiredAdapter extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>,
+  TAdapter extends Adapter<Port<string, unknown>, Port<string, unknown> | never, Lifetime>,
+  TRequiredAdapter extends Adapter<Port<string, unknown>, Port<string, unknown> | never, Lifetime>,
 > =
   IsCaptive<
     GraphLifetimeLevel<InferAdapterLifetime<TAdapter>>,
@@ -226,17 +226,17 @@ export type ValidateCaptiveDependency<
  * @see {@link ValidateCaptiveDependency} - Single dependency validation
  */
 export type ValidateAllDependencies<
-  TAdapter extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>,
+  TAdapter extends Adapter<Port<string, unknown>, Port<string, unknown> | never, Lifetime>,
   TAdapters extends readonly Adapter<
-    Port<unknown, string>,
-    Port<unknown, string> | never,
+    Port<string, unknown>,
+    Port<string, unknown> | never,
     Lifetime
   >[],
 > = TAdapters extends readonly [
-  infer First extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>,
+  infer First extends Adapter<Port<string, unknown>, Port<string, unknown> | never, Lifetime>,
   ...infer Rest extends readonly Adapter<
-    Port<unknown, string>,
-    Port<unknown, string> | never,
+    Port<string, unknown>,
+    Port<string, unknown> | never,
     Lifetime
   >[],
 ]

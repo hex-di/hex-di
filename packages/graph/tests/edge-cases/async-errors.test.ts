@@ -6,6 +6,7 @@
 
 import { describe, expect, it } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
+import { ResultAsync, safeTry, ok } from "@hex-di/result";
 
 interface Service {
   name: string;
@@ -18,9 +19,7 @@ describe("async factory error handling", () => {
     const failingAdapter = createAdapter({
       provides: FailingPort,
       requires: [],
-      factory: async () => {
-        throw new Error("Factory initialization failed");
-      },
+      factory: () => Promise.reject(new Error("Factory initialization failed")),
     });
 
     // The factory should throw when invoked
@@ -43,9 +42,8 @@ describe("async factory error handling", () => {
     const failingAdapter = createAdapter({
       provides: FailingPort,
       requires: [],
-      factory: async () => {
-        throw new InitializationError("Database connection failed", "DB_CONN_ERR");
-      },
+      factory: () =>
+        Promise.reject(new InitializationError("Database connection failed", "DB_CONN_ERR")),
     });
 
     await expect(failingAdapter.factory({})).rejects.toThrow(InitializationError);
@@ -61,19 +59,22 @@ describe("async factory error handling", () => {
     const slowAdapter = createAdapter({
       provides: SlowPort,
       requires: [],
-      factory: async () => {
-        // Simulate async work with multiple promise chains
-        await Promise.resolve();
-        await Promise.resolve();
-        await Promise.resolve();
-        resolveCount++;
-        return { name: "slow-service" };
-      },
+      factory: () =>
+        safeTry(async function* () {
+          // Simulate async work with multiple promise chains
+          await Promise.resolve();
+          await Promise.resolve();
+          await Promise.resolve();
+          resolveCount++;
+          return ok({ name: "slow-service" });
+        }),
     });
 
     const result = await slowAdapter.factory({});
 
-    expect(result).toEqual({ name: "slow-service" });
+    // Factory returns ResultAsync; await gives Result whose value is the service
+    expect(result).toHaveProperty("_tag", "Ok");
+    expect(result).toHaveProperty("value", { name: "slow-service" });
     expect(resolveCount).toBe(1);
   });
 
@@ -86,12 +87,12 @@ describe("async factory error handling", () => {
     const abortableAdapter = createAdapter({
       provides: AbortablePort,
       requires: [],
-      factory: async () => {
+      factory: () => {
         // Check abort flag before expensive operation
         if (aborted) {
-          throw new Error("Operation aborted");
+          return Promise.reject(new Error("Operation aborted"));
         }
-        return { name: "abortable-service" };
+        return ResultAsync.ok({ name: "abortable-service" });
       },
     });
 
@@ -108,11 +109,11 @@ describe("async factory error handling", () => {
       createAdapter({
         provides: EnvDependentPort,
         requires: [],
-        factory: async () => {
+        factory: () => {
           if (shouldFail) {
-            throw new Error("Environment check failed: missing required config");
+            return Promise.reject(new Error("Environment check failed: missing required config"));
           }
-          return { name: "env-dependent-service" };
+          return ResultAsync.ok({ name: "env-dependent-service" });
         },
       });
 
@@ -125,7 +126,8 @@ describe("async factory error handling", () => {
     // Success case
     const successAdapter = createEnvAdapter(false);
     const result = await successAdapter.factory({});
-    expect(result).toEqual({ name: "env-dependent-service" });
+    expect(result).toHaveProperty("_tag", "Ok");
+    expect(result).toHaveProperty("value", { name: "env-dependent-service" });
   });
 
   it("conditional failure based on dependency state", async () => {
@@ -140,12 +142,12 @@ describe("async factory error handling", () => {
     const healthCheckAdapter = createAdapter({
       provides: HealthCheckPort,
       requires: [DependencyPort],
-      factory: async (deps: { Dependency: MockDep }) => {
+      factory: (deps: { Dependency: MockDep }) => {
         // Check dependency health before proceeding
         if (!deps.Dependency.isHealthy()) {
-          throw new Error("Dependency health check failed");
+          return Promise.reject(new Error("Dependency health check failed"));
         }
-        return { name: "health-check-service" };
+        return ResultAsync.ok({ name: "health-check-service" });
       },
     });
 
@@ -158,7 +160,8 @@ describe("async factory error handling", () => {
     // Test with healthy dependency
     const healthyDep = { isHealthy: () => true };
     const result = await healthCheckAdapter.factory({ Dependency: healthyDep });
-    expect(result).toEqual({ name: "health-check-service" });
+    expect(result).toHaveProperty("_tag", "Ok");
+    expect(result).toHaveProperty("value", { name: "health-check-service" });
   });
 
   it("factory that rejects with non-Error value", async () => {
@@ -167,10 +170,7 @@ describe("async factory error handling", () => {
     const weirdAdapter = createAdapter({
       provides: WeirdRejectPort,
       requires: [],
-      factory: async () => {
-        // Some code rejects with non-Error values
-        return Promise.reject("string rejection");
-      },
+      factory: () => Promise.reject("string rejection"),
     });
 
     await expect(weirdAdapter.factory({})).rejects.toBe("string rejection");
@@ -185,17 +185,17 @@ describe("async factory error handling", () => {
     const retryAdapter = createAdapter({
       provides: RetryPort,
       requires: [],
-      factory: async () => {
+      factory: () => {
         attemptCount++;
         if (attemptCount < SUCCEED_ON_ATTEMPT) {
-          throw new Error(`Attempt ${attemptCount} failed`);
+          return Promise.reject(new Error(`Attempt ${attemptCount} failed`));
         }
-        return { name: "retry-service" };
+        return ResultAsync.ok({ name: "retry-service" });
       },
     });
 
     // Helper function to retry
-    async function withRetry<T>(fn: () => Promise<T>, retries: number): Promise<T> {
+    async function withRetry<T>(fn: () => PromiseLike<T>, retries: number): Promise<T> {
       try {
         return await fn();
       } catch (error) {
@@ -211,7 +211,8 @@ describe("async factory error handling", () => {
 
     // Should succeed after retries
     const result = await withRetry(() => retryAdapter.factory({}), MAX_RETRIES);
-    expect(result).toEqual({ name: "retry-service" });
+    expect(result).toHaveProperty("_tag", "Ok");
+    expect(result).toHaveProperty("value", { name: "retry-service" });
     expect(attemptCount).toBe(SUCCEED_ON_ATTEMPT);
   });
 
@@ -223,7 +224,7 @@ describe("async factory error handling", () => {
     const partialAdapter = createAdapter({
       provides: PartialPort,
       requires: [],
-      factory: async () => {
+      factory: () => {
         // First step succeeds
         resourceAllocated = true;
 
@@ -235,7 +236,7 @@ describe("async factory error handling", () => {
           if (resourceAllocated) {
             cleanupCalled = true;
           }
-          throw error;
+          return Promise.reject(error);
         }
       },
     });
@@ -256,14 +257,14 @@ describe("async factory error handling", () => {
     const validatingAdapter = createAdapter({
       provides: ValidatingPort,
       requires: [ConfigPort],
-      factory: async (deps: { Config: Config }) => {
+      factory: (deps: { Config: Config }) => {
         if (deps.Config.value < 0) {
-          throw new Error("Config value must be non-negative");
+          return Promise.reject(new Error("Config value must be non-negative"));
         }
         if (deps.Config.value > 100) {
-          throw new Error("Config value must not exceed 100");
+          return Promise.reject(new Error("Config value must not exceed 100"));
         }
-        return { name: `validating-service-${deps.Config.value}` };
+        return ResultAsync.ok({ name: `validating-service-${deps.Config.value}` });
       },
     });
 
@@ -279,6 +280,7 @@ describe("async factory error handling", () => {
 
     // Test valid value
     const result = await validatingAdapter.factory({ Config: { value: 50 } });
-    expect(result).toEqual({ name: "validating-service-50" });
+    expect(result).toHaveProperty("_tag", "Ok");
+    expect(result).toHaveProperty("value", { name: "validating-service-50" });
   });
 });

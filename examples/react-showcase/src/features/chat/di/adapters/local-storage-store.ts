@@ -5,9 +5,10 @@
  */
 
 import { createAdapter } from "@hex-di/core";
+import { ResultAsync } from "@hex-di/result";
 import { MessageStorePort } from "../ports.js";
 import { LoggerPort } from "../../../core/di/ports.js";
-import type { Message, MessageStore, MessageListener, Unsubscribe } from "../../types.js";
+import type { Message, MessageListener, Unsubscribe } from "../../types.js";
 
 /**
  * Storage key for persisted messages in localStorage.
@@ -35,68 +36,66 @@ export const LocalStorageMessageStoreAdapter = createAdapter({
   requires: [LoggerPort],
   // No lifetime - async adapters are always singletons
   // Initialization order is automatic via topological sort based on dependencies
-  factory: async (deps): Promise<MessageStore> => {
-    // Simulate async storage access
-    await new Promise(resolve => setTimeout(resolve, 150));
-
-    // Load persisted messages from localStorage
-    let messages: Message[] = [];
-    try {
-      const stored = localStorage.getItem(MESSAGES_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as Array<{
-          id: string;
-          senderId: string;
-          senderName: string;
-          content: string;
-          timestamp: string;
-        }>;
-        // Convert timestamp strings back to Date objects
-        messages = parsed.map(m => ({
-          ...m,
-          timestamp: new Date(m.timestamp),
-        }));
-        deps.Logger.log(`Loaded ${messages.length} messages from storage`);
-      }
-    } catch (e) {
-      deps.Logger.warn("Failed to load messages from storage, starting fresh");
-    }
-
-    const listeners = new Set<MessageListener>();
-
-    const notifyListeners = (): void => {
-      const frozenMessages = Object.freeze([...messages]) as readonly Message[];
-      listeners.forEach(listener => listener(frozenMessages));
-    };
-
-    const persistMessages = (): void => {
+  factory: deps =>
+    ResultAsync.fromSafePromise(new Promise<void>(resolve => setTimeout(resolve, 150))).map(() => {
+      // Load persisted messages from localStorage
+      let messages: Message[] = [];
       try {
-        localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
+        const stored = localStorage.getItem(MESSAGES_STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored) as Array<{
+            id: string;
+            senderId: string;
+            senderName: string;
+            content: string;
+            timestamp: string;
+          }>;
+          // Convert timestamp strings back to Date objects
+          messages = parsed.map(m => ({
+            ...m,
+            timestamp: new Date(m.timestamp),
+          }));
+          deps.Logger.log(`Loaded ${messages.length} messages from storage`);
+        }
       } catch (e) {
-        deps.Logger.warn("Failed to persist messages to storage");
+        deps.Logger.warn("Failed to load messages from storage, starting fresh");
       }
-    };
 
-    deps.Logger.log("MessageStore initialized with localStorage persistence (async)");
+      const listeners = new Set<MessageListener>();
 
-    return {
-      getMessages: (): readonly Message[] => {
-        return Object.freeze([...messages]) as readonly Message[];
-      },
-      addMessage: (message: Message): void => {
-        messages.push(message);
-        deps.Logger.log(`Message added from ${message.senderName}`);
-        persistMessages();
-        notifyListeners();
-      },
-      subscribe: (listener: MessageListener): Unsubscribe => {
-        listeners.add(listener);
-        deps.Logger.log("New subscriber added to MessageStore");
-        return () => {
-          listeners.delete(listener);
-          deps.Logger.log("Subscriber removed from MessageStore");
-        };
-      },
-    };
-  },
+      const notifyListeners = (): void => {
+        const frozenMessages = Object.freeze([...messages]) as readonly Message[];
+        listeners.forEach(listener => listener(frozenMessages));
+      };
+
+      const persistMessages = (): void => {
+        try {
+          localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
+        } catch (e) {
+          deps.Logger.warn("Failed to persist messages to storage");
+        }
+      };
+
+      deps.Logger.log("MessageStore initialized with localStorage persistence (async)");
+
+      return {
+        getMessages: (): readonly Message[] => {
+          return Object.freeze([...messages]) as readonly Message[];
+        },
+        addMessage: (message: Message): void => {
+          messages.push(message);
+          deps.Logger.log(`Message added from ${message.senderName}`);
+          persistMessages();
+          notifyListeners();
+        },
+        subscribe: (listener: MessageListener): Unsubscribe => {
+          listeners.add(listener);
+          deps.Logger.log("New subscriber added to MessageStore");
+          return () => {
+            listeners.delete(listener);
+            deps.Logger.log("Subscriber removed from MessageStore");
+          };
+        },
+      };
+    }),
 });

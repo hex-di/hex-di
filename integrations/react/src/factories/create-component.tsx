@@ -72,7 +72,7 @@ type ComponentResolvedDeps<TRequires> = [TRequires] extends [never]
  * ```
  */
 export interface ComponentConfig<
-  TRequires extends readonly Port<unknown, string>[],
+  TRequires extends readonly Port<string, unknown>[],
   TProps extends object = Record<string, never>,
 > {
   /**
@@ -162,7 +162,7 @@ export interface ComponentConfig<
  * ```
  */
 export function createComponent<
-  const TRequires extends readonly Port<unknown, string>[],
+  const TRequires extends readonly Port<string, unknown>[],
   TProps extends object = Record<string, never>,
 >(config: ComponentConfig<TRequires, TProps>): FC<TProps> {
   const { requires, render } = config;

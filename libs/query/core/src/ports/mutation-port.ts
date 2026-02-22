@@ -53,7 +53,7 @@ export interface MutationPort<
   TInput = void,
   TError = Error,
   TContext = unknown,
-> extends DirectedPort<MutationExecutor<TData, TInput, TError>, TName, "inbound"> {
+> extends DirectedPort<TName, MutationExecutor<TData, TInput, TError>, "inbound"> {
   /** Phantom: compile-time error type */
   readonly [__mutationErrorType]: TError;
 

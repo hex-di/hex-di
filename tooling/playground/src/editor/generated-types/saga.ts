@@ -9,8 +9,8 @@ export const dts = `declare module "@hex-di/saga" {
  * 1. The same service interface type \`T\`
  * 2. The same port name \`TName\`
  *
- * @typeParam T - The service interface type (phantom type - exists only at compile time)
  * @typeParam TName - The literal string type for the port name (defaults to \`string\`)
+ * @typeParam T - The service interface type (phantom type - exists only at compile time)
  *
  * @remarks
  * - The \`__brand\` property carries both the service type and name in a tuple
@@ -29,8 +29,8 @@ export const dts = `declare module "@hex-di/saga" {
  * }
  *
  * // Create typed port tokens
- * type ConsoleLoggerPort = Port<Logger, 'ConsoleLogger'>;
- * type FileLoggerPort = Port<Logger, 'FileLogger'>;
+ * type ConsoleLoggerPort = Port<'ConsoleLogger', Logger>;
+ * type FileLoggerPort = Port<'FileLogger', Logger>;
  *
  * // These are type-incompatible despite same interface
  * declare const consolePort: ConsoleLoggerPort;
@@ -45,15 +45,15 @@ export const dts = `declare module "@hex-di/saga" {
  * type LoggerPortType = typeof LoggerPort;
  * \`\`\`
  */
-export type Port<T, TName extends string> = {
+export type Port<TName extends string, T> = {
 	/**
 	 * Brand property for nominal typing.
-	 * Contains a tuple of [ServiceType, PortName] at the type level.
+	 * Contains a tuple of [PortName, ServiceType] at the type level.
 	 * Value is undefined at runtime.
 	 */
 	readonly __brand: [
-		T,
-		TName
+		TName,
+		T
 	];
 	/**
 	 * The port name, exposed for debugging and error messages.
@@ -125,7 +125,7 @@ export type NotAPortError<T> = {
  * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * \`\`\`
  */
-export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPortError<P>;
+export type InferService<P> = P extends Port<infer _TName, infer T> ? T : NotAPortError<P>;
 /**
  * Extracts the port name literal type from a Port type.
  *
@@ -159,7 +159,7 @@ export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPo
  * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * \`\`\`
  */
-export type InferPortName<P> = P extends Port<infer _T, infer TName> ? TName : NotAPortError<P>;
+export type InferPortName<P> = P extends Port<infer TName, infer _T> ? TName : NotAPortError<P>;
 declare const __metadataKey: unique symbol;
 /**
  * Discriminator for hexagonal architecture port types.
@@ -210,8 +210,8 @@ export interface PortMetadata {
  * DirectedPorts are structurally compatible with base Ports, enabling gradual
  * adoption without breaking existing code.
  *
- * @typeParam TService - The service interface type (phantom type)
  * @typeParam TName - The literal string type for the port name
+ * @typeParam TService - The service interface type (phantom type)
  * @typeParam TDirection - 'inbound' or 'outbound'
  *
  * @see {@link InboundPort} - Convenience alias for inbound directed ports
@@ -222,13 +222,13 @@ export interface PortMetadata {
  * @example
  * \`\`\`typescript
  * // DirectedPort is assignable to Port (backward compatible)
- * const port: DirectedPort<Logger, 'Logger', 'inbound'> = createInboundPort({
+ * const port: DirectedPort<'Logger', Logger, 'inbound'> = createInboundPort({
  *   name: 'Logger',
  * });
- * const basePort: Port<Logger, 'Logger'> = port; // OK
+ * const basePort: Port<'Logger', Logger> = port; // OK
  * \`\`\`
  */
-export type DirectedPort<TService, TName extends string, TDirection extends PortDirection, TCategory extends string = string> = Port<TService, TName> & {
+export type DirectedPort<TName extends string, TService, TDirection extends PortDirection, TCategory extends string = string> = Port<TName, TService> & {
 	readonly __directionBrand: TDirection;
 	readonly __metadataKey: PortMetadata;
 	readonly __categoryBrand: TCategory;
@@ -482,7 +482,7 @@ export interface StepOptions<TError = unknown> {
  *
  * Type safety is enforced by the builder at construction time.
  */
-export interface StepDefinition<TName extends string, TInput, TAccumulated, TOutput, TError, TPort extends Port<unknown, string>> {
+export interface StepDefinition<TName extends string, TInput, TAccumulated, TOutput, TError, TPort extends Port<string, unknown>> {
 	/** Unique step name, used as the key in accumulated results */
 	readonly name: TName;
 	/** Port to invoke for the forward action */
@@ -501,7 +501,7 @@ export interface StepDefinition<TName extends string, TInput, TAccumulated, TOut
 	readonly __stepError?: TError;
 }
 /** Type alias erasing all type parameters for use in generic contexts */
-export type AnyStepDefinition = StepDefinition<string, unknown, unknown, unknown, unknown, Port<unknown, string>>;
+export type AnyStepDefinition = StepDefinition<string, unknown, unknown, unknown, unknown, Port<string, unknown>>;
 /** Structured error type for invalid StepDefinition inputs */
 export type NotAStepDefinitionError<T> = {
 	readonly __errorBrand: "NotAStepDefinitionError";
@@ -510,13 +510,13 @@ export type NotAStepDefinitionError<T> = {
 	readonly __hint: "Use InferStepOutput<typeof YourStep>, not InferStepOutput<YourStep>";
 };
 /** Extract the step name literal type */
-export type InferStepName<S> = S extends StepDefinition<infer N, unknown, unknown, unknown, unknown, Port<unknown, string>> ? N : NotAStepDefinitionError<S>;
+export type InferStepName<S> = S extends StepDefinition<infer N, unknown, unknown, unknown, unknown, Port<string, unknown>> ? N : NotAStepDefinitionError<S>;
 /** Extract the step output type */
-export type InferStepOutput<S> = S extends StepDefinition<string, unknown, unknown, infer O, unknown, Port<unknown, string>> ? O : NotAStepDefinitionError<S>;
+export type InferStepOutput<S> = S extends StepDefinition<string, unknown, unknown, infer O, unknown, Port<string, unknown>> ? O : NotAStepDefinitionError<S>;
 /** Extract the step input type */
-export type InferStepInput<S> = S extends StepDefinition<string, infer I, unknown, unknown, unknown, Port<unknown, string>> ? I : NotAStepDefinitionError<S>;
+export type InferStepInput<S> = S extends StepDefinition<string, infer I, unknown, unknown, unknown, Port<string, unknown>> ? I : NotAStepDefinitionError<S>;
 /** Extract the step error type */
-export type InferStepError<S> = S extends StepDefinition<string, unknown, unknown, unknown, infer E, Port<unknown, string>> ? E : NotAStepDefinitionError<S>;
+export type InferStepError<S> = S extends StepDefinition<string, unknown, unknown, unknown, infer E, Port<string, unknown>> ? E : NotAStepDefinitionError<S>;
 /** Extract the port type used by the step */
 export type InferStepPort<S> = S extends StepDefinition<string, unknown, unknown, unknown, unknown, infer P> ? P : NotAStepDefinitionError<S>;
 /** Recursively collect port types from a tuple of step definitions */
@@ -532,17 +532,17 @@ export type MissingSagaStepPortsError<TMissing> = {
 	readonly __hint: "Register adapters for these ports in the GraphBuilder";
 };
 /** Validate that all ports required by saga steps are provided in the graph */
-export type ValidateSagaPorts<TSteps extends readonly AnyStepDefinition[], TProvided extends Port<unknown, string>> = Exclude<CollectStepPorts<TSteps>, TProvided> extends never ? true : MissingSagaStepPortsError<Exclude<CollectStepPorts<TSteps>, TProvided>>;
+export type ValidateSagaPorts<TSteps extends readonly AnyStepDefinition[], TProvided extends Port<string, unknown>> = Exclude<CollectStepPorts<TSteps>, TProvided> extends never ? true : MissingSagaStepPortsError<Exclude<CollectStepPorts<TSteps>, TProvided>>;
 /** Stage 1: Name declared, awaiting I/O types */
 export interface StepBuilder<TName extends string> {
 	io<TInput, TOutput, TError = never>(): StepBuilderWithIO<TName, TInput, TOutput, TError>;
 }
 /** Stage 2: I/O declared, awaiting port + mapper */
 export interface StepBuilderWithIO<TName extends string, TInput, TOutput, TError> {
-	invoke<TPort extends Port<unknown, string>>(port: TPort, mapper: (ctx: StepContext<TInput, unknown>) => unknown): StepBuilderWithInvocation<TName, TInput, TOutput, TError, TPort>;
+	invoke<TPort extends Port<string, unknown>>(port: TPort, mapper: (ctx: StepContext<TInput, unknown>) => unknown): StepBuilderWithInvocation<TName, TInput, TOutput, TError, TPort>;
 }
 /** Stage 3: Port + mapper set, compensation and options available */
-export interface StepBuilderWithInvocation<TName extends string, TInput, TOutput, TError, TPort extends Port<unknown, string>> {
+export interface StepBuilderWithInvocation<TName extends string, TInput, TOutput, TError, TPort extends Port<string, unknown>> {
 	compensate(mapper: (ctx: CompensationContext<TInput, unknown, TOutput, TError>) => unknown): StepBuilderWithInvocation<TName, TInput, TOutput, TError, TPort>;
 	skipCompensation(): StepBuilderWithInvocation<TName, TInput, TOutput, TError, TPort>;
 	when(predicate: (ctx: StepContext<TInput, unknown>) => boolean): StepBuilderWithInvocation<TName, TInput, TOutput, TError, TPort>;
@@ -702,7 +702,7 @@ export interface SagaBuilder<TName extends string> {
 }
 /** Stage 2: Input declared, steps can be added */
 export interface SagaBuilderWithInput<TName extends string, TInput, TSteps extends readonly AnyStepDefinition[], TErrors> {
-	step<S extends StepDefinition<string, TInput, unknown, unknown, unknown, Port<unknown, string>>>(...args: HasStepName<TSteps, InferStepName<S>> extends true ? [
+	step<S extends StepDefinition<string, TInput, unknown, unknown, unknown, Port<string, unknown>>>(...args: HasStepName<TSteps, InferStepName<S>> extends true ? [
 		step: StepNameAlreadyExistsError<InferStepName<S>>
 	] : [
 		step: S
@@ -710,17 +710,17 @@ export interface SagaBuilderWithInput<TName extends string, TInput, TSteps exten
 		...TSteps,
 		S
 	], TErrors | InferStepError<S>>;
-	parallel<PSteps extends readonly StepDefinition<string, TInput, unknown, unknown, unknown, Port<unknown, string>>[]>(steps: PSteps): SagaBuilderWithInput<TName, TInput, [
+	parallel<PSteps extends readonly StepDefinition<string, TInput, unknown, unknown, unknown, Port<string, unknown>>[]>(steps: PSteps): SagaBuilderWithInput<TName, TInput, [
 		...TSteps,
 		...PSteps
 	], TErrors | AccumulatedErrors<PSteps>>;
-	branch<TKey extends string, TBranches extends Record<TKey, readonly StepDefinition<string, TInput, unknown, unknown, unknown, Port<unknown, string>>[]>>(selector: (ctx: StepContext<TInput, AccumulatedResults<TSteps>>) => TKey, branches: TBranches): SagaBuilderWithInput<TName, TInput, [
+	branch<TKey extends string, TBranches extends Record<TKey, readonly StepDefinition<string, TInput, unknown, unknown, unknown, Port<string, unknown>>[]>>(selector: (ctx: StepContext<TInput, AccumulatedResults<TSteps>>) => TKey, branches: TBranches): SagaBuilderWithInput<TName, TInput, [
 		...TSteps,
-		StepDefinition<"__branch", TInput, unknown, BranchAccumulatedResults<TKey, TBranches>, BranchAccumulatedErrors<TKey, TBranches>, Port<unknown, string>>
+		StepDefinition<"__branch", TInput, unknown, BranchAccumulatedResults<TKey, TBranches>, BranchAccumulatedErrors<TKey, TBranches>, Port<string, unknown>>
 	], TErrors | BranchAccumulatedErrors<TKey, TBranches>>;
 	saga<TSaga extends AnySagaDefinition>(saga: TSaga, mapper: (ctx: StepContext<TInput, AccumulatedResults<TSteps>>) => InferSagaInput<TSaga>): SagaBuilderWithInput<TName, TInput, [
 		...TSteps,
-		StepDefinition<InferSagaName<TSaga> & string, TInput, unknown, InferSagaOutput<TSaga>, InferSagaErrors<TSaga>, Port<unknown, string>>
+		StepDefinition<InferSagaName<TSaga> & string, TInput, unknown, InferSagaOutput<TSaga>, InferSagaErrors<TSaga>, Port<string, unknown>>
 	], TErrors | InferSagaErrors<TSaga>>;
 	output<TOutput>(mapper: (results: AccumulatedResults<TSteps>) => TOutput): SagaBuilderWithOutput<TName, TInput, TOutput, TSteps, TErrors>;
 }
@@ -1536,14 +1536,14 @@ export interface SagaExecutionSummary {
 	readonly compensated: boolean;
 }
 /** Branded saga port that resolves to SagaExecutor */
-export type SagaPort<TName extends string, TInput, TOutput, TError> = Port<SagaExecutor<TInput, TOutput, TError>, TName> & {
+export type SagaPort<TName extends string, TInput, TOutput, TError> = Port<TName, SagaExecutor<TInput, TOutput, TError>> & {
 	readonly [SagaPortSymbol]: true;
 	readonly __sagaInputType: TInput;
 	readonly __sagaOutputType: TOutput;
 	readonly __sagaErrorType: TError;
 };
 /** Branded management port that resolves to SagaManagementExecutor */
-export type SagaManagementPort<TName extends string, TOutput, TError> = Port<SagaManagementExecutor<TOutput, TError>, TName> & {
+export type SagaManagementPort<TName extends string, TOutput, TError> = Port<TName, SagaManagementExecutor<TOutput, TError>> & {
 	readonly [SagaManagementPortSymbol]: true;
 	readonly __sagaOutputType: TOutput;
 	readonly __sagaErrorType: TError;
@@ -2091,15 +2091,15 @@ export declare function sagaManagementPort<TOutput, TError = never>(): <const TN
 /**
  * Pre-defined port for the saga persistence adapter.
  */
-export declare const SagaPersisterPort: DirectedPort<SagaPersister, "SagaPersister", "outbound", string>;
+export declare const SagaPersisterPort: DirectedPort<"SagaPersister", SagaPersister, "outbound", string>;
 /**
  * Pre-defined port for the saga registry (live execution tracking).
  */
-export declare const SagaRegistryPort: DirectedPort<SagaRegistry, "SagaRegistry", "outbound", string>;
+export declare const SagaRegistryPort: DirectedPort<"SagaRegistry", SagaRegistry, "outbound", string>;
 /**
  * Pre-defined port for the saga inspector (introspection API).
  */
-export declare const SagaInspectorPort: DirectedPort<SagaInspector, "SagaInspector", "outbound", string>;
+export declare const SagaInspectorPort: DirectedPort<"SagaInspector", SagaInspector, "outbound", string>;
 /**
  * Runtime type guard that narrows a value to SagaPort.
  *
@@ -2349,7 +2349,7 @@ export declare const SagaRegistryAdapter: SagaRegistryAdapterType;
  * integrates saga inspection into the container's unified
  * Library Inspector Protocol.
  */
-export declare const SagaLibraryInspectorPort: DirectedPort<LibraryInspector, "SagaLibraryInspector", "outbound", "library-inspector">;
+export declare const SagaLibraryInspectorPort: DirectedPort<"SagaLibraryInspector", LibraryInspector, "outbound", "library-inspector">;
 /**
  * Pre-built frozen adapter for SagaLibraryInspectorPort.
  *

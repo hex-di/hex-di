@@ -135,7 +135,7 @@ export type InferScopeProvides<T> = T extends Scope<infer P, infer _A, infer _Ph
  * // true
  * ```
  */
-export type IsResolvable<TContainer, TPort extends Port<unknown, string>> = TPort extends
+export type IsResolvable<TContainer, TPort extends Port<string, unknown>> = TPort extends
   | InferContainerEffectiveProvides<TContainer>
   | InferScopeProvides<TContainer>
   ? true
@@ -185,7 +185,7 @@ export type IsResolvable<TContainer, TPort extends Port<unknown, string>> = TPor
  * // ExtendService type
  * ```
  */
-export type ServiceFromContainer<TContainer, TPort extends Port<unknown, string>> =
+export type ServiceFromContainer<TContainer, TPort extends Port<string, unknown>> =
   IsResolvable<TContainer, TPort> extends true ? InferService<TPort> : never;
 
 /**

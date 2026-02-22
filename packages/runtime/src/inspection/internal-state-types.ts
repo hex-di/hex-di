@@ -44,7 +44,7 @@ export interface ContainerInternalState {
   readonly childContainers: readonly ContainerInternalState[];
 
   /** Map of port to adapter information */
-  readonly adapterMap: ReadonlyMap<Port<unknown, string>, AdapterInfo>;
+  readonly adapterMap: ReadonlyMap<Port<string, unknown>, AdapterInfo>;
 
   /**
    * Parent container's internal state for inherited resolution tracking.
@@ -116,7 +116,7 @@ export interface MemoMapSnapshot {
  */
 export interface MemoEntrySnapshot {
   /** The port this entry is keyed by */
-  readonly port: Port<unknown, string>;
+  readonly port: Port<string, unknown>;
 
   /** Port name for display */
   readonly portName: string;

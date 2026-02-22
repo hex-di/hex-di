@@ -71,7 +71,7 @@ import { createQueryObserver } from "./query-observer.js";
  * compatible without requiring casts.
  */
 export interface QueryContainer {
-  resolve(port: Port<unknown, string>): unknown;
+  resolve(port: Port<string, unknown>): unknown;
 }
 
 // =============================================================================
@@ -451,7 +451,7 @@ export function createQueryClient(config: QueryClientConfig): QueryClient {
    * Resolve a service from the DI container.
    * Returns undefined if resolution fails (adapter not registered).
    */
-  function resolveService(port: Port<unknown, string>): unknown {
+  function resolveService(port: Port<string, unknown>): unknown {
     return fromThrowable(
       () => container.resolve(port),
       () => undefined

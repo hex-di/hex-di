@@ -20,12 +20,14 @@ pnpm add @hex-di/hono hono
 
 ```typescript
 import { Hono } from "hono";
+import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "@hex-di/runtime";
 import { createScopeMiddleware, resolvePort } from "@hex-di/hono";
 import { LoggerPort } from "./ports.js";
 
 const app = new Hono();
-const container = createContainer().register(/* ... */).build();
+const graph = GraphBuilder.create().provide(/* adapters */).build();
+const container = createContainer({ graph, name: "App" });
 
 // Add per-request scope middleware
 app.use("*", createScopeMiddleware(container));
@@ -53,7 +55,7 @@ app.use("*", createScopeMiddleware(container));
 
 app.get("/users/:id", c => {
   // Scope is available in context
-  const scope = c.get("hexdi.scope");
+  const scope = c.get("hexScope");
 
   // Resolve ports directly
   const userService = resolvePort(c, UserServicePort);
@@ -220,7 +222,7 @@ app.get("/api/users/:id", async c => {
   return c.json({ id: userId, name: "Alice" });
 });
 
-app.on404(c => {
+app.notFound(c => {
   // 404 responses also traced
   return c.json({ error: "Not found" }, 404);
 });
@@ -248,7 +250,8 @@ import { createScopeMiddleware, tracingMiddleware, resolvePort } from "@hex-di/h
 import { createContainer } from "@hex-di/runtime";
 import { TracerPort } from "@hex-di/tracing";
 
-const container = createContainer().register(/* adapters */).build();
+const graph = GraphBuilder.create().provide(/* adapters */).build();
+const container = createContainer({ graph, name: "App" });
 
 const app = new Hono();
 

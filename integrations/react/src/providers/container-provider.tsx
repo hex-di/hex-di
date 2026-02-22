@@ -33,12 +33,12 @@ import { toRuntimeContainerRef } from "../internal/runtime-refs.js";
  *
  * @internal
  */
-type AnyContainer<TProvides extends Port<unknown, string>> = {
+type AnyContainer<TProvides extends Port<string, unknown>> = {
   resolve<P extends TProvides>(port: P): InferService<P>;
   resolveAsync<P extends TProvides>(port: P): Promise<InferService<P>>;
-  createScope(): Scope<TProvides, Port<unknown, string>, ContainerPhase>;
+  createScope(): Scope<TProvides, Port<string, unknown>, ContainerPhase>;
   dispose(): Promise<void>;
-  has(port: Port<unknown, string>): boolean;
+  has(port: Port<string, unknown>): boolean;
   readonly isDisposed: boolean;
   readonly isInitialized: boolean;
   // Internal access for child container detection without throwing
@@ -60,7 +60,7 @@ type AnyContainer<TProvides extends Port<unknown, string>> = {
  *
  * @internal
  */
-function isChildContainer<TProvides extends Port<unknown, string>>(
+function isChildContainer<TProvides extends Port<string, unknown>>(
   container: AnyContainer<TProvides>
 ): boolean {
   // Preferred: Use internal state to detect child containers - no throwing involved
@@ -86,7 +86,7 @@ function isChildContainer<TProvides extends Port<unknown, string>>(
  *
  * @typeParam TProvides - Union of Port types that the container can resolve
  */
-export interface HexDiContainerProviderProps<TProvides extends Port<unknown, string>> {
+export interface HexDiContainerProviderProps<TProvides extends Port<string, unknown>> {
   /**
    * The pre-created Container instance to provide to the React tree.
    *
@@ -161,7 +161,7 @@ export interface HexDiContainerProviderProps<TProvides extends Port<unknown, str
  * }
  * ```
  */
-export function HexDiContainerProvider<TProvides extends Port<unknown, string>>({
+export function HexDiContainerProvider<TProvides extends Port<string, unknown>>({
   container,
   children,
 }: HexDiContainerProviderProps<TProvides>): React.ReactNode {

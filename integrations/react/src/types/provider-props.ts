@@ -21,7 +21,7 @@ import type { Resolver } from "./core.js";
  *
  * @typeParam TProvides - Union of Port types that the container can resolve
  */
-export interface HexDiContainerProviderProps<TProvides extends Port<unknown, string>> {
+export interface HexDiContainerProviderProps<TProvides extends Port<string, unknown>> {
   /**
    * The pre-created Container instance to provide to the React tree.
    */
@@ -46,7 +46,7 @@ export interface HexDiContainerProviderProps<TProvides extends Port<unknown, str
  * Accepts Resolver<TProvides> which is satisfied by both Container and Scope.
  * This allows passing the result of useScope() directly to HexDiScopeProvider.
  */
-export interface HexDiScopeProviderProps<TProvides extends Port<unknown, string>> {
+export interface HexDiScopeProviderProps<TProvides extends Port<string, unknown>> {
   /**
    * The externally managed resolver (scope or container) to provide to the React tree.
    * Accepts any Resolver<TProvides> - typically a Scope from useScope() or createScope().
@@ -90,8 +90,8 @@ export interface HexDiAutoScopeProviderProps {
  * @typeParam TAsyncPorts - Union of Port types that require async initialization
  */
 export interface HexDiAsyncContainerProviderProps<
-  TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> = Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown> = Port<string, unknown>,
 > {
   /**
    * The uninitialized Container instance to initialize and provide.
@@ -148,8 +148,8 @@ export interface HexDiAsyncContainerReadyProps {
  * @typeParam TAsyncPorts - Union of Port types that require async initialization
  */
 export interface HexDiAsyncContainerProviderComponent<
-  TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> = Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown> = Port<string, unknown>,
 > {
   (props: HexDiAsyncContainerProviderProps<TProvides, TAsyncPorts>): ReactNode;
   Loading: ComponentType<HexDiAsyncContainerLoadingProps>;

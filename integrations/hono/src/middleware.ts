@@ -34,9 +34,9 @@ export interface ScopeMiddlewareOptions<
  * - Disposes the scope after the handler completes (even on errors)
  */
 export function createScopeMiddleware<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown> = never,
+  TAsyncPorts extends Port<string, unknown> = never,
   TPhase extends ContainerPhase = "uninitialized",
   ScopeKey extends string = typeof DEFAULT_SCOPE_KEY,
   ContainerKey extends string = typeof DEFAULT_CONTAINER_KEY,

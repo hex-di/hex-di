@@ -26,7 +26,7 @@ interface OptionsBag {
 
 interface BuilderState<TName extends string> {
   readonly name: TName;
-  port: Port<unknown, string> | null;
+  port: Port<string, unknown> | null;
   invokeMapper: ((ctx: StepContext<unknown, unknown>) => unknown) | null;
   compensateMapper:
     | ((ctx: CompensationContext<unknown, unknown, unknown, unknown>) => unknown)
@@ -121,8 +121,8 @@ export function widenRetryIfFn(retryIf: (error: unknown) => boolean): (error: un
  * The port stored in state is the same object that was passed to invoke(),
  * so recovering its original type is safe.
  */
-export function getPort<TPort extends Port<unknown, string>>(state: BuilderState<string>): TPort;
-export function getPort(state: BuilderState<string>): Port<unknown, string> | null {
+export function getPort<TPort extends Port<string, unknown>>(state: BuilderState<string>): TPort;
+export function getPort(state: BuilderState<string>): Port<string, unknown> | null {
   return state.port;
 }
 
@@ -139,7 +139,7 @@ export function buildStepDefinition<
   TInput,
   TOutput,
   TError,
-  TPort extends Port<unknown, string>,
+  TPort extends Port<string, unknown>,
 >(state: BuilderState<TName>): StepDefinition<TName, TInput, unknown, TOutput, TError, TPort>;
 export function buildStepDefinition<TName extends string>(state: BuilderState<TName>): object {
   return Object.freeze({

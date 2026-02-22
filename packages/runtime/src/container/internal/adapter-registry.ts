@@ -49,18 +49,18 @@ import { ADAPTER_ACCESS } from "../../inspection/symbols.js";
  * @internal
  */
 export class AdapterRegistry<
-  TParentProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TParentProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
 > {
   /**
    * Local adapter map (overrides, extensions, or root adapters).
    */
-  private readonly adapters: Map<Port<unknown, string>, RuntimeAdapter> = new Map();
+  private readonly adapters: Map<Port<string, unknown>, RuntimeAdapter> = new Map();
 
   /**
    * Set of ports registered locally (not inherited from parent).
    */
-  private readonly localPorts: Set<Port<unknown, string>> = new Set();
+  private readonly localPorts: Set<Port<string, unknown>> = new Set();
 
   /**
    * Set of port names that override parent adapters.
@@ -92,7 +92,7 @@ export class AdapterRegistry<
    * @param adapter - The adapter providing the service
    * @param markLocal - Whether to mark this as a local registration (default: true)
    */
-  register(port: Port<unknown, string>, adapter: RuntimeAdapter, markLocal: boolean = true): void {
+  register(port: Port<string, unknown>, adapter: RuntimeAdapter, markLocal: boolean = true): void {
     this.adapters.set(port, adapter);
     if (markLocal) {
       this.localPorts.add(port);
@@ -117,7 +117,7 @@ export class AdapterRegistry<
    * @param port - The port to look up
    * @returns The adapter or undefined if not found
    */
-  get(port: Port<unknown, string>): RuntimeAdapter | undefined {
+  get(port: Port<string, unknown>): RuntimeAdapter | undefined {
     const local = this.adapters.get(port);
     if (local !== undefined) {
       return local;
@@ -134,7 +134,7 @@ export class AdapterRegistry<
    * @param port - The port to check
    * @returns True if an adapter exists
    */
-  has(port: Port<unknown, string>): boolean {
+  has(port: Port<string, unknown>): boolean {
     return this.get(port) !== undefined;
   }
 
@@ -144,7 +144,7 @@ export class AdapterRegistry<
    * @param port - The port to check
    * @returns True if registered locally
    */
-  isLocal(port: Port<unknown, string>): boolean {
+  isLocal(port: Port<string, unknown>): boolean {
     return this.localPorts.has(port);
   }
 
@@ -177,7 +177,7 @@ export class AdapterRegistry<
    * @param isRoot - Whether this is a root container
    * @returns True if should resolve locally
    */
-  shouldResolveLocally(port: Port<unknown, string>, isRoot: boolean): boolean {
+  shouldResolveLocally(port: Port<string, unknown>, isRoot: boolean): boolean {
     if (isRoot) {
       return this.adapters.has(port);
     }
@@ -190,14 +190,14 @@ export class AdapterRegistry<
    * @param port - The port to look up
    * @returns The local adapter or undefined
    */
-  getLocal(port: Port<unknown, string>): RuntimeAdapter | undefined {
+  getLocal(port: Port<string, unknown>): RuntimeAdapter | undefined {
     return this.adapters.get(port);
   }
 
   /**
    * Iterates over local adapters.
    */
-  entries(): IterableIterator<[Port<unknown, string>, RuntimeAdapter]> {
+  entries(): IterableIterator<[Port<string, unknown>, RuntimeAdapter]> {
     return this.adapters.entries();
   }
 

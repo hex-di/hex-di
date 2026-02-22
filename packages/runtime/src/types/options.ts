@@ -393,7 +393,7 @@ export interface CreateContainerOptions {
  *
  * @see {@link InheritanceModeConfig} - Per-port inheritance mode configuration
  */
-export interface CreateChildOptions<TProvides extends Port<unknown, string> = never> {
+export interface CreateChildOptions<TProvides extends Port<string, unknown> = never> {
   /**
    * Container name - serves as both identifier and display label.
    *
@@ -581,8 +581,8 @@ export interface CreateChildOptions<TProvides extends Port<unknown, string> = ne
  * @see {@link ResolutionHooks} - Hook interface for lifecycle instrumentation
  */
 export interface CreateContainerConfig<
-  TProvides extends Port<unknown, string>,
-  _TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  _TAsyncPorts extends Port<string, unknown> = never,
 > {
   /**
    * The validated ServiceGraph containing all adapters.
@@ -600,7 +600,7 @@ export interface CreateContainerConfig<
    * const container = createContainer({ graph, name: "App" });
    * ```
    */
-  readonly graph: Graph<TProvides, Port<unknown, string>>;
+  readonly graph: Graph<TProvides, Port<string, unknown>>;
 
   /**
    * Safety-related options for protective limits and error reporting.

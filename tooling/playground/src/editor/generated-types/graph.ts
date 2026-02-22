@@ -9,8 +9,8 @@ export const dts = `declare module "@hex-di/graph" {
  * 1. The same service interface type \`T\`
  * 2. The same port name \`TName\`
  *
- * @typeParam T - The service interface type (phantom type - exists only at compile time)
  * @typeParam TName - The literal string type for the port name (defaults to \`string\`)
+ * @typeParam T - The service interface type (phantom type - exists only at compile time)
  *
  * @remarks
  * - The \`__brand\` property carries both the service type and name in a tuple
@@ -29,8 +29,8 @@ export const dts = `declare module "@hex-di/graph" {
  * }
  *
  * // Create typed port tokens
- * type ConsoleLoggerPort = Port<Logger, 'ConsoleLogger'>;
- * type FileLoggerPort = Port<Logger, 'FileLogger'>;
+ * type ConsoleLoggerPort = Port<'ConsoleLogger', Logger>;
+ * type FileLoggerPort = Port<'FileLogger', Logger>;
  *
  * // These are type-incompatible despite same interface
  * declare const consolePort: ConsoleLoggerPort;
@@ -45,15 +45,15 @@ export const dts = `declare module "@hex-di/graph" {
  * type LoggerPortType = typeof LoggerPort;
  * \`\`\`
  */
-export type Port<T, TName extends string> = {
+export type Port<TName extends string, T> = {
 	/**
 	 * Brand property for nominal typing.
-	 * Contains a tuple of [ServiceType, PortName] at the type level.
+	 * Contains a tuple of [PortName, ServiceType] at the type level.
 	 * Value is undefined at runtime.
 	 */
 	readonly __brand: [
-		T,
-		TName
+		TName,
+		T
 	];
 	/**
 	 * The port name, exposed for debugging and error messages.
@@ -125,7 +125,7 @@ export type NotAPortError<T> = {
  * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * \`\`\`
  */
-export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPortError<P>;
+export type InferService<P> = P extends Port<infer _TName, infer T> ? T : NotAPortError<P>;
 /**
  * Extracts the port name literal type from a Port type.
  *
@@ -159,7 +159,7 @@ export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPo
  * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * \`\`\`
  */
-export type InferPortName<P> = P extends Port<infer _T, infer TName> ? TName : NotAPortError<P>;
+export type InferPortName<P> = P extends Port<infer TName, infer _T> ? TName : NotAPortError<P>;
 /**
  * Checks if a type is \`never\`.
  *
@@ -397,14 +397,14 @@ out TFactoryKind extends FactoryKind = "sync", out TClonable extends boolean = f
 export interface AdapterConstraint {
 	/**
 	 * The port this adapter provides (read-only, covariant).
-	 * Uses Port<unknown, string> as the widest Port type.
+	 * Uses Port<string, unknown> as the widest Port type.
 	 */
-	readonly provides: Port<unknown, string>;
+	readonly provides: Port<string, unknown>;
 	/**
 	 * The ports this adapter depends on (read-only, covariant).
 	 * Each element is a Port with \`__portName\` for runtime identification.
 	 */
-	readonly requires: readonly Port<unknown, string>[];
+	readonly requires: readonly Port<string, unknown>[];
 	/**
 	 * The lifetime scope (fixed union, all values assignable).
 	 */
@@ -428,7 +428,7 @@ export interface AdapterConstraint {
 	 */
 	finalizer?(instance: never): void | Promise<void>;
 }
-export type InferPlaceholder = Port<unknown, string>;
+export type InferPlaceholder = Port<string, unknown>;
 export type LifetimePlaceholder = Lifetime;
 export type FactoryKindPlaceholder = FactoryKind;
 export type ClonablePlaceholder = boolean;
@@ -438,8 +438,8 @@ export type ClonablePlaceholder = boolean;
  *
  * When \`dts-bundle-generator\` creates flat type bundles for the playground,
  * each package gets its own copy of the \`Adapter\` type. Pattern-matching
- * \`TAdapter extends Adapter<infer TProvides, Port<unknown, string>, ...>\` fixes
- * \`TRequires\` at a concrete type, which causes \`ResolvedDeps<Port<unknown, string>>\`
+ * \`TAdapter extends Adapter<infer TProvides, Port<string, unknown>, ...>\` fixes
+ * \`TRequires\` at a concrete type, which causes \`ResolvedDeps<Port<string, unknown>>\`
  * to resolve to \`{ [key: string]: unknown }\`. The \`factory\` field becomes
  * \`(deps: { [key: string]: unknown }) => ...\`, and function parameter contravariance
  * prevents matching against concrete deps like \`{ Config: Config; Logger: Logger }\`.
@@ -2241,7 +2241,7 @@ export type JoinPortNames<T, Acc extends string = "", Depth extends unknown[] = 
 	T
 ] extends [
 	never
-] ? Acc : LastOfUnion<T> extends Port<unknown, infer N extends string> ? JoinPortNames<Exclude<T, LastOfUnion<T>>, [
+] ? Acc : LastOfUnion<T> extends Port<infer N extends string, unknown> ? JoinPortNames<Exclude<T, LastOfUnion<T>>, [
 	Acc
 ] extends [
 	""
@@ -5089,8 +5089,8 @@ export type ExtractServiceByName<TPortUnion, TName extends string> = TPortUnion 
 	readonly __portName: TName;
 } ? TPortUnion extends {
 	readonly [K: symbol]: [
-		infer TService,
-		TName
+		TName,
+		infer TService
 	];
 } ? TService : never : never;
 /**

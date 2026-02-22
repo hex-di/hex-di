@@ -97,11 +97,11 @@ export interface CreateDirectedPortOptions<TName extends string> {
  * - The implementation signature returns `object` (the frozen runtime object)
  */
 export function createDirectedPortImpl<
-  TService,
   TName extends string,
+  TService,
   TDirection extends PortDirection,
   TCategory extends string = string,
->(runtime: DirectedPortRuntime<TName>): DirectedPort<TService, TName, TDirection, TCategory>;
+>(runtime: DirectedPortRuntime<TName>): DirectedPort<TName, TService, TDirection, TCategory>;
 export function createDirectedPortImpl<TName extends string>(
   runtime: DirectedPortRuntime<TName>
 ): object {
@@ -145,14 +145,14 @@ function hasMetadataKey(obj: object): obj is { readonly [METADATA_KEY]: PortMeta
  * isDirectedPort(inbound); // true
  *
  * if (isDirectedPort(port)) {
- *   // TypeScript narrows: port is DirectedPort<unknown, string, PortDirection>
+ *   // TypeScript narrows: port is DirectedPort<string, unknown, PortDirection>
  *   const direction = getPortDirection(port);
  * }
  * ```
  */
 export function isDirectedPort(
-  port: Port<unknown, string>
-): port is DirectedPort<unknown, string, PortDirection> {
+  port: Port<string, unknown>
+): port is DirectedPort<string, unknown, PortDirection> {
   return (
     hasDirectionBrand(port) &&
     (port[DIRECTION_BRAND] === "inbound" || port[DIRECTION_BRAND] === "outbound")
@@ -174,11 +174,11 @@ export function isDirectedPort(
  * isInboundPort(outbound); // false
  *
  * if (isInboundPort(port)) {
- *   // TypeScript narrows: port is InboundPort<unknown, string>
+ *   // TypeScript narrows: port is InboundPort<string, unknown>
  * }
  * ```
  */
-export function isInboundPort(port: Port<unknown, string>): port is InboundPort<unknown, string> {
+export function isInboundPort(port: Port<string, unknown>): port is InboundPort<string, unknown> {
   return hasDirectionBrand(port) && port[DIRECTION_BRAND] === "inbound";
 }
 
@@ -197,11 +197,11 @@ export function isInboundPort(port: Port<unknown, string>): port is InboundPort<
  * isOutboundPort(inbound); // false
  *
  * if (isOutboundPort(port)) {
- *   // TypeScript narrows: port is OutboundPort<unknown, string>
+ *   // TypeScript narrows: port is OutboundPort<string, unknown>
  * }
  * ```
  */
-export function isOutboundPort(port: Port<unknown, string>): port is OutboundPort<unknown, string> {
+export function isOutboundPort(port: Port<string, unknown>): port is OutboundPort<string, unknown> {
   return hasDirectionBrand(port) && port[DIRECTION_BRAND] === "outbound";
 }
 
@@ -224,7 +224,7 @@ export function isOutboundPort(port: Port<unknown, string>): port is OutboundPor
  * getPortDirection(outbound); // 'outbound'
  * ```
  */
-export function getPortDirection(port: Port<unknown, string>): PortDirection | undefined {
+export function getPortDirection(port: Port<string, unknown>): PortDirection | undefined {
   if (hasDirectionBrand(port)) {
     return port[DIRECTION_BRAND];
   }
@@ -250,7 +250,7 @@ export function getPortDirection(port: Port<unknown, string>): PortDirection | u
  * // { description: 'Application logging', category: 'infrastructure', tags: [] }
  * ```
  */
-export function getPortMetadata(port: Port<unknown, string>): PortMetadata | undefined {
+export function getPortMetadata(port: Port<string, unknown>): PortMetadata | undefined {
   if (hasMetadataKey(port)) {
     return port[METADATA_KEY];
   }
@@ -267,7 +267,7 @@ export function getPortMetadata(port: Port<unknown, string>): PortMetadata | und
  * @param port - The port to verify
  * @throws {TypeError} If the port is not frozen
  */
-export function assertPortFrozen(port: Port<unknown, string>): void {
+export function assertPortFrozen(port: Port<string, unknown>): void {
   if (!Object.isFrozen(port)) {
     throw new TypeError(
       `ERROR[HEX028]: Port '${port.__portName}' is not frozen. ` +

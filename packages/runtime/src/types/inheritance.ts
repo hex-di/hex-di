@@ -57,8 +57,8 @@ export type InheritanceModeMap<TPortNames extends string> = {
  * Extracts port names from a union of Port types.
  * @internal
  */
-export type ExtractPortNames<T extends Port<unknown, string>> =
-  T extends Port<infer _S, infer TName> ? TName : never;
+export type ExtractPortNames<T extends Port<string, unknown>> =
+  T extends Port<infer TName, infer _S> ? TName : never;
 
 /**
  * Valid inheritance mode configuration map.
@@ -76,6 +76,6 @@ export type ExtractPortNames<T extends Port<unknown, string>> =
  * });
  * ```
  */
-export type InheritanceModeConfig<TProvides extends Port<unknown, string>> = {
+export type InheritanceModeConfig<TProvides extends Port<string, unknown>> = {
   [K in ExtractPortNames<TProvides>]?: InheritanceMode;
 };

@@ -13,7 +13,14 @@
 
 import { describe, expectTypeOf, it } from "vitest";
 import { port, createAdapter, adapterOrDie, adapterOrElse } from "../src/index.js";
-import type { InferAdapterError, InferManyErrors, FactoryResult, IsAsyncFactory, InferFactoryError } from "../src/index.js";
+import type {
+  InferAdapterError,
+  InferManyErrors,
+  FactoryResult,
+  IsAsyncFactory,
+  InferFactoryError,
+} from "../src/index.js";
+import { ResultAsync } from "@hex-di/result";
 
 // =============================================================================
 // Test Fixtures
@@ -361,7 +368,7 @@ describe("InferFactoryError unwraps PromiseLike", () => {
 // =============================================================================
 
 describe("adapterOrElse factoryKind async propagation", () => {
-  it("sync primary + async fallback → factoryKind async", () => {
+  it("sync primary + ResultAsync fallback → factoryKind async", () => {
     const syncPrimary = createAdapter({
       provides: LoggerPort,
       factory: (): FactoryResult<Logger, MyError> => ({
@@ -371,20 +378,21 @@ describe("adapterOrElse factoryKind async propagation", () => {
     });
     const asyncFallback = createAdapter({
       provides: LoggerPort,
-      factory: async () => ({ log: () => {} }),
+      factory: () => ResultAsync.ok({ log: () => {} }),
     });
 
     const result = adapterOrElse(syncPrimary, asyncFallback);
     expectTypeOf(result.factoryKind).toEqualTypeOf<"async">();
   });
 
-  it("async primary + sync fallback → factoryKind async", () => {
+  it("PromiseLike primary + sync fallback → factoryKind async", () => {
     const asyncPrimary = createAdapter({
       provides: LoggerPort,
-      factory: async (): Promise<FactoryResult<Logger, MyError>> => ({
-        _tag: "Ok" as const,
-        value: { log: () => {} },
-      }),
+      factory: (): PromiseLike<FactoryResult<Logger, MyError>> =>
+        Promise.resolve({
+          _tag: "Ok" as const,
+          value: { log: () => {} },
+        }),
     });
     const syncFallback = createAdapter({
       provides: LoggerPort,
@@ -395,17 +403,18 @@ describe("adapterOrElse factoryKind async propagation", () => {
     expectTypeOf(result.factoryKind).toEqualTypeOf<"async">();
   });
 
-  it("async primary + async fallback → factoryKind async", () => {
+  it("PromiseLike primary + ResultAsync fallback → factoryKind async", () => {
     const asyncPrimary = createAdapter({
       provides: LoggerPort,
-      factory: async (): Promise<FactoryResult<Logger, MyError>> => ({
-        _tag: "Ok" as const,
-        value: { log: () => {} },
-      }),
+      factory: (): PromiseLike<FactoryResult<Logger, MyError>> =>
+        Promise.resolve({
+          _tag: "Ok" as const,
+          value: { log: () => {} },
+        }),
     });
     const asyncFallback = createAdapter({
       provides: LoggerPort,
-      factory: async () => ({ log: () => {} }),
+      factory: () => ResultAsync.ok({ log: () => {} }),
     });
 
     const result = adapterOrElse(asyncPrimary, asyncFallback);
@@ -436,7 +445,9 @@ describe("adapterOrElse factoryKind async propagation", () => {
 
 describe("adapterOrElse requires merge and clonable", () => {
   it("merges requires from both adapters with distinct ports", () => {
-    interface Db { query(): void }
+    interface Db {
+      query(): void;
+    }
     const DbPort = port<Db>()({ name: "Db" });
 
     const primary = createAdapter({
@@ -450,7 +461,7 @@ describe("adapterOrElse requires merge and clonable", () => {
     const fb = createAdapter({
       provides: LoggerPort,
       requires: [DbPort],
-      factory: (_deps) => ({ log: () => {} }),
+      factory: _deps => ({ log: () => {} }),
     });
 
     const result = adapterOrElse(primary, fb);

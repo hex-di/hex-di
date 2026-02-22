@@ -123,8 +123,8 @@ export function resetScopeIdCounter(): void {
  * @internal
  */
 export class ScopeImpl<
-  TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown> = never,
   TPhase extends "uninitialized" | "initialized" = "uninitialized",
 > {
   readonly id: string;
@@ -248,7 +248,7 @@ export class ScopeImpl<
     return this.disposed;
   }
 
-  has(port: Port<unknown, string>): boolean {
+  has(port: Port<string, unknown>): boolean {
     return this.container.hasAdapter(port);
   }
 
@@ -311,8 +311,8 @@ function createMemoMapSnapshot(memo: MemoMap): MemoMapSnapshot {
 }
 
 export function createScopeWrapper<
-  TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown> = never,
   TPhase extends "uninitialized" | "initialized" = "uninitialized",
 >(
   impl: ScopeImpl<TProvides, TAsyncPorts, TPhase>,

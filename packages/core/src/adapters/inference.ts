@@ -17,7 +17,7 @@ import type { InferenceError } from "../utils/type-utilities.js";
 // =============================================================================
 
 // Type placeholder for inference patterns - more explicit than `any`
-type InferPlaceholder = Port<unknown, string>;
+type InferPlaceholder = Port<string, unknown>;
 type LifetimePlaceholder = Lifetime;
 type FactoryKindPlaceholder = FactoryKind;
 type ClonablePlaceholder = boolean;
@@ -28,8 +28,8 @@ type ClonablePlaceholder = boolean;
  *
  * When `dts-bundle-generator` creates flat type bundles for the playground,
  * each package gets its own copy of the `Adapter` type. Pattern-matching
- * `TAdapter extends Adapter<infer TProvides, Port<unknown, string>, ...>` fixes
- * `TRequires` at a concrete type, which causes `ResolvedDeps<Port<unknown, string>>`
+ * `TAdapter extends Adapter<infer TProvides, Port<string, unknown>, ...>` fixes
+ * `TRequires` at a concrete type, which causes `ResolvedDeps<Port<string, unknown>>`
  * to resolve to `{ [key: string]: unknown }`. The `factory` field becomes
  * `(deps: { [key: string]: unknown }) => ...`, and function parameter contravariance
  * prevents matching against concrete deps like `{ Config: Config; Logger: Logger }`.

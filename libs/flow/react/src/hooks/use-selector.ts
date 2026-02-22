@@ -24,7 +24,7 @@ export type EqualityFn<T> = (a: T, b: T) => boolean;
 // =============================================================================
 
 export function useSelector<TState extends string, TEvent extends string, TContext, TSelected>(
-  port: Port<FlowService<TState, TEvent, TContext>, string>,
+  port: Port<string, FlowService<TState, TEvent, TContext>>,
   selector: (state: TState, context: TContext) => TSelected,
   equals: EqualityFn<TSelected> = shallowEqual
 ): TSelected {

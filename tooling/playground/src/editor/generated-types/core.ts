@@ -9,8 +9,8 @@ export const dts = `declare module "@hex-di/core" {
  * 1. The same service interface type \`T\`
  * 2. The same port name \`TName\`
  *
- * @typeParam T - The service interface type (phantom type - exists only at compile time)
  * @typeParam TName - The literal string type for the port name (defaults to \`string\`)
+ * @typeParam T - The service interface type (phantom type - exists only at compile time)
  *
  * @remarks
  * - The \`__brand\` property carries both the service type and name in a tuple
@@ -29,8 +29,8 @@ export const dts = `declare module "@hex-di/core" {
  * }
  *
  * // Create typed port tokens
- * type ConsoleLoggerPort = Port<Logger, 'ConsoleLogger'>;
- * type FileLoggerPort = Port<Logger, 'FileLogger'>;
+ * type ConsoleLoggerPort = Port<'ConsoleLogger', Logger>;
+ * type FileLoggerPort = Port<'FileLogger', Logger>;
  *
  * // These are type-incompatible despite same interface
  * declare const consolePort: ConsoleLoggerPort;
@@ -45,15 +45,15 @@ export const dts = `declare module "@hex-di/core" {
  * type LoggerPortType = typeof LoggerPort;
  * \`\`\`
  */
-export type Port<T, TName extends string> = {
+export type Port<TName extends string, T> = {
 	/**
 	 * Brand property for nominal typing.
-	 * Contains a tuple of [ServiceType, PortName] at the type level.
+	 * Contains a tuple of [PortName, ServiceType] at the type level.
 	 * Value is undefined at runtime.
 	 */
 	readonly __brand: [
-		T,
-		TName
+		TName,
+		T
 	];
 	/**
 	 * The port name, exposed for debugging and error messages.
@@ -125,7 +125,7 @@ export type NotAPortError<T> = {
  * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * \`\`\`
  */
-export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPortError<P>;
+export type InferService<P> = P extends Port<infer _TName, infer T> ? T : NotAPortError<P>;
 /**
  * Extracts the port name literal type from a Port type.
  *
@@ -159,7 +159,7 @@ export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPo
  * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * \`\`\`
  */
-export type InferPortName<P> = P extends Port<infer _T, infer TName> ? TName : NotAPortError<P>;
+export type InferPortName<P> = P extends Port<infer TName, infer _T> ? TName : NotAPortError<P>;
 declare const __metadataKey: unique symbol;
 /**
  * Discriminator for hexagonal architecture port types.
@@ -210,8 +210,8 @@ export interface PortMetadata {
  * DirectedPorts are structurally compatible with base Ports, enabling gradual
  * adoption without breaking existing code.
  *
- * @typeParam TService - The service interface type (phantom type)
  * @typeParam TName - The literal string type for the port name
+ * @typeParam TService - The service interface type (phantom type)
  * @typeParam TDirection - 'inbound' or 'outbound'
  *
  * @see {@link InboundPort} - Convenience alias for inbound directed ports
@@ -222,13 +222,13 @@ export interface PortMetadata {
  * @example
  * \`\`\`typescript
  * // DirectedPort is assignable to Port (backward compatible)
- * const port: DirectedPort<Logger, 'Logger', 'inbound'> = createInboundPort({
+ * const port: DirectedPort<'Logger', Logger, 'inbound'> = createInboundPort({
  *   name: 'Logger',
  * });
- * const basePort: Port<Logger, 'Logger'> = port; // OK
+ * const basePort: Port<'Logger', Logger> = port; // OK
  * \`\`\`
  */
-export type DirectedPort<TService, TName extends string, TDirection extends PortDirection, TCategory extends string = string> = Port<TService, TName> & {
+export type DirectedPort<TName extends string, TService, TDirection extends PortDirection, TCategory extends string = string> = Port<TName, TService> & {
 	readonly __directionBrand: TDirection;
 	readonly __metadataKey: PortMetadata;
 	readonly __categoryBrand: TCategory;
@@ -239,8 +239,8 @@ export type DirectedPort<TService, TName extends string, TDirection extends Port
  * Inbound ports define the application's primary API - what the outside world
  * can ask the application to do. They're implemented by use case handlers.
  *
- * @typeParam TService - The service interface type
  * @typeParam TName - The literal string type for the port name
+ * @typeParam TService - The service interface type
  *
  * @example
  * \`\`\`typescript
@@ -256,15 +256,15 @@ export type DirectedPort<TService, TName extends string, TDirection extends Port
  * });
  * \`\`\`
  */
-export type InboundPort<TService, TName extends string, TCategory extends string = string> = DirectedPort<TService, TName, "inbound", TCategory>;
+export type InboundPort<TName extends string, TService, TCategory extends string = string> = DirectedPort<TName, TService, "inbound", TCategory>;
 /**
  * An outbound (driven) port for infrastructure interfaces.
  *
  * Outbound ports define what the application needs from external systems.
  * They're implemented by infrastructure adapters (databases, APIs, etc.).
  *
- * @typeParam TService - The service interface type
  * @typeParam TName - The literal string type for the port name
+ * @typeParam TService - The service interface type
  *
  * @example
  * \`\`\`typescript
@@ -280,7 +280,7 @@ export type InboundPort<TService, TName extends string, TCategory extends string
  * });
  * \`\`\`
  */
-export type OutboundPort<TService, TName extends string, TCategory extends string = string> = DirectedPort<TService, TName, "outbound", TCategory>;
+export type OutboundPort<TName extends string, TService, TCategory extends string = string> = DirectedPort<TName, TService, "outbound", TCategory>;
 /**
  * Checks if a type is a DirectedPort.
  *
@@ -289,8 +289,8 @@ export type OutboundPort<TService, TName extends string, TCategory extends strin
  *
  * @example
  * \`\`\`typescript
- * type A = IsDirectedPort<InboundPort<Logger, 'Logger'>>; // true
- * type B = IsDirectedPort<Port<Logger, 'Logger'>>;        // false
+ * type A = IsDirectedPort<InboundPort<'Logger', Logger>>; // true
+ * type B = IsDirectedPort<Port<'Logger', Logger>>;        // false
  * \`\`\`
  */
 export type IsDirectedPort<TPort> = TPort extends {
@@ -304,7 +304,7 @@ export type IsDirectedPort<TPort> = TPort extends {
  *
  * @example
  * \`\`\`typescript
- * type Dir = InferPortDirection<InboundPort<Logger, 'Logger'>>;
+ * type Dir = InferPortDirection<InboundPort<'Logger', Logger>>;
  * // Dir = 'inbound'
  * \`\`\`
  */
@@ -319,7 +319,7 @@ export type InferPortDirection<P> = P extends {
  *
  * @example
  * \`\`\`typescript
- * type Meta = InferPortMetadata<InboundPort<Logger, 'Logger'>>;
+ * type Meta = InferPortMetadata<InboundPort<'Logger', Logger>>;
  * // Meta = PortMetadata
  * \`\`\`
  */
@@ -358,7 +358,7 @@ export type InferPortCategory<P> = P extends {
  * // Inbound = RequestPort
  * \`\`\`
  */
-export type InboundPorts<P> = P extends DirectedPort<infer S, infer N, "inbound", infer C> ? DirectedPort<S, N, "inbound", C> : never;
+export type InboundPorts<P> = P extends DirectedPort<infer N, infer S, "inbound", infer C> ? DirectedPort<N, S, "inbound", C> : never;
 /**
  * Filters a union of ports to only those with 'outbound' direction.
  *
@@ -374,7 +374,7 @@ export type InboundPorts<P> = P extends DirectedPort<infer S, infer N, "inbound"
  * // Outbound = LoggerPort | ResponsePort
  * \`\`\`
  */
-export type OutboundPorts<P> = P extends DirectedPort<infer S, infer N, "outbound", infer C> ? DirectedPort<S, N, "outbound", C> : never;
+export type OutboundPorts<P> = P extends DirectedPort<infer N, infer S, "outbound", infer C> ? DirectedPort<N, S, "outbound", C> : never;
 /**
  * Suggested category values for port organization with IDE autocomplete.
  *
@@ -474,12 +474,12 @@ export declare function createPort<const TName extends string, TService, const T
 	name: TName;
 	direction: TDirection;
 	category?: TCategory;
-}): DirectedPort<TService, TName, TDirection, TCategory>;
+}): DirectedPort<TName, TService, TDirection, TCategory>;
 export declare function createPort<const TName extends string, TService, const TCategory extends string = string>(config: PortConfig & {
 	name: TName;
 	category?: TCategory;
-}): DirectedPort<TService, TName, "outbound", TCategory>;
-export declare function createPort<const TConfig extends PortConfig>(config: TConfig): DirectedPort<unknown, TConfig["name"], TConfig extends {
+}): DirectedPort<TName, TService, "outbound", TCategory>;
+export declare function createPort<const TConfig extends PortConfig>(config: TConfig): DirectedPort<TConfig["name"], unknown, TConfig extends {
 	direction: infer D extends PortDirection;
 } ? D : "outbound", TConfig extends {
 	category: infer C extends string;
@@ -499,17 +499,17 @@ export declare function createPort<const TConfig extends PortConfig>(config: TCo
  *
  * // Name "Logger" is inferred as literal type
  * const LoggerPort = port<Logger>()({ name: "Logger" });
- * // Type: DirectedPort<Logger, "Logger", "outbound">
+ * // Type: DirectedPort<"Logger", Logger, "outbound">
  *
  * // With direction
  * const RequestPort = port<Request>()({ name: "Request", direction: "inbound" });
- * // Type: DirectedPort<Request, "Request", "inbound">
+ * // Type: DirectedPort<"Request", Request, "inbound">
  * \`\`\`
  *
  * @typeParam TService - The service interface type
  * @returns A function that accepts a config and returns a DirectedPort
  */
-export declare function port<TService>(): <const TConfig extends PortConfig>(config: TConfig) => DirectedPort<TService, TConfig["name"], TConfig extends {
+export declare function port<TService>(): <const TConfig extends PortConfig>(config: TConfig) => DirectedPort<TConfig["name"], TService, TConfig extends {
 	direction: infer D extends PortDirection;
 } ? D : "outbound", TConfig extends {
 	category: infer C extends string;
@@ -527,12 +527,12 @@ export declare function port<TService>(): <const TConfig extends PortConfig>(con
  * isDirectedPort(inbound); // true
  *
  * if (isDirectedPort(port)) {
- *   // TypeScript narrows: port is DirectedPort<unknown, string, PortDirection>
+ *   // TypeScript narrows: port is DirectedPort<string, unknown, PortDirection>
  *   const direction = getPortDirection(port);
  * }
  * \`\`\`
  */
-export declare function isDirectedPort(port: Port<unknown, string>): port is DirectedPort<unknown, string, PortDirection>;
+export declare function isDirectedPort(port: Port<string, unknown>): port is DirectedPort<string, unknown, PortDirection>;
 /**
  * Runtime type guard that checks if a port is an InboundPort.
  *
@@ -548,11 +548,11 @@ export declare function isDirectedPort(port: Port<unknown, string>): port is Dir
  * isInboundPort(outbound); // false
  *
  * if (isInboundPort(port)) {
- *   // TypeScript narrows: port is InboundPort<unknown, string>
+ *   // TypeScript narrows: port is InboundPort<string, unknown>
  * }
  * \`\`\`
  */
-export declare function isInboundPort(port: Port<unknown, string>): port is InboundPort<unknown, string>;
+export declare function isInboundPort(port: Port<string, unknown>): port is InboundPort<string, unknown>;
 /**
  * Runtime type guard that checks if a port is an OutboundPort.
  *
@@ -568,11 +568,11 @@ export declare function isInboundPort(port: Port<unknown, string>): port is Inbo
  * isOutboundPort(inbound); // false
  *
  * if (isOutboundPort(port)) {
- *   // TypeScript narrows: port is OutboundPort<unknown, string>
+ *   // TypeScript narrows: port is OutboundPort<string, unknown>
  * }
  * \`\`\`
  */
-export declare function isOutboundPort(port: Port<unknown, string>): port is OutboundPort<unknown, string>;
+export declare function isOutboundPort(port: Port<string, unknown>): port is OutboundPort<string, unknown>;
 /**
  * Gets the direction of a port, if it's a DirectedPort.
  *
@@ -588,7 +588,7 @@ export declare function isOutboundPort(port: Port<unknown, string>): port is Out
  * getPortDirection(outbound); // 'outbound'
  * \`\`\`
  */
-export declare function getPortDirection(port: Port<unknown, string>): PortDirection | undefined;
+export declare function getPortDirection(port: Port<string, unknown>): PortDirection | undefined;
 /**
  * Gets the metadata of a port, if it's a DirectedPort.
  *
@@ -608,14 +608,14 @@ export declare function getPortDirection(port: Port<unknown, string>): PortDirec
  * // { description: 'Application logging', category: 'infrastructure', tags: [] }
  * \`\`\`
  */
-export declare function getPortMetadata(port: Port<unknown, string>): PortMetadata | undefined;
+export declare function getPortMetadata(port: Port<string, unknown>): PortMetadata | undefined;
 /**
  * Asserts that a port object is frozen.
  *
  * @param port - The port to verify
  * @throws {TypeError} If the port is not frozen
  */
-export declare function assertPortFrozen(port: Port<unknown, string>): void;
+export declare function assertPortFrozen(port: Port<string, unknown>): void;
 /**
  * Literal Value Constants for Adapters.
  *
@@ -696,7 +696,7 @@ export type IsNever<T> = [
  * @typeParam T - A tuple or array type
  * @returns Union of all element types, or \`never\` for empty array
  */
-export type TupleToUnion<T extends readonly Port<unknown, string>[]> = T extends readonly [
+export type TupleToUnion<T extends readonly Port<string, unknown>[]> = T extends readonly [
 ] ? never : T[number];
 /**
  * Flattens intersection types into a single object type for better readability.
@@ -838,7 +838,7 @@ export type ResolvedDeps<TRequires> = [
  * // EmptyDeps
  * \`\`\`
  */
-export type PortDeps<TRequires extends readonly Port<unknown, string>[]> = ResolvedDeps<TupleToUnion<TRequires>>;
+export type PortDeps<TRequires extends readonly Port<string, unknown>[]> = ResolvedDeps<TupleToUnion<TRequires>>;
 /**
  * A branded adapter type that captures the complete contract for a service implementation.
  *
@@ -977,14 +977,14 @@ out TFactoryKind extends FactoryKind = "sync", out TClonable extends boolean = f
 export interface AdapterConstraint {
 	/**
 	 * The port this adapter provides (read-only, covariant).
-	 * Uses Port<unknown, string> as the widest Port type.
+	 * Uses Port<string, unknown> as the widest Port type.
 	 */
-	readonly provides: Port<unknown, string>;
+	readonly provides: Port<string, unknown>;
 	/**
 	 * The ports this adapter depends on (read-only, covariant).
 	 * Each element is a Port with \`__portName\` for runtime identification.
 	 */
-	readonly requires: readonly Port<unknown, string>[];
+	readonly requires: readonly Port<string, unknown>[];
 	/**
 	 * The lifetime scope (fixed union, all values assignable).
 	 */
@@ -1008,7 +1008,7 @@ export interface AdapterConstraint {
 	 */
 	finalizer?(instance: never): void | Promise<void>;
 }
-export type InferPlaceholder = Port<unknown, string>;
+export type InferPlaceholder = Port<string, unknown>;
 export type LifetimePlaceholder = Lifetime;
 export type FactoryKindPlaceholder = FactoryKind;
 export type ClonablePlaceholder = boolean;
@@ -1018,8 +1018,8 @@ export type ClonablePlaceholder = boolean;
  *
  * When \`dts-bundle-generator\` creates flat type bundles for the playground,
  * each package gets its own copy of the \`Adapter\` type. Pattern-matching
- * \`TAdapter extends Adapter<infer TProvides, Port<unknown, string>, ...>\` fixes
- * \`TRequires\` at a concrete type, which causes \`ResolvedDeps<Port<unknown, string>>\`
+ * \`TAdapter extends Adapter<infer TProvides, Port<string, unknown>, ...>\` fixes
+ * \`TRequires\` at a concrete type, which causes \`ResolvedDeps<Port<string, unknown>>\`
  * to resolve to \`{ [key: string]: unknown }\`. The \`factory\` field becomes
  * \`(deps: { [key: string]: unknown }) => ...\`, and function parameter contravariance
  * prevents matching against concrete deps like \`{ Config: Config; Logger: Logger }\`.
@@ -1323,7 +1323,7 @@ export type EnforceAsyncLifetime<TFactory, TLifetime extends string> = IsAsyncFa
  * @typeParam TProvides - The port being implemented
  * @typeParam TRequires - Tuple of required port dependencies
  */
-export interface BaseUnifiedConfig<TProvides extends Port<unknown, string>, TRequires extends readonly Port<unknown, string>[]> {
+export interface BaseUnifiedConfig<TProvides extends Port<string, unknown>, TRequires extends readonly Port<string, unknown>[]> {
 	/**
 	 * The port this adapter provides/implements.
 	 */
@@ -1365,7 +1365,7 @@ export interface BaseUnifiedConfig<TProvides extends Port<unknown, string>, TReq
  * @typeParam TRequires - Tuple of required port dependencies
  * @typeParam TFactory - The factory function type
  */
-export interface FactoryConfig<TProvides extends Port<unknown, string>, TRequires extends readonly Port<unknown, string>[], TFactory extends (deps: PortDeps<TRequires>) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | Promise<FactoryResult<InferService<TProvides>>> | PromiseLike<FactoryResult<InferService<TProvides>>>> extends BaseUnifiedConfig<TProvides, TRequires> {
+export interface FactoryConfig<TProvides extends Port<string, unknown>, TRequires extends readonly Port<string, unknown>[], TFactory extends (deps: PortDeps<TRequires>) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | Promise<FactoryResult<InferService<TProvides>>> | PromiseLike<FactoryResult<InferService<TProvides>>>> extends BaseUnifiedConfig<TProvides, TRequires> {
 	/**
 	 * Factory function that creates the service instance.
 	 *
@@ -1386,7 +1386,7 @@ export interface FactoryConfig<TProvides extends Port<unknown, string>, TRequire
  * @typeParam TRequires - Tuple of required port dependencies
  * @typeParam TClass - The class constructor type
  */
-export interface ClassConfig<TProvides extends Port<unknown, string>, TRequires extends readonly Port<unknown, string>[], TClass extends new (...args: unknown[]) => InferService<TProvides>> extends BaseUnifiedConfig<TProvides, TRequires> {
+export interface ClassConfig<TProvides extends Port<string, unknown>, TRequires extends readonly Port<string, unknown>[], TClass extends new (...args: unknown[]) => InferService<TProvides>> extends BaseUnifiedConfig<TProvides, TRequires> {
 	/**
 	 * Class constructor for dependency injection.
 	 *
@@ -1418,8 +1418,8 @@ export interface ClassConfig<TProvides extends Port<unknown, string>, TRequires 
  *
  * @internal
  */
-export type PortsToServices<T extends readonly Port<unknown, string>[]> = {
-	[K in keyof T]: T[K] extends Port<infer S, string> ? S : never;
+export type PortsToServices<T extends readonly Port<string, unknown>[]> = {
+	[K in keyof T]: T[K] extends Port<string, infer S> ? S : never;
 };
 /**
  * Creates an adapter with a factory function, all defaults applied.
@@ -1435,7 +1435,7 @@ export type PortsToServices<T extends readonly Port<unknown, string>[]> = {
  * @typeParam TProvides - The port being implemented
  * @typeParam TFactory - The factory function type
  */
-export declare function createAdapter<TProvides extends Port<unknown, string>, TFactory extends (deps: ResolvedDeps<never>) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>>(config: {
+export declare function createAdapter<TProvides extends Port<string, unknown>, TFactory extends (deps: ResolvedDeps<never>) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>>(config: {
 	readonly provides: TProvides;
 	readonly factory: TFactory;
 	readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
@@ -1454,7 +1454,7 @@ export declare function createAdapter<TProvides extends Port<unknown, string>, T
  * @typeParam TRequires - Tuple of required port dependencies
  * @typeParam TFactory - The factory function type
  */
-export declare function createAdapter<TProvides extends Port<unknown, string>, const TRequires extends readonly Port<unknown, string>[], TFactory extends (deps: PortDeps<TRequires>) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>>(config: {
+export declare function createAdapter<TProvides extends Port<string, unknown>, const TRequires extends readonly Port<string, unknown>[], TFactory extends (deps: PortDeps<TRequires>) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>>(config: {
 	readonly provides: TProvides;
 	readonly requires: TRequires;
 	readonly factory: TFactory;
@@ -1478,7 +1478,7 @@ export declare function createAdapter<TProvides extends Port<unknown, string>, c
  * @typeParam TLifetime - The lifetime scope
  * @typeParam TFactory - The factory function type
  */
-export declare function createAdapter<TProvides extends Port<unknown, string>, const TLifetime extends Lifetime, TFactory extends (deps: ResolvedDeps<never>) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>>(config: {
+export declare function createAdapter<TProvides extends Port<string, unknown>, const TLifetime extends Lifetime, TFactory extends (deps: ResolvedDeps<never>) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>>(config: {
 	readonly provides: TProvides;
 	readonly lifetime: TLifetime;
 	readonly factory: TFactory;
@@ -1503,7 +1503,7 @@ export declare function createAdapter<TProvides extends Port<unknown, string>, c
  * @typeParam TLifetime - The lifetime scope
  * @typeParam TFactory - The factory function type
  */
-export declare function createAdapter<TProvides extends Port<unknown, string>, const TRequires extends readonly Port<unknown, string>[], const TLifetime extends Lifetime, TFactory extends (deps: PortDeps<TRequires>) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>>(config: {
+export declare function createAdapter<TProvides extends Port<string, unknown>, const TRequires extends readonly Port<string, unknown>[], const TLifetime extends Lifetime, TFactory extends (deps: PortDeps<TRequires>) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>>(config: {
 	readonly provides: TProvides;
 	readonly requires: TRequires;
 	readonly lifetime: TLifetime;
@@ -1522,7 +1522,7 @@ export declare function createAdapter<TProvides extends Port<unknown, string>, c
  * @typeParam TClonable - The clonable flag literal type
  * @typeParam TFactory - The factory function type
  */
-export declare function createAdapter<TProvides extends Port<unknown, string>, const TClonable extends boolean, TFactory extends (deps: ResolvedDeps<never>) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>>(config: {
+export declare function createAdapter<TProvides extends Port<string, unknown>, const TClonable extends boolean, TFactory extends (deps: ResolvedDeps<never>) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>>(config: {
 	readonly provides: TProvides;
 	readonly clonable: TClonable;
 	readonly factory: TFactory;
@@ -1542,7 +1542,7 @@ export declare function createAdapter<TProvides extends Port<unknown, string>, c
  * @typeParam TClonable - The clonable flag literal type
  * @typeParam TFactory - The factory function type
  */
-export declare function createAdapter<TProvides extends Port<unknown, string>, const TRequires extends readonly Port<unknown, string>[], const TClonable extends boolean, TFactory extends (deps: PortDeps<TRequires>) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>>(config: {
+export declare function createAdapter<TProvides extends Port<string, unknown>, const TRequires extends readonly Port<string, unknown>[], const TClonable extends boolean, TFactory extends (deps: PortDeps<TRequires>) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>>(config: {
 	readonly provides: TProvides;
 	readonly requires: TRequires;
 	readonly clonable: TClonable;
@@ -1567,7 +1567,7 @@ export declare function createAdapter<TProvides extends Port<unknown, string>, c
  * @typeParam TClonable - The clonable flag literal type
  * @typeParam TFactory - The factory function type
  */
-export declare function createAdapter<TProvides extends Port<unknown, string>, const TLifetime extends Lifetime, const TClonable extends boolean, TFactory extends (deps: ResolvedDeps<never>) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>>(config: {
+export declare function createAdapter<TProvides extends Port<string, unknown>, const TLifetime extends Lifetime, const TClonable extends boolean, TFactory extends (deps: ResolvedDeps<never>) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>>(config: {
 	readonly provides: TProvides;
 	readonly lifetime: TLifetime;
 	readonly clonable: TClonable;
@@ -1592,7 +1592,7 @@ export declare function createAdapter<TProvides extends Port<unknown, string>, c
  * @typeParam TClonable - The clonable flag literal type
  * @typeParam TFactory - The factory function type
  */
-export declare function createAdapter<TProvides extends Port<unknown, string>, const TRequires extends readonly Port<unknown, string>[], const TLifetime extends Lifetime, const TClonable extends boolean, TFactory extends (deps: PortDeps<TRequires>) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>>(config: {
+export declare function createAdapter<TProvides extends Port<string, unknown>, const TRequires extends readonly Port<string, unknown>[], const TLifetime extends Lifetime, const TClonable extends boolean, TFactory extends (deps: PortDeps<TRequires>) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>>(config: {
 	readonly provides: TProvides;
 	readonly requires: TRequires;
 	readonly lifetime: TLifetime;
@@ -1619,7 +1619,7 @@ export declare function createAdapter<TProvides extends Port<unknown, string>, c
  * });
  * \`\`\`
  */
-export declare function createAdapter<TProvides extends Port<unknown, string>, TClass extends new () => InferService<TProvides>>(config: {
+export declare function createAdapter<TProvides extends Port<string, unknown>, TClass extends new () => InferService<TProvides>>(config: {
 	readonly provides: TProvides;
 	readonly class: TClass;
 	readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
@@ -1648,7 +1648,7 @@ export declare function createAdapter<TProvides extends Port<unknown, string>, T
  * });
  * \`\`\`
  */
-export declare function createAdapter<TProvides extends Port<unknown, string>, const TRequires extends readonly Port<unknown, string>[], TClass extends new (...args: PortsToServices<TRequires>) => InferService<TProvides>>(config: {
+export declare function createAdapter<TProvides extends Port<string, unknown>, const TRequires extends readonly Port<string, unknown>[], TClass extends new (...args: PortsToServices<TRequires>) => InferService<TProvides>>(config: {
 	readonly provides: TProvides;
 	readonly requires: TRequires;
 	readonly class: TClass;
@@ -1676,7 +1676,7 @@ export declare function createAdapter<TProvides extends Port<unknown, string>, c
  * });
  * \`\`\`
  */
-export declare function createAdapter<TProvides extends Port<unknown, string>, const TLifetime extends Lifetime, TClass extends new () => InferService<TProvides>>(config: {
+export declare function createAdapter<TProvides extends Port<string, unknown>, const TLifetime extends Lifetime, TClass extends new () => InferService<TProvides>>(config: {
 	readonly provides: TProvides;
 	readonly class: TClass;
 	readonly lifetime: TLifetime;
@@ -1706,7 +1706,7 @@ export declare function createAdapter<TProvides extends Port<unknown, string>, c
  * });
  * \`\`\`
  */
-export declare function createAdapter<TProvides extends Port<unknown, string>, const TRequires extends readonly Port<unknown, string>[], const TLifetime extends Lifetime, TClass extends new (...args: PortsToServices<TRequires>) => InferService<TProvides>>(config: {
+export declare function createAdapter<TProvides extends Port<string, unknown>, const TRequires extends readonly Port<string, unknown>[], const TLifetime extends Lifetime, TClass extends new (...args: PortsToServices<TRequires>) => InferService<TProvides>>(config: {
 	readonly provides: TProvides;
 	readonly requires: TRequires;
 	readonly class: TClass;
@@ -1734,7 +1734,7 @@ export declare function createAdapter<TProvides extends Port<unknown, string>, c
  * });
  * \`\`\`
  */
-export declare function createAdapter<TProvides extends Port<unknown, string>, const TClonable extends boolean, TClass extends new () => InferService<TProvides>>(config: {
+export declare function createAdapter<TProvides extends Port<string, unknown>, const TClonable extends boolean, TClass extends new () => InferService<TProvides>>(config: {
 	readonly provides: TProvides;
 	readonly class: TClass;
 	readonly clonable: TClonable;
@@ -1764,7 +1764,7 @@ export declare function createAdapter<TProvides extends Port<unknown, string>, c
  * });
  * \`\`\`
  */
-export declare function createAdapter<TProvides extends Port<unknown, string>, const TRequires extends readonly Port<unknown, string>[], const TClonable extends boolean, TClass extends new (...args: PortsToServices<TRequires>) => InferService<TProvides>>(config: {
+export declare function createAdapter<TProvides extends Port<string, unknown>, const TRequires extends readonly Port<string, unknown>[], const TClonable extends boolean, TClass extends new (...args: PortsToServices<TRequires>) => InferService<TProvides>>(config: {
 	readonly provides: TProvides;
 	readonly requires: TRequires;
 	readonly class: TClass;
@@ -1793,7 +1793,7 @@ export declare function createAdapter<TProvides extends Port<unknown, string>, c
  * });
  * \`\`\`
  */
-export declare function createAdapter<TProvides extends Port<unknown, string>, const TLifetime extends Lifetime, const TClonable extends boolean, TClass extends new () => InferService<TProvides>>(config: {
+export declare function createAdapter<TProvides extends Port<string, unknown>, const TLifetime extends Lifetime, const TClonable extends boolean, TClass extends new () => InferService<TProvides>>(config: {
 	readonly provides: TProvides;
 	readonly class: TClass;
 	readonly lifetime: TLifetime;
@@ -1824,7 +1824,7 @@ export declare function createAdapter<TProvides extends Port<unknown, string>, c
  * });
  * \`\`\`
  */
-export declare function createAdapter<TProvides extends Port<unknown, string>, const TRequires extends readonly Port<unknown, string>[], const TLifetime extends Lifetime, const TClonable extends boolean, TClass extends new (...args: PortsToServices<TRequires>) => InferService<TProvides>>(config: {
+export declare function createAdapter<TProvides extends Port<string, unknown>, const TRequires extends readonly Port<string, unknown>[], const TLifetime extends Lifetime, const TClonable extends boolean, TClass extends new (...args: PortsToServices<TRequires>) => InferService<TProvides>>(config: {
 	readonly provides: TProvides;
 	readonly requires: TRequires;
 	readonly class: TClass;
@@ -1901,7 +1901,7 @@ declare const __originalPort: unique symbol;
  * // name: "LazyUserService"
  * \`\`\`
  */
-export type LazyPort<TPort extends Port<unknown, string>> = Port<() => InferService<TPort>, \`Lazy\${InferPortName<TPort>}\`> & {
+export type LazyPort<TPort extends Port<string, unknown>> = Port<\`Lazy\${InferPortName<TPort>}\`, () => InferService<TPort>> & {
 	readonly __lazyPortBrand: true;
 	readonly __originalPort: TPort;
 };
@@ -1960,14 +1960,14 @@ export type UnwrapLazyPort<TPort> = TPort extends {
  * });
  * \`\`\`
  */
-export declare function lazyPort<TName extends string, TPort extends Port<unknown, TName>>(port: TPort): LazyPort<TPort>;
+export declare function lazyPort<TName extends string, TPort extends Port<TName, unknown>>(port: TPort): LazyPort<TPort>;
 /**
  * Extracts the original port from a lazy port at runtime.
  *
  * @param lazy - The lazy port
  * @returns The original port
  */
-export declare function getOriginalPort<TPort extends Port<unknown, string>>(lazy: LazyPort<TPort>): TPort;
+export declare function getOriginalPort<TPort extends Port<string, unknown>>(lazy: LazyPort<TPort>): TPort;
 /**
  * Runtime check if a port is a lazy port.
  *
@@ -1981,7 +1981,7 @@ export declare function getOriginalPort<TPort extends Port<unknown, string>>(laz
  * isLazyPort(UserServicePort); // false
  * \`\`\`
  */
-export declare function isLazyPort(port: Port<unknown, string>): port is LazyPort<Port<unknown, string>>;
+export declare function isLazyPort(port: Port<string, unknown>): port is LazyPort<Port<string, unknown>>;
 /**
  * Checks if a value is a valid Lifetime value.
  *
@@ -3803,14 +3803,14 @@ export declare function isLibraryInspector(value: unknown): value is LibraryInsp
  *   name: "FlowInspector",
  *   description: "Flow library inspection",
  * });
- * // Type: DirectedPort<LibraryInspector, "FlowInspector", "outbound", "library-inspector">
+ * // Type: DirectedPort<"FlowInspector", LibraryInspector, "outbound", "library-inspector">
  * \`\`\`
  */
 export declare function createLibraryInspectorPort<const TName extends string>(config: {
 	readonly name: TName;
 	readonly description?: string;
 	readonly tags?: readonly string[];
-}): DirectedPort<LibraryInspector, TName, "outbound", "library-inspector">;
+}): DirectedPort<TName, LibraryInspector, "outbound", "library-inspector">;
 /**
  * Information about a scope event (creation/disposal).
  */

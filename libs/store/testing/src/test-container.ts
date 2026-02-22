@@ -20,10 +20,10 @@ import { createContainer } from "@hex-di/runtime";
 /**
  * A test container with all ports resolvable synchronously.
  *
- * Uses `Port<unknown, string>` as TProvides so any port can be resolved,
+ * Uses `Port<string, unknown>` as TProvides so any port can be resolved,
  * and `never` for TAsyncPorts so `resolve()` accepts all ports.
  */
-export type TestContainer = Container<Port<unknown, string>>;
+export type TestContainer = Container<Port<string, unknown>>;
 
 /**
  * Configuration for {@link createStateTestContainer}.
@@ -39,7 +39,7 @@ export interface StateTestContainerConfig<A extends readonly AdapterConstraint[]
    * method (e.g. AtomService). For services without `set()`, the override
    * is silently skipped.
    */
-  readonly overrides?: ReadonlyArray<readonly [Port<unknown, string>, unknown]>;
+  readonly overrides?: ReadonlyArray<readonly [Port<string, unknown>, unknown]>;
 }
 
 // =============================================================================
@@ -68,7 +68,7 @@ function hasSetMethod(service: unknown): service is { set: (value: unknown) => v
  */
 function buildGraphFromAdapters(
   adapters: readonly AdapterConstraint[]
-): Graph<Port<unknown, string>> {
+): Graph<Port<string, unknown>> {
   const result: unknown = GraphBuilder.create().provideMany(adapters).build();
   if (!isGraph(result)) {
     throw new Error(

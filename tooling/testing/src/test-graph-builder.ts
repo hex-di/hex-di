@@ -43,10 +43,10 @@ const TEST_GRAPH_BUILDER_BRAND = Symbol("TestGraphBuilder");
  * @internal
  */
 type _AdapterPortName<
-  A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>,
+  A extends Adapter<Port<string, unknown>, Port<string, unknown> | never, Lifetime>,
 > =
   A extends Adapter<infer P, infer _R, infer _L>
-    ? P extends Port<unknown, string>
+    ? P extends Port<string, unknown>
       ? InferPortName<P>
       : never
     : never;
@@ -57,8 +57,8 @@ type _AdapterPortName<
  * @internal
  */
 type _ValidOverrideAdapter<
-  TProvides extends Port<unknown, string>,
-  A extends Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>,
+  TProvides extends Port<string, unknown>,
+  A extends Adapter<Port<string, unknown>, Port<string, unknown> | never, Lifetime>,
 > = A extends Adapter<infer P, infer _R, infer _L> ? (P extends TProvides ? A : never) : never;
 
 // =============================================================================
@@ -116,8 +116,8 @@ type _ValidOverrideAdapter<
  * @see {@link InferTestGraphProvides} - Type utility to extract TProvides from TestGraphBuilder
  */
 export class TestGraphBuilder<
-  TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> | never = never,
+  TProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown> | never = never,
 > {
   /**
    * Type-level brand property for nominal typing.
@@ -149,7 +149,7 @@ export class TestGraphBuilder<
    */
   private readonly overrides: ReadonlyMap<
     string,
-    Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>
+    Adapter<Port<string, unknown>, Port<string, unknown> | never, Lifetime>
   >;
 
   /**
@@ -166,7 +166,7 @@ export class TestGraphBuilder<
     originalGraph: Graph<TProvides, TAsyncPorts>,
     overrides: ReadonlyMap<
       string,
-      Adapter<Port<unknown, string>, Port<unknown, string> | never, Lifetime>
+      Adapter<Port<string, unknown>, Port<string, unknown> | never, Lifetime>
     >
   ) {
     this.originalGraph = originalGraph;
@@ -194,8 +194,8 @@ export class TestGraphBuilder<
    * ```
    */
   static from<
-    T extends Port<unknown, string>,
-    TAsync extends Port<unknown, string> | never = never,
+    T extends Port<string, unknown>,
+    TAsync extends Port<string, unknown> | never = never,
   >(graph: Graph<T, TAsync>): TestGraphBuilder<T, TAsync> {
     return new TestGraphBuilder(graph, new Map());
   }
@@ -233,7 +233,7 @@ export class TestGraphBuilder<
    *   .build();
    * ```
    */
-  override<A extends Adapter<TProvides, Port<unknown, string> | never, Lifetime>>(
+  override<A extends Adapter<TProvides, Port<string, unknown> | never, Lifetime>>(
     adapter: A
   ): TestGraphBuilder<TProvides, TAsyncPorts> {
     // Extract port name from the adapter's provides property

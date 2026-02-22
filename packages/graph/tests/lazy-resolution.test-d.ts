@@ -67,7 +67,7 @@ describe("LazyPort type", () => {
     type Lazy = LazyPort<typeof UserServicePort>;
 
     // Should be assignable to Port
-    type IsValidPort = Lazy extends Port<() => UserService, "LazyUserService"> ? true : false;
+    type IsValidPort = Lazy extends Port<"LazyUserService", () => UserService> ? true : false;
     expectTypeOf<IsValidPort>().toEqualTypeOf<true>();
   });
 });

@@ -9,6 +9,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 import { port, createAdapter, adapterOrDie, adapterOrElse } from "../src/index.js";
+import { ResultAsync } from "@hex-di/result";
 
 // =============================================================================
 // Test Fixtures
@@ -167,13 +168,15 @@ describe("adapterOrElse", () => {
   });
 
   it("should merge requires from both adapters", () => {
-    interface Config { host: string }
+    interface Config {
+      host: string;
+    }
     const ConfigPort = port<Config>()({ name: "Config" });
 
     const primary = createAdapter({
       provides: LoggerPort,
       requires: [ConfigPort],
-      factory: (_deps) => ({ log: () => {} }),
+      factory: _deps => ({ log: () => {} }),
     });
 
     const wrapped = adapterOrElse(primary, fallbackAdapter);
@@ -181,18 +184,20 @@ describe("adapterOrElse", () => {
   });
 
   it("should dedup requires by port name", () => {
-    interface Config { host: string }
+    interface Config {
+      host: string;
+    }
     const ConfigPort = port<Config>()({ name: "Config" });
 
     const primary = createAdapter({
       provides: LoggerPort,
       requires: [ConfigPort],
-      factory: (_deps) => ({ log: () => {} }),
+      factory: _deps => ({ log: () => {} }),
     });
     const fallbackWithDep = createAdapter({
       provides: LoggerPort,
       requires: [ConfigPort],
-      factory: (_deps) => ({ log: () => {} }),
+      factory: _deps => ({ log: () => {} }),
     });
 
     const wrapped = adapterOrElse(primary, fallbackWithDep);
@@ -210,18 +215,19 @@ describe("adapterOrElse", () => {
     expect(Object.isFrozen(wrapped)).toBe(true);
   });
 
-  it("should be async if fallback is async", () => {
+  it("ResultAsync fallback keeps factoryKind sync at runtime", () => {
     const primary = createAdapter({
       provides: LoggerPort,
       factory: () => ({ log: () => {} }),
     });
     const asyncFallback = createAdapter({
       provides: LoggerPort,
-      factory: async () => ({ log: () => {} }),
+      factory: () => ResultAsync.ok({ log: () => {} }),
     });
 
     const wrapped = adapterOrElse(primary, asyncFallback);
-    expect(wrapped.factoryKind).toBe("async");
+    // ResultAsync-returning factories are sync at runtime (no async keyword)
+    expect(wrapped.factoryKind).toBe("sync");
   });
 
   it("should NOT call fallback when primary returns Ok", () => {
@@ -253,10 +259,10 @@ describe("adapterOrElse", () => {
     expect(fallbackFn).not.toHaveBeenCalled();
   });
 
-  it("async primary + sync fallback → factoryKind async", () => {
+  it("ResultAsync primary + sync fallback → factoryKind sync at runtime", () => {
     const primary = createAdapter({
       provides: LoggerPort,
-      factory: async () => ({ log: () => {} }),
+      factory: () => ResultAsync.ok({ log: () => {} }),
     });
     const fb = createAdapter({
       provides: LoggerPort,
@@ -264,21 +270,23 @@ describe("adapterOrElse", () => {
     });
 
     const wrapped = adapterOrElse(primary, fb);
-    expect(wrapped.factoryKind).toBe("async");
+    // ResultAsync-returning factories are sync at runtime (no async keyword)
+    expect(wrapped.factoryKind).toBe("sync");
   });
 
-  it("async primary + async fallback → factoryKind async", () => {
+  it("ResultAsync primary + ResultAsync fallback → factoryKind sync at runtime", () => {
     const primary = createAdapter({
       provides: LoggerPort,
-      factory: async () => ({ log: () => {} }),
+      factory: () => ResultAsync.ok({ log: () => {} }),
     });
     const fb = createAdapter({
       provides: LoggerPort,
-      factory: async () => ({ log: () => {} }),
+      factory: () => ResultAsync.ok({ log: () => {} }),
     });
 
     const wrapped = adapterOrElse(primary, fb);
-    expect(wrapped.factoryKind).toBe("async");
+    // ResultAsync-returning factories are sync at runtime (no async keyword)
+    expect(wrapped.factoryKind).toBe("sync");
   });
 
   it("sync primary + sync fallback → factoryKind sync", () => {
@@ -295,14 +303,14 @@ describe("adapterOrElse", () => {
     expect(wrapped.factoryKind).toBe("sync");
   });
 
-  it("async primary Ok → unwraps correctly", async () => {
+  it("PromiseLike primary Ok → unwraps correctly", async () => {
     const logger: Logger = { log: () => {} };
     const primary = createAdapter({
       provides: LoggerPort,
-      factory: async (): Promise<
+      factory: (): PromiseLike<
         | { readonly _tag: "Ok"; readonly value: Logger }
         | { readonly _tag: "Err"; readonly error: string }
-      > => ({ _tag: "Ok", value: logger }),
+      > => Promise.resolve({ _tag: "Ok" as const, value: logger }),
     });
     const fb = createAdapter({
       provides: LoggerPort,
@@ -314,18 +322,18 @@ describe("adapterOrElse", () => {
     expect(result).toBe(logger);
   });
 
-  it("async primary Err → calls async fallback", async () => {
+  it("PromiseLike primary Err → calls ResultAsync fallback", async () => {
     const fallbackLogger: Logger = { log: () => {} };
     const primary = createAdapter({
       provides: LoggerPort,
-      factory: async (): Promise<
+      factory: (): PromiseLike<
         | { readonly _tag: "Ok"; readonly value: Logger }
         | { readonly _tag: "Err"; readonly error: string }
-      > => ({ _tag: "Err", error: "fail" }),
+      > => Promise.resolve({ _tag: "Err" as const, error: "fail" }),
     });
     const fb = createAdapter({
       provides: LoggerPort,
-      factory: async () => fallbackLogger,
+      factory: () => ResultAsync.ok(fallbackLogger),
     });
 
     const wrapped = adapterOrElse(primary, fb);
@@ -335,10 +343,6 @@ describe("adapterOrElse", () => {
 
   it("primary returns thenable Ok → unwraps via isThenable", async () => {
     const logger: Logger = { log: () => {} };
-    const primary = createAdapter({
-      provides: LoggerPort,
-      factory: async () => logger,
-    });
     // Make primary return a thenable Ok at runtime
     const thenableOk = { then: (cb: (v: unknown) => void) => cb({ _tag: "Ok", value: logger }) };
     const thenablePrimary = createAdapter({
@@ -350,11 +354,14 @@ describe("adapterOrElse", () => {
       factory: () => ({ log: () => {} }),
     });
 
-    // Force async path by pairing with an async fallback
-    const wrapped = adapterOrElse(thenablePrimary, createAdapter({
-      provides: LoggerPort,
-      factory: async () => ({ log: () => {} }),
-    }));
+    // Force async path by pairing with a ResultAsync fallback
+    const wrapped = adapterOrElse(
+      thenablePrimary,
+      createAdapter({
+        provides: LoggerPort,
+        factory: () => ResultAsync.ok({ log: () => {} }),
+      })
+    );
     const result = await wrapped.factory({});
     expect(result).toBe(logger);
   });
@@ -368,7 +375,7 @@ describe("adapterOrElse", () => {
     });
     const fb = createAdapter({
       provides: LoggerPort,
-      factory: async () => fallbackLogger,
+      factory: () => ResultAsync.ok(fallbackLogger),
     });
 
     const wrapped = adapterOrElse(thenablePrimary, fb);
@@ -380,10 +387,10 @@ describe("adapterOrElse", () => {
     const fallbackLogger: Logger = { log: () => {} };
     const primary = createAdapter({
       provides: LoggerPort,
-      factory: async (): Promise<
+      factory: (): PromiseLike<
         | { readonly _tag: "Ok"; readonly value: Logger }
         | { readonly _tag: "Err"; readonly error: string }
-      > => ({ _tag: "Err", error: "fail" }),
+      > => Promise.resolve({ _tag: "Err" as const, error: "fail" }),
     });
     const thenableFb = { then: (cb: (v: unknown) => void) => cb(fallbackLogger) };
     const fb = createAdapter({
@@ -427,20 +434,24 @@ describe("adapterOrElse", () => {
   });
 
   it("merges requires from both adapters with distinct ports", () => {
-    interface Config { host: string }
-    interface Db { query(): void }
+    interface Config {
+      host: string;
+    }
+    interface Db {
+      query(): void;
+    }
     const ConfigPort = port<Config>()({ name: "Config" });
     const DbPort = port<Db>()({ name: "Db" });
 
     const primary = createAdapter({
       provides: LoggerPort,
       requires: [ConfigPort],
-      factory: (_deps) => ({ log: () => {} }),
+      factory: _deps => ({ log: () => {} }),
     });
     const fb = createAdapter({
       provides: LoggerPort,
       requires: [DbPort],
-      factory: (_deps) => ({ log: () => {} }),
+      factory: _deps => ({ log: () => {} }),
     });
 
     const wrapped = adapterOrElse(primary, fb);

@@ -23,9 +23,9 @@ import type { LazyContainer } from "@hex-di/runtime";
  * @typeParam TAsyncPorts - Port types with async factories
  */
 export interface LazyContainerProviderProps<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown> = never,
+  TAsyncPorts extends Port<string, unknown> = never,
 > {
   /**
    * The LazyContainer instance to load and provide.
@@ -99,9 +99,9 @@ export interface LazyContainerReadyProps {
  * @typeParam TAsyncPorts - Port types with async factories
  */
 export interface LazyContainerProviderComponent<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown> = never,
+  TAsyncPorts extends Port<string, unknown> = never,
 > {
   (props: LazyContainerProviderProps<TProvides, TExtends, TAsyncPorts>): ReactNode;
   Loading: (props: LazyContainerLoadingProps) => ReactNode;

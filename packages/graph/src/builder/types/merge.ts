@@ -680,7 +680,7 @@ export type OverrideTypeMismatchError<TPortName extends string> =
 type ExtractServiceByName<TPortUnion, TName extends string> = TPortUnion extends {
   readonly __portName: TName;
 }
-  ? TPortUnion extends { readonly [K: symbol]: [infer TService, TName] }
+  ? TPortUnion extends { readonly [K: symbol]: [TName, infer TService] }
     ? TService
     : never
   : never;

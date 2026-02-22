@@ -166,6 +166,6 @@ export function getContextVariableOrDefault<T>(
  * // Results in deterministic order: [CachePort, DatabasePort, LoggerPort]
  * ```
  */
-export function portComparator(portA: Port<unknown, string>, portB: Port<unknown, string>): number {
+export function portComparator(portA: Port<string, unknown>, portB: Port<string, unknown>): number {
   return portA.__portName.localeCompare(portB.__portName);
 }

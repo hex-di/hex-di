@@ -36,7 +36,7 @@ afterEach(() => {
 const INTERNAL_ACCESS = Symbol.for("hex-di/internal-access");
 
 function createMockContainer(services: Map<string, unknown>): any {
-  const mockResolve = vi.fn().mockImplementation((port: Port<unknown, string>) => {
+  const mockResolve = vi.fn().mockImplementation((port: Port<string, unknown>) => {
     const name = (port as any).__portName ?? (port as any).name;
     const svc = services.get(name);
     if (svc) return svc;
@@ -47,7 +47,7 @@ function createMockContainer(services: Map<string, unknown>): any {
     resolve: mockResolve,
     resolveAsync: vi
       .fn()
-      .mockImplementation((port: Port<unknown, string>) => Promise.resolve(mockResolve(port))),
+      .mockImplementation((port: Port<string, unknown>) => Promise.resolve(mockResolve(port))),
     createScope: vi.fn(),
     dispose: vi.fn().mockResolvedValue(undefined),
     has: vi.fn().mockReturnValue(true),
@@ -65,7 +65,7 @@ function createMockContainer(services: Map<string, unknown>): any {
     resolve: mockResolve,
     resolveAsync: vi
       .fn()
-      .mockImplementation((port: Port<unknown, string>) => Promise.resolve(mockResolve(port))),
+      .mockImplementation((port: Port<string, unknown>) => Promise.resolve(mockResolve(port))),
     createScope: vi.fn().mockReturnValue(mockScope),
     createChild: vi.fn(),
     dispose: vi.fn().mockResolvedValue(undefined),
@@ -376,13 +376,13 @@ describe("React E2E", () => {
     const { service: service2, setState: setState2 } = createMockStateService(0);
     setState2({ count: 100 });
 
-    const mockResolve1 = vi.fn().mockImplementation((port: Port<unknown, string>) => {
+    const mockResolve1 = vi.fn().mockImplementation((port: Port<string, unknown>) => {
       const name = (port as any).__portName ?? (port as any).name;
       if (name === "Counter") return service1;
       throw new Error(`Unknown port: ${name}`);
     });
 
-    const mockResolve2 = vi.fn().mockImplementation((port: Port<unknown, string>) => {
+    const mockResolve2 = vi.fn().mockImplementation((port: Port<string, unknown>) => {
       const name = (port as any).__portName ?? (port as any).name;
       if (name === "Counter") return service2;
       throw new Error(`Unknown port: ${name}`);
@@ -392,7 +392,7 @@ describe("React E2E", () => {
       resolve: mockResolve1,
       resolveAsync: vi
         .fn()
-        .mockImplementation((p: Port<unknown, string>) => Promise.resolve(mockResolve1(p))),
+        .mockImplementation((p: Port<string, unknown>) => Promise.resolve(mockResolve1(p))),
       createScope: vi.fn(),
       dispose: vi.fn().mockResolvedValue(undefined),
       has: vi.fn().mockReturnValue(true),
@@ -410,7 +410,7 @@ describe("React E2E", () => {
       resolve: mockResolve2,
       resolveAsync: vi
         .fn()
-        .mockImplementation((p: Port<unknown, string>) => Promise.resolve(mockResolve2(p))),
+        .mockImplementation((p: Port<string, unknown>) => Promise.resolve(mockResolve2(p))),
       createScope: vi.fn(),
       dispose: vi.fn().mockResolvedValue(undefined),
       has: vi.fn().mockReturnValue(true),

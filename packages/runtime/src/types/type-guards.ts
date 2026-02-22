@@ -28,12 +28,12 @@ import type { Port } from "@hex-di/core";
  * const LoggerPort = createPort<Logger>({ name: 'Logger' });
  *
  * if (isPort(value)) {
- *   // value is now typed as Port<unknown, string>
+ *   // value is now typed as Port<string, unknown>
  *   console.log(value.__portName);
  * }
  * ```
  */
-export function isPort(value: unknown): value is Port<unknown, string> {
+export function isPort(value: unknown): value is Port<string, unknown> {
   if (!hasProperty(value, "__portName")) {
     return false;
   }
@@ -67,7 +67,7 @@ export function isPort(value: unknown): value is Port<unknown, string> {
 export function isPortNamed<TName extends string>(
   value: unknown,
   expectedName: TName
-): value is Port<unknown, TName> {
+): value is Port<TName, unknown> {
   return isPort(value) && value.__portName === expectedName;
 }
 

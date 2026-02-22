@@ -12,8 +12,8 @@ type GenericEnv = { Variables: object };
  * Throws {@link MissingScopeError} when the middleware was not registered.
  */
 export function getScope<
-  TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown> = never,
   TPhase extends ContainerPhase = "uninitialized",
   ScopeKey extends string = typeof DEFAULT_SCOPE_KEY,
   _ContainerKey extends string = typeof DEFAULT_CONTAINER_KEY,
@@ -36,9 +36,9 @@ export function getScope<
  * Throws {@link MissingContainerError} when the middleware was not registered.
  */
 export function getContainer<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown> = never,
+  TAsyncPorts extends Port<string, unknown> = never,
   TPhase extends ContainerPhase = "uninitialized",
   _ScopeKey extends string = typeof DEFAULT_SCOPE_KEY,
   ContainerKey extends string = typeof DEFAULT_CONTAINER_KEY,
@@ -63,8 +63,8 @@ export function getContainer<
  * Resolve a port from the per-request scope stored on the context.
  */
 export function resolvePort<
-  TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown> = never,
   TPhase extends ContainerPhase = "uninitialized",
   ScopeKey extends string = typeof DEFAULT_SCOPE_KEY,
   ContainerKey extends string = typeof DEFAULT_CONTAINER_KEY,
@@ -83,8 +83,8 @@ export function resolvePort<
  * Resolve a port from the per-request scope using async resolution.
  */
 export function resolvePortAsync<
-  TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown> = never,
   TPhase extends ContainerPhase = "uninitialized",
   ScopeKey extends string = typeof DEFAULT_SCOPE_KEY,
   ContainerKey extends string = typeof DEFAULT_CONTAINER_KEY,

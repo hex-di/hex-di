@@ -405,8 +405,8 @@ export interface TracingMetrics {
  * 1. The same service interface type \`T\`
  * 2. The same port name \`TName\`
  *
- * @typeParam T - The service interface type (phantom type - exists only at compile time)
  * @typeParam TName - The literal string type for the port name (defaults to \`string\`)
+ * @typeParam T - The service interface type (phantom type - exists only at compile time)
  *
  * @remarks
  * - The \`__brand\` property carries both the service type and name in a tuple
@@ -425,8 +425,8 @@ export interface TracingMetrics {
  * }
  *
  * // Create typed port tokens
- * type ConsoleLoggerPort = Port<Logger, 'ConsoleLogger'>;
- * type FileLoggerPort = Port<Logger, 'FileLogger'>;
+ * type ConsoleLoggerPort = Port<'ConsoleLogger', Logger>;
+ * type FileLoggerPort = Port<'FileLogger', Logger>;
  *
  * // These are type-incompatible despite same interface
  * declare const consolePort: ConsoleLoggerPort;
@@ -441,15 +441,15 @@ export interface TracingMetrics {
  * type LoggerPortType = typeof LoggerPort;
  * \`\`\`
  */
-export type Port<T, TName extends string> = {
+export type Port<TName extends string, T> = {
 	/**
 	 * Brand property for nominal typing.
-	 * Contains a tuple of [ServiceType, PortName] at the type level.
+	 * Contains a tuple of [PortName, ServiceType] at the type level.
 	 * Value is undefined at runtime.
 	 */
 	readonly __brand: [
-		T,
-		TName
+		TName,
+		T
 	];
 	/**
 	 * The port name, exposed for debugging and error messages.
@@ -521,7 +521,7 @@ export type NotAPortError<T> = {
  * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * \`\`\`
  */
-export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPortError<P>;
+export type InferService<P> = P extends Port<infer _TName, infer T> ? T : NotAPortError<P>;
 /**
  * Extracts the port name literal type from a Port type.
  *
@@ -555,7 +555,7 @@ export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPo
  * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * \`\`\`
  */
-export type InferPortName<P> = P extends Port<infer _T, infer TName> ? TName : NotAPortError<P>;
+export type InferPortName<P> = P extends Port<infer TName, infer _T> ? TName : NotAPortError<P>;
 declare const __metadataKey: unique symbol;
 /**
  * Discriminator for hexagonal architecture port types.
@@ -606,8 +606,8 @@ export interface PortMetadata {
  * DirectedPorts are structurally compatible with base Ports, enabling gradual
  * adoption without breaking existing code.
  *
- * @typeParam TService - The service interface type (phantom type)
  * @typeParam TName - The literal string type for the port name
+ * @typeParam TService - The service interface type (phantom type)
  * @typeParam TDirection - 'inbound' or 'outbound'
  *
  * @see {@link InboundPort} - Convenience alias for inbound directed ports
@@ -618,13 +618,13 @@ export interface PortMetadata {
  * @example
  * \`\`\`typescript
  * // DirectedPort is assignable to Port (backward compatible)
- * const port: DirectedPort<Logger, 'Logger', 'inbound'> = createInboundPort({
+ * const port: DirectedPort<'Logger', Logger, 'inbound'> = createInboundPort({
  *   name: 'Logger',
  * });
- * const basePort: Port<Logger, 'Logger'> = port; // OK
+ * const basePort: Port<'Logger', Logger> = port; // OK
  * \`\`\`
  */
-export type DirectedPort<TService, TName extends string, TDirection extends PortDirection, TCategory extends string = string> = Port<TService, TName> & {
+export type DirectedPort<TName extends string, TService, TDirection extends PortDirection, TCategory extends string = string> = Port<TName, TService> & {
 	readonly __directionBrand: TDirection;
 	readonly __metadataKey: PortMetadata;
 	readonly __categoryBrand: TCategory;
@@ -1646,7 +1646,7 @@ export interface Tracer {
  * });
  * \`\`\`
  */
-export declare const TracerPort: DirectedPort<Tracer, "Tracer", "outbound", "tracing/tracer">;
+export declare const TracerPort: DirectedPort<"Tracer", Tracer, "outbound", "tracing/tracer">;
 /**
  * Service interface for exporting completed spans.
  *
@@ -1769,7 +1769,7 @@ export interface SpanExporter {
  * });
  * \`\`\`
  */
-export declare const SpanExporterPort: DirectedPort<SpanExporter, "SpanExporter", "outbound", "tracing/exporter">;
+export declare const SpanExporterPort: DirectedPort<"SpanExporter", SpanExporter, "outbound", "tracing/exporter">;
 /**
  * Service interface for processing span lifecycle events.
  *
@@ -1914,7 +1914,7 @@ export interface SpanProcessor {
  * });
  * \`\`\`
  */
-export declare const SpanProcessorPort: DirectedPort<SpanProcessor, "SpanProcessor", "outbound", "tracing/processor">;
+export declare const SpanProcessorPort: DirectedPort<"SpanProcessor", SpanProcessor, "outbound", "tracing/processor">;
 /**
  * NoOpTracerAdapter - Zero-overhead tracer adapter for disabled tracing.
  *
@@ -1956,7 +1956,7 @@ export declare const SpanProcessorPort: DirectedPort<SpanProcessor, "SpanProcess
  *
  * @public
  */
-export declare const NoOpTracerAdapter: Adapter<DirectedPort<Tracer, "Tracer", "outbound", "tracing/tracer">, never, "singleton", "sync", false, readonly [
+export declare const NoOpTracerAdapter: Adapter<DirectedPort<"Tracer", Tracer, "outbound", "tracing/tracer">, never, "singleton", "sync", false, readonly [
 ], never>;
 /**
  * NoOp span singleton for testing and validation.
@@ -2006,7 +2006,7 @@ declare const NOOP_TRACER_EXPORTED: Tracer;
  *
  * @public
  */
-export declare const MemoryTracerAdapter: Adapter<DirectedPort<Tracer, "Tracer", "outbound", "tracing/tracer">, never, "transient", "sync", false, readonly [
+export declare const MemoryTracerAdapter: Adapter<DirectedPort<"Tracer", Tracer, "outbound", "tracing/tracer">, never, "transient", "sync", false, readonly [
 ], never>;
 /**
  * Options for creating a MemoryTracer.
@@ -2482,7 +2482,7 @@ export declare class ConsoleTracer implements Tracer {
  *
  * @public
  */
-export declare const ConsoleTracerAdapter: Adapter<DirectedPort<Tracer, "Tracer", "outbound", "tracing/tracer">, never, "singleton", "sync", false, readonly [
+export declare const ConsoleTracerAdapter: Adapter<DirectedPort<"Tracer", Tracer, "outbound", "tracing/tracer">, never, "singleton", "sync", false, readonly [
 ], never>;
 /**
  * Create a ConsoleTracer instance with custom options.
@@ -3003,7 +3003,7 @@ export interface ResolutionHookContext {
 	 * The port being resolved.
 	 * Can be used to identify the service type.
 	 */
-	readonly port: Port<unknown, string>;
+	readonly port: Port<string, unknown>;
 	/**
 	 * Name of the port being resolved.
 	 * Convenience property equivalent to \`port.__portName\`.
@@ -3029,7 +3029,7 @@ export interface ResolutionHookContext {
 	 * The parent port if this is a nested dependency resolution.
 	 * null for top-level resolutions initiated by user code.
 	 */
-	readonly parentPort: Port<unknown, string> | null;
+	readonly parentPort: Port<string, unknown> | null;
 	/**
 	 * Whether this resolution will be served from cache.
 	 * true if instance already exists (singleton/scoped), false for fresh creation.
@@ -4153,7 +4153,7 @@ export interface TracerLike {
  *
  * Register \`tracerLikeAdapter\` in your graph to auto-bridge from TracerPort.
  */
-export declare const TracerLikePort: DirectedPort<TracerLike, "TracerLike", "outbound", "tracing/bridge">;
+export declare const TracerLikePort: DirectedPort<"TracerLike", TracerLike, "outbound", "tracing/bridge">;
 /**
  * Creates a TracerLike adapter from a full Tracer instance.
  *
@@ -4178,8 +4178,8 @@ export declare function createTracerLikeAdapter(tracer: Tracer): TracerLike;
  * Add to your graph with \`.provide(tracerLikeAdapter)\` — any library
  * that needs a TracerLike can then resolve it from the container.
  */
-export declare const tracerLikeAdapter: Adapter<DirectedPort<TracerLike, "TracerLike", "outbound", "tracing/bridge">, DirectedPort<Tracer, "Tracer", "outbound", "tracing/tracer">, "singleton", "sync", false, readonly [
-	DirectedPort<Tracer, "Tracer", "outbound", "tracing/tracer">
+export declare const tracerLikeAdapter: Adapter<DirectedPort<"TracerLike", TracerLike, "outbound", "tracing/bridge">, DirectedPort<"Tracer", Tracer, "outbound", "tracing/tracer">, "singleton", "sync", false, readonly [
+	DirectedPort<"Tracer", Tracer, "outbound", "tracing/tracer">
 ], never>;
 /**
  * Time range filter options for span queries.
@@ -4343,7 +4343,7 @@ export declare function createTracingQueryApi(source: SpanSource): TracingQueryA
 /**
  * Port for the Tracing library inspector bridge.
  */
-export declare const TracingLibraryInspectorPort: DirectedPort<LibraryInspector, "TracingLibraryInspector", "outbound", "library-inspector">;
+export declare const TracingLibraryInspectorPort: DirectedPort<"TracingLibraryInspector", LibraryInspector, "outbound", "library-inspector">;
 /**
  * Creates a LibraryInspector that bridges the TracingQueryAPI
  * into the container's unified inspection protocol.
@@ -4372,7 +4372,7 @@ export declare function createTracingLibraryInspector(queryApi: TracingQueryAPI)
  * });
  * \`\`\`
  */
-export declare const TracingQueryApiPort: DirectedPort<TracingQueryAPI, "TracingQueryApi", "outbound", "tracing/tracer">;
+export declare const TracingQueryApiPort: DirectedPort<"TracingQueryApi", TracingQueryAPI, "outbound", "tracing/tracer">;
 /**
  * Pre-built frozen adapter for TracingLibraryInspectorPort.
  *

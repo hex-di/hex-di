@@ -28,8 +28,8 @@ import type { TypedEventSink } from "./events.js";
  * @typeParam TName - The literal string type for the port name
  */
 export type ActivityPort<TInput, TOutput, TName extends string> = Port<
-  Activity<TInput, TOutput>,
-  TName
+  TName,
+  Activity<TInput, TOutput>
 > & {
   /** Phantom property carrying the activity's input type. */
   readonly __activityInput: TInput;
@@ -83,7 +83,7 @@ export type CleanupReason = "completed" | "cancelled" | "timeout" | "error";
  * @typeParam TRequires - The tuple of Port types for dependencies
  * @typeParam TEvents - The events definition from defineEvents
  */
-export interface ActivityContext<TRequires extends readonly Port<unknown, string>[], TEvents> {
+export interface ActivityContext<TRequires extends readonly Port<string, unknown>[], TEvents> {
   /**
    * Resolved dependencies keyed by port name.
    */
@@ -113,7 +113,7 @@ export interface ActivityContext<TRequires extends readonly Port<unknown, string
  */
 export interface ActivityConfig<
   TPort extends ActivityPort<unknown, unknown, string>,
-  TRequires extends readonly Port<unknown, string>[],
+  TRequires extends readonly Port<string, unknown>[],
   TEvents,
 > {
   /**
@@ -174,7 +174,7 @@ export interface ActivityConfig<
  */
 export interface ConfiguredActivity<
   TPort extends ActivityPort<unknown, unknown, string>,
-  TRequires extends readonly Port<unknown, string>[],
+  TRequires extends readonly Port<string, unknown>[],
   TEvents,
 > {
   /**
@@ -241,7 +241,7 @@ export interface ConfiguredActivityAny {
   /**
    * The required dependencies (covariant - array of ports).
    */
-  readonly requires: readonly Port<unknown, string>[];
+  readonly requires: readonly Port<string, unknown>[];
 
   /**
    * The events definition (covariant - unknown).

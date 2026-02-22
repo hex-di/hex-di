@@ -63,7 +63,7 @@ interface SagaState<TOutput, TError> {
 function useSagaExecutor<P extends SagaPort<string, unknown, unknown, unknown>>(
   port: P
 ): SagaExecutor<InferSagaPortInput<P>, InferSagaPortOutput<P>, InferSagaPortError<P>>;
-function useSagaExecutor(port: Port<unknown, string>): unknown {
+function useSagaExecutor(port: Port<string, unknown>): unknown {
   return usePort(port);
 }
 

@@ -44,7 +44,7 @@ export interface UseMachineResult<TState extends string, TEvent extends string, 
  * React hook for consuming a FlowService state machine from the container.
  */
 export function useMachine<TState extends string, TEvent extends string, TContext>(
-  port: Port<FlowService<TState, TEvent, TContext>, string>
+  port: Port<string, FlowService<TState, TEvent, TContext>>
 ): UseMachineResult<TState, TEvent, TContext> {
   const flowService = useFlowPort<TState, TEvent, TContext>(port);
 

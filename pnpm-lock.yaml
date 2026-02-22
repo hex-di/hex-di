@@ -267,6 +267,9 @@ importers:
       '@hex-di/react':
         specifier: workspace:*
         version: link:../../integrations/react
+      '@hex-di/result':
+        specifier: workspace:*
+        version: link:../../packages/result
       '@hex-di/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
@@ -348,11 +351,14 @@ importers:
         version: link:../../libs/tracing/core
       typescript:
         specifier: '>=5.0'
-        version: 5.6.3
+        version: 5.9.3
     devDependencies:
       '@hex-di/graph':
         specifier: workspace:*
         version: link:../../packages/graph
+      '@hex-di/result':
+        specifier: ^0.2.0
+        version: 0.2.0(typescript@5.9.3)
       hono:
         specifier: ^4.11.1
         version: 4.11.1
@@ -1322,6 +1328,9 @@ importers:
         specifier: '>=5.0'
         version: 5.6.3
     devDependencies:
+      '@hex-di/result':
+        specifier: workspace:*
+        version: link:../result
       '@stryker-mutator/core':
         specifier: ^8.7.1
         version: 8.7.1
@@ -1421,6 +1430,40 @@ importers:
       '@vitest/coverage-v8':
         specifier: 4.0.18
         version: 4.0.18(vitest@4.0.18(@opentelemetry/api@1.9.0)(@types/node@25.0.3)(jiti@2.6.1)(jsdom@28.0.0)(lightningcss@1.31.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2))
+
+  presentations/guard/app:
+    dependencies:
+      react:
+        specifier: ^19.2.3
+        version: 19.2.3
+      react-dom:
+        specifier: ^19.2.3
+        version: 19.2.3(react@19.2.3)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.2.0
+        version: 19.2.7
+      '@types/react-dom':
+        specifier: ^19.2.0
+        version: 19.2.3(@types/react@19.2.7)
+      '@vitejs/plugin-react':
+        specifier: ^5.1.2
+        version: 5.1.2(vite@7.3.0(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2))
+      autoprefixer:
+        specifier: ^10.4.20
+        version: 10.4.22(postcss@8.5.6)
+      postcss:
+        specifier: ^8.4.49
+        version: 8.5.6
+      tailwindcss:
+        specifier: ^3.4.16
+        version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vite:
+        specifier: ^7.3.0
+        version: 7.3.0(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
 
   testing/cross-library:
     dependencies:
@@ -3458,6 +3501,15 @@ packages:
 
   '@hapi/topo@5.1.0':
     resolution: {integrity: sha512-foQZKJig7Ob0BMAYBfcJk8d77QtOe7Wo4ox7ff1lQYoNNAb6jwcY1ncdoy2e9wQZzvNy7ODZCYJkK8kzmcAnAg==}
+
+  '@hex-di/result@0.2.0':
+    resolution: {integrity: sha512-skQWtSzueoLTVtmaNIruAtjCsmSUf3x2PDgOj2aqx0JKDOMEzobBYqEG5iAS3EwaMBI1vmnAMrgQZa0ZlczodA==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      typescript: '>=5.6'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   '@hono/node-server@1.19.7':
     resolution: {integrity: sha512-vUcD0uauS7EU2caukW8z5lJKtoGMokxNbJtBiwHgpqxEXokaHCBkQUmCHhjFB1VUTWdqj25QoMkMKzgjq+uhrw==}
@@ -13642,6 +13694,10 @@ snapshots:
   '@hapi/topo@5.1.0':
     dependencies:
       '@hapi/hoek': 9.3.0
+
+  '@hex-di/result@0.2.0(typescript@5.9.3)':
+    optionalDependencies:
+      typescript: 5.9.3
 
   '@hono/node-server@1.19.7(hono@4.11.1)':
     dependencies:

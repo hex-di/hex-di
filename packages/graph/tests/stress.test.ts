@@ -33,7 +33,7 @@ interface Service {
 /**
  * Creates a port with a given name.
  */
-function makePort(name: string): Port<Service, string> {
+function makePort(name: string): Port<string, Service> {
   return port<Service>()({ name });
 }
 
@@ -58,10 +58,10 @@ function makeChain(
   length: number,
   prefix: string
 ): {
-  ports: Port<Service, string>[];
+  ports: Port<string, Service>[];
   adapters: AdapterConstraint[];
 } {
-  const ports: Port<Service, string>[] = [];
+  const ports: Port<string, Service>[] = [];
   const adapters: AdapterConstraint[] = [];
 
   for (let i = 0; i < length; i++) {

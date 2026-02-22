@@ -40,7 +40,7 @@ export function createStateAdapter<
   TName extends string,
   TState,
   TActions extends ActionMap<TState>,
-  const TRequires extends readonly Port<unknown, string>[] = readonly [],
+  const TRequires extends readonly Port<string, unknown>[] = readonly [],
 >(config: {
   readonly provides: StatePortDef<TName, TState, TActions>;
   readonly requires?: TRequires;
@@ -56,8 +56,8 @@ export function createStateAdapter<
   readonly reactiveSystem?: ReactiveSystemInstance;
 }): StoreAdapterResult<TName>;
 export function createStateAdapter(config: {
-  readonly provides: Port<unknown, string> & { readonly __portName: string };
-  readonly requires?: readonly Port<unknown, string>[];
+  readonly provides: Port<string, unknown> & { readonly __portName: string };
+  readonly requires?: readonly Port<string, unknown>[];
   readonly lifetime?: "singleton" | "scoped";
   readonly initial: unknown;
   readonly actions: ActionMap<unknown>;

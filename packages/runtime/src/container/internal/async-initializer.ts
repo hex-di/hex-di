@@ -22,7 +22,7 @@ import type { RuntimeAdapter } from "../internal-types.js";
  * Callback for resolving async ports during initialization.
  * @internal
  */
-export type AsyncInitializationResolver = (port: Port<unknown, string>) => Promise<unknown>;
+export type AsyncInitializationResolver = (port: Port<string, unknown>) => Promise<unknown>;
 
 /**
  * A level of adapters that can be initialized in parallel.
@@ -70,7 +70,7 @@ export class AsyncInitializer {
   /**
    * Set of ports that have async factories.
    */
-  private readonly asyncPorts: Set<Port<unknown, string>> = new Set();
+  private readonly asyncPorts: Set<Port<string, unknown>> = new Set();
 
   /**
    * Registered async adapters (unordered, populated during registration).
@@ -130,7 +130,7 @@ export class AsyncInitializer {
    * @param port - The port to check
    * @returns True if the port requires async initialization
    */
-  hasAsyncPort(port: Port<unknown, string>): boolean {
+  hasAsyncPort(port: Port<string, unknown>): boolean {
     return this.asyncPorts.has(port);
   }
 

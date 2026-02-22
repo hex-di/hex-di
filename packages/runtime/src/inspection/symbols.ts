@@ -24,7 +24,7 @@
  * import type { ContainerInternalState, Container } from '@hex-di/runtime';
  * import type { Port } from '@hex-di/core';
  *
- * function inspectContainer(container: Container<Port<unknown, string>>) {
+ * function inspectContainer(container: Container<Port<string, unknown>>) {
  *   // No cast needed - Container type includes [INTERNAL_ACCESS] property
  *   const snapshot = container[INTERNAL_ACCESS]();
  *   console.log('Disposed:', snapshot.disposed);

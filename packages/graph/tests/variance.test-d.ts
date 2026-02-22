@@ -271,7 +271,7 @@ describe("variance regression guards", () => {
   it("Port type parameters remain in expected positions", () => {
     // Document expected Port variance
 
-    type TestPort = Port<{ log: () => void }, "Logger">;
+    type TestPort = Port<"Logger", { log: () => void }>;
 
     // Just verify the type is constructible
     expectTypeOf<TestPort>().toBeObject();

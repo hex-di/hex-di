@@ -22,19 +22,19 @@ export function createTestContainer(): TestContainer {
   const services = new Map<string, unknown>();
 
   return {
-    resolve<T>(port: Port<T, string>): T {
+    resolve<T>(port: Port<string, T>): T {
       const service = services.get(port.__portName);
       if (service === undefined) {
         throw new Error(`No adapter registered for port "${port.__portName}"`);
       }
       return service as T;
     },
-    register<T>(port: Port<T, string>, service: T): void {
+    register<T>(port: Port<string, T>, service: T): void {
       services.set(port.__portName, service);
     },
   };
 }
 
 export interface TestContainer extends QueryContainer {
-  register<T>(port: Port<T, string>, service: T): void;
+  register<T>(port: Port<string, T>, service: T): void;
 }

@@ -1045,8 +1045,8 @@ export type StoreRuntimeError = EffectFailedError | EffectErrorHandlerError | Ef
  * 1. The same service interface type \`T\`
  * 2. The same port name \`TName\`
  *
- * @typeParam T - The service interface type (phantom type - exists only at compile time)
  * @typeParam TName - The literal string type for the port name (defaults to \`string\`)
+ * @typeParam T - The service interface type (phantom type - exists only at compile time)
  *
  * @remarks
  * - The \`__brand\` property carries both the service type and name in a tuple
@@ -1065,8 +1065,8 @@ export type StoreRuntimeError = EffectFailedError | EffectErrorHandlerError | Ef
  * }
  *
  * // Create typed port tokens
- * type ConsoleLoggerPort = Port<Logger, 'ConsoleLogger'>;
- * type FileLoggerPort = Port<Logger, 'FileLogger'>;
+ * type ConsoleLoggerPort = Port<'ConsoleLogger', Logger>;
+ * type FileLoggerPort = Port<'FileLogger', Logger>;
  *
  * // These are type-incompatible despite same interface
  * declare const consolePort: ConsoleLoggerPort;
@@ -1081,15 +1081,15 @@ export type StoreRuntimeError = EffectFailedError | EffectErrorHandlerError | Ef
  * type LoggerPortType = typeof LoggerPort;
  * \`\`\`
  */
-export type Port<T, TName extends string> = {
+export type Port<TName extends string, T> = {
 	/**
 	 * Brand property for nominal typing.
-	 * Contains a tuple of [ServiceType, PortName] at the type level.
+	 * Contains a tuple of [PortName, ServiceType] at the type level.
 	 * Value is undefined at runtime.
 	 */
 	readonly __brand: [
-		T,
-		TName
+		TName,
+		T
 	];
 	/**
 	 * The port name, exposed for debugging and error messages.
@@ -1161,7 +1161,7 @@ export type NotAPortError<T> = {
  * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * \`\`\`
  */
-export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPortError<P>;
+export type InferService<P> = P extends Port<infer _TName, infer T> ? T : NotAPortError<P>;
 /**
  * Extracts the port name literal type from a Port type.
  *
@@ -1195,7 +1195,7 @@ export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPo
  * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * \`\`\`
  */
-export type InferPortName<P> = P extends Port<infer _T, infer TName> ? TName : NotAPortError<P>;
+export type InferPortName<P> = P extends Port<infer TName, infer _T> ? TName : NotAPortError<P>;
 declare const __metadataKey: unique symbol;
 /**
  * Discriminator for hexagonal architecture port types.
@@ -1246,8 +1246,8 @@ export interface PortMetadata {
  * DirectedPorts are structurally compatible with base Ports, enabling gradual
  * adoption without breaking existing code.
  *
- * @typeParam TService - The service interface type (phantom type)
  * @typeParam TName - The literal string type for the port name
+ * @typeParam TService - The service interface type (phantom type)
  * @typeParam TDirection - 'inbound' or 'outbound'
  *
  * @see {@link InboundPort} - Convenience alias for inbound directed ports
@@ -1258,13 +1258,13 @@ export interface PortMetadata {
  * @example
  * \`\`\`typescript
  * // DirectedPort is assignable to Port (backward compatible)
- * const port: DirectedPort<Logger, 'Logger', 'inbound'> = createInboundPort({
+ * const port: DirectedPort<'Logger', Logger, 'inbound'> = createInboundPort({
  *   name: 'Logger',
  * });
- * const basePort: Port<Logger, 'Logger'> = port; // OK
+ * const basePort: Port<'Logger', Logger> = port; // OK
  * \`\`\`
  */
-export type DirectedPort<TService, TName extends string, TDirection extends PortDirection, TCategory extends string = string> = Port<TService, TName> & {
+export type DirectedPort<TName extends string, TService, TDirection extends PortDirection, TCategory extends string = string> = Port<TName, TService> & {
 	readonly __directionBrand: TDirection;
 	readonly __metadataKey: PortMetadata;
 	readonly __categoryBrand: TCategory;
@@ -1275,7 +1275,7 @@ export type DirectedPort<TService, TName extends string, TDirection extends Port
  * @typeParam T - A tuple or array type
  * @returns Union of all element types, or \`never\` for empty array
  */
-export type TupleToUnion<T extends readonly Port<unknown, string>[]> = T extends readonly [
+export type TupleToUnion<T extends readonly Port<string, unknown>[]> = T extends readonly [
 ] ? never : T[number];
 /**
  * Discriminator for sync vs async factory functions.
@@ -1358,7 +1358,7 @@ export type ResolvedDeps<TRequires> = [
  * // EmptyDeps
  * \`\`\`
  */
-export type PortDeps<TRequires extends readonly Port<unknown, string>[]> = ResolvedDeps<TupleToUnion<TRequires>>;
+export type PortDeps<TRequires extends readonly Port<string, unknown>[]> = ResolvedDeps<TupleToUnion<TRequires>>;
 /**
  * A branded adapter type that captures the complete contract for a service implementation.
  *
@@ -1497,14 +1497,14 @@ out TFactoryKind extends FactoryKind = "sync", out TClonable extends boolean = f
 export interface AdapterConstraint {
 	/**
 	 * The port this adapter provides (read-only, covariant).
-	 * Uses Port<unknown, string> as the widest Port type.
+	 * Uses Port<string, unknown> as the widest Port type.
 	 */
-	readonly provides: Port<unknown, string>;
+	readonly provides: Port<string, unknown>;
 	/**
 	 * The ports this adapter depends on (read-only, covariant).
 	 * Each element is a Port with \`__portName\` for runtime identification.
 	 */
-	readonly requires: readonly Port<unknown, string>[];
+	readonly requires: readonly Port<string, unknown>[];
 	/**
 	 * The lifetime scope (fixed union, all values assignable).
 	 */
@@ -1896,14 +1896,14 @@ export interface StoreInspectorInternal extends StoreInspectorAPI {
 /**
  * Port definition for container registration of StoreInspectorAPI.
  */
-export declare const StoreInspectorPort: DirectedPort<StoreInspectorAPI, "StoreInspector", "outbound">;
+export declare const StoreInspectorPort: DirectedPort<"StoreInspector", StoreInspectorAPI, "outbound">;
 export type StoreInspectorPortDef = typeof StoreInspectorPort;
 /**
  * Port definition for the internal inspector interface.
  * Used by adapter factories with \`inspection: true\` to auto-register ports
  * and auto-record actions.
  */
-export declare const StoreInspectorInternalPort: DirectedPort<StoreInspectorInternal, "StoreInspectorInternal", "outbound">;
+export declare const StoreInspectorInternalPort: DirectedPort<"StoreInspectorInternal", StoreInspectorInternal, "outbound">;
 export type StoreInspectorInternalPortDef = typeof StoreInspectorInternalPort;
 /**
  * Port definition for container registration of StoreRegistry.
@@ -1911,13 +1911,13 @@ export type StoreInspectorInternalPortDef = typeof StoreInspectorInternalPort;
  * When registered in a graph, enables auto-discovery of store port adapters
  * without manual \`registerPort()\` calls.
  */
-export declare const StoreRegistryPort: DirectedPort<StoreRegistry, "StoreRegistry", "outbound">;
+export declare const StoreRegistryPort: DirectedPort<"StoreRegistry", StoreRegistry, "outbound">;
 export type StoreRegistryPortDef = typeof StoreRegistryPort;
 /**
  * Port definition for the store tracing hook.
  * When registered in a graph, enables distributed tracing for store operations.
  */
-export declare const StoreTracingHookPort: DirectedPort<StoreTracingHook, "StoreTracingHook", "outbound">;
+export declare const StoreTracingHookPort: DirectedPort<"StoreTracingHook", StoreTracingHook, "outbound">;
 export type StoreTracingHookPortDef = typeof StoreTracingHookPort;
 /**
  * Port definition for the store library inspector bridge.
@@ -1925,7 +1925,7 @@ export type StoreTracingHookPortDef = typeof StoreTracingHookPort;
  * When registered in a graph, provides a LibraryInspector that bridges
  * store inspection into the container's unified Library Inspector Protocol.
  */
-export declare const StoreLibraryInspectorPort: DirectedPort<LibraryInspector, "StoreLibraryInspector", "outbound", "library-inspector">;
+export declare const StoreLibraryInspectorPort: DirectedPort<"StoreLibraryInspector", LibraryInspector, "outbound", "library-inspector">;
 declare const __stateType: unique symbol;
 declare const __actionsType: unique symbol;
 declare const __atomType: unique symbol;
@@ -1934,7 +1934,7 @@ declare const __asyncDerivedErrorType: unique symbol;
  * State port definition.
  * Extends DirectedPort with phantom types for state and action inference.
  */
-export type StatePortDef<TName extends string, TState, TActions extends ActionMap<TState>> = DirectedPort<StateService<TState, TActions>, TName, "outbound"> & {
+export type StatePortDef<TName extends string, TState, TActions extends ActionMap<TState>> = DirectedPort<TName, StateService<TState, TActions>, "outbound"> & {
 	readonly __stateType: TState;
 	readonly __actionsType: TActions;
 };
@@ -1942,24 +1942,24 @@ export type StatePortDef<TName extends string, TState, TActions extends ActionMa
  * Atom port definition.
  * Extends DirectedPort with phantom type for value inference.
  */
-export type AtomPortDef<TName extends string, TValue> = DirectedPort<AtomService<TValue>, TName, "outbound"> & {
+export type AtomPortDef<TName extends string, TValue> = DirectedPort<TName, AtomService<TValue>, "outbound"> & {
 	readonly __atomType: TValue;
 };
 /**
  * Derived port definition.
  */
-export type DerivedPortDef<TName extends string, TResult> = DirectedPort<DerivedService<TResult>, TName, "outbound">;
+export type DerivedPortDef<TName extends string, TResult> = DirectedPort<TName, DerivedService<TResult>, "outbound">;
 /**
  * Async derived port definition.
  * Extends DirectedPort with phantom type for error inference.
  */
-export type AsyncDerivedPortDef<TName extends string, TResult, E = never> = DirectedPort<AsyncDerivedService<TResult, E>, TName, "outbound"> & {
+export type AsyncDerivedPortDef<TName extends string, TResult, E = never> = DirectedPort<TName, AsyncDerivedService<TResult, E>, "outbound"> & {
 	readonly __asyncDerivedErrorType: E;
 };
 /**
  * Linked derived (bidirectional) port definition.
  */
-export type LinkedDerivedPortDef<TName extends string, TResult> = DirectedPort<LinkedDerivedService<TResult>, TName, "outbound">;
+export type LinkedDerivedPortDef<TName extends string, TResult> = DirectedPort<TName, LinkedDerivedService<TResult>, "outbound">;
 /** Extract state type from a state port. Returns never for non-state ports. */
 export type InferStateType<P> = [
 	P
@@ -2169,7 +2169,7 @@ export declare function createIsolatedReactiveSystem(): ReactiveSystemInstance;
  * TRequires = \`never\` maps to \`requires: readonly []\` via the Adapter's default
  * TRequiresTuple computation, preventing false self-dependency detection.
  */
-export type StoreAdapterResult<TName extends string = string> = Adapter<Port<unknown, TName>, never, Lifetime, "sync", boolean>;
+export type StoreAdapterResult<TName extends string = string> = Adapter<Port<TName, unknown>, never, Lifetime, "sync", boolean>;
 /** Type for effect adapter branding */
 export type EffectAdapterBrand = {
 	readonly __effectBrand: true;
@@ -2188,7 +2188,7 @@ export type EffectAdapterBrand = {
  * When \`inspection: true\`, the adapter auto-registers with StoreRegistry and auto-records
  * actions via StoreInspectorInternal.
  */
-export declare function createStateAdapter<TName extends string, TState, TActions extends ActionMap<TState>, const TRequires extends readonly Port<unknown, string>[] = readonly [
+export declare function createStateAdapter<TName extends string, TState, TActions extends ActionMap<TState>, const TRequires extends readonly Port<string, unknown>[] = readonly [
 ]>(config: {
 	readonly provides: StatePortDef<TName, TState, TActions>;
 	readonly requires?: TRequires;
@@ -2217,7 +2217,7 @@ export declare function createAtomAdapter<TName extends string>(config: {
  * The adapter computes its value by calling \`select\` with resolved dependencies.
  * Recomputation occurs when any dependency changes.
  */
-export declare function createDerivedAdapter<TPort extends DerivedPortDef<string, unknown>, const TRequires extends readonly Port<unknown, string>[]>(config: {
+export declare function createDerivedAdapter<TPort extends DerivedPortDef<string, unknown>, const TRequires extends readonly Port<string, unknown>[]>(config: {
 	readonly provides: TPort;
 	readonly requires: TRequires;
 	readonly select: (deps: PortDeps<TRequires>) => InferDerivedType<TPort>;
@@ -2232,7 +2232,7 @@ export declare function createDerivedAdapter<TPort extends DerivedPortDef<string
  * The adapter fetches data using \`select\`, which returns a ResultAsync.
  * It tracks loading/error status and supports retry and stale-while-revalidate.
  */
-export declare function createAsyncDerivedAdapter<TPort extends AsyncDerivedPortDef<string, unknown, unknown>, const TRequires extends readonly Port<unknown, string>[]>(config: {
+export declare function createAsyncDerivedAdapter<TPort extends AsyncDerivedPortDef<string, unknown, unknown>, const TRequires extends readonly Port<string, unknown>[]>(config: {
 	readonly provides: TPort;
 	readonly requires: TRequires;
 	readonly select: (deps: PortDeps<TRequires>) => ResultAsync\$1<InferAsyncDerivedType<TPort>, InferAsyncDerivedErrorType<TPort>>;
@@ -2248,18 +2248,18 @@ export declare function createAsyncDerivedAdapter<TPort extends AsyncDerivedPort
  * Supports both read (select) and write (set -> write) operations.
  * The \`write\` function propagates changes back to source state.
  */
-export declare function createLinkedDerivedAdapter<TPort extends LinkedDerivedPortDef<string, unknown>, const TRequires extends readonly Port<unknown, string>[]>(config: {
+export declare function createLinkedDerivedAdapter<TPort extends LinkedDerivedPortDef<string, unknown>, const TRequires extends readonly Port<string, unknown>[]>(config: {
 	readonly provides: TPort;
 	readonly requires: TRequires;
 	readonly select: (deps: PortDeps<TRequires>) => InferLinkedDerivedType<TPort>;
 	readonly write: (value: InferLinkedDerivedType<TPort>, deps: PortDeps<TRequires>) => void;
-	readonly writesTo?: readonly Port<unknown, string>[];
+	readonly writesTo?: readonly Port<string, unknown>[];
 	readonly equals?: (a: InferLinkedDerivedType<TPort>, b: InferLinkedDerivedType<TPort>) => boolean;
 	readonly inspection?: boolean;
 	readonly reactiveSystem?: ReactiveSystemInstance;
 }): StoreAdapterResult<InferPortName<TPort> & string>;
-export interface CreateEffectAdapterConfig<TName extends string = string, TRequires extends readonly Port<unknown, string>[] = readonly Port<unknown, string>[]> {
-	readonly provides: Port<ActionEffect, TName>;
+export interface CreateEffectAdapterConfig<TName extends string = string, TRequires extends readonly Port<string, unknown>[] = readonly Port<string, unknown>[]> {
+	readonly provides: Port<TName, ActionEffect>;
 	readonly requires?: TRequires;
 	readonly factory: (deps: PortDeps<TRequires>) => ActionEffect;
 	readonly inspection?: boolean;
@@ -2270,10 +2270,10 @@ export interface CreateEffectAdapterConfig<TName extends string = string, TRequi
  * Effect adapters receive ActionEvents from all state ports and can
  * perform side effects (logging, analytics, persistence, etc.).
  */
-export declare function createEffectAdapter<TName extends string, const TRequires extends readonly Port<unknown, string>[] = readonly [
+export declare function createEffectAdapter<TName extends string, const TRequires extends readonly Port<string, unknown>[] = readonly [
 ]>(config: CreateEffectAdapterConfig<TName, TRequires>): StoreAdapterResult<TName>;
 export interface CreateHydrationAdapterConfig<TName extends string = string> {
-	readonly provides: Port<StateHydrator, TName>;
+	readonly provides: Port<TName, StateHydrator>;
 	readonly storage: HydrationStorage;
 }
 /**

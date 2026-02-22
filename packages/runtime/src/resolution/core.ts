@@ -26,7 +26,7 @@ import type { RuntimeAdapterFor } from "../container/internal-types.js";
  *
  * @internal
  */
-export interface ResolutionParams<P extends Port<unknown, string>> {
+export interface ResolutionParams<P extends Port<string, unknown>> {
   /** The port being resolved */
   readonly port: P;
   /** The adapter providing the service implementation */
@@ -114,7 +114,7 @@ export function getMemoForLifetime(
  *
  * @internal
  */
-export function resolveWithMemo<P extends Port<unknown, string>>(
+export function resolveWithMemo<P extends Port<string, unknown>>(
   port: P,
   lifetime: Lifetime,
   singletonMemo: MemoMap,
@@ -144,7 +144,7 @@ export function resolveWithMemo<P extends Port<unknown, string>>(
  *
  * @internal
  */
-export async function resolveWithMemoAsync<P extends Port<unknown, string>>(
+export async function resolveWithMemoAsync<P extends Port<string, unknown>>(
   port: P,
   lifetime: Lifetime,
   singletonMemo: MemoMap,
@@ -157,6 +157,26 @@ export async function resolveWithMemoAsync<P extends Port<unknown, string>>(
     return factory();
   }
   return memo.getOrElseMemoizeAsync(port, factory, finalizer);
+}
+
+/**
+ * Checks if a value is a PromiseLike (thenable).
+ *
+ * Used by the sync resolution engine to detect factories that return
+ * PromiseLike values (e.g., ResultAsync) which cannot be handled synchronously.
+ *
+ * @param value - The value to check
+ * @returns True if the value has a `then` method
+ *
+ * @internal
+ */
+export function isThenable(value: unknown): value is PromiseLike<unknown> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "then" in value &&
+    typeof value.then === "function"
+  );
 }
 
 /**
@@ -175,11 +195,16 @@ export async function resolveWithMemoAsync<P extends Port<unknown, string>>(
  *
  * @internal
  */
+export function unwrapResultDefense<T>(value: unknown): T;
 export function unwrapResultDefense(value: unknown): unknown {
-  if (typeof value === "object" && value !== null && "_tag" in value) {
-    const tagged = value as { _tag: string; value?: unknown; error?: unknown };
-    if (tagged._tag === "Ok") return tagged.value;
-    if (tagged._tag === "Err") throw tagged.error;
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "_tag" in value &&
+    typeof value._tag === "string"
+  ) {
+    if (value._tag === "Ok" && "value" in value) return value.value;
+    if (value._tag === "Err" && "error" in value) throw value.error;
   }
   return value;
 }
@@ -197,8 +222,8 @@ export function unwrapResultDefense(value: unknown): unknown {
  * @internal
  */
 export function buildDependencies(
-  requires: readonly Port<unknown, string>[],
-  resolve: (port: Port<unknown, string>) => unknown
+  requires: readonly Port<string, unknown>[],
+  resolve: (port: Port<string, unknown>) => unknown
 ): Record<string, unknown> {
   const deps: Record<string, unknown> = {};
   for (const requiredPort of requires) {
@@ -219,8 +244,8 @@ export function buildDependencies(
  * @internal
  */
 export async function buildDependenciesAsync(
-  requires: readonly Port<unknown, string>[],
-  resolve: (port: Port<unknown, string>) => Promise<unknown>
+  requires: readonly Port<string, unknown>[],
+  resolve: (port: Port<string, unknown>) => Promise<unknown>
 ): Promise<Record<string, unknown>> {
   // Resolve all dependencies concurrently
   const results = await Promise.all(

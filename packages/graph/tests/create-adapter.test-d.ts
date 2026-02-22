@@ -62,7 +62,7 @@ describe("createAdapter function", () => {
     expect(adapter).toBeDefined();
 
     // The requires property should be a readonly array containing the ports
-    expectTypeOf(adapter.requires).toMatchTypeOf<readonly Port<unknown, string>[]>();
+    expectTypeOf(adapter.requires).toMatchTypeOf<readonly Port<string, unknown>[]>();
 
     // The adapter type should have the union of required ports
     expectTypeOf(adapter).toMatchTypeOf<

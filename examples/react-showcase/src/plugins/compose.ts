@@ -16,8 +16,8 @@ import type { FeatureBundle, Plugin } from "./types.js";
  * Generic adapter type used for runtime composition.
  */
 type RuntimeAdapter = Adapter<
-  Port<unknown, string>,
-  Port<unknown, string> | never,
+  Port<string, unknown>,
+  Port<string, unknown> | never,
   Lifetime,
   FactoryKind
 >;

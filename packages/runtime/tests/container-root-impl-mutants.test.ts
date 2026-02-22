@@ -286,7 +286,7 @@ describe("RootContainerImpl - getParentUnregisterCallback", () => {
 describe("RootContainerImpl - resolveWithInheritance", () => {
   it("throws for unregistered port (no inheritance for root)", () => {
     const container = makeRootContainer();
-    const resolve = container.resolve as (port: Port<unknown, string>) => unknown;
+    const resolve = container.resolve as (port: Port<string, unknown>) => unknown;
     expect(() => resolve(DatabasePort)).toThrow(/No adapter registered/);
   });
 });
@@ -298,7 +298,7 @@ describe("RootContainerImpl - resolveWithInheritance", () => {
 describe("RootContainerImpl - resolveInternalFallback", () => {
   it("throws with port name in error message", () => {
     const container = makeRootContainer();
-    const resolve = container.resolve as (port: Port<unknown, string>) => unknown;
+    const resolve = container.resolve as (port: Port<string, unknown>) => unknown;
 
     try {
       resolve(DatabasePort);
@@ -317,7 +317,7 @@ describe("RootContainerImpl - resolveAsyncInternalFallback", () => {
   it("rejects with port name in error message", async () => {
     const container = makeRootContainer();
     const resolveAsync = container.resolveAsync as (
-      port: Port<unknown, string>
+      port: Port<string, unknown>
     ) => Promise<unknown>;
 
     try {

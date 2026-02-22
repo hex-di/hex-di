@@ -6,6 +6,7 @@
 
 import { describe, expect, it } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
+import { ResultAsync } from "@hex-di/result";
 import { GraphBuilder } from "../../src/index.js";
 
 interface Service {
@@ -20,13 +21,13 @@ describe("async adapter edge cases", () => {
     const asyncAdapter = createAdapter({
       provides: AsyncServicePort,
       requires: [],
-      factory: async deps => {
+      factory: deps => {
         receivedDeps.push(deps);
-        return { name: "async-service" };
+        return ResultAsync.ok({ name: "async-service" });
       },
     });
 
-    expect(asyncAdapter.factoryKind).toBe("async");
+    expect(asyncAdapter.factoryKind).toBe("sync");
     expect(asyncAdapter.lifetime).toBe("singleton"); // Async adapters are always singleton
     expect(asyncAdapter.requires).toEqual([]);
   });
@@ -37,7 +38,7 @@ describe("async adapter edge cases", () => {
     const asyncAdapter = createAdapter({
       provides: AsyncServicePort,
       requires: [],
-      factory: async () => ({ name: "async-service" }),
+      factory: () => ResultAsync.ok({ name: "async-service" }),
     });
 
     // Async adapters are forced to singleton lifetime
@@ -54,27 +55,27 @@ describe("async adapter edge cases", () => {
         createAdapter({
           provides: Async1Port,
           requires: [],
-          factory: async () => ({ name: "async1" }),
+          factory: () => ResultAsync.ok({ name: "async1" }),
         })
       )
       .provide(
         createAdapter({
           provides: Async2Port,
           requires: [Async1Port],
-          factory: async () => ({ name: "async2" }),
+          factory: () => ResultAsync.ok({ name: "async2" }),
         })
       )
       .provide(
         createAdapter({
           provides: Async3Port,
           requires: [Async1Port, Async2Port],
-          factory: async () => ({ name: "async3" }),
+          factory: () => ResultAsync.ok({ name: "async3" }),
         })
       )
       .build();
 
     expect(graph.adapters.length).toBe(3);
-    expect(graph.adapters.every(a => a.factoryKind === "async")).toBe(true);
+    expect(graph.adapters.every(a => a.factoryKind === "sync")).toBe(true);
     expect(graph.adapters.every(a => a.lifetime === "singleton")).toBe(true);
   });
 
@@ -92,32 +93,30 @@ describe("async adapter edge cases", () => {
     const asyncAdapter = createAdapter({
       provides: AsyncPort,
       requires: [SyncPort],
-      factory: async () => ({ name: "async" }),
+      factory: () => ResultAsync.ok({ name: "async" }),
     });
 
     const graph = GraphBuilder.create().provide(syncAdapter).provide(asyncAdapter).build();
 
     expect(graph.adapters.length).toBe(2);
     expect(graph.adapters[0].factoryKind).toBe("sync");
-    expect(graph.adapters[1].factoryKind).toBe("async");
+    expect(graph.adapters[1].factoryKind).toBe("sync");
   });
 
-  it("async adapter factory return type is Promise", () => {
+  it("async adapter factory return type is thenable", () => {
     const AsyncPort = port<Service>()({ name: "AsyncReturn" });
 
     const asyncAdapter = createAdapter({
       provides: AsyncPort,
       requires: [],
-      factory: async () => {
-        // Simulate async initialization
-        await Promise.resolve();
-        return { name: "async-return" };
-      },
+      factory: () =>
+        ResultAsync.fromSafePromise(Promise.resolve()).map(() => ({ name: "async-return" })),
     });
 
-    // Factory should return a Promise
+    // Factory should return a thenable (ResultAsync)
     const factoryResult = asyncAdapter.factory({});
-    expect(factoryResult).toBeInstanceOf(Promise);
+    expect(factoryResult).toHaveProperty("then");
+    expect(typeof factoryResult.then).toBe("function");
   });
 
   it("async adapter preserves clonable property", () => {
@@ -127,13 +126,13 @@ describe("async adapter edge cases", () => {
       provides: ClonableAsyncPort,
       requires: [],
       clonable: true,
-      factory: async () => ({ name: "clonable-async" }),
+      factory: () => ResultAsync.ok({ name: "clonable-async" }),
     });
 
     const nonClonableAsync = createAdapter({
       provides: port<Service>()({ name: "NonClonableAsync" }),
       requires: [],
-      factory: async () => ({ name: "non-clonable-async" }),
+      factory: () => ResultAsync.ok({ name: "non-clonable-async" }),
     });
 
     expect(clonableAsync.clonable).toBe(true);

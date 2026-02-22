@@ -79,7 +79,7 @@ describe("Adapter type", () => {
     // TRequires is captured in the brand tuple
     // We verify via the requires array type that it tracks dependencies
     type RequiresType = ServiceAdapter["requires"];
-    expectTypeOf<RequiresType>().toMatchTypeOf<readonly Port<unknown, string>[]>();
+    expectTypeOf<RequiresType>().toMatchTypeOf<readonly Port<string, unknown>[]>();
   });
 
   it("captures TRequires as never for zero dependencies", () => {

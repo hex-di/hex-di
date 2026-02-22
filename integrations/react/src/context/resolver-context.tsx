@@ -59,7 +59,7 @@ type LocalResolver = RuntimeResolverRef;
  *
  * @internal
  */
-export interface ResolverContextValue<TProvides extends Port<unknown, string>> {
+export interface ResolverContextValue<TProvides extends Port<string, unknown>> {
   /**
    * The current resolver - either the root container or a scope.
    * Uses RuntimeResolverRef for bivariant storage.

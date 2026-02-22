@@ -68,7 +68,7 @@ export type SpiedService<T> = {
  * expect(spiedLogger.log.mock.calls).toEqual([['test']]);
  * ```
  */
-export type SpiedAdapter<P extends Port<object, string>> = Adapter<
+export type SpiedAdapter<P extends Port<string, object>> = Adapter<
   P,
   never,
   "transient",
@@ -154,7 +154,7 @@ export type SpiedAdapter<P extends Port<object, string>> = Adapter<
  * @see {@link SpiedAdapter} - The return type with MockedFunction methods
  * @see {@link SpiedService} - The mapped type for spied service interfaces
  */
-export function createSpiedMockAdapter<P extends Port<object, string>>(
+export function createSpiedMockAdapter<P extends Port<string, object>>(
   port: P,
   defaults?: Partial<InferService<P>>
 ): SpiedAdapter<P> {
@@ -195,7 +195,7 @@ function createSpiedImplementation<T extends object>(defaults?: Partial<T>): T {
 
   const handler: ProxyHandler<object> = {
     get(_target, prop, _receiver) {
-      // Skip special properties
+      // Skip special properties like Symbol.toStringTag, Symbol.toPrimitive, etc.
       if (typeof prop === "symbol") {
         return undefined;
       }

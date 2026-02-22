@@ -164,15 +164,15 @@ describe("ActivityPort is assignable to Port type", () => {
   it("ActivityPort extends Port with Activity service type", () => {
     const FetchUserPort = activityPort<FetchUserInput, User>()("FetchUser");
 
-    // ActivityPort should be assignable to Port<Activity<...>, Name>
-    expectTypeOf(FetchUserPort).toMatchTypeOf<Port<Activity<FetchUserInput, User>, "FetchUser">>();
+    // ActivityPort should be assignable to Port<Name, Activity<...>>
+    expectTypeOf(FetchUserPort).toMatchTypeOf<Port<"FetchUser", Activity<FetchUserInput, User>>>();
   });
 
   it("can be used where Port is expected", () => {
     const _FetchUserPort = activityPort<FetchUserInput, User>()("FetchUser");
 
     // Should be usable in a function expecting Port
-    type AcceptsPort<P extends Port<unknown, string>> = P;
+    type AcceptsPort<P extends Port<string, unknown>> = P;
 
     // This should compile without error
     type Result = AcceptsPort<typeof _FetchUserPort>;

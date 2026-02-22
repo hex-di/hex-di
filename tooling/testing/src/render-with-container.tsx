@@ -53,7 +53,7 @@ import type { Port } from "@hex-di/core";
  * ```
  */
 export interface RenderWithContainerResult<
-  TProvides extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
 > extends RenderResult {
   /**
    * The DI container created for this render.
@@ -142,7 +142,7 @@ export interface RenderWithContainerResult<
  * renderWithContainer(<App />, testGraph);
  * ```
  */
-export function renderWithContainer<TProvides extends Port<unknown, string>>(
+export function renderWithContainer<TProvides extends Port<string, unknown>>(
   element: ReactElement,
   graph: Graph<TProvides>,
   options?: RenderOptions

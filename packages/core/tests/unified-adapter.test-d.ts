@@ -25,6 +25,7 @@ import type {
   BothFactoryAndClassError,
   NeitherFactoryNorClassError,
 } from "../src/adapters/unified.js";
+import { ResultAsync } from "@hex-di/result";
 
 // =============================================================================
 // Test Fixtures
@@ -224,38 +225,41 @@ describe("unified createAdapter - factory variant with explicit values", () => {
 // =============================================================================
 
 describe("unified createAdapter - async factory detection", () => {
-  it("detects async factory and sets factoryKind to async", () => {
+  it("detects ResultAsync factory and sets factoryKind to async", () => {
     const adapter = createAdapter({
       provides: DatabasePort,
-      factory: async () => ({
-        query: async () => ({}),
-      }),
+      factory: () =>
+        ResultAsync.ok({
+          query: async () => ({}),
+        }),
     });
 
-    // Async factory should have factoryKind: "async"
+    // ResultAsync-returning factory detected as async at the type level
     expectTypeOf(adapter.factoryKind).toEqualTypeOf<"async">();
   });
 
-  it("forces lifetime to singleton for async factory", () => {
+  it("forces lifetime to singleton for ResultAsync factory", () => {
     const adapter = createAdapter({
       provides: DatabasePort,
-      factory: async () => ({
-        query: async () => ({}),
-      }),
+      factory: () =>
+        ResultAsync.ok({
+          query: async () => ({}),
+        }),
     });
 
-    // Async factory always has singleton lifetime
+    // ResultAsync factory always has singleton lifetime
     expectTypeOf(adapter.lifetime).toEqualTypeOf<"singleton">();
   });
 
-  it("produces error type in lifetime for async factory with non-singleton lifetime", () => {
-    // Async factory with scoped lifetime produces error type in lifetime position
+  it("produces error type in lifetime for ResultAsync factory with non-singleton lifetime", () => {
+    // ResultAsync factory with scoped lifetime produces error type in lifetime position
     const scopedAsyncAdapter = createAdapter({
       provides: DatabasePort,
       lifetime: "scoped",
-      factory: async () => ({
-        query: async () => ({}),
-      }),
+      factory: () =>
+        ResultAsync.ok({
+          query: async () => ({}),
+        }),
     });
 
     // The lifetime is an error message string, not a valid Lifetime
@@ -263,13 +267,14 @@ describe("unified createAdapter - async factory detection", () => {
       scopedAsyncAdapter.lifetime
     ).toEqualTypeOf<"Async factories must use 'singleton' lifetime. Got: 'scoped'. Hint: Remove the lifetime property to use the default, or make the factory synchronous.">();
 
-    // Async factory with transient lifetime produces error type in lifetime position
+    // ResultAsync factory with transient lifetime produces error type in lifetime position
     const transientAsyncAdapter = createAdapter({
       provides: DatabasePort,
       lifetime: "transient",
-      factory: async () => ({
-        query: async () => ({}),
-      }),
+      factory: () =>
+        ResultAsync.ok({
+          query: async () => ({}),
+        }),
     });
 
     expectTypeOf(
@@ -277,27 +282,27 @@ describe("unified createAdapter - async factory detection", () => {
     ).toEqualTypeOf<"Async factories must use 'singleton' lifetime. Got: 'transient'. Hint: Remove the lifetime property to use the default, or make the factory synchronous.">();
   });
 
-  it("allows async factory with explicit singleton lifetime", () => {
+  it("allows ResultAsync factory with explicit singleton lifetime", () => {
     const adapter = createAdapter({
       provides: DatabasePort,
       lifetime: "singleton",
-      factory: async () => ({
-        query: async () => ({}),
-      }),
+      factory: () =>
+        ResultAsync.ok({
+          query: async () => ({}),
+        }),
     });
 
     expectTypeOf(adapter.lifetime).toEqualTypeOf<"singleton">();
     expectTypeOf(adapter.factoryKind).toEqualTypeOf<"async">();
   });
 
-  it("keeps async factoryKind for Promise-returning sync factory", () => {
+  it("keeps async factoryKind for ResultAsync-returning sync factory", () => {
     const adapter = createAdapter({
       provides: DatabasePort,
-      factory: () => Promise.resolve({ query: async () => ({}) }),
+      factory: () => ResultAsync.ok({ query: async () => ({}) }),
     });
 
-    // Returns Promise, so TypeScript infers this as async
-    // (sync function returning Promise still counts as async for type system)
+    // Returns PromiseLike, so TypeScript infers this as async at the type level
     expectTypeOf(adapter.factoryKind).toEqualTypeOf<"async">();
   });
 });
@@ -317,12 +322,13 @@ describe("unified createAdapter - factory return type validation", () => {
     expectTypeOf(adapter.provides).toEqualTypeOf(LoggerPort);
   });
 
-  it("compiles when async factory returns Promise of correct type", () => {
+  it("compiles when factory returns ResultAsync of correct type", () => {
     const adapter = createAdapter({
       provides: DatabasePort,
-      factory: async (): Promise<Database> => ({
-        query: async () => ({}),
-      }),
+      factory: () =>
+        ResultAsync.ok({
+          query: async () => ({}),
+        }),
     });
 
     // Verify the adapter was created successfully

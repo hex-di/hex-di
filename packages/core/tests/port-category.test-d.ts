@@ -38,13 +38,13 @@ interface UserService {
 
 describe("DirectedPort TCategory parameter", () => {
   it("defaults 4th param to string when omitted", () => {
-    type ThreeParam = DirectedPort<Logger, "Logger", "outbound">;
-    type FourParam = DirectedPort<Logger, "Logger", "outbound", string>;
+    type ThreeParam = DirectedPort<"Logger", Logger, "outbound">;
+    type FourParam = DirectedPort<"Logger", Logger, "outbound", string>;
     expectTypeOf<ThreeParam>().toEqualTypeOf<FourParam>();
   });
 
   it("preserves literal category", () => {
-    type WithCategory = DirectedPort<Logger, "Logger", "outbound", "domain">;
+    type WithCategory = DirectedPort<"Logger", Logger, "outbound", "domain">;
     expectTypeOf<InferPortCategory<WithCategory>>().toEqualTypeOf<"domain">();
   });
 });
@@ -55,26 +55,26 @@ describe("DirectedPort TCategory parameter", () => {
 
 describe("InboundPort category", () => {
   it("defaults category to string", () => {
-    type DefaultCat = InboundPort<UserService, "UserService">;
-    type ExplicitString = InboundPort<UserService, "UserService", string>;
+    type DefaultCat = InboundPort<"UserService", UserService>;
+    type ExplicitString = InboundPort<"UserService", UserService, string>;
     expectTypeOf<DefaultCat>().toEqualTypeOf<ExplicitString>();
   });
 
   it("preserves literal category", () => {
-    type WithCat = InboundPort<UserService, "UserService", "domain">;
+    type WithCat = InboundPort<"UserService", UserService, "domain">;
     expectTypeOf<InferPortCategory<WithCat>>().toEqualTypeOf<"domain">();
   });
 });
 
 describe("OutboundPort category", () => {
   it("defaults category to string", () => {
-    type DefaultCat = OutboundPort<Logger, "Logger">;
-    type ExplicitString = OutboundPort<Logger, "Logger", string>;
+    type DefaultCat = OutboundPort<"Logger", Logger>;
+    type ExplicitString = OutboundPort<"Logger", Logger, string>;
     expectTypeOf<DefaultCat>().toEqualTypeOf<ExplicitString>();
   });
 
   it("preserves literal category", () => {
-    type WithCat = OutboundPort<Logger, "Logger", "infrastructure">;
+    type WithCat = OutboundPort<"Logger", Logger, "infrastructure">;
     expectTypeOf<InferPortCategory<WithCat>>().toEqualTypeOf<"infrastructure">();
   });
 });
@@ -109,12 +109,12 @@ describe("port() builder category inference", () => {
 
 describe("InferPortCategory", () => {
   it("extracts literal category", () => {
-    type Cat = InferPortCategory<DirectedPort<Logger, "Logger", "outbound", "domain">>;
+    type Cat = InferPortCategory<DirectedPort<"Logger", Logger, "outbound", "domain">>;
     expectTypeOf<Cat>().toEqualTypeOf<"domain">();
   });
 
   it("returns string for uncategorized ports", () => {
-    type Cat = InferPortCategory<DirectedPort<Logger, "Logger", "outbound">>;
+    type Cat = InferPortCategory<DirectedPort<"Logger", Logger, "outbound">>;
     expectTypeOf<Cat>().toEqualTypeOf<string>();
   });
 
@@ -130,8 +130,8 @@ describe("InferPortCategory", () => {
 
 describe("InboundPorts preserves category", () => {
   it("preserves category in filtered result", () => {
-    type DomainInbound = InboundPort<UserService, "UserService", "domain">;
-    type InfraOutbound = OutboundPort<Logger, "Logger", "infrastructure">;
+    type DomainInbound = InboundPort<"UserService", UserService, "domain">;
+    type InfraOutbound = OutboundPort<"Logger", Logger, "infrastructure">;
     type All = DomainInbound | InfraOutbound;
 
     type Filtered = InboundPorts<All>;
@@ -141,8 +141,8 @@ describe("InboundPorts preserves category", () => {
 
 describe("OutboundPorts preserves category", () => {
   it("preserves category in filtered result", () => {
-    type DomainInbound = InboundPort<UserService, "UserService", "domain">;
-    type InfraOutbound = OutboundPort<Logger, "Logger", "infrastructure">;
+    type DomainInbound = InboundPort<"UserService", UserService, "domain">;
+    type InfraOutbound = OutboundPort<"Logger", Logger, "infrastructure">;
     type All = DomainInbound | InfraOutbound;
 
     type Filtered = OutboundPorts<All>;
@@ -159,14 +159,14 @@ describe("createLibraryInspectorPort", () => {
     const FlowPort = createLibraryInspectorPort({ name: "FlowInspector" });
     expectTypeOf<InferPortCategory<typeof FlowPort>>().toEqualTypeOf<"library-inspector">();
     expectTypeOf(FlowPort).toEqualTypeOf<
-      DirectedPort<LibraryInspector, "FlowInspector", "outbound", "library-inspector">
+      DirectedPort<"FlowInspector", LibraryInspector, "outbound", "library-inspector">
     >();
   });
 
   it("service type is LibraryInspector", () => {
     const FlowPort = createLibraryInspectorPort({ name: "FlowInspector" });
     type Service =
-      typeof FlowPort extends DirectedPort<infer S, string, "outbound", string> ? S : never;
+      typeof FlowPort extends DirectedPort<string, infer S, "outbound", string> ? S : never;
     expectTypeOf<Service>().toEqualTypeOf<LibraryInspector>();
   });
 });

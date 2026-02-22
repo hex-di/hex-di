@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { port, createAdapter } from "@hex-di/core";
+import { ok } from "@hex-di/result";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "@hex-di/runtime";
 import {
@@ -56,7 +57,7 @@ function buildContainer(disposalLog: string[]) {
   const asyncValueAdapter = createAdapter({
     provides: AsyncValuePort,
     requires: [],
-    factory: () => Promise.resolve({ value: "async-value" }),
+    factory: async () => ok({ value: "async-value" }),
   });
 
   const graph = GraphBuilder.create()

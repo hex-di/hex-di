@@ -42,7 +42,7 @@ export type StatePortDef<
   TName extends string,
   TState,
   TActions extends ActionMap<TState>,
-> = DirectedPort<StateService<TState, TActions>, TName, "outbound"> & {
+> = DirectedPort<TName, StateService<TState, TActions>, "outbound"> & {
   readonly [__stateType]: TState;
   readonly [__actionsType]: TActions;
 };
@@ -52,8 +52,8 @@ export type StatePortDef<
  * Extends DirectedPort with phantom type for value inference.
  */
 export type AtomPortDef<TName extends string, TValue> = DirectedPort<
-  AtomService<TValue>,
   TName,
+  AtomService<TValue>,
   "outbound"
 > & {
   readonly [__atomType]: TValue;
@@ -63,8 +63,8 @@ export type AtomPortDef<TName extends string, TValue> = DirectedPort<
  * Derived port definition.
  */
 export type DerivedPortDef<TName extends string, TResult> = DirectedPort<
-  DerivedService<TResult>,
   TName,
+  DerivedService<TResult>,
   "outbound"
 >;
 
@@ -73,8 +73,8 @@ export type DerivedPortDef<TName extends string, TResult> = DirectedPort<
  * Extends DirectedPort with phantom type for error inference.
  */
 export type AsyncDerivedPortDef<TName extends string, TResult, E = never> = DirectedPort<
-  AsyncDerivedService<TResult, E>,
   TName,
+  AsyncDerivedService<TResult, E>,
   "outbound"
 > & {
   readonly [__asyncDerivedErrorType]: E;
@@ -84,8 +84,8 @@ export type AsyncDerivedPortDef<TName extends string, TResult, E = never> = Dire
  * Linked derived (bidirectional) port definition.
  */
 export type LinkedDerivedPortDef<TName extends string, TResult> = DirectedPort<
-  LinkedDerivedService<TResult>,
   TName,
+  LinkedDerivedService<TResult>,
   "outbound"
 >;
 

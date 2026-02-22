@@ -37,9 +37,9 @@ import type { AdapterInfo, ContainerInternalState } from "../inspection/internal
  * @internal
  */
 export class ChildContainerImpl<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown> = never,
+  TAsyncPorts extends Port<string, unknown> = never,
 > extends BaseContainerImpl<TProvides, TExtends, TAsyncPorts> {
   protected readonly isRoot = false as const;
 
@@ -210,13 +210,13 @@ export class ChildContainerImpl<
     scopeName?: string
   ): InferService<P>;
   resolveInternal(
-    port: Port<unknown, string>,
+    port: Port<string, unknown>,
     scopedMemo: MemoMap,
     scopeId?: string | null,
     scopeName?: string
   ): unknown;
   resolveInternal(
-    port: Port<unknown, string>,
+    port: Port<string, unknown>,
     scopedMemo: MemoMap,
     scopeId: string | null = null,
     scopeName?: string
@@ -293,7 +293,7 @@ export class ChildContainerImpl<
     ) as InferService<P>;
   }
 
-  protected resolveInternalFallback(port: Port<unknown, string>, portName: string): unknown {
+  protected resolveInternalFallback(port: Port<string, unknown>, portName: string): unknown {
     // For child containers, delegate to parent based on inheritance mode
     if (!this.adapterRegistry.isLocal(port)) {
       const mode = this.inheritanceResolver.getMode(portName);
@@ -306,7 +306,7 @@ export class ChildContainerImpl<
     throw new Error(`No adapter registered for port '${portName}'`);
   }
 
-  protected resolveAsyncInternalFallback(port: Port<unknown, string>): Promise<unknown> {
+  protected resolveAsyncInternalFallback(port: Port<string, unknown>): Promise<unknown> {
     if (!this.adapterRegistry.isLocal(port)) {
       return this.parentContainer.resolveAsyncInternal(port as TProvides);
     }
@@ -381,7 +381,7 @@ export class ChildContainerImpl<
    * circular calls when parent iterates its child containers. The parent's
    * adapters are available in the parent's own snapshot.
    */
-  protected override createAdapterMapSnapshot(): ReadonlyMap<Port<unknown, string>, AdapterInfo> {
+  protected override createAdapterMapSnapshot(): ReadonlyMap<Port<string, unknown>, AdapterInfo> {
     // Only include local adapters to avoid circular parent access
     return super.createAdapterMapSnapshot();
   }

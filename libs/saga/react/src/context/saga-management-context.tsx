@@ -39,7 +39,7 @@ export interface SagaManagementProviderProps<
 function useResolveManagementExecutor<M extends SagaManagementPort<string, unknown, unknown>>(
   port: M
 ): SagaManagementExecutor<InferSagaManagementPortOutput<M>, InferSagaManagementPortError<M>>;
-function useResolveManagementExecutor(port: Port<unknown, string>): unknown {
+function useResolveManagementExecutor(port: Port<string, unknown>): unknown {
   return usePort(port);
 }
 

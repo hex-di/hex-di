@@ -53,7 +53,7 @@ import type {
  * const integration: TypedReactIntegration<AppPorts> = createTypedHooks<AppPorts>();
  * ```
  */
-export interface TypedReactIntegration<TProvides extends Port<unknown, string>> {
+export interface TypedReactIntegration<TProvides extends Port<string, unknown>> {
   // ===========================================================================
   // Provider Components
   // ===========================================================================

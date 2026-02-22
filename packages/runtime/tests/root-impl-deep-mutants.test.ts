@@ -297,7 +297,7 @@ describe("RootContainerImpl resolveInternalFallback", () => {
       )
       .build();
     const container = createContainer({ graph, name: "Root" });
-    const resolve = container.resolve as (port: Port<unknown, string>) => unknown;
+    const resolve = container.resolve as (port: Port<string, unknown>) => unknown;
 
     expect(() => resolve(DatabasePort)).toThrow();
     try {
@@ -320,7 +320,7 @@ describe("RootContainerImpl resolveInternalFallback", () => {
       .build();
     const container = createContainer({ graph, name: "Root" });
     const resolveAsync = container.resolveAsync as (
-      port: Port<unknown, string>
+      port: Port<string, unknown>
     ) => Promise<unknown>;
 
     try {

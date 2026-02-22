@@ -140,7 +140,7 @@ describe("GraphBuilder immutability", () => {
     // A mutable object should not be assignable to GraphBuilder
     type FakeBuilder = {
       provide: (
-        adapter: Adapter<Port<unknown, string>, Port<unknown, string>, "singleton">
+        adapter: Adapter<Port<string, unknown>, Port<string, unknown>, "singleton">
       ) => unknown;
       build: () => unknown;
     };

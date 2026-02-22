@@ -131,7 +131,7 @@ export type ResolvedDeps<TRequires> = [TRequires] extends [never]
  * // EmptyDeps
  * ```
  */
-export type PortDeps<TRequires extends readonly Port<unknown, string>[]> = ResolvedDeps<
+export type PortDeps<TRequires extends readonly Port<string, unknown>[]> = ResolvedDeps<
   TupleToUnion<TRequires>
 >;
 
@@ -288,15 +288,15 @@ export type Adapter<
 export interface AdapterConstraint {
   /**
    * The port this adapter provides (read-only, covariant).
-   * Uses Port<unknown, string> as the widest Port type.
+   * Uses Port<string, unknown> as the widest Port type.
    */
-  readonly provides: Port<unknown, string>;
+  readonly provides: Port<string, unknown>;
 
   /**
    * The ports this adapter depends on (read-only, covariant).
    * Each element is a Port with `__portName` for runtime identification.
    */
-  readonly requires: readonly Port<unknown, string>[];
+  readonly requires: readonly Port<string, unknown>[];
 
   /**
    * The lifetime scope (fixed union, all values assignable).

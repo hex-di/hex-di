@@ -33,18 +33,18 @@ export function isInheritanceMode(value: unknown): value is InheritanceMode {
 // =============================================================================
 
 export function isAdapterProvidedByParent<
-  TParentProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TParentProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
 >(parent: ParentContainerLike<TParentProvides, TAsyncPorts>, adapter: RuntimeAdapter): boolean {
   return parent[ADAPTER_ACCESS](adapter.provides) !== undefined;
 }
 
 export function isAdapterProvidedByParentOrExtensions<
-  TParentProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TParentProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
 >(
   parent: ParentContainerLike<TParentProvides, TAsyncPorts>,
-  extensions: ReadonlyMap<Port<unknown, string>, RuntimeAdapter>,
+  extensions: ReadonlyMap<Port<string, unknown>, RuntimeAdapter>,
   adapter: RuntimeAdapter
 ): boolean {
   return parent[ADAPTER_ACCESS](adapter.provides) !== undefined || extensions.has(adapter.provides);

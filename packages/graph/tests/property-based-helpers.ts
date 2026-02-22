@@ -71,7 +71,7 @@ export function fcConfig(numRuns: number): { numRuns: number; seed?: number; ver
 // =============================================================================
 
 /** Standard port type used in property tests */
-export type TestPort = Port<{ value: string }, string>;
+export type TestPort = Port<string, { value: string }>;
 
 /** Standard service type produced by test adapters */
 export interface TestService {

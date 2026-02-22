@@ -59,7 +59,7 @@ interface SagaBuilderWithInput<
   TSteps extends readonly AnyStepDefinition[],
   TErrors,
 > {
-  step<S extends StepDefinition<string, TInput, unknown, unknown, unknown, Port<unknown, string>>>(
+  step<S extends StepDefinition<string, TInput, unknown, unknown, unknown, Port<string, unknown>>>(
     ...args: HasStepName<TSteps, InferStepName<S>> extends true
       ? [step: StepNameAlreadyExistsError<InferStepName<S>>]
       : [step: S]
@@ -72,7 +72,7 @@ interface SagaBuilderWithInput<
       unknown,
       unknown,
       unknown,
-      Port<unknown, string>
+      Port<string, unknown>
     >[],
   >(
     steps: PSteps
@@ -87,7 +87,7 @@ interface SagaBuilderWithInput<
     TKey extends string,
     TBranches extends Record<
       TKey,
-      readonly StepDefinition<string, TInput, unknown, unknown, unknown, Port<unknown, string>>[]
+      readonly StepDefinition<string, TInput, unknown, unknown, unknown, Port<string, unknown>>[]
     >,
   >(
     selector: (ctx: StepContext<TInput, AccumulatedResults<TSteps>>) => TKey,
@@ -103,7 +103,7 @@ interface SagaBuilderWithInput<
         unknown,
         BranchAccumulatedResults<TKey, TBranches>,
         BranchAccumulatedErrors<TKey, TBranches>,
-        Port<unknown, string>
+        Port<string, unknown>
       >,
     ],
     TErrors | BranchAccumulatedErrors<TKey, TBranches>
@@ -123,7 +123,7 @@ interface SagaBuilderWithInput<
         unknown,
         InferSagaOutput<TSaga>,
         InferSagaErrors<TSaga>,
-        Port<unknown, string>
+        Port<string, unknown>
       >,
     ],
     TErrors | InferSagaErrors<TSaga>

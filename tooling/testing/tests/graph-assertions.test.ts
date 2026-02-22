@@ -19,8 +19,8 @@ import {
 // At runtime, .build() always returns a graph-like object, but TypeScript
 // returns MissingDependencyError type for incomplete graphs at compile time.
 // This cast is safe for testing the runtime assertion behavior.
-function asGraph<T>(value: unknown): Graph<Port<T, string>> {
-  return value as Graph<Port<T, string>>;
+function asGraph<T>(value: unknown): Graph<Port<string, T>> {
+  return value as Graph<Port<string, T>>;
 }
 
 // =============================================================================

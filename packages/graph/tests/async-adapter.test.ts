@@ -13,6 +13,7 @@
 
 import { describe, it, expect } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
+import { ResultAsync } from "@hex-di/result";
 import { GraphBuilder } from "../src/index.js";
 
 // =============================================================================
@@ -56,13 +57,14 @@ describe("async adapter creation", () => {
     const adapter = createAdapter({
       provides: DatabasePort,
       requires: [],
-      factory: async () => ({
-        query: async () => ({}),
-        isConnected: true,
-      }),
+      factory: () =>
+        ResultAsync.ok({
+          query: async () => ({}),
+          isConnected: true,
+        }),
     });
 
-    expect(adapter.factoryKind).toBe("async");
+    expect(adapter.factoryKind).toBe("sync");
     expect(adapter.lifetime).toBe("singleton");
   });
 
@@ -70,9 +72,9 @@ describe("async adapter creation", () => {
     const adapter = createAdapter({
       provides: DatabasePort,
       requires: [LoggerPort, ConfigPort],
-      factory: async ({ Logger, Config }) => {
+      factory: ({ Logger, Config }) => {
         Logger.log(`Connecting to ${Config.get("db.host")}`);
-        return { query: async () => ({}), isConnected: true };
+        return ResultAsync.ok({ query: async () => ({}), isConnected: true });
       },
     });
 
@@ -83,17 +85,18 @@ describe("async adapter creation", () => {
     const clonableAdapter = createAdapter({
       provides: CachePort,
       requires: [],
-      factory: async () => ({
-        get: () => null,
-        set: () => {},
-      }),
+      factory: () =>
+        ResultAsync.ok({
+          get: () => null,
+          set: () => {},
+        }),
       clonable: true,
     });
 
     const nonClonableAdapter = createAdapter({
       provides: DatabasePort,
       requires: [],
-      factory: async () => ({ query: async () => ({}), isConnected: true }),
+      factory: () => ResultAsync.ok({ query: async () => ({}), isConnected: true }),
       clonable: false,
     });
 
@@ -107,7 +110,7 @@ describe("async adapter creation", () => {
     const adapter = createAdapter({
       provides: DatabasePort,
       requires: [],
-      factory: async () => ({ query: async () => ({}), isConnected: true }),
+      factory: () => ResultAsync.ok({ query: async () => ({}), isConnected: true }),
       finalizer: async () => {
         finalizerCalled = true;
       },
@@ -135,7 +138,7 @@ describe("GraphBuilder with async adapters", () => {
     const AsyncDatabase = createAdapter({
       provides: DatabasePort,
       requires: [LoggerPort],
-      factory: async () => ({ query: async () => ({}), isConnected: true }),
+      factory: () => ResultAsync.ok({ query: async () => ({}), isConnected: true }),
     });
 
     const builder = GraphBuilder.create().provide(SyncLogger).provide(AsyncDatabase);
@@ -156,13 +159,13 @@ describe("GraphBuilder with async adapters", () => {
     const AsyncConfig = createAdapter({
       provides: ConfigPort,
       requires: [],
-      factory: async () => ({ get: () => "value" }),
+      factory: () => ResultAsync.ok({ get: () => "value" }),
     });
 
     const AsyncDatabase = createAdapter({
       provides: DatabasePort,
       requires: [LoggerPort, ConfigPort],
-      factory: async () => ({ query: async () => ({}), isConnected: true }),
+      factory: () => ResultAsync.ok({ query: async () => ({}), isConnected: true }),
     });
 
     const graph = GraphBuilder.create()
@@ -186,7 +189,7 @@ describe("GraphBuilder with async adapters", () => {
     const AsyncDatabase = createAdapter({
       provides: DatabasePort,
       requires: [LoggerPort],
-      factory: async () => ({ query: async () => ({}), isConnected: true }),
+      factory: () => ResultAsync.ok({ query: async () => ({}), isConnected: true }),
     });
 
     // Build should succeed when all dependencies are satisfied
@@ -199,7 +202,7 @@ describe("GraphBuilder with async adapters", () => {
     const AsyncConfig = createAdapter({
       provides: ConfigPort,
       requires: [],
-      factory: async () => ({ get: () => "value" }),
+      factory: () => ResultAsync.ok({ get: () => "value" }),
     });
 
     const builder = GraphBuilder.create().provide(AsyncConfig);
@@ -220,13 +223,13 @@ describe("concurrent async adapter scenarios", () => {
     const AsyncConfig = createAdapter({
       provides: ConfigPort,
       requires: [],
-      factory: async () => ({ get: () => "value" }),
+      factory: () => ResultAsync.ok({ get: () => "value" }),
     });
 
     const AsyncCache = createAdapter({
       provides: CachePort,
       requires: [],
-      factory: async () => ({ get: () => null, set: () => {} }),
+      factory: () => ResultAsync.ok({ get: () => null, set: () => {} }),
     });
 
     const graph = GraphBuilder.create().provide(AsyncConfig).provide(AsyncCache).build();
@@ -241,7 +244,7 @@ describe("concurrent async adapter scenarios", () => {
     const AsyncConfig = createAdapter({
       provides: ConfigPort,
       requires: [],
-      factory: async () => ({ get: () => "value" }),
+      factory: () => ResultAsync.ok({ get: () => "value" }),
     });
 
     const SyncLogger = createAdapter({
@@ -254,15 +257,16 @@ describe("concurrent async adapter scenarios", () => {
     const AsyncDatabase = createAdapter({
       provides: DatabasePort,
       requires: [ConfigPort, LoggerPort],
-      factory: async () => ({ query: async () => ({}), isConnected: true }),
+      factory: () => ResultAsync.ok({ query: async () => ({}), isConnected: true }),
     });
 
     const AsyncUserService = createAdapter({
       provides: UserServicePort,
       requires: [DatabasePort, LoggerPort],
-      factory: async () => ({
-        getUser: async (id: string) => ({ id, name: "User" }),
-      }),
+      factory: () =>
+        ResultAsync.ok({
+          getUser: async (id: string) => ({ id, name: "User" }),
+        }),
     });
 
     const graph = GraphBuilder.create()
@@ -293,27 +297,28 @@ describe("concurrent async adapter scenarios", () => {
     const AsyncConfig = createAdapter({
       provides: ConfigPort,
       requires: [],
-      factory: async () => ({ get: () => "value" }),
+      factory: () => ResultAsync.ok({ get: () => "value" }),
     });
 
     const AsyncDatabase = createAdapter({
       provides: DatabasePort,
       requires: [ConfigPort],
-      factory: async () => ({ query: async () => ({}), isConnected: true }),
+      factory: () => ResultAsync.ok({ query: async () => ({}), isConnected: true }),
     });
 
     const AsyncCache = createAdapter({
       provides: CachePort,
       requires: [ConfigPort],
-      factory: async () => ({ get: () => null, set: () => {} }),
+      factory: () => ResultAsync.ok({ get: () => null, set: () => {} }),
     });
 
     const AsyncUserService = createAdapter({
       provides: UserServicePort,
       requires: [DatabasePort, CachePort],
-      factory: async () => ({
-        getUser: async (id: string) => ({ id, name: "User" }),
-      }),
+      factory: () =>
+        ResultAsync.ok({
+          getUser: async (id: string) => ({ id, name: "User" }),
+        }),
     });
 
     const graph = GraphBuilder.create()
@@ -347,7 +352,7 @@ describe("async adapter edge cases", () => {
     const adapter = createAdapter({
       provides: LoggerPort,
       requires: [],
-      factory: async () => ({ log: () => {} }),
+      factory: () => ResultAsync.ok({ log: () => {} }),
     });
 
     const graph = GraphBuilder.create().provide(adapter).build();
@@ -367,9 +372,9 @@ describe("async adapter edge cases", () => {
     const AsyncDatabase = createAdapter({
       provides: DatabasePort,
       requires: [LoggerPort],
-      factory: async ({ Logger }) => {
+      factory: ({ Logger }) => {
         Logger.log("Initializing database...");
-        return { query: async () => ({}), isConnected: true };
+        return ResultAsync.ok({ query: async () => ({}), isConnected: true });
       },
     });
 
@@ -383,13 +388,13 @@ describe("async adapter edge cases", () => {
     const Async1 = createAdapter({
       provides: ConfigPort,
       requires: [],
-      factory: async () => ({ get: () => "" }),
+      factory: () => ResultAsync.ok({ get: () => "" }),
     });
 
     const Async2 = createAdapter({
       provides: CachePort,
       requires: [],
-      factory: async () => ({ get: () => null, set: () => {} }),
+      factory: () => ResultAsync.ok({ get: () => null, set: () => {} }),
     });
 
     const graph = GraphBuilder.create().provide(Async1).provide(Async2).build();
@@ -524,13 +529,11 @@ describe("async factory error scenarios", () => {
     const errorAdapter = createAdapter({
       provides: DatabasePort,
       requires: [],
-      factory: async () => {
-        throw new Error("Connection failed");
-      },
+      factory: () => Promise.reject(new Error("Connection failed")),
     });
 
     // The adapter is created successfully - errors only occur at resolution time
-    expect(errorAdapter.factoryKind).toBe("async");
+    expect(errorAdapter.factoryKind).toBe("sync");
     expect(errorAdapter.provides).toBe(DatabasePort);
   });
 
@@ -538,20 +541,18 @@ describe("async factory error scenarios", () => {
     const rejectAdapter = createAdapter({
       provides: DatabasePort,
       requires: [],
-      factory: async () => {
-        throw new Error("Rejected");
-      },
+      factory: () => Promise.reject(new Error("Rejected")),
     });
 
     // The adapter is created successfully - errors only occur at resolution time
-    expect(rejectAdapter.factoryKind).toBe("async");
+    expect(rejectAdapter.factoryKind).toBe("sync");
   });
 
   it("captures async finalizer that throws", () => {
     const adapterWithBadFinalizer = createAdapter({
       provides: DatabasePort,
       requires: [],
-      factory: async () => ({ query: async () => ({}), isConnected: true }),
+      factory: () => ResultAsync.ok({ query: async () => ({}), isConnected: true }),
       finalizer: async () => {
         throw new Error("Cleanup failed");
       },
@@ -567,7 +568,7 @@ describe("async factory error scenarios", () => {
     const adapter = createAdapter({
       provides: CachePort,
       requires: [],
-      factory: async () => ({ get: () => null, set: () => {} }),
+      factory: () => ResultAsync.ok({ get: () => null, set: () => {} }),
     });
 
     const graph = GraphBuilder.create().provide(adapter).build();

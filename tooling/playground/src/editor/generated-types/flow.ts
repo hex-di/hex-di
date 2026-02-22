@@ -431,8 +431,8 @@ export type InferMachineContextType<M> = M extends Machine<infer _S, infer _E, i
  * 1. The same service interface type \`T\`
  * 2. The same port name \`TName\`
  *
- * @typeParam T - The service interface type (phantom type - exists only at compile time)
  * @typeParam TName - The literal string type for the port name (defaults to \`string\`)
+ * @typeParam T - The service interface type (phantom type - exists only at compile time)
  *
  * @remarks
  * - The \`__brand\` property carries both the service type and name in a tuple
@@ -451,8 +451,8 @@ export type InferMachineContextType<M> = M extends Machine<infer _S, infer _E, i
  * }
  *
  * // Create typed port tokens
- * type ConsoleLoggerPort = Port<Logger, 'ConsoleLogger'>;
- * type FileLoggerPort = Port<Logger, 'FileLogger'>;
+ * type ConsoleLoggerPort = Port<'ConsoleLogger', Logger>;
+ * type FileLoggerPort = Port<'FileLogger', Logger>;
  *
  * // These are type-incompatible despite same interface
  * declare const consolePort: ConsoleLoggerPort;
@@ -467,15 +467,15 @@ export type InferMachineContextType<M> = M extends Machine<infer _S, infer _E, i
  * type LoggerPortType = typeof LoggerPort;
  * \`\`\`
  */
-export type Port<T, TName extends string> = {
+export type Port<TName extends string, T> = {
 	/**
 	 * Brand property for nominal typing.
-	 * Contains a tuple of [ServiceType, PortName] at the type level.
+	 * Contains a tuple of [PortName, ServiceType] at the type level.
 	 * Value is undefined at runtime.
 	 */
 	readonly __brand: [
-		T,
-		TName
+		TName,
+		T
 	];
 	/**
 	 * The port name, exposed for debugging and error messages.
@@ -547,7 +547,7 @@ export type NotAPortError<T> = {
  * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * \`\`\`
  */
-export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPortError<P>;
+export type InferService<P> = P extends Port<infer _TName, infer T> ? T : NotAPortError<P>;
 /**
  * Extracts the port name literal type from a Port type.
  *
@@ -581,7 +581,7 @@ export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPo
  * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * \`\`\`
  */
-export type InferPortName<P> = P extends Port<infer _T, infer TName> ? TName : NotAPortError<P>;
+export type InferPortName<P> = P extends Port<infer TName, infer _T> ? TName : NotAPortError<P>;
 declare const __metadataKey: unique symbol;
 /**
  * Discriminator for hexagonal architecture port types.
@@ -632,8 +632,8 @@ export interface PortMetadata {
  * DirectedPorts are structurally compatible with base Ports, enabling gradual
  * adoption without breaking existing code.
  *
- * @typeParam TService - The service interface type (phantom type)
  * @typeParam TName - The literal string type for the port name
+ * @typeParam TService - The service interface type (phantom type)
  * @typeParam TDirection - 'inbound' or 'outbound'
  *
  * @see {@link InboundPort} - Convenience alias for inbound directed ports
@@ -644,13 +644,13 @@ export interface PortMetadata {
  * @example
  * \`\`\`typescript
  * // DirectedPort is assignable to Port (backward compatible)
- * const port: DirectedPort<Logger, 'Logger', 'inbound'> = createInboundPort({
+ * const port: DirectedPort<'Logger', Logger, 'inbound'> = createInboundPort({
  *   name: 'Logger',
  * });
- * const basePort: Port<Logger, 'Logger'> = port; // OK
+ * const basePort: Port<'Logger', Logger> = port; // OK
  * \`\`\`
  */
-export type DirectedPort<TService, TName extends string, TDirection extends PortDirection, TCategory extends string = string> = Port<TService, TName> & {
+export type DirectedPort<TName extends string, TService, TDirection extends PortDirection, TCategory extends string = string> = Port<TName, TService> & {
 	readonly __directionBrand: TDirection;
 	readonly __metadataKey: PortMetadata;
 	readonly __categoryBrand: TCategory;
@@ -661,7 +661,7 @@ export type DirectedPort<TService, TName extends string, TDirection extends Port
  * @typeParam T - A tuple or array type
  * @returns Union of all element types, or \`never\` for empty array
  */
-export type TupleToUnion<T extends readonly Port<unknown, string>[]> = T extends readonly [
+export type TupleToUnion<T extends readonly Port<string, unknown>[]> = T extends readonly [
 ] ? never : T[number];
 /**
  * Discriminator for sync vs async factory functions.
@@ -744,7 +744,7 @@ export type ResolvedDeps<TRequires> = [
  * // EmptyDeps
  * \`\`\`
  */
-export type PortDeps<TRequires extends readonly Port<unknown, string>[]> = ResolvedDeps<TupleToUnion<TRequires>>;
+export type PortDeps<TRequires extends readonly Port<string, unknown>[]> = ResolvedDeps<TupleToUnion<TRequires>>;
 /**
  * A branded adapter type that captures the complete contract for a service implementation.
  *
@@ -1020,7 +1020,7 @@ export interface BaseEffect<TKind extends string> {
  * };
  * \`\`\`
  */
-export interface InvokeEffect<TPort extends Port<unknown, string>, TMethod extends MethodNames<InferService<TPort>>, TArgs extends readonly unknown[]> extends BaseEffect<"Invoke"> {
+export interface InvokeEffect<TPort extends Port<string, unknown>, TMethod extends MethodNames<InferService<TPort>>, TArgs extends readonly unknown[]> extends BaseEffect<"Invoke"> {
 	/**
 	 * The port token for service resolution.
 	 */
@@ -2578,7 +2578,7 @@ export declare const Effect: {
 	 * // Effect.invoke(UserServicePort, "getUser", [123]);
 	 * \`\`\`
 	 */
-	readonly invoke: <TPort extends Port<unknown, string>, TMethod extends MethodNames<InferService<TPort>>>(port: TPort, method: TMethod, args: MethodParams<InferService<TPort>, TMethod> extends readonly unknown[] ? readonly [
+	readonly invoke: <TPort extends Port<string, unknown>, TMethod extends MethodNames<InferService<TPort>>>(port: TPort, method: TMethod, args: MethodParams<InferService<TPort>, TMethod> extends readonly unknown[] ? readonly [
 		...MethodParams<InferService<TPort>, TMethod>
 	] : never) => InvokeEffect<TPort, TMethod, readonly [
 		...MethodParams<InferService<TPort>, TMethod>
@@ -2989,7 +2989,7 @@ export declare function defineEvents<const TDef extends EventDefinitionInput>(de
  * @typeParam TOutput - The output type of the activity
  * @typeParam TName - The literal string type for the port name
  */
-export type ActivityPort<TInput, TOutput, TName extends string> = Port<Activity<TInput, TOutput>, TName> & {
+export type ActivityPort<TInput, TOutput, TName extends string> = Port<TName, Activity<TInput, TOutput>> & {
 	/** Phantom property carrying the activity's input type. */
 	readonly __activityInput: TInput;
 	/** Phantom property carrying the activity's output type. */
@@ -3024,7 +3024,7 @@ export type CleanupReason = "completed" | "cancelled" | "timeout" | "error";
  * @typeParam TRequires - The tuple of Port types for dependencies
  * @typeParam TEvents - The events definition from defineEvents
  */
-export interface ActivityContext<TRequires extends readonly Port<unknown, string>[], TEvents> {
+export interface ActivityContext<TRequires extends readonly Port<string, unknown>[], TEvents> {
 	/**
 	 * Resolved dependencies keyed by port name.
 	 */
@@ -3045,7 +3045,7 @@ export interface ActivityContext<TRequires extends readonly Port<unknown, string
  * @typeParam TRequires - The tuple of Port types for dependencies
  * @typeParam TEvents - The events definition from defineEvents
  */
-export interface ActivityConfig<TPort extends ActivityPort<unknown, unknown, string>, TRequires extends readonly Port<unknown, string>[], TEvents> {
+export interface ActivityConfig<TPort extends ActivityPort<unknown, unknown, string>, TRequires extends readonly Port<string, unknown>[], TEvents> {
 	/**
 	 * The ports this activity depends on.
 	 * Use \`as const\` or the \`const\` modifier to preserve tuple types.
@@ -3087,7 +3087,7 @@ export interface ActivityConfig<TPort extends ActivityPort<unknown, unknown, str
  * @typeParam TRequires - The tuple of Port types for dependencies
  * @typeParam TEvents - The events definition from defineEvents
  */
-export interface ConfiguredActivity<TPort extends ActivityPort<unknown, unknown, string>, TRequires extends readonly Port<unknown, string>[], TEvents> {
+export interface ConfiguredActivity<TPort extends ActivityPort<unknown, unknown, string>, TRequires extends readonly Port<string, unknown>[], TEvents> {
 	/**
 	 * The activity port this configuration implements.
 	 */
@@ -3135,7 +3135,7 @@ export interface ConfiguredActivityAny {
 	/**
 	 * The required dependencies (covariant - array of ports).
 	 */
-	readonly requires: readonly Port<unknown, string>[];
+	readonly requires: readonly Port<string, unknown>[];
 	/**
 	 * The events definition (covariant - unknown).
 	 */
@@ -4150,7 +4150,7 @@ export type ActivityNotFound = Readonly<{
  * ConfiguredActivityAny to ensure proper type inference when calling
  * execute and cleanup methods.
  */
-export type SpawnableActivity<TPort extends ActivityPort<unknown, unknown, string>, TRequires extends readonly Port<unknown, string>[], TEvents> = ConfiguredActivity<TPort, TRequires, TEvents>;
+export type SpawnableActivity<TPort extends ActivityPort<unknown, unknown, string>, TRequires extends readonly Port<string, unknown>[], TEvents> = ConfiguredActivity<TPort, TRequires, TEvents>;
 /**
  * Configuration options for creating an ActivityManager.
  */
@@ -4239,7 +4239,7 @@ export interface ActivityManager {
 	 * @param options - Optional spawn options (timeout override)
 	 * @returns Unique identifier for this activity instance
 	 */
-	spawn<TPort extends ActivityPort<unknown, unknown, string>, TRequires extends readonly Port<unknown, string>[], TEvents>(activity: SpawnableActivity<TPort, TRequires, TEvents>, input: ActivityInput<TPort>, eventSink: TypedEventSink<TEvents>, deps: PortDeps<TRequires>, options?: SpawnOptions): string;
+	spawn<TPort extends ActivityPort<unknown, unknown, string>, TRequires extends readonly Port<string, unknown>[], TEvents>(activity: SpawnableActivity<TPort, TRequires, TEvents>, input: ActivityInput<TPort>, eventSink: TypedEventSink<TEvents>, deps: PortDeps<TRequires>, options?: SpawnOptions): string;
 	/**
 	 * Spawns a legacy Activity with an explicit ID.
 	 *
@@ -4441,7 +4441,7 @@ export declare function activityPort<TInput, TOutput>(): <const TName extends st
  * });
  * \`\`\`
  */
-export declare function activity<TPort extends ActivityPort<unknown, unknown, string>, const TRequires extends readonly Port<unknown, string>[], TEvents>(port: TPort, config: ActivityConfig<TPort, TRequires, TEvents>): ConfiguredActivity<TPort, TRequires, TEvents>;
+export declare function activity<TPort extends ActivityPort<unknown, unknown, string>, const TRequires extends readonly Port<string, unknown>[], TEvents>(port: TPort, config: ActivityConfig<TPort, TRequires, TEvents>): ConfiguredActivity<TPort, TRequires, TEvents>;
 /**
  * A test double for TypedEventSink that captures all emitted events.
  *
@@ -4778,13 +4778,13 @@ export declare class MissingMockError extends Error {
  * await TaskActivity.execute(input, { deps, sink, signal });
  * \`\`\`
  */
-export declare function createTestDeps<TRequires extends readonly Port<unknown, string>[]>(requires: TRequires, mocks: Partial<PortDeps<TRequires>>): PortDeps<TRequires>;
+export declare function createTestDeps<TRequires extends readonly Port<string, unknown>[]>(requires: TRequires, mocks: Partial<PortDeps<TRequires>>): PortDeps<TRequires>;
 /**
  * Type for building mocks from a requires tuple.
  *
  * Maps each port in the requires tuple to its expected mock type.
  */
-export type MocksFor<TRequires extends readonly Port<unknown, string>[]> = {
+export type MocksFor<TRequires extends readonly Port<string, unknown>[]> = {
 	[P in TRequires[number] as InferPortName<P> & string]: InferService<P>;
 };
 /**
@@ -4838,7 +4838,7 @@ export interface TestActivityResult<TOutput, TEvents> {
  * @typeParam TInput - The activity's input type
  * @typeParam TRequires - The activity's requires tuple type
  */
-export interface TestActivityOptions<TInput, TRequires extends readonly Port<unknown, string>[]> {
+export interface TestActivityOptions<TInput, TRequires extends readonly Port<string, unknown>[]> {
 	/**
 	 * The input to pass to the activity's execute function.
 	 */
@@ -4950,7 +4950,7 @@ export interface TestActivityOptions<TInput, TRequires extends readonly Port<unk
  * expect(cleanupReason).toBe('timeout');
  * \`\`\`
  */
-export declare function testActivity<TPort extends ActivityPort<unknown, unknown, string>, TRequires extends readonly Port<unknown, string>[], TEvents>(activity: ConfiguredActivity<TPort, TRequires, TEvents>, options: TestActivityOptions<ActivityInput<TPort>, TRequires>): Promise<TestActivityResult<ActivityOutput<TPort>, TEvents>>;
+export declare function testActivity<TPort extends ActivityPort<unknown, unknown, string>, TRequires extends readonly Port<string, unknown>[], TEvents>(activity: ConfiguredActivity<TPort, TRequires, TEvents>, options: TestActivityOptions<ActivityInput<TPort>, TRequires>): Promise<TestActivityResult<ActivityOutput<TPort>, TEvents>>;
 /**
  * Represents the active state configuration of a machine.
  *
@@ -6186,7 +6186,7 @@ export type InferFlowServiceContext<F> = F extends FlowService<infer _S, infer _
  * const snapshot = inspector.getMachineState('Modal', 'Modal-1');
  * \`\`\`
  */
-export declare const FlowInspectorPort: Port<FlowInspector, "FlowInspector">;
+export declare const FlowInspectorPort: Port<"FlowInspector", FlowInspector>;
 /**
  * DI Port for resolving a FlowRegistry from the container.
  *
@@ -6203,7 +6203,7 @@ export declare const FlowInspectorPort: Port<FlowInspector, "FlowInspector">;
  * const machines = registry.getAllMachines();
  * \`\`\`
  */
-export declare const FlowRegistryPort: Port<FlowRegistry, "FlowRegistry">;
+export declare const FlowRegistryPort: Port<"FlowRegistry", FlowRegistry>;
 /**
  * DI Port for resolving a FlowLibraryInspector from the container.
  *
@@ -6217,7 +6217,7 @@ export declare const FlowRegistryPort: Port<FlowRegistry, "FlowRegistry">;
  * container.inspector.registerLibrary(inspector);
  * \`\`\`
  */
-export declare const FlowLibraryInspectorPort: DirectedPort<LibraryInspector, "FlowLibraryInspector", "outbound", "library-inspector">;
+export declare const FlowLibraryInspectorPort: DirectedPort<"FlowLibraryInspector", LibraryInspector, "outbound", "library-inspector">;
 /**
  * DI Port for resolving a FlowEventBus from the container.
  *
@@ -6234,7 +6234,7 @@ export declare const FlowLibraryInspectorPort: DirectedPort<LibraryInspector, "F
  * bus.subscribe(event => console.log(event.type));
  * \`\`\`
  */
-export declare const FlowEventBusPort: Port<FlowEventBus, "FlowEventBus">;
+export declare const FlowEventBusPort: Port<"FlowEventBus", FlowEventBus>;
 /**
  * A minimal interface for resolving ports from a scope.
  *
@@ -6249,7 +6249,7 @@ export interface ScopeResolver {
 	 * @param port - The port token to resolve
 	 * @returns The service instance for the given port
 	 */
-	resolve<P extends Port<unknown, string>>(port: P): InferService<P>;
+	resolve<P extends Port<string, unknown>>(port: P): InferService<P>;
 }
 /**
  * Activity registry type for looking up activities by port name.
@@ -6260,7 +6260,7 @@ export type ActivityRegistry = ReadonlyMap<string, ConfiguredActivityAny>;
  * Activity deps resolver function type.
  * @internal
  */
-export type ActivityDepsResolver = <TRequires extends readonly Port<unknown, string>[]>(requires: TRequires) => PortDeps<TRequires>;
+export type ActivityDepsResolver = <TRequires extends readonly Port<string, unknown>[]>(requires: TRequires) => PortDeps<TRequires>;
 /**
  * A Port type that provides a FlowService.
  *
@@ -6271,7 +6271,7 @@ export type ActivityDepsResolver = <TRequires extends readonly Port<unknown, str
  * @typeParam TContext - The context type
  * @typeParam TName - The port name literal type
  */
-export type FlowPort<TState extends string, TEvent extends string, TContext, TName extends string = string> = Port<FlowService<TState, TEvent, TContext>, TName>;
+export type FlowPort<TState extends string, TEvent extends string, TContext, TName extends string = string> = Port<TName, FlowService<TState, TEvent, TContext>>;
 /**
  * Creates a typed Port token for a FlowService.
  *
@@ -6446,7 +6446,7 @@ export interface DIEffectExecutor extends EffectExecutor {
  * \`\`\`
  */
 export declare function createDIEffectExecutor(config: DIEffectExecutorConfig): DIEffectExecutor;
-type TupleToUnion\$1<T extends readonly Port<unknown, string>[]> = T extends readonly [
+type TupleToUnion\$1<T extends readonly Port<string, unknown>[]> = T extends readonly [
 ] ? never : T[number];
 /**
  * Configuration for creating a FlowAdapter.
@@ -6456,7 +6456,7 @@ type TupleToUnion\$1<T extends readonly Port<unknown, string>[]> = T extends rea
  * @typeParam TActivities - Tuple of ConfiguredActivity types
  * @typeParam TLifetime - The lifetime scope for the adapter
  */
-export interface FlowAdapterConfig<TProvides extends FlowPort<string, string, unknown, string>, TRequires extends readonly Port<unknown, string>[], TActivities extends readonly ConfiguredActivityAny[] = readonly [
+export interface FlowAdapterConfig<TProvides extends FlowPort<string, string, unknown, string>, TRequires extends readonly Port<string, unknown>[], TActivities extends readonly ConfiguredActivityAny[] = readonly [
 ], TLifetime extends Lifetime = "scoped"> {
 	/**
 	 * The FlowPort this adapter provides.
@@ -6553,7 +6553,7 @@ export interface FlowAdapterConfig<TProvides extends FlowPort<string, string, un
 	 *
 	 * The port must be included in the \`requires\` array for it to be resolved.
 	 */
-	readonly tracerPort?: Port<unknown, string>;
+	readonly tracerPort?: Port<string, unknown>;
 	/**
 	 * Optional scope ID to associate machines with their creating scope.
 	 * When provided, this is stored in the FlowRegistry entry and can be
@@ -6564,7 +6564,7 @@ export interface FlowAdapterConfig<TProvides extends FlowPort<string, string, un
 /**
  * A FlowAdapter is a standard HexDI Adapter that provides a FlowService.
  */
-export type FlowAdapter<TProvides extends FlowPort<string, string, unknown, string>, TRequires extends readonly Port<unknown, string>[], TLifetime extends Lifetime = "scoped"> = Adapter<TProvides, TupleToUnion\$1<TRequires>, TLifetime, "sync", false, TRequires>;
+export type FlowAdapter<TProvides extends FlowPort<string, string, unknown, string>, TRequires extends readonly Port<string, unknown>[], TLifetime extends Lifetime = "scoped"> = Adapter<TProvides, TupleToUnion\$1<TRequires>, TLifetime, "sync", false, TRequires>;
 /**
  * Creates a FlowAdapter that provides a FlowService for a state machine.
  *
@@ -6635,7 +6635,7 @@ export type FlowAdapter<TProvides extends FlowPort<string, string, unknown, stri
  * });
  * \`\`\`
  */
-export declare function createFlowAdapter<TProvides extends FlowPort<string, string, unknown, string>, const TRequires extends readonly Port<unknown, string>[], const TActivities extends readonly ConfiguredActivityAny[] = readonly [
+export declare function createFlowAdapter<TProvides extends FlowPort<string, string, unknown, string>, const TRequires extends readonly Port<string, unknown>[], const TActivities extends readonly ConfiguredActivityAny[] = readonly [
 ], const TLifetime extends Lifetime = "scoped">(config: FlowAdapterConfig<TProvides, TRequires, TActivities, TLifetime>): Result<FlowAdapter<TProvides, TRequires, TLifetime>, FlowAdapterCreationError>;
 /**
  * Detail about a single outgoing transition from a state.

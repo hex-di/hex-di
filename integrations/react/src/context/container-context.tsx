@@ -24,7 +24,7 @@ import type { RuntimeContainerRef } from "../internal/runtime-refs.js";
  *
  * NOTE: This is a phantom type - it exists only at the type level.
  * The global contexts in this file don't use the brand because they
- * use Port<unknown, string> as the base type, allowing any container.
+ * use Port<string, unknown> as the base type, allowing any container.
  *
  * @internal
  */
@@ -48,7 +48,7 @@ declare const ContextBrand: unique symbol;
  *
  * @internal
  */
-export interface ContainerContextValue<TProvides extends Port<unknown, string>> {
+export interface ContainerContextValue<TProvides extends Port<string, unknown>> {
   /**
    * The container provided by ContainerProvider.
    * Uses RuntimeContainerRef for bivariant storage.

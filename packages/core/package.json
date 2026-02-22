@@ -65,6 +65,7 @@
   },
   "sideEffects": false,
   "devDependencies": {
+    "@hex-di/result": "workspace:*",
     "@stryker-mutator/core": "^8.7.1",
     "@stryker-mutator/vitest-runner": "^8.7.1",
     "@vitest/coverage-v8": "4.0.18"

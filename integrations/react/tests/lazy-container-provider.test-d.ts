@@ -44,9 +44,9 @@ interface PluginService {
 // Test Port Types
 // =============================================================================
 
-type LoggerPortType = Port<Logger, "Logger">;
-type DatabasePortType = Port<Database, "Database">;
-type PluginServicePortType = Port<PluginService, "PluginService">;
+type LoggerPortType = Port<"Logger", Logger>;
+type DatabasePortType = Port<"Database", Database>;
+type PluginServicePortType = Port<"PluginService", PluginService>;
 
 type ParentPorts = LoggerPortType | DatabasePortType;
 type PluginPorts = PluginServicePortType;

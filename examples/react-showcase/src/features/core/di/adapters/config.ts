@@ -5,8 +5,8 @@
  */
 
 import { createAdapter } from "@hex-di/core";
+import { ResultAsync } from "@hex-di/result";
 import { ConfigPort } from "../ports.js";
-import type { Config } from "../../../types.js";
 
 /**
  * Adapter for the application configuration service.
@@ -24,12 +24,11 @@ export const ConfigAdapter = createAdapter({
   provides: ConfigPort,
   requires: [],
   // No lifetime - async adapters are always singletons
-  factory: async (): Promise<Config> => {
-    // Simulate loading config from API
-    await new Promise(resolve => setTimeout(resolve, 10000));
-    return {
-      notificationDuration: 3000,
-      maxMessages: 100,
-    };
-  },
+  factory: () =>
+    ResultAsync.fromSafePromise(new Promise<void>(resolve => setTimeout(resolve, 10000))).map(
+      () => ({
+        notificationDuration: 3000,
+        maxMessages: 100,
+      })
+    ),
 });

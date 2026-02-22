@@ -262,9 +262,9 @@ function DefaultError({ error }: { error: Error }): ReactNode {
  * @internal
  */
 function HexDiLazyContainerProviderRoot<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown> = never,
+  TAsyncPorts extends Port<string, unknown> = never,
 >({
   lazyContainer,
   children,

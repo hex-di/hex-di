@@ -61,7 +61,7 @@ export type ActivityPortName<TActivity extends ConfiguredActivityAny> =
  */
 export type ActivityRequiredPortNames<TActivity extends ConfiguredActivityAny> =
   TActivity["requires"] extends readonly (infer P)[]
-    ? P extends Port<unknown, string>
+    ? P extends Port<string, unknown>
       ? InferPortName<P>
       : never
     : never;
@@ -71,9 +71,9 @@ export type ActivityRequiredPortNames<TActivity extends ConfiguredActivityAny> =
  *
  * @typeParam TPorts - The tuple of ports to extract names from
  */
-export type PortNamesUnion<TPorts extends readonly Port<unknown, string>[]> =
+export type PortNamesUnion<TPorts extends readonly Port<string, unknown>[]> =
   TPorts[number] extends infer P
-    ? P extends Port<unknown, string>
+    ? P extends Port<string, unknown>
       ? InferPortName<P>
       : never
     : never;

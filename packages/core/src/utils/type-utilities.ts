@@ -31,7 +31,7 @@ export type IsNever<T> = [T] extends [never] ? true : false;
  * @typeParam T - A tuple or array type
  * @returns Union of all element types, or `never` for empty array
  */
-export type TupleToUnion<T extends readonly Port<unknown, string>[]> = T extends readonly []
+export type TupleToUnion<T extends readonly Port<string, unknown>[]> = T extends readonly []
   ? never
   : T[number];
 

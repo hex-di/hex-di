@@ -22,7 +22,7 @@ import type { FlowService } from "@hex-di/flow";
  * @internal
  */
 export function useFlowPort<TState extends string, TEvent extends string, TContext>(
-  port: Port<FlowService<TState, TEvent, TContext>, string>
+  port: Port<string, FlowService<TState, TEvent, TContext>>
 ): FlowService<TState, TEvent, TContext> {
   return usePort(port);
 }

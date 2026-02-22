@@ -97,7 +97,7 @@ function createMockFlowService(initialSnapshot: MachineSnapshot<TestState, TestC
 }
 
 function createMockContainer(flowService: TestFlowService): any {
-  const mockResolve = vi.fn().mockImplementation((p: Port<unknown, string>) => {
+  const mockResolve = vi.fn().mockImplementation((p: Port<string, unknown>) => {
     const pName = (p as { __portName?: string }).__portName;
     if (pName === "TestFlow") return flowService;
     throw new Error(`Unknown port: ${pName}`);
@@ -107,7 +107,7 @@ function createMockContainer(flowService: TestFlowService): any {
     resolve: mockResolve,
     resolveAsync: vi
       .fn()
-      .mockImplementation((p: Port<unknown, string>) => Promise.resolve(mockResolve(p))),
+      .mockImplementation((p: Port<string, unknown>) => Promise.resolve(mockResolve(p))),
     createScope: vi.fn(),
     createChild: vi.fn(),
     dispose: vi.fn().mockResolvedValue(undefined),

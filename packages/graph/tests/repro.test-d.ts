@@ -19,7 +19,7 @@ const LoggerAdapter = createAdapter({
 
 it("minimal port check", () => {
   expect(LoggerPort).toBeDefined();
-  expectTypeOf<LoggerPortType>().toEqualTypeOf<DirectedPort<Logger, "Logger", "outbound">>();
+  expectTypeOf<LoggerPortType>().toEqualTypeOf<DirectedPort<"Logger", Logger, "outbound">>();
 });
 
 it("adapter provides check", () => {

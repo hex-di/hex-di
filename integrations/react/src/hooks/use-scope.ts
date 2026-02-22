@@ -89,7 +89,7 @@ import { MissingProviderError } from "../errors.js";
  * ```
  */
 export function useScope<
-  TProvides extends Port<unknown, string> = Port<unknown, string>,
+  TProvides extends Port<string, unknown> = Port<string, unknown>,
 >(): Scope<TProvides> {
   const context = useContext(ResolverContext);
 

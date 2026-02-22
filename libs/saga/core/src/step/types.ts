@@ -91,7 +91,7 @@ export interface StepDefinition<
   TAccumulated,
   TOutput,
   TError,
-  TPort extends Port<unknown, string>,
+  TPort extends Port<string, unknown>,
 > {
   /** Unique step name, used as the key in accumulated results */
   readonly name: TName;
@@ -125,7 +125,7 @@ export type AnyStepDefinition = StepDefinition<
   unknown,
   unknown,
   unknown,
-  Port<unknown, string>
+  Port<string, unknown>
 >;
 
 // =============================================================================
@@ -142,25 +142,25 @@ export type NotAStepDefinitionError<T> = {
 
 /** Extract the step name literal type */
 export type InferStepName<S> =
-  S extends StepDefinition<infer N, unknown, unknown, unknown, unknown, Port<unknown, string>>
+  S extends StepDefinition<infer N, unknown, unknown, unknown, unknown, Port<string, unknown>>
     ? N
     : NotAStepDefinitionError<S>;
 
 /** Extract the step output type */
 export type InferStepOutput<S> =
-  S extends StepDefinition<string, unknown, unknown, infer O, unknown, Port<unknown, string>>
+  S extends StepDefinition<string, unknown, unknown, infer O, unknown, Port<string, unknown>>
     ? O
     : NotAStepDefinitionError<S>;
 
 /** Extract the step input type */
 export type InferStepInput<S> =
-  S extends StepDefinition<string, infer I, unknown, unknown, unknown, Port<unknown, string>>
+  S extends StepDefinition<string, infer I, unknown, unknown, unknown, Port<string, unknown>>
     ? I
     : NotAStepDefinitionError<S>;
 
 /** Extract the step error type */
 export type InferStepError<S> =
-  S extends StepDefinition<string, unknown, unknown, unknown, infer E, Port<unknown, string>>
+  S extends StepDefinition<string, unknown, unknown, unknown, infer E, Port<string, unknown>>
     ? E
     : NotAStepDefinitionError<S>;
 
@@ -194,7 +194,7 @@ export type MissingSagaStepPortsError<TMissing> = {
 /** Validate that all ports required by saga steps are provided in the graph */
 export type ValidateSagaPorts<
   TSteps extends readonly AnyStepDefinition[],
-  TProvided extends Port<unknown, string>,
+  TProvided extends Port<string, unknown>,
 > =
   Exclude<CollectStepPorts<TSteps>, TProvided> extends never
     ? true

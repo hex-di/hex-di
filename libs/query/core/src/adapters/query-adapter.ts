@@ -33,7 +33,7 @@ export interface QueryAdapterConfigNoDeps<TPort extends AnyQueryPort> {
  */
 export interface QueryAdapterConfigWithDeps<
   TPort extends AnyQueryPort,
-  TRequires extends ReadonlyArray<Port<unknown, string>>,
+  TRequires extends ReadonlyArray<Port<string, unknown>>,
 > {
   readonly requires: TRequires;
   readonly factory: (deps: PortDeps<TRequires>) => InferService<TPort>;
@@ -79,7 +79,7 @@ export function createQueryAdapter<TPort extends AnyQueryPort>(
 // Overload: with requires
 export function createQueryAdapter<
   TPort extends AnyQueryPort,
-  TRequires extends ReadonlyArray<Port<unknown, string>>,
+  TRequires extends ReadonlyArray<Port<string, unknown>>,
 >(port: TPort, config: QueryAdapterConfigWithDeps<TPort, TRequires>): AdapterConstraint;
 
 // Implementation
@@ -87,7 +87,7 @@ export function createQueryAdapter(
   port: AnyQueryPort,
   config:
     | QueryAdapterConfigNoDeps<AnyQueryPort>
-    | QueryAdapterConfigWithDeps<AnyQueryPort, ReadonlyArray<Port<unknown, string>>>
+    | QueryAdapterConfigWithDeps<AnyQueryPort, ReadonlyArray<Port<string, unknown>>>
 ): AdapterConstraint {
   if (config.requires !== undefined) {
     return bridgeCreateAdapter({

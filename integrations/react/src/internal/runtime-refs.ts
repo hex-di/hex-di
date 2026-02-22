@@ -148,7 +148,7 @@ export function toRuntimeContainerWithInit<T extends ContainerLike>(
  *
  * @internal
  */
-export function toTypedResolver<TProvides extends Port<unknown, string>>(
+export function toTypedResolver<TProvides extends Port<string, unknown>>(
   ref: RuntimeResolverRef
 ): TypedResolver<TProvides> {
   return assertResolverProvides<TProvides>(ref);
@@ -162,7 +162,7 @@ export function toTypedResolver<TProvides extends Port<unknown, string>>(
  * Base graph type - widest valid Graph for structural compatibility.
  * @internal
  */
-type GraphAny = Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>;
+type GraphAny = Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>;
 
 /**
  * Inheritance mode map with string keys for structural compatibility.
@@ -180,15 +180,15 @@ type InheritanceModeMap = Partial<Record<string, InheritanceMode>>;
  * - Property syntax `method: (x: T) => R` is contravariant in `T`
  *
  * This allows Container<LoggerPort> to be assigned to ResolverLike even though
- * LoggerPort is narrower than Port<unknown, string>.
+ * LoggerPort is narrower than Port<string, unknown>.
  *
  * @see https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-6.html
  * @internal
  */
 interface ResolverLike {
-  resolve(port: Port<unknown, string>): unknown;
-  resolveAsync(port: Port<unknown, string>): Promise<unknown>;
-  has(port: Port<unknown, string>): boolean;
+  resolve(port: Port<string, unknown>): unknown;
+  resolveAsync(port: Port<string, unknown>): Promise<unknown>;
+  has(port: Port<string, unknown>): boolean;
   createScope(name?: string): ResolverLike;
   dispose(): Promise<void>;
   readonly isDisposed: boolean;
@@ -220,7 +220,7 @@ interface ContainerLike extends ResolverLike {
  */
 interface LazyContainerLike {
   load(): Promise<ResolverLike>;
-  has(port: Port<unknown, string>): boolean;
+  has(port: Port<string, unknown>): boolean;
   dispose(): Promise<void>;
   readonly isLoaded: boolean;
   readonly isDisposed: boolean;
@@ -250,7 +250,7 @@ export interface RuntimeLazyContainer {
    * Checks if a port is available.
    * Before loading, delegates to parent. After loading, includes child ports.
    */
-  has(port: Port<unknown, string>): boolean;
+  has(port: Port<string, unknown>): boolean;
 
   /**
    * Disposes the lazy container.
@@ -295,7 +295,7 @@ export function toRuntimeLazyContainer<T extends LazyContainerLike>(
       const loaded = await lazyContainer.load();
       return toRuntimeResolver(loaded);
     },
-    has(port: Port<unknown, string>): boolean {
+    has(port: Port<string, unknown>): boolean {
       return lazyContainer.has(port);
     },
     dispose(): Promise<void> {

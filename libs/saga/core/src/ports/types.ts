@@ -72,8 +72,8 @@ export interface SagaExecutionSummary {
 
 /** Branded saga port that resolves to SagaExecutor */
 export type SagaPort<TName extends string, TInput, TOutput, TError> = Port<
-  SagaExecutor<TInput, TOutput, TError>,
-  TName
+  TName,
+  SagaExecutor<TInput, TOutput, TError>
 > & {
   readonly [SagaPortSymbol]: true;
   readonly [__sagaInputType]: TInput;
@@ -83,8 +83,8 @@ export type SagaPort<TName extends string, TInput, TOutput, TError> = Port<
 
 /** Branded management port that resolves to SagaManagementExecutor */
 export type SagaManagementPort<TName extends string, TOutput, TError> = Port<
-  SagaManagementExecutor<TOutput, TError>,
-  TName
+  TName,
+  SagaManagementExecutor<TOutput, TError>
 > & {
   readonly [SagaManagementPortSymbol]: true;
   readonly [__sagaOutputType]: TOutput;

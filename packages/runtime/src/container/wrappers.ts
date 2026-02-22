@@ -65,7 +65,7 @@ import {
  */
 export function hasInternalMethods(
   value: unknown
-): value is InternalContainerMethods<Port<unknown, string>> {
+): value is InternalContainerMethods<Port<string, unknown>> {
   if (!isRecord(value)) {
     return false;
   }
@@ -88,9 +88,9 @@ export function hasInternalMethods(
 }
 
 function isContainerParent<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase = "initialized",
 >(value: unknown): value is Container<TProvides, TExtends, TAsyncPorts, TPhase>["parent"] {
   if (!isRecord(value)) {
@@ -120,9 +120,9 @@ function isContainerParent<
  * @internal
  */
 export function asParentContainerLike<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
 >(
   wrapper: Container<TProvides, TExtends, TAsyncPorts>
 ): ParentContainerLike<TProvides | TExtends, TAsyncPorts> {
@@ -141,8 +141,8 @@ export function asParentContainerLike<
     registerChildContainer: wrapper.registerChildContainer,
     unregisterChildContainer: wrapper.unregisterChildContainer,
     originalParent: wrapper,
-    has: (port: Port<unknown, string>): boolean => wrapper.has(port),
-    hasAdapter: (port: Port<unknown, string>): boolean => wrapper.hasAdapter(port),
+    has: (port: Port<string, unknown>): boolean => wrapper.has(port),
+    hasAdapter: (port: Port<string, unknown>): boolean => wrapper.hasAdapter(port),
   };
 }
 
@@ -161,9 +161,9 @@ export function asParentContainerLike<
  * @internal
  */
 export function createChildContainerWrapper<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown> = never,
+  TAsyncPorts extends Port<string, unknown> = never,
 >(
   impl: ChildContainerImpl<TProvides, TExtends, TAsyncPorts>,
   childName: string,
@@ -283,15 +283,15 @@ export function createChildContainerWrapper<
     name: childName,
     parentName: parentName, // Derived from parent.name
     kind: "child" as ContainerKind,
-    has: (port: Port<unknown, string>): boolean => impl.has(port),
-    hasAdapter: (port: Port<unknown, string>): boolean => impl.hasAdapter(port),
+    has: (port: Port<string, unknown>): boolean => impl.has(port),
+    hasAdapter: (port: Port<string, unknown>): boolean => impl.hasAdapter(port),
     createScope: (name?: string) =>
       createChildContainerScope(impl, name, () => childContainer.inspector),
     createChild: <
       TChildGraph extends Graph<
-        Port<unknown, string>,
-        Port<unknown, string>,
-        Port<unknown, string>
+        Port<string, unknown>,
+        Port<string, unknown>,
+        Port<string, unknown>
       >,
     >(
       childGraph: TChildGraph,
@@ -322,9 +322,9 @@ export function createChildContainerWrapper<
     },
     createChildAsync: <
       TChildGraph extends Graph<
-        Port<unknown, string>,
-        Port<unknown, string>,
-        Port<unknown, string>
+        Port<string, unknown>,
+        Port<string, unknown>,
+        Port<string, unknown>
       >,
     >(
       graphLoader: () => Promise<TChildGraph>,
@@ -339,9 +339,9 @@ export function createChildContainerWrapper<
     > => createChildContainerAsyncInternal(childContainer, childName, graphLoader, options),
     createLazyChild: <
       TChildGraph extends Graph<
-        Port<unknown, string>,
-        Port<unknown, string>,
-        Port<unknown, string>
+        Port<string, unknown>,
+        Port<string, unknown>,
+        Port<string, unknown>
       >,
     >(
       graphLoader: () => Promise<TChildGraph>,
@@ -403,7 +403,7 @@ export function createChildContainerWrapper<
       }
     },
     [INTERNAL_ACCESS]: () => impl.getInternalState(),
-    [ADAPTER_ACCESS]: (port: Port<unknown, string>) => impl.getAdapter(port),
+    [ADAPTER_ACCESS]: (port: Port<string, unknown>) => impl.getAdapter(port),
     registerChildContainer: (child: DisposableChild) => impl.registerChildContainer(child),
     unregisterChildContainer: (child: DisposableChild) => impl.unregisterChildContainer(child),
     get [ContainerBrand]() {
@@ -466,9 +466,9 @@ export function createChildContainerWrapper<
  * @internal
  */
 export function createChildContainerScope<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
 >(
   impl: ChildContainerImpl<TProvides, TExtends, TAsyncPorts>,
   name?: string,
@@ -502,9 +502,9 @@ export function createChildContainerScope<
  * @internal
  */
 function createChildFromGraphInternal<
-  TParentProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
-  TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+  TParentProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
+  TChildGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>,
 >(
   parentLike: ParentContainerLike<TParentProvides, TAsyncPorts>,
   childGraph: TChildGraph,
@@ -552,10 +552,10 @@ function createChildFromGraphInternal<
  * @internal
  */
 async function createChildContainerAsyncInternal<
-  TParentProvides extends Port<unknown, string>,
-  TParentExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
-  TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+  TParentProvides extends Port<string, unknown>,
+  TParentExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
+  TChildGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>,
 >(
   // Using Pick to accept ContainerMembers (used by child container wrappers) as well as Container
   parent: Pick<
@@ -584,10 +584,10 @@ async function createChildContainerAsyncInternal<
  * @internal
  */
 function createLazyChildContainerInternal<
-  TParentProvides extends Port<unknown, string>,
-  TParentExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
-  TChildGraph extends Graph<Port<unknown, string>, Port<unknown, string>, Port<unknown, string>>,
+  TParentProvides extends Port<string, unknown>,
+  TParentExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
+  TChildGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>,
 >(
   // Using Pick to accept ContainerMembers (used by child container wrappers) as well as Container
   parent: Pick<

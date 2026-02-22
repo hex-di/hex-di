@@ -31,23 +31,23 @@ import type { StoreAdapterResult } from "./brands.js";
  */
 export function createLinkedDerivedAdapter<
   TPort extends LinkedDerivedPortDef<string, unknown>,
-  const TRequires extends readonly Port<unknown, string>[],
+  const TRequires extends readonly Port<string, unknown>[],
 >(config: {
   readonly provides: TPort;
   readonly requires: TRequires;
   readonly select: (deps: PortDeps<TRequires>) => InferLinkedDerivedType<TPort>;
   readonly write: (value: InferLinkedDerivedType<TPort>, deps: PortDeps<TRequires>) => void;
-  readonly writesTo?: readonly Port<unknown, string>[];
+  readonly writesTo?: readonly Port<string, unknown>[];
   readonly equals?: (a: InferLinkedDerivedType<TPort>, b: InferLinkedDerivedType<TPort>) => boolean;
   readonly inspection?: boolean;
   readonly reactiveSystem?: ReactiveSystemInstance;
 }): StoreAdapterResult<InferPortName<TPort> & string>;
 export function createLinkedDerivedAdapter(config: {
   readonly provides: LinkedDerivedPortDef<string, unknown>;
-  readonly requires: readonly Port<unknown, string>[];
+  readonly requires: readonly Port<string, unknown>[];
   readonly select: (deps: Record<string, unknown>) => unknown;
   readonly write: (value: unknown, deps: Record<string, unknown>) => void;
-  readonly writesTo?: readonly Port<unknown, string>[];
+  readonly writesTo?: readonly Port<string, unknown>[];
   readonly equals?: (a: unknown, b: unknown) => boolean;
   readonly inspection?: boolean;
   readonly reactiveSystem?: ReactiveSystemInstance;

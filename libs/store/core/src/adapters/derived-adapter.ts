@@ -31,7 +31,7 @@ import type { StoreAdapterResult } from "./brands.js";
  */
 export function createDerivedAdapter<
   TPort extends DerivedPortDef<string, unknown>,
-  const TRequires extends readonly Port<unknown, string>[],
+  const TRequires extends readonly Port<string, unknown>[],
 >(config: {
   readonly provides: TPort;
   readonly requires: TRequires;
@@ -43,7 +43,7 @@ export function createDerivedAdapter<
 }): StoreAdapterResult<InferPortName<TPort> & string>;
 export function createDerivedAdapter(config: {
   readonly provides: DerivedPortDef<string, unknown>;
-  readonly requires: readonly Port<unknown, string>[];
+  readonly requires: readonly Port<string, unknown>[];
   readonly select: (deps: Record<string, unknown>) => unknown;
   readonly equals?: (a: unknown, b: unknown) => boolean;
   readonly lifetime?: "singleton" | "scoped";

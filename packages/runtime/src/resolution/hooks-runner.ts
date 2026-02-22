@@ -63,12 +63,12 @@ export interface ResolutionMetadata {
  * @internal
  */
 interface MutableHookContext {
-  port: Port<unknown, string>;
+  port: Port<string, unknown>;
   portName: string;
   lifetime: Lifetime;
   scopeId: string | null;
   scopeName: string | undefined;
-  parentPort: Port<unknown, string> | null;
+  parentPort: Port<string, unknown> | null;
   isCacheHit: boolean;
   depth: number;
   containerId: string;
@@ -114,7 +114,7 @@ export class HooksRunner {
    * Parallel arrays for parent stack tracking.
    * Avoids allocating ParentStackEntry objects per resolution.
    */
-  private readonly _parentPorts: Port<unknown, string>[] = [];
+  private readonly _parentPorts: Port<string, unknown>[] = [];
   private readonly _parentStartTimes: number[] = [];
 
   /**
@@ -147,7 +147,7 @@ export class HooksRunner {
    * @returns The result of the action
    */
   runSync<T>(
-    port: Port<unknown, string>,
+    port: Port<string, unknown>,
     adapter: AdapterInfo,
     scopeId: string | null,
     isCacheHit: boolean,
@@ -202,7 +202,7 @@ export class HooksRunner {
    * @returns Promise resolving to the result of the action
    */
   runAsync<T>(
-    port: Port<unknown, string>,
+    port: Port<string, unknown>,
     adapter: AdapterInfo,
     scopeId: string | null,
     isCacheHit: boolean,
@@ -253,7 +253,7 @@ export class HooksRunner {
    * Initializes duration=0 and error=null for later in-place mutation.
    */
   private _createContext(
-    port: Port<unknown, string>,
+    port: Port<string, unknown>,
     adapter: AdapterInfo,
     scopeId: string | null,
     isCacheHit: boolean,
@@ -318,7 +318,7 @@ export class HooksRunner {
  * @internal
  */
 export function checkCacheHit(
-  port: Port<unknown, string>,
+  port: Port<string, unknown>,
   lifetime: Lifetime,
   singletonMemo: MemoMap,
   scopedMemo: MemoMap

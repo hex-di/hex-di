@@ -101,7 +101,7 @@ describe("createContainer", () => {
     const container = createContainer({ graph: graph, name: "Test" });
 
     // Cast to test runtime behavior with an unregistered port
-    const resolve = container.resolve as (port: Port<unknown, string>) => unknown;
+    const resolve = container.resolve as (port: Port<string, unknown>) => unknown;
     expect(() => resolve(DatabasePort)).toThrow();
   });
 

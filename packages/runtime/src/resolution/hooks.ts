@@ -82,7 +82,7 @@ export interface ResolutionHookContext {
    * The port being resolved.
    * Can be used to identify the service type.
    */
-  readonly port: Port<unknown, string>;
+  readonly port: Port<string, unknown>;
 
   /**
    * Name of the port being resolved.
@@ -113,7 +113,7 @@ export interface ResolutionHookContext {
    * The parent port if this is a nested dependency resolution.
    * null for top-level resolutions initiated by user code.
    */
-  readonly parentPort: Port<unknown, string> | null;
+  readonly parentPort: Port<string, unknown> | null;
 
   /**
    * Whether this resolution will be served from cache.

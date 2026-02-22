@@ -178,14 +178,14 @@ export function isLibraryInspector(value: unknown): value is LibraryInspector {
  *   name: "FlowInspector",
  *   description: "Flow library inspection",
  * });
- * // Type: DirectedPort<LibraryInspector, "FlowInspector", "outbound", "library-inspector">
+ * // Type: DirectedPort<"FlowInspector", LibraryInspector, "outbound", "library-inspector">
  * ```
  */
 export function createLibraryInspectorPort<const TName extends string>(config: {
   readonly name: TName;
   readonly description?: string;
   readonly tags?: readonly string[];
-}): DirectedPort<LibraryInspector, TName, "outbound", "library-inspector"> {
+}): DirectedPort<TName, LibraryInspector, "outbound", "library-inspector"> {
   return createPort<TName, LibraryInspector, "outbound", "library-inspector">({
     ...config,
     category: "library-inspector",

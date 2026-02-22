@@ -11,7 +11,7 @@
  *   `<P extends TProvides>(port: P) => InferService<P>`
  *
  * This is contravariant in the parameter position under `strictFunctionTypes`,
- * meaning Container<LoggerPort> is NOT assignable to Container<Port<unknown, string>>.
+ * meaning Container<LoggerPort> is NOT assignable to Container<Port<string, unknown>>.
  *
  * Additionally, Container's resolve signature uses conditional types based on TPhase,
  * creating union incompatibility when trying to store containers in generic state.
@@ -110,7 +110,7 @@ export interface RuntimeResolver {
    * @param port - The port token to resolve
    * @returns The service instance (type-erased for storage flexibility)
    */
-  readonly resolve: (port: Port<unknown, string>) => unknown;
+  readonly resolve: (port: Port<string, unknown>) => unknown;
 
   /**
    * Resolves a service instance for the given port asynchronously.
@@ -118,7 +118,7 @@ export interface RuntimeResolver {
    * @param port - The port token to resolve
    * @returns A promise resolving to the service instance
    */
-  readonly resolveAsync: (port: Port<unknown, string>) => Promise<unknown>;
+  readonly resolveAsync: (port: Port<string, unknown>) => Promise<unknown>;
 
   /**
    * Creates a child scope for managing scoped service lifetimes.
@@ -141,7 +141,7 @@ export interface RuntimeResolver {
    * @param port - The port token to check
    * @returns true if the port is resolvable
    */
-  readonly has: (port: Port<unknown, string>) => boolean;
+  readonly has: (port: Port<string, unknown>) => boolean;
 
   /**
    * Whether the resolver has been disposed.
@@ -261,11 +261,11 @@ export function isRuntimeContainer(resolver: RuntimeResolver): resolver is Runti
  * @internal
  */
 interface ResolverLike {
-  resolve(port: Port<unknown, string>): unknown;
-  resolveAsync(port: Port<unknown, string>): Promise<unknown>;
+  resolve(port: Port<string, unknown>): unknown;
+  resolveAsync(port: Port<string, unknown>): Promise<unknown>;
   createScope(name?: string): ResolverLike;
   dispose(): Promise<void>;
-  has(port: Port<unknown, string>): boolean;
+  has(port: Port<string, unknown>): boolean;
   readonly isDisposed: boolean;
   // Optional scope-specific methods
   subscribe?(listener: () => void): () => void;
@@ -320,7 +320,7 @@ function isResolverLike(value: unknown): value is ResolverLike {
  * TypeScript's generic method signatures create contravariance:
  *   `<P extends TProvides>(port: P) => InferService<P>`
  * is not assignable to:
- *   `(port: Port<unknown, string>) => unknown`
+ *   `(port: Port<string, unknown>) => unknown`
  *
  * Even though the implementation would work, TypeScript correctly rejects
  * this because the generic signature makes stronger guarantees about input
@@ -463,7 +463,7 @@ export function toRuntimeContainer(
  * const logger = typed.resolve(LoggerPort);  // Type-safe!
  * ```
  */
-export function assertResolverProvides<TProvides extends Port<unknown, string>>(
+export function assertResolverProvides<TProvides extends Port<string, unknown>>(
   resolver: RuntimeResolver
 ): TypedResolver<TProvides> {
   // This function creates a TypedResolver wrapper around RuntimeResolver.
@@ -489,18 +489,18 @@ export function assertResolverProvides<TProvides extends Port<unknown, string>>(
  *
  * @internal
  */
-function createTypedResolverWrapper<TProvides extends Port<unknown, string>>(
+function createTypedResolverWrapper<TProvides extends Port<string, unknown>>(
   resolver: RuntimeResolver
 ): TypedResolver<TProvides> {
-  function resolve(port: Port<unknown, string>): unknown;
+  function resolve(port: Port<string, unknown>): unknown;
   function resolve<P extends TProvides>(port: P): InferService<P>;
-  function resolve(port: Port<unknown, string>): unknown {
+  function resolve(port: Port<string, unknown>): unknown {
     return resolver.resolve(port);
   }
 
-  function resolveAsync(port: Port<unknown, string>): Promise<unknown>;
+  function resolveAsync(port: Port<string, unknown>): Promise<unknown>;
   function resolveAsync<P extends TProvides>(port: P): Promise<InferService<P>>;
-  function resolveAsync(port: Port<unknown, string>): Promise<unknown> {
+  function resolveAsync(port: Port<string, unknown>): Promise<unknown> {
     return resolver.resolveAsync(port);
   }
 
@@ -532,7 +532,7 @@ function createTypedResolverWrapper<TProvides extends Port<unknown, string>>(
  *
  * @typeParam TProvides - Union of Port types that this resolver can resolve
  */
-export interface TypedResolver<TProvides extends Port<unknown, string>> {
+export interface TypedResolver<TProvides extends Port<string, unknown>> {
   /**
    * Resolves a service instance for the given port synchronously.
    *
@@ -566,7 +566,7 @@ export interface TypedResolver<TProvides extends Port<unknown, string>> {
   /**
    * Checks if the resolver can resolve the given port.
    */
-  has(port: Port<unknown, string>): boolean;
+  has(port: Port<string, unknown>): boolean;
 
   /**
    * Whether the resolver is disposed.

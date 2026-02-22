@@ -54,11 +54,11 @@ interface Analytics {
 }
 
 // Port type aliases for type testing (no runtime values needed)
-type LoggerPortType = Port<Logger, "Logger">;
-type DatabasePortType = Port<Database, "Database">;
-type ConfigPortType = Port<Config, "Config">;
-type CachePortType = Port<Cache, "Cache">;
-type AnalyticsPortType = Port<Analytics, "Analytics">;
+type LoggerPortType = Port<"Logger", Logger>;
+type DatabasePortType = Port<"Database", Database>;
+type ConfigPortType = Port<"Config", Config>;
+type CachePortType = Port<"Cache", Cache>;
+type AnalyticsPortType = Port<"Analytics", Analytics>;
 
 // =============================================================================
 // Test Setup: Graph Definitions

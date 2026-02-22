@@ -43,7 +43,7 @@ import { createFlowTracingHook } from "../introspection/flow-tracing-hook.js";
  * Converts a tuple/array type to a union of its element types.
  * @internal
  */
-type TupleToUnion<T extends readonly Port<unknown, string>[]> = T extends readonly []
+type TupleToUnion<T extends readonly Port<string, unknown>[]> = T extends readonly []
   ? never
   : T[number];
 
@@ -140,7 +140,7 @@ function isTracerLike(value: unknown): value is TracerLike {
  */
 export interface FlowAdapterConfig<
   TProvides extends FlowPort<string, string, unknown, string>,
-  TRequires extends readonly Port<unknown, string>[],
+  TRequires extends readonly Port<string, unknown>[],
   TActivities extends readonly ConfiguredActivityAny[] = readonly [],
   TLifetime extends Lifetime = "scoped",
 > {
@@ -252,7 +252,7 @@ export interface FlowAdapterConfig<
    *
    * The port must be included in the `requires` array for it to be resolved.
    */
-  readonly tracerPort?: Port<unknown, string>;
+  readonly tracerPort?: Port<string, unknown>;
 
   /**
    * Optional scope ID to associate machines with their creating scope.
@@ -271,7 +271,7 @@ export interface FlowAdapterConfig<
  */
 export type FlowAdapter<
   TProvides extends FlowPort<string, string, unknown, string>,
-  TRequires extends readonly Port<unknown, string>[],
+  TRequires extends readonly Port<string, unknown>[],
   TLifetime extends Lifetime = "scoped",
 > = Adapter<TProvides, TupleToUnion<TRequires>, TLifetime, "sync", false, TRequires>;
 
@@ -351,7 +351,7 @@ export type FlowAdapter<
  */
 export function createFlowAdapter<
   TProvides extends FlowPort<string, string, unknown, string>,
-  const TRequires extends readonly Port<unknown, string>[],
+  const TRequires extends readonly Port<string, unknown>[],
   const TActivities extends readonly ConfiguredActivityAny[] = readonly [],
   const TLifetime extends Lifetime = "scoped",
 >(
@@ -413,7 +413,7 @@ export function createFlowAdapter<
 
     // Create a resolver that looks up ports by name.
     const scopeResolver: ScopeResolver = {
-      resolve<P extends Port<unknown, string>>(port: P): InferService<P> {
+      resolve<P extends Port<string, unknown>>(port: P): InferService<P> {
         const service = portNameToService.get(port.__portName);
         if (service === undefined) {
           // This is a programming error: the port is not in the requires list.
@@ -669,7 +669,7 @@ function buildActivityRegistry(
  */
 function createActivityDepsResolver(
   allDeps: unknown,
-  availablePorts: readonly Port<unknown, string>[]
+  availablePorts: readonly Port<string, unknown>[]
 ): ActivityDepsResolver {
   // Build a set of available port names for validation
   const availablePortNames = new Set<string>();
@@ -677,7 +677,7 @@ function createActivityDepsResolver(
     availablePortNames.add(p.__portName);
   }
 
-  return <TRequires extends readonly Port<unknown, string>[]>(
+  return <TRequires extends readonly Port<string, unknown>[]>(
     requires: TRequires
   ): PortDeps<TRequires> => {
     const deps: Record<string, unknown> = {};

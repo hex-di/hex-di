@@ -172,7 +172,7 @@ describe("StatePortDef extends DirectedPort", () => {
   it("extends DirectedPort with correct service type", () => {
     type Port = StatePortDef<"Counter", CounterState, CounterActions>;
     expectTypeOf<Port>().toMatchTypeOf<
-      DirectedPort<StateService<CounterState, CounterActions>, "Counter", "outbound">
+      DirectedPort<"Counter", StateService<CounterState, CounterActions>, "outbound">
     >();
   });
 });

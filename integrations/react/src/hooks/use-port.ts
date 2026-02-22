@@ -11,6 +11,7 @@
 import { useContext, useMemo } from "react";
 import type { Port, InferService } from "@hex-di/core";
 import { ResolverContext } from "../context/resolver-context.js";
+import { assertResolverProvides } from "../internal/runtime-resolver.js";
 import { MissingProviderError } from "../errors.js";
 
 /**
@@ -75,7 +76,7 @@ import { MissingProviderError } from "../errors.js";
  * ```
  */
 export function usePort<
-  TProvides extends Port<unknown, string> = Port<unknown, string>,
+  TProvides extends Port<string, unknown> = Port<string, unknown>,
   P extends TProvides = TProvides,
 >(port: P): InferService<P> {
   const context = useContext(ResolverContext);
@@ -84,15 +85,16 @@ export function usePort<
     throw new MissingProviderError("usePort", "ContainerProvider");
   }
 
-  // Resolve from the nearest resolver (Scope or Container)
-  // Let ContainerError subclasses propagate - they are programming errors or factory errors
-  // Type assertion needed because Container|Scope union has incompatible resolve signatures
-  // due to phase-dependent conditional types. The typed hooks (createTypedHooks) use the
-  // Resolver interface to avoid this issue.
-  const resolver = context.resolver as { resolve: (port: Port<unknown, string>) => unknown };
+  // Wrap RuntimeResolver in TypedResolver via function overloads (no casts).
+  // assertResolverProvides uses overloaded resolve<P>() returning InferService<P>.
+  // Memoized on resolver identity — only re-wraps when scope/container changes.
+  const typed = useMemo(
+    () => assertResolverProvides<TProvides>(context.resolver),
+    [context.resolver]
+  );
 
-  // Memoize resolution per (resolver, port) pair to prevent redundant
-  // hook invocations on re-renders. Re-resolves when the resolver changes
+  // Memoize resolution per (typed resolver, port) pair to prevent redundant
+  // resolution on re-renders. Re-resolves when the resolver changes
   // (e.g., entering a new scope) or the port token changes.
-  return useMemo(() => resolver.resolve(port) as InferService<P>, [resolver, port]);
+  return useMemo(() => typed.resolve(port), [typed, port]);
 }

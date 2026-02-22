@@ -166,7 +166,7 @@ describe("root container resolution", () => {
     const graph = GraphBuilder.create().provide(makeLoggerAdapter()).build();
     const container = createContainer({ graph, name: "TestApp" });
 
-    const resolve = container.resolve as (port: Port<unknown, string>) => unknown;
+    const resolve = container.resolve as (port: Port<string, unknown>) => unknown;
     expect(() => resolve(DatabasePort)).toThrow();
   });
 

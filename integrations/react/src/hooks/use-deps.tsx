@@ -109,7 +109,7 @@ type DepsResult<TRequires> = [TRequires] extends [never]
  * }
  * ```
  */
-export function useDeps<const TRequires extends readonly Port<unknown, string>[]>(
+export function useDeps<const TRequires extends readonly Port<string, unknown>[]>(
   ...requires: TRequires
 ): DepsResult<TupleToUnion<TRequires>> {
   // Get resolver context - throws if outside provider

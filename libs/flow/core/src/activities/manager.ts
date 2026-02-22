@@ -43,7 +43,7 @@ import { ActivityNotFound, DisposeError } from "../errors/index.js";
  */
 type SpawnableActivity<
   TPort extends ActivityPort<unknown, unknown, string>,
-  TRequires extends readonly Port<unknown, string>[],
+  TRequires extends readonly Port<string, unknown>[],
   TEvents,
 > = ConfiguredActivity<TPort, TRequires, TEvents>;
 
@@ -173,7 +173,7 @@ export interface ActivityManager {
    */
   spawn<
     TPort extends ActivityPort<unknown, unknown, string>,
-    TRequires extends readonly Port<unknown, string>[],
+    TRequires extends readonly Port<string, unknown>[],
     TEvents,
   >(
     activity: SpawnableActivity<TPort, TRequires, TEvents>,
@@ -276,7 +276,7 @@ function isConfiguredActivity(
   obj: unknown
 ): obj is SpawnableActivity<
   ActivityPort<unknown, unknown, string>,
-  readonly Port<unknown, string>[],
+  readonly Port<string, unknown>[],
   unknown
 > {
   return (
@@ -531,7 +531,7 @@ export function createActivityManager(config?: ActivityManagerConfig): ActivityM
    */
   function spawnConfigured<
     TPort extends ActivityPort<unknown, unknown, string>,
-    TRequires extends readonly Port<unknown, string>[],
+    TRequires extends readonly Port<string, unknown>[],
     TEvents,
   >(
     activityDef: SpawnableActivity<TPort, TRequires, TEvents>,

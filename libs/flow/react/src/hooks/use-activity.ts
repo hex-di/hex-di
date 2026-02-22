@@ -27,7 +27,7 @@ export interface UseActivityResult {
 // =============================================================================
 
 export function useActivity<TState extends string, TEvent extends string, TContext>(
-  port: Port<FlowService<TState, TEvent, TContext>, string>,
+  port: Port<string, FlowService<TState, TEvent, TContext>>,
   activityId: string
 ): UseActivityResult {
   const flowService = useFlowPort<TState, TEvent, TContext>(port);

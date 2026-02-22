@@ -9,8 +9,8 @@ export const dts = `declare module "@hex-di/query" {
  * 1. The same service interface type \`T\`
  * 2. The same port name \`TName\`
  *
- * @typeParam T - The service interface type (phantom type - exists only at compile time)
  * @typeParam TName - The literal string type for the port name (defaults to \`string\`)
+ * @typeParam T - The service interface type (phantom type - exists only at compile time)
  *
  * @remarks
  * - The \`__brand\` property carries both the service type and name in a tuple
@@ -29,8 +29,8 @@ export const dts = `declare module "@hex-di/query" {
  * }
  *
  * // Create typed port tokens
- * type ConsoleLoggerPort = Port<Logger, 'ConsoleLogger'>;
- * type FileLoggerPort = Port<Logger, 'FileLogger'>;
+ * type ConsoleLoggerPort = Port<'ConsoleLogger', Logger>;
+ * type FileLoggerPort = Port<'FileLogger', Logger>;
  *
  * // These are type-incompatible despite same interface
  * declare const consolePort: ConsoleLoggerPort;
@@ -45,15 +45,15 @@ export const dts = `declare module "@hex-di/query" {
  * type LoggerPortType = typeof LoggerPort;
  * \`\`\`
  */
-export type Port<T, TName extends string> = {
+export type Port<TName extends string, T> = {
 	/**
 	 * Brand property for nominal typing.
-	 * Contains a tuple of [ServiceType, PortName] at the type level.
+	 * Contains a tuple of [PortName, ServiceType] at the type level.
 	 * Value is undefined at runtime.
 	 */
 	readonly __brand: [
-		T,
-		TName
+		TName,
+		T
 	];
 	/**
 	 * The port name, exposed for debugging and error messages.
@@ -125,7 +125,7 @@ export type NotAPortError<T> = {
  * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * \`\`\`
  */
-export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPortError<P>;
+export type InferService<P> = P extends Port<infer _TName, infer T> ? T : NotAPortError<P>;
 /**
  * Extracts the port name literal type from a Port type.
  *
@@ -159,7 +159,7 @@ export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPo
  * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * \`\`\`
  */
-export type InferPortName<P> = P extends Port<infer _T, infer TName> ? TName : NotAPortError<P>;
+export type InferPortName<P> = P extends Port<infer TName, infer _T> ? TName : NotAPortError<P>;
 declare const __metadataKey: unique symbol;
 /**
  * Discriminator for hexagonal architecture port types.
@@ -210,8 +210,8 @@ export interface PortMetadata {
  * DirectedPorts are structurally compatible with base Ports, enabling gradual
  * adoption without breaking existing code.
  *
- * @typeParam TService - The service interface type (phantom type)
  * @typeParam TName - The literal string type for the port name
+ * @typeParam TService - The service interface type (phantom type)
  * @typeParam TDirection - 'inbound' or 'outbound'
  *
  * @see {@link InboundPort} - Convenience alias for inbound directed ports
@@ -222,13 +222,13 @@ export interface PortMetadata {
  * @example
  * \`\`\`typescript
  * // DirectedPort is assignable to Port (backward compatible)
- * const port: DirectedPort<Logger, 'Logger', 'inbound'> = createInboundPort({
+ * const port: DirectedPort<'Logger', Logger, 'inbound'> = createInboundPort({
  *   name: 'Logger',
  * });
- * const basePort: Port<Logger, 'Logger'> = port; // OK
+ * const basePort: Port<'Logger', Logger> = port; // OK
  * \`\`\`
  */
-export type DirectedPort<TService, TName extends string, TDirection extends PortDirection, TCategory extends string = string> = Port<TService, TName> & {
+export type DirectedPort<TName extends string, TService, TDirection extends PortDirection, TCategory extends string = string> = Port<TName, TService> & {
 	readonly __directionBrand: TDirection;
 	readonly __metadataKey: PortMetadata;
 	readonly __categoryBrand: TCategory;
@@ -239,7 +239,7 @@ export type DirectedPort<TService, TName extends string, TDirection extends Port
  * @typeParam T - A tuple or array type
  * @returns Union of all element types, or \`never\` for empty array
  */
-export type TupleToUnion<T extends readonly Port<unknown, string>[]> = T extends readonly [
+export type TupleToUnion<T extends readonly Port<string, unknown>[]> = T extends readonly [
 ] ? never : T[number];
 /**
  * A descriptive error type that replaces silent \`never\` in inference contexts.
@@ -360,7 +360,7 @@ export type ResolvedDeps<TRequires> = [
  * // EmptyDeps
  * \`\`\`
  */
-export type PortDeps<TRequires extends readonly Port<unknown, string>[]> = ResolvedDeps<TupleToUnion<TRequires>>;
+export type PortDeps<TRequires extends readonly Port<string, unknown>[]> = ResolvedDeps<TupleToUnion<TRequires>>;
 /**
  * A branded adapter type that captures the complete contract for a service implementation.
  *
@@ -499,14 +499,14 @@ out TFactoryKind extends FactoryKind = "sync", out TClonable extends boolean = f
 export interface AdapterConstraint {
 	/**
 	 * The port this adapter provides (read-only, covariant).
-	 * Uses Port<unknown, string> as the widest Port type.
+	 * Uses Port<string, unknown> as the widest Port type.
 	 */
-	readonly provides: Port<unknown, string>;
+	readonly provides: Port<string, unknown>;
 	/**
 	 * The ports this adapter depends on (read-only, covariant).
 	 * Each element is a Port with \`__portName\` for runtime identification.
 	 */
-	readonly requires: readonly Port<unknown, string>[];
+	readonly requires: readonly Port<string, unknown>[];
 	/**
 	 * The lifetime scope (fixed union, all values assignable).
 	 */
@@ -1291,7 +1291,7 @@ export interface QueryPortConfig<_TData, _TParams, _TError, TName extends string
 	readonly defaults?: Partial<QueryDefaults>;
 }
 export interface QueryPort<TName extends string = string, TData = unknown, TParams = void, TError = Error, TDependsOn extends ReadonlyArray<AnyQueryPort> = [
-]> extends DirectedPort<QueryFetcher<TData, TParams, TError>, TName, "inbound"> {
+]> extends DirectedPort<TName, QueryFetcher<TData, TParams, TError>, "inbound"> {
 	/** Phantom: compile-time error type */
 	readonly __queryErrorType: TError;
 	/** Runtime brand: identifies this as a QueryPort */
@@ -1341,7 +1341,7 @@ export interface MutationPortConfig<_TData, _TInput, _TError, _TContext, TName e
 	/** Default mutation options */
 	readonly defaults?: Partial<MutationDefaults>;
 }
-export interface MutationPort<TName extends string = string, TData = unknown, TInput = void, TError = Error, TContext = unknown> extends DirectedPort<MutationExecutor<TData, TInput, TError>, TName, "inbound"> {
+export interface MutationPort<TName extends string = string, TData = unknown, TInput = void, TError = Error, TContext = unknown> extends DirectedPort<TName, MutationExecutor<TData, TInput, TError>, "inbound"> {
 	/** Phantom: compile-time error type */
 	readonly __mutationErrorType: TError;
 	/** Phantom: compile-time optimistic update context type */
@@ -1379,7 +1379,7 @@ export interface QueryAdapterConfigNoDeps<TPort extends AnyQueryPort> {
 /**
  * Configuration for creating a query adapter with dependencies.
  */
-export interface QueryAdapterConfigWithDeps<TPort extends AnyQueryPort, TRequires extends ReadonlyArray<Port<unknown, string>>> {
+export interface QueryAdapterConfigWithDeps<TPort extends AnyQueryPort, TRequires extends ReadonlyArray<Port<string, unknown>>> {
 	readonly requires: TRequires;
 	readonly factory: (deps: PortDeps<TRequires>) => InferService<TPort>;
 	readonly lifetime?: Lifetime;
@@ -1410,7 +1410,7 @@ export interface QueryAdapterConfigWithDeps<TPort extends AnyQueryPort, TRequire
  * \`\`\`
  */
 export declare function createQueryAdapter<TPort extends AnyQueryPort>(port: TPort, config: QueryAdapterConfigNoDeps<TPort>): AdapterConstraint;
-export declare function createQueryAdapter<TPort extends AnyQueryPort, TRequires extends ReadonlyArray<Port<unknown, string>>>(port: TPort, config: QueryAdapterConfigWithDeps<TPort, TRequires>): AdapterConstraint;
+export declare function createQueryAdapter<TPort extends AnyQueryPort, TRequires extends ReadonlyArray<Port<string, unknown>>>(port: TPort, config: QueryAdapterConfigWithDeps<TPort, TRequires>): AdapterConstraint;
 /**
  * Configuration for creating a mutation adapter without dependencies.
  */
@@ -1422,7 +1422,7 @@ export interface MutationAdapterConfigNoDeps<TPort extends AnyMutationPort> {
 /**
  * Configuration for creating a mutation adapter with dependencies.
  */
-export interface MutationAdapterConfigWithDeps<TPort extends AnyMutationPort, TRequires extends ReadonlyArray<Port<unknown, string>>> {
+export interface MutationAdapterConfigWithDeps<TPort extends AnyMutationPort, TRequires extends ReadonlyArray<Port<string, unknown>>> {
 	readonly requires: TRequires;
 	readonly factory: (deps: PortDeps<TRequires>) => InferService<TPort>;
 	readonly lifetime?: Lifetime;
@@ -1453,7 +1453,7 @@ export interface MutationAdapterConfigWithDeps<TPort extends AnyMutationPort, TR
  * \`\`\`
  */
 export declare function createMutationAdapter<TPort extends AnyMutationPort>(port: TPort, config: MutationAdapterConfigNoDeps<TPort>): AdapterConstraint;
-export declare function createMutationAdapter<TPort extends AnyMutationPort, TRequires extends ReadonlyArray<Port<unknown, string>>>(port: TPort, config: MutationAdapterConfigWithDeps<TPort, TRequires>): AdapterConstraint;
+export declare function createMutationAdapter<TPort extends AnyMutationPort, TRequires extends ReadonlyArray<Port<string, unknown>>>(port: TPort, config: MutationAdapterConfigWithDeps<TPort, TRequires>): AdapterConstraint;
 /**
  * Configuration for creating a streamed query adapter without dependencies.
  */
@@ -1465,7 +1465,7 @@ export interface StreamedQueryAdapterConfigNoDeps<TData, TParams, TError, TChunk
 /**
  * Configuration for creating a streamed query adapter with dependencies.
  */
-export interface StreamedQueryAdapterConfigWithDeps<TData, TParams, TError, TChunk, TRequires extends ReadonlyArray<Port<unknown, string>>> {
+export interface StreamedQueryAdapterConfigWithDeps<TData, TParams, TError, TChunk, TRequires extends ReadonlyArray<Port<string, unknown>>> {
 	readonly requires: TRequires;
 	readonly factory: (deps: PortDeps<TRequires>) => StreamedFetcher<TData, TParams, TError, TChunk>;
 	readonly lifetime?: Lifetime;
@@ -1494,7 +1494,7 @@ export interface StreamedQueryAdapterConfigWithDeps<TData, TParams, TError, TChu
 export declare function createStreamedQueryAdapter<TData, TParams, TError, TChunk, TName extends string>(port: AnyQueryPort & {
 	readonly __portName: TName;
 }, config: StreamedQueryAdapterConfigNoDeps<TData, TParams, TError, TChunk>): AdapterConstraint;
-export declare function createStreamedQueryAdapter<TData, TParams, TError, TChunk, TName extends string, TRequires extends ReadonlyArray<Port<unknown, string>>>(port: AnyQueryPort & {
+export declare function createStreamedQueryAdapter<TData, TParams, TError, TChunk, TName extends string, TRequires extends ReadonlyArray<Port<string, unknown>>>(port: AnyQueryPort & {
 	readonly __portName: TName;
 }, config: StreamedQueryAdapterConfigWithDeps<TData, TParams, TError, TChunk, TRequires>): AdapterConstraint;
 /**
@@ -2038,7 +2038,7 @@ export declare function createQueryObserver<TData, TParams, TError, TName extend
  * compatible without requiring casts.
  */
 export interface QueryContainer {
-	resolve(port: Port<unknown, string>): unknown;
+	resolve(port: Port<string, unknown>): unknown;
 }
 export interface QueryClient {
 	fetchQuery<TData, TParams, TError, TName extends string>(port: QueryPort<TName, TData, TParams, TError>, params: TParams, options?: FetchOptions): ResultAsync\$1<TData, TError | QueryResolutionError>;
@@ -2507,7 +2507,7 @@ export declare function createQueryInspector(client: QueryClient, options?: Quer
 /**
  * Port for the QueryInspector service.
  */
-export declare const QueryInspectorPort: DirectedPort<QueryInspectorAPI, "QueryInspector", "outbound", "query">;
+export declare const QueryInspectorPort: DirectedPort<"QueryInspector", QueryInspectorAPI, "outbound", "query">;
 /**
  * Creates a LibraryInspector that bridges QueryInspectorAPI
  * into the container's unified Library Inspector Protocol.
@@ -2542,7 +2542,7 @@ export declare function createQueryLibraryInspector(inspector: QueryInspectorAPI
  * When registered in a graph, provides a LibraryInspector that bridges
  * query inspection into the container's unified Library Inspector Protocol.
  */
-export declare const QueryLibraryInspectorPort: DirectedPort<LibraryInspector, "QueryLibraryInspector", "outbound", "library-inspector">;
+export declare const QueryLibraryInspectorPort: DirectedPort<"QueryLibraryInspector", LibraryInspector, "outbound", "library-inspector">;
 /**
  * Pre-built frozen adapter for QueryLibraryInspectorPort.
  *

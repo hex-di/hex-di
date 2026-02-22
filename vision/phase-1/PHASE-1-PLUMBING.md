@@ -566,22 +566,37 @@ private createInstance<P extends Port<unknown, string>>(
   port: P,
   adapter: RuntimeAdapterFor<P>,
   scopedMemo: MemoMap,
-  scopeId: string | null
+  scopeId: string | null,
+  scopeName?: string
 ): InferService<P> {
+  const portName = port.__portName;
+
   // Track for cycle detection
-  this.resolutionContext.enter(port.__portName);
+  this.resolutionContext.enter(portName);
 
   try {
-    // Resolve all dependencies recursively
-    const deps = buildDependencies(adapter.requires, requiredPort =>
-      this.resolveDependency(requiredPort, scopedMemo, scopeId)
-    );
+    // Ensure adapter is synchronous
+    assertSyncAdapter(adapter, portName);
 
-    // Create instance
-    return adapter.factory(deps);
+    try {
+      // Resolve all dependencies recursively
+      const deps = buildDependencies(adapter.requires, requiredPort =>
+        this.resolveDependency(requiredPort, scopedMemo, scopeId, scopeName)
+      );
+
+      // Create instance and unwrap Result
+      const raw = adapter.factory(deps);
+      return unwrapResultDefense(raw) as InferService<P>;
+    } catch (e) {
+      // Preserve container errors, wrap factory errors
+      if (e instanceof ContainerError) {
+        throw e;
+      }
+      throw new FactoryError(portName, e);
+    }
   } finally {
     // Always exit context, even if factory throws
-    this.resolutionContext.exit(port.__portName);
+    this.resolutionContext.exit(portName);
   }
 }
 ```

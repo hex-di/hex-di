@@ -18,7 +18,7 @@ import { useFlowPort } from "./use-flow-port.js";
 // =============================================================================
 
 export function useSend<TState extends string, TEvent extends string, TContext>(
-  port: Port<FlowService<TState, TEvent, TContext>, string>
+  port: Port<string, FlowService<TState, TEvent, TContext>>
 ): (event: { readonly type: TEvent }) => ResultAsync<void, TransitionError | EffectExecutionError> {
   const flowService = useFlowPort<TState, TEvent, TContext>(port);
 

@@ -559,8 +559,8 @@ export type BuilderMissing<B> =
  * ```
  */
 export type PortsByCategory<TProvides, TCategory extends string> =
-  TProvides extends DirectedPort<infer S, infer N, infer D, TCategory>
-    ? DirectedPort<S, N, D, TCategory>
+  TProvides extends DirectedPort<infer N, infer S, infer D, TCategory>
+    ? DirectedPort<N, S, D, TCategory>
     : never;
 
 /**

@@ -112,7 +112,7 @@ type Finalizer<T = unknown> = FinalizerFn<T> | undefined;
  * Entry tracking creation order and optional finalizer for disposal.
  * @internal
  */
-interface CacheEntry<P extends Port<unknown, string>> {
+interface CacheEntry<P extends Port<string, unknown>> {
   /** The port used as cache key */
   readonly port: P;
   /** The cached instance for the port */
@@ -136,8 +136,8 @@ export interface EntryMetadata {
   readonly resolutionOrder: number;
 }
 
-function isEntryForPort<P extends Port<unknown, string>>(
-  entry: CacheEntry<Port<unknown, string>>,
+function isEntryForPort<P extends Port<string, unknown>>(
+  entry: CacheEntry<Port<string, unknown>>,
   port: P
 ): entry is CacheEntry<P> {
   return entry.port === port;
@@ -182,13 +182,13 @@ export class MemoMap {
    * Cache storing port -> instance mappings.
    * Uses port reference as key for O(1) lookup.
    */
-  private readonly cache: Map<Port<unknown, string>, CacheEntry<Port<unknown, string>>> = new Map();
+  private readonly cache: Map<Port<string, unknown>, CacheEntry<Port<string, unknown>>> = new Map();
 
   /**
    * Tracks creation order for LIFO disposal.
    * Each entry contains the port and optional finalizer.
    */
-  private readonly creationOrder: CacheEntry<Port<unknown, string>>[] = [];
+  private readonly creationOrder: CacheEntry<Port<string, unknown>>[] = [];
 
   /**
    * Optional parent MemoMap for singleton inheritance.
@@ -218,7 +218,7 @@ export class MemoMap {
    * Prevents double-factory-execution when two async resolution
    * paths converge before either completes.
    */
-  private readonly pendingAsync: Map<Port<unknown, string>, Promise<unknown>> = new Map();
+  private readonly pendingAsync: Map<Port<string, unknown>, Promise<unknown>> = new Map();
 
   /**
    * Creates a new MemoMap instance.
@@ -255,7 +255,7 @@ export class MemoMap {
    * );
    * ```
    */
-  getOrElseMemoize<P extends Port<unknown, string>>(
+  getOrElseMemoize<P extends Port<string, unknown>>(
     port: P,
     factory: () => InferService<P>,
     finalizer?: Finalizer<InferService<P>>
@@ -311,7 +311,7 @@ export class MemoMap {
    * );
    * ```
    */
-  memoizeOwn<P extends Port<unknown, string>>(
+  memoizeOwn<P extends Port<string, unknown>>(
     port: P,
     factory: () => InferService<P>,
     finalizer?: Finalizer<InferService<P>>
@@ -363,7 +363,7 @@ export class MemoMap {
    * );
    * ```
    */
-  async getOrElseMemoizeAsync<P extends Port<unknown, string>>(
+  async getOrElseMemoizeAsync<P extends Port<string, unknown>>(
     port: P,
     factory: () => Promise<InferService<P>>,
     finalizer?: Finalizer<InferService<P>>
@@ -401,7 +401,7 @@ export class MemoMap {
    * Separated from getOrElseMemoizeAsync to support deduplication.
    * @internal
    */
-  private async _executeMemoizeAsync<P extends Port<unknown, string>>(
+  private async _executeMemoizeAsync<P extends Port<string, unknown>>(
     port: P,
     factory: () => Promise<InferService<P>>,
     finalizer?: Finalizer<InferService<P>>
@@ -436,7 +436,7 @@ export class MemoMap {
    * }
    * ```
    */
-  has(port: Port<unknown, string>): boolean {
+  has(port: Port<string, unknown>): boolean {
     // Check own cache first
     if (this.cache.has(port)) {
       return true;
@@ -457,7 +457,7 @@ export class MemoMap {
    * @param port - The port to look up
    * @returns The cached instance or undefined if not present
    */
-  getIfPresent<P extends Port<unknown, string>>(port: P): InferService<P> | undefined {
+  getIfPresent<P extends Port<string, unknown>>(port: P): InferService<P> | undefined {
     const cached = this.cache.get(port);
     if (cached !== undefined && isEntryForPort(cached, port)) {
       return cached.instance;
@@ -485,7 +485,7 @@ export class MemoMap {
    * }
    * ```
    */
-  *entries(): Iterable<[Port<unknown, string>, EntryMetadata]> {
+  *entries(): Iterable<[Port<string, unknown>, EntryMetadata]> {
     for (const entry of this.creationOrder) {
       yield [
         entry.port,

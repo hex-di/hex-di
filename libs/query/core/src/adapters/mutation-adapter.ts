@@ -33,7 +33,7 @@ export interface MutationAdapterConfigNoDeps<TPort extends AnyMutationPort> {
  */
 export interface MutationAdapterConfigWithDeps<
   TPort extends AnyMutationPort,
-  TRequires extends ReadonlyArray<Port<unknown, string>>,
+  TRequires extends ReadonlyArray<Port<string, unknown>>,
 > {
   readonly requires: TRequires;
   readonly factory: (deps: PortDeps<TRequires>) => InferService<TPort>;
@@ -79,7 +79,7 @@ export function createMutationAdapter<TPort extends AnyMutationPort>(
 // Overload: with requires
 export function createMutationAdapter<
   TPort extends AnyMutationPort,
-  TRequires extends ReadonlyArray<Port<unknown, string>>,
+  TRequires extends ReadonlyArray<Port<string, unknown>>,
 >(port: TPort, config: MutationAdapterConfigWithDeps<TPort, TRequires>): AdapterConstraint;
 
 // Implementation
@@ -87,7 +87,7 @@ export function createMutationAdapter(
   port: AnyMutationPort,
   config:
     | MutationAdapterConfigNoDeps<AnyMutationPort>
-    | MutationAdapterConfigWithDeps<AnyMutationPort, ReadonlyArray<Port<unknown, string>>>
+    | MutationAdapterConfigWithDeps<AnyMutationPort, ReadonlyArray<Port<string, unknown>>>
 ): AdapterConstraint {
   if (config.requires !== undefined) {
     return bridgeCreateAdapter({

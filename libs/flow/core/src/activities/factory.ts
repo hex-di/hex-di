@@ -65,7 +65,7 @@ import type { ActivityPort, ActivityConfig, ConfiguredActivity } from "./types.j
  */
 export function activity<
   TPort extends ActivityPort<unknown, unknown, string>,
-  const TRequires extends readonly Port<unknown, string>[],
+  const TRequires extends readonly Port<string, unknown>[],
   TEvents,
 >(
   port: TPort,

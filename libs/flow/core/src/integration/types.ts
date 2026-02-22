@@ -204,7 +204,7 @@ export type InferFlowServiceContext<F> =
  * const snapshot = inspector.getMachineState('Modal', 'Modal-1');
  * ```
  */
-export const FlowInspectorPort: Port<FlowInspector, "FlowInspector"> = port<FlowInspector>()({
+export const FlowInspectorPort: Port<"FlowInspector", FlowInspector> = port<FlowInspector>()({
   name: "FlowInspector",
   description: "Read-only query API for inspecting flow machine state and history",
   category: "flow",
@@ -226,7 +226,7 @@ export const FlowInspectorPort: Port<FlowInspector, "FlowInspector"> = port<Flow
  * const machines = registry.getAllMachines();
  * ```
  */
-export const FlowRegistryPort: Port<FlowRegistry, "FlowRegistry"> = port<FlowRegistry>()({
+export const FlowRegistryPort: Port<"FlowRegistry", FlowRegistry> = port<FlowRegistry>()({
   name: "FlowRegistry",
   description: "Registry for tracking live machine instances",
   category: "flow",
@@ -270,7 +270,7 @@ export const FlowLibraryInspectorPort = createLibraryInspectorPort({
  * bus.subscribe(event => console.log(event.type));
  * ```
  */
-export const FlowEventBusPort: Port<FlowEventBus, "FlowEventBus"> = port<FlowEventBus>()({
+export const FlowEventBusPort: Port<"FlowEventBus", FlowEventBus> = port<FlowEventBus>()({
   name: "FlowEventBus",
   description: "Cross-machine event pub/sub bus",
   category: "flow",
@@ -294,7 +294,7 @@ export interface ScopeResolver {
    * @param port - The port token to resolve
    * @returns The service instance for the given port
    */
-  resolve<P extends Port<unknown, string>>(port: P): InferService<P>;
+  resolve<P extends Port<string, unknown>>(port: P): InferService<P>;
 }
 
 /**
@@ -307,6 +307,6 @@ export type ActivityRegistry = ReadonlyMap<string, ConfiguredActivityAny>;
  * Activity deps resolver function type.
  * @internal
  */
-export type ActivityDepsResolver = <TRequires extends readonly Port<unknown, string>[]>(
+export type ActivityDepsResolver = <TRequires extends readonly Port<string, unknown>[]>(
   requires: TRequires
 ) => PortDeps<TRequires>;

@@ -46,24 +46,24 @@ npm install @hex-di/result
 ```ts
 import { ok, err } from "@hex-di/result";
 
-const success = ok(42);        // Ok<number, never>
-const failure = err("oops");   // Err<never, string>
+const success = ok(42); // Ok<number, never>
+const failure = err("oops"); // Err<never, string>
 ```
 
 ### Pattern Matching
 
 ```ts
 const message = result.match(
-  (value) => `Got ${value}`,
-  (error) => `Failed: ${error}`,
+  value => `Got ${value}`,
+  error => `Failed: ${error}`
 );
 ```
 
 ### Transformations
 
 ```ts
-const doubled = ok(21).map((n) => n * 2);        // Ok(42)
-const mapped = err("bad").mapErr((e) => e.length); // Err(3)
+const doubled = ok(21).map(n => n * 2); // Ok(42)
+const mapped = err("bad").mapErr(e => e.length); // Err(3)
 ```
 
 ### Chaining
@@ -110,15 +110,19 @@ Match all error variants with a `switch` on `_tag`:
 const result = fetchUser("42");
 
 result.match(
-  (user) => renderUser(user),
-  (error) => {
+  user => renderUser(user),
+  error => {
     switch (error._tag) {
-      case "NotFound":  return render404(error.resource, error.id);
-      case "Forbidden": return render403(error.role);
-      case "Timeout":   return renderRetry(error.ms);
-      default:          return assertNever(error); // compile error if a case is missing
+      case "NotFound":
+        return render404(error.resource, error.id);
+      case "Forbidden":
+        return render403(error.role);
+      case "Timeout":
+        return renderRetry(error.ms);
+      default:
+        return assertNever(error); // compile error if a case is missing
     }
-  },
+  }
 );
 ```
 
@@ -138,7 +142,7 @@ const BadGateway = Http.create("BadGateway");
 const error = NotFound({ url: "/api/users", status: 404 });
 // { _namespace: "HttpError", _tag: "NotFound", url: "/api/users", status: 404 }
 
-Http.is(error);                // true — belongs to the HttpError group
+Http.is(error); // true — belongs to the HttpError group
 Http.isTag("NotFound")(error); // true — specific tag within group
 ```
 
@@ -148,22 +152,20 @@ Transform or recover from errors with `mapErr` and `orElse`:
 
 ```ts
 // Wrap errors into a higher-level type
-result.mapErr((e) => ({ _tag: "ServiceError" as const, cause: e }));
+result.mapErr(e => ({ _tag: "ServiceError" as const, cause: e }));
 
 // Recover from specific errors, propagate others
-result.orElse((e) =>
-  e._tag === "Timeout" ? retry(e.ms) : err(e),
-);
+result.orElse(e => (e._tag === "Timeout" ? retry(e.ms) : err(e)));
 ```
 
 ### Extracting Values
 
 ```ts
-result.unwrapOr(0);          // 42 if Ok, 0 if Err
-result.unwrapOrElse((e) => e.length);
-result.toNullable();         // T | null
-result.toUndefined();        // T | undefined
-result.intoTuple();          // [null, T] | [E, null]
+result.unwrapOr(0); // 42 if Ok, 0 if Err
+result.unwrapOrElse(e => e.length);
+result.toNullable(); // T | null
+result.toUndefined(); // T | undefined
+result.intoTuple(); // [null, T] | [E, null]
 ```
 
 ## Async Support
@@ -174,14 +176,12 @@ result.intoTuple();          // [null, T] | [E, null]
 import { ResultAsync, fromPromise } from "@hex-di/result";
 
 const userResult = fromPromise(
-  fetch("/api/user").then((r) => r.json()),
-  (error) => ({ _tag: "FetchError" as const, cause: error }),
+  fetch("/api/user").then(r => r.json()),
+  error => ({ _tag: "FetchError" as const, cause: error })
 );
 
 // Chain async operations
-const nameResult = userResult
-  .map((user) => user.name)
-  .mapErr((e) => e.cause);
+const nameResult = userResult.map(user => user.name).mapErr(e => e.cause);
 
 // Await to get the Result
 const result = await nameResult; // Result<string, unknown>
@@ -190,28 +190,39 @@ const result = await nameResult; // Result<string, unknown>
 ### Constructors
 
 ```ts
-import { fromPromise, fromSafePromise, fromThrowable, fromNullable, fromPredicate, tryCatch } from "@hex-di/result";
+import {
+  fromPromise,
+  fromSafePromise,
+  fromThrowable,
+  fromNullable,
+  fromPredicate,
+  tryCatch,
+} from "@hex-di/result";
 
 // Wrap a promise that may reject
-const result = fromPromise(fetch("/api"), (e) => String(e));
+const result = fromPromise(fetch("/api"), e => String(e));
 
 // Wrap a promise that never rejects
 const safe = fromSafePromise(Promise.resolve(42));
 
 // Wrap a function that may throw
-const safeParse = fromThrowable(JSON.parse, (e) => String(e));
+const safeParse = fromThrowable(JSON.parse, e => String(e));
 const parsed = safeParse('{"a":1}'); // Ok({ a: 1 })
 
 // Convert nullable to Result
 const fromNull = fromNullable(maybeUser, () => "user not found");
 
 // Predicate-based construction
-const positive = fromPredicate(42, (n) => n > 0, (n) => `${n} is not positive`);
+const positive = fromPredicate(
+  42,
+  n => n > 0,
+  n => `${n} is not positive`
+);
 
 // try/catch wrapper
 const result = tryCatch(
   () => riskyOperation(),
-  (e) => String(e),
+  e => String(e)
 );
 ```
 
@@ -235,7 +246,7 @@ Async generators work too:
 
 ```ts
 const result = await safeTry(async function* () {
-  const user = yield* fetchUser(id);     // ResultAsync
+  const user = yield* fetchUser(id); // ResultAsync
   const posts = yield* fetchPosts(user.id);
   return ok({ user, posts });
 });
@@ -262,7 +273,7 @@ import { all, any, allSettled, partition, collect } from "@hex-di/result";
 
 // All must succeed (like Promise.all)
 const results = all([ok(1), ok(2), ok(3)]); // Ok([1, 2, 3])
-const failed = all([ok(1), err("x")]);      // Err("x")
+const failed = all([ok(1), err("x")]); // Err("x")
 
 // Any must succeed (like Promise.any)
 const first = any([err("a"), ok(2), ok(3)]); // Ok(2)
@@ -282,33 +293,33 @@ const settled = allSettled([ok(1), err("x")]); // Ok([Ok(1), Err("x")])
 ```ts
 import { some, none, type Option } from "@hex-di/result";
 
-const present = some(42);   // Some<number>
-const absent = none();       // None
+const present = some(42); // Some<number>
+const absent = none(); // None
 
 present.isSome(); // true
-absent.isNone();  // true
+absent.isNone(); // true
 
 // Pattern matching
 const label = present.match(
-  (value) => `Found: ${value}`,
-  () => "Not found",
+  value => `Found: ${value}`,
+  () => "Not found"
 );
 
 // Convert between Option and Result
-const result = present.toResult(); // Ok(42)
-const option = ok(42).toOption();  // Some(42)
+const result = present.toResult(() => "not found"); // Ok(42)
+const option = ok(42).toOption(); // Some(42)
 ```
 
 ## Subpath Exports
 
 ```ts
-import { ok, err, Result } from "@hex-di/result";          // Core API
-import { safeTry } from "@hex-di/result";                   // Generators (re-exported from main)
+import { ok, err, Result } from "@hex-di/result"; // Core API
+import { safeTry } from "@hex-di/result"; // Generators (re-exported from main)
 import { all, any, partition } from "@hex-di/result/combinators"; // Combinators
-import { ResultAsync } from "@hex-di/result/async";         // Async Result
+import { ResultAsync } from "@hex-di/result/async"; // Async Result
 import { some, none, Option } from "@hex-di/result/option"; // Option type
-import { createError } from "@hex-di/result/errors";        // Error patterns
-import { fromThrowable } from "@hex-di/result/fn/*";        // Individual functions
+import { createError } from "@hex-di/result/errors"; // Error patterns
+import { map } from "@hex-di/result/fn/map"; // Individual functions
 ```
 
 ## Type Utilities
@@ -316,7 +327,7 @@ import { fromThrowable } from "@hex-di/result/fn/*";        // Individual functi
 ```ts
 import type { InferOk, InferErr, InferAsyncOk, InferAsyncErr } from "@hex-di/result";
 
-type Value = InferOk<typeof result>;  // Extract T from Result<T, E>
+type Value = InferOk<typeof result>; // Extract T from Result<T, E>
 type Error = InferErr<typeof result>; // Extract E from Result<T, E>
 ```
 
@@ -337,10 +348,10 @@ const schema = toSchema(validate);
 
 ## Related Packages
 
-| Package | Description |
-|---------|-------------|
-| [`@hex-di/result-testing`](https://www.npmjs.com/package/@hex-di/result-testing) | Vitest matchers and test utilities |
-| [`@hex-di/result-react`](https://www.npmjs.com/package/@hex-di/result-react) | React hooks, components, and adapters |
+| Package                                                                          | Description                           |
+| -------------------------------------------------------------------------------- | ------------------------------------- |
+| [`@hex-di/result-testing`](https://www.npmjs.com/package/@hex-di/result-testing) | Vitest matchers and test utilities    |
+| [`@hex-di/result-react`](https://www.npmjs.com/package/@hex-di/result-react)     | React hooks, components, and adapters |
 
 ## Requirements
 

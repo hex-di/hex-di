@@ -49,7 +49,7 @@ type AsyncContainerStatus = "loading" | "ready" | "error";
  * Uses ContainerLike to accept both root and child containers.
  * @internal
  */
-interface AsyncContainerState<TProvides extends Port<unknown, string>> {
+interface AsyncContainerState<TProvides extends Port<string, unknown>> {
   readonly status: AsyncContainerStatus;
   readonly container: ContainerLike<TProvides> | null;
   readonly error: Error | null;
@@ -59,7 +59,7 @@ interface AsyncContainerState<TProvides extends Port<unknown, string>> {
  * Internal context value for async container state.
  * @internal
  */
-interface AsyncContainerContextValue<TProvides extends Port<unknown, string>> {
+interface AsyncContainerContextValue<TProvides extends Port<string, unknown>> {
   readonly state: AsyncContainerState<TProvides>;
 }
 
@@ -77,12 +77,12 @@ interface AsyncContainerContextValue<TProvides extends Port<unknown, string>> {
  *
  * @internal
  */
-interface ContainerLike<TProvides extends Port<unknown, string>> {
+interface ContainerLike<TProvides extends Port<string, unknown>> {
   resolve<P extends TProvides>(port: P): InferService<P>;
   resolveAsync<P extends TProvides>(port: P): Promise<InferService<P>>;
   createScope(name?: string): Resolver<TProvides>;
   dispose(): Promise<void>;
-  has(port: Port<unknown, string>): boolean;
+  has(port: Port<string, unknown>): boolean;
   readonly isDisposed: boolean;
   readonly isInitialized: boolean;
   // Internal access for child container detection without throwing
@@ -104,7 +104,7 @@ interface ContainerLike<TProvides extends Port<unknown, string>> {
  *
  * @internal
  */
-function isChildContainer<TProvides extends Port<unknown, string>>(
+function isChildContainer<TProvides extends Port<string, unknown>>(
   container: ContainerLike<TProvides>
 ): boolean {
   // Preferred: Use internal state to detect child containers - no throwing involved
@@ -134,7 +134,7 @@ function isChildContainer<TProvides extends Port<unknown, string>>(
  *
  * @internal
  */
-interface ContainerContextValue<TProvides extends Port<unknown, string>> {
+interface ContainerContextValue<TProvides extends Port<string, unknown>> {
   readonly container: ContainerLike<TProvides>;
   readonly isChildContainer: boolean;
 }
@@ -152,7 +152,7 @@ interface ContainerContextValue<TProvides extends Port<unknown, string>> {
  *
  * @internal
  */
-interface ResolverContextValue<TProvides extends Port<unknown, string>> {
+interface ResolverContextValue<TProvides extends Port<string, unknown>> {
   /**
    * Returns the current resolver (Container or Scope).
    * Called at resolution time to ensure freshness after StrictMode remounts.
@@ -170,8 +170,8 @@ interface ResolverContextValue<TProvides extends Port<unknown, string>> {
  * @internal
  */
 interface ResolvableMethods {
-  readonly resolve: (port: Port<unknown, string>) => unknown;
-  readonly resolveAsync: (port: Port<unknown, string>) => Promise<unknown>;
+  readonly resolve: (port: Port<string, unknown>) => unknown;
+  readonly resolveAsync: (port: Port<string, unknown>) => Promise<unknown>;
   readonly createScope: (name?: string) => ResolvableMethods;
   readonly dispose: () => Promise<void>;
   readonly isDisposed: boolean;
@@ -209,7 +209,7 @@ function extractMethods(resolver: unknown): ResolvableMethods {
  *
  * @internal
  */
-function toResolver<TProvides extends Port<unknown, string>>(
+function toResolver<TProvides extends Port<string, unknown>>(
   container: unknown
 ): Resolver<TProvides> {
   const methods = extractMethods(container);
@@ -286,7 +286,7 @@ function toResolver<TProvides extends Port<unknown, string>>(
  * ```
  */
 export function createTypedHooks<
-  TProvides extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
 >(): TypedReactIntegration<TProvides> {
   // ==========================================================================
   // Create isolated contexts for this factory instance

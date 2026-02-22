@@ -14,13 +14,13 @@ import type { Port } from "@hex-di/core";
  * Extracts port name from a Port type.
  * @internal
  */
-type InferPortName<P> = P extends Port<unknown, infer TName> ? TName : never;
+type InferPortName<P> = P extends Port<infer TName, unknown> ? TName : never;
 
 /**
  * Converts a union of Port types to a comma-separated string of names.
  * @internal
  */
-type PortUnionToString<P extends Port<unknown, string>> = P extends never
+type PortUnionToString<P extends Port<string, unknown>> = P extends never
   ? "(empty graph)"
   : InferPortName<P>;
 
@@ -49,7 +49,7 @@ type PortUnionToString<P extends Port<unknown, string>> = P extends never
  */
 export type PortNotInGraphError<
   TPortName extends string,
-  TAvailable extends Port<unknown, string>,
+  TAvailable extends Port<string, unknown>,
 > = `ERROR[TYPE-01]: Port '${TPortName}' not found in graph.
 
 Available ports: ${PortUnionToString<TAvailable>}
@@ -88,7 +88,7 @@ Example:
  */
 export type MissingDependenciesError<
   TPortName extends string,
-  TMissing extends Port<unknown, string>,
+  TMissing extends Port<string, unknown>,
 > = `ERROR[TYPE-02]: Override adapter for '${TPortName}' has unsatisfied dependencies.
 
 Missing: ${PortUnionToString<TMissing>}

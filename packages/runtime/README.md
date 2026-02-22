@@ -38,8 +38,12 @@ import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "@hex-di/runtime";
 
 // 1. Define ports (interfaces)
-interface Logger { log(message: string): void; }
-interface Database { query(sql: string): Promise<unknown[]>; }
+interface Logger {
+  log(message: string): void;
+}
+interface Database {
+  query(sql: string): Promise<unknown[]>;
+}
 
 const LoggerPort = port<Logger>()({ name: "Logger" });
 const DatabasePort = port<Database>()({ name: "Database" });
@@ -49,15 +53,15 @@ const LoggerAdapter = createAdapter({
   provides: LoggerPort,
   requires: [],
   lifetime: "singleton",
-  factory: () => ({ log: (msg) => console.log(msg) }),
+  factory: () => ({ log: msg => console.log(msg) }),
 });
 
 const DatabaseAdapter = createAdapter({
   provides: DatabasePort,
   requires: [LoggerPort],
   lifetime: "singleton",
-  factory: (deps) => ({
-    query: async (sql) => {
+  factory: deps => ({
+    query: async sql => {
       deps.Logger.log(`Query: ${sql}`);
       return [];
     },
@@ -65,17 +69,14 @@ const DatabaseAdapter = createAdapter({
 });
 
 // 3. Build the graph
-const graph = GraphBuilder.create()
-  .provide(LoggerAdapter)
-  .provide(DatabaseAdapter)
-  .build();
+const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build();
 
 // 4. Create a container
 const container = createContainer({ graph, name: "App" });
 
 // 5. Resolve services – fully type-safe
-const logger = container.resolve(LoggerPort);   // Logger
-const db = container.resolve(DatabasePort);      // Database
+const logger = container.resolve(LoggerPort); // Logger
+const db = container.resolve(DatabasePort); // Database
 
 logger.log("ready");
 const rows = await db.query("SELECT 1");
@@ -158,7 +159,7 @@ const childGraph = GraphBuilder.create().provide(MockLoggerAdapter).build();
 const child = container.createChild(childGraph, { name: "Test" });
 
 const mockLogger = child.resolve(LoggerPort); // uses MockLoggerAdapter
-const db = child.resolve(DatabasePort);       // delegates to parent
+const db = child.resolve(DatabasePort); // delegates to parent
 ```
 
 #### Async and lazy child containers
@@ -166,14 +167,14 @@ const db = child.resolve(DatabasePort);       // delegates to parent
 ```typescript
 // Async – graph loaded via dynamic import before use
 const pluginContainer = await container.createChildAsync(
-  () => import("./plugin-graph").then((m) => m.pluginGraph),
-  { name: "Plugin" },
+  () => import("./plugin-graph").then(m => m.pluginGraph),
+  { name: "Plugin" }
 );
 
 // Lazy – graph not loaded until first resolve()
 const lazyPlugin = container.createLazyChild(
-  () => import("./plugin-graph").then((m) => m.pluginGraph),
-  { name: "LazyPlugin" },
+  () => import("./plugin-graph").then(m => m.pluginGraph),
+  { name: "LazyPlugin" }
 );
 console.log(lazyPlugin.isLoaded); // false
 const svc = await lazyPlugin.resolve(PluginPort); // triggers load
@@ -188,9 +189,9 @@ When creating a child container, control how each inherited port behaves:
 const child = container.createChild(childGraph, {
   name: "Child",
   inheritanceModes: {
-    Logger: "shared",   // share parent's singleton instance (default)
-    Cache: "isolated",  // create a new instance via the same factory
-    Config: "forked",   // shallow-clone the parent's instance (requires clonable: true)
+    Logger: "shared", // share parent's singleton instance (default)
+    Cache: "isolated", // create a new instance via the same factory
+    Config: "forked", // shallow-clone the parent's instance (requires clonable: true)
   },
 });
 ```
@@ -207,9 +208,7 @@ const MockLogger = createAdapter({
   factory: () => ({ log: vi.fn() }),
 });
 
-const testContainer = container
-  .override(MockLogger)
-  .build(); // returns a child container with the override applied
+const testContainer = container.override(MockLogger).build(); // returns a child container with the override applied
 ```
 
 The type system rejects overrides for ports not in the graph or adapters with unsatisfied dependencies.
@@ -223,11 +222,11 @@ const container = createContainer({
   graph,
   name: "App",
   hooks: {
-    beforeResolve: (ctx) => {
+    beforeResolve: ctx => {
       console.log(`Resolving ${ctx.portName} (depth ${ctx.depth})`);
       if (ctx.isCacheHit) console.log("  cache hit");
     },
-    afterResolve: (ctx) => {
+    afterResolve: ctx => {
       console.log(`Resolved ${ctx.portName} in ${ctx.duration}ms`);
     },
   },
@@ -237,7 +236,7 @@ const container = createContainer({
 Hooks can also be added and removed after container creation:
 
 ```typescript
-const handler = (ctx) => tracer.record(ctx);
+const handler = ctx => tracer.record(ctx);
 container.addHook("afterResolve", handler);
 // later…
 container.removeHook("afterResolve", handler);
@@ -275,11 +274,12 @@ Helpers for integrating `@hex-di/result` adapters with containers:
 ```typescript
 import { resolveResult, recordResult } from "@hex-di/runtime";
 
-// Resolve a port and return a Result
-const result = resolveResult(container, SomePort);
+// Resolve a port and return a Result<T, ResolutionError>
+const result = resolveResult(() => container.resolve(SomePort));
 
-// Record a Result value into the container context
-recordResult(container, SomePort, ok(value));
+// Record a Result outcome to an inspector for tracking statistics
+const tryResult = container.tryResolve(SomePort);
+recordResult(container.inspector, "SomePort", tryResult);
 ```
 
 ## Container Inspection
@@ -290,10 +290,10 @@ The `inspect()` function returns a frozen snapshot of container state:
 import { inspect } from "@hex-di/runtime";
 
 const snapshot = inspect(container);
-console.log(snapshot.phase);       // "uninitialized" | "initialized"
-console.log(snapshot.kind);        // "root" | "child"
-console.log(snapshot.singletons);  // cached singleton entries
-console.log(snapshot.adapters);    // all registered adapters
+console.log(snapshot.kind); // "root" | "child" | "lazy" | "scope"
+console.log(snapshot.singletons); // cached singleton entries
+console.log(snapshot.containerName); // human-readable container name
+console.log(snapshot.isDisposed); // whether the container has been disposed
 ```
 
 The `container.inspector` property provides a richer event-based API used by devtools integrations.
@@ -302,16 +302,16 @@ The `container.inspector` property provides a richer event-based API used by dev
 
 All errors extend `ContainerError` and carry a stable `code` string for programmatic handling.
 
-| Error class | `code` | `isProgrammingError` | When thrown |
-|---|---|---|---|
-| `CircularDependencyError` | `CIRCULAR_DEPENDENCY` | `true` | Cycle detected in dependency graph |
-| `FactoryError` | `FACTORY_FAILED` | `false` | Sync factory threw during resolution |
-| `AsyncFactoryError` | `ASYNC_FACTORY_FAILED` | `false` | Async factory rejected |
-| `AsyncInitializationRequiredError` | `ASYNC_INIT_REQUIRED` | `true` | Sync resolve of async port before `initialize()` |
-| `ScopeRequiredError` | `SCOPE_REQUIRED` | `true` | Scoped port resolved from root container |
-| `DisposedScopeError` | `DISPOSED_SCOPE` | `true` | Resolution from a disposed scope/container |
-| `NonClonableForkedError` | `NON_CLONABLE_FORKED` | `true` | `forked` inheritance mode on non-clonable adapter |
-| `DisposalError` | `DISPOSAL_FAILED` | `false` | One or more finalizers threw during disposal |
+| Error class                        | `code`                 | `isProgrammingError` | When thrown                                       |
+| ---------------------------------- | ---------------------- | -------------------- | ------------------------------------------------- |
+| `CircularDependencyError`          | `CIRCULAR_DEPENDENCY`  | `true`               | Cycle detected in dependency graph                |
+| `FactoryError`                     | `FACTORY_FAILED`       | `false`              | Sync factory threw during resolution              |
+| `AsyncFactoryError`                | `ASYNC_FACTORY_FAILED` | `false`              | Async factory rejected                            |
+| `AsyncInitializationRequiredError` | `ASYNC_INIT_REQUIRED`  | `true`               | Sync resolve of async port before `initialize()`  |
+| `ScopeRequiredError`               | `SCOPE_REQUIRED`       | `true`               | Scoped port resolved from root container          |
+| `DisposedScopeError`               | `DISPOSED_SCOPE`       | `true`               | Resolution from a disposed scope/container        |
+| `NonClonableForkedError`           | `NON_CLONABLE_FORKED`  | `true`               | `forked` inheritance mode on non-clonable adapter |
+| `DisposalError`                    | `DISPOSAL_FAILED`      | `false`              | One or more finalizers threw during disposal      |
 
 ```typescript
 import {
@@ -338,10 +338,10 @@ try {
 
 ```typescript
 import type {
-  InferContainerProvides,  // extract the Port union a container provides
-  InferScopeProvides,      // same, for a Scope
-  IsResolvable,            // boolean type: can Port P be resolved from Container C?
-  ServiceFromContainer,    // extract the service type for a given port
+  InferContainerProvides, // extract the Port union a container provides
+  InferScopeProvides, // same, for a Scope
+  IsResolvable, // boolean type: can Port P be resolved from Container C?
+  ServiceFromContainer, // extract the service type for a given port
 } from "@hex-di/runtime";
 ```
 
@@ -375,17 +375,17 @@ Lifetime levels: `singleton` (longest) > `scoped` / `request` > `transient` (sho
 
 ## Package Exports
 
-| Export path | Description |
-|---|---|
-| `@hex-di/runtime` | Public API – use this in application code |
+| Export path                | Description                                                                                              |
+| -------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `@hex-di/runtime`          | Public API – use this in application code                                                                |
 | `@hex-di/runtime/internal` | Implementation classes for sibling packages (`@hex-di/react`, etc.) – **do not use in application code** |
 
 ## Related Packages
 
-| Package | Role |
-|---|---|
-| `@hex-di/core` | Port and adapter definitions |
-| `@hex-di/graph` | Dependency graph builder and validation |
+| Package          | Role                                                 |
+| ---------------- | ---------------------------------------------------- |
+| `@hex-di/core`   | Port and adapter definitions                         |
+| `@hex-di/graph`  | Dependency graph builder and validation              |
 | `@hex-di/result` | `Result` / `ResultAsync` type used by `try*` methods |
 
 ## License

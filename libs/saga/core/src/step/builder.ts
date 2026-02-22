@@ -36,7 +36,7 @@ interface StepBuilder<TName extends string> {
 
 /** Stage 2: I/O declared, awaiting port + mapper */
 interface StepBuilderWithIO<TName extends string, TInput, TOutput, TError> {
-  invoke<TPort extends Port<unknown, string>>(
+  invoke<TPort extends Port<string, unknown>>(
     port: TPort,
     mapper: (ctx: StepContext<TInput, unknown>) => unknown
   ): StepBuilderWithInvocation<TName, TInput, TOutput, TError, TPort>;
@@ -48,7 +48,7 @@ interface StepBuilderWithInvocation<
   TInput,
   TOutput,
   TError,
-  TPort extends Port<unknown, string>,
+  TPort extends Port<string, unknown>,
 > {
   compensate(
     mapper: (ctx: CompensationContext<TInput, unknown, TOutput, TError>) => unknown
@@ -86,7 +86,7 @@ interface OptionsBag {
 
 interface BuilderState<TName extends string> {
   readonly name: TName;
-  port: Port<unknown, string> | null;
+  port: Port<string, unknown> | null;
   invokeMapper: ((ctx: StepContext<unknown, unknown>) => unknown) | null;
   compensateMapper:
     | ((ctx: CompensationContext<unknown, unknown, unknown, unknown>) => unknown)
@@ -151,7 +151,7 @@ function createStepBuilderWithIO<TName extends string, TInput, TOutput, TError>(
   state: BuilderState<TName>
 ): StepBuilderWithIO<TName, TInput, TOutput, TError> {
   return {
-    invoke<TPort extends Port<unknown, string>>(
+    invoke<TPort extends Port<string, unknown>>(
       port: TPort,
       mapper: (ctx: StepContext<TInput, unknown>) => unknown
     ): StepBuilderWithInvocation<TName, TInput, TOutput, TError, TPort> {
@@ -171,7 +171,7 @@ function createStepBuilderWithInvocation<
   TInput,
   TOutput,
   TError,
-  TPort extends Port<unknown, string>,
+  TPort extends Port<string, unknown>,
 >(state: BuilderState<TName>): StepBuilderWithInvocation<TName, TInput, TOutput, TError, TPort> {
   const builder: StepBuilderWithInvocation<TName, TInput, TOutput, TError, TPort> = {
     compensate(

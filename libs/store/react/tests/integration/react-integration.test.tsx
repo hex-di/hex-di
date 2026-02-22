@@ -25,7 +25,7 @@ afterEach(() => {
 const INTERNAL_ACCESS = Symbol.for("hex-di/internal-access");
 
 function createMockContainer(services: Map<string, unknown>): any {
-  const mockResolve = vi.fn().mockImplementation((port: Port<unknown, string>) => {
+  const mockResolve = vi.fn().mockImplementation((port: Port<string, unknown>) => {
     const name = (port as any).__portName ?? (port as any).name;
     const svc = services.get(name);
     if (svc) return svc;
@@ -36,7 +36,7 @@ function createMockContainer(services: Map<string, unknown>): any {
     resolve: mockResolve,
     resolveAsync: vi
       .fn()
-      .mockImplementation((port: Port<unknown, string>) => Promise.resolve(mockResolve(port))),
+      .mockImplementation((port: Port<string, unknown>) => Promise.resolve(mockResolve(port))),
     createScope: vi.fn(),
     dispose: vi.fn().mockResolvedValue(undefined),
     has: vi.fn().mockReturnValue(true),
@@ -54,7 +54,7 @@ function createMockContainer(services: Map<string, unknown>): any {
     resolve: mockResolve,
     resolveAsync: vi
       .fn()
-      .mockImplementation((port: Port<unknown, string>) => Promise.resolve(mockResolve(port))),
+      .mockImplementation((port: Port<string, unknown>) => Promise.resolve(mockResolve(port))),
     createScope: vi.fn().mockReturnValue(mockScope),
     createChild: vi.fn(),
     dispose: vi.fn().mockResolvedValue(undefined),
@@ -199,7 +199,7 @@ describe("React integration", () => {
     // Scoped service with count: 42
     const { service: scopedService } = createMockStateService(42);
 
-    const mockScopeResolve = vi.fn().mockImplementation((port: Port<unknown, string>) => {
+    const mockScopeResolve = vi.fn().mockImplementation((port: Port<string, unknown>) => {
       const name = (port as any).__portName ?? (port as any).name;
       if (name === "Counter") return scopedService;
       throw new Error(`Unknown port: ${name}`);
@@ -209,7 +209,7 @@ describe("React integration", () => {
       resolve: mockScopeResolve,
       resolveAsync: vi
         .fn()
-        .mockImplementation((port: Port<unknown, string>) =>
+        .mockImplementation((port: Port<string, unknown>) =>
           Promise.resolve(mockScopeResolve(port))
         ),
       createScope: vi.fn(),

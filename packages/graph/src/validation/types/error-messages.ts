@@ -61,7 +61,7 @@ import type {
  */
 export type ExtractPortNames<TPorts> = [TPorts] extends [never]
   ? never
-  : TPorts extends Port<unknown, infer Name>
+  : TPorts extends Port<infer Name, unknown>
     ? Name
     : never;
 
@@ -151,7 +151,7 @@ export type JoinPortNames<T, Acc extends string = "", Depth extends unknown[] = 
     ? `${Acc}...(truncated: depth limit reached)` // Truncate when recursion depth limit (100) is reached
     : [T] extends [never]
       ? Acc
-      : LastOfUnion<T> extends Port<unknown, infer N extends string>
+      : LastOfUnion<T> extends Port<infer N extends string, unknown>
         ? JoinPortNames<
             Exclude<T, LastOfUnion<T>>,
             [Acc] extends [""] ? N : `${Acc}, ${N}`,

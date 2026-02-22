@@ -191,7 +191,7 @@ function createMockImplementation<T extends object>(
  * @see {@link MockAdapterOptions} for configuration options
  * @see TestGraphBuilder for overriding adapters in tests
  */
-export function createMockAdapter<P extends Port<object, string>, L extends Lifetime = "transient">(
+export function createMockAdapter<P extends Port<string, object>, L extends Lifetime = "transient">(
   port: P,
   implementation: Partial<InferService<P>>,
   options?: MockAdapterOptions & { lifetime?: L }

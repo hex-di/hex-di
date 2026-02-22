@@ -10,7 +10,7 @@ npm install @hex-di/graph @hex-di/core
 pnpm add @hex-di/graph @hex-di/core
 ```
 
-`@hex-di/core` is a required peer dependency that provides port and adapter factories.
+`@hex-di/core` is a required dependency (installed automatically) that provides port and adapter factories.
 
 ## Requirements
 
@@ -59,10 +59,7 @@ const DatabaseAdapter = createAdapter({
 });
 
 // 4. Build the dependency graph
-const graph = GraphBuilder.create()
-  .provide(LoggerAdapter)
-  .provide(DatabaseAdapter)
-  .build(); // compile error if any dependency is missing
+const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build(); // compile error if any dependency is missing
 
 // 5. Pass graph to @hex-di/runtime to create a container
 ```
@@ -82,9 +79,10 @@ const CachePort = port<Cache>()({ name: "Cache" });
 // Adapter: declares what it provides, what it needs, and how to build it
 const CacheAdapter = createAdapter({
   provides: CachePort,
-  requires: [ConfigPort],       // typed dependencies
-  lifetime: "singleton",        // 'singleton' | 'scoped' | 'transient'
-  factory: ({ Config }) => ({   // receives resolved dependencies
+  requires: [ConfigPort], // typed dependencies
+  lifetime: "singleton", // 'singleton' | 'scoped' | 'transient'
+  factory: ({ Config }) => ({
+    // receives resolved dependencies
     get: key => store.get(key),
     set: (key, val) => store.set(key, val),
   }),
@@ -111,8 +109,7 @@ const DatabaseAdapter = createAdapter({
 `GraphBuilder` is an immutable fluent builder. Each method call returns a **new** builder instance; the original is unchanged.
 
 ```typescript
-const base = GraphBuilder.create()
-  .provide(LoggerAdapter);
+const base = GraphBuilder.create().provide(LoggerAdapter);
 
 // Branch safely — base is unchanged
 const withDb = base.provide(DatabaseAdapter);
@@ -120,6 +117,7 @@ const withCache = base.provide(CacheAdapter);
 ```
 
 The builder tracks state at the type level using phantom type parameters:
+
 - `TProvides` — union of all ports with registered adapters
 - `TRequires` — union of all ports that adapters need (narrows as deps are satisfied)
 
@@ -156,11 +154,11 @@ All three checks report actionable error messages directly in your IDE.
 
 ### Lifetime Scopes
 
-| Lifetime | Instance created | Use for |
-|---|---|---|
-| `'singleton'` | Once per container | Shared resources, connection pools |
-| `'scoped'` | Once per scope (e.g. request) | Request state, transactions |
-| `'transient'` | Every resolution | Stateless handlers, isolated instances |
+| Lifetime      | Instance created              | Use for                                |
+| ------------- | ----------------------------- | -------------------------------------- |
+| `'singleton'` | Once per container            | Shared resources, connection pools     |
+| `'scoped'`    | Once per scope (e.g. request) | Request state, transactions            |
+| `'transient'` | Every resolution              | Stateless handlers, isolated instances |
 
 Lifetime rules: a singleton cannot depend on a scoped or transient service (captive dependency). Scoped can depend on scoped or singleton. Transient can depend on anything.
 
@@ -195,9 +193,7 @@ const builder = GraphBuilder.withExtendedDepth().create();
 Creates a builder scoped to a child graph. Use when you need child-container adapters that can depend on ports the parent provides, without those ports being present in the child graph itself:
 
 ```typescript
-const childGraph = GraphBuilder.forParent(parentGraph)
-  .override(MockLoggerAdapter)
-  .buildFragment();
+const childGraph = GraphBuilder.forParent(parentGraph).override(MockLoggerAdapter).buildFragment();
 ```
 
 ### `.provide(adapter)`
@@ -228,7 +224,7 @@ const childGraph = GraphBuilder.forParent(parentGraph)
   .buildFragment();
 ```
 
-Override validation (confirming the port exists in the parent) happens at runtime, not compile time.
+Override validation (confirming the port exists in the parent and the types are compatible) happens at compile time when using `forParent()`.
 
 ### `.merge(otherBuilder)`
 
@@ -243,10 +239,7 @@ const merged = builderA.merge(builderB);
 Validates that all required ports are satisfied and returns a frozen `Graph`. Produces a compile-time error if any dependency is missing:
 
 ```typescript
-const graph = GraphBuilder.create()
-  .provide(LoggerAdapter)
-  .provide(DatabaseAdapter)
-  .build(); // Graph<typeof LoggerPort | typeof DatabasePort>
+const graph = GraphBuilder.create().provide(LoggerAdapter).provide(DatabaseAdapter).build(); // Graph<typeof LoggerPort | typeof DatabasePort>
 ```
 
 ### `.buildFragment()`
@@ -255,9 +248,7 @@ Like `.build()` but skips the "all deps satisfied" check. Use for child graphs w
 
 ```typescript
 // ConfigAdapter requires LoggerPort which will come from the parent
-const childGraph = GraphBuilder.create()
-  .provide(ConfigAdapter)
-  .buildFragment(); // no error about missing Logger
+const childGraph = GraphBuilder.create().provide(ConfigAdapter).buildFragment(); // no error about missing Logger
 ```
 
 ### `.tryBuild()`
@@ -266,7 +257,7 @@ Same compile-time guard as `.build()` but returns a `Result<Graph, GraphBuildErr
 
 ```typescript
 const result = builder.tryBuild();
-if (result.ok) {
+if (result.isOk()) {
   const graph = result.value;
 }
 ```
@@ -289,14 +280,14 @@ const info = builder.inspect();
 console.log(info.summary);
 // "Graph(3 adapters, 0 unsatisfied): Logger, Database, UserService"
 
-console.log(info.adapterCount);        // 3
-console.log(info.provides);            // ["Logger (singleton)", "Database (singleton)", ...]
+console.log(info.adapterCount); // 3
+console.log(info.provides); // ["Logger (singleton)", "Database (singleton)", ...]
 console.log(info.unsatisfiedRequirements); // []
-console.log(info.isComplete);          // true
-console.log(info.maxChainDepth);       // 1
-console.log(info.dependencyMap);       // { Logger: [], Database: ["Logger"], ... }
-console.log(info.orphanPorts);         // ports provided but required by nobody
-console.log(info.depthWarning);        // string if depth limit approached, undefined otherwise
+console.log(info.isComplete); // true
+console.log(info.maxChainDepth); // 1
+console.log(info.dependencyMap); // { Logger: [], Database: ["Logger"], ... }
+console.log(info.orphanPorts); // ports provided but required by nobody
+console.log(info.depthWarning); // string if depth limit approached, undefined otherwise
 
 for (const s of info.suggestions) {
   console.log(`[${s.type}] ${s.message}`);
@@ -328,12 +319,12 @@ if (!result.valid) {
 
 The package exposes three entry points:
 
-| Import path | Stability | Contents |
-|---|---|---|
-| `@hex-di/graph` | Stable | `GraphBuilder`, `Graph`, inference types, error types |
-| `@hex-di/graph/advanced` | Stable | Everything above + inspection utilities, traversal, error parsing, structured logging, audit |
-| `@hex-di/graph/inspection` | Stable | Runtime inspection utilities only (no compile-time types) |
-| `@hex-di/graph/internal` | Unstable | Internal types — do not depend on these |
+| Import path                | Stability | Contents                                                                                     |
+| -------------------------- | --------- | -------------------------------------------------------------------------------------------- |
+| `@hex-di/graph`            | Stable    | `GraphBuilder`, `Graph`, inference types, error types                                        |
+| `@hex-di/graph/advanced`   | Stable    | Everything above + inspection utilities, traversal, error parsing, structured logging, audit |
+| `@hex-di/graph/inspection` | Stable    | Runtime inspection utilities only (no compile-time types)                                    |
+| `@hex-di/graph/internal`   | Unstable  | Internal types — do not depend on these                                                      |
 
 ## Lazy Ports (Breaking Cycles)
 
@@ -376,6 +367,7 @@ const graph = GraphBuilder.create()
 ```
 
 Key points:
+
 - `lazyPort(SomePort)` produces a dependency named `LazyPortName` (prefixed with `Lazy`)
 - The factory receives a thunk `() => T` instead of `T` directly
 - Only register the original adapters — lazy adapters are generated automatically
@@ -456,7 +448,7 @@ if (isGraphError(message)) {
     case GraphErrorCode.CAPTIVE_DEPENDENCY:
       console.log(
         `${parsed.details.dependentLifetime} '${parsed.details.dependentName}' ` +
-        `cannot depend on ${parsed.details.captiveLifetime} '${parsed.details.captiveName}'`
+          `cannot depend on ${parsed.details.captiveLifetime} '${parsed.details.captiveName}'`
       );
       break;
     case GraphErrorCode.DUPLICATE_ADAPTER:
@@ -485,18 +477,22 @@ import type {
 } from "@hex-di/graph";
 ```
 
-All exported from `@hex-di/graph/advanced`:
+Adapter inspection types exported from `@hex-di/core`:
 
 ```typescript
 import type {
-  // Adapter inspection
   InferAdapterProvides,
   InferAdapterRequires,
   InferAdapterLifetime,
+} from "@hex-di/core";
+```
 
+Validation and error types exported from `@hex-di/graph/advanced`:
+
+```typescript
+import type {
   // Dependency satisfaction
   UnsatisfiedDependencies,
-  IsSatisfied,
 
   // Compile-time error types
   MissingDependencyError,
@@ -506,9 +502,6 @@ import type {
 
   // Cycle detection
   WouldCreateCycle,
-
-  // Builder inspection
-  InspectValidation,
 } from "@hex-di/graph/advanced";
 ```
 
@@ -526,7 +519,9 @@ const builder = GraphBuilder.withExtendedDepth().create();
 // Check depth at runtime
 const info = builder.inspect();
 if (info.maxChainDepth > 25) {
-  console.warn(`Deep graph (${info.maxChainDepth} levels) — compile-time cycle detection may be incomplete`);
+  console.warn(
+    `Deep graph (${info.maxChainDepth} levels) — compile-time cycle detection may be incomplete`
+  );
 }
 ```
 
@@ -534,11 +529,11 @@ Most production dependency graphs are well under 15 levels deep. If you are cons
 
 ## Relationship to Other HexDI Packages
 
-| Package | Role |
-|---|---|
-| `@hex-di/core` | Port and adapter factories, shared types (required) |
-| `@hex-di/graph` | Dependency graph construction and validation (this package) |
-| `@hex-di/runtime` | Container implementation that consumes a built `Graph` |
+| Package           | Role                                                        |
+| ----------------- | ----------------------------------------------------------- |
+| `@hex-di/core`    | Port and adapter factories, shared types (required)         |
+| `@hex-di/graph`   | Dependency graph construction and validation (this package) |
+| `@hex-di/runtime` | Container implementation that consumes a built `Graph`      |
 
 ## License
 

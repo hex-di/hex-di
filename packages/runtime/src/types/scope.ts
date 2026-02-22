@@ -150,8 +150,8 @@ import { ScopeBrand } from "./brands.js";
  */
 // Note: Scopes don't have plugin APIs. They're pure resolution contexts.
 export type Scope<
-  TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown> = never,
   TPhase extends ContainerPhase = "uninitialized",
 > = ScopeMembers<TProvides, TAsyncPorts, TPhase>;
 
@@ -161,8 +161,8 @@ export type Scope<
  * @internal
  */
 export type ScopeMembers<
-  TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
 > = {
   /**
@@ -276,7 +276,7 @@ export type ScopeMembers<
    * @param port - The port token to check
    * @returns true if the port is provided by this scope or its container
    */
-  has(port: Port<unknown, string>): boolean;
+  has(port: Port<string, unknown>): boolean;
 
   /**
    * Subscribe to scope lifecycle events.

@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@hex-di/core": "workspace:*",
+    "@hex-di/result": "workspace:*",
     "@hex-di/flow": "workspace:*",
     "@hex-di/flow-react": "workspace:*",
     "@hex-di/graph": "workspace:*",

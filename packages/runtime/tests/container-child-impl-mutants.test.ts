@@ -342,7 +342,7 @@ describe("ChildContainerImpl - resolveInternalFallback", () => {
     const childGraph = GraphBuilder.create().build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
-    const resolve = child.resolve as (port: Port<unknown, string>) => unknown;
+    const resolve = child.resolve as (port: Port<string, unknown>) => unknown;
     expect(() => resolve(CachePort)).toThrow();
   });
 });
@@ -366,7 +366,7 @@ describe("ChildContainerImpl - resolveAsyncInternalFallback", () => {
     const childGraph = GraphBuilder.create().build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
-    const resolveAsync = child.resolveAsync as (port: Port<unknown, string>) => Promise<unknown>;
+    const resolveAsync = child.resolveAsync as (port: Port<string, unknown>) => Promise<unknown>;
     await expect(resolveAsync(CachePort)).rejects.toThrow();
   });
 });

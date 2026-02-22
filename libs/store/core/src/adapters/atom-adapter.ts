@@ -34,7 +34,7 @@ export function createAtomAdapter(config: {
 }): AdapterConstraint {
   const inspectionPorts = config.inspection ? [StoreRegistryPort, StoreInspectorInternalPort] : [];
 
-  const requires: readonly Port<unknown, string>[] = [...inspectionPorts];
+  const requires: readonly Port<string, unknown>[] = [...inspectionPorts];
   const portName = config.provides.__portName;
   const lifetime = config.lifetime ?? "singleton";
 

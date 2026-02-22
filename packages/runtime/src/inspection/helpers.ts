@@ -54,9 +54,9 @@ interface ContainerKindMetadata {
  * @internal
  */
 export function detectContainerKind<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
 >(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): ContainerKind {
   const metadata = extractKindMetadata(container);
@@ -78,9 +78,9 @@ export function detectContainerKind<
  * @internal
  */
 function extractKindMetadata<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
 >(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): ContainerKindMetadata {
   // Check for lazy container markers
@@ -110,9 +110,9 @@ function extractKindMetadata<
  * @internal
  */
 function hasParentReference<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
 >(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): boolean {
   // Check for parent property or inherited state marker
@@ -125,9 +125,9 @@ function hasParentReference<
  * @internal
  */
 function hasScopeMarker<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
 >(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): boolean {
   // Scopes have a scopeId and are created via createScope()
@@ -139,9 +139,9 @@ function hasScopeMarker<
  * @internal
  */
 function extractParentId<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
 >(_container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): string | null {
   // Implementation depends on container internals
@@ -164,9 +164,9 @@ function extractParentId<
  * @internal
  */
 export function detectPhase<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
 >(
   container: Container<TProvides, TExtends, TAsyncPorts, TPhase>,
@@ -197,9 +197,9 @@ export function detectPhase<
  * @internal
  */
 function detectRootPhase<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
 >(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): TypedPhase {
   // Check if container has initialize method and if it's been called
@@ -221,9 +221,9 @@ function detectRootPhase<
  * @internal
  */
 function detectLazyPhase<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
 >(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): TypedPhase {
   // Check for lazy loading state
@@ -264,9 +264,9 @@ function detectLazyPhase<
  * ```
  */
 export function buildTypedSnapshot<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
 >(
   runtimeSnapshot: RuntimeSnapshot,
@@ -320,9 +320,9 @@ function convertToDevToolsSingleton(runtimeSnapshot: RuntimeSnapshot): {
  * @internal
  */
 function buildRootSnapshot<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
 >(
   base: {
@@ -357,9 +357,9 @@ function buildRootSnapshot<
  * @internal
  */
 function buildChildSnapshot<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
 >(
   base: {
@@ -394,9 +394,9 @@ function buildChildSnapshot<
  * @internal
  */
 function buildLazySnapshot<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
 >(
   base: {
@@ -426,9 +426,9 @@ function buildLazySnapshot<
  * @internal
  */
 function buildScopeSnapshot<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
 >(
   base: {
@@ -467,9 +467,9 @@ function buildScopeSnapshot<
  * @internal
  */
 function extractAsyncAdapterInfo<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
 >(
   container: Container<TProvides, TExtends, TAsyncPorts, TPhase>
@@ -489,9 +489,9 @@ function extractAsyncAdapterInfo<
  * @internal
  */
 function extractInheritanceModes<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
 >(
   container: Container<TProvides, TExtends, TAsyncPorts, TPhase>
@@ -514,9 +514,9 @@ function extractInheritanceModes<
  * @internal
  */
 function extractScopeId<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
 >(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): string {
   if ("_scopeId" in container && typeof container._scopeId === "string") {
@@ -533,9 +533,9 @@ function extractScopeId<
  * @internal
  */
 function extractParentScopeId<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
 >(container: Container<TProvides, TExtends, TAsyncPorts, TPhase>): string | null {
   if ("_parentScopeId" in container) {

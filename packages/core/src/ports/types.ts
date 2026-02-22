@@ -37,8 +37,8 @@ declare const __brand: unique symbol;
  * 1. The same service interface type `T`
  * 2. The same port name `TName`
  *
- * @typeParam T - The service interface type (phantom type - exists only at compile time)
  * @typeParam TName - The literal string type for the port name (defaults to `string`)
+ * @typeParam T - The service interface type (phantom type - exists only at compile time)
  *
  * @remarks
  * - The `__brand` property carries both the service type and name in a tuple
@@ -57,8 +57,8 @@ declare const __brand: unique symbol;
  * }
  *
  * // Create typed port tokens
- * type ConsoleLoggerPort = Port<Logger, 'ConsoleLogger'>;
- * type FileLoggerPort = Port<Logger, 'FileLogger'>;
+ * type ConsoleLoggerPort = Port<'ConsoleLogger', Logger>;
+ * type FileLoggerPort = Port<'FileLogger', Logger>;
  *
  * // These are type-incompatible despite same interface
  * declare const consolePort: ConsoleLoggerPort;
@@ -73,13 +73,13 @@ declare const __brand: unique symbol;
  * type LoggerPortType = typeof LoggerPort;
  * ```
  */
-export type Port<T, TName extends string> = {
+export type Port<TName extends string, T> = {
   /**
    * Brand property for nominal typing.
-   * Contains a tuple of [ServiceType, PortName] at the type level.
+   * Contains a tuple of [PortName, ServiceType] at the type level.
    * Value is undefined at runtime.
    */
-  readonly [__brand]: [T, TName];
+  readonly [__brand]: [TName, T];
 
   /**
    * The port name, exposed for debugging and error messages.
@@ -161,7 +161,7 @@ export type NotAPortError<T> = {
  * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * ```
  */
-export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPortError<P>;
+export type InferService<P> = P extends Port<infer _TName, infer T> ? T : NotAPortError<P>;
 
 /**
  * Extracts the port name literal type from a Port type.
@@ -196,7 +196,7 @@ export type InferService<P> = P extends Port<infer T, infer _TName> ? T : NotAPo
  * // IDE shows: { __errorBrand: "NotAPortError", __message: "Expected a Port...", ... }
  * ```
  */
-export type InferPortName<P> = P extends Port<infer _T, infer TName> ? TName : NotAPortError<P>;
+export type InferPortName<P> = P extends Port<infer TName, infer _T> ? TName : NotAPortError<P>;
 
 // =============================================================================
 // Directed Port Brand Symbols
@@ -290,8 +290,8 @@ export interface PortMetadata {
  * DirectedPorts are structurally compatible with base Ports, enabling gradual
  * adoption without breaking existing code.
  *
- * @typeParam TService - The service interface type (phantom type)
  * @typeParam TName - The literal string type for the port name
+ * @typeParam TService - The service interface type (phantom type)
  * @typeParam TDirection - 'inbound' or 'outbound'
  *
  * @see {@link InboundPort} - Convenience alias for inbound directed ports
@@ -302,18 +302,18 @@ export interface PortMetadata {
  * @example
  * ```typescript
  * // DirectedPort is assignable to Port (backward compatible)
- * const port: DirectedPort<Logger, 'Logger', 'inbound'> = createInboundPort({
+ * const port: DirectedPort<'Logger', Logger, 'inbound'> = createInboundPort({
  *   name: 'Logger',
  * });
- * const basePort: Port<Logger, 'Logger'> = port; // OK
+ * const basePort: Port<'Logger', Logger> = port; // OK
  * ```
  */
 export type DirectedPort<
-  TService,
   TName extends string,
+  TService,
   TDirection extends PortDirection,
   TCategory extends string = string,
-> = Port<TService, TName> & {
+> = Port<TName, TService> & {
   readonly [__directionBrand]: TDirection;
   readonly [__metadataKey]: PortMetadata;
   readonly [__categoryBrand]: TCategory;
@@ -329,8 +329,8 @@ export type DirectedPort<
  * Inbound ports define the application's primary API - what the outside world
  * can ask the application to do. They're implemented by use case handlers.
  *
- * @typeParam TService - The service interface type
  * @typeParam TName - The literal string type for the port name
+ * @typeParam TService - The service interface type
  *
  * @example
  * ```typescript
@@ -347,10 +347,10 @@ export type DirectedPort<
  * ```
  */
 export type InboundPort<
-  TService,
   TName extends string,
+  TService,
   TCategory extends string = string,
-> = DirectedPort<TService, TName, "inbound", TCategory>;
+> = DirectedPort<TName, TService, "inbound", TCategory>;
 
 /**
  * An outbound (driven) port for infrastructure interfaces.
@@ -358,8 +358,8 @@ export type InboundPort<
  * Outbound ports define what the application needs from external systems.
  * They're implemented by infrastructure adapters (databases, APIs, etc.).
  *
- * @typeParam TService - The service interface type
  * @typeParam TName - The literal string type for the port name
+ * @typeParam TService - The service interface type
  *
  * @example
  * ```typescript
@@ -376,10 +376,10 @@ export type InboundPort<
  * ```
  */
 export type OutboundPort<
-  TService,
   TName extends string,
+  TService,
   TCategory extends string = string,
-> = DirectedPort<TService, TName, "outbound", TCategory>;
+> = DirectedPort<TName, TService, "outbound", TCategory>;
 
 // =============================================================================
 // Type Predicates for DirectedPort
@@ -393,8 +393,8 @@ export type OutboundPort<
  *
  * @example
  * ```typescript
- * type A = IsDirectedPort<InboundPort<Logger, 'Logger'>>; // true
- * type B = IsDirectedPort<Port<Logger, 'Logger'>>;        // false
+ * type A = IsDirectedPort<InboundPort<'Logger', Logger>>; // true
+ * type B = IsDirectedPort<Port<'Logger', Logger>>;        // false
  * ```
  */
 export type IsDirectedPort<TPort> = TPort extends {
@@ -411,7 +411,7 @@ export type IsDirectedPort<TPort> = TPort extends {
  *
  * @example
  * ```typescript
- * type Dir = InferPortDirection<InboundPort<Logger, 'Logger'>>;
+ * type Dir = InferPortDirection<InboundPort<'Logger', Logger>>;
  * // Dir = 'inbound'
  * ```
  */
@@ -429,7 +429,7 @@ export type InferPortDirection<P> = P extends {
  *
  * @example
  * ```typescript
- * type Meta = InferPortMetadata<InboundPort<Logger, 'Logger'>>;
+ * type Meta = InferPortMetadata<InboundPort<'Logger', Logger>>;
  * // Meta = PortMetadata
  * ```
  */
@@ -471,8 +471,8 @@ export type InferPortCategory<P> = P extends { readonly [__categoryBrand]: infer
  * ```
  */
 export type InboundPorts<P> =
-  P extends DirectedPort<infer S, infer N, "inbound", infer C>
-    ? DirectedPort<S, N, "inbound", C>
+  P extends DirectedPort<infer N, infer S, "inbound", infer C>
+    ? DirectedPort<N, S, "inbound", C>
     : never;
 
 /**
@@ -491,8 +491,8 @@ export type InboundPorts<P> =
  * ```
  */
 export type OutboundPorts<P> =
-  P extends DirectedPort<infer S, infer N, "outbound", infer C>
-    ? DirectedPort<S, N, "outbound", C>
+  P extends DirectedPort<infer N, infer S, "outbound", infer C>
+    ? DirectedPort<N, S, "outbound", C>
     : never;
 
 // =============================================================================

@@ -90,9 +90,9 @@ function hasInspector(obj: unknown): obj is HasInspector {
  * the `Container` type, not this implementation class.
  */
 export abstract class BaseContainerImpl<
-  TProvides extends Port<unknown, string>,
-  TExtends extends Port<unknown, string> = never,
-  TAsyncPorts extends Port<unknown, string> = never,
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown> = never,
+  TAsyncPorts extends Port<string, unknown> = never,
 > {
   // Core state
   protected readonly adapterRegistry: AdapterRegistry<TProvides, TAsyncPorts>;
@@ -182,14 +182,14 @@ export abstract class BaseContainerImpl<
    * Resolves internal for child containers when port not found locally.
    */
   protected abstract resolveInternalFallback(
-    port: Port<unknown, string>,
+    port: Port<string, unknown>,
     portName: string
   ): unknown;
 
   /**
    * Resolves async internal for child containers when port not found locally.
    */
-  protected abstract resolveAsyncInternalFallback(port: Port<unknown, string>): Promise<unknown>;
+  protected abstract resolveAsyncInternalFallback(port: Port<string, unknown>): Promise<unknown>;
 
   // ===========================================================================
   // Public API
@@ -238,15 +238,15 @@ export abstract class BaseContainerImpl<
     this.lifecycleManager.unregisterChildContainer(child);
   }
 
-  hasAdapter(port: Port<unknown, string>): boolean {
+  hasAdapter(port: Port<string, unknown>): boolean {
     return this.adapterRegistry.has(port);
   }
 
-  getAdapter(port: Port<unknown, string>): RuntimeAdapter | undefined {
+  getAdapter(port: Port<string, unknown>): RuntimeAdapter | undefined {
     return this.adapterRegistry.get(port);
   }
 
-  has(port: Port<unknown, string>): boolean {
+  has(port: Port<string, unknown>): boolean {
     const adapter = this.getAdapter(port);
     if (adapter === undefined) return false;
     if (adapter.lifetime === "scoped") return false;
@@ -293,13 +293,13 @@ export abstract class BaseContainerImpl<
     scopeName?: string
   ): InferService<P>;
   resolveInternal(
-    port: Port<unknown, string>,
+    port: Port<string, unknown>,
     scopedMemo: MemoMap,
     scopeId?: string | null,
     scopeName?: string
   ): unknown;
   resolveInternal(
-    port: Port<unknown, string>,
+    port: Port<string, unknown>,
     scopedMemo: MemoMap,
     scopeId: string | null = null,
     scopeName?: string
@@ -315,7 +315,7 @@ export abstract class BaseContainerImpl<
     return this.resolveWithAdapter(port, adapter, scopedMemo, scopeId, scopeName);
   }
 
-  protected resolveWithAdapter<P extends Port<unknown, string>>(
+  protected resolveWithAdapter<P extends Port<string, unknown>>(
     port: P,
     adapter: RuntimeAdapterFor<P>,
     scopedMemo: MemoMap,
@@ -358,13 +358,13 @@ export abstract class BaseContainerImpl<
     scopeName?: string
   ): Promise<InferService<P>>;
   resolveAsyncInternal(
-    port: Port<unknown, string>,
+    port: Port<string, unknown>,
     scopedMemo: MemoMap,
     scopeId?: string | null,
     scopeName?: string
   ): Promise<unknown>;
   async resolveAsyncInternal(
-    port: Port<unknown, string>,
+    port: Port<string, unknown>,
     scopedMemo: MemoMap,
     scopeId: string | null = null,
     scopeName?: string
@@ -378,7 +378,7 @@ export abstract class BaseContainerImpl<
     return this.resolveAsyncWithAdapter(port, adapter, scopedMemo, scopeId, scopeName);
   }
 
-  protected resolveAsyncWithAdapter<P extends Port<unknown, string>>(
+  protected resolveAsyncWithAdapter<P extends Port<string, unknown>>(
     port: P,
     adapter: RuntimeAdapterFor<P>,
     scopedMemo: MemoMap,
@@ -488,11 +488,11 @@ export abstract class BaseContainerImpl<
    * @returns A readonly map of ports to adapter info
    */
   protected createAdapterMapSnapshot(): ReadonlyMap<
-    Port<unknown, string>,
+    Port<string, unknown>,
     import("../inspection/internal-state-types.js").AdapterInfo
   > {
     const map = new Map<
-      Port<unknown, string>,
+      Port<string, unknown>,
       import("../inspection/internal-state-types.js").AdapterInfo
     >();
     for (const [port, adapter] of this.adapterRegistry.entries()) {

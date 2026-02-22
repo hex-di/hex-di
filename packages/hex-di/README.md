@@ -36,7 +36,7 @@ const loggerAdapter = createAdapter({
   provides: LoggerPort,
   requires: [],
   lifetime: "singleton",
-  factory: () => ({ log: (msg) => console.log(msg) }),
+  factory: () => ({ log: msg => console.log(msg) }),
 });
 
 const databaseAdapter = createAdapter({
@@ -44,7 +44,7 @@ const databaseAdapter = createAdapter({
   requires: [LoggerPort],
   lifetime: "singleton",
   factory: ({ Logger }) => ({
-    query: async (sql) => {
+    query: async sql => {
       Logger.log(`Executing: ${sql}`);
       return [];
     },
@@ -52,17 +52,10 @@ const databaseAdapter = createAdapter({
 });
 
 // 3. Build the dependency graph (validated at compile time)
-const graph = GraphBuilder.create()
-  .provide(loggerAdapter)
-  .provide(databaseAdapter)
-  .build();
-
-if (graph.isErr()) {
-  throw graph.error;
-}
+const graph = GraphBuilder.create().provide(loggerAdapter).provide(databaseAdapter).build();
 
 // 4. Create the container and resolve services
-const container = createContainer(graph.value);
+const container = createContainer({ graph, name: "App" });
 const db = container.resolve(DatabasePort);
 await db.query("SELECT * FROM users");
 ```
@@ -71,10 +64,10 @@ await db.query("SELECT * FROM users");
 
 This package re-exports the complete public API of:
 
-| Package | What it provides |
-|---|---|
-| [`@hex-di/core`](../core) | `port`, `createAdapter`, `lazyPort`, error classes, utilities |
-| [`@hex-di/graph`](../graph) | `GraphBuilder`, graph inference types, build errors |
+| Package                         | What it provides                                                      |
+| ------------------------------- | --------------------------------------------------------------------- |
+| [`@hex-di/core`](../core)       | `port`, `createAdapter`, `lazyPort`, error classes, utilities         |
+| [`@hex-di/graph`](../graph)     | `GraphBuilder`, graph inference types, build errors                   |
 | [`@hex-di/runtime`](../runtime) | `createContainer`, `Container`, `Scope`, resolution hooks, inspection |
 
 ## Selective imports

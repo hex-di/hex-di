@@ -81,7 +81,7 @@ export interface TestActivityResult<TOutput, TEvents> {
  * @typeParam TInput - The activity's input type
  * @typeParam TRequires - The activity's requires tuple type
  */
-export interface TestActivityOptions<TInput, TRequires extends readonly Port<unknown, string>[]> {
+export interface TestActivityOptions<TInput, TRequires extends readonly Port<string, unknown>[]> {
   /**
    * The input to pass to the activity's execute function.
    */
@@ -213,7 +213,7 @@ function getAbortStatus(reason: unknown): "cancelled" | "timeout" {
  */
 export async function testActivity<
   TPort extends ActivityPort<unknown, unknown, string>,
-  TRequires extends readonly Port<unknown, string>[],
+  TRequires extends readonly Port<string, unknown>[],
   TEvents,
 >(
   activity: ConfiguredActivity<TPort, TRequires, TEvents>,

@@ -10,7 +10,12 @@
 import type { Port, InferService } from "../ports/types.js";
 import type { Adapter, Lifetime, FactoryKind, ResolvedDeps, PortDeps } from "./types.js";
 import type { TupleToUnion } from "../utils/type-utilities.js";
-import type { IsAsyncFactory, EnforceAsyncLifetime, FactoryResult, InferFactoryError } from "./unified-types.js";
+import type {
+  IsAsyncFactory,
+  EnforceAsyncLifetime,
+  FactoryResult,
+  InferFactoryError,
+} from "./unified-types.js";
 import {
   SYNC,
   ASYNC,
@@ -58,8 +63,8 @@ export type {
  *
  * @internal
  */
-export type PortsToServices<T extends readonly Port<unknown, string>[]> = {
-  [K in keyof T]: T[K] extends Port<infer S, string> ? S : never;
+export type PortsToServices<T extends readonly Port<string, unknown>[]> = {
+  [K in keyof T]: T[K] extends Port<string, infer S> ? S : never;
 };
 
 // IsAsyncFactory is imported from unified-types.ts
@@ -83,7 +88,7 @@ export type PortsToServices<T extends readonly Port<unknown, string>[]> = {
  */
 function extractServicesInOrder(
   deps: Record<string, unknown>,
-  requires: readonly Port<unknown, string>[]
+  requires: readonly Port<string, unknown>[]
 ): unknown[] {
   return requires.map(port => deps[port.__portName]);
 }
@@ -180,7 +185,7 @@ function isThenable(value: unknown): value is PromiseLike<unknown> {
     typeof value === "object" &&
     value !== null &&
     "then" in value &&
-    typeof (value as Record<string, unknown>)["then"] === "function"
+    typeof value.then === "function"
   );
 }
 
@@ -319,10 +324,14 @@ function assertValidAdapterConfig(
  * @typeParam TFactory - The factory function type
  */
 export function createAdapter<
-  TProvides extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
   TFactory extends (
     deps: ResolvedDeps<never>
-  ) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>,
+  ) =>
+    | InferService<TProvides>
+    | Promise<InferService<TProvides>>
+    | FactoryResult<InferService<TProvides>>
+    | PromiseLike<FactoryResult<InferService<TProvides>>>,
 >(config: {
   readonly provides: TProvides;
   readonly factory: TFactory;
@@ -352,11 +361,15 @@ export function createAdapter<
  * @typeParam TFactory - The factory function type
  */
 export function createAdapter<
-  TProvides extends Port<unknown, string>,
-  const TRequires extends readonly Port<unknown, string>[],
+  TProvides extends Port<string, unknown>,
+  const TRequires extends readonly Port<string, unknown>[],
   TFactory extends (
     deps: PortDeps<TRequires>
-  ) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>,
+  ) =>
+    | InferService<TProvides>
+    | Promise<InferService<TProvides>>
+    | FactoryResult<InferService<TProvides>>
+    | PromiseLike<FactoryResult<InferService<TProvides>>>,
 >(config: {
   readonly provides: TProvides;
   readonly requires: TRequires;
@@ -391,11 +404,15 @@ export function createAdapter<
  * @typeParam TFactory - The factory function type
  */
 export function createAdapter<
-  TProvides extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
   const TLifetime extends Lifetime,
   TFactory extends (
     deps: ResolvedDeps<never>
-  ) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>,
+  ) =>
+    | InferService<TProvides>
+    | Promise<InferService<TProvides>>
+    | FactoryResult<InferService<TProvides>>
+    | PromiseLike<FactoryResult<InferService<TProvides>>>,
 >(config: {
   readonly provides: TProvides;
   readonly lifetime: TLifetime;
@@ -431,12 +448,16 @@ export function createAdapter<
  * @typeParam TFactory - The factory function type
  */
 export function createAdapter<
-  TProvides extends Port<unknown, string>,
-  const TRequires extends readonly Port<unknown, string>[],
+  TProvides extends Port<string, unknown>,
+  const TRequires extends readonly Port<string, unknown>[],
   const TLifetime extends Lifetime,
   TFactory extends (
     deps: PortDeps<TRequires>
-  ) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>,
+  ) =>
+    | InferService<TProvides>
+    | Promise<InferService<TProvides>>
+    | FactoryResult<InferService<TProvides>>
+    | PromiseLike<FactoryResult<InferService<TProvides>>>,
 >(config: {
   readonly provides: TProvides;
   readonly requires: TRequires;
@@ -466,11 +487,15 @@ export function createAdapter<
  * @typeParam TFactory - The factory function type
  */
 export function createAdapter<
-  TProvides extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
   const TClonable extends boolean,
   TFactory extends (
     deps: ResolvedDeps<never>
-  ) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>,
+  ) =>
+    | InferService<TProvides>
+    | Promise<InferService<TProvides>>
+    | FactoryResult<InferService<TProvides>>
+    | PromiseLike<FactoryResult<InferService<TProvides>>>,
 >(config: {
   readonly provides: TProvides;
   readonly clonable: TClonable;
@@ -501,12 +526,16 @@ export function createAdapter<
  * @typeParam TFactory - The factory function type
  */
 export function createAdapter<
-  TProvides extends Port<unknown, string>,
-  const TRequires extends readonly Port<unknown, string>[],
+  TProvides extends Port<string, unknown>,
+  const TRequires extends readonly Port<string, unknown>[],
   const TClonable extends boolean,
   TFactory extends (
     deps: PortDeps<TRequires>
-  ) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>,
+  ) =>
+    | InferService<TProvides>
+    | Promise<InferService<TProvides>>
+    | FactoryResult<InferService<TProvides>>
+    | PromiseLike<FactoryResult<InferService<TProvides>>>,
 >(config: {
   readonly provides: TProvides;
   readonly requires: TRequires;
@@ -542,12 +571,16 @@ export function createAdapter<
  * @typeParam TFactory - The factory function type
  */
 export function createAdapter<
-  TProvides extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
   const TLifetime extends Lifetime,
   const TClonable extends boolean,
   TFactory extends (
     deps: ResolvedDeps<never>
-  ) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>,
+  ) =>
+    | InferService<TProvides>
+    | Promise<InferService<TProvides>>
+    | FactoryResult<InferService<TProvides>>
+    | PromiseLike<FactoryResult<InferService<TProvides>>>,
 >(config: {
   readonly provides: TProvides;
   readonly lifetime: TLifetime;
@@ -583,13 +616,17 @@ export function createAdapter<
  * @typeParam TFactory - The factory function type
  */
 export function createAdapter<
-  TProvides extends Port<unknown, string>,
-  const TRequires extends readonly Port<unknown, string>[],
+  TProvides extends Port<string, unknown>,
+  const TRequires extends readonly Port<string, unknown>[],
   const TLifetime extends Lifetime,
   const TClonable extends boolean,
   TFactory extends (
     deps: PortDeps<TRequires>
-  ) => InferService<TProvides> | Promise<InferService<TProvides>> | FactoryResult<InferService<TProvides>> | PromiseLike<FactoryResult<InferService<TProvides>>>,
+  ) =>
+    | InferService<TProvides>
+    | Promise<InferService<TProvides>>
+    | FactoryResult<InferService<TProvides>>
+    | PromiseLike<FactoryResult<InferService<TProvides>>>,
 >(config: {
   readonly provides: TProvides;
   readonly requires: TRequires;
@@ -631,7 +668,7 @@ export function createAdapter<
  * ```
  */
 export function createAdapter<
-  TProvides extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
   TClass extends new () => InferService<TProvides>,
 >(config: {
   readonly provides: TProvides;
@@ -664,8 +701,8 @@ export function createAdapter<
  * ```
  */
 export function createAdapter<
-  TProvides extends Port<unknown, string>,
-  const TRequires extends readonly Port<unknown, string>[],
+  TProvides extends Port<string, unknown>,
+  const TRequires extends readonly Port<string, unknown>[],
   TClass extends new (...args: PortsToServices<TRequires>) => InferService<TProvides>,
 >(config: {
   readonly provides: TProvides;
@@ -697,7 +734,7 @@ export function createAdapter<
  * ```
  */
 export function createAdapter<
-  TProvides extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
   const TLifetime extends Lifetime,
   TClass extends new () => InferService<TProvides>,
 >(config: {
@@ -732,8 +769,8 @@ export function createAdapter<
  * ```
  */
 export function createAdapter<
-  TProvides extends Port<unknown, string>,
-  const TRequires extends readonly Port<unknown, string>[],
+  TProvides extends Port<string, unknown>,
+  const TRequires extends readonly Port<string, unknown>[],
   const TLifetime extends Lifetime,
   TClass extends new (...args: PortsToServices<TRequires>) => InferService<TProvides>,
 >(config: {
@@ -766,7 +803,7 @@ export function createAdapter<
  * ```
  */
 export function createAdapter<
-  TProvides extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
   const TClonable extends boolean,
   TClass extends new () => InferService<TProvides>,
 >(config: {
@@ -801,8 +838,8 @@ export function createAdapter<
  * ```
  */
 export function createAdapter<
-  TProvides extends Port<unknown, string>,
-  const TRequires extends readonly Port<unknown, string>[],
+  TProvides extends Port<string, unknown>,
+  const TRequires extends readonly Port<string, unknown>[],
   const TClonable extends boolean,
   TClass extends new (...args: PortsToServices<TRequires>) => InferService<TProvides>,
 >(config: {
@@ -836,7 +873,7 @@ export function createAdapter<
  * ```
  */
 export function createAdapter<
-  TProvides extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
   const TLifetime extends Lifetime,
   const TClonable extends boolean,
   TClass extends new () => InferService<TProvides>,
@@ -873,8 +910,8 @@ export function createAdapter<
  * ```
  */
 export function createAdapter<
-  TProvides extends Port<unknown, string>,
-  const TRequires extends readonly Port<unknown, string>[],
+  TProvides extends Port<string, unknown>,
+  const TRequires extends readonly Port<string, unknown>[],
   const TLifetime extends Lifetime,
   const TClonable extends boolean,
   TClass extends new (...args: PortsToServices<TRequires>) => InferService<TProvides>,
@@ -892,20 +929,20 @@ export function createAdapter<
  * This must immediately follow the overloads.
  */
 export function createAdapter(config: {
-  provides: Port<unknown, string>;
+  provides: Port<string, unknown>;
   factory?: (deps: Record<string, unknown>) => unknown | Promise<unknown>;
   class?: new (...args: unknown[]) => unknown;
-  requires?: readonly Port<unknown, string>[];
+  requires?: readonly Port<string, unknown>[];
   lifetime?: Lifetime;
   clonable?: boolean;
   finalizer?: (instance: unknown) => void | Promise<void>;
 }): Adapter<
-  Port<unknown, string>,
+  Port<string, unknown>,
   unknown,
   Lifetime,
   typeof SYNC | typeof ASYNC,
   boolean,
-  readonly Port<unknown, string>[],
+  readonly Port<string, unknown>[],
   unknown
 > {
   // Validate mutual exclusion: exactly one of factory or class must be provided
@@ -1031,8 +1068,8 @@ function unwrapResultOrDie(raw: unknown): unknown {
  * @internal
  */
 interface RuntimeAdapter {
-  readonly provides: Port<unknown, string>;
-  readonly requires: readonly Port<unknown, string>[];
+  readonly provides: Port<string, unknown>;
+  readonly requires: readonly Port<string, unknown>[];
   readonly lifetime: Lifetime;
   readonly factoryKind: FactoryKind;
   readonly factory: (deps: Record<string, unknown>) => unknown | Promise<unknown>;
@@ -1046,7 +1083,7 @@ interface RuntimeAdapter {
  */
 function cloneAdapterWithFactory(
   adapter: RuntimeAdapter,
-  factory: (deps: Record<string, unknown>) => unknown | Promise<unknown>,
+  factory: (deps: Record<string, unknown>) => unknown | Promise<unknown>
 ): RuntimeAdapter {
   const result = {
     provides: adapter.provides,
@@ -1096,15 +1133,16 @@ export function adapterOrDie<
 ): Adapter<TProvides, TRequires, TLifetime, TFactoryKind, TClonable, TRequiresTuple, never>;
 export function adapterOrDie(adapter: RuntimeAdapter): RuntimeAdapter {
   const userFactory = adapter.factory;
-  const wrappedFactory = adapter.factoryKind === ASYNC
-    ? async (deps: Record<string, unknown>): Promise<unknown> => {
-        const raw = await userFactory(deps);
-        return unwrapResultOrDie(raw);
-      }
-    : (deps: Record<string, unknown>): unknown => {
-        const raw = userFactory(deps);
-        return unwrapResultOrDie(raw);
-      };
+  const wrappedFactory =
+    adapter.factoryKind === ASYNC
+      ? async (deps: Record<string, unknown>): Promise<unknown> => {
+          const raw = await userFactory(deps);
+          return unwrapResultOrDie(raw);
+        }
+      : (deps: Record<string, unknown>): unknown => {
+          const raw = userFactory(deps);
+          return unwrapResultOrDie(raw);
+        };
 
   return cloneAdapterWithFactory(adapter, wrappedFactory);
 }
@@ -1150,8 +1188,24 @@ export function adapterOrElse<
   TClonable2 extends boolean,
   TRequiresTuple2 extends readonly unknown[],
 >(
-  adapter: Adapter<TProvides, TRequires1, TLifetime1, TFactoryKind1, TClonable1, TRequiresTuple1, TError>,
-  fallback: Adapter<TProvides, TRequires2, TLifetime2, TFactoryKind2, TClonable2, TRequiresTuple2, never>,
+  adapter: Adapter<
+    TProvides,
+    TRequires1,
+    TLifetime1,
+    TFactoryKind1,
+    TClonable1,
+    TRequiresTuple1,
+    TError
+  >,
+  fallback: Adapter<
+    TProvides,
+    TRequires2,
+    TLifetime2,
+    TFactoryKind2,
+    TClonable2,
+    TRequiresTuple2,
+    never
+  >
 ): Adapter<
   TProvides,
   TRequires1 | TRequires2,
@@ -1161,10 +1215,7 @@ export function adapterOrElse<
   readonly [...TRequiresTuple1, ...TRequiresTuple2],
   never
 >;
-export function adapterOrElse(
-  adapter: RuntimeAdapter,
-  fallback: RuntimeAdapter,
-): RuntimeAdapter {
+export function adapterOrElse(adapter: RuntimeAdapter, fallback: RuntimeAdapter): RuntimeAdapter {
   const primaryFactory = adapter.factory;
   const fallbackFactory = fallback.factory;
   const isAsync = adapter.factoryKind === ASYNC || fallback.factoryKind === ASYNC;
@@ -1182,15 +1233,35 @@ export function adapterOrElse(
       }
     : (deps: Record<string, unknown>): unknown => {
         const raw = primaryFactory(deps);
+
+        // If the factory returns a PromiseLike (e.g. ResultAsync), chain through
+        // it asynchronously. Promise.resolve handles both real Promises and custom
+        // thenables correctly (unlike calling .then() on a custom thenable directly).
+        if (isThenable(raw)) {
+          return Promise.resolve(raw).then((resolved: unknown) => {
+            if (isResultLike(resolved) && resolved._tag === "Err") {
+              const fb = fallbackFactory(deps);
+              return Promise.resolve(fb).then((fbVal: unknown) => unwrapIfResult(fbVal));
+            }
+            return unwrapIfResult(resolved);
+          });
+        }
+
+        // Synchronous Result handling
         if (isResultLike(raw) && raw._tag === "Err") {
-          return unwrapIfResult(fallbackFactory(deps));
+          const fb = fallbackFactory(deps);
+          // Fallback itself may return a PromiseLike
+          if (isThenable(fb)) {
+            return Promise.resolve(fb).then((fbVal: unknown) => unwrapIfResult(fbVal));
+          }
+          return unwrapIfResult(fb);
         }
         return unwrapIfResult(raw);
       };
 
   // Merge requires arrays (dedup by port name)
   const seenNames = new Set<string>();
-  const mergedRequires: Port<unknown, string>[] = [];
+  const mergedRequires: Port<string, unknown>[] = [];
   for (const p of [...adapter.requires, ...fallback.requires]) {
     const name = p.__portName;
     if (!seenNames.has(name)) {

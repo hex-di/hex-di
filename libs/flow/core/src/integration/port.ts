@@ -29,7 +29,7 @@ export type FlowPort<
   TEvent extends string,
   TContext,
   TName extends string = string,
-> = Port<FlowService<TState, TEvent, TContext>, TName>;
+> = Port<TName, FlowService<TState, TEvent, TContext>>;
 
 // =============================================================================
 // FlowService Port Factory

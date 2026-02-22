@@ -46,7 +46,7 @@ import type { Container, Scope } from "@hex-di/runtime";
  * This type is structural - any object with matching methods satisfies it.
  * No type casts are needed when assigning Container or Scope to Resolver.
  */
-export interface Resolver<TProvides extends Port<unknown, string>> {
+export interface Resolver<TProvides extends Port<string, unknown>> {
   /**
    * Resolves a service instance for the given port synchronously.
    *

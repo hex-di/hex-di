@@ -22,7 +22,7 @@ import { SYNC, FALSE } from "@hex-di/core";
  * Configuration accepted by the bridge for no-dependency adapters.
  */
 interface BridgeConfigNoDeps {
-  readonly provides: Port<unknown, string>;
+  readonly provides: Port<string, unknown>;
   readonly factory: () => unknown;
   readonly lifetime?: Lifetime;
   readonly requires?: undefined;
@@ -32,8 +32,8 @@ interface BridgeConfigNoDeps {
  * Configuration accepted by the bridge for adapters with dependencies.
  */
 interface BridgeConfigWithDeps {
-  readonly provides: Port<unknown, string>;
-  readonly requires: ReadonlyArray<Port<unknown, string>>;
+  readonly provides: Port<string, unknown>;
+  readonly requires: ReadonlyArray<Port<string, unknown>>;
   readonly factory: (deps: Record<string, unknown>) => unknown;
   readonly lifetime?: Lifetime;
 }

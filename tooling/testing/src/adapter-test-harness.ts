@@ -63,8 +63,8 @@ import type {
  * ```
  */
 export interface AdapterTestHarness<
-  TProvides extends Port<unknown, string>,
-  TRequires extends Port<unknown, string> | never,
+  TProvides extends Port<string, unknown>,
+  TRequires extends Port<string, unknown> | never,
   TFactoryKind extends FactoryKind = "sync",
 > {
   /**
@@ -130,8 +130,8 @@ export interface AdapterTestHarness<
  * @internal
  */
 function validateDependencies<
-  TProvides extends Port<unknown, string>,
-  TRequires extends Port<unknown, string> | never,
+  TProvides extends Port<string, unknown>,
+  TRequires extends Port<string, unknown> | never,
   TLifetime extends Lifetime,
   TFactoryKind extends FactoryKind,
   TClonable extends boolean = boolean,
@@ -139,7 +139,7 @@ function validateDependencies<
   adapter: Adapter<TProvides, TRequires, TLifetime, TFactoryKind, TClonable>,
   mockDependencies: Record<string, unknown>
 ): void {
-  const requires = adapter.requires as readonly Port<unknown, string>[];
+  const requires = adapter.requires as readonly Port<string, unknown>[];
 
   for (const port of requires) {
     const portName = port.__portName as string;
@@ -241,8 +241,8 @@ function validateDependencies<
  * @see {@link createMockAdapter} - For creating mock adapters for graph overrides
  */
 export function createAdapterTest<
-  TProvides extends Port<unknown, string>,
-  TRequires extends Port<unknown, string> | never,
+  TProvides extends Port<string, unknown>,
+  TRequires extends Port<string, unknown> | never,
   TLifetime extends Lifetime,
   TFactoryKind extends FactoryKind = FactoryKind,
   TClonable extends boolean = boolean,

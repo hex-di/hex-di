@@ -45,7 +45,7 @@ export interface UseFlowResult<TState extends string, TEvent extends string, TCo
 // =============================================================================
 
 export function useFlow<TState extends string, TEvent extends string, TContext>(
-  port: Port<FlowService<TState, TEvent, TContext>, string>
+  port: Port<string, FlowService<TState, TEvent, TContext>>
 ): UseFlowResult<TState, TEvent, TContext> {
   const flowService = useFlowPort<TState, TEvent, TContext>(port);
 

@@ -12,6 +12,7 @@
  */
 
 import { createAdapter } from "@hex-di/core";
+import { ResultAsync } from "@hex-di/result";
 import {
   ConfigPort,
   LoggerPort,
@@ -21,7 +22,6 @@ import {
   NotificationServicePort,
 } from "./ports.js";
 import type {
-  Config,
   Message,
   MessageStore,
   MessageListener,
@@ -108,14 +108,13 @@ export const ConfigAdapter = createAdapter({
   provides: ConfigPort,
   requires: [],
   // No lifetime field - async adapters are always singletons
-  factory: async (): Promise<Config> => {
-    // Simulate loading config from API
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    return {
-      notificationDuration: 3000,
-      maxMessages: 100,
-    };
-  },
+  factory: () =>
+    ResultAsync.fromSafePromise(new Promise<void>(resolve => setTimeout(resolve, 3000))).map(
+      () => ({
+        notificationDuration: 3000,
+        maxMessages: 100,
+      })
+    ),
 });
 
 /**

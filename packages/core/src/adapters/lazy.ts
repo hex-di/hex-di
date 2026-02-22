@@ -73,9 +73,9 @@ declare const __originalPort: unique symbol;
  * // name: "LazyUserService"
  * ```
  */
-export type LazyPort<TPort extends Port<unknown, string>> = Port<
-  () => InferService<TPort>,
-  `Lazy${InferPortName<TPort>}`
+export type LazyPort<TPort extends Port<string, unknown>> = Port<
+  `Lazy${InferPortName<TPort>}`,
+  () => InferService<TPort>
 > & {
   readonly [__lazyPortBrand]: true;
   readonly [__originalPort]: TPort;
@@ -135,7 +135,7 @@ const ORIGINAL_PORT = Symbol.for("@hex-di/core/OriginalPort");
  * Runtime representation of a LazyPort.
  * @internal
  */
-interface LazyPortRuntime<TName extends string, TPort extends Port<unknown, string>> {
+interface LazyPortRuntime<TName extends string, TPort extends Port<string, unknown>> {
   readonly __portName: `Lazy${TName}`;
   readonly [LAZY_PORT_BRAND]: true;
   readonly [ORIGINAL_PORT]: TPort;
@@ -145,10 +145,10 @@ interface LazyPortRuntime<TName extends string, TPort extends Port<unknown, stri
  * Internal helper to create a LazyPort with proper typing.
  * @internal
  */
-function createLazyPortImpl<TName extends string, TPort extends Port<unknown, TName>>(
+function createLazyPortImpl<TName extends string, TPort extends Port<TName, unknown>>(
   runtime: LazyPortRuntime<TName, TPort>
 ): LazyPort<TPort>;
-function createLazyPortImpl<TName extends string, TPort extends Port<unknown, TName>>(
+function createLazyPortImpl<TName extends string, TPort extends Port<TName, unknown>>(
   runtime: LazyPortRuntime<TName, TPort>
 ): object {
   return runtime;
@@ -179,7 +179,7 @@ function createLazyPortImpl<TName extends string, TPort extends Port<unknown, TN
  * });
  * ```
  */
-export function lazyPort<TName extends string, TPort extends Port<unknown, TName>>(
+export function lazyPort<TName extends string, TPort extends Port<TName, unknown>>(
   port: TPort
 ): LazyPort<TPort> {
   if (isLazyPort(port)) {
@@ -213,7 +213,7 @@ function hasLazyBrand(obj: object): obj is { readonly [LAZY_PORT_BRAND]: true } 
  * Type guard that checks if an object has the original port symbol.
  * @internal
  */
-function hasOriginalPort<TPort extends Port<unknown, string>>(
+function hasOriginalPort<TPort extends Port<string, unknown>>(
   obj: object
 ): obj is { readonly [ORIGINAL_PORT]: TPort } {
   return ORIGINAL_PORT in obj;
@@ -225,7 +225,7 @@ function hasOriginalPort<TPort extends Port<unknown, string>>(
  * @param lazy - The lazy port
  * @returns The original port
  */
-export function getOriginalPort<TPort extends Port<unknown, string>>(lazy: LazyPort<TPort>): TPort {
+export function getOriginalPort<TPort extends Port<string, unknown>>(lazy: LazyPort<TPort>): TPort {
   if (hasOriginalPort<TPort>(lazy)) {
     return lazy[ORIGINAL_PORT];
   }
@@ -245,6 +245,6 @@ export function getOriginalPort<TPort extends Port<unknown, string>>(lazy: LazyP
  * isLazyPort(UserServicePort); // false
  * ```
  */
-export function isLazyPort(port: Port<unknown, string>): port is LazyPort<Port<unknown, string>> {
+export function isLazyPort(port: Port<string, unknown>): port is LazyPort<Port<string, unknown>> {
   return hasLazyBrand(port) && port[LAZY_PORT_BRAND] === true;
 }

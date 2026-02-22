@@ -15,7 +15,7 @@ import { HydrationError } from "../errors/tagged-errors.js";
 import type { StoreAdapterResult } from "./brands.js";
 
 export interface CreateHydrationAdapterConfig<TName extends string = string> {
-  readonly provides: Port<StateHydrator, TName>;
+  readonly provides: Port<TName, StateHydrator>;
   readonly storage: HydrationStorage;
 }
 

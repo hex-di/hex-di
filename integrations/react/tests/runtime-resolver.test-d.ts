@@ -268,12 +268,12 @@ describe("edge cases", () => {
     function test(resolver: RuntimeResolver) {
       // resolve accepts any Port
       expectTypeOf(resolver.resolve).toEqualTypeOf<
-        (port: import("@hex-di/core").Port<unknown, string>) => unknown
+        (port: import("@hex-di/core").Port<string, unknown>) => unknown
       >();
 
       // resolveAsync accepts any Port
       expectTypeOf(resolver.resolveAsync).toEqualTypeOf<
-        (port: import("@hex-di/core").Port<unknown, string>) => Promise<unknown>
+        (port: import("@hex-di/core").Port<string, unknown>) => Promise<unknown>
       >();
 
       // createScope accepts optional name and returns RuntimeResolver

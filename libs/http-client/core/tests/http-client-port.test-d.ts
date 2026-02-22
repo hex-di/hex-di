@@ -25,7 +25,7 @@ import type { UrlParamsInput } from "../src/types/url-params.js";
 
 describe("HttpClientPort — port token", () => {
   it("HttpClientPort is a DirectedPort pointing to HttpClient service", () => {
-    expectTypeOf(HttpClientPort).toMatchTypeOf<DirectedPort<HttpClient, string, "outbound">>();
+    expectTypeOf(HttpClientPort).toMatchTypeOf<DirectedPort<string, HttpClient, "outbound">>();
   });
 
   it("HttpClientPort __portName is typed as 'HttpClient'", () => {
@@ -34,7 +34,7 @@ describe("HttpClientPort — port token", () => {
 
   it("HttpClientPort is assignable to a DirectedPort with HttpClient service type", () => {
     type Port = typeof HttpClientPort;
-    expectTypeOf<Port>().toMatchTypeOf<DirectedPort<HttpClient, "HttpClient", "outbound">>();
+    expectTypeOf<Port>().toMatchTypeOf<DirectedPort<"HttpClient", HttpClient, "outbound">>();
   });
 });
 
@@ -57,19 +57,28 @@ describe("HttpClient — interface shape", () => {
 
   it("post takes url and optional RequestOptionsWithBody and returns ResultAsync", () => {
     expectTypeOf<HttpClient["post"]>().toEqualTypeOf<
-      (url: string | URL, options?: RequestOptionsWithBody) => ResultAsync<HttpResponse, HttpRequestError>
+      (
+        url: string | URL,
+        options?: RequestOptionsWithBody
+      ) => ResultAsync<HttpResponse, HttpRequestError>
     >();
   });
 
   it("put takes url and optional RequestOptionsWithBody and returns ResultAsync", () => {
     expectTypeOf<HttpClient["put"]>().toEqualTypeOf<
-      (url: string | URL, options?: RequestOptionsWithBody) => ResultAsync<HttpResponse, HttpRequestError>
+      (
+        url: string | URL,
+        options?: RequestOptionsWithBody
+      ) => ResultAsync<HttpResponse, HttpRequestError>
     >();
   });
 
   it("patch takes url and optional RequestOptionsWithBody and returns ResultAsync", () => {
     expectTypeOf<HttpClient["patch"]>().toEqualTypeOf<
-      (url: string | URL, options?: RequestOptionsWithBody) => ResultAsync<HttpResponse, HttpRequestError>
+      (
+        url: string | URL,
+        options?: RequestOptionsWithBody
+      ) => ResultAsync<HttpResponse, HttpRequestError>
     >();
   });
 
@@ -87,7 +96,9 @@ describe("HttpClient — interface shape", () => {
 
   it("HttpClient has all six convenience methods plus execute", () => {
     type Keys = keyof HttpClient;
-    expectTypeOf<Keys>().toEqualTypeOf<"execute" | "get" | "post" | "put" | "patch" | "del" | "head">();
+    expectTypeOf<Keys>().toEqualTypeOf<
+      "execute" | "get" | "post" | "put" | "patch" | "del" | "head"
+    >();
   });
 });
 

@@ -37,7 +37,7 @@ import { NonClonableForkedError } from "../../errors/index.js";
  *
  * @internal
  */
-export type IsolatedInstanceCreator<TProvides extends Port<unknown, string>> = <
+export type IsolatedInstanceCreator<TProvides extends Port<string, unknown>> = <
   P extends TProvides,
 >(
   port: P,
@@ -69,13 +69,13 @@ export type IsolatedInstanceCreator<TProvides extends Port<unknown, string>> = <
  * @internal
  */
 export class InheritanceResolver<
-  TProvides extends Port<unknown, string>,
-  TAsyncPorts extends Port<unknown, string>,
+  TProvides extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
 > {
   /**
    * Cache for forked instances (shallow clones of parent instances).
    */
-  private readonly forkedInstances: Map<string, ForkedEntry<Port<unknown, string>>> = new Map();
+  private readonly forkedInstances: Map<string, ForkedEntry<Port<string, unknown>>> = new Map();
 
   /**
    * Creates a new InheritanceResolver.
@@ -192,9 +192,9 @@ export class InheritanceResolver<
     // Cast needed because shallowClone returns unknown (generic utility function).
     const forkedInstance = shallowClone(parentInstance) as InferService<P>;
     const entry: ForkedEntry<P> = { port, instance: forkedInstance };
-    // SAFETY: Widening ForkedEntry<P> to ForkedEntry<Port<unknown, string>> for storage in Map.
+    // SAFETY: Widening ForkedEntry<P> to ForkedEntry<Port<string, unknown>> for storage in Map.
     // Sound because the Map is keyed by portName and we validate port identity on retrieval.
-    this.forkedInstances.set(portName, entry as ForkedEntry<Port<unknown, string>>);
+    this.forkedInstances.set(portName, entry as ForkedEntry<Port<string, unknown>>);
     return forkedInstance;
   }
 

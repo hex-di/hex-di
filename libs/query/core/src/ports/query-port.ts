@@ -59,7 +59,7 @@ export interface QueryPort<
   TParams = void,
   TError = Error,
   TDependsOn extends ReadonlyArray<AnyQueryPort> = [],
-> extends DirectedPort<QueryFetcher<TData, TParams, TError>, TName, "inbound"> {
+> extends DirectedPort<TName, QueryFetcher<TData, TParams, TError>, "inbound"> {
   /** Phantom: compile-time error type */
   readonly [__queryErrorType]: TError;
 

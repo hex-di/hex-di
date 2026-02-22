@@ -1028,7 +1028,7 @@ describe("AsyncInitializationRequiredError via tryResolve", () => {
 
     // Cast to bypass type system (tryResolve excludes async ports on uninitialized containers)
     const tryResolve = container.tryResolve as (
-      port: Port<unknown, string>
+      port: Port<string, unknown>
     ) => ReturnType<typeof container.tryResolve>;
     const result = tryResolve(DatabasePort);
 

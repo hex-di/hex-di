@@ -23,7 +23,7 @@ export function useMachineSelector<
   TContext,
   TSelected,
 >(
-  port: Port<FlowService<TState, TEvent, TContext>, string>,
+  port: Port<string, FlowService<TState, TEvent, TContext>>,
   selector: (snapshot: MachineSnapshot<TState, TContext>) => TSelected,
   equals: EqualityFn<TSelected> = shallowEqual
 ): TSelected {

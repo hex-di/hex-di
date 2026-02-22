@@ -11,18 +11,16 @@ pnpm add -D @hex-di/testing
 ## Usage
 
 ```typescript
-import { createTestGraph } from "@hex-di/testing";
+import { TestGraphBuilder } from "@hex-di/testing";
 
-const graph = createTestGraph(productionGraph, {
-  overrides: [MockLoggerAdapter],
-});
+const testGraph = TestGraphBuilder.from(productionGraph).override(MockLoggerAdapter).build();
 
-const container = await graph.build();
+const container = createContainer({ graph: testGraph, name: "Test" });
 ```
 
 ## Features
 
-- **`createTestGraph`** — build a graph with specific adapters swapped out for test doubles
+- **`TestGraphBuilder`** — build a graph with specific adapters swapped out for test doubles
 - **Mock adapters** — type-safe stubs validated against port contracts at compile time
 - **Automatic cleanup** — test containers are disposed after each test without manual teardown
 - **Graph assertions** — runtime helpers for asserting graph completeness and port wiring

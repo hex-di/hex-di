@@ -21,7 +21,7 @@ import { shallowEqual } from "./shallow-equal.js";
  * @returns The current MachineSnapshot, or undefined if not found
  */
 export function useFlowState(
-  inspectorPort: Port<FlowInspector, string>,
+  inspectorPort: Port<string, FlowInspector>,
   portName: string,
   instanceId: string
 ): MachineSnapshot<string, unknown> | undefined {

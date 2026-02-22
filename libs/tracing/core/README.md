@@ -9,7 +9,7 @@ Provides W3C Trace Context compatible tracing with OpenTelemetry-aligned interfa
 - **Port/Adapter pattern** - TracerPort defines the contract, adapters implement it
 - **W3C Trace Context** - Standards-compliant trace propagation via `traceparent`/`tracestate` headers
 - **OpenTelemetry compatible** - API surface aligns with OTel SDK conventions
-- **Zero dependencies** - Only peer-depends on `@hex-di/core`
+- **Zero dependencies** - Only peer-depends on `@hex-di/core` and `@hex-di/runtime`
 - **Three built-in adapters** - NoOp, Memory, Console
 - **Type-safe** - Full TypeScript inference, no type casts
 
@@ -27,11 +27,12 @@ pnpm add @hex-di/tracing
 import { createContainer } from "@hex-di/runtime";
 import { TracerPort, MemoryTracerAdapter } from "@hex-di/tracing";
 
-// Register the adapter
-const container = createContainer().register(MemoryTracerAdapter).build();
+// Register the adapter in a graph and create a container
+const graph = GraphBuilder.create().provide(MemoryTracerAdapter).build();
+const container = createContainer({ graph, name: "App" });
 
 // Resolve the tracer via its port
-const tracer = container.get(TracerPort);
+const tracer = container.resolve(TracerPort);
 
 tracer.withSpan("my-operation", span => {
   span.setAttribute("user.id", "123");
@@ -63,7 +64,8 @@ Zero-overhead tracer for production environments where tracing is disabled. All 
 import { NoOpTracerAdapter, NOOP_TRACER } from "@hex-di/tracing";
 
 // Via DI
-const container = createContainer().register(NoOpTracerAdapter).build();
+const graph = GraphBuilder.create().provide(NoOpTracerAdapter).build();
+const container = createContainer({ graph, name: "App" });
 
 // Or use the singleton directly
 const result = NOOP_TRACER.withSpan("operation", span => {
@@ -239,18 +241,12 @@ isValidSpanId("00f067..."); // true (16 hex, not all zeros)
 
 ## Testing Utilities
 
-The `@hex-di/tracing/testing` namespace provides assertion helpers and span matchers for verifying tracing behavior in tests. These utilities are tree-shakeable and exported separately to avoid including test code in production bundles.
+The tracing package provides assertion helpers and span matchers for verifying tracing behavior in tests.
 
 ### Importing Test Utilities
 
 ```typescript
-import {
-  assertSpanExists,
-  hasAttribute,
-  hasEvent,
-  hasStatus,
-  hasDuration,
-} from "@hex-di/tracing/testing";
+import { assertSpanExists, hasAttribute, hasEvent, hasStatus, hasDuration } from "@hex-di/tracing";
 ```
 
 ### assertSpanExists
@@ -259,7 +255,7 @@ Finds spans matching criteria and throws a descriptive error if not found. Suppo
 
 ```typescript
 import { createMemoryTracer } from "@hex-di/tracing";
-import { assertSpanExists, hasAttribute, hasStatus } from "@hex-di/tracing/testing";
+import { assertSpanExists, hasAttribute, hasStatus } from "@hex-di/tracing";
 
 const tracer = createMemoryTracer();
 
@@ -299,7 +295,7 @@ Pure function predicates for composable span matching. All matchers return `bool
 Check if span has attribute with optional value matching:
 
 ```typescript
-import { hasAttribute } from "@hex-di/tracing/testing";
+import { hasAttribute } from "@hex-di/tracing";
 
 // Check attribute presence
 hasAttribute(span, "http.method"); // true if attribute exists
@@ -316,7 +312,7 @@ hasAttribute(span, "http.status_code", 200); // true if status === 200
 Check if span has event by name:
 
 ```typescript
-import { hasEvent } from "@hex-di/tracing/testing";
+import { hasEvent } from "@hex-di/tracing";
 
 tracer.withSpan("operation", span => {
   span.addEvent("cache.hit", { key: "user:123" });
@@ -331,7 +327,7 @@ hasEvent(span, "cache.miss"); // false
 Check span status:
 
 ```typescript
-import { hasStatus } from "@hex-di/tracing/testing";
+import { hasStatus } from "@hex-di/tracing";
 
 span.setStatus("error");
 
@@ -344,7 +340,7 @@ hasStatus(span, "ok"); // false
 Check if span duration falls within bounds (milliseconds):
 
 ```typescript
-import { hasDuration } from "@hex-di/tracing/testing";
+import { hasDuration } from "@hex-di/tracing";
 
 // Minimum duration only
 hasDuration(span, 10); // true if duration >= 10ms
@@ -361,13 +357,7 @@ hasDuration(span, undefined, 50); // true if duration <= 50ms
 ```typescript
 import { describe, it, expect } from "vitest";
 import { createMemoryTracer } from "@hex-di/tracing";
-import {
-  assertSpanExists,
-  hasAttribute,
-  hasEvent,
-  hasStatus,
-  hasDuration,
-} from "@hex-di/tracing/testing";
+import { assertSpanExists, hasAttribute, hasEvent, hasStatus, hasDuration } from "@hex-di/tracing";
 
 describe("HTTP Request Tracing", () => {
   it("creates span with correct attributes", () => {
