@@ -71,6 +71,10 @@ jobs:
             | tr '\n' ' ')
           pnpm turbo build $FILTERS
 
+      # ── Write npm auth token so pnpm publish can find it ─────────────
+      - name: Configure npm auth
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+
       # ── Publish — skip packages whose current version is already on npm ───
       - name: Publish approved packages
         env:
