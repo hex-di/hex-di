@@ -46,4 +46,5 @@ jobs:
           cache: "pnpm"
       - run: pnpm install --frozen-lockfile
       - run: node scripts/turbo-publishable.mjs test
+      - run: pnpm turbo build --filter=@hex-di/guard-features...
       - run: pnpm --filter @hex-di/guard-features test
