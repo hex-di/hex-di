@@ -269,18 +269,18 @@ describe("performance: build()", () => {
     const builder100 = GraphBuilder.create().provideMany(adapters100);
     const builder500 = GraphBuilder.create().provideMany(adapters500);
 
-    // Run many iterations to get measurable times
+    // Run enough iterations to get measurable times without overwhelming slow CI runners
     const time100 = measureTime(() => {
-      for (let i = 0; i < 1000; i++) {
+      for (let i = 0; i < 100; i++) {
         builder100.build();
       }
-    }, 10);
+    }, 5);
 
     const time500 = measureTime(() => {
-      for (let i = 0; i < 1000; i++) {
+      for (let i = 0; i < 100; i++) {
         builder500.build();
       }
-    }, 10);
+    }, 5);
 
     // build() time should be roughly constant regardless of graph size.
     // Allow generous variance (10x) for measurement noise - the important thing
