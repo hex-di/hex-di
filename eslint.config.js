@@ -119,6 +119,8 @@ export const typeLevelTestConfig = tseslint.config({
   rules: {
     // Variables in type tests are often only used with typeof
     "@typescript-eslint/no-unused-vars": "off",
+    // Bare property accesses used to trigger @ts-expect-error assertions
+    "@typescript-eslint/no-unused-expressions": "off",
   },
 });
 

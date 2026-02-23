@@ -72,12 +72,12 @@ describe("assertion helpers reject non-matching types", () => {
 
   it("expectOkAsync rejects non-ResultAsync", () => {
     // @ts-expect-error — plain Result is not ResultAsync<T, E>
-    expectOkAsync({} as Result<number, string>);
+    void expectOkAsync({} as Result<number, string>);
   });
 
   it("expectErrAsync rejects non-ResultAsync", () => {
     // @ts-expect-error — plain Result is not ResultAsync<T, E>
-    expectErrAsync({} as Result<number, string>);
+    void expectErrAsync({} as Result<number, string>);
   });
 
   it("expectSome rejects Result (not Option)", () => {

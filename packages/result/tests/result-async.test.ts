@@ -27,7 +27,7 @@ describe("BEH-06-002: ResultAsync PromiseLike implementation (then/await)", () =
 
   it("ResultAsync.then() receives the resolved Result", async () => {
     const ra = ResultAsync.ok(42);
-    const result = await ra.then((r) => r);
+    const result = await ra.then(r => r);
     expect(result._tag).toBe("Ok");
     if (result.isOk()) expect(result.value).toBe(42);
   });
@@ -98,7 +98,7 @@ describe("BEH-06-003: ResultAsync static constructors (ok, err, fromPromise, fro
   // BEH-06-003: fromCallback
   describe("fromCallback", () => {
     it("resolves to Ok when callback provides value", async () => {
-      const result = await ResultAsync.fromCallback<number, string>((cb) => {
+      const result = await ResultAsync.fromCallback<number, string>(cb => {
         cb(null, 42);
       });
       expect(result._tag).toBe("Ok");
@@ -106,7 +106,7 @@ describe("BEH-06-003: ResultAsync static constructors (ok, err, fromPromise, fro
     });
 
     it("resolves to Err when callback provides error", async () => {
-      const result = await ResultAsync.fromCallback<number, string>((cb) => {
+      const result = await ResultAsync.fromCallback<number, string>(cb => {
         cb("fail", 0 as never);
       });
       expect(result._tag).toBe("Err");
@@ -114,8 +114,8 @@ describe("BEH-06-003: ResultAsync static constructors (ok, err, fromPromise, fro
     });
 
     it("handles async callbacks", async () => {
-      const result = await ResultAsync.fromCallback<number, string>((cb) => {
-        Promise.resolve().then(() => cb(null, 99));
+      const result = await ResultAsync.fromCallback<number, string>(cb => {
+        void Promise.resolve().then(() => cb(null, 99));
       });
       expect(result._tag).toBe("Ok");
       if (result.isOk()) expect(result.value).toBe(99);
@@ -514,7 +514,11 @@ describe("BEH-06-009: ResultAsync conversion methods (flatten, flip, toJSON)", (
   });
 
   it("resultAsync.toJSON() returns Err JSON", async () => {
-    expect(await ResultAsync.err("x").toJSON()).toEqual({ _tag: "Err", _schemaVersion: 1, error: "x" });
+    expect(await ResultAsync.err("x").toJSON()).toEqual({
+      _tag: "Err",
+      _schemaVersion: 1,
+      error: "x",
+    });
   });
 });
 

@@ -110,13 +110,13 @@ describe("ContainerProvider context stability", () => {
 
   it("consumer render count stays stable across parent re-renders", () => {
     const container = createMockContainer();
-    const renderCountRef = { current: 0 };
+    const onRender = vi.fn();
 
     // Memoize the consumer so it only re-renders when props or context change.
     // Without memoized context values, React.memo wouldn't help because
     // context changes would still trigger re-renders.
     const Consumer = React.memo(function Consumer(): React.ReactElement {
-      renderCountRef.current++;
+      onRender();
       const ctx = useContext(ResolverContext);
       return <div data-testid="consumer">{ctx ? "has-resolver" : "none"}</div>;
     });
@@ -134,7 +134,7 @@ describe("ContainerProvider context stability", () => {
     }
 
     render(<Parent />);
-    const afterFirstRender = renderCountRef.current;
+    const afterFirstRender = onRender.mock.calls.length;
 
     act(() => {
       fireEvent.click(screen.getByTestId("rerender"));
@@ -148,7 +148,7 @@ describe("ContainerProvider context stability", () => {
 
     // Consumer should not re-render when parent state changes,
     // because context value is memoized and Consumer is memoized.
-    expect(renderCountRef.current).toBe(afterFirstRender);
+    expect(onRender.mock.calls.length).toBe(afterFirstRender);
   });
 });
 

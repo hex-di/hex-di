@@ -60,14 +60,16 @@ describe("async factory error handling", () => {
       provides: SlowPort,
       requires: [],
       factory: () =>
-        safeTry(async function* () {
-          // Simulate async work with multiple promise chains
-          await Promise.resolve();
-          await Promise.resolve();
-          await Promise.resolve();
-          resolveCount++;
-          return ok({ name: "slow-service" });
-        }),
+        ResultAsync.fromSafePromise(
+          (async () => {
+            // Simulate async work with multiple promise chains
+            await Promise.resolve();
+            await Promise.resolve();
+            await Promise.resolve();
+            resolveCount++;
+            return { name: "slow-service" };
+          })()
+        ),
     });
 
     const result = await slowAdapter.factory({});

@@ -819,7 +819,7 @@ describe("builtin-api.ts - inspector API", () => {
 
     const tree = container.inspector.getScopeTree();
     expect(tree).toBeDefined();
-    scope.dispose();
+    void scope.dispose();
   });
 });
 
@@ -948,7 +948,7 @@ describe("child-impl.ts - child container edge cases", () => {
     const scope = child.createScope("test-scope");
     const logger = scope.resolve(LoggerPort);
     expect(typeof logger.log).toBe("function");
-    scope.dispose();
+    void scope.dispose();
   });
 
   it("child container getAdapter for parent port returns adapter", () => {
@@ -1009,8 +1009,8 @@ describe("scope/impl.ts - scope lifecycle", () => {
     const logger2 = scope2.resolve(LoggerPort);
     expect(logger1).not.toBe(logger2);
 
-    scope1.dispose();
-    scope2.dispose();
+    void scope1.dispose();
+    void scope2.dispose();
   });
 
   it("nested scopes cascade disposal", async () => {
@@ -1066,7 +1066,7 @@ describe("scope/impl.ts - scope lifecycle", () => {
     // hasAdapter returns true even for scoped ports
     expect(scope.has(LoggerPort)).toBe(true);
     expect(scope.has(DatabasePort)).toBe(false);
-    scope.dispose();
+    void scope.dispose();
   });
 
   it("scope tryResolve returns Ok", () => {
@@ -1076,7 +1076,7 @@ describe("scope/impl.ts - scope lifecycle", () => {
 
     const result = scope.tryResolve(LoggerPort);
     expect(result.isOk()).toBe(true);
-    scope.dispose();
+    void scope.dispose();
   });
 
   it("scope tryResolveAsync returns Ok", async () => {
@@ -1086,7 +1086,7 @@ describe("scope/impl.ts - scope lifecycle", () => {
 
     const result = await scope.tryResolveAsync(LoggerPort);
     expect(result.isOk()).toBe(true);
-    scope.dispose();
+    void scope.dispose();
   });
 
   it("scope tryDispose returns Ok", async () => {

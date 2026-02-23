@@ -17,7 +17,6 @@ import type {
   LibraryInspector,
   UnifiedSnapshot,
   LibraryQueryEntry,
-  LibraryQueryResult,
   LibraryQueryPredicate,
 } from "@hex-di/core";
 import { getPortMetadata } from "@hex-di/core";

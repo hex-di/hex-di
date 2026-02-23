@@ -4,7 +4,7 @@ import { baseConfig, testConfig } from "../../eslint.config.js";
 
 export default tseslint.config(
   {
-    ignores: ["node_modules/**", "dist/**", "dist-verify/**", "*.config.js", "*.config.ts"],
+    ignores: ["node_modules/**", "dist/**", "dist-verify/**", ".stryker-tmp/**", "*.config.js", "*.config.ts"],
   },
   ...baseConfig,
   {

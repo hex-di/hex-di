@@ -7,13 +7,7 @@
  */
 
 import type { Ok, Err, Result, ResultAsync as ResultAsyncType, Some, None } from "@hex-di/result";
-import {
-  ok,
-  err,
-  ResultAsync,
-  some,
-  none,
-} from "@hex-di/result";
+import { ok, err, ResultAsync, some, none } from "@hex-di/result";
 
 /**
  * Creates a fixture factory for Result and ResultAsync values with a default Ok value.
@@ -41,12 +35,8 @@ export function createResultFixture<T>(defaults: T): {
     ok: (value?: T) => ok(value !== undefined ? value : defaults),
     err: <E>(error: E) => err(error),
     okAsync: (value?: T) =>
-      ResultAsync.fromSafePromise(
-        Promise.resolve(value !== undefined ? value : defaults),
-      ),
-    errAsync: <E>(error: E) =>
-      // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- Intentional: user controls the error type E
-      ResultAsync.fromPromise(Promise.reject(error), () => error),
+      ResultAsync.fromSafePromise(Promise.resolve(value !== undefined ? value : defaults)),
+    errAsync: <E>(error: E) => ResultAsync.fromPromise(Promise.reject(error), () => error),
   };
 }
 
@@ -96,7 +86,7 @@ export function mockResultAsync<T, E>(): {
   reject: (error: E) => void;
 } {
   let resolvePromise!: (result: Result<T, E>) => void;
-  const promise = new Promise<Result<T, E>>((res) => {
+  const promise = new Promise<Result<T, E>>(res => {
     resolvePromise = res;
   });
 
