@@ -73,7 +73,16 @@ jobs:
 
       # ── Write npm auth token so pnpm publish can find it ─────────────
       - name: Configure npm auth
-        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NPM_TOKEN" ]; then
+            echo "::error::NPM_TOKEN secret is not set"
+            exit 1
+          fi
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> "$GITHUB_WORKSPACE/.npmrc"
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> ~/.npmrc
+          echo "Auth configured (token length: ${#NPM_TOKEN})"
 
       # ── Publish — skip packages whose current version is already on npm ───
       - name: Publish approved packages
