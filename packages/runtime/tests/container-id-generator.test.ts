@@ -72,7 +72,7 @@ describe("generateChildContainerId", () => {
 
 describe("resetChildContainerIdCounter", () => {
   it("resets default generator counter", () => {
-    const id1 = generateChildContainerId();
+    const _id1 = generateChildContainerId();
     // Counter is now past child-1
 
     resetChildContainerIdCounter();

@@ -1,14 +1,8 @@
 /**
  * Tests for src/scope/impl.ts
  */
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import {
-  ScopeImpl,
-  createScopeIdGenerator,
-  resetScopeIdCounter,
-  createScopeWrapper,
-} from "../src/scope/impl.js";
-import { MemoMap } from "../src/util/memo-map.js";
+import { describe, it, expect, beforeEach } from "vitest";
+import { createScopeIdGenerator, resetScopeIdCounter } from "../src/scope/impl.js";
 import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";

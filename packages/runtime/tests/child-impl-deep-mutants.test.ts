@@ -16,11 +16,11 @@
  * - setWrapper/getWrapper
  */
 import { describe, it, expect, vi } from "vitest";
-import { port, createAdapter, type Port } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
 import { INTERNAL_ACCESS, ADAPTER_ACCESS } from "../src/inspection/symbols.js";
-import { DisposedScopeError, ScopeRequiredError, FactoryError } from "../src/errors/index.js";
+import { DisposedScopeError } from "../src/errors/index.js";
 
 // =============================================================================
 // Test Fixtures
@@ -42,7 +42,7 @@ interface Config {
 const LoggerPort = port<Logger>()({ name: "Logger" });
 const DatabasePort = port<Database>()({ name: "Database" });
 const CachePort = port<Cache>()({ name: "Cache" });
-const ConfigPort = port<Config>()({ name: "Config" });
+const _ConfigPort = port<Config>()({ name: "Config" });
 
 function makeRootGraph(...adapters: any[]) {
   let builder: any = GraphBuilder.create();

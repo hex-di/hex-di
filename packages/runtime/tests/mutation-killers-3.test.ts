@@ -17,7 +17,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
-import { ADAPTER_ACCESS, INTERNAL_ACCESS, HOOKS_ACCESS } from "../src/inspection/symbols.js";
+import { ADAPTER_ACCESS, INTERNAL_ACCESS } from "../src/inspection/symbols.js";
 import {
   detectContainerKindFromInternal,
   detectPhaseFromSnapshot,
@@ -35,7 +35,6 @@ import {
 } from "../src/container/helpers.js";
 import { MemoMap } from "../src/util/memo-map.js";
 import { resetScopeIdCounter } from "../src/scope/impl.js";
-import { DisposedScopeError, AsyncFactoryError } from "../src/errors/index.js";
 import { checkCacheHit } from "../src/resolution/hooks-runner.js";
 
 // =============================================================================
@@ -54,7 +53,7 @@ interface Cache {
 
 const LoggerPort = port<Logger>()({ name: "Logger" });
 const DatabasePort = port<Database>()({ name: "Database" });
-const CachePort = port<Cache>()({ name: "Cache" });
+const _CachePort = port<Cache>()({ name: "Cache" });
 
 function makeLoggerAdapter(lifetime: "singleton" | "transient" | "scoped" = "singleton") {
   return createAdapter({
@@ -701,9 +700,9 @@ describe("base-impl.ts multiple children and scopes", () => {
     const container = createContainer({ graph, name: "Parent" });
 
     const childGraph = GraphBuilder.create().build();
-    const child1 = container.createChild(childGraph, { name: "Child1" });
+    const _child1 = container.createChild(childGraph, { name: "Child1" });
     const child2 = container.createChild(childGraph, { name: "Child2" });
-    const child3 = container.createChild(childGraph, { name: "Child3" });
+    const _child3 = container.createChild(childGraph, { name: "Child3" });
 
     const state = (container as any)[INTERNAL_ACCESS]();
     expect(state.childContainers.length).toBe(3);
@@ -725,7 +724,7 @@ describe("base-impl.ts multiple children and scopes", () => {
     const container = createContainer({ graph, name: "Test" });
 
     const scope1 = container.createScope("scope1");
-    const scope2 = container.createScope("scope2");
+    const _scope2 = container.createScope("scope2");
     const scope3 = container.createScope("scope3");
 
     const state = (container as any)[INTERNAL_ACCESS]();
@@ -808,7 +807,7 @@ describe("scope/impl.ts nested scope lifecycle", () => {
     const container = createContainer({ graph, name: "Test" });
 
     const scope = container.createScope("parent");
-    const child = scope.createScope("child");
+    const _child = scope.createScope("child");
 
     const state = (scope as any)[INTERNAL_ACCESS]();
     expect(state.childScopes.length).toBe(1);

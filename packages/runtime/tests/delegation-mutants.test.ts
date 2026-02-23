@@ -258,7 +258,7 @@ describe("wrapper delegation: registerChildContainer and unregisterChildContaine
   it("registerChildContainer is called during createChild (L362)", () => {
     const parent = makeRootContainer();
     const childGraph = GraphBuilder.create().build();
-    const child = parent.createChild(childGraph, { name: "Child" });
+    const _child = parent.createChild(childGraph, { name: "Child" });
 
     // Verify child is tracked - parent's internal state should have childContainers
     const state = parent[INTERNAL_ACCESS]();
@@ -349,7 +349,7 @@ describe("initialized container wrapper delegation", () => {
     const initialized = await uninit.initialize();
 
     const childGraph = GraphBuilder.create().build();
-    const child = initialized.createChild(childGraph, { name: "TC" });
+    const _child = initialized.createChild(childGraph, { name: "TC" });
 
     const state = initialized[INTERNAL_ACCESS]();
     expect(state.childContainers.length).toBeGreaterThanOrEqual(1);

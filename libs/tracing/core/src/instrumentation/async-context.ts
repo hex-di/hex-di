@@ -29,6 +29,16 @@ interface AsyncLocalStorageLike {
   run<T>(store: SpanStackStore, fn: () => T): T;
 }
 
+function isDynamicImporter(
+  value: unknown
+): value is (specifier: string) => Promise<Record<string, unknown>> {
+  return typeof value === "function";
+}
+
+function isAsyncLocalStorageConstructor(value: unknown): value is new () => AsyncLocalStorageLike {
+  return typeof value === "function";
+}
+
 /** Cached AsyncLocalStorage instance, if available */
 let _als: AsyncLocalStorageLike | undefined;
 
@@ -66,17 +76,15 @@ export async function initAsyncSpanContext(): Promise<boolean> {
     }
 
     // Use Function constructor for the dynamic import to prevent TypeScript
-    // from resolving the module specifier at compile time
-    const importFn = new Function("specifier", "return import(specifier)");
-    const asyncHooks: Record<string, unknown> = await (importFn("node:async_hooks") as Promise<
-      Record<string, unknown>
-    >);
+    // from resolving the module specifier at compile time.
+    const importFn: unknown = new Function("specifier", "return import(specifier)");
+    if (!isDynamicImporter(importFn)) return false;
+    const asyncHooks = await importFn("node:async_hooks");
 
     if (asyncHooks && "AsyncLocalStorage" in asyncHooks) {
-      const AlsCtor = asyncHooks.AsyncLocalStorage;
-      if (typeof AlsCtor === "function") {
-        const als = new (AlsCtor as new () => AsyncLocalStorageLike)();
-        _als = als;
+      const AlsCtor: unknown = asyncHooks.AsyncLocalStorage;
+      if (isAsyncLocalStorageConstructor(AlsCtor)) {
+        _als = new AlsCtor();
         return true;
       }
     }

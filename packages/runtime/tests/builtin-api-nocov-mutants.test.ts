@@ -14,7 +14,7 @@
  * - getContainer returns container ref
  */
 import { describe, it, expect, vi } from "vitest";
-import { port, createAdapter, type Port } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
 import type { InspectorAPI } from "../src/inspection/types.js";
@@ -638,7 +638,7 @@ describe("getGraphData inheritanceMode and parentName details", () => {
     const child = parent.createChild(childGraph, { name: "Child" });
 
     const inspector = getInspector(child);
-    const graphData = inspector.getGraphData();
+    const _graphData = inspector.getGraphData();
 
     // Find an inherited adapter if any exist in the child's adapterMap
     // The child's internal state's adapterMap should include inherited adapters

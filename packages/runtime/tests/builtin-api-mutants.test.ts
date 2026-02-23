@@ -13,7 +13,7 @@ import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
 import type { InspectorAPI } from "../src/inspection/types.js";
-import { INTERNAL_ACCESS, INSPECTOR } from "../src/inspection/symbols.js";
+import { INTERNAL_ACCESS } from "../src/inspection/symbols.js";
 
 // =============================================================================
 // Test Fixtures
@@ -34,8 +34,8 @@ interface RequestCtx {
 
 const LoggerPort = port<Logger>()({ name: "Logger" });
 const DatabasePort = port<Database>()({ name: "Database" });
-const CachePort = port<Cache>()({ name: "Cache" });
-const RequestCtxPort = port<RequestCtx>()({ name: "RequestCtx" });
+const _CachePort = port<Cache>()({ name: "Cache" });
+const _RequestCtxPort = port<RequestCtx>()({ name: "RequestCtx" });
 
 function getInspector(container: any): InspectorAPI {
   return container.inspector;

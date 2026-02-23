@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/guard",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Compile-time-safe authorization for the HexDI ecosystem — permission tokens, role DAG, policy evaluator, guard adapter",
   "type": "module",
   "main": "./dist/index.js",

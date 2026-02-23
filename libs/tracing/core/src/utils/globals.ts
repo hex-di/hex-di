@@ -20,9 +20,10 @@ export interface PerformanceLike {
   now(): number;
 }
 
-/** Subset of Console API used for logging. */
+/** Subset of Console API used for logging and warnings. */
 export interface ConsoleLike {
   log(message: string): void;
+  warn(message: string): void;
 }
 
 function isCryptoLike(value: unknown): value is CryptoLike {
@@ -53,7 +54,9 @@ function isConsoleLike(value: unknown): value is ConsoleLike {
     value !== undefined &&
     typeof value === "object" &&
     "log" in value &&
-    typeof value.log === "function"
+    typeof value.log === "function" &&
+    "warn" in value &&
+    typeof value.warn === "function"
   );
 }
 

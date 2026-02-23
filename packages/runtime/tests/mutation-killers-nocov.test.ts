@@ -11,10 +11,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { port, createAdapter, type LibraryInspector } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
-import { INTERNAL_ACCESS, ADAPTER_ACCESS, HOOKS_ACCESS } from "../src/inspection/symbols.js";
-import { createBuiltinInspectorAPI } from "../src/inspection/builtin-api.js";
-import { createInspector, getInternalAccessor } from "../src/inspection/creation.js";
-import type { InternalAccessible } from "../src/inspection/creation.js";
+import { INTERNAL_ACCESS, HOOKS_ACCESS } from "../src/inspection/symbols.js";
+import { createInspector } from "../src/inspection/creation.js";
 import { createLibraryRegistry } from "../src/inspection/library-registry.js";
 import {
   detectContainerKindFromInternal,
@@ -24,30 +22,21 @@ import {
 import type {
   ContainerInternalState,
   MemoMapSnapshot,
-  ScopeInternalState,
 } from "../src/inspection/internal-state-types.js";
 import { detectContainerKind, detectPhase, buildTypedSnapshot } from "../src/inspection/helpers.js";
 import { levenshteinDistance, suggestSimilarPort } from "../src/util/string-similarity.js";
 import { MemoMap } from "../src/util/memo-map.js";
-import { resetScopeIdCounter, ScopeImpl, createScopeWrapper } from "../src/scope/impl.js";
+import { resetScopeIdCounter } from "../src/scope/impl.js";
 import { resetChildContainerIdCounter } from "../src/container/id-generator.js";
 import {
   DisposedScopeError,
   ScopeRequiredError,
-  AsyncInitializationRequiredError,
   NonClonableForkedError,
   FactoryError,
   DisposalError,
-  ContainerError,
 } from "../src/errors/index.js";
 import { markNextChildAsLazy, consumeLazyFlag } from "../src/container/lazy-impl.js";
-import { hasInternalMethods, asParentContainerLike } from "../src/container/wrappers.js";
-import {
-  isAdapterForPort,
-  isInternalAccessible,
-  asInternalAccessible,
-} from "../src/container/internal-types.js";
-import { isDisposableChild, shallowClone, isInheritanceMode } from "../src/container/helpers.js";
+import { hasInternalMethods } from "../src/container/wrappers.js";
 import { ScopeBrand } from "../src/types.js";
 
 // =============================================================================
@@ -112,7 +101,7 @@ function makeConfigAdapter(lifetime: "singleton" | "transient" | "scoped" = "sin
   });
 }
 
-function makeAuthAdapter() {
+function _makeAuthAdapter() {
   return createAdapter({
     provides: AuthPort,
     requires: [LoggerPort] as const,
@@ -155,7 +144,7 @@ describe("inspection/builtin-api.ts - NoCoverage mutants", () => {
       parent.resolve(LoggerPort);
 
       const childGraph = GraphBuilder.create().provide(makeConfigAdapter()).build();
-      const child = parent.createChild(childGraph, { name: "Child" });
+      const _child = parent.createChild(childGraph, { name: "Child" });
 
       // Access inspector on parent
       const parentInspector = parent.inspector;
@@ -727,7 +716,7 @@ describe("inspection/creation.ts - NoCoverage mutants", () => {
         .provide(makeCacheAdapter("scoped"))
         .build();
       const container = createContainer({ graph, name: "Root" });
-      const scope = container.createScope();
+      const _scope = container.createScope();
 
       const inspector = createInspector(container);
       const tree = inspector.getScopeTree();
@@ -1542,7 +1531,7 @@ describe("container/factory.ts - NoCoverage error paths", () => {
       container.resolve(LoggerPort);
       expect(calls.length).toBeGreaterThan(0);
 
-      const countBefore = calls.length;
+      const _countBefore = calls.length;
       uninstall();
 
       // After uninstall, further resolves should not trigger the hook

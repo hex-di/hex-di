@@ -21,12 +21,7 @@ import { port, createAdapter, type Port } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
 import { ADAPTER_ACCESS, INTERNAL_ACCESS, HOOKS_ACCESS } from "../src/inspection/symbols.js";
-import { ContainerBrand } from "../src/types.js";
-import {
-  DisposedScopeError,
-  ScopeRequiredError,
-  AsyncInitializationRequiredError,
-} from "../src/errors/index.js";
+import { DisposedScopeError, ScopeRequiredError } from "../src/errors/index.js";
 
 // =============================================================================
 // Test Fixtures
@@ -64,7 +59,7 @@ function makeDbAdapter() {
   });
 }
 
-function makeAsyncDbAdapter() {
+function _makeAsyncDbAdapter() {
   return createAdapter({
     provides: DatabasePort,
     requires: [],

@@ -8,7 +8,7 @@ import { describe, it, expect, vi } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
-import { FactoryError, ContainerError, CircularDependencyError } from "../src/errors/index.js";
+import { FactoryError, CircularDependencyError } from "../src/errors/index.js";
 
 interface Logger {
   log(msg: string): void;
@@ -22,7 +22,7 @@ interface Cache {
 
 const LoggerPort = port<Logger>()({ name: "Logger" });
 const DatabasePort = port<Database>()({ name: "Database" });
-const CachePort = port<Cache>()({ name: "Cache" });
+const _CachePort = port<Cache>()({ name: "Cache" });
 
 describe("ResolutionEngine (integration via container)", () => {
   describe("sync resolution", () => {
@@ -113,7 +113,7 @@ describe("ResolutionEngine (integration via container)", () => {
       const graph = GraphBuilder.create().provide(loggerAdapter).provide(dbAdapter).build();
       const container = createContainer({ graph, name: "Test" });
 
-      const db = container.resolve(DatabasePort);
+      const _db = container.resolve(DatabasePort);
       expect(dbFactory).toHaveBeenCalledTimes(1);
       // deps should contain Logger instance
       const depsArg = dbFactory.mock.calls[0][0];

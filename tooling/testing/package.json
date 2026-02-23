@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/testing",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Testing utilities for HexDI - override adapters, create type-safe mocks, and manage test container lifecycles",
   "type": "module",
   "main": "./dist/index.js",

@@ -1,7 +1,7 @@
 // @traces BEH-R03-002 BEH-R03-004 INV-R11
 import { describe, it, expect, afterEach } from "vitest";
 import { render, cleanup, act, waitFor } from "@testing-library/react";
-import React, { Suspense, startTransition } from "react";
+import React from "react";
 import { ok, err, ResultAsync, type Result } from "@hex-di/result";
 import { useOptimisticResult } from "../../src/hooks/use-optimistic-result.js";
 import { useResultTransition } from "../../src/hooks/use-result-transition.js";
@@ -15,20 +15,18 @@ describe("Integration: React 19 hooks (BEH-R03-002, BEH-R03-004)", () => {
       function Counter({ authoritative }: { authoritative: Result<number, string> }) {
         const { result, setOptimistic } = useOptimisticResult(
           authoritative,
-          (_current, increment: number) => ok(_current.isOk() ? _current.value + increment : 0) as Result<number, string>,
+          (_current, increment: number) =>
+            ok(_current.isOk() ? _current.value + increment : 0) as Result<number, string>
         );
 
         return (
           <div>
             <Match
               result={result}
-              ok={(v) => <span data-testid="value">{v}</span>}
-              err={(e) => <span data-testid="error">{e}</span>}
+              ok={v => <span data-testid="value">{v}</span>}
+              err={e => <span data-testid="error">{e}</span>}
             />
-            <button
-              data-testid="increment"
-              onClick={() => setOptimistic(1)}
-            >
+            <button data-testid="increment" onClick={() => setOptimistic(1)}>
               +1
             </button>
           </div>
@@ -45,13 +43,13 @@ describe("Integration: React 19 hooks (BEH-R03-002, BEH-R03-004)", () => {
       function ErrDisplay({ authoritative }: { authoritative: Result<number, string> }) {
         const { result } = useOptimisticResult(
           authoritative,
-          (_current, _increment: number) => ok(0) as Result<number, string>,
+          (_current, _increment: number) => ok(0) as Result<number, string>
         );
         return (
           <Match
             result={result}
-            ok={(v) => <span data-testid="value">{v}</span>}
-            err={(e) => <span data-testid="error">{e}</span>}
+            ok={v => <span data-testid="value">{v}</span>}
+            err={e => <span data-testid="error">{e}</span>}
           />
         );
       }
@@ -65,8 +63,7 @@ describe("Integration: React 19 hooks (BEH-R03-002, BEH-R03-004)", () => {
   describe("useResultTransition + Match", () => {
     it("shows pending state while transition resolves", async () => {
       function TransitionDemo() {
-        const { result, isPending, startResultTransition } =
-          useResultTransition<string, string>();
+        const { result, isPending, startResultTransition } = useResultTransition<string, string>();
 
         return (
           <div>
@@ -74,17 +71,15 @@ describe("Integration: React 19 hooks (BEH-R03-002, BEH-R03-004)", () => {
             {result ? (
               <Match
                 result={result}
-                ok={(v) => <span data-testid="value">{v}</span>}
-                err={(e) => <span data-testid="error">{e}</span>}
+                ok={v => <span data-testid="value">{v}</span>}
+                err={e => <span data-testid="error">{e}</span>}
               />
             ) : (
               <span data-testid="empty">no data</span>
             )}
             <button
               data-testid="load"
-              onClick={() =>
-                startResultTransition(() => ResultAsync.ok("loaded"))
-              }
+              onClick={() => startResultTransition(() => ResultAsync.ok("loaded"))}
             >
               Load
             </button>
@@ -107,25 +102,22 @@ describe("Integration: React 19 hooks (BEH-R03-002, BEH-R03-004)", () => {
 
     it("handles error result in transition", async () => {
       function TransitionErr() {
-        const { result, startResultTransition } =
-          useResultTransition<string, string>();
+        const { result, startResultTransition } = useResultTransition<string, string>();
 
         return (
           <div>
             {result ? (
               <Match
                 result={result}
-                ok={(v) => <span data-testid="value">{v}</span>}
-                err={(e) => <span data-testid="error">{e}</span>}
+                ok={v => <span data-testid="value">{v}</span>}
+                err={e => <span data-testid="error">{e}</span>}
               />
             ) : (
               <span data-testid="empty">empty</span>
             )}
             <button
               data-testid="fail"
-              onClick={() =>
-                startResultTransition(() => ResultAsync.err("oops"))
-              }
+              onClick={() => startResultTransition(() => ResultAsync.err("oops"))}
             >
               Fail
             </button>

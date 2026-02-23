@@ -514,7 +514,14 @@
       "Bash(do echo \"=== $pkg ===\")",
       "Bash(do echo \"=== $pkg typecheck ===\")",
       "Bash(do echo \"=== $pkg tests ===\")",
-      "Bash(do pnpm --filter \"@hex-di/http-client-$pkg\" test)"
+      "Bash(do pnpm --filter \"@hex-di/http-client-$pkg\" test)",
+      "Bash(git diff:*)",
+      "Bash(cd:*)",
+      "Bash(git commit:*)",
+      "Bash(gh run:*)",
+      "WebFetch(domain:turbo.build)",
+      "WebFetch(domain:turborepo.dev)",
+      "Bash(tail:*)"
     ]
   }
 }

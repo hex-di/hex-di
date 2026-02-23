@@ -10,7 +10,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { monotonicNow } from "../src/util/monotonic-time.js";
 import { FinalizerTimeoutError, ScopeDepthExceededError } from "../src/errors/index.js";
-import { ScopeImpl, createScopeWrapper } from "../src/scope/impl.js";
 import { ScopeLifecycleEmitter } from "../src/scope/lifecycle-events.js";
 import { MemoMap } from "../src/util/memo-map.js";
 import { port } from "@hex-di/core";

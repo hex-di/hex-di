@@ -10,10 +10,10 @@ describe("createResultResource (BEH-R02-004)", () => {
     let resolve: ((v: number) => void) | null = null;
     const resource = createResultResource(() =>
       ResultAsync.fromSafePromise(
-        new Promise<number>((r) => {
+        new Promise<number>(r => {
           resolve = r;
-        }),
-      ),
+        })
+      )
     );
 
     function Inner() {
@@ -24,14 +24,14 @@ describe("createResultResource (BEH-R02-004)", () => {
     const { container } = render(
       <Suspense fallback={<span>Loading...</span>}>
         <Inner />
-      </Suspense>,
+      </Suspense>
     );
 
     expect(container.textContent).toBe("Loading...");
 
     await act(async () => {
       resolve!(42);
-      await new Promise((r) => setTimeout(r, 0));
+      await new Promise(r => setTimeout(r, 0));
     });
 
     expect(container.textContent).toBe("Value: 42");
@@ -43,9 +43,9 @@ describe("createResultResource (BEH-R02-004)", () => {
     const resource = createResultResource(() => {
       fetchStarted = true;
       return ResultAsync.fromSafePromise(
-        new Promise<string>((r) => {
+        new Promise<string>(r => {
           resolve = r;
-        }),
+        })
       );
     });
 
@@ -54,7 +54,7 @@ describe("createResultResource (BEH-R02-004)", () => {
 
     // Resolve before render
     resolve!("preloaded");
-    await new Promise((r) => setTimeout(r, 0));
+    await new Promise(r => setTimeout(r, 0));
 
     function Inner() {
       const result = resource.read();
@@ -64,7 +64,7 @@ describe("createResultResource (BEH-R02-004)", () => {
     const { container } = render(
       <Suspense fallback={<span>Loading...</span>}>
         <Inner />
-      </Suspense>,
+      </Suspense>
     );
 
     // Should NOT suspend since data is preloaded
@@ -73,14 +73,14 @@ describe("createResultResource (BEH-R02-004)", () => {
 
   it("invalidate() clears cache, re-suspends", async () => {
     let callCount = 0;
-    let resolvers: Array<(v: string) => void> = [];
+    const resolvers: Array<(v: string) => void> = [];
 
     const resource = createResultResource(() => {
       callCount++;
       return ResultAsync.fromSafePromise(
-        new Promise<string>((r) => {
+        new Promise<string>(r => {
           resolvers.push(r);
-        }),
+        })
       );
     });
 
@@ -92,7 +92,7 @@ describe("createResultResource (BEH-R02-004)", () => {
     const { container } = render(
       <Suspense fallback={<span>Loading...</span>}>
         <Inner />
-      </Suspense>,
+      </Suspense>
     );
 
     expect(container.textContent).toBe("Loading...");
@@ -100,7 +100,7 @@ describe("createResultResource (BEH-R02-004)", () => {
 
     await act(async () => {
       resolvers[0]("first");
-      await new Promise((r) => setTimeout(r, 0));
+      await new Promise(r => setTimeout(r, 0));
     });
     expect(container.textContent).toBe("first");
 
@@ -115,18 +115,18 @@ describe("createResultResource (BEH-R02-004)", () => {
 
     const resourceA = createResultResource(() =>
       ResultAsync.fromSafePromise(
-        new Promise<string>((r) => {
+        new Promise<string>(r => {
           resolveA = r;
-        }),
-      ),
+        })
+      )
     );
 
     const resourceB = createResultResource(() =>
       ResultAsync.fromSafePromise(
-        new Promise<string>((r) => {
+        new Promise<string>(r => {
           resolveB = r;
-        }),
-      ),
+        })
+      )
     );
 
     function InnerA() {
@@ -147,7 +147,7 @@ describe("createResultResource (BEH-R02-004)", () => {
         <Suspense fallback={<span>Loading B...</span>}>
           <InnerB />
         </Suspense>
-      </div>,
+      </div>
     );
 
     expect(container.textContent).toContain("Loading A...");
@@ -155,7 +155,7 @@ describe("createResultResource (BEH-R02-004)", () => {
 
     await act(async () => {
       resolveA!("alpha");
-      await new Promise((r) => setTimeout(r, 0));
+      await new Promise(r => setTimeout(r, 0));
     });
 
     expect(container.textContent).toContain("A: alpha");
@@ -163,7 +163,7 @@ describe("createResultResource (BEH-R02-004)", () => {
 
     await act(async () => {
       resolveB!("beta");
-      await new Promise((r) => setTimeout(r, 0));
+      await new Promise(r => setTimeout(r, 0));
     });
 
     expect(container.textContent).toContain("A: alpha");

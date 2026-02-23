@@ -10,9 +10,7 @@
  * - inspection/type-guards.ts: hasInspector, getInspectorAPI
  */
 import { describe, it, expect, vi } from "vitest";
-import { port, createAdapter } from "@hex-di/core";
-import { GraphBuilder } from "@hex-di/graph";
-import { createContainer } from "../src/container/factory.js";
+import { port } from "@hex-di/core";
 import { MemoMap } from "../src/util/memo-map.js";
 import { levenshteinDistance, suggestSimilarPort } from "../src/util/string-similarity.js";
 import { ScopeLifecycleEmitter } from "../src/scope/lifecycle-events.js";

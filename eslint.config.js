@@ -5,35 +5,33 @@ import antfu from "eslint-plugin-antfu";
 import prettierConfig from "eslint-config-prettier";
 
 /**
- * Shared ESLint configuration for all packages.
- * Each package extends this config in their own eslint.config.js
+ * Shared ESLint configuration split into prod and test concerns.
+ *
+ * - sharedConfig:        rules for ALL files (style, unused vars, prettier)
+ * - prodConfig:          strict type-safety rules scoped to src/**
+ * - testConfig:          relaxed rules for test files
+ * - typeLevelTestConfig: extra relaxation for .test-d.ts files
+ * - parserConfig(dir):   helper to wire up projectService per-package
  */
 
+// ── Shared config: applies to ALL files ──
+
 /** @type {import("typescript-eslint").ConfigArray} */
-export const baseConfig = tseslint.config(
-  // Base ESLint recommended
+export const sharedConfig = tseslint.config(
   eslint.configs.recommended,
 
-  // TypeScript recommended
   ...tseslint.configs.recommended,
 
-  // Global rules
   {
     plugins: {
       antfu,
     },
     rules: {
-      // Core goal: no any types in production
-      "@typescript-eslint/no-explicit-any": "error",
-
-      // Code quality
       "prefer-const": "error",
       "@typescript-eslint/no-unused-vars": [
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
-
-      // Allow namespace for JSX declarations
       "@typescript-eslint/no-namespace": [
         "error",
         {
@@ -41,31 +39,34 @@ export const baseConfig = tseslint.config(
           allowDefinitionFiles: true,
         },
       ],
-
-      // Antfu rules
       "antfu/no-top-level-await": "off",
       "antfu/if-newline": "off",
-
-      // Promise/async safety
-      "@typescript-eslint/no-floating-promises": "error",
-      "@typescript-eslint/no-misused-promises": "error",
-      "@typescript-eslint/await-thenable": "error",
-      "@typescript-eslint/require-await": "warn",
-
-      // Type safety (prevent any leakage) - start as warn to assess impact
-      "@typescript-eslint/no-unsafe-assignment": "warn",
-      "@typescript-eslint/no-unsafe-call": "warn",
-      "@typescript-eslint/no-unsafe-member-access": "warn",
-      "@typescript-eslint/no-unsafe-return": "warn",
-
-      // Console protection
-      "no-console": ["warn", { allow: ["warn", "error"] }],
     },
   },
 
-  // Prettier config (must be last to disable conflicting rules)
   prettierConfig
 );
+
+// ── Prod config: strict rules scoped to src/ files only ──
+
+/** @type {import("typescript-eslint").ConfigArray} */
+export const prodConfig = tseslint.config({
+  files: ["src/**/*.{ts,tsx}"],
+  rules: {
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-floating-promises": "error",
+    "@typescript-eslint/no-misused-promises": "error",
+    "@typescript-eslint/await-thenable": "error",
+    "@typescript-eslint/require-await": "warn",
+    "@typescript-eslint/no-unsafe-assignment": "warn",
+    "@typescript-eslint/no-unsafe-call": "warn",
+    "@typescript-eslint/no-unsafe-member-access": "warn",
+    "@typescript-eslint/no-unsafe-return": "warn",
+    "no-console": ["warn", { allow: ["warn", "error"] }],
+  },
+});
+
+// ── Test config: relaxed rules for test files ──
 
 /** @type {import("typescript-eslint").ConfigArray} */
 export const testConfig = tseslint.config({
@@ -76,12 +77,9 @@ export const testConfig = tseslint.config({
     "**/__tests__/**/*.{ts,tsx}",
   ],
   rules: {
-    // Relaxed for mocking flexibility
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/no-non-null-assertion": "off",
     "@typescript-eslint/no-empty-object-type": "off",
-
-    // Keep some safety in tests
     "@typescript-eslint/no-unused-vars": [
       "warn",
       {
@@ -93,38 +91,44 @@ export const testConfig = tseslint.config({
       },
     ],
     "prefer-const": "warn",
-
-    // Async rules still active - tests should handle promises correctly
     "@typescript-eslint/no-floating-promises": "error",
     "@typescript-eslint/no-misused-promises": "error",
-
-    // Relax unsafe rules for test mocking
     "@typescript-eslint/no-unsafe-assignment": "off",
     "@typescript-eslint/no-unsafe-call": "off",
     "@typescript-eslint/no-unsafe-member-access": "off",
     "@typescript-eslint/no-unsafe-return": "off",
-
-    // Allow console in tests
     "no-console": "off",
-
-    // Type-level test files use variables only for `typeof` extraction
-    // and async factories without await for type inference
     "@typescript-eslint/require-await": "off",
   },
 });
+
+// ── Type-level test config: extra relaxation for .test-d.ts files ──
 
 /** @type {import("typescript-eslint").ConfigArray} */
 export const typeLevelTestConfig = tseslint.config({
   files: ["**/*.test-d.{ts,tsx}"],
   rules: {
-    // Variables in type tests are often only used with typeof
     "@typescript-eslint/no-unused-vars": "off",
-    // Bare property accesses used to trigger @ts-expect-error assertions
     "@typescript-eslint/no-unused-expressions": "off",
   },
 });
 
-// Root config - only lints root-level files
+// ── Parser config factory: reduces per-package boilerplate ──
+
+/** @param {string} dirname - import.meta.dirname of the package */
+export function parserConfig(dirname) {
+  return {
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: dirname,
+      },
+    },
+  };
+}
+
+// ── Root config: only lints root-level files ──
+
 export default tseslint.config(
   {
     ignores: [
@@ -133,7 +137,6 @@ export default tseslint.config(
       "**/build/**",
       "**/.docusaurus/**",
       "**/coverage/**",
-      // Packages have their own configs
       "packages/**",
       "integrations/**",
       "tooling/**",
@@ -149,5 +152,6 @@ export default tseslint.config(
       },
     },
   },
-  ...baseConfig
+  ...sharedConfig,
+  ...prodConfig
 );

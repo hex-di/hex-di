@@ -952,17 +952,24 @@ emit(event: ScopeLifecycleEvent): void {
 ```typescript
 // From: packages/runtime/src/resolution/engine.ts
 
-private createInstance<P extends Port<unknown, string>>(
+private createInstance<P extends Port<string, unknown>>(
     port: P, adapter: RuntimeAdapterFor<P>,
     scopedMemo: MemoMap, scopeId: string | null, scopeName?: string
   ): InferService<P> {
-    // ...
+    const portName = port.__portName;
+
+    this.resolutionContext.enter(portName);
+
     try {
+      assertSyncAdapter(adapter, portName);
+
       try {
         const deps = buildDependencies(adapter.requires, requiredPort =>
           this.resolveDependency(requiredPort, scopedMemo, scopeId, scopeName)
         );
-        return adapter.factory(deps);
+        const raw = adapter.factory(deps);
+
+        return unwrapResultDefense(raw) as InferService<P>;
       } catch (e) {
         if (e instanceof ContainerError) {
           throw e;

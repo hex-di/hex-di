@@ -221,7 +221,7 @@ describe("LazyContainerImpl - performLoad behavior", () => {
     );
 
     // Start loading
-    const loadPromise = lazy.load().catch((e: unknown) => e);
+    const _loadPromise = lazy.load().catch((e: unknown) => e);
 
     // Resolve the graph (so load completes)
     resolveLoader?.(makeDbGraph());

@@ -11,7 +11,7 @@ import { describe, it, expect, vi } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
-import { ADAPTER_ACCESS, INTERNAL_ACCESS, HOOKS_ACCESS } from "../src/inspection/symbols.js";
+import { INTERNAL_ACCESS } from "../src/inspection/symbols.js";
 import { isDisposableChild } from "../src/container/helpers.js";
 import { isInternalAccessible } from "../src/container/internal-types.js";
 

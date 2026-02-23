@@ -1,8 +1,8 @@
 // @traces BEH-R02-003 INV-R6
 import { describe, it, expect, afterEach } from "vitest";
-import { render, cleanup, act, waitFor } from "@testing-library/react";
+import { render, cleanup, act } from "@testing-library/react";
 import React, { Suspense, useState } from "react";
-import { ok, err, ResultAsync, type Result } from "@hex-di/result";
+import { ResultAsync } from "@hex-di/result";
 import { useResultSuspense } from "../../../src/hooks/use-result-suspense.js";
 
 afterEach(cleanup);
@@ -10,15 +10,12 @@ afterEach(cleanup);
 describe("useResultSuspense (BEH-R02-003)", () => {
   it("suspends then returns Result", async () => {
     let resolvePromise: ((v: string) => void) | null = null;
-    const promise = new Promise<string>((r) => {
+    const promise = new Promise<string>(r => {
       resolvePromise = r;
     });
 
     function Inner() {
-      const result = useResultSuspense(
-        () => ResultAsync.fromSafePromise(promise),
-        [],
-      );
+      const result = useResultSuspense(() => ResultAsync.fromSafePromise(promise), []);
       return <span>Got: {result.isOk() ? result.value : "error"}</span>;
     }
 
@@ -27,7 +24,7 @@ describe("useResultSuspense (BEH-R02-003)", () => {
       const rendered = render(
         <Suspense fallback={<span>Loading...</span>}>
           <Inner />
-        </Suspense>,
+        </Suspense>
       );
       container = rendered.container;
     });
@@ -43,15 +40,8 @@ describe("useResultSuspense (BEH-R02-003)", () => {
 
   it("Err result returned, not thrown (INV-R4, INV-R6)", async () => {
     function Inner() {
-      const result = useResultSuspense(
-        () => ResultAsync.err("mapped error"),
-        [],
-      );
-      return (
-        <span>
-          {result.isErr() ? `Error: ${result.error}` : String(result.value)}
-        </span>
-      );
+      const result = useResultSuspense(() => ResultAsync.err("mapped error"), []);
+      return <span>{result.isErr() ? `Error: ${result.error}` : String(result.value)}</span>;
     }
 
     let errorCaught = false;
@@ -80,7 +70,7 @@ describe("useResultSuspense (BEH-R02-003)", () => {
           <Suspense fallback={<span>Loading...</span>}>
             <Inner />
           </Suspense>
-        </ErrorBoundary>,
+        </ErrorBoundary>
       );
       container = rendered.container;
     });
@@ -96,7 +86,9 @@ describe("useResultSuspense (BEH-R02-003)", () => {
     function getControlledPromise(key: string) {
       if (!promises.has(key)) {
         let resolve!: (v: string) => void;
-        const promise = new Promise<string>((r) => { resolve = r; });
+        const promise = new Promise<string>(r => {
+          resolve = r;
+        });
         promises.set(key, { promise, resolve });
       }
       return promises.get(key)!;
@@ -105,7 +97,7 @@ describe("useResultSuspense (BEH-R02-003)", () => {
     function Inner({ dep }: { dep: string }) {
       const result = useResultSuspense(
         () => ResultAsync.fromSafePromise(getControlledPromise(dep).promise),
-        [dep],
+        [dep]
       );
       return <span>Got: {result.isOk() ? result.value : "err"}</span>;
     }

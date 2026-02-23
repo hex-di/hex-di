@@ -6,7 +6,6 @@ import { createInspector } from "../src/inspection/api.js";
 import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
-import { INTERNAL_ACCESS } from "../src/inspection/symbols.js";
 
 const PortA = port<string>()({ name: "PortA" });
 

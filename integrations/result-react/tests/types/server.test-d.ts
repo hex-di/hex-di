@@ -1,6 +1,6 @@
 // @traces BEH-R07-001 BEH-R07-002 BEH-R07-003 BEH-R07-004 BEH-R07-005
 import { describe, it, expectTypeOf } from "vitest";
-import { ok, err, some, none, ResultAsync, type Result, type Option } from "@hex-di/result";
+import { ok, some, ResultAsync, type Result, type Option } from "@hex-di/result";
 import {
   matchResult,
   matchResultAsync,
@@ -12,11 +12,11 @@ describe("matchResult types (BEH-R07-001)", () => {
   it("infers return type from handlers", () => {
     const result: Result<string, number> = ok("hello");
     const output = matchResult(result, {
-      ok: (value) => {
+      ok: value => {
         expectTypeOf(value).toEqualTypeOf<string>();
         return value.length;
       },
-      err: (error) => {
+      err: error => {
         expectTypeOf(error).toEqualTypeOf<number>();
         return -1;
       },
@@ -40,7 +40,7 @@ describe("matchResult types (BEH-R07-001)", () => {
 describe("matchResultAsync types (BEH-R07-002)", () => {
   it("returns Promise<A | B>", () => {
     const output = matchResultAsync(ResultAsync.ok("data"), {
-      ok: (value) => {
+      ok: value => {
         expectTypeOf(value).toEqualTypeOf<string>();
         return value.length;
       },
@@ -57,7 +57,7 @@ describe("matchOption types (BEH-R07-003)", () => {
   it("infers return type from handlers", () => {
     const option: Option<string> = some("hello");
     const output = matchOption(option, {
-      some: (value) => {
+      some: value => {
         expectTypeOf(value).toEqualTypeOf<string>();
         return value.length;
       },
@@ -74,7 +74,7 @@ describe("resultAction types (BEH-R07-004)", () => {
   it("preserves argument types and infers result", () => {
     const action = resultAction(
       async (id: string, count: number) => ({ id, count }),
-      (e) => String(e),
+      e => String(e)
     );
     expectTypeOf(action).toEqualTypeOf<
       (id: string, count: number) => Promise<Result<{ id: string; count: number }, string>>

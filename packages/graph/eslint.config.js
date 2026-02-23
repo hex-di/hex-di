@@ -1,20 +1,14 @@
 // @ts-check
 import tseslint from "typescript-eslint";
-import { baseConfig, testConfig, typeLevelTestConfig } from "../../eslint.config.js";
+import { sharedConfig, prodConfig, testConfig, typeLevelTestConfig, parserConfig } from "../../eslint.config.js";
 
 export default tseslint.config(
   {
     ignores: ["node_modules/**", "dist/**", "coverage/**", "*.config.js", "*.config.ts", "examples/**", "fix-imports.mjs"],
   },
-  ...baseConfig,
-  {
-    languageOptions: {
-      parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
-  },
+  ...sharedConfig,
+  parserConfig(import.meta.dirname),
+  ...prodConfig,
   // Type-definition files use `any` in generic constraints for type inference
   // This is standard TypeScript pattern, different from runtime `any` usage
   {

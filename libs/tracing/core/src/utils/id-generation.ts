@@ -16,13 +16,13 @@
  * @packageDocumentation
  */
 
-import { getCrypto } from "./globals.js";
+import { getConsole, getCrypto } from "./globals.js";
 
 /**
  * 256-entry hex lookup table for fast byte-to-hex conversion.
  * One lookup per byte instead of two per nibble.
  */
-const HEX_TABLE: string[] = new Array(256);
+const HEX_TABLE: string[] = new Array<string>(256);
 for (let i = 0; i < 256; i++) {
   HEX_TABLE[i] = (i < 16 ? "0" : "") + i.toString(16);
 }
@@ -41,22 +41,12 @@ function emitMathRandomWarning(): void {
   if (_mathRandomWarningEmitted) return;
   _mathRandomWarningEmitted = true;
 
-  if (typeof globalThis !== "undefined" && "console" in globalThis) {
-    const g: Record<string, unknown> = globalThis;
-    const cons = g.console;
-    if (cons && typeof cons === "object" && "warn" in cons) {
-      const warnFn: unknown = (cons as Record<string, unknown>).warn;
-      if (typeof warnFn === "function") {
-        (warnFn as (msg: string) => void).call(
-          cons,
-          "[hex-di/tracing] WARNING: crypto.getRandomValues() is unavailable. " +
-            "Falling back to Math.random() for trace/span ID generation. " +
-            "IDs will not be cryptographically secure. " +
-            "This may indicate a non-standard runtime environment."
-        );
-      }
-    }
-  }
+  getConsole()?.warn(
+    "[hex-di/tracing] WARNING: crypto.getRandomValues() is unavailable. " +
+      "Falling back to Math.random() for trace/span ID generation. " +
+      "IDs will not be cryptographically secure. " +
+      "This may indicate a non-standard runtime environment."
+  );
 }
 
 // Span ID batch: 256 entries × 8 bytes = 2048 bytes

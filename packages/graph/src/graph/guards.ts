@@ -43,24 +43,26 @@ export function isGraph(value: unknown): value is Graph {
   // Check adapters property
   if (!("adapters" in value) || !Array.isArray(value.adapters)) return false;
 
+  // Bind to unknown[] to avoid `any` from Array.isArray narrowing
+  const adapters: readonly unknown[] = value.adapters;
+
   // Deep validation for each adapter
-  for (const adapter of value.adapters) {
+  for (const adapter of adapters) {
     if (adapter === null || typeof adapter !== "object") return false;
 
     // Validate provides
-    if (
-      !("provides" in adapter) ||
-      adapter.provides === null ||
-      typeof adapter.provides !== "object"
-    )
-      return false;
-    if (!("__portName" in adapter.provides) || typeof adapter.provides.__portName !== "string")
-      return false;
-    if (adapter.provides.__portName.length === 0) return false;
+    if (!("provides" in adapter)) return false;
+    const { provides } = adapter;
+    if (provides === null || typeof provides !== "object") return false;
+    if (!("__portName" in provides) || typeof provides.__portName !== "string") return false;
+    if (provides.__portName.length === 0) return false;
 
     // Validate requires
-    if (!("requires" in adapter) || !Array.isArray(adapter.requires)) return false;
-    for (const req of adapter.requires) {
+    if (!("requires" in adapter)) return false;
+    const { requires } = adapter;
+    if (!Array.isArray(requires)) return false;
+    const requiresList: readonly unknown[] = requires;
+    for (const req of requiresList) {
       if (req === null || typeof req !== "object") return false;
       if (!("__portName" in req) || typeof req.__portName !== "string") return false;
     }

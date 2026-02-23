@@ -12,10 +12,10 @@
  * - createLazyChildContainer: parentLike.has delegation
  */
 import { describe, it, expect, vi } from "vitest";
-import { port, createAdapter, type Port } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
-import { INTERNAL_ACCESS, HOOKS_ACCESS } from "../src/inspection/symbols.js";
+import { HOOKS_ACCESS } from "../src/inspection/symbols.js";
 import { ContainerBrand } from "../src/types.js";
 
 // =============================================================================
@@ -34,7 +34,7 @@ interface Cache {
 
 const LoggerPort = port<Logger>()({ name: "Logger" });
 const DatabasePort = port<Database>()({ name: "Database" });
-const CachePort = port<Cache>()({ name: "Cache" });
+const _CachePort = port<Cache>()({ name: "Cache" });
 
 function makeTransientAdapter() {
   return createAdapter({

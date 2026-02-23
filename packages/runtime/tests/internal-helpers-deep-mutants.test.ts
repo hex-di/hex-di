@@ -35,7 +35,7 @@ interface Database {
 }
 
 const LoggerPort = port<Logger>()({ name: "Logger" });
-const DatabasePort = port<Database>()({ name: "Database" });
+const _DatabasePort = port<Database>()({ name: "Database" });
 
 function getInspector(container: any): InspectorAPI {
   return container.inspector;

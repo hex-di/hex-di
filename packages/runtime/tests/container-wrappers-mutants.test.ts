@@ -15,7 +15,7 @@
  * - createLazyChildContainerInternal delegation
  */
 import { describe, it, expect, vi } from "vitest";
-import { port, createAdapter, type Port } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
 import { ADAPTER_ACCESS, INTERNAL_ACCESS, HOOKS_ACCESS } from "../src/inspection/symbols.js";

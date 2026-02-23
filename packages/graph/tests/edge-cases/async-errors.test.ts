@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
-import { ResultAsync, safeTry, ok } from "@hex-di/result";
+import { ResultAsync } from "@hex-di/result";
 
 interface Service {
   name: string;

@@ -11,7 +11,7 @@ describe("useSafeTry (BEH-R03-003)", () => {
         const a = yield* ok(1);
         const b = yield* ok(2);
         return ok(a + b);
-      }, []),
+      }, [])
     );
 
     await waitFor(() => {
@@ -26,7 +26,7 @@ describe("useSafeTry (BEH-R03-003)", () => {
         const a = yield* ok(1);
         const _b = yield* err("fail");
         return ok(a);
-      }, []),
+      }, [])
     );
 
     await waitFor(() => {
@@ -41,7 +41,7 @@ describe("useSafeTry (BEH-R03-003)", () => {
         const a = yield* await ResultAsync.ok(10);
         const b = yield* await ResultAsync.ok(20);
         return ok(a + b);
-      }, []),
+      }, [])
     );
 
     await waitFor(() => {
@@ -56,7 +56,7 @@ describe("useSafeTry (BEH-R03-003)", () => {
         const _a = yield* await ResultAsync.ok(10);
         const _b = yield* await ResultAsync.err("boom");
         return ok(0);
-      }, []),
+      }, [])
     );
 
     await waitFor(() => {
@@ -73,10 +73,10 @@ describe("useSafeTry (BEH-R03-003)", () => {
         capturedSignal = signal;
         yield* await ResultAsync.fromPromise(
           new Promise(() => {}), // never resolves
-          () => "error",
+          () => "error"
         );
         return ok(0);
-      }, []),
+      }, [])
     );
 
     await waitFor(() => {
@@ -88,7 +88,7 @@ describe("useSafeTry (BEH-R03-003)", () => {
   });
 
   it("abort on deps change", async () => {
-    let signals: AbortSignal[] = [];
+    const signals: AbortSignal[] = [];
 
     const { rerender } = renderHook(
       ({ dep }: { dep: number }) =>
@@ -97,9 +97,9 @@ describe("useSafeTry (BEH-R03-003)", () => {
             signals.push(signal);
             return ok(dep);
           },
-          [dep],
+          [dep]
         ),
-      { initialProps: { dep: 1 } },
+      { initialProps: { dep: 1 } }
     );
 
     await waitFor(() => {

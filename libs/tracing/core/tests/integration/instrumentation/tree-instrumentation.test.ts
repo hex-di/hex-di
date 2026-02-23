@@ -208,7 +208,7 @@ describe("instrumentContainerTree", () => {
       containers.push(container);
 
       // Get the inspector to check for registered hooks
-      const inspector = container.inspector;
+      const _inspector = container.inspector;
 
       // Instrument with NoOp tracer
       instrumentContainer(container, noopTracer);

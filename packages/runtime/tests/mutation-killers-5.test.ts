@@ -23,15 +23,9 @@ import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
 import { INTERNAL_ACCESS, HOOKS_ACCESS, ADAPTER_ACCESS } from "../src/inspection/symbols.js";
-import {
-  markNextChildAsLazy,
-  consumeLazyFlag,
-  LazyContainerImpl,
-} from "../src/container/lazy-impl.js";
+import { markNextChildAsLazy, consumeLazyFlag } from "../src/container/lazy-impl.js";
 import { isInternalAccessible, asInternalAccessible } from "../src/container/internal-types.js";
-import { ScopeLifecycleEmitter } from "../src/scope/lifecycle-events.js";
 import { resetScopeIdCounter, createScopeIdGenerator } from "../src/scope/impl.js";
-import { resetChildContainerIdCounter } from "../src/container/id-generator.js";
 import { DisposedScopeError } from "../src/errors/index.js";
 import { hasInternalMethods, asParentContainerLike } from "../src/container/wrappers.js";
 
@@ -54,8 +48,8 @@ interface Config {
 
 const LoggerPort = port<Logger>()({ name: "Logger" });
 const DatabasePort = port<Database>()({ name: "Database" });
-const CachePort = port<Cache>()({ name: "Cache" });
-const ConfigPort = port<Config>()({ name: "Config" });
+const _CachePort = port<Cache>()({ name: "Cache" });
+const _ConfigPort = port<Config>()({ name: "Config" });
 
 function createLoggerAdapter(lifetime: "singleton" | "transient" | "scoped" = "singleton") {
   return createAdapter({

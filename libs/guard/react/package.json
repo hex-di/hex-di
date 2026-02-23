@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/guard-react",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "React integration for @hex-di/guard — SubjectProvider, Can/Cannot components, and authorization hooks",
   "type": "module",
   "main": "./dist/index.js",

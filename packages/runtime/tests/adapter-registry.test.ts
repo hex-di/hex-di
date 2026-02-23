@@ -4,7 +4,7 @@
  * shouldResolveLocally logic, and iteration.
  */
 import { describe, it, expect, vi } from "vitest";
-import { port, createAdapter } from "@hex-di/core";
+import { port } from "@hex-di/core";
 import { AdapterRegistry } from "../src/container/internal/adapter-registry.js";
 import { ADAPTER_ACCESS } from "../src/inspection/symbols.js";
 
@@ -20,7 +20,7 @@ interface Cache {
 
 const LoggerPort = port<Logger>()({ name: "Logger" });
 const DatabasePort = port<Database>()({ name: "Database" });
-const CachePort = port<Cache>()({ name: "Cache" });
+const _CachePort = port<Cache>()({ name: "Cache" });
 
 function createRuntimeAdapter(
   portObj: any,

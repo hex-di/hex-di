@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/guard-testing",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Testing utilities for @hex-di/guard — memory adapters, fixtures, conformance suites, and custom matchers",
   "type": "module",
   "main": "./dist/index.js",

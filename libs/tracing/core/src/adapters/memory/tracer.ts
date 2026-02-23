@@ -119,7 +119,7 @@ export class MemoryTracer implements Tracer {
     }
 
     this._maxSpans = maxSpans;
-    this._spans = new Array(maxSpans);
+    this._spans = new Array<SpanData | undefined>(maxSpans);
     this._defaultAttributes = attrs;
     this._hasDefaultAttributes = Object.keys(attrs).length > 0;
     this._onSpanEnd = this._collectSpan.bind(this);

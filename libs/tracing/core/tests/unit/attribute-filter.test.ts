@@ -6,7 +6,7 @@
 
 import { describe, it, expect } from "vitest";
 import { createAttributeFilter, createFilteringProcessor } from "../../src/index.js";
-import type { SpanProcessor, SpanData, Span, SpanContext } from "../../src/index.js";
+import type { SpanProcessor, SpanData, Span } from "../../src/index.js";
 
 function makeSpanData(attributes: Record<string, string | number | boolean> = {}): SpanData {
   return {

@@ -36,12 +36,9 @@ export function expectFrozen(value: unknown): void {
       const json = JSON.stringify(value);
       preview = json.length > 100 ? json.slice(0, 100) : json;
     } catch {
-      // eslint-disable-next-line @typescript-eslint/no-base-to-string -- Fallback for non-serializable objects
       preview = String(value);
     }
-    throw new Error(
-      `Expected value to be frozen (Object.isFrozen), but it is not: ${preview}`,
-    );
+    throw new Error(`Expected value to be frozen (Object.isFrozen), but it is not: ${preview}`);
   }
 }
 
@@ -61,14 +58,10 @@ export function expectFrozen(value: unknown): void {
  */
 export function expectResultBrand(value: unknown): void {
   if (value === null || value === undefined || typeof value !== "object") {
-    throw new Error(
-      `Expected an object, but received ${value === null ? "null" : typeof value}`,
-    );
+    throw new Error(`Expected an object, but received ${value === null ? "null" : typeof value}`);
   }
   if (!(RESULT_BRAND in value)) {
-    throw new Error(
-      "Expected value to carry RESULT_BRAND symbol, but it does not",
-    );
+    throw new Error("Expected value to carry RESULT_BRAND symbol, but it does not");
   }
 }
 
@@ -88,14 +81,10 @@ export function expectResultBrand(value: unknown): void {
  */
 export function expectOptionBrand(value: unknown): void {
   if (value === null || value === undefined || typeof value !== "object") {
-    throw new Error(
-      `Expected an object, but received ${value === null ? "null" : typeof value}`,
-    );
+    throw new Error(`Expected an object, but received ${value === null ? "null" : typeof value}`);
   }
   if (!(OPTION_BRAND in value)) {
-    throw new Error(
-      "Expected value to carry OPTION_BRAND symbol, but it does not",
-    );
+    throw new Error("Expected value to carry OPTION_BRAND symbol, but it does not");
   }
 }
 
@@ -120,9 +109,7 @@ export function expectImmutableResult<T, E>(result: Result<T, E>): void {
 
   const tag = (result as { _tag: string })._tag;
   if (tag !== "Ok" && tag !== "Err") {
-    throw new Error(
-      `Expected _tag to be "Ok" or "Err", but got "${String(tag)}"`,
-    );
+    throw new Error(`Expected _tag to be "Ok" or "Err", but got "${String(tag)}"`);
   }
 
   if (tag === "Ok") {
@@ -152,12 +139,10 @@ export function expectImmutableResult<T, E>(result: Result<T, E>): void {
  * @since 0.2.0
  */
 export async function expectNeverRejects(
-  resultAsync: ResultAsync<unknown, unknown>,
+  resultAsync: ResultAsync<unknown, unknown>
 ): Promise<void> {
   const resolved = await resultAsync;
   if (!isResult(resolved)) {
-    throw new Error(
-      `Expected ResultAsync to resolve to a Result, but got: ${String(resolved)}`,
-    );
+    throw new Error(`Expected ResultAsync to resolve to a Result, but got: ${String(resolved)}`);
   }
 }

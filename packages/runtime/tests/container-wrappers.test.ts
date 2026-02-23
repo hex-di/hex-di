@@ -32,7 +32,7 @@ interface AuthService {
 const LoggerPort = port<Logger>()({ name: "Logger" });
 const DatabasePort = port<Database>()({ name: "Database" });
 const CachePort = port<CacheService>()({ name: "Cache" });
-const UserServicePort = port<UserService>()({ name: "UserService" });
+const _UserServicePort = port<UserService>()({ name: "UserService" });
 const AuthServicePort = port<AuthService>()({ name: "AuthService" });
 
 function createParentContainer() {
@@ -58,7 +58,7 @@ function createParentContainer() {
 
 describe("container wrappers - createChild", () => {
   it("creates a child container from parent", () => {
-    const { container: parent, graph: parentGraph } = createParentContainer();
+    const { container: parent, graph: _parentGraph } = createParentContainer();
     const cacheAdapter = createAdapter({
       provides: CachePort,
       requires: [],
@@ -75,7 +75,7 @@ describe("container wrappers - createChild", () => {
   });
 
   it("child resolves parent's ports", () => {
-    const { container: parent, graph: parentGraph } = createParentContainer();
+    const { container: parent, graph: _parentGraph } = createParentContainer();
     const childGraph = GraphBuilder.create().build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
@@ -85,7 +85,7 @@ describe("container wrappers - createChild", () => {
   });
 
   it("child resolves its own extension ports", () => {
-    const { container: parent, graph: parentGraph } = createParentContainer();
+    const { container: parent, graph: _parentGraph } = createParentContainer();
     const cacheAdapter = createAdapter({
       provides: CachePort,
       requires: [],
@@ -118,14 +118,14 @@ describe("container wrappers - createChild", () => {
   });
 
   it("child container is frozen", () => {
-    const { container: parent, graph: parentGraph } = createParentContainer();
+    const { container: parent, graph: _parentGraph } = createParentContainer();
     const childGraph = GraphBuilder.create().build();
     const child = parent.createChild(childGraph, { name: "Child" });
     expect(Object.isFrozen(child)).toBe(true);
   });
 
   it("child container has INTERNAL_ACCESS", () => {
-    const { container: parent, graph: parentGraph } = createParentContainer();
+    const { container: parent, graph: _parentGraph } = createParentContainer();
     const childGraph = GraphBuilder.create().build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
@@ -136,7 +136,7 @@ describe("container wrappers - createChild", () => {
 
 describe("container wrappers - dispose", () => {
   it("disposing parent cascades to child containers", async () => {
-    const { container: parent, graph: parentGraph } = createParentContainer();
+    const { container: parent, graph: _parentGraph } = createParentContainer();
     const childGraph = GraphBuilder.create().build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
@@ -146,7 +146,7 @@ describe("container wrappers - dispose", () => {
   });
 
   it("disposing child does not affect parent", async () => {
-    const { container: parent, graph: parentGraph } = createParentContainer();
+    const { container: parent, graph: _parentGraph } = createParentContainer();
     const childGraph = GraphBuilder.create().build();
     const child = parent.createChild(childGraph, { name: "Child" });
 
@@ -158,13 +158,13 @@ describe("container wrappers - dispose", () => {
 
 describe("container wrappers - tryResolve and tryDispose", () => {
   it("tryResolve returns Ok for valid resolution", () => {
-    const { container: parent, graph: parentGraph } = createParentContainer();
+    const { container: parent, graph: _parentGraph } = createParentContainer();
     const result = parent.tryResolve(LoggerPort);
     expect(result.isOk()).toBe(true);
   });
 
   it("tryDispose returns Ok on successful disposal", async () => {
-    const { container: parent, graph: parentGraph } = createParentContainer();
+    const { container: parent, graph: _parentGraph } = createParentContainer();
     const result = await parent.tryDispose();
     expect(result.isOk()).toBe(true);
   });
@@ -208,7 +208,7 @@ describe("container wrappers - scope creation from container", () => {
 
 describe("container wrappers - multiple child containers", () => {
   it("supports multiple children from the same parent", () => {
-    const { container: parent, graph: parentGraph } = createParentContainer();
+    const { container: parent, graph: _parentGraph } = createParentContainer();
 
     const cacheAdapter = createAdapter({
       provides: CachePort,

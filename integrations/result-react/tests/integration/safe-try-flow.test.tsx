@@ -2,7 +2,7 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { render, cleanup, waitFor, act } from "@testing-library/react";
 import React from "react";
-import { ok, err, ResultAsync } from "@hex-di/result";
+import { ok, ResultAsync } from "@hex-di/result";
 import { useSafeTry } from "../../src/hooks/use-safe-try.js";
 import { Match } from "../../src/components/match.js";
 
@@ -29,7 +29,7 @@ describe("Integration: useSafeTry + Match (BEH-R03-003, BEH-R01-001)", () => {
               Order {orderId} by {userName}
             </span>
           )}
-          err={(e) => <span>Error: {String(e)}</span>}
+          err={e => <span>Error: {String(e)}</span>}
         />
       );
     }
@@ -62,7 +62,7 @@ describe("Integration: useSafeTry + Match (BEH-R03-003, BEH-R01-001)", () => {
               {orderId} {userName}
             </span>
           )}
-          err={(e) => <span>Error: {e}</span>}
+          err={e => <span>Error: {e}</span>}
         />
       );
     }

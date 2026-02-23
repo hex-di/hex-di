@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/guard-validation",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "GxP validation protocols (IQ/OQ/PQ) and traceability matrix tooling for @hex-di/guard",
   "type": "module",
   "main": "./dist/index.js",

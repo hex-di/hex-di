@@ -13,18 +13,15 @@ describe("GxP: Stale data prevention (INV-R3)", () => {
 
     const { result, rerender } = renderHook(
       ({ dep }: { dep: number }) =>
-        useResultAsync(
-          () => {
-            const idx = callIndex++;
-            return ResultAsync.fromSafePromise(
-              new Promise<string>((resolve) => {
-                resolvers[idx] = resolve;
-              }),
-            );
-          },
-          [dep],
-        ),
-      { initialProps: { dep: 1 } },
+        useResultAsync(() => {
+          const idx = callIndex++;
+          return ResultAsync.fromSafePromise(
+            new Promise<string>(resolve => {
+              resolvers[idx] = resolve;
+            })
+          );
+        }, [dep]),
+      { initialProps: { dep: 1 } }
     );
 
     // Trigger rapid deps changes
@@ -54,23 +51,20 @@ describe("GxP: Stale data prevention (INV-R3)", () => {
   it("out-of-order resolution picks latest generation only", async () => {
     let resolverA: ((v: string) => void) | null = null;
     let resolverB: ((v: string) => void) | null = null;
-    let callCount = 0;
+    let _callCount = 0;
 
     const { result, rerender } = renderHook(
       ({ dep }: { dep: string }) =>
-        useResultAsync(
-          () => {
-            callCount++;
-            return ResultAsync.fromSafePromise(
-              new Promise<string>((resolve) => {
-                if (dep === "a") resolverA = resolve;
-                else resolverB = resolve;
-              }),
-            );
-          },
-          [dep],
-        ),
-      { initialProps: { dep: "a" } },
+        useResultAsync(() => {
+          _callCount++;
+          return ResultAsync.fromSafePromise(
+            new Promise<string>(resolve => {
+              if (dep === "a") resolverA = resolve;
+              else resolverB = resolve;
+            })
+          );
+        }, [dep]),
+      { initialProps: { dep: "a" } }
     );
 
     rerender({ dep: "b" });

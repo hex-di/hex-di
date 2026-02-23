@@ -4,13 +4,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
-import {
-  parseInheritanceModes,
-  parseChildGraph,
-  attachBuiltinAPIs,
-} from "../src/container/wrapper-utils.js";
+import { parseInheritanceModes, parseChildGraph } from "../src/container/wrapper-utils.js";
 import { createContainer } from "../src/container/factory.js";
-import { INTERNAL_ACCESS } from "../src/inspection/symbols.js";
 
 // =============================================================================
 // Test Fixtures

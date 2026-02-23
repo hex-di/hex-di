@@ -349,10 +349,6 @@ describe("adapterOrElse", () => {
       provides: LoggerPort,
       factory: () => thenableOk as unknown as Promise<Logger>,
     });
-    const fb = createAdapter({
-      provides: LoggerPort,
-      factory: () => ({ log: () => {} }),
-    });
 
     // Force async path by pairing with a ResultAsync fallback
     const wrapped = adapterOrElse(

@@ -9,11 +9,7 @@ import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
 import { INTERNAL_ACCESS, ADAPTER_ACCESS } from "../src/inspection/symbols.js";
-import {
-  DisposedScopeError,
-  ScopeRequiredError,
-  AsyncInitializationRequiredError,
-} from "../src/errors/index.js";
+import { DisposedScopeError, ScopeRequiredError } from "../src/errors/index.js";
 
 interface Logger {
   log(msg: string): void;
@@ -27,7 +23,7 @@ interface Cache {
 
 const LoggerPort = port<Logger>()({ name: "Logger" });
 const DatabasePort = port<Database>()({ name: "Database" });
-const CachePort = port<Cache>()({ name: "Cache" });
+const _CachePort = port<Cache>()({ name: "Cache" });
 
 describe("BaseContainerImpl mutation targets", () => {
   describe("has() method", () => {
@@ -277,7 +273,7 @@ describe("BaseContainerImpl mutation targets", () => {
       const state = (container as any)[INTERNAL_ACCESS]();
       expect(state.adapterMap.size).toBe(2);
 
-      for (const [portObj, info] of state.adapterMap) {
+      for (const [_portObj, info] of state.adapterMap) {
         if (info.portName === "Logger") {
           expect(info.lifetime).toBe("singleton");
           expect(info.dependencyCount).toBe(0);

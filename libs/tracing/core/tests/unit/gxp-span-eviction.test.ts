@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { MemoryTracer, createMemoryTracer } from "../../src/index.js";
+import { MemoryTracer } from "../../src/index.js";
 import type { SpanData } from "../../src/index.js";
 
 describe("MemoryTracer - span eviction audit trail", () => {

@@ -30,7 +30,6 @@ import {
   ScopeRequiredError,
   AsyncInitializationRequiredError,
 } from "../src/errors/index.js";
-import { markNextChildAsLazy, consumeLazyFlag } from "../src/container/lazy-impl.js";
 
 // =============================================================================
 // Test Fixtures
@@ -48,7 +47,7 @@ interface Cache {
 
 const LoggerPort = port<Logger>()({ name: "Logger" });
 const DatabasePort = port<Database>()({ name: "Database" });
-const CachePort = port<Cache>()({ name: "Cache" });
+const _CachePort = port<Cache>()({ name: "Cache" });
 
 function makeRootContainer(lifetime: "singleton" | "transient" | "scoped" = "singleton") {
   const loggerAdapter = createAdapter({
@@ -223,7 +222,7 @@ describe("BaseContainerImpl - child container registration", () => {
   it("registerChildContainer adds child to tracking", () => {
     const container = makeRootContainer();
     const childGraph = GraphBuilder.create().build();
-    const child = container.createChild(childGraph, { name: "Child" });
+    const _child = container.createChild(childGraph, { name: "Child" });
 
     const state = container[INTERNAL_ACCESS]();
     expect(state.childContainers.length).toBe(1);
@@ -304,7 +303,7 @@ describe("BaseContainerImpl - child container registration", () => {
 describe("BaseContainerImpl - scope management", () => {
   it("registerChildScope adds scope to tracking", () => {
     const container = makeRootContainer("scoped");
-    const scope = container.createScope("test");
+    const _scope = container.createScope("test");
 
     const state = container[INTERNAL_ACCESS]();
     expect(state.childScopes.length).toBe(1);

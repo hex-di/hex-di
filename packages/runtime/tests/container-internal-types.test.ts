@@ -81,7 +81,7 @@ describe("container internal types and adapter access", () => {
     expect(state.adapterMap.size).toBe(2);
 
     // Adapter info should be accessible
-    for (const [portObj, adapterInfo] of state.adapterMap) {
+    for (const [_portObj, adapterInfo] of state.adapterMap) {
       if (adapterInfo.portName === "Logger") {
         expect(adapterInfo.lifetime).toBe("singleton");
         expect(adapterInfo.dependencyCount).toBe(0);

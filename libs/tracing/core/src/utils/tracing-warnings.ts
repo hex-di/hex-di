@@ -7,6 +7,8 @@
  * @packageDocumentation
  */
 
+import { getConsole } from "./globals.js";
+
 let _noTracingWarned = false;
 let _warningsSuppressed = false;
 
@@ -62,14 +64,5 @@ export function warnTracingDisabled(context: string): void {
  * @internal
  */
 function emitWarning(message: string): void {
-  if (typeof globalThis !== "undefined" && "console" in globalThis) {
-    const g: Record<string, unknown> = globalThis;
-    const cons = g.console;
-    if (cons && typeof cons === "object" && "warn" in cons) {
-      const warnFn: unknown = (cons as Record<string, unknown>).warn;
-      if (typeof warnFn === "function") {
-        (warnFn as (msg: string) => void).call(cons, message);
-      }
-    }
-  }
+  getConsole()?.warn(message);
 }

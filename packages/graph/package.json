@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/graph",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Dependency graph construction and compile-time validation layer for HexDI",
   "type": "module",
   "main": "./dist/index.js",

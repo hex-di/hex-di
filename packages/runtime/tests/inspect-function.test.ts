@@ -16,7 +16,7 @@ interface Database {
 }
 
 const LoggerPort = port<Logger>()({ name: "Logger" });
-const DatabasePort = port<Database>()({ name: "Database" });
+const _DatabasePort = port<Database>()({ name: "Database" });
 
 describe("inspect()", () => {
   it("returns a snapshot for a fresh container", () => {

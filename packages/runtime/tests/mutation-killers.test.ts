@@ -37,19 +37,13 @@ import {
   asInternalAccessible,
 } from "../src/container/internal-types.js";
 import { isDisposableChild, isInheritanceMode, shallowClone } from "../src/container/helpers.js";
-import {
-  resetScopeIdCounter,
-  createScopeIdGenerator,
-  ScopeImpl,
-  createScopeWrapper,
-} from "../src/scope/impl.js";
+import { resetScopeIdCounter, createScopeIdGenerator } from "../src/scope/impl.js";
 import { createLibraryRegistry } from "../src/inspection/library-registry.js";
 import { checkCacheHit, HooksRunner } from "../src/resolution/hooks-runner.js";
 import { MemoMap } from "../src/util/memo-map.js";
 import { AsyncInitializer } from "../src/container/internal/async-initializer.js";
 import {
   DisposedScopeError,
-  ScopeRequiredError,
   AsyncInitializationRequiredError,
   AsyncFactoryError,
 } from "../src/errors/index.js";
@@ -72,7 +66,7 @@ interface Cache {
 
 const LoggerPort = port<Logger>()({ name: "Logger" });
 const DatabasePort = port<Database>()({ name: "Database" });
-const CachePort = port<Cache>()({ name: "Cache" });
+const _CachePort = port<Cache>()({ name: "Cache" });
 
 function makeSimpleGraph() {
   const adapter = createAdapter({
@@ -1249,7 +1243,7 @@ describe("lazy-impl.ts mutation killers", () => {
 
     it("dispose when loaded disposes the container", async () => {
       const { lazy } = createLazyContainer();
-      const loaded = await lazy.load();
+      const _loaded = await lazy.load();
       await lazy.dispose();
       expect(lazy.isDisposed).toBe(true);
     });
@@ -1346,10 +1340,10 @@ describe("scope/impl.ts mutation killers", () => {
       const container = createContainer({ graph, name: "Test" });
 
       // Create a scope - uses global counter
-      const scope1 = container.createScope();
+      const _scope1 = container.createScope();
       // Scope IDs are implementation details but we can verify they differ
       // by creating two
-      const scope2 = container.createScope();
+      const _scope2 = container.createScope();
 
       // Reset
       resetScopeIdCounter();
@@ -2788,7 +2782,7 @@ describe("base-impl.ts additional mutation killers", () => {
       const graph = makeScopedGraph();
       const container = createContainer({ graph, name: "Test" });
 
-      const scope = container.createScope("test-scope");
+      const _scope = container.createScope("test-scope");
       const state = (container as any)[INTERNAL_ACCESS]();
 
       expect(state.childScopes.length).toBe(1);

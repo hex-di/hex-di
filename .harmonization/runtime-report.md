@@ -17,7 +17,7 @@ The runtime provides two resolution methods:
 - **`resolve<P>(port: P): InferService<P>`** -- synchronous resolution (`container.ts:165-171`)
 - **`resolveAsync<P>(port: P): Promise<InferService<P>>`** -- async resolution (`container.ts:188`)
 
-Resolution delegates through `ResolutionEngine.resolve()` (`engine.ts:107-122`) which handles:
+Resolution delegates through `ResolutionEngine.resolve()` (`engine.ts:108-130`) which handles:
 
 1. Optional hook invocation (beforeResolve/afterResolve)
 2. Lifetime-based caching via `resolveWithMemo` (`core.ts:117-130`)
@@ -160,7 +160,7 @@ The runtime has a comprehensive error hierarchy (`errors/index.ts`):
 Resolution errors are thrown (not returned as `Result`) because resolution is synchronous and occurs at container/scope boundaries:
 
 - `CircularDependencyError` -- detected via `ResolutionContext.enter()` (`context.ts`)
-- `FactoryError` -- wraps factory exceptions (`engine.ts:172-176`)
+- `FactoryError` -- wraps factory exceptions (`engine.ts:188`)
 - `DisposedScopeError` -- thrown when resolving from disposed scope/container
 - `AsyncInitializationRequiredError` -- resolving async port before initialization
 - `ScopeRequiredError` -- resolving scoped port from root container (not from a scope)
@@ -270,7 +270,7 @@ The tracing spec (`SPEC-TRACING.md`) defines:
 
 3. **W3C Trace Context propagation** -- The tracing spec defines `TraceContextVar` and `ActiveSpanVar` as context variables. These would be resolved from the container as scoped services, allowing per-request trace context. The runtime handles this via scoped lifetime. **COMPATIBLE.**
 
-4. **Zero-cost when disabled** -- The `HooksRunner` is only created when hooks are configured. When no hooks exist (`this.hooksRunner === null`), the engine skips directly to `resolveCore` (`engine.ts:114-116`). The tracing spec's `NoOpTracerAdapter` as a singleton provides zero overhead at the tracer level. **COMPATIBLE.**
+4. **Zero-cost when disabled** -- The `HooksRunner` is only created when hooks are configured. When no hooks exist (`this.hooksRunner === null`), the engine skips directly to `resolveCore` (`engine.ts:116-118`). The tracing spec's `NoOpTracerAdapter` as a singleton provides zero overhead at the tracer level. **COMPATIBLE.**
 
 ### 6.3 Identified Gaps
 

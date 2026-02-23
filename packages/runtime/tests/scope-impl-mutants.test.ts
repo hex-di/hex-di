@@ -32,7 +32,7 @@ interface DbConn {
 
 const LoggerPort = port<Logger>()({ name: "Logger" });
 const ReqCtxPort = port<ReqCtx>()({ name: "ReqCtx" });
-const DbConnPort = port<DbConn>()({ name: "DbConn" });
+const _DbConnPort = port<DbConn>()({ name: "DbConn" });
 
 function makeContainer(opts: { scoped?: boolean; singleton?: boolean } = {}) {
   let builder: any = GraphBuilder.create();
@@ -110,7 +110,7 @@ describe("resetScopeIdCounter", () => {
   it("resets the default generator counter", () => {
     const container = makeContainer({ scoped: true });
 
-    const scope1 = container.createScope();
+    const _scope1 = container.createScope();
     // After reset, next scope should start from scope-0 again
     resetScopeIdCounter();
     const scope2 = container.createScope();
@@ -374,7 +374,7 @@ describe("ScopeImpl.getInternalState (mutant killing)", () => {
   it("includes child scope snapshots", () => {
     const container = makeContainer({ scoped: true });
     const parent = container.createScope();
-    const child = parent.createScope();
+    const _child = parent.createScope();
 
     const state = (parent as any)[INTERNAL_ACCESS]();
     expect(state.childScopes.length).toBe(1);

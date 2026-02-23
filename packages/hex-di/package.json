@@ -1,6 +1,6 @@
 {
   "name": "hex-di",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Type-safe dependency injection with hexagonal architecture — umbrella package for the full HexDI stack",
   "type": "module",
   "main": "./dist/index.js",

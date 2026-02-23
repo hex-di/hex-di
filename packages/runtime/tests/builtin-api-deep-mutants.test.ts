@@ -15,7 +15,6 @@ import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
 import type { InspectorAPI } from "../src/inspection/types.js";
-import { INTERNAL_ACCESS } from "../src/inspection/symbols.js";
 
 // =============================================================================
 // Fixtures

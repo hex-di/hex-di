@@ -1,22 +1,18 @@
 // @traces BEH-R02-001 INV-R1 INV-R2 INV-R3 INV-R7 INV-R8
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { ResultAsync } from "@hex-di/result";
 import { useResultAsync } from "../../../src/hooks/use-result-async.js";
 
 describe("useResultAsync (BEH-R02-001)", () => {
   it("starts isLoading=true, result=undefined", () => {
-    const { result } = renderHook(() =>
-      useResultAsync(() => ResultAsync.ok("hello"), []),
-    );
+    const { result } = renderHook(() => useResultAsync(() => ResultAsync.ok("hello"), []));
     expect(result.current.isLoading).toBe(true);
     expect(result.current.result).toBeUndefined();
   });
 
   it("resolves to Ok result, isLoading=false", async () => {
-    const { result } = renderHook(() =>
-      useResultAsync(() => ResultAsync.ok(42), []),
-    );
+    const { result } = renderHook(() => useResultAsync(() => ResultAsync.ok(42), []));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -25,9 +21,7 @@ describe("useResultAsync (BEH-R02-001)", () => {
   });
 
   it("resolves to Err result", async () => {
-    const { result } = renderHook(() =>
-      useResultAsync(() => ResultAsync.err("fail"), []),
-    );
+    const { result } = renderHook(() => useResultAsync(() => ResultAsync.err("fail"), []));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -39,16 +33,13 @@ describe("useResultAsync (BEH-R02-001)", () => {
     let capturedSignal: AbortSignal | null = null;
 
     const { unmount } = renderHook(() =>
-      useResultAsync(
-        (signal) => {
-          capturedSignal = signal;
-          return ResultAsync.fromPromise(
-            new Promise(() => {}), // never resolves
-            () => "error",
-          );
-        },
-        [],
-      ),
+      useResultAsync(signal => {
+        capturedSignal = signal;
+        return ResultAsync.fromPromise(
+          new Promise(() => {}), // never resolves
+          () => "error"
+        );
+      }, [])
     );
 
     await waitFor(() => {
@@ -61,18 +52,18 @@ describe("useResultAsync (BEH-R02-001)", () => {
   });
 
   it("aborts signal on deps change (INV-R2)", async () => {
-    let capturedSignals: AbortSignal[] = [];
+    const capturedSignals: AbortSignal[] = [];
 
     const { rerender } = renderHook(
       ({ dep }: { dep: number }) =>
         useResultAsync(
-          (signal) => {
+          signal => {
             capturedSignals.push(signal);
             return ResultAsync.ok(dep);
           },
-          [dep],
+          [dep]
         ),
-      { initialProps: { dep: 1 } },
+      { initialProps: { dep: 1 } }
     );
 
     await waitFor(() => {
@@ -89,20 +80,20 @@ describe("useResultAsync (BEH-R02-001)", () => {
   });
 
   it("stale response discarded (INV-R3)", async () => {
-    let resolvers: Array<(v: string) => void> = [];
+    const resolvers: Array<(v: string) => void> = [];
 
     const { result, rerender } = renderHook(
       ({ dep }: { dep: number }) =>
         useResultAsync(
           () =>
             ResultAsync.fromSafePromise(
-              new Promise<string>((resolve) => {
+              new Promise<string>(resolve => {
                 resolvers.push(resolve);
-              }),
+              })
             ),
-          [dep],
+          [dep]
         ),
-      { initialProps: { dep: 1 } },
+      { initialProps: { dep: 1 } }
     );
 
     await waitFor(() => {
@@ -133,7 +124,7 @@ describe("useResultAsync (BEH-R02-001)", () => {
       useResultAsync(() => {
         callCount++;
         return ResultAsync.ok(callCount);
-      }, []),
+      }, [])
     );
 
     await waitFor(() => {
@@ -155,9 +146,7 @@ describe("useResultAsync (BEH-R02-001)", () => {
   });
 
   it("refetch referentially stable (INV-R1)", () => {
-    const { result, rerender } = renderHook(() =>
-      useResultAsync(() => ResultAsync.ok(1), []),
-    );
+    const { result, rerender } = renderHook(() => useResultAsync(() => ResultAsync.ok(1), []));
     const firstRefetch = result.current.refetch;
     rerender();
     expect(result.current.refetch).toBe(firstRefetch);
@@ -174,8 +163,8 @@ describe("useResultAsync (BEH-R02-001)", () => {
           return ResultAsync.ok("done");
         },
         [],
-        { retry: 3, retryDelay: 10 },
-      ),
+        { retry: 3, retryDelay: 10 }
+      )
     );
 
     await waitFor(() => {
@@ -198,9 +187,9 @@ describe("useResultAsync (BEH-R02-001)", () => {
         {
           retry: 5,
           retryDelay: 10,
-          retryOn: (e) => e.retryable,
-        },
-      ),
+          retryOn: e => e.retryable,
+        }
+      )
     );
 
     await waitFor(() => {
@@ -220,8 +209,8 @@ describe("useResultAsync (BEH-R02-001)", () => {
           return ResultAsync.err("fail");
         },
         [],
-        { retry: 100, retryDelay: 50 },
-      ),
+        { retry: 100, retryDelay: 50 }
+      )
     );
 
     // Wait for first attempt
@@ -233,7 +222,7 @@ describe("useResultAsync (BEH-R02-001)", () => {
 
     const attemptsAtUnmount = attempt;
     // Wait a bit to ensure no more attempts happen
-    await new Promise((r) => setTimeout(r, 200));
+    await new Promise(r => setTimeout(r, 200));
     expect(attempt).toBe(attemptsAtUnmount);
   });
 
@@ -256,8 +245,8 @@ describe("useResultAsync (BEH-R02-001)", () => {
             delays.push(d);
             return d;
           },
-        },
-      ),
+        }
+      )
     );
 
     await waitFor(() => {

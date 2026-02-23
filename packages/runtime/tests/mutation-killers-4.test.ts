@@ -16,7 +16,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
-import { INTERNAL_ACCESS, HOOKS_ACCESS } from "../src/inspection/symbols.js";
 import {
   getMemoForLifetime,
   resolveWithMemo,
@@ -32,8 +31,7 @@ import {
 } from "../src/container/id-generator.js";
 import { ResolutionContext } from "../src/resolution/context.js";
 import { ScopeLifecycleEmitter } from "../src/scope/lifecycle-events.js";
-import { resetScopeIdCounter } from "../src/scope/impl.js";
-import { DisposedScopeError, CircularDependencyError } from "../src/errors/index.js";
+import { CircularDependencyError } from "../src/errors/index.js";
 
 // =============================================================================
 // Test Fixtures
@@ -51,7 +49,7 @@ interface Cache {
 
 const LoggerPort = port<Logger>()({ name: "Logger" });
 const DatabasePort = port<Database>()({ name: "Database" });
-const CachePort = port<Cache>()({ name: "Cache" });
+const _CachePort = port<Cache>()({ name: "Cache" });
 
 // =============================================================================
 // resolution/core.ts

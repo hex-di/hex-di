@@ -1,9 +1,11 @@
 // @ts-check
 import tseslint from "typescript-eslint";
 import {
-  baseConfig,
+  sharedConfig,
+  prodConfig,
   testConfig,
   typeLevelTestConfig,
+  parserConfig,
 } from "../../eslint.config.js";
 
 export default tseslint.config(
@@ -12,15 +14,9 @@ export default tseslint.config(
   },
 
   // ── Shared base config ──
-  ...baseConfig,
-  {
-    languageOptions: {
-      parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
-  },
+  ...sharedConfig,
+  parserConfig(import.meta.dirname),
+  ...prodConfig,
 
   // ── ATR-1: Flag andTee/orTee usage for GxP audit trail compliance ──
   // 21 CFR 11.10(e) — andTee/orTee suppress exceptions, making them unsafe

@@ -21,7 +21,7 @@ import { describe, it, expect, vi } from "vitest";
 import { port, createAdapter, type Port } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
-import { INTERNAL_ACCESS, ADAPTER_ACCESS } from "../src/inspection/symbols.js";
+import { INTERNAL_ACCESS } from "../src/inspection/symbols.js";
 import { DisposedScopeError, ScopeRequiredError, FactoryError } from "../src/errors/index.js";
 
 // =============================================================================
@@ -44,7 +44,7 @@ interface UserService {
 const LoggerPort = port<Logger>()({ name: "Logger" });
 const DatabasePort = port<Database>()({ name: "Database" });
 const CachePort = port<Cache>()({ name: "Cache" });
-const UserServicePort = port<UserService>()({ name: "UserService" });
+const _UserServicePort = port<UserService>()({ name: "UserService" });
 
 function makeRootGraph() {
   const loggerAdapter = createAdapter({
@@ -221,7 +221,7 @@ describe("ChildContainerImpl - wrapper registration", () => {
   it("creating child registers it with parent", async () => {
     const parent = makeRootContainer();
     const childGraph = GraphBuilder.create().build();
-    const child = parent.createChild(childGraph, { name: "Child" });
+    const _child = parent.createChild(childGraph, { name: "Child" });
 
     // Verify by checking parent internal state has child
     const state = parent[INTERNAL_ACCESS]();

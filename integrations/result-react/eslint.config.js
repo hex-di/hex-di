@@ -1,7 +1,7 @@
 // @ts-check
 import tseslint from "typescript-eslint";
 import reactHooks from "eslint-plugin-react-hooks";
-import { baseConfig, testConfig } from "../../eslint.config.js";
+import { sharedConfig, prodConfig, testConfig, parserConfig } from "../../eslint.config.js";
 
 export default tseslint.config(
   {
@@ -14,16 +14,12 @@ export default tseslint.config(
       "features/**",
     ],
   },
-  ...baseConfig,
+  ...sharedConfig,
+  parserConfig(import.meta.dirname),
+  ...prodConfig,
   {
     plugins: {
       "react-hooks": reactHooks,
-    },
-    languageOptions: {
-      parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
     },
     rules: {
       ...reactHooks.configs.recommended.rules,

@@ -6,7 +6,6 @@ import { describe, it, expect, vi } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
-import { AsyncFactoryError } from "../src/errors/index.js";
 
 // =============================================================================
 // Test Fixtures
@@ -21,7 +20,7 @@ interface Database {
 }
 
 const LoggerPort = port<Logger>()({ name: "Logger" });
-const DatabasePort = port<Database>()({ name: "Database" });
+const _DatabasePort = port<Database>()({ name: "Database" });
 
 // =============================================================================
 // Tests

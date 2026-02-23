@@ -21,19 +21,11 @@ import {
 } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
-import { ADAPTER_ACCESS, INTERNAL_ACCESS, HOOKS_ACCESS } from "../src/inspection/symbols.js";
-import {
-  DisposedScopeError,
-  ScopeRequiredError,
-  AsyncInitializationRequiredError,
-  AsyncFactoryError,
-  ContainerError,
-  FactoryError,
-} from "../src/errors/index.js";
+import { INTERNAL_ACCESS } from "../src/inspection/symbols.js";
+import { FactoryError } from "../src/errors/index.js";
 import { resetScopeIdCounter } from "../src/scope/impl.js";
 import { createInspector, getInternalAccessor } from "../src/inspection/creation.js";
-import { checkCacheHit, HooksRunner } from "../src/resolution/hooks-runner.js";
-import { MemoMap } from "../src/util/memo-map.js";
+import { HooksRunner } from "../src/resolution/hooks-runner.js";
 import {
   mapToContainerError,
   mapToDisposalError,
@@ -63,8 +55,8 @@ interface Config {
 
 const LoggerPort = port<Logger>()({ name: "Logger" });
 const DatabasePort = port<Database>()({ name: "Database" });
-const CachePort = port<Cache>()({ name: "Cache" });
-const ConfigPort = port<Config>()({ name: "Config" });
+const _CachePort = port<Cache>()({ name: "Cache" });
+const _ConfigPort = port<Config>()({ name: "Config" });
 
 // =============================================================================
 // result-helpers.ts - Exact error mapping tests
@@ -682,7 +674,7 @@ describe("inspection/creation.ts additional mutation killers", () => {
       const container = createContainer({ graph, name: "Test" });
 
       const parentScope = container.createScope("parent-scope");
-      const childScope = parentScope.createScope("child-scope");
+      const _childScope = parentScope.createScope("child-scope");
 
       const inspector = createInspector(container);
       const tree = inspector.getScopeTree();

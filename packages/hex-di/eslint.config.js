@@ -1,18 +1,12 @@
 // @ts-check
 import tseslint from "typescript-eslint";
-import { baseConfig } from "../../eslint.config.js";
+import { sharedConfig, prodConfig, parserConfig } from "../../eslint.config.js";
 
 export default tseslint.config(
   {
     ignores: ["node_modules/**", "dist/**", "*.config.js", "*.config.ts"],
   },
-  ...baseConfig,
-  {
-    languageOptions: {
-      parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
-  },
+  ...sharedConfig,
+  parserConfig(import.meta.dirname),
+  ...prodConfig,
 );

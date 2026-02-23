@@ -1,12 +1,6 @@
 // @traces BEH-R02-001 BEH-R02-002 BEH-R02-003 BEH-R02-004 BEH-R03-001 BEH-R03-002 BEH-R03-003 BEH-R03-004
 import { describe, it, expectTypeOf } from "vitest";
-import {
-  ok,
-  err,
-  ResultAsync,
-  type Result,
-  type Err,
-} from "@hex-di/result";
+import { ok, ResultAsync, type Result } from "@hex-di/result";
 import { useResult } from "../../src/hooks/use-result.js";
 import { useResultAsync } from "../../src/hooks/use-result-async.js";
 import type {
@@ -41,10 +35,7 @@ describe("useResult types (BEH-R03-001)", () => {
 
 describe("useResultAsync types (BEH-R02-001)", () => {
   it("returns UseResultAsyncReturn<T, E>", () => {
-    const hook = useResultAsync(
-      (_signal) => ResultAsync.ok("data"),
-      [],
-    );
+    const hook = useResultAsync(_signal => ResultAsync.ok("data"), []);
     expectTypeOf(hook).toEqualTypeOf<UseResultAsyncReturn<string, never>>();
     expectTypeOf(hook.result).toEqualTypeOf<Result<string, never> | undefined>();
     expectTypeOf(hook.isLoading).toEqualTypeOf<boolean>();
@@ -59,7 +50,7 @@ describe("useResultAsync types (BEH-R02-001)", () => {
         expectTypeOf(error).toEqualTypeOf<string>();
         return 1000;
       },
-      retryOn: (error) => {
+      retryOn: error => {
         expectTypeOf(error).toEqualTypeOf<string>();
         return true;
       },
@@ -70,9 +61,8 @@ describe("useResultAsync types (BEH-R02-001)", () => {
 
 describe("useResultAction types (BEH-R02-002)", () => {
   it("infers argument types from fn, signal is stripped from execute", () => {
-    const hook = useResultAction(
-      (_signal: AbortSignal, name: string, age: number) =>
-        ResultAsync.ok({ name, age }),
+    const hook = useResultAction((_signal: AbortSignal, name: string, age: number) =>
+      ResultAsync.ok({ name, age })
     );
     expectTypeOf(hook).toEqualTypeOf<
       UseResultActionReturn<[string, number], { name: string; age: number }, never>
@@ -99,10 +89,7 @@ describe("useSafeTry types (BEH-R03-003)", () => {
 
 describe("useResultSuspense types (BEH-R02-003)", () => {
   it("returns Result<T, E> (never undefined)", () => {
-    const result = useResultSuspense(
-      () => ResultAsync.ok("data"),
-      [],
-    );
+    const result = useResultSuspense(() => ResultAsync.ok("data"), []);
     expectTypeOf(result).toEqualTypeOf<Result<string, never>>();
   });
 });
@@ -120,13 +107,10 @@ describe("createResultResource types (BEH-R02-004)", () => {
 describe("useOptimisticResult types (BEH-R03-002)", () => {
   it("returns result and setOptimistic", () => {
     const authoritative: Result<string, number> = ok("hello");
-    const hook = useOptimisticResult(
-      authoritative,
-      (_current, optimistic) => {
-        expectTypeOf(optimistic).toEqualTypeOf<string>();
-        return ok(optimistic) as Result<string, number>;
-      },
-    );
+    const hook = useOptimisticResult(authoritative, (_current, optimistic) => {
+      expectTypeOf(optimistic).toEqualTypeOf<string>();
+      return ok(optimistic) as Result<string, number>;
+    });
     expectTypeOf(hook.result).toEqualTypeOf<Result<string, number>>();
     expectTypeOf(hook.setOptimistic).toEqualTypeOf<(value: string) => void>();
   });

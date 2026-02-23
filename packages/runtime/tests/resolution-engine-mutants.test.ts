@@ -5,16 +5,14 @@
  * - container/internal/inheritance-resolver.ts: getMode, shared/forked/isolated
  */
 import { describe, it, expect, vi } from "vitest";
-import { port, createAdapter } from "@hex-di/core";
-import { GraphBuilder } from "@hex-di/graph";
-import { createContainer } from "../src/container/factory.js";
+import { port } from "@hex-di/core";
 import { ResolutionEngine } from "../src/resolution/engine.js";
 import { AsyncResolutionEngine } from "../src/resolution/async-engine.js";
 import { InheritanceResolver } from "../src/container/internal/inheritance-resolver.js";
 import { ResolutionContext } from "../src/resolution/context.js";
 import { HooksRunner, type ContainerMetadata } from "../src/resolution/hooks-runner.js";
 import { MemoMap } from "../src/util/memo-map.js";
-import { FactoryError, AsyncFactoryError, ContainerError } from "../src/errors/index.js";
+import { FactoryError, AsyncFactoryError } from "../src/errors/index.js";
 import { ADAPTER_ACCESS } from "../src/inspection/symbols.js";
 
 // =============================================================================

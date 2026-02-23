@@ -1,13 +1,13 @@
 // @traces BEH-R02-002 INV-R1 INV-R2 INV-R3
 import { describe, it, expect } from "vitest";
 import { renderHook, waitFor, act } from "@testing-library/react";
-import { ok, err, ResultAsync } from "@hex-di/result";
+import { ok, ResultAsync } from "@hex-di/result";
 import { useResultAction } from "../../../src/hooks/use-result-action.js";
 
 describe("useResultAction (BEH-R02-002)", () => {
   it("starts result=undefined, isLoading=false", () => {
     const { result } = renderHook(() =>
-      useResultAction((_signal: AbortSignal) => ResultAsync.ok("value")),
+      useResultAction((_signal: AbortSignal) => ResultAsync.ok("value"))
     );
     expect(result.current.result).toBeUndefined();
     expect(result.current.isLoading).toBe(false);
@@ -15,9 +15,7 @@ describe("useResultAction (BEH-R02-002)", () => {
 
   it("execute triggers, sets loading, resolves", async () => {
     const { result } = renderHook(() =>
-      useResultAction((_signal: AbortSignal, x: number) =>
-        ResultAsync.ok(x * 2),
-      ),
+      useResultAction((_signal: AbortSignal, x: number) => ResultAsync.ok(x * 2))
     );
 
     let executeResult: unknown;
@@ -31,16 +29,16 @@ describe("useResultAction (BEH-R02-002)", () => {
   });
 
   it("execute aborts previous in-flight", async () => {
-    let capturedSignals: AbortSignal[] = [];
+    const capturedSignals: AbortSignal[] = [];
 
     const { result } = renderHook(() =>
       useResultAction((signal: AbortSignal) => {
         capturedSignals.push(signal);
         return ResultAsync.fromPromise(
-          new Promise<string>((resolve) => setTimeout(() => resolve("done"), 100)),
-          () => "error",
+          new Promise<string>(resolve => setTimeout(() => resolve("done"), 100)),
+          () => "error"
         );
-      }),
+      })
     );
 
     // Fire two executions quickly
@@ -61,7 +59,7 @@ describe("useResultAction (BEH-R02-002)", () => {
 
   it("reset clears result and aborts", async () => {
     const { result } = renderHook(() =>
-      useResultAction((_signal: AbortSignal) => ResultAsync.ok("value")),
+      useResultAction((_signal: AbortSignal) => ResultAsync.ok("value"))
     );
 
     await act(async () => {
@@ -84,9 +82,9 @@ describe("useResultAction (BEH-R02-002)", () => {
         capturedSignal = signal;
         return ResultAsync.fromPromise(
           new Promise(() => {}), // never resolves
-          () => "error",
+          () => "error"
         );
-      }),
+      })
     );
 
     void act(() => {
@@ -102,16 +100,16 @@ describe("useResultAction (BEH-R02-002)", () => {
   });
 
   it("stale response discarded (INV-R3)", async () => {
-    let resolvers: Array<(v: string) => void> = [];
+    const resolvers: Array<(v: string) => void> = [];
 
     const { result } = renderHook(() =>
       useResultAction((_signal: AbortSignal) =>
         ResultAsync.fromSafePromise(
-          new Promise<string>((resolve) => {
+          new Promise<string>(resolve => {
             resolvers.push(resolve);
-          }),
-        ),
-      ),
+          })
+        )
+      )
     );
 
     // Fire first execution
@@ -149,7 +147,7 @@ describe("useResultAction (BEH-R02-002)", () => {
 
   it("execute and reset stable (INV-R1)", () => {
     const { result, rerender } = renderHook(() =>
-      useResultAction((_signal: AbortSignal) => ResultAsync.ok(1)),
+      useResultAction((_signal: AbortSignal) => ResultAsync.ok(1))
     );
     const firstExecute = result.current.execute;
     const firstReset = result.current.reset;
@@ -160,7 +158,7 @@ describe("useResultAction (BEH-R02-002)", () => {
 
   it("works with sync Result return", async () => {
     const { result } = renderHook(() =>
-      useResultAction((_signal: AbortSignal, x: number) => ok(x + 1)),
+      useResultAction((_signal: AbortSignal, x: number) => ok(x + 1))
     );
 
     await act(async () => {

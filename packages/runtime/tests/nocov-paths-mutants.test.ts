@@ -19,7 +19,7 @@ import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
 import { INTERNAL_ACCESS } from "../src/inspection/symbols.js";
-import { isDisposableChild, isInheritanceMode, shallowClone } from "../src/container/helpers.js";
+import { isInheritanceMode, shallowClone } from "../src/container/helpers.js";
 import {
   detectContainerKindFromInternal,
   detectPhaseFromSnapshot,
@@ -502,7 +502,7 @@ describe("creation.ts: createInspector", () => {
     });
     const graph = GraphBuilder.create().provide(scopedAdapter).provide(makeDbAdapter()).build();
     const container = createContainer({ graph, name: "Root" });
-    const scope = container.createScope("s");
+    const _scope = container.createScope("s");
 
     const inspector = createInspector(container);
     const tree = inspector.getScopeTree();
@@ -522,7 +522,7 @@ describe("creation.ts: createInspector", () => {
 
     const childGraph = GraphBuilder.create().build();
     const child = parent.createChild(childGraph, { name: "Child" });
-    const inspector = createInspector(child);
+    const _inspector = createInspector(child);
 
     // Logger is resolved in parent, child's inspector should find it in parent chain
     // This depends on whether child's internal state includes parentState

@@ -2,7 +2,7 @@
 import React, { StrictMode } from "react";
 import { describe, it, expect, afterEach } from "vitest";
 import { renderHook, cleanup, waitFor, act } from "@testing-library/react";
-import { ok, err, ResultAsync } from "@hex-di/result";
+import { ok, ResultAsync } from "@hex-di/result";
 import { useResultAsync } from "../../../src/hooks/use-result-async.js";
 import { useResultAction } from "../../../src/hooks/use-result-action.js";
 import { useSafeTry } from "../../../src/hooks/use-safe-try.js";
@@ -16,18 +16,15 @@ const strictWrapper = ({ children }: { children: React.ReactNode }) => (
 describe("StrictMode compatibility (INV-R7)", () => {
   describe("useResultAsync", () => {
     it("produces a single result despite double-invoked effects", async () => {
-      let callCount = 0;
+      let _callCount = 0;
 
       const { result } = renderHook(
         () =>
-          useResultAsync(
-            () => {
-              callCount++;
-              return ResultAsync.ok("data");
-            },
-            [],
-          ),
-        { wrapper: strictWrapper },
+          useResultAsync(() => {
+            _callCount++;
+            return ResultAsync.ok("data");
+          }, []),
+        { wrapper: strictWrapper }
       );
 
       await waitFor(() => {
@@ -43,24 +40,18 @@ describe("StrictMode compatibility (INV-R7)", () => {
 
       const { result } = renderHook(
         () =>
-          useResultAsync(
-            (signal) => {
-              const idx = callIdx++;
-              return ResultAsync.fromSafePromise(
-                new Promise<string>((resolve) => {
-                  const timer = setTimeout(
-                    () => resolve(`result-${idx}`),
-                    idx === 0 ? 50 : 10,
-                  );
-                  signal.addEventListener("abort", () => clearTimeout(timer), {
-                    once: true,
-                  });
-                }),
-              );
-            },
-            [],
-          ),
-        { wrapper: strictWrapper },
+          useResultAsync(signal => {
+            const idx = callIdx++;
+            return ResultAsync.fromSafePromise(
+              new Promise<string>(resolve => {
+                const timer = setTimeout(() => resolve(`result-${idx}`), idx === 0 ? 50 : 10);
+                signal.addEventListener("abort", () => clearTimeout(timer), {
+                  once: true,
+                });
+              })
+            );
+          }, []),
+        { wrapper: strictWrapper }
       );
 
       await waitFor(() => {
@@ -80,14 +71,13 @@ describe("StrictMode compatibility (INV-R7)", () => {
   describe("useResultAction", () => {
     it("execute works correctly under StrictMode", async () => {
       const { result } = renderHook(
-        () =>
-          useResultAction((_signal, name: string) => ResultAsync.ok(`hello ${name}`)),
-        { wrapper: strictWrapper },
+        () => useResultAction((_signal, name: string) => ResultAsync.ok(`hello ${name}`)),
+        { wrapper: strictWrapper }
       );
 
-      let executeResult;
+      let _executeResult;
       await act(async () => {
-        executeResult = await result.current.execute("world");
+        _executeResult = await result.current.execute("world");
       });
 
       expect(result.current.result).toBeOk("hello world");
@@ -104,7 +94,7 @@ describe("StrictMode compatibility (INV-R7)", () => {
             const b = yield* ok(2);
             return ok(a + b);
           }, []),
-        { wrapper: strictWrapper },
+        { wrapper: strictWrapper }
       );
 
       await waitFor(() => {

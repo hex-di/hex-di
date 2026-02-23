@@ -9,7 +9,7 @@ import {
   resolveResult,
   recordResult,
 } from "../src/container/result-helpers.js";
-import { ContainerError, FactoryError, DisposalError } from "../src/errors/index.js";
+import { FactoryError, DisposalError } from "../src/errors/index.js";
 import { ok, err } from "@hex-di/result";
 import type { InspectorAPI } from "../src/inspection/types.js";
 

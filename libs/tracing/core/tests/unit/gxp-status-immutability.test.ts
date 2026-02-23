@@ -69,7 +69,6 @@ describe("MemorySpan - setStatus immutability", () => {
 describe("ConsoleTracer - setStatus immutability", () => {
   it("should match MemorySpan behavior for status immutability", () => {
     const tracer = new ConsoleTracer({ minDurationMs: 999999 }); // suppress output
-    let capturedStatus = "unset";
 
     const span = tracer.startSpan("test");
     span.setStatus("ok");

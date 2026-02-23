@@ -12,10 +12,10 @@
  * - createLazyChildContainerInternal: parentLike.has delegation
  */
 import { describe, it, expect, vi } from "vitest";
-import { port, createAdapter, type Port } from "@hex-di/core";
+import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
-import { ADAPTER_ACCESS, INTERNAL_ACCESS, HOOKS_ACCESS } from "../src/inspection/symbols.js";
+import { ADAPTER_ACCESS, HOOKS_ACCESS } from "../src/inspection/symbols.js";
 import { ContainerBrand } from "../src/types.js";
 import { hasInternalMethods, asParentContainerLike } from "../src/container/wrappers.js";
 
@@ -540,7 +540,7 @@ describe("child container tryResolve/tryResolveAsync emit inspector events", () 
     const events: any[] = [];
     child.inspector.subscribe((e: any) => events.push(e));
 
-    const result = await child.tryResolveAsync(LoggerPort);
+    const _result = await child.tryResolveAsync(LoggerPort);
 
     // Wait a tick for the void then to resolve
     await new Promise(resolve => setTimeout(resolve, 10));
