@@ -8,3 +8,4 @@ packages:
   - "presentations/*/app"
   - "testing/*"
   - "website"
+  - "tools/specforge/*"
