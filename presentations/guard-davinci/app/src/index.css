@@ -1,0 +1,416 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base ─────────────────────────────────────────────────────────── */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #020408;
+  overflow: hidden;
+}
+
+::selection {
+  background: rgba(0, 240, 255, 0.25);
+  color: #fff;
+}
+
+/* ── Grid background ──────────────────────────────────────────────── */
+
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(0, 240, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ── HUD Card ─────────────────────────────────────────────────────── */
+
+.hud-card {
+  position: relative;
+  background: rgba(8, 16, 28, 0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 240, 255, 0.1);
+  border-radius: 2px;
+}
+
+.hud-card::before,
+.hud-card::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-color: rgba(0, 240, 255, 0.35);
+  border-style: solid;
+  pointer-events: none;
+}
+
+.hud-card::before {
+  top: -1px;
+  left: -1px;
+  border-width: 1px 0 0 1px;
+}
+
+.hud-card::after {
+  bottom: -1px;
+  right: -1px;
+  border-width: 0 1px 1px 0;
+}
+
+/* Accent variant */
+.hud-card-accent {
+  border-color: rgba(255, 94, 0, 0.15);
+}
+
+.hud-card-accent::before,
+.hud-card-accent::after {
+  border-color: rgba(255, 94, 0, 0.4);
+}
+
+/* Green variant */
+.hud-card-green {
+  border-color: rgba(166, 226, 46, 0.15);
+}
+
+.hud-card-green::before,
+.hud-card-green::after {
+  border-color: rgba(166, 226, 46, 0.4);
+}
+
+/* Amber variant */
+.hud-card-amber {
+  border-color: rgba(255, 176, 32, 0.15);
+}
+
+.hud-card-amber::before,
+.hud-card-amber::after {
+  border-color: rgba(255, 176, 32, 0.4);
+}
+
+/* Pink variant */
+.hud-card-pink {
+  border-color: rgba(249, 38, 114, 0.15);
+}
+
+.hud-card-pink::before,
+.hud-card-pink::after {
+  border-color: rgba(249, 38, 114, 0.4);
+}
+
+/* ── Comparison Card ─────────────────────────────────────────────── */
+
+.comparison-card {
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.comparison-before {
+  background: rgba(8, 16, 28, 0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 60, 60, 0.15);
+  border-right: none;
+}
+
+.comparison-after {
+  background: rgba(8, 16, 28, 0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  border-left: 1px solid rgba(0, 240, 255, 0.08);
+}
+
+@media (max-width: 1023px) {
+  .comparison-before {
+    border-right: 1px solid rgba(255, 60, 60, 0.15);
+    border-bottom: none;
+  }
+
+  .comparison-after {
+    border-left: 1px solid rgba(0, 240, 255, 0.15);
+    border-top: 1px solid rgba(0, 240, 255, 0.08);
+  }
+}
+
+/* ── Terminal window ──────────────────────────────────────────────── */
+
+.terminal-window {
+  background: rgba(2, 4, 8, 0.9);
+  border: 1px solid rgba(0, 240, 255, 0.12);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.terminal-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: rgba(8, 16, 28, 0.6);
+  border-bottom: 1px solid rgba(0, 240, 255, 0.08);
+}
+
+.terminal-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.terminal-dot-red { background: #ff5f57; }
+.terminal-dot-yellow { background: #febc2e; }
+.terminal-dot-green { background: #28c840; }
+
+.terminal-body {
+  padding: 20px 24px;
+  font-family: "Fira Code", monospace;
+  font-size: 15px;
+  line-height: 1.7;
+  overflow-x: auto;
+}
+
+/* ── Syntax highlighting classes ──────────────────────────────────── */
+
+.syn-keyword { color: #FF5E00; }
+.syn-function { color: #00F0FF; }
+.syn-string { color: #A6E22E; }
+.syn-type { color: #F92672; }
+.syn-comment { color: #586E85; font-style: italic; }
+.syn-number { color: #AE81FF; }
+.syn-param { color: #FD971F; }
+.syn-bracket { color: #586E85; }
+.syn-operator { color: #FF5E00; }
+.syn-property { color: #DAE6F0; }
+.syn-tag { color: #F92672; }
+.syn-attr { color: #A6E22E; }
+.syn-punctuation { color: #586E85; }
+.syn-generic { color: #66D9EF; }
+
+/* ── Scrollbar ────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(8, 16, 28, 0.4);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.15);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 255, 0.3);
+}
+
+/* ── Scanline overlay ─────────────────────────────────────────────── */
+
+.scanline-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 240, 255, 0.008) 2px,
+    rgba(0, 240, 255, 0.008) 4px
+  );
+}
+
+/* ── Phase divider ────────────────────────────────────────────────── */
+
+.phase-divider {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 32px 0;
+}
+
+.phase-divider::before,
+.phase-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+}
+
+.phase-divider::before {
+  background: linear-gradient(90deg, transparent, var(--phase-color, #00F0FF));
+}
+
+.phase-divider::after {
+  background: linear-gradient(90deg, var(--phase-color, #00F0FF), transparent);
+}
+
+/* ── Badge ────────────────────────────────────────────────────────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-family: "Fira Code", monospace;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  border: 1px solid;
+}
+
+/* ── Sidebar ──────────────────────────────────────────────────────── */
+
+.sidebar-item {
+  position: relative;
+  padding: 4px 12px 4px 16px;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: #586E85;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-left: 2px solid transparent;
+}
+
+.sidebar-item:hover {
+  color: #DAE6F0;
+  background: rgba(0, 240, 255, 0.03);
+}
+
+.sidebar-item-active {
+  color: #00F0FF;
+  border-left-color: #00F0FF;
+  background: rgba(0, 240, 255, 0.05);
+}
+
+/* ── Utility ──────────────────────────────────────────────────────── */
+
+.text-glow-cyan {
+  text-shadow: 0 0 20px rgba(0, 240, 255, 0.4), 0 0 40px rgba(0, 240, 255, 0.15);
+}
+
+.text-glow-accent {
+  text-shadow: 0 0 20px rgba(255, 94, 0, 0.4), 0 0 40px rgba(255, 94, 0, 0.15);
+}
+
+.text-glow-green {
+  text-shadow: 0 0 20px rgba(166, 226, 46, 0.4);
+}
+
+.text-glow-amber {
+  text-shadow: 0 0 20px rgba(255, 176, 32, 0.4);
+}
+
+.text-glow-pink {
+  text-shadow: 0 0 20px rgba(249, 38, 114, 0.4);
+}
+
+.border-glow-cyan {
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.1), inset 0 0 15px rgba(0, 240, 255, 0.03);
+}
+
+.clip-slant {
+  clip-path: polygon(0 0, 100% 0, 93% 100%, 0% 100%);
+}
+
+/* Shield icon glow */
+.shield-glow {
+  filter: drop-shadow(0 0 12px rgba(0, 240, 255, 0.5))
+          drop-shadow(0 0 30px rgba(0, 240, 255, 0.2));
+}
+
+/* Numbered badge */
+.num-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  font-family: "Fira Code", monospace;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  background: rgba(0, 240, 255, 0.08);
+  color: #00F0FF;
+}
+
+.num-badge-accent {
+  border-color: rgba(255, 94, 0, 0.3);
+  background: rgba(255, 94, 0, 0.08);
+  color: #FF5E00;
+}
+
+/* ── Entrance animations ─────────────────────────────────────────── */
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slide-left {
+  from { opacity: 0; transform: translateX(-30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-right {
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-up {
+  animation-name: fade-up;
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-fade-in {
+  animation-name: fade-in;
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-slide-left {
+  animation-name: slide-left;
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-slide-right {
+  animation-name: slide-right;
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-scale-in {
+  animation-name: scale-in;
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-fade-in,
+  .animate-slide-left,
+  .animate-slide-right,
+  .animate-scale-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
