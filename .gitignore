@@ -32,6 +32,10 @@ coverage/
 # ESLint
 .eslintcache
 
+# Planning & compliance docs
+.planning/
+Gxp/
+
 # Agent OS
 .agent-os/
 agent-os/
