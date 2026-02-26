@@ -1,6 +1,6 @@
-import {themes as prismThemes} from 'prism-react-renderer';
-import type {Config} from '@docusaurus/types';
-import type * as Preset from '@docusaurus/preset-classic';
+import { themes as prismThemes } from "prism-react-renderer";
+import type { Config } from "@docusaurus/types";
+import type * as Preset from "@docusaurus/preset-classic";
 
 interface PostCssOptions {
   plugins: unknown[];
@@ -9,10 +9,10 @@ interface PostCssOptions {
 
 function tailwindPlugin() {
   return {
-    name: 'docusaurus-tailwindcss',
+    name: "docusaurus-tailwindcss",
     configurePostCss(postcssOptions: PostCssOptions): PostCssOptions {
-      postcssOptions.plugins.push(require('@tailwindcss/postcss'));
-      postcssOptions.plugins.push(require('autoprefixer'));
+      postcssOptions.plugins.push(require("@tailwindcss/postcss"));
+      postcssOptions.plugins.push(require("autoprefixer"));
       return postcssOptions;
     },
   };
@@ -22,10 +22,10 @@ function tailwindPlugin() {
 
 const config: Config = {
   // SEO: Main site title (under 60 characters)
-  title: 'HexDI',
+  title: "HexDI",
   // SEO: Site tagline used in meta descriptions
-  tagline: 'Type-Safe Dependency Injection for TypeScript',
-  favicon: 'img/favicon.ico',
+  tagline: "Type-Safe Dependency Injection for TypeScript",
+  favicon: "img/favicon.ico",
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
@@ -35,101 +35,101 @@ const config: Config = {
   // Markdown configuration - use CommonMark format to avoid MDX parsing issues
   // with TypeScript generic syntax like <T, TName> in prose
   markdown: {
-    format: 'detect',
+    format: "detect",
   },
 
   // Set the production url of your site here
-  url: 'https://leaderiop.github.io',
+  url: "https://leaderiop.github.io",
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/hex-di/',
+  baseUrl: "/hex-di/",
 
   // GitHub pages deployment config.
-  organizationName: 'leaderiop', // GitHub org/user name
-  projectName: 'hex-di', // repo name
+  organizationName: "leaderiop", // GitHub org/user name
+  projectName: "hex-di", // repo name
 
   plugins: [tailwindPlugin],
 
-  onBrokenLinks: 'throw',
+  onBrokenLinks: "throw",
 
   // SEO: HTML lang attribute for accessibility and search engines
   // Even if you don't use internationalization, you can use this field to set
   // useful metadata like html lang.
   i18n: {
-    defaultLocale: 'en',
-    locales: ['en'],
+    defaultLocale: "en",
+    locales: ["en"],
   },
 
   // SEO: Site-wide head tags for meta description and keywords
   headTags: [
     // Primary meta description (150-160 characters for optimal SEO)
     {
-      tagName: 'meta',
+      tagName: "meta",
       attributes: {
-        name: 'description',
+        name: "description",
         content:
-          'HexDI is a type-safe dependency injection framework for TypeScript. Catch dependency errors at compile time with full type inference and zero runtime overhead.',
+          "HexDI is a type-safe dependency injection framework for TypeScript. Catch dependency errors at compile time with full type inference and zero runtime overhead.",
       },
     },
     // SEO keywords
     {
-      tagName: 'meta',
+      tagName: "meta",
       attributes: {
-        name: 'keywords',
+        name: "keywords",
         content:
-          'dependency injection, TypeScript, type-safe, DI, IoC, inversion of control, hexagonal architecture, ports and adapters, React DI, compile-time validation',
+          "dependency injection, TypeScript, type-safe, DI, IoC, inversion of control, hexagonal architecture, ports and adapters, React DI, compile-time validation",
       },
     },
     // Author meta tag
     {
-      tagName: 'meta',
+      tagName: "meta",
       attributes: {
-        name: 'author',
-        content: 'HexDI Contributors',
+        name: "author",
+        content: "HexDI Contributors",
       },
     },
     // Robots meta tag
     {
-      tagName: 'meta',
+      tagName: "meta",
       attributes: {
-        name: 'robots',
-        content: 'index, follow',
+        name: "robots",
+        content: "index, follow",
       },
     },
     // Theme color for browser UI
     {
-      tagName: 'meta',
+      tagName: "meta",
       attributes: {
-        name: 'theme-color',
-        content: '#5E35B1',
+        name: "theme-color",
+        content: "#5E35B1",
       },
     },
   ],
 
   presets: [
     [
-      'classic',
+      "classic",
       {
         docs: {
-          path: '../docs',
-          sidebarPath: './sidebars.ts',
-          routeBasePath: 'docs',
-          editUrl: 'https://github.com/leaderiop/hex-di/tree/main/docs/',
+          path: "../docs",
+          sidebarPath: "./sidebars.ts",
+          routeBasePath: "docs",
+          editUrl: "https://github.com/leaderiop/hex-di/tree/main/docs/",
           // Enable showLineNumbers globally for code blocks
           // Users can still use showLineNumbers={false} to disable per-block
         },
         // Disable blog
         blog: false,
         theme: {
-          customCss: './src/css/custom.css',
+          customCss: "./src/css/custom.css",
         },
         // SEO: Sitemap generation for search engines
         sitemap: {
-          lastmod: 'date',
-          changefreq: 'weekly',
+          lastmod: "date",
+          changefreq: "weekly",
           priority: 0.5,
-          ignorePatterns: ['/tags/**'],
-          filename: 'sitemap.xml',
+          ignorePatterns: ["/tags/**"],
+          filename: "sitemap.xml",
         },
       } satisfies Preset.Options,
     ],
@@ -138,11 +138,11 @@ const config: Config = {
   // Local search plugin
   themes: [
     [
-      '@easyops-cn/docusaurus-search-local',
+      "@easyops-cn/docusaurus-search-local",
       {
         // Index settings
         hashed: true,
-        language: ['en'],
+        language: ["en"],
         indexDocs: true,
         indexPages: true,
         indexBlog: false,
@@ -152,12 +152,12 @@ const config: Config = {
         explicitSearchResultPath: true,
 
         // Route configuration
-        docsRouteBasePath: '/docs',
+        docsRouteBasePath: "/docs",
 
         // Search bar configuration
         searchBarShortcut: true,
         searchBarShortcutHint: true,
-        searchBarPosition: 'right',
+        searchBarPosition: "right",
 
         // Result limits
         searchResultLimits: 8,
@@ -172,37 +172,37 @@ const config: Config = {
 
   themeConfig: {
     // SEO: Open Graph and Twitter Card social sharing image
-    image: 'img/hexdi-social-card.png',
+    image: "img/hexdi-social-card.png",
 
     // SEO: Open Graph metadata
     metadata: [
       // Open Graph tags
-      {name: 'og:type', content: 'website'},
-      {name: 'og:site_name', content: 'HexDI'},
+      { name: "og:type", content: "website" },
+      { name: "og:site_name", content: "HexDI" },
       {
-        name: 'og:title',
-        content: 'HexDI - Type-Safe Dependency Injection for TypeScript',
+        name: "og:title",
+        content: "HexDI - Type-Safe Dependency Injection for TypeScript",
       },
       {
-        name: 'og:description',
+        name: "og:description",
         content:
-          'Catch dependency errors at compile time, not runtime. Build robust TypeScript applications with full type inference and zero runtime overhead.',
+          "Catch dependency errors at compile time, not runtime. Build robust TypeScript applications with full type inference and zero runtime overhead.",
       },
       // Twitter Card tags
-      {name: 'twitter:card', content: 'summary_large_image'},
+      { name: "twitter:card", content: "summary_large_image" },
       {
-        name: 'twitter:title',
-        content: 'HexDI - Type-Safe Dependency Injection for TypeScript',
+        name: "twitter:title",
+        content: "HexDI - Type-Safe Dependency Injection for TypeScript",
       },
       {
-        name: 'twitter:description',
+        name: "twitter:description",
         content:
-          'Catch dependency errors at compile time, not runtime. Build robust TypeScript applications with full type inference and zero runtime overhead.',
+          "Catch dependency errors at compile time, not runtime. Build robust TypeScript applications with full type inference and zero runtime overhead.",
       },
     ],
 
     colorMode: {
-      defaultMode: 'light',
+      defaultMode: "light",
       disableSwitch: false,
       respectPrefersColorScheme: true,
     },
@@ -212,10 +212,10 @@ const config: Config = {
       maxHeadingLevel: 4,
     },
     navbar: {
-      title: 'HexDI',
+      title: "HexDI",
       logo: {
-        alt: 'HexDI Logo',
-        src: 'img/logo.svg',
+        alt: "HexDI Logo",
+        src: "img/logo.svg",
         width: 40,
         height: 40,
       },
@@ -223,90 +223,95 @@ const config: Config = {
       items: [
         // Left-side navigation items
         {
-          type: 'docSidebar',
-          sidebarId: 'docsSidebar',
-          position: 'left',
-          label: 'Docs',
+          type: "docSidebar",
+          sidebarId: "docsSidebar",
+          position: "left",
+          label: "Docs",
         },
         {
-          to: '/docs/api',
-          position: 'left',
-          label: 'API',
+          to: "/docs/api",
+          position: "left",
+          label: "API",
         },
         {
-          to: '/docs/examples',
-          position: 'left',
-          label: 'Examples',
+          to: "/docs/examples",
+          position: "left",
+          label: "Examples",
+        },
+        {
+          to: "/presentations",
+          position: "left",
+          label: "Presentations",
         },
         // Right-side items
         {
-          type: 'search',
-          position: 'right',
+          type: "search",
+          position: "right",
         },
         {
-          href: 'https://github.com/leaderiop/hex-di',
-          position: 'right',
-          className: 'header-github-link',
-          'aria-label': 'GitHub repository',
+          href: "https://github.com/leaderiop/hex-di",
+          position: "right",
+          className: "header-github-link",
+          "aria-label": "GitHub repository",
         },
       ],
     },
     footer: {
-      style: 'dark',
+      style: "dark",
       links: [
         {
-          title: 'Documentation',
+          title: "Documentation",
           items: [
             {
-              label: 'Getting Started',
-              to: '/docs/getting-started',
+              label: "Getting Started",
+              to: "/docs/getting-started",
             },
             {
-              label: 'API Reference',
-              to: '/docs/api',
+              label: "API Reference",
+              to: "/docs/api",
             },
             {
-              label: 'Guides',
-              to: '/docs/guides',
+              label: "Guides",
+              to: "/docs/guides",
             },
             {
-              label: 'Examples',
-              to: '/docs/examples',
+              label: "Examples",
+              to: "/docs/examples",
             },
           ],
         },
         {
-          title: 'Community',
+          title: "Community",
           items: [
             {
-              label: 'GitHub',
-              href: 'https://github.com/leaderiop/hex-di',
+              label: "GitHub",
+              href: "https://github.com/leaderiop/hex-di",
             },
             {
-              label: 'Discussions',
-              href: 'https://github.com/leaderiop/hex-di/discussions',
+              label: "Discussions",
+              href: "https://github.com/leaderiop/hex-di/discussions",
             },
           ],
         },
         {
-          title: 'Resources',
+          title: "Resources",
           items: [
             {
-              label: 'Changelog',
-              href: 'https://github.com/leaderiop/hex-di/blob/main/CHANGELOG.md',
+              label: "Changelog",
+              href: "https://github.com/leaderiop/hex-di/blob/main/CHANGELOG.md",
             },
             {
-              label: 'Roadmap',
-              href: 'https://github.com/leaderiop/hex-di/blob/main/ROADMAP.md',
+              label: "Roadmap",
+              href: "https://github.com/leaderiop/hex-di/blob/main/ROADMAP.md",
             },
           ],
         },
         {
-          title: 'Legal',
+          title: "Legal",
           items: [
             {
-              label: 'License',
-              href: 'https://github.com/leaderiop/hex-di/blob/main/LICENSE',
+              label: "License",
+              href: "https://github.com/leaderiop/hex-di/blob/main/LICENSE",
             },
           ],
         },
@@ -319,31 +324,23 @@ const config: Config = {
       // Dark theme: Dracula-style (customized via CSS for brand colors)
       darkTheme: prismThemes.dracula,
       // Additional languages for TypeScript ecosystem
-      additionalLanguages: [
-        'bash',
-        'json',
-        'typescript',
-        'tsx',
-        'jsx',
-        'diff',
-        'shell-session',
-      ],
+      additionalLanguages: ["bash", "json", "typescript", "tsx", "jsx", "diff", "shell-session"],
       // Enable magic comments for line highlighting
       magicComments: [
         {
-          className: 'theme-code-block-highlighted-line',
-          line: 'highlight-next-line',
-          block: {start: 'highlight-start', end: 'highlight-end'},
+          className: "theme-code-block-highlighted-line",
+          line: "highlight-next-line",
+          block: { start: "highlight-start", end: "highlight-end" },
         },
         {
-          className: 'code-block-error-line',
-          line: 'error-line',
-          block: {start: 'error-start', end: 'error-end'},
+          className: "code-block-error-line",
+          line: "error-line",
+          block: { start: "error-start", end: "error-end" },
         },
         {
-          className: 'code-block-success-line',
-          line: 'success-line',
-          block: {start: 'success-start', end: 'success-end'},
+          className: "code-block-success-line",
+          line: "success-line",
+          block: { start: "success-start", end: "success-end" },
         },
       ],
     },

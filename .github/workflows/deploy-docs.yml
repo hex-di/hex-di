@@ -4,8 +4,9 @@ on:
   push:
     branches: [main]
     paths:
-      - 'docs/**'
-      - 'website/**'
+      - "docs/**"
+      - "website/**"
+      - "presentations/**"
   workflow_dispatch:
 
 permissions:
@@ -32,11 +33,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'pnpm'
+          node-version: "20"
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install
+
+      - name: Build presentations
+        run: node scripts/build-presentations.mjs
 
       - name: Build website
         run: pnpm --filter website build

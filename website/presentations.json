@@ -1,0 +1,23 @@
+[
+  {
+    "id": "guard",
+    "name": "Guard Authorization Framework",
+    "description": "Interactive walkthrough of @hex-di/guard.",
+    "appPath": "presentations/guard/app",
+    "published": true
+  },
+  {
+    "id": "authorization-policies",
+    "name": "Authorization Policies",
+    "description": "Access control models from ACL to PBAC.",
+    "appPath": "presentations/authorization-policies/app",
+    "published": true
+  },
+  {
+    "id": "guard-davinci",
+    "name": "Guard x DaVinci",
+    "description": "From scattered checks to type-safe authorization.",
+    "appPath": "presentations/guard-davinci/app",
+    "published": true
+  }
+]
