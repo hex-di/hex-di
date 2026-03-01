@@ -57,6 +57,7 @@
     "@hex-di/core": "workspace:*",
     "@hex-di/devtools-ui": "workspace:*",
     "@hex-di/graph": "workspace:*",
+    "@hex-di/guard": "workspace:*",
     "@hex-di/runtime": "workspace:*",
     "@hex-di/result": "workspace:*",
     "@hex-di/flow": "workspace:*",

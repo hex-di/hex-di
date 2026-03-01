@@ -53,6 +53,7 @@
   "dependencies": {
     "@hex-di/core": "workspace:*",
     "@hex-di/graph": "workspace:*",
+    "@hex-di/guard": "workspace:*",
     "dagre": "^0.8.5"
   },
   "peerDependencies": {
