@@ -1,0 +1,30 @@
+{
+  "id": "api/react",
+  "title": "@hex-di/react",
+  "description": "API reference for @hex-di/react providing typed hooks, ContainerProvider, ScopeProvider, and AutoScopeProvider for React integration.",
+  "source": "@site/../../docs/api/react.md",
+  "sourceDirName": "api",
+  "slug": "/api/react",
+  "permalink": "/docs/api/react",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/../../docs/api/react.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "title": "@hex-di/react",
+    "description": "API reference for @hex-di/react providing typed hooks, ContainerProvider, ScopeProvider, and AutoScopeProvider for React integration.",
+    "sidebar_position": 4,
+    "sidebar_label": "@hex-di/react"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "@hex-di/runtime",
+    "permalink": "/docs/api/runtime"
+  },
+  "next": {
+    "title": "@hex-di/testing",
+    "permalink": "/docs/api/testing"
+  }
+}

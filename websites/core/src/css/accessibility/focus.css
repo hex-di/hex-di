@@ -1,0 +1,164 @@
+/**
+ * HexDI Focus Indicators — Cyberpunk Dark Theme
+ *
+ * WCAG 2.1 AA compliant focus indicators with cyan outline.
+ */
+
+/* Base focus-visible */
+:focus-visible {
+  outline: 2px solid #00F0FF;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Links */
+a:focus-visible {
+  outline: 2px solid #00F0FF;
+  outline-offset: 2px;
+  border-radius: 2px;
+  text-decoration: underline;
+}
+
+/* Buttons */
+button:focus-visible,
+[role="button"]:focus-visible,
+.button:focus-visible {
+  outline: 2px solid #00F0FF;
+  outline-offset: 2px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 240, 255, 0.15);
+}
+
+/* Navbar links */
+.navbar__link:focus-visible {
+  outline: 2px solid #00F0FF;
+  outline-offset: 2px;
+  border-radius: 2px;
+  background-color: rgba(0, 240, 255, 0.05);
+}
+
+/* Sidebar menu links */
+.menu__link:focus-visible {
+  outline: 2px solid #00F0FF;
+  outline-offset: -2px;
+  border-radius: 2px;
+  background-color: rgba(0, 240, 255, 0.05);
+}
+
+/* TOC links */
+.table-of-contents__link:focus-visible {
+  outline: 2px solid #00F0FF;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Breadcrumb links */
+.breadcrumbs__link:focus-visible {
+  outline: 2px solid #00F0FF;
+  outline-offset: 2px;
+  border-radius: 2px;
+  background-color: rgba(0, 240, 255, 0.05);
+}
+
+/* Pagination links */
+.pagination-nav__link:focus-visible {
+  outline: 2px solid #00F0FF;
+  outline-offset: 2px;
+  border-color: #00F0FF;
+  box-shadow: 0 0 0 4px rgba(0, 240, 255, 0.1);
+}
+
+/* Search button */
+.DocSearch-Button:focus-visible,
+[class*="searchButton"]:focus-visible {
+  outline: 2px solid #00F0FF;
+  outline-offset: 2px;
+  border-radius: 2px;
+  border-color: #00F0FF;
+}
+
+/* Copy button */
+[class*="copyButton"]:focus-visible {
+  outline: 2px solid #00F0FF;
+  outline-offset: 2px;
+  border-radius: 2px;
+  background-color: rgba(0, 240, 255, 0.08);
+}
+
+/* Mobile menu toggle */
+.navbar__toggle:focus-visible {
+  outline: 2px solid #00F0FF;
+  outline-offset: 2px;
+  border-radius: 2px;
+  background-color: rgba(0, 240, 255, 0.05);
+}
+
+/* Form inputs */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #00F0FF;
+  outline-offset: 0;
+  border-color: #00F0FF;
+  box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.1);
+}
+
+/* Search input */
+.navbar__search-input:focus-visible {
+  outline: 2px solid #00F0FF;
+  outline-offset: -2px;
+  border-color: #00F0FF;
+}
+
+/* Footer links */
+.footer__link-item:focus-visible {
+  outline: 2px solid #00F0FF;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* -------------------------------------------------------------------------
+   Skip to Content Link
+   ------------------------------------------------------------------------- */
+
+.skip-to-content:focus-visible {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  width: auto;
+  height: auto;
+  padding: 16px 24px;
+  background: var(--hexdi-surface);
+  border: 2px solid #00F0FF;
+  border-radius: 2px;
+  color: var(--hexdi-text-primary);
+  font-family: var(--font-primary);
+  font-size: 1rem;
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 240, 255, 0.1);
+  z-index: 10000;
+  outline: none;
+}
+
+/* -------------------------------------------------------------------------
+   High Contrast
+   ------------------------------------------------------------------------- */
+
+@media (prefers-contrast: more) {
+  :focus-visible {
+    outline: 3px solid currentColor;
+    outline-offset: 3px;
+  }
+
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  a:focus-visible {
+    outline: 3px solid currentColor;
+    outline-offset: 3px;
+  }
+}

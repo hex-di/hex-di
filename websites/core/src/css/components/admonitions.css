@@ -1,0 +1,248 @@
+/**
+ * HexDI Admonition/Callout Box — Cyberpunk Dark Theme
+ *
+ * Corner brackets like .hud-card, color-coded per type.
+ */
+
+/* ==========================================================================
+   Base Admonition Styles
+   ========================================================================== */
+
+.theme-admonition,
+[class*="admonition_"] {
+  border-radius: 2px;
+  border: 1px solid rgba(0, 240, 255, 0.1);
+  border-left-width: 3px;
+  border-left-style: solid;
+  padding: 16px 16px 16px 48px;
+  margin: 24px 0;
+  position: relative;
+  background-color: rgba(8, 16, 28, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+/* Corner brackets — top-left */
+.theme-admonition::before,
+[class*="admonition_"]::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 12px;
+  height: 12px;
+  border-style: solid;
+  border-width: 2px 0 0 0;
+  border-color: currentColor;
+  pointer-events: none;
+}
+
+/* Corner brackets — bottom-right */
+.theme-admonition::after,
+[class*="admonition_"]::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 12px;
+  height: 12px;
+  border-style: solid;
+  border-width: 0 2px 2px 0;
+  border-color: currentColor;
+  pointer-events: none;
+}
+
+/* Admonition icon positioning */
+[class*="admonitionHeading"]::before,
+.theme-admonition [class*="admonitionIcon"],
+[class*="admonition_"] [class*="admonitionIcon"] {
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  width: 20px;
+  height: 20px;
+}
+
+/* Admonition title/heading */
+[class*="admonitionHeading"] {
+  font-family: var(--font-code);
+  font-weight: var(--weight-semibold);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+
+/* Admonition content */
+[class*="admonitionContent"] {
+  font-family: var(--font-primary);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.theme-admonition p:last-child,
+[class*="admonition_"] p:last-child {
+  margin-bottom: 0;
+}
+
+/* -------------------------------------------------------------------------
+   INFO / NOTE — Cyan
+   ------------------------------------------------------------------------- */
+.theme-admonition-note,
+[class*="admonition_"][class*="note"],
+.admonition-note,
+.theme-admonition-info,
+[class*="admonition_"][class*="info"],
+.admonition-info {
+  background-color: rgba(0, 240, 255, 0.06);
+  border-left-color: #00F0FF;
+  border-color: rgba(0, 240, 255, 0.1);
+  border-left-color: #00F0FF;
+  color: #00F0FF;
+}
+
+.theme-admonition-note [class*="admonitionIcon"] svg,
+[class*="admonition_"][class*="note"] [class*="admonitionIcon"] svg,
+.admonition-note [class*="admonitionIcon"] svg,
+.theme-admonition-info [class*="admonitionIcon"] svg,
+[class*="admonition_"][class*="info"] [class*="admonitionIcon"] svg,
+.admonition-info [class*="admonitionIcon"] svg {
+  color: #00F0FF;
+  fill: #00F0FF;
+}
+
+.theme-admonition-note [class*="admonitionHeading"],
+[class*="admonition_"][class*="note"] [class*="admonitionHeading"],
+.admonition-note [class*="admonitionHeading"],
+.theme-admonition-info [class*="admonitionHeading"],
+[class*="admonition_"][class*="info"] [class*="admonitionHeading"],
+.admonition-info [class*="admonitionHeading"] {
+  color: #00F0FF;
+}
+
+/* Reset text color for content inside info/note admonitions */
+.theme-admonition-note [class*="admonitionContent"],
+[class*="admonition_"][class*="note"] [class*="admonitionContent"],
+.theme-admonition-info [class*="admonitionContent"],
+[class*="admonition_"][class*="info"] [class*="admonitionContent"] {
+  color: var(--hexdi-text-primary);
+}
+
+/* -------------------------------------------------------------------------
+   TIP — Green
+   ------------------------------------------------------------------------- */
+.theme-admonition-tip,
+[class*="admonition_"][class*="tip"],
+.admonition-tip {
+  background-color: rgba(166, 226, 46, 0.06);
+  border-color: rgba(166, 226, 46, 0.1);
+  border-left-color: #A6E22E;
+  color: #A6E22E;
+}
+
+.theme-admonition-tip [class*="admonitionIcon"] svg,
+[class*="admonition_"][class*="tip"] [class*="admonitionIcon"] svg,
+.admonition-tip [class*="admonitionIcon"] svg {
+  color: #A6E22E;
+  fill: #A6E22E;
+}
+
+.theme-admonition-tip [class*="admonitionHeading"],
+[class*="admonition_"][class*="tip"] [class*="admonitionHeading"],
+.admonition-tip [class*="admonitionHeading"] {
+  color: #A6E22E;
+}
+
+.theme-admonition-tip [class*="admonitionContent"],
+[class*="admonition_"][class*="tip"] [class*="admonitionContent"] {
+  color: var(--hexdi-text-primary);
+}
+
+/* -------------------------------------------------------------------------
+   WARNING / CAUTION — Orange
+   ------------------------------------------------------------------------- */
+.theme-admonition-caution,
+[class*="admonition_"][class*="caution"],
+.admonition-caution,
+.theme-admonition-warning,
+[class*="admonition_"][class*="warning"],
+.admonition-warning {
+  background-color: rgba(255, 94, 0, 0.06);
+  border-color: rgba(255, 94, 0, 0.1);
+  border-left-color: #FF5E00;
+  color: #FF5E00;
+}
+
+.theme-admonition-caution [class*="admonitionIcon"] svg,
+[class*="admonition_"][class*="caution"] [class*="admonitionIcon"] svg,
+.admonition-caution [class*="admonitionIcon"] svg,
+.theme-admonition-warning [class*="admonitionIcon"] svg,
+[class*="admonition_"][class*="warning"] [class*="admonitionIcon"] svg,
+.admonition-warning [class*="admonitionIcon"] svg {
+  color: #FF5E00;
+  fill: #FF5E00;
+}
+
+.theme-admonition-caution [class*="admonitionHeading"],
+[class*="admonition_"][class*="caution"] [class*="admonitionHeading"],
+.admonition-caution [class*="admonitionHeading"],
+.theme-admonition-warning [class*="admonitionHeading"],
+[class*="admonition_"][class*="warning"] [class*="admonitionHeading"],
+.admonition-warning [class*="admonitionHeading"] {
+  color: #FF5E00;
+}
+
+.theme-admonition-caution [class*="admonitionContent"],
+[class*="admonition_"][class*="caution"] [class*="admonitionContent"],
+.theme-admonition-warning [class*="admonitionContent"],
+[class*="admonition_"][class*="warning"] [class*="admonitionContent"] {
+  color: var(--hexdi-text-primary);
+}
+
+/* -------------------------------------------------------------------------
+   DANGER — Pink
+   ------------------------------------------------------------------------- */
+.theme-admonition-danger,
+[class*="admonition_"][class*="danger"],
+.admonition-danger {
+  background-color: rgba(249, 38, 114, 0.06);
+  border-color: rgba(249, 38, 114, 0.1);
+  border-left-color: #F92672;
+  color: #F92672;
+}
+
+.theme-admonition-danger [class*="admonitionIcon"] svg,
+[class*="admonition_"][class*="danger"] [class*="admonitionIcon"] svg,
+.admonition-danger [class*="admonitionIcon"] svg {
+  color: #F92672;
+  fill: #F92672;
+}
+
+.theme-admonition-danger [class*="admonitionHeading"],
+[class*="admonition_"][class*="danger"] [class*="admonitionHeading"],
+.admonition-danger [class*="admonitionHeading"] {
+  color: #F92672;
+}
+
+.theme-admonition-danger [class*="admonitionContent"],
+[class*="admonition_"][class*="danger"] [class*="admonitionContent"] {
+  color: var(--hexdi-text-primary);
+}
+
+/* -------------------------------------------------------------------------
+   Icon SVG Sizing
+   ------------------------------------------------------------------------- */
+.theme-admonition [class*="admonitionIcon"] svg,
+[class*="admonition_"] [class*="admonitionIcon"] svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* -------------------------------------------------------------------------
+   Transitions
+   ------------------------------------------------------------------------- */
+.theme-admonition,
+[class*="admonition_"] {
+  transition:
+    border-color 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out;
+}

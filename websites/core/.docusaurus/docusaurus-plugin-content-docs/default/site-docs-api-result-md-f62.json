@@ -1,0 +1,21 @@
+{
+  "id": "api/result",
+  "title": "@hex-di/result",
+  "description": "API reference for @hex-di/result — Rust-style Result<T,E> type with combinators, async support, and Option type.",
+  "source": "@site/../../docs/api/result.md",
+  "sourceDirName": "api",
+  "slug": "/api/result",
+  "permalink": "/docs/api/result",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/../../docs/api/result.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "title": "@hex-di/result",
+    "description": "API reference for @hex-di/result — Rust-style Result<T,E> type with combinators, async support, and Option type.",
+    "sidebar_position": 3,
+    "sidebar_label": "@hex-di/result"
+  }
+}

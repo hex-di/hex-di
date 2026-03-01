@@ -1,0 +1,10 @@
+/**
+ * HexDI Core Website - CSS Entry Point
+ * Shared theme + site-specific overrides
+ */
+
+/* Shared theme (design tokens, doc components, accessibility) */
+@import '@hex-di/website-theme/css/custom.css';
+
+/* Site-specific: landing page animations and styles */
+@import './components/landing.css';

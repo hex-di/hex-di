@@ -1,0 +1,20 @@
+{
+  "id": "index",
+  "title": "Introduction",
+  "description": "Rust-inspired Result with pattern matching and railway-oriented programming.",
+  "source": "@site/docs/index.md",
+  "sourceDirName": ".",
+  "slug": "/",
+  "permalink": "/docs/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/index.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Introduction"
+  },
+  "sidebar": "docs"
+}

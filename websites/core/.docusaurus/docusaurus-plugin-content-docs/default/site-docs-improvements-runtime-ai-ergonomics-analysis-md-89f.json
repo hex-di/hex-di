@@ -1,0 +1,15 @@
+{
+  "id": "improvements/runtime-ai-ergonomics-analysis",
+  "title": "AI/LLM Ergonomics Analysis: @hex-di/runtime Package",
+  "description": "Executive Summary",
+  "source": "@site/../../docs/improvements/runtime-ai-ergonomics-analysis.md",
+  "sourceDirName": "improvements",
+  "slug": "/improvements/runtime-ai-ergonomics-analysis",
+  "permalink": "/docs/improvements/runtime-ai-ergonomics-analysis",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/../../docs/improvements/runtime-ai-ergonomics-analysis.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

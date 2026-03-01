@@ -1,0 +1,30 @@
+{
+  "id": "getting-started/lifetimes",
+  "title": "Service Lifetimes",
+  "description": "Master singleton, scoped, and transient service lifetimes in HexDI for proper instance management.",
+  "source": "@site/../../docs/getting-started/lifetimes.md",
+  "sourceDirName": "getting-started",
+  "slug": "/getting-started/lifetimes",
+  "permalink": "/docs/getting-started/lifetimes",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/../../docs/getting-started/lifetimes.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "title": "Service Lifetimes",
+    "description": "Master singleton, scoped, and transient service lifetimes in HexDI for proper instance management.",
+    "sidebar_position": 4,
+    "sidebar_label": "Lifetimes"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "First Application",
+    "permalink": "/docs/getting-started/first-application"
+  },
+  "next": {
+    "title": "TypeScript Integration",
+    "permalink": "/docs/getting-started/typescript-integration"
+  }
+}

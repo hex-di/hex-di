@@ -1,0 +1,15 @@
+{
+  "id": "improvements/adapter",
+  "title": "Adapter API Improvements",
+  "description": "Status: IMPLEMENTED (v3.0 - February 2026)",
+  "source": "@site/../../docs/improvements/adapter.md",
+  "sourceDirName": "improvements",
+  "slug": "/improvements/adapter",
+  "permalink": "/docs/improvements/adapter",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/../../docs/improvements/adapter.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

@@ -1,0 +1,43 @@
+/**
+ * HexDI Reduced Motion Support — Cyberpunk Dark Theme
+ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .card:hover,
+  .whyBenefitCard:hover,
+  .lifetimeCard:hover,
+  [class*="card"]:hover {
+    transform: none !important;
+  }
+
+  .heroVisual {
+    animation: none !important;
+  }
+
+  @keyframes searchModalFadeIn {
+    from, to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .search-result-highlight {
+    animation: none !important;
+    background-color: rgba(0, 240, 255, 0.2) !important;
+  }
+
+  .aa-DetachedFormContainer .aa-LoadingIndicator,
+  .DocSearch-LoadingIndicator,
+  [class*="searchLoading"] {
+    animation: none !important;
+  }
+}

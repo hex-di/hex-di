@@ -1,0 +1,30 @@
+{
+  "id": "api/core",
+  "title": "@hex-di/core",
+  "description": "API reference for @hex-di/core — the foundational package providing typed port tokens, adapters, error classes, and utilities.",
+  "source": "@site/../../docs/api/core.md",
+  "sourceDirName": "api",
+  "slug": "/api/core",
+  "permalink": "/docs/api/core",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/../../docs/api/core.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "title": "@hex-di/core",
+    "description": "API reference for @hex-di/core — the foundational package providing typed port tokens, adapters, error classes, and utilities.",
+    "sidebar_position": 1,
+    "sidebar_label": "@hex-di/core"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "API Reference",
+    "permalink": "/docs/api/"
+  },
+  "next": {
+    "title": "@hex-di/graph",
+    "permalink": "/docs/api/graph"
+  }
+}

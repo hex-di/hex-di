@@ -1,0 +1,141 @@
+/**
+ * CodeExample Styles — Cyberpunk Terminal Style
+ */
+
+.container {
+  margin: 32px 0;
+  border: 1px solid rgba(0, 240, 255, 0.12);
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(2, 4, 8, 0.9);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 24px;
+  background: rgba(8, 16, 28, 0.6);
+  border-bottom: 1px solid rgba(0, 240, 255, 0.08);
+}
+
+@media (min-width: 640px) {
+  .header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+}
+
+.headerContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-headings);
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--hexdi-text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.description {
+  margin: 4px 0 0 0;
+  font-family: var(--font-primary);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--hexdi-text-secondary);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #00F0FF;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.link:hover {
+  color: #5FFFFF;
+  text-decoration: underline;
+}
+
+.codeWrapper {
+  /* Container for code block */
+}
+
+.codeWrapper pre,
+.codeWrapper [class*="codeBlockContainer"],
+.codeWrapper [class*="codeBlock"] {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+}
+
+.codeWrapper pre {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.codeWrapper [class*="codeBlockTitle"] {
+  border-radius: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link {
+    transition: none;
+  }
+}
+
+/* Mobile */
+@media screen and (max-width: 639px) {
+  .container {
+    margin: 24px 0;
+    margin-left: -16px;
+    margin-right: -16px;
+    border-radius: 0;
+    width: calc(100% + 32px);
+  }
+
+  .header {
+    padding: 16px;
+    gap: 8px;
+  }
+
+  .title {
+    font-size: 1rem;
+  }
+
+  .description {
+    font-size: 0.8125rem;
+  }
+
+  .link {
+    font-size: 0.8125rem;
+    min-height: 44px;
+    padding: 8px 0;
+  }
+}
+
+/* Tablet */
+@media screen and (min-width: 640px) and (max-width: 1023px) {
+  .container {
+    margin: 24px 0;
+  }
+
+  .header {
+    padding: 16px 20px;
+  }
+}

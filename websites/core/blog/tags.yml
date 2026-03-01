@@ -1,0 +1,15 @@
+release:
+  label: Release
+  description: New version releases and changelogs
+architecture:
+  label: Architecture
+  description: Architecture decisions and patterns
+tutorial:
+  label: Tutorial
+  description: Step-by-step guides and tutorials
+typescript:
+  label: TypeScript
+  description: TypeScript type system tips and techniques
+di:
+  label: Dependency Injection
+  description: DI patterns and best practices

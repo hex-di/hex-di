@@ -1,0 +1,29 @@
+{
+  "id": "guides/README",
+  "title": "Guides",
+  "description": "In-depth guides for integrating HexDI with React, testing strategies, and error handling.",
+  "source": "@site/../../docs/guides/README.md",
+  "sourceDirName": "guides",
+  "slug": "/guides/",
+  "permalink": "/docs/guides/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/../../docs/guides/README.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "title": "Guides",
+    "description": "In-depth guides for integrating HexDI with React, testing strategies, and error handling.",
+    "sidebar_position": 2
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "TypeScript Integration",
+    "permalink": "/docs/getting-started/typescript-integration"
+  },
+  "next": {
+    "title": "React Integration",
+    "permalink": "/docs/guides/react-integration"
+  }
+}

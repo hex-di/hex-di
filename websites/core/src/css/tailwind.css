@@ -1,0 +1,9 @@
+/**
+ * Tailwind utilities — loaded for the dark tactical landing page.
+ * NOTE: @tailwind base is intentionally omitted to avoid overriding
+ * Docusaurus/Infima global styles on docs pages.
+ *
+ * All non-utility CSS (keyframes, design tokens, component classes)
+ * lives in components/landing.css to avoid being purged.
+ */
+@tailwind utilities;

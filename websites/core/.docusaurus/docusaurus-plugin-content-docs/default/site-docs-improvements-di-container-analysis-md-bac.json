@@ -1,0 +1,15 @@
+{
+  "id": "improvements/di-container-analysis",
+  "title": "Dependency Injection Container Analysis Report",
+  "description": "Executive Summary",
+  "source": "@site/../../docs/improvements/di-container-analysis.md",
+  "sourceDirName": "improvements",
+  "slug": "/improvements/di-container-analysis",
+  "permalink": "/docs/improvements/di-container-analysis",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/../../docs/improvements/di-container-analysis.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

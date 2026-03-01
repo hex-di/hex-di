@@ -1,0 +1,15 @@
+{
+  "id": "api/graph-architecture",
+  "title": "@hex-di/graph Architecture",
+  "description": "This document explains the internal architecture of the @hex-di/graph package, which provides compile-time dependency validation for HexDI.",
+  "source": "@site/../../docs/api/graph-architecture.md",
+  "sourceDirName": "api",
+  "slug": "/api/graph-architecture",
+  "permalink": "/docs/api/graph-architecture",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/../../docs/api/graph-architecture.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

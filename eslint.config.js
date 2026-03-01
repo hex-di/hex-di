@@ -143,6 +143,7 @@ export default tseslint.config(
       "libs/**",
       "examples/**",
       "website/**",
+      "websites/**",
     ],
   },
   {

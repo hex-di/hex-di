@@ -1,0 +1,97 @@
+/**
+ * HexDI Syntax Highlighting — Cyberpunk Presentation Palette
+ *
+ * Single dark-only token set matching the presentation design language.
+ */
+
+/* Keywords: import, const, function, return, etc. */
+.token.keyword {
+  color: #FF5E00;
+}
+
+/* Strings */
+.token.string {
+  color: #A6E22E;
+}
+
+/* Functions */
+.token.function {
+  color: #00F0FF;
+}
+
+/* Types and classes */
+.token.class-name,
+.token.maybe-class-name {
+  color: #F92672;
+}
+
+/* Comments */
+.token.comment {
+  color: #586E85;
+  font-style: italic;
+}
+
+/* Operators */
+.token.operator {
+  color: #F92672;
+}
+
+/* Punctuation */
+.token.punctuation {
+  color: #DAE6F0;
+}
+
+/* Numbers */
+.token.number {
+  color: #AE81FF;
+}
+
+/* Boolean */
+.token.boolean {
+  color: #AE81FF;
+}
+
+/* Built-in types */
+.token.builtin {
+  color: #66D9EF;
+}
+
+/* Property names */
+.token.property {
+  color: #DAE6F0;
+}
+
+/* Template strings / interpolation */
+.token.template-string {
+  color: #A6E22E;
+}
+
+/* Regex */
+.token.regex {
+  color: #FF5E00;
+}
+
+/* Decorators / annotations */
+.token.decorator,
+.token.annotation {
+  color: #F92672;
+}
+
+/* Constants */
+.token.constant {
+  color: #AE81FF;
+}
+
+/* Tags (JSX/HTML) */
+.token.tag {
+  color: #F92672;
+}
+
+/* Attributes */
+.token.attr-name {
+  color: #A6E22E;
+}
+
+.token.attr-value {
+  color: #A6E22E;
+}

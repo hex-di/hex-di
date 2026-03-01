@@ -1,0 +1,171 @@
+/**
+ * HexDI Code Block Styling — Cyberpunk Dark Theme
+ *
+ * Terminal-style code blocks with traffic light dots on titled blocks.
+ */
+
+/* ==========================================================================
+   Code Block Styling with Fira Code Ligatures
+   ========================================================================== */
+
+code, pre, .prism-code,
+code[class*="language-"],
+pre[class*="language-"] {
+  font-family: var(--font-code);
+  font-size: var(--text-code);
+  line-height: var(--text-code-line);
+  font-weight: var(--text-code-weight);
+  font-feature-settings: 'liga' 1, 'calt' 1;
+  font-variant-ligatures: common-ligatures contextual;
+  -webkit-font-feature-settings: 'liga' 1, 'calt' 1;
+  -moz-font-feature-settings: 'liga' 1, 'calt' 1;
+}
+
+/* Inline code styling */
+code:not(pre code) {
+  font-family: var(--font-code);
+  font-feature-settings: 'liga' 1, 'calt' 1;
+  background: rgba(0, 240, 255, 0.06);
+  color: #00F0FF;
+  border-radius: 2px;
+}
+
+pre {
+  font-family: var(--font-code);
+  font-feature-settings: 'liga' 1, 'calt' 1;
+}
+
+[class*="codeBlockContainer"] code {
+  font-family: var(--font-code);
+  font-feature-settings: 'liga' 1, 'calt' 1;
+}
+
+.theme-code-block pre {
+  font-family: var(--font-code);
+  font-feature-settings: 'liga' 1, 'calt' 1;
+}
+
+/* ==========================================================================
+   Code Block Container Styling
+   ========================================================================== */
+
+[class*="codeBlockContainer"] {
+  background-color: rgba(2, 4, 8, 0.9);
+  border: 1px solid rgba(0, 240, 255, 0.12);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+[class*="codeBlockContent"] {
+  background-color: rgba(2, 4, 8, 0.9);
+}
+
+[class*="codeBlockContainer"] pre {
+  background-color: rgba(2, 4, 8, 0.9);
+  padding: 16px;
+  margin: 0;
+  border-radius: 0;
+}
+
+/* ==========================================================================
+   Code Block Header Bar — Terminal Style
+   ========================================================================== */
+
+[class*="codeBlockTitle"] {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px 0 56px;
+  background-color: rgba(8, 16, 28, 0.6);
+  border-bottom: 1px solid rgba(0, 240, 255, 0.08);
+  font-family: var(--font-code);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #586E85;
+  position: relative;
+}
+
+/* Traffic light dots */
+[class*="codeBlockTitle"]::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #F92672;
+  box-shadow:
+    14px 0 0 #FFB020,
+    28px 0 0 #A6E22E;
+}
+
+/* Language badge styling */
+[class*="codeBlockTitle"] + [class*="codeBlockContent"]::before {
+  content: attr(data-language);
+  position: absolute;
+  top: 8px;
+  right: 48px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #586E85;
+  background-color: rgba(0, 240, 255, 0.06);
+  padding: 2px 8px;
+  border-radius: 2px;
+}
+
+/* ==========================================================================
+   Code Block Copy Button
+   ========================================================================== */
+
+[class*="buttonGroup"] {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+}
+
+[class*="codeBlockTitle"] + [class*="codeBlockContent"] [class*="buttonGroup"] {
+  top: 48px;
+}
+
+[class*="copyButton"] {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  color: #586E85;
+  transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+}
+
+[class*="copyButton"] svg {
+  width: 16px;
+  height: 16px;
+}
+
+[class*="copyButton"]:hover {
+  background-color: rgba(0, 240, 255, 0.08);
+  color: #00F0FF;
+}
+
+[class*="copyButton"]:active {
+  transform: scale(0.95);
+}
+
+[class*="copyButton"][class*="copied"],
+[class*="copyButton"]:focus {
+  background-color: rgba(0, 240, 255, 0.1);
+  color: #00F0FF;
+}

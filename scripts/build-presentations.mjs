@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Builds published presentations and copies their output into
- * website/static/presentations/<id>/ so Docusaurus serves them as-is.
+ * websites/core/static/presentations/<id>/ so Docusaurus serves them as-is.
  *
  * Usage: node scripts/build-presentations.mjs
  */
@@ -15,7 +15,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "..");
 
 const config = JSON.parse(
-  readFileSync(resolve(root, "website/presentations.json"), "utf8")
+  readFileSync(resolve(root, "websites/core/presentations.json"), "utf8")
 );
 
 const published = config.filter((p) => p.published);
@@ -25,7 +25,7 @@ if (published.length === 0) {
   process.exit(0);
 }
 
-const staticDir = resolve(root, "website/static/presentations");
+const staticDir = resolve(root, "websites/core/static/presentations");
 
 // Clean previous build output
 rmSync(staticDir, { recursive: true, force: true });
@@ -35,7 +35,7 @@ let failed = false;
 
 for (const entry of published) {
   const appDir = resolve(root, entry.appPath);
-  const base = `/hex-di/presentations/${entry.id}/`;
+  const base = `/presentations/${entry.id}/`;
   const outDir = resolve(staticDir, entry.id);
 
   console.log(`\nBuilding "${entry.name}" (${entry.id})...`);

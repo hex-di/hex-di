@@ -1,0 +1,21 @@
+{
+  "id": "README",
+  "title": "HexDI Documentation",
+  "description": "HexDI makes your dependency graph structurally correct by construction — compile-time architectural validation for TypeScript applications.",
+  "source": "@site/../../docs/README.md",
+  "sourceDirName": ".",
+  "slug": "/",
+  "permalink": "/docs/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/../../docs/README.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "title": "HexDI Documentation",
+    "description": "HexDI makes your dependency graph structurally correct by construction — compile-time architectural validation for TypeScript applications.",
+    "sidebar_position": 1,
+    "sidebar_label": "Overview"
+  }
+}

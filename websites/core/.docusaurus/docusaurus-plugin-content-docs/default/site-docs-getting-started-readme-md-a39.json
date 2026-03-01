@@ -1,0 +1,25 @@
+{
+  "id": "getting-started/README",
+  "title": "Getting Started",
+  "description": "Install HexDI and learn how structural dependency injection works in TypeScript.",
+  "source": "@site/../../docs/getting-started/README.md",
+  "sourceDirName": "getting-started",
+  "slug": "/getting-started/",
+  "permalink": "/docs/getting-started/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/../../docs/getting-started/README.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "title": "Getting Started",
+    "description": "Install HexDI and learn how structural dependency injection works in TypeScript.",
+    "sidebar_position": 1
+  },
+  "sidebar": "docsSidebar",
+  "next": {
+    "title": "Installation",
+    "permalink": "/docs/getting-started/installation"
+  }
+}

@@ -1,0 +1,40 @@
+/**
+ * HexDI Transitions — Dark-only theme
+ *
+ * No theme switching — single dark mode.
+ */
+
+html {
+  color-scheme: dark;
+}
+
+/* Subtle transitions for interactive elements */
+.navbar,
+.footer,
+.menu,
+.pagination-nav,
+.table-of-contents,
+.theme-doc-sidebar-container {
+  transition:
+    border-color 0.2s ease-in-out;
+}
+
+/* Code block transition */
+pre,
+code,
+.prism-code,
+[class*="codeBlockContainer"],
+[class*="codeBlockContent"] {
+  transition:
+    border-color 0.2s ease-in-out;
+}
+
+/* Card and surface transitions */
+.card,
+[class*="card"],
+.alert,
+[class*="admonition"] {
+  transition:
+    border-color 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out;
+}

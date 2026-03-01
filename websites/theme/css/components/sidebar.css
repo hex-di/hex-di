@@ -1,0 +1,215 @@
+/**
+ * HexDI Sidebar Navigation — Cyberpunk Dark Theme
+ *
+ * Cyan active state, border-left indicator, monospace category labels.
+ */
+
+/* -------------------------------------------------------------------------
+   Sidebar Container
+   ------------------------------------------------------------------------- */
+
+.theme-doc-sidebar-container {
+  width: 280px !important;
+  min-width: 280px;
+  border-right: 1px solid rgba(0, 240, 255, 0.12);
+  background-color: rgba(8, 16, 28, 0.5);
+  box-shadow: 4px 0 30px -10px rgba(0, 240, 255, 0.15);
+  backdrop-filter: blur(8px);
+}
+
+[class*="sidebarViewport"] {
+  top: 0;
+  position: sticky;
+  max-height: 100vh;
+}
+
+/* -------------------------------------------------------------------------
+   Sidebar Menu Styling
+   ------------------------------------------------------------------------- */
+
+.menu {
+  padding: 16px 12px;
+  font-family: var(--font-primary);
+  font-weight: var(--weight-regular);
+}
+
+.menu__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menu__list .menu__list {
+  margin-left: 0;
+  padding-left: 14px;
+  border-left: 1px solid rgba(0, 240, 255, 0.08);
+  margin-top: 4px;
+}
+
+/* -------------------------------------------------------------------------
+   Menu Links
+   ------------------------------------------------------------------------- */
+
+.menu__link {
+  display: flex;
+  align-items: center;
+  padding: 9px 12px;
+  border-radius: 2px;
+  border-left: 2px solid transparent;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  color: #586E85;
+  text-decoration: none;
+  transition:
+    background-color 0.15s ease-in-out,
+    color 0.15s ease-in-out,
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
+}
+
+.menu__link:hover {
+  background-color: rgba(0, 240, 255, 0.03);
+  color: #DAE6F0;
+  text-decoration: none;
+  border-left-color: rgba(0, 240, 255, 0.15);
+}
+
+.menu__link--active {
+  background-color: rgba(0, 240, 255, 0.05);
+  color: #00F0FF;
+  border-left-color: #00F0FF;
+  font-weight: var(--weight-medium);
+  box-shadow: inset 3px 0 8px -4px rgba(0, 240, 255, 0.3);
+}
+
+.menu__link--active:hover {
+  background-color: rgba(0, 240, 255, 0.05);
+  color: #00F0FF;
+}
+
+/* -------------------------------------------------------------------------
+   Category Styling (Collapsible Sections)
+   ------------------------------------------------------------------------- */
+
+.menu__list-item--collapsed .menu__list {
+  display: none;
+}
+
+.menu__caret,
+.menu__link--sublist {
+  cursor: pointer;
+}
+
+.menu__link--sublist-caret {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 2px;
+  border-left: 2px solid rgba(0, 240, 255, 0.25);
+  font-family: var(--font-code);
+  font-size: 0.6875rem;
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--hexdi-text-primary);
+  background-color: transparent;
+  transition:
+    background-color 0.15s ease-in-out,
+    color 0.15s ease-in-out,
+    border-color 0.15s ease-in-out;
+}
+
+.menu__link--sublist-caret:hover {
+  background-color: rgba(0, 240, 255, 0.03);
+  color: #00F0FF;
+  border-left-color: #00F0FF;
+}
+
+/* Category separators — top border between sibling categories */
+.menu__list-item + .menu__list-item:has(> .menu__link--sublist-caret) {
+  border-top: 1px solid rgba(0, 240, 255, 0.06);
+  margin-top: 8px;
+  padding-top: 12px;
+}
+
+/* -------------------------------------------------------------------------
+   Chevron (Caret) Indicators
+   ------------------------------------------------------------------------- */
+
+.menu__caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  transition: transform 0.2s ease-in-out;
+}
+
+.menu__caret-icon {
+  transition: transform 0.2s ease-in-out;
+}
+
+.menu__list-item:not(.menu__list-item--collapsed) > * > .menu__caret-icon {
+  transform: rotate(90deg);
+}
+
+/* -------------------------------------------------------------------------
+   Sidebar Scrolling Behavior
+   ------------------------------------------------------------------------- */
+
+.theme-doc-sidebar-menu {
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(100vh - 64px);
+  padding-bottom: 24px;
+}
+
+.theme-doc-sidebar-menu::-webkit-scrollbar {
+  width: 4px;
+}
+
+.theme-doc-sidebar-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.theme-doc-sidebar-menu::-webkit-scrollbar-thumb {
+  background: var(--hexdi-scrollbar-thumb);
+  border-radius: 3px;
+}
+
+.theme-doc-sidebar-menu::-webkit-scrollbar-thumb:hover {
+  background: var(--hexdi-scrollbar-thumb-hover);
+}
+
+/* -------------------------------------------------------------------------
+   Sidebar Transitions
+   ------------------------------------------------------------------------- */
+
+.theme-doc-sidebar-container,
+.menu,
+.menu__link,
+.menu__link--sublist-caret {
+  transition:
+    background-color 0.15s ease-in-out,
+    color 0.15s ease-in-out,
+    border-color 0.15s ease-in-out;
+}
+
+/* -------------------------------------------------------------------------
+   Mobile Sidebar
+   ------------------------------------------------------------------------- */
+
+@media (max-width: 996px) {
+  .theme-doc-sidebar-container {
+    width: 100% !important;
+    min-width: 100%;
+    border-right: none;
+    box-shadow: none;
+  }
+
+  .theme-doc-sidebar-menu {
+    max-height: calc(100vh - 120px);
+  }
+}

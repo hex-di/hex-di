@@ -1,0 +1,205 @@
+/**
+ * PackageCard Styles — Cyberpunk HUD Card
+ */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  padding: 28px;
+  background: rgba(8, 16, 28, 0.5);
+  border: 1px solid rgba(0, 240, 255, 0.12);
+  border-radius: 2px;
+  position: relative;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  border-color: rgba(0, 240, 255, 0.3);
+  box-shadow: 0 0 24px rgba(0, 240, 255, 0.06);
+}
+
+/* Corner brackets */
+.card::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 14px;
+  height: 14px;
+  border-color: #00F0FF;
+  border-style: solid;
+  border-width: 2px 0 0 2px;
+  pointer-events: none;
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 14px;
+  height: 14px;
+  border-color: #00F0FF;
+  border-style: solid;
+  border-width: 0 2px 2px 0;
+  pointer-events: none;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.name {
+  margin: 0;
+  font-family: var(--font-code);
+  font-size: 1.125rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #00F0FF;
+}
+
+.badge {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 4px 12px;
+  font-family: var(--font-code);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-radius: 2px;
+}
+
+.badgeCore {
+  background: rgba(0, 240, 255, 0.1);
+  color: #00F0FF;
+  border: 1px solid rgba(0, 240, 255, 0.2);
+}
+
+.badgeOptional {
+  background: rgba(255, 94, 0, 0.1);
+  color: #FF5E00;
+  border: 1px solid rgba(255, 94, 0, 0.2);
+}
+
+.description {
+  margin: 0 0 16px 0;
+  font-family: var(--font-primary);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--hexdi-text-primary);
+}
+
+.features {
+  margin: 0 0 16px 0;
+  padding: 0;
+  list-style: none;
+  flex-grow: 1;
+}
+
+.feature {
+  position: relative;
+  padding-left: 24px;
+  margin-bottom: 8px;
+  font-family: var(--font-primary);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--hexdi-text-secondary);
+}
+
+.feature:last-child {
+  margin-bottom: 0;
+}
+
+.feature::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 14px;
+  height: 8px;
+  border-left: 2px solid #A6E22E;
+  border-bottom: 2px solid #A6E22E;
+  transform: rotate(-45deg);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: auto;
+  font-family: var(--font-primary);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #00F0FF;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.link:hover {
+  color: #5FFFFF;
+  text-decoration: underline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+
+  .link {
+    transition: none;
+  }
+}
+
+/* Mobile */
+@media screen and (max-width: 639px) {
+  .card {
+    padding: 20px;
+  }
+
+  .name {
+    font-size: 1rem;
+  }
+
+  .badge {
+    padding: 3px 10px;
+    font-size: 0.625rem;
+  }
+
+  .description {
+    font-size: 0.875rem;
+    margin-bottom: 12px;
+  }
+
+  .features {
+    margin-bottom: 12px;
+  }
+
+  .feature {
+    font-size: 0.8125rem;
+    padding-left: 20px;
+  }
+
+  .link {
+    font-size: 0.875rem;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .card {
+    transform: none !important;
+  }
+
+  .card:active {
+    transform: scale(0.98) !important;
+  }
+}

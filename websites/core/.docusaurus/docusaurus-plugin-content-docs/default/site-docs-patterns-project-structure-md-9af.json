@@ -1,0 +1,29 @@
+{
+  "id": "patterns/project-structure",
+  "title": "Project Structure",
+  "description": "Recommended patterns for organizing HexDI code including directory structure, domain organization, and monorepo setups.",
+  "source": "@site/../../docs/patterns/project-structure.md",
+  "sourceDirName": "patterns",
+  "slug": "/patterns/project-structure",
+  "permalink": "/docs/patterns/project-structure",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/../../docs/patterns/project-structure.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "title": "Project Structure",
+    "description": "Recommended patterns for organizing HexDI code including directory structure, domain organization, and monorepo setups.",
+    "sidebar_position": 1
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Patterns",
+    "permalink": "/docs/patterns/"
+  },
+  "next": {
+    "title": "Composing Graphs",
+    "permalink": "/docs/patterns/composing-graphs"
+  }
+}

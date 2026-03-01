@@ -1,0 +1,118 @@
+/**
+ * HexDI Previous/Next Navigation — Cyberpunk Dark Theme
+ *
+ * HUD card style with cyan border hover and glow.
+ */
+
+.pagination-nav {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--hexdi-border);
+}
+
+.pagination-nav__link {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 20px;
+  border: 1px solid var(--hexdi-border);
+  border-radius: 2px;
+  background-color: var(--hexdi-surface);
+  text-decoration: none;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.pagination-nav__link:hover {
+  border-color: rgba(0, 240, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.06);
+  text-decoration: none;
+}
+
+.pagination-nav__link--prev {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.pagination-nav__link--next {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.pagination-nav__sublabel {
+  font-size: 0.75rem;
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--hexdi-text-tertiary);
+  margin-bottom: 4px;
+}
+
+.pagination-nav__label {
+  font-family: var(--font-headings);
+  font-size: 1rem;
+  font-weight: var(--weight-semibold);
+  color: #00F0FF;
+  line-height: 1.4;
+  transition: color 0.15s ease-in-out;
+}
+
+.pagination-nav__link:hover .pagination-nav__label {
+  color: #5FFFFF;
+}
+
+/* Arrow icons */
+.pagination-nav__link--prev .pagination-nav__sublabel::before {
+  content: '';
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-right: 6px solid var(--hexdi-text-tertiary);
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.pagination-nav__link--next .pagination-nav__sublabel::after {
+  content: '';
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 6px solid var(--hexdi-text-tertiary);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* Responsive — stack on small screens */
+@media (max-width: 640px) {
+  .pagination-nav {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .pagination-nav__link--prev,
+  .pagination-nav__link--next {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .pagination-nav__link--next .pagination-nav__sublabel::after {
+    display: none;
+  }
+
+  .pagination-nav__link--next .pagination-nav__sublabel::before {
+    content: '';
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-left: 6px solid var(--hexdi-text-tertiary);
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+}

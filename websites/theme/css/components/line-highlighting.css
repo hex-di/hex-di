@@ -1,0 +1,68 @@
+/**
+ * HexDI Line Highlighting — Cyberpunk Dark Theme
+ */
+
+/* ==========================================================================
+   Line Numbers
+   ========================================================================== */
+
+.prism-code .token-line .line-number,
+[class*="codeLineNumber"] {
+  display: inline-block;
+  width: 40px;
+  min-width: 40px;
+  padding-right: 16px;
+  text-align: right;
+  color: #586E85;
+  font-size: 13px;
+  font-family: var(--font-code);
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.theme-code-block [class*="lineNumber"] {
+  width: 40px;
+  min-width: 40px;
+  padding-right: 16px;
+  text-align: right;
+  color: #586E85;
+  user-select: none;
+}
+
+[data-word-wrap="true"] [class*="codeLineNumber"] {
+  width: 40px;
+  min-width: 40px;
+}
+
+/* ==========================================================================
+   Line Highlighting
+   ========================================================================== */
+
+/* Default highlighted line */
+.theme-code-block-highlighted-line {
+  background-color: rgba(0, 240, 255, 0.08);
+  display: block;
+  margin: 0 -16px;
+  padding: 0 16px;
+  border-left: 3px solid #00F0FF;
+}
+
+/* Error line highlighting */
+.code-block-error-line {
+  background-color: rgba(249, 38, 114, 0.08);
+  display: block;
+  margin: 0 -16px;
+  padding: 0 16px;
+  border-left: 3px solid #F92672;
+}
+
+/* Success line highlighting */
+.code-block-success-line {
+  background-color: rgba(166, 226, 46, 0.08);
+  display: block;
+  margin: 0 -16px;
+  padding: 0 16px;
+  border-left: 3px solid #A6E22E;
+}

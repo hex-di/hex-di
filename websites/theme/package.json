@@ -1,0 +1,15 @@
+{
+  "name": "@hex-di/website-theme",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./config": "./src/config.ts",
+    "./libraries": "./src/libraries.ts",
+    "./css/*": "./css/*"
+  },
+  "dependencies": {
+    "@docusaurus/types": "3.9.2"
+  }
+}

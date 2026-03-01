@@ -1,0 +1,82 @@
+/**
+ * HexDI Breadcrumb Navigation — Cyberpunk Dark Theme
+ */
+
+/* Breadcrumb container */
+.breadcrumbs,
+.theme-doc-breadcrumbs,
+[class*="breadcrumbsContainer"] {
+  margin-bottom: 16px;
+  padding: 0;
+}
+
+.breadcrumbs__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.breadcrumbs__item {
+  display: flex;
+  align-items: center;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.breadcrumbs__link {
+  color: var(--hexdi-text-secondary);
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 2px;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+.breadcrumbs__link:hover {
+  color: #00F0FF;
+  background-color: rgba(0, 240, 255, 0.05);
+  text-decoration: none;
+}
+
+.breadcrumbs__item--active .breadcrumbs__link {
+  color: var(--hexdi-text-primary);
+  font-weight: var(--weight-medium);
+  background-color: transparent;
+}
+
+.breadcrumbs__item--active .breadcrumbs__link:hover {
+  background-color: transparent;
+  cursor: default;
+}
+
+/* Separator */
+.breadcrumbs__item:not(:last-child)::after {
+  content: '/';
+  margin-left: 8px;
+  color: var(--hexdi-text-tertiary);
+  font-size: 0.8125rem;
+  font-weight: var(--weight-regular);
+}
+
+.breadcrumbs__item svg {
+  width: 12px;
+  height: 12px;
+  margin: 0 4px;
+  fill: var(--hexdi-text-tertiary);
+}
+
+/* Home icon */
+.breadcrumbs__item:first-child .breadcrumbs__link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.breadcrumbs__item:first-child .breadcrumbs__link svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}

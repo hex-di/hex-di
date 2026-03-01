@@ -7,5 +7,5 @@ packages:
   - "examples/pokenerve/*"
   - "presentations/*/app"
   - "testing/*"
-  - "website"
+  - "websites/*"
   - "tools/specforge/*"

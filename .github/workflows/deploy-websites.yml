@@ -1,0 +1,167 @@
+name: Deploy Websites
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "websites/**"
+      - "docs/**"
+      - "presentations/**"
+  workflow_dispatch:
+    inputs:
+      force_all:
+        description: "Deploy all sites (ignore change detection)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: "deploy-websites"
+  cancel-in-progress: false
+
+jobs:
+  # ── Detect which sites need rebuilding ────────────────────────
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      has_sites: ${{ steps.set-matrix.outputs.has_sites }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed sites
+        id: set-matrix
+        run: |
+          ALL_SITES='[
+            {"id":"core","project":"hexdi-dev","pkg":"@hex-di/website-core"},
+            {"id":"result","project":"result-hexdi-dev","pkg":"@hex-di/website-result"},
+            {"id":"flow","project":"flow-hexdi-dev","pkg":"@hex-di/website-flow"},
+            {"id":"guard","project":"guard-hexdi-dev","pkg":"@hex-di/website-guard"},
+            {"id":"saga","project":"saga-hexdi-dev","pkg":"@hex-di/website-saga"},
+            {"id":"query","project":"query-hexdi-dev","pkg":"@hex-di/website-query"},
+            {"id":"store","project":"store-hexdi-dev","pkg":"@hex-di/website-store"},
+            {"id":"logger","project":"logger-hexdi-dev","pkg":"@hex-di/website-logger"},
+            {"id":"tracing","project":"tracing-hexdi-dev","pkg":"@hex-di/website-tracing"},
+            {"id":"clock","project":"clock-hexdi-dev","pkg":"@hex-di/website-clock"},
+            {"id":"crypto","project":"crypto-hexdi-dev","pkg":"@hex-di/website-crypto"},
+            {"id":"http-client","project":"http-client-hexdi-dev","pkg":"@hex-di/website-http-client"}
+          ]'
+
+          # Force all on workflow_dispatch with force_all=true
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.force_all }}" = "true" ]; then
+            echo "Force deploying all sites"
+            echo "matrix={\"include\":$(echo "$ALL_SITES" | jq -c)}" >> "$GITHUB_OUTPUT"
+            echo "has_sites=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git diff --name-only HEAD)
+
+          REBUILD_ALL=false
+          SITES_TO_BUILD="[]"
+
+          # Theme changes → rebuild all
+          if echo "$CHANGED_FILES" | grep -q "^websites/theme/"; then
+            REBUILD_ALL=true
+          fi
+
+          if [ "$REBUILD_ALL" = "true" ]; then
+            echo "Theme changed — rebuilding all sites"
+            SITES_TO_BUILD="$ALL_SITES"
+          else
+            # docs/ or presentations/ changes → rebuild core
+            CORE_TRIGGER=false
+            if echo "$CHANGED_FILES" | grep -q "^docs/"; then
+              CORE_TRIGGER=true
+            fi
+            if echo "$CHANGED_FILES" | grep -q "^presentations/"; then
+              CORE_TRIGGER=true
+            fi
+
+            # Check each site directory for changes
+            for site_json in $(echo "$ALL_SITES" | jq -c '.[]'); do
+              site_id=$(echo "$site_json" | jq -r '.id')
+
+              if [ "$site_id" = "core" ] && [ "$CORE_TRIGGER" = "true" ]; then
+                SITES_TO_BUILD=$(echo "$SITES_TO_BUILD" | jq -c ". + [$site_json]")
+                continue
+              fi
+
+              if echo "$CHANGED_FILES" | grep -q "^websites/${site_id}/"; then
+                SITES_TO_BUILD=$(echo "$SITES_TO_BUILD" | jq -c ". + [$site_json]")
+              fi
+            done
+          fi
+
+          COUNT=$(echo "$SITES_TO_BUILD" | jq length)
+          echo "Sites to deploy: $COUNT"
+          echo "$SITES_TO_BUILD" | jq -r '.[].id'
+
+          if [ "$COUNT" -gt 0 ]; then
+            echo "matrix={\"include\":$(echo "$SITES_TO_BUILD" | jq -c)}" >> "$GITHUB_OUTPUT"
+            echo "has_sites=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "matrix={\"include\":[]}" >> "$GITHUB_OUTPUT"
+            echo "has_sites=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ── Build each changed site ───────────────────────────────────
+  build:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has_sites == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build presentations (core only)
+        if: matrix.id == 'core'
+        run: node scripts/build-presentations.mjs
+
+      - name: Build site
+        run: pnpm --filter ${{ matrix.pkg }} build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-${{ matrix.id }}
+          path: websites/${{ matrix.id }}/build
+          retention-days: 1
+
+  # ── Deploy each built site to Cloudflare Pages ────────────────
+  deploy:
+    needs: [detect-changes, build]
+    if: needs.detect-changes.outputs.has_sites == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+      fail-fast: false
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: site-${{ matrix.id }}
+          path: build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy build --project-name=${{ matrix.project }}

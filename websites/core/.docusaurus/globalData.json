@@ -1,0 +1,190 @@
+{
+  "docusaurus-plugin-content-docs": {
+    "default": {
+      "path": "/docs",
+      "versions": [
+        {
+          "name": "current",
+          "label": "Next",
+          "isLast": true,
+          "path": "/docs",
+          "mainDocId": "README",
+          "docs": [
+            {
+              "id": "advanced/type-level-programming",
+              "path": "/docs/advanced/type-level-programming"
+            },
+            {
+              "id": "api/core",
+              "path": "/docs/api/core",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "api/graph",
+              "path": "/docs/api/graph",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "api/graph-architecture",
+              "path": "/docs/api/graph-architecture"
+            },
+            {
+              "id": "api/react",
+              "path": "/docs/api/react",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "api/README",
+              "path": "/docs/api/",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "api/result",
+              "path": "/docs/api/result"
+            },
+            {
+              "id": "api/runtime",
+              "path": "/docs/api/runtime",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "api/testing",
+              "path": "/docs/api/testing",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "examples/README",
+              "path": "/docs/examples/",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "getting-started/core-concepts",
+              "path": "/docs/getting-started/core-concepts",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "getting-started/first-application",
+              "path": "/docs/getting-started/first-application",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "getting-started/installation",
+              "path": "/docs/getting-started/installation",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "getting-started/lifetimes",
+              "path": "/docs/getting-started/lifetimes",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "getting-started/README",
+              "path": "/docs/getting-started/",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "getting-started/typescript-integration",
+              "path": "/docs/getting-started/typescript-integration",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "guides/error-handling",
+              "path": "/docs/guides/error-handling",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "guides/react-integration",
+              "path": "/docs/guides/react-integration",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "guides/README",
+              "path": "/docs/guides/",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "guides/testing-strategies",
+              "path": "/docs/guides/testing-strategies",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "improvements",
+              "path": "/docs/improvements"
+            },
+            {
+              "id": "improvements/adapter",
+              "path": "/docs/improvements/adapter"
+            },
+            {
+              "id": "improvements/di-container-analysis",
+              "path": "/docs/improvements/di-container-analysis"
+            },
+            {
+              "id": "improvements/graph-builder",
+              "path": "/docs/improvements/graph-builder"
+            },
+            {
+              "id": "improvements/port",
+              "path": "/docs/improvements/port"
+            },
+            {
+              "id": "improvements/react-runtime-integration-analysis",
+              "path": "/docs/improvements/react-runtime-integration-analysis"
+            },
+            {
+              "id": "improvements/runtime-ai-ergonomics-analysis",
+              "path": "/docs/improvements/runtime-ai-ergonomics-analysis"
+            },
+            {
+              "id": "improvements/runtime-package-improvement-spec",
+              "path": "/docs/improvements/runtime-package-improvement-spec"
+            },
+            {
+              "id": "patterns/composing-graphs",
+              "path": "/docs/patterns/composing-graphs",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "patterns/finalizers-and-cleanup",
+              "path": "/docs/patterns/finalizers-and-cleanup",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "patterns/project-structure",
+              "path": "/docs/patterns/project-structure",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "patterns/README",
+              "path": "/docs/patterns/",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "patterns/scoped-services",
+              "path": "/docs/patterns/scoped-services",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "README",
+              "path": "/docs/"
+            },
+            {
+              "id": "technical-improvements",
+              "path": "/docs/technical-improvements"
+            }
+          ],
+          "draftIds": [],
+          "sidebars": {
+            "docsSidebar": {
+              "link": {
+                "path": "/docs/getting-started/",
+                "label": "Getting Started"
+              }
+            }
+          }
+        }
+      ],
+      "breadcrumbs": true
+    }
+  }
+}

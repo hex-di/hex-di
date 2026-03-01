@@ -1,0 +1,29 @@
+{
+  "id": "guides/react-integration",
+  "title": "React Integration",
+  "description": "Complete guide to integrating HexDI with React using typed hooks, providers, and automatic scope lifecycle management.",
+  "source": "@site/../../docs/guides/react-integration.md",
+  "sourceDirName": "guides",
+  "slug": "/guides/react-integration",
+  "permalink": "/docs/guides/react-integration",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/../../docs/guides/react-integration.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "title": "React Integration",
+    "description": "Complete guide to integrating HexDI with React using typed hooks, providers, and automatic scope lifecycle management.",
+    "sidebar_position": 1
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Guides",
+    "permalink": "/docs/guides/"
+  },
+  "next": {
+    "title": "Testing Strategies",
+    "permalink": "/docs/guides/testing-strategies"
+  }
+}

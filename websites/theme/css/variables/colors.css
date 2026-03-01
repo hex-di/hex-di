@@ -1,0 +1,122 @@
+/**
+ * HexDI Color Variables — Cyberpunk / Tactical Dark Palette
+ *
+ * Single dark-only theme. No light mode, no [data-theme='dark'] overrides.
+ */
+
+:root {
+  /* -------------------------------------------------------------------------
+     Background & Surface
+     ------------------------------------------------------------------------- */
+  --hexdi-background: #020408;
+  --hexdi-surface: #08101C;
+  --hexdi-surface-hover: #0E1A2E;
+
+  /* -------------------------------------------------------------------------
+     Borders
+     ------------------------------------------------------------------------- */
+  --hexdi-border: rgba(0, 240, 255, 0.12);
+  --hexdi-border-light: rgba(0, 240, 255, 0.06);
+
+  /* -------------------------------------------------------------------------
+     Text
+     ------------------------------------------------------------------------- */
+  --hexdi-text-primary: #DAE6F0;
+  --hexdi-text-secondary: #8a9bb0;
+  --hexdi-text-tertiary: #586E85;
+
+  /* -------------------------------------------------------------------------
+     Primary — Cyan
+     ------------------------------------------------------------------------- */
+  --hexdi-primary-900: #001A1D;
+  --hexdi-primary-700: #003D42;
+  --hexdi-primary-600: #006B75;
+  --hexdi-primary-500: #00C4D4;
+  --hexdi-primary-400: #00F0FF;
+  --hexdi-primary-300: #5FFFFF;
+  --hexdi-primary-200: #A0FFFF;
+  --hexdi-primary-100: #B0FFFF;
+  --hexdi-primary-50: rgba(0, 240, 255, 0.06);
+
+  /* -------------------------------------------------------------------------
+     Accent — Orange
+     ------------------------------------------------------------------------- */
+  --hexdi-accent-700: #CC4A00;
+  --hexdi-accent-500: #FF5E00;
+  --hexdi-accent-300: #FFA060;
+
+  /* -------------------------------------------------------------------------
+     Semantic — Success / Warning / Error
+     ------------------------------------------------------------------------- */
+  --hexdi-success-700: #6B9E1E;
+  --hexdi-success-500: #A6E22E;
+  --hexdi-success-300: #C8F06A;
+  --hexdi-success-100: rgba(166, 226, 46, 0.06);
+
+  --hexdi-warning-700: #CC8C00;
+  --hexdi-warning-500: #FFB020;
+  --hexdi-warning-300: #FFD080;
+  --hexdi-warning-100: rgba(255, 176, 32, 0.06);
+
+  --hexdi-error-700: #C01050;
+  --hexdi-error-500: #F92672;
+  --hexdi-error-300: #FF6EA0;
+  --hexdi-error-100: rgba(249, 38, 114, 0.06);
+
+  /* -------------------------------------------------------------------------
+     TypeScript Blue (kept for backward compat in some components)
+     ------------------------------------------------------------------------- */
+  --hexdi-ts-700: #006B75;
+  --hexdi-ts-500: #00C4D4;
+  --hexdi-ts-300: #5FFFFF;
+  --hexdi-ts-100: #B0FFFF;
+
+  /* -------------------------------------------------------------------------
+     Lifetime Scope Colors
+     ------------------------------------------------------------------------- */
+  --hexdi-singleton-600: #00897B;
+  --hexdi-singleton-400: #26A69A;
+  --hexdi-singleton-100: rgba(38, 166, 154, 0.1);
+
+  --hexdi-scoped-600: #FF8F00;
+  --hexdi-scoped-400: #FFA726;
+  --hexdi-scoped-100: rgba(255, 167, 38, 0.1);
+
+  --hexdi-request-600: #7B1FA2;
+  --hexdi-request-400: #AB47BC;
+  --hexdi-request-100: rgba(171, 71, 188, 0.1);
+
+  /* -------------------------------------------------------------------------
+     Admonition Colors
+     ------------------------------------------------------------------------- */
+  --hexdi-info-500: #00F0FF;
+  --hexdi-info-100: #B0FFFF;
+  --hexdi-info-bg: rgba(0, 240, 255, 0.06);
+
+  --hexdi-tip-500: #A6E22E;
+  --hexdi-tip-100: #C8F06A;
+  --hexdi-tip-bg: rgba(166, 226, 46, 0.06);
+
+  --hexdi-caution-500: #FF5E00;
+  --hexdi-caution-100: #FFA060;
+  --hexdi-caution-bg: rgba(255, 94, 0, 0.06);
+
+  --hexdi-danger-500: #F92672;
+  --hexdi-danger-100: #FF6EA0;
+  --hexdi-danger-bg: rgba(249, 38, 114, 0.06);
+
+  /* -------------------------------------------------------------------------
+     Code Block
+     ------------------------------------------------------------------------- */
+  --hexdi-code-block-bg: rgba(2, 4, 8, 0.9);
+  --hexdi-code-header-bg: rgba(8, 16, 28, 0.6);
+  --hexdi-code-line-number-color: #586E85;
+  --hexdi-code-copy-button-hover-bg: rgba(0, 240, 255, 0.08);
+
+  /* -------------------------------------------------------------------------
+     Scrollbar
+     ------------------------------------------------------------------------- */
+  --hexdi-scrollbar-track: #020408;
+  --hexdi-scrollbar-thumb: rgba(0, 240, 255, 0.15);
+  --hexdi-scrollbar-thumb-hover: rgba(0, 240, 255, 0.3);
+}

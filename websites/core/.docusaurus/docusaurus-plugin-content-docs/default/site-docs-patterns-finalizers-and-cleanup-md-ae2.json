@@ -1,0 +1,29 @@
+{
+  "id": "patterns/finalizers-and-cleanup",
+  "title": "Finalizers and Cleanup",
+  "description": "Resource cleanup patterns using finalizers for database connections, file handles, event listeners, and graceful shutdown.",
+  "source": "@site/../../docs/patterns/finalizers-and-cleanup.md",
+  "sourceDirName": "patterns",
+  "slug": "/patterns/finalizers-and-cleanup",
+  "permalink": "/docs/patterns/finalizers-and-cleanup",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/../../docs/patterns/finalizers-and-cleanup.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "title": "Finalizers and Cleanup",
+    "description": "Resource cleanup patterns using finalizers for database connections, file handles, event listeners, and graceful shutdown.",
+    "sidebar_position": 4
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Scoped Services",
+    "permalink": "/docs/patterns/scoped-services"
+  },
+  "next": {
+    "title": "API Reference",
+    "permalink": "/docs/api/"
+  }
+}

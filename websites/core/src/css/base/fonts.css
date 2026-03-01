@@ -1,0 +1,14 @@
+/**
+ * HexDI Web Font Imports
+ *
+ * Google Font imports for the documentation website.
+ */
+
+/* Inter - Clean sans-serif for body text */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Fira Code - Monospace with ligatures for code */
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap');
+
+/* Rajdhani - Cyberpunk display font for headings */
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap');

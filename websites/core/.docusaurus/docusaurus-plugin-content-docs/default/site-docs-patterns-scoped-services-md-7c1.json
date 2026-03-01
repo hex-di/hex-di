@@ -1,0 +1,29 @@
+{
+  "id": "patterns/scoped-services",
+  "title": "Scoped Services",
+  "description": "Patterns for transient and user-scoped services including HTTP requests, user sessions, React scopes, and multi-tenancy.",
+  "source": "@site/../../docs/patterns/scoped-services.md",
+  "sourceDirName": "patterns",
+  "slug": "/patterns/scoped-services",
+  "permalink": "/docs/patterns/scoped-services",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/../../docs/patterns/scoped-services.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "title": "Scoped Services",
+    "description": "Patterns for transient and user-scoped services including HTTP requests, user sessions, React scopes, and multi-tenancy.",
+    "sidebar_position": 3
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Composing Graphs",
+    "permalink": "/docs/patterns/composing-graphs"
+  },
+  "next": {
+    "title": "Finalizers and Cleanup",
+    "permalink": "/docs/patterns/finalizers-and-cleanup"
+  }
+}

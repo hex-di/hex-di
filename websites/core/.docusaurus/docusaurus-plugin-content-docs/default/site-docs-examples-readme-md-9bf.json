@@ -1,0 +1,25 @@
+{
+  "id": "examples/README",
+  "title": "Examples",
+  "description": "Real-world code examples for HexDI — basic setup, scoped services, testing patterns, and framework integration.",
+  "source": "@site/../../docs/examples/README.md",
+  "sourceDirName": "examples",
+  "slug": "/examples/",
+  "permalink": "/docs/examples/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/../../docs/examples/README.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 5,
+  "frontMatter": {
+    "title": "Examples",
+    "description": "Real-world code examples for HexDI — basic setup, scoped services, testing patterns, and framework integration.",
+    "sidebar_position": 5
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "@hex-di/testing",
+    "permalink": "/docs/api/testing"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "improvements/port",
+  "title": "Port API Improvements",
+  "description": "Current State (v0.1.0)",
+  "source": "@site/../../docs/improvements/port.md",
+  "sourceDirName": "improvements",
+  "slug": "/improvements/port",
+  "permalink": "/docs/improvements/port",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/../../docs/improvements/port.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

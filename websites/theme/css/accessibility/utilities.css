@@ -1,0 +1,114 @@
+/**
+ * HexDI Accessibility Utilities — Cyberpunk Dark Theme
+ */
+
+/* -------------------------------------------------------------------------
+   Screen Reader Only Content
+   ------------------------------------------------------------------------- */
+
+.sr-only,
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sr-only:focus,
+.sr-only:active,
+.visually-hidden:focus,
+.visually-hidden:active {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* -------------------------------------------------------------------------
+   Color Contrast Enhancements
+   ------------------------------------------------------------------------- */
+
+.errorIcon {
+  background: var(--hexdi-error-500);
+  color: white;
+}
+
+/* Warning admonition contrast */
+.theme-admonition-caution [class*="admonitionHeading"],
+.theme-admonition-warning [class*="admonitionHeading"] {
+  color: #FF5E00;
+}
+
+/* -------------------------------------------------------------------------
+   Keyboard Trap Prevention
+   ------------------------------------------------------------------------- */
+
+[aria-modal="true"] {
+  /* Focus management handled by JS */
+}
+
+.dropdown__menu {
+  /* Focus should cycle through all menu items */
+}
+
+/* -------------------------------------------------------------------------
+   Link Distinguishability
+   ------------------------------------------------------------------------- */
+
+.markdown a,
+article a,
+.theme-doc-markdown a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.markdown a:hover,
+article a:hover,
+.theme-doc-markdown a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* Exception for navigation links */
+.navbar a,
+.footer a,
+.menu a,
+.breadcrumbs a,
+.pagination-nav a {
+  text-decoration: none;
+}
+
+.navbar a:hover,
+.footer a:hover,
+.menu a:hover {
+  text-decoration: underline;
+}
+
+/* -------------------------------------------------------------------------
+   Touch Target Size
+   ------------------------------------------------------------------------- */
+
+@media (pointer: coarse) {
+  button,
+  [role="button"],
+  a,
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .markdown a,
+  article a,
+  p a {
+    min-height: auto;
+    min-width: auto;
+  }
+}
