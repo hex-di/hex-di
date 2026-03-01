@@ -4,6 +4,8 @@ set -euo pipefail
 # ============================================================
 # Cloudflare Pages — One-time project setup
 #
+# Discovers sites from websites/*/deploy.json files.
+#
 # Prerequisites:
 #   export CLOUDFLARE_ACCOUNT_ID="your-account-id"
 #   export CLOUDFLARE_API_TOKEN="your-api-token"
@@ -16,44 +18,16 @@ set -euo pipefail
 : "${CLOUDFLARE_ACCOUNT_ID:?Set CLOUDFLARE_ACCOUNT_ID}"
 : "${CLOUDFLARE_API_TOKEN:?Set CLOUDFLARE_API_TOKEN}"
 
-DOMAIN="hexdi.dev"
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-declare -A SITES=(
-  [core]="hexdi-dev"
-  [result]="result-hexdi-dev"
-  [flow]="flow-hexdi-dev"
-  [guard]="guard-hexdi-dev"
-  [saga]="saga-hexdi-dev"
-  [query]="query-hexdi-dev"
-  [store]="store-hexdi-dev"
-  [logger]="logger-hexdi-dev"
-  [tracing]="tracing-hexdi-dev"
-  [clock]="clock-hexdi-dev"
-  [crypto]="crypto-hexdi-dev"
-  [http-client]="http-client-hexdi-dev"
-)
-
-declare -A DOMAINS=(
-  [core]="hexdi.dev"
-  [result]="result.hexdi.dev"
-  [flow]="flow.hexdi.dev"
-  [guard]="guard.hexdi.dev"
-  [saga]="saga.hexdi.dev"
-  [query]="query.hexdi.dev"
-  [store]="store.hexdi.dev"
-  [logger]="logger.hexdi.dev"
-  [tracing]="tracing.hexdi.dev"
-  [clock]="clock.hexdi.dev"
-  [crypto]="crypto.hexdi.dev"
-  [http-client]="http-client.hexdi.dev"
-)
-
-echo "=== Cloudflare Pages Setup for ${DOMAIN} ==="
+echo "=== Cloudflare Pages Setup ==="
 echo ""
 
-for site_id in "${!SITES[@]}"; do
-  project="${SITES[$site_id]}"
-  custom_domain="${DOMAINS[$site_id]}"
+for config in "$REPO_ROOT"/websites/*/deploy.json; do
+  dir=$(dirname "$config")
+  site_id=$(basename "$dir")
+  project=$(jq -r '.project' "$config")
+  custom_domain=$(jq -r '.domain' "$config")
 
   echo "--- ${site_id} → ${project} (${custom_domain}) ---"
 
@@ -78,10 +52,8 @@ done
 echo "=== Setup complete ==="
 echo ""
 echo "Next steps:"
-echo "  1. Ensure ${DOMAIN} is added to your Cloudflare account"
-echo "  2. Verify DNS records are configured:"
-echo "     - hexdi.dev → CNAME hexdi-dev.pages.dev"
-echo "     - *.hexdi.dev → individual CNAMEs or use Cloudflare DNS proxy"
+echo "  1. Ensure your domain is added to your Cloudflare account"
+echo "  2. Verify DNS records are configured (CNAMEs to *.pages.dev)"
 echo "  3. Add GitHub secrets:"
 echo "     - CLOUDFLARE_ACCOUNT_ID"
 echo "     - CLOUDFLARE_API_TOKEN"

@@ -33,20 +33,15 @@ jobs:
       - name: Detect changed sites
         id: set-matrix
         run: |
-          ALL_SITES='[
-            {"id":"core","project":"hexdi-dev","pkg":"@hex-di/website-core"},
-            {"id":"result","project":"result-hexdi-dev","pkg":"@hex-di/website-result"},
-            {"id":"flow","project":"flow-hexdi-dev","pkg":"@hex-di/website-flow"},
-            {"id":"guard","project":"guard-hexdi-dev","pkg":"@hex-di/website-guard"},
-            {"id":"saga","project":"saga-hexdi-dev","pkg":"@hex-di/website-saga"},
-            {"id":"query","project":"query-hexdi-dev","pkg":"@hex-di/website-query"},
-            {"id":"store","project":"store-hexdi-dev","pkg":"@hex-di/website-store"},
-            {"id":"logger","project":"logger-hexdi-dev","pkg":"@hex-di/website-logger"},
-            {"id":"tracing","project":"tracing-hexdi-dev","pkg":"@hex-di/website-tracing"},
-            {"id":"clock","project":"clock-hexdi-dev","pkg":"@hex-di/website-clock"},
-            {"id":"crypto","project":"crypto-hexdi-dev","pkg":"@hex-di/website-crypto"},
-            {"id":"http-client","project":"http-client-hexdi-dev","pkg":"@hex-di/website-http-client"}
-          ]'
+          # Discover sites from deploy.json files
+          ALL_SITES="[]"
+          for config in websites/*/deploy.json; do
+            dir=$(dirname "$config")
+            id=$(basename "$dir")
+            project=$(jq -r '.project' "$config")
+            pkg=$(jq -r '.name' "$dir/package.json")
+            ALL_SITES=$(echo "$ALL_SITES" | jq -c ". + [{\"id\":\"$id\",\"project\":\"$project\",\"pkg\":\"$pkg\"}]")
+          done
 
           # Force all on workflow_dispatch with force_all=true
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.force_all }}" = "true" ]; then
