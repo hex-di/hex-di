@@ -24,7 +24,7 @@ import type { PortResolver } from "./types.js";
 import type { ExecutionState, SagaResult } from "./execution-state.js";
 import { emit } from "./events.js";
 import { executeStepWithRetry, TimeoutSignal } from "./step-executor.js";
-import { checkpoint, toCompletedStepState } from "./checkpointing.js";
+import { checkpoint, checkpointBeforeStep, toCompletedStepState } from "./checkpointing.js";
 import { handleStepFailure, makeCancelledResult } from "./compensation-handler.js";
 
 // =============================================================================
@@ -65,9 +65,48 @@ export async function executeSagaInternal(
 
       if (node._type === "step") {
         if (stepIndex < startFromStep) {
-          // Resume skips are silent replay — no event emitted
+          // S3: Emit step:resumed events for skipped (previously completed) steps
+          const completedInfo = executionState.completedSteps.find(
+            s => s.stepName === node.step.name
+          );
+          if (completedInfo) {
+            emit(executionState, {
+              type: "step:resumed",
+              executionId,
+              sagaName,
+              stepName: node.step.name,
+              stepIndex,
+              output: accumulatedResults[node.step.name],
+              originalCompletedAt: new Date().toISOString(),
+              timestamp: Date.now(),
+            });
+          }
           stepIndex++;
           continue;
+        }
+
+        // S1: Write-ahead checkpoint before step execution
+        const wacResult = await checkpointBeforeStep(executionState, node.step.name, stepIndex);
+        if (wacResult.isErr()) {
+          return err(
+            createStepFailedError(
+              {
+                executionId,
+                sagaName,
+                stepName: node.step.name,
+                stepIndex,
+                message: `Write-ahead checkpoint failed: ${wacResult.error.message}`,
+                completedSteps: completedSteps.map(s => s.stepName),
+                compensatedSteps: [],
+              },
+              wacResult.error.cause
+            )
+          );
+        }
+
+        // Re-check abort after checkpoint await (signal may have fired during yield)
+        if (signal.aborted) {
+          return makeCancelledResult(executionState, stepIndex);
         }
 
         const result = await executeStepNode(
@@ -79,21 +118,74 @@ export async function executeSagaInternal(
         );
 
         if (result.isErr()) {
-          await checkpoint(executionState, { status: "failed" });
+          const cpResult = await checkpoint(executionState, { status: "failed" });
+          if (cpResult.isErr()) {
+            // Checkpoint abort -- return checkpoint error
+            return err(
+              createStepFailedError(
+                {
+                  executionId,
+                  sagaName,
+                  stepName: "__checkpoint",
+                  stepIndex: -1,
+                  message: `Checkpoint failed during error handling: ${cpResult.error.message}`,
+                  completedSteps: completedSteps.map(s => s.stepName),
+                  compensatedSteps: [],
+                },
+                cpResult.error.cause
+              )
+            );
+          }
           return err(result.error);
         }
 
-        await checkpoint(executionState, {
+        // S1: Clear pendingStep after step completes
+        const cpResult = await checkpoint(executionState, {
           currentStep: stepIndex + 1,
           completedSteps: completedSteps.map(toCompletedStepState),
+          pendingStep: null,
         });
+        if (cpResult.isErr()) {
+          return err(
+            createStepFailedError(
+              {
+                executionId,
+                sagaName,
+                stepName: node.step.name,
+                stepIndex,
+                message: `Checkpoint failed after step completion: ${cpResult.error.message}`,
+                completedSteps: completedSteps.map(s => s.stepName),
+                compensatedSteps: [],
+              },
+              cpResult.error.cause
+            )
+          );
+        }
 
         stepIndex++;
       } else if (node._type === "parallel") {
         const baseIndex = stepIndex;
 
         if (baseIndex + node.steps.length <= startFromStep) {
-          // Resume skips are silent replay — no event emitted
+          // S3: Emit step:resumed events for parallel skipped steps
+          for (let pi = 0; pi < node.steps.length; pi++) {
+            const pStep = node.steps[pi];
+            const completedInfo = executionState.completedSteps.find(
+              s => s.stepName === pStep.name
+            );
+            if (completedInfo) {
+              emit(executionState, {
+                type: "step:resumed",
+                executionId,
+                sagaName,
+                stepName: pStep.name,
+                stepIndex: baseIndex + pi,
+                output: accumulatedResults[pStep.name],
+                originalCompletedAt: new Date().toISOString(),
+                timestamp: Date.now(),
+              });
+            }
+          }
           stepIndex += node.steps.length;
           continue;
         }
@@ -111,10 +203,27 @@ export async function executeSagaInternal(
           }
         }
 
-        await checkpoint(executionState, {
+        const cpResult = await checkpoint(executionState, {
           currentStep: stepIndex + node.steps.length,
           completedSteps: completedSteps.map(toCompletedStepState),
+          pendingStep: null,
         });
+        if (cpResult.isErr()) {
+          return err(
+            createStepFailedError(
+              {
+                executionId,
+                sagaName,
+                stepName: "__checkpoint",
+                stepIndex: -1,
+                message: `Checkpoint failed after parallel steps: ${cpResult.error.message}`,
+                completedSteps: completedSteps.map(s => s.stepName),
+                compensatedSteps: [],
+              },
+              cpResult.error.cause
+            )
+          );
+        }
 
         stepIndex += node.steps.length;
       } else if (node._type === "branch") {
@@ -252,6 +361,7 @@ export async function executeSagaInternal(
 
     await checkpoint(executionState, {
       status: "completed",
+      pendingStep: null,
       timestamps: {
         startedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

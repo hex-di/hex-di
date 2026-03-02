@@ -28,9 +28,12 @@ export default {
     },
     "experimental_router": "browser"
   },
+  "themes": [
+    "@docusaurus/theme-mermaid"
+  ],
   "markdown": {
     "format": "detect",
-    "mermaid": false,
+    "mermaid": true,
     "emoji": true,
     "mdx1Compat": {
       "comments": true,
@@ -228,6 +231,13 @@ export default {
         }
       ],
       "copyright": "Copyright © 2026 HexDI Contributors."
+    },
+    "mermaid": {
+      "theme": {
+        "dark": "dark",
+        "light": "default"
+      },
+      "options": {}
     },
     "prism": {
       "theme": {
@@ -462,7 +472,6 @@ export default {
     "static"
   ],
   "customFields": {},
-  "themes": [],
   "scripts": [],
   "headTags": [],
   "stylesheets": [],

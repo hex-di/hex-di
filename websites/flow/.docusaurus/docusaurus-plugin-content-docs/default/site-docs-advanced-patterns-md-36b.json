@@ -1,0 +1,28 @@
+{
+  "id": "advanced/patterns",
+  "title": "Patterns",
+  "description": "Advanced composition patterns for building complex state machine systems with Flow.",
+  "source": "@site/docs/advanced/patterns.md",
+  "sourceDirName": "advanced",
+  "slug": "/advanced/patterns",
+  "permalink": "/docs/advanced/patterns",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/advanced/patterns.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Patterns"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "React Integration",
+    "permalink": "/docs/react"
+  },
+  "next": {
+    "title": "Serialization",
+    "permalink": "/docs/advanced/serialization"
+  }
+}

@@ -8,7 +8,7 @@
  * - runtime/step-executor.ts
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { createPort } from "@hex-di/core";
 import { defineStep } from "../src/step/builder.js";
 import { defineSaga } from "../src/saga/builder.js";
@@ -16,9 +16,7 @@ import { createSagaRunner, executeSaga } from "../src/runtime/runner.js";
 import { resolveStepByName, executeSagaInternal } from "../src/runtime/saga-executor.js";
 import { emit, buildExecutionTrace } from "../src/runtime/events.js";
 import { invokePort, TimeoutSignal, executeStepWithRetry } from "../src/runtime/step-executor.js";
-import { toCompletedStepState, checkpoint } from "../src/runtime/checkpointing.js";
-import { handleStepFailure, makeCancelledResult } from "../src/runtime/compensation-handler.js";
-import type { PortResolver, SagaEvent, SagaEventListener } from "../src/runtime/types.js";
+import type { PortResolver, SagaEvent } from "../src/runtime/types.js";
 import type { ExecutionState } from "../src/runtime/execution-state.js";
 import type { SagaNode } from "../src/saga/types.js";
 
@@ -29,7 +27,7 @@ import type { SagaNode } from "../src/saga/types.js";
 const PortA = createPort<"PortA", any>({ name: "PortA" });
 const PortB = createPort<"PortB", any>({ name: "PortB" });
 const PortC = createPort<"PortC", any>({ name: "PortC" });
-const PortD = createPort<"PortD", any>({ name: "PortD" });
+const _PortD = createPort<"PortD", any>({ name: "PortD" });
 
 // =============================================================================
 // Helpers
@@ -46,7 +44,7 @@ function createResolver(mapping: Record<string, (params: any) => Promise<unknown
   };
 }
 
-function deferred<T>(): {
+function _deferred<T>(): {
   promise: Promise<T>;
   resolve: (v: T) => void;
   reject: (e: unknown) => void;
@@ -193,7 +191,6 @@ describe("saga-executor: executeSagaInternal deep mutants", () => {
     });
 
     it("returns cancelled when signal IS aborted (mutant: if(false))", async () => {
-      let runnerRef: ReturnType<typeof createSagaRunner>;
       const S1 = defineStep("Pre")
         .io<string, string>()
         .invoke(PortA, ctx => ctx.input)
@@ -215,7 +212,7 @@ describe("saga-executor: executeSagaInternal deep mutants", () => {
         },
         PortB: async () => "b",
       });
-      runnerRef = createSagaRunner(resolver);
+      const runnerRef = createSagaRunner(resolver);
       const result = await executeSaga(runnerRef, saga, "in", { executionId: "cancel-check-1" });
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -254,7 +251,7 @@ describe("saga-executor: executeSagaInternal deep mutants", () => {
       const abortController = new AbortController();
       state.abortController = abortController;
 
-      const result = await executeSagaInternal(
+      const _result = await executeSagaInternal(
         saga,
         "in",
         resolver,
@@ -366,7 +363,7 @@ describe("saga-executor: executeSagaInternal deep mutants", () => {
         sagaOptions: saga.options,
       });
 
-      const result = await executeSagaInternal(
+      const _result = await executeSagaInternal(
         saga,
         "in",
         resolver,
@@ -413,7 +410,7 @@ describe("saga-executor: executeSagaInternal deep mutants", () => {
         sagaOptions: saga.options,
       });
 
-      const result = await executeSagaInternal(
+      const _result = await executeSagaInternal(
         saga,
         "in",
         resolver,
@@ -1383,7 +1380,7 @@ describe("compensation-handler: deep mutants", () => {
 
   describe("status transitions in handleStepFailure", () => {
     it("status becomes 'compensating' during compensation, then 'failed' after", async () => {
-      let statusDuringComp: string | undefined;
+      let _statusDuringComp: string | undefined;
       const CompObs = defineStep("CompObs")
         .io<string, string>()
         .invoke(PortA, ctx => ctx.input)
@@ -1850,7 +1847,6 @@ describe("compensation-handler: deep mutants", () => {
 
 describe("makeCancelledResult: deep mutants", () => {
   it("sets status to 'cancelled', not empty string", async () => {
-    let runnerRef: ReturnType<typeof createSagaRunner>;
     const S1 = defineStep("MkCnclS1")
       .io<string, string>()
       .invoke(PortA, ctx => ctx.input)
@@ -1873,7 +1869,7 @@ describe("makeCancelledResult: deep mutants", () => {
       },
       PortB: async () => "b",
     });
-    runnerRef = createSagaRunner(resolver);
+    const runnerRef = createSagaRunner(resolver);
     const result = await executeSaga(runnerRef, saga, "in", {
       executionId: "mk-cncl-1",
       listeners: [e => events.push(e)],
@@ -1890,7 +1886,6 @@ describe("makeCancelledResult: deep mutants", () => {
   });
 
   it("saga:cancelled event has stepName='' and compensated=false", async () => {
-    let runnerRef: ReturnType<typeof createSagaRunner>;
     const S1 = defineStep("CnclEvtS1")
       .io<string, string>()
       .invoke(PortA, ctx => ctx.input)
@@ -1913,7 +1908,7 @@ describe("makeCancelledResult: deep mutants", () => {
       },
       PortB: async () => "b",
     });
-    runnerRef = createSagaRunner(resolver);
+    const runnerRef = createSagaRunner(resolver);
     await executeSaga(runnerRef, saga, "in", {
       executionId: "cncl-evt-1",
       listeners: [e => events.push(e)],
@@ -1925,7 +1920,6 @@ describe("makeCancelledResult: deep mutants", () => {
   });
 
   it("createCancelledError message is 'Saga was cancelled', not empty string", async () => {
-    let runnerRef: ReturnType<typeof createSagaRunner>;
     const S1 = defineStep("CnclMsgS1")
       .io<string, string>()
       .invoke(PortA, ctx => ctx.input)
@@ -1947,7 +1941,7 @@ describe("makeCancelledResult: deep mutants", () => {
       },
       PortB: async () => "b",
     });
-    runnerRef = createSagaRunner(resolver);
+    const runnerRef = createSagaRunner(resolver);
     const result = await executeSaga(runnerRef, saga, "in", { executionId: "cncl-msg-1" });
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
@@ -2512,7 +2506,7 @@ describe("step-executor: executeStepWithRetry deep mutants", () => {
   describe("delay function vs numeric delay", () => {
     it("function delay receives (attempt+1, lastError)", async () => {
       const delayArgs: Array<[number, unknown]> = [];
-      let callCount = 0;
+      let _callCount = 0;
       const step = defineStep("DelayFn")
         .io<string, string>()
         .invoke(PortA, ctx => ctx.input)
@@ -2528,7 +2522,7 @@ describe("step-executor: executeStepWithRetry deep mutants", () => {
         step,
         "params",
         async () => {
-          callCount++;
+          _callCount++;
           throw new Error("delay-fn-fail");
         },
         {
@@ -2732,12 +2726,12 @@ describe("step-executor: withTimeout and sleep integration", () => {
       .invoke(PortA, ctx => ctx.input)
       .retry({ maxAttempts: 3, delay: 10000 })
       .build();
-    let callCount = 0;
+    let _callCount = 0;
     const resultPromise = executeStepWithRetry(
       step,
       "params",
       async () => {
-        callCount++;
+        _callCount++;
         throw new Error("fail");
       },
       { maxAttempts: 3, delay: 10000 },
@@ -2790,7 +2784,7 @@ describe("saga-executor: branch and subSaga resume skips", () => {
       sagaOptions: saga.options,
     });
 
-    const result = await executeSagaInternal(
+    const _result = await executeSagaInternal(
       saga,
       "in",
       resolver,
@@ -2840,7 +2834,7 @@ describe("saga-executor: branch and subSaga resume skips", () => {
       sagaOptions: saga.options,
     });
 
-    const result = await executeSagaInternal(
+    const _result = await executeSagaInternal(
       saga,
       "in",
       resolver,

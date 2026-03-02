@@ -1,7 +1,7 @@
 {
   "id": "index",
   "title": "Introduction",
-  "description": "Rust-inspired Result with pattern matching and railway-oriented programming.",
+  "description": "Rust-style Result for TypeScript. Errors as values — no throws, no surprises.",
   "source": "@site/docs/index.md",
   "sourceDirName": ".",
   "slug": "/",
@@ -16,5 +16,9 @@
     "sidebar_position": 1,
     "title": "Introduction"
   },
-  "sidebar": "docs"
+  "sidebar": "docs",
+  "next": {
+    "title": "The Result Type",
+    "permalink": "/docs/concepts/result-type"
+  }
 }

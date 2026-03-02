@@ -164,7 +164,7 @@ export type IsBrandedPortName<T> =
  * | Type | Input | Output | Use Case |
  * |------|-------|--------|----------|
  * | `AdapterProvidesName<A>` | Adapter | `"Logger"` | Graph tracking, validation |
- * | `InferAdapterProvides<A>` | Adapter | `Port<Logger, "Logger">` | Container resolution |
+ * | `InferAdapterProvides<A>` | Adapter | `Port<"Logger", Logger>` | Container resolution |
  *
  * @typeParam TAdapter - The adapter type to extract from
  * @returns The port name as a string literal type, or `never` if not a valid adapter

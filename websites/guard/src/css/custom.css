@@ -2,4 +2,5 @@
  * Site CSS - imports shared theme + site-specific overrides
  */
 @import '@hex-di/website-theme/css/custom.css';
+@import './guard-theme.css';
 @import './landing.css';

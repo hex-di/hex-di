@@ -405,6 +405,8 @@ describe("Advanced Patterns E2E", () => {
           completedAt: null,
         },
         metadata: {},
+        totalSteps: 5,
+        pendingStep: null,
       });
 
       // Resume: steps 3-4 should execute, 0-2 skipped
@@ -490,6 +492,8 @@ describe("Advanced Patterns E2E", () => {
           completedAt: null,
         },
         metadata: {},
+        totalSteps: 2,
+        pendingStep: null,
       });
 
       // External event triggers resume
@@ -719,6 +723,8 @@ describe("Advanced Patterns E2E", () => {
           completedAt: null,
         },
         metadata: {},
+        totalSteps: 2,
+        pendingStep: null,
       });
 
       // Runner 2 (new scope) — uses different resolver

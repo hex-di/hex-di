@@ -13,6 +13,7 @@
   "dependencies": {
     "@docusaurus/core": "3.9.2",
     "@docusaurus/preset-classic": "3.9.2",
+    "@docusaurus/theme-mermaid": "3.9.2",
     "@hex-di/website-theme": "workspace:*",
     "@mdx-js/react": "^3.0.0",
     "@tailwindcss/postcss": "^4.2.0",

@@ -1,0 +1,28 @@
+{
+  "id": "advanced/gxp",
+  "title": "GxP Infrastructure",
+  "description": "For regulated environments (pharmaceutical, biotech, medical devices), the guard package includes infrastructure that supports audit trail requirements, data integrity, and system lifecycle management.",
+  "source": "@site/docs/advanced/gxp.md",
+  "sourceDirName": "advanced",
+  "slug": "/advanced/gxp",
+  "permalink": "/docs/advanced/gxp",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/advanced/gxp.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "GxP Infrastructure"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "React Integration",
+    "permalink": "/docs/react"
+  },
+  "next": {
+    "title": "Architecture",
+    "permalink": "/docs/advanced/architecture"
+  }
+}

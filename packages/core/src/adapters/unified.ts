@@ -1141,6 +1141,14 @@ export function adapterOrDie(adapter: RuntimeAdapter): RuntimeAdapter {
         }
       : (deps: Record<string, unknown>): unknown => {
           const raw = userFactory(deps);
+
+          // If the factory returns a PromiseLike (e.g. ResultAsync), chain through
+          // it asynchronously. Promise.resolve handles both real Promises and custom
+          // thenables correctly.
+          if (isThenable(raw)) {
+            return Promise.resolve(raw).then((resolved: unknown) => unwrapResultOrDie(resolved));
+          }
+
           return unwrapResultOrDie(raw);
         };
 

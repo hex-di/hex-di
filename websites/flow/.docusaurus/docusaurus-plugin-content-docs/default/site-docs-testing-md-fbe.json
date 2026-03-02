@@ -1,0 +1,28 @@
+{
+  "id": "testing",
+  "title": "Testing",
+  "description": "The @hex-di/flow-testing package provides comprehensive utilities for testing state machines, including test harnesses, mock executors, assertions, and deterministic time control.",
+  "source": "@site/docs/testing.md",
+  "sourceDirName": ".",
+  "slug": "/testing",
+  "permalink": "/docs/testing",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/testing.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Testing"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "API Reference",
+    "permalink": "/docs/api/api-reference"
+  },
+  "next": {
+    "title": "React Integration",
+    "permalink": "/docs/react"
+  }
+}

@@ -391,7 +391,7 @@ describe("DIEffectExecutor error paths", () => {
       activityManager,
     });
 
-    const effect = Effect.invoke(UserServicePort, "getUser" as any, ["id"] as any);
+    const _effect = Effect.invoke(UserServicePort, "getUser" as any, ["id"] as any);
     // The port resolves to our mock scope which doesn't have getUser but we
     // need to test the actual InvokeError path where the method throws
     const invokeEffect = {

@@ -18,6 +18,14 @@ export {
   CircularReference,
   InvalidState,
   MachineIdMismatch,
+  ContextValidationFailed,
   type SerializationError,
   type RestoreError,
 } from "./errors.js";
+
+export {
+  MigrationRegistry,
+  applyMigrations,
+  MigrationFailed,
+  type StateMigration,
+} from "./migration.js";

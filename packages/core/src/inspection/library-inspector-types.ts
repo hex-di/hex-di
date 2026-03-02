@@ -170,7 +170,7 @@ export function isLibraryInspector(value: unknown): value is LibraryInspector {
  * category queries via `PortsByCategory` and `HasCategory`.
  *
  * @param config - Port configuration (name, optional description and tags)
- * @returns A `DirectedPort<LibraryInspector, TName, "outbound", "library-inspector">`
+ * @returns A `DirectedPort<TName, LibraryInspector, "outbound", "library-inspector">`
  *
  * @example
  * ```typescript

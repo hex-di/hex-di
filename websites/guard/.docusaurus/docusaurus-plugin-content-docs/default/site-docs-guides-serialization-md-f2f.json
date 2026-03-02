@@ -1,0 +1,28 @@
+{
+  "id": "guides/serialization",
+  "title": "Serialization",
+  "description": "Policies in @hex-di/guard are data, not callbacks. This is a deliberate design choice that enables serialization, storage, transmission, and introspection.",
+  "source": "@site/docs/guides/serialization.md",
+  "sourceDirName": "guides",
+  "slug": "/guides/serialization",
+  "permalink": "/docs/guides/serialization",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/guides/serialization.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3,
+    "title": "Serialization"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Port Gates",
+    "permalink": "/docs/guides/port-gates"
+  },
+  "next": {
+    "title": "API Reference",
+    "permalink": "/docs/api/api-reference"
+  }
+}

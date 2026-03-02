@@ -23,6 +23,11 @@ import type {
   InspectorEvent,
 } from "@hex-di/core";
 import type { ResultChainDescriptor, ResultChainExecution } from "../panels/result/types.js";
+import type {
+  GuardEvaluationDescriptor,
+  GuardEvaluationExecution,
+  SerializedRole,
+} from "../panels/guard/types.js";
 
 /**
  * Transport-agnostic interface for accessing container inspection data.
@@ -79,6 +84,26 @@ export interface InspectorDataSource {
    * Returns undefined when tracing is not enabled.
    */
   getResultExecutions?(chainId: string): readonly ResultChainExecution[] | undefined;
+
+  // Guard tracing -- Level 1 data (optional, only available with tracing)
+
+  /**
+   * All registered Guard evaluation descriptors from TracedGuard instrumentation.
+   * Returns undefined when guard tracing is not enabled.
+   */
+  getGuardDescriptors?(): ReadonlyMap<string, GuardEvaluationDescriptor> | undefined;
+
+  /**
+   * Recent executions for a specific guarded port.
+   * Returns undefined when guard tracing is not enabled.
+   */
+  getGuardExecutions?(portName: string): readonly GuardEvaluationExecution[] | undefined;
+
+  /**
+   * Role hierarchy extracted from registered role tokens.
+   * Returns undefined when guard tracing is not enabled.
+   */
+  getGuardRoleHierarchy?(): readonly SerializedRole[] | undefined;
 
   // Push-based subscription -- listener fires on any data change
 

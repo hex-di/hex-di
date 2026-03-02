@@ -6,13 +6,21 @@
  * - parallel: All compensations run concurrently, collects all errors
  * - best-effort: Reverse-order, continues even if some fail
  *
+ * S6: Supports per-step compensation timeout via Promise.race.
+ * S2: Accumulates DeadLetterEntry on compensation failure.
+ *
  * @packageDocumentation
  */
 
 import { tryCatch } from "@hex-di/result";
 import type { ResultAsync } from "@hex-di/result";
 import type { CompensationContext } from "../step/types.js";
-import type { CompensationPlanStep, CompensationResult, CompensationStepError } from "./types.js";
+import type {
+  CompensationPlanStep,
+  CompensationResult,
+  CompensationStepError,
+  DeadLetterEntry,
+} from "./types.js";
 import type { SagaEvent } from "../runtime/types.js";
 
 // =============================================================================
@@ -65,6 +73,51 @@ export type CompensationInvoker = (
   step: CompensationPlanStep,
   params: unknown
 ) => ResultAsync<unknown, unknown>;
+
+// =============================================================================
+// S6: Compensation Timeout Helper
+// =============================================================================
+
+function withTimeout<T>(
+  promise: PromiseLike<T>,
+  timeoutMs: number | undefined,
+  stepName: string
+): Promise<T> {
+  const resolved = Promise.resolve(promise);
+  if (timeoutMs === undefined || timeoutMs <= 0) {
+    return resolved;
+  }
+
+  return Promise.race([
+    resolved,
+    new Promise<never>((_resolve, reject) => {
+      setTimeout(() => {
+        reject(new Error(`Compensation for step "${stepName}" timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+    }),
+  ]);
+}
+
+// =============================================================================
+// S2: Dead-Letter Entry Creator
+// =============================================================================
+
+function createDeadLetterEntry(
+  executionId: string,
+  sagaName: string,
+  step: CompensationPlanStep,
+  error: unknown
+): DeadLetterEntry {
+  return Object.freeze({
+    executionId,
+    sagaName,
+    stepName: step.stepName,
+    stepIndex: step.stepIndex,
+    originalError: error,
+    failedAt: new Date().toISOString(),
+    retryCount: 0,
+  });
+}
 
 // =============================================================================
 // Event Emission Helper
@@ -174,6 +227,7 @@ async function executeSequential(
   const compensatedSteps: string[] = [];
   const failedSteps: string[] = [];
   const errors: CompensationStepError[] = [];
+  const deadLetterEntries: DeadLetterEntry[] = [];
   const strategyStart = Date.now();
 
   // Execute in reverse order
@@ -202,6 +256,9 @@ async function executeSequential(
         stepIndex: step.stepIndex,
         cause: paramsResult.error,
       });
+      deadLetterEntries.push(
+        createDeadLetterEntry(executionId, sagaName, step, paramsResult.error)
+      );
       emitCompensationStepEvent(
         emitEvent,
         executionId,
@@ -225,32 +282,68 @@ async function executeSequential(
       break;
     }
 
-    const result = await invoker(step, paramsResult.value);
-    if (result.isOk()) {
-      compensatedSteps.push(step.stepName);
-      emitCompensationStepEvent(
-        emitEvent,
-        executionId,
-        sagaName,
-        step,
-        true,
-        undefined,
-        Date.now() - stepStart
+    try {
+      const result = await withTimeout(
+        invoker(step, paramsResult.value).then(r => r),
+        step.timeout,
+        step.stepName
       );
-    } else {
+      if (result.isOk()) {
+        compensatedSteps.push(step.stepName);
+        emitCompensationStepEvent(
+          emitEvent,
+          executionId,
+          sagaName,
+          step,
+          true,
+          undefined,
+          Date.now() - stepStart
+        );
+      } else {
+        failedSteps.push(step.stepName);
+        errors.push({
+          stepName: step.stepName,
+          stepIndex: step.stepIndex,
+          cause: result.error,
+        });
+        deadLetterEntries.push(createDeadLetterEntry(executionId, sagaName, step, result.error));
+        emitCompensationStepEvent(
+          emitEvent,
+          executionId,
+          sagaName,
+          step,
+          false,
+          result.error,
+          Date.now() - stepStart
+        );
+        const remaining = reversed.slice(i + 1).map(s => s.stepName);
+        emitCompensationFailed(
+          emitEvent,
+          executionId,
+          sagaName,
+          step.stepName,
+          result.error,
+          compensatedSteps,
+          remaining
+        );
+        // Sequential strategy stops on first failure
+        break;
+      }
+    } catch (timeoutError: unknown) {
       failedSteps.push(step.stepName);
       errors.push({
         stepName: step.stepName,
         stepIndex: step.stepIndex,
-        cause: result.error,
+        cause: timeoutError,
       });
+      deadLetterEntries.push(createDeadLetterEntry(executionId, sagaName, step, timeoutError));
       emitCompensationStepEvent(
         emitEvent,
         executionId,
         sagaName,
         step,
         false,
-        result.error,
+        timeoutError,
         Date.now() - stepStart
       );
       const remaining = reversed.slice(i + 1).map(s => s.stepName);
@@ -259,11 +352,10 @@ async function executeSequential(
         executionId,
         sagaName,
         step.stepName,
-        result.error,
+        timeoutError,
         compensatedSteps,
         remaining
       );
-      // Sequential strategy stops on first failure
       break;
     }
   }
@@ -277,6 +369,7 @@ async function executeSequential(
     failedSteps,
     errors,
     allSucceeded: failedSteps.length === 0,
+    deadLetterEntries: deadLetterEntries.length > 0 ? deadLetterEntries : undefined,
   };
 }
 
@@ -295,9 +388,9 @@ async function executeParallel(
   const compensatedSteps: string[] = [];
   const failedSteps: string[] = [];
   const errors: CompensationStepError[] = [];
+  const deadLetterEntries: DeadLetterEntry[] = [];
   const strategyStart = Date.now();
 
-  // Since ResultAsync never rejects, Promise.all is safe
   const outcomes = await Promise.all(
     steps.map(async step => {
       const stepStart = Date.now();
@@ -326,32 +419,51 @@ async function executeParallel(
         return stepCompensationFailed(step, paramsResult.error);
       }
 
-      return (await invoker(step, paramsResult.value)).match(
-        (): CompensationStepOutcome => {
-          emitCompensationStepEvent(
-            emitEvent,
-            executionId,
-            sagaName,
-            step,
-            true,
-            undefined,
-            Date.now() - stepStart
-          );
-          return stepCompensated(step);
-        },
-        (error): CompensationStepOutcome => {
-          emitCompensationStepEvent(
-            emitEvent,
-            executionId,
-            sagaName,
-            step,
-            false,
-            error,
-            Date.now() - stepStart
-          );
-          return stepCompensationFailed(step, error);
-        }
-      );
+      try {
+        return await withTimeout(
+          invoker(step, paramsResult.value).then(r =>
+            r.match(
+              (): CompensationStepOutcome => {
+                emitCompensationStepEvent(
+                  emitEvent,
+                  executionId,
+                  sagaName,
+                  step,
+                  true,
+                  undefined,
+                  Date.now() - stepStart
+                );
+                return stepCompensated(step);
+              },
+              (error): CompensationStepOutcome => {
+                emitCompensationStepEvent(
+                  emitEvent,
+                  executionId,
+                  sagaName,
+                  step,
+                  false,
+                  error,
+                  Date.now() - stepStart
+                );
+                return stepCompensationFailed(step, error);
+              }
+            )
+          ),
+          step.timeout,
+          step.stepName
+        );
+      } catch (timeoutError: unknown) {
+        emitCompensationStepEvent(
+          emitEvent,
+          executionId,
+          sagaName,
+          step,
+          false,
+          timeoutError,
+          Date.now() - stepStart
+        );
+        return stepCompensationFailed(step, timeoutError);
+      }
     })
   );
 
@@ -368,6 +480,9 @@ async function executeParallel(
         stepIndex: outcome.step.stepIndex,
         cause: outcome.cause,
       });
+      deadLetterEntries.push(
+        createDeadLetterEntry(executionId, sagaName, outcome.step, outcome.cause)
+      );
       if (firstFailedStep === undefined) {
         firstFailedStep = outcome.step.stepName;
         firstError = outcome.cause;
@@ -394,6 +509,7 @@ async function executeParallel(
     failedSteps,
     errors,
     allSucceeded: failedSteps.length === 0,
+    deadLetterEntries: deadLetterEntries.length > 0 ? deadLetterEntries : undefined,
   };
 }
 
@@ -412,6 +528,7 @@ async function executeBestEffort(
   const compensatedSteps: string[] = [];
   const failedSteps: string[] = [];
   const errors: CompensationStepError[] = [];
+  const deadLetterEntries: DeadLetterEntry[] = [];
   const strategyStart = Date.now();
 
   // Execute in reverse order, but continue on failure
@@ -441,6 +558,9 @@ async function executeBestEffort(
         stepIndex: step.stepIndex,
         cause: paramsResult.error,
       });
+      deadLetterEntries.push(
+        createDeadLetterEntry(executionId, sagaName, step, paramsResult.error)
+      );
       emitCompensationStepEvent(
         emitEvent,
         executionId,
@@ -458,37 +578,66 @@ async function executeBestEffort(
       continue;
     }
 
-    const result = await invoker(step, paramsResult.value);
-    if (result.isOk()) {
-      compensatedSteps.push(step.stepName);
-      emitCompensationStepEvent(
-        emitEvent,
-        executionId,
-        sagaName,
-        step,
-        true,
-        undefined,
-        Date.now() - stepStart
+    try {
+      const result = await withTimeout(
+        invoker(step, paramsResult.value).then(r => r),
+        step.timeout,
+        step.stepName
       );
-    } else {
+      if (result.isOk()) {
+        compensatedSteps.push(step.stepName);
+        emitCompensationStepEvent(
+          emitEvent,
+          executionId,
+          sagaName,
+          step,
+          true,
+          undefined,
+          Date.now() - stepStart
+        );
+      } else {
+        failedSteps.push(step.stepName);
+        errors.push({
+          stepName: step.stepName,
+          stepIndex: step.stepIndex,
+          cause: result.error,
+        });
+        deadLetterEntries.push(createDeadLetterEntry(executionId, sagaName, step, result.error));
+        emitCompensationStepEvent(
+          emitEvent,
+          executionId,
+          sagaName,
+          step,
+          false,
+          result.error,
+          Date.now() - stepStart
+        );
+        if (firstFailedStep === undefined) {
+          firstFailedStep = step.stepName;
+          firstError = result.error;
+        }
+        // Best-effort: continue to next step despite failure
+      }
+    } catch (timeoutError: unknown) {
       failedSteps.push(step.stepName);
       errors.push({
         stepName: step.stepName,
         stepIndex: step.stepIndex,
-        cause: result.error,
+        cause: timeoutError,
       });
+      deadLetterEntries.push(createDeadLetterEntry(executionId, sagaName, step, timeoutError));
       emitCompensationStepEvent(
         emitEvent,
         executionId,
         sagaName,
         step,
         false,
-        result.error,
+        timeoutError,
         Date.now() - stepStart
       );
       if (firstFailedStep === undefined) {
         firstFailedStep = step.stepName;
-        firstError = result.error;
+        firstError = timeoutError;
       }
       // Best-effort: continue to next step despite failure
     }
@@ -513,6 +662,7 @@ async function executeBestEffort(
     failedSteps,
     errors,
     allSucceeded: failedSteps.length === 0,
+    deadLetterEntries: deadLetterEntries.length > 0 ? deadLetterEntries : undefined,
   };
 }
 

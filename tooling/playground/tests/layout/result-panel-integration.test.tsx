@@ -75,9 +75,9 @@ describe("Result panel integration", () => {
     expect(resultIdx).toBeLessThan(containerIdx);
   });
 
-  it("getBuiltInPanels() returns 8 panels", () => {
+  it("getBuiltInPanels() returns 9 panels", () => {
     const panels = getBuiltInPanels();
-    expect(panels).toHaveLength(8);
+    expect(panels).toHaveLength(9);
   });
 
   it("result panel has a valid component", () => {

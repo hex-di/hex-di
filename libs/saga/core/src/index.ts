@@ -50,6 +50,7 @@ export type {
   AccumulatedErrors,
   BranchAccumulatedResults,
   BranchAccumulatedErrors,
+  CheckpointPolicy,
   InferSagaName,
   InferSagaInput,
   InferSagaOutput,
@@ -123,13 +124,19 @@ export type {
   CompensationPlan,
   CompensationPlanStep,
   CompensationInvoker,
+  DeadLetterEntry,
 } from "./compensation/index.js";
 
 // =============================================================================
 // Runtime
 // =============================================================================
 
-export { createSagaRunner, executeSaga, generateExecutionId } from "./runtime/index.js";
+export {
+  createSagaRunner,
+  executeSaga,
+  generateExecutionId,
+  DeadLetterQueue,
+} from "./runtime/index.js";
 
 export type {
   SagaRunnerConfig,
@@ -145,6 +152,8 @@ export type {
   StepCompletedEvent,
   StepFailedEvent,
   StepSkippedEvent,
+  StepResumedEvent,
+  CheckpointWarningEvent,
   CompensationStartedEvent,
   CompensationStepEvent,
   CompensationCompletedEvent,
@@ -158,6 +167,7 @@ export type {
   StepTrace,
   CompensationTrace,
   CompensationStepTrace,
+  CheckpointError,
 } from "./runtime/index.js";
 
 // =============================================================================

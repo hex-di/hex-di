@@ -188,6 +188,12 @@ export interface InvokeEffect<
    * This property is undefined at runtime.
    */
   readonly __resultType: MethodReturn<InferService<TPort>, TMethod>;
+
+  /**
+   * Optional compensating effect to execute on partial rollback (GxP F8).
+   * Executed in reverse order when a subsequent step in a SequenceEffect fails.
+   */
+  readonly compensate?: EffectAny;
 }
 
 // =============================================================================
@@ -222,6 +228,11 @@ export interface SpawnEffect<TActivityId extends string, TInput> extends BaseEff
    * Input data for the activity.
    */
   readonly input: TInput;
+
+  /**
+   * Optional compensating effect to execute on partial rollback (GxP F8).
+   */
+  readonly compensate?: EffectAny;
 }
 
 // =============================================================================
@@ -276,6 +287,11 @@ export interface EmitEffect<TEvent extends EventAny> extends BaseEffect<"Emit"> 
    * The event to emit to the machine.
    */
   readonly event: TEvent;
+
+  /**
+   * Optional compensating effect to execute on partial rollback (GxP F8).
+   */
+  readonly compensate?: EffectAny;
 }
 
 // =============================================================================
@@ -298,6 +314,11 @@ export interface DelayEffect extends BaseEffect<"Delay"> {
    * The duration to wait in milliseconds.
    */
   readonly milliseconds: number;
+
+  /**
+   * Optional compensating effect to execute on partial rollback (GxP F8).
+   */
+  readonly compensate?: EffectAny;
 }
 
 // =============================================================================

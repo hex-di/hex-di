@@ -14,7 +14,9 @@ import {
 } from "../../src/policy/combinators.js";
 import { eq, subject } from "../../src/policy/matchers.js";
 import { hashPolicy } from "../../src/serialization/serialize.js";
+import { createNodeHashDigest } from "@hex-di/crypto-node";
 
+const digest = createNodeHashDigest();
 const ReadUser = createPermission({ resource: "user", action: "read" });
 
 describe("policy data types", () => {
@@ -105,8 +107,8 @@ describe("policy data types", () => {
   // DoD 3 Test 10: hashPolicy() returns consistent SHA-256 hex string for same policy
   it("hashPolicy() returns consistent SHA-256 hex string for same policy", () => {
     const policy = hasPermission(ReadUser);
-    const hash1 = hashPolicy(policy);
-    const hash2 = hashPolicy(policy);
+    const hash1 = hashPolicy(policy, digest);
+    const hash2 = hashPolicy(policy, digest);
     expect(hash1).toBe(hash2);
     expect(typeof hash1).toBe("string");
     expect(hash1).toMatch(/^[0-9a-f]{64}$/);

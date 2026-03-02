@@ -1,0 +1,28 @@
+{
+  "id": "guides/generators",
+  "title": "Generators & Do Notation",
+  "description": "@hex-di/result provides two powerful patterns for sequential operations: generator-based flow with safeTry and Do notation for building up context step-by-step.",
+  "source": "@site/docs/guides/generators.md",
+  "sourceDirName": "guides",
+  "slug": "/guides/generators",
+  "permalink": "/docs/guides/generators",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/guides/generators.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3,
+    "title": "Generators & Do Notation"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Async Results",
+    "permalink": "/docs/guides/async-results"
+  },
+  "next": {
+    "title": "API Reference",
+    "permalink": "/docs/api/api-reference"
+  }
+}

@@ -128,6 +128,8 @@ function makePersisterState(
   return {
     input: {},
     currentStep: 0,
+    totalSteps: 3,
+    pendingStep: null,
     completedSteps: [],
     status: "completed",
     error: null,
@@ -425,7 +427,7 @@ describe("integration/inspector-adapter.ts — createSagaInspectorAdapter", () =
       getSuggestions: () => [],
       subscribe: () => () => {},
     };
-    adapter.finalizer!(disposableInspector as any);
+    void adapter.finalizer!(disposableInspector as any);
     expect(disposeCalled).toBe(true);
   });
 
@@ -1763,6 +1765,8 @@ describe("saga-inspector.ts — getHistory edge cases", () => {
         sagaName: "TestSaga",
         status: "completed",
         currentStep: 3,
+        totalSteps: 3,
+        pendingStep: null,
         completedSteps: [
           {
             name: "StepA",

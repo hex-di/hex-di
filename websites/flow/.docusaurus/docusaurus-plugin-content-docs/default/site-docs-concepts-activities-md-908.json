@@ -1,0 +1,28 @@
+{
+  "id": "concepts/activities",
+  "title": "Activities",
+  "description": "Activities are long-running processes that can emit events, be cancelled, and maintain their own lifecycle alongside state machines.",
+  "source": "@site/docs/concepts/activities.md",
+  "sourceDirName": "concepts",
+  "slug": "/concepts/activities",
+  "permalink": "/docs/concepts/activities",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/concepts/activities.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "sidebar_position": 4,
+    "title": "Activities"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Effects",
+    "permalink": "/docs/concepts/effects"
+  },
+  "next": {
+    "title": "Building Machines",
+    "permalink": "/docs/guides/building-machines"
+  }
+}

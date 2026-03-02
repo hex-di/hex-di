@@ -49,13 +49,13 @@ interface PortConfig {
  * **Service and name explicit (preserves literal name):**
  * ```typescript
  * const LoggerPort = createPort<'Logger', Logger>({ name: 'Logger' });
- * // Type: DirectedPort<Logger, 'Logger', 'outbound'>
+ * // Type: DirectedPort<'Logger', Logger, 'outbound'>
  * ```
  *
  * **Using port() builder (recommended - preserves literal name):**
  * ```typescript
  * const LoggerPort = port<Logger>()({ name: 'Logger' });
- * // Type: DirectedPort<Logger, 'Logger', 'outbound'>
+ * // Type: DirectedPort<'Logger', Logger, 'outbound'>
  * ```
  *
  * @typeParam TService - The service interface type (defaults to unknown)

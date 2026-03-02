@@ -53,7 +53,7 @@ describe("FlowEventBusAdapter", () => {
     bus.subscribe(e => events.push(e));
 
     // Finalize the bus
-    FlowEventBusAdapter.finalizer?.(bus);
+    void FlowEventBusAdapter.finalizer?.(bus);
 
     // After disposal, emit should be a no-op
     bus.emit({ type: "AFTER_DISPOSE" });

@@ -1,0 +1,28 @@
+{
+  "id": "guides/di-integration",
+  "title": "DI Integration",
+  "description": "The enforcement layer bridges the pure evaluation core with HexDI's runtime container. enforcePolicy() wraps adapters so that policy evaluation runs automatically at resolution time.",
+  "source": "@site/docs/guides/di-integration.md",
+  "sourceDirName": "guides",
+  "slug": "/guides/di-integration",
+  "permalink": "/docs/guides/di-integration",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/guides/di-integration.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "DI Integration"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Subjects",
+    "permalink": "/docs/concepts/subjects"
+  },
+  "next": {
+    "title": "Port Gates",
+    "permalink": "/docs/guides/port-gates"
+  }
+}

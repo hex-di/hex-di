@@ -1,0 +1,28 @@
+{
+  "id": "api/api-reference",
+  "title": "API Reference",
+  "description": "Complete API documentation for the @hex-di/saga library.",
+  "source": "@site/docs/api/api-reference.md",
+  "sourceDirName": "api",
+  "slug": "/api/api-reference",
+  "permalink": "/docs/api/api-reference",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/api/api-reference.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "API Reference"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "DI Integration",
+    "permalink": "/docs/guides/di-integration"
+  },
+  "next": {
+    "title": "Testing",
+    "permalink": "/docs/testing"
+  }
+}

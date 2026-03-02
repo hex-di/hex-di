@@ -12,7 +12,7 @@
  * - executeBestEffort (continue-past-failure, reversed order, firstFailedStep)
  * - executeCompensation (filter, length === 0, empty return, strategy switch)
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { ResultAsync } from "@hex-di/result";
 import { executeCompensation } from "../src/compensation/engine.js";
 import type { CompensationEngineInput, CompensationInvoker } from "../src/compensation/engine.js";

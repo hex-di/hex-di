@@ -11,8 +11,73 @@
           "mainDocId": "index",
           "docs": [
             {
+              "id": "advanced/architecture",
+              "path": "/docs/advanced/architecture",
+              "sidebar": "docs"
+            },
+            {
+              "id": "advanced/gxp",
+              "path": "/docs/advanced/gxp",
+              "sidebar": "docs"
+            },
+            {
+              "id": "api/api-reference",
+              "path": "/docs/api/api-reference",
+              "sidebar": "docs"
+            },
+            {
+              "id": "concepts/evaluation",
+              "path": "/docs/concepts/evaluation",
+              "sidebar": "docs"
+            },
+            {
+              "id": "concepts/permissions",
+              "path": "/docs/concepts/permissions",
+              "sidebar": "docs"
+            },
+            {
+              "id": "concepts/policies",
+              "path": "/docs/concepts/policies",
+              "sidebar": "docs"
+            },
+            {
+              "id": "concepts/roles",
+              "path": "/docs/concepts/roles",
+              "sidebar": "docs"
+            },
+            {
+              "id": "concepts/subjects",
+              "path": "/docs/concepts/subjects",
+              "sidebar": "docs"
+            },
+            {
+              "id": "guides/di-integration",
+              "path": "/docs/guides/di-integration",
+              "sidebar": "docs"
+            },
+            {
+              "id": "guides/port-gates",
+              "path": "/docs/guides/port-gates",
+              "sidebar": "docs"
+            },
+            {
+              "id": "guides/serialization",
+              "path": "/docs/guides/serialization",
+              "sidebar": "docs"
+            },
+            {
               "id": "index",
               "path": "/docs/",
+              "sidebar": "docs"
+            },
+            {
+              "id": "react",
+              "path": "/docs/react",
+              "sidebar": "docs"
+            },
+            {
+              "id": "testing",
+              "path": "/docs/testing",
               "sidebar": "docs"
             }
           ],

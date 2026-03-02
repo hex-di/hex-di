@@ -12,6 +12,8 @@ function createState(overrides?: Partial<SagaExecutionState>): SagaExecutionStat
     sagaName: overrides?.sagaName ?? "TestSaga",
     input: overrides?.input ?? { orderId: "o-1" },
     currentStep: overrides?.currentStep ?? 0,
+    totalSteps: overrides?.totalSteps ?? 3,
+    pendingStep: overrides?.pendingStep ?? null,
     completedSteps: overrides?.completedSteps ?? [],
     status: overrides?.status ?? "running",
     error: overrides?.error ?? null,

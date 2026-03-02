@@ -101,12 +101,12 @@ describe("configureLanguageService", () => {
     expect(setEagerModelSync).toHaveBeenCalledWith(true);
   });
 
-  it("registers type definitions for all 10 hex-di packages", () => {
+  it("registers type definitions for all 11 hex-di packages", () => {
     const { mockMonaco, addExtraLib } = createMockMonaco();
 
     configureLanguageService(mockMonaco);
 
-    expect(addExtraLib).toHaveBeenCalledTimes(10);
+    expect(addExtraLib).toHaveBeenCalledTimes(11);
 
     // Verify each package gets registered with correct URI
     const calledUris = addExtraLib.mock.calls.map((c: any[]) => c[1]);
@@ -120,6 +120,7 @@ describe("configureLanguageService", () => {
     expect(calledUris).toContain("file:///node_modules/@hex-di/saga/index.d.ts");
     expect(calledUris).toContain("file:///node_modules/@hex-di/tracing/index.d.ts");
     expect(calledUris).toContain("file:///node_modules/@hex-di/logger/index.d.ts");
+    expect(calledUris).toContain("file:///node_modules/@hex-di/guard/index.d.ts");
   });
 
   it("does not include paths in compiler options (addExtraLib handles resolution)", () => {

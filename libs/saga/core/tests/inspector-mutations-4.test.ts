@@ -16,7 +16,7 @@ import { ResultAsync } from "@hex-di/result";
 import { defineStep } from "../src/step/builder.js";
 import { defineSaga } from "../src/saga/builder.js";
 import { createSagaInspector, emitToInspector } from "../src/introspection/saga-inspector.js";
-import type { SagaPersister, SagaExecutionState, PersistenceError } from "../src/ports/types.js";
+import type { SagaPersister, SagaExecutionState } from "../src/ports/types.js";
 import type { ExecutionTrace, StepTrace, CompensationStepTrace } from "../src/runtime/types.js";
 import type { AnySagaDefinition } from "../src/saga/types.js";
 import type { AnyStepDefinition } from "../src/step/types.js";
@@ -105,6 +105,8 @@ function makePersisterState(
   return {
     input: {},
     currentStep: 0,
+    totalSteps: 3,
+    pendingStep: null,
     completedSteps: [],
     status: "completed",
     error: null,
@@ -258,6 +260,8 @@ describe("Group 2: executionStateToSummary currentStepName boundary (L107/L120-1
       executionId: "e1",
       sagaName: "TestSaga",
       currentStep: 1,
+      totalSteps: 3,
+      pendingStep: null,
       status: "running",
     });
     const inspector = createSagaInspector({
@@ -296,6 +300,8 @@ describe("Group 2: executionStateToSummary currentStepName boundary (L107/L120-1
       executionId: "e3",
       sagaName: "TestSaga",
       currentStep: 10, // far exceeds
+      totalSteps: 3,
+      pendingStep: null,
       status: "completed",
     });
     const inspector = createSagaInspector({
@@ -314,6 +320,8 @@ describe("Group 2: executionStateToSummary currentStepName boundary (L107/L120-1
       executionId: "e4",
       sagaName: "UnknownSaga",
       currentStep: 0,
+      totalSteps: 3,
+      pendingStep: null,
       status: "running",
     });
     const inspector = createSagaInspector({
@@ -333,6 +341,8 @@ describe("Group 2: executionStateToSummary currentStepName boundary (L107/L120-1
       executionId: "e5",
       sagaName: "TestSaga",
       currentStep: 0,
+      totalSteps: 3,
+      pendingStep: null,
       status: "running",
     });
     const inspector = createSagaInspector({

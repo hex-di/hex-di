@@ -27,6 +27,18 @@ import { storeStateManagement } from "./templates/store-state-management.js";
 import { queryCachePatterns } from "./templates/query-cache-patterns.js";
 import { sagaOrchestration } from "./templates/saga-orchestration.js";
 import { multiLibraryComposition } from "./templates/multi-library-composition.js";
+import { guardBasicRoles } from "./templates/guard-basic-roles.js";
+import { guardCompositePolicies } from "./templates/guard-composite-policies.js";
+import { guardAttributeChecks } from "./templates/guard-attribute-checks.js";
+import { guardRoleHierarchy } from "./templates/guard-role-hierarchy.js";
+import { guardFieldVisibility } from "./templates/guard-field-visibility.js";
+import { guardCmsAuthorization } from "./templates/guard-cms-authorization.js";
+import { guardHybridPatterns } from "./templates/guard-hybrid-patterns.js";
+import { guardBatchEvaluation } from "./templates/guard-batch-evaluation.js";
+import { guardAsyncEvaluation } from "./templates/guard-async-evaluation.js";
+import { guardRebacRelationships } from "./templates/guard-rebac-relationships.js";
+import { guardObservability } from "./templates/guard-observability.js";
+import { guardFullStack } from "./templates/guard-full-stack.js";
 
 // =============================================================================
 // All Templates (ordered by category, then by display order within category)
@@ -41,6 +53,19 @@ const ALL_TEMPLATES: readonly ExampleTemplate[] = [
   childContainers,
   // Patterns
   resolutionTracing,
+  // Guard
+  guardBasicRoles,
+  guardCompositePolicies,
+  guardAttributeChecks,
+  guardRoleHierarchy,
+  guardFieldVisibility,
+  guardCmsAuthorization,
+  guardHybridPatterns,
+  guardBatchEvaluation,
+  guardAsyncEvaluation,
+  guardRebacRelationships,
+  guardObservability,
+  guardFullStack,
   // Result
   resultConstructorsGuards,
   resultTransformations,

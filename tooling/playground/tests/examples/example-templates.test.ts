@@ -6,6 +6,7 @@ const VALID_CATEGORIES: readonly ExampleCategory[] = [
   "basics",
   "patterns",
   "result",
+  "guard",
   "libraries",
   "advanced",
 ];

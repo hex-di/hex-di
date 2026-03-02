@@ -492,7 +492,7 @@ describe("History Pseudo-States", () => {
     it("should auto-enter compound states within the restored path (shallow)", () => {
       // For shallow history, the restored path is just the immediate child.
       // If that child is compound, it should auto-enter its initial child.
-      const machine = createDeepHistoryMachine();
+      const _machine = createDeepHistoryMachine();
 
       // We'll test with shallow history behavior by using a machine that
       // has a history node we can compare. In the deep history machine,

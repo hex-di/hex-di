@@ -12,14 +12,14 @@
  * - subscribe/emit patterns
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { createPort } from "@hex-di/core";
 import { ResultAsync } from "@hex-di/result";
 import { defineStep } from "../src/step/builder.js";
 import { defineSaga } from "../src/saga/builder.js";
 import { createSagaInspector, emitToInspector } from "../src/introspection/saga-inspector.js";
-import type { SagaPersister, SagaExecutionState, CompensationState } from "../src/ports/types.js";
-import type { ExecutionTrace, StepTrace, CompensationTrace } from "../src/runtime/types.js";
+import type { SagaPersister, SagaExecutionState } from "../src/ports/types.js";
+import type { ExecutionTrace, StepTrace } from "../src/runtime/types.js";
 
 // =============================================================================
 // Test Ports & Steps & Sagas
@@ -112,6 +112,8 @@ function makeExecutionState(overrides?: Partial<SagaExecutionState>): SagaExecut
     sagaName: "TestSaga",
     input: {},
     currentStep: 0,
+    totalSteps: 3,
+    pendingStep: null,
     completedSteps: [],
     status: "completed",
     error: null,
@@ -173,6 +175,8 @@ describe("executionStateToSummary — field accuracy", () => {
       sagaName: "TestSaga",
       status: "completed",
       currentStep: 3,
+      totalSteps: 3,
+      pendingStep: null,
       completedSteps: [
         {
           name: "StepA",
@@ -426,6 +430,8 @@ describe("executionStateToSummary — field accuracy", () => {
   it("currentStepName resolves from definition when step in range", async () => {
     const state = makeExecutionState({
       currentStep: 1,
+      totalSteps: 3,
+      pendingStep: null,
       status: "running",
     });
 
@@ -442,6 +448,8 @@ describe("executionStateToSummary — field accuracy", () => {
   it("currentStepName is null when currentStep >= steps.length", async () => {
     const state = makeExecutionState({
       currentStep: 10, // out of range
+      totalSteps: 3,
+      pendingStep: null,
       status: "running",
     });
 
@@ -458,6 +466,8 @@ describe("executionStateToSummary — field accuracy", () => {
     const state = makeExecutionState({
       sagaName: "UnknownSaga",
       currentStep: 0,
+      totalSteps: 3,
+      pendingStep: null,
     });
 
     const persister = createMockPersister([state]);

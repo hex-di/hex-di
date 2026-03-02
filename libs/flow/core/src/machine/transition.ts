@@ -151,6 +151,14 @@ export interface TransitionConfig<
    * @default false (external transition)
    */
   readonly internal?: boolean;
+
+  /**
+   * Optional per-transition event validator (GxP F10).
+   *
+   * When present, the event payload is validated before the transition is taken.
+   * Return false to reject the event for this transition.
+   */
+  readonly validate?: (event: TEvent) => boolean;
 }
 
 // =============================================================================
@@ -195,6 +203,11 @@ export interface TransitionConfigAny {
    * Whether this is an internal transition.
    */
   readonly internal?: boolean;
+
+  /**
+   * Optional per-transition event validator (GxP F10).
+   */
+  readonly validate?: (event: never) => boolean;
 }
 
 // =============================================================================

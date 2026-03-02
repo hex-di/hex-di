@@ -412,6 +412,12 @@ export interface MachineAny {
    * The context value. All machines have this property (may be undefined/void).
    */
   readonly context: unknown;
+
+  /**
+   * Optional machine definition version (GxP F5).
+   * Used for state migration when restoring serialized state.
+   */
+  readonly version?: number;
 }
 
 // =============================================================================

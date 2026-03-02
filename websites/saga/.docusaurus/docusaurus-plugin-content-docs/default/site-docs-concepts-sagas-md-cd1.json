@@ -1,0 +1,28 @@
+{
+  "id": "concepts/sagas",
+  "title": "Sagas",
+  "description": "Sagas orchestrate multiple steps into complex workflows with defined execution flows, error handling, and compensation strategies.",
+  "source": "@site/docs/concepts/sagas.md",
+  "sourceDirName": "concepts",
+  "slug": "/concepts/sagas",
+  "permalink": "/docs/concepts/sagas",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/concepts/sagas.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2,
+    "title": "Sagas"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Steps",
+    "permalink": "/docs/concepts/steps"
+  },
+  "next": {
+    "title": "Compensation",
+    "permalink": "/docs/concepts/compensation"
+  }
+}

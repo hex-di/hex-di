@@ -170,8 +170,7 @@ describe("createFlowEventBus", () => {
     const received: FlowEvent[] = [];
 
     // Subscriber that unsubscribes itself on first event
-    let unsubSelf: (() => void) | undefined;
-    unsubSelf = bus.subscribe(event => {
+    const unsubSelf = bus.subscribe(event => {
       received.push(event);
       if (unsubSelf) {
         unsubSelf();

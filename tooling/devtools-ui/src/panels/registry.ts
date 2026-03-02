@@ -16,6 +16,7 @@ import { EventLogPanel } from "./event-log-panel.js";
 import { TracingPanel } from "./tracing-panel.js";
 import { ResultPanel } from "./result-panel.js";
 import { HealthPanel } from "./health-panel.js";
+import { GuardPanel } from "./guard-panel.js";
 
 /**
  * Registry for devtools panels.
@@ -102,6 +103,13 @@ export function getBuiltInPanels(): readonly DevToolsPanel[] {
       icon: "check-circle",
       order: 3,
       component: ResultPanel,
+    },
+    {
+      id: "guard",
+      label: "Guard",
+      icon: "shield",
+      order: 4,
+      component: GuardPanel,
     },
     {
       id: "container",

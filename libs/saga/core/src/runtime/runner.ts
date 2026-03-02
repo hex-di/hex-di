@@ -33,6 +33,13 @@ import type { ExecutionState, CompletedStepInfo, SagaResult } from "./execution-
 import { emit, buildExecutionTrace } from "./events.js";
 import { buildSagaStatus } from "./status-builder.js";
 import { executeSagaInternal, resolveStepByName } from "./saga-executor.js";
+import { createValidationFailedError } from "../errors/factories.js";
+
+// =============================================================================
+// GxP Tracing Warning (warnOnce)
+// =============================================================================
+
+let gxpTracingWarned = false;
 
 // =============================================================================
 // Public API
@@ -67,6 +74,21 @@ export function createSagaRunner(resolver: PortResolver, config?: SagaRunnerConf
         options.signal.addEventListener("abort", () => abortController.abort(), { once: true });
       }
 
+      // GxP tracing warning: warn once if no tracing listeners
+      if (
+        !gxpTracingWarned &&
+        !tracingHook &&
+        !config?.suppressGxpWarnings &&
+        (!options?.listeners || options.listeners.length === 0)
+      ) {
+        gxpTracingWarned = true;
+        globalThis.console.warn(
+          "[GxP] Saga execute() called without tracing listeners. " +
+            "Consider configuring a tracingHook or event listeners for audit compliance."
+        );
+      }
+
+      const nodes = extractNodes(saga);
       const state: ExecutionState = {
         executionId,
         sagaName: saga.name,
@@ -91,14 +113,38 @@ export function createSagaRunner(resolver: PortResolver, config?: SagaRunnerConf
 
       const globalTimeout = options?.timeout ?? saga.options?.timeout;
 
-      // Save initial state to persister if available
-      const executeWithPersistence = async (): Promise<SagaResult> => {
+      // S4: Runtime input validation + persistence + execution
+      const executeWithValidation = async (): Promise<SagaResult> => {
+        // S4: Runtime input validation
+        if (saga.options.inputValidator) {
+          const isValid = saga.options.inputValidator(input);
+          if (!isValid) {
+            return err(
+              createValidationFailedError(
+                {
+                  executionId,
+                  sagaName: saga.name,
+                  stepName: "",
+                  stepIndex: -1,
+                  message: "Input validation failed",
+                  completedSteps: [],
+                  compensatedSteps: [],
+                },
+                new Error("Input validation failed")
+              )
+            );
+          }
+        }
+
+        // Save initial state to persister if available
         if (persister) {
           const initialState: SagaExecutionState = {
             executionId,
             sagaName: saga.name,
             input,
             currentStep: 0,
+            totalSteps: nodes.length,
+            pendingStep: null,
             completedSteps: [],
             status: "running",
             error: null,
@@ -114,6 +160,7 @@ export function createSagaRunner(resolver: PortResolver, config?: SagaRunnerConf
               completedAt: null,
             },
             metadata: options?.metadata ?? {},
+            sagaVersion: saga.version,
           };
           await persister.save(initialState).orTee(error => {
             emit(state, {
@@ -140,7 +187,7 @@ export function createSagaRunner(resolver: PortResolver, config?: SagaRunnerConf
         );
       };
 
-      return ResultAsync.fromResult(executeWithPersistence());
+      return ResultAsync.fromResult(executeWithValidation());
     },
 
     resume(executionId) {
@@ -198,21 +245,91 @@ export function createSagaRunner(resolver: PortResolver, config?: SagaRunnerConf
             });
           }
 
+          const nodes = extractNodes(saga);
+          const totalSteps = nodes.length;
+
+          // S10: Validate currentStep bounds
+          if (persistedState.currentStep < 0 || persistedState.currentStep > totalSteps) {
+            return err<SagaError<unknown>>(
+              createValidationFailedError(
+                {
+                  executionId,
+                  sagaName: persistedState.sagaName,
+                  stepName: "",
+                  stepIndex: persistedState.currentStep,
+                  message: `Resume state validation failed: currentStep ${persistedState.currentStep} is out of bounds [0, ${totalSteps}]`,
+                  completedSteps: persistedState.completedSteps.map(s => s.name),
+                  compensatedSteps: [],
+                },
+                new Error(
+                  `currentStep ${persistedState.currentStep} out of bounds [0, ${totalSteps}]`
+                )
+              )
+            );
+          }
+
+          // S10: Validate all completedSteps[].name exist in the saga definition
+          for (const persisted of persistedState.completedSteps) {
+            const stepDef = resolveStepByName(nodes, persisted.name);
+            if (!stepDef) {
+              return err<SagaError<unknown>>(
+                createValidationFailedError(
+                  {
+                    executionId,
+                    sagaName: persistedState.sagaName,
+                    stepName: persisted.name,
+                    stepIndex: persisted.index,
+                    message: `Resume state validation failed: completed step "${persisted.name}" does not exist in saga definition`,
+                    completedSteps: persistedState.completedSteps.map(s => s.name),
+                    compensatedSteps: [],
+                  },
+                  new Error(`Step "${persisted.name}" not found in saga definition`)
+                )
+              );
+            }
+          }
+
+          // S7: Version mismatch warning
+          if (
+            saga.version !== undefined &&
+            persistedState.sagaVersion !== undefined &&
+            saga.version !== persistedState.sagaVersion
+          ) {
+            globalThis.console.warn(
+              `[GxP] Saga "${saga.name}" version mismatch: persisted=${persistedState.sagaVersion}, current=${saga.version}`
+            );
+          }
+
           // Reconstruct accumulated results from completed steps
           const accumulatedResults: Record<string, unknown> = {};
           const completedSteps: CompletedStepInfo[] = [];
-          const nodes = extractNodes(saga);
 
           for (const persisted of persistedState.completedSteps) {
             accumulatedResults[persisted.name] = persisted.output;
 
-            // Resolve the step definition from the saga
+            // S10: Resolve the step definition; return error if not found (no dangerous fallback)
             const stepDef = resolveStepByName(nodes, persisted.name);
+            if (!stepDef) {
+              return err<SagaError<unknown>>(
+                createValidationFailedError(
+                  {
+                    executionId,
+                    sagaName: persistedState.sagaName,
+                    stepName: persisted.name,
+                    stepIndex: persisted.index,
+                    message: `Step "${persisted.name}" not found in saga definition`,
+                    completedSteps: persistedState.completedSteps.map(s => s.name),
+                    compensatedSteps: [],
+                  },
+                  new Error(`Step "${persisted.name}" not found in saga definition`)
+                )
+              );
+            }
             completedSteps.push({
               stepName: persisted.name,
               stepIndex: persisted.index,
               result: persisted.output,
-              step: stepDef ?? saga.steps[0], // fallback to first step if not found
+              step: stepDef,
             });
           }
 
@@ -239,7 +356,17 @@ export function createSagaRunner(resolver: PortResolver, config?: SagaRunnerConf
 
           executions.set(executionId, state);
 
-          const startFromStep = persistedState.currentStep;
+          // S1: If pendingStep is set and not in completedSteps, re-execute from that step
+          let startFromStep = persistedState.currentStep;
+          if (persistedState.pendingStep !== null) {
+            const pendingName = persistedState.pendingStep.name;
+            const alreadyCompleted = persistedState.completedSteps.some(
+              s => s.name === pendingName
+            );
+            if (!alreadyCompleted) {
+              startFromStep = persistedState.pendingStep.index;
+            }
+          }
 
           return executeSagaInternal(
             saga,

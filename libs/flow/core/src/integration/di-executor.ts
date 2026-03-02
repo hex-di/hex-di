@@ -7,9 +7,10 @@
  * @packageDocumentation
  */
 
-import type { Port, InferService } from "@hex-di/core";
+import type { Port } from "@hex-di/core";
 import { ok, err, ResultAsync } from "@hex-di/result";
 import type { Result } from "@hex-di/result";
+import { getDescriptorValue } from "../utils/type-bridge.js";
 import type { EffectExecutor } from "../runner/types.js";
 import type { EffectAny } from "../effects/types.js";
 import type { ActivityManager } from "../activities/manager.js";
@@ -301,6 +302,29 @@ interface LogEffectShape {
 // =============================================================================
 // Effect Shape Type Guards
 // =============================================================================
+
+const VALID_EFFECT_TAGS: ReadonlySet<string> = new Set([
+  "Invoke",
+  "Spawn",
+  "Stop",
+  "Emit",
+  "Delay",
+  "Parallel",
+  "Sequence",
+  "None",
+  "Choose",
+  "Log",
+]);
+
+/**
+ * Runtime type guard for EffectAny (validates _tag is a known effect tag).
+ * @internal
+ */
+function isEffectAny(value: unknown): value is EffectAny {
+  if (typeof value !== "object" || value === null || !("_tag" in value)) return false;
+  const tag = getDescriptorValue(value, "_tag");
+  return typeof tag === "string" && VALID_EFFECT_TAGS.has(tag);
+}
 
 /**
  * Runtime type guard for InvokeEffectShape.
@@ -693,12 +717,37 @@ export function createDIEffectExecutor(config: DIEffectExecutorConfig): DIEffect
   function executeSequence(effect: SequenceEffectShape): ResultAsync<void, SequenceAborted> {
     return ResultAsync.fromResult(
       (async (): Promise<Result<void, SequenceAborted>> => {
+        const completedSteps: number[] = [];
+
         for (let i = 0; i < effect.effects.length; i++) {
           const eff = effect.effects[i];
           const result = await dispatch(eff);
           if (result._tag === "Err") {
-            return err(SequenceAbortedCtor({ stepIndex: i, cause: result.error }));
+            // GxP F8: Run compensate effects in reverse for completed steps
+            for (let j = completedSteps.length - 1; j >= 0; j--) {
+              const completedIndex = completedSteps[j];
+              const completedEff = effect.effects[completedIndex];
+              if (
+                typeof completedEff === "object" &&
+                completedEff !== null &&
+                "compensate" in completedEff
+              ) {
+                const compensateEffect = getDescriptorValue(completedEff, "compensate");
+                if (isEffectAny(compensateEffect)) {
+                  try {
+                    await dispatch(compensateEffect);
+                  } catch {
+                    globalThis.console.warn(
+                      `[@hex-di/flow] GxP F8: Compensation failed for step ${completedIndex}`
+                    );
+                  }
+                }
+              }
+            }
+
+            return err(SequenceAbortedCtor({ stepIndex: i, cause: result.error, completedSteps }));
           }
+          completedSteps.push(i);
         }
         return ok(undefined);
       })()
@@ -737,8 +786,8 @@ export function createDIEffectExecutor(config: DIEffectExecutorConfig): DIEffect
           )
         : effect.message;
 
-    // Log via console.debug (no external logger dependency for now)
-    console.debug(`[flow:log] ${message}`);
+    // Log via console.warn (no external logger dependency for now)
+    console.warn(`[flow:log] ${message}`);
     return ResultAsync.ok(undefined);
   }
 

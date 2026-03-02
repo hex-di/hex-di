@@ -24,7 +24,7 @@ import { emit, buildExecutionTrace } from "../src/runtime/events.js";
 import { invokePort, TimeoutSignal, executeStepWithRetry } from "../src/runtime/step-executor.js";
 import { toCompletedStepState, checkpoint } from "../src/runtime/checkpointing.js";
 import { buildSagaStatus } from "../src/runtime/status-builder.js";
-import type { PortResolver, SagaEvent, SagaEventListener } from "../src/runtime/types.js";
+import type { PortResolver, SagaEvent } from "../src/runtime/types.js";
 import type { ExecutionState } from "../src/runtime/execution-state.js";
 import type { SagaNode } from "../src/saga/types.js";
 
@@ -648,7 +648,6 @@ describe("saga-executor: sub-saga execution", () => {
 
 describe("saga-executor: cancellation mid-execution", () => {
   it("aborted signal before step causes cancelled result with correct stepIndex", async () => {
-    let runnerRef: ReturnType<typeof createSagaRunner>;
     const S1 = defineStep("Cancel1")
       .io<string, string>()
       .invoke(PortA, ctx => ctx.input)
@@ -671,7 +670,7 @@ describe("saga-executor: cancellation mid-execution", () => {
       },
       PortB: async () => "done2",
     });
-    runnerRef = createSagaRunner(resolver);
+    const runnerRef = createSagaRunner(resolver);
     const result = await executeSaga(runnerRef, saga, "x", {
       executionId: "cancel-mid-1",
       listeners: [e => events.push(e)],
@@ -1089,7 +1088,6 @@ describe("compensation-handler: hooks are called with correct args", () => {
 
 describe("compensation-handler: makeCancelledResult", () => {
   it("sets status to cancelled on the executionState", async () => {
-    let runnerRef: ReturnType<typeof createSagaRunner>;
     const C1 = defineStep("MC1")
       .io<string, string>()
       .invoke(PortA, ctx => ctx.input)
@@ -1111,7 +1109,7 @@ describe("compensation-handler: makeCancelledResult", () => {
       },
       PortB: async () => "should-not-run",
     });
-    runnerRef = createSagaRunner(resolver);
+    const runnerRef = createSagaRunner(resolver);
     const result = await executeSaga(runnerRef, saga, "x", { executionId: "mc-cancel" });
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
@@ -2707,7 +2705,7 @@ describe("saga-executor: resume skipping behavior", () => {
       .step(S2)
       .output(r => r.Res2)
       .build();
-    const events: SagaEvent[] = [];
+    const _events: SagaEvent[] = [];
     const mockPersister = {
       save: () => ResultAsync.ok(undefined),
       load: (exId: string) =>
@@ -2739,6 +2737,8 @@ describe("saga-executor: resume skipping behavior", () => {
             completedAt: null,
           },
           metadata: {},
+          totalSteps: 2,
+          pendingStep: null,
         }),
       delete: () => ResultAsync.ok(undefined),
       list: () => ResultAsync.ok([]),

@@ -29,6 +29,7 @@ const PACKAGES = [
   "saga",
   "tracing",
   "logger",
+  "guard",
 ] as const;
 
 function packageDir(name: string): string {

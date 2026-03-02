@@ -17,6 +17,7 @@ export type {
   ParallelDefinition,
   SubSagaDefinition,
   SagaNode,
+  CheckpointPolicy,
   InferSagaName,
   InferSagaInput,
   InferSagaOutput,

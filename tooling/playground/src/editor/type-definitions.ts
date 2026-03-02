@@ -42,6 +42,7 @@ const PACKAGES = [
   "@hex-di/saga",
   "@hex-di/tracing",
   "@hex-di/logger",
+  "@hex-di/guard",
 ] as const;
 
 /** A hex-di package name for which we provide type definitions. */
@@ -64,6 +65,7 @@ const GENERATED_MAP: Readonly<Record<string, string | undefined>> = {
   "@hex-di/saga": generated.saga,
   "@hex-di/tracing": generated.tracing,
   "@hex-di/logger": generated.logger,
+  "@hex-di/guard": generated.guard,
 };
 
 function placeholderDts(packageName: string): string {

@@ -1,20 +1,16 @@
 // @ts-check
 import tseslint from "typescript-eslint";
-import { baseConfig, testConfig } from "../../../eslint.config.js";
+import { sharedConfig, prodConfig, testConfig, typeLevelTestConfig, parserConfig } from "../../../eslint.config.js";
 
 export default tseslint.config(
   {
     ignores: ["node_modules/**", "dist/**", "*.config.js", "*.config.ts"],
   },
-  ...baseConfig,
-  {
-    languageOptions: {
-      parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
-  },
+  ...sharedConfig,
+  parserConfig(import.meta.dirname),
+  ...prodConfig,
+  ...testConfig,
+  ...typeLevelTestConfig,
   // Allow empty object types in type definitions for conditional types
   // This is necessary for State/Event types that conditionally omit properties
   {
@@ -28,5 +24,13 @@ export default tseslint.config(
       ],
     },
   },
-  ...testConfig
+  // type-bridge.ts intentionally wraps stdlib APIs that leak `any`
+  // (PropertyDescriptor.value, Function.prototype.call) and returns `unknown`.
+  {
+    files: ["src/utils/type-bridge.ts"],
+    rules: {
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+    },
+  },
 );

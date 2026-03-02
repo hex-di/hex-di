@@ -51,10 +51,7 @@ export type {
   AsyncEvaluationError,
 } from "./evaluator/async.js";
 export { evaluateAsync } from "./evaluator/async.js";
-export type {
-  RelationshipResolver,
-  RelationshipResolverPort,
-} from "./evaluator/rebac.js";
+export type { RelationshipResolver, RelationshipResolverPort } from "./evaluator/rebac.js";
 export { NoopRelationshipResolver } from "./evaluator/rebac.js";
 
 // Subject
@@ -118,10 +115,7 @@ export type {
   CircuitBreaker,
 } from "./guard/circuit-breaker.js";
 export { createCircuitBreaker } from "./guard/circuit-breaker.js";
-export type {
-  DisposalChainResult,
-  ScopeDisposalVerifier,
-} from "./guard/disposal.js";
+export type { DisposalChainResult, ScopeDisposalVerifier } from "./guard/disposal.js";
 export { createScopeDisposalVerifier } from "./guard/disposal.js";
 export { detectClockDrift, checkClockDrift } from "./guard/clock.js";
 export type { RetentionPolicy } from "./guard/retention.js";
@@ -173,13 +167,18 @@ export { NoopSignatureService } from "./signature/port.js";
 export * from "./signature/meanings.js";
 
 // Inspection / DevTools
-export type {
-  GuardInspectionSnapshot,
-  GuardInspectionEventListener,
-} from "./inspection/inspector.js";
-export { GuardInspector } from "./inspection/inspector.js";
+export type { GuardInspectionSnapshot, GuardInspectionEventListener } from "./inspection/index.js";
+export {
+  GuardInspector,
+  GuardInspectorPort,
+  createGuardLibraryInspector,
+  GuardLibraryInspectorPort,
+  GuardLibraryInspectorAdapter,
+} from "./inspection/index.js";
 
 // Utils
 export * from "./utils/flatten.js";
 export * from "./utils/inference.js";
-export { timingSafeEqual } from "./utils/timing.js";
+
+// Crypto (re-export for consumer convenience)
+export type { HashDigest } from "@hex-di/crypto";

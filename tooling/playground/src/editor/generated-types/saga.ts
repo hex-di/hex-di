@@ -96,7 +96,7 @@ export type NotAPortError<T> = {
  * Extracts the service interface type from a Port type.
  *
  * This utility type uses conditional type inference to extract the phantom
- * type parameter \`T\` from a \`Port<T, TName>\`. If the provided type is not
+ * type parameter \`T\` from a \`Port<TName, T>\`. If the provided type is not
  * a valid Port, it returns a descriptive \`NotAPortError\` type.
  *
  * @typeParam P - The Port type to extract the service from
@@ -130,7 +130,7 @@ export type InferService<P> = P extends Port<infer _TName, infer T> ? T : NotAPo
  * Extracts the port name literal type from a Port type.
  *
  * This utility type uses conditional type inference to extract the name
- * type parameter \`TName\` from a \`Port<T, TName>\`. If the provided type is not
+ * type parameter \`TName\` from a \`Port<TName, T>\`. If the provided type is not
  * a valid Port, it returns a descriptive \`NotAPortError\` type.
  *
  * @typeParam P - The Port type to extract the name from

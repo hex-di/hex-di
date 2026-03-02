@@ -10,3 +10,4 @@ export { dts as query } from "./query.js";
 export { dts as saga } from "./saga.js";
 export { dts as tracing } from "./tracing.js";
 export { dts as logger } from "./logger.js";
+export { dts as guard } from "./guard.js";

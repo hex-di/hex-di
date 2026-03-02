@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { port } from "@hex-di/core";
 import { expectOk, expectErr } from "@hex-di/result-testing";
 import { createDIEffectExecutor } from "../../src/integration/di-executor.js";

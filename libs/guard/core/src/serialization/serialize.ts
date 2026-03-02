@@ -1,5 +1,5 @@
-import { createHash } from "node:crypto";
 import { assertNever } from "@hex-di/result";
+import type { HashDigest } from "@hex-di/crypto";
 import type { PolicyConstraint } from "../policy/constraint.js";
 import type { Policy } from "../policy/types.js";
 import { isPolicy } from "../policy/types.js";
@@ -96,9 +96,9 @@ function policyToJSONNarrowed(policy: Policy): unknown {
  *
  * @returns A hex-encoded SHA-256 digest string.
  */
-export function hashPolicy(policy: PolicyConstraint): string {
+export function hashPolicy(policy: PolicyConstraint, digest: HashDigest): string {
   const canonical = JSON.stringify(policyToJSON(policy), sortedReplacer);
-  return createHash("sha256").update(canonical).digest("hex");
+  return digest.sha256Hex(canonical);
 }
 
 function sortedReplacer(_key: string, value: unknown): unknown {
@@ -127,7 +127,7 @@ export function verifyAuditChain(entries: readonly AuditEntry[]): boolean {
   if (entries.length === 0) return true;
 
   // Check sequenceNumbers are monotonically increasing with no gaps if present
-  const withSeq = entries.filter((e) => e.sequenceNumber !== undefined);
+  const withSeq = entries.filter(e => e.sequenceNumber !== undefined);
   if (withSeq.length > 0) {
     for (let i = 1; i < withSeq.length; i++) {
       const prev = withSeq[i - 1].sequenceNumber;
@@ -148,6 +148,7 @@ export function verifyAuditChain(entries: readonly AuditEntry[]): boolean {
 export function computeAuditEntryHash(
   entry: AuditEntry,
   previousHash: string,
+  digest: HashDigest
 ): string {
   const fields = [
     entry.evaluationId,
@@ -167,7 +168,7 @@ export function computeAuditEntryHash(
     previousHash,
   ].join("|");
 
-  return createHash("sha256").update(fields, "utf8").digest("hex");
+  return digest.sha256Hex(fields);
 }
 
 function isGxPAuditEntry(entry: AuditEntry): entry is GxPAuditEntry {

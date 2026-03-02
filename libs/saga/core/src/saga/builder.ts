@@ -144,6 +144,14 @@ interface SagaBuilderWithOutput<
 > {
   options(opts: SagaOptions): SagaBuilderWithOutput<TName, TInput, TOutput, TSteps, TErrors>;
 
+  /** S4: Add a runtime input validator */
+  validate(
+    fn: (input: TInput) => boolean
+  ): SagaBuilderWithOutput<TName, TInput, TOutput, TSteps, TErrors>;
+
+  /** S7: Set the saga definition version */
+  version(v: string): SagaBuilderWithOutput<TName, TInput, TOutput, TSteps, TErrors>;
+
   build(): SagaDefinition<TName, TInput, TOutput, TSteps, TErrors>;
 }
 
@@ -157,6 +165,7 @@ interface SagaBuilderState<TName extends string> {
   readonly steps: AnyStepDefinition[];
   outputMapper: unknown;
   sagaOptions: SagaOptions;
+  sagaVersion: string | undefined;
 }
 
 // =============================================================================
@@ -172,6 +181,7 @@ function createSagaBuilder<TName extends string>(name: TName): SagaBuilder<TName
         steps: [],
         outputMapper: null,
         sagaOptions: { compensationStrategy: "sequential" },
+        sagaVersion: undefined,
       };
       return createSagaBuilderWithInput<TName, TInput, [], never>(state);
     },
@@ -229,26 +239,42 @@ function buildInputStage<TName extends string>(state: SagaBuilderState<TName>): 
 
     output(mapper: (results: unknown) => unknown) {
       setOutputMapper(state, mapper);
-      return createSagaBuilderWithOutput(state);
+      return createSagaBuilderWithOutputImpl(state);
     },
   };
 }
 
-function createSagaBuilderWithOutput<
+/**
+ * Typed overload for the output builder, erased implementation below.
+ */
+function createSagaBuilderWithOutputImpl<
   TName extends string,
   TInput,
   TOutput,
   TSteps extends readonly AnyStepDefinition[],
   TErrors,
->(state: SagaBuilderState<TName>): SagaBuilderWithOutput<TName, TInput, TOutput, TSteps, TErrors> {
-  const builder: SagaBuilderWithOutput<TName, TInput, TOutput, TSteps, TErrors> = {
+>(state: SagaBuilderState<TName>): SagaBuilderWithOutput<TName, TInput, TOutput, TSteps, TErrors>;
+function createSagaBuilderWithOutputImpl<TName extends string>(
+  state: SagaBuilderState<TName>
+): object {
+  const builder = {
     options(opts: SagaOptions) {
       state.sagaOptions = { ...state.sagaOptions, ...opts };
       return builder;
     },
 
-    build(): SagaDefinition<TName, TInput, TOutput, TSteps, TErrors> {
-      return buildSagaDefinition<TName, TInput, TOutput, TSteps, TErrors>(state);
+    validate(fn: (input: unknown) => boolean) {
+      state.sagaOptions = { ...state.sagaOptions, inputValidator: fn };
+      return builder;
+    },
+
+    version(v: string) {
+      state.sagaVersion = v;
+      return builder;
+    },
+
+    build() {
+      return buildSagaDefinition(state);
     },
   };
 

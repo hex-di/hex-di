@@ -62,6 +62,16 @@ export type MachineIdMismatch = Readonly<{
 }>;
 
 /**
+ * Error when the restored context fails schema validation (GxP F11).
+ */
+export const ContextValidationFailed = createError("ContextValidationFailed");
+export type ContextValidationFailed = Readonly<{
+  _tag: "ContextValidationFailed";
+  machineId: string;
+  message: string;
+}>;
+
+/**
  * Union of all restore error types.
  */
-export type RestoreError = InvalidState | MachineIdMismatch;
+export type RestoreError = InvalidState | MachineIdMismatch | ContextValidationFailed;

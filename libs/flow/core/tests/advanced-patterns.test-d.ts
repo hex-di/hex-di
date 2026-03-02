@@ -66,7 +66,10 @@ describe("restoreMachineState returns Result<{ state, context }, RestoreError>",
     );
 
     expectTypeOf(result).toMatchTypeOf<
-      Result<{ readonly state: string; readonly context: unknown }, RestoreError>
+      Result<
+        { readonly state: string; readonly context: unknown },
+        RestoreError | import("../src/serialization/migration.js").MigrationFailed
+      >
     >();
   });
 });
@@ -109,6 +112,8 @@ describe("SerializationError narrowable via _tag", () => {
   it("can narrow to RestoreError variants", () => {
     type E = RestoreError;
     type Tag = E["_tag"];
-    expectTypeOf<Tag>().toEqualTypeOf<"InvalidState" | "MachineIdMismatch">();
+    expectTypeOf<Tag>().toEqualTypeOf<
+      "InvalidState" | "MachineIdMismatch" | "ContextValidationFailed"
+    >();
   });
 });

@@ -73,6 +73,8 @@ describe("Runtime - Type Level", () => {
       | "step:completed"
       | "step:failed"
       | "step:skipped"
+      | "step:resumed"
+      | "checkpoint:warning"
       | "compensation:started"
       | "compensation:step"
       | "compensation:completed"

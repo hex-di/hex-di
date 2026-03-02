@@ -93,6 +93,18 @@ export interface FlowTransitionEvent<
    * Whether this transition is pinned (protected from eviction).
    */
   readonly isPinned: boolean;
+
+  /**
+   * FNV-1a audit hash of this transition (GxP F9).
+   * Present only when audit sink is configured.
+   */
+  readonly hash?: string;
+
+  /**
+   * Hash of the preceding transition in the audit chain (GxP F9).
+   * Present only when audit sink is configured.
+   */
+  readonly previousHash?: string;
 }
 
 /**

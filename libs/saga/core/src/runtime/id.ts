@@ -1,18 +1,16 @@
 /**
  * Execution ID Generator
  *
- * Simple unique ID generation for saga executions.
+ * Cryptographic unique ID generation for saga executions
+ * using crypto.randomUUID() for GxP-compliant uniqueness.
  *
  * @packageDocumentation
  */
 
-let counter = 0;
-
 /**
  * Generate a unique execution ID.
- * Uses a combination of timestamp and counter for uniqueness.
+ * Uses crypto.randomUUID() for cryptographic uniqueness.
  */
 export function generateExecutionId(): string {
-  counter += 1;
-  return `exec-${Date.now()}-${counter.toString(36)}`;
+  return `exec-${crypto.randomUUID()}`;
 }

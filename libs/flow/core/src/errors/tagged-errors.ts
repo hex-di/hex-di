@@ -65,9 +65,28 @@ export type QueueOverflow = Readonly<{
 }>;
 
 /**
+ * Event validation failed (GxP F10).
+ *
+ * Produced when either the global `eventValidator` or a per-transition
+ * `validate` predicate rejects an event before the transition is taken.
+ */
+export const EventValidationFailed = createError("EventValidationFailed");
+export type EventValidationFailed = Readonly<{
+  _tag: "EventValidationFailed";
+  machineId: string;
+  eventType: string;
+  message: string;
+}>;
+
+/**
  * Union of all errors that can occur during state transitions.
  */
-export type TransitionError = GuardThrew | ActionThrew | Disposed | QueueOverflow;
+export type TransitionError =
+  | GuardThrew
+  | ActionThrew
+  | Disposed
+  | QueueOverflow
+  | EventValidationFailed;
 
 // =============================================================================
 // EffectExecutionError Variants
@@ -122,6 +141,8 @@ export type SequenceAborted = Readonly<{
   _tag: "SequenceAborted";
   stepIndex: number;
   cause: unknown;
+  /** Indices of steps that completed successfully before the failure (GxP F8). */
+  completedSteps: readonly number[];
 }>;
 
 /**
@@ -192,9 +213,7 @@ export type PortNotAvailable = Readonly<{
  * This is the narrowed subset of `FlowAdapterError` that the factory
  * can actually produce.
  */
-export type FlowAdapterCreationError =
-  | DuplicateActivityPort
-  | ActivityNotFrozen;
+export type FlowAdapterCreationError = DuplicateActivityPort | ActivityNotFrozen;
 
 /**
  * Union of all errors related to flow adapter creation and validation.

@@ -15,9 +15,14 @@
 import { ok, err, ResultAsync } from "@hex-di/result";
 import type { Result } from "@hex-di/result";
 import type { MachineAny } from "../machine/types.js";
+import { getDescriptorValue } from "../utils/type-bridge.js";
 import type { ActivityStatus } from "../activities/types.js";
 import type { ActivityManager } from "../activities/manager.js";
 import type { EffectAny } from "../effects/types.js";
+import type { Clock } from "../clock/types.js";
+import { SystemClock } from "../clock/index.js";
+import { computeHash } from "../audit/hash-chain.js";
+import { emitFlowAuditRecord } from "../audit/global-sink.js";
 import type {
   MachineRunner,
   MachineSnapshot,
@@ -30,10 +35,9 @@ import type {
 } from "./types.js";
 import type { TransitionError, EffectExecutionError, DisposeError } from "../errors/index.js";
 import { CircularBuffer } from "../introspection/circular-buffer.js";
-import { Disposed, QueueOverflow } from "../errors/index.js";
+import { Disposed, QueueOverflow, EventValidationFailed } from "../errors/index.js";
 import {
   transitionSafe,
-  computeInitialPath,
   canTransition,
   computeInitialPathWithParallel,
   computeParallelRegionPaths,
@@ -128,6 +132,33 @@ export interface MachineRunnerOptions {
    * @default ["error", "failed"]
    */
   readonly errorStatePatterns?: readonly string[];
+
+  /**
+   * Pluggable clock for deterministic timestamps (GxP F12).
+   * All Date.now() calls in the runner flow through this clock.
+   * @default SystemClock (delegates to Date.now())
+   */
+  readonly clock?: Clock;
+
+  /**
+   * Optional global event validator (GxP F10).
+   * When provided, every event is validated before processing.
+   * Return false to reject the event.
+   */
+  readonly eventValidator?: (event: { readonly type: string }) => boolean;
+
+  /**
+   * When true, guard functions are run twice with frozen inputs
+   * and the results compared to detect impure guards (GxP F7).
+   * @default false
+   */
+  readonly enforcePureGuards?: boolean;
+
+  /**
+   * Suppress GxP compliance warnings (e.g. missing tracing).
+   * @default false
+   */
+  readonly suppressGxpWarnings?: boolean;
 }
 
 // =============================================================================
@@ -211,20 +242,18 @@ function executeEffectsSequentially(
  */
 function deriveEffectDetail(effect: EffectAny): string {
   if (effect._tag === "Invoke") {
-    // Access port and method via property descriptors (no cast)
-    const portDesc = Object.getOwnPropertyDescriptor(effect, "port");
-    const methodDesc = Object.getOwnPropertyDescriptor(effect, "method");
-    const port: unknown = portDesc !== undefined ? portDesc.value : undefined;
-    const method: unknown = methodDesc !== undefined ? methodDesc.value : undefined;
+    // Access port and method via type-bridge (avoids PropertyDescriptor.value `any`)
+    const port = getDescriptorValue(effect, "port");
+    const method = getDescriptorValue(effect, "method");
     const portName =
       typeof port === "object" && port !== null
-        ? (Object.getOwnPropertyDescriptor(port, "__portName")?.value ?? "unknown")
+        ? (getDescriptorValue(port, "__portName") ?? "unknown")
         : "unknown";
     return `${String(portName)}.${String(method)}`;
   }
   if (effect._tag === "Spawn") {
-    const activityIdDesc = Object.getOwnPropertyDescriptor(effect, "activityId");
-    return String(activityIdDesc !== undefined ? activityIdDesc.value : "unknown");
+    const activityId = getDescriptorValue(effect, "activityId");
+    return String(activityId !== undefined ? activityId : "unknown");
   }
   return effect._tag;
 }
@@ -237,11 +266,14 @@ function deriveEffectDetail(effect: EffectAny): string {
 function wrapExecutorWithHooks(
   executor: EffectExecutor,
   tracingHook: FlowTracingHook | undefined,
-  onEffectResult: ((record: EffectResultRecord) => void) | undefined
+  onEffectResult: ((record: EffectResultRecord) => void) | undefined,
+  clockRef?: Clock
 ): EffectExecutor {
   if (tracingHook === undefined && onEffectResult === undefined) {
     return executor;
   }
+
+  const effectClock = clockRef ?? SystemClock;
 
   return {
     execute(effect: EffectAny) {
@@ -255,11 +287,10 @@ function wrapExecutorWithHooks(
           const duration = performance.now() - startTime;
           tracingHook?.onEffectEnd(true);
           if (onEffectResult !== undefined) {
-            // Derive portName and method from detail
             const dotIndex = detail.indexOf(".");
             const portName = dotIndex >= 0 ? detail.substring(0, dotIndex) : detail;
             const method = dotIndex >= 0 ? detail.substring(dotIndex + 1) : effect._tag;
-            onEffectResult({ portName, method, ok: true, timestamp: Date.now(), duration });
+            onEffectResult({ portName, method, ok: true, timestamp: effectClock.now(), duration });
           }
         })
         .mapErr(error => {
@@ -269,7 +300,7 @@ function wrapExecutorWithHooks(
             const dotIndex = detail.indexOf(".");
             const portName = dotIndex >= 0 ? detail.substring(0, dotIndex) : detail;
             const method = dotIndex >= 0 ? detail.substring(dotIndex + 1) : effect._tag;
-            onEffectResult({ portName, method, ok: false, timestamp: Date.now(), duration });
+            onEffectResult({ portName, method, ok: false, timestamp: effectClock.now(), duration });
           }
           return error;
         });
@@ -282,6 +313,32 @@ function wrapExecutorWithHooks(
 // =============================================================================
 
 const DEFAULT_ERROR_STATE_PATTERNS: readonly string[] = ["error", "failed"];
+
+// =============================================================================
+// GxP F13: Tracing Warning (warnOnce)
+// =============================================================================
+
+let gxpTracingWarned = false;
+
+/**
+ * Warns once if no tracing is configured and suppressGxpWarnings is not set.
+ * @internal
+ */
+function warnIfNoTracing(
+  tracingHook: FlowTracingHook | undefined,
+  tracer: TracerLike | undefined,
+  suppress: boolean | undefined
+): void {
+  if (gxpTracingWarned || suppress === true) return;
+  if (tracingHook === undefined && tracer === undefined) {
+    gxpTracingWarned = true;
+    globalThis.console.warn(
+      "[@hex-di/flow] GxP: No tracing configured. " +
+        "Set tracingHook or tracer in MachineRunnerOptions for audit trail compliance. " +
+        "Suppress with suppressGxpWarnings: true."
+    );
+  }
+}
 
 /**
  * Checks if a state name matches any error state pattern (case-insensitive substring).
@@ -334,6 +391,18 @@ export function createMachineRunner<
   options: MachineRunnerOptions
 ): MachineRunner<TStateNames, { readonly type: TEventNames }, TContext> {
   const { executor, activityManager, collector, onEffectResult, history, onHealthEvent } = options;
+
+  // GxP F10: Global event validator
+  const eventValidator = options.eventValidator;
+
+  // GxP F7: Guard purity enforcement
+  const enforcePureGuards = options.enforcePureGuards;
+
+  // GxP F12: Pluggable clock — all timestamps flow through this
+  const clock = options.clock ?? SystemClock;
+
+  // GxP F13: Warn once if no tracing is configured
+  warnIfNoTracing(options.tracingHook, options.tracer, options.suppressGxpWarnings);
 
   // Resolve tracing: explicit tracingHook takes precedence over tracer shorthand
   const tracingHook =
@@ -430,9 +499,20 @@ export function createMachineRunner<
       pendingEvents.push({
         type: event.type,
         source: currentEnqueueSource,
-        enqueuedAt: Date.now(),
+        enqueuedAt: clock.now(),
       });
       return ok([]);
+    }
+
+    // GxP F10: Global event validation
+    if (eventValidator !== undefined && !eventValidator(event)) {
+      return err(
+        EventValidationFailed({
+          machineId: machine.id,
+          eventType: event.type,
+          message: `Global event validator rejected event '${event.type}'`,
+        })
+      );
     }
 
     isProcessing = true;
@@ -515,7 +595,7 @@ export function createMachineRunner<
     const parallelPath = activeParallelRegions.parallelPath;
     const regionValues: Record<string, StateValue> = {};
 
-    for (const regionName of Object.keys(activeParallelRegions.regions)) {
+    for (const regionName of Object.keys(activeParallelRegions.regions).sort()) {
       const regionPath = activeParallelRegions.regions[regionName];
       if (regionPath === undefined) continue;
       // The region's state value is relative to the region root (skip parallel path + region name)
@@ -599,13 +679,6 @@ export function createMachineRunner<
     }
 
     return true;
-  }
-
-  /**
-   * Convenience wrapper that uses current live state.
-   */
-  function matchesPath(dotPath: string): boolean {
-    return matchesPathSnapshot(dotPath, activePath, activeParallelRegions);
   }
 
   /**
@@ -693,8 +766,13 @@ export function createMachineRunner<
     subscriptions.notify(snapshot);
   }
 
+  // GxP F9: Hash chain state for audit integrity
+  let lastAuditHash = "";
+  let auditSequence = 0;
+
   /**
    * Records a transition event if collector is provided.
+   * Also computes hash chain and emits to audit sink (GxP F9).
    */
   function recordTransition(
     prevState: string,
@@ -702,6 +780,8 @@ export function createMachineRunner<
     nextState: string,
     effects: readonly EffectAny[]
   ): void {
+    const now = clock.now();
+
     if (collector) {
       collector.collect({
         machineId: machine.id,
@@ -709,7 +789,7 @@ export function createMachineRunner<
         event,
         nextState,
         effects,
-        timestamp: Date.now(),
+        timestamp: now,
       });
     }
     if (transitionBuffer !== undefined) {
@@ -718,9 +798,34 @@ export function createMachineRunner<
         nextState,
         eventType: event.type,
         effectCount: effects.length,
-        timestamp: Date.now(),
+        timestamp: now,
       });
     }
+
+    // GxP F9: Compute hash chain and emit audit record
+    const recordData = {
+      machineId: machine.id,
+      prevState,
+      event,
+      nextState,
+      timestamp: now,
+    };
+    const hash = computeHash(recordData, lastAuditHash);
+    const previousHash = lastAuditHash;
+    lastAuditHash = hash;
+    auditSequence++;
+
+    emitFlowAuditRecord({
+      id: `${machine.id}-${auditSequence}`,
+      machineId: machine.id,
+      prevState,
+      event,
+      nextState,
+      effects,
+      timestamp: now,
+      hash,
+      previousHash,
+    });
   }
 
   /**
@@ -748,7 +853,8 @@ export function createMachineRunner<
       currentContext,
       eventToProcess,
       machineAny,
-      historyMap
+      historyMap,
+      enforcePureGuards
     );
 
     if (result._tag === "Err") {
@@ -814,14 +920,14 @@ export function createMachineRunner<
           type: "flow-error",
           machineId: machine.id,
           state: currentState,
-          timestamp: Date.now(),
+          timestamp: clock.now(),
         });
       } else if (wasError && !isNowError) {
         onHealthEvent({
           type: "flow-recovered",
           machineId: machine.id,
           fromState: prevState,
-          timestamp: Date.now(),
+          timestamp: clock.now(),
         });
       }
     }
@@ -846,7 +952,8 @@ export function createMachineRunner<
       currentContext,
       eventToProcess,
       machineAny,
-      historyMap
+      historyMap,
+      enforcePureGuards
     );
 
     if (result._tag === "Err") {
@@ -877,7 +984,7 @@ export function createMachineRunner<
     // Record history for region paths that changed
     if (activeParallelRegions !== null) {
       const oldRegions = activeParallelRegions.regions;
-      for (const regionName of Object.keys(oldRegions)) {
+      for (const regionName of Object.keys(oldRegions).sort()) {
         const oldRegionPath = oldRegions[regionName];
         const newRegionPath = parallelResult.newRegions[regionName];
         if (
@@ -897,7 +1004,7 @@ export function createMachineRunner<
       // Record history for the parallel state being exited
       if (activeParallelRegions !== null) {
         // Record each region's final path as history for that region's compound ancestor
-        for (const regionName of Object.keys(activeParallelRegions.regions)) {
+        for (const regionName of Object.keys(activeParallelRegions.regions).sort()) {
           const regionPath = parallelResult.newRegions[regionName];
           if (regionPath !== undefined) {
             const regionCompoundPath = [...activeParallelRegions.parallelPath, regionName];
@@ -939,14 +1046,14 @@ export function createMachineRunner<
             type: "flow-error",
             machineId: machine.id,
             state: currentState,
-            timestamp: Date.now(),
+            timestamp: clock.now(),
           });
         } else if (wasError && !isNowError) {
           onHealthEvent({
             type: "flow-recovered",
             machineId: machine.id,
             fromState: prevState,
-            timestamp: Date.now(),
+            timestamp: clock.now(),
           });
         }
       }
@@ -1067,7 +1174,7 @@ export function createMachineRunner<
 
       // Execute effects sequentially with optional tracing and result recording
       return executeEffectsSequentially(
-        wrapExecutorWithHooks(executor, tracingHook, composedOnEffectResult),
+        wrapExecutorWithHooks(executor, tracingHook, composedOnEffectResult, clock),
         effects
       );
     },

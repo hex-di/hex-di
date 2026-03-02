@@ -407,7 +407,6 @@ describe("saga-executor: executeSagaInternal", () => {
     it("returns cancelled error when saga is cancelled via runner.cancel during execution", async () => {
       // Use a 2-step saga. Step 1's adapter cancels the runner, so when the loop
       // checks signal.aborted before step 2, it returns makeCancelledResult.
-      let runnerRef: ReturnType<typeof createSagaRunner>;
       const Step1 = defineStep("CancelStep1")
         .io<string, string>()
         .invoke(PortA, ctx => ctx.input)
@@ -431,7 +430,7 @@ describe("saga-executor: executeSagaInternal", () => {
         },
         PortB: async () => "step2-should-not-run",
       });
-      runnerRef = createSagaRunner(resolver);
+      const runnerRef = createSagaRunner(resolver);
       const result = await executeSaga(runnerRef, saga, "in", {
         executionId: "cancel-1",
         listeners: [e => events.push(e)],
@@ -1441,7 +1440,6 @@ describe("compensation-handler: full compensation flow", () => {
     it("sets status to cancelled and emits saga:cancelled event", async () => {
       // Use a 2-step saga. Step 1's adapter cancels the runner, so when the loop
       // checks signal.aborted before step 2, it returns makeCancelledResult.
-      let runnerRef: ReturnType<typeof createSagaRunner>;
       const SlowStep = defineStep("SlowCancel")
         .io<string, string>()
         .invoke(PortA, ctx => ctx.input)
@@ -1464,7 +1462,7 @@ describe("compensation-handler: full compensation flow", () => {
         },
         PortB: async () => "should-not-run",
       });
-      runnerRef = createSagaRunner(resolver);
+      const runnerRef = createSagaRunner(resolver);
       const result = await executeSaga(runnerRef, saga, "in", {
         executionId: "cancel-result-1",
         listeners: [e => events.push(e)],

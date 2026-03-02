@@ -1,0 +1,28 @@
+{
+  "id": "api/api-reference",
+  "title": "API Reference",
+  "description": "Complete reference of all exports from @hex-di/result, organized by category.",
+  "source": "@site/docs/api/api-reference.md",
+  "sourceDirName": "api",
+  "slug": "/api/api-reference",
+  "permalink": "/docs/api/api-reference",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/api/api-reference.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "API Reference"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Generators & Do Notation",
+    "permalink": "/docs/guides/generators"
+  },
+  "next": {
+    "title": "Serialization & Interop",
+    "permalink": "/docs/advanced/serialization"
+  }
+}

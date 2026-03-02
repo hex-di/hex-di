@@ -8,6 +8,7 @@
  */
 
 import type { State, Event, DeepReadonly } from "./types.js";
+import { getDescriptorValue } from "../utils/type-bridge.js";
 
 // =============================================================================
 // Internal Creation Helpers
@@ -123,12 +124,9 @@ function deepFreezeValue(obj: unknown): unknown {
 
   // Freeze each property value before freezing the object itself
   for (const name of propNames) {
-    const desc = Object.getOwnPropertyDescriptor(obj, name);
-    if (desc !== undefined) {
-      const value = desc.value;
-      if (value !== null && typeof value === "object") {
-        deepFreezeValue(value);
-      }
+    const value = getDescriptorValue(obj, name);
+    if (value !== null && typeof value === "object") {
+      deepFreezeValue(value);
     }
   }
 

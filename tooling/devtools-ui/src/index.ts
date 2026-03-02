@@ -25,6 +25,7 @@ export { EventLogPanel } from "./panels/event-log-panel.js";
 export { TracingPanel } from "./panels/tracing-panel.js";
 export { ResultPanel } from "./panels/result-panel.js";
 export { HealthPanel } from "./panels/health-panel.js";
+export { GuardPanel } from "./panels/guard-panel.js";
 
 // =============================================================================
 // Visualization

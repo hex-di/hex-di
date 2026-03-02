@@ -111,6 +111,8 @@ function makeState(overrides: Partial<SagaExecutionState> = {}): SagaExecutionSt
     sagaName: "TestSaga",
     input: {},
     currentStep: 0,
+    totalSteps: 3,
+    pendingStep: null,
     completedSteps: [],
     status: "completed",
     error: null,
@@ -1228,15 +1230,13 @@ describe("integration/executor.ts mutation killers", () => {
       save: vi.fn(),
       load: vi.fn(),
       delete: vi.fn(),
-      list: vi
-        .fn()
-        .mockReturnValue(
-          ResultAsync.err({
-            _tag: "StorageFailure" as const,
-            operation: "list",
-            cause: new Error("db down"),
-          })
-        ),
+      list: vi.fn().mockReturnValue(
+        ResultAsync.err({
+          _tag: "StorageFailure" as const,
+          operation: "list",
+          cause: new Error("db down"),
+        })
+      ),
       update: vi.fn(),
     };
     const mgmt = createSagaManagementExecutor(makeMockRunner(), persister);
@@ -1598,34 +1598,28 @@ describe("runtime/runner-bridges.ts mutation killers", () => {
 // =============================================================================
 
 describe("runtime/id.ts mutation killers", () => {
-  it("counter increments (not decrements) between calls", () => {
+  it("generates unique IDs with exec- prefix and UUID format", () => {
     const id1 = generateExecutionId();
     const id2 = generateExecutionId();
     const id3 = generateExecutionId();
 
-    // Parse counters from the last segment (base-36)
-    const getCounter = (id: string) => parseInt(id.split("-").pop()!, 36);
+    // All unique
+    expect(id1).not.toBe(id2);
+    expect(id2).not.toBe(id3);
+    expect(id1).not.toBe(id3);
 
-    const c1 = getCounter(id1);
-    const c2 = getCounter(id2);
-    const c3 = getCounter(id3);
-
-    // Must be strictly increasing (kills -= 1 mutation)
-    expect(c2).toBeGreaterThan(c1);
-    expect(c3).toBeGreaterThan(c2);
-    expect(c2 - c1).toBe(1);
-    expect(c3 - c2).toBe(1);
+    // All start with exec-
+    expect(id1.startsWith("exec-")).toBe(true);
+    expect(id2.startsWith("exec-")).toBe(true);
+    expect(id3.startsWith("exec-")).toBe(true);
   });
 
-  it("generates IDs with exec- prefix and timestamp", () => {
+  it("generates IDs with exec- prefix and valid UUID", () => {
     const id = generateExecutionId();
     expect(id.startsWith("exec-")).toBe(true);
-    // Format: exec-{timestamp}-{counter}
-    const parts = id.split("-");
-    expect(parts.length).toBe(3);
-    expect(parts[0]).toBe("exec");
-    // Timestamp part should be a valid number
-    const ts = parseInt(parts[1], 10);
-    expect(ts).toBeGreaterThan(0);
+    // Format: exec-{uuid} where uuid is xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    const uuid = id.slice("exec-".length);
+    // UUID v4 format check
+    expect(uuid).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   });
 });

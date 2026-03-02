@@ -7,4 +7,5 @@ export type {
   CompensationStepError,
   CompensationPlan,
   CompensationPlanStep,
+  DeadLetterEntry,
 } from "./types.js";

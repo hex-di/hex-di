@@ -12,7 +12,7 @@ import { ok, err, ResultAsync } from "@hex-di/result";
 import type { Result } from "@hex-di/result";
 import type { EffectAny } from "../effects/types.js";
 import type { EffectExecutionError } from "../errors/index.js";
-import { ParallelErrors } from "../errors/index.js";
+import { ParallelErrors, SequenceAborted } from "../errors/index.js";
 
 // =============================================================================
 // Re-export EffectExecutor from types
@@ -92,8 +92,9 @@ function runParallelEffects(
 /**
  * Executes an array of effects sequentially, short-circuiting on first error.
  *
- * Uses an async loop with early return on error, wrapped in ResultAsync.fromResult.
- * This avoids both marker class throws and the andThen TS 5.9 `| null` inference bug.
+ * GxP F8: Tracks completed step indices. On failure, executes compensate
+ * effects of completed steps in reverse order. Compensation errors are
+ * swallowed (logged to console.warn) — the original error is always returned.
  *
  * @internal
  */
@@ -103,11 +104,37 @@ function executeSequentially(
 ): ResultAsync<void, EffectExecutionError> {
   return ResultAsync.fromResult(
     (async (): Promise<Result<void, EffectExecutionError>> => {
-      for (const effect of effects) {
+      const completedSteps: number[] = [];
+
+      for (let i = 0; i < effects.length; i++) {
+        const effect = effects[i];
         const result = await execute(effect);
         if (result._tag === "Err") {
-          return result;
+          // GxP F8: Run compensate effects in reverse for completed steps
+          for (let j = completedSteps.length - 1; j >= 0; j--) {
+            const completedIndex = completedSteps[j];
+            const completedEffect = effects[completedIndex];
+            const compensateEffect = getEffectProperty(completedEffect, "compensate");
+            if (compensateEffect !== undefined && isEffectAny(compensateEffect)) {
+              try {
+                await execute(compensateEffect);
+              } catch {
+                globalThis.console.warn(
+                  `[@hex-di/flow] GxP F8: Compensation failed for step ${completedIndex}`
+                );
+              }
+            }
+          }
+
+          return err(
+            SequenceAborted({
+              stepIndex: i,
+              cause: result.error,
+              completedSteps,
+            })
+          );
         }
+        completedSteps.push(i);
       }
       return ok(undefined);
     })()

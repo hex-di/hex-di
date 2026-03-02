@@ -7,6 +7,7 @@ import {
 } from "../../src/serialization/serialize.js";
 import { deserializePolicy, deserializeAuditEntry } from "../../src/serialization/deserialize.js";
 import type { AuditEntry } from "../../src/guard/types.js";
+import { createNodeHashDigest } from "@hex-di/crypto-node";
 import {
   hasPermission,
   hasRole,
@@ -22,6 +23,7 @@ import {
 import { eq, literal, subject } from "../../src/policy/matchers.js";
 import { createPermission } from "../../src/tokens/permission.js";
 
+const digest = createNodeHashDigest();
 const ReadUser = createPermission({ resource: "user", action: "read" });
 const WriteUser = createPermission({ resource: "user", action: "write" });
 
@@ -172,25 +174,25 @@ describe("deserializePolicy — error cases", () => {
 describe("hashPolicy", () => {
   it("returns a 64-char hex string (SHA-256)", () => {
     const policy = hasPermission(ReadUser);
-    const hash = hashPolicy(policy);
+    const hash = hashPolicy(policy, digest);
     expect(hash).toHaveLength(64);
     expect(hash).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it("is deterministic for the same policy", () => {
     const policy = hasRole("admin");
-    expect(hashPolicy(policy)).toBe(hashPolicy(policy));
+    expect(hashPolicy(policy, digest)).toBe(hashPolicy(policy, digest));
   });
 
   it("different policies produce different hashes", () => {
-    const h1 = hashPolicy(hasRole("admin"));
-    const h2 = hashPolicy(hasRole("viewer"));
+    const h1 = hashPolicy(hasRole("admin"), digest);
+    const h2 = hashPolicy(hasRole("viewer"), digest);
     expect(h1).not.toBe(h2);
   });
 
   it("handles composite allOf policy", () => {
     const policy = allOf(hasPermission(ReadUser), hasRole("editor"));
-    const hash = hashPolicy(policy);
+    const hash = hashPolicy(policy, digest);
     expect(hash).toHaveLength(64);
   });
 
@@ -199,7 +201,7 @@ describe("hashPolicy", () => {
     const p2 = hasPermission(WriteUser);
     const combo1 = allOf(p1, p2);
     const combo2 = allOf(p1, p2);
-    expect(hashPolicy(combo1)).toBe(hashPolicy(combo2));
+    expect(hashPolicy(combo1, digest)).toBe(hashPolicy(combo2, digest));
   });
 });
 
@@ -272,7 +274,11 @@ describe("createAuditExportManifest", () => {
   it("includes entryCount and exportedAt", () => {
     const entries = [makeAuditEntry(), makeAuditEntry({ evaluationId: "eval-2" })];
     const manifest = JSON.parse(
-      createAuditExportManifest({ entries, exportedAt: "2025-01-01T00:00:00Z", exportedBy: "system" }),
+      createAuditExportManifest({
+        entries,
+        exportedAt: "2025-01-01T00:00:00Z",
+        exportedBy: "system",
+      })
     ) as Record<string, unknown>;
     expect(manifest["entryCount"]).toBe(2);
     expect(manifest["exportedAt"]).toBe("2025-01-01T00:00:00Z");
@@ -282,15 +288,28 @@ describe("createAuditExportManifest", () => {
   it("chainIntegrityVerified is false when entries lack integrityHash", () => {
     const entries = [makeAuditEntry()];
     const manifest = JSON.parse(
-      createAuditExportManifest({ entries, exportedAt: "2025-01-01T00:00:00Z", exportedBy: "system" }),
+      createAuditExportManifest({
+        entries,
+        exportedAt: "2025-01-01T00:00:00Z",
+        exportedBy: "system",
+      })
     ) as Record<string, unknown>;
     expect(manifest["chainIntegrityVerified"]).toBe(false);
   });
 
   it("chainIntegrityVerified is true when all entries have integrityHash", () => {
-    const gxpEntry = { ...makeAuditEntry(), integrityHash: "abc123", previousHash: "000", signature: "sig" };
+    const gxpEntry = {
+      ...makeAuditEntry(),
+      integrityHash: "abc123",
+      previousHash: "000",
+      signature: "sig",
+    };
     const manifest = JSON.parse(
-      createAuditExportManifest({ entries: [gxpEntry], exportedAt: "2025-01-01T00:00:00Z", exportedBy: "system" }),
+      createAuditExportManifest({
+        entries: [gxpEntry],
+        exportedAt: "2025-01-01T00:00:00Z",
+        exportedBy: "system",
+      })
     ) as Record<string, unknown>;
     expect(manifest["chainIntegrityVerified"]).toBe(true);
   });
@@ -298,7 +317,11 @@ describe("createAuditExportManifest", () => {
   it("includes entries array in manifest", () => {
     const entry = makeAuditEntry();
     const manifest = JSON.parse(
-      createAuditExportManifest({ entries: [entry], exportedAt: "2025-01-01T00:00:00Z", exportedBy: "system" }),
+      createAuditExportManifest({
+        entries: [entry],
+        exportedAt: "2025-01-01T00:00:00Z",
+        exportedBy: "system",
+      })
     ) as Record<string, unknown>;
     expect(Array.isArray(manifest["entries"])).toBe(true);
     expect((manifest["entries"] as unknown[]).length).toBe(1);

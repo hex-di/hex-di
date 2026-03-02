@@ -9,7 +9,7 @@
  * emitToInspector error swallowing.
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { ResultAsync } from "@hex-di/result";
 import { createPort } from "@hex-di/core";
 import { defineStep } from "../src/step/builder.js";
@@ -74,6 +74,8 @@ function makeBaseState(overrides: Partial<SagaExecutionState> = {}): SagaExecuti
     sagaName: "TestSaga",
     input: "hello",
     currentStep: 0,
+    totalSteps: 3,
+    pendingStep: null,
     completedSteps: [],
     status: "running",
     error: null,
@@ -186,6 +188,8 @@ describe("executionStateToSummary — currentStepName resolution", () => {
       executionId: "csn-1",
       sagaName: "TestSaga",
       currentStep: 1,
+      totalSteps: 3,
+      pendingStep: null,
       completedSteps: [
         {
           name: "TestStep",
@@ -219,6 +223,8 @@ describe("executionStateToSummary — currentStepName resolution", () => {
       executionId: "csn-2",
       sagaName: "NonExistentSaga",
       currentStep: 0,
+      totalSteps: 3,
+      pendingStep: null,
       status: "running",
     });
 
@@ -238,6 +244,8 @@ describe("executionStateToSummary — currentStepName resolution", () => {
       executionId: "csn-3",
       sagaName: "TwoStepSaga",
       currentStep: 1,
+      totalSteps: 3,
+      pendingStep: null,
       completedSteps: [
         {
           name: "CompensatedStep",
@@ -820,7 +828,7 @@ describe("traceToExecutionState — metadata and timestamps via getCompensationS
 
     // traceToExecutionState is called internally and metadata defaults to {}
     // This is observable via getActiveExecutions
-    const active = inspector.getActiveExecutions();
+    const _active = inspector.getActiveExecutions();
     // status "failed" is not in activeStatuses, so won't appear in getActiveExecutions
     // But getCompensationStats still uses traceToExecutionState
     const stats = inspector.getCompensationStats();

@@ -3,10 +3,10 @@ import { ExampleRegistry, exampleRegistry } from "../../src/examples/example-reg
 import type { ExampleCategory } from "../../src/examples/types.js";
 
 describe("ExampleRegistry", () => {
-  it("returns all 18 templates", () => {
+  it("returns all 26 templates", () => {
     const registry = new ExampleRegistry();
     const all = registry.getAll();
-    expect(all).toHaveLength(18);
+    expect(all).toHaveLength(26);
   });
 
   it("getById returns correct template", () => {
@@ -45,6 +45,12 @@ describe("ExampleRegistry", () => {
       expect(template.category).toBe("result");
     }
 
+    const guard = registry.getByCategory("guard");
+    expect(guard).toHaveLength(8);
+    for (const template of guard) {
+      expect(template.category).toBe("guard");
+    }
+
     const libraries = registry.getByCategory("libraries");
     expect(libraries).toHaveLength(4);
     for (const template of libraries) {
@@ -67,6 +73,6 @@ describe("ExampleRegistry", () => {
 
   it("exports a singleton instance", () => {
     expect(exampleRegistry).toBeInstanceOf(ExampleRegistry);
-    expect(exampleRegistry.getAll()).toHaveLength(18);
+    expect(exampleRegistry.getAll()).toHaveLength(26);
   });
 });

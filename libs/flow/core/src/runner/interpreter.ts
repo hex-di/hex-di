@@ -17,11 +17,13 @@
 import { ok, err } from "@hex-di/result";
 import type { Result } from "@hex-di/result";
 import type { MachineAny } from "../machine/types.js";
+import { callErased } from "../utils/type-bridge.js";
 import type { StateNodeAny } from "../machine/state-node.js";
 import type { TransitionConfigAny } from "../machine/transition.js";
 import type { EffectAny } from "../effects/types.js";
 import type { TransitionError } from "../errors/index.js";
 import { GuardThrew, ActionThrew } from "../errors/index.js";
+import { verifyGuardPurity } from "./guard-purity.js";
 
 // =============================================================================
 // TransitionResult Type
@@ -145,7 +147,7 @@ function getProperty(obj: unknown, key: string): unknown {
 
 /**
  * Calls a guard function from TransitionConfigAny.
- * Uses Function.prototype.call to bridge the `never` parameter variance.
+ * Uses callErased to bridge the `never` parameter variance.
  * @internal
  */
 function callGuard(
@@ -153,7 +155,8 @@ function callGuard(
   context: unknown,
   event: unknown
 ): boolean {
-  return Function.prototype.call.call(guard, undefined, context, event);
+  const result = callErased(guard, context, event);
+  return typeof result === "boolean" ? result : false;
 }
 
 /**
@@ -165,11 +168,22 @@ function callAction(
   context: unknown,
   event: unknown
 ): unknown {
-  return Function.prototype.call.call(action, undefined, context, event);
+  return callErased(action, context, event);
+}
+
+/**
+ * Calls a per-transition validate function from TransitionConfigAny (GxP F10).
+ * Uses the same variance bridge pattern as callGuard/callAction.
+ * @internal
+ */
+function callValidate(validate: (event: never) => boolean, event: unknown): boolean {
+  const result = callErased(validate, event);
+  return typeof result === "boolean" ? result : false;
 }
 
 /**
  * Evaluates a guard function safely.
+ * When enforcePureGuards is true, runs the guard twice and warns on impurity (GxP F7).
  * @internal
  */
 function evaluateGuard(
@@ -177,8 +191,31 @@ function evaluateGuard(
   context: unknown,
   event: { readonly type: string },
   machineId: string,
-  currentState: string
+  currentState: string,
+  enforcePureGuards?: boolean
 ): Result<boolean, TransitionError> {
+  if (enforcePureGuards === true) {
+    const purityResult = safeCall(() => verifyGuardPurity(guard, context, event));
+    if (purityResult._tag === "Err") {
+      return err(
+        GuardThrew({
+          machineId,
+          currentState,
+          eventType: event.type,
+          cause: purityResult.error,
+        })
+      );
+    }
+    if (!purityResult.value.pure) {
+      globalThis.console.warn(
+        `[@hex-di/flow] GxP F7: Impure guard detected in state '${currentState}' ` +
+          `for event '${event.type}' in machine '${machineId}'. ` +
+          `Guard returned different results for same inputs.`
+      );
+    }
+    return ok(purityResult.value.result);
+  }
+
   const result = safeCall(() => callGuard(guard, context, event));
   if (result._tag === "Err") {
     return err(
@@ -700,7 +737,8 @@ function bubbleEventSafe(
   activePath: readonly string[],
   context: unknown,
   event: { readonly type: string },
-  machineId: string
+  machineId: string,
+  enforcePureGuards?: boolean
 ): (
   path: readonly string[],
   machine: MachineAny
@@ -731,7 +769,8 @@ function bubbleEventSafe(
         context,
         event,
         machineId,
-        path.slice(0, i + 1).join(".")
+        path.slice(0, i + 1).join("."),
+        enforcePureGuards
       );
 
       if (matchResult._tag === "Err") {
@@ -853,7 +892,8 @@ function followAlwaysTransitionsForPathSafe(
   accumulatedEffects: readonly EffectAny[],
   machineId: string,
   historyMap?: HistoryMap,
-  depth: number = 0
+  depth: number = 0,
+  enforcePureGuards?: boolean
 ): Result<TransitionResult, TransitionError> {
   if (depth >= MAX_ALWAYS_DEPTH) {
     return ok({
@@ -892,7 +932,8 @@ function followAlwaysTransitionsForPathSafe(
     currentContext,
     ALWAYS_EVENT,
     machineId,
-    currentPath.join(".")
+    currentPath.join("."),
+    enforcePureGuards
   );
 
   if (matchResult._tag === "Err") {
@@ -942,7 +983,8 @@ function followAlwaysTransitionsForPathSafe(
     allEffects,
     machineId,
     historyMap,
-    depth + 1
+    depth + 1,
+    enforcePureGuards
   );
 }
 
@@ -1266,13 +1308,20 @@ export function transitionSafe(
   currentContext: unknown,
   event: { readonly type: string },
   machine: MachineAny,
-  historyMap?: HistoryMap
+  historyMap?: HistoryMap,
+  enforcePureGuards?: boolean
 ): Result<TransitionResult, TransitionError> {
   const activePath =
     typeof currentStateOrPath === "string" ? [currentStateOrPath] : currentStateOrPath;
 
   // Event bubbling with safe guard evaluation
-  const doBubble = bubbleEventSafe(activePath, currentContext, event, machine.id);
+  const doBubble = bubbleEventSafe(
+    activePath,
+    currentContext,
+    event,
+    machine.id,
+    enforcePureGuards
+  );
   const bubbleResult = doBubble(activePath, machine);
 
   if (bubbleResult._tag === "Err") {
@@ -1314,7 +1363,9 @@ export function transitionSafe(
     machine,
     effects,
     machine.id,
-    historyMap
+    historyMap,
+    0,
+    enforcePureGuards
   );
 
   if (alwaysResult._tag === "Err") {
@@ -1429,7 +1480,7 @@ export function computeParallelRegionPaths(
   }
 
   const regions: Record<string, readonly string[]> = {};
-  for (const regionName of Object.keys(parallelNode.states)) {
+  for (const regionName of Object.keys(parallelNode.states).sort()) {
     const regionPath = [...parallelPath, regionName];
     // Auto-enter compound states within the region
     regions[regionName] = autoEnterPath(regionPath, machine);
@@ -1479,7 +1530,7 @@ export function collectRegionEntryEffects(
 ): readonly EffectAny[] {
   const effects: EffectAny[] = [];
 
-  for (const regionName of Object.keys(regionPaths.regions)) {
+  for (const regionName of Object.keys(regionPaths.regions).sort()) {
     const regionPath = regionPaths.regions[regionName];
     if (regionPath === undefined) continue;
     // Collect entry effects for nodes below the parallel state
@@ -1509,7 +1560,7 @@ export function collectParallelExitEffects(
   const effects: EffectAny[] = [];
 
   // Exit effects for each region, bottom-up within each region path
-  for (const regionName of Object.keys(regionPaths.regions)) {
+  for (const regionName of Object.keys(regionPaths.regions).sort()) {
     const regionPath = regionPaths.regions[regionName];
     if (regionPath === undefined) continue;
     // Bottom-up from leaf to (parallel state exclusive)
@@ -1545,7 +1596,8 @@ export function transitionParallelSafe(
   currentContext: unknown,
   event: { readonly type: string },
   machine: MachineAny,
-  historyMap?: HistoryMap
+  historyMap?: HistoryMap,
+  enforcePureGuards?: boolean
 ): Result<ParallelTransitionResult, TransitionError> {
   const allEffects: EffectAny[] = [];
   const newRegions: Record<string, readonly string[]> = {};
@@ -1557,7 +1609,7 @@ export function transitionParallelSafe(
   // However, for now we dispatch to regions first. If the parallel state itself
   // has transitions on `on`, those are handled at the parent level by the runner.
 
-  for (const regionName of Object.keys(regionPaths.regions)) {
+  for (const regionName of Object.keys(regionPaths.regions).sort()) {
     const regionPath = regionPaths.regions[regionName];
     if (regionPath === undefined) {
       continue;
@@ -1566,7 +1618,7 @@ export function transitionParallelSafe(
     // Bubble event within this region (from leaf up to the parallel state boundary).
     // We bubble from the leaf up to (but not past) the parallel state level,
     // so that the parallel state's own transitions are handled at a higher level.
-    const bubbleFn = bubbleEventSafe(regionPath, context, event, machine.id);
+    const bubbleFn = bubbleEventSafe(regionPath, context, event, machine.id, enforcePureGuards);
     const bubbleResult = bubbleFn(regionPath, machine);
 
     if (bubbleResult._tag === "Err") {
@@ -1619,7 +1671,9 @@ export function transitionParallelSafe(
       machine,
       [],
       machine.id,
-      historyMap
+      historyMap,
+      0,
+      enforcePureGuards
     );
 
     if (alwaysResult._tag === "Err") {
@@ -1673,8 +1727,8 @@ function checkParallelOnDone(
     return undefined;
   }
 
-  // Check if ALL regions are in final states
-  const regionNames = Object.keys(regions);
+  // Check if ALL regions are in final states (sorted for determinism - GxP F4)
+  const regionNames = Object.keys(regions).sort();
   if (regionNames.length === 0) {
     return undefined;
   }
@@ -1758,7 +1812,7 @@ export function canTransitionParallel(
   context: unknown,
   machine: MachineAny
 ): boolean {
-  for (const regionName of Object.keys(regionPaths.regions)) {
+  for (const regionName of Object.keys(regionPaths.regions).sort()) {
     const regionPath = regionPaths.regions[regionName];
     if (regionPath === undefined) continue;
     const result = bubbleEvent(regionPath, context, event, machine);
@@ -1803,9 +1857,7 @@ export function findParallelDepth(path: readonly string[], machine: MachineAny):
  * - `{ parallel: false, path: string[] }` for non-parallel initial paths
  * - `{ parallel: true, path: string[], parallelPath: string[], regionPaths: ParallelRegionPaths }` for parallel
  */
-export function computeInitialPathWithParallel(
-  machine: MachineAny
-):
+export function computeInitialPathWithParallel(machine: MachineAny):
   | { readonly parallel: false; readonly path: readonly string[] }
   | {
       readonly parallel: true;
@@ -1902,6 +1954,14 @@ function findMatchingTransition(
   event: { readonly type: string }
 ): TransitionConfigAny | undefined {
   for (const transitionConfig of transitions) {
+    // GxP F10: Per-transition event validation — skip transitions that reject the event
+    if (transitionConfig.validate !== undefined) {
+      const validateFn = transitionConfig.validate;
+      if (!callValidate(validateFn, event)) {
+        continue;
+      }
+    }
+
     if (transitionConfig.guard === undefined) {
       return transitionConfig;
     }
@@ -1921,9 +1981,18 @@ function findMatchingTransitionSafe(
   context: unknown,
   event: { readonly type: string },
   machineId: string,
-  currentState: string
+  currentState: string,
+  enforcePureGuards?: boolean
 ): Result<TransitionConfigAny | undefined, TransitionError> {
   for (const transitionConfig of transitions) {
+    // GxP F10: Per-transition event validation — skip transitions that reject the event
+    if (transitionConfig.validate !== undefined) {
+      const validateFn = transitionConfig.validate;
+      if (!callValidate(validateFn, event)) {
+        continue;
+      }
+    }
+
     if (transitionConfig.guard === undefined) {
       return ok(transitionConfig);
     }
@@ -1932,7 +2001,8 @@ function findMatchingTransitionSafe(
       context,
       event,
       machineId,
-      currentState
+      currentState,
+      enforcePureGuards
     );
     if (guardResult._tag === "Err") {
       return err(guardResult.error);

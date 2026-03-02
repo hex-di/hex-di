@@ -1,0 +1,646 @@
+/**
+ * Guard Theme Overrides — Amber-on-Dark
+ *
+ * Replaces the shared HexDI cyan (#00F0FF) palette with
+ * Guard's amber (#F59E0B) accent for all docs pages.
+ *
+ * Imported AFTER the shared theme in custom.css so these
+ * selectors win by source order (same specificity).
+ */
+
+/* ==========================================================================
+   Global: Hide default Docusaurus navbar — custom GuardNav replaces it.
+   ========================================================================== */
+
+nav.navbar,
+.navbar--fixed-top,
+.navbar.navbar--fixed-top {
+  display: none !important;
+}
+
+.main-wrapper {
+  padding-top: 64px !important;
+}
+
+/* ==========================================================================
+   Color Variables — amber replaces cyan
+   ========================================================================== */
+
+:root {
+  /* --- Heading / font sizes (smaller for docs) --- */
+  --ifm-h1-font-size: 1.75rem;
+  --ifm-h2-font-size: 1.4rem;
+  --ifm-h3-font-size: 1.15rem;
+  --ifm-h4-font-size: 1rem;
+  --ifm-h5-font-size: 0.9rem;
+  --ifm-heading-line-height: 1.35;
+
+  /* --- Shared theme typography.css uses --text-h* directly on h1-h5 --- */
+  --text-h1: 1.75rem;
+  --text-h2: 1.4rem;
+  --text-h3: 1.15rem;
+  --text-h4: 1rem;
+  --text-h5: 0.9rem;
+
+  /* --- Infima primary palette --- */
+  --ifm-color-primary: #F59E0B;
+  --ifm-color-primary-dark: #D97706;
+  --ifm-color-primary-darker: #B45309;
+  --ifm-color-primary-darkest: #92400E;
+  --ifm-color-primary-light: #FBBF24;
+  --ifm-color-primary-lighter: #FCD34D;
+  --ifm-color-primary-lightest: #FDE68A;
+
+  /* --- Links --- */
+  --ifm-link-color: #F59E0B;
+  --ifm-link-hover-color: #FCD34D;
+
+  /* --- Text --- */
+  --ifm-font-color-base: var(--hexdi-text-primary);
+
+  /* --- Sidebar caret filter (neutralize Infima's dark-mode invert filter) --- */
+  --ifm-menu-link-sublist-icon-filter: none;
+
+  /* --- Inline code --- */
+  --ifm-code-background: rgba(245, 158, 11, 0.06);
+
+  /* --- Code block highlighting --- */
+  --docusaurus-highlighted-code-line-bg: rgba(245, 158, 11, 0.08);
+
+  /* --- Menu / sidebar active --- */
+  --ifm-menu-color-active: #F59E0B;
+  --ifm-menu-color-background-active: rgba(245, 158, 11, 0.06);
+
+  /* --- Sidebar caret (default is black, invisible on dark bg) --- */
+  --ifm-menu-link-sublist-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16px" height="16px" viewBox="0 0 24 24"><path fill="rgba(245,158,11,0.7)" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"></path></svg>');
+
+  /* --- TOC --- */
+  --ifm-toc-border-color: rgba(245, 158, 11, 0.1);
+  --ifm-toc-link-color: var(--hexdi-text-secondary);
+
+  /* --- Buttons --- */
+  --ifm-button-background-color: #F59E0B;
+  --ifm-button-color: #020408;
+
+  /* --- Dropdown --- */
+  --ifm-dropdown-hover-background-color: rgba(245, 158, 11, 0.06);
+
+  /* --- Admonition info override --- */
+  --ifm-color-info-dark: #F59E0B;
+  --ifm-color-info-contrast-background: rgba(245, 158, 11, 0.06);
+  --ifm-color-success-dark: #F59E0B;
+  --ifm-color-success-contrast-background: rgba(245, 158, 11, 0.06);
+
+  /* --- Search --- */
+  --docsearch-key-gradient: linear-gradient(-225deg, var(--hexdi-surface-hover), var(--hexdi-surface));
+
+  /* --- HexDI color variables --- */
+  --hexdi-border: rgba(245, 158, 11, 0.12);
+  --hexdi-border-light: rgba(245, 158, 11, 0.06);
+
+  --hexdi-primary-900: #451A03;
+  --hexdi-primary-700: #92400E;
+  --hexdi-primary-600: #B45309;
+  --hexdi-primary-500: #D97706;
+  --hexdi-primary-400: #F59E0B;
+  --hexdi-primary-300: #FCD34D;
+  --hexdi-primary-200: #FDE68A;
+  --hexdi-primary-100: #FEF3C7;
+  --hexdi-primary-50: rgba(245, 158, 11, 0.06);
+
+  --hexdi-info-500: #F59E0B;
+  --hexdi-info-100: #FCD34D;
+  --hexdi-info-bg: rgba(245, 158, 11, 0.06);
+
+  --hexdi-code-copy-button-hover-bg: rgba(245, 158, 11, 0.08);
+
+  --hexdi-scrollbar-thumb: rgba(245, 158, 11, 0.15);
+  --hexdi-scrollbar-thumb-hover: rgba(245, 158, 11, 0.3);
+}
+
+/* Counter Docusaurus's element-level --ifm-h*-font-size re-declarations */
+.markdown:not(#\#):not(#\#) h1:first-child {
+  --ifm-h1-font-size: 1.75rem;
+}
+.markdown:not(#\#):not(#\#) > h2 {
+  --ifm-h2-font-size: 1.4rem;
+}
+.markdown:not(#\#):not(#\#) > h3 {
+  --ifm-h3-font-size: 1.15rem;
+}
+
+/* Counter the doc title CSS module (uses direct font-size, not variable) */
+[class*="title_"]:not(#\#):not(#\#) {
+  font-size: 1.75rem;
+}
+
+/* Revert uppercase headings for docs readability (shared theme forces uppercase) */
+.markdown h2, .markdown h3, .markdown h4, .markdown h5, .markdown h6 {
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+
+[data-theme='dark'] {
+  --ifm-menu-link-sublist-icon-filter: none;
+}
+
+/* ==========================================================================
+   Body — amber grid background
+   ========================================================================== */
+
+body {
+  background-image:
+    linear-gradient(rgba(245, 158, 11, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245, 158, 11, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ==========================================================================
+   Navbar — amber accents
+   ========================================================================== */
+
+.navbar {
+  border-bottom: 1px solid rgba(245, 158, 11, 0.15);
+  box-shadow: 0 4px 20px -10px rgba(245, 158, 11, 0.3);
+}
+
+.navbar__link:hover {
+  color: #F59E0B;
+  background-color: rgba(245, 158, 11, 0.05);
+}
+
+.navbar__link--active {
+  color: #F59E0B;
+}
+
+.navbar__search-input:focus {
+  border-color: #F59E0B;
+}
+
+.header-github-link:hover {
+  background-color: rgba(245, 158, 11, 0.05);
+}
+
+.DocSearch-Button:hover {
+  border-color: #F59E0B;
+}
+
+@media (max-width: 996px) {
+  .navbar__toggle:hover {
+    background-color: rgba(245, 158, 11, 0.05);
+  }
+
+  .navbar-sidebar__item:hover {
+    background-color: rgba(245, 158, 11, 0.05);
+  }
+}
+
+/* ==========================================================================
+   Footer — amber accents
+   ========================================================================== */
+
+.footer--dark {
+  border-top: 1px solid rgba(245, 158, 11, 0.08);
+}
+
+.footer__link-item:hover {
+  color: #F59E0B;
+}
+
+/* ==========================================================================
+   Sidebar — amber accents
+   ========================================================================== */
+
+.theme-doc-sidebar-container {
+  background-color: rgba(8, 16, 28, 0.95);
+  border-right: 1px solid rgba(245, 158, 11, 0.12);
+  box-shadow: 4px 0 30px -10px rgba(245, 158, 11, 0.15);
+}
+
+/* Sidebar viewport must sit below the custom 64px navbar */
+[class*="sidebarViewport"] {
+  top: 64px;
+  max-height: calc(100vh - 64px);
+}
+
+.menu__list .menu__list {
+  border-left: 1px solid rgba(245, 158, 11, 0.08);
+}
+
+.menu__link:hover {
+  background-color: rgba(245, 158, 11, 0.03);
+  border-left-color: rgba(245, 158, 11, 0.15);
+}
+
+.menu__link--active {
+  background-color: rgba(245, 158, 11, 0.05);
+  color: #F59E0B;
+  border-left-color: #F59E0B;
+  box-shadow: inset 3px 0 8px -4px rgba(245, 158, 11, 0.3);
+}
+
+.menu__link--active:hover {
+  background-color: rgba(245, 158, 11, 0.05);
+  color: #F59E0B;
+}
+
+.menu__link--sublist-caret {
+  border-left: 2px solid rgba(245, 158, 11, 0.25);
+}
+
+.menu__link--sublist-caret:hover {
+  background-color: rgba(245, 158, 11, 0.03);
+  color: #F59E0B;
+  border-left-color: #F59E0B;
+}
+
+.menu__list-item--collapsed:last-child > .menu__link--sublist-caret {
+  border-left-color: transparent;
+}
+
+/* --- Sidebar density overrides (tighter than shared theme) --- */
+
+.menu {
+  padding: 10px 10px 10px 8px;
+}
+
+.theme-doc-sidebar-menu {
+  padding-bottom: 16px;
+}
+
+.menu__link {
+  font-size: 0.8125rem;  /* 13px — down from 15px */
+  padding: 6px 10px;
+}
+
+.menu__link:not(.menu__link--active) {
+  color: #9aaec2;
+}
+
+.menu__link--sublist-caret {
+  font-size: 0.6875rem;  /* 11px — minimum for uppercase labels */
+  padding: 6px 10px;
+  letter-spacing: 0.08em;
+}
+
+.menu__list .menu__list {
+  padding-left: 10px;
+  margin-top: 2px;
+}
+
+.menu__list-item + .menu__list-item:has(> .menu__link--sublist-caret) {
+  border-top: 1px solid rgba(245, 158, 11, 0.06);
+  margin-top: 4px;
+  padding-top: 6px;
+}
+
+.menu__caret {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+}
+
+/* ==========================================================================
+   Table of Contents — amber accents
+   ========================================================================== */
+
+.theme-doc-toc-desktop {
+  border-left: 1px solid rgba(245, 158, 11, 0.08);
+  box-shadow: -4px 0 30px -10px rgba(245, 158, 11, 0.1);
+}
+
+/* Suppress the duplicate "ON THIS PAGE" header on the inner <ul> —
+   the shared theme targets both .table-of-contents AND [class*="tableOfContents_"],
+   producing two headers. We only want the outer <div> version. */
+.table-of-contents.table-of-contents__left-border::before {
+  content: none;
+  display: none;
+}
+.table-of-contents.table-of-contents__left-border::after {
+  content: none;
+  display: none;
+}
+
+[class*="tableOfContents_"]::before {
+  color: rgba(245, 158, 11, 0.5);
+  border-bottom: 1px solid rgba(245, 158, 11, 0.08);
+  border-left: 4px solid #F59E0B;
+}
+
+[class*="tableOfContents_"]::after {
+  border-top: 1px solid #F59E0B;
+  border-left: 1px solid #F59E0B;
+}
+
+.table-of-contents__link:not(.table-of-contents__link--active) {
+  color: #9aaec2;
+}
+
+.table-of-contents__link:hover {
+  border-left-color: rgba(245, 158, 11, 0.15);
+}
+
+.table-of-contents__link--active,
+.table-of-contents__link.table-of-contents__link--active {
+  color: #F59E0B;
+  border-left-color: #F59E0B;
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+  background-color: rgba(245, 158, 11, 0.03);
+}
+
+.table-of-contents ul ul .table-of-contents__link--active,
+.table-of-contents ul ul ul .table-of-contents__link--active {
+  color: #F59E0B;
+  border-left-color: #F59E0B;
+}
+
+.table-of-contents__left-border {
+  border-left: 1px solid rgba(245, 158, 11, 0.08);
+}
+
+.table-of-contents::-webkit-scrollbar-thumb,
+[class*="tableOfContents_"]::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.15);
+}
+
+.table-of-contents::-webkit-scrollbar-thumb:hover,
+[class*="tableOfContents_"]::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.3);
+}
+
+/* ==========================================================================
+   Code Blocks — amber accents
+   ========================================================================== */
+
+code:not(pre code) {
+  background: rgba(245, 158, 11, 0.06);
+  color: #FCD34D;  /* lighter amber — distinct from link color #F59E0B */
+  border: 1px solid rgba(245, 158, 11, 0.08);
+}
+
+[class*="codeBlockContainer"] {
+  border: 1px solid rgba(245, 158, 11, 0.12);
+}
+
+[class*="codeBlockTitle"] {
+  border-bottom: 1px solid rgba(245, 158, 11, 0.08);
+}
+
+[class*="codeBlockTitle"] + [class*="codeBlockContent"]::before {
+  background-color: rgba(245, 158, 11, 0.06);
+}
+
+[class*="copyButton"]:hover {
+  background-color: rgba(245, 158, 11, 0.08);
+  color: #F59E0B;
+}
+
+[class*="copyButton"][class*="copied"],
+[class*="copyButton"]:focus {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #F59E0B;
+}
+
+/* ==========================================================================
+   Line Highlighting — amber
+   ========================================================================== */
+
+.theme-code-block-highlighted-line {
+  background-color: rgba(245, 158, 11, 0.08);
+  border-left: 3px solid #F59E0B;
+}
+
+/* ==========================================================================
+   Admonitions — info/note overridden to amber
+   ========================================================================== */
+
+.theme-admonition,
+[class*="admonition_"] {
+  border: 1px solid rgba(245, 158, 11, 0.1);
+}
+
+.theme-admonition-note,
+[class*="admonition_"][class*="note"],
+.admonition-note,
+.theme-admonition-info,
+[class*="admonition_"][class*="info"],
+.admonition-info {
+  background-color: rgba(245, 158, 11, 0.06);
+  border-color: rgba(245, 158, 11, 0.1);
+  border-left-color: #F59E0B;
+  color: #F59E0B;
+}
+
+.theme-admonition-note [class*="admonitionIcon"] svg,
+[class*="admonition_"][class*="note"] [class*="admonitionIcon"] svg,
+.admonition-note [class*="admonitionIcon"] svg,
+.theme-admonition-info [class*="admonitionIcon"] svg,
+[class*="admonition_"][class*="info"] [class*="admonitionIcon"] svg,
+.admonition-info [class*="admonitionIcon"] svg {
+  color: #F59E0B;
+  fill: #F59E0B;
+}
+
+.theme-admonition-note [class*="admonitionHeading"],
+[class*="admonition_"][class*="note"] [class*="admonitionHeading"],
+.admonition-note [class*="admonitionHeading"],
+.theme-admonition-info [class*="admonitionHeading"],
+[class*="admonition_"][class*="info"] [class*="admonitionHeading"],
+.admonition-info [class*="admonitionHeading"] {
+  color: #F59E0B;
+}
+
+/* ==========================================================================
+   Pagination — amber accents
+   ========================================================================== */
+
+.pagination-nav__link:hover {
+  border-color: rgba(245, 158, 11, 0.3);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.06);
+}
+
+.pagination-nav__label {
+  color: #F59E0B;
+}
+
+.pagination-nav__link:hover .pagination-nav__label {
+  color: #FCD34D;
+}
+
+/* ==========================================================================
+   Breadcrumbs — amber accents
+   ========================================================================== */
+
+.breadcrumbs__link:hover {
+  color: #F59E0B;
+  background-color: rgba(245, 158, 11, 0.05);
+}
+
+/* ==========================================================================
+   Search — amber accents
+   ========================================================================== */
+
+.aa-DetachedSearchButton:hover,
+button[class*="searchButton"]:hover,
+.DocSearch-Button:hover {
+  border-color: #F59E0B;
+}
+
+.aa-DetachedContainer,
+.DocSearch-Container,
+[class*="searchModalContainer"] {
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.2),
+    0 12px 24px rgba(0, 0, 0, 0.3),
+    0 0 30px rgba(245, 158, 11, 0.05);
+}
+
+.aa-DetachedFormContainer input:focus,
+.aa-Form input:focus,
+.DocSearch-Input:focus,
+[class*="searchInput"]:focus {
+  border-color: #F59E0B;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.aa-Item:hover,
+.aa-Item[aria-selected="true"],
+.DocSearch-Hit:hover,
+.DocSearch-Hit[aria-selected="true"],
+[class*="searchResultItem"]:hover,
+[class*="searchResultItem"][data-selected="true"] {
+  background-color: rgba(245, 158, 11, 0.08);
+}
+
+.aa-Item .aa-ItemIcon,
+.DocSearch-Hit-icon,
+[class*="searchResultIcon"] {
+  background-color: rgba(245, 158, 11, 0.06);
+  color: #F59E0B;
+}
+
+.aa-Item mark,
+.DocSearch-Hit mark,
+[class*="searchResultItem"] mark,
+.search-result-match {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #F59E0B;
+}
+
+.aa-Item[aria-selected="true"],
+.DocSearch-Hit[aria-selected="true"],
+[class*="searchResultItem"][data-selected="true"] {
+  background-color: rgba(245, 158, 11, 0.08);
+  outline: 2px solid rgba(245, 158, 11, 0.3);
+}
+
+.aa-DetachedFormContainer .aa-LoadingIndicator,
+.DocSearch-LoadingIndicator,
+[class*="searchLoading"] {
+  border-top-color: #F59E0B;
+}
+
+.search-result-highlight {
+  background-color: rgba(245, 158, 11, 0.2);
+}
+
+@keyframes highlightFade {
+  0% { background-color: rgba(245, 158, 11, 0.4); }
+  100% { background-color: rgba(245, 158, 11, 0.1); }
+}
+
+/* ==========================================================================
+   Focus Indicators — amber accents
+   ========================================================================== */
+
+:focus-visible {
+  outline: 2px solid #F59E0B;
+}
+
+a:focus-visible {
+  outline: 2px solid #F59E0B;
+}
+
+button:focus-visible,
+[role="button"]:focus-visible,
+.button:focus-visible {
+  outline: 2px solid #F59E0B;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15);
+}
+
+.navbar__link:focus-visible {
+  outline: 2px solid #F59E0B;
+  background-color: rgba(245, 158, 11, 0.05);
+}
+
+.menu__link:focus-visible {
+  outline: 2px solid #F59E0B;
+  background-color: rgba(245, 158, 11, 0.05);
+}
+
+.table-of-contents__link:focus-visible {
+  outline: 2px solid #F59E0B;
+}
+
+.breadcrumbs__link:focus-visible {
+  outline: 2px solid #F59E0B;
+  background-color: rgba(245, 158, 11, 0.05);
+}
+
+.pagination-nav__link:focus-visible {
+  outline: 2px solid #F59E0B;
+  border-color: #F59E0B;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
+}
+
+.DocSearch-Button:focus-visible,
+[class*="searchButton"]:focus-visible {
+  outline: 2px solid #F59E0B;
+  border-color: #F59E0B;
+}
+
+[class*="copyButton"]:focus-visible {
+  outline: 2px solid #F59E0B;
+  background-color: rgba(245, 158, 11, 0.08);
+}
+
+.navbar__toggle:focus-visible {
+  outline: 2px solid #F59E0B;
+  background-color: rgba(245, 158, 11, 0.05);
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #F59E0B;
+  border-color: #F59E0B;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.navbar__search-input:focus-visible {
+  outline: 2px solid #F59E0B;
+  border-color: #F59E0B;
+}
+
+.footer__link-item:focus-visible {
+  outline: 2px solid #F59E0B;
+}
+
+.skip-to-content:focus-visible {
+  border: 2px solid #F59E0B;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 20px rgba(245, 158, 11, 0.1);
+}
+
+/* ==========================================================================
+   Scrollbar — amber
+   ========================================================================== */
+
+::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.15);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.3);
+}

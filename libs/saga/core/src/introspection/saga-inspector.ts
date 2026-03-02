@@ -466,6 +466,8 @@ function traceToExecutionState(trace: ExecutionTrace): SagaExecutionState {
     sagaName: trace.sagaName,
     input: trace.input,
     currentStep: trace.steps.filter(s => s.status === "completed").length,
+    totalSteps: trace.steps.length,
+    pendingStep: null,
     completedSteps: trace.steps
       .filter(s => s.status === "completed")
       .map(s => ({

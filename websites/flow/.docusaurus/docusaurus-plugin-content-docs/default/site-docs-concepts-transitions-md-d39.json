@@ -1,0 +1,28 @@
+{
+  "id": "concepts/transitions",
+  "title": "Transitions",
+  "description": "Transitions define how your machine moves between states in response to events. Flow provides rich configuration options for transitions including guards, actions, effects, and validation.",
+  "source": "@site/docs/concepts/transitions.md",
+  "sourceDirName": "concepts",
+  "slug": "/concepts/transitions",
+  "permalink": "/docs/concepts/transitions",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/concepts/transitions.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2,
+    "title": "Transitions"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "States & Events",
+    "permalink": "/docs/concepts/states-events"
+  },
+  "next": {
+    "title": "Effects",
+    "permalink": "/docs/concepts/effects"
+  }
+}

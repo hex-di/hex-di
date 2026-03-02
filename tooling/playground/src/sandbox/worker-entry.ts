@@ -24,6 +24,8 @@ import {
 import { proxyWrapService } from "./result-proxy.js";
 import { createInstrumentedResultModule } from "./traced-result.js";
 import type { ResultModule } from "./traced-result.js";
+import { createInstrumentedGuardModule } from "./traced-guard.js";
+import type { GuardModule } from "./traced-guard.js";
 
 // =============================================================================
 // Hex-DI Module Registry
@@ -50,6 +52,7 @@ async function setupModuleRegistry(): Promise<void> {
     hexDiSaga,
     hexDiTracing,
     hexDiLogger,
+    hexDiGuard,
   ] = await Promise.all([
     import("@hex-di/core"),
     import("@hex-di/graph"),
@@ -61,6 +64,7 @@ async function setupModuleRegistry(): Promise<void> {
     import("@hex-di/saga"),
     import("@hex-di/tracing"),
     import("@hex-di/logger"),
+    import("@hex-di/guard"),
   ]);
 
   // Wrap createContainer to automatically capture inspector for visualization panels
@@ -116,6 +120,34 @@ async function setupModuleRegistry(): Promise<void> {
     }
   );
 
+  // Instrument @hex-di/guard to capture policy evaluations for the Guard panel.
+  // When evaluate() is called, the instrumented module emits
+  // guard-descriptor-registered and guard-execution-added messages
+  // to the main thread.
+  const instrumentedGuard = createInstrumentedGuardModule(
+    hexDiGuard as unknown as GuardModule,
+    (descriptor, execution) => {
+      const descriptorMsg: WorkerToMainMessage = {
+        type: "guard-descriptor-registered",
+        descriptor,
+      };
+      self.postMessage(descriptorMsg);
+
+      const executionMsg: WorkerToMainMessage = {
+        type: "guard-execution-added",
+        execution,
+      };
+      self.postMessage(executionMsg);
+    },
+    roles => {
+      const roleMsg: WorkerToMainMessage = {
+        type: "guard-role-hierarchy-updated",
+        roles,
+      };
+      self.postMessage(roleMsg);
+    }
+  );
+
   const modules: Record<string, unknown> = {
     "@hex-di/core": hexDiCore,
     "@hex-di/graph": hexDiGraph,
@@ -127,6 +159,7 @@ async function setupModuleRegistry(): Promise<void> {
     "@hex-di/saga": hexDiSaga,
     "@hex-di/tracing": hexDiTracing,
     "@hex-di/logger": hexDiLogger,
+    "@hex-di/guard": instrumentedGuard,
   };
 
   Object.defineProperty(globalThis, "__hexModules", {

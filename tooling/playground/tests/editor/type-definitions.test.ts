@@ -2,7 +2,7 @@
  * Type definition bundling tests.
  *
  * Verifies:
- * 1. typeDefinitions map contains all 10 hex-di packages
+ * 1. typeDefinitions map contains all 11 hex-di packages
  * 2. registerTypeDefinitions calls addExtraLib for each package
  * 3. File paths use the correct file:///node_modules/ URI scheme
  * 4. Brand properties use string keys (not computed symbol keys) for cross-TS-version compatibility
@@ -23,11 +23,12 @@ const EXPECTED_PACKAGES = [
   "@hex-di/saga",
   "@hex-di/tracing",
   "@hex-di/logger",
+  "@hex-di/guard",
 ];
 
 describe("typeDefinitions", () => {
-  it("contains all 10 hex-di packages", () => {
-    expect(typeDefinitions.size).toBe(10);
+  it("contains all 11 hex-di packages", () => {
+    expect(typeDefinitions.size).toBe(11);
 
     for (const pkg of EXPECTED_PACKAGES) {
       expect(typeDefinitions.has(pkg)).toBe(true);
@@ -96,7 +97,7 @@ describe("registerTypeDefinitions", () => {
 
     registerTypeDefinitions(mockTs);
 
-    expect(addExtraLib).toHaveBeenCalledTimes(10);
+    expect(addExtraLib).toHaveBeenCalledTimes(11);
 
     for (const pkg of EXPECTED_PACKAGES) {
       const expectedUri = `file:///node_modules/${pkg}/index.d.ts`;

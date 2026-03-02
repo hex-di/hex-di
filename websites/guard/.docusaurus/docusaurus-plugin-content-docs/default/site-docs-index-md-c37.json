@@ -1,7 +1,7 @@
 {
   "id": "index",
   "title": "Introduction",
-  "description": "Policy-based authorization with 10 composable policy kinds and audit trails.",
+  "description": "A policy-based authorization library for TypeScript applications, featuring composable policies, audit trails, and deep integration with dependency injection.",
   "source": "@site/docs/index.md",
   "sourceDirName": ".",
   "slug": "/",
@@ -16,5 +16,9 @@
     "sidebar_position": 1,
     "title": "Introduction"
   },
-  "sidebar": "docs"
+  "sidebar": "docs",
+  "next": {
+    "title": "Permissions",
+    "permalink": "/docs/concepts/permissions"
+  }
 }

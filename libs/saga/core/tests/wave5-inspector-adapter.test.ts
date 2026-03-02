@@ -22,21 +22,18 @@ import {
   sagaManagementPort,
   isSagaPort,
   isSagaManagementPort,
-  SagaPersisterPort,
   SagaRegistryPort,
   SagaInspectorPort,
 } from "../src/ports/factory.js";
 import { createSagaInspector, emitToInspector } from "../src/introspection/saga-inspector.js";
-import type { SagaPersister, SagaExecutionState, CompensationState } from "../src/ports/types.js";
+import type { SagaPersister, SagaExecutionState } from "../src/ports/types.js";
 import type {
   ExecutionTrace,
   StepTrace,
-  CompensationTrace,
   CompensationStepTrace,
   SagaEvent,
 } from "../src/runtime/types.js";
 import type { ExecutionState, CompletedStepInfo } from "../src/runtime/execution-state.js";
-import type { AnyStepDefinition } from "../src/step/types.js";
 
 // =============================================================================
 // Shared Test Ports and Steps
@@ -139,6 +136,8 @@ function makeExecutionState(overrides?: Partial<SagaExecutionState>): SagaExecut
     sagaName: "TestSaga",
     input: {},
     currentStep: 0,
+    totalSteps: 3,
+    pendingStep: null,
     completedSteps: [],
     status: "completed",
     error: null,
@@ -275,7 +274,7 @@ describe("inspector-adapter.ts", () => {
         subscribe: () => () => {},
         dispose: disposeFn,
       } as any;
-      adapter.finalizer!(instance);
+      void adapter.finalizer!(instance);
       expect(disposeFn).toHaveBeenCalledTimes(1);
     });
 
@@ -1673,6 +1672,8 @@ describe("saga-inspector.ts — executionStateToSummary via getHistory", () => {
   it("currentStepName is null when currentStep >= totalSteps", async () => {
     const state = makeExecutionState({
       currentStep: 10,
+      totalSteps: 3,
+      pendingStep: null,
       status: "completed",
     });
     const persister = createMockPersister([state]);
@@ -1687,6 +1688,8 @@ describe("saga-inspector.ts — executionStateToSummary via getHistory", () => {
   it("currentStepName resolves correctly when in range", async () => {
     const state = makeExecutionState({
       currentStep: 1,
+      totalSteps: 3,
+      pendingStep: null,
       status: "running",
     });
     const persister = createMockPersister([state]);

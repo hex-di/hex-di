@@ -239,6 +239,8 @@ describe("getHistory with mock persister", () => {
         completedAt: "2024-01-01T00:00:03Z",
       },
       metadata: { source: "test" },
+      totalSteps: 0,
+      pendingStep: null,
     };
 
     const persister = createMockPersister([state]);
@@ -311,6 +313,8 @@ describe("getHistory with mock persister", () => {
         completedAt: null,
       },
       metadata: {},
+      totalSteps: 0,
+      pendingStep: null,
     };
 
     const persister = createMockPersister([state]);
@@ -415,6 +419,8 @@ describe("getHistory with mock persister", () => {
         completedAt: null,
       },
       metadata: {},
+      totalSteps: 0,
+      pendingStep: null,
     };
 
     const persister = createMockPersister([state]);
@@ -464,6 +470,8 @@ describe("extractCauseTags edge cases via getHistory", () => {
         completedAt: null,
       },
       metadata: {},
+      totalSteps: 0,
+      pendingStep: null,
     };
 
     const inspector = createSagaInspector({
@@ -505,6 +513,8 @@ describe("extractCauseTags edge cases via getHistory", () => {
         completedAt: null,
       },
       metadata: {},
+      totalSteps: 0,
+      pendingStep: null,
     };
 
     const inspector = createSagaInspector({
@@ -546,6 +556,8 @@ describe("extractCauseTags edge cases via getHistory", () => {
         completedAt: null,
       },
       metadata: {},
+      totalSteps: 0,
+      pendingStep: null,
     };
 
     const inspector = createSagaInspector({
@@ -587,6 +599,8 @@ describe("extractCauseTags edge cases via getHistory", () => {
         completedAt: null,
       },
       metadata: {},
+      totalSteps: 0,
+      pendingStep: null,
     };
 
     const inspector = createSagaInspector({
@@ -628,6 +642,8 @@ describe("extractCauseTags edge cases via getHistory", () => {
         completedAt: null,
       },
       metadata: {},
+      totalSteps: 0,
+      pendingStep: null,
     };
 
     const inspector = createSagaInspector({

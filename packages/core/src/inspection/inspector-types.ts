@@ -176,7 +176,14 @@ export type InspectorEvent =
       readonly type: "execution-added";
       readonly chainId: string;
       readonly executionId: string;
-    };
+    }
+  | { readonly type: "guard-descriptor-registered"; readonly descriptorId: string }
+  | {
+      readonly type: "guard-execution-added";
+      readonly portName: string;
+      readonly executionId: string;
+    }
+  | { readonly type: "guard-role-hierarchy-updated" };
 
 /**
  * Listener function for inspector events.

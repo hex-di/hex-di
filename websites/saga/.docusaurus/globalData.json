@@ -1,0 +1,83 @@
+{
+  "docusaurus-plugin-content-docs": {
+    "default": {
+      "path": "/docs",
+      "versions": [
+        {
+          "name": "current",
+          "label": "Next",
+          "isLast": true,
+          "path": "/docs",
+          "mainDocId": "index",
+          "docs": [
+            {
+              "id": "api/api-reference",
+              "path": "/docs/api/api-reference",
+              "sidebar": "docs"
+            },
+            {
+              "id": "concepts/compensation",
+              "path": "/docs/concepts/compensation",
+              "sidebar": "docs"
+            },
+            {
+              "id": "concepts/execution",
+              "path": "/docs/concepts/execution",
+              "sidebar": "docs"
+            },
+            {
+              "id": "concepts/sagas",
+              "path": "/docs/concepts/sagas",
+              "sidebar": "docs"
+            },
+            {
+              "id": "concepts/steps",
+              "path": "/docs/concepts/steps",
+              "sidebar": "docs"
+            },
+            {
+              "id": "guides/building-sagas",
+              "path": "/docs/guides/building-sagas",
+              "sidebar": "docs"
+            },
+            {
+              "id": "guides/di-integration",
+              "path": "/docs/guides/di-integration",
+              "sidebar": "docs"
+            },
+            {
+              "id": "guides/persistence",
+              "path": "/docs/guides/persistence",
+              "sidebar": "docs"
+            },
+            {
+              "id": "index",
+              "path": "/docs/",
+              "sidebar": "docs"
+            },
+            {
+              "id": "react",
+              "path": "/docs/react",
+              "sidebar": "docs"
+            },
+            {
+              "id": "testing",
+              "path": "/docs/testing",
+              "sidebar": "docs"
+            }
+          ],
+          "draftIds": [],
+          "sidebars": {
+            "docs": {
+              "link": {
+                "path": "/docs/",
+                "label": "index"
+              }
+            }
+          }
+        }
+      ],
+      "breadcrumbs": true
+    }
+  }
+}

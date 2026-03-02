@@ -24,7 +24,7 @@ export interface AttributeResolver {
   resolve(
     subjectId: string,
     attribute: string,
-    resource?: Readonly<Record<string, unknown>>,
+    resource?: Readonly<Record<string, unknown>>
   ): Promise<unknown>;
 }
 
@@ -91,35 +91,38 @@ async function resolveWithTimeout(
   subjectId: string,
   attribute: string,
   resource: Readonly<Record<string, unknown>> | undefined,
-  timeoutMs: number,
+  timeoutMs: number
 ): Promise<Result<unknown, AttributeResolveTimeoutError | AttributeResolveError>> {
-  const timeoutPromise = new Promise<Result<unknown, AttributeResolveTimeoutError>>(
-    (resolve) => {
-      const timer = setTimeout(() => {
-        resolve(
-          err(Object.freeze({
+  const timeoutPromise = new Promise<Result<unknown, AttributeResolveTimeoutError>>(resolve => {
+    const timer = setTimeout(() => {
+      resolve(
+        err(
+          Object.freeze({
             code: ACL026,
             message: `Attribute resolution timed out after ${timeoutMs}ms for '${attribute}'`,
             attribute,
             timeoutMs,
-          })),
-        );
-      }, timeoutMs);
-      // Prevent timer from blocking process exit (Node.js)
-      timer.unref();
-    },
-  );
+          })
+        )
+      );
+    }, timeoutMs);
+    // Prevent timer from blocking process exit (Node.js)
+    if (typeof timer === "object" && typeof timer.unref === "function") timer.unref();
+  });
 
-  const resolvePromise: Promise<Result<unknown, AttributeResolveError>> =
-    resolver.resolve(subjectId, attribute, resource).then(
+  const resolvePromise: Promise<Result<unknown, AttributeResolveError>> = resolver
+    .resolve(subjectId, attribute, resource)
+    .then(
       (value): Result<unknown, AttributeResolveError> => ok(value),
       (cause: unknown): Result<unknown, AttributeResolveError> =>
-        err(Object.freeze({
-          code: ACL018,
-          message: `Attribute resolution failed for '${attribute}': ${cause instanceof Error ? cause.message : String(cause)}`,
-          attribute,
-          cause,
-        })),
+        err(
+          Object.freeze({
+            code: ACL018,
+            message: `Attribute resolution failed for '${attribute}': ${cause instanceof Error ? cause.message : String(cause)}`,
+            attribute,
+            cause,
+          })
+        )
     );
 
   return Promise.race([resolvePromise, timeoutPromise]);
@@ -138,7 +141,7 @@ export async function evaluateAsync(
   policy: PolicyConstraint,
   context: EvaluationContext,
   resolver: AttributeResolver,
-  options?: AsyncEvaluateOptions,
+  options?: AsyncEvaluateOptions
 ): Promise<Result<Decision, AsyncEvaluationError>> {
   // Capture evaluatedAt BEFORE any async resolution (GxP requirement)
   const evaluatedAt = context.evaluatedAt ?? new Date().toISOString();
@@ -178,9 +181,9 @@ export async function evaluateAsync(
           context.subject.id,
           attribute,
           context.resource,
-          timeoutMs,
-        ).then((r) => ({ attribute, isResource, result: r })),
-      ),
+          timeoutMs
+        ).then(r => ({ attribute, isResource, result: r }))
+      )
     );
 
     for (const { attribute, isResource, result } of results) {
@@ -218,4 +221,3 @@ export async function evaluateAsync(
 
   return evaluate(policy, mergedContext, options);
 }
-

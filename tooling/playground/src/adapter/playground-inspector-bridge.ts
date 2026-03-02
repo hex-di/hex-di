@@ -28,6 +28,11 @@ import {
   deserializeResultStatistics,
 } from "../sandbox/worker-protocol.js";
 import type { ResultChainDescriptor, ResultChainExecution } from "../sandbox/traced-result.js";
+import type {
+  GuardEvaluationDescriptor,
+  GuardEvaluationExecution,
+  SerializedRole,
+} from "../sandbox/traced-guard.js";
 
 // =============================================================================
 // PlaygroundInspectorBridge
@@ -53,6 +58,10 @@ export class PlaygroundInspectorBridge implements InspectorDataSource {
   private readonly resultChains = new Map<string, ResultChainDescriptor>();
   private readonly resultExecutions = new Map<string, ResultChainExecution[]>();
   private static readonly MAX_EXECUTIONS_PER_CHAIN = 100;
+  private readonly guardDescriptors = new Map<string, GuardEvaluationDescriptor>();
+  private readonly guardExecutions = new Map<string, GuardEvaluationExecution[]>();
+  private guardRoleHierarchy: readonly SerializedRole[] = [];
+  private static readonly MAX_EXECUTIONS_PER_PORT = 100;
   private readonly listeners = new Set<(event: InspectorEvent) => void>();
 
   // ===========================================================================
@@ -93,6 +102,18 @@ export class PlaygroundInspectorBridge implements InspectorDataSource {
 
   getResultExecutions(chainId: string): readonly ResultChainExecution[] | undefined {
     return this.resultExecutions.get(chainId);
+  }
+
+  getGuardDescriptors(): ReadonlyMap<string, GuardEvaluationDescriptor> | undefined {
+    return this.guardDescriptors.size > 0 ? this.guardDescriptors : undefined;
+  }
+
+  getGuardExecutions(portName: string): readonly GuardEvaluationExecution[] | undefined {
+    return this.guardExecutions.get(portName);
+  }
+
+  getGuardRoleHierarchy(): readonly SerializedRole[] | undefined {
+    return this.guardRoleHierarchy.length > 0 ? this.guardRoleHierarchy : undefined;
   }
 
   // ===========================================================================
@@ -159,6 +180,15 @@ export class PlaygroundInspectorBridge implements InspectorDataSource {
       case "result-chain-executed":
         this.handleChainExecuted(message.execution);
         break;
+      case "guard-descriptor-registered":
+        this.handleGuardDescriptorRegistered(message.descriptor);
+        break;
+      case "guard-execution-added":
+        this.handleGuardExecutionAdded(message.execution);
+        break;
+      case "guard-role-hierarchy-updated":
+        this.handleGuardRoleHierarchyUpdated(message.roles);
+        break;
       default:
         // Other message types are not handled by the bridge
         break;
@@ -196,6 +226,45 @@ export class PlaygroundInspectorBridge implements InspectorDataSource {
     });
   }
 
+  /**
+   * Handle a guard descriptor registration from the instrumented Guard module.
+   */
+  private handleGuardDescriptorRegistered(descriptor: GuardEvaluationDescriptor): void {
+    this.guardDescriptors.set(descriptor.descriptorId, descriptor);
+    this.notify({ type: "guard-descriptor-registered", descriptorId: descriptor.descriptorId });
+  }
+
+  /**
+   * Handle a guard execution from the instrumented Guard module.
+   */
+  private handleGuardExecutionAdded(execution: GuardEvaluationExecution): void {
+    let list = this.guardExecutions.get(execution.portName);
+    if (!list) {
+      list = [];
+      this.guardExecutions.set(execution.portName, list);
+    }
+    list.push(execution);
+
+    // Ring buffer: discard oldest when exceeding max
+    if (list.length > PlaygroundInspectorBridge.MAX_EXECUTIONS_PER_PORT) {
+      list.shift();
+    }
+
+    this.notify({
+      type: "guard-execution-added",
+      portName: execution.portName,
+      executionId: execution.executionId,
+    });
+  }
+
+  /**
+   * Handle a role hierarchy update from the instrumented Guard module.
+   */
+  private handleGuardRoleHierarchyUpdated(roles: readonly SerializedRole[]): void {
+    this.guardRoleHierarchy = roles;
+    this.notify({ type: "guard-role-hierarchy-updated" });
+  }
+
   // ===========================================================================
   // Reset
   // ===========================================================================
@@ -213,6 +282,9 @@ export class PlaygroundInspectorBridge implements InspectorDataSource {
     this.resultStatistics = undefined;
     this.resultChains.clear();
     this.resultExecutions.clear();
+    this.guardDescriptors.clear();
+    this.guardExecutions.clear();
+    this.guardRoleHierarchy = [];
 
     this.notify({ type: "snapshot-changed" });
   }

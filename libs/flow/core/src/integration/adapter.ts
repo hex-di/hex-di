@@ -10,6 +10,7 @@
 import type { Port, InferService, Adapter, Lifetime, ResolvedDeps } from "@hex-di/core";
 import type { Result } from "@hex-di/result";
 import { ok, err } from "@hex-di/result";
+import { getDescriptorValue } from "../utils/type-bridge.js";
 import type { Machine } from "../machine/types.js";
 import { createMachineRunner } from "../runner/create-runner.js";
 import { createActivityManager } from "../activities/manager.js";
@@ -98,17 +99,20 @@ function hasDispose(
  *
  * @internal
  */
-function getSendInternal(
-  runner: unknown
-):
-  | ((event: { readonly type: string }, source: "emit" | "delay" | "external") => unknown)
-  | undefined {
+type SendInternalFn = (
+  event: { readonly type: string },
+  source: "emit" | "delay" | "external"
+) => unknown;
+
+function getSendInternal(runner: unknown): SendInternalFn | undefined {
   if (typeof runner !== "object" || runner === null) return undefined;
-  const descriptor = Object.getOwnPropertyDescriptor(runner, "_sendInternal");
-  if (descriptor !== undefined && typeof descriptor.value === "function") {
-    return descriptor.value;
-  }
-  return undefined;
+  const value = getDescriptorValue(runner, "_sendInternal");
+  if (typeof value !== "function") return undefined;
+  // @ts-expect-error - value is narrowed to Function by typeof, but we know it's
+  // SendInternalFn from createMachineRunner's Object.defineProperty. Same variance
+  // bridge pattern used for state/context recovery in create-runner.ts.
+  const fn: SendInternalFn = value;
+  return fn;
 }
 
 /**

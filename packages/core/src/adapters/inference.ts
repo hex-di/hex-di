@@ -54,7 +54,7 @@ type AdapterProvidesShape<TProvides> = {
 /**
  * Extracts the **Port type** from an Adapter's `provides` property.
  *
- * Returns the full `Port<TService, TName>` type, not just the name string.
+ * Returns the full `Port<TName, TService>` type, not just the name string.
  *
  * @typeParam A - The Adapter type to extract from
  * @returns The Port type that the adapter provides, or `never` if not an adapter
@@ -62,13 +62,13 @@ type AdapterProvidesShape<TProvides> = {
  * @example
  * ```typescript
  * const LoggerAdapter = createAdapter({
- *   provides: LoggerPort,  // Port<Logger, "Logger">
+ *   provides: LoggerPort,  // Port<"Logger", Logger>
  *   requires: [],
  *   factory: () => ({ log: () => {} }),
  * });
  *
  * type Provided = InferAdapterProvides<typeof LoggerAdapter>;
- * // Result: Port<Logger, "Logger">
+ * // Result: Port<"Logger", Logger>
  * ```
  */
 export type InferAdapterProvides<TAdapter> =
@@ -91,7 +91,7 @@ export type InferAdapterProvides<TAdapter> =
  * });
  *
  * type Required = InferAdapterRequires<typeof UserServiceAdapter>;
- * // Result: Port<Logger, "Logger"> | Port<Database, "Database">
+ * // Result: Port<"Logger", Logger> | Port<"Database", Database>
  * ```
  */
 export type InferAdapterRequires<TAdapter> =
@@ -119,7 +119,7 @@ export type InferAdapterRequires<TAdapter> =
  * const adapters = [LoggerAdapter, DatabaseAdapter] as const;
  *
  * type AllProvided = InferManyProvides<typeof adapters>;
- * // Result: Port<Logger, "Logger"> | Port<Database, "Database">
+ * // Result: Port<"Logger", Logger> | Port<"Database", Database>
  * ```
  */
 export type InferManyProvides<TAdapters> = TAdapters extends readonly (infer TElement)[]
@@ -142,7 +142,7 @@ export type InferManyProvides<TAdapters> = TAdapters extends readonly (infer TEl
  * const adapters = [UserServiceAdapter, CacheAdapter] as const;
  *
  * type AllRequired = InferManyRequires<typeof adapters>;
- * // Result: Port<Logger, "Logger"> | Port<Database, "Database"> | ...
+ * // Result: Port<"Logger", Logger> | Port<"Database", Database> | ...
  * ```
  */
 export type InferManyRequires<TAdapters> = TAdapters extends readonly (infer TElement)[]

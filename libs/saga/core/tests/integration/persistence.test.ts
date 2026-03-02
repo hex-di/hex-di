@@ -153,6 +153,8 @@ describe("Persistence Integration", () => {
         completedAt: null,
       },
       metadata: {},
+      totalSteps: 3,
+      pendingStep: null,
     });
 
     // Resume from step 1

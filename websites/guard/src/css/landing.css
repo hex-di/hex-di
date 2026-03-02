@@ -1,49 +1,261 @@
-/* Guard landing page styles */
+/**
+ * Guard landing page styles — amber-on-dark tactical theme.
+ *
+ * These live outside the Tailwind pipeline so keyframes
+ * referenced only by inline JSX styles survive purge.
+ */
 
-.hero-section {
-  min-height: 80vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--hex-bg-darkest);
-  position: relative;
-  overflow: hidden;
+/* ============================================================
+   Design tokens — Guard amber palette
+   ============================================================ */
+:root {
+  --guard-bg: #020408;
+  --guard-surface: #08101C;
+  --guard-card: #0a1420;
+  --guard-accent: #F59E0B;
+  --guard-accent-40: rgba(245, 158, 11, 0.25);
+  --guard-accent-60: rgba(245, 158, 11, 0.38);
+  --guard-accent-08: rgba(245, 158, 11, 0.05);
+  --guard-accent-glow: 0 0 20px rgba(245, 158, 11, 0.12);
+  --guard-deny: #EF4444;
+  --guard-deny-dim: rgba(239, 68, 68, 0.18);
+  --guard-allow: #22C55E;
+  --guard-text: #ffffff;
+  --guard-text-secondary: #a0b4c8;
+  --guard-text-muted: #8a9bb0;
+  --guard-border: #1a2a3e;
+  --guard-border-accent: rgba(245, 158, 11, 0.18);
 }
 
-.hero-section::before {
+/* ============================================================
+   Dark home page body overrides
+   ============================================================ */
+body.dark-home-page .main-wrapper {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+body.dark-home-page footer {
+  display: none !important;
+}
+
+/* ============================================================
+   Keyframe animations
+   ============================================================ */
+@keyframes guard-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--guard-accent); }
+  50% { opacity: 0.4; box-shadow: 0 0 3px rgba(245, 158, 11, 0.3); }
+}
+
+@keyframes guard-fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes guard-float-3d {
+  0%, 100% { transform: translateY(0) rotateX(5deg) rotateZ(-2deg); }
+  50%      { transform: translateY(-10px) rotateX(5deg) rotateZ(-2deg); }
+}
+
+@keyframes guard-scanline {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(600%); }
+}
+
+/* ============================================================
+   Animation utility classes
+   ============================================================ */
+.guard-anim-fade-in    { opacity: 0; animation: guard-fade-in 1s cubic-bezier(0.16,1,0.3,1) 0s forwards; }
+.guard-anim-fade-in-d1 { opacity: 0; animation: guard-fade-in 1s cubic-bezier(0.16,1,0.3,1) 0.1s forwards; }
+.guard-anim-fade-in-d2 { opacity: 0; animation: guard-fade-in 1s cubic-bezier(0.16,1,0.3,1) 0.2s forwards; }
+.guard-anim-fade-in-d3 { opacity: 0; animation: guard-fade-in 1s cubic-bezier(0.16,1,0.3,1) 0.3s forwards; }
+.guard-anim-fade-in-d4 { opacity: 0; animation: guard-fade-in 1s cubic-bezier(0.16,1,0.3,1) 0.4s forwards; }
+
+/* ============================================================
+   HUD Card — corner bracket decorations
+   ============================================================ */
+.guard-hud-card {
+  position: relative;
+  background: rgba(6, 13, 20, 0.8);
+  border: 1px solid var(--guard-border-accent);
+  padding: 28px;
+  backdrop-filter: blur(8px);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.guard-hud-card::before,
+.guard-hud-card::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: var(--guard-accent);
+  border-style: solid;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.guard-hud-card::before {
+  top: -1px;
+  left: -1px;
+  border-width: 2px 0 0 2px;
+}
+
+.guard-hud-card::after {
+  bottom: -1px;
+  right: -1px;
+  border-width: 0 2px 2px 0;
+}
+
+.guard-hud-card:hover {
+  border-color: var(--guard-accent-60);
+  box-shadow:
+    0 0 24px rgba(245, 158, 11, 0.08),
+    inset 0 0 24px rgba(245, 158, 11, 0.02);
+}
+
+.guard-hud-card:hover::before,
+.guard-hud-card:hover::after {
+  width: 100%;
+  height: 100%;
+  opacity: 0.3;
+}
+
+/* Deny (red) variant */
+.guard-hud-card-deny {
+  border-color: var(--guard-deny-dim);
+}
+
+.guard-hud-card-deny::before,
+.guard-hud-card-deny::after {
+  border-color: var(--guard-deny);
+}
+
+.guard-hud-card-deny:hover {
+  border-color: rgba(239, 68, 68, 0.45);
+  box-shadow: 0 0 24px rgba(239, 68, 68, 0.08);
+}
+
+.guard-hud-card-deny:hover::before,
+.guard-hud-card-deny:hover::after {
+  opacity: 0.3;
+}
+
+/* ============================================================
+   Background grid — amber 40px
+   ============================================================ */
+.guard-bg-grid {
+  background-image:
+    linear-gradient(rgba(245, 158, 11, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245, 158, 11, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ============================================================
+   API / Policy kind card
+   ============================================================ */
+.guard-api-card {
+  background: rgba(6, 13, 20, 0.85);
+  border: 1px solid var(--guard-border);
+  padding: 20px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.guard-api-card:hover {
+  border-color: var(--guard-accent-40);
+  box-shadow: var(--guard-accent-glow);
+}
+
+/* ============================================================
+   CRT scanline overlay on code blocks
+   ============================================================ */
+.guard-scanline-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 10;
+}
+
+.guard-scanline-overlay::after {
+  content: '';
+  display: block;
+  position: absolute;
+  width: 100%;
+  height: 60px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(245, 158, 11, 0.02) 50%,
+    transparent 100%
+  );
+  animation: guard-scanline 6s linear infinite;
+}
+
+/* ============================================================
+   Hero section
+   ============================================================ */
+.guard-hero-section {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  background: var(--guard-bg);
+}
+
+.guard-hero-section::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(ellipse at 50% 0%, #FF5E0008 0%, transparent 60%);
+  background: radial-gradient(ellipse at 50% 0%, rgba(245, 158, 11, 0.05) 0%, transparent 60%);
   pointer-events: none;
 }
 
-.accent-text {
-  color: #FF5E00;
+/* ============================================================
+   Pulse dot
+   ============================================================ */
+.guard-pulse-dot {
+  animation: guard-pulse 2.5s ease-in-out infinite;
 }
 
-.accent-border {
-  border-color: #FF5E00;
+/* ============================================================
+   3D float — applied to HUD eval trace card
+   ============================================================ */
+.guard-float-3d {
+  animation: guard-float-3d 6s ease-in-out infinite;
+  transform-style: preserve-3d;
 }
 
-.accent-glow {
-  box-shadow: 0 0 20px #FF5E0020;
+/* ============================================================
+   Scrollbar (amber variant)
+   ============================================================ */
+body.dark-home-page ::-webkit-scrollbar { width: 4px; }
+body.dark-home-page ::-webkit-scrollbar-track { background: #03060b; }
+body.dark-home-page ::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.2);
+  border-radius: 3px;
+}
+body.dark-home-page ::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.4);
 }
 
-@keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* ============================================================
+   Responsive helpers — guard-prefixed
+   ============================================================ */
+.guard-show-mobile { display: none !important; }
+
+@media (max-width: 768px) {
+  .guard-section     { padding: 64px 20px !important; }
+  .guard-hero-grid   { grid-template-columns: 1fr !important; }
+  .guard-grid-2      { grid-template-columns: 1fr !important; }
+  .guard-grid-3      { grid-template-columns: 1fr !important; }
+  .guard-hide-mobile { display: none !important; }
+  .guard-show-mobile { display: flex !important; }
 }
 
-.animate-fade-in-up {
-  animation: fade-in-up 0.6s ease-out forwards;
+@media (min-width: 769px) and (max-width: 1024px) {
+  .guard-grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
 }

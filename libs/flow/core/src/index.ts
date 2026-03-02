@@ -368,8 +368,13 @@ export {
   CircularReference,
   InvalidState,
   MachineIdMismatch,
+  ContextValidationFailed,
   type SerializationError,
   type RestoreError,
+  MigrationRegistry,
+  applyMigrations,
+  MigrationFailed,
+  type StateMigration,
 } from "./serialization/index.js";
 
 // =============================================================================
@@ -426,6 +431,27 @@ export {
 } from "./devtools/index.js";
 
 // =============================================================================
+// Clock Module - Pluggable Timestamps (GxP F12)
+// =============================================================================
+
+export { type Clock } from "./clock/types.js";
+export { SystemClock } from "./clock/index.js";
+
+// =============================================================================
+// Audit Module - Audit Trail (GxP F3, F9)
+// =============================================================================
+
+export { type FlowAuditRecord, type FlowAuditSink } from "./audit/types.js";
+export { computeHash } from "./audit/hash-chain.js";
+export { setFlowAuditSink, clearFlowAuditSink, emitFlowAuditRecord } from "./audit/global-sink.js";
+
+// =============================================================================
+// Guard Purity Module (GxP F7)
+// =============================================================================
+
+export { verifyGuardPurity } from "./runner/guard-purity.js";
+
+// =============================================================================
 // Errors Module - Error Types
 // =============================================================================
 
@@ -434,6 +460,7 @@ export {
   ActionThrew,
   Disposed,
   QueueOverflow,
+  EventValidationFailed,
   type TransitionError,
   InvokeError,
   SpawnError,

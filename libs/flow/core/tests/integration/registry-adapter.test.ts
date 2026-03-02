@@ -72,7 +72,7 @@ describe("FlowRegistryAdapter", () => {
     expect(registry.getAllMachines()).toHaveLength(1);
 
     // Call the finalizer
-    FlowRegistryAdapter.finalizer?.(registry);
+    void FlowRegistryAdapter.finalizer?.(registry);
 
     // After disposal, the registry should be cleared
     expect(registry.getAllMachines()).toHaveLength(0);

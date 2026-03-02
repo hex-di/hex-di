@@ -672,7 +672,7 @@ export type OverrideTypeMismatchError<TPortName extends string> =
 /**
  * Extracts the service type from a Port union by filtering for a specific port name.
  *
- * Given `Port<Logger, "Logger"> | Port<Database, "Database">` and name "Logger",
+ * Given `Port<"Logger", Logger> | Port<"Database", Database>` and name "Logger",
  * returns `Logger`.
  *
  * @internal

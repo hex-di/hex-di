@@ -16,6 +16,7 @@
 
 import type { Result } from "@hex-di/result";
 import { ok, err, ResultAsync } from "@hex-di/result";
+import { callErased } from "../utils/type-bridge.js";
 import type {
   Activity,
   ActivityInstance,
@@ -67,6 +68,18 @@ export interface ActivityManagerConfig {
    * 3. ActivityManagerConfig.defaultTimeout (lowest precedence)
    */
   readonly defaultTimeout?: number;
+
+  /**
+   * Pluggable clock for deterministic timestamps (GxP F12).
+   * @default Date.now
+   */
+  readonly clock?: { now(): number };
+
+  /**
+   * ID generator for activity instance IDs (GxP F6).
+   * @default crypto.randomUUID based generator
+   */
+  readonly idGenerator?: () => string;
 }
 
 /**
@@ -321,14 +334,10 @@ function isSpawnOptions(obj: unknown): obj is SpawnOptions {
 // =============================================================================
 
 /**
- * Generates a unique activity instance ID.
- *
- * Uses a combination of timestamp and random string for uniqueness.
+ * Generates a unique activity instance ID using crypto.randomUUID (GxP F6).
  */
-function generateActivityId(): string {
-  const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).substring(2, 9);
-  return `activity-${timestamp}-${random}`;
+function generateDefaultActivityId(): string {
+  return `activity-${globalThis.crypto.randomUUID()}`;
 }
 
 // =============================================================================
@@ -358,6 +367,8 @@ function generateActivityId(): string {
 export function createActivityManager(config?: ActivityManagerConfig): ActivityManager {
   const activities = new Map<string, MutableActivityState>();
   const defaultTimeout = config?.defaultTimeout;
+  const clock = config?.clock ?? { now: () => Date.now() };
+  const idGenerator = config?.idGenerator ?? generateDefaultActivityId;
 
   /**
    * Updates an activity's status and optionally sets its end time.
@@ -452,12 +463,12 @@ export function createActivityManager(config?: ActivityManagerConfig): ActivityM
     timeoutTriggered: boolean
   ): CleanupReason {
     if (controller.signal.aborted) {
-      updateStatus(id, "cancelled", Date.now());
+      updateStatus(id, "cancelled", clock.now());
       return timeoutTriggered ? "timeout" : "cancelled";
     }
     // Success - capture result
     state.result = result;
-    updateStatus(id, "completed", Date.now());
+    updateStatus(id, "completed", clock.now());
     return "completed";
   }
 
@@ -470,10 +481,10 @@ export function createActivityManager(config?: ActivityManagerConfig): ActivityM
     timeoutTriggered: boolean
   ): CleanupReason {
     if (controller.signal.aborted) {
-      updateStatus(id, "cancelled", Date.now());
+      updateStatus(id, "cancelled", clock.now());
       return timeoutTriggered ? "timeout" : "cancelled";
     }
-    updateStatus(id, "failed", Date.now());
+    updateStatus(id, "failed", clock.now());
     return "error";
   }
 
@@ -488,7 +499,7 @@ export function createActivityManager(config?: ActivityManagerConfig): ActivityM
   ): string {
     // Create AbortController for this activity
     const controller = new AbortController();
-    const startTime = Date.now();
+    const startTime = clock.now();
 
     // Initialize state
     const state: MutableActivityState = {
@@ -540,12 +551,12 @@ export function createActivityManager(config?: ActivityManagerConfig): ActivityM
     deps: PortDeps<TRequires>,
     options?: SpawnOptions
   ): string {
-    // Generate unique ID
-    const id = generateActivityId();
+    // Generate unique ID (GxP F6: deterministic/cryptographic)
+    const id = idGenerator();
 
     // Create AbortController for this activity
     const controller = new AbortController();
-    const startTime = Date.now();
+    const startTime = clock.now();
 
     // Create activity context
     const context: ActivityContext<TRequires, TEvents> = {
@@ -631,18 +642,18 @@ export function createActivityManager(config?: ActivityManagerConfig): ActivityM
 
       // New API: spawn(activity, input, sink, deps, options?)
       // This is the default path - isConfiguredActivity validates the shape
-      // Uses Function.prototype.call.call to bypass the never-typed deps parameter,
+      // Uses callErased to bypass the never-typed deps parameter,
       // same pattern used for guard/action invocation in the interpreter
       if (isConfiguredActivity(firstArg) && isEventSink(thirdArg) && isSpawnOptions(fifthArg)) {
-        return Function.prototype.call.call(
+        const result = callErased(
           spawnConfigured,
-          undefined,
           firstArg,
           secondArg,
           thirdArg,
           fourthArg,
           fifthArg
         );
+        return typeof result === "string" ? result : "error-invalid-spawn-args";
       }
 
       // Unreachable for valid TypeScript callers - return error ID
@@ -664,11 +675,11 @@ export function createActivityManager(config?: ActivityManagerConfig): ActivityM
     getResult<TOutput>(id: string): Result<TOutput, ActivityNotFound> {
       const state = activities.get(id);
       if (state && state.status === "completed") {
-        // state.result is stored as unknown; recover TOutput via Function.prototype.call.call
-        // (same variance bridge pattern used for guard/action invocation)
-        return ok(
-          Function.prototype.call.call((x: TOutput): TOutput => x, undefined, state.result)
-        );
+        // state.result is stored as unknown; recover TOutput via variance bridge.
+        // @ts-expect-error - Intentional variance bridge: state.result holds TOutput at runtime
+        // but TypeScript tracks it as unknown. Same pattern as create-runner.ts state/context recovery.
+        const typed: TOutput = state.result;
+        return ok(typed);
       }
       return err(ActivityNotFound({ activityId: id }));
     },

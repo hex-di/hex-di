@@ -68,6 +68,13 @@ export interface SagaHooks {
 }
 
 // =============================================================================
+// Checkpoint Policy
+// =============================================================================
+
+/** Policy for handling checkpoint (persistence) failures */
+export type CheckpointPolicy = "swallow" | "abort" | "warn";
+
+// =============================================================================
 // SagaOptions
 // =============================================================================
 
@@ -84,6 +91,10 @@ export interface SagaOptions {
   readonly hooks?: SagaHooks;
   /** Custom metadata for tracing and diagnostics */
   readonly metadata?: Record<string, unknown>;
+  /** S4: Runtime input validation function */
+  readonly inputValidator?: (input: unknown) => boolean;
+  /** S9: Policy for handling checkpoint failures (default: "swallow") */
+  readonly checkpointPolicy?: CheckpointPolicy;
 }
 
 // =============================================================================
@@ -134,6 +145,8 @@ export interface SagaDefinition<
   readonly outputMapper: (results: AccumulatedResults<TSteps>) => TOutput;
   /** Saga configuration options */
   readonly options: SagaOptions;
+  /** S7: Optional definition version for change tracking */
+  readonly version?: string;
   /** @internal Phantom type carrier for TInput */
   readonly [__sagaInput]?: TInput;
   /** @internal Phantom type carrier for TErrors */

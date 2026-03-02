@@ -1,0 +1,28 @@
+{
+  "id": "concepts/effects",
+  "title": "Effects",
+  "description": "Effects in Flow are data descriptors that represent side effects to be executed. They are pure data structures, not imperative actions, making them testable, serializable, and composable.",
+  "source": "@site/docs/concepts/effects.md",
+  "sourceDirName": "concepts",
+  "slug": "/concepts/effects",
+  "permalink": "/docs/concepts/effects",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/concepts/effects.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3,
+    "title": "Effects"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Transitions",
+    "permalink": "/docs/concepts/transitions"
+  },
+  "next": {
+    "title": "Activities",
+    "permalink": "/docs/concepts/activities"
+  }
+}

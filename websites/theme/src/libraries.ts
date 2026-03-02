@@ -42,7 +42,7 @@ export const LIBRARIES: readonly LibraryInfo[] = [
     name: "Guard",
     tagline: "Type-Safe Authorization for TypeScript",
     npm: "@hex-di/guard",
-    accent: "#FF5E00",
+    accent: "#F59E0B",
     subdomain: "guard",
     description: "Policy-based authorization with 10 composable policy kinds and audit trails.",
   },

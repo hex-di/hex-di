@@ -1,0 +1,28 @@
+{
+  "id": "concepts/compensation",
+  "title": "Compensation",
+  "description": "Compensation provides automatic rollback of completed steps when a saga fails, ensuring system consistency through configurable strategies and dead-letter handling.",
+  "source": "@site/docs/concepts/compensation.md",
+  "sourceDirName": "concepts",
+  "slug": "/concepts/compensation",
+  "permalink": "/docs/concepts/compensation",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/concepts/compensation.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3,
+    "title": "Compensation"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Sagas",
+    "permalink": "/docs/concepts/sagas"
+  },
+  "next": {
+    "title": "Execution",
+    "permalink": "/docs/concepts/execution"
+  }
+}

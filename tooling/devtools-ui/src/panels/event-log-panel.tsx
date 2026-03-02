@@ -71,6 +71,12 @@ function getEventSummary(event: InspectorEvent): string {
       return event.chainId;
     case "execution-added":
       return `${event.chainId}/${event.executionId}`;
+    case "guard-descriptor-registered":
+      return event.descriptorId;
+    case "guard-execution-added":
+      return `${event.portName}/${event.executionId}`;
+    case "guard-role-hierarchy-updated":
+      return "Role hierarchy updated";
   }
 }
 

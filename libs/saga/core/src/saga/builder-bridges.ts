@@ -32,6 +32,7 @@ interface SagaBuilderState<TName extends string> {
   readonly steps: AnyStepDefinition[];
   outputMapper: unknown;
   sagaOptions: SagaOptions;
+  sagaVersion: string | undefined;
 }
 
 // =============================================================================
@@ -156,13 +157,17 @@ export function buildSagaDefinition<
   TErrors,
 >(state: SagaBuilderState<TName>): SagaDefinition<TName, TInput, TOutput, TSteps, TErrors>;
 export function buildSagaDefinition<TName extends string>(state: SagaBuilderState<TName>): object {
-  return Object.freeze({
+  const result: Record<string, unknown> = {
     name: state.name,
     steps: [...state.steps],
     outputMapper: state.outputMapper,
     options: Object.freeze({ ...state.sagaOptions }),
     _nodes: Object.freeze([...state.nodes]),
-  });
+  };
+  if (state.sagaVersion !== undefined) {
+    result.version = state.sagaVersion;
+  }
+  return Object.freeze(result);
 }
 
 // =============================================================================

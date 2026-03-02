@@ -14,16 +14,14 @@ import { createPermission } from "../../src/tokens/permission.js";
 import { createAuthSubject } from "../../src/subject/auth-subject.js";
 import { ok, err } from "@hex-di/result";
 import type { AuditTrail, AuditEntry } from "../../src/guard/types.js";
+import type { GuardEvent, GuardEventSink } from "../../src/guard/events.js";
 import { createPolicyChangeAuditEntry } from "../../src/guard/policy-change.js";
 import { createRoleGate, RoleGateError } from "../../src/hook/role-gate.js";
 
 const ReadUser = createPermission({ resource: "user", action: "read" });
 const WriteUser = createPermission({ resource: "user", action: "write" });
 
-function makeSubject(
-  permissions: string[] = ["user:read"],
-  roles: string[] = [],
-) {
+function makeSubject(permissions: string[] = ["user:read"], roles: string[] = []) {
   return createAuthSubject("user-1", roles, new Set(permissions));
 }
 
@@ -261,7 +259,10 @@ describe("createGuardGraph()", () => {
     const subject = makeSubject(["user:read"]);
     const recorded: AuditEntry[] = [];
     const customTrail: AuditTrail = {
-      record: (entry) => { recorded.push(entry); return ok(undefined); },
+      record: entry => {
+        recorded.push(entry);
+        return ok(undefined);
+      },
     };
     guard.enforce({
       policy: hasPermission(ReadUser),
@@ -385,7 +386,7 @@ describe("createRoleGate hook", () => {
 
 /** Helper: replicates the internal truncation logic from guard.ts for white-box testing */
 const MAX_REASON_LENGTH = 2048;
-const TRUNCATION_SUFFIX = '…[truncated]';
+const TRUNCATION_SUFFIX = "…[truncated]";
 function truncateReason(reason: string): string {
   if (reason.length <= MAX_REASON_LENGTH) return reason;
   const cutAt = MAX_REASON_LENGTH - TRUNCATION_SUFFIX.length;
@@ -397,7 +398,10 @@ describe("audit trail integration — DoD 7 tests 9-16", () => {
     const subject = makeSubject(["user:read"]);
     const recorded: AuditEntry[] = [];
     const trail: AuditTrail = {
-      record: (entry) => { recorded.push(entry); return ok(undefined); },
+      record: entry => {
+        recorded.push(entry);
+        return ok(undefined);
+      },
     };
     const result = enforcePolicy({
       policy: hasPermission(ReadUser),
@@ -417,10 +421,27 @@ describe("audit trail integration — DoD 7 tests 9-16", () => {
     const noPermSubject = makeSubject([]);
     const recorded: AuditEntry[] = [];
     const trail: AuditTrail = {
-      record: (entry) => { recorded.push(entry); return ok(undefined); },
+      record: entry => {
+        recorded.push(entry);
+        return ok(undefined);
+      },
     };
-    enforcePolicy({ policy: hasPermission(ReadUser), subject, portName: "P1", scopeId: "s", auditTrail: trail, failOnAuditError: false });
-    enforcePolicy({ policy: hasPermission(WriteUser), subject: noPermSubject, portName: "P2", scopeId: "s", auditTrail: trail, failOnAuditError: false });
+    enforcePolicy({
+      policy: hasPermission(ReadUser),
+      subject,
+      portName: "P1",
+      scopeId: "s",
+      auditTrail: trail,
+      failOnAuditError: false,
+    });
+    enforcePolicy({
+      policy: hasPermission(WriteUser),
+      subject: noPermSubject,
+      portName: "P2",
+      scopeId: "s",
+      auditTrail: trail,
+      failOnAuditError: false,
+    });
     expect(recorded.length).toBeGreaterThanOrEqual(2);
   });
 
@@ -449,7 +470,10 @@ describe("audit trail integration — DoD 7 tests 9-16", () => {
     const subject = makeSubject(["user:read"]);
     let capturedEntry: AuditEntry | undefined;
     const trail: AuditTrail = {
-      record: (entry) => { capturedEntry = entry; return ok(undefined); },
+      record: entry => {
+        capturedEntry = entry;
+        return ok(undefined);
+      },
     };
     enforcePolicy({
       policy: hasPermission(ReadUser),
@@ -529,7 +553,10 @@ describe("createGuardGraph factories — DoD 7 tests 20, 24", () => {
     const subject = makeSubject(["user:read"]);
     const recorded: AuditEntry[] = [];
     const customTrail: AuditTrail = {
-      record: (entry) => { recorded.push(entry); return ok(undefined); },
+      record: entry => {
+        recorded.push(entry);
+        return ok(undefined);
+      },
     };
     graph.enforce({
       policy: hasPermission(ReadUser),
@@ -625,7 +652,10 @@ describe("AuditEntry.reason truncation — DoD 7 tests 36-37", () => {
     const subject = makeSubject([]);
     let capturedReason = "";
     const trail: AuditTrail = {
-      record: (entry) => { capturedReason = entry.reason; return ok(undefined); },
+      record: entry => {
+        capturedReason = entry.reason;
+        return ok(undefined);
+      },
     };
     enforcePolicy({
       policy: hasPermission(ReadUser),
@@ -753,5 +783,135 @@ describe("CompletenessMonitor", () => {
     expect(result.resolutions).toBe(2);
     expect(result.auditEntries).toBe(1);
     expect(result.discrepancy).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Event emission — enforcePolicy + createGuardGraph eventSink integration
+// ---------------------------------------------------------------------------
+
+function createCollectingSink(): { sink: GuardEventSink; events: GuardEvent[] } {
+  const events: GuardEvent[] = [];
+  const sink: GuardEventSink = {
+    emit(event) {
+      events.push(event);
+    },
+  };
+  return { sink, events };
+}
+
+describe("enforcePolicy eventSink emission", () => {
+  it("emits GuardAllowEvent on allow", () => {
+    const { sink, events } = createCollectingSink();
+    const subject = makeSubject(["user:read"]);
+    const result = enforcePolicy({
+      policy: hasPermission(ReadUser),
+      subject,
+      portName: "UserRepo",
+      scopeId: "scope-1",
+      auditTrail: null,
+      failOnAuditError: false,
+      eventSink: sink,
+    });
+    expect(result.isOk()).toBe(true);
+    expect(events).toHaveLength(1);
+    expect(events[0]?.kind).toBe("guard.allow");
+    if (events[0]?.kind === "guard.allow") {
+      expect(events[0].portName).toBe("UserRepo");
+      expect(events[0].subjectId).toBe("user-1");
+      expect(events[0].decision.kind).toBe("allow");
+      expect(events[0].evaluationId).toBeTruthy();
+      expect(events[0].timestamp).toBeTruthy();
+    }
+  });
+
+  it("emits GuardDenyEvent on deny", () => {
+    const { sink, events } = createCollectingSink();
+    const subject = makeSubject([]);
+    const result = enforcePolicy({
+      policy: hasPermission(ReadUser),
+      subject,
+      portName: "UserRepo",
+      scopeId: "scope-1",
+      auditTrail: null,
+      failOnAuditError: false,
+      eventSink: sink,
+    });
+    expect(result.isErr()).toBe(true);
+    expect(events).toHaveLength(1);
+    expect(events[0]?.kind).toBe("guard.deny");
+    if (events[0]?.kind === "guard.deny") {
+      expect(events[0].portName).toBe("UserRepo");
+      expect(events[0].subjectId).toBe("user-1");
+      expect(events[0].decision.kind).toBe("deny");
+    }
+  });
+
+  it("does not emit events when eventSink is not provided", () => {
+    const subject = makeSubject(["user:read"]);
+    // No eventSink — should not throw
+    const result = enforcePolicy({
+      policy: hasPermission(ReadUser),
+      subject,
+      portName: "UserRepo",
+      scopeId: "scope-1",
+      auditTrail: null,
+      failOnAuditError: false,
+    });
+    expect(result.isOk()).toBe(true);
+  });
+});
+
+describe("createGuardGraph eventSink forwarding", () => {
+  it("forwards graph-level eventSink to enforcePolicy", () => {
+    const { sink, events } = createCollectingSink();
+    const guard = createGuardGraph({ eventSink: sink });
+    const subject = makeSubject(["user:read"]);
+    guard.enforce({
+      policy: hasPermission(ReadUser),
+      subject,
+      portName: "UserPort",
+      scopeId: "scope-1",
+    });
+    expect(events).toHaveLength(1);
+    expect(events[0]?.kind).toBe("guard.allow");
+  });
+
+  it("per-call eventSink overrides graph-level eventSink", () => {
+    const { sink: graphSink, events: graphEvents } = createCollectingSink();
+    const { sink: callSink, events: callEvents } = createCollectingSink();
+    const guard = createGuardGraph({ eventSink: graphSink });
+    const subject = makeSubject(["user:read"]);
+    guard.enforce({
+      policy: hasPermission(ReadUser),
+      subject,
+      portName: "UserPort",
+      scopeId: "scope-1",
+      eventSink: callSink,
+    });
+    expect(graphEvents).toHaveLength(0);
+    expect(callEvents).toHaveLength(1);
+  });
+
+  it("emits both allow and deny events through graph", () => {
+    const { sink, events } = createCollectingSink();
+    const guard = createGuardGraph({ eventSink: sink });
+    const allowSubject = makeSubject(["user:read"]);
+    const denySubject = makeSubject([]);
+    guard.enforce({
+      policy: hasPermission(ReadUser),
+      subject: allowSubject,
+      portName: "P1",
+      scopeId: "s",
+    });
+    guard.enforce({
+      policy: hasPermission(ReadUser),
+      subject: denySubject,
+      portName: "P2",
+      scopeId: "s",
+    });
+    expect(events).toHaveLength(2);
+    expect(events[0]?.kind).toBe("guard.allow");
+    expect(events[1]?.kind).toBe("guard.deny");
   });
 });

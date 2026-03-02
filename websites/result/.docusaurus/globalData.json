@@ -11,6 +11,46 @@
           "mainDocId": "index",
           "docs": [
             {
+              "id": "advanced/serialization",
+              "path": "/docs/advanced/serialization",
+              "sidebar": "docs"
+            },
+            {
+              "id": "api/api-reference",
+              "path": "/docs/api/api-reference",
+              "sidebar": "docs"
+            },
+            {
+              "id": "concepts/error-patterns",
+              "path": "/docs/concepts/error-patterns",
+              "sidebar": "docs"
+            },
+            {
+              "id": "concepts/option-type",
+              "path": "/docs/concepts/option-type",
+              "sidebar": "docs"
+            },
+            {
+              "id": "concepts/result-type",
+              "path": "/docs/concepts/result-type",
+              "sidebar": "docs"
+            },
+            {
+              "id": "guides/async-results",
+              "path": "/docs/guides/async-results",
+              "sidebar": "docs"
+            },
+            {
+              "id": "guides/generators",
+              "path": "/docs/guides/generators",
+              "sidebar": "docs"
+            },
+            {
+              "id": "guides/transformations",
+              "path": "/docs/guides/transformations",
+              "sidebar": "docs"
+            },
+            {
               "id": "index",
               "path": "/docs/",
               "sidebar": "docs"

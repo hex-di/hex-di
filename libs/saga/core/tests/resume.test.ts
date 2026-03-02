@@ -174,6 +174,8 @@ describe("SagaRunner.resume", () => {
         completedAt: null,
       },
       metadata: {},
+      totalSteps: 5,
+      pendingStep: null,
     });
 
     // Resume from step 3
@@ -247,6 +249,8 @@ describe("SagaRunner.resume", () => {
         completedAt: null,
       },
       metadata: {},
+      totalSteps: 0,
+      pendingStep: null,
     });
 
     const result = await runner.resume("unknown-saga-exec");
@@ -366,6 +370,8 @@ describe("SagaRunner.resume", () => {
         completedAt: null,
       },
       metadata: {},
+      totalSteps: 5,
+      pendingStep: null,
     });
 
     // Resume
@@ -451,6 +457,8 @@ describe("SagaRunner.resume", () => {
         completedAt: null,
       },
       metadata: {},
+      totalSteps: 5,
+      pendingStep: null,
     });
 
     compensatedPorts.length = 0;

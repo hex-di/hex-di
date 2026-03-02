@@ -62,6 +62,7 @@ const CATEGORY_LABELS: Record<ExampleCategory, string> = {
   basics: "Basics",
   patterns: "Patterns",
   result: "Result",
+  guard: "Guard",
   libraries: "Libraries",
   advanced: "Advanced",
 };
@@ -70,6 +71,7 @@ const CATEGORY_ORDER: readonly ExampleCategory[] = [
   "basics",
   "patterns",
   "result",
+  "guard",
   "libraries",
   "advanced",
 ];

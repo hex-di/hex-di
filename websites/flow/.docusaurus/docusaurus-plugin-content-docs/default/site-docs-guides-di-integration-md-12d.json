@@ -1,0 +1,28 @@
+{
+  "id": "guides/di-integration",
+  "title": "DI Integration",
+  "description": "Flow integrates seamlessly with the HexDI container system through adapters, enabling dependency injection for effects, activities, and cross-machine communication.",
+  "source": "@site/docs/guides/di-integration.md",
+  "sourceDirName": "guides",
+  "slug": "/guides/di-integration",
+  "permalink": "/docs/guides/di-integration",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/guides/di-integration.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3,
+    "title": "DI Integration"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Running Machines",
+    "permalink": "/docs/guides/running-machines"
+  },
+  "next": {
+    "title": "API Reference",
+    "permalink": "/docs/api/api-reference"
+  }
+}

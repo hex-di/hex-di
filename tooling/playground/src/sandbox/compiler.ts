@@ -32,6 +32,7 @@ const HEX_DI_EXTERNALS = [
   "@hex-di/saga",
   "@hex-di/tracing",
   "@hex-di/logger",
+  "@hex-di/guard",
 ] as const;
 
 // =============================================================================

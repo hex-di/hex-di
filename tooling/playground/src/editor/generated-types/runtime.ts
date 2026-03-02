@@ -559,7 +559,7 @@ export type NotAPortError<T> = {
  * Extracts the service interface type from a Port type.
  *
  * This utility type uses conditional type inference to extract the phantom
- * type parameter \`T\` from a \`Port<T, TName>\`. If the provided type is not
+ * type parameter \`T\` from a \`Port<TName, T>\`. If the provided type is not
  * a valid Port, it returns a descriptive \`NotAPortError\` type.
  *
  * @typeParam P - The Port type to extract the service from
@@ -593,7 +593,7 @@ export type InferService<P> = P extends Port<infer _TName, infer T> ? T : NotAPo
  * Extracts the port name literal type from a Port type.
  *
  * This utility type uses conditional type inference to extract the name
- * type parameter \`TName\` from a \`Port<T, TName>\`. If the provided type is not
+ * type parameter \`TName\` from a \`Port<TName, T>\`. If the provided type is not
  * a valid Port, it returns a descriptive \`NotAPortError\` type.
  *
  * @typeParam P - The Port type to extract the name from
@@ -883,7 +883,7 @@ export type AdapterProvidesShape<TProvides> = {
 /**
  * Extracts the **Port type** from an Adapter's \`provides\` property.
  *
- * Returns the full \`Port<TService, TName>\` type, not just the name string.
+ * Returns the full \`Port<TName, TService>\` type, not just the name string.
  *
  * @typeParam A - The Adapter type to extract from
  * @returns The Port type that the adapter provides, or \`never\` if not an adapter
@@ -891,13 +891,13 @@ export type AdapterProvidesShape<TProvides> = {
  * @example
  * \`\`\`typescript
  * const LoggerAdapter = createAdapter({
- *   provides: LoggerPort,  // Port<Logger, "Logger">
+ *   provides: LoggerPort,  // Port<"Logger", Logger>
  *   requires: [],
  *   factory: () => ({ log: () => {} }),
  * });
  *
  * type Provided = InferAdapterProvides<typeof LoggerAdapter>;
- * // Result: Port<Logger, "Logger">
+ * // Result: Port<"Logger", Logger>
  * \`\`\`
  */
 export type InferAdapterProvides<TAdapter> = TAdapter extends AdapterProvidesShape<infer TProvides> ? TProvides : never;
@@ -918,7 +918,7 @@ export type InferAdapterProvides<TAdapter> = TAdapter extends AdapterProvidesSha
  * });
  *
  * type Required = InferAdapterRequires<typeof UserServiceAdapter>;
- * // Result: Port<Logger, "Logger"> | Port<Database, "Database">
+ * // Result: Port<"Logger", Logger> | Port<"Database", Database>
  * \`\`\`
  */
 export type InferAdapterRequires<TAdapter> = TAdapter extends Adapter<InferPlaceholder, infer TRequires, LifetimePlaceholder, FactoryKindPlaceholder, ClonablePlaceholder> ? TRequires : never;
@@ -1440,6 +1440,15 @@ export type InspectorEvent = {
 	readonly type: "execution-added";
 	readonly chainId: string;
 	readonly executionId: string;
+} | {
+	readonly type: "guard-descriptor-registered";
+	readonly descriptorId: string;
+} | {
+	readonly type: "guard-execution-added";
+	readonly portName: string;
+	readonly executionId: string;
+} | {
+	readonly type: "guard-role-hierarchy-updated";
 };
 /**
  * Listener function for inspector events.

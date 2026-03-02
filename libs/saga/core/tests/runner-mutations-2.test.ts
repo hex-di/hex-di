@@ -23,8 +23,8 @@ import type { PortResolver, SagaEvent, SagaEventListener } from "../src/runtime/
 // =============================================================================
 
 const TestPort = createPort<"TestPort", any>({ name: "TestPort" });
-const PortA = createPort<"PortA", any>({ name: "PortA" });
-const PortB = createPort<"PortB", any>({ name: "PortB" });
+const _PortA = createPort<"PortA", any>({ name: "PortA" });
+const _PortB = createPort<"PortB", any>({ name: "PortB" });
 
 // =============================================================================
 // Helpers
@@ -220,6 +220,8 @@ describe("runner.ts event emission string values", () => {
             completedAt: null,
           },
           metadata: {},
+          totalSteps: 0,
+          pendingStep: null,
         })
       ),
       delete: vi.fn(() => ResultAsync.ok(undefined)),

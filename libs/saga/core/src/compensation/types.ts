@@ -8,6 +8,17 @@ import type { CompensationContext } from "../step/types.js";
 
 export type CompensationStrategy = "sequential" | "parallel" | "best-effort";
 
+/** S2: Dead-letter entry for compensation failures */
+export interface DeadLetterEntry {
+  readonly executionId: string;
+  readonly sagaName: string;
+  readonly stepName: string;
+  readonly stepIndex: number;
+  readonly originalError: unknown;
+  readonly failedAt: string;
+  readonly retryCount: number;
+}
+
 export interface CompensationResult {
   /** Names of steps that were successfully compensated */
   readonly compensatedSteps: readonly string[];
@@ -17,6 +28,8 @@ export interface CompensationResult {
   readonly errors: readonly CompensationStepError[];
   /** Whether all compensations succeeded */
   readonly allSucceeded: boolean;
+  /** S2: Dead-letter entries for failed compensations */
+  readonly deadLetterEntries?: readonly DeadLetterEntry[];
 }
 
 export interface CompensationStepError {
@@ -37,4 +50,6 @@ export interface CompensationPlanStep {
   readonly stepIndex: number;
   readonly result: unknown;
   readonly compensateFn: (ctx: CompensationContext<unknown, unknown, unknown, unknown>) => unknown;
+  /** S6: Optional timeout in ms for the compensation handler */
+  readonly timeout?: number;
 }

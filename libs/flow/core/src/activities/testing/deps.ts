@@ -8,6 +8,7 @@
  */
 
 import type { Port, InferPortName, InferService, PortDeps } from "@hex-di/core";
+import { getDescriptorValue } from "../../utils/type-bridge.js";
 
 // =============================================================================
 // Types
@@ -149,7 +150,7 @@ export function createTestDeps<TRequires extends readonly Port<string, unknown>[
   // Validate all required ports have mocks
   for (const port of requires) {
     const portName = port.__portName;
-    const mockValue = Object.getOwnPropertyDescriptor(mocks, portName)?.value;
+    const mockValue = getDescriptorValue(mocks, portName);
 
     if (mockValue === undefined && !Object.prototype.hasOwnProperty.call(mocks, portName)) {
       throw new MissingMockError(portName, requiredPortNames);
@@ -161,7 +162,7 @@ export function createTestDeps<TRequires extends readonly Port<string, unknown>[
 
   for (const port of requires) {
     const portName = port.__portName;
-    deps[portName] = Object.getOwnPropertyDescriptor(mocks, portName)?.value;
+    deps[portName] = getDescriptorValue(mocks, portName);
   }
 
   // Freeze to prevent accidental mutation.

@@ -56,6 +56,21 @@ export interface StepSkippedEvent extends SagaEventBase {
   readonly reason: string;
 }
 
+/** S3: Emitted when a previously completed step is replayed during resume */
+export interface StepResumedEvent extends SagaEventBase {
+  readonly type: "step:resumed";
+  readonly stepName: string;
+  readonly stepIndex: number;
+  readonly output: unknown;
+  readonly originalCompletedAt: string;
+}
+
+/** S9: Emitted when checkpoint fails with "warn" policy */
+export interface CheckpointWarningEvent extends SagaEventBase {
+  readonly type: "checkpoint:warning";
+  readonly error: unknown;
+}
+
 export interface CompensationStartedEvent extends SagaEventBase {
   readonly type: "compensation:started";
   readonly failedStepName: string;
@@ -113,6 +128,8 @@ export type SagaEvent =
   | StepCompletedEvent
   | StepFailedEvent
   | StepSkippedEvent
+  | StepResumedEvent
+  | CheckpointWarningEvent
   | CompensationStartedEvent
   | CompensationStepEvent
   | CompensationCompletedEvent
@@ -230,6 +247,8 @@ export interface SagaRunnerConfig {
    * Ignored when `tracingHook` is already provided.
    */
   readonly tracer?: TracerLike;
+  /** Suppress GxP compliance warnings (e.g., tracing warning) */
+  readonly suppressGxpWarnings?: boolean;
 }
 
 /**

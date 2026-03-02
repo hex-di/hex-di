@@ -19,6 +19,11 @@ import type {
   ResultStatistics,
 } from "@hex-di/core";
 import type { ResultChainDescriptor, ResultChainExecution } from "./traced-result.js";
+import type {
+  GuardEvaluationDescriptor,
+  GuardEvaluationExecution,
+  SerializedRole,
+} from "./traced-guard.js";
 
 // =============================================================================
 // Serialized Value Types
@@ -180,6 +185,20 @@ export type WorkerToMainMessage =
   | {
       readonly type: "result-chain-executed";
       readonly execution: ResultChainExecution;
+    }
+
+  // Guard evaluation tracing (push -- sent by instrumented Guard module)
+  | {
+      readonly type: "guard-descriptor-registered";
+      readonly descriptor: GuardEvaluationDescriptor;
+    }
+  | {
+      readonly type: "guard-execution-added";
+      readonly execution: GuardEvaluationExecution;
+    }
+  | {
+      readonly type: "guard-role-hierarchy-updated";
+      readonly roles: readonly SerializedRole[];
     }
 
   // Response to pull requests

@@ -29,7 +29,6 @@ import {
   isSagaPort,
   isSagaManagementPort,
 } from "../src/ports/factory.js";
-import { buildSagaDefinition } from "../src/saga/builder-bridges.js";
 import { generateExecutionId } from "../src/runtime/id.js";
 import {
   createResumeNotImplemented,
@@ -37,12 +36,7 @@ import {
   isBranchSelector,
   isInputMapper,
 } from "../src/runtime/runner-bridges.js";
-import {
-  widenDelayFn,
-  widenRetryIfFn,
-  getPort,
-  buildStepDefinition,
-} from "../src/step/builder-bridges.js";
+import { widenDelayFn, widenRetryIfFn } from "../src/step/builder-bridges.js";
 import type { SagaExecutionState, SagaPersister } from "../src/ports/types.js";
 
 // =============================================================================
@@ -60,6 +54,8 @@ function makeState(overrides: Partial<SagaExecutionState> = {}): SagaExecutionSt
     sagaName: "TestSaga",
     input: {},
     currentStep: 0,
+    totalSteps: 3,
+    pendingStep: null,
     completedSteps: [],
     status: "completed",
     error: null,
@@ -970,7 +966,7 @@ describe("saga/builder", () => {
 // =============================================================================
 
 describe("runtime/id generateExecutionId", () => {
-  it("generates unique IDs with incrementing counter", () => {
+  it("generates unique IDs with exec- prefix and UUID", () => {
     const id1 = generateExecutionId();
     const id2 = generateExecutionId();
 
@@ -978,23 +974,21 @@ describe("runtime/id generateExecutionId", () => {
     expect(id1.startsWith("exec-")).toBe(true);
     expect(id2.startsWith("exec-")).toBe(true);
 
-    // Parse the counter suffixes (base-36 encoded)
-    const suffix1 = id1.split("-").pop()!;
-    const suffix2 = id2.split("-").pop()!;
-    const counter1 = parseInt(suffix1, 36);
-    const counter2 = parseInt(suffix2, 36);
-
-    expect(counter2).toBe(counter1 + 1);
+    // UUID format check
+    const uuid1 = id1.slice("exec-".length);
+    const uuid2 = id2.slice("exec-".length);
+    expect(uuid1).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    expect(uuid2).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   });
 
-  it("counter increments by exactly 1", () => {
+  it("each call produces a different UUID", () => {
     const id1 = generateExecutionId();
     const id2 = generateExecutionId();
 
-    const counter1 = parseInt(id1.split("-").pop()!, 36);
-    const counter2 = parseInt(id2.split("-").pop()!, 36);
+    const uuid1 = id1.slice("exec-".length);
+    const uuid2 = id2.slice("exec-".length);
 
-    expect(counter2 - counter1).toBe(1);
+    expect(uuid1).not.toBe(uuid2);
   });
 });
 

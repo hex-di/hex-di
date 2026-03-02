@@ -262,6 +262,8 @@ describe("Introspection Integration", () => {
         completedAt: null,
       },
       metadata: {},
+      totalSteps: 3,
+      pendingStep: null,
     });
 
     // Resume should skip Payment and execute Shipping + Notify

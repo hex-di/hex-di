@@ -16,6 +16,7 @@ import type { EventSink, Activity } from "../activities/types.js";
 import { createMachineRunner } from "../runner/create-runner.js";
 import { createActivityManager } from "../activities/manager.js";
 import { createBasicExecutor } from "../runner/executor.js";
+import { getDescriptorValue } from "../utils/type-bridge.js";
 
 // =============================================================================
 // Types
@@ -105,12 +106,11 @@ export function createMachineActivity(
           return;
         }
         const statesRecord = childMachine.states;
-        const stateDesc = Object.getOwnPropertyDescriptor(statesRecord, runner.state());
-        const stateNode = stateDesc?.value;
+        const stateNode = getDescriptorValue(statesRecord, runner.state());
         if (
           typeof stateNode === "object" &&
           stateNode !== null &&
-          Object.getOwnPropertyDescriptor(stateNode, "type")?.value === "final"
+          getDescriptorValue(stateNode, "type") === "final"
         ) {
           doneEmitted = true;
           sink.emit({ type: config.doneEventType });

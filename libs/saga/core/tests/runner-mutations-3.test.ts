@@ -11,7 +11,7 @@
  * Each test is designed to detect a specific Stryker mutation.
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { createPort } from "@hex-di/core";
 import { defineStep } from "../src/step/builder.js";
 import { defineSaga } from "../src/saga/builder.js";

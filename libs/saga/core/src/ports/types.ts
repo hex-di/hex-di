@@ -156,7 +156,11 @@ export interface SagaExecutionState {
     readonly completedAt: string | null;
   };
   readonly metadata: Record<string, unknown>;
-  readonly totalSteps?: number;
+  readonly totalSteps: number;
+  /** Write-ahead pending step: set before step execution, cleared after completion */
+  readonly pendingStep: { readonly name: string; readonly index: number } | null;
+  /** Saga definition version at execution time */
+  readonly sagaVersion?: string;
 }
 
 /** Persistence interface for saga state */

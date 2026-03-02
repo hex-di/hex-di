@@ -15,8 +15,12 @@ import {
   CircularReference,
   InvalidState,
   MachineIdMismatch,
+  ContextValidationFailed,
 } from "./errors.js";
 import type { SerializationError, RestoreError } from "./errors.js";
+import { getDescriptorValue } from "../utils/type-bridge.js";
+import { applyMigrations } from "./migration.js";
+import type { MigrationRegistry, MigrationFailed } from "./migration.js";
 
 // =============================================================================
 // Serialized State Type
@@ -29,8 +33,8 @@ import type { SerializationError, RestoreError } from "./errors.js";
  * localStorage, a database, or sent over the wire.
  */
 export interface SerializedMachineState {
-  /** Schema version for forward compatibility. */
-  readonly version: 1;
+  /** Schema version for forward compatibility (GxP F5). */
+  readonly version: number;
   /** The machine's unique identifier. */
   readonly machineId: string;
   /** The current state name. */
@@ -39,6 +43,8 @@ export interface SerializedMachineState {
   readonly context: unknown;
   /** Timestamp of when the state was serialized. */
   readonly timestamp: number;
+  /** Hash of the machine definition at serialization time (GxP F5). */
+  readonly machineDefinitionHash?: string;
 }
 
 // =============================================================================
@@ -65,7 +71,14 @@ export interface SerializedMachineState {
  */
 export function serializeMachineState(
   runner: MachineRunnerAny,
-  machineId: string
+  machineId: string,
+  options?: {
+    readonly clock?: { now(): number };
+    /** Machine definition version to embed in serialized state (GxP F5). */
+    readonly version?: number;
+    /** Machine definition hash to embed in serialized state (GxP F5). */
+    readonly machineDefinitionHash?: string;
+  }
 ): Result<SerializedMachineState, SerializationError> {
   const context = runner.context();
 
@@ -76,11 +89,12 @@ export function serializeMachineState(
   }
 
   const serialized: SerializedMachineState = {
-    version: 1,
+    version: options?.version ?? 1,
     machineId,
     state: runner.state(),
     context,
-    timestamp: Date.now(),
+    timestamp: options?.clock !== undefined ? options.clock.now() : Date.now(),
+    machineDefinitionHash: options?.machineDefinitionHash,
   };
 
   return ok(serialized);
@@ -120,8 +134,14 @@ export function serializeMachineState(
  */
 export function restoreMachineState(
   serialized: SerializedMachineState,
-  machine: MachineAny
-): Result<{ readonly state: string; readonly context: unknown }, RestoreError> {
+  machine: MachineAny,
+  options?: {
+    /** Optional context schema validator (GxP F11). Return false to reject. */
+    readonly contextValidator?: (ctx: unknown) => boolean;
+    /** Optional migration registry for version upgrades (GxP F5). */
+    readonly migrationRegistry?: MigrationRegistry;
+  }
+): Result<{ readonly state: string; readonly context: unknown }, RestoreError | MigrationFailed> {
   // Check machine ID
   if (serialized.machineId !== machine.id) {
     return err(
@@ -132,22 +152,43 @@ export function restoreMachineState(
     );
   }
 
+  // GxP F5: Apply migrations if version differs
+  let migrated = serialized;
+  const targetVersion = machine.version ?? 1;
+  if (serialized.version !== targetVersion && options?.migrationRegistry !== undefined) {
+    const migrationResult = applyMigrations(serialized, targetVersion, options.migrationRegistry);
+    if (migrationResult._tag === "Err") {
+      return err(migrationResult.error);
+    }
+    migrated = migrationResult.value;
+  }
+
   // Check state is valid
   const statesRecord = machine.states;
   const validStates = Object.keys(statesRecord);
 
-  if (!validStates.includes(serialized.state)) {
+  if (!validStates.includes(migrated.state)) {
     return err(
       InvalidState({
-        stateName: serialized.state,
+        stateName: migrated.state,
         validStates,
       })
     );
   }
 
+  // GxP F11: Validate context schema on restore
+  if (options?.contextValidator !== undefined && !options.contextValidator(migrated.context)) {
+    return err(
+      ContextValidationFailed({
+        machineId: machine.id,
+        message: `Context schema validation failed for machine '${machine.id}'`,
+      })
+    );
+  }
+
   return ok({
-    state: serialized.state,
-    context: serialized.context,
+    state: migrated.state,
+    context: migrated.context,
   });
 }
 
@@ -212,8 +253,7 @@ function validateSerializable(
     } else {
       for (const key of Object.keys(value)) {
         const propPath = `${path}.${key}`;
-        const descriptor = Object.getOwnPropertyDescriptor(value, key);
-        const propValue = descriptor !== undefined ? descriptor.value : undefined;
+        const propValue = getDescriptorValue(value, key);
         const propResult = validateSerializable(propValue, propPath, seen);
         if (propResult._tag === "Err") {
           return propResult;

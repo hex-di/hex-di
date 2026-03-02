@@ -6,6 +6,9 @@ import { hasPermission } from "../../src/policy/combinators.js";
 import { createPermission } from "../../src/tokens/permission.js";
 import { createAuthSubject } from "../../src/subject/auth-subject.js";
 import { ok, err } from "@hex-di/result";
+import { createNodeHashDigest } from "@hex-di/crypto-node";
+
+const digest = createNodeHashDigest();
 function makeAuditEntry(overrides: Partial<AuditEntry> = {}): AuditEntry {
   return {
     evaluationId: "eval-1",
@@ -110,11 +113,7 @@ describe("verifyAuditChain", () => {
   });
 
   it("returns true for entries without sequenceNumber", () => {
-    const entries = [
-      makeAuditEntry(),
-      makeAuditEntry(),
-      makeAuditEntry(),
-    ];
+    const entries = [makeAuditEntry(), makeAuditEntry(), makeAuditEntry()];
     expect(verifyAuditChain(entries)).toBe(true);
   });
   it("returns false when sequence numbers have gaps", () => {
@@ -126,10 +125,7 @@ describe("verifyAuditChain", () => {
   });
 
   it("returns false when sequence numbers are out of order", () => {
-    const entries = [
-      makeAuditEntry({ sequenceNumber: 2 }),
-      makeAuditEntry({ sequenceNumber: 1 }),
-    ];
+    const entries = [makeAuditEntry({ sequenceNumber: 2 }), makeAuditEntry({ sequenceNumber: 1 })];
     expect(verifyAuditChain(entries)).toBe(false);
   });
 
@@ -160,45 +156,53 @@ describe("verifyAuditChain", () => {
 describe("computeAuditEntryHash", () => {
   it("produces a deterministic SHA-256 hex string", () => {
     const entry = makeAuditEntry();
-    const hash1 = computeAuditEntryHash(entry, "prev-hash");
-    const hash2 = computeAuditEntryHash(entry, "prev-hash");
+    const hash1 = computeAuditEntryHash(entry, "prev-hash", digest);
+    const hash2 = computeAuditEntryHash(entry, "prev-hash", digest);
     expect(hash1).toBe(hash2);
     expect(hash1).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it("produces a 64-character hex string", () => {
     const entry = makeAuditEntry();
-    const hash = computeAuditEntryHash(entry, "genesis");
+    const hash = computeAuditEntryHash(entry, "genesis", digest);
     expect(hash).toHaveLength(64);
   });
   it("changes when evaluationId changes", () => {
     const entry1 = makeAuditEntry({ evaluationId: "eval-1" });
     const entry2 = makeAuditEntry({ evaluationId: "eval-2" });
-    expect(computeAuditEntryHash(entry1, "prev")).not.toBe(computeAuditEntryHash(entry2, "prev"));
+    expect(computeAuditEntryHash(entry1, "prev", digest)).not.toBe(
+      computeAuditEntryHash(entry2, "prev", digest)
+    );
   });
 
   it("changes when previousHash changes", () => {
     const entry = makeAuditEntry();
-    const hash1 = computeAuditEntryHash(entry, "hash-a");
-    const hash2 = computeAuditEntryHash(entry, "hash-b");
+    const hash1 = computeAuditEntryHash(entry, "hash-a", digest);
+    const hash2 = computeAuditEntryHash(entry, "hash-b", digest);
     expect(hash1).not.toBe(hash2);
   });
 
   it("changes when decision changes", () => {
     const entry1 = makeAuditEntry({ decision: "allow" });
     const entry2 = makeAuditEntry({ decision: "deny" });
-    expect(computeAuditEntryHash(entry1, "prev")).not.toBe(computeAuditEntryHash(entry2, "prev"));
+    expect(computeAuditEntryHash(entry1, "prev", digest)).not.toBe(
+      computeAuditEntryHash(entry2, "prev", digest)
+    );
   });
   it("changes when timestamp changes", () => {
     const entry1 = makeAuditEntry({ timestamp: "2026-02-21T10:00:00.000Z" });
     const entry2 = makeAuditEntry({ timestamp: "2026-02-21T10:00:01.000Z" });
-    expect(computeAuditEntryHash(entry1, "prev")).not.toBe(computeAuditEntryHash(entry2, "prev"));
+    expect(computeAuditEntryHash(entry1, "prev", digest)).not.toBe(
+      computeAuditEntryHash(entry2, "prev", digest)
+    );
   });
 
   it("changes when sequenceNumber changes", () => {
     const entry1 = makeAuditEntry({ sequenceNumber: 1 });
     const entry2 = makeAuditEntry({ sequenceNumber: 2 });
-    expect(computeAuditEntryHash(entry1, "prev")).not.toBe(computeAuditEntryHash(entry2, "prev"));
+    expect(computeAuditEntryHash(entry1, "prev", digest)).not.toBe(
+      computeAuditEntryHash(entry2, "prev", digest)
+    );
   });
 });
 // ---------------------------------------------------------------------------

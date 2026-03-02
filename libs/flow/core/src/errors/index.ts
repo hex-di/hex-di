@@ -11,6 +11,7 @@ export {
   ActionThrew,
   Disposed,
   QueueOverflow,
+  EventValidationFailed,
   type TransitionError,
   InvokeError,
   SpawnError,

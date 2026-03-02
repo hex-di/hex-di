@@ -17,10 +17,11 @@
  * - `"basics"` — Fundamental DI concepts
  * - `"patterns"` — Common patterns and best practices
  * - `"result"` — @hex-di/result API coverage
+ * - `"guard"` — @hex-di/guard authorization policies (RBAC, ABAC, hybrid)
  * - `"libraries"` — Library-specific examples (flow, store, query, saga)
  * - `"advanced"` — Complex multi-library composition
  */
-export type ExampleCategory = "basics" | "patterns" | "result" | "libraries" | "advanced";
+export type ExampleCategory = "basics" | "patterns" | "result" | "guard" | "libraries" | "advanced";
 
 // =============================================================================
 // Template

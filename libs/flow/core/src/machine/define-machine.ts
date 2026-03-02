@@ -15,6 +15,7 @@
 import type { MachineBrandSymbol } from "./brands.js";
 import type { StateNode, StateNodeAny } from "./state-node.js";
 import { Effect } from "../effects/constructors.js";
+import { getDescriptorValue } from "../utils/type-bridge.js";
 
 // Re-export types needed by tests
 export type { StateNode, StateNodeAny } from "./state-node.js";
@@ -157,8 +158,7 @@ function deepFreeze<T>(obj: T, seen: WeakSet<object> = new WeakSet()): T {
 
   // Freeze each property value before freezing the object itself
   for (const name of propNames) {
-    const desc = Object.getOwnPropertyDescriptor(obj, name);
-    const value = desc !== undefined ? desc.value : undefined;
+    const value = getDescriptorValue(obj, name);
     if (value !== null && typeof value === "object") {
       deepFreeze(value, seen);
     }
@@ -307,7 +307,7 @@ export function defineMachine(config: {
   // Normalize states: expand string shorthand transitions and default missing `on`
   const normalizedStates: Record<string, unknown> = {};
   for (const stateName of stateNames) {
-    const stateNode = Object.getOwnPropertyDescriptor(config.states, stateName)?.value;
+    const stateNode = getDescriptorValue(config.states, stateName);
     normalizedStates[stateName] = normalizeStateNode(stateNode);
   }
 
@@ -345,43 +345,40 @@ function normalizeStateNode(stateNode: unknown): unknown {
   }
 
   // Normalize `on` map
-  const onDesc = Object.getOwnPropertyDescriptor(stateNode, "on");
-  const on = onDesc?.value;
+  const on = getDescriptorValue(stateNode, "on");
   const onRecord = typeof on === "object" && on !== null ? on : {};
   const normalizedOn: Record<string, unknown> = {};
 
   for (const eventName of Object.keys(onRecord)) {
-    const desc = Object.getOwnPropertyDescriptor(onRecord, eventName);
-    normalizedOn[eventName] = normalizeTransitionValue(desc?.value);
+    normalizedOn[eventName] = normalizeTransitionValue(getDescriptorValue(onRecord, eventName));
   }
 
   // Copy all properties from stateNode to a new object, then override normalized ones
   const normalized: Record<string, unknown> = {};
   for (const key of Object.getOwnPropertyNames(stateNode)) {
-    const desc = Object.getOwnPropertyDescriptor(stateNode, key);
-    if (desc !== undefined) {
-      normalized[key] = desc.value;
-    }
+    normalized[key] = getDescriptorValue(stateNode, key);
   }
   normalized["on"] = normalizedOn;
 
   // Normalize `onDone` string shorthand
-  const onDoneDesc = Object.getOwnPropertyDescriptor(stateNode, "onDone");
-  if (onDoneDesc !== undefined) {
-    normalized["onDone"] = normalizeTransitionValue(onDoneDesc.value);
+  const onDoneValue = getDescriptorValue(stateNode, "onDone");
+  if (onDoneValue !== undefined) {
+    normalized["onDone"] = normalizeTransitionValue(onDoneValue);
   }
 
   // Normalize `always` string shorthand
-  const alwaysDesc = Object.getOwnPropertyDescriptor(stateNode, "always");
-  if (alwaysDesc !== undefined) {
-    normalized["always"] = normalizeTransitionValue(alwaysDesc.value);
+  const alwaysValue = getDescriptorValue(stateNode, "always");
+  if (alwaysValue !== undefined) {
+    normalized["always"] = normalizeTransitionValue(alwaysValue);
   }
 
   // Normalize `after` delayed transitions into entry effects + event handlers
-  const afterDesc = Object.getOwnPropertyDescriptor(stateNode, "after");
-  if (afterDesc !== undefined && typeof afterDesc.value === "object" && afterDesc.value !== null) {
-    const afterConfig = afterDesc.value;
-    const existingEntry = Array.isArray(normalized["entry"]) ? [...normalized["entry"]] : [];
+  const afterValue = getDescriptorValue(stateNode, "after");
+  if (typeof afterValue === "object" && afterValue !== null) {
+    const afterConfig = afterValue;
+    const entryValue = normalized["entry"];
+    const entryArray: unknown[] = Array.isArray(entryValue) ? entryValue : [];
+    const existingEntry = [...entryArray];
 
     // Object.keys returns numeric keys in ascending order
     for (const msKey of Object.keys(afterConfig)) {
@@ -389,8 +386,9 @@ function normalizeStateNode(stateNode: unknown): unknown {
       if (!Number.isFinite(ms) || ms < 0) continue;
 
       const afterEventName = `$$AFTER_${ms}`;
-      const transDesc = Object.getOwnPropertyDescriptor(afterConfig, msKey);
-      normalizedOn[afterEventName] = normalizeTransitionValue(transDesc?.value);
+      normalizedOn[afterEventName] = normalizeTransitionValue(
+        getDescriptorValue(afterConfig, msKey)
+      );
 
       // Add sequence entry effect: delay(ms) then emit($$AFTER_<ms>)
       existingEntry.push(
@@ -408,17 +406,12 @@ function normalizeStateNode(stateNode: unknown): unknown {
   }
 
   // Recursively normalize nested `states` for compound/parallel state nodes
-  const statesDesc = Object.getOwnPropertyDescriptor(stateNode, "states");
-  if (
-    statesDesc !== undefined &&
-    typeof statesDesc.value === "object" &&
-    statesDesc.value !== null
-  ) {
-    const nestedStates = statesDesc.value;
+  const statesValue = getDescriptorValue(stateNode, "states");
+  if (typeof statesValue === "object" && statesValue !== null) {
+    const nestedStates = statesValue;
     const normalizedNested: Record<string, unknown> = {};
     for (const childName of Object.keys(nestedStates)) {
-      const childDesc = Object.getOwnPropertyDescriptor(nestedStates, childName);
-      normalizedNested[childName] = normalizeStateNode(childDesc?.value);
+      normalizedNested[childName] = normalizeStateNode(getDescriptorValue(nestedStates, childName));
     }
     normalized["states"] = normalizedNested;
 

@@ -18,6 +18,7 @@ import type { EffectAny } from "../effects/types.js";
 import type { EventAny } from "./types.js";
 import { defineMachine, type Machine } from "./define-machine.js";
 import type { StateNodeAny } from "./state-node.js";
+import { getDescriptorValue } from "../utils/type-bridge.js";
 
 // =============================================================================
 // Transition Option Types
@@ -269,10 +270,11 @@ function createTransitionPhase<TStates extends string, TEvents extends string, T
         }
 
         // If there is already a transition for this event, convert to array
-        const existing = Object.getOwnPropertyDescriptor(onRecord, t.event)?.value;
+        const existing = getDescriptorValue(onRecord, t.event);
         if (existing !== undefined) {
           if (Array.isArray(existing)) {
-            onRecord[t.event] = [...existing, transitionConfig];
+            const existingArr: unknown[] = existing;
+            onRecord[t.event] = [...existingArr, transitionConfig];
           } else {
             onRecord[t.event] = [existing, transitionConfig];
           }

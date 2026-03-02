@@ -1,0 +1,28 @@
+{
+  "id": "guides/transformations",
+  "title": "Transformations & Chaining",
+  "description": "Result types provide a rich set of methods for transforming values, chaining operations, and handling both success and failure cases elegantly.",
+  "source": "@site/docs/guides/transformations.md",
+  "sourceDirName": "guides",
+  "slug": "/guides/transformations",
+  "permalink": "/docs/guides/transformations",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/guides/transformations.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Transformations & Chaining"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Error Patterns",
+    "permalink": "/docs/concepts/error-patterns"
+  },
+  "next": {
+    "title": "Async Results",
+    "permalink": "/docs/guides/async-results"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "id": "concepts/roles",
+  "title": "Roles & Inheritance",
+  "description": "Roles aggregate permissions into named sets and support DAG-based inheritance with automatic permission flattening.",
+  "source": "@site/docs/concepts/roles.md",
+  "sourceDirName": "concepts",
+  "slug": "/concepts/roles",
+  "permalink": "/docs/concepts/roles",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/concepts/roles.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2,
+    "title": "Roles & Inheritance"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Permissions",
+    "permalink": "/docs/concepts/permissions"
+  },
+  "next": {
+    "title": "Policies & Composition",
+    "permalink": "/docs/concepts/policies"
+  }
+}

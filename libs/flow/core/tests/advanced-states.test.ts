@@ -13,7 +13,7 @@
  * @packageDocumentation
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { ResultAsync } from "@hex-di/result";
 import { expectOk } from "@hex-di/result-testing";
 import { defineMachine } from "../src/machine/define-machine.js";
@@ -24,12 +24,9 @@ import {
   computeInitialPath,
   canTransition,
   createMachineRunner,
-  createBasicExecutor,
-  type MachineSnapshot,
   type EffectExecutor,
 } from "../src/runner/index.js";
-import { createActivityManager, type ActivityManager } from "../src/activities/index.js";
-import type { EffectExecutionError } from "../src/errors/index.js";
+import { createActivityManager } from "../src/activities/index.js";
 
 // =============================================================================
 // Test Helpers
@@ -46,7 +43,7 @@ function noopExecutor(): EffectExecutor {
 // Marker effects for tracking entry/exit ordering
 const entryEffect = (name: string) => Effect.delay(name.length);
 const exitEffect = (name: string) => Effect.delay(name.length * 10);
-const transitionEffect = () => Effect.delay(999);
+const _transitionEffect = () => Effect.delay(999);
 
 // =============================================================================
 // DoD 8.1: Compound state with type: 'compound' and nested states
@@ -623,7 +620,7 @@ describe("DoD 8.15: Exit/entry effect ordering for sibling transition", () => {
 
     // Should only exit child 'a' and enter child 'b'
     // Parent's exit/entry should NOT fire for sibling transitions
-    const effectTags = result.effects.map(e => e._tag);
+    const _effectTags = result.effects.map(e => e._tag);
     expect(result.effects).toEqual([
       exitEffect("a"), // exit old child
       entryEffect("b"), // enter new child

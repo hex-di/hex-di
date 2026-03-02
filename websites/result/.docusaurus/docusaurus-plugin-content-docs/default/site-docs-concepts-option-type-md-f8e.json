@@ -1,0 +1,28 @@
+{
+  "id": "concepts/option-type",
+  "title": "The Option Type",
+  "description": "The Option type represents a value that may or may not exist, providing a type-safe alternative to null and undefined.",
+  "source": "@site/docs/concepts/option-type.md",
+  "sourceDirName": "concepts",
+  "slug": "/concepts/option-type",
+  "permalink": "/docs/concepts/option-type",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/concepts/option-type.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2,
+    "title": "The Option Type"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "The Result Type",
+    "permalink": "/docs/concepts/result-type"
+  },
+  "next": {
+    "title": "Error Patterns",
+    "permalink": "/docs/concepts/error-patterns"
+  }
+}

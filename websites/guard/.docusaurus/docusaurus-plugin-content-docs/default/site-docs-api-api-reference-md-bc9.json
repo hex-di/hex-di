@@ -1,0 +1,28 @@
+{
+  "id": "api/api-reference",
+  "title": "API Reference",
+  "description": "Complete reference for all exports from @hex-di/guard.",
+  "source": "@site/docs/api/api-reference.md",
+  "sourceDirName": "api",
+  "slug": "/api/api-reference",
+  "permalink": "/docs/api/api-reference",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/api/api-reference.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "API Reference"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Serialization",
+    "permalink": "/docs/guides/serialization"
+  },
+  "next": {
+    "title": "Testing",
+    "permalink": "/docs/testing"
+  }
+}

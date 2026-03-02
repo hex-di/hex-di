@@ -13,6 +13,7 @@ import { evaluate } from "../evaluator/evaluate.js";
 import type { Decision } from "../evaluator/decision.js";
 import { ACL001, ACL008 } from "../errors/codes.js";
 import type { AuditTrailWriteError, PolicyEvaluationError } from "../errors/types.js";
+import type { GuardEventSink } from "./events.js";
 
 /**
  * Error thrown when guard() denies access during adapter resolution.
@@ -24,11 +25,9 @@ export class AccessDeniedError extends Error {
     readonly policy: PolicyConstraint,
     readonly decision: Decision & { kind: "deny" },
     readonly portName: string,
-    readonly subjectId: string,
+    readonly subjectId: string
   ) {
-    super(
-      `Access denied for port '${portName}': ${decision.reason}`,
-    );
+    super(`Access denied for port '${portName}': ${decision.reason}`);
     this.name = "AccessDeniedError";
   }
 }
@@ -50,7 +49,7 @@ export class AuditWriteFailedError extends Error {
  * Reasons exceeding this length are silently truncated with a suffix marker.
  */
 const MAX_REASON_LENGTH = 2048;
-const TRUNCATION_SUFFIX = '…[truncated]';
+const TRUNCATION_SUFFIX = "…[truncated]";
 
 /**
  * Truncates a reason string to MAX_REASON_LENGTH characters.
@@ -68,10 +67,7 @@ function truncateReason(reason: string): string {
 /**
  * Discriminated union of errors returned by enforcePolicy().
  */
-export type EnforcePolicyError =
-  | AccessDeniedError
-  | AuditWriteFailedError
-  | PolicyEvaluationError;
+export type EnforcePolicyError = AccessDeniedError | AuditWriteFailedError | PolicyEvaluationError;
 
 /**
  * Enforces a policy before delegating to the subject factory.
@@ -90,6 +86,7 @@ export function enforcePolicy(options: {
   readonly fieldMaskAdapter?: {
     readonly onVisibleFields: (fields: ReadonlyArray<string>, evaluationId: string) => void;
   };
+  readonly eventSink?: GuardEventSink;
 }): Result<void, EnforcePolicyError> {
   const result = evaluate(options.policy, {
     subject: options.subject,
@@ -97,6 +94,18 @@ export function enforcePolicy(options: {
   });
 
   if (result.isErr()) {
+    if (options.eventSink !== undefined) {
+      const evalError = result.error;
+      options.eventSink.emit({
+        kind: "guard.error",
+        evaluationId: "",
+        portName: options.portName,
+        subjectId: options.subject.id,
+        errorCode: evalError.code,
+        message: evalError.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
     return err(result.error);
   }
 
@@ -110,8 +119,7 @@ export function enforcePolicy(options: {
     decision: decision.kind,
     portName: options.portName,
     scopeId: options.scopeId,
-    reason:
-      decision.kind === "deny" ? truncateReason(decision.reason) : "Access granted",
+    reason: decision.kind === "deny" ? truncateReason(decision.reason) : "Access granted",
     durationMs: decision.durationMs,
     schemaVersion: 1,
     sessionId: options.subject.sessionId,
@@ -133,16 +141,42 @@ export function enforcePolicy(options: {
     options.fieldMaskAdapter.onVisibleFields(decision.visibleFields, decision.evaluationId);
   }
 
+  if (options.eventSink !== undefined) {
+    emitDecisionEvent(options.eventSink, decision, options.portName);
+  }
+
   if (decision.kind === "deny") {
-    return err(new AccessDeniedError(
-      options.policy,
-      decision,
-      options.portName,
-      decision.subjectId,
-    ));
+    return err(
+      new AccessDeniedError(options.policy, decision, options.portName, decision.subjectId)
+    );
   }
 
   return ok(undefined);
+}
+
+/**
+ * Emits a GuardAllowEvent or GuardDenyEvent based on the decision.
+ */
+function emitDecisionEvent(sink: GuardEventSink, decision: Decision, portName: string): void {
+  if (decision.kind === "allow") {
+    sink.emit({
+      kind: "guard.allow",
+      evaluationId: decision.evaluationId,
+      portName,
+      subjectId: decision.subjectId,
+      decision,
+      timestamp: decision.evaluatedAt,
+    });
+  } else {
+    sink.emit({
+      kind: "guard.deny",
+      evaluationId: decision.evaluationId,
+      portName,
+      subjectId: decision.subjectId,
+      decision,
+      timestamp: decision.evaluatedAt,
+    });
+  }
 }
 
 /**
@@ -177,6 +211,7 @@ export interface GuardGraph {
     readonly auditTrail?: AuditTrail;
     readonly failOnAuditError?: boolean;
     readonly resource?: Readonly<Record<string, unknown>>;
+    readonly eventSink?: GuardEventSink;
   }): Result<void, EnforcePolicyError>;
 }
 
@@ -190,7 +225,7 @@ export interface GuardGraph {
  * guard.enforce({ policy, subject, portName: "UserPort", scopeId: scope.id });
  * ```
  */
-export function createGuardGraph(): GuardGraph {
+export function createGuardGraph(config?: { readonly eventSink?: GuardEventSink }): GuardGraph {
   const noopAuditTrail = createNoopAuditTrailAdapter();
 
   return {
@@ -204,6 +239,7 @@ export function createGuardGraph(): GuardGraph {
         auditTrail: options.auditTrail ?? null,
         failOnAuditError: options.failOnAuditError ?? true,
         resource: options.resource,
+        eventSink: options.eventSink ?? config?.eventSink,
       });
     },
   };
@@ -213,9 +249,7 @@ export function createGuardGraph(): GuardGraph {
  * Runs a health check against the guard infrastructure.
  * Tests audit trail reachability with a probe entry.
  */
-export function createGuardHealthCheck(
-  auditTrail: AuditTrailPort,
-): () => GuardHealthCheckResult {
+export function createGuardHealthCheck(auditTrail: AuditTrailPort): () => GuardHealthCheckResult {
   return (): GuardHealthCheckResult => {
     const start = performance.now();
     const checkedAt = new Date().toISOString();

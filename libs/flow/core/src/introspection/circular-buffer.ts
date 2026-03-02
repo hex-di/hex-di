@@ -19,6 +19,7 @@
 export class CircularBuffer<T> {
   private readonly buffer: Array<T | undefined>;
   private readonly cap: number;
+  private readonly onEvict: ((item: T) => void) | undefined;
   private head = 0;
   private size = 0;
 
@@ -26,10 +27,12 @@ export class CircularBuffer<T> {
    * Creates a new CircularBuffer with the given capacity.
    *
    * @param capacity - Maximum number of items the buffer can hold
+   * @param onEvict - Optional callback invoked with the evicted item when the buffer overflows (GxP F3)
    */
-  constructor(capacity: number) {
+  constructor(capacity: number, onEvict?: (item: T) => void) {
     this.cap = capacity;
     this.buffer = new Array<T | undefined>(capacity).fill(undefined);
+    this.onEvict = onEvict;
   }
 
   /**
@@ -54,7 +57,13 @@ export class CircularBuffer<T> {
     if (this.size < this.cap) {
       this.size++;
     } else {
-      // Buffer is full — overwrite oldest, advance head
+      // Buffer is full — evict oldest, then overwrite (GxP F3)
+      if (this.onEvict !== undefined) {
+        const evicted = this.buffer[this.head];
+        if (evicted !== undefined) {
+          this.onEvict(evicted);
+        }
+      }
       this.head = (this.head + 1) % this.cap;
     }
   }

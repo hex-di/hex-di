@@ -32,6 +32,8 @@ function createState(overrides?: Partial<SagaExecutionState>): SagaExecutionStat
       completedAt: null,
     },
     metadata: overrides?.metadata ?? {},
+    totalSteps: overrides?.totalSteps ?? 0,
+    pendingStep: overrides?.pendingStep ?? null,
   };
 }
 
@@ -49,6 +51,8 @@ describe("Persistence E2E", () => {
         executionId: "crash-exec",
         sagaName: "FiveStepSaga",
         currentStep: 3,
+        totalSteps: 3,
+        pendingStep: null,
         status: "running",
         completedSteps: [
           {
@@ -87,6 +91,8 @@ describe("Persistence E2E", () => {
       // Simulate resume: continue from step 3
       await persister.update("crash-exec", {
         currentStep: 4,
+        totalSteps: 3,
+        pendingStep: null,
         completedSteps: [
           ...loaded.value.completedSteps,
           {
@@ -101,6 +107,8 @@ describe("Persistence E2E", () => {
 
       await persister.update("crash-exec", {
         currentStep: 5,
+        totalSteps: 3,
+        pendingStep: null,
         status: "completed",
         completedSteps: [
           ...loaded.value.completedSteps,
@@ -146,6 +154,8 @@ describe("Persistence E2E", () => {
         executionId: "scope-exec",
         sagaName: "ScopedSaga",
         currentStep: 2,
+        totalSteps: 3,
+        pendingStep: null,
         completedSteps: [
           {
             name: "Init",
@@ -176,6 +186,8 @@ describe("Persistence E2E", () => {
       // Continue in new scope
       await persister.update("scope-exec", {
         currentStep: 3,
+        totalSteps: 3,
+        pendingStep: null,
         status: "completed",
         completedSteps: [
           ...state.completedSteps,
@@ -292,6 +304,8 @@ describe("Persistence E2E: Real Runner Resume", () => {
       sagaName: "ThreeStepSaga",
       input: { value: "partial" },
       currentStep: 1,
+      totalSteps: 3,
+      pendingStep: null,
       completedSteps: [
         {
           name: "StepA",

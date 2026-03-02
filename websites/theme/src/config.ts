@@ -75,7 +75,9 @@ export function createSiteConfig(options: SiteOptions): Config {
 
     future: { v4: true },
 
-    markdown: { format: "detect" },
+    themes: ["@docusaurus/theme-mermaid"],
+
+    markdown: { format: "detect", mermaid: true },
 
     url,
     baseUrl,
@@ -156,6 +158,9 @@ export function createSiteConfig(options: SiteOptions): Config {
           },
         ],
         copyright: `Copyright \u00A9 ${new Date().getFullYear()} HexDI Contributors.`,
+      },
+      mermaid: {
+        theme: { dark: "dark" },
       },
       prism: {
         theme: prismThemes.dracula,

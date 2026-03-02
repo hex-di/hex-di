@@ -1,0 +1,28 @@
+{
+  "id": "testing",
+  "title": "Testing",
+  "description": "The @hex-di/guard-testing package provides comprehensive testing utilities including memory adapters, fixtures, custom matchers, and conformance suites.",
+  "source": "@site/docs/testing.md",
+  "sourceDirName": ".",
+  "slug": "/testing",
+  "permalink": "/docs/testing",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/testing.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Testing"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "API Reference",
+    "permalink": "/docs/api/api-reference"
+  },
+  "next": {
+    "title": "React Integration",
+    "permalink": "/docs/react"
+  }
+}

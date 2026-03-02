@@ -1,0 +1,28 @@
+{
+  "id": "guides/running-machines",
+  "title": "Running Machines",
+  "description": "Once you've built a state machine, you need to create a runner to execute it. The MachineRunner manages state transitions, effect execution, activity lifecycle, and event processing.",
+  "source": "@site/docs/guides/running-machines.md",
+  "sourceDirName": "guides",
+  "slug": "/guides/running-machines",
+  "permalink": "/docs/guides/running-machines",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/guides/running-machines.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2,
+    "title": "Running Machines"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Building Machines",
+    "permalink": "/docs/guides/building-machines"
+  },
+  "next": {
+    "title": "DI Integration",
+    "permalink": "/docs/guides/di-integration"
+  }
+}

@@ -42,7 +42,6 @@ agent-os/
 
 # Auto Claude data directory
 .auto-claude/
-.claude/
 .turbo/
 .vite-temp/
 .harmonization/

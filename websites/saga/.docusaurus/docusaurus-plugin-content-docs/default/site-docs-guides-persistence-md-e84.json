@@ -1,0 +1,28 @@
+{
+  "id": "guides/persistence",
+  "title": "Persistence & Resume",
+  "description": "Saga persistence enables recovery from crashes, long-running workflows, and distributed execution through write-ahead checkpointing.",
+  "source": "@site/docs/guides/persistence.md",
+  "sourceDirName": "guides",
+  "slug": "/guides/persistence",
+  "permalink": "/docs/guides/persistence",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/guides/persistence.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2,
+    "title": "Persistence & Resume"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Building Sagas",
+    "permalink": "/docs/guides/building-sagas"
+  },
+  "next": {
+    "title": "DI Integration",
+    "permalink": "/docs/guides/di-integration"
+  }
+}

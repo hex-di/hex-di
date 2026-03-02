@@ -62,22 +62,74 @@
     ],
     "__props": "9d86e7fa"
   },
-  "/docs-f67": {
+  "/docs-920": {
     "__comp": "5e95c892",
     "__context": {
       "plugin": "aba21aa0"
     }
   },
-  "/docs-2b0": {
+  "/docs-a8b": {
     "__comp": "a7bd4aaa",
     "__props": "0058b4c6"
   },
-  "/docs-355": {
+  "/docs-a6f": {
     "__comp": "a94703ab"
   },
   "/docs/-56e": {
     "__comp": "17896441",
     "content": "c377a04b"
+  },
+  "/docs/advanced/architecture-cd8": {
+    "__comp": "17896441",
+    "content": "0f265c92"
+  },
+  "/docs/advanced/gxp-eb4": {
+    "__comp": "17896441",
+    "content": "a0ea6613"
+  },
+  "/docs/api/api-reference-9ba": {
+    "__comp": "17896441",
+    "content": "bc9301a5"
+  },
+  "/docs/concepts/evaluation-8ac": {
+    "__comp": "17896441",
+    "content": "15676a5c"
+  },
+  "/docs/concepts/permissions-8e9": {
+    "__comp": "17896441",
+    "content": "599cb1ad"
+  },
+  "/docs/concepts/policies-ce8": {
+    "__comp": "17896441",
+    "content": "98521a2b"
+  },
+  "/docs/concepts/roles-92a": {
+    "__comp": "17896441",
+    "content": "84be9398"
+  },
+  "/docs/concepts/subjects-577": {
+    "__comp": "17896441",
+    "content": "cfc9ac7d"
+  },
+  "/docs/guides/di-integration-fb7": {
+    "__comp": "17896441",
+    "content": "12d87e14"
+  },
+  "/docs/guides/port-gates-b41": {
+    "__comp": "17896441",
+    "content": "7e7fc014"
+  },
+  "/docs/guides/serialization-ada": {
+    "__comp": "17896441",
+    "content": "f2fa5565"
+  },
+  "/docs/react-7e1": {
+    "__comp": "17896441",
+    "content": "01a106d5"
+  },
+  "/docs/testing-c39": {
+    "__comp": "17896441",
+    "content": "fbe93038"
   },
   "/-e5f": {
     "__comp": "1df93b7f",

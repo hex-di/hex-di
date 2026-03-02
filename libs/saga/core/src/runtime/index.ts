@@ -1,5 +1,8 @@
 export { createSagaRunner, executeSaga } from "./runner.js";
 export { generateExecutionId } from "./id.js";
+export { DeadLetterQueue } from "./dead-letter.js";
+
+export type { CheckpointError } from "./checkpointing.js";
 
 export type {
   SagaRunnerConfig,
@@ -15,6 +18,8 @@ export type {
   StepCompletedEvent,
   StepFailedEvent,
   StepSkippedEvent,
+  StepResumedEvent,
+  CheckpointWarningEvent,
   CompensationStartedEvent,
   CompensationStepEvent,
   CompensationCompletedEvent,

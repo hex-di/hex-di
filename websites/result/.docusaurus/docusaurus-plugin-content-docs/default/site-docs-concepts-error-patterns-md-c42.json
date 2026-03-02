@@ -1,0 +1,28 @@
+{
+  "id": "concepts/error-patterns",
+  "title": "Error Patterns",
+  "description": "@hex-di/result provides utilities for creating discriminated error types and ensuring exhaustive error handling.",
+  "source": "@site/docs/concepts/error-patterns.md",
+  "sourceDirName": "concepts",
+  "slug": "/concepts/error-patterns",
+  "permalink": "/docs/concepts/error-patterns",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/leaderiop/hex-di/tree/main/docs/concepts/error-patterns.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3,
+    "title": "Error Patterns"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "The Option Type",
+    "permalink": "/docs/concepts/option-type"
+  },
+  "next": {
+    "title": "Transformations & Chaining",
+    "permalink": "/docs/guides/transformations"
+  }
+}
