@@ -103,6 +103,8 @@ interface PackageInfo {
   label: string;
   description: string;
   accent: "cyan" | "orange";
+  published: boolean;
+  docsUrl: string;
 }
 
 const PACKAGES: PackageInfo[] = [
@@ -111,12 +113,16 @@ const PACKAGES: PackageInfo[] = [
     label: "CORE",
     description: "Ports, adapters, graph builder, and container. Everything you need.",
     accent: "cyan",
+    published: true,
+    docsUrl: "https://hexdi.dev/docs",
   },
   {
     name: "@hex-di/react",
     label: "OPTIONAL",
     description: "React provider, context, and hooks that mirror your DI graph.",
     accent: "orange",
+    published: true,
+    docsUrl: "https://hexdi.dev/docs",
   },
   {
     name: "@hex-di/testing",
@@ -124,6 +130,8 @@ const PACKAGES: PackageInfo[] = [
     description:
       "Type-safe mock adapters, graph assertions, and renderWithContainer — DI-aware test utilities for Vitest and Testing Library.",
     accent: "orange",
+    published: true,
+    docsUrl: "https://hexdi.dev/docs",
   },
 ];
 
@@ -166,62 +174,82 @@ interface EcosystemLib {
   purpose: string;
   detail: string;
   accent: "cyan" | "orange";
+  published: boolean;
+  docsUrl: string;
 }
 
 const ECOSYSTEM: EcosystemLib[] = [
+  {
+    name: "@hex-di/result",
+    purpose: "Rust-style Result & Option",
+    detail: "Result<T,E> · Option · combinators",
+    accent: "orange",
+    published: true,
+    docsUrl: "https://result.hexdi.dev",
+  },
   {
     name: "@hex-di/logger",
     purpose: "Structured logging",
     detail: "pino · winston · bunyan",
     accent: "cyan",
+    published: false,
+    docsUrl: "https://logger.hexdi.dev",
   },
   {
     name: "@hex-di/tracing",
     purpose: "Distributed tracing",
     detail: "OTel · Datadog · Jaeger · Zipkin",
     accent: "cyan",
+    published: false,
+    docsUrl: "https://tracing.hexdi.dev",
   },
   {
     name: "@hex-di/query",
     purpose: "Data fetching & caching",
     detail: "port-based query layer",
     accent: "orange",
+    published: false,
+    docsUrl: "https://query.hexdi.dev",
   },
   {
     name: "@hex-di/store",
     purpose: "Reactive state",
     detail: "signal-based DI port",
     accent: "cyan",
+    published: false,
+    docsUrl: "https://store.hexdi.dev",
   },
   {
     name: "@hex-di/flow",
     purpose: "State machines",
     detail: "injected service FSMs",
     accent: "orange",
+    published: false,
+    docsUrl: "https://flow.hexdi.dev",
   },
   {
     name: "@hex-di/saga",
     purpose: "Workflow orchestration",
     detail: "distributed saga pattern",
     accent: "cyan",
+    published: false,
+    docsUrl: "https://saga.hexdi.dev",
   },
   {
     name: "@hex-di/guard",
     purpose: "Auth & permissions",
     detail: "role · policy · ABAC",
     accent: "orange",
+    published: true,
+    docsUrl: "https://guard.hexdi.dev",
   },
   {
     name: "@hex-di/clock",
     purpose: "Testable time",
     detail: "virtual clock for tests",
     accent: "cyan",
-  },
-  {
-    name: "@hex-di/http-client",
-    purpose: "HTTP client port",
-    detail: "typed client with retry",
-    accent: "orange",
+    published: false,
+    docsUrl: "https://clock.hexdi.dev",
   },
 ];
 
@@ -1830,49 +1858,63 @@ function ArchitectureSection(): ReactNode {
           {/* Package cards */}
           <FadeIn delay={100}>
             <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              {PACKAGES.map(pkg => (
-                <div
-                  key={pkg.name}
-                  className={`hud-card${pkg.accent === "orange" ? " hud-card-orange" : ""}`}
-                  style={{ padding: "18px 22px" }}
-                >
+              {PACKAGES.map(pkg => {
+                const card = (
                   <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      marginBottom: "8px",
-                    }}
+                    className={`hud-card${pkg.accent === "orange" ? " hud-card-orange" : ""}${!pkg.published ? " hud-card-unpublished" : ""}`}
+                    style={{ padding: "18px 22px" }}
                   >
-                    <span
+                    <div
                       style={{
-                        fontFamily: "'Fira Code', monospace",
-                        fontSize: "0.6rem",
-                        letterSpacing: "0.1em",
-                        color: pkg.accent === "cyan" ? "#00F0FF" : "#FF5E00",
-                        background:
-                          pkg.accent === "cyan" ? "rgba(0,240,255,0.08)" : "rgba(255,94,0,0.08)",
-                        border: `1px solid ${pkg.accent === "cyan" ? "rgba(0,240,255,0.2)" : "rgba(255,94,0,0.2)"}`,
-                        padding: "2px 8px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        marginBottom: "8px",
                       }}
                     >
-                      {pkg.label}
-                    </span>
-                    <code
-                      style={{
-                        fontFamily: "'Fira Code', monospace",
-                        fontSize: "0.85rem",
-                        color: "#c8d6e5",
-                      }}
-                    >
-                      {pkg.name}
-                    </code>
+                      <span
+                        style={{
+                          fontFamily: "'Fira Code', monospace",
+                          fontSize: "0.6rem",
+                          letterSpacing: "0.1em",
+                          color: pkg.accent === "cyan" ? "#00F0FF" : "#FF5E00",
+                          background:
+                            pkg.accent === "cyan" ? "rgba(0,240,255,0.08)" : "rgba(255,94,0,0.08)",
+                          border: `1px solid ${pkg.accent === "cyan" ? "rgba(0,240,255,0.2)" : "rgba(255,94,0,0.2)"}`,
+                          padding: "2px 8px",
+                        }}
+                      >
+                        {pkg.label}
+                      </span>
+                      <code
+                        style={{
+                          fontFamily: "'Fira Code', monospace",
+                          fontSize: "0.85rem",
+                          color: "#c8d6e5",
+                        }}
+                      >
+                        {pkg.name}
+                      </code>
+                    </div>
+                    <p style={{ ...S.body("#6a7f90"), fontSize: "0.855rem", margin: 0 }}>
+                      {pkg.description}
+                    </p>
                   </div>
-                  <p style={{ ...S.body("#6a7f90"), fontSize: "0.855rem", margin: 0 }}>
-                    {pkg.description}
-                  </p>
-                </div>
-              ))}
+                );
+                return pkg.published ? (
+                  <a
+                    key={pkg.name}
+                    href={pkg.docsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hud-card-link"
+                  >
+                    {card}
+                  </a>
+                ) : (
+                  <div key={pkg.name}>{card}</div>
+                );
+              })}
               <div
                 style={{
                   marginTop: "20px",
@@ -2239,27 +2281,60 @@ function EcosystemSection(): ReactNode {
         >
           {ECOSYSTEM.map((lib, i) => (
             <FadeIn key={lib.name} delay={i * 40}>
-              <div
-                className={`hud-card${lib.accent === "orange" ? " hud-card-orange" : ""}`}
-                style={{ padding: "20px 22px", height: "100%", boxSizing: "border-box" }}
-              >
-                <code
-                  style={{
-                    fontFamily: "'Fira Code', monospace",
-                    fontSize: "0.78rem",
-                    color: lib.accent === "cyan" ? "#00F0FF" : "#FF5E00",
-                    display: "block",
-                    marginBottom: "10px",
-                    letterSpacing: "0.02em",
-                  }}
+              {lib.published ? (
+                <a
+                  href={lib.docsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hud-card-link"
+                  style={{ height: "100%" }}
                 >
-                  {lib.name}
-                </code>
-                <p style={{ ...S.body("#c8d6e5"), fontSize: "0.875rem", marginBottom: "6px" }}>
-                  {lib.purpose}
-                </p>
-                <p style={{ ...S.body("#506070"), fontSize: "0.78rem" }}>{lib.detail}</p>
-              </div>
+                  <div
+                    className={`hud-card${lib.accent === "orange" ? " hud-card-orange" : ""}`}
+                    style={{ padding: "20px 22px", height: "100%", boxSizing: "border-box" }}
+                  >
+                    <code
+                      style={{
+                        fontFamily: "'Fira Code', monospace",
+                        fontSize: "0.78rem",
+                        color: lib.accent === "cyan" ? "#00F0FF" : "#FF5E00",
+                        display: "block",
+                        marginBottom: "10px",
+                        letterSpacing: "0.02em",
+                      }}
+                    >
+                      {lib.name}
+                    </code>
+                    <p style={{ ...S.body("#c8d6e5"), fontSize: "0.875rem", marginBottom: "6px" }}>
+                      {lib.purpose}
+                    </p>
+                    <p style={{ ...S.body("#506070"), fontSize: "0.78rem" }}>{lib.detail}</p>
+                  </div>
+                </a>
+              ) : (
+                <div
+                  className={`hud-card hud-card-unpublished${lib.accent === "orange" ? " hud-card-orange" : ""}`}
+                  style={{ padding: "20px 22px", height: "100%", boxSizing: "border-box" }}
+                >
+                  <span className="coming-soon-badge">COMING SOON</span>
+                  <code
+                    style={{
+                      fontFamily: "'Fira Code', monospace",
+                      fontSize: "0.78rem",
+                      color: lib.accent === "cyan" ? "#00F0FF" : "#FF5E00",
+                      display: "block",
+                      marginBottom: "10px",
+                      letterSpacing: "0.02em",
+                    }}
+                  >
+                    {lib.name}
+                  </code>
+                  <p style={{ ...S.body("#c8d6e5"), fontSize: "0.875rem", marginBottom: "6px" }}>
+                    {lib.purpose}
+                  </p>
+                  <p style={{ ...S.body("#506070"), fontSize: "0.78rem" }}>{lib.detail}</p>
+                </div>
+              )}
             </FadeIn>
           ))}
         </div>

@@ -19,5 +19,12 @@
     "description": "From scattered checks to type-safe authorization.",
     "appPath": "presentations/guard-davinci/app",
     "published": true
+  },
+  {
+    "id": "self-aware-app",
+    "name": "The Self-Aware Application",
+    "description": "HexDI as the OBD-II port for software.",
+    "appPath": "presentations/self-aware-app/app",
+    "published": true
   }
 ]

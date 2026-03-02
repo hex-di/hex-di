@@ -166,6 +166,49 @@ body.dark-home-page footer.footer--dark {
     inset 0 0 24px rgba(0, 240, 255, 0.02);
 }
 
+/* Unpublished (coming-soon) variant */
+.hud-card-unpublished {
+  opacity: 0.45;
+  filter: grayscale(60%);
+  cursor: default;
+}
+.hud-card-unpublished:hover {
+  border-color: var(--hex-border);
+  box-shadow: none;
+}
+.hud-card-unpublished.hud-card-orange:hover {
+  border-color: rgba(255, 94, 0, 0.18);
+  box-shadow: none;
+}
+
+/* Link wrapper for published cards */
+.hud-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hud-card-link:hover {
+  text-decoration: none;
+  color: inherit;
+  transform: translateY(-2px);
+}
+
+/* "COMING SOON" badge */
+.coming-soon-badge {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.12em;
+  color: var(--hex-text-faint);
+  border: 1px solid rgba(0, 240, 255, 0.1);
+  background: rgba(0, 240, 255, 0.04);
+  padding: 2px 8px;
+  pointer-events: none;
+}
+
 /* Orange variant */
 .hud-card-orange::before,
 .hud-card-orange::after {
