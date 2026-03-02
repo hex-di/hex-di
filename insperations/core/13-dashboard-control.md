@@ -24,9 +24,17 @@ Standard HexDI palette. No overrides.
 ## Root Layout
 
 ```css
-body { background: #020408; /* bg-grid */ }
-nav { height: 64px; /* h-16 */ }
-main { display: flex; height: calc(100vh - 64px); overflow: hidden; }
+body {
+  background: #020408; /* bg-grid */
+}
+nav {
+  height: 64px; /* h-16 */
+}
+main {
+  display: flex;
+  height: calc(100vh - 64px);
+  overflow: hidden;
+}
 ```
 
 ---
@@ -77,20 +85,26 @@ main { display: flex; height: calc(100vh - 64px); overflow: hidden; }
 ## Left Panel: Terminal Inspector
 
 ### Header Bar
+
 ```html
 <div class="p-4 border-b border-hex-primary/10 bg-hex-surface/30 flex justify-between items-center">
-  <span class="font-mono text-[10px] uppercase tracking-widest text-hex-muted">Terminal_Inspector</span>
+  <span class="font-mono text-[10px] uppercase tracking-widest text-hex-muted"
+    >Terminal_Inspector</span
+  >
   <div class="flex gap-1.5">
-    <div class="w-2.5 h-2.5 rounded-full bg-hex-accent/40"></div>  <!-- orange dot -->
-    <div class="w-2.5 h-2.5 rounded-full bg-hex-primary/40"></div>  <!-- cyan dot -->
+    <div class="w-2.5 h-2.5 rounded-full bg-hex-accent/40"></div>
+    <!-- orange dot -->
+    <div class="w-2.5 h-2.5 rounded-full bg-hex-primary/40"></div>
+    <!-- cyan dot -->
   </div>
 </div>
 ```
 
 ### Scrollable Terminal Body
+
 ```css
 .terminal-scroll {
-  font-family: 'Fira Code', monospace;
+  font-family: "Fira Code", monospace;
   font-size: 0.875rem;
   overflow-y: auto;
   padding: 1.5rem;
@@ -99,6 +113,7 @@ main { display: flex; height: calc(100vh - 64px); overflow: hidden; }
 ```
 
 **Terminal content pattern:**
+
 ```
 // APP_TOPOLOGY_MAPPING_INIT           ← dim cyan comment
 $ hex-di --analyze ./src              ← orange $ + command
@@ -117,16 +132,27 @@ $ hex-di --analyze ./src              ← orange $ + command
 Code blocks: `border border-hex-primary/20 bg-black/40 p-4 rounded text-[11px] text-hex-primaryLight`
 
 ### `.scanline` (inside terminal)
+
 ```css
 .scanline {
   position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100px;
-  background: linear-gradient(to bottom, transparent, rgba(0,240,255,0.05), transparent);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100px;
+  background: linear-gradient(to bottom, transparent, rgba(0, 240, 255, 0.05), transparent);
   animation: scanline-move 8s linear infinite;
-  pointer-events: none; z-index: 50;
+  pointer-events: none;
+  z-index: 50;
 }
-@keyframes scanline-move { 0% { top: 0% } 100% { top: 100% } }
+@keyframes scanline-move {
+  0% {
+    top: 0%;
+  }
+  100% {
+    top: 100%;
+  }
+}
 ```
 
 ---
@@ -147,7 +173,6 @@ text-hex-muted       → muted: info lines [SCAN], [GRAPH]
 
 Use as the **developer tooling / CLI experience** screen. Ideal for showcasing the hex-di inspection/analysis capabilities, as an in-app terminal panel, or as inspiration for any "split terminal + visualization" layout pattern.
 
-
 ---
 
 <details>
@@ -156,49 +181,53 @@ Use as the **developer tooling / CLI experience** screen. Ideal for showcasing t
 ```html
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <!-- Standard head + scanline 8s -->
-  <!-- body: height 100vh; overflow: hidden -->
-  <!-- .terminal-scroll: thin 4px scrollbar -->
-  <!-- hud-card: blur(8px) -->
-</head>
-<body class="bg-hex-bg bg-grid" style="height:100vh; overflow:hidden;">
+  <head>
+    <!-- Standard head + scanline 8s -->
+    <!-- body: height 100vh; overflow: hidden -->
+    <!-- .terminal-scroll: thin 4px scrollbar -->
+    <!-- hud-card: blur(8px) -->
+  </head>
+  <body class="bg-hex-bg bg-grid" style="height:100vh; overflow:hidden;">
+    <nav
+      class="border-b border-hex-primary/20 bg-hex-bg/90 backdrop-blur-md h-16 flex items-center px-6"
+    >
+      <div class="flex items-center gap-4">
+        <!-- Logo + separator + CORE_MODULE_V2.4.0 label -->
+      </div>
+      <div class="ml-auto flex items-center gap-4">
+        <!-- SYS_STATUS: OPTIMAL + GitHub icon -->
+      </div>
+    </nav>
 
-  <nav class="border-b border-hex-primary/20 bg-hex-bg/90 backdrop-blur-md h-16 flex items-center px-6">
-    <div class="flex items-center gap-4">
-      <!-- Logo + separator + CORE_MODULE_V2.4.0 label -->
-    </div>
-    <div class="ml-auto flex items-center gap-4">
-      <!-- SYS_STATUS: OPTIMAL + GitHub icon -->
-    </div>
-  </nav>
-
-  <main class="flex overflow-hidden" style="height:calc(100vh - 64px);">
-
-    <!-- Left: Terminal Inspector (w-[450px]) -->
-    <aside class="w-[450px] flex-shrink-0 border-r border-hex-primary/10 flex flex-col overflow-hidden">
-      <div class="p-4 border-b border-hex-primary/10 bg-hex-surface/30 flex justify-between items-center">
-        <span class="font-mono text-[10px] uppercase tracking-widest text-hex-muted">Terminal_Inspector</span>
-        <div class="flex gap-1.5">
-          <div class="w-2.5 h-2.5 rounded-full bg-hex-accent/40"></div>
-          <div class="w-2.5 h-2.5 rounded-full bg-hex-primary/40"></div>
+    <main class="flex overflow-hidden" style="height:calc(100vh - 64px);">
+      <!-- Left: Terminal Inspector (w-[450px]) -->
+      <aside
+        class="w-[450px] flex-shrink-0 border-r border-hex-primary/10 flex flex-col overflow-hidden"
+      >
+        <div
+          class="p-4 border-b border-hex-primary/10 bg-hex-surface/30 flex justify-between items-center"
+        >
+          <span class="font-mono text-[10px] uppercase tracking-widest text-hex-muted"
+            >Terminal_Inspector</span
+          >
+          <div class="flex gap-1.5">
+            <div class="w-2.5 h-2.5 rounded-full bg-hex-accent/40"></div>
+            <div class="w-2.5 h-2.5 rounded-full bg-hex-primary/40"></div>
+          </div>
         </div>
+        <div class="flex-1 overflow-y-auto terminal-scroll p-6 font-mono text-[11px] relative">
+          <div class="scanline"></div>
+          <!-- // comment → $ command → [SCAN][GRAPH][COMPUTE] → code block -->
+        </div>
+      </aside>
+
+      <!-- Right: content -->
+      <div class="flex-1 overflow-y-auto p-8">
+        <!-- Dependency graph visualization -->
+        <!-- Service registry table/list -->
       </div>
-      <div class="flex-1 overflow-y-auto terminal-scroll p-6 font-mono text-[11px] relative">
-        <div class="scanline"></div>
-        <!-- // comment → $ command → [SCAN][GRAPH][COMPUTE] → code block -->
-      </div>
-    </aside>
-
-    <!-- Right: content -->
-    <div class="flex-1 overflow-y-auto p-8">
-      <!-- Dependency graph visualization -->
-      <!-- Service registry table/list -->
-    </div>
-
-  </main>
-
-</body>
+    </main>
+  </body>
 </html>
 ```
 

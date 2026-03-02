@@ -1,0 +1,664 @@
+/**
+ * Result Theme Overrides — Lime-on-Dark
+ *
+ * Replaces the shared HexDI cyan (#00F0FF) palette with
+ * Result's lime (#A6E22E) accent for all docs pages.
+ *
+ * Imported AFTER the shared theme in custom.css so these
+ * selectors win by source order (same specificity).
+ */
+
+/* ==========================================================================
+   Global: Hide default Docusaurus navbar — custom ResultNav replaces it.
+   We use visibility+height trick instead of display:none so Docusaurus's
+   internal JS can still read .navbar.clientHeight without crashing.
+   ========================================================================== */
+
+.navbar--fixed-top,
+.navbar.navbar--fixed-top {
+  visibility: hidden !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+.main-wrapper {
+  padding-top: 64px !important;
+}
+
+/* ==========================================================================
+   Color Variables — lime replaces cyan
+   ========================================================================== */
+
+:root {
+  /* --- Heading / font sizes (smaller for docs) --- */
+  --ifm-h1-font-size: 1.75rem;
+  --ifm-h2-font-size: 1.4rem;
+  --ifm-h3-font-size: 1.15rem;
+  --ifm-h4-font-size: 1rem;
+  --ifm-h5-font-size: 0.9rem;
+  --ifm-heading-line-height: 1.35;
+
+  /* --- Shared theme typography.css uses --text-h* directly on h1-h5 --- */
+  --text-h1: 1.75rem;
+  --text-h2: 1.4rem;
+  --text-h3: 1.15rem;
+  --text-h4: 1rem;
+  --text-h5: 0.9rem;
+
+  /* --- Infima primary palette --- */
+  --ifm-color-primary: #A6E22E;
+  --ifm-color-primary-dark: #8BC220;
+  --ifm-color-primary-darker: #6B9E1E;
+  --ifm-color-primary-darkest: #4D7316;
+  --ifm-color-primary-light: #B8E85A;
+  --ifm-color-primary-lighter: #C8F06A;
+  --ifm-color-primary-lightest: #D8F7A0;
+
+  /* --- Links --- */
+  --ifm-link-color: #A6E22E;
+  --ifm-link-hover-color: #C8F06A;
+
+  /* --- Text --- */
+  --ifm-font-color-base: var(--hexdi-text-primary);
+
+  /* --- Sidebar caret filter (neutralize Infima's dark-mode invert filter) --- */
+  --ifm-menu-link-sublist-icon-filter: none;
+
+  /* --- Inline code --- */
+  --ifm-code-background: rgba(166, 226, 46, 0.06);
+
+  /* --- Code block highlighting --- */
+  --docusaurus-highlighted-code-line-bg: rgba(166, 226, 46, 0.08);
+
+  /* --- Menu / sidebar active --- */
+  --ifm-menu-color-active: #A6E22E;
+  --ifm-menu-color-background-active: rgba(166, 226, 46, 0.06);
+
+  /* --- Sidebar caret (default is black, invisible on dark bg) --- */
+  --ifm-menu-link-sublist-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16px" height="16px" viewBox="0 0 24 24"><path fill="rgba(166,226,46,0.7)" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"></path></svg>');
+
+  /* --- TOC --- */
+  --ifm-toc-border-color: rgba(166, 226, 46, 0.1);
+  --ifm-toc-link-color: var(--hexdi-text-secondary);
+
+  /* --- Buttons --- */
+  --ifm-button-background-color: #A6E22E;
+  --ifm-button-color: #020408;
+
+  /* --- Dropdown --- */
+  --ifm-dropdown-hover-background-color: rgba(166, 226, 46, 0.06);
+
+  /* --- Admonition info override --- */
+  --ifm-color-info-dark: #A6E22E;
+  --ifm-color-info-contrast-background: rgba(166, 226, 46, 0.06);
+  --ifm-color-success-dark: #A6E22E;
+  --ifm-color-success-contrast-background: rgba(166, 226, 46, 0.06);
+
+  /* --- Search --- */
+  --docsearch-key-gradient: linear-gradient(-225deg, var(--hexdi-surface-hover), var(--hexdi-surface));
+
+  /* --- HexDI color variables --- */
+  --hexdi-border: rgba(166, 226, 46, 0.12);
+  --hexdi-border-light: rgba(166, 226, 46, 0.06);
+
+  --hexdi-primary-900: #1A2E08;
+  --hexdi-primary-700: #4D7316;
+  --hexdi-primary-600: #6B9E1E;
+  --hexdi-primary-500: #8BC220;
+  --hexdi-primary-400: #A6E22E;
+  --hexdi-primary-300: #C8F06A;
+  --hexdi-primary-200: #D8F7A0;
+  --hexdi-primary-100: #E8FBC0;
+  --hexdi-primary-50: rgba(166, 226, 46, 0.06);
+
+  --hexdi-info-500: #A6E22E;
+  --hexdi-info-100: #C8F06A;
+  --hexdi-info-bg: rgba(166, 226, 46, 0.06);
+
+  --hexdi-code-copy-button-hover-bg: rgba(166, 226, 46, 0.08);
+
+  --hexdi-scrollbar-thumb: rgba(166, 226, 46, 0.15);
+  --hexdi-scrollbar-thumb-hover: rgba(166, 226, 46, 0.3);
+}
+
+/* ==========================================================================
+   Heading Size Overrides — counter Docusaurus element-level re-declarations
+   Docusaurus sets --ifm-h*-font-size at the element level with :not(#\#):not(#\#)
+   specificity, so :root overrides alone are not enough.
+   ========================================================================== */
+
+.markdown:not(#\#):not(#\#) h1:first-child {
+  --ifm-h1-font-size: 1.75rem;
+}
+.markdown:not(#\#):not(#\#) > h2 {
+  --ifm-h2-font-size: 1.4rem;
+}
+.markdown:not(#\#):not(#\#) > h3 {
+  --ifm-h3-font-size: 1.15rem;
+}
+
+/* Counter the doc title CSS module (uses direct font-size, not variable) */
+[class*="title_"]:not(#\#):not(#\#) {
+  font-size: 1.75rem;
+}
+
+/* Revert uppercase headings for docs readability (shared theme forces uppercase) */
+.markdown h2, .markdown h3, .markdown h4, .markdown h5, .markdown h6 {
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+
+/* ==========================================================================
+   Dark Theme — override Infima specificity for sidebar caret filter
+   ========================================================================== */
+
+[data-theme='dark'] {
+  --ifm-menu-link-sublist-icon-filter: none;
+}
+
+/* ==========================================================================
+   Body — lime grid background
+   ========================================================================== */
+
+body {
+  background-image:
+    linear-gradient(rgba(166, 226, 46, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(166, 226, 46, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ==========================================================================
+   Navbar — lime accents
+   ========================================================================== */
+
+.navbar {
+  border-bottom: 1px solid rgba(166, 226, 46, 0.15);
+  box-shadow: 0 4px 20px -10px rgba(166, 226, 46, 0.3);
+}
+
+.navbar__link:hover {
+  color: #A6E22E;
+  background-color: rgba(166, 226, 46, 0.05);
+}
+
+.navbar__link--active {
+  color: #A6E22E;
+}
+
+.navbar__search-input:focus {
+  border-color: #A6E22E;
+}
+
+.header-github-link:hover {
+  background-color: rgba(166, 226, 46, 0.05);
+}
+
+.DocSearch-Button:hover {
+  border-color: #A6E22E;
+}
+
+@media (max-width: 996px) {
+  .navbar__toggle:hover {
+    background-color: rgba(166, 226, 46, 0.05);
+  }
+
+  .navbar-sidebar__item:hover {
+    background-color: rgba(166, 226, 46, 0.05);
+  }
+}
+
+/* ==========================================================================
+   Footer — lime accents
+   ========================================================================== */
+
+.footer--dark {
+  border-top: 1px solid rgba(166, 226, 46, 0.08);
+}
+
+.footer__link-item:hover {
+  color: #A6E22E;
+}
+
+/* ==========================================================================
+   Sidebar — lime accents
+   ========================================================================== */
+
+.theme-doc-sidebar-container {
+  background-color: rgba(8, 16, 28, 0.95);
+  border-right: 1px solid rgba(166, 226, 46, 0.12);
+  box-shadow: 4px 0 30px -10px rgba(166, 226, 46, 0.15);
+}
+
+/* Sidebar viewport must sit below the custom 64px navbar */
+[class*="sidebarViewport"] {
+  top: 64px;
+  max-height: calc(100vh - 64px);
+}
+
+.menu__list .menu__list {
+  border-left: 1px solid rgba(166, 226, 46, 0.08);
+}
+
+.menu__link:hover {
+  background-color: rgba(166, 226, 46, 0.03);
+  border-left-color: rgba(166, 226, 46, 0.15);
+}
+
+.menu__link--active {
+  background-color: rgba(166, 226, 46, 0.05);
+  color: #A6E22E;
+  border-left-color: #A6E22E;
+  box-shadow: inset 3px 0 8px -4px rgba(166, 226, 46, 0.3);
+}
+
+.menu__link--active:hover {
+  background-color: rgba(166, 226, 46, 0.05);
+  color: #A6E22E;
+}
+
+.menu__link--sublist-caret {
+  border-left: 2px solid rgba(166, 226, 46, 0.25);
+}
+
+.menu__link--sublist-caret:hover {
+  background-color: rgba(166, 226, 46, 0.03);
+  color: #A6E22E;
+  border-left-color: #A6E22E;
+}
+
+.menu__list-item--collapsed:last-child > .menu__link--sublist-caret {
+  border-left-color: transparent;
+}
+
+/* --- Sidebar density overrides (tighter than shared theme) --- */
+
+.menu {
+  padding: 10px 10px 10px 8px;
+}
+
+.theme-doc-sidebar-menu {
+  padding-bottom: 16px;
+}
+
+.menu__link {
+  font-size: 0.8125rem;  /* 13px — down from 15px */
+  padding: 6px 10px;
+}
+
+.menu__link:not(.menu__link--active) {
+  color: #9aaec2;  /* brighter than #8a9bb0 — ~7.5:1 contrast at 13px */
+}
+
+.menu__link--sublist-caret {
+  font-size: 0.6875rem;  /* 11px — minimum for uppercase labels */
+  padding: 6px 10px;
+  letter-spacing: 0.08em;
+}
+
+.menu__list .menu__list {
+  padding-left: 10px;
+  margin-top: 2px;
+}
+
+.menu__list-item + .menu__list-item:has(> .menu__link--sublist-caret) {
+  border-top: 1px solid rgba(166, 226, 46, 0.06);
+  margin-top: 4px;
+  padding-top: 6px;
+}
+
+.menu__caret {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+}
+
+/* ==========================================================================
+   Table of Contents — lime accents
+   ========================================================================== */
+
+.theme-doc-toc-desktop {
+  border-left: 1px solid rgba(166, 226, 46, 0.08);
+  box-shadow: -4px 0 30px -10px rgba(166, 226, 46, 0.1);
+}
+
+/* Suppress the duplicate "ON THIS PAGE" header on the inner <ul> —
+   the shared theme targets both .table-of-contents AND [class*="tableOfContents_"],
+   producing two headers. We only want the outer <div> version. */
+.table-of-contents.table-of-contents__left-border::before {
+  content: none;
+  display: none;
+}
+.table-of-contents.table-of-contents__left-border::after {
+  content: none;
+  display: none;
+}
+
+[class*="tableOfContents_"]::before {
+  color: rgba(166, 226, 46, 0.5);
+  border-bottom: 1px solid rgba(166, 226, 46, 0.08);
+  border-left: 4px solid #A6E22E;
+}
+
+[class*="tableOfContents_"]::after {
+  border-top: 1px solid #A6E22E;
+  border-left: 1px solid #A6E22E;
+}
+
+.table-of-contents__link:not(.table-of-contents__link--active) {
+  color: #9aaec2;  /* brighter than #8a9bb0 — ~7.5:1 contrast */
+}
+
+.table-of-contents__link:hover {
+  border-left-color: rgba(166, 226, 46, 0.15);
+}
+
+.table-of-contents__link--active,
+.table-of-contents__link.table-of-contents__link--active {
+  color: #A6E22E;
+  border-left-color: #A6E22E;
+  text-shadow: 0 0 8px rgba(166, 226, 46, 0.3);
+  background-color: rgba(166, 226, 46, 0.03);
+}
+
+.table-of-contents ul ul .table-of-contents__link--active,
+.table-of-contents ul ul ul .table-of-contents__link--active {
+  color: #A6E22E;
+  border-left-color: #A6E22E;
+}
+
+.table-of-contents__left-border {
+  border-left: 1px solid rgba(166, 226, 46, 0.08);
+}
+
+.table-of-contents::-webkit-scrollbar-thumb,
+[class*="tableOfContents_"]::-webkit-scrollbar-thumb {
+  background: rgba(166, 226, 46, 0.15);
+}
+
+.table-of-contents::-webkit-scrollbar-thumb:hover,
+[class*="tableOfContents_"]::-webkit-scrollbar-thumb:hover {
+  background: rgba(166, 226, 46, 0.3);
+}
+
+/* ==========================================================================
+   Code Blocks — lime accents
+   ========================================================================== */
+
+code:not(pre code) {
+  background: rgba(166, 226, 46, 0.06);
+  color: #C8F06A;  /* lighter lime — distinct from link color #A6E22E */
+  border: 1px solid rgba(166, 226, 46, 0.08);
+}
+
+[class*="codeBlockContainer"] {
+  border: 1px solid rgba(166, 226, 46, 0.12);
+}
+
+[class*="codeBlockTitle"] {
+  border-bottom: 1px solid rgba(166, 226, 46, 0.08);
+}
+
+[class*="codeBlockTitle"] + [class*="codeBlockContent"]::before {
+  background-color: rgba(166, 226, 46, 0.06);
+}
+
+[class*="copyButton"]:hover {
+  background-color: rgba(166, 226, 46, 0.08);
+  color: #A6E22E;
+}
+
+[class*="copyButton"][class*="copied"],
+[class*="copyButton"]:focus {
+  background-color: rgba(166, 226, 46, 0.1);
+  color: #A6E22E;
+}
+
+/* ==========================================================================
+   Line Highlighting — lime
+   ========================================================================== */
+
+.theme-code-block-highlighted-line {
+  background-color: rgba(166, 226, 46, 0.08);
+  border-left: 3px solid #A6E22E;
+}
+
+/* ==========================================================================
+   Admonitions — info/note overridden to lime
+   ========================================================================== */
+
+.theme-admonition,
+[class*="admonition_"] {
+  border: 1px solid rgba(166, 226, 46, 0.1);
+}
+
+.theme-admonition-note,
+[class*="admonition_"][class*="note"],
+.admonition-note,
+.theme-admonition-info,
+[class*="admonition_"][class*="info"],
+.admonition-info {
+  background-color: rgba(166, 226, 46, 0.06);
+  border-color: rgba(166, 226, 46, 0.1);
+  border-left-color: #A6E22E;
+  color: #A6E22E;
+}
+
+.theme-admonition-note [class*="admonitionIcon"] svg,
+[class*="admonition_"][class*="note"] [class*="admonitionIcon"] svg,
+.admonition-note [class*="admonitionIcon"] svg,
+.theme-admonition-info [class*="admonitionIcon"] svg,
+[class*="admonition_"][class*="info"] [class*="admonitionIcon"] svg,
+.admonition-info [class*="admonitionIcon"] svg {
+  color: #A6E22E;
+  fill: #A6E22E;
+}
+
+.theme-admonition-note [class*="admonitionHeading"],
+[class*="admonition_"][class*="note"] [class*="admonitionHeading"],
+.admonition-note [class*="admonitionHeading"],
+.theme-admonition-info [class*="admonitionHeading"],
+[class*="admonition_"][class*="info"] [class*="admonitionHeading"],
+.admonition-info [class*="admonitionHeading"] {
+  color: #A6E22E;
+}
+
+/* ==========================================================================
+   Pagination — lime accents
+   ========================================================================== */
+
+.pagination-nav__link:hover {
+  border-color: rgba(166, 226, 46, 0.3);
+  box-shadow: 0 0 20px rgba(166, 226, 46, 0.06);
+}
+
+.pagination-nav__label {
+  color: #A6E22E;
+}
+
+.pagination-nav__link:hover .pagination-nav__label {
+  color: #C8F06A;
+}
+
+/* ==========================================================================
+   Breadcrumbs — lime accents
+   ========================================================================== */
+
+.breadcrumbs__link:hover {
+  color: #A6E22E;
+  background-color: rgba(166, 226, 46, 0.05);
+}
+
+/* ==========================================================================
+   Search — lime accents
+   ========================================================================== */
+
+.aa-DetachedSearchButton:hover,
+button[class*="searchButton"]:hover,
+.DocSearch-Button:hover {
+  border-color: #A6E22E;
+}
+
+.aa-DetachedContainer,
+.DocSearch-Container,
+[class*="searchModalContainer"] {
+  border: 1px solid rgba(166, 226, 46, 0.15);
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.2),
+    0 12px 24px rgba(0, 0, 0, 0.3),
+    0 0 30px rgba(166, 226, 46, 0.05);
+}
+
+.aa-DetachedFormContainer input:focus,
+.aa-Form input:focus,
+.DocSearch-Input:focus,
+[class*="searchInput"]:focus {
+  border-color: #A6E22E;
+  box-shadow: 0 0 0 3px rgba(166, 226, 46, 0.1);
+}
+
+.aa-Item:hover,
+.aa-Item[aria-selected="true"],
+.DocSearch-Hit:hover,
+.DocSearch-Hit[aria-selected="true"],
+[class*="searchResultItem"]:hover,
+[class*="searchResultItem"][data-selected="true"] {
+  background-color: rgba(166, 226, 46, 0.08);
+}
+
+.aa-Item .aa-ItemIcon,
+.DocSearch-Hit-icon,
+[class*="searchResultIcon"] {
+  background-color: rgba(166, 226, 46, 0.06);
+  color: #A6E22E;
+}
+
+.aa-Item mark,
+.DocSearch-Hit mark,
+[class*="searchResultItem"] mark,
+.search-result-match {
+  background-color: rgba(166, 226, 46, 0.15);
+  color: #A6E22E;
+}
+
+.aa-Item[aria-selected="true"],
+.DocSearch-Hit[aria-selected="true"],
+[class*="searchResultItem"][data-selected="true"] {
+  background-color: rgba(166, 226, 46, 0.08);
+  outline: 2px solid rgba(166, 226, 46, 0.3);
+}
+
+.aa-DetachedFormContainer .aa-LoadingIndicator,
+.DocSearch-LoadingIndicator,
+[class*="searchLoading"] {
+  border-top-color: #A6E22E;
+}
+
+.search-result-highlight {
+  background-color: rgba(166, 226, 46, 0.2);
+}
+
+@keyframes highlightFade {
+  0% { background-color: rgba(166, 226, 46, 0.4); }
+  100% { background-color: rgba(166, 226, 46, 0.1); }
+}
+
+/* ==========================================================================
+   Focus Indicators — lime accents
+   ========================================================================== */
+
+:focus-visible {
+  outline: 2px solid #A6E22E;
+}
+
+a:focus-visible {
+  outline: 2px solid #A6E22E;
+}
+
+button:focus-visible,
+[role="button"]:focus-visible,
+.button:focus-visible {
+  outline: 2px solid #A6E22E;
+  box-shadow: 0 0 0 4px rgba(166, 226, 46, 0.15);
+}
+
+.navbar__link:focus-visible {
+  outline: 2px solid #A6E22E;
+  background-color: rgba(166, 226, 46, 0.05);
+}
+
+.menu__link:focus-visible {
+  outline: 2px solid #A6E22E;
+  background-color: rgba(166, 226, 46, 0.05);
+}
+
+.table-of-contents__link:focus-visible {
+  outline: 2px solid #A6E22E;
+}
+
+.breadcrumbs__link:focus-visible {
+  outline: 2px solid #A6E22E;
+  background-color: rgba(166, 226, 46, 0.05);
+}
+
+.pagination-nav__link:focus-visible {
+  outline: 2px solid #A6E22E;
+  border-color: #A6E22E;
+  box-shadow: 0 0 0 4px rgba(166, 226, 46, 0.1);
+}
+
+.DocSearch-Button:focus-visible,
+[class*="searchButton"]:focus-visible {
+  outline: 2px solid #A6E22E;
+  border-color: #A6E22E;
+}
+
+[class*="copyButton"]:focus-visible {
+  outline: 2px solid #A6E22E;
+  background-color: rgba(166, 226, 46, 0.08);
+}
+
+.navbar__toggle:focus-visible {
+  outline: 2px solid #A6E22E;
+  background-color: rgba(166, 226, 46, 0.05);
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #A6E22E;
+  border-color: #A6E22E;
+  box-shadow: 0 0 0 3px rgba(166, 226, 46, 0.1);
+}
+
+.navbar__search-input:focus-visible {
+  outline: 2px solid #A6E22E;
+  border-color: #A6E22E;
+}
+
+.footer__link-item:focus-visible {
+  outline: 2px solid #A6E22E;
+}
+
+.skip-to-content:focus-visible {
+  border: 2px solid #A6E22E;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 20px rgba(166, 226, 46, 0.1);
+}
+
+/* ==========================================================================
+   Scrollbar — lime
+   ========================================================================== */
+
+::-webkit-scrollbar-thumb {
+  background: rgba(166, 226, 46, 0.15);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(166, 226, 46, 0.3);
+}

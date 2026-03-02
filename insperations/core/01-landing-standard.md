@@ -18,6 +18,7 @@ The foundational landing page design. Dark cyberpunk/tactical aesthetic with cya
 ## Color Palette
 
 Uses the standard HexDI palette (see `design-system.md`).
+
 - Background: `#020408`
 - Primary: `#00F0FF` (cyan)
 - Accent: `#FF5E00` (orange)
@@ -106,10 +107,12 @@ Uses the standard HexDI palette (see `design-system.md`).
 ## Hero Section
 
 **Background decorations:**
+
 - Radial gradient spotlight centered (800×800px, cyan)
 - CRT scanline overlay (repeating horizontal lines, `opacity-20`)
 
 **Left column:**
+
 - Orange badge: `Compile-Time Safety v2.0` with square pulsing dot
 - H1: "The compiler reviews the **architecture**. / You review the logic."
   - "architecture" in gradient cyan text
@@ -122,6 +125,7 @@ Uses the standard HexDI palette (see `design-system.md`).
 - **Install widget:** `$ npm install @hex-di/core` with copy button, corner bracket decoration
 
 **Right column:**
+
 - Animated SVG hexagon graph: `animate-float`, `transform: rotateX(20deg) rotateZ(-10deg)`
 - 6 nodes: CONTAINER (orange), SERVICE/REPO/DB/ADAPTER/PORT (cyan)
 - Gradient connecting lines (fade in/out from center)
@@ -167,43 +171,59 @@ Right: "System: Rigid / Scope: Global" — border-r
 ```html
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <!-- Standard head: Tailwind CDN + fonts + config + CSS (see design-system.md) -->
-  <!-- float keyframe: translateY(0) ↔ translateY(-10px) — simple vertical only -->
-  <!-- hud-card: blur(4px), 10px corners, hover lifts + border glow -->
-</head>
-<body class="bg-hex-bg bg-grid overflow-x-hidden">
-  <div class="fixed inset-0 bg-grid opacity-30 pointer-events-none z-0"></div>
-  <div class="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_0%,rgba(2,4,8,0.8)_100%)] pointer-events-none z-0"></div>
+  <head>
+    <!-- Standard head: Tailwind CDN + fonts + config + CSS (see design-system.md) -->
+    <!-- float keyframe: translateY(0) ↔ translateY(-10px) — simple vertical only -->
+    <!-- hud-card: blur(4px), 10px corners, hover lifts + border glow -->
+  </head>
+  <body class="bg-hex-bg bg-grid overflow-x-hidden">
+    <div class="fixed inset-0 bg-grid opacity-30 pointer-events-none z-0"></div>
+    <div
+      class="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_0%,rgba(2,4,8,0.8)_100%)] pointer-events-none z-0"
+    ></div>
 
-  <nav class="fixed top-0 w-full z-[100] border-b border-hex-primary/20 bg-hex-bg/80 backdrop-blur-xl">
-    <div class="max-w-7xl mx-auto px-10 h-20 flex items-center justify-between">
-      <!-- Logo + [Features][Architecture][Docs] links + SYS_v2.4 badge -->
-    </div>
-  </nav>
-
-  <main class="relative z-10">
-    <section class="min-h-screen flex items-center pt-20 relative">
-      <div class="max-w-7xl mx-auto px-10 grid lg:grid-cols-2 gap-16 items-center">
-        <div><!-- Badge + H1 + subtext + [Initialize_Core][View_Docs] + install widget --></div>
-        <div class="flex justify-end"><!-- Hex SVG class="animate-float" --></div>
+    <nav
+      class="fixed top-0 w-full z-[100] border-b border-hex-primary/20 bg-hex-bg/80 backdrop-blur-xl"
+    >
+      <div class="max-w-7xl mx-auto px-10 h-20 flex items-center justify-between">
+        <!-- Logo + [Features][Architecture][Docs] links + SYS_v2.4 badge -->
       </div>
-    </section>
-    <section class="py-24"><div class="max-w-7xl mx-auto px-10">
-      <div class="grid md:grid-cols-3 gap-6"><!-- 6× hud-card features --></div>
-    </div></section>
-    <section class="py-24"><div class="max-w-7xl mx-auto px-10"><!-- Terminal window --></div></section>
-    <section class="py-24"><div class="max-w-7xl mx-auto px-10"><!-- Architecture SVG --></div></section>
-    <section class="py-24"><div class="max-w-7xl mx-auto px-10">
-      <div class="grid md:grid-cols-3 gap-6"><!-- 3× lifetime scope cards --></div>
-    </div></section>
-    <section class="py-24"><div class="max-w-7xl mx-auto px-10">
-      <div class="grid md:grid-cols-2 gap-6"><!-- Comparison: HexDI vs Traditional --></div>
-    </div></section>
-    <section class="py-24"><div class="max-w-7xl mx-auto px-10"><!-- CTA card --></div></section>
-    <footer class="border-t border-hex-primary/10 py-12"><!-- footer --></footer>
-  </main>
-</body>
+    </nav>
+
+    <main class="relative z-10">
+      <section class="min-h-screen flex items-center pt-20 relative">
+        <div class="max-w-7xl mx-auto px-10 grid lg:grid-cols-2 gap-16 items-center">
+          <div><!-- Badge + H1 + subtext + [Initialize_Core][View_Docs] + install widget --></div>
+          <div class="flex justify-end"><!-- Hex SVG class="animate-float" --></div>
+        </div>
+      </section>
+      <section class="py-24">
+        <div class="max-w-7xl mx-auto px-10">
+          <div class="grid md:grid-cols-3 gap-6"><!-- 6× hud-card features --></div>
+        </div>
+      </section>
+      <section class="py-24">
+        <div class="max-w-7xl mx-auto px-10"><!-- Terminal window --></div>
+      </section>
+      <section class="py-24">
+        <div class="max-w-7xl mx-auto px-10"><!-- Architecture SVG --></div>
+      </section>
+      <section class="py-24">
+        <div class="max-w-7xl mx-auto px-10">
+          <div class="grid md:grid-cols-3 gap-6"><!-- 3× lifetime scope cards --></div>
+        </div>
+      </section>
+      <section class="py-24">
+        <div class="max-w-7xl mx-auto px-10">
+          <div class="grid md:grid-cols-2 gap-6"><!-- Comparison: HexDI vs Traditional --></div>
+        </div>
+      </section>
+      <section class="py-24">
+        <div class="max-w-7xl mx-auto px-10"><!-- CTA card --></div>
+      </section>
+      <footer class="border-t border-hex-primary/10 py-12"><!-- footer --></footer>
+    </main>
+  </body>
 </html>
 ```
 

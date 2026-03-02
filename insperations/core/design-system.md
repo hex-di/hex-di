@@ -6,19 +6,20 @@ All 18 inspirations share a unified design language. This document captures ever
 
 ## Color Tokens
 
-| Token | Value | Usage |
-|---|---|---|
-| `bg` | `#020408` | Page background |
-| `surface` | `#08101C` | Card/panel surfaces |
-| `primary` | `#00F0FF` | Cyan — borders, accents, links, glow |
-| `primaryLight` | `#5FFFFF` | Lighter cyan for gradients |
-| `primaryDark` | `#008F99` | Darker cyan for hover states |
-| `accent` | `#FF5E00` | Orange — CTAs, warnings, highlights |
-| `accentDark` | `#CC4A00` | Darker orange |
-| `text` | `#DAE6F0` | Body text |
-| `muted` | `#586E85` | Secondary/subdued text |
+| Token          | Value     | Usage                                |
+| -------------- | --------- | ------------------------------------ |
+| `bg`           | `#020408` | Page background                      |
+| `surface`      | `#08101C` | Card/panel surfaces                  |
+| `primary`      | `#00F0FF` | Cyan — borders, accents, links, glow |
+| `primaryLight` | `#5FFFFF` | Lighter cyan for gradients           |
+| `primaryDark`  | `#008F99` | Darker cyan for hover states         |
+| `accent`       | `#FF5E00` | Orange — CTAs, warnings, highlights  |
+| `accentDark`   | `#CC4A00` | Darker orange                        |
+| `text`         | `#DAE6F0` | Body text                            |
+| `muted`        | `#586E85` | Secondary/subdued text               |
 
 ### Variant overrides
+
 - **file 5 & 6**: `bg: #010306`, `surface: #050a14`, `muted: #4a5d71`
 - **file 6**: adds `accent: #FF0055` (red-pink) and `neonPurple: #BC13FE`
 
@@ -26,19 +27,21 @@ All 18 inspirations share a unified design language. This document captures ever
 
 ## Typography
 
-| Role | Font family | Weights |
-|---|---|---|
-| `font-sans` / body | Inter | 300, 400, 500, 600 |
-| `font-display` / headings | Rajdhani | 400, 500, 600, 700 |
-| `font-mono` / code/labels | Fira Code | 400, 500, 600 |
+| Role                      | Font family | Weights            |
+| ------------------------- | ----------- | ------------------ |
+| `font-sans` / body        | Inter       | 300, 400, 500, 600 |
+| `font-display` / headings | Rajdhani    | 400, 500, 600, 700 |
+| `font-mono` / code/labels | Fira Code   | 400, 500, 600      |
 
 **Text size scale (headings)**
+
 - Hero h1: `text-5xl md:text-7xl` → `text-6xl md:text-8xl` (files 3–4 go bigger)
 - Section h2: `text-3xl md:text-4xl`
 - Card h3: `text-xl`–`text-2xl`
 - Labels: `text-[9px]`–`text-xs`, `tracking-[0.2em]–[0.5em]`, `uppercase`
 
 **Text style patterns**
+
 - ALL CAPS headings: `uppercase tracking-widest`
 - Monospace inline labels: `font-mono text-[10px] tracking-[0.2em] uppercase`
 - Gradient heading: `text-transparent bg-clip-text bg-gradient-to-r from-hex-primary to-hex-primaryLight`
@@ -50,6 +53,7 @@ All 18 inspirations share a unified design language. This document captures ever
 ## Background Patterns
 
 ### Grid
+
 ```css
 /* Standard 40px grid */
 background-size: 40px 40px;
@@ -67,6 +71,7 @@ opacity: 0.02
 ```
 
 ### Radial spotlight / radar
+
 ```css
 /* Primary spotlight */
 radial-gradient(circle at center, rgba(0, 240, 255, 0.08–0.15) 0%, rgba(2, 4, 8, 0) 70%)
@@ -76,12 +81,14 @@ radial-gradient(circle at center, rgba(255, 94, 0, 0.1) 0%, rgba(2, 4, 8, 0) 70%
 ```
 
 ### Hex tessellation (file 6 only)
+
 ```css
 /* SVG hex tile as inline data URI, animated slow scroll */
 animation: hex-pattern 120s linear infinite;
 ```
 
 ### Scrolling grid mask (file 5)
+
 ```css
 mask-image: radial-gradient(circle at center, black, transparent 80%);
 ```
@@ -91,6 +98,7 @@ mask-image: radial-gradient(circle at center, black, transparent 80%);
 ## Core Component Patterns
 
 ### `.hud-card`
+
 The primary card pattern used across all files.
 
 ```css
@@ -115,34 +123,50 @@ box-shadow: 0 0 20px rgba(0, 240, 255, 0.10–0.15);
 ```
 
 **Hover lift variant (file 4 / 3):**
+
 ```css
 transform: translateY(-5px) scale(1.02);
 box-shadow: 0 10px 30px rgba(0, 240, 255, 0.15);
 ```
 
 ### `.clip-path-slant`
+
 CTA button shape — diagonal right edge:
+
 ```css
 /* common */
 clip-path: polygon(0 0, 100% 0, 90–95% 100%, 0% 100%);
 ```
 
 ### `.holo-element`
+
 Shimmer/holographic sheen overlay:
+
 ```css
 ::after {
-  background: linear-gradient(115deg, transparent 0%, transparent 40%,
-    rgba(0,240,255,0.2) 50%, transparent 60%, transparent 100%);
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(0, 240, 255, 0.2) 50%,
+    transparent 60%,
+    transparent 100%
+  );
   background-size: 300% 100%;
   animation: holo-slide 3–4s infinite linear;
 }
 @keyframes holo-slide {
-  0%   { background-position: -200% 0 }
-  100% { background-position:  200% 0 }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 ```
 
 ### `.tactical-border-b` (nav)
+
 ```css
 border-bottom: 1px solid rgba(0, 240, 255, 0.2–0.3);
 box-shadow: 0 4px 20–30px -10px rgba(0, 240, 255, 0.4–0.5);
@@ -152,17 +176,17 @@ box-shadow: 0 4px 20–30px -10px rgba(0, 240, 255, 0.4–0.5);
 
 ## Animations
 
-| Name | Duration | Description |
-|---|---|---|
-| `float` | 6s ease-in-out | Vertical bob with optional 3D rotation (`rotateX/Z`) |
-| `pulse-glow` | 2s | Opacity 0.4→1 + box-shadow glow pulse |
-| `scanline` | 4s–8s linear | Vertical scan line sweeps top to bottom |
-| `holo-slide` | 3s | Background-position drift for shimmer |
-| `spin-slow` | 20–30s | Full rotation |
-| `fade-up` | 1s | Opacity 0→1 + translateY 40→0 (file 4) |
-| `particle-float` | 15s | Rising particles (file 4) |
-| `glitch` | 1s | Text-shadow RGB split (file 5) |
-| `chroma` | 2–3s | Chromatic aberration oscillation (file 6) |
+| Name             | Duration       | Description                                          |
+| ---------------- | -------------- | ---------------------------------------------------- |
+| `float`          | 6s ease-in-out | Vertical bob with optional 3D rotation (`rotateX/Z`) |
+| `pulse-glow`     | 2s             | Opacity 0.4→1 + box-shadow glow pulse                |
+| `scanline`       | 4s–8s linear   | Vertical scan line sweeps top to bottom              |
+| `holo-slide`     | 3s             | Background-position drift for shimmer                |
+| `spin-slow`      | 20–30s         | Full rotation                                        |
+| `fade-up`        | 1s             | Opacity 0→1 + translateY 40→0 (file 4)               |
+| `particle-float` | 15s            | Rising particles (file 4)                            |
+| `glitch`         | 1s             | Text-shadow RGB split (file 5)                       |
+| `chroma`         | 2–3s           | Chromatic aberration oscillation (file 6)            |
 
 ---
 
@@ -181,9 +205,15 @@ box-shadow: 0 4px 20–30px -10px rgba(0, 240, 255, 0.4–0.5);
 ## Scrollbar
 
 ```css
-::-webkit-scrollbar       { width: 4–6px }
-::-webkit-scrollbar-track { background: #020408 }
-::-webkit-scrollbar-thumb { background: #00F0FF or rgba(0,240,255,0.2) }
+::-webkit-scrollbar {
+  width: 4–6px;
+}
+::-webkit-scrollbar-track {
+  background: #020408;
+}
+::-webkit-scrollbar-thumb {
+  background: #00f0ff or rgba(0, 240, 255, 0.2);
+}
 ```
 
 ---
@@ -201,7 +231,9 @@ Always colored `text-hex-primary` with drop-shadow glow `drop-shadow-[0_0_8–12
 ## Status Badge
 
 ```html
-<div class="flex items-center gap-2 text-[10px] text-hex-primary border border-hex-primary/30 px-2–3 py-1 bg-hex-primary/5 font-mono uppercase">
+<div
+  class="flex items-center gap-2 text-[10px] text-hex-primary border border-hex-primary/30 px-2–3 py-1 bg-hex-primary/5 font-mono uppercase"
+>
   <div class="w-1.5 h-1.5 bg-hex-primary rounded-full animate-pulse/ping"></div>
   SYS.ONLINE
 </div>
@@ -212,6 +244,7 @@ Always colored `text-hex-primary` with drop-shadow glow `drop-shadow-[0_0_8–12
 ## HUD Corner Brackets (container decoration)
 
 4-corner brackets on panels/sections:
+
 ```css
 /* Each corner: position absolute, border on 2 sides, width/height 4–32px */
 top-left:     border-t + border-l  →  #00F0FF, 2–4px
@@ -227,9 +260,10 @@ bottom-right: border-b + border-r
 
 ```css
 .section-scanline {
-  position: absolute; inset: 0;
+  position: absolute;
+  inset: 0;
   height: 100px;
-  background: linear-gradient(to bottom, transparent, rgba(0,240,255,0.05), transparent);
+  background: linear-gradient(to bottom, transparent, rgba(0, 240, 255, 0.05), transparent);
   pointer-events: none;
   z-index: 5;
   animation: scanline 6s linear infinite;
@@ -241,15 +275,16 @@ bottom-right: border-b + border-r
 ## Fixed HUD Telemetry Labels
 
 Side panels displayed at `xl:` breakpoint only, `pointer-events: none`:
+
 ```html
 <!-- Left side -->
-<div class="fixed top-24 left-6 text-[9–10px] text-hex-primary/50 uppercase tracking-widest font-mono hidden xl:block ...">
+<div
+  class="fixed top-24 left-6 text-[9–10px] text-hex-primary/50 uppercase tracking-widest font-mono hidden xl:block ..."
+>
   Build: Stable / v2.4.0
 </div>
 <!-- Right side -->
-<div class="fixed top-24 right-6 ... text-right">
-  System: Rigid / Scope: Global
-</div>
+<div class="fixed top-24 right-6 ... text-right">System: Rigid / Scope: Global</div>
 ```
 
 ---
@@ -257,7 +292,9 @@ Side panels displayed at `xl:` breakpoint only, `pointer-events: none`:
 ## Install Command Widget
 
 ```html
-<div class="flex items-center gap-3 p-4 bg-[#050A10] border border-hex-primary/20 max-w-md font-mono text-sm relative">
+<div
+  class="flex items-center gap-3 p-4 bg-[#050A10] border border-hex-primary/20 max-w-md font-mono text-sm relative"
+>
   <span class="text-hex-accent">$</span>
   <span class="text-gray-400">npm install</span>
   <span class="text-hex-primary">@hex-di/core</span>
@@ -272,7 +309,9 @@ Side panels displayed at `xl:` breakpoint only, `pointer-events: none`:
 ```html
 <div class="border border-hex-primary/30 bg-[#020408] rounded-sm overflow-hidden">
   <!-- header bar -->
-  <div class="px-4 py-2 bg-[#0A1420] border-b border-hex-primary/30 flex items-center justify-between">
+  <div
+    class="px-4 py-2 bg-[#0A1420] border-b border-hex-primary/30 flex items-center justify-between"
+  >
     <!-- macOS traffic lights (files 3+) -->
     <div class="flex gap-1.5">
       <div class="w-3 h-3 rounded-full bg-red-500/50"></div>

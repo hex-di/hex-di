@@ -25,14 +25,18 @@ Standard HexDI palette. No overrides.
 
 ```css
 body {
-  display: flex;          /* sidebar + content side by side */
+  display: flex; /* sidebar + content side by side */
   background: #020408;
   overflow-x: hidden;
 }
 
 /* Fixed overlays */
-.fixed-grid-bg { /* bg-grid-large, opacity: 0.30 */ }
-.fixed-vignette { /* radial-gradient(circle at 50% 50%, transparent 0%, rgba(2,4,8,0.8) 100%) */ }
+.fixed-grid-bg {
+  /* bg-grid-large, opacity: 0.30 */
+}
+.fixed-vignette {
+  /* radial-gradient(circle at 50% 50%, transparent 0%, rgba(2,4,8,0.8) 100%) */
+}
 ```
 
 ---
@@ -40,10 +44,13 @@ body {
 ## Left Sidebar (`aside`, fixed, w-64)
 
 ```html
-<aside class="fixed left-0 top-0 bottom-0 w-64 z-[100] tactical-border-r bg-hex-bg/90 backdrop-blur-xl flex flex-col p-8">
+<aside
+  class="fixed left-0 top-0 bottom-0 w-64 z-[100] tactical-border-r bg-hex-bg/90 backdrop-blur-xl flex flex-col p-8"
+></aside>
 ```
 
 ### Logo Block (top of sidebar)
+
 ```html
 <div class="flex items-center gap-3 group cursor-pointer mb-16">
   <!-- hex SVG: hover rotates 90deg over 500ms -->
@@ -56,12 +63,17 @@ Logo icon hover: `group-hover:rotate-90 transition-transform duration-500`
 Ambient glow: `absolute inset-0 bg-hex-primary/20 blur-xl rounded-full scale-150 animate-pulse`
 
 ### Nav Links (sidebar)
+
 ```html
-<nav class="flex flex-col gap-8 text-[11px] font-mono tracking-[0.2em] text-hex-muted uppercase flex-grow">
+<nav
+  class="flex flex-col gap-8 text-[11px] font-mono tracking-[0.2em] text-hex-muted uppercase flex-grow"
+>
   <a href="#features" class="relative group py-2">
     <span class="group-hover:text-hex-primary">[01_Features]</span>
     <!-- animated underline: w-0 → w-full on hover (0.3s) -->
-    <span class="absolute bottom-0 left-0 w-0 h-[1px] bg-hex-primary transition-all duration-300 group-hover:w-full"></span>
+    <span
+      class="absolute bottom-0 left-0 w-0 h-[1px] bg-hex-primary transition-all duration-300 group-hover:w-full"
+    ></span>
   </a>
   <!-- [02_Architecture], [03_Lifecycle], [04_Code], [05_Compare] -->
 </nav>
@@ -70,6 +82,7 @@ Ambient glow: `absolute inset-0 bg-hex-primary/20 blur-xl rounded-full scale-150
 Numbered links: `[01_Features]`, `[02_Architecture]`, `[03_Lifecycle]`, `[04_Code]`, `[05_Compare]`
 
 ### `.tactical-border-r`
+
 ```css
 .tactical-border-r {
   border-right: 1px solid rgba(0, 240, 255, 0.2);
@@ -82,6 +95,7 @@ Numbered links: `[01_Features]`, `[02_Architecture]`, `[03_Lifecycle]`, `[04_Cod
 ## Main Content (to the right of sidebar, `ml-64`)
 
 Background layers:
+
 1. Fixed `bg-grid-large` (160px, opacity 0.30) — full viewport
 2. Fixed radial vignette (dark edges)
 3. `holo-element` shimmer overlays on sections
@@ -89,6 +103,7 @@ Background layers:
 ### Hero (`hud-card`, full-width with bg-radar-gradient)
 
 The hero is a large `hud-card` spanning full width, height `min-h-[500px]`, using `flex flex-col lg:flex-row`:
+
 ```
 ┌────────────────────────────────────────────────────────┐
 │ bg-radar-gradient (radial cyan overlay)                │
@@ -153,7 +168,6 @@ Top edge accent: `absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transpa
 
 Use when you want a **persistent sidebar navigation** instead of a top navbar — great for documentation-style pages or long-form technical content where nav accessibility throughout the scroll matters. The numbered nav links (`[01_Features]`) reinforce the tactical/systematic aesthetic.
 
-
 ---
 
 <details>
@@ -162,37 +176,42 @@ Use when you want a **persistent sidebar navigation** instead of a top navbar �
 ```html
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <!-- Standard head + holo-slide + scanline -->
-  <!-- float: rotateX(20deg) rotateZ(-10deg) -->
-  <!-- body: display flex; overflow-x hidden -->
-  <!-- bg-grid-large: 160px grid -->
-  <!-- .tactical-border-r: border-right + right-side glow box-shadow -->
-</head>
-<body class="flex overflow-x-hidden" style="background:#020408;">
+  <head>
+    <!-- Standard head + holo-slide + scanline -->
+    <!-- float: rotateX(20deg) rotateZ(-10deg) -->
+    <!-- body: display flex; overflow-x hidden -->
+    <!-- bg-grid-large: 160px grid -->
+    <!-- .tactical-border-r: border-right + right-side glow box-shadow -->
+  </head>
+  <body class="flex overflow-x-hidden" style="background:#020408;">
+    <!-- Fixed overlays (grid-large + vignette) -->
+    <div
+      class="fixed inset-0 opacity-30 pointer-events-none z-0"
+      style="background-size:160px 160px; background-image:linear-gradient(to right,rgba(0,240,255,0.03)1px,transparent 1px),linear-gradient(to bottom,rgba(0,240,255,0.03)1px,transparent 1px);"
+    ></div>
 
-  <!-- Fixed overlays (grid-large + vignette) -->
-  <div class="fixed inset-0 opacity-30 pointer-events-none z-0" style="background-size:160px 160px; background-image:linear-gradient(to right,rgba(0,240,255,0.03)1px,transparent 1px),linear-gradient(to bottom,rgba(0,240,255,0.03)1px,transparent 1px);"></div>
+    <!-- Fixed sidebar (w-64) -->
+    <aside
+      class="fixed left-0 top-0 bottom-0 w-64 z-[100] bg-hex-bg/90 backdrop-blur-xl flex flex-col p-8"
+      style="border-right:1px solid rgba(0,240,255,0.2); box-shadow:4px 0 30px -10px rgba(0,240,255,0.2);"
+    >
+      <div class="flex items-center gap-3 cursor-pointer mb-16 group">
+        <!-- hex SVG (group-hover:rotate-90 duration-500) + HexDI text -->
+      </div>
+      <nav
+        class="flex flex-col gap-8 text-[11px] font-mono tracking-[0.2em] text-hex-muted uppercase flex-grow"
+      >
+        <!-- [01_Features] through [05_Compare] with animated underline -->
+      </nav>
+    </aside>
 
-  <!-- Fixed sidebar (w-64) -->
-  <aside class="fixed left-0 top-0 bottom-0 w-64 z-[100] bg-hex-bg/90 backdrop-blur-xl flex flex-col p-8"
-         style="border-right:1px solid rgba(0,240,255,0.2); box-shadow:4px 0 30px -10px rgba(0,240,255,0.2);">
-    <div class="flex items-center gap-3 cursor-pointer mb-16 group">
-      <!-- hex SVG (group-hover:rotate-90 duration-500) + HexDI text -->
-    </div>
-    <nav class="flex flex-col gap-8 text-[11px] font-mono tracking-[0.2em] text-hex-muted uppercase flex-grow">
-      <!-- [01_Features] through [05_Compare] with animated underline -->
-    </nav>
-  </aside>
-
-  <!-- Scrollable main (ml-64) -->
-  <main class="ml-64 flex-1 min-h-screen relative z-10">
-    <!-- Hero: full-width hud-card min-h-[500px] -->
-    <!-- Features: grid-cols-12, col-span-4 cards -->
-    <!-- Code preview, Architecture, Comparison, CTA -->
-  </main>
-
-</body>
+    <!-- Scrollable main (ml-64) -->
+    <main class="ml-64 flex-1 min-h-screen relative z-10">
+      <!-- Hero: full-width hud-card min-h-[500px] -->
+      <!-- Features: grid-cols-12, col-span-4 cards -->
+      <!-- Code preview, Architecture, Comparison, CTA -->
+    </main>
+  </body>
 </html>
 ```
 
