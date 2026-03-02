@@ -194,6 +194,12 @@ describe("InspectorEvent library variants", () => {
           return "chain-registered";
         case "execution-added":
           return "execution-added";
+        case "guard-descriptor-registered":
+          return "guard-descriptor-registered";
+        case "guard-execution-added":
+          return "guard-execution-added";
+        case "guard-role-hierarchy-updated":
+          return "guard-role-hierarchy-updated";
         default: {
           // If all variants are covered, event should be `never`
           assertType<never>(event);
