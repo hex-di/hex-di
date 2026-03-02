@@ -1,49 +1,261 @@
-/* Result landing page styles */
+/**
+ * Result landing page styles — lime-on-dark theme.
+ *
+ * These live outside the Tailwind pipeline so keyframes
+ * referenced only by inline JSX styles survive purge.
+ */
 
-.hero-section {
-  min-height: 80vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--hex-bg-darkest);
-  position: relative;
-  overflow: hidden;
+/* ============================================================
+   Design tokens — Result lime palette
+   ============================================================ */
+:root {
+  --result-bg: #020408;
+  --result-surface: #08101C;
+  --result-card: #0a1420;
+  --result-accent: #A6E22E;
+  --result-accent-40: rgba(166, 226, 46, 0.25);
+  --result-accent-60: rgba(166, 226, 46, 0.38);
+  --result-accent-08: rgba(166, 226, 46, 0.05);
+  --result-accent-glow: 0 0 20px rgba(166, 226, 46, 0.12);
+  --result-err: #F92672;
+  --result-err-dim: rgba(249, 38, 114, 0.18);
+  --result-text: #ffffff;
+  --result-text-secondary: #a0b4c8;
+  --result-text-muted: #8a9bb0;
+  --result-border: #1a2a3e;
+  --result-border-accent: rgba(166, 226, 46, 0.18);
 }
 
-.hero-section::before {
+/* ============================================================
+   Dark home page body overrides
+   ============================================================ */
+body.dark-home-page .main-wrapper {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+body.dark-home-page footer {
+  display: none !important;
+}
+
+/* ============================================================
+   Keyframe animations
+   ============================================================ */
+@keyframes result-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--result-accent); }
+  50% { opacity: 0.4; box-shadow: 0 0 3px rgba(166, 226, 46, 0.3); }
+}
+
+@keyframes result-fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes result-float-3d {
+  0%, 100% { transform: translateY(0) rotateX(12deg) rotateZ(-4deg); }
+  50%      { transform: translateY(-10px) rotateX(14deg) rotateZ(-2deg); }
+}
+
+@keyframes result-scanline {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(600%); }
+}
+
+@keyframes result-draw-path {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
+}
+
+@keyframes result-dot-travel {
+  0%   { offset-distance: 0%; opacity: 0; }
+  5%   { opacity: 1; }
+  95%  { opacity: 1; }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+
+/* ============================================================
+   Animation utility classes
+   ============================================================ */
+.anim-fade-in    { opacity: 0; animation: result-fade-in 1s cubic-bezier(0.16,1,0.3,1) 0s forwards; }
+.anim-fade-in-d1 { opacity: 0; animation: result-fade-in 1s cubic-bezier(0.16,1,0.3,1) 0.1s forwards; }
+.anim-fade-in-d2 { opacity: 0; animation: result-fade-in 1s cubic-bezier(0.16,1,0.3,1) 0.2s forwards; }
+.anim-fade-in-d3 { opacity: 0; animation: result-fade-in 1s cubic-bezier(0.16,1,0.3,1) 0.3s forwards; }
+.anim-fade-in-d4 { opacity: 0; animation: result-fade-in 1s cubic-bezier(0.16,1,0.3,1) 0.4s forwards; }
+
+/* ============================================================
+   HUD Card — corner bracket decorations
+   ============================================================ */
+.result-hud-card {
+  position: relative;
+  background: rgba(6, 13, 20, 0.8);
+  border: 1px solid var(--result-border-accent);
+  padding: 28px;
+  backdrop-filter: blur(8px);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.result-hud-card::before,
+.result-hud-card::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: var(--result-accent);
+  border-style: solid;
+  transition: border-color 0.3s ease;
+}
+
+.result-hud-card::before {
+  top: -1px;
+  left: -1px;
+  border-width: 2px 0 0 2px;
+}
+
+.result-hud-card::after {
+  bottom: -1px;
+  right: -1px;
+  border-width: 0 2px 2px 0;
+}
+
+.result-hud-card:hover {
+  border-color: var(--result-accent-60);
+  box-shadow:
+    0 0 24px rgba(166, 226, 46, 0.08),
+    inset 0 0 24px rgba(166, 226, 46, 0.02);
+}
+
+/* Error (red) variant */
+.result-hud-card-err {
+  border-color: var(--result-err-dim);
+}
+
+.result-hud-card-err::before,
+.result-hud-card-err::after {
+  border-color: var(--result-err);
+}
+
+.result-hud-card-err:hover {
+  border-color: rgba(249, 38, 114, 0.45);
+  box-shadow: 0 0 24px rgba(249, 38, 114, 0.08);
+}
+
+/* ============================================================
+   Background grid — lime 40px
+   ============================================================ */
+.result-bg-grid {
+  background-image:
+    linear-gradient(rgba(166, 226, 46, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(166, 226, 46, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ============================================================
+   API showcase card
+   ============================================================ */
+.result-api-card {
+  background: rgba(6, 13, 20, 0.85);
+  border: 1px solid var(--result-border);
+  padding: 20px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.result-api-card:hover {
+  border-color: var(--result-accent-40);
+  box-shadow: var(--result-accent-glow);
+}
+
+/* ============================================================
+   CRT scanline overlay on code blocks
+   ============================================================ */
+.result-scanline-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 10;
+}
+
+.result-scanline-overlay::after {
+  content: '';
+  display: block;
+  position: absolute;
+  width: 100%;
+  height: 60px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(166, 226, 46, 0.02) 50%,
+    transparent 100%
+  );
+  animation: result-scanline 6s linear infinite;
+}
+
+/* ============================================================
+   Hero section
+   ============================================================ */
+.result-hero-section {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  background: var(--result-bg);
+}
+
+.result-hero-section::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(ellipse at 50% 0%, #A6E22E08 0%, transparent 60%);
+  background: radial-gradient(ellipse at 50% 0%, rgba(166, 226, 46, 0.05) 0%, transparent 60%);
   pointer-events: none;
 }
 
-.accent-text {
-  color: #A6E22E;
+/* ============================================================
+   Pulse dot
+   ============================================================ */
+.result-pulse-dot {
+  animation: result-pulse 2.5s ease-in-out infinite;
 }
 
-.accent-border {
-  border-color: #A6E22E;
+/* ============================================================
+   3D float — applied to Railway SVG wrapper
+   ============================================================ */
+.result-float-3d {
+  animation: result-float-3d 6s ease-in-out infinite;
+  transform-style: preserve-3d;
 }
 
-.accent-glow {
-  box-shadow: 0 0 20px #A6E22E20;
+/* ============================================================
+   Scrollbar (lime variant)
+   ============================================================ */
+body.dark-home-page ::-webkit-scrollbar { width: 4px; }
+body.dark-home-page ::-webkit-scrollbar-track { background: #03060b; }
+body.dark-home-page ::-webkit-scrollbar-thumb {
+  background: rgba(166, 226, 46, 0.2);
+  border-radius: 3px;
+}
+body.dark-home-page ::-webkit-scrollbar-thumb:hover {
+  background: rgba(166, 226, 46, 0.4);
 }
 
-@keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* ============================================================
+   Responsive helpers — result-prefixed
+   ============================================================ */
+.result-show-mobile { display: none !important; }
+
+@media (max-width: 768px) {
+  .result-section     { padding: 64px 20px !important; }
+  .result-hero-grid   { grid-template-columns: 1fr !important; }
+  .result-grid-2      { grid-template-columns: 1fr !important; }
+  .result-grid-3      { grid-template-columns: 1fr !important; }
+  .result-grid-4      { grid-template-columns: repeat(2, 1fr) !important; }
+  .result-hide-mobile { display: none !important; }
+  .result-show-mobile { display: flex !important; }
 }
 
-.animate-fade-in-up {
-  animation: fade-in-up 0.6s ease-out forwards;
+@media (min-width: 769px) and (max-width: 1024px) {
+  .result-grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
 }

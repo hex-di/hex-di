@@ -1,5 +1,6 @@
 /**
- * Site CSS - imports shared theme + site-specific overrides
+ * Site CSS - imports shared theme + Result lime overrides
  */
 @import '@hex-di/website-theme/css/custom.css';
+@import './result-theme.css';
 @import './landing.css';
