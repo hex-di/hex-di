@@ -18,6 +18,9 @@ import {
   intoTuple,
   merge,
   toOption,
+  catchTag,
+  catchTags,
+  andThenWith,
 } from "../src/fn/index.js";
 
 // BEH-10-001 through BEH-10-004
@@ -44,7 +47,7 @@ describe("Standalone Functions - Type Level", () => {
   it("match extracts the final value from both branches", () => {
     const fn = match(
       (v: number) => `ok: ${v}`,
-      (e: string) => `err: ${e}`,
+      (e: string) => `err: ${e}`
     );
     const result = fn(ok(42) as Result<number, string>);
     expectTypeOf(result).toEqualTypeOf<string>();
@@ -115,7 +118,7 @@ describe("Standalone Functions - Type Level", () => {
     const result = pipe(
       ok(42),
       map((x: number) => x * 2),
-      map((x: number) => String(x)),
+      map((x: number) => String(x))
     );
     expectTypeOf(result).toMatchTypeOf<Result<string, never>>();
   });
@@ -123,5 +126,21 @@ describe("Standalone Functions - Type Level", () => {
   it("pipe with single value returns the value unchanged", () => {
     const result = pipe(42);
     expectTypeOf(result).toEqualTypeOf<number>();
+  });
+
+  it("catchTag narrows error type in pipe", () => {
+    type E = { _tag: "A"; x: number } | { _tag: "B"; y: string };
+    const fn = catchTag("A", () => ok(0));
+    const result = fn(ok(42) as Result<number, E>);
+    expectTypeOf(result).toMatchTypeOf<Result<number, { _tag: "B"; y: string }>>();
+  });
+
+  it("andThenWith infers combined type", () => {
+    const fn = andThenWith(
+      (n: number) => ok(String(n)),
+      (_e: string) => ok("recovered")
+    );
+    const result = fn(ok(42) as Result<number, string>);
+    expectTypeOf(result).toMatchTypeOf<Result<string, never>>();
   });
 });

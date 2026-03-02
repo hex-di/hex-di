@@ -1293,3 +1293,116 @@ export function adapterOrElse(adapter: RuntimeAdapter, fallback: RuntimeAdapter)
 
   return Object.freeze(result);
 }
+
+// =============================================================================
+// adapterOrHandle — Tag-Based Error Recovery
+// =============================================================================
+
+/**
+ * Type guard to check if a value is an object with a string `_tag` property.
+ * @internal
+ */
+function hasStringTag(value: unknown): value is { _tag: string } {
+  return (
+    typeof value === "object" && value !== null && "_tag" in value && typeof value._tag === "string"
+  );
+}
+
+/**
+ * Wraps a fallible adapter with tag-selective error handlers.
+ *
+ * Takes an adapter whose factory returns `Result<T, E>` where `E` has a `_tag`
+ * discriminant, and a partial handler map keyed by tag values. When the factory
+ * returns `Err`, if the error's `_tag` matches a handler key, that handler is
+ * called and its `Ok` result is unwrapped. Unhandled tags propagate as `Err`.
+ *
+ * The returned adapter's `TError` is narrowed to exclude only the handled tags.
+ * Handlers are partial — you can handle some error variants and let others propagate.
+ *
+ * @example
+ * ```typescript
+ * type MyErrors =
+ *   | { _tag: "ConfigMissing"; path: string }
+ *   | { _tag: "ConnectionFailed"; reason: string }
+ *   | { _tag: "AuthError"; code: number };
+ *
+ * const FallibleAdapter = createAdapter({
+ *   provides: ServicePort,
+ *   factory: (): FactoryResult<Service, MyErrors> => { ... },
+ * });
+ *
+ * // Handle some errors, let AuthError propagate
+ * const PartiallyHandled = adapterOrHandle(FallibleAdapter, {
+ *   ConfigMissing: () => ({ _tag: "Ok", value: defaultService }),
+ *   ConnectionFailed: () => ({ _tag: "Ok", value: fallbackService }),
+ * });
+ * // PartiallyHandled has TError = { _tag: "AuthError"; code: number }
+ * ```
+ */
+export function adapterOrHandle<
+  TProvides,
+  TRequires,
+  TLifetime extends string,
+  TFactoryKind extends FactoryKind,
+  TClonable extends boolean,
+  TRequiresTuple extends readonly unknown[],
+  TError extends { _tag: string },
+  Handlers extends Partial<{
+    [K in TError["_tag"]]: (
+      error: Extract<TError, { _tag: K }>
+    ) => FactoryResult<InferService<TProvides>, never>;
+  }>,
+>(
+  adapter: Adapter<
+    TProvides,
+    TRequires,
+    TLifetime,
+    TFactoryKind,
+    TClonable,
+    TRequiresTuple,
+    TError
+  >,
+  handlers: Handlers
+): Adapter<
+  TProvides,
+  TRequires,
+  TLifetime,
+  TFactoryKind,
+  TClonable,
+  TRequiresTuple,
+  Exclude<TError, { _tag: keyof Handlers & string }>
+>;
+export function adapterOrHandle(
+  adapter: RuntimeAdapter,
+  handlers: Record<string, (error: unknown) => unknown>
+): RuntimeAdapter {
+  const userFactory = adapter.factory;
+
+  const handleResultWithHandlers = (raw: unknown): unknown => {
+    if (isResultLike(raw) && raw._tag === "Err") {
+      const error = raw.error;
+      if (hasStringTag(error) && error._tag in handlers) {
+        const handlerResult = handlers[error._tag](error);
+        return unwrapIfResult(handlerResult);
+      }
+      return raw;
+    }
+    return unwrapIfResult(raw);
+  };
+
+  const wrappedFactory =
+    adapter.factoryKind === ASYNC
+      ? async (deps: Record<string, unknown>): Promise<unknown> => {
+          const raw = await userFactory(deps);
+          return handleResultWithHandlers(raw);
+        }
+      : (deps: Record<string, unknown>): unknown => {
+          const raw = userFactory(deps);
+          if (isThenable(raw)) {
+            return Promise.resolve(raw).then(handleResultWithHandlers);
+          }
+          return handleResultWithHandlers(raw);
+        };
+
+  return cloneAdapterWithFactory(adapter, wrappedFactory);
+}

@@ -110,4 +110,11 @@ export type {
   InferOkUnion,
   InferErrTuple,
   NonEmptyArray,
+  TaggedError,
+  TagsOf,
+  HasTag,
+  ErrorByTag,
+  RemoveTag,
+  RemoveTags,
+  ExhaustiveHandlerMap,
 } from "./type-utils.js";

@@ -5,6 +5,7 @@ node_modules/
 dist/
 build/
 *.tsbuildinfo
+.docusaurus/
 
 # IDE
 .idea/
@@ -23,6 +24,7 @@ pnpm-debug.log*
 
 # Test coverage
 coverage/
+test-results/
 
 # Environment
 .env

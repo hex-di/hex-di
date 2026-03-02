@@ -1,0 +1,129 @@
+/**
+ * Core Theme Overrides
+ *
+ * The shared HexDI theme already uses cyan (#00F0FF) — no color
+ * overrides needed here. This file handles structural adjustments:
+ * hiding the default Docusaurus navbar (replaced by CoreNav),
+ * sidebar density, heading sizes for docs readability, etc.
+ *
+ * Imported AFTER the shared theme in custom.css so these
+ * selectors win by source order (same specificity).
+ */
+
+/* ==========================================================================
+   Global: Hide default Docusaurus navbar — custom CoreNav replaces it.
+   ========================================================================== */
+
+nav.navbar,
+.navbar--fixed-top,
+.navbar.navbar--fixed-top {
+  display: none !important;
+}
+
+.main-wrapper {
+  padding-top: 64px !important;
+}
+
+/* ==========================================================================
+   Heading sizes (smaller for docs readability)
+   ========================================================================== */
+
+:root {
+  --ifm-h1-font-size: 1.75rem;
+  --ifm-h2-font-size: 1.4rem;
+  --ifm-h3-font-size: 1.15rem;
+  --ifm-h4-font-size: 1rem;
+  --ifm-h5-font-size: 0.9rem;
+  --ifm-heading-line-height: 1.35;
+
+  /* Shared theme typography.css uses --text-h* directly on h1-h5 */
+  --text-h1: 1.75rem;
+  --text-h2: 1.4rem;
+  --text-h3: 1.15rem;
+  --text-h4: 1rem;
+  --text-h5: 0.9rem;
+}
+
+/* Counter Docusaurus's element-level --ifm-h*-font-size re-declarations */
+.markdown:not(#\#):not(#\#) h1:first-child {
+  --ifm-h1-font-size: 1.75rem;
+}
+.markdown:not(#\#):not(#\#) > h2 {
+  --ifm-h2-font-size: 1.4rem;
+}
+.markdown:not(#\#):not(#\#) > h3 {
+  --ifm-h3-font-size: 1.15rem;
+}
+
+/* Counter the doc title CSS module (uses direct font-size, not variable) */
+[class*="title_"]:not(#\#):not(#\#) {
+  font-size: 1.75rem;
+}
+
+/* Revert uppercase headings for docs readability (shared theme forces uppercase) */
+.markdown h2, .markdown h3, .markdown h4, .markdown h5, .markdown h6 {
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+
+/* ==========================================================================
+   Sidebar — sits below 64px custom navbar, tighter density
+   ========================================================================== */
+
+[class*="sidebarViewport"] {
+  top: 64px;
+  max-height: calc(100vh - 64px);
+}
+
+/* --- Sidebar density overrides (tighter than shared theme) --- */
+
+.menu {
+  padding: 10px 10px 10px 8px;
+}
+
+.theme-doc-sidebar-menu {
+  padding-bottom: 16px;
+}
+
+.menu__link {
+  font-size: 0.8125rem;  /* 13px */
+  padding: 6px 10px;
+}
+
+.menu__link--sublist-caret {
+  font-size: 0.6875rem;  /* 11px */
+  padding: 6px 10px;
+  letter-spacing: 0.08em;
+}
+
+.menu__list .menu__list {
+  padding-left: 10px;
+  margin-top: 2px;
+}
+
+/* Category separators between top-level sidebar items */
+.menu__list-item + .menu__list-item:has(> .menu__link--sublist-caret) {
+  border-top: 1px solid rgba(0, 240, 255, 0.06);
+  margin-top: 4px;
+  padding-top: 6px;
+}
+
+.menu__caret {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+}
+
+/* ==========================================================================
+   TOC — suppress duplicate "ON THIS PAGE" header
+   ========================================================================== */
+
+.table-of-contents.table-of-contents__left-border::before {
+  content: none;
+  display: none;
+}
+.table-of-contents.table-of-contents__left-border::after {
+  content: none;
+  display: none;
+}

@@ -97,6 +97,7 @@ export {
   createAdapter as createUnifiedAdapter,
   adapterOrDie,
   adapterOrElse,
+  adapterOrHandle,
   type PortsToServices,
   type BothFactoryAndClassError,
   type NeitherFactoryNorClassError,

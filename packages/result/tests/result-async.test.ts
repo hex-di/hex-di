@@ -360,7 +360,7 @@ describe("BEH-06-007: ResultAsync instance chaining methods (andThen, orElse, an
 
   // --- andThrough with ResultAsync return ---
   it("resultAsync.andThrough() works with ResultAsync side effect", async () => {
-    const result = await ResultAsync.ok(42).andThrough(() => ResultAsync.ok("ignored"));
+    const result = await ResultAsync.ok(42).andThrough((): Result<unknown, never> => ok("ignored"));
     expect(result._tag).toBe("Ok");
     if (result.isOk()) expect(result.value).toBe(42);
   });
@@ -564,6 +564,87 @@ describe("BEH-06-011 / INV-8: Lazy ResultAsync registration via _setResultAsyncI
     const result = await err("e").toAsync();
     expect(result._tag).toBe("Err");
     if (result.isErr()) expect(result.error).toBe("e");
+  });
+});
+
+describe("BEH-15-005: ResultAsync effect error handling", () => {
+  type AppError = { _tag: "NotFound"; resource: string } | { _tag: "Timeout"; ms: number };
+
+  it("resultAsync.catchTag() handles matching error", async () => {
+    const ra = ResultAsync.err({ _tag: "NotFound", resource: "User" } as AppError);
+    const result = await ra.catchTag("NotFound", () => ok(99));
+    expect(result._tag).toBe("Ok");
+    if (result.isOk()) expect(result.value).toBe(99);
+  });
+
+  it("resultAsync.catchTag() passes through non-matching error", async () => {
+    const ra = ResultAsync.err({ _tag: "Timeout", ms: 5000 } as AppError);
+    const result = await ra.catchTag("NotFound", () => ok(99));
+    expect(result._tag).toBe("Err");
+    if (result.isErr()) expect(result.error).toEqual({ _tag: "Timeout", ms: 5000 });
+  });
+
+  it("resultAsync.catchTag() passes through Ok", async () => {
+    const ra = ResultAsync.ok(42) as ResultAsync<number, AppError>;
+    const result = await ra.catchTag("NotFound", () => ok(0));
+    expect(result._tag).toBe("Ok");
+    if (result.isOk()) expect(result.value).toBe(42);
+  });
+
+  it("resultAsync.catchTag() with async handler", async () => {
+    const ra = ResultAsync.err({ _tag: "NotFound", resource: "User" } as AppError);
+    const result = await ra.catchTag("NotFound", () => ResultAsync.ok(99));
+    expect(result._tag).toBe("Ok");
+    if (result.isOk()) expect(result.value).toBe(99);
+  });
+
+  it("resultAsync.catchTags() handles matching error", async () => {
+    const ra = ResultAsync.err({ _tag: "Timeout", ms: 3000 } as AppError);
+    const result = await ra.catchTags({
+      NotFound: () => ok(0),
+      Timeout: () => ok(-1),
+    });
+    expect(result._tag).toBe("Ok");
+    if (result.isOk()) expect(result.value).toBe(-1);
+  });
+
+  it("resultAsync.catchTags() passes through unhandled error", async () => {
+    const ra = ResultAsync.err({ _tag: "Timeout", ms: 5000 } as AppError);
+    const result = await ra.catchTags({
+      NotFound: () => ok(0),
+    });
+    expect(result._tag).toBe("Err");
+    if (result.isErr()) expect(result.error).toEqual({ _tag: "Timeout", ms: 5000 });
+  });
+
+  it("resultAsync.andThenWith() on Ok delegates to onOk", async () => {
+    const ra = ResultAsync.ok(42) as ResultAsync<number, string>;
+    const result = await ra.andThenWith(
+      n => ok(n * 2),
+      () => ok(-1)
+    );
+    expect(result._tag).toBe("Ok");
+    if (result.isOk()) expect(result.value).toBe(84);
+  });
+
+  it("resultAsync.andThenWith() on Err delegates to onErr", async () => {
+    const ra = ResultAsync.err("fail") as ResultAsync<number, string>;
+    const result = await ra.andThenWith(
+      n => ok(n * 2),
+      () => ok(-1)
+    );
+    expect(result._tag).toBe("Ok");
+    if (result.isOk()) expect(result.value).toBe(-1);
+  });
+
+  it("resultAsync.andThenWith() with async handlers", async () => {
+    const ra = ResultAsync.ok(42) as ResultAsync<number, string>;
+    const result = await ra.andThenWith(
+      n => ResultAsync.ok(n * 2),
+      () => ResultAsync.ok(-1)
+    );
+    expect(result._tag).toBe("Ok");
+    if (result.isOk()) expect(result.value).toBe(84);
   });
 });
 

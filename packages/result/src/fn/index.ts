@@ -23,3 +23,6 @@ export { merge } from "./merge.js";
 export { toOption } from "./to-option.js";
 export { toOptionErr } from "./to-option-err.js";
 export { toJSON } from "./to-json.js";
+export { catchTag } from "./catch-tag.js";
+export { catchTags } from "./catch-tags.js";
+export { andThenWith } from "./and-then-with.js";

@@ -192,10 +192,10 @@ export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
   }
 
   static fromCallback<T, E>(
-    fn: (callback: (error: E | null, value: T) => void) => void,
+    fn: (callback: (error: E | null, value: T) => void) => void
   ): ResultAsync<T, E> {
     return new ResultAsync(
-      new Promise<Result<T, E>>((resolve) => {
+      new Promise<Result<T, E>>(resolve => {
         fn((error, value) => {
           if (error !== null && error !== undefined) {
             resolve(err(error));
@@ -203,7 +203,7 @@ export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
             resolve(ok(value));
           }
         });
-      }),
+      })
     );
   }
 
@@ -211,9 +211,9 @@ export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
     ...results: R
   ): ResultAsync<InferOkUnion<R>, InferErrUnion<R>> {
     return new ResultAsync(
-      Promise.race(results.map((r) => r.#promise)) as Promise<
+      Promise.race(results.map(r => r.#promise)) as Promise<
         Result<InferOkUnion<R>, InferErrUnion<R>>
-      >,
+      >
     );
   }
 
@@ -445,6 +445,98 @@ export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
     );
   }
 
+  // --- Effect error handling ---
+
+  catchTag<Tag extends string, T2>(
+    tag: Tag,
+    handler: (error: Extract<E, { _tag: Tag }>) => Result<T2, never> | ResultAsyncType<T2, never>
+  ): ResultAsync<T | T2, Exclude<E, { _tag: Tag }>> {
+    return new ResultAsync(
+      this.#promise.then(async (result): Promise<Result<T | T2, Exclude<E, { _tag: Tag }>>> => {
+        if (result._tag === "Ok") {
+          return ok(result.value);
+        }
+        const error = result.error;
+        if (
+          error !== null &&
+          error !== undefined &&
+          typeof error === "object" &&
+          "_tag" in error &&
+          error._tag === tag
+        ) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const handled = handler(error as any);
+          if ("_tag" in handled) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
+            return handled as any;
+          }
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
+          return (await handled) as any;
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
+        return err(result.error) as any;
+      })
+    );
+  }
+
+  catchTags<
+    Handlers extends Partial<{
+      [K in Extract<E, { _tag: string }>["_tag"]]: (
+        error: Extract<E, { _tag: K }>
+      ) => Result<unknown, never> | ResultAsyncType<unknown, never>;
+    }>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  >(handlers: Handlers): any {
+    return new ResultAsync(
+      this.#promise.then(async (result): Promise<Result<unknown, unknown>> => {
+        if (result._tag === "Ok") {
+          return ok(result.value);
+        }
+        const error = result.error;
+        if (
+          error !== null &&
+          error !== undefined &&
+          typeof error === "object" &&
+          "_tag" in error &&
+          typeof error._tag === "string" &&
+          error._tag in handlers
+        ) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const handler = (handlers as Record<string, ((e: any) => any) | undefined>)[error._tag];
+          if (handler !== undefined) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            const handled = handler(error);
+            if (handled !== null && typeof handled === "object" && "_tag" in handled) {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+              return handled;
+            }
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+            return await handled;
+          }
+        }
+        return err(result.error);
+      })
+    );
+  }
+
+  andThenWith<U, F, G>(
+    onOk: (value: T) => Result<U, F> | ResultAsyncType<U, F>,
+    onErr: (error: E) => Result<U, G> | ResultAsyncType<U, G>
+  ): ResultAsync<U, F | G> {
+    return new ResultAsync(
+      this.#promise.then(async (result): Promise<Result<U, F | G>> => {
+        if (result._tag === "Ok") {
+          const next = onOk(result.value);
+          return toPromiseResult(next);
+        }
+        const next = onErr(result.error);
+        return toPromiseResult(next);
+      })
+    );
+  }
+
+  // --- Conversion ---
+
   flip(): ResultAsync<E, T> {
     return new ResultAsync(
       this.#promise.then((result): Result<E, T> => {
@@ -456,7 +548,9 @@ export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
     );
   }
 
-  async toJSON(): Promise<{ _tag: "Ok"; _schemaVersion: 1; value: T } | { _tag: "Err"; _schemaVersion: 1; error: E }> {
+  async toJSON(): Promise<
+    { _tag: "Ok"; _schemaVersion: 1; value: T } | { _tag: "Err"; _schemaVersion: 1; error: E }
+  > {
     const result = await this.#promise;
     return result.toJSON();
   }

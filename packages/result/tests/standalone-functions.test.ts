@@ -2,11 +2,34 @@ import { describe, it, expect, vi } from "vitest";
 import { ok, err } from "../src/index.js";
 import type { Result } from "../src/index.js";
 import {
-  pipe, map, mapErr, mapBoth, andThen, orElse, match,
-  unwrapOr, flatten, flip, and, or, mapOr, mapOrElse,
-  contains, containsErr, inspect, inspectErr,
-  toNullable, toUndefined, intoTuple, merge,
-  toOption, toOptionErr, toJSON,
+  pipe,
+  map,
+  mapErr,
+  mapBoth,
+  andThen,
+  orElse,
+  match,
+  unwrapOr,
+  flatten,
+  flip,
+  and,
+  or,
+  mapOr,
+  mapOrElse,
+  contains,
+  containsErr,
+  inspect,
+  inspectErr,
+  toNullable,
+  toUndefined,
+  intoTuple,
+  merge,
+  toOption,
+  toOptionErr,
+  toJSON,
+  catchTag,
+  catchTags,
+  andThenWith,
 } from "../src/fn/index.js";
 
 describe("BEH-10-001, INV-14: Standalone Functions", () => {
@@ -16,7 +39,10 @@ describe("BEH-10-001, INV-14: Standalone Functions", () => {
     });
 
     it("pipe(ok(21), map(n => n * 2)) returns Ok(42)", () => {
-      const result = pipe(ok(21), map((n: number) => n * 2));
+      const result = pipe(
+        ok(21),
+        map((n: number) => n * 2)
+      );
       expect(result._tag).toBe("Ok");
       if (result.isOk()) expect(result.value).toBe(42);
     });
@@ -26,7 +52,7 @@ describe("BEH-10-001, INV-14: Standalone Functions", () => {
         ok(10),
         map((n: number) => n * 2),
         map((n: number) => n + 1),
-        unwrapOr(0),
+        unwrapOr(0)
       );
       expect(result).toBe(21);
     });
@@ -55,13 +81,19 @@ describe("BEH-10-001, INV-14: Standalone Functions", () => {
 
   describe("BEH-10-003: mapBoth", () => {
     it("delegates to result.mapBoth on Ok", () => {
-      const result = mapBoth((n: number) => n * 2, (e: string) => e.toUpperCase())(ok(21) as Result<number, string>);
+      const result = mapBoth(
+        (n: number) => n * 2,
+        (e: string) => e.toUpperCase()
+      )(ok(21) as Result<number, string>);
       expect(result._tag).toBe("Ok");
       if (result.isOk()) expect(result.value).toBe(42);
     });
 
     it("delegates to result.mapBoth on Err", () => {
-      const result = mapBoth((n: number) => n * 2, (e: string) => e.toUpperCase())(err("fail") as Result<number, string>);
+      const result = mapBoth(
+        (n: number) => n * 2,
+        (e: string) => e.toUpperCase()
+      )(err("fail") as Result<number, string>);
       expect(result._tag).toBe("Err");
       if (result.isErr()) expect(result.error).toBe("FAIL");
     });
@@ -85,11 +117,21 @@ describe("BEH-10-001, INV-14: Standalone Functions", () => {
 
   describe("BEH-10-003: match", () => {
     it("delegates to result.match on Ok", () => {
-      expect(match((n: number) => n * 2, (e: string) => e.length)(ok(21) as Result<number, string>)).toBe(42);
+      expect(
+        match(
+          (n: number) => n * 2,
+          (e: string) => e.length
+        )(ok(21) as Result<number, string>)
+      ).toBe(42);
     });
 
     it("delegates to result.match on Err", () => {
-      expect(match((n: number) => n * 2, (e: string) => e.length)(err("ab") as Result<number, string>)).toBe(2);
+      expect(
+        match(
+          (n: number) => n * 2,
+          (e: string) => e.length
+        )(err("ab") as Result<number, string>)
+      ).toBe(2);
     });
   });
 
@@ -141,8 +183,18 @@ describe("BEH-10-001, INV-14: Standalone Functions", () => {
 
   describe("BEH-10-003: mapOrElse", () => {
     it("delegates to result.mapOrElse", () => {
-      expect(mapOrElse((e: string) => e.length, (n: number) => n * 2)(ok(21) as Result<number, string>)).toBe(42);
-      expect(mapOrElse((e: string) => e.length, (n: number) => n * 2)(err("ab") as Result<number, string>)).toBe(2);
+      expect(
+        mapOrElse(
+          (e: string) => e.length,
+          (n: number) => n * 2
+        )(ok(21) as Result<number, string>)
+      ).toBe(42);
+      expect(
+        mapOrElse(
+          (e: string) => e.length,
+          (n: number) => n * 2
+        )(err("ab") as Result<number, string>)
+      ).toBe(2);
     });
   });
 
@@ -227,6 +279,80 @@ describe("BEH-10-001, INV-14: Standalone Functions", () => {
     });
   });
 
+  describe("BEH-15-004: catchTag standalone", () => {
+    it("delegates to result.catchTag on Err match", () => {
+      type E = { _tag: "A"; x: number } | { _tag: "B"; y: string };
+      const result: Result<number, E> = err({ _tag: "A", x: 1 });
+      const caught = catchTag("A", () => ok(99))(result);
+      expect(caught._tag).toBe("Ok");
+      if (caught.isOk()) expect(caught.value).toBe(99);
+    });
+
+    it("passes through on non-match", () => {
+      type E = { _tag: "A"; x: number } | { _tag: "B"; y: string };
+      const result: Result<number, E> = err({ _tag: "B", y: "hi" });
+      const caught = catchTag("A", () => ok(99))(result);
+      expect(caught._tag).toBe("Err");
+    });
+
+    it("works in pipe", () => {
+      type E = { _tag: "A" } | { _tag: "B" };
+      const result = pipe(
+        err({ _tag: "A" }) as Result<number, E>,
+        catchTag("A", () => ok(42))
+      );
+      expect(result._tag).toBe("Ok");
+      if (result.isOk()) expect(result.value).toBe(42);
+    });
+  });
+
+  describe("BEH-15-004: catchTags standalone", () => {
+    it("delegates to result.catchTags", () => {
+      type E = { _tag: "A" } | { _tag: "B" };
+      const result: Result<number, E> = err({ _tag: "B" });
+      const caught = catchTags({
+        A: () => ok(1),
+        B: () => ok(2),
+      })(result);
+      expect(caught._tag).toBe("Ok");
+      if (caught.isOk()) expect(caught.value).toBe(2);
+    });
+  });
+
+  describe("BEH-15-004: andThenWith standalone", () => {
+    it("delegates to result.andThenWith on Ok", () => {
+      const result: Result<number, string> = ok(42);
+      const transformed = andThenWith(
+        (n: number) => ok(n * 2),
+        (_e: string) => ok(-1)
+      )(result);
+      expect(transformed._tag).toBe("Ok");
+      if (transformed.isOk()) expect(transformed.value).toBe(84);
+    });
+
+    it("delegates to result.andThenWith on Err", () => {
+      const result: Result<number, string> = err("fail");
+      const transformed = andThenWith(
+        (n: number) => ok(n * 2),
+        (_e: string) => ok(-1)
+      )(result);
+      expect(transformed._tag).toBe("Ok");
+      if (transformed.isOk()) expect(transformed.value).toBe(-1);
+    });
+
+    it("works in pipe", () => {
+      const result = pipe(
+        ok(10) as Result<number, string>,
+        andThenWith(
+          (n: number) => ok(String(n)),
+          (_e: string) => ok("error")
+        )
+      );
+      expect(result._tag).toBe("Ok");
+      if (result.isOk()) expect(result.value).toBe("10");
+    });
+  });
+
   describe("BEH-10-004: Usage examples", () => {
     it("pipe chain: transforms Ok through multiple standalone functions", () => {
       const result = pipe(
@@ -234,7 +360,7 @@ describe("BEH-10-001, INV-14: Standalone Functions", () => {
         map((n: number) => n * 3),
         andThen((n: number) => (n > 10 ? ok(n) : err("too small"))),
         mapErr((e: string) => e.toUpperCase()),
-        unwrapOr(0),
+        unwrapOr(0)
       );
       expect(result).toBe(15);
     });
@@ -251,10 +377,10 @@ describe("BEH-10-001, INV-14: Standalone Functions", () => {
     it("mixing with methods: standalone pipe and instance methods interop", () => {
       const result = pipe(
         ok(10),
-        map((n: number) => n + 5),
+        map((n: number) => n + 5)
       );
       // Continue with instance method
-      const final = result.map((n) => n * 2).unwrapOr(0);
+      const final = result.map(n => n * 2).unwrapOr(0);
       expect(final).toBe(30);
     });
   });

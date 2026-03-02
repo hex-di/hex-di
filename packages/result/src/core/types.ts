@@ -38,7 +38,41 @@ export interface ResultAsync<T, E> extends PromiseLike<Result<T, E>> {
   merge(): Promise<T | E>;
   flatten<U>(this: ResultAsync<Result<U, E>, E>): ResultAsync<U, E>;
   flip(): ResultAsync<E, T>;
-  toJSON(): Promise<{ _tag: "Ok"; _schemaVersion: 1; value: T } | { _tag: "Err"; _schemaVersion: 1; error: E }>;
+
+  // Effect error handling
+  catchTag<Tag extends string, T2>(
+    tag: Tag,
+    handler: (error: Extract<E, { _tag: Tag }>) => Result<T2, never> | ResultAsync<T2, never>
+  ): ResultAsync<T | T2, Exclude<E, { _tag: Tag }>>;
+
+  catchTags<
+    Handlers extends Partial<{
+      [K in Extract<E, { _tag: string }>["_tag"]]: (
+        error: Extract<E, { _tag: K }>
+      ) => Result<unknown, never> | ResultAsync<unknown, never>;
+    }>,
+  >(
+    handlers: Handlers
+  ): ResultAsync<
+    | T
+    | {
+        [K in keyof Handlers]: Handlers[K] extends (
+          e: never
+        ) => Result<infer U, never> | ResultAsync<infer U, never>
+          ? U
+          : never;
+      }[keyof Handlers],
+    Exclude<E, { _tag: keyof Handlers & string }>
+  >;
+
+  andThenWith<U, F, G>(
+    onOk: (value: T) => Result<U, F> | ResultAsync<U, F>,
+    onErr: (error: E) => Result<U, G> | ResultAsync<U, G>
+  ): ResultAsync<U, F | G>;
+
+  toJSON(): Promise<
+    { _tag: "Ok"; _schemaVersion: 1; value: T } | { _tag: "Err"; _schemaVersion: 1; error: E }
+  >;
 }
 
 /**
@@ -93,6 +127,27 @@ export interface Ok<T, E> {
   andThrough<F>(f: (value: T) => Result<unknown, F>): Result<T, E | F>;
   inspect(f: (value: T) => void): Ok<T, E>;
   inspectErr(f: (error: E) => void): Ok<T, E>;
+
+  // Effect error handling
+  catchTag<Tag extends string, T2>(
+    tag: Tag,
+    handler: (error: Extract<E, { _tag: Tag }>) => Result<T2, never>
+  ): Ok<T, Exclude<E, { _tag: Tag }>>;
+
+  catchTags<
+    Handlers extends Partial<{
+      [K in Extract<E, { _tag: string }>["_tag"]]: (
+        error: Extract<E, { _tag: K }>
+      ) => Result<unknown, never>;
+    }>,
+  >(
+    handlers: Handlers
+  ): Ok<T, Exclude<E, { _tag: keyof Handlers & string }>>;
+
+  andThenWith<U, F, G>(
+    onOk: (value: T) => Result<U, F>,
+    onErr: (error: E) => Result<U, G>
+  ): Result<U, F>;
 
   // Extraction
   match<A, B>(onOk: (value: T) => A, onErr: (error: E) => B): A;
@@ -181,6 +236,33 @@ export interface Err<T, E> {
   andThrough<F>(f: (value: T) => Result<unknown, F>): Err<T, E>;
   inspect(f: (value: T) => void): Err<T, E>;
   inspectErr(f: (error: E) => void): Err<T, E>;
+
+  // Effect error handling
+  catchTag<Tag extends string, T2>(
+    tag: Tag,
+    handler: (error: Extract<E, { _tag: Tag }>) => Result<T2, never>
+  ): Result<T | T2, Exclude<E, { _tag: Tag }>>;
+
+  catchTags<
+    Handlers extends Partial<{
+      [K in Extract<E, { _tag: string }>["_tag"]]: (
+        error: Extract<E, { _tag: K }>
+      ) => Result<unknown, never>;
+    }>,
+  >(
+    handlers: Handlers
+  ): Result<
+    | T
+    | {
+        [K in keyof Handlers]: Handlers[K] extends (e: never) => Result<infer U, never> ? U : never;
+      }[keyof Handlers],
+    Exclude<E, { _tag: keyof Handlers & string }>
+  >;
+
+  andThenWith<U, F, G>(
+    onOk: (value: T) => Result<U, F>,
+    onErr: (error: E) => Result<U, G>
+  ): Result<U, G>;
 
   // Extraction
   match<A, B>(onOk: (value: T) => A, onErr: (error: E) => B): B;

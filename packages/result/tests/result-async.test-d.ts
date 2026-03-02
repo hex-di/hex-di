@@ -47,4 +47,23 @@ describe("ResultAsync - Type Level", () => {
   // DoD 8 type #7 - covered by collect tests
 
   // DoD 8 type #8 - covered by collect tests
+
+  // BEH-15-005: Effect error handling on ResultAsync
+  it("resultAsync.catchTag narrows error type", () => {
+    type AppError = { _tag: "NotFound" } | { _tag: "Timeout" };
+    const ra = ResultAsync.err({ _tag: "NotFound" }) as ResultAsync<number, AppError>;
+    const caught = ra.catchTag("NotFound", () => ok(0));
+    expectTypeOf(caught).toMatchTypeOf<ResultAsync<number, { _tag: "Timeout" }>>();
+  });
+
+  it("resultAsync.andThenWith produces ResultAsync<U, F | G>", () => {
+    type E1 = { _tag: "E1" };
+    type E2 = { _tag: "E2" };
+    const ra = ResultAsync.ok(42) as ResultAsync<number, string>;
+    const result = ra.andThenWith(
+      (): Result<string, E1> => ok("x"),
+      (): Result<string, E2> => ok("y")
+    );
+    expectTypeOf(result).toMatchTypeOf<ResultAsync<string, E1 | E2>>();
+  });
 });

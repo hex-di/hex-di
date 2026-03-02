@@ -155,6 +155,17 @@ export function ok<T>(value: T): Ok<T, never> {
       return self;
     },
 
+    // Effect error handling
+    catchTag() {
+      return self;
+    },
+    catchTags() {
+      return self;
+    },
+    andThenWith(onOk) {
+      return onOk(value);
+    },
+
     // Extraction
     match(onOk) {
       return onOk(value);
@@ -339,6 +350,44 @@ export function err<E>(error: E): Err<never, E> {
     inspectErr(f) {
       f(error);
       return self;
+    },
+
+    // Effect error handling — generic narrowing (Exclude<E, { _tag: Tag }>) cannot
+    // be verified by TypeScript in method bodies. Runtime _tag checks guarantee safety.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    catchTag(tag: string, handler: (error: any) => any) {
+      if (
+        error !== null &&
+        error !== undefined &&
+        typeof error === "object" &&
+        "_tag" in error &&
+        error._tag === tag
+      ) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        return handler(error);
+      }
+      return self;
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    catchTags(handlers: Record<string, ((error: any) => any) | undefined>) {
+      if (
+        error !== null &&
+        error !== undefined &&
+        typeof error === "object" &&
+        "_tag" in error &&
+        typeof error._tag === "string" &&
+        error._tag in handlers
+      ) {
+        const handler = handlers[error._tag];
+        if (handler !== undefined) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+          return handler(error);
+        }
+      }
+      return self;
+    },
+    andThenWith(_onOk, onErr) {
+      return onErr(error);
     },
 
     // Extraction

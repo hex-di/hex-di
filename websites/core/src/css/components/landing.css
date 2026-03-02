@@ -28,9 +28,8 @@
 /* ============================================================
    Dark home page body overrides
    ============================================================ */
-/* Landing page overrides — whole site is now dark, so only hide
-   default navbar/footer on the landing page */
-body.dark-home-page .navbar--fixed-top {
+/* Landing page overrides — CoreNav hidden, TacticalNav takes over */
+body.dark-home-page [data-core-nav] {
   display: none !important;
 }
 

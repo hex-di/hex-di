@@ -8,7 +8,8 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { port, createAdapter, adapterOrDie, adapterOrElse } from "../src/index.js";
+import { port, createAdapter, adapterOrDie, adapterOrElse, adapterOrHandle } from "../src/index.js";
+import type { FactoryResult } from "../src/index.js";
 import { ResultAsync } from "@hex-di/result";
 
 // =============================================================================
@@ -487,5 +488,200 @@ describe("adapterOrDie finalizer", () => {
 
     const wrapped = adapterOrDie(adapter);
     expect(wrapped.finalizer).toBe(finalizerFn);
+  });
+});
+
+// =============================================================================
+// adapterOrHandle
+// =============================================================================
+
+type NotFoundError = { readonly _tag: "NotFound"; readonly id: string };
+type TimeoutError = { readonly _tag: "Timeout"; readonly ms: number };
+type AuthError = { readonly _tag: "AuthError"; readonly code: number };
+type TestErrors = NotFoundError | TimeoutError | AuthError;
+
+describe("adapterOrHandle", () => {
+  const defaultLogger: Logger = { log: () => {} };
+
+  it("should pass through Ok results and unwrap the value", () => {
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      factory: (): FactoryResult<Logger, TestErrors> => ({
+        _tag: "Ok" as const,
+        value: defaultLogger,
+      }),
+    });
+
+    const wrapped = adapterOrHandle(adapter, {
+      NotFound: () => ({ _tag: "Ok" as const, value: { log: () => {} } }),
+    });
+    const result = wrapped.factory({});
+    expect(result).toBe(defaultLogger);
+  });
+
+  it("should call matching handler on Err and unwrap its Ok result", () => {
+    const fallback: Logger = { log: () => {} };
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      factory: (): FactoryResult<Logger, TestErrors> => ({
+        _tag: "Err" as const,
+        error: { _tag: "NotFound" as const, id: "abc" },
+      }),
+    });
+
+    const wrapped = adapterOrHandle(adapter, {
+      NotFound: () => ({ _tag: "Ok" as const, value: fallback }),
+    });
+    const result = wrapped.factory({});
+    expect(result).toBe(fallback);
+  });
+
+  it("should return Err as-is when no matching handler exists", () => {
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      factory: (): FactoryResult<Logger, TestErrors> => ({
+        _tag: "Err" as const,
+        error: { _tag: "AuthError" as const, code: 403 },
+      }),
+    });
+
+    const wrapped = adapterOrHandle(adapter, {
+      NotFound: () => ({ _tag: "Ok" as const, value: defaultLogger }),
+    });
+    const result = wrapped.factory({});
+    expect(result).toEqual({ _tag: "Err", error: { _tag: "AuthError", code: 403 } });
+  });
+
+  it("should pass through plain (non-Result) factory returns unchanged", () => {
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      factory: () => defaultLogger,
+    });
+
+    const wrapped = adapterOrHandle(adapter, {});
+    const result = wrapped.factory({});
+    expect(result).toBe(defaultLogger);
+  });
+
+  it("should pass the full error object to the handler", () => {
+    const handlerFn = vi.fn(() => ({
+      _tag: "Ok" as const,
+      value: defaultLogger,
+    }));
+
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      factory: (): FactoryResult<Logger, TestErrors> => ({
+        _tag: "Err" as const,
+        error: { _tag: "Timeout" as const, ms: 5000 },
+      }),
+    });
+
+    const wrapped = adapterOrHandle(adapter, { Timeout: handlerFn });
+    wrapped.factory({});
+    expect(handlerFn).toHaveBeenCalledWith({ _tag: "Timeout", ms: 5000 });
+  });
+
+  it("should preserve adapter metadata", () => {
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      lifetime: "scoped",
+      factory: (): FactoryResult<Logger, NotFoundError> => ({
+        _tag: "Ok" as const,
+        value: defaultLogger,
+      }),
+    });
+
+    const wrapped = adapterOrHandle(adapter, {
+      NotFound: () => ({ _tag: "Ok" as const, value: defaultLogger }),
+    });
+    expect(wrapped.provides).toBe(adapter.provides);
+    expect(wrapped.lifetime).toBe("scoped");
+    expect(wrapped.requires).toEqual([]);
+    expect(wrapped.factoryKind).toBe("sync");
+    expect(wrapped.clonable).toBe(false);
+  });
+
+  it("should preserve clonable flag", () => {
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      clonable: true,
+      factory: (): FactoryResult<Logger, NotFoundError> => ({
+        _tag: "Ok" as const,
+        value: defaultLogger,
+      }),
+    });
+
+    const wrapped = adapterOrHandle(adapter, {
+      NotFound: () => ({ _tag: "Ok" as const, value: defaultLogger }),
+    });
+    expect(wrapped.clonable).toBe(true);
+  });
+
+  it("should preserve finalizer", () => {
+    const finalizerFn = vi.fn();
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      factory: (): FactoryResult<Logger, NotFoundError> => ({
+        _tag: "Ok" as const,
+        value: defaultLogger,
+      }),
+      finalizer: finalizerFn,
+    });
+
+    const wrapped = adapterOrHandle(adapter, {
+      NotFound: () => ({ _tag: "Ok" as const, value: defaultLogger }),
+    });
+    expect(wrapped.finalizer).toBe(finalizerFn);
+  });
+
+  it("should return a frozen adapter", () => {
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      factory: (): FactoryResult<Logger, NotFoundError> => ({
+        _tag: "Ok" as const,
+        value: defaultLogger,
+      }),
+    });
+
+    const wrapped = adapterOrHandle(adapter, {
+      NotFound: () => ({ _tag: "Ok" as const, value: defaultLogger }),
+    });
+    expect(Object.isFrozen(wrapped)).toBe(true);
+  });
+
+  it("should handle PromiseLike (thenable) factory returns", async () => {
+    const fallback: Logger = { log: () => {} };
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      factory: (): PromiseLike<FactoryResult<Logger, NotFoundError>> =>
+        Promise.resolve({
+          _tag: "Err" as const,
+          error: { _tag: "NotFound" as const, id: "xyz" },
+        }),
+    });
+
+    const wrapped = adapterOrHandle(adapter, {
+      NotFound: () => ({ _tag: "Ok" as const, value: fallback }),
+    });
+    const result = await wrapped.factory({});
+    expect(result).toBe(fallback);
+  });
+
+  it("should handle async factory returns", async () => {
+    const fallback: Logger = { log: () => {} };
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      factory: async (): Promise<FactoryResult<Logger, NotFoundError>> => ({
+        _tag: "Err" as const,
+        error: { _tag: "NotFound" as const, id: "xyz" },
+      }),
+    });
+
+    const wrapped = adapterOrHandle(adapter, {
+      NotFound: () => ({ _tag: "Ok" as const, value: fallback }),
+    });
+    const result = await wrapped.factory({});
+    expect(result).toBe(fallback);
   });
 });

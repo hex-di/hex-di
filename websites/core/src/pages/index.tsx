@@ -2843,9 +2843,9 @@ export default function Home(): ReactNode {
       description="Catch missing dependencies at compile time. HexDI gives your TypeScript dependency graph structural type checking — no decorators, no reflection, no runtime surprises."
       noFooter
     >
-      {/* SSR-safe: hide Docusaurus navbar immediately without waiting for JS hydration */}
+      {/* SSR-safe: hide CoreNav and set dark background before JS hydration */}
       <Head>
-        <style>{`.navbar--fixed-top{display:none!important}.main-wrapper{padding-top:0!important}body{background:#020408!important}`}</style>
+        <style>{`[data-core-nav]{display:none!important}.main-wrapper{padding-top:0!important}body{background:#020408!important}`}</style>
       </Head>
       <div style={{ background: "#020408", minHeight: "100vh", color: "#c8d6e5" }}>
         <TacticalNav />

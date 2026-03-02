@@ -1,5 +1,145 @@
 import type { Result, ResultAsync } from "./core/types.js";
 
+// =============================================================================
+// Error Row Utilities (Tier 3)
+// =============================================================================
+
+/**
+ * Constructs a frozen tagged error type. Type-level companion to `createError()`.
+ *
+ * @example
+ * ```ts
+ * import type { TaggedError } from '@hex-di/result';
+ *
+ * type NotFound = TaggedError<"NotFound", { resource: string }>;
+ * // Readonly<{ _tag: "NotFound"; resource: string }>
+ *
+ * type Timeout = TaggedError<"Timeout">;
+ * // Readonly<{ _tag: "Timeout" }>
+ * ```
+ *
+ * @since v1.1.0
+ * @see spec/result/type-system/error-row.md
+ */
+export type TaggedError<Tag extends string, Fields extends Record<string, unknown> = never> = [
+  Fields,
+] extends [never]
+  ? Readonly<{ _tag: Tag }>
+  : Readonly<{ _tag: Tag } & Fields>;
+
+/**
+ * Extracts all `_tag` literal values from a tagged error union.
+ *
+ * @example
+ * ```ts
+ * import type { TagsOf } from '@hex-di/result';
+ *
+ * type E = { _tag: "NotFound" } | { _tag: "Timeout" };
+ * type Tags = TagsOf<E>; // "NotFound" | "Timeout"
+ * ```
+ *
+ * @since v1.1.0
+ * @see spec/result/type-system/error-row.md
+ */
+export type TagsOf<E> = E extends { _tag: infer Tag extends string } ? Tag : never;
+
+/**
+ * Boolean check: does the error union `E` contain a member with the given `_tag`?
+ *
+ * @example
+ * ```ts
+ * import type { HasTag } from '@hex-di/result';
+ *
+ * type E = { _tag: "NotFound" } | { _tag: "Timeout" };
+ * type A = HasTag<E, "NotFound">; // true
+ * type B = HasTag<E, "Unknown">;  // false
+ * ```
+ *
+ * @since v1.1.0
+ * @see spec/result/type-system/error-row.md
+ */
+export type HasTag<E, Tag extends string> = Extract<E, { _tag: Tag }> extends never ? false : true;
+
+/**
+ * Extracts the error member with a specific `_tag` from a union.
+ * Readable alias for `Extract<E, { _tag: Tag }>`.
+ *
+ * @example
+ * ```ts
+ * import type { ErrorByTag } from '@hex-di/result';
+ *
+ * type E = { _tag: "NotFound"; resource: string } | { _tag: "Timeout"; ms: number };
+ * type NF = ErrorByTag<E, "NotFound">; // { _tag: "NotFound"; resource: string }
+ * ```
+ *
+ * @since v1.1.0
+ * @see spec/result/type-system/error-row.md
+ */
+export type ErrorByTag<E, Tag extends string> = Extract<E, { _tag: Tag }>;
+
+/**
+ * Removes the error member with a specific `_tag` from a union.
+ * Readable alias for `Exclude<E, { _tag: Tag }>`.
+ *
+ * @example
+ * ```ts
+ * import type { RemoveTag } from '@hex-di/result';
+ *
+ * type E = { _tag: "NotFound" } | { _tag: "Timeout" };
+ * type Remaining = RemoveTag<E, "NotFound">; // { _tag: "Timeout" }
+ * ```
+ *
+ * @since v1.1.0
+ * @see spec/result/type-system/error-row.md
+ */
+export type RemoveTag<E, Tag extends string> = Exclude<E, { _tag: Tag }>;
+
+/**
+ * Removes multiple tagged members from an error union at once.
+ * Recursive over a tuple of tag strings.
+ *
+ * @example
+ * ```ts
+ * import type { RemoveTags } from '@hex-di/result';
+ *
+ * type E = { _tag: "NotFound" } | { _tag: "Timeout" } | { _tag: "Forbidden" };
+ * type Remaining = RemoveTags<E, ["NotFound", "Timeout"]>; // { _tag: "Forbidden" }
+ * ```
+ *
+ * @since v1.1.0
+ * @see spec/result/type-system/error-row.md
+ */
+export type RemoveTags<E, Tags extends readonly string[]> = Tags extends readonly [
+  infer Head extends string,
+  ...infer Tail extends string[],
+]
+  ? RemoveTags<Exclude<E, { _tag: Head }>, Tail>
+  : E;
+
+/**
+ * Exhaustive handler map requiring a handler for every `_tag` in the error union.
+ * Each handler must return `Result<T, never>` (infallible recovery).
+ * Opt-in type annotation for `catchTags` — enforces that all error variants are handled.
+ *
+ * @example
+ * ```ts
+ * import type { ExhaustiveHandlerMap } from '@hex-di/result';
+ * import { ok } from '@hex-di/result';
+ *
+ * type E = { _tag: "NotFound"; resource: string } | { _tag: "Timeout"; ms: number };
+ * const handlers: ExhaustiveHandlerMap<E, string> = {
+ *   NotFound: (e) => ok(`missing: ${e.resource}`),
+ *   Timeout: (e) => ok(`timed out after ${e.ms}ms`),
+ * };
+ * ```
+ *
+ * @since v1.1.0
+ * @see spec/result/type-system/error-row.md
+ */
+export type ExhaustiveHandlerMap<E extends { _tag: string }, T> = {
+  [K in E["_tag"]]: (error: Extract<E, { _tag: K }>) => Result<T, never>;
+};
+
 /**
  * Extracts the success type `T` from a `Result<T, E>` or `ResultAsync<T, E>`.
  *

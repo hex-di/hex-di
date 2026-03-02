@@ -12,7 +12,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { port, createAdapter, adapterOrDie, adapterOrElse } from "../src/index.js";
+import { port, createAdapter, adapterOrDie, adapterOrElse, adapterOrHandle } from "../src/index.js";
 import type {
   InferAdapterError,
   InferManyErrors,
@@ -485,5 +485,130 @@ describe("adapterOrElse requires merge and clonable", () => {
 
     const result = adapterOrElse(primary, fb);
     expectTypeOf(result.clonable).toEqualTypeOf<true>();
+  });
+});
+
+// =============================================================================
+// adapterOrHandle — Tag-Based Error Narrowing
+// =============================================================================
+
+type NotFoundError = { _tag: "NotFound"; id: string };
+type TimeoutError = { _tag: "Timeout"; ms: number };
+type AuthError = { _tag: "AuthError"; code: number };
+type ThreeTagErrors = NotFoundError | TimeoutError | AuthError;
+
+describe("adapterOrHandle narrows TError by handled tags", () => {
+  it("handling one tag removes it from TError", () => {
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      factory: (): FactoryResult<Logger, ThreeTagErrors> => ({
+        _tag: "Ok" as const,
+        value: { log: () => {} },
+      }),
+    });
+
+    const handled = adapterOrHandle(adapter, {
+      NotFound: () => ({ _tag: "Ok" as const, value: { log: () => {} } }),
+    });
+
+    type Remaining = InferAdapterError<typeof handled>;
+    expectTypeOf<Remaining>().toEqualTypeOf<TimeoutError | AuthError>();
+  });
+
+  it("handling all tags produces TError = never", () => {
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      factory: (): FactoryResult<Logger, ThreeTagErrors> => ({
+        _tag: "Ok" as const,
+        value: { log: () => {} },
+      }),
+    });
+
+    const handled = adapterOrHandle(adapter, {
+      NotFound: () => ({ _tag: "Ok" as const, value: { log: () => {} } }),
+      Timeout: () => ({ _tag: "Ok" as const, value: { log: () => {} } }),
+      AuthError: () => ({ _tag: "Ok" as const, value: { log: () => {} } }),
+    });
+
+    type Remaining = InferAdapterError<typeof handled>;
+    expectTypeOf<Remaining>().toBeNever();
+  });
+
+  it("handling two of three tags leaves one", () => {
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      factory: (): FactoryResult<Logger, ThreeTagErrors> => ({
+        _tag: "Ok" as const,
+        value: { log: () => {} },
+      }),
+    });
+
+    const handled = adapterOrHandle(adapter, {
+      NotFound: () => ({ _tag: "Ok" as const, value: { log: () => {} } }),
+      Timeout: () => ({ _tag: "Ok" as const, value: { log: () => {} } }),
+    });
+
+    type Remaining = InferAdapterError<typeof handled>;
+    expectTypeOf<Remaining>().toEqualTypeOf<AuthError>();
+  });
+
+  it("preserves TProvides, TLifetime, TFactoryKind, TClonable", () => {
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      lifetime: "scoped",
+      clonable: true,
+      factory: (): FactoryResult<Logger, NotFoundError> => ({
+        _tag: "Ok" as const,
+        value: { log: () => {} },
+      }),
+    });
+
+    const handled = adapterOrHandle(adapter, {
+      NotFound: () => ({ _tag: "Ok" as const, value: { log: () => {} } }),
+    });
+
+    expectTypeOf(handled.provides).toEqualTypeOf(adapter.provides);
+    expectTypeOf(handled.lifetime).toEqualTypeOf<"scoped">();
+    expectTypeOf(handled.factoryKind).toEqualTypeOf<"sync">();
+    expectTypeOf(handled.clonable).toEqualTypeOf<true>();
+  });
+
+  it("preserves TRequiresTuple", () => {
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      requires: [ConfigPort],
+      factory: (_deps): FactoryResult<Logger, NotFoundError> => ({
+        _tag: "Ok" as const,
+        value: { log: () => {} },
+      }),
+    });
+
+    const handled = adapterOrHandle(adapter, {
+      NotFound: () => ({ _tag: "Ok" as const, value: { log: () => {} } }),
+    });
+
+    type Requires = typeof handled extends { requires: infer R } ? R : never;
+    expectTypeOf<Requires>().toEqualTypeOf<readonly [typeof ConfigPort]>();
+  });
+
+  it("handler receives correctly narrowed error type", () => {
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      factory: (): FactoryResult<Logger, ThreeTagErrors> => ({
+        _tag: "Ok" as const,
+        value: { log: () => {} },
+      }),
+    });
+
+    adapterOrHandle(adapter, {
+      NotFound: err => {
+        expectTypeOf(err).toEqualTypeOf<NotFoundError>();
+        return { _tag: "Ok" as const, value: { log: () => {} } };
+      },
+      Timeout: err => {
+        expectTypeOf(err).toEqualTypeOf<TimeoutError>();
+        return { _tag: "Ok" as const, value: { log: () => {} } };
+      },
+    });
   });
 });

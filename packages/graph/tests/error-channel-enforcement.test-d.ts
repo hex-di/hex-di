@@ -11,7 +11,7 @@
  */
 
 import { describe, expectTypeOf, it } from "vitest";
-import { port, createAdapter, adapterOrDie, adapterOrElse } from "@hex-di/core";
+import { port, createAdapter, adapterOrDie, adapterOrElse, adapterOrHandle } from "@hex-di/core";
 import type { FactoryResult } from "@hex-di/core";
 import { GraphBuilder } from "../src/index.js";
 import type { Graph } from "../src/index.js";
@@ -38,6 +38,9 @@ const LoggerPort = port<Logger>()({ name: "Logger" });
 const ConfigPort = port<Config>()({ name: "Config" });
 
 type MyError = { code: string; message: string };
+type TaggedErrorA = { _tag: "ErrorA"; code: string };
+type TaggedErrorB = { _tag: "ErrorB"; reason: string };
+type TaggedErrors = TaggedErrorA | TaggedErrorB;
 
 // Infallible adapters (no error channel)
 const InfallibleLoggerAdapter = createAdapter({
@@ -54,6 +57,15 @@ const InfallibleConfigAdapter = createAdapter({
 const FallibleLoggerAdapter = createAdapter({
   provides: LoggerPort,
   factory: (): FactoryResult<Logger, MyError> => ({
+    _tag: "Ok" as const,
+    value: { log: () => {} },
+  }),
+});
+
+// Fallible adapter with tagged errors (for adapterOrHandle)
+const TaggedFallibleLoggerAdapter = createAdapter({
+  provides: LoggerPort,
+  factory: (): FactoryResult<Logger, TaggedErrors> => ({
     _tag: "Ok" as const,
     value: { log: () => {} },
   }),
@@ -110,14 +122,22 @@ describe("build() with unhandled fallible adapter returns error string", () => {
     expectTypeOf<ContainsError>().toEqualTypeOf<true>();
   });
 
-  it("error message mentions adapterOrDie or adapterOrElse", () => {
+  it("error message mentions adapterOrDie, adapterOrElse, or adapterOrHandle", () => {
     const builder = GraphBuilder.create().provide(FallibleLoggerAdapter);
     type BuildResult = ReturnType<typeof builder.build>;
 
-    type ContainsOrDie = BuildResult extends `${string}adapterOrDie(adapter)${string}` ? true : false;
-    type ContainsOrElse = BuildResult extends `${string}adapterOrElse(adapter, fallbackAdapter)${string}` ? true : false;
+    type ContainsOrDie = BuildResult extends `${string}adapterOrDie(adapter)${string}`
+      ? true
+      : false;
+    type ContainsOrElse =
+      BuildResult extends `${string}adapterOrElse(adapter, fallbackAdapter)${string}`
+        ? true
+        : false;
+    type ContainsOrHandle =
+      BuildResult extends `${string}adapterOrHandle(adapter, handlers)${string}` ? true : false;
     expectTypeOf<ContainsOrDie>().toEqualTypeOf<true>();
     expectTypeOf<ContainsOrElse>().toEqualTypeOf<true>();
+    expectTypeOf<ContainsOrHandle>().toEqualTypeOf<true>();
   });
 });
 
@@ -231,6 +251,62 @@ describe("tryBuild() with adapterOrElse-wrapped adapter returns Result", () => {
     type TryBuildResult = ReturnType<typeof builder.tryBuild>;
 
     // Should NOT be a string (error message)
+    type IsString = TryBuildResult extends string ? true : false;
+    expectTypeOf<IsString>().toEqualTypeOf<false>();
+  });
+});
+
+// =============================================================================
+// build() with adapterOrHandle() (all tags handled) -> returns Graph
+// =============================================================================
+
+describe("build() with adapterOrHandle-wrapped fallible adapter returns Graph", () => {
+  it("adapterOrHandle handling all tags clears error channel for build()", () => {
+    const SafeAdapter = adapterOrHandle(TaggedFallibleLoggerAdapter, {
+      ErrorA: () => ({ _tag: "Ok" as const, value: { log: () => {} } }),
+      ErrorB: () => ({ _tag: "Ok" as const, value: { log: () => {} } }),
+    });
+    const builder = GraphBuilder.create().provide(SafeAdapter);
+    type BuildResult = ReturnType<typeof builder.build>;
+
+    type IsGraph = BuildResult extends Graph<unknown, unknown, unknown> ? true : false;
+    expectTypeOf<IsGraph>().toEqualTypeOf<true>();
+
+    type IsString = BuildResult extends string ? true : false;
+    expectTypeOf<IsString>().toEqualTypeOf<false>();
+  });
+});
+
+// =============================================================================
+// build() with adapterOrHandle() (partial) -> returns error string
+// =============================================================================
+
+describe("build() with partially-handled adapterOrHandle returns error string", () => {
+  it("adapterOrHandle with remaining unhandled tags still produces error", () => {
+    const PartiallyHandled = adapterOrHandle(TaggedFallibleLoggerAdapter, {
+      ErrorA: () => ({ _tag: "Ok" as const, value: { log: () => {} } }),
+    });
+    const builder = GraphBuilder.create().provide(PartiallyHandled);
+    type BuildResult = ReturnType<typeof builder.build>;
+
+    // Should be a string (error message) because ErrorB is still unhandled
+    expectTypeOf<BuildResult>().toBeString();
+  });
+});
+
+// =============================================================================
+// tryBuild() with adapterOrHandle() (all tags handled) -> returns Result
+// =============================================================================
+
+describe("tryBuild() with adapterOrHandle-wrapped adapter returns Result", () => {
+  it("adapterOrHandle handling all tags clears error channel for tryBuild()", () => {
+    const SafeAdapter = adapterOrHandle(TaggedFallibleLoggerAdapter, {
+      ErrorA: () => ({ _tag: "Ok" as const, value: { log: () => {} } }),
+      ErrorB: () => ({ _tag: "Ok" as const, value: { log: () => {} } }),
+    });
+    const builder = GraphBuilder.create().provide(SafeAdapter);
+    type TryBuildResult = ReturnType<typeof builder.tryBuild>;
+
     type IsString = TryBuildResult extends string ? true : false;
     expectTypeOf<IsString>().toEqualTypeOf<false>();
   });

@@ -6,5 +6,8 @@
 /* Shared theme (design tokens, doc components, accessibility) */
 @import '@hex-di/website-theme/css/custom.css';
 
+/* Site-specific: docs structural overrides (navbar, sidebar, headings) */
+@import './core-theme.css';
+
 /* Site-specific: landing page animations and styles */
 @import './components/landing.css';
