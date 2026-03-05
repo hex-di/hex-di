@@ -731,7 +731,9 @@
       "WebFetch(domain:www.cs.utexas.edu)",
       "Bash(read file:*)",
       "WebFetch(domain:www.npmtrends.com)",
-      "WebFetch(domain:www.reddit.com)"
+      "WebFetch(domain:www.reddit.com)",
+      "Bash(THEME_BASE=\"/Users/u1070457/Projects/Perso/hex-di/node_modules/.pnpm/@docusaurus+theme-classic@3.9.2_@types+react@19.2.7_lightningcss@1.31.1_react-dom@19.2.3_reac_f24i7s2pzm3wmohpw3uvwjqmci/node_modules/@docusaurus/theme-classic/src/theme/BlogPostPage\")",
+      "Read(//Users/u1070457/Projects/Perso/hex-di/**)"
     ]
   }
 }

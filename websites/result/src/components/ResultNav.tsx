@@ -54,6 +54,9 @@ function ResultNavLink({
         border: "1px solid",
         borderColor: hovered ? "rgba(166, 226, 46, 0.3)" : "transparent",
         transition: "all 0.2s ease",
+        minHeight: "44px",
+        display: "inline-flex",
+        alignItems: "center",
       }}
     >
       {label}
@@ -213,6 +216,7 @@ export default function ResultNav(): ReactNode {
 
   return (
     <nav
+      className="result-nav"
       style={{
         position: "fixed",
         top: 0,
@@ -222,7 +226,6 @@ export default function ResultNav(): ReactNode {
         height: "64px",
         display: "flex",
         alignItems: "center",
-        padding: "0 40px",
         background: "rgba(2, 4, 8, 0.9)",
         borderBottom: "1px solid rgba(166, 226, 46, 0.2)",
         boxShadow: "0 4px 20px -10px rgba(166, 226, 46, 0.3)",

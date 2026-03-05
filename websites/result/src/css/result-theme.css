@@ -474,18 +474,10 @@ code:not(pre code) {
 [class*="codeBlockContent"] {
   background-color: #0a1420;
   position: relative;
+  overflow: hidden;
 }
 
 /* Scanline overlay on code blocks */
-[class*="codeBlockContent"]::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-  z-index: 10;
-}
-
 [class*="codeBlockContent"]::after {
   content: '';
   display: block;
@@ -517,6 +509,10 @@ code:not(pre code) {
   overflow: hidden;
   white-space: pre-wrap;
   word-wrap: break-word;
+}
+
+@media (max-width: 480px) {
+  [class*="codeBlockContainer"] pre { padding: 14px 12px; font-size: 0.78rem; }
 }
 
 /* Title bar — matching landing TerminalWindow */

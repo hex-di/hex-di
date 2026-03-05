@@ -64,10 +64,13 @@ function TagPill({
   return (
     <a
       href={permalink}
+      className="result-pill"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        display: "inline-block",
+        display: "inline-flex",
+        alignItems: "center",
+        lineHeight: 1,
         padding: "2px 8px",
         borderRadius: "4px",
         background: hovered ? "rgba(166, 226, 46, 0.15)" : "rgba(166, 226, 46, 0.1)",
@@ -112,6 +115,7 @@ function FeaturedPostCard({ item }: { readonly item: Props["items"][number] }): 
 
   return (
     <div
+      className="result-featured-card"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -131,10 +135,10 @@ function FeaturedPostCard({ item }: { readonly item: Props["items"][number] }): 
     >
       {/* FEATURED badge */}
       <div
+        className="result-pill"
         style={{
-          position: "absolute",
-          top: "24px",
-          left: "24px",
+          alignSelf: "flex-start",
+          marginBottom: "auto",
           padding: "4px 12px",
           background: "rgba(166, 226, 46, 0.15)",
           border: "1px solid rgba(166, 226, 46, 0.3)",
@@ -142,6 +146,7 @@ function FeaturedPostCard({ item }: { readonly item: Props["items"][number] }): 
           fontFamily: MONO,
           fontSize: "0.65rem",
           fontWeight: 700,
+          lineHeight: 1,
           letterSpacing: "0.15em",
           textTransform: "uppercase",
           color: ACCENT,
@@ -437,6 +442,7 @@ function SidebarTag({
   return (
     <a
       href={tag.permalink}
+      className="result-pill"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -573,6 +579,10 @@ export default function BlogListPage(props: Props): ReactNode {
       <Layout>
         {/* Inline responsive styles */}
         <style>{`
+          .result-pill {
+            min-height: auto !important;
+            min-width: auto !important;
+          }
           .result-blog-sidebar {
             display: block;
           }
@@ -582,6 +592,19 @@ export default function BlogListPage(props: Props): ReactNode {
             }
             .result-blog-grid {
               grid-template-columns: 1fr !important;
+            }
+            .result-featured-card {
+              padding: 32px 24px !important;
+              min-height: 300px !important;
+            }
+          }
+          @media (max-width: 480px) {
+            .result-featured-card {
+              padding: 24px 16px !important;
+              min-height: 260px !important;
+            }
+            .result-featured-card h2 {
+              font-size: 1.3rem !important;
             }
           }
         `}</style>

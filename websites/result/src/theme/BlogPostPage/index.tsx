@@ -48,10 +48,13 @@ function TagPill({
   return (
     <a
       href={permalink}
+      className="result-pill"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        display: "inline-block",
+        display: "inline-flex",
+        alignItems: "center",
+        lineHeight: 1,
         padding: "2px 8px",
         borderRadius: "4px",
         background: hovered ? "rgba(166, 226, 46, 0.15)" : "rgba(166, 226, 46, 0.1)",
@@ -124,6 +127,7 @@ function HeroHeader(): ReactNode {
       )}
 
       <h1
+        className="result-blog-title"
         style={{
           fontFamily: "'Inter', sans-serif",
           fontSize: "2.2rem",
@@ -343,6 +347,10 @@ function BlogPostPageContent({ children }: { readonly children: ReactNode }): Re
       <BlogPostPageStructuredData />
       <Layout>
         <style>{`
+          .result-pill {
+            min-height: auto !important;
+            min-width: auto !important;
+          }
           .result-blog-post-toc {
             display: block;
           }
@@ -352,6 +360,14 @@ function BlogPostPageContent({ children }: { readonly children: ReactNode }): Re
             }
             .result-blog-post-nav {
               grid-template-columns: 1fr !important;
+            }
+            .result-blog-title {
+              font-size: 1.6rem !important;
+            }
+          }
+          @media (max-width: 480px) {
+            .result-blog-title {
+              font-size: 1.35rem !important;
             }
           }
         `}</style>

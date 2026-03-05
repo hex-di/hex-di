@@ -406,7 +406,6 @@ const S = {
     margin: 0,
   }),
   section: (bg?: string): CSSProperties => ({
-    padding: "100px 40px",
     position: "relative" as const,
     background: bg,
   }),
@@ -757,7 +756,7 @@ function TerminalWindow({
         </span>
       </div>
       {/* Code area */}
-      <div style={{ position: "relative" }}>
+      <div style={{ position: "relative", overflow: "hidden" }}>
         <div className="result-scanline-overlay" />
         <pre
           style={{
@@ -1302,11 +1301,11 @@ function HeroSection(): ReactNode {
 function StatsBar(): ReactNode {
   return (
     <div
+      className="result-stats-bar"
       style={{
         background: "rgba(6, 13, 20, 0.7)",
         borderTop: `1px solid ${ACCENT}12`,
         borderBottom: `1px solid ${ACCENT}12`,
-        padding: "32px 40px",
       }}
     >
       <div
@@ -1369,7 +1368,7 @@ function BeforeAfterSection(): ReactNode {
     <section className="result-section" style={S.section("#08101C")}>
       <div style={S.container()}>
         <FadeIn>
-          <div style={S.sectionHeader()}>
+          <div className="result-section-header" style={S.sectionHeader()}>
             <p style={S.monoLabel(ERR_COLOR)}>-- THE PROBLEM --</p>
             <h2 style={S.h2()}>
               Try-catch gives you <span style={{ color: "#506070" }}>unknown</span>. Result gives
@@ -1549,7 +1548,7 @@ function FeaturesSection(): ReactNode {
     <section id="features" className="result-section" style={S.section("#08101C")}>
       <div style={S.container()}>
         <FadeIn>
-          <div style={S.sectionHeader()}>
+          <div className="result-section-header" style={S.sectionHeader()}>
             <p style={S.monoLabel()}>:: features</p>
             <h2 style={S.h2()}>Why Result?</h2>
           </div>
@@ -1628,7 +1627,7 @@ function QuickStartSection(): ReactNode {
     <section className="result-section" style={S.section("#020408")}>
       <div style={S.container()}>
         <FadeIn>
-          <div style={S.sectionHeader()}>
+          <div className="result-section-header" style={S.sectionHeader()}>
             <p style={S.monoLabel()}>:: quick start</p>
             <h2 style={S.h2()}>Three steps. That{"'"}s it.</h2>
           </div>
@@ -1722,7 +1721,7 @@ function FamiliarPatternsSection(): ReactNode {
     <section className="result-section" style={S.section("#020408")}>
       <div style={S.container()}>
         <FadeIn>
-          <div style={S.sectionHeader()}>
+          <div className="result-section-header" style={S.sectionHeader()}>
             <p style={S.monoLabel()}>:: familiar</p>
             <h2 style={S.h2()}>You already know this</h2>
             <p style={{ ...S.body(), maxWidth: 560, margin: "0 auto" }}>
@@ -1931,7 +1930,7 @@ function APIShowcaseSection(): ReactNode {
     <section id="api" className="result-section" style={S.section("#020408")}>
       <div style={S.container()}>
         <FadeIn>
-          <div style={S.sectionHeader()}>
+          <div className="result-section-header" style={S.sectionHeader()}>
             <p style={S.monoLabel()}>:: api</p>
             <h2 style={S.h2()}>50+ methods. One import.</h2>
             <p style={{ ...S.body(), maxWidth: 560, margin: "0 auto" }}>
@@ -2283,7 +2282,7 @@ function EcosystemSection(): ReactNode {
     <section className="result-section" style={S.section("#020408")}>
       <div style={S.container()}>
         <FadeIn>
-          <div style={S.sectionHeader()}>
+          <div className="result-section-header" style={S.sectionHeader()}>
             <p style={S.monoLabel()}>:: ecosystem</p>
             <h2 style={S.h2()}>Part of the HexDI stack</h2>
             <p style={{ ...S.body(), maxWidth: 560, margin: "0 auto 40px" }}>
@@ -2365,13 +2364,7 @@ function EcosystemSection(): ReactNode {
 
 function CTASection(): ReactNode {
   return (
-    <section
-      className="result-section"
-      style={{
-        ...S.section("#08101C"),
-        padding: "80px 40px",
-      }}
-    >
+    <section className="result-section" style={S.section("#08101C")}>
       <div style={S.container()}>
         <FadeIn>
           <div
@@ -2380,7 +2373,6 @@ function CTASection(): ReactNode {
               maxWidth: 700,
               margin: "0 auto",
               textAlign: "center",
-              padding: "48px 40px",
             }}
           >
             <h2 style={{ ...S.h2(), marginBottom: 12 }}>
@@ -2468,19 +2460,17 @@ function ResultFooter(): ReactNode {
 
   return (
     <footer
+      className="result-footer"
       style={{
-        padding: "48px 40px 32px",
         background: "#020408",
         borderTop: "1px solid rgba(166, 226, 46, 0.2)",
       }}
     >
       <div
+        className="result-footer-grid"
         style={{
           maxWidth: 800,
           margin: "0 auto",
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 40,
           marginBottom: 32,
         }}
       >
