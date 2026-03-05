@@ -18,6 +18,24 @@ class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
 - **Private `#promise`**: The internal promise is inaccessible from outside the class.
 - **Invariant**: The internal promise **never rejects**. See [INV-2](../invariants.md#inv-2-internal-promise-never-rejects).
 
+## BEH-06-001a: Iterator Protocol (Generator yield\*)
+
+```ts
+*[Symbol.iterator](): Generator<ResultAsync<T, E>, T, T | typeof RESULT_ASYNC_YIELD> {
+  const sent = yield this;
+  if (isNotYieldMarker<T>(sent)) {
+    return sent;
+  }
+  throw new Error("unreachable: ResultAsync iterator requires a value from safeTry runner");
+}
+```
+
+Enables `yield* resultAsync` inside `safeTry` async generators without `await`. The iterator yields the `ResultAsync` instance as a "command" to the `safeTry` runner, which awaits it, resolves the `Result`, and either sends the `Ok` value back via `gen.next(value)` or short-circuits on `Err`.
+
+This follows the same pattern used by Effect-ts for `Effect[Symbol.iterator]`. See [ADR-019](../decisions/019-resultasync-iterator-protocol.md), [INV-20](../invariants.md#inv-20-resultasync-iterator-yields-self), [BEH-07-002](07-generators.md#beh-07-002-yield-protocol).
+
+**Backward compatibility**: `yield* await resultAsync` remains valid — `await` resolves `ResultAsync` to `Result`, then `yield*` delegates to `Result[Symbol.iterator]`.
+
 ## BEH-06-002: PromiseLike Implementation
 
 ```ts
@@ -100,12 +118,14 @@ static fromCallback<T, E>(
 Wraps a Node-style callback function into a `ResultAsync`. The callback convention is `(error, value)` where a non-null first argument indicates failure.
 
 **Behavior**:
+
 - If `callback(null, value)` is called → resolves to `Ok(value)`
 - If `callback(error)` is called → resolves to `Err(error)`
 
 **Example**:
+
 ```ts
-const result = ResultAsync.fromCallback<Buffer, NodeJS.ErrnoException>((cb) => {
+const result = ResultAsync.fromCallback<Buffer, NodeJS.ErrnoException>(cb => {
   fs.readFile("config.json", cb);
 });
 ```

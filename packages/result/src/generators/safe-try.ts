@@ -12,6 +12,11 @@ import { ResultAsync as ResultAsyncClass } from "../async/result-async.js";
  * Supports both sync generators (returning `Result`) and async generators (returning
  * `ResultAsync`). Dispatch is determined by checking `Symbol.asyncIterator` on the generator.
  *
+ * In async generators, `yield*` works on both `Result` and `ResultAsync` values.
+ * `ResultAsync` implements `[Symbol.iterator]` (ADR-019) which yields itself as a command
+ * to the runner. The async generator runtime auto-awaits the yielded `ResultAsync` (since
+ * it is `PromiseLike`), so the runner receives a resolved `Result`.
+ *
  * @example
  * ```ts
  * import { ok, err, safeTry } from '@hex-di/result';
@@ -30,16 +35,22 @@ import { ResultAsync as ResultAsyncClass } from "../async/result-async.js";
  * @see spec/result/behaviors/07-generators.md — BEH-07-001
  */
 
-/** Extract E from Err<never, E> or union of Err<never, E1> | Err<never, E2> */
-type ExtractErrType<Y> = Y extends Err<never, infer E> ? E : never;
+/**
+ * Extract error types from yielded values.
+ *
+ * In sync generators, Y is always Err<never, E>.
+ * In async generators, Y can be Err<never, E> (from yield* err(...)) or
+ * Result<T, E> (from yield* resultAsync, which auto-awaits to Result).
+ */
+type ExtractErrType<Y> = Y extends Result<unknown, infer E> ? E : never;
 
 // Sync overload — T from return, E from both yield and return
 export function safeTry<Y extends Err<never, unknown>, T, RE>(
   generator: () => Generator<Y, Result<T, RE>, unknown>
 ): Result<T, ExtractErrType<Y> | RE>;
 
-// Async overload
-export function safeTry<Y extends Err<never, unknown>, T, RE>(
+// Async overload — Y includes Err (from sync Result) and Result (from auto-awaited ResultAsync)
+export function safeTry<Y extends Result<unknown, unknown>, T, RE>(
   generator: () => AsyncGenerator<Y, Result<T, RE>, unknown>
 ): ResultAsync<T, ExtractErrType<Y> | RE>;
 
@@ -47,7 +58,7 @@ export function safeTry<Y extends Err<never, unknown>, T, RE>(
 export function safeTry(
   generator: () =>
     | Generator<Err<never, unknown>, Result<unknown, unknown>, unknown>
-    | AsyncGenerator<Err<never, unknown>, Result<unknown, unknown>, unknown>
+    | AsyncGenerator<Result<unknown, unknown>, Result<unknown, unknown>, unknown>
 ): Result<unknown, unknown> | ResultAsync<unknown, unknown> {
   const gen = generator();
 
@@ -62,8 +73,8 @@ export function safeTry(
 function isAsyncGenerator(
   gen:
     | Generator<Err<never, unknown>, Result<unknown, unknown>, unknown>
-    | AsyncGenerator<Err<never, unknown>, Result<unknown, unknown>, unknown>
-): gen is AsyncGenerator<Err<never, unknown>, Result<unknown, unknown>, unknown> {
+    | AsyncGenerator<Result<unknown, unknown>, Result<unknown, unknown>, unknown>
+): gen is AsyncGenerator<Result<unknown, unknown>, Result<unknown, unknown>, unknown> {
   return Symbol.asyncIterator in gen;
 }
 
@@ -85,22 +96,40 @@ function runSync(
   }
 }
 
+/**
+ * Runs an async generator with bidirectional communication (ADR-019).
+ *
+ * The runner handles two kinds of yielded values (both are Result after auto-await):
+ * - Ok: came from `yield* resultAsync` where the ResultAsync resolved to Ok.
+ *   The runner feeds the Ok value back via gen.next(value).
+ * - Err: came from `yield* err(...)` or `yield* resultAsync` where it resolved to Err.
+ *   The runner short-circuits and returns the error.
+ *
+ * Note: `yield* ok(value)` never yields to the runner — Ok's iterator immediately
+ * returns the value (done: true), so yield* evaluates directly.
+ */
 function runAsync(
-  gen: AsyncGenerator<Err<never, unknown>, Result<unknown, unknown>, unknown>
+  gen: AsyncGenerator<Result<unknown, unknown>, Result<unknown, unknown>, unknown>
 ): ResultAsync<unknown, unknown> {
   const promise = (async (): Promise<Result<unknown, unknown>> => {
+    let feedBack: unknown = undefined;
     for (;;) {
-      const next = await gen.next();
+      const next = await gen.next(feedBack);
 
       if (next.done) {
         return next.value;
       }
 
-      // The yielded value is an Err — early return
-      const yieldedErr = next.value;
-      // Tell the generator to clean up (run finally blocks)
-      await gen.return(err(yieldedErr.error));
-      return err(yieldedErr.error);
+      const yielded = next.value;
+
+      if (yielded._tag === "Ok") {
+        // From yield* ResultAsync.ok(v) — auto-awaited to Ok, feed value back
+        feedBack = yielded.value;
+      } else {
+        // From yield* err(e) or yield* ResultAsync.err(e) — short-circuit
+        await gen.return(err(yielded.error));
+        return err(yielded.error);
+      }
     }
   })();
 

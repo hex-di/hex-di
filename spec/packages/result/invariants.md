@@ -179,3 +179,13 @@ See [ADR-014](decisions/014-catch-tag-effect-elimination.md).
 **Implication**: Chaining `andThen` calls is associative — parenthesization does not matter. Enables reliable refactoring of `andThen` chains. Verified via property-based testing. See [BEH-16-003](behaviors/16-property-based-laws.md).
 
 **Referenced from**: [ADR-016](decisions/016-property-based-monad-laws.md), [BEH-16-003](behaviors/16-property-based-laws.md).
+
+## INV-20: ResultAsync Iterator Yields Self
+
+`ResultAsync<T, E>`'s `[Symbol.iterator]()` is a generator that yields `this` and returns the value sent back via `gen.next(value)`. The `safeTry` async runner receives the `ResultAsync`, awaits it, and either sends the `Ok` value back or short-circuits on `Err`.
+
+**Source**: `async/result-async.ts` — `*[Symbol.iterator]()` uses a `RESULT_ASYNC_YIELD` marker symbol and `isNotYieldMarker<T>` type guard to narrow the sent value without casts.
+
+**Implication**: `yield* resultAsync` works inside `safeTry` async generators without `await`. The runner handles resolution and error propagation. `yield* await resultAsync` remains valid (the `await` is redundant but harmless).
+
+See [ADR-019](decisions/019-resultasync-iterator-protocol.md), [BEH-07-002](behaviors/07-generators.md#beh-07-002-yield-protocol).

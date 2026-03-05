@@ -346,15 +346,15 @@ function fetchJson<T>(url: string) {
 // Clean, linear, typed
 function getUserProfile(id: string) {
   return safeTry(async function* () {
-    const user = yield* await fetchJson<User>(`/api/users/${id}`);
-    const posts = yield* await fetchJson<Post[]>(`/api/users/${id}/posts`);
+    const user = yield* fetchJson<User>(`/api/users/${id}`);
+    const posts = yield* fetchJson<Post[]>(`/api/users/${id}/posts`);
     return ok({ ...user, posts });
   });
 }
 // ResultAsync<{ user: User; posts: Post[] }, NotFound | Forbidden | NetworkError>
 ```
 
-Every error type is visible in the signature. The `safeTry` generator reads like synchronous code — each `yield* await` unwraps the async Result and short-circuits on error, like Rust's `?` operator. No nesting, no callbacks, no ambiguity.
+Every error type is visible in the signature. The `safeTry` generator reads like synchronous code — each `yield*` unwraps the async Result and short-circuits on error, like Rust's `?` operator. No nesting, no callbacks, no ambiguity.
 
 And at the call site:
 

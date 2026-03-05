@@ -1,13 +1,11 @@
 ---
 title: "Stop Throwing, Start Returning: Why TypeScript Needs the Result Pattern"
-description: "TypeScript's try-catch gives you unknown errors, invisible failure modes, and silent bugs. The Result pattern makes errors typed, visible, and impossible to forget. Here's why you should stop throwing and start returning."
-slug: stop-throwing-start-returning
-authors: [hex-di]
-tags: [typescript, error-handling, result-pattern, functional-programming]
-date: 2026-03-05
+published: false
+description: "TypeScript's try-catch gives you unknown errors, invisible failure modes, and silent bugs. The Result pattern makes errors typed, visible, and impossible to forget."
+tags: typescript, errorhandling, functional, rust
+cover_image:
+canonical_url: https://result.hexdi.dev/blog/stop-throwing-start-returning
 ---
-
-# Stop Throwing, Start Returning: Why TypeScript Needs the Result Pattern
 
 You've written this code a hundred times:
 
@@ -27,8 +25,6 @@ And every time, you've made the same bet: that nothing unexpected will end up in
 
 Let's talk about why that bet keeps losing.
 
-<!-- truncate -->
-
 ## TypeScript's try-catch is broken
 
 TypeScript is famous for catching mistakes at compile time. Misspell a property? Red squiggly. Pass a `string` where a `number` goes? Build fails. But errors? TypeScript throws its hands up.
@@ -41,7 +37,7 @@ Since TypeScript 4.4, `catch` clauses type `error` as `unknown`:
 try {
   const data = JSON.parse(input);
 } catch (error) {
-  // error: unknown — no properties, no methods, nothing
+  // error: unknown -- no properties, no methods, nothing
   console.log(error.message);
   //                ^^^^^^^ Property 'message' does not exist on type 'unknown'
 }
@@ -73,7 +69,7 @@ function fetchUser(id: string): Promise<User> {
 }
 ```
 
-Can this fail? Of course it can. It makes a network call. But nothing in the signature tells you that. Nothing tells you _how_ it can fail. Network timeout? 404? 403? Invalid JSON? You have to read the implementation — or find out in production.
+Can this fail? Of course it can. It makes a network call. But nothing in the signature tells you that. Nothing tells you _how_ it can fail. Network timeout? 404? 403? Invalid JSON? You have to read the implementation -- or find out in production.
 
 Compare that with a function that returns a nullable value:
 
@@ -134,10 +130,10 @@ This is how Rust, Go, Haskell, and Swift handle errors. Not as control flow inte
 
 The DIY approach works for simple cases, but it falls apart fast:
 
-- No standard shape — every team invents their own `{ ok, value, error }` format
-- No composition — how do you chain two functions that both might fail?
-- No utilities — you end up writing the same `if/else` checks everywhere
-- No type inference — TypeScript can't narrow nested discriminated unions well
+- No standard shape -- every team invents their own `{ ok, value, error }` format
+- No composition -- how do you chain two functions that both might fail?
+- No utilities -- you end up writing the same `if/else` checks everywhere
+- No type inference -- TypeScript can't narrow nested discriminated unions well
 
 You need a proper container type. Enter `Result`.
 
@@ -162,11 +158,11 @@ function divide(a: number, b: number): Result<number, string> {
 const result = divide(10, 2);
 
 if (result.isOk()) {
-  console.log(result.value); // number — narrowed by type guard
+  console.log(result.value); // number -- narrowed by type guard
 }
 
 if (result.isErr()) {
-  console.log(result.error); // string — narrowed by type guard
+  console.log(result.error); // string -- narrowed by type guard
 }
 ```
 
@@ -188,7 +184,7 @@ const doubled = ok(21).map(n => n * 2); // Ok(42)
 const mapped = err("bad").mapErr(e => e.length); // Err(3)
 ```
 
-`map` transforms the success value. If the Result is an Err, `map` does nothing — the error passes through untouched.
+`map` transforms the success value. If the Result is an Err, `map` does nothing -- the error passes through untouched.
 
 ### Chain operations
 
@@ -206,7 +202,7 @@ const result = parseNumber("42").andThen(isPositive); // Ok(42)
 const failed = parseNumber("abc").andThen(isPositive); // Err("not a number")
 ```
 
-`andThen` is like `Promise.then` — it chains operations that can themselves fail. If the first step fails, the second never runs.
+`andThen` is like `Promise.then` -- it chains operations that can themselves fail. If the first step fails, the second never runs.
 
 ### Extract safely
 
@@ -226,7 +222,7 @@ result.toUndefined(); // T | undefined
 
 You're not learning a new paradigm. You're using patterns you already know, applied to error handling.
 
-## Tagged errors — handle errors by name
+## Tagged errors -- handle errors by name
 
 Plain `string` errors are fine for examples, but real applications have different _kinds_ of errors. A 404 is different from a 403 is different from a timeout. You need to handle them differently.
 
@@ -275,7 +271,7 @@ But switch statements are verbose. For surgical handling of specific errors, use
 
 ```ts
 const result = fetchUser("42").catchTag("Timeout", error => {
-  // recover from timeout — error is narrowed to { _tag: "Timeout", ms: number }
+  // recover from timeout -- error is narrowed to { _tag: "Timeout", ms: number }
   return ok(fallbackUser);
 });
 // result: Result<User, NotFound | Forbidden>
@@ -284,7 +280,7 @@ const result = fetchUser("42").catchTag("Timeout", error => {
 
 `catchTag` handles one error variant by _recovering_ from it and _removes it from the type_. TypeScript tracks exactly which errors remain unhandled. Handle them one by one, or handle several at once with `catchTags`.
 
-## Real-world example — building a type-safe API client
+## Real-world example -- building a type-safe API client
 
 Let's make this concrete. Here's a typical API call chain with try-catch:
 
@@ -307,13 +303,13 @@ async function getUserProfile(id: string): Promise<UserProfile> {
       const postsData = await posts.json();
       return { ...user, posts: postsData };
     } catch {
-      // Posts failed — should we return the user without posts?
+      // Posts failed -- should we return the user without posts?
       // Should we throw? Nobody knows. This catch swallows everything.
       return { ...user, posts: [] };
     }
   } catch (error) {
     // Is this a network error? A JSON parse error? A 404?
-    // We threw strings and Error objects — good luck figuring it out.
+    // We threw strings and Error objects -- good luck figuring it out.
     throw error;
   }
 }
@@ -354,7 +350,7 @@ function getUserProfile(id: string) {
 // ResultAsync<{ user: User; posts: Post[] }, NotFound | Forbidden | NetworkError>
 ```
 
-Every error type is visible in the signature. The `safeTry` generator reads like synchronous code — each `yield*` unwraps the async Result and short-circuits on error, like Rust's `?` operator. No nesting, no callbacks, no ambiguity.
+Every error type is visible in the signature. The `safeTry` generator reads like synchronous code -- each `yield*` unwraps the async Result and short-circuits on error, like Rust's `?` operator. No nesting, no callbacks, no ambiguity.
 
 And at the call site:
 
@@ -367,7 +363,7 @@ profile
   .match(
     profile => render(profile),
     error => {
-      // error is narrowed to NetworkError — the only one left
+      // error is narrowed to NetworkError -- the only one left
       showRetryDialog(error.url);
     }
   );
@@ -381,7 +377,7 @@ There are other Result libraries for TypeScript. Here's what makes this one diff
 
 - **50+ methods** on Result, zero dependencies, every instance `Object.freeze()`-d
 - **`catchTag` / `catchTags`** for tagged error handling with type narrowing
-- **`safeTry` generators** — Rust's `?` operator for TypeScript
+- **`safeTry` generators** -- Rust's `?` operator for TypeScript
 - **Full `Option<T>` type** with `Some` / `None` and Result interop
 - **`ResultAsync<T, E>`** for promise-based chains with the same API
 - **`createErrorGroup`** for grouping related errors with a shared namespace
@@ -402,13 +398,13 @@ import { ok, err, type Result } from "@hex-di/result";
 
 Honesty corner. Result isn't always the right tool.
 
-**Truly exceptional errors.** Out of memory. Stack overflow. Your process is dying. Throw. These aren't errors you "handle" — they're catastrophic failures.
+**Truly exceptional errors.** Out of memory. Stack overflow. Your process is dying. Throw. These aren't errors you "handle" -- they're catastrophic failures.
 
 **Quick scripts and prototypes.** If you're writing a one-off script, try-catch is fine. Result shines in production codebases where errors need to be tracked, composed, and maintained.
 
 **When your team isn't ready.** Result is a paradigm shift. If your team hasn't seen the pattern before, introduce it gradually. Wrap one function, show the benefits, let it spread organically.
 
-**Third-party boundaries.** Libraries throw. The DOM throws. You'll always need `fromThrowable` and `fromPromise` at the edges of your system. Result handles the _inside_ — your domain logic, your service layer, your business rules.
+**Third-party boundaries.** Libraries throw. The DOM throws. You'll always need `fromThrowable` and `fromPromise` at the edges of your system. Result handles the _inside_ -- your domain logic, your service layer, your business rules.
 
 The rule of thumb: **Result is for expected, recoverable errors in your domain.** The errors you can name, the errors you want to handle differently based on their kind. For everything else, let exceptions be exceptions.
 
@@ -426,6 +422,6 @@ Errors are just data. Treat them that way.
 
 **Get started:** `npm install @hex-di/result`
 
-**Docs:** [hex-di.github.io/hex-di/result](https://hex-di.github.io/hex-di/result)
+**Docs:** [result.hexdi.dev](https://result.hexdi.dev)
 
 **GitHub:** [github.com/hex-di/hex-di](https://github.com/hex-di/hex-di)

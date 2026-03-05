@@ -56,7 +56,7 @@ function ResultNavLink({
         transition: "all 0.2s ease",
       }}
     >
-      [{label}]
+      {label}
     </a>
   );
 }
@@ -140,7 +140,7 @@ function LibrariesDropdown(): ReactNode {
           transition: "all 0.2s ease",
         }}
       >
-        [Libraries]
+        Libraries
       </button>
 
       {open && (
@@ -236,16 +236,28 @@ export default function ResultNav(): ReactNode {
         style={{
           display: "flex",
           alignItems: "center",
+          gap: "8px",
           marginRight: "auto",
           textDecoration: "none",
         }}
       >
+        {/* Logo icon — staircase/step pattern */}
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 48 48"
+          fill="#A6E22E"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d="M4 4H17.3334V17.3334H30.6666V30.6666H44V44H4V4Z" />
+        </svg>
         <span
           style={{
-            fontFamily: "'Rajdhani', sans-serif",
+            fontFamily: "'Fira Code', monospace",
             fontWeight: 700,
-            fontSize: "1.25rem",
+            fontSize: "1.15rem",
             color: "#FFFFFF",
+            letterSpacing: "-0.01em",
           }}
         >
           Result
@@ -342,7 +354,7 @@ export default function ResultNav(): ReactNode {
                 fontSize: "0.82rem",
               }}
             >
-              [{label}]
+              {label}
             </a>
           ))}
           {/* Libraries section */}

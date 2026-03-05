@@ -2,6 +2,7 @@ import { describe, it, expectTypeOf } from "vitest";
 import { ok, err } from "../src/index.js";
 import type { Result } from "../src/index.js";
 import type { ResultAsync } from "../src/core/types.js";
+import { ResultAsync as ResultAsyncClass } from "../src/async/result-async.js";
 import { safeTry } from "../src/generators/safe-try.js";
 
 describe("Generators - Type Level", () => {
@@ -51,5 +52,46 @@ describe("Generators - Type Level", () => {
     });
 
     expectTypeOf(result).toMatchTypeOf<Result<string, E1 | E2>>();
+  });
+
+  // --- ADR-019: ResultAsync yield* type tests ---
+
+  it("yield* ResultAsync.ok(42) produces number", () => {
+    safeTry(async function* () {
+      const n = yield* ResultAsyncClass.ok(42);
+      expectTypeOf(n).toEqualTypeOf<number>();
+      return ok(n);
+    });
+  });
+
+  it("Error types from ResultAsync accumulate alongside Err error types", () => {
+    type E1 = { _tag: "E1" };
+    type E2 = { _tag: "E2" };
+
+    function syncStep(): Result<number, E1> {
+      return ok(1);
+    }
+    function asyncStep(): ResultAsync<string, E2> {
+      return ResultAsyncClass.ok("hello");
+    }
+
+    const result = safeTry(async function* () {
+      const a = yield* syncStep();
+      const b = yield* asyncStep();
+      return ok(`${a}-${b}`);
+    });
+
+    expectTypeOf(result).toMatchTypeOf<ResultAsync<string, E1 | E2>>();
+  });
+
+  it("safeTry with only ResultAsync yields returns ResultAsync<T, E>", () => {
+    type AsyncErr = { _tag: "AsyncErr" };
+
+    const result = safeTry(async function* () {
+      const n = yield* ResultAsyncClass.ok(10);
+      return ok(n);
+    });
+
+    expectTypeOf(result).toMatchTypeOf<ResultAsync<number, never>>();
   });
 });

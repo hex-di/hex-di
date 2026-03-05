@@ -1,4 +1,4 @@
-import { themes as prismThemes } from "prism-react-renderer";
+import prismTheme from "./prism-theme";
 import type { Config } from "@docusaurus/types";
 import type { Options as PresetOptions } from "@docusaurus/preset-classic";
 import { LIBRARIES, getLibraryUrl } from "./libraries";
@@ -205,8 +205,8 @@ export function createSiteConfig(options: SiteOptions): Config {
         theme: { dark: "dark" },
       },
       prism: {
-        theme: prismThemes.dracula,
-        darkTheme: prismThemes.dracula,
+        theme: prismTheme,
+        darkTheme: prismTheme,
         additionalLanguages: ["bash", "json", "typescript"],
         magicComments: [
           {

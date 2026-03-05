@@ -9,6 +9,12 @@ import { partition } from "../combinators/partition.js";
 import { forEach } from "../combinators/for-each.js";
 import { zipOrAccumulate } from "../combinators/zip-or-accumulate.js";
 
+const RESULT_ASYNC_YIELD: unique symbol = Symbol("ResultAsync.yield");
+
+function isNotYieldMarker<T>(value: T | typeof RESULT_ASYNC_YIELD): value is T {
+  return value !== RESULT_ASYNC_YIELD;
+}
+
 // Helper to resolve a Result | ResultAsync to a Promise<Result>
 function toPromiseResult<T, E>(value: Result<T, E> | ResultAsync<T, E>): Promise<Result<T, E>> {
   if ("_tag" in value) {
@@ -234,6 +240,16 @@ export class ResultAsync<T, E> {
     onrejected?: ((reason: unknown) => B | PromiseLike<B>) | null | undefined
   ): PromiseLike<A | B> {
     return this.#promise.then(onfulfilled, onrejected);
+  }
+
+  // --- Generator protocol (ADR-019) ---
+
+  *[Symbol.iterator](): Generator<ResultAsync<T, E>, T, T | typeof RESULT_ASYNC_YIELD> {
+    const sent = yield this;
+    if (isNotYieldMarker<T>(sent)) {
+      return sent;
+    }
+    throw new Error("unreachable: ResultAsync iterator requires a value from safeTry runner");
   }
 
   // --- Transformations ---

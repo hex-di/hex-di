@@ -134,6 +134,81 @@ describe("BEH-07-001: Generators", () => {
     expect(cleanup).toHaveBeenCalledOnce();
   });
 
+  // --- ADR-019: yield* ResultAsync directly (without await) ---
+
+  it("ADR-019: yield* ResultAsync.ok(value) extracts value in async safeTry", async () => {
+    const result = safeTry(async function* () {
+      const a = yield* ResultAsync.ok(42);
+      return ok(a + 1);
+    });
+    const resolved = await result;
+    expect(resolved._tag).toBe("Ok");
+    if (resolved.isOk()) expect(resolved.value).toBe(43);
+  });
+
+  it("ADR-019: yield* ResultAsync.err(error) short-circuits in async safeTry", async () => {
+    const result = safeTry(async function* () {
+      const _a = yield* ResultAsync.ok(1);
+      const _b = yield* ResultAsync.err("async-err");
+      return ok(999);
+    });
+    const resolved = await result;
+    expect(resolved._tag).toBe("Err");
+    if (resolved.isErr()) expect(resolved.error).toBe("async-err");
+  });
+
+  it("ADR-019: mixed sync yield* ok() + async yield* ResultAsync.ok() in same generator", async () => {
+    const result = safeTry(async function* () {
+      const a = yield* ok(10); // sync Result
+      const b = yield* ResultAsync.ok(20); // async ResultAsync — no await
+      const c = yield* ok(30); // sync Result
+      return ok(a + b + c);
+    });
+    const resolved = await result;
+    expect(resolved._tag).toBe("Ok");
+    if (resolved.isOk()) expect(resolved.value).toBe(60);
+  });
+
+  it("ADR-019: yield* fromPromise works without await", async () => {
+    const result = safeTry(async function* () {
+      const value = yield* ResultAsync.fromPromise(Promise.resolve(42), () => "failed");
+      return ok(value);
+    });
+    const resolved = await result;
+    expect(resolved._tag).toBe("Ok");
+    if (resolved.isOk()) expect(resolved.value).toBe(42);
+  });
+
+  it("ADR-019: generator cleanup (finally) runs on ResultAsync Err short-circuit", async () => {
+    const cleanup = vi.fn();
+
+    const result = safeTry(async function* () {
+      try {
+        const _a = yield* ResultAsync.ok(1);
+        const _b = yield* ResultAsync.err("stop");
+        return ok(999);
+      } finally {
+        cleanup();
+      }
+    });
+
+    const resolved = await result;
+    expect(resolved._tag).toBe("Err");
+    if (resolved.isErr()) expect(resolved.error).toBe("stop");
+    expect(cleanup).toHaveBeenCalledOnce();
+  });
+
+  it("ADR-019: yield* await ResultAsync still works (backward compat)", async () => {
+    const result = safeTry(async function* () {
+      const a = yield* await ResultAsync.ok(10);
+      const b = yield* await ResultAsync.ok(20);
+      return ok(a + b);
+    });
+    const resolved = await result;
+    expect(resolved._tag).toBe("Ok");
+    if (resolved.isOk()) expect(resolved.value).toBe(30);
+  });
+
   // DoD 9 #9
   it("BEH-07-002: Ok [Symbol.iterator] yields the Ok value", () => {
     const iter = ok(42)[Symbol.iterator]();
