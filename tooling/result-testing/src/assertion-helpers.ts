@@ -146,3 +146,46 @@ export function expectNone<T>(option: Option<T>): void {
   }
   throw new Error(`Expected None but got Some: ${formatValue(option.value)}`);
 }
+
+/**
+ * Asserts that a tagged error has a specific `_tag` value.
+ *
+ * @example
+ * ```ts
+ * const NotFound = createError("NotFound");
+ * expectErrorTag(NotFound({ id: "1" }), "NotFound"); // passes
+ * ```
+ *
+ * @param error - The tagged error to check
+ * @param tag - The expected _tag value
+ * @throws If the error's _tag does not match
+ * @since 0.3.0
+ */
+export function expectErrorTag(error: { _tag: string }, tag: string): void {
+  if (error._tag === tag) {
+    return;
+  }
+  throw new Error(`Expected error tag "${tag}" but got "${error._tag}"`);
+}
+
+/**
+ * Asserts that a tagged error has a specific `_namespace` value.
+ *
+ * @example
+ * ```ts
+ * const Http = createErrorGroup("HttpError");
+ * const NotFound = Http.create("NotFound");
+ * expectErrorNamespace(NotFound({ url: "/" }), "HttpError"); // passes
+ * ```
+ *
+ * @param error - The tagged error to check (must have _namespace)
+ * @param namespace - The expected _namespace value
+ * @throws If the error's _namespace does not match
+ * @since 0.3.0
+ */
+export function expectErrorNamespace(error: { _namespace: string }, namespace: string): void {
+  if (error._namespace === namespace) {
+    return;
+  }
+  throw new Error(`Expected error namespace "${namespace}" but got "${error._namespace}"`);
+}

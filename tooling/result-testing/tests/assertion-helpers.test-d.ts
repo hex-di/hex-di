@@ -7,6 +7,8 @@ import {
   expectErrAsync,
   expectSome,
   expectNone,
+  expectErrorTag,
+  expectErrorNamespace,
 } from "../src/index.js";
 
 // =============================================================================
@@ -88,5 +90,33 @@ describe("assertion helpers reject non-matching types", () => {
   it("expectNone rejects Result (not Option)", () => {
     // @ts-expect-error — Result<T, E> is not Option<T>
     expectNone({} as Result<number, string>);
+  });
+});
+
+// =============================================================================
+// expectErrorTag / expectErrorNamespace type contracts
+// =============================================================================
+
+describe("expectErrorTag returns void", () => {
+  it("returns void", () => {
+    expectTypeOf(expectErrorTag({ _tag: "NotFound" }, "NotFound")).toEqualTypeOf<void>();
+  });
+});
+
+describe("expectErrorNamespace returns void", () => {
+  it("returns void", () => {
+    expectTypeOf(expectErrorNamespace({ _namespace: "Http" }, "Http")).toEqualTypeOf<void>();
+  });
+});
+
+describe("expectErrorTag / expectErrorNamespace reject invalid inputs", () => {
+  it("expectErrorTag rejects object without _tag", () => {
+    // @ts-expect-error — object without _tag
+    expectErrorTag({}, "x");
+  });
+
+  it("expectErrorNamespace rejects object without _namespace", () => {
+    // @ts-expect-error — object without _namespace
+    expectErrorNamespace({}, "x");
   });
 });

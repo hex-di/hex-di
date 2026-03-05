@@ -729,7 +729,9 @@
       "WebFetch(domain:okmij.org)",
       "WebFetch(domain:softwarefoundations.cis.upenn.edu)",
       "WebFetch(domain:www.cs.utexas.edu)",
-      "Bash(read file:*)"
+      "Bash(read file:*)",
+      "WebFetch(domain:www.npmtrends.com)",
+      "WebFetch(domain:www.reddit.com)"
     ]
   }
 }

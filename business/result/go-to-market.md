@@ -1,0 +1,343 @@
+# Go-to-Market Strategy: @hex-di/result
+
+```
+ ┌─────────────────────────────────────────────────────────────────────────────────┐
+ │                          GO-TO-MARKET ROADMAP                                   │
+ ├─────────────────────────────────────────────────────────────────────────────────┤
+ │                                                                                 │
+ │  Month  1     2     3     4     5     6     7     8     9    10    11    12     │
+ │         │     │     │     │     │     │     │     │     │     │     │     │     │
+ │         ├─────┴─────┤                                                           │
+ │         │ PHASE 1   │  Foundation                                               │
+ │         │ Docs, ESLint plugin, benchmarks, playground                           │
+ │         └─────┬─────┤                                                           │
+ │               ├─────┴─────┤                                                     │
+ │               │ PHASE 2   │  Content & Awareness                                │
+ │               │ Comparisons, tutorials, newsletters                             │
+ │               └─────┬─────┤                                                     │
+ │                     ├─────┴─────┤                                               │
+ │                     │ PHASE 3   │  Community Outreach                            │
+ │                     │ Reddit, Discord, Twitter, GitHub                           │
+ │                     └─────┬─────┤                                               │
+ │                           ├─────┴─────────────────┤                             │
+ │                           │ PHASE 4               │  Integration & Ecosystem    │
+ │                           │ Zod, tRPC, Next.js, Hono, test matchers             │
+ │                           └─────┬─────────────────┤                             │
+ │                                 ├─────────────────┴─────────────────────────┤   │
+ │                                 │ PHASE 5                                   │   │
+ │                                 │ Growth & Retention (ongoing)               │   │
+ │                                 │ Conferences, Discord server, contributors  │   │
+ │                                 └───────────────────────────────────────────┘   │
+ │                                                                                 │
+ │  Targets ──────────────────────────────────────────────────────────────────     │
+ │  Downloads    ·················1k··········10k·····························50k  │
+ │  Stars        ································500·························2k   │
+ │  Discord      ································100····························  │
+ │                                                                                 │
+ └─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Phase 1: Foundation (Month 1-2)
+
+```
+ ┌─────────────────────────────────────────────────────────────────────────────────┐
+ │                  PHASE 1 DELIVERABLES                                            │
+ │                                                                                 │
+ │  ┌────────────────────────┐ ┌────────────────────────┐ ┌──────────────────────┐ │
+ │  │  DOCUMENTATION         │ │  TOOLING               │ │  BENCHMARKS          │ │
+ │  │  ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄  │ │  ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄  │ │  ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄  │ │
+ │  │                        │ │                        │ │                      │ │
+ │  │  ┌──────────────────┐  │ │  ┌──────────────────┐  │ │  ┌────────────────┐  │ │
+ │  │  │ API docs         │  │ │  │ ESLint plugin    │  │ │  │ Performance    │  │ │
+ │  │  │ (all 50+ methods)│  │ │  │ eslint-plugin-   │  │ │  │ vs neverthrow  │  │ │
+ │  │  └──────────────────┘  │ │  │ hex-result       │  │ │  │ vs true-myth   │  │ │
+ │  │  ┌──────────────────┐  │ │  │ ┄┄┄┄┄┄┄┄┄┄┄┄┄┄  │  │ │  │ vs ts-results  │  │ │
+ │  │  │ Interactive       │  │ │  │ ● no-unhandled  │  │ │  │ vs oxide.ts    │  │ │
+ │  │  │ playground        │  │ │  │ ● prefer-catch- │  │ │  └────────────────┘  │ │
+ │  │  │ (StackBlitz)      │  │ │  │   tag           │  │ │  ┌────────────────┐  │ │
+ │  │  └──────────────────┘  │ │  │ ● no-unsafe-    │  │ │  │ Bundle size    │  │ │
+ │  │  ┌──────────────────┐  │ │  │   unwrap        │  │ │  │ (tree-shaken)  │  │ │
+ │  │  │ Getting started   │  │ │  └──────────────────┘  │ │  └────────────────┘  │ │
+ │  │  │ (5-min guide)     │  │ │  ┌──────────────────┐  │ │                      │ │
+ │  │  └──────────────────┘  │ │  │ VS Code snippets │  │ │  Published as a      │ │
+ │  │  ┌──────────────────┐  │ │  └──────────────────┘  │ │  living document     │ │
+ │  │  │ Migration guides  │  │ │                        │ │                      │ │
+ │  │  │ ● from try-catch  │  │ │                        │ │                      │ │
+ │  │  │ ● from neverthrow │  │ │                        │ │                      │ │
+ │  │  │ ● from fp-ts      │  │ │                        │ │                      │ │
+ │  │  └──────────────────┘  │ │                        │ │                      │ │
+ │  └────────────────────────┘ └────────────────────────┘ └──────────────────────┘ │
+ │                                                                                 │
+ └─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Phase 2: Content & Awareness (Month 2-4)
+
+### Comparison Articles
+
+- **"@hex-di/result vs neverthrow: Why you need catchTag"** — demonstrate the tagged error advantage with real-world scenarios (API error handling, validation pipelines)
+- **"You don't need Effect for typed errors"** — show how @hex-di/result provides catchTag and contracts without the ecosystem
+- **"The TypeScript Result library landscape in 2026"** — neutral-toned overview positioning @hex-di/result as the feature-complete standalone option
+
+### Tutorial Content
+
+- **"Typed errors in TypeScript: A practical guide"** — introductory content targeting Result-curious developers
+- **"Building a type-safe API layer with @hex-di/result"** — practical tutorial showing real application patterns
+- **"From Rust to TypeScript: Error handling that feels like home"** — targeting the Rust community
+- **"Effect contracts explained: Declare your errors, enforce them at compile time"** — showcasing the unique effect system
+
+### Publishing Channels
+
+- dev.to, Medium, personal blog
+- Cross-post key articles to Hashnode
+- Submit to TypeScript Weekly, JavaScript Weekly newsletters
+
+---
+
+## Phase 3: Community Outreach (Month 3-5)
+
+```
+ ┌─────────────────────────────────────────────────────────────────────────────────┐
+ │                    COMMUNITY CHANNEL STRATEGY                                   │
+ ├─────────────────────────────────────────────────────────────────────────────────┤
+ │                                                                                 │
+ │                          ┌─────────────────────┐                                │
+ │                          │   @hex-di/result     │                                │
+ │                          │   (message source)   │                                │
+ │                          └──────────┬──────────┘                                │
+ │                  ┌──────────────────┼──────────────────┐                        │
+ │                  ▼                  ▼                  ▼                        │
+ │  ┌───────────────────┐ ┌──────────────────┐ ┌────────────────────┐             │
+ │  │  DISCOVERY         │ │  ENGAGEMENT       │ │  RETENTION          │             │
+ │  │  (find new users)  │ │  (build trust)    │ │  (keep users)       │             │
+ │  ├───────────────────┤ ├──────────────────┤ ├────────────────────┤             │
+ │  │                   │ │                  │ │                    │             │
+ │  │  Reddit           │ │  Discord         │ │  GitHub            │             │
+ │  │  ┌─────────────┐  │ │  ┌────────────┐  │ │  ┌──────────────┐ │             │
+ │  │  │r/typescript  │  │ │  │TS Discord  │  │ │  │ Discussions  │ │             │
+ │  │  │r/rust        │  │ │  │Effect      │  │ │  │ Issues       │ │             │
+ │  │  │r/programming │  │ │  │Discord     │  │ │  │ (24h SLA)    │ │             │
+ │  │  │r/node        │  │ │  │Rust Discord│  │ │  └──────────────┘ │             │
+ │  │  └─────────────┘  │ │  └────────────┘  │ │  ┌──────────────┐ │             │
+ │  │                   │ │                  │ │  │ Awesome lists │ │             │
+ │  │  Twitter / X      │ │  Newsletters     │ │  │ ● Awesome TS │ │             │
+ │  │  ┌─────────────┐  │ │  ┌────────────┐  │ │  │ ● Awesome    │ │             │
+ │  │  │Thread series │  │ │  │TS Weekly   │  │ │  │   FP-TS      │ │             │
+ │  │  │Code snippets │  │ │  │JS Weekly   │  │ │  └──────────────┘ │             │
+ │  │  │Influencer    │  │ │  │Hashnode    │  │ │  ┌──────────────┐ │             │
+ │  │  │engagement    │  │ │  └────────────┘  │ │  │ Issue cross- │ │             │
+ │  │  └─────────────┘  │ │                  │ │  │ pollination   │ │             │
+ │  │                   │ │                  │ │  └──────────────┘ │             │
+ │  └───────────────────┘ └──────────────────┘ └────────────────────┘             │
+ │                                                                                 │
+ └─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Reddit
+
+- r/typescript — share comparison articles and tutorials
+- r/rust — "For Rust developers working in TypeScript" angle
+- r/programming — broader reach for key content pieces
+- r/node — practical Node.js error handling angles
+
+### Discord & Chat
+
+- TypeScript Discord — participate in error-handling discussions, share when relevant
+- Effect Discord — engage respectfully with users who express "Effect is too complex" sentiments
+- Rust Discord — share the Rust-to-TypeScript migration angle
+
+### Twitter / X
+
+- Thread series: "TypeScript error handling patterns" — educational content that naturally leads to @hex-di/result
+- Engage with influential TypeScript developers
+- Share code snippets showing catchTag, safeTry, and other unique features
+
+### GitHub
+
+- **Awesome TypeScript** — submit for inclusion
+- **Awesome FP-TS** — submit as a migration target
+- **Issue engagement** — respond to neverthrow/oxide.ts issues where @hex-di/result solves the problem
+- **Discussions** — open GitHub Discussions for community Q&A
+
+---
+
+## Phase 4: Integration & Ecosystem (Month 4-8)
+
+```
+ ┌─────────────────────────────────────────────────────────────────────────────────┐
+ │                     INTEGRATION ECOSYSTEM MAP                                   │
+ ├─────────────────────────────────────────────────────────────────────────────────┤
+ │                                                                                 │
+ │                    ┌──────────────────────────────────┐                          │
+ │                    │        @hex-di/result             │                          │
+ │                    │     (core — zero deps)            │                          │
+ │                    └───────────────┬──────────────────┘                          │
+ │            ┌───────────┬───────────┼───────────┬───────────┐                    │
+ │            ▼           ▼           ▼           ▼           ▼                    │
+ │  ┌──────────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌──────────┐            │
+ │  │ Validation   │ │  RPC    │ │  HTTP   │ │ Testing │ │ Utility  │            │
+ │  ├──────────────┤ ├─────────┤ ├─────────┤ ├─────────┤ ├──────────┤            │
+ │  │              │ │         │ │         │ │         │ │          │            │
+ │  │ result-zod   │ │  tRPC   │ │ Next.js │ │ Vitest  │ │ result-  │            │
+ │  │ safeParse()  │ │  typed  │ │ Server  │ │ toBeOk  │ │ fetch    │            │
+ │  │ → Result<T,E>│ │  error  │ │ Actions │ │ toBeErr │ │ type-    │            │
+ │  │              │ │  prop.  │ │ Route   │ │         │ │ safe     │            │
+ │  │ Standard     │ │         │ │ Handler │ │ Jest    │ │ wrapper  │            │
+ │  │ Schema       │ │         │ │         │ │ compat  │ │          │            │
+ │  │ compat       │ │         │ │ Hono    │ │         │ │ result-  │            │
+ │  │              │ │         │ │ middle- │ │         │ │ promise  │            │
+ │  │              │ │         │ │ ware    │ │         │ │ P → R<>  │            │
+ │  └──────────────┘ └─────────┘ └─────────┘ └─────────┘ └──────────┘            │
+ │                                                                                 │
+ │  Priority:  HIGH ━━━━━━━━━━━━━━━  MEDIUM ─────────────  LOW ┈┈┈┈┈┈┈┈┈┈┈┈┈┈   │
+ │             Zod, tRPC              Next.js, Hono         Vitest, Jest           │
+ │                                                                                 │
+ └─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Framework Integrations
+
+- **Zod integration** (`@hex-di/result-zod`) — `safeParse()` that returns `Result<T, ZodError>` instead of Zod's custom type
+- **Standard Schema** — Result-returning validators compatible with the Standard Schema spec
+- **tRPC integration** — typed error propagation through tRPC procedures
+- **Next.js patterns** — guides for using Result in Server Actions and Route Handlers
+- **Hono integration** — middleware that converts Result types to HTTP responses
+
+### Utility Packages
+
+- **`@hex-di/result-fetch`** — type-safe fetch wrapper returning Results
+- **`@hex-di/result-promise`** — utilities for converting Promise<T> to ResultAsync<T, E>
+
+### Ecosystem Alignment
+
+- Ensure compatibility with popular testing frameworks (Vitest, Jest)
+- Provide custom matchers: `expect(result).toBeOk()`, `expect(result).toBeErr()`
+
+---
+
+## Phase 5: Growth & Retention (Ongoing)
+
+### Developer Relations
+
+- **Conference talks** — submit to TypeScript Congress, JSNation, Rust-adjacent events
+- **Podcast appearances** — TypeScript-focused podcasts (Syntax, JS Party, etc.)
+- **Open source contributions** — help other projects adopt Result patterns, referencing @hex-di/result
+
+### Community Building
+
+- **Discord server** — dedicated community for @hex-di/result and hex-di ecosystem users
+- **Office hours** — regular sessions for questions, feedback, and feature discussions
+- **Contributor program** — clear contributing guide, good-first-issue labels, mentorship
+
+### Metrics & Goals
+
+```
+ ┌─────────────────────────────────────────────────────────────────────────────────┐
+ │                    GROWTH TRAJECTORY — NPM WEEKLY DOWNLOADS                     │
+ ├─────────────────────────────────────────────────────────────────────────────────┤
+ │                                                                                 │
+ │  50k ┤                                                              ╭──── 50k  │
+ │      │                                                         ╭───╯           │
+ │  40k ┤                                                    ╭───╯                │
+ │      │                                               ╭───╯                     │
+ │  30k ┤                                          ╭───╯                          │
+ │      │                                     ╭───╯                               │
+ │  20k ┤                                ╭───╯                                    │
+ │      │                           ╭───╯                                         │
+ │  10k ┤                      ╭───╯─────────────────────── 10k (M6 target)       │
+ │      │                 ╭───╯                                                    │
+ │   5k ┤            ╭───╯                                                         │
+ │      │       ╭───╯                                                              │
+ │   1k ┤──╭───╯───────────────────────────────────── 1k (M3 target)              │
+ │      │╭─╯                                                                       │
+ │    0 ┼──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┬── │
+ │      M1    M2    M3    M4    M5    M6    M7    M8    M9   M10   M11   M12      │
+ │      ├─ Foundation─┤─ Content ──┤─ Community ─┤─── Integration ────┤─ Growth ─┤ │
+ │                                                                                 │
+ └─────────────────────────────────────────────────────────────────────────────────┘
+
+ ┌─────────────────────────────────────────────────────────────────────────────────┐
+ │                    MILESTONE DASHBOARD                                           │
+ ├─────────────────────────────────────────────────────────────────────────────────┤
+ │                                                                                 │
+ │  Metric                    M3          M6          M12                           │
+ │  ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄             │
+ │  npm weekly downloads      1,000       10,000      50,000                       │
+ │  GitHub stars              ·           500         2,000                         │
+ │  Discord members           ·           100         ·                             │
+ │  Blog views (cumulative)   ·           50,000      ·                             │
+ │                                                                                 │
+ │  ● = milestone    · = not yet targeted                                          │
+ │                                                                                 │
+ └─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Feedback Loops
+
+- **GitHub Issues** — actively triage and respond within 24 hours
+- **npm download analytics** — track growth weekly, correlate with content publication
+- **User surveys** — quarterly survey of active users for feature prioritization
+- **Competitor monitoring** — track neverthrow, Effect, and new entrants for feature parity risks
+
+---
+
+## Key Success Factors
+
+```
+ ┌─────────────────────────────────────────────────────────────────────────────────┐
+ │                    FLYWHEEL: VIRTUOUS GROWTH CYCLE                               │
+ ├─────────────────────────────────────────────────────────────────────────────────┤
+ │                                                                                 │
+ │                  ┌─────────────────────────┐                                    │
+ │                  │   Quality Content        │                                    │
+ │                  │   (comparisons, guides)  │                                    │
+ │                  └────────────┬────────────┘                                    │
+ │                               │                                                 │
+ │                               ▼                                                 │
+ │     ┌──────────────────────────────────────────────────┐                        │
+ │     │               Discovery & Awareness               │                        │
+ │     │   (developers find @hex-di/result via content)    │                        │
+ │     └─────────────────────┬────────────────────────────┘                        │
+ │                           │                                                     │
+ │                           ▼                                                     │
+ │  ┌────────────────────────────────────────────┐                                 │
+ │  │            Trial & Adoption                 │                                 │
+ │  │  (playground → npm install → first Result)  │                                 │
+ │  └──────────────────┬─────────────────────────┘                                 │
+ │                     │                                                           │
+ │                     ▼                                                           │
+ │        ┌──────────────────────────────────┐                                     │
+ │        │       Production Use              │                                     │
+ │        │  (catchTag, contracts, safeTry)   │                                     │
+ │        └───────────────┬──────────────────┘                                     │
+ │                        │                                                        │
+ │           ┌────────────┴────────────┐                                           │
+ │           ▼                         ▼                                           │
+ │  ┌────────────────┐    ┌──────────────────────┐                                 │
+ │  │  Word of Mouth  │    │  Community Growth     │                                │
+ │  │  (devs tell     │    │  (issues, PRs,        │                                │
+ │  │   their teams)  │    │   discussions)         │                                │
+ │  └───────┬────────┘    └──────────┬───────────┘                                 │
+ │          │                        │                                              │
+ │          └────────────┬───────────┘                                              │
+ │                       ▼                                                          │
+ │           ┌──────────────────────┐                                               │
+ │           │  More Content Ideas   │──────────────────────────┐                   │
+ │           │  (case studies, new   │                          │                   │
+ │           │   comparisons)        │                          │                   │
+ │           └──────────────────────┘                          │                   │
+ │                                                              │                   │
+ │              ┌───────────────────────────────────────────────┘                   │
+ │              │                                                                   │
+ │              └──► (back to Quality Content — the flywheel spins)                 │
+ │                                                                                  │
+ └─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+1. **Content quality over quantity** — one excellent comparison article outweighs ten mediocre ones
+2. **Authenticity** — be honest about trade-offs; developers respect nuance over hype
+3. **Speed of response** — fast issue resolution and feature delivery builds trust
+4. **Incremental adoption story** — always show how to start small and grow
+5. **Dogfooding** — use @hex-di/result extensively in the hex-di ecosystem to prove it works at scale

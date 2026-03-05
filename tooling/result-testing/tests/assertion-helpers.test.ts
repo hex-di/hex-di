@@ -7,6 +7,8 @@ import {
   expectErrAsync,
   expectSome,
   expectNone,
+  expectErrorTag,
+  expectErrorNamespace,
 } from "../src/index.js";
 
 // =============================================================================
@@ -26,15 +28,11 @@ describe("expectOk", () => {
   });
 
   it("throws on Err result with descriptive message", () => {
-    expect(() => expectOk(err("fail"))).toThrow(
-      'Expected Ok but got Err: "fail"',
-    );
+    expect(() => expectOk(err("fail"))).toThrow('Expected Ok but got Err: "fail"');
   });
 
   it("includes error value in throw message", () => {
-    expect(() => expectOk(err({ code: 404 }))).toThrow(
-      'Expected Ok but got Err: {"code":404}',
-    );
+    expect(() => expectOk(err({ code: 404 }))).toThrow('Expected Ok but got Err: {"code":404}');
   });
 });
 
@@ -74,9 +72,7 @@ describe("expectOkAsync", () => {
   });
 
   it("throws on Err ResultAsync", async () => {
-    await expect(expectOkAsync(ResultAsync.err("fail"))).rejects.toThrow(
-      "Expected Ok but got Err",
-    );
+    await expect(expectOkAsync(ResultAsync.err("fail"))).rejects.toThrow("Expected Ok but got Err");
   });
 });
 
@@ -91,9 +87,7 @@ describe("expectErrAsync", () => {
   });
 
   it("throws on Ok ResultAsync", async () => {
-    await expect(expectErrAsync(ResultAsync.ok(42))).rejects.toThrow(
-      "Expected Err but got Ok",
-    );
+    await expect(expectErrAsync(ResultAsync.ok(42))).rejects.toThrow("Expected Err but got Ok");
   });
 });
 
@@ -145,8 +139,38 @@ describe("expectNone", () => {
   });
 
   it("includes value in throw message for object", () => {
-    expect(() => expectNone(some({ x: 1 }))).toThrow(
-      'Expected None but got Some: {"x":1}',
+    expect(() => expectNone(some({ x: 1 }))).toThrow('Expected None but got Some: {"x":1}');
+  });
+});
+
+// =============================================================================
+// expectErrorTag
+// =============================================================================
+
+describe("expectErrorTag", () => {
+  it("passes when _tag matches", () => {
+    expectErrorTag({ _tag: "NotFound" }, "NotFound");
+  });
+
+  it("throws when _tag does not match", () => {
+    expect(() => expectErrorTag({ _tag: "NotFound" }, "Timeout")).toThrow(
+      'Expected error tag "Timeout" but got "NotFound"'
+    );
+  });
+});
+
+// =============================================================================
+// expectErrorNamespace
+// =============================================================================
+
+describe("expectErrorNamespace", () => {
+  it("passes when _namespace matches", () => {
+    expectErrorNamespace({ _namespace: "HttpError" }, "HttpError");
+  });
+
+  it("throws when _namespace does not match", () => {
+    expect(() => expectErrorNamespace({ _namespace: "HttpError" }, "DbError")).toThrow(
+      'Expected error namespace "DbError" but got "HttpError"'
     );
   });
 });

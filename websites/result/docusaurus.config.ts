@@ -1,4 +1,5 @@
 import { createSiteConfig } from "@hex-di/website-theme/config";
+import blogSyncPlugin from "./plugins/blog-sync";
 
 interface PostCssOptions {
   plugins: unknown[];
@@ -22,4 +23,5 @@ export default createSiteConfig({
   blogPath: "blog",
   customCss: "./src/css/custom.css",
   tailwindPlugin,
+  additionalPlugins: [blogSyncPlugin],
 });

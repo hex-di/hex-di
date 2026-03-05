@@ -5,6 +5,7 @@ import {
   expectResultBrand,
   expectOptionBrand,
   expectImmutableResult,
+  expectImmutableOption,
   expectNeverRejects,
 } from "../src/index.js";
 
@@ -30,20 +31,18 @@ describe("expectFrozen", () => {
   });
 
   it("throws for null", () => {
-    expect(() => expectFrozen(null)).toThrow(
-      "Expected value to be frozen, but received null",
-    );
+    expect(() => expectFrozen(null)).toThrow("Expected value to be frozen, but received null");
   });
 
   it("throws for undefined", () => {
     expect(() => expectFrozen(undefined)).toThrow(
-      "Expected value to be frozen, but received undefined",
+      "Expected value to be frozen, but received undefined"
     );
   });
 
   it("throws for non-frozen object", () => {
     expect(() => expectFrozen({ a: 1 })).toThrow(
-      "Expected value to be frozen (Object.isFrozen), but it is not:",
+      "Expected value to be frozen (Object.isFrozen), but it is not:"
     );
   });
 
@@ -67,25 +66,21 @@ describe("expectResultBrand", () => {
 
   it("throws for structural fake", () => {
     expect(() => expectResultBrand({ _tag: "Ok", value: 42 })).toThrow(
-      "Expected value to carry RESULT_BRAND symbol, but it does not",
+      "Expected value to carry RESULT_BRAND symbol, but it does not"
     );
   });
 
   it("throws for non-object (number)", () => {
-    expect(() => expectResultBrand(42)).toThrow(
-      "Expected an object, but received number",
-    );
+    expect(() => expectResultBrand(42)).toThrow("Expected an object, but received number");
   });
 
   it("throws for null", () => {
-    expect(() => expectResultBrand(null)).toThrow(
-      "Expected an object, but received null",
-    );
+    expect(() => expectResultBrand(null)).toThrow("Expected an object, but received null");
   });
 
   it("throws for undefined", () => {
     expect(() => expectResultBrand(undefined)).toThrow(
-      "Expected an object, but received undefined",
+      "Expected an object, but received undefined"
     );
   });
 });
@@ -105,20 +100,16 @@ describe("expectOptionBrand", () => {
 
   it("throws for structural fake", () => {
     expect(() => expectOptionBrand({ _tag: "Some", value: 42 })).toThrow(
-      "Expected value to carry OPTION_BRAND symbol, but it does not",
+      "Expected value to carry OPTION_BRAND symbol, but it does not"
     );
   });
 
   it("throws for non-object (string)", () => {
-    expect(() => expectOptionBrand("hello")).toThrow(
-      "Expected an object, but received string",
-    );
+    expect(() => expectOptionBrand("hello")).toThrow("Expected an object, but received string");
   });
 
   it("throws for null", () => {
-    expect(() => expectOptionBrand(null)).toThrow(
-      "Expected an object, but received null",
-    );
+    expect(() => expectOptionBrand(null)).toThrow("Expected an object, but received null");
   });
 });
 
@@ -152,16 +143,14 @@ describe("expectImmutableResult", () => {
     // Simulate a branded but wrong-tagged object
     const { RESULT_BRAND } = await import("@hex-di/result");
     const fake = Object.freeze({ [RESULT_BRAND]: true, _tag: "Invalid" });
-    expect(() => expectImmutableResult(fake as never)).toThrow(
-      'Expected _tag to be "Ok" or "Err"',
-    );
+    expect(() => expectImmutableResult(fake as never)).toThrow('Expected _tag to be "Ok" or "Err"');
   });
 
   it("checks 'value' property on Ok (step 4)", async () => {
     const { RESULT_BRAND } = await import("@hex-di/result");
     const fake = Object.freeze({ [RESULT_BRAND]: true, _tag: "Ok" });
     expect(() => expectImmutableResult(fake as never)).toThrow(
-      'Expected Ok result to have "value" property',
+      'Expected Ok result to have "value" property'
     );
   });
 
@@ -169,8 +158,57 @@ describe("expectImmutableResult", () => {
     const { RESULT_BRAND } = await import("@hex-di/result");
     const fake = Object.freeze({ [RESULT_BRAND]: true, _tag: "Err" });
     expect(() => expectImmutableResult(fake as never)).toThrow(
-      'Expected Err result to have "error" property',
+      'Expected Err result to have "error" property'
     );
+  });
+});
+
+// =============================================================================
+// expectImmutableOption
+// =============================================================================
+
+describe("expectImmutableOption", () => {
+  it("passes for genuine Some option", () => {
+    expectImmutableOption(some(42));
+  });
+
+  it("passes for genuine None option", () => {
+    expectImmutableOption(none());
+  });
+
+  it("passes for Some with complex value", () => {
+    expectImmutableOption(some({ nested: { deep: true } }));
+  });
+
+  it("checks frozen (step 1)", () => {
+    expect(() => expectImmutableOption(null as never)).toThrow("frozen");
+  });
+
+  it("checks brand (step 2)", () => {
+    const fake = Object.freeze({ _tag: "Some", value: 42 });
+    expect(() => expectImmutableOption(fake as never)).toThrow("OPTION_BRAND");
+  });
+
+  it("checks _tag validity (step 3)", async () => {
+    const { OPTION_BRAND } = await import("@hex-di/result");
+    const fake = Object.freeze({ [OPTION_BRAND]: true, _tag: "Invalid" });
+    expect(() => expectImmutableOption(fake as never)).toThrow(
+      'Expected _tag to be "Some" or "None"'
+    );
+  });
+
+  it("checks 'value' property on Some (step 4)", async () => {
+    const { OPTION_BRAND } = await import("@hex-di/result");
+    const fake = Object.freeze({ [OPTION_BRAND]: true, _tag: "Some" });
+    expect(() => expectImmutableOption(fake as never)).toThrow(
+      'Expected Some option to have "value" property'
+    );
+  });
+
+  it("passes for None without 'value' property", async () => {
+    const { OPTION_BRAND } = await import("@hex-di/result");
+    const fake = Object.freeze({ [OPTION_BRAND]: true, _tag: "None" });
+    expectImmutableOption(fake as never);
   });
 });
 
@@ -188,10 +226,7 @@ describe("expectNeverRejects", () => {
   });
 
   it("passes for fromPromise wrapping a rejection", async () => {
-    const resultAsync = fromPromise(
-      Promise.reject("network error"),
-      (e) => String(e),
-    );
+    const resultAsync = fromPromise(Promise.reject("network error"), e => String(e));
     await expectNeverRejects(resultAsync);
   });
 });

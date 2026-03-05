@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { Result, ResultAsync } from "@hex-di/result";
+import type { Result, ResultAsync, Option } from "@hex-di/result";
 import { RESULT_BRAND, OPTION_BRAND, isResult } from "@hex-di/result";
 
 /**
@@ -144,5 +144,35 @@ export async function expectNeverRejects(
   const resolved = await resultAsync;
   if (!isResult(resolved)) {
     throw new Error(`Expected ResultAsync to resolve to a Result, but got: ${String(resolved)}`);
+  }
+}
+
+/**
+ * Compound assertion verifying all immutability and integrity properties of an Option.
+ * Checks: frozen, branded (OPTION_BRAND), valid _tag, and appropriate field exists.
+ *
+ * @example
+ * ```ts
+ * expectImmutableOption(some(42)); // passes
+ * expectImmutableOption(none());   // passes
+ * ```
+ *
+ * @param option - The Option to check
+ * @throws If any immutability or integrity check fails
+ * @since 0.3.0
+ */
+export function expectImmutableOption<T>(option: Option<T>): void {
+  expectFrozen(option);
+  expectOptionBrand(option);
+
+  const tag = (option as { _tag: string })._tag;
+  if (tag !== "Some" && tag !== "None") {
+    throw new Error(`Expected _tag to be "Some" or "None", but got "${String(tag)}"`);
+  }
+
+  if (tag === "Some") {
+    if (!("value" in option)) {
+      throw new Error('Expected Some option to have "value" property');
+    }
   }
 }

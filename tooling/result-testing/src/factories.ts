@@ -7,7 +7,7 @@
  */
 
 import type { Ok, Err, Result, ResultAsync as ResultAsyncType, Some, None } from "@hex-di/result";
-import { ok, err, ResultAsync, some, none } from "@hex-di/result";
+import { ok, err, ResultAsync, some, none, createError, createErrorGroup } from "@hex-di/result";
 
 /**
  * Creates a fixture factory for Result and ResultAsync values with a default Ok value.
@@ -94,5 +94,82 @@ export function mockResultAsync<T, E>(): {
     resultAsync: ResultAsync.fromResult(promise),
     resolve: (value: T) => resolvePromise(ok(value)),
     reject: (error: E) => resolvePromise(err(error)),
+  };
+}
+
+/**
+ * Creates a test fixture factory for tagged errors.
+ *
+ * @example
+ * ```ts
+ * const fixture = createErrorFixture("NotFound");
+ * const error = fixture.create({ resource: "User", id: "1" });
+ * // { _tag: "NotFound", resource: "User", id: "1" }
+ * fixture.tag; // "NotFound"
+ * ```
+ *
+ * @param tag - The error tag
+ * @returns Factory object with create method and tag property
+ * @since 0.3.0
+ */
+export function createErrorFixture<Tag extends string>(
+  tag: Tag
+): {
+  create: <Fields extends Record<string, unknown>>(
+    fields: Fields
+  ) => Readonly<{ _tag: Tag } & Fields>;
+  tag: Tag;
+} {
+  const factory = createError(tag);
+  return {
+    create: factory,
+    tag,
+  };
+}
+
+/**
+ * Creates a test fixture factory for error groups with multiple tags.
+ *
+ * @example
+ * ```ts
+ * const fixture = createErrorGroupFixture("HttpError", "NotFound", "Timeout");
+ * const error = fixture.create.NotFound({ url: "/" });
+ * // { _namespace: "HttpError", _tag: "NotFound", url: "/" }
+ * fixture.group.is(error); // true
+ * ```
+ *
+ * @param namespace - The error group namespace
+ * @param tags - The tags within the group
+ * @returns Factory with create map and group reference
+ * @since 0.3.0
+ */
+export function createErrorGroupFixture<NS extends string, Tags extends readonly string[]>(
+  namespace: NS,
+  ...tags: Tags
+): {
+  create: {
+    [K in Tags[number]]: <Fields extends Record<string, unknown>>(
+      fields: Fields
+    ) => Readonly<{ _namespace: NS; _tag: K } & Fields>;
+  };
+  group: ReturnType<typeof createErrorGroup<NS>>;
+} {
+  const group = createErrorGroup<NS>(namespace);
+  const create = {} as Record<
+    string,
+    <Fields extends Record<string, unknown>>(
+      fields: Fields
+    ) => Readonly<{ _namespace: NS; _tag: string } & Fields>
+  >;
+  for (const tag of tags) {
+    create[tag] = group.create(tag);
+  }
+  return {
+    create: create as {
+      [K in Tags[number]]: <Fields extends Record<string, unknown>>(
+        fields: Fields
+      ) => Readonly<{ _namespace: NS; _tag: K } & Fields>;
+    },
+    group,
   };
 }

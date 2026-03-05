@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ok, err, some, none } from "@hex-di/result";
+import { ok, err, some, none, ResultAsync } from "@hex-di/result";
 
 // =============================================================================
 // BEH-T05-001: Assertion<T> augmentation — all 8 matchers callable
@@ -92,5 +92,71 @@ describe("matchers with required arguments reject missing args", () => {
   it("toContainErr requires argument", () => {
     // @ts-expect-error — toContainErr requires an error argument
     expect(err("fail")).toContainErr();
+  });
+
+  it("toResolveToOkWith requires argument", () => {
+    // @ts-expect-error — toResolveToOkWith requires an expected argument
+    void expect(ResultAsync.ok(42)).toResolveToOkWith();
+  });
+
+  it("toResolveToErrWith requires argument", () => {
+    // @ts-expect-error — toResolveToErrWith requires an expected argument
+    void expect(ResultAsync.err("fail")).toResolveToErrWith();
+  });
+
+  it("toHaveErrorTag requires argument", () => {
+    // @ts-expect-error — toHaveErrorTag requires a tag argument
+    expect({ _tag: "x" }).toHaveErrorTag();
+  });
+
+  it("toHaveErrorNamespace requires argument", () => {
+    // @ts-expect-error — toHaveErrorNamespace requires a namespace argument
+    expect({ _tag: "x", _namespace: "y" }).toHaveErrorNamespace();
+  });
+});
+
+// =============================================================================
+// New matchers: Assertion<T> augmentation — callable
+// =============================================================================
+
+describe("new Assertion<T> matchers are callable", () => {
+  it("toResolveToOk()", async () => {
+    await expect(ResultAsync.ok(42)).toResolveToOk();
+  });
+
+  it("toResolveToOk(expected)", async () => {
+    await expect(ResultAsync.ok(42)).toResolveToOk(42);
+  });
+
+  it("toResolveToErr()", async () => {
+    await expect(ResultAsync.err("fail")).toResolveToErr();
+  });
+
+  it("toResolveToErr(expected)", async () => {
+    await expect(ResultAsync.err("fail")).toResolveToErr("fail");
+  });
+
+  it("toResolveToOkWith(expected)", async () => {
+    await expect(ResultAsync.ok(42)).toResolveToOkWith(42);
+  });
+
+  it("toResolveToErrWith(expected)", async () => {
+    await expect(ResultAsync.err("fail")).toResolveToErrWith("fail");
+  });
+
+  it("toHaveErrorTag(tag)", () => {
+    expect({ _tag: "NotFound" }).toHaveErrorTag("NotFound");
+  });
+
+  it("toHaveErrorNamespace(namespace)", () => {
+    expect({ _tag: "NotFound", _namespace: "Http" }).toHaveErrorNamespace("Http");
+  });
+
+  it("toHaveResultJSON()", () => {
+    expect(ok(42).toJSON()).toHaveResultJSON();
+  });
+
+  it("toRoundTripJSON()", () => {
+    expect(ok(42)).toRoundTripJSON();
   });
 });

@@ -9,6 +9,8 @@ import {
   createResultFixture,
   createOptionFixture,
   mockResultAsync,
+  createErrorFixture,
+  createErrorGroupFixture,
 } from "../src/index.js";
 
 // =============================================================================
@@ -123,5 +125,65 @@ describe("mockResultAsync", () => {
     resolve(42);
     const error = await expectErrAsync(resultAsync);
     expect(error).toBe("fail");
+  });
+});
+
+// =============================================================================
+// createErrorFixture
+// =============================================================================
+
+describe("createErrorFixture", () => {
+  const fixture = createErrorFixture("NotFound");
+
+  it("has the correct tag property", () => {
+    expect(fixture.tag).toBe("NotFound");
+  });
+
+  it("create() produces a tagged error with given fields", () => {
+    const error = fixture.create({ resource: "User", id: "123" });
+    expect(error._tag).toBe("NotFound");
+    expect(error.resource).toBe("User");
+    expect(error.id).toBe("123");
+  });
+
+  it("create() produces frozen errors", () => {
+    const error = fixture.create({ x: 1 });
+    expect(Object.isFrozen(error)).toBe(true);
+  });
+});
+
+// =============================================================================
+// createErrorGroupFixture
+// =============================================================================
+
+describe("createErrorGroupFixture", () => {
+  const fixture = createErrorGroupFixture("HttpError", "NotFound", "Timeout");
+
+  it("create map has constructors for each tag", () => {
+    expect(typeof fixture.create.NotFound).toBe("function");
+    expect(typeof fixture.create.Timeout).toBe("function");
+  });
+
+  it("creates errors with correct namespace and tag", () => {
+    const error = fixture.create.NotFound({ url: "/api" });
+    expect(error._namespace).toBe("HttpError");
+    expect(error._tag).toBe("NotFound");
+    expect(error.url).toBe("/api");
+  });
+
+  it("group.is() recognizes created errors", () => {
+    const error = fixture.create.Timeout({ ms: 5000 });
+    expect(fixture.group.is(error)).toBe(true);
+  });
+
+  it("group.isTag() checks specific tag", () => {
+    const error = fixture.create.NotFound({ url: "/" });
+    expect(fixture.group.isTag("NotFound")(error)).toBe(true);
+    expect(fixture.group.isTag("Timeout")(error)).toBe(false);
+  });
+
+  it("creates frozen errors", () => {
+    const error = fixture.create.NotFound({ url: "/" });
+    expect(Object.isFrozen(error)).toBe(true);
   });
 });

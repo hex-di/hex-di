@@ -15,6 +15,8 @@ export {
   expectErrAsync,
   expectSome,
   expectNone,
+  expectErrorTag,
+  expectErrorNamespace,
 } from "./assertion-helpers.js";
 
 export { setupResultMatchers } from "./matchers.js";
@@ -23,6 +25,8 @@ export {
   createResultFixture,
   createOptionFixture,
   mockResultAsync,
+  createErrorFixture,
+  createErrorGroupFixture,
 } from "./factories.js";
 
 export {
@@ -30,5 +34,6 @@ export {
   expectResultBrand,
   expectOptionBrand,
   expectImmutableResult,
+  expectImmutableOption,
   expectNeverRejects,
 } from "./gxp.js";
