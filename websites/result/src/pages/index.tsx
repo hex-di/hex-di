@@ -18,61 +18,112 @@ const INSTALL_CMD = "npm install @hex-di/result";
 // ============================================================
 
 const BEFORE_CODE = `try {
-  const user = await fetchUser(id);
-  const order = await createOrder(user);
-  await sendEmail(order);
+  const txn = chargeCard(user.card, amount);
+  const receipt = sendReceipt(txn);
+  return \`Sent to \${receipt.email}\`;
 } catch (e) {
   // e is \`unknown\` — no type info
-  // Was it a network error? Validation?
-  // Did fetchUser fail or createOrder?
-  console.error("something broke", e);
+  // Was it a network error? Card expired?
+  // Fraud check? We don't know.
+  console.error("payment failed", e);
 }`;
 
-const AFTER_CODE = `const result = await tryCatch(
-  () => fetchUser(id)
+const AFTER_CODE = `const result = fromThrowable(
+  () => chargeCard(user.card, amount),
+  (e) => ({ _tag: "PaymentFailed", cause: e }),
 )
-  .andThen(user => createOrder(user))
-  .andThen(order => sendEmail(order))
-  .match({
-    ok: (val) => \`Sent to \${val.email}\`,
-    err: (e) => \`Failed: \${e._tag}\`,
-    // ^— e: NotFound | ValidationFailed
-    //    Full union, exhaustive check ✓
-  });`;
+  .andThen((txn) => sendReceipt(txn))
+  .catchTag("CardExpired", (e) => ok(renewAndRetry(e)))
+  .match(
+    (receipt) => \`Sent to \${receipt.email}\`,
+    (e) => \`Failed: \${e._tag}\`,
+    // ^— e: NetworkTimeout | FraudDetected
+    //    CardExpired already handled ✓
+  );`;
 
-const PIPELINE_CODE = `import { tryCatch, ok } from '@hex-di/result';
+const PIPELINE_CODE = `import { fromThrowable, ok, err } from '@hex-di/result';
 
-const result = tryCatch({
-  try: () => JSON.parse(rawInput),
-  catch: (e) => new ParseError(e),
-})
-  .andThen((data) =>
-    validate(data)
-      ? ok(data)
-      : err(new ValidationFailed(data))
+const reading = fromThrowable(
+  () => sensor.read(),
+  (e) => ({ _tag: "SensorOffline", id: sensor.id }),
+)
+  .andThen((raw) =>
+    raw.value > threshold
+      ? ok(raw)
+      : err({ _tag: "OutOfRange", value: raw.value })
   )
-  .map((valid) => transform(valid))
-  .andTee((val) => log('transformed', val))
-  .match({
-    ok:  (val) => save(val),
-    err: (e)   => report(e),
-  });`;
+  .map((valid) => normalize(valid))
+  .andTee((v) => telemetry.record(v))
+  .match(
+    (v) => publish(v),
+    (e) => alertOps(e),
+  );`;
 
-const SAFETRY_CODE = `import { safeTry, ok, err } from '@hex-di/result';
+const SAFETRY_CODE = `import { safeTry, ok } from '@hex-di/result';
 
-const result = safeTry(function* () {
-  // yield* unwraps Ok or short-circuits on Err
-  const user  = yield* fetchUser(id);
-  const order = yield* createOrder(user);
-  const email = yield* sendEmail(order);
+const approval = safeTry(function* () {
+  const credit = yield* checkCredit(applicantId);
+  const risk   = yield* assessRisk(credit);
+  const terms  = yield* generateTerms(risk);
 
-  return ok({ order, email });
+  return ok({ approved: true, terms });
   // If any step returns Err, execution stops
   // and the Err propagates — like Rust's ? operator
 });`;
 
+const DO_NOTATION_CODE = `import { ok, bind, let_ } from '@hex-di/result';
+
+const user = ok({})
+  .andThen(bind("name", () => validateName("Alice")))
+  .andThen(bind("email", () => validateEmail("a@ex.com")))
+  .andThen(bind("age", () => validateAge(25)))
+  .andThen(let_("id", () => \`usr_\${Date.now()}\`));
+// Type: Result<{
+//   name: string; email: string;
+//   age: number; id: string;
+// }, ValidationError>`;
+
+const CATCH_TAG_CODE = `type PaymentError =
+  | { _tag: "CardExpired"; card: string }
+  | { _tag: "NetworkTimeout"; ms: number }
+  | { _tag: "FraudDetected"; score: number };
+
+const result: Result<string, PaymentError> = chargeCard(card);
+
+const handled = result
+  .catchTag("NetworkTimeout", (e) =>
+    ok(\`Retried after \${e.ms}ms\`))
+  // Type: Result<string, CardExpired | FraudDetected>
+
+  .catchTag("CardExpired", (e) =>
+    ok(\`Renewed card \${e.card}\`))
+  // Type: Result<string, FraudDetected>
+
+  .orTee((e) => alertFraudTeam(e));
+  // Only FraudDetected remains — type proves it ✓`;
+
+const EFFECT_HANDLER_CODE = `import {
+  composeHandlers, transformEffects,
+  type EffectHandler,
+} from '@hex-di/result';
+
+const quotaHandler: EffectHandler<QuotaExceeded, string> = {
+  _tag: "quota", tags: ["QuotaExceeded"],
+  handle: (e) => ok(\`Queued: tenant \${e.tenantId}\`),
+};
+
+const corruptionHandler: EffectHandler<FileCorrupted, string> = {
+  _tag: "corruption", tags: ["FileCorrupted"],
+  handle: (e) => ok(\`Quarantined: \${e.fileName}\`),
+};
+
+// Compose + apply — only PermissionDenied remains
+const handler = composeHandlers(quotaHandler, corruptionHandler);
+const result = transformEffects(processFile(file), handler);
+// Type: Result<string, PermissionDenied>`;
+
 const ECOSYSTEM_CODE = `import { createAdapter } from 'hex-di';
-import { ok, err } from '@hex-di/result';
+import { ok, fromThrowable } from '@hex-di/result';
 
 const UserService = createAdapter({
   provides: UserServicePort,
@@ -80,10 +131,10 @@ const UserService = createAdapter({
   lifetime: 'singleton',
   factory: ({ Database, Logger }) => ({
     findUser: (id: string) =>
-      tryCatch({
-        try: () => Database.query(id),
-        catch: () => new DatabaseError(id),
-      })
+      fromThrowable(
+        () => Database.query(id),
+        () => new DatabaseError(id),
+      )
         .andTee((u) => Logger.info('found', u))
         .mapErr((e) => new UserNotFound(id, e)),
   }),
@@ -130,15 +181,16 @@ const FEATURES: readonly Feature[] = [
     iconColor: "#FFB86C",
   },
   {
-    title: "Composable",
+    title: "Tagged Error Handling",
     description:
-      "Combine multiple Results with all(), collect(), and partition(). Build complex flows from simple parts.",
+      "catchTag progressively eliminates errors from the union. Each handler narrows the type until nothing remains.",
     icon: "layers",
     iconColor: "#6272A4",
   },
   {
-    title: "Framework Agnostic",
-    description: "Works everywhere TypeScript runs. No decorators, no reflection, no magic.",
+    title: "Effect System",
+    description:
+      "Type-level contracts, composable handlers, and effect tracking. Declare and verify error surfaces at zero runtime cost.",
     icon: "globe",
     iconColor: "#FF79C6",
   },
@@ -146,7 +198,7 @@ const FEATURES: readonly Feature[] = [
 
 const STATS = [
   { value: "0", label: "runtime dependencies" },
-  { value: "40+", label: "API methods" },
+  { value: "50+", label: "API methods" },
   { value: "7", label: "combinators" },
   { value: "TS 5.6+", label: "TypeScript native" },
 ] as const;
@@ -165,11 +217,11 @@ const b = err('fail');  // Err<string>`,
     annotation: "Wrap values into the Result type",
   },
   {
-    title: "tryCatch",
-    code: `const r = tryCatch({
-  try: () => JSON.parse(s),
-  catch: (e) => new ParseError(e),
-});`,
+    title: "fromThrowable",
+    code: `const r = fromThrowable(
+  () => JSON.parse(s),
+  (e) => new ParseError(e),
+);`,
     annotation: "Catch exceptions as typed errors",
   },
   {
@@ -209,26 +261,53 @@ const API_CHAINING: readonly ApiCard[] = [
 const API_COMBINATORS: readonly ApiCard[] = [
   {
     title: "all()",
-    code: `const r = Result.all([
+    code: `const r = all(
   fetchUser(id),
   fetchOrder(id),
-]); // Ok<[User, Order]>`,
+); // Ok<[User, Order]>`,
     annotation: "All must succeed or first Err wins",
   },
   {
-    title: "collect()",
-    code: `const r = Result.collect({
-  user: fetchUser(id),
-  order: fetchOrder(id),
-}); // Ok<{ user: User, order: Order }>`,
-    annotation: "Named results as an object",
+    title: "zipOrAccumulate()",
+    code: `const r = zipOrAccumulate(
+  validateName(name),
+  validateAge(age),
+); // Err<[E, ...E[]]> collects ALL`,
+    annotation: "Accumulate all errors, no short-circuit",
   },
   {
     title: "partition()",
-    code: `const [oks, errs] = Result.partition(
+    code: `const [oks, errs] = partition(
   items.map(i => validate(i))
 );`,
     annotation: "Split into successes and failures",
+  },
+];
+
+const API_TAGGED_ERRORS: readonly ApiCard[] = [
+  {
+    title: "catchTag()",
+    code: `result
+  .catchTag("NotFound", (e) =>
+    ok(\`Fallback: \${e.resource}\`)
+  ) // narrows error union`,
+    annotation: "Handle one tagged error, narrow the type",
+  },
+  {
+    title: "catchTags()",
+    code: `result.catchTags({
+  NotFound: (e) => ok("default"),
+  Timeout:  (e) => ok("retry"),
+}) // handles multiple at once`,
+    annotation: "Handle multiple tagged errors in one call",
+  },
+  {
+    title: "createErrorGroup()",
+    code: `const Http = createErrorGroup("Http");
+const NotFound = Http.create("NotFound");
+const e = NotFound({ url: "/api", status: 404 });
+Http.is(e) // true`,
+    annotation: "Two-level discriminated error families",
   },
 ];
 
@@ -297,11 +376,11 @@ function getIcon(name: string, color: string): ReactNode {
 }
 
 const PIPELINE_STEPS = [
-  { step: "tryCatch", desc: "Catch exceptions as typed errors" },
-  { step: "andThen", desc: "Chain Result-returning operations" },
-  { step: "map", desc: "Transform the success value" },
-  { step: "andTee", desc: "Run side-effects without changing the value" },
-  { step: "match", desc: "Pattern match on Ok or Err — exhaustively" },
+  { step: "fromThrowable", desc: "Catch sensor exceptions as typed errors" },
+  { step: "andThen", desc: "Validate reading against thresholds" },
+  { step: "map", desc: "Normalize the sensor value" },
+  { step: "andTee", desc: "Record telemetry without changing the value" },
+  { step: "match", desc: "Publish or alert — exhaustively" },
 ];
 
 // ============================================================
@@ -414,7 +493,7 @@ const TS_BUILTIN_TYPES = new Set([
 const RESULT_API = new Set([
   "ok",
   "err",
-  "tryCatch",
+  "fromThrowable",
   "safeTry",
   "match",
   "all",
@@ -428,6 +507,18 @@ const RESULT_API = new Set([
   "andTee",
   "orTee",
   "Result",
+  "catchTag",
+  "catchTags",
+  "andThenWith",
+  "orDie",
+  "createErrorGroup",
+  "composeHandlers",
+  "transformEffects",
+  "identityHandler",
+  "zipOrAccumulate",
+  "forEach",
+  "bind",
+  "let_",
 ]);
 
 interface SynToken {
@@ -1600,10 +1691,10 @@ function APIShowcaseSection(): ReactNode {
         <FadeIn>
           <div style={S.sectionHeader()}>
             <p style={S.monoLabel()}>:: api</p>
-            <h2 style={S.h2()}>40+ methods. One import.</h2>
+            <h2 style={S.h2()}>50+ methods. One import.</h2>
             <p style={{ ...S.body(), maxWidth: 560, margin: "0 auto" }}>
-              Constructors, chainers, combinators — everything you need to handle errors as
-              first-class values.
+              Constructors, chainers, combinators, tagged error handlers — everything you need to
+              handle errors as first-class values.
             </p>
           </div>
         </FadeIn>
@@ -1611,6 +1702,7 @@ function APIShowcaseSection(): ReactNode {
         <ApiCardRow label="// constructors" cards={API_CONSTRUCTORS} delay={0} />
         <ApiCardRow label="// chaining" cards={API_CHAINING} delay={100} />
         <ApiCardRow label="// combinators" cards={API_COMBINATORS} delay={200} />
+        <ApiCardRow label="// tagged error handling" cards={API_TAGGED_ERRORS} delay={300} />
       </div>
     </section>
   );
@@ -1694,7 +1786,271 @@ function GeneratorsSection(): ReactNode {
 }
 
 // ============================================================
-// SECTION 8: ECOSYSTEM
+// SECTION 7b: DO NOTATION
+// ============================================================
+
+function DoNotationSection(): ReactNode {
+  const isMobile = useIsMobile();
+
+  return (
+    <section className="result-section" style={S.section("#020408")}>
+      <div style={S.container()}>
+        <div
+          className="result-grid-2"
+          style={{
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "1fr 1.2fr",
+            gap: isMobile ? 40 : 80,
+            alignItems: "center",
+          }}
+        >
+          <FadeIn>
+            <div>
+              <p style={S.monoLabel()}>:: do notation</p>
+              <h2 style={S.h2()}>
+                Build objects <span style={{ color: ACCENT }}>step by step</span>
+              </h2>
+              <p style={{ ...S.body(), marginBottom: 24 }}>
+                Use{" "}
+                <code
+                  style={{
+                    color: SYN.fn,
+                    fontFamily: "'Fira Code', monospace",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  bind
+                </code>{" "}
+                and{" "}
+                <code
+                  style={{
+                    color: SYN.fn,
+                    fontFamily: "'Fira Code', monospace",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  let_
+                </code>{" "}
+                to accumulate fields into a typed object. Each step can fail — and the full object
+                type is inferred automatically.
+              </p>
+              <p style={S.body()}>
+                <code
+                  style={{
+                    color: SYN.fn,
+                    fontFamily: "'Fira Code', monospace",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  bind
+                </code>{" "}
+                adds a Result-producing field.{" "}
+                <code
+                  style={{
+                    color: SYN.fn,
+                    fontFamily: "'Fira Code', monospace",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  let_
+                </code>{" "}
+                adds a pure value. Both accumulate into the same typed record.
+              </p>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={150}>
+            <TerminalWindow title="do-notation.ts" code={DO_NOTATION_CODE} />
+          </FadeIn>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================
+// SECTION 8: TAGGED ERROR HANDLING
+// ============================================================
+
+function TaggedErrorSection(): ReactNode {
+  const isMobile = useIsMobile();
+
+  return (
+    <section className="result-section" style={S.section("#020408")}>
+      <div style={S.container()}>
+        <div
+          className="result-grid-2"
+          style={{
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "1.2fr 1fr",
+            gap: isMobile ? 40 : 80,
+            alignItems: "center",
+          }}
+        >
+          {/* Left: code terminal */}
+          <FadeIn>
+            <TerminalWindow title="tagged-errors.ts" code={CATCH_TAG_CODE} />
+          </FadeIn>
+
+          {/* Right: explanation */}
+          <FadeIn delay={150}>
+            <div>
+              <p style={S.monoLabel()}>:: tagged errors</p>
+              <h2 style={S.h2()}>
+                Eliminate errors <span style={{ color: ACCENT }}>one tag at a time</span>
+              </h2>
+              <p style={{ ...S.body(), marginBottom: 24 }}>
+                Use{" "}
+                <code
+                  style={{
+                    color: SYN.fn,
+                    fontFamily: "'Fira Code', monospace",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  catchTag
+                </code>{" "}
+                and{" "}
+                <code
+                  style={{
+                    color: SYN.fn,
+                    fontFamily: "'Fira Code', monospace",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  catchTags
+                </code>{" "}
+                to progressively handle errors by their discriminant. TypeScript narrows the union
+                after each handler — until nothing remains.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {[
+                  { fn: "catchTag", desc: "Handle one error type, narrow the union" },
+                  { fn: "catchTags", desc: "Handle multiple at once, narrow all" },
+                  { fn: "andThenWith", desc: "Chain with success + error recovery" },
+                  { fn: "orDie", desc: "Extract value or throw — for boundaries" },
+                ].map(s => (
+                  <div key={s.fn} style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
+                    <span
+                      style={{
+                        fontFamily: "'Fira Code', monospace",
+                        fontSize: "0.78rem",
+                        color: ACCENT,
+                        minWidth: 110,
+                      }}
+                    >
+                      {s.fn}()
+                    </span>
+                    <span style={{ ...S.body(), fontSize: "0.82rem" }}>{s.desc}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 28 }}>
+                <Link
+                  to="/docs/guides/tagged-error-handling"
+                  style={{
+                    fontFamily: "'Fira Code', monospace",
+                    fontSize: "0.78rem",
+                    color: ACCENT,
+                    textDecoration: "none",
+                    borderBottom: `1px solid ${ACCENT}40`,
+                    paddingBottom: 2,
+                  }}
+                >
+                  Read the guide →
+                </Link>
+              </div>
+            </div>
+          </FadeIn>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================
+// SECTION 9: EFFECT HANDLERS
+// ============================================================
+
+function EffectHandlerSection(): ReactNode {
+  const isMobile = useIsMobile();
+
+  return (
+    <section className="result-section" style={S.section("#08101C")}>
+      <div style={S.container()}>
+        <div
+          className="result-grid-2"
+          style={{
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "1fr 1.2fr",
+            gap: isMobile ? 40 : 80,
+            alignItems: "center",
+          }}
+        >
+          {/* Left: explanation */}
+          <FadeIn>
+            <div>
+              <p style={S.monoLabel()}>:: effect system</p>
+              <h2 style={S.h2()}>
+                Composable <span style={{ color: ACCENT }}>error handlers</span>
+              </h2>
+              <p style={{ ...S.body(), marginBottom: 24 }}>
+                Define handlers for specific error tags, compose them algebraically, and apply them
+                to any Result. Plus type-level contracts that enforce effect declarations at compile
+                time — zero runtime cost.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {[
+                  { fn: "EffectHandler", desc: "Typed handler for specific error tags" },
+                  { fn: "composeHandlers", desc: "Merge handlers, left-biased precedence" },
+                  { fn: "transformEffects", desc: "Apply handler chain to any Result" },
+                  { fn: "EffectContract", desc: "Declare input/output/effects at type level" },
+                ].map(s => (
+                  <div key={s.fn} style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
+                    <span
+                      style={{
+                        fontFamily: "'Fira Code', monospace",
+                        fontSize: "0.78rem",
+                        color: ACCENT,
+                        minWidth: 150,
+                      }}
+                    >
+                      {s.fn}
+                    </span>
+                    <span style={{ ...S.body(), fontSize: "0.82rem" }}>{s.desc}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 28 }}>
+                <Link
+                  to="/docs/advanced/effect-system"
+                  style={{
+                    fontFamily: "'Fira Code', monospace",
+                    fontSize: "0.78rem",
+                    color: ACCENT,
+                    textDecoration: "none",
+                    borderBottom: `1px solid ${ACCENT}40`,
+                    paddingBottom: 2,
+                  }}
+                >
+                  Explore the effect system →
+                </Link>
+              </div>
+            </div>
+          </FadeIn>
+
+          {/* Right: code terminal */}
+          <FadeIn delay={150}>
+            <TerminalWindow title="effect-handlers.ts" code={EFFECT_HANDLER_CODE} />
+          </FadeIn>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================
+// SECTION 10: ECOSYSTEM
 // ============================================================
 
 function EcosystemSection(): ReactNode {
@@ -1909,6 +2265,14 @@ function ResultFooter(): ReactNode {
             Getting Started
           </Link>
           <br />
+          <Link to="/docs/guides/tagged-error-handling" style={linkStyle}>
+            Tagged Error Handling
+          </Link>
+          <br />
+          <Link to="/docs/advanced/effect-system" style={linkStyle}>
+            Effect System
+          </Link>
+          <br />
           <Link to="/docs/api/api-reference" style={linkStyle}>
             API Reference
           </Link>
@@ -1987,6 +2351,9 @@ export default function Home(): ReactNode {
         <FeaturesSection />
         <APIShowcaseSection />
         <GeneratorsSection />
+        <DoNotationSection />
+        <TaggedErrorSection />
+        <EffectHandlerSection />
         <EcosystemSection />
         <CTASection />
         <ResultFooter />
