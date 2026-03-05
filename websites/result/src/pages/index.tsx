@@ -18,45 +18,40 @@ const INSTALL_CMD = "npm install @hex-di/result";
 // ============================================================
 
 const BEFORE_CODE = `try {
-  const txn = chargeCard(user.card, amount);
-  const receipt = sendReceipt(txn);
-  return \`Sent to \${receipt.email}\`;
+  const user = findUser(id);
+  const order = createOrder(user);
+  return order.confirmation;
 } catch (e) {
-  // e is \`unknown\` — no type info
-  // Was it a network error? Card expired?
-  // Fraud check? We don't know.
-  console.error("payment failed", e);
+  // e is \`unknown\` — what went wrong?
+  // User not found? Order failed? DB down?
+  console.error("something broke", e);
 }`;
 
-const AFTER_CODE = `const result = fromThrowable(
-  () => chargeCard(user.card, amount),
-  (e) => ({ _tag: "PaymentFailed", cause: e }),
-)
-  .andThen((txn) => sendReceipt(txn))
-  .catchTag("CardExpired", (e) => ok(renewAndRetry(e)))
-  .match(
-    (receipt) => \`Sent to \${receipt.email}\`,
-    (e) => \`Failed: \${e._tag}\`,
-    // ^— e: NetworkTimeout | FraudDetected
-    //    CardExpired already handled ✓
-  );`;
+const AFTER_CODE = `import { ok, err } from '@hex-di/result';
 
-const PIPELINE_CODE = `import { fromThrowable, ok, err } from '@hex-di/result';
+const result = findUser(id);
+//    ^? Result<User, NotFoundError>
 
-const reading = fromThrowable(
-  () => sensor.read(),
-  (e) => ({ _tag: "SensorOffline", id: sensor.id }),
-)
-  .andThen((raw) =>
-    raw.value > threshold
-      ? ok(raw)
-      : err({ _tag: "OutOfRange", value: raw.value })
+if (result.isOk()) {
+  console.log(result.value.name);
+  //                 ^? User — fully typed
+} else {
+  console.log(result.error._tag);
+  //                 ^? NotFoundError — never unknown
+}`;
+
+const PIPELINE_CODE = `import { ok, err } from '@hex-di/result';
+
+const profile = findUser(id)   // Result<User, NotFound>
+  .andThen((user) =>
+    user.active
+      ? ok(user)
+      : err({ _tag: "Inactive", id: user.id })
   )
-  .map((valid) => normalize(valid))
-  .andTee((v) => telemetry.record(v))
+  .map((user) => ({ ...user, displayName: formatName(user) }))
   .match(
-    (v) => publish(v),
-    (e) => alertOps(e),
+    (profile) => renderProfile(profile),
+    (e) => showError(e._tag),
   );`;
 
 const SAFETRY_CODE = `import { safeTry, ok } from '@hex-di/result';
@@ -68,7 +63,7 @@ const approval = safeTry(function* () {
 
   return ok({ approved: true, terms });
   // If any step returns Err, execution stops
-  // and the Err propagates — like Rust's ? operator
+  // and the Err propagates automatically
 });`;
 
 const DO_NOTATION_CODE = `import { ok, bind, let_ } from '@hex-di/result';
@@ -160,16 +155,15 @@ const FEATURES: readonly Feature[] = [
     iconColor: "#A6E22E",
   },
   {
-    title: "Railway-Oriented",
+    title: "Errors Skip Automatically",
     description:
-      "Chain operations with map, andThen, and orElse. Errors propagate automatically through the pipeline.",
+      "When something fails, the rest of the chain is skipped. No nested if-checks needed.",
     icon: "route",
     iconColor: "#20B2AA",
   },
   {
-    title: "Exhaustive Matching",
-    description:
-      "TypeScript ensures you handle every error variant. No silent failures, no forgotten catch blocks.",
+    title: "Never Forget an Error",
+    description: "TypeScript tells you at build time if you missed handling an error case.",
     icon: "check",
     iconColor: "#BD93F9",
   },
@@ -181,16 +175,16 @@ const FEATURES: readonly Feature[] = [
     iconColor: "#FFB86C",
   },
   {
-    title: "Tagged Error Handling",
+    title: "Handle Errors by Name",
     description:
-      "catchTag progressively eliminates errors from the union. Each handler narrows the type until nothing remains.",
+      "Each error has a name. Handle them one by one — TypeScript tracks which ones are left.",
     icon: "layers",
     iconColor: "#6272A4",
   },
   {
-    title: "Effect System",
+    title: "Reusable Error Handlers",
     description:
-      "Type-level contracts, composable handlers, and effect tracking. Declare and verify error surfaces at zero runtime cost.",
+      "Write an error handler once, apply it anywhere. Compose multiple handlers into one — TypeScript tracks what's left.",
     icon: "globe",
     iconColor: "#FF79C6",
   },
@@ -376,11 +370,10 @@ function getIcon(name: string, color: string): ReactNode {
 }
 
 const PIPELINE_STEPS = [
-  { step: "fromThrowable", desc: "Catch sensor exceptions as typed errors" },
-  { step: "andThen", desc: "Validate reading against thresholds" },
-  { step: "map", desc: "Normalize the sensor value" },
-  { step: "andTee", desc: "Record telemetry without changing the value" },
-  { step: "match", desc: "Publish or alert — exhaustively" },
+  { step: "findUser", desc: "Returns Result<User, NotFound>" },
+  { step: "andThen", desc: "Check the user is active" },
+  { step: "map", desc: "Transform into a display profile" },
+  { step: "match", desc: "Render success or show error" },
 ];
 
 // ============================================================
@@ -493,6 +486,8 @@ const TS_BUILTIN_TYPES = new Set([
 const RESULT_API = new Set([
   "ok",
   "err",
+  "isOk",
+  "isErr",
   "fromThrowable",
   "safeTry",
   "match",
@@ -793,7 +788,7 @@ function RailwaySVG(): ReactNode {
       width="420"
       height="260"
       style={{ maxWidth: "100%" }}
-      aria-label="Railway-oriented programming visualization"
+      aria-label="Result data flow visualization"
     >
       <defs>
         <filter id="glow-lime">
@@ -1180,9 +1175,9 @@ function HeroSection(): ReactNode {
               margin: "0 0 28px",
             }}
           >
-            Errors become <span style={{ color: ACCENT }}>values</span>.
+            Errors you can <span style={{ color: ACCENT }}>see</span>.
             <br />
-            Values become <span style={{ color: ACCENT }}>pipelines</span>.
+            Types you can <span style={{ color: ACCENT }}>trust</span>.
           </h1>
 
           <p
@@ -1194,8 +1189,8 @@ function HeroSection(): ReactNode {
               marginBottom: "40px",
             }}
           >
-            Type-safe error handling for TypeScript. Zero dependencies. Full railway-oriented
-            programming in a single import.
+            Stop guessing what went wrong in catch blocks. Result makes errors visible, typed, and
+            impossible to forget.
           </p>
 
           {/* Install command */}
@@ -1450,7 +1445,7 @@ function BeforeAfterSection(): ReactNode {
                     textTransform: "uppercase",
                   }}
                 >
-                  Result pipeline
+                  @hex-di/result
                 </span>
               </div>
               <pre
@@ -1607,6 +1602,253 @@ function FeaturesSection(): ReactNode {
 }
 
 // ============================================================
+// SECTION: QUICK START (3 steps)
+// ============================================================
+
+const QUICK_STEPS = [
+  {
+    num: "1",
+    label: "Install",
+    code: `npm install @hex-di/result`,
+  },
+  {
+    num: "2",
+    label: "Return a Result",
+    code: `return b === 0 ? err("division by zero") : ok(a / b);`,
+  },
+  {
+    num: "3",
+    label: "Handle both cases",
+    code: `result.match(v => use(v), e => handle(e));`,
+  },
+];
+
+function QuickStartSection(): ReactNode {
+  return (
+    <section className="result-section" style={S.section("#020408")}>
+      <div style={S.container()}>
+        <FadeIn>
+          <div style={S.sectionHeader()}>
+            <p style={S.monoLabel()}>:: quick start</p>
+            <h2 style={S.h2()}>Three steps. That{"'"}s it.</h2>
+          </div>
+        </FadeIn>
+
+        <div
+          className="result-grid-3"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 24,
+          }}
+        >
+          {QUICK_STEPS.map((s, i) => (
+            <FadeIn key={s.num} delay={i * 100}>
+              <div className="result-hud-card" style={{ height: "100%" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    marginBottom: 16,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "'Rajdhani', sans-serif",
+                      fontSize: "1.6rem",
+                      fontWeight: 700,
+                      color: ACCENT,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {s.num}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "'Rajdhani', sans-serif",
+                      fontSize: "1.05rem",
+                      fontWeight: 600,
+                      color: "#fff",
+                    }}
+                  >
+                    {s.label}
+                  </span>
+                </div>
+                <pre
+                  style={{
+                    margin: 0,
+                    fontFamily: "'Fira Code', monospace",
+                    fontSize: "0.78rem",
+                    lineHeight: 1.7,
+                    overflowX: "auto",
+                  }}
+                >
+                  <ResultCodeBlock code={s.code} />
+                </pre>
+              </div>
+            </FadeIn>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================
+// SECTION: FAMILIAR PATTERNS
+// ============================================================
+
+const FAMILIAR_PATTERNS = [
+  {
+    familiar: "if (response.ok)",
+    result: "if (result.isOk())",
+    note: "Same check — but the types narrow automatically.",
+  },
+  {
+    familiar: "array.map(x => ...)",
+    result: "result.map(x => ...)",
+    note: "Transform the value inside, skip if empty/error.",
+  },
+  {
+    familiar: "promise.then(x => ...)",
+    result: "result.andThen(x => ...)",
+    note: "Chain async-like steps — errors short-circuit.",
+  },
+];
+
+function FamiliarPatternsSection(): ReactNode {
+  return (
+    <section className="result-section" style={S.section("#020408")}>
+      <div style={S.container()}>
+        <FadeIn>
+          <div style={S.sectionHeader()}>
+            <p style={S.monoLabel()}>:: familiar</p>
+            <h2 style={S.h2()}>You already know this</h2>
+            <p style={{ ...S.body(), maxWidth: 560, margin: "0 auto" }}>
+              {"If you've used "}
+              <code
+                style={{
+                  color: SYN.fn,
+                  fontFamily: "'Fira Code', monospace",
+                  fontSize: "0.85rem",
+                }}
+              >
+                .map()
+              </code>
+              {" on an array or "}
+              <code
+                style={{
+                  color: SYN.fn,
+                  fontFamily: "'Fira Code', monospace",
+                  fontSize: "0.85rem",
+                }}
+              >
+                .then()
+              </code>
+              {" on a Promise, you already know how Result works."}
+            </p>
+          </div>
+        </FadeIn>
+
+        <div
+          className="result-grid-3"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 24,
+          }}
+        >
+          {FAMILIAR_PATTERNS.map((p, i) => (
+            <FadeIn key={p.familiar} delay={i * 100}>
+              <div className="result-hud-card" style={{ height: "100%" }}>
+                <p
+                  style={{
+                    fontFamily: "'Fira Code', monospace",
+                    fontSize: "0.75rem",
+                    color: "#506070",
+                    margin: "0 0 8px",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  JS you know
+                </p>
+                <pre
+                  style={{
+                    margin: "0 0 16px",
+                    fontFamily: "'Fira Code', monospace",
+                    fontSize: "0.82rem",
+                    lineHeight: 1.7,
+                    color: "#8a9bb0",
+                  }}
+                >
+                  {p.familiar}
+                </pre>
+                <p
+                  style={{
+                    fontFamily: "'Fira Code', monospace",
+                    fontSize: "0.75rem",
+                    color: ACCENT,
+                    margin: "0 0 8px",
+                    letterSpacing: "0.04em",
+                    opacity: 0.7,
+                  }}
+                >
+                  Result equivalent
+                </p>
+                <pre
+                  style={{
+                    margin: "0 0 16px",
+                    fontFamily: "'Fira Code', monospace",
+                    fontSize: "0.82rem",
+                    lineHeight: 1.7,
+                    color: ACCENT,
+                  }}
+                >
+                  {p.result}
+                </pre>
+                <p style={{ ...S.body(), fontSize: "0.82rem" }}>{p.note}</p>
+              </div>
+            </FadeIn>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================
+// SECTION: PROGRESSIVE DIVIDER
+// ============================================================
+
+function ProgressiveDivider(): ReactNode {
+  return (
+    <div
+      style={{
+        padding: "60px 40px",
+        textAlign: "center",
+        background: "#08101C",
+      }}
+    >
+      <FadeIn>
+        <p style={S.monoLabel()}>{`:: going deeper`}</p>
+        <div
+          style={{
+            width: 60,
+            height: 1,
+            background: `${ACCENT}40`,
+            margin: "16px auto",
+          }}
+        />
+        <p style={{ ...S.body(), fontSize: "0.85rem" }}>
+          Master these patterns when you{"'"}re ready.
+        </p>
+      </FadeIn>
+    </div>
+  );
+}
+
+// ============================================================
 // SECTION 6: API SHOWCASE
 // ============================================================
 
@@ -1693,8 +1935,8 @@ function APIShowcaseSection(): ReactNode {
             <p style={S.monoLabel()}>:: api</p>
             <h2 style={S.h2()}>50+ methods. One import.</h2>
             <p style={{ ...S.body(), maxWidth: 560, margin: "0 auto" }}>
-              Constructors, chainers, combinators, tagged error handlers — everything you need to
-              handle errors as first-class values.
+              Create results, chain operations, combine results, handle tagged errors — everything
+              you need to stop throwing.
             </p>
           </div>
         </FadeIn>
@@ -1731,11 +1973,9 @@ function GeneratorsSection(): ReactNode {
             <div>
               <p style={S.monoLabel()}>:: generators</p>
               <h2 style={S.h2()}>
-                {"Rust's "}
-                <span style={{ color: ACCENT }}>?</span>
-                {" operator, in TypeScript"}
+                Write straight-line code that <span style={{ color: ACCENT }}>bails on errors</span>
               </h2>
-              <p style={{ ...S.body(), marginBottom: 24 }}>
+              <p style={S.body()}>
                 Use{" "}
                 <code
                   style={{
@@ -1746,21 +1986,7 @@ function GeneratorsSection(): ReactNode {
                 >
                   safeTry
                 </code>{" "}
-                with generator functions to write linear, imperative code that short-circuits on the
-                first error — just like Rust{"'"}s{" "}
-                <code
-                  style={{
-                    color: SYN.keyword,
-                    fontFamily: "'Fira Code', monospace",
-                    fontSize: "0.85rem",
-                  }}
-                >
-                  ?
-                </code>{" "}
-                operator.
-              </p>
-              <p style={S.body()}>
-                Each{" "}
+                with generator functions to write linear code that stops at the first error. Each{" "}
                 <code
                   style={{
                     color: SYN.keyword,
@@ -1806,9 +2032,9 @@ function DoNotationSection(): ReactNode {
         >
           <FadeIn>
             <div>
-              <p style={S.monoLabel()}>:: do notation</p>
+              <p style={S.monoLabel()}>:: accumulate</p>
               <h2 style={S.h2()}>
-                Build objects <span style={{ color: ACCENT }}>step by step</span>
+                Build typed objects <span style={{ color: ACCENT }}>field by field</span>
               </h2>
               <p style={{ ...S.body(), marginBottom: 24 }}>
                 Use{" "}
@@ -1995,16 +2221,15 @@ function EffectHandlerSection(): ReactNode {
                 Composable <span style={{ color: ACCENT }}>error handlers</span>
               </h2>
               <p style={{ ...S.body(), marginBottom: 24 }}>
-                Define handlers for specific error tags, compose them algebraically, and apply them
-                to any Result. Plus type-level contracts that enforce effect declarations at compile
-                time — zero runtime cost.
+                Write a handler for each error type, then snap them together. Apply the combined
+                handler to any Result — TypeScript proves which errors are left. Zero runtime cost.
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {[
-                  { fn: "EffectHandler", desc: "Typed handler for specific error tags" },
-                  { fn: "composeHandlers", desc: "Merge handlers, left-biased precedence" },
-                  { fn: "transformEffects", desc: "Apply handler chain to any Result" },
-                  { fn: "EffectContract", desc: "Declare input/output/effects at type level" },
+                  { fn: "EffectHandler", desc: "One handler for one error type" },
+                  { fn: "composeHandlers", desc: "Snap multiple handlers together" },
+                  { fn: "transformEffects", desc: "Apply combined handler to any Result" },
+                  { fn: "EffectContract", desc: "Declare which errors a function can produce" },
                 ].map(s => (
                   <div key={s.fn} style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
                     <span
@@ -2333,12 +2558,12 @@ export default function Home(): ReactNode {
   }, []);
 
   return (
-    <Layout description="Type-Safe Error Handling for TypeScript">
+    <Layout description="Errors You Can See, Types You Can Trust">
       <Head>
-        <title>Result | Type-Safe Error Handling | HexDI</title>
+        <title>Result | Errors You Can See, Types You Can Trust | HexDI</title>
         <meta
           name="description"
-          content="Type-safe error handling for TypeScript. Zero dependencies. Full railway-oriented programming."
+          content="Stop guessing what went wrong in catch blocks. Result makes errors visible, typed, and impossible to forget. Zero dependencies."
         />
         <style>{`.main-wrapper{padding-top:0!important}footer{display:none!important}`}</style>
       </Head>
@@ -2347,12 +2572,16 @@ export default function Home(): ReactNode {
         <HeroSection />
         <StatsBar />
         <BeforeAfterSection />
-        <CodePipelineSection />
+        <QuickStartSection />
+        <FamiliarPatternsSection />
         <FeaturesSection />
+        <CodePipelineSection />
+        <CTASection />
+        <ProgressiveDivider />
         <APIShowcaseSection />
+        <TaggedErrorSection />
         <GeneratorsSection />
         <DoNotationSection />
-        <TaggedErrorSection />
         <EffectHandlerSection />
         <EcosystemSection />
         <CTASection />

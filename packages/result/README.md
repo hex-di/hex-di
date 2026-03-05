@@ -1,6 +1,6 @@
 # @hex-di/result
 
-Rust-style `Result` and `Option` types for TypeScript. Errors as values with full type safety.
+Stop guessing what went wrong in catch blocks. Result makes errors visible, typed, and impossible to forget.
 
 ```ts
 import { ok, err, type Result } from "@hex-di/result";
@@ -21,17 +21,18 @@ if (result.isOk()) {
 
 ## Features
 
-- **Type-safe error handling** -- `Result<T, E>` makes errors explicit in function signatures
-- **Immutable** -- all instances are `Object.freeze()`-d with brand symbols
-- **Zero dependencies** -- no runtime deps, just TypeScript
-- **Full method chain API** -- `map`, `mapErr`, `andThen`, `orElse`, `match`, and more
-- **Async support** -- `ResultAsync<T, E>` wraps promises with the same API
-- **Option type** -- `Option<T>` with `Some`/`None` variants
-- **Generators** -- `safeTry` for imperative-style error composition
-- **Do notation** -- `bind` / `let_` for building up result objects step by step
+- **Errors you can see** -- `Result<T, E>` makes errors explicit in function signatures. No more `unknown` in catch blocks.
+- **Errors skip automatically** -- Chain operations with `map`, `andThen`, `orElse`. When something fails, the rest is skipped.
+- **Never forget an error** -- TypeScript tells you at build time if you missed handling an error case.
+- **Zero runtime cost** -- No dependencies. Lightweight wrapper that compiles to simple objects.
+- **Handle errors by name** -- Tagged errors with `catchTag` let you handle them one by one. TypeScript tracks which ones are left.
+- **Async support** -- `ResultAsync<T, E>` wraps promises with the same chainable API.
+- **You already know this** -- `.map()` like arrays, `.andThen()` like promises. Familiar patterns, better types.
 - **Combinators** -- `all`, `any`, `allSettled`, `collect`, `partition`, `forEach`, `zipOrAccumulate`
-- **Serialization** -- `toJSON` / `fromJSON` with schema version
-- **Standard Schema** -- `toSchema` for validation library interop
+- **Generators & Accumulate** -- `safeTry` for imperative style, `bind`/`let_` for building typed objects field by field.
+- **Option type** -- `Option<T>` with `Some`/`None` variants.
+- **Serialization** -- `toJSON` / `fromJSON` with schema version.
+- **Immutable** -- All instances are `Object.freeze()`-d with brand symbols.
 
 ## Install
 
@@ -82,9 +83,17 @@ const result = parseNumber("42").andThen(isPositive); // Ok(42)
 const failed = parseNumber("abc").andThen(isPositive); // Err("not a number")
 ```
 
-### Error Handling
+### You Already Know This
 
-Define typed error variants with `createError` and match them exhaustively:
+| JS you know              | Result equivalent          |
+| ------------------------ | -------------------------- |
+| `if (response.ok)`       | `if (result.isOk())`       |
+| `array.map(x => ...)`    | `result.map(x => ...)`     |
+| `promise.then(x => ...)` | `result.andThen(x => ...)` |
+
+## Error Handling
+
+Define typed error variants with `createError`. TypeScript makes sure you handle every one:
 
 ```ts
 import { ok, err, createError, assertNever, type Result } from "@hex-di/result";
@@ -151,14 +160,16 @@ Http.isTag("NotFound")(error); // true — specific tag within group
 Transform or recover from errors with `mapErr` and `orElse`:
 
 ```ts
+const ServiceError = createError("ServiceError");
+
 // Wrap errors into a higher-level type
-result.mapErr(e => ({ _tag: "ServiceError" as const, cause: e }));
+result.mapErr(e => ServiceError({ cause: e }));
 
 // Recover from specific errors, propagate others
 result.orElse(e => (e._tag === "Timeout" ? retry(e.ms) : err(e)));
 ```
 
-### Extracting Values
+## Extracting Values
 
 ```ts
 result.unwrapOr(0); // 42 if Ok, 0 if Err
@@ -168,26 +179,7 @@ result.toUndefined(); // T | undefined
 result.intoTuple(); // [null, T] | [E, null]
 ```
 
-## Async Support
-
-`ResultAsync<T, E>` wraps a `Promise<Result<T, E>>` with the same chainable API:
-
-```ts
-import { ResultAsync, fromPromise } from "@hex-di/result";
-
-const userResult = fromPromise(
-  fetch("/api/user").then(r => r.json()),
-  error => ({ _tag: "FetchError" as const, cause: error })
-);
-
-// Chain async operations
-const nameResult = userResult.map(user => user.name).mapErr(e => e.cause);
-
-// Await to get the Result
-const result = await nameResult; // Result<string, unknown>
-```
-
-### Constructors
+## Constructors
 
 ```ts
 import {
@@ -226,9 +218,56 @@ const result = tryCatch(
 );
 ```
 
+---
+
+_The sections below cover advanced patterns. Everything above is enough to be productive._
+
+---
+
+## Combinators
+
+```ts
+import { all, any, allSettled, partition, collect } from "@hex-di/result";
+
+// All must succeed (like Promise.all)
+const results = all([ok(1), ok(2), ok(3)]); // Ok([1, 2, 3])
+const failed = all([ok(1), err("x")]); // Err("x")
+
+// Any must succeed (like Promise.any)
+const first = any([err("a"), ok(2), ok(3)]); // Ok(2)
+
+// Collect all, separating Ok and Err
+const [oks, errs] = partition([ok(1), err("a"), ok(3)]);
+// oks: [1, 3], errs: ["a"]
+
+// All settle, preserving all results
+const settled = allSettled([ok(1), err("x")]); // Ok([Ok(1), Err("x")])
+```
+
+## Async Support
+
+`ResultAsync<T, E>` wraps a `Promise<Result<T, E>>` with the same chainable API:
+
+```ts
+import { ResultAsync, fromPromise, createError } from "@hex-di/result";
+
+const FetchError = createError("FetchError");
+
+const userResult = fromPromise(
+  fetch("/api/user").then(r => r.json()),
+  error => FetchError({ cause: error })
+);
+
+// Chain async operations
+const nameResult = userResult.map(user => user.name).mapErr(e => e.cause);
+
+// Await to get the Result
+const result = await nameResult; // Result<string, unknown>
+```
+
 ## Generators (safeTry)
 
-Compose multiple `Result` operations with early return on `Err`, similar to Rust's `?` operator:
+Write straight-line code that stops at the first error -- no nesting, no callbacks:
 
 ```ts
 import { safeTry, ok, err } from "@hex-di/result";
@@ -252,9 +291,9 @@ const result = await safeTry(async function* () {
 });
 ```
 
-## Do Notation
+## Accumulate (bind / let\_)
 
-Build up an object accumulating results step by step:
+Build up a typed object field by field, where each field can fail:
 
 ```ts
 import { ok, bind, let_ } from "@hex-di/result";
@@ -264,26 +303,6 @@ const result = ok({})
   .andThen(bind("posts", ({ user }) => fetchPosts(user.id)))
   .andThen(let_("count", ({ posts }) => posts.length));
 // Result<{ user: User; posts: Post[]; count: number }, Error>
-```
-
-## Combinators
-
-```ts
-import { all, any, allSettled, partition, collect } from "@hex-di/result";
-
-// All must succeed (like Promise.all)
-const results = all([ok(1), ok(2), ok(3)]); // Ok([1, 2, 3])
-const failed = all([ok(1), err("x")]); // Err("x")
-
-// Any must succeed (like Promise.any)
-const first = any([err("a"), ok(2), ok(3)]); // Ok(2)
-
-// Collect all, separating Ok and Err
-const [oks, errs] = partition([ok(1), err("a"), ok(3)]);
-// oks: [1, 3], errs: ["a"]
-
-// All settle, preserving all results
-const settled = allSettled([ok(1), err("x")]); // Ok([Ok(1), Err("x")])
 ```
 
 ## Option Type
