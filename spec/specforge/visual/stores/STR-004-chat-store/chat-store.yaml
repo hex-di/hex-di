@@ -1,0 +1,91 @@
+entity: store
+id: STR-004-chat-store
+name: "Chat Store"
+docs: ./chat-store.md
+tests: ./chat-store.feature
+
+initial-state:
+  messages: []
+  isProcessing: false
+  error: null
+  tokenBudget:
+    used: 0
+    total: 200000
+    percent: 0
+  discoveryStatus:
+    briefAccepted: false
+    briefReady: false
+
+# ChatMessage shape:
+# {
+#   id: string
+#   role: "user" | "agent"
+#   content: string
+#   timestamp: ISO-8601 string
+#   toolResults?: [{ type: string, summary: string, query?: string }]
+# }
+
+reducers:
+  EVT-008-message-sent:
+    - field: "messages"
+      operation: append
+      value: "payload.message"
+    - field: "isProcessing"
+      operation: set
+      value: true
+    - field: "error"
+      operation: clear
+  EVT-009-message-received:
+    - field: "messages"
+      operation: append
+      value: "payload.message"
+    - field: "isProcessing"
+      operation: set
+      value: false
+  EVT-010-chat-error:
+    - field: "isProcessing"
+      operation: set
+      value: false
+    - field: "error"
+      operation: set
+      value: "payload.error"
+  EVT-011-budget-updated:
+    - field: "tokenBudget.used"
+      operation: set
+      value: "payload.used"
+    - field: "tokenBudget.total"
+      operation: set
+      value: "payload.total"
+    - field: "tokenBudget.percent"
+      operation: set
+      value: "payload.percent"
+  EVT-012-discovery-status-changed:
+    - field: "discoveryStatus.briefAccepted"
+      operation: set
+      value: "payload.briefAccepted"
+    - field: "discoveryStatus.briefReady"
+      operation: set
+      value: "payload.briefReady"
+  EVT-013-brief-action:
+    - field: "discoveryStatus.briefAccepted"
+      operation: set
+      value: "payload.accepted"
+
+selectors:
+  - name: "lastMessage"
+    compute: "messages[messages.length - 1] or null"
+  - name: "messageCount"
+    compute: "messages.length"
+  - name: "budgetRemaining"
+    compute: "tokenBudget.total - tokenBudget.used"
+  - name: "isBudgetCritical"
+    compute: "tokenBudget.percent >= 90"
+
+consumers:
+  - $ref: CMP-007-token-budget-bar
+  - $ref: CMP-008-discovery-status-bar
+  - $ref: CMP-009-message-list
+  - $ref: CMP-010-chat-input-area
+
+persistence:
+  enabled: false

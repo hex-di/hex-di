@@ -1,0 +1,49 @@
+entity: store
+id: STR-003-sessions-store
+name: "Sessions Store"
+docs: ./sessions-store.md
+tests: ./sessions-store.feature
+
+initial-state:
+  sessions: []
+  isLoading: false
+
+# Session shape (for reference, not a reducer):
+# {
+#   sessionId: string
+#   packageName: string
+#   specPath: string
+#   status: "idle" | "active" | "discovery" | "spec-generation" | "implementation" | "completed" | "error"
+#   createdAt: ISO-8601 string
+#   pipelineMode: "discovery" | "spec" | "implementation"
+#   lastActivityAt: ISO-8601 string
+# }
+
+reducers:
+  EVT-003-session-created:
+    - field: "sessions"
+      operation: append
+      value: "payload.session"
+  EVT-006-sessions-loaded:
+    - field: "sessions"
+      operation: set
+      value: "payload.sessions"
+    - field: "isLoading"
+      operation: set
+      value: false
+  EVT-007-session-deleted:
+    - field: "sessions"
+      operation: remove
+      value: "item.sessionId === payload.sessionId"
+
+selectors:
+  - name: "sortedSessions"
+    compute: "sessions sorted by lastActivityAt descending"
+  - name: "filteredSessions"
+    compute: "sortedSessions filtered by home view filters (status, pipelineMode, search)"
+
+consumers:
+  - $ref: CMP-005-session-table
+
+persistence:
+  enabled: false

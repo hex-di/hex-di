@@ -1,0 +1,85 @@
+entity: page
+id: PG-009-graph-explorer
+name: "Graph Explorer"
+docs: ./graph-explorer.md
+tests: ./graph-explorer.feature
+
+route:
+  path: "#graph"
+  hash: true
+  guard: null
+
+layout: single-column
+
+meta:
+  title: "SpecForge — Graph Explorer"
+
+components:
+  - $ref: CMP-022-connection-status-banner
+  - $ref: CMP-004-filter-bar
+  - $ref: CMP-020-graph-node-list
+  - $ref: CMP-021-graph-edge-list
+
+stores:
+  - $ref: STR-011-graph-store
+  - $ref: STR-001-filter-store
+  - $ref: STR-002-active-session-store
+
+description: |
+  Text-based knowledge graph explorer with node and edge lists. Displays
+  a connection status banner at the top, a filter bar with node type and
+  relationship type filters plus view-mode presets, and a two-column split
+  view showing a node list on the left and an edge list on the right.
+  Future enhancement: D3.js force-directed graph visualization.
+
+filters:
+  nodeTypes:
+    type: multi-select
+    options: [spec, requirement, task, test, finding, agent, phase, entity]
+  relationshipTypes:
+    type: multi-select
+    options: [defines, implements, tests, covers, uses, produces, consumes]
+  viewMode:
+    type: button-group
+    options:
+      - full-graph
+      - by-type
+      - by-relationship
+      - specs-only
+      - tasks-only
+      - findings-only
+      - custom
+    default: full-graph
+  search:
+    type: text
+    placeholder: "Search nodes by label or ID..."
+
+node-type-colors:
+  spec: "#4FC3F7"
+  requirement: "#AB47BC"
+  task: "#66BB6A"
+  test: "#FFCA28"
+  finding: "#FF3B3B"
+  agent: "#FF7043"
+  phase: "#26C6DA"
+  entity: "#78909C"
+
+relationship-types:
+  - defines
+  - implements
+  - tests
+  - covers
+  - uses
+  - produces
+  - consumes
+
+states:
+  - no-session
+  - disconnected
+  - empty
+  - loading
+  - populated
+
+future-enhancements:
+  - description: "D3.js force-directed graph visualization"
+    status: planned

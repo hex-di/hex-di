@@ -1,0 +1,10 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`formatBlameError > snapshot: full formatted output 1`] = `
+"┌─ FactoryError ────────────────────────────────────
+│ Port: "Database" (outbound)
+│ Adapter: DatabaseAdapter
+│ Violation: FactoryError — ConnectionFailed
+│ Path: UserService → Repository → Database
+└───────────────────────────────────────────────────"
+`;

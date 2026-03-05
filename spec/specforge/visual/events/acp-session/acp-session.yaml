@@ -1,0 +1,74 @@
+entity: event
+id: EVT-014-acp-session-message-received
+name: "Agent Message Received"
+docs: ./acp-session.md
+tests: ./acp-session.feature
+
+payload:
+  - name: "message"
+    type: object
+    required: true
+    description: "AgentMessageView shape: { messageId, agentRole, content, timestamp, messageType, severity, phase }"
+
+target-stores:
+  - $ref: STR-009-acp-session-store
+
+side-effects: []
+
+---
+entity: event
+id: EVT-015-acp-session-messages-loaded
+name: "Agent Messages Loaded"
+docs: ./acp-session.md
+tests: ./acp-session.feature
+
+payload:
+  - name: "messages"
+    type: array
+    required: true
+    description: "Array of AgentMessageView objects loaded from the backend"
+
+target-stores:
+  - $ref: STR-009-acp-session-store
+
+side-effects: []
+
+---
+entity: event
+id: EVT-016-acp-session-message-dismissed
+name: "Agent Message Dismissed"
+docs: ./acp-session.md
+tests: ./acp-session.feature
+
+payload:
+  - name: "messageId"
+    type: string
+    required: true
+    description: "ID of the message to dismiss"
+
+target-stores:
+  - $ref: STR-009-acp-session-store
+
+side-effects: []
+
+---
+entity: event
+id: EVT-017-acp-session-subscription-tick
+name: "ACP Session Tick"
+docs: ./acp-session.md
+tests: ./acp-session.feature
+
+payload:
+  - name: "tick"
+    type: number
+    required: true
+    description: "Monotonically increasing tick counter"
+  - name: "timestamp"
+    type: string
+    required: true
+    description: "ISO-8601 timestamp of the tick"
+
+target-stores:
+  - $ref: STR-016-session-subscription
+
+side-effects: []

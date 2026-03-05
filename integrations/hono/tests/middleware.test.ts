@@ -47,6 +47,7 @@ function buildContainer(disposalLog: string[]) {
     provides: ScopedResourcePort,
     requires: [],
     lifetime: "scoped",
+    freeze: false,
     factory: () => ({ disposed: false }),
     finalizer: resource => {
       resource.disposed = true;

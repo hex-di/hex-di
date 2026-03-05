@@ -1,0 +1,88 @@
+entity: element
+id: ELM-044-phase-node
+name: "Phase Node"
+docs: ./pipeline.md
+tests: ./pipeline.feature
+
+type: container
+
+layout:
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 4px
+  padding: 8px 12px
+  border-radius: 6px
+  min-width: 80px
+
+children:
+  icon:
+    font-size: 14px
+  name:
+    font-size: 11px
+    font-family: "var(--sf-font-body)"
+    white-space: nowrap
+
+states:
+  pending:
+    color: "var(--sf-text-muted)"
+    background: "transparent"
+    border: "1px dashed rgba(0, 240, 255, 0.15)"
+    icon: "circle-outline"
+  active:
+    color: "var(--sf-accent)"
+    background: "var(--sf-accent-dim)"
+    border: "1px solid var(--sf-accent)"
+    box-shadow: "0 0 8px rgba(0, 240, 255, 0.2)"
+    icon: "spinner"
+    animation: "glow 2s ease-in-out infinite"
+  completed:
+    color: "#22C55E"
+    background: "rgba(34, 197, 94, 0.08)"
+    border: "1px solid rgba(34, 197, 94, 0.3)"
+    icon: "check"
+  failed:
+    color: "#FF3B3B"
+    background: "rgba(255, 59, 59, 0.08)"
+    border: "1px solid rgba(255, 59, 59, 0.3)"
+    icon: "x-mark"
+
+accessibility:
+  role: "listitem"
+  label: "Phase: {phaseName}, status: {status}"
+
+---
+entity: element
+id: ELM-045-phase-connector
+name: "Phase Connector"
+docs: ./pipeline.md
+tests: ./pipeline.feature
+
+type: container
+
+layout:
+  height: 2px
+  width: 24px
+  flex-shrink: 0
+  align-self: center
+
+states:
+  pending:
+    background: "rgba(0, 240, 255, 0.15)"
+    border-style: dashed
+  active:
+    background: "var(--sf-accent)"
+    animation: "flow 1.5s linear infinite"
+  completed:
+    background: "#22C55E"
+  failed:
+    background: "#FF3B3B"
+
+notes: |
+  Horizontal line connecting adjacent ELM-044 phase nodes.
+  Color matches the status of the left (source) phase node.
+  When the source phase is "active", the connector has a flowing animation.
+
+accessibility:
+  role: "separator"
+  label: "Connector between {sourcePhase} and {targetPhase}"

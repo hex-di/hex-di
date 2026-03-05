@@ -1,0 +1,512 @@
+entity: element
+id: ELM-029-token-budget-progress
+name: "Token Budget Progress"
+docs: ./chat.md
+tests: ./chat.feature
+
+type: container
+
+layout:
+  width: 100%
+  height: 4px
+  border-radius: 2px
+  overflow: hidden
+
+children:
+  fill:
+    height: 100%
+    border-radius: 2px
+    transition: "width 0.3s ease"
+
+states:
+  safe:
+    fill-background: "var(--sf-accent)"
+  warning:
+    fill-background: "#FF8C00"
+  critical:
+    fill-background: "#FF3B3B"
+  exhausted:
+    fill-background: "#FF3B3B"
+    fill-animation: "pulse 1.5s ease-in-out infinite"
+
+state-thresholds:
+  safe: "usage < 70%"
+  warning: "usage >= 70% && usage < 90%"
+  critical: "usage >= 90% && usage < 100%"
+  exhausted: "usage >= 100%"
+
+bindings:
+  - store: { $ref: STR-004-chat-store }
+    field: tokenBudget
+    mapping: "(tokenBudget.used / tokenBudget.total) * 100"
+
+accessibility:
+  role: "progressbar"
+  label: "Token budget: {used} of {total} tokens used"
+
+---
+entity: element
+id: ELM-030-token-budget-label
+name: "Token Budget Label"
+docs: ./chat.md
+tests: ./chat.feature
+
+type: text
+
+layout:
+  font-size: 11px
+  font-family: "var(--sf-font-body)"
+
+states:
+  default:
+    color: "var(--sf-text-muted)"
+
+bindings:
+  - store: { $ref: STR-004-chat-store }
+    field: tokenBudget
+    format: "{used} / {total} tokens"
+
+accessibility:
+  role: "status"
+  label: "Token budget usage"
+
+---
+entity: element
+id: ELM-031-discovery-status-indicator
+name: "Discovery Status Indicator"
+docs: ./chat.md
+tests: ./chat.feature
+
+type: text
+
+layout:
+  font-size: 11px
+  font-family: "var(--sf-font-body)"
+  padding: 2px 8px
+  border-radius: 10px
+  display: inline-block
+
+states:
+  not-started:
+    color: "var(--sf-text-muted)"
+    background: "rgba(255, 255, 255, 0.05)"
+    content: "Not Started"
+  in-progress:
+    color: "var(--sf-accent)"
+    background: "var(--sf-accent-dim)"
+    content: "In Progress"
+  brief-ready:
+    color: "#FF8C00"
+    background: "rgba(255, 140, 0, 0.1)"
+    content: "Brief Ready"
+  brief-accepted:
+    color: "#22C55E"
+    background: "rgba(34, 197, 94, 0.1)"
+    content: "Brief Accepted"
+
+accessibility:
+  role: "status"
+  label: "Discovery phase: {state}"
+
+---
+entity: element
+id: ELM-032-accept-brief-button
+name: "Accept Brief Button"
+docs: ./chat.md
+tests: ./chat.feature
+
+type: button
+
+layout:
+  font-size: 12px
+  font-family: "var(--sf-font-body)"
+  padding: 6px 14px
+  border-radius: 4px
+  cursor: pointer
+  font-weight: 600
+
+states:
+  default:
+    color: "var(--sf-bg-deep)"
+    background: "var(--sf-accent)"
+  hover:
+    background: "var(--sf-accent-bright)"
+
+visible-when: "briefReady === true && briefAccepted === false"
+
+actions:
+  - trigger: click
+    action: { $ref: ACT-013-accept-brief }
+
+accessibility:
+  role: "button"
+  label: "Accept the discovery brief"
+
+---
+entity: element
+id: ELM-033-reject-brief-button
+name: "Reject Brief Button"
+docs: ./chat.md
+tests: ./chat.feature
+
+type: button
+
+layout:
+  font-size: 12px
+  font-family: "var(--sf-font-body)"
+  padding: 6px 14px
+  border-radius: 4px
+  cursor: pointer
+
+states:
+  default:
+    color: "var(--sf-text-muted)"
+    background: "transparent"
+    border: "1px solid rgba(0, 240, 255, 0.15)"
+  hover:
+    color: "var(--sf-text)"
+    background: "rgba(0, 240, 255, 0.05)"
+
+actions:
+  - trigger: click
+    action: { $ref: ACT-014-reject-brief }
+
+accessibility:
+  role: "button"
+  label: "Reject the discovery brief"
+
+---
+entity: element
+id: ELM-034-request-brief-button
+name: "Request Brief Button"
+docs: ./chat.md
+tests: ./chat.feature
+
+type: button
+
+layout:
+  font-size: 12px
+  font-family: "var(--sf-font-body)"
+  padding: 6px 14px
+  border-radius: 4px
+  cursor: pointer
+
+states:
+  default:
+    color: "var(--sf-accent)"
+    background: "var(--sf-accent-dim)"
+  hover:
+    background: "rgba(0, 240, 255, 0.15)"
+
+actions:
+  - trigger: click
+    action: { $ref: ACT-015-request-brief }
+
+accessibility:
+  role: "button"
+  label: "Request a discovery brief"
+
+---
+entity: element
+id: ELM-035-message-bubble-user
+name: "Message Bubble (User)"
+docs: ./chat.md
+tests: ./chat.feature
+
+type: container
+
+layout:
+  max-width: 75%
+  align-self: flex-end
+  padding: 10px 14px
+  border-radius: "12px 12px 2px 12px"
+  font-size: 13px
+  font-family: "var(--sf-font-body)"
+  line-height: 1.5
+
+states:
+  default:
+    color: "var(--sf-text)"
+    background: "var(--sf-accent-dim)"
+
+accessibility:
+  role: "listitem"
+  label: "User message"
+
+---
+entity: element
+id: ELM-036-message-bubble-agent
+name: "Message Bubble (Agent)"
+docs: ./chat.md
+tests: ./chat.feature
+
+type: container
+
+layout:
+  max-width: 75%
+  align-self: flex-start
+  padding: 10px 14px
+  border-radius: "12px 12px 12px 2px"
+  font-size: 13px
+  font-family: "var(--sf-font-body)"
+  line-height: 1.5
+
+states:
+  default:
+    color: "var(--sf-text)"
+    background: "var(--sf-surface)"
+
+accessibility:
+  role: "listitem"
+  label: "Agent message"
+
+---
+entity: element
+id: ELM-037-message-timestamp
+name: "Message Timestamp"
+docs: ./chat.md
+tests: ./chat.feature
+
+type: text
+
+layout:
+  font-size: 10px
+  font-family: "var(--sf-font-body)"
+  margin-top: 4px
+
+states:
+  default:
+    color: "var(--sf-text-muted)"
+
+accessibility:
+  role: "time"
+  label: "Sent at {timestamp}"
+
+---
+entity: element
+id: ELM-038-tool-result-card
+name: "Tool Result Card"
+docs: ./chat.md
+tests: ./chat.feature
+
+type: container
+
+layout:
+  border: "1px solid rgba(0, 240, 255, 0.1)"
+  border-radius: 6px
+  padding: 8px 12px
+  margin-top: 6px
+  cursor: pointer
+
+children:
+  header:
+    display: flex
+    align-items: center
+    gap: 8px
+  summary:
+    font-size: 12px
+    font-family: "var(--sf-font-body)"
+    color: "var(--sf-text-muted)"
+  expandable-content:
+    font-size: 12px
+    font-family: "var(--sf-font-body)"
+    color: "var(--sf-text)"
+    margin-top: 8px
+
+states:
+  collapsed:
+    background: "transparent"
+  expanded:
+    background: "rgba(0, 240, 255, 0.02)"
+  hover:
+    background: "rgba(0, 240, 255, 0.03)"
+
+accessibility:
+  role: "region"
+  label: "Tool result: {toolType}"
+
+---
+entity: element
+id: ELM-039-tool-result-type-badge
+name: "Tool Result Type Badge"
+docs: ./chat.md
+tests: ./chat.feature
+
+type: text
+
+layout:
+  font-size: 10px
+  font-family: "var(--sf-font-body)"
+  padding: 1px 6px
+  border-radius: 8px
+  text-transform: lowercase
+
+states:
+  web-search:
+    color: "var(--sf-accent)"
+    background: "var(--sf-accent-dim)"
+  graph-query:
+    color: "#A78BFA"
+    background: "rgba(167, 139, 250, 0.1)"
+
+accessibility:
+  role: "status"
+  label: "Tool type: {type}"
+
+---
+entity: element
+id: ELM-040-chat-input-textarea
+name: "Chat Input Textarea"
+docs: ./chat.md
+tests: ./chat.feature
+
+type: input
+
+layout:
+  width: 100%
+  min-height: 40px
+  max-height: 120px
+  font-size: 13px
+  font-family: "var(--sf-font-body)"
+  padding: 10px 14px
+  border-radius: 8px
+  resize: none
+  line-height: 1.5
+
+states:
+  default:
+    color: "var(--sf-text)"
+    background: "var(--sf-surface)"
+    border: "1px solid rgba(0, 240, 255, 0.1)"
+    placeholder-color: "var(--sf-text-muted)"
+  focus:
+    border-color: "var(--sf-accent)"
+    outline: none
+
+placeholder: "Type a message..."
+max-lines: 4
+
+keyboard:
+  Enter: send-message
+  Shift+Enter: newline
+
+accessibility:
+  role: "textbox"
+  label: "Chat message input"
+
+---
+entity: element
+id: ELM-041-chat-send-button
+name: "Chat Send Button"
+docs: ./chat.md
+tests: ./chat.feature
+
+type: button
+
+layout:
+  width: 36px
+  height: 36px
+  display: flex
+  align-items: center
+  justify-content: center
+  border-radius: 6px
+  cursor: pointer
+  border: none
+
+states:
+  default:
+    color: "var(--sf-bg-deep)"
+    background: "var(--sf-accent)"
+  hover:
+    background: "var(--sf-accent-bright)"
+  disabled:
+    opacity: 0.4
+    pointer-events: none
+
+disabled-when: "textarea is empty OR isProcessing === true"
+
+actions:
+  - trigger: click
+    action: { $ref: ACT-011-send-message }
+
+accessibility:
+  role: "button"
+  label: "Send message"
+
+---
+entity: element
+id: ELM-042-chat-processing-indicator
+name: "Chat Processing Indicator"
+docs: ./chat.md
+tests: ./chat.feature
+
+type: container
+
+layout:
+  display: flex
+  align-items: center
+  gap: 4px
+  padding: 8px 14px
+
+children:
+  dot:
+    width: 6px
+    height: 6px
+    border-radius: 50%
+    background: "var(--sf-accent)"
+    animation: "bounce 1.4s ease-in-out infinite"
+
+states:
+  visible:
+    display: flex
+  hidden:
+    display: none
+
+visible-when: "isProcessing === true"
+
+accessibility:
+  role: "status"
+  label: "Agent is processing"
+
+---
+entity: element
+id: ELM-043-chat-error-banner
+name: "Chat Error Banner"
+docs: ./chat.md
+tests: ./chat.feature
+
+type: container
+
+layout:
+  width: 100%
+  padding: 10px 14px
+  border-radius: 6px
+  display: flex
+  align-items: center
+  justify-content: space-between
+  font-size: 12px
+  font-family: "var(--sf-font-body)"
+
+children:
+  message:
+    color: "#FF3B3B"
+  dismiss-button:
+    cursor: pointer
+    color: "#FF3B3B"
+    opacity: 0.7
+
+states:
+  default:
+    background: "rgba(255, 59, 59, 0.08)"
+    border: "1px solid rgba(255, 59, 59, 0.2)"
+  hover-dismiss:
+    dismiss-opacity: 1
+
+bindings:
+  - store: { $ref: STR-004-chat-store }
+    field: error
+    visible-when: "error !== null"
+
+accessibility:
+  role: "alert"
+  label: "Error: {message}"

@@ -1,0 +1,554 @@
+entity: element
+id: ELM-072-hero-headline
+name: "Hero Headline"
+docs: ./landing.md
+tests: ./landing.feature
+
+type: text
+
+layout:
+  font-family: "var(--sf-font-display)"
+  font-size: 48px
+  font-weight: 800
+  line-height: 1.1
+  text-align: center
+  max-width: 720px
+
+states:
+  default:
+    background: "linear-gradient(135deg, var(--sf-accent), #7C3AED)"
+    -webkit-background-clip: text
+    -webkit-text-fill-color: transparent
+    background-clip: text
+
+notes: |
+  Large display headline with accent gradient text effect.
+  Gradient goes from accent (cyan) to purple (#7C3AED).
+  Uses -webkit-background-clip: text for the gradient text effect.
+
+accessibility:
+  role: "heading"
+  aria-level: 1
+  label: "SpecForge headline"
+
+---
+entity: element
+id: ELM-073-hero-subheadline
+name: "Hero Subheadline"
+docs: ./landing.md
+tests: ./landing.feature
+
+type: text
+
+layout:
+  font-family: "var(--sf-font-body)"
+  font-size: 20px
+  font-weight: 400
+  line-height: 1.5
+  text-align: center
+  max-width: 600px
+
+states:
+  default:
+    color: "var(--sf-text-muted)"
+
+accessibility:
+  role: "paragraph"
+  label: "SpecForge description"
+
+---
+entity: element
+id: ELM-074-hero-cta-primary
+name: "Hero CTA Primary"
+docs: ./landing.md
+tests: ./landing.feature
+
+type: button
+
+layout:
+  display: inline-flex
+  align-items: center
+  justify-content: center
+  padding: "12px 28px"
+  border-radius: 8px
+  font-size: 16px
+  font-weight: 600
+  cursor: pointer
+  transition: "all 200ms ease"
+
+states:
+  default:
+    color: "var(--sf-bg)"
+    background: "var(--sf-accent)"
+  hover:
+    background: "var(--sf-accent)"
+    opacity: 0.9
+    transform: "translateY(-1px)"
+    box-shadow: "0 4px 16px rgba(0, 240, 255, 0.3)"
+  active:
+    transform: "translateY(0)"
+    box-shadow: "none"
+
+actions:
+  - trigger: click
+    action: { $ref: ACT-028-landing-cta }
+
+notes: |
+  Primary call-to-action button. Dark text on accent background.
+  Label: "Get Started" or "Try SpecForge".
+  Hover lifts the button slightly and adds a glow shadow.
+
+accessibility:
+  role: "button"
+  label: "Get Started with SpecForge"
+
+---
+entity: element
+id: ELM-075-hero-cta-secondary
+name: "Hero CTA Secondary"
+docs: ./landing.md
+tests: ./landing.feature
+
+type: button
+
+layout:
+  display: inline-flex
+  align-items: center
+  justify-content: center
+  padding: "12px 28px"
+  border-radius: 8px
+  font-size: 16px
+  font-weight: 600
+  cursor: pointer
+  border: "1px solid var(--sf-accent)"
+  transition: "all 200ms ease"
+
+states:
+  default:
+    color: "var(--sf-accent)"
+    background: "transparent"
+  hover:
+    background: "rgba(0, 240, 255, 0.08)"
+    transform: "translateY(-1px)"
+  active:
+    transform: "translateY(0)"
+
+actions:
+  - trigger: click
+    action: { $ref: ACT-029-landing-navigate }
+
+notes: |
+  Secondary CTA with ghost style. Accent border, transparent background.
+  Label: "View Docs".
+
+accessibility:
+  role: "button"
+  label: "View SpecForge documentation"
+
+---
+entity: element
+id: ELM-076-feature-card
+name: "Feature Card"
+docs: ./landing.md
+tests: ./landing.feature
+
+type: container
+
+layout:
+  display: flex
+  flex-direction: column
+  gap: 12px
+  padding: 24px
+  border-radius: 12px
+  background: "var(--sf-surface)"
+  border: "1px solid var(--sf-border)"
+  transition: "all 200ms ease"
+
+states:
+  default:
+    background: "var(--sf-surface)"
+    border-color: "var(--sf-border)"
+  hover:
+    border-color: "rgba(0, 240, 255, 0.2)"
+    box-shadow: "0 0 24px rgba(0, 240, 255, 0.06)"
+    transform: "translateY(-2px)"
+
+content:
+  - ref: { $ref: ELM-077-feature-icon }
+  - name: "title"
+    font-size: 16px
+    font-weight: 600
+    color: "var(--sf-text)"
+  - name: "description"
+    font-size: 13px
+    color: "var(--sf-text-muted)"
+    line-height: 1.5
+
+accessibility:
+  role: "article"
+  label: "Feature: {title}"
+
+---
+entity: element
+id: ELM-077-feature-icon
+name: "Feature Icon"
+docs: ./landing.md
+tests: ./landing.feature
+
+type: icon
+
+layout:
+  font-size: 32px
+  line-height: 1
+
+states:
+  default:
+    color: "var(--sf-accent)"
+
+notes: |
+  32px icon rendered inside the feature card.
+  Always in accent color. Unicode glyph or SVG icon.
+
+accessibility:
+  role: "presentation"
+  label: ""
+
+---
+entity: element
+id: ELM-078-how-it-works-step
+name: "How It Works Step"
+docs: ./landing.md
+tests: ./landing.feature
+
+type: container
+
+layout:
+  display: flex
+  align-items: flex-start
+  gap: 16px
+
+content:
+  - name: "step-number"
+    display: flex
+    align-items: center
+    justify-content: center
+    width: 36px
+    height: 36px
+    border-radius: "50%"
+    background: "var(--sf-accent-dim)"
+    color: "var(--sf-accent)"
+    font-family: "var(--sf-font-display)"
+    font-size: 16px
+    font-weight: 700
+    flex-shrink: 0
+  - name: "step-content"
+    display: flex
+    flex-direction: column
+    gap: 4px
+    children:
+      - name: "title"
+        font-size: 16px
+        font-weight: 600
+        color: "var(--sf-text)"
+      - name: "description"
+        font-size: 13px
+        color: "var(--sf-text-muted)"
+        line-height: 1.5
+
+states:
+  default:
+    opacity: 1
+
+accessibility:
+  role: "listitem"
+  label: "Step {number}: {title}"
+
+---
+entity: element
+id: ELM-079-step-connector
+name: "Step Connector"
+docs: ./landing.md
+tests: ./landing.feature
+
+type: container
+
+layout:
+  width: 2px
+  margin-left: 17px
+  height: 32px
+
+states:
+  default:
+    border-left: "2px dotted var(--sf-border)"
+
+notes: |
+  Dotted vertical line connecting how-it-works steps.
+  Positioned to align with the center of the step number circle.
+  margin-left: 17px aligns with the center of the 36px circle (18px - 1px).
+
+accessibility:
+  role: "presentation"
+  label: ""
+
+---
+entity: element
+id: ELM-080-cli-demo-line
+name: "CLI Demo Line"
+docs: ./landing.md
+tests: ./landing.feature
+
+type: text
+
+layout:
+  font-family: "var(--sf-font-mono)"
+  font-size: 14px
+  line-height: 1.8
+  white-space: pre
+
+states:
+  command:
+    color: "var(--sf-text)"
+    animation: "typing 2s steps(40) forwards"
+  output:
+    color: "#22C55E"
+  comment:
+    color: "var(--sf-text-muted)"
+
+notes: |
+  A single line of text in the CLI demo terminal.
+  Commands appear with a typing animation effect.
+  Output lines are green (#22C55E).
+  Comment lines are muted (preceded by #).
+
+accessibility:
+  role: "presentation"
+  label: ""
+
+---
+entity: element
+id: ELM-081-cli-demo-prompt
+name: "CLI Demo Prompt"
+docs: ./landing.md
+tests: ./landing.feature
+
+type: text
+
+layout:
+  font-family: "var(--sf-font-mono)"
+  font-size: 14px
+  line-height: 1.8
+  display: inline
+  margin-right: 8px
+
+states:
+  default:
+    color: "var(--sf-accent)"
+
+notes: |
+  Terminal prompt symbol ("$" or ">") preceding command lines.
+  Accent colored to stand out from the command text.
+
+accessibility:
+  role: "presentation"
+  label: ""
+
+---
+entity: element
+id: ELM-082-pricing-tier-card
+name: "Pricing Tier Card"
+docs: ./landing.md
+tests: ./landing.feature
+
+type: container
+
+layout:
+  display: flex
+  flex-direction: column
+  gap: 16px
+  padding: 28px
+  border-radius: 12px
+  background: "var(--sf-surface)"
+  border: "1px solid var(--sf-border)"
+  min-width: 260px
+
+states:
+  default:
+    border-color: "var(--sf-border)"
+  popular:
+    border-color: "var(--sf-accent)"
+    box-shadow: "0 0 24px rgba(0, 240, 255, 0.1)"
+
+content:
+  - name: "tier-name"
+    font-size: 20px
+    font-weight: 700
+    color: "var(--sf-text)"
+  - name: "price"
+    font-size: 36px
+    font-family: "var(--sf-font-display)"
+    font-weight: 800
+    color: "var(--sf-text)"
+  - name: "price-period"
+    font-size: 13px
+    color: "var(--sf-text-muted)"
+  - name: "feature-list"
+    display: flex
+    flex-direction: column
+    gap: 8px
+  - name: "cta-button"
+    padding: "10px 20px"
+    border-radius: 8px
+    font-size: 14px
+    font-weight: 600
+    text-align: center
+    cursor: pointer
+
+notes: |
+  Pricing tier card. The "popular" tier gets an accent border and subtle glow.
+  Contains tier name, price, period, feature list, and a CTA button.
+
+accessibility:
+  role: "article"
+  label: "Pricing tier: {tierName}"
+
+---
+entity: element
+id: ELM-083-pricing-feature-item
+name: "Pricing Feature Item"
+docs: ./landing.md
+tests: ./landing.feature
+
+type: text
+
+layout:
+  display: flex
+  align-items: center
+  gap: 8px
+  font-size: 13px
+  line-height: 1.5
+
+states:
+  included:
+    color: "var(--sf-text)"
+    icon-color: "#22C55E"
+  excluded:
+    color: "var(--sf-text-muted)"
+    icon-color: "var(--sf-text-muted)"
+    text-decoration: "line-through"
+
+content:
+  - name: "icon"
+    font-size: 14px
+    width: 16px
+    text-align: center
+  - name: "label"
+    font-size: 13px
+
+notes: |
+  Feature list item inside a pricing tier card.
+  Included features: green check icon, normal text.
+  Excluded features: muted cross icon, muted strikethrough text.
+
+accessibility:
+  role: "listitem"
+  label: "{feature}, {included ? 'included' : 'not included'}"
+
+---
+entity: element
+id: ELM-084-cta-headline
+name: "CTA Headline"
+docs: ./landing.md
+tests: ./landing.feature
+
+type: text
+
+layout:
+  font-family: "var(--sf-font-display)"
+  font-size: 36px
+  font-weight: 700
+  line-height: 1.2
+  text-align: center
+  max-width: 600px
+
+states:
+  default:
+    color: "var(--sf-text)"
+
+accessibility:
+  role: "heading"
+  aria-level: 2
+  label: "Final call-to-action"
+
+---
+entity: element
+id: ELM-085-cta-button
+name: "CTA Button"
+docs: ./landing.md
+tests: ./landing.feature
+
+type: button
+
+layout:
+  display: inline-flex
+  align-items: center
+  justify-content: center
+  padding: "14px 36px"
+  border-radius: 8px
+  font-size: 18px
+  font-weight: 700
+  cursor: pointer
+  transition: "all 200ms ease"
+
+states:
+  default:
+    color: "var(--sf-bg)"
+    background: "var(--sf-accent)"
+  hover:
+    opacity: 0.9
+    transform: "translateY(-1px)"
+    box-shadow: "0 4px 20px rgba(0, 240, 255, 0.35)"
+  active:
+    transform: "translateY(0)"
+    box-shadow: "none"
+
+actions:
+  - trigger: click
+    action: { $ref: ACT-028-landing-cta }
+
+notes: |
+  Prominent bottom-of-page CTA button. Larger than the hero CTA.
+  Accent background, dark text. Hover glow effect.
+
+accessibility:
+  role: "button"
+  label: "Get started with SpecForge"
+
+---
+entity: element
+id: ELM-086-footer-link
+name: "Footer Link"
+docs: ./landing.md
+tests: ./landing.feature
+
+type: link
+
+layout:
+  font-size: 13px
+  line-height: 1.8
+  text-decoration: none
+  transition: "color 150ms ease"
+
+states:
+  default:
+    color: "var(--sf-text-muted)"
+  hover:
+    color: "var(--sf-text)"
+
+notes: |
+  Footer navigation link grouped in columns.
+  Muted by default, brightens to full text color on hover.
+  No underline. Grouped under column headings (Product, Resources, Company, etc.).
+
+accessibility:
+  role: "link"
+  label: "{linkText}"

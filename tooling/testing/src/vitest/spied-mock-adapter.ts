@@ -172,6 +172,7 @@ export function createSpiedMockAdapter<P extends Port<string, object>>(
     factoryKind: "sync" as const,
     factory: spiedFactory,
     clonable: false as const,
+    freeze: true as const,
   });
 
   return adapter;

@@ -57,6 +57,7 @@ export const FlowRegistryAdapter: Adapter<
   lifetime: "singleton" as const,
   factoryKind: "sync" as const,
   clonable: false as const,
+  freeze: true as const,
   factory: (): InferService<typeof FlowRegistryPort> => createFlowRegistry(),
   finalizer: (instance: InferService<typeof FlowRegistryPort>): void => {
     if (hasDispose(instance)) {

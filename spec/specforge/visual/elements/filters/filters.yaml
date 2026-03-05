@@ -1,0 +1,273 @@
+entity: element
+id: ELM-014-filter-dropdown
+name: "Filter Dropdown"
+docs: ./filters.md
+tests: ./filters.feature
+
+type: input
+
+layout:
+  font-size: 12px
+  font-family: "var(--sf-font-body)"
+  padding: 6px 10px
+  border-radius: 4px
+
+states:
+  default:
+    color: "var(--sf-text)"
+    background: "var(--sf-bg)"
+    border: "1px solid rgba(0, 240, 255, 0.15)"
+  focus:
+    border-color: "var(--sf-accent)"
+    outline: none
+  disabled:
+    opacity: 0.4
+    pointer-events: none
+
+actions:
+  - trigger: change
+    action: { $ref: ACT-016-set-filter }
+
+accessibility:
+  role: "combobox"
+  label: "Filter by {filterName}"
+
+---
+entity: element
+id: ELM-015-filter-dropdown-label
+name: "Filter Dropdown Label"
+docs: ./filters.md
+tests: ./filters.feature
+
+type: text
+
+layout:
+  font-size: 11px
+  font-family: "var(--sf-font-body)"
+  margin-bottom: 4px
+
+states:
+  default:
+    color: "var(--sf-text-muted)"
+
+accessibility:
+  role: "label"
+
+---
+entity: element
+id: ELM-016-filter-multi-select-trigger
+name: "Filter Multi-Select Trigger"
+docs: ./filters.md
+tests: ./filters.feature
+
+type: button
+
+layout:
+  font-size: 12px
+  font-family: "var(--sf-font-body)"
+  padding: 6px 10px
+  border-radius: 4px
+  display: flex
+  align-items: center
+  gap: 6px
+  cursor: pointer
+
+states:
+  default:
+    color: "var(--sf-text)"
+    background: "var(--sf-bg)"
+    border: "1px solid rgba(0, 240, 255, 0.15)"
+  open:
+    border-color: "var(--sf-accent)"
+  hover:
+    background: "rgba(0, 240, 255, 0.05)"
+
+children:
+  count-badge:
+    font-size: 10px
+    padding: 1px 5px
+    border-radius: 8px
+    background: "var(--sf-accent-dim)"
+    color: "var(--sf-accent)"
+
+actions:
+  - trigger: click
+    action: toggle-dropdown
+
+accessibility:
+  role: "button"
+  label: "Select {filterName}, {count} selected"
+
+---
+entity: element
+id: ELM-017-filter-multi-select-option
+name: "Filter Multi-Select Option"
+docs: ./filters.md
+tests: ./filters.feature
+
+type: input
+
+layout:
+  display: flex
+  align-items: center
+  gap: 8px
+  font-size: 12px
+  font-family: "var(--sf-font-body)"
+  padding: 6px 10px
+  cursor: pointer
+
+children:
+  checkbox:
+    width: 14px
+    height: 14px
+    accent-color: "var(--sf-accent)"
+
+states:
+  default:
+    color: "var(--sf-text)"
+    background: "transparent"
+  hover:
+    background: "rgba(0, 240, 255, 0.05)"
+  checked:
+    color: "var(--sf-accent)"
+
+actions:
+  - trigger: change
+    action: { $ref: ACT-016-set-filter }
+
+accessibility:
+  role: "option"
+  label: "{optionName}"
+
+---
+entity: element
+id: ELM-018-filter-toggle
+name: "Filter Toggle"
+docs: ./filters.md
+tests: ./filters.feature
+
+type: input
+
+layout:
+  display: flex
+  align-items: center
+  gap: 6px
+  cursor: pointer
+
+children:
+  checkbox:
+    width: 14px
+    height: 14px
+    accent-color: "var(--sf-accent)"
+  label:
+    font-size: 12px
+    font-family: "var(--sf-font-body)"
+    color: "var(--sf-text)"
+
+states:
+  unchecked:
+    label-color: "var(--sf-text-muted)"
+  checked:
+    label-color: "var(--sf-text)"
+
+actions:
+  - trigger: change
+    action: { $ref: ACT-017-toggle-filter }
+
+accessibility:
+  role: "checkbox"
+  label: "{toggleName}"
+
+---
+entity: element
+id: ELM-019-filter-text-input
+name: "Filter Text Input"
+docs: ./filters.md
+tests: ./filters.feature
+
+type: input
+
+layout:
+  font-size: 12px
+  font-family: "var(--sf-font-body)"
+  padding: 6px 10px
+  min-width: 120px
+  border-radius: 4px
+
+states:
+  default:
+    color: "var(--sf-text)"
+    background: "var(--sf-bg)"
+    border: "1px solid rgba(0, 240, 255, 0.15)"
+    placeholder-color: "var(--sf-text-muted)"
+  focus:
+    border-color: "var(--sf-accent)"
+    outline: none
+
+actions:
+  - trigger: change
+    action: { $ref: ACT-016-set-filter }
+    debounce: 300
+
+accessibility:
+  role: "searchbox"
+  label: "Filter by text"
+
+---
+entity: element
+id: ELM-020-filter-chip
+name: "Filter Chip"
+docs: ./filters.md
+tests: ./filters.feature
+
+type: container
+
+layout:
+  display: inline-flex
+  align-items: center
+  gap: 4px
+  font-size: 11px
+  font-family: "var(--sf-font-body)"
+  padding: 2px 8px
+  border-radius: 12px
+
+states:
+  default:
+    color: "var(--sf-accent)"
+    background: "var(--sf-accent-dim)"
+
+accessibility:
+  role: "listitem"
+  label: "Active filter: {filterValue}"
+
+---
+entity: element
+id: ELM-021-filter-chip-remove
+name: "Filter Chip Remove"
+docs: ./filters.md
+tests: ./filters.feature
+
+type: button
+
+layout:
+  font-size: 10px
+  line-height: 1
+  padding: 0
+  cursor: pointer
+  border: none
+  background: transparent
+
+states:
+  default:
+    color: "var(--sf-accent)"
+    opacity: 0.7
+  hover:
+    opacity: 1
+
+actions:
+  - trigger: click
+    action: { $ref: ACT-018-remove-filter }
+
+accessibility:
+  role: "button"
+  label: "Remove filter: {filterValue}"

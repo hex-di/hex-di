@@ -1,0 +1,15 @@
+kind: references
+package: specforge
+entries:
+  - id: "acp"
+    file: "acp/"
+    title: "Acp"
+  - id: "claude-code"
+    file: "claude-code/"
+    title: "Claude Code"
+  - id: "huly"
+    file: "huly/"
+    title: "Huly"
+  - id: "zed"
+    file: "zed/"
+    title: "Zed"

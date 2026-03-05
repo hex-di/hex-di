@@ -1,0 +1,86 @@
+entity: component
+id: CMP-004-filter-bar
+name: "Filter Bar"
+docs: ./filter-bar.md
+tests: ./filter-bar.feature
+
+props:
+  - name: "viewId"
+    type: string
+    required: true
+    description: "The FilterableViewId indicating which view's filters to display (home | acp-session | tasks | coverage | spec | costs | graph)"
+  - name: "children"
+    type: object
+    required: true
+    description: "Filter control elements -- varies per view. Passed as children to allow each view to compose its own filter controls."
+
+children:
+  - $ref: ELM-014-filter-dropdown
+    description: "Dropdown select filter control"
+  - $ref: ELM-016-filter-multi-select-trigger
+    description: "Multi-select filter control with checkboxes"
+  - $ref: ELM-019-filter-text-input
+    description: "Inline text search filter control"
+  - $ref: ELM-018-filter-toggle
+    description: "Boolean toggle filter control"
+  - $ref: ELM-020-filter-chip
+    description: "Dismissible active filter chip"
+  - $ref: ELM-021-filter-chip-remove
+    description: "Remove button for active filter chips"
+
+stores:
+  - $ref: STR-001-filter-store
+    binds:
+      - selector: "filters[viewId]"
+        to: "filter control values"
+      - selector: "activeFilterCount"
+        to: "ELM-020 count value"
+      - selector: "hasActiveFilters"
+        to: "chips section visibility"
+      - selector: "activeChips"
+        to: "ELM-018 chip list"
+
+layout:
+  display: flex
+  flex-direction: column
+  gap: 0px
+  background: "var(--sf-surface)"
+  border-radius: 8px
+  border: "1px solid rgba(0, 240, 255, 0.08)"
+  padding: "8px 12px"
+
+controls-row:
+  display: flex
+  flex-direction: row
+  flex-wrap: wrap
+  align-items: center
+  gap: 8px
+
+chips-row:
+  display: flex
+  flex-direction: row
+  flex-wrap: wrap
+  align-items: center
+  gap: 6px
+  padding-top: 8px
+  border-top: "1px solid rgba(0, 240, 255, 0.06)"
+  margin-top: 8px
+
+filterable-views:
+  - "home"
+  - "acp-session"
+  - "tasks"
+  - "coverage"
+  - "spec"
+  - "costs"
+  - "graph"
+
+non-filterable-views:
+  - "chat"
+  - "pipeline"
+
+visibility:
+  responsive:
+    desktop: true
+    tablet: true
+    mobile: true

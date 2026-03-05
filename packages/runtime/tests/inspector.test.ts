@@ -7,7 +7,7 @@
  */
 
 import { describe, test, expect, vi } from "vitest";
-import { port, createAdapter } from "@hex-di/core";
+import { port, createAdapter, type InspectorAPI } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
 import { createInspector } from "../src/inspection/creation.js";
@@ -160,7 +160,7 @@ function snapshotAllLevels(hierarchy: ReturnType<typeof createComplexHierarchy>)
  * @returns true if all relationships are valid
  */
 function verifyHierarchyIntegrity(
-  root: ReturnType<typeof createContainer>,
+  root: { inspector: InspectorAPI },
   expectedChildCount: number
 ): boolean {
   const childInspectors = root.inspector.getChildContainers();
@@ -187,7 +187,7 @@ function verifyHierarchyIntegrity(
  * @returns Array of phases observed during operation
  */
 async function trackPhaseTransitions(
-  container: ReturnType<typeof createContainer>,
+  container: { inspector: InspectorAPI },
   operation: () => Promise<void>
 ): Promise<string[]> {
   const phases: string[] = [];

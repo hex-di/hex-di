@@ -844,6 +844,7 @@ describe("child-impl.ts - forked inheritance", () => {
       requires: [],
       lifetime: "singleton",
       clonable: true,
+      freeze: true,
       factory: () => logger,
     });
     const graph = GraphBuilder.create().provide(adapter).build();

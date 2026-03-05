@@ -29,11 +29,19 @@ export { INSPECTION_CONFIG, computeTypeComplexity } from "./complexity.js";
 export type { ComplexityBreakdown } from "./complexity.js";
 
 // Runtime cycle detection
-export { detectCycleAtRuntime } from "./runtime-cycle-detection.js";
+export { detectCycleAtRuntime, detectAllCyclesAtRuntime } from "./runtime-cycle-detection.js";
 
 // Runtime captive dependency detection
 export { detectCaptiveAtRuntime, detectAllCaptivesAtRuntime } from "./runtime-captive-detection.js";
 export type { CaptiveDependencyResult } from "./runtime-captive-detection.js";
+
+// Well-founded cycle detection and verification
+export {
+  extractLazyEdges,
+  verifyWellFoundedness,
+  classifyAllCycles,
+} from "./well-founded-cycle.js";
+export type { LazyEdge, WellFoundednessCheck } from "./well-founded-cycle.js";
 
 // Serialization
 export { inspectionToJSON } from "./serialization.js";
@@ -45,6 +53,12 @@ export {
   formatCaptiveError,
   formatDuplicateError,
 } from "./error-formatting.js";
+
+// Enhanced cycle error formatting
+export {
+  formatEnhancedCycleError,
+  formatEnhancedCycleErrors,
+} from "./enhanced-cycle-formatting.js";
 
 // Structured logging
 export type { LogLevel, StructuredLogEntry, StructuredLogOptions } from "./structured-logging.js";
@@ -67,6 +81,9 @@ export {
   getPortsByLayer,
 } from "./traversal.js";
 
+// Initialization order computation
+export { computeInitializationOrder } from "./init-order.js";
+
 // Port filtering utilities
 export {
   filterPorts,
@@ -76,3 +93,11 @@ export {
   getPortsByTags,
 } from "./filter.js";
 export type { PortFilter, FilteredPorts } from "./filter.js";
+
+// Effect propagation analysis
+export {
+  computeErrorProfile,
+  computeEffectSummaries,
+  detectUnhandledErrors,
+} from "./effect-propagation.js";
+export type { ErrorTagEntry, PortEffectSummary } from "./effect-propagation.js";

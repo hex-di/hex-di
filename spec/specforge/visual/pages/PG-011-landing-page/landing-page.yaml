@@ -1,0 +1,75 @@
+entity: page
+id: PG-011-landing-page
+name: "Landing Page"
+docs: ./landing-page.md
+tests: ./landing-page.feature
+
+route:
+  path: "/"
+  hash: false
+  guard: null
+  description: "Standalone marketing page, bypasses the app shell"
+
+layout: full-bleed
+
+meta:
+  title: "SpecForge — AI-Powered Specification Authoring"
+
+components:
+  - $ref: CMP-023-hero-section
+  - $ref: CMP-024-feature-grid
+  - $ref: CMP-025-how-it-works-flow
+  - $ref: CMP-026-cli-demo-terminal
+  - $ref: CMP-027-pricing-table
+  - $ref: CMP-028-cta-section
+  - $ref: CMP-029-landing-footer
+
+stores: []
+
+description: |
+  Marketing landing page for SpecForge. Dark cyberpunk aesthetic.
+  Scrollable single-page layout with seven sections: Hero, Features,
+  How It Works, CLI Demo, Pricing, CTA, and Footer. No auth required,
+  no session required. Static content with animated elements.
+
+theme:
+  bg: "#020408"
+  surface: "#08101C"
+  accent: "#00F0FF"
+  accent-light: "#5FFFFF"
+  text: "#DAE6F0"
+  text-muted: "#586E85"
+  font-display: "Rajdhani"
+  font-body: "Inter"
+  font-mono: "JetBrains Mono"
+
+responsive:
+  desktop:
+    max-width: 1200px
+    centered: true
+  tablet:
+    breakpoint: 768px
+    grids: "2-column"
+  mobile:
+    breakpoint: 480px
+    grids: "single-column stacked"
+
+sections:
+  - order: 1
+    component: CMP-023-hero-section
+  - order: 2
+    component: CMP-024-feature-grid
+  - order: 3
+    component: CMP-025-how-it-works-flow
+  - order: 4
+    component: CMP-026-cli-demo-terminal
+  - order: 5
+    component: CMP-027-pricing-table
+  - order: 6
+    component: CMP-028-cta-section
+  - order: 7
+    component: CMP-029-landing-footer
+
+states:
+  - populated
+  - loading

@@ -1,0 +1,89 @@
+entity: component
+id: CMP-029-landing-footer
+name: "Landing Footer"
+docs: ./landing-footer.md
+tests: ./landing-footer.feature
+
+description: |
+  Page footer for the SpecForge landing page. Contains the logo,
+  three columns of navigation links (Product, Community, Legal),
+  and copyright information.
+
+props: {}
+
+layout:
+  display: flex
+  flex-direction: column
+  max-width: 1080px
+  margin: 0 auto
+  padding: "48px 24px 32px"
+  border-top: "1px solid rgba(0, 240, 255, 0.08)"
+
+columns-layout:
+  display: grid
+  grid-template-columns: "1.5fr 1fr 1fr 1fr"
+  gap: 48px
+
+responsive:
+  tablet:
+    breakpoint: 768px
+    columns-layout:
+      grid-template-columns: "repeat(2, 1fr)"
+      gap: 32px
+  mobile:
+    breakpoint: 480px
+    columns-layout:
+      grid-template-columns: "1fr"
+      gap: 24px
+
+logo-section:
+  description: "Left column with logo and tagline"
+  logo-height: 28px
+  tagline:
+    text: "AI-powered specification authoring"
+    font-family: "var(--sf-font-body)"
+    font-size: 13px
+    color: "var(--sf-text-muted)"
+    margin-top: 12px
+
+link-columns:
+  - heading: "Product"
+    links:
+      - { text: "Features", href: "#features" }
+      - { text: "Pricing", href: "#pricing" }
+      - { text: "Documentation", href: "/docs" }
+  - heading: "Community"
+    links:
+      - { text: "GitHub", href: "https://github.com/specforge" }
+      - { text: "Discord", href: "https://discord.gg/specforge" }
+      - { text: "Twitter", href: "https://twitter.com/specforge" }
+  - heading: "Legal"
+    links:
+      - { text: "Privacy", href: "/privacy" }
+      - { text: "Terms", href: "/terms" }
+      - { text: "License", href: "/license" }
+
+column-heading:
+  font-family: "var(--sf-font-body)"
+  font-size: 11px
+  font-weight: 700
+  text-transform: uppercase
+  letter-spacing: "0.08em"
+  color: "var(--sf-accent)"
+  margin-bottom: 16px
+
+copyright:
+  text: "SpecForge. All rights reserved."
+  font-family: "var(--sf-font-body)"
+  font-size: 12px
+  color: "var(--sf-text-muted)"
+  margin-top: 48px
+  padding-top: 24px
+  border-top: "1px solid rgba(0, 240, 255, 0.04)"
+  text-align: center
+
+children:
+  - $ref: ELM-086-footer-link
+
+accessibility:
+  role: "contentinfo"

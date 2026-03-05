@@ -4,6 +4,7 @@
  * @packageDocumentation
  */
 
+import type { BlameContext } from "./blame.js";
 import { ContainerError, extractErrorMessage } from "./base.js";
 
 // =============================================================================
@@ -49,10 +50,11 @@ export class CircularDependencyError extends ContainerError {
    * Creates a new CircularDependencyError.
    *
    * @param dependencyChain - Array of port names forming the cycle.
+   * @param blame - Optional blame context for error attribution
    */
-  constructor(dependencyChain: readonly string[]) {
+  constructor(dependencyChain: readonly string[], blame?: BlameContext) {
     const formattedChain = dependencyChain.join(" -> ");
-    super(`Circular dependency detected: ${formattedChain}`);
+    super(`Circular dependency detected: ${formattedChain}`, blame);
     this.dependencyChain = Object.freeze([...dependencyChain]);
     Object.freeze(this);
   }
@@ -104,10 +106,11 @@ export class FactoryError extends ContainerError {
    *
    * @param portName - The name of the port whose factory threw
    * @param cause - The original exception thrown by the factory
+   * @param blame - Optional blame context for error attribution
    */
-  constructor(portName: string, cause: unknown) {
+  constructor(portName: string, cause: unknown, blame?: BlameContext) {
     const causeMessage = extractErrorMessage(cause);
-    super(`Factory for port '${portName}' threw: ${causeMessage}`);
+    super(`Factory for port '${portName}' threw: ${causeMessage}`, blame);
     this.portName = portName;
     this.cause = cause;
     Object.freeze(this);
@@ -149,11 +152,13 @@ export class DisposedScopeError extends ContainerError {
    * Creates a new DisposedScopeError.
    *
    * @param portName - The name of the port that was attempted to be resolved
+   * @param blame - Optional blame context for error attribution
    */
-  constructor(portName: string) {
+  constructor(portName: string, blame?: BlameContext) {
     super(
       `Cannot resolve port '${portName}' from a disposed scope. ` +
-        `The scope has already been disposed and cannot be used for resolution.`
+        `The scope has already been disposed and cannot be used for resolution.`,
+      blame
     );
     this.portName = portName;
     Object.freeze(this);
@@ -199,11 +204,13 @@ export class ScopeRequiredError extends ContainerError {
    * Creates a new ScopeRequiredError.
    *
    * @param portName - The name of the scoped port that was attempted to be resolved
+   * @param blame - Optional blame context for error attribution
    */
-  constructor(portName: string) {
+  constructor(portName: string, blame?: BlameContext) {
     super(
       `Cannot resolve scoped port '${portName}' from the root container. ` +
-        `Scoped ports must be resolved from a scope created via createScope().`
+        `Scoped ports must be resolved from a scope created via createScope().`,
+      blame
     );
     this.portName = portName;
     Object.freeze(this);
@@ -256,10 +263,11 @@ export class AsyncFactoryError extends ContainerError {
    *
    * @param portName - The name of the port whose async factory threw
    * @param cause - The original exception thrown by the factory
+   * @param blame - Optional blame context for error attribution
    */
-  constructor(portName: string, cause: unknown) {
+  constructor(portName: string, cause: unknown, blame?: BlameContext) {
     const causeMessage = extractErrorMessage(cause);
-    super(`Async factory for port '${portName}' failed: ${causeMessage}`);
+    super(`Async factory for port '${portName}' failed: ${causeMessage}`, blame);
     this.portName = portName;
     this.cause = cause;
     Object.freeze(this);
@@ -355,6 +363,7 @@ export class AsyncInitializationRequiredError extends ContainerError {
  *   provides: LoggerPort,
  *   factory: () => new ConsoleLogger(),
  *   clonable: true,  // ← Safe to shallow clone
+ *   freeze: true,
  * });
  * ```
  */

@@ -1,0 +1,265 @@
+entity: element
+id: ELM-022-session-table-row
+name: "Session Table Row"
+docs: ./home.md
+tests: ./home.feature
+
+type: button
+
+layout:
+  display: grid
+  grid-template-columns: "2fr 2fr auto 1fr 1.5fr auto auto"
+  align-items: center
+  gap: 12px
+  padding: 10px 16px
+  font-size: 13px
+  font-family: "var(--sf-font-body)"
+  cursor: pointer
+  border-bottom: "1px solid rgba(0, 240, 255, 0.06)"
+
+columns:
+  - field: packageName
+    color: "var(--sf-text)"
+  - field: specPath
+    color: "var(--sf-text-muted)"
+  - field: status
+    element: { $ref: ELM-023-session-status-badge }
+  - field: pipelineMode
+    color: "var(--sf-text-muted)"
+  - field: lastActivity
+    color: "var(--sf-text-muted)"
+  - field: resumeAction
+    element: { $ref: ELM-028-session-resume-button }
+  - field: deleteAction
+    element: { $ref: ELM-027-session-delete-button }
+
+states:
+  default:
+    background: "transparent"
+  hover:
+    background: "rgba(0, 240, 255, 0.03)"
+
+actions:
+  - trigger: click
+    action: { $ref: ACT-006-select-session }
+
+accessibility:
+  role: "row"
+  label: "Session: {packageName} - {specPath}"
+
+---
+entity: element
+id: ELM-023-session-status-badge
+name: "Session Status Badge"
+docs: ./home.md
+tests: ./home.feature
+
+type: text
+
+layout:
+  font-size: 11px
+  font-family: "var(--sf-font-body)"
+  padding: 2px 8px
+  border-radius: 10px
+  text-transform: lowercase
+  display: inline-block
+
+states:
+  running:
+    color: "var(--sf-accent)"
+    background: "var(--sf-accent-dim)"
+  paused:
+    color: "var(--sf-warning)"
+    background: "rgba(255, 140, 0, 0.1)"
+  completed:
+    color: "#22C55E"
+    background: "rgba(34, 197, 94, 0.1)"
+  failed:
+    color: "#FF3B3B"
+    background: "rgba(255, 59, 59, 0.1)"
+  idle:
+    color: "var(--sf-text-muted)"
+    background: "rgba(255, 255, 255, 0.05)"
+
+accessibility:
+  role: "status"
+  label: "Session status: {status}"
+
+---
+entity: element
+id: ELM-024-new-session-package-input
+name: "New Session Package Input"
+docs: ./home.md
+tests: ./home.feature
+
+type: input
+
+layout:
+  font-size: 13px
+  font-family: "var(--sf-font-body)"
+  padding: 8px 12px
+  border-radius: 4px
+
+states:
+  default:
+    color: "var(--sf-text)"
+    background: "var(--sf-bg)"
+    border: "1px solid rgba(0, 240, 255, 0.15)"
+    placeholder-color: "var(--sf-text-muted)"
+  focus:
+    border-color: "var(--sf-accent)"
+    outline: none
+  invalid:
+    border-color: "var(--sf-error)"
+
+placeholder: "Package name"
+required: true
+
+accessibility:
+  role: "textbox"
+  label: "Package name for new session"
+
+---
+entity: element
+id: ELM-025-new-session-spec-input
+name: "New Session Spec Input"
+docs: ./home.md
+tests: ./home.feature
+
+type: input
+
+layout:
+  font-size: 13px
+  font-family: "var(--sf-font-body)"
+  padding: 8px 12px
+  border-radius: 4px
+
+states:
+  default:
+    color: "var(--sf-text)"
+    background: "var(--sf-bg)"
+    border: "1px solid rgba(0, 240, 255, 0.15)"
+    placeholder-color: "var(--sf-text-muted)"
+  focus:
+    border-color: "var(--sf-accent)"
+    outline: none
+  invalid:
+    border-color: "var(--sf-error)"
+
+placeholder: "Spec path"
+required: true
+
+accessibility:
+  role: "textbox"
+  label: "Spec file path for new session"
+
+---
+entity: element
+id: ELM-026-new-session-submit-button
+name: "New Session Submit Button"
+docs: ./home.md
+tests: ./home.feature
+
+type: button
+
+layout:
+  font-size: 13px
+  font-family: "var(--sf-font-body)"
+  padding: 8px 16px
+  border-radius: 4px
+  cursor: pointer
+  font-weight: 600
+
+states:
+  default:
+    color: "var(--sf-bg-deep)"
+    background: "var(--sf-accent)"
+  hover:
+    background: "var(--sf-accent-bright)"
+  disabled:
+    opacity: 0.4
+    pointer-events: none
+
+content: "Create Session"
+
+actions:
+  - trigger: click
+    action: { $ref: ACT-008-create-session }
+
+disabled-when: "packageName is empty OR specPath is empty"
+
+accessibility:
+  role: "button"
+  label: "Create new session"
+
+---
+entity: element
+id: ELM-027-session-delete-button
+name: "Session Delete Button"
+docs: ./home.md
+tests: ./home.feature
+
+type: button
+
+layout:
+  width: 28px
+  height: 28px
+  display: flex
+  align-items: center
+  justify-content: center
+  border-radius: 4px
+  cursor: pointer
+  border: none
+
+states:
+  default:
+    color: "var(--sf-text-muted)"
+    background: "transparent"
+  hover:
+    color: "var(--sf-error)"
+    background: "rgba(255, 59, 59, 0.1)"
+
+actions:
+  - trigger: click
+    action: { $ref: ACT-010-delete-session }
+    confirmation: true
+
+accessibility:
+  role: "button"
+  label: "Delete session {sessionId}"
+
+---
+entity: element
+id: ELM-028-session-resume-button
+name: "Session Resume Button"
+docs: ./home.md
+tests: ./home.feature
+
+type: button
+
+layout:
+  font-size: 11px
+  font-family: "var(--sf-font-body)"
+  padding: 4px 10px
+  border-radius: 4px
+  cursor: pointer
+
+states:
+  default:
+    color: "var(--sf-accent)"
+    background: "var(--sf-accent-dim)"
+    border: "1px solid rgba(0, 240, 255, 0.2)"
+  hover:
+    background: "rgba(0, 240, 255, 0.15)"
+  hidden:
+    display: none
+
+visible-when: "session.status === 'paused'"
+
+actions:
+  - trigger: click
+    action: { $ref: ACT-009-resume-session }
+
+accessibility:
+  role: "button"
+  label: "Resume session {sessionId}"

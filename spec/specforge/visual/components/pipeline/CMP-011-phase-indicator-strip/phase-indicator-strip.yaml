@@ -1,0 +1,113 @@
+entity: component
+id: CMP-011-phase-indicator-strip
+name: "Phase Indicator Strip"
+docs: ./phase-indicator-strip.md
+tests: ./phase-indicator-strip.feature
+
+props:
+  - name: "phases"
+    type: array
+    itemType: PhaseProgress
+    required: true
+    description: "Array of phase objects with id, name, status, and progress"
+  - name: "currentPhase"
+    type: number
+    required: true
+    description: "Zero-based index of the currently active phase"
+
+children:
+  - $ref: ELM-044-phase-node
+  - $ref: ELM-045-phase-connector
+
+stores:
+  - $ref: STR-005-pipeline-store
+    binds:
+      - selector: "phases"
+        to: "phases"
+      - selector: "currentPhase"
+        to: "currentPhase"
+      - selector: "progress"
+        to: "overallProgress"
+
+layout:
+  display: flex
+  flex-direction: column
+  width: 100%
+  padding: "16px 24px"
+  gap: 12px
+
+overall-progress:
+  position: "top"
+  display: "text"
+  format: "Pipeline: {overallProgress}% complete"
+  style:
+    font-size: 12px
+    color: "var(--sf-text-muted)"
+    text-align: center
+
+phase-row:
+  display: flex
+  flex-direction: row
+  justify-content: space-evenly
+  align-items: center
+  width: 100%
+
+phase-node:
+  shape: "circle"
+  diameter: 40px
+  border-width: 2px
+  border-radius: 50%
+  inner-content: "status icon"
+  label-position: "below"
+  label-gap: 6px
+
+phase-connector:
+  type: "line"
+  height: 2px
+  flex-grow: 1
+  margin: "0 8px"
+
+phase-states:
+  pending:
+    node-border: "2px dashed var(--sf-text-muted)"
+    node-background: "transparent"
+    node-icon-color: "var(--sf-text-muted)"
+    label-color: "var(--sf-text-muted)"
+    connector-color: "var(--sf-text-muted)"
+    connector-style: "dashed"
+    animation: none
+  active:
+    node-border: "2px solid var(--sf-accent)"
+    node-background: "var(--sf-accent-dim)"
+    node-icon-color: "var(--sf-accent)"
+    label-color: "var(--sf-accent)"
+    connector-color: "var(--sf-accent)"
+    connector-style: "solid"
+    animation: "glow-pulse 2s ease-in-out infinite"
+    box-shadow: "0 0 12px var(--sf-accent-dim)"
+  completed:
+    node-border: "2px solid var(--sf-success)"
+    node-background: "var(--sf-success)"
+    node-icon-color: "var(--sf-surface)"
+    label-color: "var(--sf-success)"
+    connector-color: "var(--sf-success)"
+    connector-style: "solid"
+    animation: none
+  failed:
+    node-border: "2px solid var(--sf-error)"
+    node-background: "var(--sf-error)"
+    node-icon-color: "var(--sf-surface)"
+    label-color: "var(--sf-error)"
+    connector-color: "var(--sf-error)"
+    connector-style: "solid"
+    animation: none
+
+connector-animation:
+  active-to-pending:
+    style: "dashed"
+    animation: "dash-march 1s linear infinite"
+    description: "Animated dashes moving from active node toward pending node"
+
+accessibility:
+  role: "navigation"
+  label: "Pipeline phases: {overallProgress}% complete"

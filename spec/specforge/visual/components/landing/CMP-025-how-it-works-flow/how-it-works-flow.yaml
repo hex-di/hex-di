@@ -1,0 +1,74 @@
+entity: component
+id: CMP-025-how-it-works-flow
+name: "How It Works Flow"
+docs: ./how-it-works-flow.md
+tests: ./how-it-works-flow.feature
+
+description: |
+  Four-step horizontal flow diagram showing the SpecForge workflow.
+  Each step has a numbered circle, title, and description, connected
+  by dotted lines between steps.
+
+props:
+  steps:
+    type: array
+    items:
+      type: object
+      properties:
+        number: { type: number }
+        title: { type: string }
+        description: { type: string }
+    default:
+      - number: 1
+        title: "Point to Package"
+        description: "Select the target codebase or package you want to generate specs for."
+      - number: 2
+        title: "Discover"
+        description: "AI conversation to understand your domain, requirements, and constraints."
+      - number: 3
+        title: "Generate"
+        description: "Multi-agent pipeline creates comprehensive, production-grade specifications."
+      - number: 4
+        title: "Review"
+        description: "Human-in-the-loop verification ensures accuracy and completeness."
+
+layout:
+  display: flex
+  flex-direction: column
+  align-items: center
+  max-width: 1080px
+  margin: 0 auto
+  padding: "80px 24px"
+
+section-header:
+  title: "How It Works"
+  font-family: "var(--sf-font-display)"
+  font-size: 32px
+  font-weight: 700
+  color: "var(--sf-text)"
+  text-align: center
+  margin-bottom: 48px
+
+steps-layout:
+  display: flex
+  flex-direction: row
+  align-items: flex-start
+  justify-content: center
+  gap: 0px
+  width: 100%
+
+responsive:
+  mobile:
+    breakpoint: 640px
+    steps-layout:
+      flex-direction: column
+      align-items: center
+      gap: 32px
+
+children:
+  - $ref: ELM-078-how-it-works-step
+  - $ref: ELM-079-step-connector
+
+accessibility:
+  role: "region"
+  label: "How SpecForge works"

@@ -1,0 +1,70 @@
+entity: component
+id: CMP-007-token-budget-bar
+name: "Token Budget Bar"
+docs: ./token-budget-bar.md
+tests: ./token-budget-bar.feature
+
+props:
+  - name: "used"
+    type: number
+    required: true
+    description: "Number of tokens consumed in the current session"
+  - name: "total"
+    type: number
+    required: true
+    description: "Total token budget for the session"
+  - name: "percent"
+    type: number
+    required: true
+    description: "Percentage of budget used (0-100)"
+
+children:
+  - $ref: ELM-029-token-budget-progress
+  - $ref: ELM-030-token-budget-label
+
+stores:
+  - $ref: STR-004-chat-store
+    binds:
+      - selector: "tokenBudget.used"
+        to: "used"
+      - selector: "tokenBudget.total"
+        to: "total"
+      - selector: "tokenBudget.percent"
+        to: "percent"
+
+layout:
+  display: flex
+  flex-direction: column
+  width: 100%
+  gap: 4px
+
+budget-zones:
+  safe:
+    range: "0-60%"
+    color: "var(--sf-accent)"
+    animation: none
+  warning:
+    range: "60-85%"
+    color: "#FF8C00"
+    animation: none
+  critical:
+    range: "85-95%"
+    color: "#FF3B3B"
+    animation: none
+  exhausted:
+    range: "95-100%"
+    color: "#FF3B3B"
+    animation: "pulse 1.5s ease-in-out infinite"
+
+progress-bar:
+  height: 4px
+  border-radius: 2px
+  background: "var(--sf-surface-alt)"
+  fill-transition: "width 300ms ease, background-color 300ms ease"
+
+accessibility:
+  role: "progressbar"
+  label: "Token budget: {percent}% used ({used} of {total})"
+  aria-valuemin: 0
+  aria-valuemax: 100
+  aria-valuenow: "{percent}"

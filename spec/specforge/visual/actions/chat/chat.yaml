@@ -1,0 +1,129 @@
+entity: action
+id: ACT-011-send-message
+name: "Send Message"
+docs: ./chat.md
+tests: ./chat.feature
+
+type: form-submit
+trigger:
+  - element: { $ref: ELM-041-chat-send-button }
+    interaction: click
+  - element: { $ref: ELM-040-chat-input-textarea }
+    interaction: keydown
+    key: "Enter"
+    modifiers: []
+preconditions:
+  - field: message
+    rule: "non-empty string"
+  - field: isProcessing
+    rule: "equals false"
+events-dispatched:
+  - $ref: EVT-008-message-sent
+
+stores-affected:
+  - $ref: STR-004-chat-store
+
+notes: |
+  Sends a user chat message to the active session.
+  Can be triggered by clicking the send button or pressing Enter in the input.
+  The action is blocked when the input is empty or when a previous message
+  is still being processed (isProcessing === true).
+  After dispatch, the input field is cleared and isProcessing is set to true.
+
+---
+entity: action
+id: ACT-012-clear-chat-error
+name: "Clear Chat Error"
+docs: ./chat.md
+tests: ./chat.feature
+
+type: notification-dismiss
+trigger:
+  element: { $ref: ELM-043-chat-error-banner }
+  interaction: click
+  target: "dismiss button"
+preconditions: []
+events-dispatched:
+  - $ref: EVT-024-error-cleared
+
+stores-affected:
+  - $ref: STR-004-chat-store
+
+notes: |
+  Dismisses the chat error banner by clearing the error state.
+  The error banner (ELM-043) contains a dismiss/close button.
+  Clicking it dispatches EVT-024-error-cleared, which sets the
+  chat store error field to null.
+
+---
+entity: action
+id: ACT-013-accept-brief
+name: "Accept Brief"
+docs: ./chat.md
+tests: ./chat.feature
+
+type: data-update
+trigger:
+  element: { $ref: ELM-032-accept-brief-button }
+  interaction: click
+preconditions: []
+events-dispatched:
+  - $ref: EVT-013-brief-action
+
+stores-affected:
+  - $ref: STR-004-chat-store
+
+notes: |
+  Accepts the discovery brief generated during the discovery phase.
+  Dispatches EVT-013-brief-action with { accepted: true }.
+  Updates the chat store discoveryStatus.briefAccepted to true.
+  This advances the session workflow past the discovery phase.
+
+---
+entity: action
+id: ACT-014-reject-brief
+name: "Reject Brief"
+docs: ./chat.md
+tests: ./chat.feature
+
+type: data-update
+trigger:
+  element: { $ref: ELM-033-reject-brief-button }
+  interaction: click
+preconditions: []
+events-dispatched:
+  - $ref: EVT-013-brief-action
+
+stores-affected:
+  - $ref: STR-004-chat-store
+
+notes: |
+  Rejects the discovery brief, signaling that the user wants to continue
+  the discovery conversation before proceeding.
+  Dispatches EVT-013-brief-action with { accepted: false }.
+  Updates the chat store discoveryStatus.briefAccepted to false.
+  The session remains in the discovery phase.
+
+---
+entity: action
+id: ACT-015-request-brief
+name: "Request Brief"
+docs: ./chat.md
+tests: ./chat.feature
+
+type: data-create
+trigger:
+  element: { $ref: ELM-034-request-brief-button }
+  interaction: click
+preconditions: []
+events-dispatched:
+  - $ref: EVT-012-discovery-status-changed
+
+stores-affected:
+  - $ref: STR-004-chat-store
+
+notes: |
+  Requests the discovery agent to generate a brief summarizing the
+  discovery conversation. Dispatches EVT-012-discovery-status-changed
+  which updates the discoveryStatus fields in the chat store.
+  After the brief is generated, the accept/reject buttons become available.

@@ -8,72 +8,9 @@
 import type { RESULT_BRAND } from "./brand.js";
 import type { Option, Some, None } from "../option/types.js";
 
-// Forward declaration for ResultAsync (populated in async module)
-export interface ResultAsync<T, E> extends PromiseLike<Result<T, E>> {
-  map<U>(f: (value: T) => U | Promise<U>): ResultAsync<U, E>;
-  mapErr<F>(f: (error: E) => F | Promise<F>): ResultAsync<T, F>;
-  mapBoth<U, F>(
-    onOk: (value: T) => U | Promise<U>,
-    onErr: (error: E) => F | Promise<F>
-  ): ResultAsync<U, F>;
-  andThen<U, F>(f: (value: T) => Result<U, F> | ResultAsync<U, F>): ResultAsync<U, E | F>;
-  orElse<U, F>(f: (error: E) => Result<U, F> | ResultAsync<U, F>): ResultAsync<T | U, F>;
-  andTee(f: (value: T) => void | Promise<void>): ResultAsync<T, E>;
-  orTee(f: (error: E) => void | Promise<void>): ResultAsync<T, E>;
-  andThrough<F>(
-    f: (value: T) => Result<unknown, F> | ResultAsync<unknown, F>
-  ): ResultAsync<T, E | F>;
-  inspect(f: (value: T) => void): ResultAsync<T, E>;
-  inspectErr(f: (error: E) => void): ResultAsync<T, E>;
-  match<A, B>(
-    onOk: (value: T) => A | Promise<A>,
-    onErr: (error: E) => B | Promise<B>
-  ): Promise<A | B>;
-  unwrapOr<U>(defaultValue: U): Promise<T | U>;
-  unwrapOrElse<U>(f: (error: E) => U): Promise<T | U>;
-  orDie(): Promise<T>;
-  toNullable(): Promise<T | null>;
-  toUndefined(): Promise<T | undefined>;
-  intoTuple(): Promise<[null, T] | [E, null]>;
-  merge(): Promise<T | E>;
-  flatten<U>(this: ResultAsync<Result<U, E>, E>): ResultAsync<U, E>;
-  flip(): ResultAsync<E, T>;
-
-  // Effect error handling
-  catchTag<Tag extends string, T2>(
-    tag: Tag,
-    handler: (error: Extract<E, { _tag: Tag }>) => Result<T2, never> | ResultAsync<T2, never>
-  ): ResultAsync<T | T2, Exclude<E, { _tag: Tag }>>;
-
-  catchTags<
-    Handlers extends Partial<{
-      [K in Extract<E, { _tag: string }>["_tag"]]: (
-        error: Extract<E, { _tag: K }>
-      ) => Result<unknown, never> | ResultAsync<unknown, never>;
-    }>,
-  >(
-    handlers: Handlers
-  ): ResultAsync<
-    | T
-    | {
-        [K in keyof Handlers]: Handlers[K] extends (
-          e: never
-        ) => Result<infer U, never> | ResultAsync<infer U, never>
-          ? U
-          : never;
-      }[keyof Handlers],
-    Exclude<E, { _tag: keyof Handlers & string }>
-  >;
-
-  andThenWith<U, F, G>(
-    onOk: (value: T) => Result<U, F> | ResultAsync<U, F>,
-    onErr: (error: E) => Result<U, G> | ResultAsync<U, G>
-  ): ResultAsync<U, F | G>;
-
-  toJSON(): Promise<
-    { _tag: "Ok"; _schemaVersion: 1; value: T } | { _tag: "Err"; _schemaVersion: 1; error: E }
-  >;
-}
+// Re-export the ResultAsync class type (eliminates the dual interface/class problem)
+import type { ResultAsync } from "../async/result-async.js";
+export type { ResultAsync };
 
 /**
  * The success variant of {@link Result}. Contains a `value` of type `T`.

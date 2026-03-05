@@ -150,6 +150,7 @@ describe("Graph Traversal Utilities", () => {
           factoryKind: "sync" as const,
           factory: () => ({ a: true }),
           clonable: false,
+          freeze: true,
         },
         {
           provides: BPort,
@@ -158,6 +159,7 @@ describe("Graph Traversal Utilities", () => {
           factoryKind: "sync" as const,
           factory: () => ({ b: true }),
           clonable: false,
+          freeze: true,
         },
       ];
 

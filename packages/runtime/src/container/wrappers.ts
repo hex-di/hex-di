@@ -50,6 +50,7 @@ import type {
 import type { InspectorAPI } from "../inspection/types.js";
 import {
   attachBuiltinAPIs,
+  assertInspectorAttached,
   parseChildGraph,
   parseInheritanceModes,
   createChildContainerConfig,
@@ -354,7 +355,10 @@ export function createChildContainerWrapper<
     dispose: async () => {
       childContainer.inspector?.disposeLibraries?.();
       await impl.dispose();
+      assertInspectorAttached(childContainer);
+      return childContainer;
     },
+
     get isDisposed() {
       return impl.isDisposed;
     },

@@ -1,4 +1,4 @@
-import type { Result, ResultAsync as ResultAsyncType } from "../core/types.js";
+import type { Result } from "../core/types.js";
 import { ok, err, _setResultAsyncImpl } from "../core/result.js";
 import type { InferOkUnion, InferErrUnion } from "../type-utils.js";
 import { all } from "../combinators/all.js";
@@ -10,7 +10,7 @@ import { forEach } from "../combinators/for-each.js";
 import { zipOrAccumulate } from "../combinators/zip-or-accumulate.js";
 
 // Helper to resolve a Result | ResultAsync to a Promise<Result>
-function toPromiseResult<T, E>(value: Result<T, E> | ResultAsyncType<T, E>): Promise<Result<T, E>> {
+function toPromiseResult<T, E>(value: Result<T, E> | ResultAsync<T, E>): Promise<Result<T, E>> {
   if ("_tag" in value) {
     return Promise.resolve(value);
   }
@@ -51,7 +51,7 @@ async function resolveValue<T>(value: T | Promise<T>): Promise<T> {
  * @since v1.0.0
  * @see spec/result/behaviors/06-async.md — BEH-06-001
  */
-export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
+export class ResultAsync<T, E> {
   readonly #promise: Promise<Result<T, E>>;
 
   private constructor(promise: Promise<Result<T, E>>) {
@@ -276,7 +276,7 @@ export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
 
   // --- Chaining ---
 
-  andThen<U, F>(f: (value: T) => Result<U, F> | ResultAsyncType<U, F>): ResultAsync<U, E | F> {
+  andThen<U, F>(f: (value: T) => Result<U, F> | ResultAsync<U, F>): ResultAsync<U, E | F> {
     return new ResultAsync(
       this.#promise.then(async (result): Promise<Result<U, E | F>> => {
         if (result._tag === "Err") {
@@ -288,7 +288,7 @@ export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
     );
   }
 
-  orElse<U, F>(f: (error: E) => Result<U, F> | ResultAsyncType<U, F>): ResultAsync<T | U, F> {
+  orElse<U, F>(f: (error: E) => Result<U, F> | ResultAsync<U, F>): ResultAsync<T | U, F> {
     return new ResultAsync(
       this.#promise.then(async (result): Promise<Result<T | U, F>> => {
         if (result._tag === "Ok") {
@@ -331,7 +331,7 @@ export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
   }
 
   andThrough<F>(
-    f: (value: T) => Result<unknown, F> | ResultAsyncType<unknown, F>
+    f: (value: T) => Result<unknown, F> | ResultAsync<unknown, F>
   ): ResultAsync<T, E | F> {
     return new ResultAsync(
       this.#promise.then(async (result): Promise<Result<T, E | F>> => {
@@ -449,7 +449,7 @@ export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
 
   catchTag<Tag extends string, T2>(
     tag: Tag,
-    handler: (error: Extract<E, { _tag: Tag }>) => Result<T2, never> | ResultAsyncType<T2, never>
+    handler: (error: Extract<E, { _tag: Tag }>) => Result<T2, never> | ResultAsync<T2, never>
   ): ResultAsync<T | T2, Exclude<E, { _tag: Tag }>> {
     return new ResultAsync(
       this.#promise.then(async (result): Promise<Result<T | T2, Exclude<E, { _tag: Tag }>>> => {
@@ -483,7 +483,7 @@ export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
     Handlers extends Partial<{
       [K in Extract<E, { _tag: string }>["_tag"]]: (
         error: Extract<E, { _tag: K }>
-      ) => Result<unknown, never> | ResultAsyncType<unknown, never>;
+      ) => Result<unknown, never> | ResultAsync<unknown, never>;
     }>,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   >(handlers: Handlers): any {
@@ -520,8 +520,8 @@ export class ResultAsync<T, E> implements ResultAsyncType<T, E> {
   }
 
   andThenWith<U, F, G>(
-    onOk: (value: T) => Result<U, F> | ResultAsyncType<U, F>,
-    onErr: (error: E) => Result<U, G> | ResultAsyncType<U, G>
+    onOk: (value: T) => Result<U, F> | ResultAsync<U, F>,
+    onErr: (error: E) => Result<U, G> | ResultAsync<U, G>
   ): ResultAsync<U, F | G> {
     return new ResultAsync(
       this.#promise.then(async (result): Promise<Result<U, F | G>> => {

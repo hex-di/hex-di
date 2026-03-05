@@ -1,0 +1,28 @@
+kind: reference
+package: specforge
+source: huly
+entries:
+  - id: "api-client"
+    file: "api-client.md"
+    title: "Huly — API Client"
+  - id: "architecture"
+    file: "architecture.md"
+    title: "Huly — Architecture"
+  - id: "collaboration"
+    file: "collaboration.md"
+    title: "Huly — Collaboration & Real-Time"
+  - id: "data-model"
+    file: "data-model.md"
+    title: "Huly — Data Model"
+  - id: "deployment"
+    file: "deployment.md"
+    title: "Huly — Deployment"
+  - id: "overview"
+    file: "overview.md"
+    title: "Huly — Overview"
+  - id: "plugin-system"
+    file: "plugin-system.md"
+    title: "Huly — Plugin System"
+  - id: "workspace-lifecycle"
+    file: "workspace-lifecycle.md"
+    title: "Huly — Workspace Lifecycle"

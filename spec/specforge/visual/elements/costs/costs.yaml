@@ -1,0 +1,281 @@
+entity: element
+id: ELM-063-cost-summary-card
+name: "Cost Summary Card"
+docs: ./costs.md
+tests: ./costs.feature
+
+type: container
+
+layout:
+  display: flex
+  flex-direction: column
+  gap: 4px
+  padding: 16px
+  border-radius: 8px
+  background: "var(--sf-surface)"
+  min-width: 160px
+
+states:
+  default:
+    background: "var(--sf-surface)"
+
+content:
+  - name: "title"
+    font-size: 11px
+    font-weight: 500
+    color: "var(--sf-text-muted)"
+    text-transform: uppercase
+    letter-spacing: "0.05em"
+  - name: "value"
+    font-size: 24px
+    font-family: "var(--sf-font-display)"
+    font-weight: 700
+    color: "var(--sf-text)"
+  - name: "subtitle"
+    font-size: 11px
+    color: "var(--sf-text-muted)"
+
+notes: |
+  Four summary cards displayed at the top of the cost tracker view:
+  - Total Cost: dollar amount with 2 decimal places
+  - Input Tokens: formatted with K/M suffix
+  - Output Tokens: formatted with K/M suffix
+  - Budget %: percentage of budget consumed, colored by zone
+
+accessibility:
+  role: "group"
+  label: "{title}: {value}"
+
+---
+entity: element
+id: ELM-064-budget-gauge
+name: "Budget Gauge"
+docs: ./costs.md
+tests: ./costs.feature
+
+type: container
+
+layout:
+  width: 120px
+  height: 120px
+  position: relative
+
+states:
+  safe:
+    color: "var(--sf-accent)"
+    condition: "budgetPercent >= 0 && budgetPercent < 60"
+  warning:
+    color: "#FF8C00"
+    condition: "budgetPercent >= 60 && budgetPercent < 85"
+  critical:
+    color: "#FF3B3B"
+    condition: "budgetPercent >= 85 && budgetPercent < 95"
+  exhausted:
+    color: "#FF3B3B"
+    animation: "pulse 1.5s ease-in-out infinite"
+    condition: "budgetPercent >= 95 && budgetPercent <= 100"
+
+content:
+  - name: "gauge-arc"
+    description: "Circular arc from 0 to budgetPercent, colored by zone"
+    stroke-width: 8px
+    stroke-linecap: round
+    track-color: "var(--sf-surface-elevated)"
+  - name: "center-label"
+    font-size: 20px
+    font-family: "var(--sf-font-display)"
+    font-weight: 700
+    color: "var(--sf-text)"
+    text-anchor: middle
+
+notes: |
+  Circular gauge showing budget consumption percentage.
+  Arc fills clockwise from top. Track is surface-elevated, fill is zone-colored.
+  Center displays the percentage value.
+  Color zones:
+    safe (0-60%): accent (cyan)
+    warning (60-85%): #FF8C00 (orange)
+    critical (85-95%): #FF3B3B (red)
+    exhausted (95-100%): #FF3B3B with pulsing animation
+
+accessibility:
+  role: "meter"
+  label: "Budget usage: {budgetPercent}%"
+  aria-valuemin: 0
+  aria-valuemax: 100
+  aria-valuenow: "{budgetPercent}"
+
+---
+entity: element
+id: ELM-065-phase-cost-row
+name: "Phase Cost Row"
+docs: ./costs.md
+tests: ./costs.feature
+
+type: container
+
+layout:
+  display: flex
+  align-items: center
+  gap: 12px
+  padding: "8px 16px"
+  border-bottom: "1px solid var(--sf-border)"
+  min-height: 40px
+
+states:
+  default:
+    background: "transparent"
+    color: "var(--sf-text)"
+  hover:
+    background: "rgba(0, 240, 255, 0.03)"
+
+content:
+  - name: "phase-name"
+    font-size: 13px
+    font-weight: 500
+    color: "var(--sf-text)"
+    flex: 2
+  - name: "input-tokens"
+    font-size: 13px
+    font-family: "var(--sf-font-mono)"
+    color: "var(--sf-text-muted)"
+    text-align: right
+    flex: 1
+  - name: "output-tokens"
+    font-size: 13px
+    font-family: "var(--sf-font-mono)"
+    color: "var(--sf-text-muted)"
+    text-align: right
+    flex: 1
+  - name: "cost"
+    font-size: 13px
+    font-family: "var(--sf-font-mono)"
+    font-weight: 600
+    color: "var(--sf-text)"
+    text-align: right
+    flex: 1
+
+notes: |
+  Table row showing cost breakdown for a single flow phase.
+  Columns are sortable by clicking the column header.
+  Token counts use monospace font for alignment.
+
+accessibility:
+  role: "row"
+  label: "Phase {phaseName}: input {inputTokens}, output {outputTokens}, cost {cost}"
+
+---
+entity: element
+id: ELM-066-agent-cost-row
+name: "Agent Cost Row"
+docs: ./costs.md
+tests: ./costs.feature
+
+type: container
+
+layout:
+  display: flex
+  align-items: center
+  gap: 12px
+  padding: "8px 16px"
+  border-bottom: "1px solid var(--sf-border)"
+  min-height: 40px
+
+states:
+  default:
+    background: "transparent"
+    color: "var(--sf-text)"
+  hover:
+    background: "rgba(0, 240, 255, 0.03)"
+
+content:
+  - name: "agent-role"
+    display: flex
+    align-items: center
+    gap: 8px
+    flex: 2
+    children:
+      - ref: { $ref: ELM-058-agent-role-badge }
+      - name: "role-label"
+        font-size: 13px
+        color: "var(--sf-text)"
+  - name: "input-tokens"
+    font-size: 13px
+    font-family: "var(--sf-font-mono)"
+    color: "var(--sf-text-muted)"
+    text-align: right
+    flex: 1
+  - name: "output-tokens"
+    font-size: 13px
+    font-family: "var(--sf-font-mono)"
+    color: "var(--sf-text-muted)"
+    text-align: right
+    flex: 1
+  - name: "cost"
+    font-size: 13px
+    font-family: "var(--sf-font-mono)"
+    font-weight: 600
+    color: "var(--sf-text)"
+    text-align: right
+    flex: 1
+  - name: "invocations"
+    font-size: 12px
+    font-family: "var(--sf-font-mono)"
+    color: "var(--sf-text-muted)"
+    text-align: right
+    flex: 1
+
+notes: |
+  Table row showing cost breakdown for a single agent role.
+  Includes the role-colored badge (ELM-058) for visual identification.
+  Adds an invocations column compared to phase-cost-row.
+
+accessibility:
+  role: "row"
+  label: "Agent {agentRole}: input {inputTokens}, output {outputTokens}, cost {cost}, invocations {invocations}"
+
+---
+entity: element
+id: ELM-067-cost-view-mode-toggle
+name: "Cost View Mode Toggle"
+docs: ./costs.md
+tests: ./costs.feature
+
+type: button
+
+layout:
+  display: inline-flex
+  align-items: center
+  gap: 0
+  border-radius: 6px
+  overflow: hidden
+  background: "var(--sf-surface)"
+
+states:
+  default:
+    color: "var(--sf-text-muted)"
+    background: "var(--sf-surface)"
+    padding: "6px 10px"
+  hover:
+    color: "var(--sf-text)"
+    background: "rgba(0, 240, 255, 0.05)"
+  active:
+    color: "var(--sf-accent)"
+    background: "var(--sf-accent-dim)"
+
+actions:
+  - trigger: click
+    action: { $ref: ACT-016-set-filter }
+    payload:
+      view: costs
+      key: viewMode
+      value: "by-phase | by-agent"
+
+notes: |
+  Segmented control toggling between "by-phase" and "by-agent" table views.
+  Active mode is highlighted with accent.
+  Clicking triggers ACT-016-set-filter with the selected viewMode value.
+
+accessibility:
+  role: "radiogroup"
+  label: "Cost breakdown view mode"

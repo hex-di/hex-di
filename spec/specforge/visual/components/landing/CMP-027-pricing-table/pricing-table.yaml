@@ -1,0 +1,111 @@
+entity: component
+id: CMP-027-pricing-table
+name: "Pricing Table"
+docs: ./pricing-table.md
+tests: ./pricing-table.feature
+
+description: |
+  Three-tier pricing comparison table for the SpecForge landing page.
+  Displays Open Source, Pro, and Enterprise tiers side by side with
+  feature lists, pricing, and CTA buttons. Pro tier is highlighted.
+
+props:
+  tiers:
+    type: array
+    items:
+      type: object
+      properties:
+        name: { type: string }
+        price: { type: string }
+        period: { type: string }
+        features:
+          type: array
+          items:
+            type: object
+            properties:
+              text: { type: string }
+              included: { type: boolean }
+        isPopular: { type: boolean }
+        ctaLabel: { type: string }
+    default:
+      - name: "Open Source"
+        price: "Free"
+        period: ""
+        isPopular: false
+        ctaLabel: "Get Started"
+        features:
+          - { text: "Core CLI", included: true }
+          - { text: "Local spec generation", included: true }
+          - { text: "Single-agent pipeline", included: true }
+          - { text: "Community support", included: true }
+          - { text: "Cloud sync", included: false }
+          - { text: "Team collaboration", included: false }
+          - { text: "GxP compliance", included: false }
+          - { text: "SSO & audit trails", included: false }
+      - name: "Pro"
+        price: "$29"
+        period: "/mo"
+        isPopular: true
+        ctaLabel: "Start Free Trial"
+        features:
+          - { text: "Core CLI", included: true }
+          - { text: "Local spec generation", included: true }
+          - { text: "Multi-agent pipeline", included: true }
+          - { text: "Priority support", included: true }
+          - { text: "Cloud sync", included: true }
+          - { text: "Team collaboration", included: true }
+          - { text: "GxP compliance", included: false }
+          - { text: "SSO & audit trails", included: false }
+      - name: "Enterprise"
+        price: "Custom"
+        period: ""
+        isPopular: false
+        ctaLabel: "Contact Sales"
+        features:
+          - { text: "Core CLI", included: true }
+          - { text: "Local spec generation", included: true }
+          - { text: "Multi-agent pipeline", included: true }
+          - { text: "Dedicated support", included: true }
+          - { text: "Cloud sync", included: true }
+          - { text: "Team collaboration", included: true }
+          - { text: "GxP compliance", included: true }
+          - { text: "SSO & audit trails", included: true }
+
+layout:
+  display: flex
+  flex-direction: column
+  align-items: center
+  max-width: 1080px
+  margin: 0 auto
+  padding: "80px 24px"
+
+section-header:
+  title: "Pricing"
+  font-family: "var(--sf-font-display)"
+  font-size: 32px
+  font-weight: 700
+  color: "var(--sf-text)"
+  text-align: center
+  margin-bottom: 48px
+
+tiers-layout:
+  display: grid
+  grid-template-columns: "repeat(3, 1fr)"
+  gap: 24px
+  width: 100%
+
+responsive:
+  tablet:
+    breakpoint: 768px
+    tiers-layout:
+      grid-template-columns: "1fr"
+      max-width: 400px
+      margin: 0 auto
+
+children:
+  - $ref: ELM-082-pricing-tier-card
+  - $ref: ELM-083-pricing-feature-item
+
+accessibility:
+  role: "region"
+  label: "Pricing plans"

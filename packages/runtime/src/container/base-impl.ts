@@ -5,7 +5,7 @@
  * @internal
  */
 
-import type { Port, InferService } from "@hex-di/core";
+import type { Port, InferService, ContractCheckMode } from "@hex-di/core";
 import { MemoMap, type MemoMapConfig } from "../util/memo-map.js";
 import { ResolutionContext } from "../resolution/context.js";
 import type { ScopeImpl } from "../scope/impl.js";
@@ -143,6 +143,21 @@ export abstract class BaseContainerImpl<
       (port, scopedMemo, scopeId, scopeName) =>
         this.resolveAsyncInternal(port, scopedMemo, scopeId, scopeName)
     );
+  }
+
+  // ===========================================================================
+  // Contract Check Configuration
+  // ===========================================================================
+
+  /**
+   * Configures the contract check mode on both resolution engines.
+   *
+   * @param mode - The contract check mode ("off", "warn", or "strict")
+   * @internal
+   */
+  protected setContractCheckMode(mode: ContractCheckMode): void {
+    this.resolutionEngine.setContractCheckMode(mode);
+    this.asyncResolutionEngine.setContractCheckMode(mode);
   }
 
   // ===========================================================================

@@ -190,7 +190,7 @@ interface ResolverLike {
   resolveAsync(port: Port<string, unknown>): Promise<unknown>;
   has(port: Port<string, unknown>): boolean;
   createScope(name?: string): ResolverLike;
-  dispose(): Promise<void>;
+  dispose(): Promise<unknown>;
   readonly isDisposed: boolean;
 }
 
@@ -221,7 +221,7 @@ interface ContainerLike extends ResolverLike {
 interface LazyContainerLike {
   load(): Promise<ResolverLike>;
   has(port: Port<string, unknown>): boolean;
-  dispose(): Promise<void>;
+  dispose(): Promise<unknown>;
   readonly isLoaded: boolean;
   readonly isDisposed: boolean;
 }
@@ -298,8 +298,8 @@ export function toRuntimeLazyContainer<T extends LazyContainerLike>(
     has(port: Port<string, unknown>): boolean {
       return lazyContainer.has(port);
     },
-    dispose(): Promise<void> {
-      return lazyContainer.dispose();
+    async dispose(): Promise<void> {
+      await lazyContainer.dispose();
     },
     get isLoaded(): boolean {
       return lazyContainer.isLoaded;

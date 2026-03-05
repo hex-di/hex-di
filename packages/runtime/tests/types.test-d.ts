@@ -93,15 +93,17 @@ describe("Container type", () => {
     expectTypeOf<CreateScopeReturn>().toEqualTypeOf<Scope<LoggerPortType>>();
   });
 
-  it("has dispose method returning Promise<void>", () => {
+  it("has dispose method returning Promise of disposed container", () => {
     type TestContainer = Container<LoggerPortType>;
 
     // Container should have dispose method
     expectTypeOf<TestContainer>().toHaveProperty("dispose");
 
-    // dispose should return Promise<void>
+    // dispose should return Promise of disposed Container
     type DisposeReturn = ReturnType<TestContainer["dispose"]>;
-    expectTypeOf<DisposeReturn>().toEqualTypeOf<Promise<void>>();
+    expectTypeOf<DisposeReturn>().toEqualTypeOf<
+      Promise<Container<LoggerPortType, never, never, "uninitialized", "disposed">>
+    >();
   });
 });
 
@@ -154,15 +156,17 @@ describe("Scope type", () => {
     expectTypeOf<CreateScopeReturn>().toEqualTypeOf<Scope<LoggerPortType>>();
   });
 
-  it("has dispose method returning Promise<void>", () => {
+  it("has dispose method returning Promise of disposed scope", () => {
     type TestScope = Scope<LoggerPortType>;
 
     // Scope should have dispose method
     expectTypeOf<TestScope>().toHaveProperty("dispose");
 
-    // dispose should return Promise<void>
+    // dispose should return Promise of disposed Scope
     type DisposeReturn = ReturnType<TestScope["dispose"]>;
-    expectTypeOf<DisposeReturn>().toEqualTypeOf<Promise<void>>();
+    expectTypeOf<DisposeReturn>().toEqualTypeOf<
+      Promise<Scope<LoggerPortType, never, "uninitialized", "disposed">>
+    >();
   });
 });
 

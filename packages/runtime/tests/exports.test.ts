@@ -183,6 +183,9 @@ describe("@hex-di/runtime exports", () => {
         // Result integration
         "resolveResult",
         "recordResult",
+        // Handle-based resolution
+        "resolveHandle",
+        "resolveHandleToActive",
       ];
 
       // Verify all expected exports exist

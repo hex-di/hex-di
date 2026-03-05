@@ -1,0 +1,54 @@
+entity: store
+id: STR-014-router-store
+name: "Router Store"
+docs: ./router-store.md
+tests: ./router-store.feature
+
+initial-state:
+  currentView: "home"
+
+types:
+  ViewId:
+    enum:
+      - "home"
+      - "chat"
+      - "pipeline"
+      - "spec"
+      - "tasks"
+      - "coverage"
+      - "acp-session"
+      - "costs"
+      - "graph"
+
+  FilterableViews:
+    description: "Subset of ViewId that supports filter bar interaction"
+    values:
+      - "pipeline"
+      - "tasks"
+      - "coverage"
+      - "acp-session"
+
+reducers:
+  EVT-001:
+    description: "view-changed"
+    effects:
+      - field: "currentView"
+        operation: set
+        value: "payload.viewId"
+
+selectors:
+  - name: "currentView"
+    compute: "currentView"
+
+  - name: "isFilterableView"
+    compute: "['pipeline', 'tasks', 'coverage', 'acp-session'].includes(currentView)"
+
+consumers:
+  - $ref: CMP-001-nav-rail
+  - $ref: CMP-004-filter-bar
+  - $ref: PG-010-app-shell
+
+persistence:
+  enabled: false
+
+hook: useCurrentView

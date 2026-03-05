@@ -11,6 +11,11 @@
           "mainDocId": "index",
           "docs": [
             {
+              "id": "advanced/effect-system",
+              "path": "/docs/advanced/effect-system",
+              "sidebar": "docs"
+            },
+            {
               "id": "advanced/serialization",
               "path": "/docs/advanced/serialization",
               "sidebar": "docs"
@@ -41,8 +46,18 @@
               "sidebar": "docs"
             },
             {
+              "id": "guides/combinators",
+              "path": "/docs/guides/combinators",
+              "sidebar": "docs"
+            },
+            {
               "id": "guides/generators",
               "path": "/docs/guides/generators",
+              "sidebar": "docs"
+            },
+            {
+              "id": "guides/tagged-error-handling",
+              "path": "/docs/guides/tagged-error-handling",
               "sidebar": "docs"
             },
             {

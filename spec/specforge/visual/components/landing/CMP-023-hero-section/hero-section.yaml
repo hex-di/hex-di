@@ -1,0 +1,48 @@
+entity: component
+id: CMP-023-hero-section
+name: "Hero Section"
+docs: ./hero-section.md
+tests: ./hero-section.feature
+
+description: |
+  Full-viewport hero section at the top of the SpecForge landing page.
+  Displays the main headline, subheadline, two CTA buttons, and an
+  animated hexagon grid background.
+
+props:
+  headline:
+    type: string
+    default: "AI-Powered Specification Authoring"
+  subheadline:
+    type: string
+    default: "Multi-agent collaboration for production-grade software specs"
+
+layout:
+  display: flex
+  flex-direction: column
+  align-items: center
+  justify-content: center
+  min-height: 100vh
+  padding-top: 20vh
+  padding-bottom: 10vh
+  padding-left: 24px
+  padding-right: 24px
+  max-width: 800px
+  margin: 0 auto
+  text-align: center
+  position: relative
+  overflow: hidden
+
+background:
+  color: "var(--sf-bg)"
+  animation: "Subtle animated hexagon grid pattern. Semi-transparent hexagonal outlines (#00F0FF at 6% opacity) drift slowly upward and pulse. Canvas or SVG based."
+
+children:
+  - $ref: ELM-072-hero-headline
+  - $ref: ELM-073-hero-subheadline
+  - $ref: ELM-074-hero-cta-primary
+  - $ref: ELM-075-hero-cta-secondary
+
+accessibility:
+  role: "banner"
+  label: "SpecForge hero"

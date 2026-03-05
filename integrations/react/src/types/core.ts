@@ -81,7 +81,7 @@ export interface Resolver<TProvides extends Port<string, unknown>> {
    *
    * @returns A promise that resolves when disposal is complete
    */
-  dispose(): Promise<void>;
+  dispose(): Promise<unknown>;
 
   /**
    * Whether the resolver has been disposed.

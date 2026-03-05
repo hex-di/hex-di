@@ -105,27 +105,50 @@ if (result.isErr()) {
 }
 ```
 
+## Tagged Error Handling
+
+Use `catchTag` and `catchTags` to handle specific errors by their `_tag`, progressively eliminating them from the error union:
+
+```typescript
+import { ok, err, type Result } from "@hex-di/result";
+
+type NotFound = { readonly _tag: "NotFound"; readonly id: string };
+type Timeout = { readonly _tag: "Timeout"; readonly ms: number };
+
+const result: Result<string, NotFound | Timeout> = err({ _tag: "NotFound", id: "123" });
+
+// Handle one error type — Timeout remains in the union
+const handled = result.catchTag("NotFound", e => ok(`Default for ${e.id}`));
+
+// Handle multiple at once
+const allHandled = result.catchTags({
+  NotFound: e => ok(`Default for ${e.id}`),
+  Timeout: e => ok(`Retried after ${e.ms}ms`),
+});
+```
+
+See the full [Tagged Error Handling](../guides/tagged-error-handling) guide for `catchTag`, `catchTags`, `andThenWith`, and `orDie()`.
+
 ## Grouping Related Errors
 
-### `createErrorGroup(errors)`
+### `createErrorGroup(namespace)`
 
-Groups related errors under a shared parent for organization.
+Creates error families with two-level discriminants (`_namespace` + `_tag`) for organizing errors across domains:
 
 ```typescript
 import { createErrorGroup } from "@hex-di/result";
 
-const DatabaseErrors = createErrorGroup({
-  ConnectionFailed: "ConnectionFailed",
-  QueryTimeout: "QueryTimeout",
-  TransactionFailed: "TransactionFailed",
-});
+const Http = createErrorGroup("HttpError");
+const NotFound = Http.create("NotFound");
+const Timeout = Http.create("Timeout");
 
-// Use grouped errors
-const result = err(DatabaseErrors.ConnectionFailed("Cannot connect to database"));
+// Create error instances with custom fields
+const error = NotFound({ url: "/api/users", status: 404 });
+// { _namespace: "HttpError", _tag: "NotFound", url: "/api/users", status: 404 }
 
-if (result.isErr() && result.error._tag === "ConnectionFailed") {
-  // Handle connection failure
-}
+// Type guards
+Http.is(error); // true — belongs to HttpError namespace
+Http.isTag("NotFound")(error); // true — is specifically NotFound
 ```
 
 ## Ensuring Exhaustive Handling

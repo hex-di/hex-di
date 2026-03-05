@@ -75,6 +75,7 @@ function isPort(value: unknown): value is { __portName: string } {
  * - `factoryKind`: Must be a valid FactoryKind value
  * - `factory`: Must be a function
  * - `clonable`: Must be a boolean
+ * - `freeze`: Must be a boolean
  *
  * @param value - The value to check
  * @returns `true` if the value conforms to AdapterConstraint
@@ -114,7 +115,38 @@ export function isAdapter(value: unknown): value is AdapterConstraint {
   // Check clonable property
   if (!("clonable" in value) || typeof value.clonable !== "boolean") return false;
 
+  // Check freeze property
+  if (!("freeze" in value) || typeof value.freeze !== "boolean") return false;
+
   return true;
+}
+
+// =============================================================================
+// Freeze Configuration Accessor
+// =============================================================================
+
+/**
+ * Gets the freeze configuration from an adapter.
+ *
+ * Returns the adapter's `freeze` property value, which controls whether
+ * resolved service instances are `Object.freeze()`d before injection.
+ *
+ * @param adapter - The adapter to read freeze config from
+ * @returns `true` if the adapter's services should be frozen (default), `false` if they should be mutable
+ *
+ * @example
+ * ```typescript
+ * const adapter = createAdapter({
+ *   provides: CachePort,
+ *   factory: () => new Map(),
+ *   freeze: false,
+ * });
+ *
+ * getAdapterFreezeConfig(adapter); // false
+ * ```
+ */
+export function getAdapterFreezeConfig(adapter: AdapterConstraint): boolean {
+  return adapter.freeze;
 }
 
 // =============================================================================

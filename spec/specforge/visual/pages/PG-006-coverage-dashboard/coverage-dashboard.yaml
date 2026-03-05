@@ -1,0 +1,99 @@
+entity: page
+id: PG-006-coverage-dashboard
+name: "Coverage Dashboard"
+docs: ./coverage-dashboard.md
+tests: ./coverage-dashboard.feature
+
+route:
+  path: "/coverage"
+  hash: true
+  guard:
+    store: STR-002-active-session-store
+    condition: "sessionId !== null"
+    redirect: "#home"
+
+layout: single-column
+
+meta:
+  title: "SpecForge — Coverage"
+
+components:
+  - $ref: CMP-004-filter-bar
+    position: top
+    description: "Filter bar with status multi-select, spec file, sort, gaps toggle, file category, uncovered toggle"
+  - $ref: CMP-015-coverage-file-list
+    position: main-content
+    description: "Coverage file table with summary stat cards and progress bars"
+
+stores:
+  - $ref: STR-008-coverage-store
+  - $ref: STR-001-filter-store
+    slice: "coverage"
+  - $ref: STR-002-active-session-store
+
+states:
+  no-session:
+    condition: "STR-002.sessionId === null"
+    display: "Prompt to select a session"
+  empty:
+    condition: "files.length === 0"
+    display: "No coverage data message"
+  loading:
+    condition: "isLoading === true"
+    display: "Skeleton summary cards and table rows"
+  populated:
+    condition: "files.length > 0"
+    display: "Summary stat cards + coverage file table"
+
+filters:
+  - key: "statuses"
+    type: multi-select
+    options: ["covered", "implemented-only", "tested-only", "gap"]
+    default: []
+  - key: "specFile"
+    type: dropdown
+    default: "all"
+  - key: "sort"
+    type: dropdown
+    options: ["requirement-id", "coverage-asc", "coverage-desc", "file-name"]
+    default: "requirement-id"
+  - key: "showGapsOnly"
+    type: toggle
+    label: "Show gaps only"
+    default: false
+  - key: "fileCategory"
+    type: multi-select
+    default: []
+  - key: "showUncoveredOnly"
+    type: toggle
+    label: "Show uncovered only"
+    default: false
+
+summary-stats:
+  - label: "Overall Coverage"
+    selector: "overallCoverage"
+    format: "percent"
+  - label: "Gap Count"
+    selector: "gapCount"
+    format: "number"
+  - label: "Total Files"
+    selector: "totalFiles"
+    format: "number"
+  - label: "Covered Files"
+    selector: "coveredCount"
+    format: "number"
+
+coverage-bar-colors:
+  high:
+    condition: "> 80%"
+    color: "#22C55E"
+  medium:
+    condition: "50-80%"
+    color: "#FF8C00"
+  low:
+    condition: "< 50%"
+    color: "#FF3B3B"
+
+accessibility:
+  role: "main"
+  label: "Coverage dashboard"

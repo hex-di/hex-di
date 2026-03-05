@@ -1,0 +1,71 @@
+entity: store
+id: STR-016-session-subscription
+name: "ACP Session Subscription Store"
+docs: ./session-subscription.md
+tests: ./session-subscription.feature
+
+initial-state:
+  tick: 0
+  isSubscribed: false
+  lastEventTimestamp: null
+
+types:
+  TickState:
+    tick: "number (monotonically increasing, starts at 0)"
+    isSubscribed: boolean
+    lastEventTimestamp: "number | null (Unix ms timestamp)"
+
+reducers:
+  EVT-017:
+    description: "session-subscription-tick"
+    effects:
+      - field: "tick"
+        operation: increment
+        value: 1
+      - field: "lastEventTimestamp"
+        operation: set
+        value: "payload.timestamp"
+
+  EVT-033:
+    description: "session-subscribed"
+    effects:
+      - field: "isSubscribed"
+        operation: set
+        value: true
+
+  EVT-034:
+    description: "session-unsubscribed"
+    effects:
+      - field: "isSubscribed"
+        operation: set
+        value: false
+
+selectors:
+  - name: "currentTick"
+    compute: "tick"
+
+  - name: "isSubscribed"
+    compute: "isSubscribed"
+
+  - name: "timeSinceLastEvent"
+    compute: "lastEventTimestamp !== null ? Date.now() - lastEventTimestamp : null"
+
+consumers:
+  - $ref: STR-005-pipeline-store
+  - $ref: STR-006-spec-content-store
+  - $ref: STR-007-task-board-store
+  - $ref: STR-008-coverage-store
+  - $ref: STR-009-acp-session-store
+  - $ref: STR-010-cost-tracker-store
+
+persistence:
+  enabled: false
+
+hook: useSessionTick
+
+notes: |
+  The tick counter is monotonically increasing. It increments by exactly 1
+  on every ACP session message event, regardless of event type. Downstream stores
+  and hooks observe the tick value to trigger data refresh. This decouples
+  the "something changed" signal from the specific event payload.
+  Data source: MessageExchangePort.subscribe().

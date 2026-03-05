@@ -3,6 +3,22 @@ import type { Config } from "@docusaurus/types";
 import type { Options as PresetOptions } from "@docusaurus/preset-classic";
 import { LIBRARIES, getLibraryUrl } from "./libraries";
 
+// Suppress DEP0169 (url.parse() deprecation) emitted by react-loadable-ssr-addon
+// which is a Docusaurus internal dependency. Not fixable on our side.
+process.removeAllListeners("warning");
+const originalEmit = process.emit.bind(process);
+process.emit = function (event: string, ...args: unknown[]) {
+  if (
+    event === "warning" &&
+    typeof args[0] === "object" &&
+    args[0] !== null &&
+    (args[0] as { code?: string }).code === "DEP0169"
+  ) {
+    return false;
+  }
+  return originalEmit(event, ...args);
+} as typeof process.emit;
+
 export interface SiteOptions {
   readonly libraryId: string;
   readonly docsPath: string;
@@ -39,6 +55,27 @@ function buildLibrariesDropdown(): {
   };
 }
 
+/**
+ * Docusaurus plugin that suppresses the vscode-languageserver-types
+ * webpack warning about dynamic require. This is a known issue from
+ * the @docusaurus/theme-mermaid dependency chain.
+ */
+function suppressWebpackWarningsPlugin() {
+  return {
+    name: "suppress-webpack-warnings",
+    configureWebpack() {
+      return {
+        ignoreWarnings: [
+          {
+            module: /vscode-languageserver-types/,
+            message: /Critical dependency/,
+          },
+        ],
+      };
+    },
+  };
+}
+
 export function createSiteConfig(options: SiteOptions): Config {
   const library = LIBRARIES.find(lib => lib.id === options.libraryId);
   if (!library) {
@@ -60,7 +97,7 @@ export function createSiteConfig(options: SiteOptions): Config {
     { href: "https://github.com/leaderiop/hex-di", label: "GitHub", position: "right" },
   ];
 
-  const plugins: Array<unknown> = [];
+  const plugins: Array<unknown> = [suppressWebpackWarningsPlugin];
   if (options.tailwindPlugin) {
     plugins.push(options.tailwindPlugin);
   }
@@ -77,7 +114,13 @@ export function createSiteConfig(options: SiteOptions): Config {
 
     themes: ["@docusaurus/theme-mermaid"],
 
-    markdown: { format: "detect", mermaid: true },
+    markdown: {
+      format: "detect",
+      mermaid: true,
+      hooks: {
+        onBrokenMarkdownLinks: "throw",
+      },
+    },
 
     url,
     baseUrl,
@@ -85,8 +128,7 @@ export function createSiteConfig(options: SiteOptions): Config {
     organizationName: "leaderiop",
     projectName: "hex-di",
 
-    onBrokenLinks: "warn",
-    onBrokenMarkdownLinks: "warn",
+    onBrokenLinks: "throw",
 
     i18n: { defaultLocale: "en", locales: ["en"] },
 

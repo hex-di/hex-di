@@ -1,11 +1,19 @@
 /**
  * Comprehensive tests for adapter type guards.
  *
- * Tests isLifetime(), isFactoryKind(), and isAdapter() with valid/invalid inputs.
+ * Tests isLifetime(), isFactoryKind(), isAdapter(), and getAdapterFreezeConfig()
+ * with valid/invalid inputs.
  */
 
 import { describe, it, expect } from "vitest";
-import { isAdapter, isLifetime, isFactoryKind, port, createAdapter } from "../src/index.js";
+import {
+  isAdapter,
+  isLifetime,
+  isFactoryKind,
+  getAdapterFreezeConfig,
+  port,
+  createAdapter,
+} from "../src/index.js";
 
 // =============================================================================
 // isLifetime()
@@ -117,6 +125,7 @@ describe("isAdapter()", () => {
       requires: [DatabasePort],
       lifetime: "scoped",
       clonable: true,
+      freeze: true,
       factory: () => ({ log: () => {} }),
     });
     expect(isAdapter(adapter)).toBe(true);
@@ -150,6 +159,7 @@ describe("isAdapter()", () => {
         factoryKind: "sync",
         factory: () => {},
         clonable: false,
+        freeze: true,
       })
     ).toBe(false);
   });
@@ -163,6 +173,7 @@ describe("isAdapter()", () => {
         factoryKind: "sync",
         factory: () => {},
         clonable: false,
+        freeze: true,
       })
     ).toBe(false);
   });
@@ -176,6 +187,7 @@ describe("isAdapter()", () => {
         factoryKind: "sync",
         factory: () => {},
         clonable: false,
+        freeze: true,
       })
     ).toBe(false);
   });
@@ -189,6 +201,7 @@ describe("isAdapter()", () => {
         factoryKind: "sync",
         factory: () => {},
         clonable: false,
+        freeze: true,
       })
     ).toBe(false);
   });
@@ -202,6 +215,7 @@ describe("isAdapter()", () => {
         factoryKind: "sync",
         factory: () => {},
         clonable: false,
+        freeze: true,
       })
     ).toBe(false);
   });
@@ -215,6 +229,7 @@ describe("isAdapter()", () => {
         factoryKind: "sync",
         factory: () => {},
         clonable: false,
+        freeze: true,
       })
     ).toBe(false);
   });
@@ -227,6 +242,7 @@ describe("isAdapter()", () => {
         factoryKind: "sync",
         factory: () => {},
         clonable: false,
+        freeze: true,
       })
     ).toBe(false);
   });
@@ -240,6 +256,7 @@ describe("isAdapter()", () => {
         factoryKind: "promise",
         factory: () => {},
         clonable: false,
+        freeze: true,
       })
     ).toBe(false);
   });
@@ -252,6 +269,7 @@ describe("isAdapter()", () => {
         lifetime: "singleton",
         factory: () => {},
         clonable: false,
+        freeze: true,
       })
     ).toBe(false);
   });
@@ -265,6 +283,7 @@ describe("isAdapter()", () => {
         factoryKind: "sync",
         factory: "not a function",
         clonable: false,
+        freeze: true,
       })
     ).toBe(false);
   });
@@ -277,6 +296,7 @@ describe("isAdapter()", () => {
         lifetime: "singleton",
         factoryKind: "sync",
         clonable: false,
+        freeze: true,
       })
     ).toBe(false);
   });
@@ -290,6 +310,7 @@ describe("isAdapter()", () => {
         factoryKind: "sync",
         factory: () => {},
         clonable: "yes",
+        freeze: true,
       })
     ).toBe(false);
   });
@@ -302,6 +323,34 @@ describe("isAdapter()", () => {
         lifetime: "singleton",
         factoryKind: "sync",
         factory: () => {},
+        freeze: true,
+      })
+    ).toBe(false);
+  });
+
+  it("returns false when 'freeze' is not a boolean", () => {
+    expect(
+      isAdapter({
+        provides: LoggerPort,
+        requires: [],
+        lifetime: "singleton",
+        factoryKind: "sync",
+        factory: () => {},
+        clonable: false,
+        freeze: "yes",
+      })
+    ).toBe(false);
+  });
+
+  it("returns false when 'freeze' is missing", () => {
+    expect(
+      isAdapter({
+        provides: LoggerPort,
+        requires: [],
+        lifetime: "singleton",
+        factoryKind: "sync",
+        factory: () => {},
+        clonable: false,
       })
     ).toBe(false);
   });
@@ -315,6 +364,7 @@ describe("isAdapter()", () => {
         factoryKind: "sync",
         factory: () => {},
         clonable: false,
+        freeze: true,
       })
     ).toBe(true);
   });
@@ -328,7 +378,52 @@ describe("isAdapter()", () => {
         factoryKind: "sync",
         factory: () => {},
         clonable: false,
+        freeze: true,
       })
     ).toBe(false);
+  });
+});
+
+// =============================================================================
+// getAdapterFreezeConfig()
+// =============================================================================
+
+describe("getAdapterFreezeConfig()", () => {
+  const LoggerPort = port<{ log(msg: string): void }>()({ name: "FreezeLogger" });
+
+  it("returns true for adapter with default freeze config", () => {
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      factory: () => ({ log: () => {} }),
+    });
+    expect(getAdapterFreezeConfig(adapter)).toBe(true);
+  });
+
+  it("returns true for adapter with explicit freeze: true", () => {
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      factory: () => ({ log: () => {} }),
+      freeze: true,
+    });
+    expect(getAdapterFreezeConfig(adapter)).toBe(true);
+  });
+
+  it("returns false for adapter with freeze: false", () => {
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      factory: () => ({ log: () => {} }),
+      freeze: false,
+    });
+    expect(getAdapterFreezeConfig(adapter)).toBe(false);
+  });
+
+  it("round-trip: createAdapter({ freeze: false }) -> getAdapterFreezeConfig === false", () => {
+    const adapter = createAdapter({
+      provides: LoggerPort,
+      lifetime: "transient",
+      factory: () => ({ log: () => {} }),
+      freeze: false,
+    });
+    expect(getAdapterFreezeConfig(adapter)).toBe(false);
   });
 });

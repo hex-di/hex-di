@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { Port } from "@hex-di/core";
+import type { Port, ContractCheckMode } from "@hex-di/core";
 import type { Graph } from "@hex-di/graph";
 import type { InheritanceModeConfig } from "./inheritance.js";
 import type { ResolutionHooks } from "../resolution/hooks.js";
@@ -209,6 +209,7 @@ export interface RuntimePerformanceOptions {
  *   safety: {
  *     maxScopeDepth: 128,
  *     finalizerTimeoutMs: 10_000,
+ *     contractChecks: "strict",
  *     onLifecycleError: (err, event) => logger.error("Lifecycle error", { err, event }),
  *   },
  * });
@@ -247,6 +248,35 @@ export interface RuntimeSafetyOptions {
    * @default undefined
    */
   readonly onFinalizerTimeout?: (portName: string, timeoutMs: number) => void;
+
+  /**
+   * Contract checking mode for runtime interface conformance verification.
+   *
+   * Controls whether the container verifies that adapter factory outputs
+   * structurally conform to the port's expected interface (when ports
+   * declare `methods` metadata).
+   *
+   * - `"off"` (default): No contract checking. Zero performance cost.
+   * - `"warn"`: Log violations to console but allow resolution to proceed.
+   * - `"strict"`: Throw `ContractViolationError` on any violation.
+   *
+   * Only ports with `methods` metadata are checked. Ports without `methods`
+   * skip contract checking regardless of this setting.
+   *
+   * @default "off"
+   *
+   * @example Enable strict contract checking in development
+   * ```typescript
+   * const container = createContainer({
+   *   graph,
+   *   name: "App",
+   *   safety: {
+   *     contractChecks: process.env.NODE_ENV === "production" ? "off" : "strict",
+   *   },
+   * });
+   * ```
+   */
+  readonly contractChecks?: ContractCheckMode;
 }
 
 /**
@@ -498,6 +528,7 @@ export interface CreateChildOptions<TProvides extends Port<string, unknown> = ne
  * - `hooks`: Resolution lifecycle hooks for tracing/monitoring
  * - `devtools`: DevTools visibility and display options
  * - `performance`: Performance optimization options
+ * - `safety`: Safety options including contract checking
  *
  * **Type Inference:**
  * The returned container type is fully inferred from the graph:
@@ -532,14 +563,13 @@ export interface CreateChildOptions<TProvides extends Port<string, unknown> = ne
  * });
  * ```
  *
- * @example With DevTools configuration
+ * @example With contract checking
  * ```typescript
  * const container = createContainer({
  *   graph,
  *   name: "App",
- *   devtools: {
- *     label: "Main Application Container",
- *     discoverable: true,
+ *   safety: {
+ *     contractChecks: "strict",
  *   },
  * });
  * ```
@@ -551,28 +581,6 @@ export interface CreateChildOptions<TProvides extends Port<string, unknown> = ne
  *   name: "API Server",
  *   performance: {
  *     disableTimestamps: process.env.NODE_ENV === "production",
- *   },
- * });
- * ```
- *
- * @example Complete configuration
- * ```typescript
- * const container = createContainer({
- *   graph: productionGraph,
- *   name: "Production API",
- *   hooks: {
- *     afterResolve: (ctx) => {
- *       if (ctx.error) {
- *         errorMonitor.captureException(ctx.error);
- *       }
- *     },
- *   },
- *   devtools: {
- *     label: "Production API Server",
- *     discoverable: false, // Hide from DevTools in production
- *   },
- *   performance: {
- *     disableTimestamps: true, // Optimize for high throughput
  *   },
  * });
  * ```

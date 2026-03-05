@@ -1842,6 +1842,7 @@ describe("container/child-impl.ts - NoCoverage error paths", () => {
         lifetime: "singleton",
         factory: () => ({ log: vi.fn() }),
         clonable: true,
+        freeze: true,
       });
       const graph = GraphBuilder.create().provide(loggerAdapter).build();
       const parent = createContainer({ graph, name: "Parent" });
@@ -1924,6 +1925,7 @@ describe("inheritance-resolver.ts - NoCoverage edge cases", () => {
         lifetime: "singleton",
         factory: () => ({ log: vi.fn() }),
         clonable: true,
+        freeze: true,
       });
       const graph = GraphBuilder.create().provide(loggerAdapter).build();
       const parent = createContainer({ graph, name: "Parent" });

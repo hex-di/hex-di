@@ -1,0 +1,25 @@
+kind: process
+package: specforge
+infix: SF
+entries:
+  - id: "change-control"
+    file: "change-control.md"
+    title: "Change Control"
+  - id: "ci-maintenance"
+    file: "ci-maintenance.md"
+    title: "CI Maintenance"
+  - id: "definitions-of-done"
+    file: "definitions-of-done.md"
+    title: "Definitions of Done"
+  - id: "document-control-policy"
+    file: "document-control-policy.md"
+    title: "Document Control Policy"
+  - id: "requirement-id-scheme"
+    file: "requirement-id-scheme.md"
+    title: "Requirement ID Scheme"
+  - id: "spec-validation-rules"
+    file: "spec-validation-rules.md"
+    title: "Spec Validation Rules"
+  - id: "test-strategy"
+    file: "test-strategy.md"
+    title: "Test Strategy"

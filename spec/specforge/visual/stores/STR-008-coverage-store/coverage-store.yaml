@@ -1,0 +1,41 @@
+entity: store
+id: STR-008-coverage-store
+name: "Coverage Store"
+docs: ./coverage-store.md
+tests: ./coverage-store.feature
+
+initial-state:
+  files: []
+
+# FileCoverageView shape:
+# {
+#   fileName: string
+#   coveragePercent: number
+#   status: "covered" | "implemented-only" | "tested-only" | "gap"
+#   specFile: string
+#   fileCategory?: string
+# }
+
+reducers:
+  EVT-024-coverage-loaded:
+    - field: "files"
+      operation: set
+      value: "payload.files"
+  EVT-025-coverage-file-updated:
+    - field: "files[fileName === payload.fileName]"
+      operation: set
+      value: "payload.file"
+
+selectors:
+  - name: "overallCoverage"
+    compute: "average of all files' coveragePercent (0 when files is empty)"
+  - name: "gapCount"
+    compute: "files.filter(f => f.status === 'gap').length"
+  - name: "filesByStatus"
+    compute: "files grouped into { covered: [], implementedOnly: [], testedOnly: [], gap: [] }"
+
+consumers:
+  - $ref: CMP-015-coverage-file-list
+
+persistence:
+  enabled: false

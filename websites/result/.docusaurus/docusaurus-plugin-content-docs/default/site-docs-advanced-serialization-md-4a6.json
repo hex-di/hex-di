@@ -20,5 +20,9 @@
   "previous": {
     "title": "API Reference",
     "permalink": "/docs/api/api-reference"
+  },
+  "next": {
+    "title": "Effect System",
+    "permalink": "/docs/advanced/effect-system"
   }
 }

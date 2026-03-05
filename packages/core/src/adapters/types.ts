@@ -249,9 +249,39 @@ export type Adapter<
   readonly clonable: TClonable;
 
   /**
+   * Whether the resolved service instance should be `Object.freeze()`d before injection.
+   *
+   * When `true` (or omitted/defaulted to `true`), the container applies `Object.freeze()`
+   * to the service instance after factory invocation and before returning it to the consumer.
+   * This prevents capability tampering where one consumer modifies a shared service.
+   *
+   * When `false`, the service instance is returned as-is (mutable). Use this for services
+   * that require mutable internal state (e.g., connection pools, caches).
+   *
+   * @remarks
+   * - Freeze is shallow only (consistent with Result/Option freeze behavior)
+   * - Singleton services are frozen once on first resolution; the cached frozen reference is reused
+   * - Transient services are frozen on every resolution (new frozen instance each time)
+   * - Scoped services are frozen once per scope
+   *
+   * @default true
+   */
+  readonly freeze: boolean;
+
+  /**
    * Optional finalizer function called during disposal.
    */
   finalizer?(instance: InferService<TProvides>): void | Promise<void>;
+
+  /**
+   * Runtime metadata listing the `_tag` values of error types this adapter's factory may produce.
+   *
+   * Populated by `createAdapter()` when `errorTags` is provided in the config.
+   * Used by graph inspection to compute transitive error profiles per port.
+   *
+   * Empty array or undefined means the adapter is considered infallible for inspection purposes.
+   */
+  readonly __errorTags?: readonly string[];
 };
 
 // =============================================================================
@@ -321,7 +351,21 @@ export interface AdapterConstraint {
   readonly clonable: boolean;
 
   /**
+   * Whether the resolved service instance should be `Object.freeze()`d before injection.
+   * Defaults to true (frozen by default).
+   */
+  readonly freeze: boolean;
+
+  /**
    * Optional finalizer (contravariant param accepts any instance type).
    */
   finalizer?(instance: never): void | Promise<void>;
+
+  /**
+   * Runtime metadata listing the `_tag` values of error types this adapter's factory may produce.
+   *
+   * Used by graph inspection to compute transitive error profiles per port.
+   * Empty array or undefined means the adapter is considered infallible for inspection purposes.
+   */
+  readonly __errorTags?: readonly string[];
 }

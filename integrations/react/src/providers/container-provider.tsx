@@ -36,8 +36,8 @@ import { toRuntimeContainerRef } from "../internal/runtime-refs.js";
 type AnyContainer<TProvides extends Port<string, unknown>> = {
   resolve<P extends TProvides>(port: P): InferService<P>;
   resolveAsync<P extends TProvides>(port: P): Promise<InferService<P>>;
-  createScope(): Scope<TProvides, Port<string, unknown>, ContainerPhase>;
-  dispose(): Promise<void>;
+  createScope(name?: string): Scope<TProvides, Port<string, unknown>, ContainerPhase, "active">;
+  dispose(): Promise<unknown>;
   has(port: Port<string, unknown>): boolean;
   readonly isDisposed: boolean;
   readonly isInitialized: boolean;

@@ -1,0 +1,87 @@
+entity: component
+id: CMP-016-message-entry-list
+name: "Message Entry List"
+docs: ./message-entry-list.md
+tests: ./message-entry-list.feature
+
+props:
+  - name: "messages"
+    type: array
+    required: true
+    description: "Array of AgentMessageView objects in chronological order"
+
+types:
+  AgentMessageView:
+    messageId: string
+    agentRole: "'spec-author' | 'gxp-reviewer' | 'test-designer' | 'architect' | 'validator' | 'code-reviewer' | 'domain-expert' | 'orchestrator'"
+    content: string
+    timestamp: number
+    messageType: "'finding' | 'clarification' | 'broadcast'"
+    severity: "'critical' | 'major' | 'minor' | 'observation'"
+    phase: string
+
+children:
+  - $ref: ELM-057-session-message-card
+  - $ref: ELM-058-agent-role-badge
+  - $ref: ELM-059-severity-indicator
+  - $ref: ELM-060-message-type-icon
+  - $ref: ELM-061-phase-tag
+  - $ref: ELM-062-preset-button
+
+stores:
+  - $ref: STR-009-acp-session-store
+    binds:
+      - selector: "messages"
+        to: "messages"
+      - selector: "criticalCount"
+        to: "criticalCount"
+  - $ref: STR-001-filter-store
+    binds:
+      - selector: "acpSession.agentRole"
+        to: "agentRoleFilter"
+      - selector: "acpSession.messageTypes"
+        to: "messageTypeFilter"
+      - selector: "acpSession.severities"
+        to: "severityFilter"
+      - selector: "acpSession.phase"
+        to: "phaseFilter"
+      - selector: "acpSession.search"
+        to: "searchFilter"
+      - selector: "acpSession.preset"
+        to: "activePreset"
+
+layout:
+  display: flex
+  flex-direction: column
+  gap: 8px
+  width: 100%
+  overflow-y: auto
+
+presets:
+  - name: "Open Critical"
+    id: "open-critical"
+    filters:
+      severities: ["critical"]
+  - name: "GxP Issues"
+    id: "gxp-issues"
+    filters:
+      agentRole: "gxp-reviewer"
+  - name: "Unresolved Clarifications"
+    id: "unresolved-clarifications"
+    filters:
+      messageTypes: ["clarification"]
+  - name: "Current Phase"
+    id: "current-phase"
+    filters:
+      phase: "{activePhase}"
+
+empty-state:
+  text: "No messages match current filters."
+  color: "var(--sf-text-muted)"
+  font-size: 13px
+  text-align: center
+  padding: 32px
+
+accessibility:
+  role: "feed"
+  label: "Session messages"

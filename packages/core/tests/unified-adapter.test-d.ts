@@ -140,6 +140,7 @@ describe("unified createAdapter - factory variant with explicit values", () => {
       requires: [LoggerPort],
       lifetime: "singleton",
       clonable: false,
+      freeze: true,
       factory: deps => ({
         query: async () => {
           deps.Logger.log("query");
@@ -167,6 +168,7 @@ describe("unified createAdapter - factory variant with explicit values", () => {
     const adapter = createAdapter({
       provides: LoggerPort,
       clonable: true,
+      freeze: true,
       factory: () => ({ log: () => {} }),
     });
 
@@ -180,6 +182,7 @@ describe("unified createAdapter - factory variant with explicit values", () => {
       requires: [DatabasePort, LoggerPort],
       lifetime: "singleton",
       clonable: false,
+      freeze: true,
       factory: deps => ({
         getUser: async (id: string) => {
           deps.Logger.log(`Getting user ${id}`);
@@ -397,6 +400,7 @@ describe("unified createAdapter - class variant with explicit values", () => {
     const adapter = createAdapter({
       provides: LoggerPort,
       clonable: true,
+      freeze: true,
       class: ConsoleLogger,
     });
 
@@ -571,6 +575,7 @@ describe("unified createAdapter - optional requires with explicit options", () =
       const adapter = createAdapter({
         provides: LoggerPort,
         clonable: true,
+        freeze: true,
         factory: () => ({ log: () => {} }),
       });
 
@@ -584,6 +589,7 @@ describe("unified createAdapter - optional requires with explicit options", () =
         provides: LoggerPort,
         lifetime: "transient",
         clonable: true,
+        freeze: true,
         factory: () => ({ log: () => {} }),
       });
 
@@ -616,6 +622,7 @@ describe("unified createAdapter - optional requires with explicit options", () =
         provides: DatabasePort,
         requires: [LoggerPort],
         clonable: true,
+        freeze: true,
         factory: deps => ({
           query: async () => {
             deps.Logger.log("query");
@@ -647,6 +654,7 @@ describe("unified createAdapter - optional requires with explicit options", () =
       const adapter = createAdapter({
         provides: LoggerPort,
         clonable: true,
+        freeze: true,
         class: ConsoleLogger,
       });
 
@@ -660,6 +668,7 @@ describe("unified createAdapter - optional requires with explicit options", () =
         provides: LoggerPort,
         lifetime: "transient",
         clonable: true,
+        freeze: true,
         class: ConsoleLogger,
       });
 
@@ -687,6 +696,7 @@ describe("unified createAdapter - optional requires with explicit options", () =
         provides: DatabasePort,
         requires: [LoggerPort],
         clonable: true,
+        freeze: true,
         class: PostgresDatabase,
       });
 

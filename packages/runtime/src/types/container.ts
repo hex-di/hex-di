@@ -7,7 +7,13 @@
  * @packageDocumentation
  */
 
-import type { Port, InferService, InspectorAPI, AdapterConstraint } from "@hex-di/core";
+import type {
+  Port,
+  InferService,
+  InspectorAPI,
+  AdapterConstraint,
+  DisposalPhase,
+} from "@hex-di/core";
 import type { Result, ResultAsync } from "@hex-di/result";
 import type { ContainerError, DisposalError } from "../errors/index.js";
 import type { Graph, InferGraphProvides, InferGraphAsyncPorts } from "@hex-di/graph";
@@ -33,108 +39,36 @@ import type { ValidateOverrideAdapter } from "./override-types.js";
  * - Child containers: `TExtends` is a port union (has `parent`, no `initialize()`)
  *
  * @typeParam TProvides - Union of Port types available from the container's graph or parent container.
- *   For root containers, this comes from the Graph type (`InferGraphProvides<TGraph>`).
- *   For child containers, this represents the effective provides union from the parent
- *   (`ParentProvides | ParentExtends`). This type parameter determines which ports can
- *   be passed to `resolve()` and `resolveAsync()`. It's the "base" set of ports before
- *   any extensions are added.
  *
  * @typeParam TExtends - Union of Port types added via child graph extensions or `.override().extend()`.
- *   For root containers, this is always `never` (root containers don't extend, they provide).
- *   For child containers, this represents ports that were added by the child graph but
- *   were not present in the parent. Together with `TProvides`, this forms the complete
- *   set of resolvable ports: `TProvides | TExtends`. This distinction is critical for:
- *   - Type-checking the `parent` property (only exists when `TExtends` is not `never`)
- *   - Type-checking the `initialize()` method (only exists when `TExtends` is `never`)
- *   - Tracking which ports are new vs inherited in child containers
  *
  * @typeParam TAsyncPorts - Union of Port types that have async factory functions.
- *   These ports require special handling before initialization:
- *   - Before `initialize()`: Cannot be resolved synchronously (throws AsyncInitializationRequiredError)
- *   - After `initialize()`: Can be resolved synchronously (cached result from initialization)
- *   This type parameter flows through container creation and child container creation,
- *   accumulating async ports from both parent and child graphs. It's used to narrow
- *   the type of `resolve()` before initialization to exclude async ports.
  *
  * @typeParam TPhase - The initialization phase: `'uninitialized' | 'initialized'`.
- *   This type-state parameter tracks whether async initialization has completed:
- *   - `'uninitialized'`: Fresh container, `initialize()` available (root only), sync resolve limited
- *   - `'initialized'`: After calling `initialize()`, all ports resolvable synchronously
- *   Child containers inherit their parent's phase at creation time and cannot change it.
- *   This enables compile-time enforcement of async initialization requirements, preventing
- *   runtime errors from attempting to synchronously resolve uninitialized async ports.
  *
- * @remarks
- * **Nominal Typing via Branding:**
- * The `[ContainerBrand]` property carries `TProvides` and `TExtends` at the type level,
- * making containers with different type parameters structurally incompatible. This prevents
- * accidentally passing a container with the wrong ports to a function.
- *
- * **Resolution Behavior:**
- * - The `resolve` method accepts `TProvides | TExtends` (effective provides union)
- * - Before initialization, only `Exclude<TProvides | TExtends, TAsyncPorts>` is resolvable
- * - After initialization, all `TProvides | TExtends` ports are resolvable synchronously
- * - `resolveAsync` always accepts all `TProvides | TExtends` regardless of phase
- *
- * **Root vs Child Containers:**
- * The type system uses `TExtends` to distinguish container kinds:
- * - `[TExtends] extends [never]`: Root container (has `initialize()`, no `parent`)
- * - `TExtends` is a port union: Child container (has `parent`, no `initialize()`)
- * Note the `[T] extends [never]` syntax prevents conditional type distribution over `never`.
- *
- * **Initialization Phase Flow:**
- * Root containers start as `'uninitialized'` and transition to `'initialized'` via `initialize()`.
- * Child containers inherit their parent's phase at creation and cannot change it independently.
- * This means child containers created before parent initialization may have limited sync access
- * to async ports until the root ancestor is initialized.
+ * @typeParam TDisposal - The disposal phase: `'active' | 'disposed'`.
+ *   This phantom type parameter tracks whether the container has been disposed.
+ *   When `"active"` (default), all resolution and scope creation methods are available.
+ *   When `"disposed"`, those methods are absent from the type — calling them is a type error.
+ *   `dispose()` returns `Promise<Container<..., "disposed">>` to enable type-safe
+ *   tracking of the disposal state transition.
  *
  * @see {@link Scope} - Child scope type with identical resolution API but separate brand
  * @see {@link createContainer} - Factory function to create root container instances
- * @see {@link Container.createChild} - Creates child containers from a Graph
- *
- * @example Root container with type parameters
- * ```typescript
- * // Root container type has TExtends = never
- * const container = createContainer(graph);
- * // Type: Container<LoggerPort | DatabasePort, never, DatabasePort, 'uninitialized'>
- * //                ^- TProvides from graph  ^- no extensions  ^- DB is async  ^- not initialized
- *
- * const logger = container.resolve(LoggerPort);  // OK: sync port
- * // container.resolve(DatabasePort);            // ERROR: async port, not initialized
- *
- * await container.initialize(); // Transition to 'initialized' phase
- * // Type now: Container<LoggerPort | DatabasePort, never, DatabasePort, 'initialized'>
- * const db = container.resolve(DatabasePort);    // OK: async port, now initialized
- * ```
- *
- * @example Child container with extensions
- * ```typescript
- * const child = container.createChild(
- *   GraphBuilder.create()
- *     .override(MockLoggerAdapter)   // Override parent's logger
- *     .provide(CacheAdapter)         // Add new cache port
- *     .build()
- * );
- * // Type: Container<LoggerPort | DatabasePort, CachePort, DatabasePort, 'initialized'>
- * //                ^- inherited provides       ^- new port   ^- inherited async  ^- inherited phase
- *
- * child.parent; // Container<LoggerPort | DatabasePort, never, ...>
- * // child.initialize() - Not available (TExtends is not never)
- *
- * const cache = child.resolve(CachePort);  // OK: from TExtends
- * const logger = child.resolve(LoggerPort); // OK: from TProvides (overridden)
- * ```
  */
 export type Container<
   TProvides extends Port<string, unknown>,
   TExtends extends Port<string, unknown> = never,
   TAsyncPorts extends Port<string, unknown> = never,
   TPhase extends ContainerPhase = "uninitialized",
-> = ContainerMembers<TProvides, TExtends, TAsyncPorts, TPhase>;
+  TDisposal extends DisposalPhase = "active",
+> = TDisposal extends "active"
+  ? ActiveContainerMembers<TProvides, TExtends, TAsyncPorts, TPhase>
+  : DisposedContainerMembers<TProvides, TExtends, TAsyncPorts, TPhase>;
 
 /**
- * Internal type containing Container method definitions.
- * Exported for use in factory.ts where container objects are created.
+ * Alias for the full ContainerMembers type — represents an active (non-disposed) container.
+ * This is the primary type used in factory/wrapper code.
  * @internal
  */
 export type ContainerMembers<
@@ -142,26 +76,86 @@ export type ContainerMembers<
   TExtends extends Port<string, unknown>,
   TAsyncPorts extends Port<string, unknown>,
   TPhase extends ContainerPhase,
+  TDisposal extends DisposalPhase = "active",
+> = TDisposal extends "active"
+  ? ActiveContainerMembers<TProvides, TExtends, TAsyncPorts, TPhase>
+  : DisposedContainerMembers<TProvides, TExtends, TAsyncPorts, TPhase>;
+
+// =============================================================================
+// Base Container Properties (shared by active and disposed containers)
+// =============================================================================
+
+/**
+ * Properties available on all containers regardless of disposal state.
+ * @internal
+ */
+type ContainerBase<
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
+  TPhase extends ContainerPhase,
 > = {
+  /** Whether the container has been initialized. */
+  readonly isInitialized: boolean;
+
+  /** Whether the container has been disposed. */
+  readonly isDisposed: boolean;
+
+  /** Checks if the container can resolve the given port. */
+  has(port: Port<string, unknown>): boolean;
+
+  /** Container name. */
+  readonly name: string;
+
+  /** Parent container's name, null for root containers. */
+  readonly parentName: string | null;
+
+  /** Container kind. */
+  readonly kind: ContainerKind;
+
+  /**
+   * Reference to the parent container.
+   * Only available on child containers (when TExtends is not never).
+   */
+  // NOTE: Using [T] extends [never] to prevent distribution over the never type.
+  readonly parent: [TExtends] extends [never]
+    ? never
+    : Container<TProvides, Port<string, unknown>, TAsyncPorts, TPhase>;
+
+  /** Inspector API for container state inspection and DevTools integration. */
+  readonly inspector: InspectorAPI;
+
+  /** Adds a resolution hook to this container. */
+  addHook<T extends HookType>(type: T, handler: HookHandler<T>): void;
+
+  /** Removes a previously installed resolution hook. */
+  removeHook<T extends HookType>(type: T, handler: HookHandler<T>): void;
+
+  /** Brand property for nominal typing. */
+  readonly [ContainerBrand]: { provides: TProvides; extends: TExtends };
+
+  /** Internal state accessor for DevTools inspection. @internal */
+  readonly [INTERNAL_ACCESS]: () => ContainerInternalState;
+};
+
+// =============================================================================
+// Active Container Members (TDisposal = "active")
+// =============================================================================
+
+/**
+ * Container interface when the container is active (not disposed).
+ * All resolution, scope creation, disposal, and override methods are available.
+ * @internal
+ */
+export type ActiveContainerMembers<
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
+  TPhase extends ContainerPhase,
+> = ContainerBase<TProvides, TExtends, TAsyncPorts, TPhase> & {
   /**
    * Resolves a service instance for the given port synchronously.
-   *
-   * The port must be in `TProvides | TExtends` union, enforced at compile time.
-   * The return type is inferred from the port's phantom service type.
-   *
-   * **Phase-dependent behavior:**
-   * - Before initialization: Only non-async ports can be resolved
-   * - After initialization: All ports can be resolved
-   *
-   * @typeParam P - The specific port type being resolved
-   * @param port - The port token to resolve
-   * @returns The service instance for the given port
-   *
-   * @throws {DisposedScopeError} If the container has been disposed
-   * @throws {ScopeRequiredError} If resolving a scoped port from root container
-   * @throws {CircularDependencyError} If a circular dependency is detected
-   * @throws {FactoryError} If the adapter's factory function throws
-   * @throws {AsyncInitializationRequiredError} If resolving an async port before initialization
+   * Phase-dependent: before initialization, only non-async ports can be resolved.
    */
   resolve<
     P extends TPhase extends "initialized"
@@ -171,33 +165,10 @@ export type ContainerMembers<
     port: P
   ): InferService<P>;
 
-  /**
-   * Resolves a service instance for the given port asynchronously.
-   *
-   * The port must be in `TProvides | TExtends` union, enforced at compile time.
-   * This method can resolve any port regardless of whether it has an async factory.
-   *
-   * @typeParam P - The specific port type being resolved
-   * @param port - The port token to resolve
-   * @returns A promise that resolves to the service instance
-   *
-   * @throws {DisposedScopeError} If the container has been disposed
-   * @throws {ScopeRequiredError} If resolving a scoped port from root container
-   * @throws {CircularDependencyError} If a circular dependency is detected
-   * @throws {AsyncFactoryError} If the async factory function throws
-   */
+  /** Resolves a service instance for the given port asynchronously. */
   resolveAsync<P extends TProvides | TExtends>(port: P): Promise<InferService<P>>;
 
-  /**
-   * Resolves a service instance, returning a Result instead of throwing.
-   *
-   * Same port constraints as `resolve()` - phase-dependent for async ports.
-   * Returns `Ok(service)` on success, `Err(ContainerError)` on failure.
-   *
-   * @typeParam P - The specific port type being resolved
-   * @param port - The port token to resolve
-   * @returns A Result containing the service instance or a ContainerError
-   */
+  /** Resolves a service instance, returning a Result instead of throwing. */
   tryResolve<
     P extends TPhase extends "initialized"
       ? TProvides | TExtends
@@ -206,112 +177,43 @@ export type ContainerMembers<
     port: P
   ): Result<InferService<P>, ContainerError>;
 
-  /**
-   * Resolves a service instance asynchronously, returning a ResultAsync instead of throwing.
-   *
-   * Same port constraints as `resolveAsync()`.
-   * Returns `Ok(service)` on success, `Err(ContainerError)` on failure.
-   *
-   * @typeParam P - The specific port type being resolved
-   * @param port - The port token to resolve
-   * @returns A ResultAsync containing the service instance or a ContainerError
-   */
+  /** Resolves a service instance asynchronously, returning a ResultAsync. */
   tryResolveAsync<P extends TProvides | TExtends>(
     port: P
   ): ResultAsync<InferService<P>, ContainerError>;
 
-  /**
-   * Disposes the container, returning a ResultAsync instead of throwing.
-   *
-   * Returns `Ok(void)` on clean disposal, `Err(DisposalError)` if finalizers threw.
-   *
-   * @returns A ResultAsync that resolves to void or a DisposalError
-   */
+  /** Disposes the container, returning a ResultAsync instead of throwing. */
   tryDispose(): ResultAsync<void, DisposalError>;
 
   /**
-   * Initializes all async ports, returning a ResultAsync instead of throwing.
-   *
-   * **Only available on root containers** (when `TExtends extends never`).
-   * Same constraints as `initialize` — only on root, uninitialized containers.
-   * Returns `Ok(initializedContainer)` on success, `Err(ContainerError)` on failure.
-   *
-   * @returns A ResultAsync containing the initialized container or a ContainerError
+   * Initializes all async ports, returning a ResultAsync.
+   * Only available on root containers.
    */
   // NOTE: Using [T] extends [never] to prevent distribution over the never type.
   tryInitialize: [TExtends] extends [never]
     ? TPhase extends "uninitialized"
-      ? () => ResultAsync<Container<TProvides, never, TAsyncPorts, "initialized">, ContainerError>
+      ? () => ResultAsync<
+          Container<TProvides, never, TAsyncPorts, "initialized", "active">,
+          ContainerError
+        >
       : never
     : never;
 
   /**
    * Initializes all async ports in priority order.
-   *
-   * **Only available on root containers** (when `TExtends extends never`).
-   * Child containers inherit initialization state from their parent.
-   *
-   * This method resolves all ports with async factories, caching the results.
-   * After initialization, sync resolve works for all ports including async ones.
-   *
-   * @returns A promise that resolves to an initialized container
-   *
-   * @throws {DisposedScopeError} If the container has been disposed
-   * @throws {AsyncFactoryError} If any async factory throws
+   * Only available on root containers.
    */
   // NOTE: Using [T] extends [never] to prevent distribution over the never type.
-  // Plain `T extends never` returns never when T=never due to conditional type distribution.
   initialize: [TExtends] extends [never]
     ? TPhase extends "uninitialized"
-      ? () => Promise<Container<TProvides, never, TAsyncPorts, "initialized">>
+      ? () => Promise<Container<TProvides, never, TAsyncPorts, "initialized", "active">>
       : never
     : never;
 
-  /**
-   * Whether the container has been initialized.
-   *
-   * After initialization, all ports can be resolved synchronously.
-   * Child containers inherit this state from their root ancestor.
-   */
-  readonly isInitialized: boolean;
+  /** Creates a child scope for managing scoped service lifetimes. */
+  createScope(name?: string): Scope<TProvides | TExtends, TAsyncPorts, TPhase, "active">;
 
-  /**
-   * Creates a child scope for managing scoped service lifetimes.
-   *
-   * Scoped services are created once per scope and shared within that scope.
-   * The returned scope has the effective provides (`TProvides | TExtends`).
-   *
-   * @param name - Optional custom name for the scope (for DevTools identification)
-   * @returns A new Scope instance
-   */
-  createScope(name?: string): Scope<TProvides | TExtends, TAsyncPorts, TPhase>;
-
-  /**
-   * Creates a child container from a child graph.
-   *
-   * Child containers can:
-   * - Override parent adapters using `GraphBuilder.override()`
-   * - Add new adapters using `GraphBuilder.provide()`
-   * - Configure singleton inheritance modes (shared, forked, isolated)
-   *
-   * @typeParam TChildGraph - The child graph type
-   * @param childGraph - Graph built with GraphBuilder, using override() for replacements
-   * @param inheritanceModes - Optional per-port inheritance mode configuration
-   * @returns A new child Container instance
-   *
-   * @example
-   * ```typescript
-   * const childGraph = GraphBuilder.create()
-   *   .override(MockLoggerAdapter)  // Override parent's Logger
-   *   .provide(CacheAdapter)        // Add new Cache port
-   *   .build();
-   *
-   * const child = container.createChild(childGraph, { name: "Feature" });
-   * child.name       // "Feature"
-   * child.parentName // parent's name (auto-derived)
-   * child.kind       // "child"
-   * ```
-   */
+  /** Creates a child container from a child graph. */
   createChild<
     TChildGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>,
   >(
@@ -321,32 +223,11 @@ export type ContainerMembers<
     TProvides | TExtends,
     Exclude<InferGraphProvides<TChildGraph>, TProvides | TExtends>,
     TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
-    "initialized"
+    "initialized",
+    "active"
   >;
 
-  /**
-   * Creates a child container asynchronously from a graph loader.
-   *
-   * Use this method when the child graph is loaded via dynamic import
-   * for code-splitting. The returned Promise resolves to a normal Container
-   * that can be used synchronously.
-   *
-   * @typeParam TChildGraph - The child graph type
-   * @param graphLoader - Async function that returns the child graph
-   * @param options - Container options including id, label, and optional inheritanceModes
-   * @returns A Promise that resolves to the child container
-   *
-   * @example
-   * ```typescript
-   * const pluginContainer = await container.createChildAsync(
-   *   () => import('./plugin-graph').then(m => m.PluginGraph),
-   *   { name: "Plugin Container" }
-   * );
-   *
-   * // Use like a normal container
-   * const service = pluginContainer.resolve(PluginPort);
-   * ```
-   */
+  /** Creates a child container asynchronously from a graph loader. */
   createChildAsync<
     TChildGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>,
   >(
@@ -357,37 +238,12 @@ export type ContainerMembers<
       TProvides | TExtends,
       Exclude<InferGraphProvides<TChildGraph>, TProvides | TExtends>,
       TAsyncPorts | InferGraphAsyncPorts<TChildGraph>,
-      "initialized"
+      "initialized",
+      "active"
     >
   >;
 
-  /**
-   * Creates a lazy-loading child container wrapper.
-   *
-   * The graph is not loaded until the first call to `resolve()` or `load()`.
-   * Use this for optional features that may never be accessed, maximizing
-   * code-splitting benefits.
-   *
-   * @typeParam TChildGraph - The child graph type
-   * @param graphLoader - Async function that returns the child graph
-   * @param options - Container options including id, label, and optional inheritanceModes
-   * @returns A LazyContainer that loads on first use
-   *
-   * @example
-   * ```typescript
-   * const lazyPlugin = container.createLazyChild(
-   *   () => import('./plugin-graph').then(m => m.PluginGraph),
-   *   { name: "Plugin Container" }
-   * );
-   *
-   * // Graph not loaded yet
-   * console.log(lazyPlugin.isLoaded); // false
-   *
-   * // Graph loaded on first resolve
-   * const service = await lazyPlugin.resolve(PluginPort);
-   * console.log(lazyPlugin.isLoaded); // true
-   * ```
-   */
+  /** Creates a lazy-loading child container wrapper. */
   createLazyChild<
     TChildGraph extends Graph<Port<string, unknown>, Port<string, unknown>, Port<string, unknown>>,
   >(
@@ -401,192 +257,34 @@ export type ContainerMembers<
 
   /**
    * Disposes the container and all singleton instances.
-   *
-   * After disposal, the container cannot be used to resolve services.
-   * Finalizers are called in LIFO order (last created first disposed).
-   * Child containers and scopes are disposed first.
-   *
-   * @returns A promise that resolves when disposal is complete
+   * Returns a promise that resolves to the container typed as disposed.
    */
-  dispose(): Promise<void>;
+  dispose(): Promise<Container<TProvides, TExtends, TAsyncPorts, TPhase, "disposed">>;
 
-  /**
-   * Whether the container has been disposed.
-   *
-   * After disposal, resolve() will throw DisposedScopeError.
-   * This property can be used to check if the container is still usable.
-   */
-  readonly isDisposed: boolean;
-
-  /**
-   * Checks if the container can resolve the given port.
-   *
-   * @param port - The port token to check
-   * @returns true if the port is provided by this container or its parent
-   */
-  has(port: Port<string, unknown>): boolean;
-
-  /**
-   * Container name - serves as both identifier and display label.
-   *
-   * Set via `createContainer(graph, { name })` or `createChild(graph, { name })`.
-   */
-  readonly name: string;
-
-  /**
-   * Parent container's name, null for root containers.
-   *
-   * For child containers, this is automatically derived from `parent.name`
-   * at creation time.
-   */
-  readonly parentName: string | null;
-
-  /**
-   * Container kind - "root" for root containers, "child" for child containers.
-   */
-  readonly kind: ContainerKind;
-
-  /**
-   * Reference to the parent container.
-   *
-   * **Only available on child containers** (when `TExtends` is not `never`).
-   * Root containers do not have a parent.
-   */
-  // NOTE: Using [T] extends [never] to prevent distribution over the never type.
-  readonly parent: [TExtends] extends [never]
-    ? never
-    : Container<TProvides, Port<string, unknown>, TAsyncPorts, TPhase>;
-
-  // =========================================================================
-  // Built-in Plugin APIs (always present, zero ceremony access)
-  // =========================================================================
-
-  /**
-   * Inspector API for container state inspection and DevTools integration.
-   *
-   * Provides pull-based queries for container state, scope trees, and port resolution status.
-   * Always available on containers - no plugin configuration or symbol imports required.
-   *
-   * @example
-   * ```typescript
-   * const container = createContainer({ graph: graph, name: "App"  });
-   *
-   * // Direct property access - maximum discoverability
-   * const snapshot = container.inspector.getSnapshot();
-   * const ports = container.inspector.listPorts();
-   * const kind = container.inspector.getContainerKind();
-   * ```
-   */
-  readonly inspector: InspectorAPI;
-
-  // =========================================================================
-  // Hook Management API
-  // =========================================================================
-
-  /**
-   * Adds a resolution hook to this container.
-   *
-   * Hooks are called during service resolution:
-   * - `beforeResolve`: Called before resolving, receives port name and lifetime
-   * - `afterResolve`: Called after resolving, receives result and duration
-   *
-   * Multiple hooks can be installed. beforeResolve hooks fire in installation order,
-   * afterResolve hooks fire in reverse order (middleware pattern).
-   *
-   * @param type - The hook type: 'beforeResolve' or 'afterResolve'
-   * @param handler - The hook handler function
-   *
-   * @example
-   * ```typescript
-   * container.addHook('beforeResolve', (ctx) => {
-   *   console.log(`Resolving ${ctx.portName}`);
-   * });
-   *
-   * container.addHook('afterResolve', (ctx) => {
-   *   console.log(`Resolved ${ctx.portName} in ${ctx.duration}ms`);
-   * });
-   * ```
-   */
-  addHook<T extends HookType>(type: T, handler: HookHandler<T>): void;
-
-  /**
-   * Removes a previously installed resolution hook.
-   *
-   * The handler must be the same function reference that was passed to addHook.
-   * If the handler was not installed, this is a no-op.
-   *
-   * @param type - The hook type: 'beforeResolve' or 'afterResolve'
-   * @param handler - The hook handler function to remove
-   *
-   * @example
-   * ```typescript
-   * const handler = (ctx) => console.log(ctx.portName);
-   * container.addHook('beforeResolve', handler);
-   * // Later...
-   * container.removeHook('beforeResolve', handler);
-   * ```
-   */
-  removeHook<T extends HookType>(type: T, handler: HookHandler<T>): void;
-
-  // =========================================================================
-  // Override API (Type-Safe Container Overrides)
-  // =========================================================================
-
-  /**
-   * Creates an override builder for type-safe container overrides.
-   *
-   * The override builder provides a fluent API for creating child containers
-   * with overridden adapters. Each `.override()` call is validated at compile
-   * time to ensure:
-   * 1. The adapter's port exists in this container's graph
-   * 2. The adapter's dependencies are satisfied
-   *
-   * The `.build()` method creates a child container with the overrides applied.
-   *
-   * @typeParam A - The adapter type to override with
-   * @param adapter - The adapter instance to use as an override
-   * @returns An OverrideBuilder for chaining additional overrides
-   *
-   * @example
-   * ```typescript
-   * // Create a test container with mock services
-   * const testContainer = container
-   *   .override(MockLoggerAdapter)
-   *   .override(MockDatabaseAdapter)
-   *   .build();
-   *
-   * // The mock logger is now used instead of the real one
-   * const logger = testContainer.resolve(LoggerPort);
-   * ```
-   *
-   * @example
-   * ```typescript
-   * // Compile-time error if port doesn't exist
-   * container.override(UnknownAdapter); // ERROR: Port 'Unknown' not found in graph
-   *
-   * // Compile-time error if dependencies missing
-   * container.override(AdapterWithMissingDeps); // ERROR: Missing dependencies
-   * ```
-   */
+  /** Creates an override builder for type-safe container overrides. */
   override<A extends AdapterConstraint>(
     adapter: A
   ): OverrideBuilder<TProvides | TExtends, never, TAsyncPorts, TPhase>;
-
-  /**
-   * Brand property for nominal typing.
-   * Contains the TProvides and TExtends type parameters at the type level.
-   * Value is undefined at runtime.
-   */
-  readonly [ContainerBrand]: { provides: TProvides; extends: TExtends };
-
-  /**
-   * Internal state accessor for DevTools inspection.
-   * Returns a frozen snapshot of the container's internal state.
-   *
-   * @internal Use createInspector() for a higher-level inspection API
-   */
-  readonly [INTERNAL_ACCESS]: () => ContainerInternalState;
 };
+
+// =============================================================================
+// Disposed Container Members (TDisposal = "disposed")
+// =============================================================================
+
+/**
+ * Container interface after disposal.
+ *
+ * Only metadata and inspection properties are available.
+ * Resolution methods, scope creation, and disposal are absent — calling
+ * them on a disposed container is a compile-time type error.
+ * @internal
+ */
+export type DisposedContainerMembers<
+  TProvides extends Port<string, unknown>,
+  TExtends extends Port<string, unknown>,
+  TAsyncPorts extends Port<string, unknown>,
+  TPhase extends ContainerPhase,
+> = ContainerBase<TProvides, TExtends, TAsyncPorts, TPhase>;
 
 // =============================================================================
 // Override Builder Type
@@ -594,13 +292,6 @@ export type ContainerMembers<
 
 /**
  * Public interface for the override builder.
- *
- * Defined here alongside Container because they are mutually recursive:
- * Container.override() returns OverrideBuilder, and OverrideBuilder.build()
- * returns Container. Co-locating them avoids a circular module dependency.
- *
- * The OverrideBuilder class in container/override-builder.ts structurally
- * matches this interface.
  *
  * @typeParam TProvides - Union of port types provided by the base graph
  * @typeParam TOverrides - Union of port types that have been overridden
@@ -613,25 +304,15 @@ export interface OverrideBuilder<
   TAsyncPorts extends Port<string, unknown> = never,
   TPhase extends ContainerPhase = "initialized",
 > {
-  /**
-   * Adds an adapter override to the builder.
-   *
-   * Returns a new OverrideBuilder instance with the adapter added.
-   * Validates at compile time that the adapter's port exists in the graph.
-   */
+  /** Adds an adapter override to the builder. */
   override<A extends AdapterConstraint>(
     adapter: A
   ): ValidateOverrideAdapter<TProvides, A> extends AdapterConstraint
     ? OverrideBuilder<TProvides, TOverrides, TAsyncPorts, TPhase>
     : ValidateOverrideAdapter<TProvides, A>;
 
-  /**
-   * Builds the child container with accumulated overrides.
-   *
-   * Creates a child container that inherits all parent ports but resolves
-   * overridden ports using the provided adapters.
-   */
-  build(): Container<TProvides, never, TAsyncPorts, "initialized">;
+  /** Builds the child container with accumulated overrides. */
+  build(): Container<TProvides, never, TAsyncPorts, "initialized", "active">;
 }
 
 // =============================================================================
@@ -641,27 +322,9 @@ export interface OverrideBuilder<
 /**
  * A lazy-loading container wrapper that defers graph loading until first use.
  *
- * LazyContainer is returned by `container.createLazyChild()` and enables
- * code-splitting for dependency injection graphs. The graph is loaded
- * asynchronously on the first call to `resolve()` or `load()`.
- *
- * Defined here alongside Container because they are mutually recursive:
- * Container.createLazyChild() returns LazyContainer, and LazyContainer.load()
- * returns Container.
- *
  * @typeParam TProvides - Union of Port types inherited from the parent container.
  * @typeParam TExtends - Union of Port types added by the lazy-loaded graph.
  * @typeParam TAsyncPorts - Union of Port types that have async factories.
- *
- * @remarks
- * - All resolution methods return Promises since graph loading is async
- * - `load()` can be called to pre-load the graph before resolution
- * - `has()` delegates to parent before loading, includes child graph ports after
- * - Concurrent `load()` calls share the same loading promise (deduplication)
- * - Disposing before load completes marks as disposed without error
- *
- * @see {@link Container.createLazyChild} - Factory method that creates LazyContainer
- * @see {@link Container.createChildAsync} - Alternative that returns Promise<Container>
  */
 export type LazyContainer<
   TProvides extends Port<string, unknown>,
@@ -678,111 +341,35 @@ type LazyContainerMembers<
   TExtends extends Port<string, unknown>,
   TAsyncPorts extends Port<string, unknown>,
 > = {
-  /**
-   * Resolves a service instance for the given port asynchronously.
-   *
-   * On first call, loads the graph and creates the child container.
-   * Subsequent calls use the cached container for resolution.
-   *
-   * @typeParam P - The specific port type being resolved
-   * @param port - The port token to resolve
-   * @returns A promise that resolves to the service instance
-   *
-   * @throws {DisposedScopeError} If the lazy container has been disposed
-   * @throws {CircularDependencyError} If a circular dependency is detected
-   * @throws {FactoryError} If the adapter's factory function throws
-   */
+  /** Resolves a service instance for the given port asynchronously. */
   resolve<P extends TProvides | TExtends>(port: P): Promise<InferService<P>>;
 
-  /**
-   * Resolves a service instance for the given port asynchronously.
-   *
-   * Alias for `resolve()` - both methods behave identically since
-   * graph loading is inherently asynchronous.
-   *
-   * @typeParam P - The specific port type being resolved
-   * @param port - The port token to resolve
-   * @returns A promise that resolves to the service instance
-   */
+  /** Resolves a service instance for the given port asynchronously. Alias for resolve(). */
   resolveAsync<P extends TProvides | TExtends>(port: P): Promise<InferService<P>>;
 
-  /**
-   * Resolves a service instance, returning a ResultAsync instead of throwing.
-   *
-   * Returns `Ok(service)` on success, `Err(ContainerError)` on failure.
-   * Always returns ResultAsync since graph loading is inherently asynchronous.
-   *
-   * @typeParam P - The specific port type being resolved
-   * @param port - The port token to resolve
-   * @returns A ResultAsync containing the service instance or a ContainerError
-   */
+  /** Resolves a service instance, returning a ResultAsync instead of throwing. */
   tryResolve<P extends TProvides | TExtends>(port: P): ResultAsync<InferService<P>, ContainerError>;
 
-  /**
-   * Resolves a service instance asynchronously, returning a ResultAsync instead of throwing.
-   *
-   * Alias for `tryResolve()` since both methods are async.
-   *
-   * @typeParam P - The specific port type being resolved
-   * @param port - The port token to resolve
-   * @returns A ResultAsync containing the service instance or a ContainerError
-   */
+  /** Resolves a service instance asynchronously, returning a ResultAsync. */
   tryResolveAsync<P extends TProvides | TExtends>(
     port: P
   ): ResultAsync<InferService<P>, ContainerError>;
 
-  /**
-   * Disposes the lazy container, returning a ResultAsync instead of throwing.
-   *
-   * Returns `Ok(void)` on clean disposal, `Err(DisposalError)` if finalizers threw.
-   *
-   * @returns A ResultAsync that resolves to void or a DisposalError
-   */
+  /** Disposes the lazy container, returning a ResultAsync instead of throwing. */
   tryDispose(): ResultAsync<void, DisposalError>;
 
-  /**
-   * Explicitly loads the graph and returns the underlying container.
-   *
-   * Use this method to pre-load the graph in the background, access the sync
-   * container API after loading, or control when loading occurs.
-   *
-   * Concurrent calls share the same loading promise (deduplication).
-   *
-   * @returns A promise that resolves to the loaded child container
-   *
-   * @throws {DisposedScopeError} If the lazy container has been disposed
-   */
-  load(): Promise<Container<TProvides, TExtends, TAsyncPorts, "initialized">>;
+  /** Explicitly loads the graph and returns the underlying container. */
+  load(): Promise<Container<TProvides, TExtends, TAsyncPorts, "initialized", "active">>;
 
-  /**
-   * Whether the graph has been loaded and the container is ready.
-   */
+  /** Whether the graph has been loaded and the container is ready. */
   readonly isLoaded: boolean;
 
-  /**
-   * Whether the lazy container has been disposed.
-   */
+  /** Whether the lazy container has been disposed. */
   readonly isDisposed: boolean;
 
-  /**
-   * Checks if a port is available for resolution.
-   *
-   * Before loading: Delegates to parent container.
-   * After loading: Includes both parent and child graph ports.
-   *
-   * @param port - The port token to check
-   * @returns true if the port can be resolved
-   */
+  /** Checks if a port is available for resolution. */
   has(port: Port<string, unknown>): boolean;
 
-  /**
-   * Disposes the lazy container.
-   *
-   * If the graph is loaded, disposes the underlying child container.
-   * If loading is in progress, waits for load completion then disposes.
-   * If not yet loaded, marks as disposed without loading.
-   *
-   * @returns A promise that resolves when disposal is complete
-   */
+  /** Disposes the lazy container. */
   dispose(): Promise<void>;
 };

@@ -1,0 +1,62 @@
+entity: event
+id: EVT-021-search-query-changed
+name: "Search Query Changed"
+docs: ./search.md
+tests: ./search.feature
+
+payload:
+  - name: "query"
+    type: string
+    required: true
+    description: "The current search query text"
+  - name: "selectedIndex"
+    type: number
+    required: false
+    description: "Optional selected index for keyboard navigation"
+
+target-stores:
+  - $ref: STR-012-search-store
+
+side-effects: []
+
+---
+entity: event
+id: EVT-022-search-result-selected
+name: "Search Result Selected"
+docs: ./search.md
+tests: ./search.feature
+
+payload:
+  - name: "resultId"
+    type: string
+    required: true
+    description: "ID of the selected search result"
+  - name: "resultType"
+    type: string
+    required: true
+    description: "Category of the result (e.g., 'sessions', 'specs', 'tasks', 'messages', 'graph-nodes')"
+  - name: "viewId"
+    type: string
+    required: true
+    description: "Target view to navigate to"
+
+target-stores:
+  - $ref: STR-012-search-store
+
+side-effects:
+  - type: navigation
+    description: "Navigate to the target view via EVT-001-view-changed"
+
+---
+entity: event
+id: EVT-023-search-closed
+name: "Search Closed"
+docs: ./search.md
+tests: ./search.feature
+
+payload: []
+
+target-stores:
+  - $ref: STR-012-search-store
+
+side-effects: []

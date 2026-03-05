@@ -1,0 +1,82 @@
+entity: component
+id: CMP-014-dag-list
+name: "DAG List"
+docs: ./dag-list.md
+tests: ./dag-list.feature
+
+props:
+  - name: "groups"
+    type: array
+    itemType: TaskGroupView
+    required: true
+    description: "Array of task groups ordered by dependency topology"
+
+children:
+  - $ref: ELM-049-task-group-card
+  - $ref: ELM-050-task-status-badge
+  - $ref: ELM-051-task-count-indicator
+
+stores:
+  - $ref: STR-007-task-board-store
+    binds:
+      - selector: "groups"
+        to: "groups"
+  - $ref: STR-001-filter-store
+    binds:
+      - selector: "tasks.statuses"
+        to: "filterStatuses"
+      - selector: "tasks.requirementId"
+        to: "filterRequirementId"
+      - selector: "tasks.search"
+        to: "filterSearch"
+
+layout:
+  display: flex
+  flex-direction: column
+  width: 100%
+  gap: 4px
+  padding: "16px"
+  overflow-y: auto
+
+indentation:
+  unit: 24px
+  description: "Each dependency depth level adds 24px of left padding"
+  max-depth: 6
+
+row-layout:
+  display: flex
+  flex-direction: row
+  align-items: center
+  gap: 8px
+  padding: "8px 12px"
+  border-radius: 6px
+  hover-background: "var(--sf-surface-alt)"
+
+requirement-tags:
+  display: "inline-flex"
+  position: "end of row"
+  style:
+    font-size: 11px
+    font-family: "var(--sf-font-mono)"
+    color: "var(--sf-text-muted)"
+    background: "var(--sf-surface-alt)"
+    padding: "2px 6px"
+    border-radius: 3px
+
+dependency-lines:
+  style: "left-aligned vertical and horizontal connector lines"
+  color: "var(--sf-border)"
+  width: 1px
+  description: "Thin lines connecting parent tasks to child tasks at each indent level"
+
+empty-state:
+  message: "No tasks to display."
+  style:
+    color: "var(--sf-text-muted)"
+    text-align: center
+    padding: "48px 0"
+    font-style: italic
+
+accessibility:
+  role: "list"
+  label: "Task dependency list"

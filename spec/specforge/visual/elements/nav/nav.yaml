@@ -1,0 +1,128 @@
+entity: element
+id: ELM-001-nav-button
+name: "Nav Button"
+docs: ./nav.md
+tests: ./nav.feature
+
+type: button
+
+layout:
+  width: 52px
+  height: 52px
+  display: flex
+  flex-direction: column
+  align-items: center
+  justify-content: center
+  gap: 2px
+  cursor: pointer
+
+states:
+  default:
+    color: "var(--sf-text-muted)"
+    background: "transparent"
+  hover:
+    color: "var(--sf-text)"
+    background: "rgba(0, 240, 255, 0.05)"
+  active:
+    color: "var(--sf-accent)"
+    background: "var(--sf-accent-dim)"
+    border-left: "3px solid var(--sf-accent)"
+  disabled:
+    opacity: 0.4
+    pointer-events: none
+
+actions:
+  - trigger: click
+    action: { $ref: ACT-001-navigate-to-view }
+
+accessibility:
+  role: "button"
+  label: "Navigate to {viewName}"
+
+---
+entity: element
+id: ELM-002-nav-icon
+name: "Nav Icon"
+docs: ./nav.md
+tests: ./nav.feature
+
+type: icon
+
+layout:
+  font-size: 20px
+  line-height: 1
+
+states:
+  default:
+    color: inherit
+
+notes: |
+  Unicode icon glyph rendered inside the parent nav button.
+  Color is inherited from the parent ELM-001-nav-button state.
+
+---
+entity: element
+id: ELM-003-nav-label
+name: "Nav Label"
+docs: ./nav.md
+tests: ./nav.feature
+
+type: text
+
+layout:
+  font-size: 9px
+  font-family: "var(--sf-font-body)"
+  line-height: 1.2
+  text-align: center
+  white-space: nowrap
+
+states:
+  default:
+    color: inherit
+
+notes: |
+  Small label text positioned below the icon glyph inside nav button.
+  Color is inherited from the parent ELM-001-nav-button state.
+
+---
+entity: element
+id: ELM-004-nav-search-button
+name: "Nav Search Button"
+docs: ./nav.md
+tests: ./nav.feature
+
+type: button
+
+layout:
+  width: 52px
+  height: 52px
+  display: flex
+  flex-direction: column
+  align-items: center
+  justify-content: center
+  gap: 2px
+  margin-top: auto
+  cursor: pointer
+
+states:
+  default:
+    color: "var(--sf-text-muted)"
+    background: "transparent"
+  hover:
+    color: "var(--sf-text)"
+    background: "rgba(0, 240, 255, 0.05)"
+  active:
+    color: "var(--sf-accent)"
+    background: "var(--sf-accent-dim)"
+
+actions:
+  - trigger: click
+    action: { $ref: ACT-003-open-search }
+
+accessibility:
+  role: "button"
+  label: "Open search (keyboard shortcut: /)"
+
+notes: |
+  Special nav button pinned to the bottom of the nav rail via margin-top: auto.
+  Displays "/" icon. Keyboard shortcut "/" also triggers search overlay.

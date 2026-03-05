@@ -133,7 +133,7 @@ export interface RuntimeResolver {
    *
    * @returns A promise that resolves when disposal is complete
    */
-  readonly dispose: () => Promise<void>;
+  readonly dispose: () => Promise<unknown>;
 
   /**
    * Checks if the resolver can resolve the given port.
@@ -264,7 +264,7 @@ interface ResolverLike {
   resolve(port: Port<string, unknown>): unknown;
   resolveAsync(port: Port<string, unknown>): Promise<unknown>;
   createScope(name?: string): ResolverLike;
-  dispose(): Promise<void>;
+  dispose(): Promise<unknown>;
   has(port: Port<string, unknown>): boolean;
   readonly isDisposed: boolean;
   // Optional scope-specific methods
@@ -561,7 +561,7 @@ export interface TypedResolver<TProvides extends Port<string, unknown>> {
   /**
    * Disposes the resolver.
    */
-  dispose(): Promise<void>;
+  dispose(): Promise<unknown>;
 
   /**
    * Checks if the resolver can resolve the given port.

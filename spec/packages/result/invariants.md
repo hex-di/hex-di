@@ -131,3 +131,51 @@ Every standalone function in `@hex-di/result/fn/*` delegates to the correspondin
 **Implication**: Behavioral consistency between method chaining and standalone function usage is guaranteed. A bug fix to a `Result` method automatically applies to the standalone function.
 
 See [ADR-007](decisions/007-dual-api-surface.md).
+
+## INV-15: catchTag Output Preserves Immutability
+
+Results returned by `catchTag`, `catchTags`, and `andThenWith` are either the original frozen `Result` instance (passthrough) or a new `Result` created via `ok()`/`err()` (which are frozen by [INV-1](#inv-1-frozen-result-instances)). No mutable intermediate values are created.
+
+**Source**: `core/result.ts` — `catchTag` returns either `self` (frozen) or `handler(error)` (handler must return a `Result`, which is frozen by construction). Same pattern for `catchTags` and `andThenWith`.
+
+**Implication**: The immutability guarantee extends transitively to all effect elimination operations.
+
+See [ADR-014](decisions/014-catch-tag-effect-elimination.md).
+
+## INV-16: catchTag Requires \_tag Discriminant
+
+`catchTag` and `catchTags` only match errors that are non-null objects with a `_tag` property. Non-object errors (strings, numbers, null, undefined) and objects without `_tag` silently pass through. This is a deliberate design choice — these methods are designed for discriminated error unions created by `createError()`.
+
+**Source**: `core/result.ts` — runtime check: `error !== null && error !== undefined && typeof error === "object" && "_tag" in error`.
+
+**Implication**: Consumers using plain string or number error types cannot use `catchTag`/`catchTags`. They should use `orElse` or `match` instead.
+
+## INV-17: Monad Left Identity
+
+`ok(a).andThen(f)` produces a value structurally equal to `f(a)` for all values `a: T` and functions `f: (a: T) => Result<U, E>`. This is the monad left identity law.
+
+**Source**: `core/result.ts` — `ok(value).andThen(f)` calls `f(value)` directly.
+
+**Implication**: Wrapping a value in `Ok` and immediately binding is a no-op — the `Ok` wrapper does not alter the computation. Verified via property-based testing. See [BEH-16-001](behaviors/16-property-based-laws.md).
+
+**Referenced from**: [ADR-016](decisions/016-property-based-monad-laws.md), [BEH-16-001](behaviors/16-property-based-laws.md).
+
+## INV-18: Monad Right Identity
+
+`m.andThen(ok)` produces a value structurally equal to `m` for all `m: Result<T, E>`. This is the monad right identity law.
+
+**Source**: `core/result.ts` — `ok(value).andThen(ok)` returns `ok(value)`. `err(error).andThen(ok)` short-circuits and returns `err(error)`.
+
+**Implication**: Binding with the `ok` constructor is a no-op for both `Ok` and `Err` values. Verified via property-based testing. See [BEH-16-002](behaviors/16-property-based-laws.md).
+
+**Referenced from**: [ADR-016](decisions/016-property-based-monad-laws.md), [BEH-16-002](behaviors/16-property-based-laws.md).
+
+## INV-19: Monad Associativity
+
+`m.andThen(f).andThen(g)` produces a value structurally equal to `m.andThen(x => f(x).andThen(g))` for all `m: Result<T, E>`, `f: (a: T) => Result<U, F>`, and `g: (b: U) => Result<V, G>`. This is the monad associativity law.
+
+**Source**: `core/result.ts` — both expression forms reduce to the same sequence of function applications, with short-circuiting on `Err` at each step.
+
+**Implication**: Chaining `andThen` calls is associative — parenthesization does not matter. Enables reliable refactoring of `andThen` chains. Verified via property-based testing. See [BEH-16-003](behaviors/16-property-based-laws.md).
+
+**Referenced from**: [ADR-016](decisions/016-property-based-monad-laws.md), [BEH-16-003](behaviors/16-property-based-laws.md).

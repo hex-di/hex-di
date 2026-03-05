@@ -85,7 +85,7 @@ export interface TestContainerResult<TProvides extends Port<string, unknown>> {
    *
    * @returns A Promise that resolves when disposal is complete
    */
-  readonly dispose: () => Promise<void>;
+  readonly dispose: () => Promise<unknown>;
 }
 
 // =============================================================================

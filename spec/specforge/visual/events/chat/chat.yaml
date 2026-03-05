@@ -1,0 +1,144 @@
+entity: event
+id: EVT-008-message-sent
+name: "Message Sent"
+docs: ./chat.md
+tests: ./chat.feature
+
+payload:
+  - name: "id"
+    type: string
+    required: true
+    description: "Unique message identifier (UUID)"
+  - name: "content"
+    type: string
+    required: true
+    description: "Markdown text content of the user message"
+  - name: "timestamp"
+    type: string
+    required: true
+    description: "ISO-8601 timestamp of when the message was sent"
+
+target-stores:
+  - $ref: STR-004-chat-store
+
+side-effects:
+  - type: api-call
+    description: "Send the message to the DiscoveryOrchestrator backend endpoint"
+
+---
+entity: event
+id: EVT-009-message-received
+name: "Message Received"
+docs: ./chat.md
+tests: ./chat.feature
+
+payload:
+  - name: "id"
+    type: string
+    required: true
+    description: "Unique message identifier (UUID)"
+  - name: "content"
+    type: string
+    required: true
+    description: "Markdown text content of the agent response"
+  - name: "timestamp"
+    type: string
+    required: true
+    description: "ISO-8601 timestamp of when the response was generated"
+  - name: "toolResults"
+    type: array
+    required: false
+    description: "Optional array of ToolResult objects: [{ type, summary, query? }]"
+
+target-stores:
+  - $ref: STR-004-chat-store
+
+side-effects: []
+
+---
+entity: event
+id: EVT-010-chat-error
+name: "Chat Error"
+docs: ./chat.md
+tests: ./chat.feature
+
+payload:
+  - name: "error"
+    type: string
+    required: true
+    description: "Human-readable error message"
+
+target-stores:
+  - $ref: STR-004-chat-store
+
+side-effects: []
+
+---
+entity: event
+id: EVT-011-budget-updated
+name: "Budget Updated"
+docs: ./chat.md
+tests: ./chat.feature
+
+payload:
+  - name: "used"
+    type: number
+    required: true
+    description: "Number of tokens consumed so far"
+  - name: "total"
+    type: number
+    required: true
+    description: "Maximum token budget"
+  - name: "percent"
+    type: number
+    required: true
+    description: "Pre-computed percentage (0-100)"
+
+target-stores:
+  - $ref: STR-004-chat-store
+
+side-effects: []
+
+---
+entity: event
+id: EVT-012-discovery-status-changed
+name: "Discovery Status Changed"
+docs: ./chat.md
+tests: ./chat.feature
+
+payload:
+  - name: "briefReady"
+    type: boolean
+    required: true
+    description: "Whether the agent has marked the brief as ready for review"
+  - name: "briefAccepted"
+    type: boolean
+    required: true
+    description: "Whether the user has accepted the brief"
+
+target-stores:
+  - $ref: STR-004-chat-store
+
+side-effects: []
+
+---
+entity: event
+id: EVT-013-brief-action
+name: "Brief Action"
+docs: ./chat.md
+tests: ./chat.feature
+
+payload:
+  - name: "action"
+    type: string
+    required: true
+    description: "'accept' | 'reject' -- the user's decision on the brief"
+  - name: "success"
+    type: boolean
+    required: true
+    description: "Whether the action was successfully processed"
+
+target-stores:
+  - $ref: STR-004-chat-store
+
+side-effects: []

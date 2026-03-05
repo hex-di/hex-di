@@ -1,0 +1,97 @@
+entity: component
+id: CMP-005-session-table
+name: "Session Table"
+docs: ./session-table.md
+tests: ./session-table.feature
+
+props:
+  - name: "sessions"
+    type: array
+    itemType: SessionSummary
+    required: true
+  - name: "onSelectSession"
+    type: callback
+    signature: "(sessionId: string) => void"
+    required: true
+  - name: "onDeleteSession"
+    type: callback
+    signature: "(sessionId: string) => void"
+    required: true
+  - name: "onResumeSession"
+    type: callback
+    signature: "(sessionId: string) => void"
+    required: true
+
+children:
+  - $ref: ELM-022-session-table-row
+  - $ref: ELM-023-session-status-badge
+  - $ref: ELM-027-session-delete-button
+  - $ref: ELM-028-session-resume-button
+
+stores:
+  - $ref: STR-003-sessions-store
+    binds:
+      - selector: "sortedSessions"
+        to: "sessions"
+  - $ref: STR-001-filter-store
+    binds:
+      - selector: "home.status"
+        to: "filterStatus"
+      - selector: "home.pipelineMode"
+        to: "filterPipelineMode"
+      - selector: "home.search"
+        to: "filterSearch"
+      - selector: "home.sort"
+        to: "sortField"
+
+layout:
+  display: flex
+  flex-direction: column
+  width: 100%
+  overflow-y: auto
+
+columns:
+  - name: "Package"
+    field: "packageName"
+    width: flex
+    sortable: false
+  - name: "Spec Path"
+    field: "specPath"
+    width: flex
+    sortable: false
+  - name: "Status"
+    field: "status"
+    width: 120px
+    sortable: false
+    render: { $ref: ELM-023-session-status-badge }
+  - name: "Mode"
+    field: "pipelineMode"
+    width: 120px
+    sortable: false
+  - name: "Last Activity"
+    field: "lastActivityAt"
+    width: 160px
+    sortable: true
+    format: relative-time
+
+sorting:
+  default-field: "lastActivityAt"
+  default-direction: descending
+  options:
+    - field: "lastActivityAt"
+      label: "Last Activity"
+    - field: "createdAt"
+      label: "Created Date"
+    - field: "packageName"
+      label: "Package Name"
+
+empty-state:
+  message: "No sessions found. Create one to get started."
+  style:
+    color: "var(--sf-text-muted)"
+    text-align: center
+    padding: 48px 0
+
+accessibility:
+  role: "table"
+  label: "Sessions"

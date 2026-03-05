@@ -118,3 +118,46 @@ export type {
   RemoveTags,
   ExhaustiveHandlerMap,
 } from "./type-utils.js";
+
+// =============================================================================
+// Effect Polymorphism Types
+// =============================================================================
+
+export type {
+  EffectOf,
+  PureResult,
+  EffectfulResult,
+  MaskEffects,
+  LiftEffect,
+  IsEffectFree,
+  EffectUnion,
+} from "./effect-types.js";
+
+// =============================================================================
+// Effect Contracts
+// =============================================================================
+
+export type {
+  EffectContract,
+  SatisfiesContract,
+  ComposeContracts,
+  EffectViolation,
+  OutputViolation,
+  InputViolation,
+  ContractCompositionError,
+} from "./contracts/index.js";
+
+// =============================================================================
+// Effect Handlers
+// =============================================================================
+
+export { composeHandlers, identityHandler } from "./handlers/index.js";
+export { transformEffects } from "./handlers/index.js";
+export type {
+  EffectHandler,
+  InputOf,
+  OutputOf,
+  ComposeHandlers,
+  UnionOfOutputs,
+  NarrowedError,
+} from "./handlers/index.js";

@@ -477,6 +477,7 @@ describe("Inheritance Modes", () => {
       requires: [],
       lifetime: "singleton",
       clonable: true, // Required for forked inheritance mode
+      freeze: false, // Tests require mutable counter state
       factory: () => ({
         value: 0,
         increment() {
@@ -597,6 +598,7 @@ describe("Inheritance Modes", () => {
         requires: [],
         lifetime: "singleton",
         factory,
+        freeze: false,
       });
 
       const graph = GraphBuilder.create().provide(CounterAdapter).build();
@@ -702,6 +704,7 @@ describe("Inheritance Modes", () => {
         requires: [],
         lifetime: "singleton",
         factory: () => ({ data: "initial" }),
+        freeze: false,
       });
 
       const graph = GraphBuilder.create().provide(CounterAdapter).provide(StateAdapter).build();
@@ -1347,6 +1350,7 @@ describe("Child Container Integration Tests", () => {
       requires: [],
       lifetime: "singleton",
       clonable: true, // Required for forked inheritance mode
+      freeze: false, // Tests require mutable counter state
       factory: () => ({
         value: 0,
         increment() {

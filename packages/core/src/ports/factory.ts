@@ -25,6 +25,7 @@ interface PortConfig {
   readonly description?: string;
   readonly category?: SuggestedCategory;
   readonly tags?: readonly string[];
+  readonly methods?: readonly string[];
 }
 
 // =============================================================================
@@ -68,6 +69,7 @@ interface PortConfig {
  * @remarks
  * - Direction defaults to 'outbound' at both runtime and type level
  * - `tags` returns `[]` when not specified (not undefined)
+ * - `methods` returns `undefined` when not specified
  * - `description` and `category` return `undefined` when not specified
  */
 
@@ -115,6 +117,7 @@ export function createPort<
     description: config.description,
     category: config.category,
     tags: config.tags ?? [], // Return empty array when not specified
+    methods: config.methods,
   });
 
   const runtime: DirectedPortRuntime<TName> = Object.freeze({
@@ -150,6 +153,12 @@ export function createPort<
  * // With direction
  * const RequestPort = port<Request>()({ name: "Request", direction: "inbound" });
  * // Type: DirectedPort<"Request", Request, "inbound">
+ *
+ * // With methods for runtime completeness verification
+ * const UserPort = port<UserService>()({
+ *   name: "UserService",
+ *   methods: ["getUser", "createUser", "deleteUser"],
+ * });
  * ```
  *
  * @typeParam TService - The service interface type

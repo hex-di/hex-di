@@ -572,6 +572,7 @@ export function createFlowAdapter<
     factoryKind: "sync" as const,
     factory,
     clonable: false as const,
+    freeze: true as const,
     // Add finalizer to dispose the FlowService when the scope is disposed
     finalizer: (instance: InferService<TProvides>): Promise<void> => {
       // Unregister from FlowRegistry before disposal

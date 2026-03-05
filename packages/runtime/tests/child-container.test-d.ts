@@ -16,7 +16,12 @@ import { describe, expectTypeOf, it, expect } from "vitest";
 import { port, createAdapter } from "@hex-di/core";
 import { GraphBuilder } from "@hex-di/graph";
 import { createContainer } from "../src/container/factory.js";
-import type { Container, InheritanceMode } from "../src/types.js";
+import type {
+  Container,
+  InheritanceMode,
+  InferContainerProvides,
+  InferContainerEffectiveProvides,
+} from "../src/types.js";
 
 // =============================================================================
 // Test Service Interfaces
@@ -361,7 +366,7 @@ describe("Child container property types", () => {
     expectTypeOf<ChildType>().toHaveProperty("parent");
   });
 
-  it("dispose() returns Promise<void>", () => {
+  it("dispose() returns Promise of disposed container", () => {
     const graph = GraphBuilder.create().provide(LoggerAdapter).build();
     const container = createContainer({ graph: graph, name: "Test" });
 
@@ -369,7 +374,8 @@ describe("Child container property types", () => {
     const childContainer = container.createChild(childGraph, { name: "Child" });
 
     const disposeResult = childContainer.dispose();
-    expectTypeOf(disposeResult).toEqualTypeOf<Promise<void>>();
+    // dispose() returns a Promise containing a disposed container (not void)
+    expectTypeOf(disposeResult).toMatchTypeOf<Promise<{ isDisposed: boolean; name: string }>>();
   });
 
   it("isDisposed is readonly boolean", () => {
@@ -400,20 +406,16 @@ describe("Extended ports type validation", () => {
     const config = childContainer.resolve(ConfigPort);
     expectTypeOf(config).toEqualTypeOf<Config>();
 
-    // Parent type does not include ConfigPort
-    type ParentProvides =
-      typeof container extends Container<infer P, infer _E, infer _A, infer _Ph> ? P : never;
-    type ChildProvides =
-      typeof childContainer extends Container<infer P, infer E, infer _A, infer _Ph>
-        ? P | E
-        : never;
+    // Use brand-based inference for Container type parameters
+    type ParentProvides = InferContainerProvides<typeof container>;
+    type ChildEffectiveProvides = InferContainerEffectiveProvides<typeof childContainer>;
 
     // Parent only provides LoggerPort
     expectTypeOf<ParentProvides>().toEqualTypeOf<LoggerPortType>();
 
     // Child provides LoggerPort + ConfigPort (via TProvides | TExtends)
-    type HasLogger = LoggerPortType extends ChildProvides ? true : false;
-    type HasConfig = ConfigPortType extends ChildProvides ? true : false;
+    type HasLogger = LoggerPortType extends ChildEffectiveProvides ? true : false;
+    type HasConfig = ConfigPortType extends ChildEffectiveProvides ? true : false;
     expectTypeOf<HasLogger>().toEqualTypeOf<true>();
     expectTypeOf<HasConfig>().toEqualTypeOf<true>();
   });

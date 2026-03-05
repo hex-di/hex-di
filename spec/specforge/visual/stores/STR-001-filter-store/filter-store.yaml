@@ -1,0 +1,90 @@
+entity: store
+id: STR-001-filter-store
+name: "Filter Store"
+docs: ./filter-store.md
+tests: ./filter-store.feature
+
+initial-state:
+  home:
+    status: "all"
+    pipelineMode: "all"
+    search: ""
+    sort: "last-activity"
+  ACP session:
+    agentRole: "all"
+    messageTypes: []
+    severities: []
+    phase: "all"
+    search: ""
+    preset: "none"
+  tasks:
+    statuses: []
+    requirementId: ""
+    search: ""
+    viewMode: "kanban"
+  coverage:
+    statuses: []
+    specFile: "all"
+    sort: "requirement-id"
+    showGapsOnly: false
+    fileCategory: []
+    showUncoveredOnly: false
+  spec:
+    showChangesOnly: false
+    search: ""
+  costs:
+    phases: []
+    agentRoles: []
+    viewMode: "by-phase"
+  graph:
+    nodeTypes: []
+    relationshipTypes: []
+    viewMode: "full-graph"
+    search: ""
+
+reducers:
+  EVT-018-filter-changed:
+    - field: "[payload.view][payload.key]"
+      operation: set
+      value: "payload.value"
+  EVT-019-filters-reset:
+    - field: "[payload.view]"
+      operation: set
+      value: "initial-state[payload.view]"
+  EVT-020-filters-all-reset:
+    - field: "home"
+      operation: set
+      value: "initial-state.home"
+    - field: "acp-session"
+      operation: set
+      value: "initial-state.acp-session"
+    - field: "tasks"
+      operation: set
+      value: "initial-state.tasks"
+    - field: "coverage"
+      operation: set
+      value: "initial-state.coverage"
+    - field: "spec"
+      operation: set
+      value: "initial-state.spec"
+    - field: "costs"
+      operation: set
+      value: "initial-state.costs"
+    - field: "graph"
+      operation: set
+      value: "initial-state.graph"
+
+selectors:
+  - name: "activeFilterCount"
+    compute: "count of non-default filter values for a given view"
+  - name: "hasActiveFilters"
+    compute: "activeFilterCount(view) > 0"
+  - name: "activeChips"
+    compute: "array of { view, key, label, value } for each non-default filter"
+
+consumers:
+  - $ref: CMP-004-filter-bar
+  - description: "All view components that read filter state"
+
+persistence:
+  enabled: false

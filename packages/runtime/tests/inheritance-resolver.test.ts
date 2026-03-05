@@ -75,6 +75,7 @@ describe("InheritanceResolver (via child container)", () => {
         lifetime: "singleton",
         factory: () => ({ log: vi.fn() }),
         clonable: true,
+        freeze: true,
       });
       const graph = GraphBuilder.create().provide(loggerAdapter).build();
       const parent = createContainer({ graph, name: "Parent" });
@@ -100,6 +101,7 @@ describe("InheritanceResolver (via child container)", () => {
         lifetime: "singleton",
         factory: () => ({ log: vi.fn() }),
         clonable: true,
+        freeze: true,
       });
       const graph = GraphBuilder.create().provide(loggerAdapter).build();
       const parent = createContainer({ graph, name: "Parent" });
@@ -189,6 +191,7 @@ describe("InheritanceResolver (via child container)", () => {
         lifetime: "singleton",
         factory: () => ({ log: vi.fn() }),
         clonable: true,
+        freeze: true,
       });
       const dbAdapter = createAdapter({
         provides: DatabasePort,

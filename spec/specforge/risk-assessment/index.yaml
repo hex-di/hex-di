@@ -1,0 +1,41 @@
+kind: risk-assessment
+package: specforge
+infix: SF
+methodology: FMEA
+entries:
+  - id: FM-SF-001
+    file: FM-SF-001-infrastructure.md
+    title: "Infrastructure Failure Modes"
+    fm_range: FM-SF-001–FM-SF-005
+  - id: FM-SF-006
+    file: FM-SF-006-flow-execution.md
+    title: "Flow Execution Failure Modes"
+    fm_range: FM-SF-006–FM-SF-012
+  - id: FM-SF-013
+    file: FM-SF-013-data-integrity.md
+    title: "Data Integrity Failure Modes"
+    fm_range: FM-SF-013–FM-SF-018
+  - id: FM-SF-019
+    file: FM-SF-019-security.md
+    title: "Security Failure Modes"
+    fm_range: FM-SF-019–FM-SF-024
+  - id: FM-SF-025
+    file: FM-SF-025-communication.md
+    title: "Communication Failure Modes"
+    fm_range: FM-SF-025–FM-SF-030
+  - id: FM-SF-031
+    file: FM-SF-031-cost-memory.md
+    title: "Cost and Memory Failure Modes"
+    fm_range: FM-SF-031–FM-SF-036
+  - id: FM-SF-037
+    file: FM-SF-037-deployment.md
+    title: "Deployment Failure Modes"
+    fm_range: FM-SF-037–FM-SF-042
+  - id: FM-SF-043
+    file: FM-SF-043-protocol-registry.md
+    title: "Protocol Extension & Registry Failure Modes"
+    status: active
+  - id: FM-SF-049
+    file: FM-SF-049-capabilities-resilience-permission.md
+    title: "Capabilities, Resilience & Permission Failure Modes"
+    status: active

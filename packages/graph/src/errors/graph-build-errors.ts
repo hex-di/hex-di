@@ -14,6 +14,7 @@
  */
 
 import { createError } from "@hex-di/result";
+import type { CycleError, MultipleCyclesError } from "./cycle-error.js";
 
 // =============================================================================
 // Error Constructors
@@ -28,11 +29,18 @@ export const CaptiveDependencyBuild = createError("CaptiveDependency");
 /** Creates a `MissingDependency` tagged error for unsatisfied requirements. */
 export const MissingDependencyBuild = createError("MissingDependency");
 
+/** Creates a `MissingOperation` tagged error for incomplete adapter implementations. */
+export const MissingOperationBuild = createError("MissingOperation");
+
 // =============================================================================
 // Error Interfaces
 // =============================================================================
 
-/** Structured error for circular dependency detection (HEX002). */
+/**
+ * Structured error for circular dependency detection (HEX002).
+ *
+ * @deprecated Prefer `CycleError` from `cycle-error.ts` which includes diagrams and suggestions.
+ */
 export interface CyclicDependencyBuildError {
   readonly _tag: "CyclicDependency";
   readonly cyclePath: readonly string[];
@@ -56,12 +64,30 @@ export interface MissingDependencyBuildError {
   readonly message: string;
 }
 
+/**
+ * Structured error for incomplete adapter operations.
+ *
+ * Produced when a port declares `methods` metadata and the adapter
+ * factory returns an instance missing one or more of those methods.
+ */
+export interface MissingOperationBuildError {
+  readonly _tag: "MissingOperation";
+  readonly portName: string;
+  readonly missingMethods: readonly string[];
+  readonly message: string;
+}
+
 // =============================================================================
 // Error Unions
 // =============================================================================
 
 /** Errors that can occur during `tryBuild()` / `tryBuildGraph()`. */
-export type GraphBuildError = CyclicDependencyBuildError | CaptiveDependencyBuildError;
+export type GraphBuildError =
+  | CyclicDependencyBuildError
+  | CaptiveDependencyBuildError
+  | MissingOperationBuildError
+  | CycleError
+  | MultipleCyclesError;
 
 /** Errors that can occur during `validate()` (superset of GraphBuildError). */
 export type GraphValidationError = GraphBuildError | MissingDependencyBuildError;

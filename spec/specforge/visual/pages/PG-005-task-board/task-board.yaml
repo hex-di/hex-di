@@ -1,0 +1,82 @@
+entity: page
+id: PG-005-task-board
+name: "Task Board"
+docs: ./task-board.md
+tests: ./task-board.feature
+
+route:
+  path: "/tasks"
+  hash: true
+  guard:
+    store: STR-002-active-session-store
+    condition: "sessionId !== null"
+    redirect: "#home"
+
+layout: single-column
+
+meta:
+  title: "SpecForge — Tasks"
+
+components:
+  - $ref: CMP-004-filter-bar
+    position: top
+    description: "Filter bar with status multi-select, requirement ID, search, and view mode toggle"
+  - $ref: CMP-013-kanban-board
+    position: main-content
+    condition: "STR-001.tasks.viewMode === 'kanban'"
+    description: "Kanban board with columns: Pending, In Progress, Completed, Blocked"
+  - $ref: CMP-014-dag-list
+    position: main-content
+    condition: "STR-001.tasks.viewMode === 'dag'"
+    description: "DAG-ordered indented list of task groups"
+
+stores:
+  - $ref: STR-007-task-board-store
+  - $ref: STR-001-filter-store
+    slice: "tasks"
+  - $ref: STR-002-active-session-store
+
+states:
+  no-session:
+    condition: "STR-002.sessionId === null"
+    display: "Prompt to select a session"
+  empty:
+    condition: "taskGroups.length === 0"
+    display: "No tasks message"
+  loading:
+    condition: "isLoading === true"
+    display: "Skeleton task cards"
+  populated:
+    condition: "taskGroups.length > 0"
+    display: "Kanban board or DAG list based on viewMode"
+
+filters:
+  - key: "statuses"
+    type: multi-select
+    options: ["pending", "in-progress", "completed", "blocked"]
+    default: []
+  - key: "requirementId"
+    type: text
+    placeholder: "Requirement ID..."
+    default: ""
+  - key: "search"
+    type: text
+    placeholder: "Search tasks..."
+    default: ""
+  - key: "viewMode"
+    type: segmented-toggle
+    options: ["kanban", "dag"]
+    default: "kanban"
+
+types:
+  TaskGroupView:
+    groupId: string
+    name: string
+    status: "'pending' | 'in-progress' | 'completed' | 'blocked'"
+    taskCount: number
+    testCount: number
+    requirementIds: "string[]"
+
+accessibility:
+  role: "main"
+  label: "Task board"

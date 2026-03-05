@@ -35,7 +35,12 @@ const config: Config = {
   favicon: "img/favicon.ico",
 
   future: { v4: true },
-  markdown: { format: "detect" },
+  markdown: {
+    format: "detect",
+    hooks: {
+      onBrokenMarkdownLinks: "throw",
+    },
+  },
 
   url: "https://hexdi.dev",
   baseUrl: "/",
@@ -46,7 +51,6 @@ const config: Config = {
   plugins: [tailwindPlugin],
 
   onBrokenLinks: "throw",
-  onBrokenMarkdownLinks: "warn",
 
   i18n: { defaultLocale: "en", locales: ["en"] },
 

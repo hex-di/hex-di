@@ -1,0 +1,40 @@
+entity: store
+id: STR-006-spec-content-store
+name: "Spec Content Store"
+docs: ./spec-content-store.md
+tests: ./spec-content-store.feature
+
+initial-state:
+  content: ""
+  changedSections: []
+
+reducers:
+  EVT-014-acp-session-message-received:
+    - field: "content"
+      operation: set
+      value: "payload.content"
+    - field: "changedSections"
+      operation: clear
+  EVT-015-acp-session-messages-loaded:
+    - field: "changedSections"
+      operation: append
+      value: "payload.sectionId"
+  EVT-016-spec-content-updated:
+    - field: "content"
+      operation: set
+      value: "payload.content"
+  EVT-017-spec-changes-acknowledged:
+    - field: "changedSections"
+      operation: clear
+
+selectors:
+  - name: "sectionCount"
+    compute: "count of markdown H2 sections in content"
+  - name: "hasChanges"
+    compute: "changedSections.length > 0"
+
+consumers:
+  - $ref: CMP-012-markdown-section-renderer
+
+persistence:
+  enabled: false

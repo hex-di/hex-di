@@ -449,6 +449,7 @@ describe("child-impl.ts - resolveWithInheritance hooks and mode", () => {
       lifetime: "singleton",
       factory: () => ({ log: vi.fn() }),
       clonable: true,
+      freeze: true,
     });
     const graph = GraphBuilder.create().provide(loggerAdapter).build();
     const container = createContainer({ graph, name: "Root" });
@@ -533,6 +534,7 @@ describe("child-impl.ts - getInternalState with correct IDs", () => {
       lifetime: "singleton",
       factory: () => ({ log: vi.fn() }),
       clonable: true,
+      freeze: true,
     });
     const graph = GraphBuilder.create().provide(loggerAdapter).build();
     const container = createContainer({ graph, name: "Root" });
@@ -2084,6 +2086,7 @@ describe("builtin-api.ts - inspector API", () => {
       lifetime: "singleton",
       factory: () => ({ log: vi.fn() }),
       clonable: true,
+      freeze: true,
     });
     const graph = GraphBuilder.create().provide(loggerAdapter).build();
     const container = createContainer({ graph, name: "Root" });

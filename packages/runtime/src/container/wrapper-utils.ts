@@ -62,6 +62,29 @@ export function attachBuiltinAPIs(
   });
 }
 
+/**
+ * Asserts that a container's inspector property has been set.
+ *
+ * This is used inside deferred closures (like `dispose()`) where TypeScript's
+ * flow analysis cannot track that `attachBuiltinAPIs()` was called before the
+ * closure is executed. The assertion narrows the type to include `inspector: InspectorAPI`.
+ *
+ * @param container - Container object that may have inspector set
+ * @throws Error if inspector is not set (indicates a framework bug)
+ *
+ * @internal
+ */
+export function assertInspectorAttached<T extends { inspector?: InspectorAPI }>(
+  container: T
+): asserts container is T & { inspector: InspectorAPI } {
+  if (container.inspector === undefined) {
+    throw new Error(
+      "Container inspector not set. " +
+        "This is a framework bug: attachBuiltinAPIs must be called before dispose."
+    );
+  }
+}
+
 // =============================================================================
 // Child Container Creation Shared Logic
 // =============================================================================

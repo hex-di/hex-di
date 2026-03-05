@@ -43,6 +43,7 @@ import { createChildContainerWrapper } from "./wrappers.js";
 import type { InspectorAPI } from "../inspection/types.js";
 import {
   attachBuiltinAPIs,
+  assertInspectorAttached,
   parseChildGraph,
   parseInheritanceModes,
   createChildContainerConfig,
@@ -131,7 +132,7 @@ export function createContainer<
 >(
   config: CreateContainerConfig<TProvides, TAsyncPorts>
 ): Container<TProvides, never, TAsyncPorts, "uninitialized"> {
-  const { graph, name, hooks, performance } = config;
+  const { graph, name, hooks, performance, safety } = config;
 
   // Emit tracing warning if no hooks configured
   emitTracingWarning(name, hooks, performance);
@@ -150,6 +151,7 @@ export function createContainer<
     containerName: name,
     options: { hooks: lateBindingHooks },
     performance,
+    safety,
   };
   const impl = new RootContainerImpl<TProvides, TAsyncPorts>(rootConfig);
 
@@ -443,7 +445,10 @@ function createUninitializedContainerWrapper<
     dispose: async () => {
       container.inspector?.disposeLibraries?.();
       await impl.dispose();
+      assertInspectorAttached(container);
+      return container;
     },
+
     get isInitialized() {
       return impl.isInitialized;
     },
@@ -737,7 +742,10 @@ function createInitializedContainerWrapper<
     dispose: async () => {
       container.inspector?.disposeLibraries?.();
       await impl.dispose();
+      assertInspectorAttached(container);
+      return container;
     },
+
     get isInitialized() {
       return impl.isInitialized;
     },

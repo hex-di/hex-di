@@ -8,6 +8,7 @@
  */
 
 import type { AdapterConstraint } from "../adapters/types.js";
+import type { CapabilityAuditReport } from "../capability/types.js";
 
 /**
  * Structural type for graph-like objects that can be inspected.
@@ -354,6 +355,27 @@ export interface GraphInspection {
    * Summary counts of ports by direction.
    */
   readonly directionSummary: DirectionSummary;
+
+  /**
+   * Capability audit report for all adapters in the graph.
+   *
+   * Summarizes ambient authority detections per adapter, providing
+   * an overall authority hygiene score. Useful for CI/CD integration
+   * where a pipeline step can fail the build if
+   * `capabilities.highConfidenceViolations > 0`.
+   *
+   * @see {@link CapabilityAuditReport}
+   *
+   * @example
+   * ```typescript
+   * const info = builder.inspect();
+   * if (info.capabilities.highConfidenceViolations > 0) {
+   *   console.error(info.capabilities.summary);
+   *   process.exitCode = 1;
+   * }
+   * ```
+   */
+  readonly capabilities: CapabilityAuditReport;
 }
 
 /**
@@ -472,6 +494,8 @@ export interface GraphInspectionJSON {
   readonly ports: readonly PortInfo[];
   /** Summary counts of ports by direction */
   readonly directionSummary: DirectionSummary;
+  /** Capability audit report */
+  readonly capabilities: CapabilityAuditReport;
 }
 
 /**

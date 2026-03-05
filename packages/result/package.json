@@ -82,6 +82,7 @@
     "@stryker-mutator/core": "^9.5.1",
     "@stryker-mutator/vitest-runner": "^9.5.1",
     "@vitest/coverage-v8": "^4.0.18",
+    "fast-check": "^4.5.3",
     "tsx": "^4.21.0"
   },
   "keywords": [

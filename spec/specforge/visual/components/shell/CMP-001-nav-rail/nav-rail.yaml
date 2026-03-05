@@ -1,0 +1,89 @@
+entity: component
+id: CMP-001-nav-rail
+name: "Nav Rail"
+docs: ./nav-rail.md
+tests: ./nav-rail.feature
+
+props:
+  - name: "currentView"
+    type: string
+    required: true
+    description: "The currently active ViewId, determines which nav button shows the active state"
+  - name: "onNavigate"
+    type: callback
+    required: true
+    description: "Callback invoked with the target ViewId when a nav button is clicked"
+
+children:
+  - $ref: ELM-001-nav-button
+    count: 9
+    description: "One button per navigable view"
+  - $ref: ELM-002-nav-icon
+    count: 9
+    description: "Icon glyph inside each nav button"
+  - $ref: ELM-003-nav-label
+    count: 9
+    description: "Label text below each nav icon"
+  - $ref: ELM-004-nav-search-button
+    count: 1
+    description: "Search button pinned to bottom of rail"
+
+stores:
+  - $ref: STR-014-router-store
+    binds:
+      - selector: "currentView"
+        to: "currentView"
+
+layout:
+  width: 64px
+  height: "100%"
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 4px
+  padding: "12px 0"
+
+style:
+  background: "var(--sf-surface)"
+  border-right: "1px solid rgba(0, 240, 255, 0.08)"
+  grid-row: "1 / -1"
+
+nav-items:
+  - view: "home"
+    icon: "\u2302"
+    label: "Home"
+  - view: "chat"
+    icon: "\u25CE"
+    label: "Chat"
+  - view: "pipeline"
+    icon: "\u25B8"
+    label: "Pipeline"
+  - view: "spec"
+    icon: "\u2261"
+    label: "Spec"
+  - view: "tasks"
+    icon: "\u2630"
+    label: "Tasks"
+  - view: "coverage"
+    icon: "\u25C9"
+    label: "Coverage"
+  - view: "acp-session"
+    icon: "\u25A6"
+    label: "Board"
+  - view: "costs"
+    icon: "$"
+    label: "Costs"
+  - view: "graph"
+    icon: "\u25C7"
+    label: "Graph"
+
+active-item-style:
+  color: "var(--sf-accent)"
+  background: "var(--sf-accent-dim)"
+  border-left: "3px solid var(--sf-accent)"
+
+visibility:
+  responsive:
+    desktop: true
+    tablet: true
+    mobile: false

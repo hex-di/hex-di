@@ -1,0 +1,17 @@
+entity: event
+id: EVT-024-error-cleared
+name: "Error Cleared"
+docs: ./misc.md
+tests: ./misc.feature
+
+payload:
+  - name: "source"
+    type: string
+    required: true
+    description: "Which store's error was cleared (e.g., 'chat', 'session')"
+
+target-stores:
+  - $ref: STR-004-chat-store
+  - $ref: STR-002-active-session-store
+
+side-effects: []

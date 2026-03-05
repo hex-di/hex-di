@@ -1,0 +1,85 @@
+entity: store
+id: STR-010-cost-tracker-store
+name: "Cost Tracker Store"
+docs: ./cost-tracker-store.md
+tests: ./cost-tracker-store.feature
+
+initial-state:
+  summary:
+    totalCost: 0
+    inputTokens: 0
+    outputTokens: 0
+    budgetPercent: 0
+  byPhase: []
+  byAgent: []
+
+types:
+  CostSummary:
+    totalCost: number
+    inputTokens: number
+    outputTokens: number
+    budgetPercent: number
+
+  PhaseCost:
+    phase: string
+    inputTokens: number
+    outputTokens: number
+    cost: number
+
+  AgentCost:
+    agentRole: string
+    inputTokens: number
+    outputTokens: number
+    cost: number
+    invocations: number
+
+reducers:
+  EVT-018:
+    description: "cost-summary-updated"
+    effects:
+      - field: "summary"
+        operation: set
+        value: "payload.summary"
+
+  EVT-019:
+    description: "phase-costs-loaded"
+    effects:
+      - field: "byPhase"
+        operation: set
+        value: "payload.byPhase"
+
+  EVT-020:
+    description: "agent-costs-loaded"
+    effects:
+      - field: "byAgent"
+        operation: set
+        value: "payload.byAgent"
+
+  EVT-017:
+    description: "session-subscription-tick"
+    effects: []
+
+selectors:
+  - name: "topCostPhase"
+    compute: "byPhase.reduce((max, p) => p.cost > max.cost ? p : max, byPhase[0]) ?? null"
+
+  - name: "topCostAgent"
+    compute: "byAgent.reduce((max, a) => a.cost > max.cost ? a : max, byAgent[0]) ?? null"
+
+  - name: "budgetZone"
+    compute: |
+      summary.budgetPercent < 60  ? 'safe'
+      : summary.budgetPercent < 80 ? 'warning'
+      : summary.budgetPercent < 100 ? 'critical'
+      : 'exhausted'
+
+consumers:
+  - $ref: CMP-017-cost-summary-cards
+  - $ref: CMP-018-phase-cost-table
+  - $ref: CMP-019-agent-cost-table
+  - $ref: CMP-002-status-bar
+
+persistence:
+  enabled: false
+
+hook: useCostTracker

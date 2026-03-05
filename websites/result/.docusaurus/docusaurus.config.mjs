@@ -34,6 +34,10 @@ export default {
   "markdown": {
     "format": "detect",
     "mermaid": true,
+    "hooks": {
+      "onBrokenMarkdownLinks": "throw",
+      "onBrokenMarkdownImages": "throw"
+    },
     "emoji": true,
     "mdx1Compat": {
       "comments": true,
@@ -42,17 +46,13 @@ export default {
     },
     "anchors": {
       "maintainCase": false
-    },
-    "hooks": {
-      "onBrokenMarkdownLinks": "warn",
-      "onBrokenMarkdownImages": "throw"
     }
   },
   "url": "https://result.hexdi.dev",
   "baseUrl": "/",
   "organizationName": "leaderiop",
   "projectName": "hex-di",
-  "onBrokenLinks": "warn",
+  "onBrokenLinks": "throw",
   "i18n": {
     "defaultLocale": "en",
     "locales": [
@@ -62,6 +62,7 @@ export default {
     "localeConfigs": {}
   },
   "plugins": [
+    null,
     null
   ],
   "presets": [

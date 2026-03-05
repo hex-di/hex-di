@@ -252,6 +252,7 @@ describe("ChildContainerImpl forked inheritance mode", () => {
         requires: [],
         lifetime: "singleton",
         clonable: true,
+        freeze: true,
         factory: () => ({ log: parentLog }),
       })
     );

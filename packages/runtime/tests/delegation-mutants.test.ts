@@ -574,6 +574,7 @@ describe("child-impl.ts: inherited resolution paths", () => {
       lifetime: "singleton",
       factory: () => ({ log: vi.fn() }),
       clonable: true,
+      freeze: true,
     });
     const graph = GraphBuilder.create()
       .provide(clonableLoggerAdapter)

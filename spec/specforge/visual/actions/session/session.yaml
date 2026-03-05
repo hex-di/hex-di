@@ -1,0 +1,151 @@
+entity: action
+id: ACT-006-select-session
+name: "Select Session"
+docs: ./session.md
+tests: ./session.feature
+
+type: list-select
+trigger:
+  element: { $ref: ELM-022-session-table-row }
+  interaction: click
+preconditions: []
+events-dispatched:
+  - $ref: EVT-002-session-selected
+
+stores-affected:
+  - $ref: STR-002-active-session-store
+
+side-effects:
+  - type: navigate
+    target: "chat"
+    description: "Navigates to the chat view with the selected session active."
+
+notes: |
+  Clicking a session row in the session table selects that session.
+  The selected session becomes the active session in the active-session-store.
+  The application automatically navigates to the chat view upon selection.
+
+---
+entity: action
+id: ACT-007-deselect-session
+name: "Deselect Session"
+docs: ./session.md
+tests: ./session.feature
+
+type: list-select
+trigger:
+  programmatic: true
+preconditions: []
+events-dispatched:
+  - $ref: EVT-002-session-selected
+
+stores-affected:
+  - $ref: STR-002-active-session-store
+
+side-effects:
+  - type: navigate
+    target: "home"
+    description: "Navigates back to the home view."
+
+notes: |
+  Clears the active session by dispatching EVT-002-session-selected with a
+  null payload. Triggered programmatically when the user navigates away from
+  the chat view or when a session is deleted. Navigates to the home view.
+
+---
+entity: action
+id: ACT-008-create-session
+name: "Create Session"
+docs: ./session.md
+tests: ./session.feature
+
+type: form-submit
+trigger:
+  element: { $ref: ELM-026-new-session-submit-button }
+  interaction: click
+preconditions:
+  - field: packageName
+    rule: "non-empty string"
+  - field: specPath
+    rule: "non-empty string"
+events-dispatched:
+  - $ref: EVT-003-session-created
+
+stores-affected:
+  - $ref: STR-003-sessions-store
+
+validation:
+  - field: "packageName"
+    rule: "required"
+    message: "Package name is required"
+  - field: "specPath"
+    rule: "required"
+    message: "Spec path is required"
+
+post-submit:
+  clear-form: true
+  select-session: true
+
+notes: |
+  Submits the new session form with packageName and specPath values.
+  The submit button is disabled when either field is empty.
+  On success, the form fields are cleared and the newly created session
+  is automatically selected (triggering ACT-006 behavior).
+
+---
+entity: action
+id: ACT-009-resume-session
+name: "Resume Session"
+docs: ./session.md
+tests: ./session.feature
+
+type: data-update
+trigger:
+  element: { $ref: ELM-028-session-resume-button }
+  interaction: click
+preconditions:
+  - field: session.status
+    rule: "equals 'paused'"
+events-dispatched:
+  - $ref: EVT-004-session-status-changed
+
+stores-affected:
+  - $ref: STR-003-sessions-store
+  - $ref: STR-002-active-session-store
+
+notes: |
+  Resumes a paused session by changing its status from "paused" to "running".
+  The resume button is only visible when the session status is "paused".
+  Dispatches EVT-004-session-status-changed with the new status.
+
+---
+entity: action
+id: ACT-010-delete-session
+name: "Delete Session"
+docs: ./session.md
+tests: ./session.feature
+
+type: data-delete
+trigger:
+  element: { $ref: ELM-027-session-delete-button }
+  interaction: click
+preconditions:
+  - type: confirmation
+    message: "Are you sure you want to delete this session? This action cannot be undone."
+events-dispatched:
+  - $ref: EVT-007-session-deleted
+
+stores-affected:
+  - $ref: STR-003-sessions-store
+  - $ref: STR-002-active-session-store
+
+side-effects:
+  - type: deselect
+    condition: "deleted session was the active session"
+    description: "Triggers ACT-007-deselect-session if the deleted session was active."
+
+notes: |
+  Deletes a session after the user confirms via a confirmation dialog.
+  If the deleted session was the currently active session, the active session
+  is cleared and the user is navigated to the home view via ACT-007.
+  The session is removed from the sessions store permanently.

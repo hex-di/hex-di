@@ -1,0 +1,73 @@
+entity: component
+id: CMP-018-phase-cost-table
+name: "Phase Cost Table"
+docs: ./phase-cost-table.md
+tests: ./phase-cost-table.feature
+
+props:
+  - name: "byPhase"
+    type: array
+    required: true
+    description: "Array of PhaseCost objects showing cost breakdown by pipeline phase"
+
+types:
+  PhaseCost:
+    phase: string
+    inputTokens: number
+    outputTokens: number
+    cost: number
+
+children:
+  - $ref: ELM-065-phase-cost-row
+
+stores:
+  - $ref: STR-010-cost-tracker-store
+    binds:
+      - selector: "byPhase"
+        to: "byPhase"
+  - $ref: STR-001-filter-store
+    binds:
+      - selector: "costs.phases"
+        to: "phaseFilter"
+
+layout:
+  display: flex
+  flex-direction: column
+  width: 100%
+
+table:
+  columns:
+    - name: "Phase Name"
+      field: "phase"
+      sortable: true
+      width: "auto"
+    - name: "Input Tokens"
+      field: "inputTokens"
+      sortable: true
+      align: right
+      format: "###,###"
+    - name: "Output Tokens"
+      field: "outputTokens"
+      sortable: true
+      align: right
+      format: "###,###"
+    - name: "Cost"
+      field: "cost"
+      sortable: true
+      align: right
+      format: "$%.2f"
+  row-style:
+    alternating-background: true
+    even: "transparent"
+    odd: "rgba(0, 240, 255, 0.02)"
+
+empty-state:
+  text: "No phase cost data available."
+  color: "var(--sf-text-muted)"
+  font-size: 13px
+  text-align: center
+  padding: 32px
+
+accessibility:
+  role: "table"
+  label: "Cost breakdown by pipeline phase"

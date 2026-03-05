@@ -139,6 +139,7 @@ describe("createAdapter - factory variant", () => {
     const adapter = createAdapter({
       provides: LoggerPort,
       clonable: true,
+      freeze: true,
       factory: () => ({ log: vi.fn() }),
     });
 
@@ -154,6 +155,7 @@ describe("createAdapter - factory variant", () => {
       requires: [LoggerPort, DatabasePort],
       lifetime: "scoped",
       clonable: true,
+      freeze: true,
       factory: deps => ({
         getUser: () => {
           deps.Logger.log("Getting user");
@@ -248,6 +250,7 @@ describe("createAdapter - class variant", () => {
     const adapter = createAdapter({
       provides: LoggerPort,
       clonable: true,
+      freeze: true,
       class: ConsoleLogger,
     });
 
@@ -263,6 +266,7 @@ describe("createAdapter - class variant", () => {
       requires: [LoggerPort, DatabasePort],
       lifetime: "scoped",
       clonable: false,
+      freeze: true,
       class: UserServiceImpl,
       finalizer,
     });

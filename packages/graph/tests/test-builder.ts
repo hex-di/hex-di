@@ -712,6 +712,7 @@ export class TestGraphBuilder {
       requires: [],
       lifetime: options.lifetime ?? "singleton",
       clonable: options.clonable ?? false,
+      freeze: true,
       factory: () => mock.implementation,
     });
 
@@ -732,6 +733,7 @@ export class TestGraphBuilder {
       requires: [LoggerPort],
       lifetime: options.lifetime ?? "singleton",
       clonable: options.clonable ?? false,
+      freeze: true,
       factory: () => mock.implementation,
     });
 
@@ -752,6 +754,7 @@ export class TestGraphBuilder {
       requires: [],
       lifetime: options.lifetime ?? "singleton",
       clonable: options.clonable ?? false,
+      freeze: true,
       factory: () => mock.implementation,
     });
 
@@ -770,6 +773,7 @@ export class TestGraphBuilder {
       requires: [],
       lifetime: config.lifetime ?? "singleton",
       clonable: config.clonable ?? false,
+      freeze: true,
       factory: () => mock.implementation as CacheService,
     });
 
@@ -791,6 +795,7 @@ export class TestGraphBuilder {
       requires: [],
       lifetime: config.lifetime ?? "singleton",
       clonable: config.clonable ?? false,
+      freeze: true,
       factory: () => mock.implementation as ConfigService,
     });
 
@@ -807,6 +812,7 @@ export class TestGraphBuilder {
       requires: [DatabasePort, LoggerPort],
       lifetime: config.lifetime ?? "scoped",
       clonable: config.clonable ?? false,
+      freeze: true,
       factory: () => ({
         getUser: async (id: string) => ({ id, name: "Test User" }),
       }),

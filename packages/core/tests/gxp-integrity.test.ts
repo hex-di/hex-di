@@ -238,6 +238,7 @@ describe("GxP: Freeze verification guards", () => {
       factoryKind: "sync" as const,
       factory: () => ({ doWork: () => {} }),
       clonable: false,
+      freeze: true,
     };
     expect(() => assertAdapterFrozen(fake)).toThrow("ERROR[HEX027]");
   });

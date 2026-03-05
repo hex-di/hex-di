@@ -1,0 +1,118 @@
+entity: event
+id: EVT-002-session-selected
+name: "Session Selected"
+docs: ./session.md
+tests: ./session.feature
+
+payload:
+  - name: "sessionId"
+    type: string | null
+    required: true
+    description: "UUID of the selected session, or null for deselect"
+
+target-stores:
+  - $ref: STR-002-active-session-store
+
+side-effects:
+  - type: navigation
+    description: "Navigate to chat view when selecting a session (not on deselect)"
+
+---
+entity: event
+id: EVT-003-session-created
+name: "Session Created"
+docs: ./session.md
+tests: ./session.feature
+
+payload:
+  - name: "session"
+    type: object
+    required: true
+    description: "SessionSummary shape: { sessionId, packageName, specPath, status, createdAt, pipelineMode, lastActivityAt }"
+
+target-stores:
+  - $ref: STR-003-sessions-store
+  - $ref: STR-002-active-session-store
+
+side-effects: []
+
+---
+entity: event
+id: EVT-004-session-status-changed
+name: "Session Status Changed"
+docs: ./session.md
+tests: ./session.feature
+
+payload:
+  - name: "sessionId"
+    type: string
+    required: true
+  - name: "status"
+    type: string
+    required: true
+    description: "'idle' | 'active' | 'discovery' | 'spec-generation' | 'implementation' | 'completed' | 'error'"
+  - name: "pipelineMode"
+    type: string
+    required: true
+    description: "'discovery' | 'spec' | 'implementation'"
+
+target-stores:
+  - $ref: STR-002-active-session-store
+  - $ref: STR-005-pipeline-store
+
+side-effects: []
+
+---
+entity: event
+id: EVT-005-session-error
+name: "Session Error"
+docs: ./session.md
+tests: ./session.feature
+
+payload:
+  - name: "error"
+    type: string
+    required: true
+    description: "Human-readable error message"
+
+target-stores:
+  - $ref: STR-002-active-session-store
+
+side-effects: []
+
+---
+entity: event
+id: EVT-006-sessions-loaded
+name: "Sessions Loaded"
+docs: ./session.md
+tests: ./session.feature
+
+payload:
+  - name: "sessions"
+    type: array
+    required: true
+    description: "Array of SessionSummary objects loaded from the backend"
+
+target-stores:
+  - $ref: STR-003-sessions-store
+
+side-effects: []
+
+---
+entity: event
+id: EVT-007-session-deleted
+name: "Session Deleted"
+docs: ./session.md
+tests: ./session.feature
+
+payload:
+  - name: "sessionId"
+    type: string
+    required: true
+    description: "UUID of the deleted session"
+
+target-stores:
+  - $ref: STR-003-sessions-store
+  - $ref: STR-002-active-session-store
+
+side-effects: []

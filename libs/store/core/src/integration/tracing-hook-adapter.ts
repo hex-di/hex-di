@@ -29,6 +29,7 @@ export function createStoreTracingHookAdapter(config: {
     lifetime: "singleton" as const,
     factoryKind: "sync" as const,
     clonable: false as const,
+    freeze: true as const,
     factory: (): StoreTracingHook =>
       createStoreTracingBridge({
         tracer: config.tracer,

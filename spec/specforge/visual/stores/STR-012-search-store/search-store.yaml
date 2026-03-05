@@ -1,0 +1,106 @@
+entity: store
+id: STR-012-search-store
+name: "Search Store"
+docs: ./search-store.md
+tests: ./search-store.feature
+
+initial-state:
+  query: ""
+  results: []
+  isOpen: false
+  selectedIndex: -1
+
+types:
+  SearchResultCategory:
+    enum: ["sessions", "specs", "tasks", "messages", "graph-nodes"]
+
+  SearchResult:
+    id: string
+    category: SearchResultCategory
+    title: string
+    subtitle: string
+    icon: string
+    navigateTo: string
+
+reducers:
+  EVT-021:
+    description: "search-query-changed"
+    effects:
+      - field: "query"
+        operation: set
+        value: "payload.query"
+      - field: "selectedIndex"
+        operation: set
+        value: -1
+
+  EVT-022:
+    description: "search-result-selected"
+    effects:
+      - field: "isOpen"
+        operation: set
+        value: false
+      - field: "query"
+        operation: set
+        value: ""
+      - field: "results"
+        operation: clear
+      - field: "selectedIndex"
+        operation: set
+        value: -1
+
+  EVT-023:
+    description: "search-closed"
+    effects:
+      - field: "isOpen"
+        operation: set
+        value: false
+      - field: "query"
+        operation: set
+        value: ""
+      - field: "results"
+        operation: clear
+      - field: "selectedIndex"
+        operation: set
+        value: -1
+
+  EVT-030:
+    description: "search-opened"
+    effects:
+      - field: "isOpen"
+        operation: set
+        value: true
+
+  EVT-031:
+    description: "search-results-received"
+    effects:
+      - field: "results"
+        operation: set
+        value: "payload.results"
+
+  EVT-032:
+    description: "search-selection-moved"
+    effects:
+      - field: "selectedIndex"
+        operation: set
+        value: "payload.index"
+
+selectors:
+  - name: "hasResults"
+    compute: "results.length > 0"
+
+  - name: "resultCount"
+    compute: "results.length"
+
+  - name: "selectedResult"
+    compute: "selectedIndex >= 0 && selectedIndex < results.length ? results[selectedIndex] : null"
+
+  - name: "resultsByCategory"
+    compute: "Object.groupBy(results, r => r.category)"
+
+consumers:
+  - $ref: CMP-003-search-overlay
+
+persistence:
+  enabled: false
+
+hook: useGlobalSearch

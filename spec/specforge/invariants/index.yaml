@@ -1,0 +1,176 @@
+kind: invariants
+package: specforge
+infix: SF
+entries:
+  - id: INV-SF-1
+    file: INV-SF-1-acp-session-history-append-only.md
+    title: "ACP Session History Append-Only"
+    status: active
+  - id: INV-SF-10
+    file: INV-SF-10-graph-acp-sync-consistency.md
+    title: "Graph-ACP Sync Consistency"
+    status: active
+  - id: INV-SF-11
+    file: INV-SF-11-session-chunk-immutability.md
+    title: "Session Chunk Immutability"
+    status: active
+  - id: INV-SF-12
+    file: INV-SF-12-hook-pipeline-ordering.md
+    title: "Hook Pipeline Ordering"
+    status: active
+  - id: INV-SF-13
+    file: INV-SF-13-structured-output-schema-compliance.md
+    title: "Structured Output Schema Compliance"
+    status: active
+  - id: INV-SF-14
+    file: INV-SF-14-memory-artifact-traceability.md
+    title: "Memory Artifact Traceability"
+    status: active
+  - id: INV-SF-15
+    file: INV-SF-15-budget-zone-monotonicity.md
+    title: "Budget Zone Monotonicity"
+    status: active
+  - id: INV-SF-16
+    file: INV-SF-16-permission-escalation-requires-explicit-grant.md
+    title: "Permission Escalation Requires Explicit Grant"
+    status: active
+  - id: INV-SF-17
+    file: INV-SF-17-mcp-server-health-gate.md
+    title: "MCP Server Health Gate"
+    status: active
+  - id: INV-SF-18
+    file: INV-SF-18-acp-run-state-consistency.md
+    title: "ACP Run State Consistency"
+    status: active
+  - id: INV-SF-19
+    file: INV-SF-19-degraded-mode.md
+    title: "Degraded Mode"
+    status: active
+  - id: INV-SF-2
+    file: INV-SF-2-agent-session-isolation.md
+    title: "Agent Session Isolation"
+    status: active
+  - id: INV-SF-20
+    file: INV-SF-20-idempotent-graph-sync.md
+    title: "Idempotent Graph Sync"
+    status: active
+  - id: INV-SF-21
+    file: INV-SF-21-flow-definition-capability-validation.md
+    title: "Flow Definition Capability Validation"
+    status: active
+  - id: INV-SF-22
+    file: INV-SF-22-acp-message-ordering.md
+    title: "ACP Message Ordering"
+    status: active
+  - id: INV-SF-23
+    file: INV-SF-23-session-resource-cleanup-deadline.md
+    title: "Session Resource Cleanup Deadline"
+    status: active
+  - id: INV-SF-24
+    file: INV-SF-24-mode-detection-determinism.md
+    title: "Mode Detection Determinism"
+    status: active
+  - id: INV-SF-25
+    file: INV-SF-25-error-object-immutability.md
+    title: "Error Object Immutability"
+    status: active
+  - id: INV-SF-26
+    file: INV-SF-26-graph-mutation-schema-validation.md
+    title: "Graph Mutation Schema Validation"
+    status: active
+  - id: INV-SF-27
+    file: INV-SF-27-acp-message-delivery-guarantee.md
+    title: "ACP Message Delivery Guarantee"
+    status: active
+  - id: INV-SF-28
+    file: INV-SF-28-clarification-timeout-bound.md
+    title: "Clarification Timeout Bound"
+    status: active
+  - id: INV-SF-29
+    file: INV-SF-29-server-startup-atomicity.md
+    title: "Server Startup Atomicity"
+    status: active
+  - id: INV-SF-3
+    file: INV-SF-3-convergence-bound.md
+    title: "Convergence Bound"
+    status: active
+  - id: INV-SF-30
+    file: INV-SF-30-session-history-bounded-growth.md
+    title: "Session History Bounded Growth"
+    status: active
+  - id: INV-SF-31
+    file: INV-SF-31-graph-sync-rebuild-atomicity.md
+    title: "Graph Sync Rebuild Atomicity"
+    status: active
+  - id: INV-SF-32
+    file: INV-SF-32-gxp-hash-chain-continuity.md
+    title: "GxP Hash Chain Continuity"
+    status: active
+  - id: INV-SF-4
+    file: INV-SF-4-dependency-respecting-execution.md
+    title: "Dependency-Respecting Execution"
+    status: active
+  - id: INV-SF-5
+    file: INV-SF-5-tool-isolation.md
+    title: "Tool Isolation"
+    status: active
+  - id: INV-SF-6
+    file: INV-SF-6-atomic-filesystem-flush.md
+    title: "Atomic Filesystem Flush"
+    status: active
+  - id: INV-SF-7
+    file: INV-SF-7-graph-data-persistence.md
+    title: "Graph Data Persistence"
+    status: active
+  - id: INV-SF-8
+    file: INV-SF-8-rendering-fidelity.md
+    title: "Rendering Fidelity"
+    status: active
+  - id: INV-SF-9
+    file: INV-SF-9-flow-determinism.md
+    title: "Flow Determinism"
+    status: active
+  - id: INV-SF-33
+    file: INV-SF-33-implementation-status-consistency.md
+    title: "Implementation Status Consistency"
+    status: active
+  - id: INV-SF-34
+    file: INV-SF-34-lifecycle-timestamp-monotonicity.md
+    title: "Lifecycle Timestamp Monotonicity"
+    status: active
+  - id: INV-SF-35
+    file: INV-SF-35-dependency-graph-consistency.md
+    title: "Dependency Graph Consistency"
+    status: active
+  - id: INV-SF-36
+    file: INV-SF-36-completeness-schema-enforcement.md
+    title: "Completeness Schema Enforcement"
+    status: active
+  - id: INV-SF-37
+    file: INV-SF-37-ci-check-determinism.md
+    title: "CI Check Determinism"
+    status: active
+  - id: INV-SF-38
+    file: INV-SF-38-extension-method-isolation.md
+    title: "Extension Method Isolation"
+    status: active
+  - id: INV-SF-39
+    file: INV-SF-39-protocol-meta-pass-through.md
+    title: "Protocol Meta Pass-Through"
+    status: active
+  - id: INV-SF-40
+    file: INV-SF-40-manifest-schema-validation.md
+    title: "Manifest Schema Validation"
+    status: active
+  - id: INV-SF-41
+    file: INV-SF-41-surface-capability-gating.md
+    title: "Surface Capability Gating"
+    status: active
+  - id: INV-SF-42
+    file: INV-SF-42-session-checkpoint-integrity.md
+    title: "Session Checkpoint Integrity"
+    status: active
+  - id: INV-SF-43
+    file: INV-SF-43-permission-policy-determinism.md
+    title: "Permission Policy Determinism"
+    status: active

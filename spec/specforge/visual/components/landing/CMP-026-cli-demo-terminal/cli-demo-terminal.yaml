@@ -1,0 +1,107 @@
+entity: component
+id: CMP-026-cli-demo-terminal
+name: "CLI Demo Terminal"
+docs: ./cli-demo-terminal.md
+tests: ./cli-demo-terminal.feature
+
+description: |
+  Animated terminal window showing the SpecForge CLI in action.
+  Displays a command being typed with a typewriter effect, followed
+  by output lines appearing with staggered delays. Styled with
+  terminal chrome (title bar with traffic-light dots).
+
+props:
+  lines:
+    type: array
+    items:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ["command", "output", "comment"]
+        text: { type: string }
+    default:
+      - type: command
+        text: "specforge init --package @my/app"
+      - type: output
+        text: "Scanning package structure..."
+      - type: output
+        text: "Found 24 source files, 8 test files"
+      - type: output
+        text: "Starting discovery conversation..."
+      - type: comment
+        text: "# AI agents collaborate to understand your codebase"
+      - type: output
+        text: "Spawning agents: [architect] [analyst] [writer] [reviewer]"
+      - type: output
+        text: "Generating specifications..."
+      - type: output
+        text: "Created 12 spec files in ./spec/"
+      - type: output
+        text: "Done in 47.3s"
+
+layout:
+  max-width: "720px"
+  margin: "0 auto"
+  padding: "80px 24px"
+
+terminal-window:
+  border-radius: "12px"
+  overflow: hidden
+  border: "1px solid rgba(0, 240, 255, 0.1)"
+
+terminal-chrome:
+  display: flex
+  align-items: center
+  padding: "12px 16px"
+  background: "rgba(8, 16, 28, 0.8)"
+  border-bottom: "1px solid rgba(0, 240, 255, 0.06)"
+
+terminal-dots:
+  items:
+    - color: "#FF5F57"
+      label: "Close"
+    - color: "#FEBC2E"
+      label: "Minimize"
+    - color: "#28C840"
+      label: "Maximize"
+  dot-size: "12px"
+  dot-gap: "8px"
+
+terminal-title:
+  text: "Terminal"
+  font-family: "var(--sf-font-body)"
+  font-size: "12px"
+  color: "var(--sf-text-muted)"
+  margin-left: auto
+  margin-right: auto
+
+terminal-body:
+  background: "var(--sf-surface)"
+  padding: "20px"
+  font-family: "var(--sf-font-mono)"
+  font-size: "13px"
+  line-height: 1.7
+  min-height: "280px"
+  position: relative
+
+scanline-effect:
+  description: "Subtle green scanline overlay that moves slowly downward"
+  background: "linear-gradient(transparent 50%, rgba(0, 240, 255, 0.02) 50%)"
+  background-size: "100% 4px"
+  pointer-events: none
+  z-index: 1
+
+children:
+  - $ref: "ELM-080-cli-demo-line"
+  - $ref: "ELM-081-cli-demo-prompt"
+
+animation:
+  typing-speed: "40ms"
+  line-appear-delay: "300ms"
+  initial-delay: "500ms"
+  cursor-blink-rate: "530ms"
+
+accessibility:
+  role: "region"
+  label: "CLI demonstration"

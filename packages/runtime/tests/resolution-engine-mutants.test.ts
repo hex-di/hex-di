@@ -55,6 +55,7 @@ function makeAdapter(
     dependencyNames: (opts.requires ?? []).map((p: any) => p.__portName),
     finalizer: undefined,
     clonable: opts.clonable ?? false,
+    freeze: true,
   } as any;
 }
 

@@ -44,6 +44,7 @@ function makeAdapter(providesPort: any, requiresPorts: any[] = [], asyncFactory:
     dependencyNames: requiresPorts.map((p: any) => p.__portName),
     finalizer: undefined,
     clonable: false,
+    freeze: true,
   } as any;
 }
 

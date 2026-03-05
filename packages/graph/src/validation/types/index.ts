@@ -131,3 +131,6 @@ export type {
   MergeConflictErrorMessage,
   DetectMergeConflict,
 } from "./merge-conflict.js";
+
+// Initialization order (topological sort)
+export type { InitializationOrder } from "./init-order.js";

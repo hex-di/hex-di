@@ -1,0 +1,9 @@
+kind: scripts
+package: specforge
+entries:
+  - id: "verify-roadmap"
+    file: "verify-roadmap.sh"
+    title: "Verify Roadmap"
+  - id: "verify-traceability"
+    file: "verify-traceability.sh"
+    title: "Verify Traceability"

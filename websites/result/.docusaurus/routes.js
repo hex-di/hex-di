@@ -34,19 +34,25 @@ export default [
   },
   {
     path: '/docs',
-    component: ComponentCreator('/docs', 'd28'),
+    component: ComponentCreator('/docs', '3bb'),
     routes: [
       {
         path: '/docs',
-        component: ComponentCreator('/docs', 'cad'),
+        component: ComponentCreator('/docs', '532'),
         routes: [
           {
             path: '/docs',
-            component: ComponentCreator('/docs', '600'),
+            component: ComponentCreator('/docs', '9f2'),
             routes: [
               {
                 path: '/docs/',
                 component: ComponentCreator('/docs/', '56e'),
+                exact: true,
+                sidebar: "docs"
+              },
+              {
+                path: '/docs/advanced/effect-system',
+                component: ComponentCreator('/docs/advanced/effect-system', '1ca'),
                 exact: true,
                 sidebar: "docs"
               },
@@ -87,8 +93,20 @@ export default [
                 sidebar: "docs"
               },
               {
+                path: '/docs/guides/combinators',
+                component: ComponentCreator('/docs/guides/combinators', '50b'),
+                exact: true,
+                sidebar: "docs"
+              },
+              {
                 path: '/docs/guides/generators',
                 component: ComponentCreator('/docs/guides/generators', '1ee'),
+                exact: true,
+                sidebar: "docs"
+              },
+              {
+                path: '/docs/guides/tagged-error-handling',
+                component: ComponentCreator('/docs/guides/tagged-error-handling', '19d'),
                 exact: true,
                 sidebar: "docs"
               },

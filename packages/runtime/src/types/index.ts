@@ -35,6 +35,9 @@ export type {
   RuntimeSafetyOptions,
 } from "./options.js";
 
+// Re-export DisposalPhase from core for convenience
+export type { DisposalPhase } from "@hex-di/core";
+
 // =============================================================================
 // Inheritance Mode Types
 // =============================================================================

@@ -37,6 +37,9 @@
       "name": "@docusaurus/theme-classic",
       "version": "3.9.2"
     },
+    "suppress-webpack-warnings": {
+      "type": "local"
+    },
     "docusaurus-tailwindcss": {
       "type": "local"
     },

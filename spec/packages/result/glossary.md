@@ -166,6 +166,66 @@ A document that maps each requirement (invariant, behavior spec) to its correspo
 
 A specialized test that verifies library properties relevant to GxP regulatory compliance: immutability (`Object.freeze()`), brand integrity (`RESULT_BRAND` symbol), and error flow guarantees (no silent suppression). Level 3 of the test pyramid. See [process/test-strategy.md](process/test-strategy.md).
 
+## Effect Elimination
+
+The process of removing a specific error variant from the error type `E` by handling it. Implemented via `catchTag` and `catchTags` using TypeScript's `Exclude<E, { _tag: Tag }>` utility type. Derived from type-and-effect systems (Gifford & Lucassen 1986). See [ADR-014](decisions/014-catch-tag-effect-elimination.md).
+
+## Error Row
+
+The union type `E` in `Result<T, E>`, viewed as a set (row) of possible error variants. Individual variants can be added via `andThen` (union `|`) or removed via `catchTag` (`Exclude`). Analogous to effect rows in algebraic effect systems.
+
+## catchTag
+
+A method on `Result` and `ResultAsync` that handles a single error variant by matching its `_tag` discriminant. On match, invokes a handler and removes the tag from `E` via `Exclude`. On non-match, passes through unchanged. See [BEH-15-001](behaviors/15-effect-error-handling.md).
+
+## catchTags
+
+A method on `Result` and `ResultAsync` that handles multiple error variants via a handler map (`{ TagA: handler, TagB: handler }`). All matched tags are removed from `E`. When all tags are handled, `E → never`. See [BEH-15-002](behaviors/15-effect-error-handling.md).
+
+## andThenWith
+
+A method on `Result` and `ResultAsync` that combines `andThen` (success path) and `orElse` (error path) in a single call. Both handlers return `Result`, enabling further chaining. The original `E` is fully consumed. See [BEH-15-003](behaviors/15-effect-error-handling.md).
+
+## Effect Handler
+
+A function that discharges (handles) a specific effect from the effect set. In `@hex-di/result`, the handler parameter of `catchTag` is an effect handler — it handles one error variant and returns an infallible `Result<T2, never>`.
+
+## Subeffecting
+
+The relationship where a narrower effect set is a subset of a wider one. `Exclude<E, { _tag: Tag }>` is a subeffect of `E`. TypeScript's type assignability enforces subeffecting: `Result<T, never>` is assignable to `Result<T, E>` for any `E`.
+
+## TaggedError
+
+`TaggedError<Tag, Fields?>` — a type-level constructor producing `Readonly<{ _tag: Tag } & Fields>`. Type companion to `createError()`. When `Fields` is omitted, produces `Readonly<{ _tag: Tag }>`. See [type-system/error-row.md](type-system/error-row.md).
+
+## TagsOf
+
+`TagsOf<E>` — extracts the union of all `_tag` literal string values from a tagged error union `E`. Returns `never` for non-tagged types. See [type-system/error-row.md](type-system/error-row.md).
+
+## Error Row Utilities
+
+Type-level utilities for working with the error union `E` in `Result<T, E>`: `TaggedError`, `TagsOf`, `HasTag`, `ErrorByTag`, `RemoveTag`, `RemoveTags`, and `ExhaustiveHandlerMap`. All are pure type aliases with zero runtime cost. See [type-system/error-row.md](type-system/error-row.md).
+
+## ExhaustiveHandlerMap
+
+`ExhaustiveHandlerMap<E, T>` — a mapped type requiring a handler `(error) => Result<T, never>` for every `_tag` in error union `E`. Opt-in type annotation for `catchTags` to enforce compile-time exhaustiveness. See [type-system/error-row.md](type-system/error-row.md).
+
 ## Deep Freeze
 
 Recursive `Object.freeze()` applied to both the `Result` wrapper and its contained value/error, ensuring the entire object graph is immutable. Used for GxP-critical data where nested mutation must be prevented. See [compliance/gxp.md](compliance/gxp.md).
+
+## Monad Law
+
+One of three algebraic laws that a monad must satisfy: left identity (`ok(a).andThen(f) ≡ f(a)`), right identity (`m.andThen(ok) ≡ m`), and associativity (`m.andThen(f).andThen(g) ≡ m.andThen(x => f(x).andThen(g))`). `Result` satisfies all three laws. See [BEH-16](behaviors/16-property-based-laws.md) and [ADR-016](decisions/016-property-based-monad-laws.md).
+
+## Property-Based Test
+
+A test that verifies a property holds for all inputs of a given type, using random generation (via `fast-check`) rather than hand-written examples. Used to verify algebraic laws (monad, functor, handler algebra) with high confidence. See [BEH-16](behaviors/16-property-based-laws.md).
+
+## Effect Contract
+
+A type-level function signature declaring input type, output type, and the set of effects (error tags) the function may produce. `EffectContract<In, Out, Effects>` enables compile-time verification that implementations satisfy their declared effect profiles. See [BEH-18](behaviors/18-effect-contracts.md) and [ADR-018](decisions/018-effect-contracts.md).
+
+## Higher-Order Effect Handler
+
+A composable, first-class effect handler that can be combined with other handlers via `composeHandlers()`. Handler composition forms a monoid (associative with identity). See [BEH-17](behaviors/17-higher-order-effects.md) and [ADR-017](decisions/017-higher-order-effect-handlers.md).

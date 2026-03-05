@@ -1,0 +1,139 @@
+entity: wireframe
+id: WF-003-search-and-navigate
+name: "Search and Navigate"
+docs: ./search-and-navigate.md
+tests: ./search-and-navigate.feature
+
+viewports:
+  desktop: { min-width: 1024 }
+  tablet: { min-width: 768, max-width: 1023 }
+  mobile: { max-width: 767 }
+
+theme:
+  colors:
+    background: "#020408"
+    surface: "#08101C"
+    surface-elevated: "rgba(8, 16, 28, 0.85)"
+    accent: "#00F0FF"
+    accent-light: "#5FFFFF"
+    accent-dim: "rgba(0, 240, 255, 0.15)"
+    text: "#DAE6F0"
+    text-muted: "#586E85"
+    warning: "#FF5E00"
+    success: "#22C55E"
+    error: "#FF3B3B"
+    info: "#00F0FF"
+  typography:
+    font-body: "'Inter', -apple-system, sans-serif"
+    font-display: "'Rajdhani', 'Inter', sans-serif"
+    font-mono: "'JetBrains Mono', 'Fira Code', monospace"
+    base-size: "14px"
+
+pages:
+  - $ref: PG-010-app-shell
+
+stores:
+  - $ref: STR-012-search-store
+  - $ref: STR-014-router-store
+
+actions:
+  - $ref: ACT-003-open-search
+  - $ref: ACT-004-search-query
+  - $ref: ACT-005-close-search
+  - $ref: ACT-025-select-search-result
+
+events:
+  - $ref: EVT-021-search-query-changed
+  - $ref: EVT-022-search-result-selected
+  - $ref: EVT-023-search-closed
+  - $ref: EVT-001-view-changed
+
+journey:
+  - step: 1
+    page: PG-010-app-shell
+    action: ACT-003-open-search
+    description: "User presses '/' or clicks the nav search button"
+    event: EVT-021-search-query-changed
+  - step: 2
+    page: PG-010-app-shell
+    description: "Search overlay (CMP-003) renders with backdrop, input auto-focused"
+  - step: 3
+    page: PG-010-app-shell
+    action: ACT-004-search-query
+    description: "User types a search query in ELM-010"
+    event: EVT-021-search-query-changed
+  - step: 4
+    page: PG-010-app-shell
+    description: "Results appear grouped by category after debounce"
+    event: EVT-022-search-result-selected
+  - step: 5
+    page: PG-010-app-shell
+    description: "User navigates results with arrow keys"
+    event: EVT-023-search-closed
+  - step: 6
+    page: PG-010-app-shell
+    action: ACT-025-select-search-result
+    description: "User presses Enter or clicks a result"
+    event: EVT-022-search-result-selected
+  - step: 7
+    page: PG-010-app-shell
+    description: "Overlay closes, app navigates to the target view"
+    event: EVT-001-view-changed
+
+decision-points:
+  - at-step: 3
+    condition: "Query is empty"
+    branch-a: "Show hint text: 'Search specs, tasks, messages...'"
+    branch-b: "Show results grouped by category"
+  - at-step: 4
+    condition: "No results match"
+    branch-a: "Show 'No results found' placeholder"
+    branch-b: "Show results grouped by category"
+  - at-step: 5
+    condition: "User interaction"
+    branch-a: "Keyboard navigation (Up/Down/Enter)"
+    branch-b: "Mouse click on result item"
+    branch-c: "Escape to close without selection"
+
+keyboard-shortcuts:
+  - key: "/"
+    modifiers: []
+    action: "Open search overlay"
+    context: "global (when no input focused)"
+  - key: "Escape"
+    modifiers: []
+    action: "Close search overlay"
+    context: "search"
+  - key: "ArrowUp"
+    modifiers: []
+    action: "Move selection up"
+    context: "search"
+  - key: "ArrowDown"
+    modifiers: []
+    action: "Move selection down"
+    context: "search"
+  - key: "Enter"
+    modifiers: []
+    action: "Select current result"
+    context: "search"
+  - key: "k"
+    modifiers: ["meta"]
+    action: "Open search overlay (alternate)"
+    context: "global"
+
+result-categories:
+  - category: "sessions"
+    icon: "session-icon"
+    navigateTo: "home"
+  - category: "specs"
+    icon: "spec-icon"
+    navigateTo: "spec"
+  - category: "tasks"
+    icon: "task-icon"
+    navigateTo: "tasks"
+  - category: "messages"
+    icon: "message-icon"
+    navigateTo: "chat"
+  - category: "graph-nodes"
+    icon: "graph-icon"
+    navigateTo: "graph"

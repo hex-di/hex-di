@@ -22,7 +22,7 @@
     "permalink": "/docs/guides/async-results"
   },
   "next": {
-    "title": "API Reference",
-    "permalink": "/docs/api/api-reference"
+    "title": "Tagged Error Handling",
+    "permalink": "/docs/guides/tagged-error-handling"
   }
 }

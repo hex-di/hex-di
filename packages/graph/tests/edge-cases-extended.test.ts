@@ -551,6 +551,7 @@ describe("clonable flag edge cases", () => {
       lifetime: "singleton",
       factory: () => ({ name: "explicit" }),
       clonable: true,
+      freeze: true,
     });
 
     expect(adapter.clonable).toBe(true);
@@ -565,6 +566,7 @@ describe("clonable flag edge cases", () => {
       lifetime: "singleton",
       factory: () => ({ name: "explicit" }),
       clonable: false,
+      freeze: true,
     });
 
     expect(adapter.clonable).toBe(false);

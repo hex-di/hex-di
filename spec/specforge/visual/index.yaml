@@ -1,0 +1,375 @@
+# SpecForge Visual Specification — Master Entity Index
+# 88 triads (264 files) across 7 entity types
+# Generated following the Flux Pattern: ELM → ACT → EVT → STR → CMP
+
+# =============================================================================
+# Workflows (6)
+# =============================================================================
+workflows:
+  - file: workflows/WF-001-session-lifecycle/session-lifecycle.yaml
+    id: WF-001-session-lifecycle
+  - file: workflows/WF-002-discovery-conversation/discovery-conversation.yaml
+    id: WF-002-discovery-conversation
+  - file: workflows/WF-003-search-and-navigate/search-and-navigate.yaml
+    id: WF-003-search-and-navigate
+  - file: workflows/WF-004-filter-refine-observe/filter-refine-observe.yaml
+    id: WF-004-filter-refine-observe
+  - file: workflows/WF-005-monitor-pipeline/monitor-pipeline.yaml
+    id: WF-005-monitor-pipeline
+  - file: workflows/WF-006-cost-investigation/cost-investigation.yaml
+    id: WF-006-cost-investigation
+
+# =============================================================================
+# Pages (11)
+# =============================================================================
+pages:
+  - file: pages/PG-001-home/home.yaml
+    id: PG-001-home
+  - file: pages/PG-002-chat/chat.yaml
+    id: PG-002-chat
+  - file: pages/PG-003-pipeline/pipeline.yaml
+    id: PG-003-pipeline
+  - file: pages/PG-004-spec-viewer/spec-viewer.yaml
+    id: PG-004-spec-viewer
+  - file: pages/PG-005-task-board/task-board.yaml
+    id: PG-005-task-board
+  - file: pages/PG-006-coverage-dashboard/coverage-dashboard.yaml
+    id: PG-006-coverage-dashboard
+  - file: pages/PG-007-acp-session/acp-session.yaml
+    id: PG-007-acp-session
+  - file: pages/PG-008-cost-tracker/cost-tracker.yaml
+    id: PG-008-cost-tracker
+  - file: pages/PG-009-graph-explorer/graph-explorer.yaml
+    id: PG-009-graph-explorer
+  - file: pages/PG-010-app-shell/app-shell.yaml
+    id: PG-010-app-shell
+  - file: pages/PG-011-landing-page/landing-page.yaml
+    id: PG-011-landing-page
+
+# =============================================================================
+# Components — Shell (4)
+# =============================================================================
+components-shell:
+  - file: components/shell/CMP-001-nav-rail/nav-rail.yaml
+    id: CMP-001-nav-rail
+  - file: components/shell/CMP-002-status-bar/status-bar.yaml
+    id: CMP-002-status-bar
+  - file: components/shell/CMP-003-search-overlay/search-overlay.yaml
+    id: CMP-003-search-overlay
+  - file: components/filters/CMP-004-filter-bar/filter-bar.yaml
+    id: CMP-004-filter-bar
+
+# =============================================================================
+# Components — Desktop Views (18)
+# =============================================================================
+components-desktop:
+  - file: components/home/CMP-005-session-table/session-table.yaml
+    id: CMP-005-session-table
+  - file: components/home/CMP-006-new-session-form/new-session-form.yaml
+    id: CMP-006-new-session-form
+  - file: components/chat/CMP-007-token-budget-bar/token-budget-bar.yaml
+    id: CMP-007-token-budget-bar
+  - file: components/chat/CMP-008-discovery-status-bar/discovery-status-bar.yaml
+    id: CMP-008-discovery-status-bar
+  - file: components/chat/CMP-009-message-list/message-list.yaml
+    id: CMP-009-message-list
+  - file: components/chat/CMP-010-chat-input-area/chat-input-area.yaml
+    id: CMP-010-chat-input-area
+  - file: components/pipeline/CMP-011-phase-indicator-strip/phase-indicator-strip.yaml
+    id: CMP-011-phase-indicator-strip
+  - file: components/spec/CMP-012-markdown-section-renderer/markdown-section-renderer.yaml
+    id: CMP-012-markdown-section-renderer
+  - file: components/tasks/CMP-013-kanban-board/kanban-board.yaml
+    id: CMP-013-kanban-board
+  - file: components/tasks/CMP-014-dag-list/dag-list.yaml
+    id: CMP-014-dag-list
+  - file: components/coverage/CMP-015-coverage-file-list/coverage-file-list.yaml
+    id: CMP-015-coverage-file-list
+  - file: components/acp-session/CMP-016-message-entry-list/message-entry-list.yaml
+    id: CMP-016-message-entry-list
+  - file: components/costs/CMP-017-cost-summary-cards/cost-summary-cards.yaml
+    id: CMP-017-cost-summary-cards
+  - file: components/costs/CMP-018-phase-cost-table/phase-cost-table.yaml
+    id: CMP-018-phase-cost-table
+  - file: components/costs/CMP-019-agent-cost-table/agent-cost-table.yaml
+    id: CMP-019-agent-cost-table
+  - file: components/graph/CMP-020-graph-node-list/graph-node-list.yaml
+    id: CMP-020-graph-node-list
+  - file: components/graph/CMP-021-graph-edge-list/graph-edge-list.yaml
+    id: CMP-021-graph-edge-list
+  - file: components/graph/CMP-022-connection-status-banner/connection-status-banner.yaml
+    id: CMP-022-connection-status-banner
+
+# =============================================================================
+# Components — Landing Page (7)
+# =============================================================================
+components-landing:
+  - file: components/landing/CMP-023-hero-section/hero-section.yaml
+    id: CMP-023-hero-section
+  - file: components/landing/CMP-024-feature-grid/feature-grid.yaml
+    id: CMP-024-feature-grid
+  - file: components/landing/CMP-025-how-it-works-flow/how-it-works-flow.yaml
+    id: CMP-025-how-it-works-flow
+  - file: components/landing/CMP-026-cli-demo-terminal/cli-demo-terminal.yaml
+    id: CMP-026-cli-demo-terminal
+  - file: components/landing/CMP-027-pricing-table/pricing-table.yaml
+    id: CMP-027-pricing-table
+  - file: components/landing/CMP-028-cta-section/cta-section.yaml
+    id: CMP-028-cta-section
+  - file: components/landing/CMP-029-landing-footer/landing-footer.yaml
+    id: CMP-029-landing-footer
+
+# =============================================================================
+# Elements — Grouped by View Context (14 groups)
+# =============================================================================
+elements:
+  - file: elements/nav/nav.yaml
+    ids: [ELM-001-nav-button, ELM-002-nav-icon, ELM-003-nav-label, ELM-004-nav-search-button]
+  - file: elements/status-bar/status-bar.yaml
+    ids:
+      [ELM-005-status-dot, ELM-006-session-id-text, ELM-007-session-status-text, ELM-008-cost-text]
+  - file: elements/search/search.yaml
+    ids:
+      [
+        ELM-009-search-backdrop,
+        ELM-010-search-input,
+        ELM-011-search-category-label,
+        ELM-012-search-result-item,
+        ELM-013-search-hint-text,
+      ]
+  - file: elements/filters/filters.yaml
+    ids:
+      [
+        ELM-014-filter-dropdown,
+        ELM-015-filter-dropdown-label,
+        ELM-016-filter-multi-select-trigger,
+        ELM-017-filter-multi-select-option,
+        ELM-018-filter-toggle,
+        ELM-019-filter-text-input,
+        ELM-020-filter-chip,
+        ELM-021-filter-chip-remove,
+      ]
+  - file: elements/home/home.yaml
+    ids:
+      [
+        ELM-022-session-table-row,
+        ELM-023-session-status-badge,
+        ELM-024-new-session-package-input,
+        ELM-025-new-session-spec-input,
+        ELM-026-new-session-submit-button,
+        ELM-027-session-delete-button,
+        ELM-028-session-resume-button,
+      ]
+  - file: elements/chat/chat.yaml
+    ids:
+      [
+        ELM-029-token-budget-progress,
+        ELM-030-token-budget-label,
+        ELM-031-discovery-status-indicator,
+        ELM-032-accept-brief-button,
+        ELM-033-reject-brief-button,
+        ELM-034-request-brief-button,
+        ELM-035-message-bubble-user,
+        ELM-036-message-bubble-agent,
+        ELM-037-message-timestamp,
+        ELM-038-tool-result-card,
+        ELM-039-tool-result-type-badge,
+        ELM-040-chat-input-textarea,
+        ELM-041-chat-send-button,
+        ELM-042-chat-processing-indicator,
+        ELM-043-chat-error-banner,
+      ]
+  - file: elements/pipeline/pipeline.yaml
+    ids: [ELM-044-phase-node, ELM-045-phase-connector]
+  - file: elements/spec/spec.yaml
+    ids: [ELM-046-markdown-section, ELM-047-section-change-indicator, ELM-048-section-heading]
+  - file: elements/tasks/tasks.yaml
+    ids:
+      [
+        ELM-049-task-group-card,
+        ELM-050-task-status-badge,
+        ELM-051-task-count-indicator,
+        ELM-052-view-mode-toggle,
+      ]
+  - file: elements/coverage/coverage.yaml
+    ids:
+      [
+        ELM-053-coverage-file-row,
+        ELM-054-coverage-progress-bar,
+        ELM-055-coverage-status-badge,
+        ELM-056-coverage-summary-stat,
+      ]
+  - file: elements/acp-session/acp-session.yaml
+    ids:
+      [
+        ELM-057-session-message-card,
+        ELM-058-agent-role-badge,
+        ELM-059-severity-indicator,
+        ELM-060-message-type-icon,
+        ELM-061-phase-tag,
+        ELM-062-preset-button,
+      ]
+  - file: elements/costs/costs.yaml
+    ids:
+      [
+        ELM-063-cost-summary-card,
+        ELM-064-budget-gauge,
+        ELM-065-phase-cost-row,
+        ELM-066-agent-cost-row,
+        ELM-067-cost-view-mode-toggle,
+      ]
+  - file: elements/graph/graph.yaml
+    ids:
+      [
+        ELM-068-graph-node-row,
+        ELM-069-graph-edge-row,
+        ELM-070-connection-status-dot,
+        ELM-071-graph-view-mode-selector,
+      ]
+  - file: elements/landing/landing.yaml
+    ids:
+      [
+        ELM-072-hero-headline,
+        ELM-073-hero-subheadline,
+        ELM-074-hero-cta-primary,
+        ELM-075-hero-cta-secondary,
+        ELM-076-feature-card,
+        ELM-077-feature-icon,
+        ELM-078-how-it-works-step,
+        ELM-079-step-connector,
+        ELM-080-cli-demo-line,
+        ELM-081-cli-demo-prompt,
+        ELM-082-pricing-tier-card,
+        ELM-083-pricing-feature-item,
+        ELM-084-cta-headline,
+        ELM-085-cta-button,
+        ELM-086-footer-link,
+      ]
+
+# =============================================================================
+# Actions — Grouped by Domain (5 groups)
+# =============================================================================
+actions:
+  - file: actions/navigation/navigation.yaml
+    ids:
+      [
+        ACT-001-navigate-to-view,
+        ACT-002-navigate-back,
+        ACT-003-open-search,
+        ACT-004-search-query,
+        ACT-005-close-search,
+      ]
+  - file: actions/session/session.yaml
+    ids:
+      [
+        ACT-006-select-session,
+        ACT-007-deselect-session,
+        ACT-008-create-session,
+        ACT-009-resume-session,
+        ACT-010-delete-session,
+      ]
+  - file: actions/chat/chat.yaml
+    ids:
+      [
+        ACT-011-send-message,
+        ACT-012-clear-chat-error,
+        ACT-013-accept-brief,
+        ACT-014-reject-brief,
+        ACT-015-request-brief,
+      ]
+  - file: actions/filters/filters.yaml
+    ids:
+      [
+        ACT-016-set-filter,
+        ACT-017-toggle-filter,
+        ACT-018-remove-filter,
+        ACT-019-clear-view-filters,
+        ACT-020-clear-all-filters,
+        ACT-021-apply-preset,
+        ACT-022-sort-column,
+        ACT-023-search-in-view,
+        ACT-024-toggle-multi-select,
+        ACT-025-select-search-result,
+        ACT-026-navigate-search-results,
+        ACT-027-toggle-view-mode,
+      ]
+  - file: actions/landing/landing.yaml
+    ids: [ACT-028-landing-cta, ACT-029-landing-navigate]
+
+# =============================================================================
+# Events — Grouped by Domain (7 groups)
+# =============================================================================
+events:
+  - file: events/routing/routing.yaml
+    ids: [EVT-001-view-changed]
+  - file: events/session/session.yaml
+    ids:
+      [
+        EVT-002-session-selected,
+        EVT-003-session-created,
+        EVT-004-session-status-changed,
+        EVT-005-session-error,
+        EVT-006-sessions-loaded,
+        EVT-007-session-deleted,
+      ]
+  - file: events/chat/chat.yaml
+    ids:
+      [
+        EVT-008-message-sent,
+        EVT-009-message-received,
+        EVT-010-chat-error,
+        EVT-011-budget-updated,
+        EVT-012-discovery-status-changed,
+        EVT-013-brief-action,
+      ]
+  - file: events/acp-session/acp-session.yaml
+    ids:
+      [
+        EVT-014-acp-session-message-received,
+        EVT-015-acp-session-messages-loaded,
+        EVT-016-acp-session-message-dismissed,
+        EVT-017-acp-session-subscription-tick,
+      ]
+  - file: events/filters/filters.yaml
+    ids: [EVT-018-filter-changed, EVT-019-filters-reset, EVT-020-filters-all-reset]
+  - file: events/search/search.yaml
+    ids: [EVT-021-search-query-changed, EVT-022-search-result-selected, EVT-023-search-closed]
+  - file: events/misc/misc.yaml
+    ids: [EVT-024-error-cleared]
+
+# =============================================================================
+# Stores (16)
+# =============================================================================
+stores:
+  - file: stores/STR-001-filter-store/filter-store.yaml
+    id: STR-001-filter-store
+  - file: stores/STR-002-active-session-store/active-session-store.yaml
+    id: STR-002-active-session-store
+  - file: stores/STR-003-sessions-store/sessions-store.yaml
+    id: STR-003-sessions-store
+  - file: stores/STR-004-chat-store/chat-store.yaml
+    id: STR-004-chat-store
+  - file: stores/STR-005-pipeline-store/pipeline-store.yaml
+    id: STR-005-pipeline-store
+  - file: stores/STR-006-spec-content-store/spec-content-store.yaml
+    id: STR-006-spec-content-store
+  - file: stores/STR-007-task-board-store/task-board-store.yaml
+    id: STR-007-task-board-store
+  - file: stores/STR-008-coverage-store/coverage-store.yaml
+    id: STR-008-coverage-store
+  - file: stores/STR-009-acp-session-store/acp-session-store.yaml
+    id: STR-009-acp-session-store
+  - file: stores/STR-010-cost-tracker-store/cost-tracker-store.yaml
+    id: STR-010-cost-tracker-store
+  - file: stores/STR-011-graph-store/graph-store.yaml
+    id: STR-011-graph-store
+  - file: stores/STR-012-search-store/search-store.yaml
+    id: STR-012-search-store
+  - file: stores/STR-013-service-context-store/service-context-store.yaml
+    id: STR-013-service-context-store
+  - file: stores/STR-014-router-store/router-store.yaml
+    id: STR-014-router-store
+  - file: stores/STR-015-keyboard-shortcut-store/keyboard-shortcut-store.yaml
+    id: STR-015-keyboard-shortcut-store
+  - file: stores/STR-016-session-subscription/session-subscription.yaml
+    id: STR-016-session-subscription

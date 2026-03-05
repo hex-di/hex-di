@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { AdapterConstraint } from "@hex-di/core";
+import type { AdapterConstraint, CapabilityAuditReport } from "@hex-di/core";
 import type { GraphValidationError } from "../../errors/index.js";
 
 /**
@@ -366,6 +366,98 @@ export interface GraphInspection {
     readonly id: string;
     readonly name?: string;
   };
+
+  /**
+   * Initialization order of ports grouped into parallelizable levels.
+   *
+   * Each inner array is a set of ports that can be initialized in parallel
+   * (all their dependencies are satisfied by previous levels). Levels are
+   * ordered from sources (no dependencies) to leaves (most dependencies).
+   *
+   * Within each level, ports are ordered by adapter registration index
+   * for deterministic output.
+   *
+   * For every dependency edge A -> B in the graph, B appears at an earlier
+   * level than A.
+   *
+   * Returns an empty array for empty graphs, or null if cycle detected.
+   *
+   * @example
+   * ```typescript
+   * const info = builder.inspect();
+   * // [["Config"], ["Database", "Cache"], ["UserService"]]
+   * // Level 0: Config (no deps) can init first
+   * // Level 1: Database and Cache (depend only on Config) can init in parallel
+   * // Level 2: UserService (depends on Database and Cache) inits last
+   * for (const [level, ports] of info.initializationOrder.entries()) {
+   *   console.log(`Level ${level}: ${ports.join(', ')}`);
+   * }
+   * ```
+   */
+  readonly initializationOrder: readonly (readonly string[])[];
+
+  /**
+   * Capability audit report for all adapters in the graph.
+   *
+   * Summarizes ambient authority detections per adapter, providing
+   * an overall authority hygiene score. Useful for CI/CD integration
+   * where a pipeline step can fail the build if
+   * `capabilities.highConfidenceViolations > 0`.
+   *
+   * @see {@link CapabilityAuditReport}
+   *
+   * @example
+   * ```typescript
+   * const info = builder.inspect();
+   * if (info.capabilities.highConfidenceViolations > 0) {
+   *   console.error(info.capabilities.summary);
+   *   process.exitCode = 1;
+   * }
+   * ```
+   */
+  readonly capabilities: CapabilityAuditReport;
+
+  /**
+   * Transitive error profile for each port in the graph.
+   *
+   * Maps each port name to a sorted array of error tag strings that may be
+   * produced transitively through the port's dependency chain. Computed from
+   * the `__errorTags` metadata on adapters.
+   *
+   * A port with an empty array is considered infallible for inspection purposes.
+   * Ports whose adapters do not declare `errorTags` are also treated as infallible.
+   *
+   * @example
+   * ```typescript
+   * const info = builder.inspect();
+   * for (const [port, tags] of Object.entries(info.errorProfile)) {
+   *   if (tags.length > 0) {
+   *     console.warn(`Port '${port}' may produce errors: ${tags.join(', ')}`);
+   *   }
+   * }
+   * ```
+   */
+  readonly errorProfile: Readonly<Record<string, readonly string[]>>;
+
+  /**
+   * Warnings about ports with unhandled error tags in their transitive dependency chain.
+   *
+   * Each warning identifies a port whose effective error profile is non-empty,
+   * suggesting that error handling (via `adapterOrDie()`, `adapterOrElse()`, or
+   * `adapterOrHandle()`) should be applied before adding the adapter to the graph.
+   *
+   * @example
+   * ```typescript
+   * const info = builder.inspect();
+   * if (info.effectWarnings.length > 0) {
+   *   console.warn('Unhandled error tags detected:');
+   *   for (const warning of info.effectWarnings) {
+   *     console.warn(`  - ${warning}`);
+   *   }
+   * }
+   * ```
+   */
+  readonly effectWarnings: readonly string[];
 }
 
 /**
@@ -484,6 +576,14 @@ export interface GraphInspectionJSON {
   readonly ports: readonly PortInfo[];
   /** Summary counts of ports by direction */
   readonly directionSummary: DirectionSummary;
+  /** Initialization order grouped into parallelizable levels */
+  readonly initializationOrder: readonly (readonly string[])[];
+  /** Capability audit report */
+  readonly capabilities: CapabilityAuditReport;
+  /** Transitive error profile per port */
+  readonly errorProfile: Record<string, readonly string[]>;
+  /** Warnings about unhandled error tags */
+  readonly effectWarnings: readonly string[];
 
   /** Actor identity, if provided via InspectOptions */
   readonly actor?: {

@@ -254,6 +254,7 @@ export type PortDirection = "inbound" | "outbound";
  * - IDE tooltips and documentation
  * - Dependency graph visualization
  * - API documentation generation
+ * - Runtime operation completeness verification (via `methods`)
  *
  * All properties are optional and readonly.
  *
@@ -264,6 +265,7 @@ export type PortDirection = "inbound" | "outbound";
  *   description: 'Handles user CRUD operations',
  *   category: 'domain',
  *   tags: ['user', 'crud', 'core'],
+ *   methods: ['getUser', 'createUser', 'deleteUser'],
  * });
  * ```
  */
@@ -274,6 +276,14 @@ export interface PortMetadata {
   readonly category?: string;
   /** Searchable tags for filtering and discovery */
   readonly tags?: readonly string[];
+  /**
+   * Runtime method names for operation completeness verification.
+   *
+   * When provided, the build pipeline can verify at runtime that adapter
+   * factories produce objects implementing all listed methods. This is
+   * opt-in: ports without `methods` skip runtime completeness checks.
+   */
+  readonly methods?: readonly string[];
 }
 
 // =============================================================================
@@ -562,4 +572,6 @@ export interface CreatePortConfig<
   readonly category?: TCategory & SuggestedCategory;
   /** Searchable tags for filtering and discovery */
   readonly tags?: readonly string[];
+  /** Runtime method names for operation completeness verification */
+  readonly methods?: readonly string[];
 }

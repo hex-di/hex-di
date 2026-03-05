@@ -279,8 +279,8 @@ describe("edge cases", () => {
       // createScope accepts optional name and returns RuntimeResolver
       expectTypeOf(resolver.createScope).toEqualTypeOf<(name?: string) => RuntimeResolver>();
 
-      // dispose returns Promise<void>
-      expectTypeOf(resolver.dispose).toEqualTypeOf<() => Promise<void>>();
+      // dispose returns Promise<unknown>
+      expectTypeOf(resolver.dispose).toEqualTypeOf<() => Promise<unknown>>();
 
       // isDisposed is boolean
       expectTypeOf(resolver.isDisposed).toEqualTypeOf<boolean>();

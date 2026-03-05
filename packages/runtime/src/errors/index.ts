@@ -5,10 +5,14 @@
  * providing consistent error structure with:
  * - `code`: Stable string constant for programmatic handling
  * - `isProgrammingError`: Boolean indicating if error is a programming mistake
+ * - `blame`: Optional blame context for error attribution
  * - Contextual information specific to each error type
  *
  * @packageDocumentation
  */
+
+import type { BlameContext } from "@hex-di/core";
+import { createBlameContext } from "@hex-di/core";
 
 // V8-specific Error.captureStackTrace type
 // We use a type alias to type the V8-specific static method without conflicts
@@ -65,25 +69,12 @@ function extractErrorMessage(cause: unknown): string {
  * - `code`: A stable string constant for programmatic error identification
  * - `isProgrammingError`: Indicates whether this error represents a programming
  *   mistake (true) or a runtime condition (false)
+ * - `blame`: Optional blame context for error attribution
  *
  * @remarks
  * - All concrete error classes must extend this base class
  * - The `name` getter returns the concrete class name for stack traces
  * - Uses `Error.captureStackTrace` when available for cleaner stack traces
- *
- * @example
- * ```typescript
- * try {
- *   container.resolve(SomePort);
- * } catch (error) {
- *   if (error instanceof ContainerError) {
- *     console.log(`Error code: ${error.code}`);
- *     if (error.isProgrammingError) {
- *       // This is a bug in the application code
- *     }
- *   }
- * }
- * ```
  */
 export abstract class ContainerError extends Error {
   /**
@@ -94,35 +85,36 @@ export abstract class ContainerError extends Error {
 
   /**
    * Indicates whether this error represents a programming mistake.
-   *
-   * - `true`: The error is caused by incorrect usage (e.g., circular dependency,
-   *   resolving from disposed scope, missing scope). These should be fixed in code.
-   * - `false`: The error is caused by runtime conditions (e.g., factory threw).
-   *   These may be recoverable or require operational handling.
    */
   abstract readonly isProgrammingError: boolean;
 
   /**
    * Optional actionable suggestion for fixing the error.
-   *
-   * Programming errors (isProgrammingError: true) should include suggestions
-   * with copy-paste-ready code examples showing how to fix the issue.
-   *
-   * Runtime errors (isProgrammingError: false) typically don't include
-   * suggestions since they depend on user code behavior.
    */
   suggestion?: string;
+
+  /**
+   * Optional blame context identifying which adapter violated which port contract.
+   * When present, the blame context is always frozen.
+   */
+  readonly blame?: BlameContext;
 
   /**
    * Creates a new ContainerError instance.
    *
    * @param message - The error message describing what went wrong
+   * @param blame - Optional blame context for error attribution
    */
-  constructor(message: string) {
+  constructor(message: string, blame?: BlameContext) {
     super(message);
 
     // Ensure proper prototype chain for instanceof checks
     Object.setPrototypeOf(this, new.target.prototype);
+
+    // Freeze and attach blame context if provided
+    if (blame !== undefined) {
+      this.blame = createBlameContext(blame);
+    }
 
     // Capture stack trace excluding this constructor for cleaner traces
     // Note: captureStackTrace is V8-specific (Node.js, Chrome)
@@ -147,27 +139,6 @@ export abstract class ContainerError extends Error {
 
 /**
  * Error thrown when a circular dependency is detected during resolution.
- *
- * Circular dependencies occur when Service A depends on Service B,
- * and Service B (directly or indirectly) depends back on Service A.
- *
- * @remarks
- * - This is always a programming error - the dependency graph must be acyclic
- * - The `dependencyChain` property shows the full cycle for debugging
- * - Detection occurs lazily at resolution time, not at container creation
- *
- * @example
- * ```typescript
- * // If UserService -> AuthService -> UserService exists:
- * try {
- *   container.resolve(UserServicePort);
- * } catch (error) {
- *   if (error instanceof CircularDependencyError) {
- *     console.log(error.dependencyChain);
- *     // ['UserService', 'AuthService', 'UserService']
- *   }
- * }
- * ```
  */
 export class CircularDependencyError extends ContainerError {
   readonly code = "CIRCULAR_DEPENDENCY" as const;
@@ -183,11 +154,11 @@ export class CircularDependencyError extends ContainerError {
    * Creates a new CircularDependencyError.
    *
    * @param dependencyChain - Array of port names forming the cycle.
-   *   The first and last elements should be identical to show the cycle.
+   * @param blame - Optional blame context for error attribution
    */
-  constructor(dependencyChain: readonly string[]) {
+  constructor(dependencyChain: readonly string[], blame?: BlameContext) {
     const formattedChain = dependencyChain.join(" -> ");
-    super(`Circular dependency detected: ${formattedChain}`);
+    super(`Circular dependency detected: ${formattedChain}`, blame);
 
     // Store a defensive copy of the chain
     this.dependencyChain = Object.freeze([...dependencyChain]);
@@ -217,26 +188,6 @@ export class CircularDependencyError extends ContainerError {
 
 /**
  * Error thrown when an adapter's factory function throws during instance creation.
- *
- * This error wraps the original exception thrown by the factory, providing
- * context about which port's factory failed.
- *
- * @remarks
- * - This is NOT a programming error - factory failures are runtime conditions
- * - The `cause` property contains the original exception for investigation
- * - The error message includes both the port name and original error message
- *
- * @example
- * ```typescript
- * try {
- *   container.resolve(DatabasePort);
- * } catch (error) {
- *   if (error instanceof FactoryError) {
- *     console.log(`Factory for ${error.portName} failed`);
- *     console.log('Original error:', error.cause);
- *   }
- * }
- * ```
  */
 export class FactoryError extends ContainerError {
   readonly code = "FACTORY_FAILED" as const;
@@ -249,7 +200,6 @@ export class FactoryError extends ContainerError {
 
   /**
    * The original exception thrown by the factory function.
-   * Can be any value since JavaScript allows throwing non-Error values.
    */
   readonly cause: unknown;
 
@@ -258,10 +208,11 @@ export class FactoryError extends ContainerError {
    *
    * @param portName - The name of the port whose factory threw
    * @param cause - The original exception thrown by the factory
+   * @param blame - Optional blame context for error attribution
    */
-  constructor(portName: string, cause: unknown) {
+  constructor(portName: string, cause: unknown, blame?: BlameContext) {
     const causeMessage = extractErrorMessage(cause);
-    super(`Factory for port '${portName}' threw: ${causeMessage}`);
+    super(`Factory for port '${portName}' threw: ${causeMessage}`, blame);
 
     this.portName = portName;
     this.cause = cause;
@@ -274,23 +225,6 @@ export class FactoryError extends ContainerError {
 
 /**
  * Error thrown when attempting to resolve a service from a disposed scope or container.
- *
- * Once a scope or container is disposed, it cannot be used to resolve services.
- * This prevents use-after-dispose bugs and resource leaks.
- *
- * @remarks
- * - This is a programming error - code should not use disposed containers
- * - Typically occurs when scope lifetime is not properly managed
- * - Check your scope lifecycle management if this error occurs
- *
- * @example
- * ```typescript
- * const scope = container.createScope();
- * await scope.dispose();
- *
- * // This will throw DisposedScopeError:
- * scope.resolve(UserServicePort);
- * ```
  */
 export class DisposedScopeError extends ContainerError {
   readonly code = "DISPOSED_SCOPE" as const;
@@ -305,11 +239,13 @@ export class DisposedScopeError extends ContainerError {
    * Creates a new DisposedScopeError.
    *
    * @param portName - The name of the port that was attempted to be resolved
+   * @param blame - Optional blame context for error attribution
    */
-  constructor(portName: string) {
+  constructor(portName: string, blame?: BlameContext) {
     super(
       `Cannot resolve port '${portName}' from a disposed scope. ` +
-        `The scope has already been disposed and cannot be used for resolution.`
+        `The scope has already been disposed and cannot be used for resolution.`,
+      blame
     );
 
     this.portName = portName;
@@ -341,26 +277,6 @@ export class DisposedScopeError extends ContainerError {
 
 /**
  * Error thrown when attempting to resolve a scoped port from the root container.
- *
- * Scoped ports have a lifetime tied to a specific scope. They cannot be resolved
- * from the root container because there is no scope to own their lifetime.
- *
- * @remarks
- * - This is a programming error - use createScope() for scoped dependencies
- * - Indicates that the code is trying to resolve scoped services incorrectly
- * - The solution is to create a scope and resolve from there
- *
- * @example
- * ```typescript
- * // UserContextPort is configured with 'scoped' lifetime
- *
- * // This will throw ScopeRequiredError:
- * container.resolve(UserContextPort);
- *
- * // Correct usage:
- * const scope = container.createScope();
- * const userContext = scope.resolve(UserContextPort);
- * ```
  */
 export class ScopeRequiredError extends ContainerError {
   readonly code = "SCOPE_REQUIRED" as const;
@@ -375,11 +291,13 @@ export class ScopeRequiredError extends ContainerError {
    * Creates a new ScopeRequiredError.
    *
    * @param portName - The name of the scoped port that was attempted to be resolved
+   * @param blame - Optional blame context for error attribution
    */
-  constructor(portName: string) {
+  constructor(portName: string, blame?: BlameContext) {
     super(
       `Cannot resolve scoped port '${portName}' from the root container. ` +
-        `Scoped ports must be resolved from a scope created via createScope().`
+        `Scoped ports must be resolved from a scope created via createScope().`,
+      blame
     );
 
     this.portName = portName;
@@ -406,27 +324,6 @@ export class ScopeRequiredError extends ContainerError {
 
 /**
  * Error thrown when an async adapter's factory function throws during instance creation.
- *
- * This error wraps the original exception thrown by the async factory, providing
- * context about which port's factory failed.
- *
- * @remarks
- * - This is NOT a programming error - async factory failures are runtime conditions
- * - The `cause` property contains the original exception for investigation
- * - The error message includes both the port name and original error message
- * - Similar to FactoryError but specific to async factory resolution
- *
- * @example
- * ```typescript
- * try {
- *   await container.resolveAsync(DatabasePort);
- * } catch (error) {
- *   if (error instanceof AsyncFactoryError) {
- *     console.log(`Async factory for ${error.portName} failed`);
- *     console.log('Original error:', error.cause);
- *   }
- * }
- * ```
  */
 export class AsyncFactoryError extends ContainerError {
   readonly code = "ASYNC_FACTORY_FAILED" as const;
@@ -439,7 +336,6 @@ export class AsyncFactoryError extends ContainerError {
 
   /**
    * The original exception thrown by the async factory function.
-   * Can be any value since JavaScript allows throwing non-Error values.
    */
   readonly cause: unknown;
 
@@ -448,10 +344,11 @@ export class AsyncFactoryError extends ContainerError {
    *
    * @param portName - The name of the port whose async factory threw
    * @param cause - The original exception thrown by the factory
+   * @param blame - Optional blame context for error attribution
    */
-  constructor(portName: string, cause: unknown) {
+  constructor(portName: string, cause: unknown, blame?: BlameContext) {
     const causeMessage = extractErrorMessage(cause);
-    super(`Async factory for port '${portName}' failed: ${causeMessage}`);
+    super(`Async factory for port '${portName}' failed: ${causeMessage}`, blame);
 
     this.portName = portName;
     this.cause = cause;
@@ -464,31 +361,6 @@ export class AsyncFactoryError extends ContainerError {
 
 /**
  * Error thrown when attempting to synchronously resolve an async port before initialization.
- *
- * Async ports (those with async factories) require either:
- * - Async resolution via resolveAsync(), or
- * - Container initialization via initialize() before sync resolve
- *
- * @remarks
- * - This is a programming error - use resolveAsync() or call initialize() first
- * - The container must be initialized before sync-resolving async ports
- * - Using resolveAsync() always works regardless of initialization state
- *
- * @example
- * ```typescript
- * // DatabasePort has an async factory
- * const container = createContainer(graph);
- *
- * // This will throw AsyncInitializationRequiredError:
- * container.resolve(DatabasePort);
- *
- * // Solution 1: Use async resolution
- * const db = await container.resolveAsync(DatabasePort);
- *
- * // Solution 2: Initialize first, then sync resolve
- * const initialized = await container.initialize();
- * const db = initialized.resolve(DatabasePort);
- * ```
  */
 export class AsyncInitializationRequiredError extends ContainerError {
   readonly code = "ASYNC_INIT_REQUIRED" as const;
@@ -533,37 +405,6 @@ export class AsyncInitializationRequiredError extends ContainerError {
 
 /**
  * Error thrown when attempting to use forked inheritance mode with a non-clonable adapter.
- *
- * Forked inheritance mode creates a shallow clone of the parent's service instance.
- * This is only safe for services that don't contain resource handles (sockets,
- * file handles, connections) or external references that would become shared.
- *
- * @remarks
- * - This is a programming error - the adapter must be marked as clonable
- * - Use `.clonable()` when defining the adapter if shallow cloning is safe
- * - Alternative: use 'shared' (share parent's instance) or 'isolated' (create new via factory)
- *
- * @example
- * ```typescript
- * // DatabaseAdapter is NOT marked as clonable (has socket resource)
- * const child = parent.createChild({
- *   inherit: { Database: 'forked' }  // This will throw NonClonableForkedError
- * });
- *
- * // Solutions:
- * // 1. Use shared mode (share parent's connection):
- * parent.createChild({ inherit: { Database: 'shared' } });
- *
- * // 2. Use isolated mode (create new connection):
- * parent.createChild({ inherit: { Database: 'isolated' } });
- *
- * // 3. Mark adapter as clonable if shallow cloning is safe:
- * const LoggerAdapter = createAdapter({
- *   provides: LoggerPort,
- *   factory: () => new ConsoleLogger(),
- *   clonable: true,  // ← Safe to shallow clone
- * });
- * ```
  */
 export class NonClonableForkedError extends ContainerError {
   readonly code = "NON_CLONABLE_FORKED" as const;
@@ -607,7 +448,8 @@ export class NonClonableForkedError extends ContainerError {
       "const adapter = createAdapter({\n" +
       `  provides: ${portName},\n` +
       "  factory: () => new Service(),\n" +
-      "  clonable: true  // Only if shallow clone is safe\n" +
+      "  clonable: true,  // Only if shallow clone is safe\n" +
+      "  freeze: true,\n" +
       "});\n" +
       "```";
   }
@@ -619,27 +461,6 @@ export class NonClonableForkedError extends ContainerError {
 
 /**
  * Error returned when container or scope disposal fails.
- *
- * Disposal may invoke multiple finalizers. If one or more throw, this error
- * captures all individual failures in the `causes` array. The original
- * `AggregateError` (if applicable) is preserved as the standard `cause`.
- *
- * @remarks
- * - This is NOT a programming error - finalizer failures are runtime conditions
- * - The `causes` array contains all individual errors from failed finalizers
- * - Used as the error type for `tryDispose()` Result-returning methods
- *
- * @example
- * ```typescript
- * const result = await container.tryDispose();
- * if (result.isErr()) {
- *   const error = result.error;
- *   console.log(`Disposal failed with ${error.causes.length} errors`);
- *   for (const cause of error.causes) {
- *     console.error(cause);
- *   }
- * }
- * ```
  */
 export class DisposalError extends ContainerError {
   readonly code = "DISPOSAL_FAILED" as const;
@@ -652,7 +473,6 @@ export class DisposalError extends ContainerError {
 
   /**
    * The original error that triggered this disposal failure.
-   * Set via Object.defineProperty when an originalError is provided.
    */
   declare readonly cause: unknown | undefined;
 
@@ -679,9 +499,6 @@ export class DisposalError extends ContainerError {
 
   /**
    * Creates a DisposalError from an AggregateError thrown during disposal.
-   *
-   * @param err - The AggregateError containing individual finalizer errors
-   * @returns A new DisposalError with all causes extracted
    */
   static fromAggregateError(err: AggregateError): DisposalError {
     return new DisposalError(
@@ -693,12 +510,6 @@ export class DisposalError extends ContainerError {
 
   /**
    * Creates a DisposalError from an unknown thrown value.
-   *
-   * If the value is an AggregateError, delegates to `fromAggregateError`.
-   * Otherwise, wraps the single error in the causes array.
-   *
-   * @param err - The unknown thrown value
-   * @returns A new DisposalError
    */
   static fromUnknown(err: unknown): DisposalError {
     if (err instanceof AggregateError) {
@@ -715,26 +526,6 @@ export class DisposalError extends ContainerError {
 
 /**
  * Error thrown when a finalizer exceeds the configured timeout during disposal.
- *
- * This error is collected alongside other finalizer errors in the AggregateError
- * thrown by MemoMap.dispose(). It indicates a resource cleanup that hung.
- *
- * @remarks
- * - This is NOT a programming error - timeout failures are runtime conditions
- * - The finalizer may still be running in the background after timeout
- * - The port name identifies which service's cleanup hung
- *
- * @example
- * ```typescript
- * const result = await container.tryDispose();
- * if (result.isErr()) {
- *   for (const cause of result.error.causes) {
- *     if (cause instanceof FinalizerTimeoutError) {
- *       console.warn(`Cleanup hung for ${cause.portName}`);
- *     }
- *   }
- * }
- * ```
  */
 export class FinalizerTimeoutError extends ContainerError {
   readonly code = "FINALIZER_TIMEOUT" as const;
@@ -746,12 +537,6 @@ export class FinalizerTimeoutError extends ContainerError {
   /** The timeout duration in milliseconds. */
   readonly timeoutMs: number;
 
-  /**
-   * Creates a new FinalizerTimeoutError.
-   *
-   * @param portName - The name of the port whose finalizer timed out
-   * @param timeoutMs - The timeout duration in milliseconds
-   */
   constructor(portName: string, timeoutMs: number) {
     super(
       `Finalizer for port '${portName}' timed out after ${timeoutMs}ms. ` +
@@ -768,22 +553,6 @@ export class FinalizerTimeoutError extends ContainerError {
 
 /**
  * Error thrown when creating a scope would exceed the maximum allowed nesting depth.
- *
- * @remarks
- * - This is a programming error - indicates runaway scope creation
- * - The default max depth is 64, configurable via container options
- * - Usually indicates a recursive createScope() call or missing scope reuse
- *
- * @example
- * ```typescript
- * try {
- *   deeplyNestedScope.createScope();
- * } catch (error) {
- *   if (error instanceof ScopeDepthExceededError) {
- *     console.log(`Max depth ${error.maxDepth} exceeded`);
- *   }
- * }
- * ```
  */
 export class ScopeDepthExceededError extends ContainerError {
   readonly code = "SCOPE_DEPTH_EXCEEDED" as const;
@@ -795,12 +564,6 @@ export class ScopeDepthExceededError extends ContainerError {
   /** The maximum allowed depth. */
   readonly maxDepth: number;
 
-  /**
-   * Creates a new ScopeDepthExceededError.
-   *
-   * @param attemptedDepth - The depth that was attempted
-   * @param maxDepth - The maximum allowed depth
-   */
   constructor(attemptedDepth: number, maxDepth: number) {
     super(
       `Cannot create scope at depth ${attemptedDepth}: maximum scope depth is ${maxDepth}. ` +

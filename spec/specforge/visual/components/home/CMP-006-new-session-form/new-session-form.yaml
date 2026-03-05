@@ -1,0 +1,48 @@
+entity: component
+id: CMP-006-new-session-form
+name: "New Session Form"
+docs: ./new-session-form.md
+tests: ./new-session-form.feature
+
+props:
+  - name: "onCreateSession"
+    type: callback
+    signature: "(packageName: string, specPath: string) => void"
+    required: true
+
+children:
+  - $ref: ELM-024-new-session-package-input
+  - $ref: ELM-025-new-session-spec-input
+  - $ref: ELM-026-new-session-submit-button
+
+layout:
+  display: flex
+  flex-direction: row
+  gap: 8px
+  align-items: flex-start
+  width: 100%
+
+internal-state:
+  packageName:
+    type: string
+    initial: ""
+  specPath:
+    type: string
+    initial: ""
+
+validation:
+  - field: "packageName"
+    rule: "required"
+    message: "Package name is required"
+  - field: "specPath"
+    rule: "required"
+    message: "Spec path is required"
+
+submit-behavior:
+  enabled-when: "packageName.trim() !== '' && specPath.trim() !== ''"
+  on-submit: "onCreateSession(packageName, specPath)"
+  clears-fields: true
+
+accessibility:
+  role: "form"
+  label: "Create new session"

@@ -17,7 +17,13 @@ const sidebars: SidebarsConfig = {
     {
       type: "category",
       label: "Guides",
-      items: ["guides/transformations", "guides/async-results", "guides/generators"],
+      items: [
+        "guides/transformations",
+        "guides/async-results",
+        "guides/generators",
+        "guides/tagged-error-handling",
+        "guides/combinators",
+      ],
     },
     {
       type: "category",
@@ -27,7 +33,7 @@ const sidebars: SidebarsConfig = {
     {
       type: "category",
       label: "Advanced",
-      items: ["advanced/serialization"],
+      items: ["advanced/serialization", "advanced/effect-system"],
     },
   ],
 };

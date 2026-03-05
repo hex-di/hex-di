@@ -6,13 +6,16 @@
  * - Resolution deduplication (pending promise tracking)
  * - Hook invocation (beforeResolve/afterResolve)
  * - Async instance creation with dependency injection
+ * - Blame context construction for error attribution
+ * - Optional contract conformance checking
  *
  * @packageDocumentation
  * @internal
  */
 
-import type { Port, InferService } from "@hex-di/core";
+import type { Port, InferService, ContractCheckMode } from "@hex-di/core";
 import type { Lifetime } from "@hex-di/core";
+import { createBlameContext, ContractViolationError } from "@hex-di/core";
 import { MemoMap } from "../util/memo-map.js";
 import { ResolutionContext } from "./context.js";
 import { AsyncFactoryError, ContainerError } from "../errors/index.js";
@@ -20,6 +23,8 @@ import type { RuntimeAdapterFor } from "../container/internal-types.js";
 import { HooksRunner, checkCacheHit } from "./hooks-runner.js";
 import type { InheritanceMode } from "../types.js";
 import { getMemoForLifetime, buildDependenciesAsync, unwrapResultDefense } from "./core.js";
+import { maybeFreezeInstance } from "./freeze.js";
+import { maybeCheckContract } from "./contract-check.js";
 
 // =============================================================================
 // Types
@@ -69,13 +74,16 @@ export type AsyncDependencyResolver = (
 export class AsyncResolutionEngine {
   /**
    * Tracks pending resolutions to deduplicate concurrent requests.
-   * Outer map: port → inner map
-   * Inner map: scopeId → promise
+   * Outer map: port -> inner map
+   * Inner map: scopeId -> promise
    */
   private readonly pendingResolutions: Map<
     Port<string, unknown>,
     Map<string | null, Promise<unknown>>
   > = new Map();
+
+  /** Contract check mode. Defaults to "off" for zero overhead. */
+  private contractCheckMode: ContractCheckMode = "off";
 
   /**
    * Creates a new AsyncResolutionEngine.
@@ -91,6 +99,16 @@ export class AsyncResolutionEngine {
     private readonly hooksRunner: HooksRunner | null,
     private readonly resolveDependency: AsyncDependencyResolver
   ) {}
+
+  /**
+   * Sets the contract check mode for this engine.
+   *
+   * @param mode - The contract check mode ("off", "warn", or "strict")
+   * @internal
+   */
+  setContractCheckMode(mode: ContractCheckMode): void {
+    this.contractCheckMode = mode;
+  }
 
   // ===========================================================================
   // Public API
@@ -273,6 +291,9 @@ export class AsyncResolutionEngine {
    *
    * Uses shared `buildDependenciesAsync` utility for consistent dependency resolution.
    * Dependencies are resolved concurrently for optimal performance.
+   * On error, constructs a BlameContext with the current resolution path.
+   * After successful creation, checks contract conformance (if enabled),
+   * then applies freeze based on adapter config.
    */
   private async createInstanceAsync<P extends Port<string, unknown>>(
     port: P,
@@ -289,12 +310,25 @@ export class AsyncResolutionEngine {
         this.resolveDependency(requiredPort, scopedMemo, scopeId, scopeName)
       );
       const raw = await adapter.factory(deps);
-      return unwrapResultDefense(raw) as InferService<P>;
+      const instance = unwrapResultDefense(raw) as InferService<P>;
+
+      // Contract check: after factory returns Ok, before freeze
+      maybeCheckContract(instance, port, this.contractCheckMode, this.resolutionContext);
+
+      return maybeFreezeInstance(instance, adapter.freeze);
     } catch (e) {
-      if (e instanceof ContainerError) {
+      // Re-throw known error types without wrapping
+      if (e instanceof ContainerError || e instanceof ContractViolationError) {
         throw e;
       }
-      throw new AsyncFactoryError(portName, e);
+      const resolutionPath = this.resolutionContext.getPath();
+      const blame = createBlameContext({
+        adapterFactory: { name: portName },
+        portContract: { name: portName, direction: "inbound" },
+        violationType: { _tag: "FactoryError", error: e },
+        resolutionPath,
+      });
+      throw new AsyncFactoryError(portName, e, blame);
     } finally {
       this.resolutionContext.exit(portName);
     }

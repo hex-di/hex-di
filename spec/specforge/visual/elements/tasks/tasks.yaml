@@ -1,0 +1,161 @@
+entity: element
+id: ELM-049-task-group-card
+name: "Task Group Card"
+docs: ./tasks.md
+tests: ./tasks.feature
+
+type: container
+
+layout:
+  display: flex
+  flex-direction: column
+  gap: 8px
+  padding: 12px
+  border-radius: 6px
+  background: "var(--sf-surface)"
+  border-left-width: 3px
+  border-left-style: solid
+  cursor: pointer
+
+states:
+  default:
+    background: "var(--sf-surface)"
+  hover:
+    background: "rgba(0, 240, 255, 0.03)"
+    box-shadow: "0 2px 8px rgba(0, 0, 0, 0.2)"
+  pending:
+    border-left-color: "var(--sf-text-muted)"
+  in-progress:
+    border-left-color: "var(--sf-accent)"
+  completed:
+    border-left-color: "#22C55E"
+  blocked:
+    border-left-color: "#FF3B3B"
+
+content:
+  - name: "group-name"
+    font-size: 14px
+    font-weight: 600
+    color: "var(--sf-text)"
+  - name: "requirement-ids"
+    font-size: 11px
+    color: "var(--sf-text-muted)"
+  - name: "task-count-indicator"
+    ref: { $ref: ELM-051-task-count-indicator }
+  - name: "status-badge"
+    ref: { $ref: ELM-050-task-status-badge }
+
+accessibility:
+  role: "article"
+  label: "Task group: {groupName}, status: {status}"
+
+---
+entity: element
+id: ELM-050-task-status-badge
+name: "Task Status Badge"
+docs: ./tasks.md
+tests: ./tasks.feature
+
+type: text
+
+layout:
+  display: inline-flex
+  align-items: center
+  padding: "2px 8px"
+  border-radius: 9999px
+  font-size: 11px
+  font-weight: 500
+  text-transform: capitalize
+
+states:
+  pending:
+    color: "var(--sf-text-muted)"
+    background: "rgba(148, 163, 184, 0.15)"
+  in-progress:
+    color: "var(--sf-accent)"
+    background: "var(--sf-accent-dim)"
+  completed:
+    color: "#22C55E"
+    background: "rgba(34, 197, 94, 0.12)"
+  blocked:
+    color: "#FF3B3B"
+    background: "rgba(255, 59, 59, 0.12)"
+
+accessibility:
+  role: "status"
+  label: "Status: {statusText}"
+
+---
+entity: element
+id: ELM-051-task-count-indicator
+name: "Task Count Indicator"
+docs: ./tasks.md
+tests: ./tasks.feature
+
+type: text
+
+layout:
+  font-size: 11px
+  font-family: "var(--sf-font-body)"
+  line-height: 1.4
+
+states:
+  default:
+    color: "var(--sf-text-muted)"
+
+notes: |
+  Renders text in the format "X tasks / Y tests".
+  X is the total number of tasks in the group.
+  Y is the total number of test scenarios associated with the group.
+
+accessibility:
+  role: "status"
+  label: "{taskCount} tasks, {testCount} tests"
+
+---
+entity: element
+id: ELM-052-view-mode-toggle
+name: "View Mode Toggle"
+docs: ./tasks.md
+tests: ./tasks.feature
+
+type: button
+
+layout:
+  display: inline-flex
+  align-items: center
+  gap: 0
+  border-radius: 6px
+  overflow: hidden
+  background: "var(--sf-surface)"
+
+states:
+  default:
+    color: "var(--sf-text-muted)"
+    background: "var(--sf-surface)"
+    padding: "6px 10px"
+  hover:
+    color: "var(--sf-text)"
+    background: "rgba(0, 240, 255, 0.05)"
+  active:
+    color: "var(--sf-accent)"
+    background: "var(--sf-accent-dim)"
+
+actions:
+  - trigger: click
+    action: { $ref: ACT-016-set-filter }
+    payload:
+      view: tasks
+      key: viewMode
+      value: "kanban | dag"
+
+notes: |
+  Two adjacent icon buttons forming a segmented control.
+  The "kanban" button shows a columns icon.
+  The "dag" button shows a directed graph icon.
+  Only one mode can be active at a time.
+  Clicking triggers ACT-016-set-filter with the selected viewMode value.
+
+accessibility:
+  role: "radiogroup"
+  label: "Task view mode"

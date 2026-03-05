@@ -1,0 +1,57 @@
+entity: action
+id: ACT-028-landing-cta
+name: "Landing CTA"
+docs: ./landing.md
+tests: ./landing.feature
+
+type: navigate
+trigger:
+  - element: { $ref: ELM-074-hero-cta-primary }
+    interaction: click
+  - element: { $ref: ELM-085-cta-button }
+    interaction: click
+preconditions: []
+events-dispatched: []
+
+side-effects:
+  - type: navigate
+    target: "signup or docs"
+    description: "Navigates to the signup page or documentation depending on CTA context."
+  - type: analytics
+    event: "cta_click"
+    properties:
+      source: "hero | cta-section"
+      variant: "primary"
+
+notes: |
+  Click on the primary CTA button on the landing page.
+  The hero CTA (ELM-074) and the bottom CTA section button (ELM-085) both
+  trigger internal navigation to the signup or getting-started page.
+  An analytics tracking event is fired as a side effect.
+
+---
+entity: action
+id: ACT-029-landing-navigate
+name: "Landing Navigate"
+docs: ./landing.md
+tests: ./landing.feature
+
+type: navigate-external
+trigger:
+  - element: { $ref: ELM-075-hero-cta-secondary }
+    interaction: click
+  - element: { $ref: ELM-086-footer-link }
+    interaction: click
+preconditions: []
+events-dispatched: []
+
+side-effects:
+  - type: navigate-external
+    target: "external URL (docs, GitHub, etc.)"
+    new-tab: true
+
+notes: |
+  Click on a secondary CTA or footer link on the landing page.
+  Navigates to an external URL (documentation site, GitHub repository, etc.).
+  External links open in a new browser tab (_blank).
+  No internal events are dispatched -- these are standard anchor navigations.

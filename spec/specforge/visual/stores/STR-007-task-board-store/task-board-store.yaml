@@ -1,0 +1,47 @@
+entity: store
+id: STR-007-task-board-store
+name: "Task Board Store"
+docs: ./task-board-store.md
+tests: ./task-board-store.feature
+
+initial-state:
+  groups: []
+
+# TaskGroupView shape:
+# {
+#   groupId: string
+#   name: string
+#   status: "pending" | "in-progress" | "completed" | "blocked"
+#   taskCount: number
+#   testCount: number
+#   requirementIds: string[]
+# }
+
+reducers:
+  EVT-021-task-groups-loaded:
+    - field: "groups"
+      operation: set
+      value: "payload.groups"
+  EVT-022-task-group-status-changed:
+    - field: "groups[groupId === payload.groupId].status"
+      operation: set
+      value: "payload.status"
+  EVT-023-task-group-updated:
+    - field: "groups[groupId === payload.groupId]"
+      operation: set
+      value: "payload.group"
+
+selectors:
+  - name: "groupsByStatus"
+    compute: "groups grouped into { pending: [], inProgress: [], completed: [], blocked: [] }"
+  - name: "totalTasks"
+    compute: "sum of all groups' taskCount"
+  - name: "completionPercent"
+    compute: "(completed groups count / total groups count) * 100"
+
+consumers:
+  - $ref: CMP-013-kanban-board
+  - $ref: CMP-014-dag-list
+
+persistence:
+  enabled: false

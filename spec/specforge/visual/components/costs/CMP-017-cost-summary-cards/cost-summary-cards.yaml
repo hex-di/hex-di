@@ -1,0 +1,85 @@
+entity: component
+id: CMP-017-cost-summary-cards
+name: "Cost Summary Cards"
+docs: ./cost-summary-cards.md
+tests: ./cost-summary-cards.feature
+
+props:
+  - name: "summary"
+    type: object
+    required: true
+    description: "CostSummary object with totalCost, inputTokens, outputTokens, budgetPercent"
+
+types:
+  CostSummary:
+    totalCost: number
+    inputTokens: number
+    outputTokens: number
+    budgetPercent: number
+
+  BudgetZone:
+    enum: ["safe", "warning", "critical", "exhausted"]
+
+children:
+  - $ref: ELM-063-cost-summary-card
+  - $ref: ELM-064-budget-gauge
+
+stores:
+  - $ref: STR-010-cost-tracker-store
+    binds:
+      - selector: "summary"
+        to: "summary"
+
+layout:
+  display: flex
+  flex-direction: row
+  gap: 16px
+  width: 100%
+
+sections:
+  - name: "cards"
+    layout:
+      display: flex
+      gap: 16px
+      flex: "1 1 0"
+    children:
+      - $ref: ELM-063-cost-summary-card
+        instance: "total-cost"
+        label: "Total Cost"
+        format: "$%.2f"
+        value-field: "summary.totalCost"
+      - $ref: ELM-063-cost-summary-card
+        instance: "input-tokens"
+        label: "Input Tokens"
+        format: "###,###"
+        value-field: "summary.inputTokens"
+      - $ref: ELM-063-cost-summary-card
+        instance: "output-tokens"
+        label: "Output Tokens"
+        format: "###,###"
+        value-field: "summary.outputTokens"
+      - $ref: ELM-063-cost-summary-card
+        instance: "budget"
+        label: "Budget"
+        contains: { $ref: ELM-064-budget-gauge }
+        value-field: "summary.budgetPercent"
+
+budget-gauge:
+  zones:
+    - name: "safe"
+      range: "0-60%"
+      color: "var(--sf-accent)"
+    - name: "warning"
+      range: "60-85%"
+      color: "#FF8C00"
+    - name: "critical"
+      range: "85-95%"
+      color: "#FF3B3B"
+    - name: "exhausted"
+      range: "95-100%"
+      color: "#FF3B3B"
+      animation: "pulse 1.5s ease-in-out infinite"
+
+accessibility:
+  role: "region"
+  label: "Cost summary"

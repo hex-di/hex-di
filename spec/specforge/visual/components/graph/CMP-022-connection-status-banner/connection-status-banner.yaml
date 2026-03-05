@@ -1,0 +1,48 @@
+entity: component
+id: CMP-022-connection-status-banner
+name: "Connection Status Banner"
+docs: ./connection-status-banner.md
+tests: ./connection-status-banner.feature
+
+props:
+  - name: "connectionStatus"
+    type: string
+    required: true
+    description: "Connection status: 'connected' or 'disconnected'"
+
+types:
+  ConnectionStatus:
+    enum: ["connected", "disconnected"]
+
+children:
+  - $ref: ELM-070-connection-status-dot
+
+stores:
+  - $ref: STR-011-graph-store
+    binds:
+      - selector: "isConnected"
+        to: "isConnected"
+
+layout:
+  display: inline-flex
+  align-items: center
+  gap: 8px
+  padding: "6px 12px"
+  border-radius: 6px
+
+states:
+  connected:
+    background: "rgba(0, 240, 255, 0.06)"
+    text: "Connected to graph"
+    text-color: "var(--sf-text-muted)"
+    dot-color: "var(--sf-accent)"
+  disconnected:
+    background: "rgba(255, 59, 59, 0.08)"
+    text: "Disconnected — data may be stale"
+    text-color: "#FF3B3B"
+    dot-color: "#FF3B3B"
+
+accessibility:
+  role: "status"
+  label: "Graph database connection status"
+  live: "polite"

@@ -38,6 +38,22 @@ export type ServiceOrigin = "own" | "inherited" | "overridden";
 export type ContainerKind = "root" | "child" | "lazy" | "scope";
 
 /**
+ * Phantom type parameter for tracking container disposal state at the type level.
+ *
+ * Used as a phantom type parameter on Container and Scope to encode lifecycle
+ * state transitions. When `"active"`, resolution methods are available. When
+ * `"disposed"`, resolution methods become `never` (type error to call them).
+ *
+ * This is separate from {@link ContainerPhase} which tracks detailed inspection
+ * phases across all container types. `DisposalPhase` is specifically for
+ * compile-time prevention of resolve-after-dispose via phantom type parameters.
+ *
+ * @see ADR-CO-003 for the design decision behind disposal state phantom types
+ * @see BEH-CO-07 for the behavior specification
+ */
+export type DisposalPhase = "active" | "disposed";
+
+/**
  * Container phase states across all container types.
  *
  * Different container types have different valid phases:

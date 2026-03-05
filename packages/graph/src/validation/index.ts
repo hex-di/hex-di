@@ -20,6 +20,9 @@
 // Re-export all types from the types/ folder
 export * from "./types/index.js";
 
+// Runtime validation utilities
+export { checkOperationCompleteness, getPortMethodNames } from "./runtime/index.js";
+
 // =============================================================================
 // Re-export Runtime Error Parsing from @hex-di/core (canonical source)
 // =============================================================================

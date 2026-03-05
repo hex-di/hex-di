@@ -1,0 +1,72 @@
+entity: store
+id: STR-015-keyboard-shortcut-store
+name: "Keyboard Shortcut Store"
+docs: ./keyboard-shortcut-store.md
+tests: ./keyboard-shortcut-store.feature
+
+initial-state:
+  registeredShortcuts: {}
+
+types:
+  ShortcutBinding:
+    key: string
+    modifiers: "('ctrl' | 'shift' | 'alt' | 'meta')[]"
+    action: string
+    context: "'global' | 'search' | 'chat' | 'graph'"
+    description: string
+
+  ShortcutMap:
+    description: "Record<string, ShortcutBinding> keyed by a composite id (context:key)"
+
+reducers:
+  REG-001:
+    description: "shortcut-registered"
+    effects:
+      - field: "registeredShortcuts"
+        operation: set
+        value: "{ ...registeredShortcuts, [payload.id]: payload.binding }"
+
+  REG-002:
+    description: "shortcut-unregistered"
+    effects:
+      - field: "registeredShortcuts"
+        operation: remove
+        value: "payload.id"
+
+selectors:
+  - name: "shortcutsForContext"
+    compute: "Object.values(registeredShortcuts).filter(s => s.context === context)"
+    parameters: [context]
+
+consumers:
+  - $ref: PG-010-app-shell
+  - $ref: CMP-003-search-overlay
+
+persistence:
+  enabled: false
+
+hook: useKeyboardShortcut
+
+default-bindings:
+  - key: "/"
+    modifiers: []
+    action: "open-search"
+    context: "global"
+    description: "Open search overlay"
+
+  - key: "Escape"
+    modifiers: []
+    action: "close-overlay"
+    context: "global"
+    description: "Close active overlay"
+
+  - key: "k"
+    modifiers: ["meta"]
+    action: "open-search"
+    context: "global"
+    description: "Open search overlay (alternate)"
+
+notes: |
+  This store acts as a registrar. UI elements register keyboard shortcuts
+  on mount and unregister on unmount. The app shell listens for keydown
+  events and looks up matching bindings to dispatch the corresponding action.

@@ -1,0 +1,139 @@
+entity: wireframe
+id: WF-001-session-lifecycle
+name: "Session Lifecycle"
+docs: ./session-lifecycle.md
+tests: ./session-lifecycle.feature
+
+viewports:
+  desktop: { min-width: 1024 }
+  tablet: { min-width: 768, max-width: 1023 }
+  mobile: { max-width: 767 }
+
+theme:
+  colors:
+    background: "#020408"
+    surface: "#08101C"
+    surface-elevated: "rgba(8, 16, 28, 0.85)"
+    accent: "#00F0FF"
+    accent-light: "#5FFFFF"
+    accent-dim: "rgba(0, 240, 255, 0.15)"
+    text: "#DAE6F0"
+    text-muted: "#586E85"
+    warning: "#FF5E00"
+    success: "#22C55E"
+    error: "#FF3B3B"
+    info: "#00F0FF"
+    severity-critical: "#FF3B3B"
+    severity-major: "#FF8C00"
+    severity-minor: "#FFD600"
+    severity-observation: "#4FC3F7"
+  agent-roles:
+    orchestrator: "#00F0FF"
+    analyst: "#A78BFA"
+    writer: "#34D399"
+    reviewer: "#F472B6"
+    architect: "#FBBF24"
+  phase-states:
+    pending: "#586E85"
+    active: "#00F0FF"
+    completed: "#22C55E"
+    failed: "#FF3B3B"
+  budget-zones:
+    safe: "#22C55E"
+    warning: "#FFD600"
+    critical: "#FF5E00"
+    exhausted: "#FF3B3B"
+  typography:
+    font-body: "'Inter', -apple-system, sans-serif"
+    font-display: "'Rajdhani', 'Inter', sans-serif"
+    font-mono: "'JetBrains Mono', 'Fira Code', monospace"
+    base-size: "14px"
+
+pages:
+  - $ref: PG-001-home
+  - $ref: PG-002-chat
+  - $ref: PG-003-pipeline
+  - $ref: PG-004-spec-viewer
+  - $ref: PG-005-task-board
+  - $ref: PG-006-coverage-dashboard
+  - $ref: PG-007-acp-session
+  - $ref: PG-008-cost-tracker
+  - $ref: PG-009-graph-explorer
+  - $ref: PG-010-app-shell
+  - $ref: PG-011-landing-page
+
+stores:
+  - $ref: STR-002-active-session-store
+  - $ref: STR-003-sessions-store
+  - $ref: STR-005-pipeline-store
+  - $ref: STR-014-router-store
+
+actions:
+  - $ref: ACT-001-navigate-to-view
+  - $ref: ACT-006-select-session
+  - $ref: ACT-008-create-session
+  - $ref: ACT-009-resume-session
+  - $ref: ACT-010-delete-session
+
+events:
+  - $ref: EVT-001-view-changed
+  - $ref: EVT-002-session-selected
+  - $ref: EVT-003-session-created
+  - $ref: EVT-004-session-status-changed
+  - $ref: EVT-005-session-error
+  - $ref: EVT-006-sessions-loaded
+  - $ref: EVT-007-session-deleted
+
+journey:
+  - step: 1
+    page: PG-011-landing-page
+    description: "User arrives at landing page and clicks Get Started"
+  - step: 2
+    page: PG-001-home
+    description: "Home view loads with session table (empty or populated)"
+  - step: 3
+    page: PG-001-home
+    action: ACT-008-create-session
+    description: "User fills new session form and submits"
+    event: EVT-003-session-created
+  - step: 4
+    page: PG-001-home
+    description: "New session appears in session table"
+  - step: 5
+    page: PG-001-home
+    action: ACT-006-select-session
+    description: "User clicks a session row to select it"
+    event: EVT-002-session-selected
+  - step: 6
+    page: PG-002-chat
+    description: "App navigates to Chat view for the selected session"
+    event: EVT-001-view-changed
+  - step: 7
+    page: PG-002-chat
+    description: "User starts discovery conversation with agent"
+    event: EVT-004-session-status-changed
+  - step: 8
+    page: PG-003-pipeline
+    description: "User navigates to Pipeline to monitor phase progress"
+  - step: 9
+    page: PG-003-pipeline
+    description: "Pipeline phases progress from pending to active to completed"
+    event: EVT-004-session-status-changed
+  - step: 10
+    page: PG-001-home
+    description: "Session status updates in table, session marked completed"
+
+decision-points:
+  - at-step: 2
+    condition: "sessions.length === 0"
+    branch-a: "Show empty state with welcome message and create form"
+    branch-b: "Show populated session table"
+  - at-step: 5
+    condition: "session.status"
+    branch-a: "If idle or paused, resume with ACT-009"
+    branch-b: "If active, navigate directly to chat"
+    branch-c: "If completed, navigate to spec viewer or pipeline summary"
+  - at-step: 7
+    condition: "Discovery completes or errors"
+    branch-a: "On success, pipeline advances to next phase"
+    branch-b: "On error, EVT-005 dispatched, session enters error state"

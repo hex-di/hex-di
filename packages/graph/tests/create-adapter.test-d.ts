@@ -223,6 +223,7 @@ describe("clonable adapter", () => {
       requires: [],
       lifetime: "singleton",
       clonable: true,
+      freeze: true,
       factory: () => ({ log: () => {} }),
     });
 
@@ -242,6 +243,7 @@ describe("clonable adapter", () => {
       requires: [],
       lifetime: "singleton",
       clonable: false,
+      freeze: true,
       factory: () => ({ log: () => {} }),
     });
 
@@ -258,6 +260,7 @@ describe("clonable adapter", () => {
       requires: [],
       lifetime: "singleton",
       clonable: true,
+      freeze: true,
       factory: () => ({ log: () => {} }),
     });
 
@@ -285,6 +288,7 @@ describe("clonable adapter", () => {
       requires: [LoggerPort, DatabasePort],
       lifetime: "scoped",
       clonable: true,
+      freeze: true,
       factory: deps => {
         expectTypeOf(deps.Logger).toEqualTypeOf<Logger>();
         expectTypeOf(deps.Database).toEqualTypeOf<Database>();

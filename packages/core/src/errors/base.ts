@@ -4,6 +4,9 @@
  * @packageDocumentation
  */
 
+import type { BlameContext } from "./blame.js";
+import { createBlameContext } from "./blame.js";
+
 // V8-specific Error.captureStackTrace type
 type V8ErrorConstructor = typeof Error & {
   captureStackTrace?(targetObject: object, constructorOpt?: unknown): void;
@@ -58,6 +61,7 @@ export function extractErrorMessage(cause: unknown): string {
  * - `code`: A stable string constant for programmatic error identification
  * - `isProgrammingError`: Indicates whether this error represents a programming
  *   mistake (true) or a runtime condition (false)
+ * - `blame`: Optional blame context identifying which adapter violated which contract
  *
  * @remarks
  * - All concrete error classes must extend this base class
@@ -71,8 +75,8 @@ export function extractErrorMessage(cause: unknown): string {
  * } catch (error) {
  *   if (error instanceof ContainerError) {
  *     console.log(`Error code: ${error.code}`);
- *     if (error.isProgrammingError) {
- *       // This is a bug in the application code
+ *     if (error.blame) {
+ *       console.log(`Blame: ${error.blame.adapterFactory.name}`);
  *     }
  *   }
  * }
@@ -96,15 +100,30 @@ export abstract class ContainerError extends Error {
   abstract readonly isProgrammingError: boolean;
 
   /**
+   * Optional blame context identifying which adapter violated which port contract.
+   *
+   * When present, the blame context is always frozen.
+   *
+   * @see {@link BlameContext}
+   */
+  readonly blame?: BlameContext;
+
+  /**
    * Creates a new ContainerError instance.
    *
    * @param message - The error message describing what went wrong
+   * @param blame - Optional blame context for error attribution
    */
-  constructor(message: string) {
+  constructor(message: string, blame?: BlameContext) {
     super(message);
 
     // Ensure proper prototype chain for instanceof checks
     Object.setPrototypeOf(this, new.target.prototype);
+
+    // Freeze and attach blame context if provided
+    if (blame !== undefined) {
+      this.blame = createBlameContext(blame);
+    }
 
     // Capture stack trace excluding this constructor for cleaner traces
     const ErrorWithCapture: V8ErrorConstructor = Error;

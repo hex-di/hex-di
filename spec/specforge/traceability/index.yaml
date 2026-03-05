@@ -1,0 +1,48 @@
+kind: traceability
+package: specforge
+infix: SF
+entries:
+  - id: TRACE-SF-001-overview
+    file: TRACE-SF-001-overview.md
+    title: "Traceability Overview"
+    status: active
+  - id: TRACE-SF-002-invariant-behavior
+    file: TRACE-SF-002-invariant-behavior.md
+    title: "Invariant -> Behavior Traceability"
+    status: active
+  - id: TRACE-SF-003-adr-behavior
+    file: TRACE-SF-003-adr-behavior.md
+    title: "ADR -> Behavior Traceability"
+    status: active
+  - id: TRACE-SF-004-type-files
+    file: TRACE-SF-004-type-files.md
+    title: "Canonical Type Files"
+    status: active
+  - id: TRACE-SF-005-behavior-type
+    file: TRACE-SF-005-behavior-type.md
+    title: "Behavior -> Type Traceability"
+    status: active
+  - id: TRACE-SF-006-architecture-behavior
+    file: TRACE-SF-006-architecture-behavior.md
+    title: "Architecture -> Behavior Traceability"
+    status: active
+  - id: TRACE-SF-007-capability-level
+    file: TRACE-SF-007-capability-level.md
+    title: "Capability-Level Traceability"
+    status: active
+  - id: TRACE-SF-008-requirement-level
+    file: TRACE-SF-008-requirement-level.md
+    title: "Requirement-Level Traceability"
+    status: active
+  - id: TRACE-SF-009-fmea
+    file: TRACE-SF-009-fmea.md
+    title: "FMEA Traceability"
+    status: active
+  - id: TRACE-SF-010-dod-coverage
+    file: TRACE-SF-010-dod-coverage.md
+    title: "DoD Traceability"
+    status: active
+  - id: TRACE-SF-011-test-coverage
+    file: TRACE-SF-011-test-coverage.md
+    title: "Test Coverage Traceability"
+    status: active

@@ -1,0 +1,63 @@
+entity: component
+id: CMP-024-feature-grid
+name: "Feature Grid"
+docs: ./feature-grid.md
+tests: ./feature-grid.feature
+
+description: |
+  Grid of six feature cards highlighting key SpecForge capabilities.
+  Displayed as a 3-column grid on desktop, 2-column on tablet, and
+  single column on mobile.
+
+props:
+  features:
+    type: array
+    items:
+      type: object
+      properties:
+        icon: { type: string }
+        title: { type: string }
+        description: { type: string }
+    default:
+      - icon: "pipeline"
+        title: "Multi-Agent Pipeline"
+        description: "Orchestrate specialized AI agents through discovery, planning, and generation phases."
+      - icon: "graph"
+        title: "Knowledge Graph"
+        description: "Build and traverse a living knowledge graph of your codebase relationships."
+      - icon: "conversation"
+        title: "Discovery Conversations"
+        description: "AI-guided conversations to understand your domain before generating specs."
+      - icon: "compliance"
+        title: "GxP Compliance"
+        description: "Built-in audit trails, traceability matrices, and regulatory documentation."
+      - icon: "token"
+        title: "Token Budget Management"
+        description: "Intelligent token allocation across agents to optimize cost and quality."
+      - icon: "acp-session"
+        title: "Real-time ACP Session"
+        description: "Shared ACP session architecture for inter-agent communication and coordination."
+
+layout:
+  display: grid
+  grid-template-columns: "repeat(3, 1fr)"
+  gap: 24px
+  max-width: 1080px
+  margin: 0 auto
+  padding: "80px 24px"
+
+responsive:
+  tablet:
+    breakpoint: 768px
+    grid-template-columns: "repeat(2, 1fr)"
+  mobile:
+    breakpoint: 480px
+    grid-template-columns: "1fr"
+
+children:
+  - $ref: ELM-076-feature-card
+  - $ref: ELM-077-feature-icon
+
+accessibility:
+  role: "region"
+  label: "Key features"

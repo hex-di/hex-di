@@ -132,7 +132,7 @@ describe("ReactiveScopeProvider", () => {
       );
 
       // Start disposal (checking during the process)
-      let disposePromise: Promise<void>;
+      let disposePromise: Promise<unknown>;
       await act(async () => {
         disposePromise = scope.dispose();
       });

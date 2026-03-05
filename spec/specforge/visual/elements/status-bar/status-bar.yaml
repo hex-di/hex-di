@@ -1,0 +1,119 @@
+entity: element
+id: ELM-005-status-dot
+name: "Status Dot"
+docs: ./status-bar.md
+tests: ./status-bar.feature
+
+type: container
+
+layout:
+  width: 6px
+  height: 6px
+  border-radius: 50%
+  flex-shrink: 0
+
+states:
+  connected:
+    background: "var(--sf-accent)"
+  idle:
+    background: "var(--sf-text-muted)"
+
+bindings:
+  - store: { $ref: STR-002-active-session-store }
+    field: activeSession
+    mapping: "activeSession !== null ? 'connected' : 'idle'"
+
+accessibility:
+  role: "status"
+  label: "Connection status: {state}"
+
+---
+entity: element
+id: ELM-006-session-id-text
+name: "Session ID Text"
+docs: ./status-bar.md
+tests: ./status-bar.feature
+
+type: text
+
+layout:
+  font-size: 11px
+  font-family: "var(--sf-font-body)"
+  white-space: nowrap
+  overflow: hidden
+  text-overflow: ellipsis
+
+states:
+  default:
+    color: "var(--sf-text-muted)"
+
+bindings:
+  - store: { $ref: STR-002-active-session-store }
+    field: activeSession.id
+    fallback: "none"
+
+accessibility:
+  role: "status"
+  label: "Session ID: {value}"
+
+---
+entity: element
+id: ELM-007-session-status-text
+name: "Session Status Text"
+docs: ./status-bar.md
+tests: ./status-bar.feature
+
+type: text
+
+layout:
+  font-size: 11px
+  font-family: "var(--sf-font-body)"
+  white-space: nowrap
+
+states:
+  idle:
+    color: "var(--sf-text-muted)"
+  running:
+    color: "var(--sf-accent)"
+  paused:
+    color: "var(--sf-warning)"
+  completed:
+    color: "var(--sf-success)"
+  failed:
+    color: "var(--sf-error)"
+
+bindings:
+  - store: { $ref: STR-002-active-session-store }
+    field: activeSession.status
+    fallback: "idle"
+
+accessibility:
+  role: "status"
+  label: "Session status: {value}"
+
+---
+entity: element
+id: ELM-008-cost-text
+name: "Cost Text"
+docs: ./status-bar.md
+tests: ./status-bar.feature
+
+type: text
+
+layout:
+  font-size: 11px
+  font-family: "var(--sf-font-body)"
+  white-space: nowrap
+
+states:
+  default:
+    color: "var(--sf-text-muted)"
+
+bindings:
+  - store: { $ref: STR-010-cost-tracker-store }
+    field: summary.totalCost
+    format: "$%.2f"
+
+accessibility:
+  role: "status"
+  label: "Total session cost: {value}"

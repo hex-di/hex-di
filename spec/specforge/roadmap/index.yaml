@@ -1,0 +1,72 @@
+kind: roadmap
+package: specforge
+variant: product
+entries:
+  - id: RM-01-foundation
+    file: RM-01-foundation.md
+    title: "Phase 1: Foundation"
+    status: planned
+  - id: RM-02-multi-agent-orchestration
+    file: RM-02-multi-agent-orchestration.md
+    title: "Phase 2: Multi-Agent Orchestration"
+    status: planned
+  - id: RM-03-knowledge-graph-composition
+    file: RM-03-knowledge-graph-composition.md
+    title: "Phase 3: Knowledge Graph & Composition"
+    status: planned
+  - id: RM-04-desktop-app
+    file: RM-04-desktop-app.md
+    title: "Phase 4: Desktop App (Tauri)"
+    status: planned
+  - id: RM-05-web-dashboard-vscode
+    file: RM-05-web-dashboard-vscode.md
+    title: "Phase 5: Web Dashboard + VS Code Extension"
+    status: planned
+  - id: RM-06-reverse-engineering-flows
+    file: RM-06-reverse-engineering-flows.md
+    title: "Phase 6: Reverse Engineering & Additional Flows"
+    status: planned
+  - id: RM-07-saas-collaboration
+    file: RM-07-saas-collaboration.md
+    title: "Phase 7: SaaS Mode + Collaboration"
+    status: planned
+  - id: RM-08-import-export-extensibility
+    file: RM-08-import-export-extensibility.md
+    title: "Phase 8: Import/Export + Extensibility Plugins"
+    status: planned
+  - id: RM-09-hooks-cost-optimization
+    file: RM-09-hooks-cost-optimization.md
+    title: "Phase 9: Hook Infrastructure + Advanced Cost Optimization"
+    status: planned
+  - id: RM-10-memory-agents-mcp
+    file: RM-10-memory-agents-mcp.md
+    title: "Phase 10: Memory + Advanced Agents + MCP"
+    status: planned
+  - id: RM-11-permissions-structured-output
+    file: RM-11-permissions-structured-output.md
+    title: "Phase 11: Permission Governance + Structured Output + Stress Testing"
+    status: planned
+  - id: RM-12-event-triggered-flows
+    file: RM-12-event-triggered-flows.md
+    title: "Phase 12: Event-Triggered Flows & Continuous Verification"
+    status: planned
+  - id: RM-13-ecosystem-marketplace
+    file: RM-13-ecosystem-marketplace.md
+    title: "Phase 13: Ecosystem & Agent Marketplace"
+    status: planned
+  - id: RM-14-intelligence-layer
+    file: RM-14-intelligence-layer.md
+    title: "Phase 14: Intelligence Layer"
+    status: planned
+  - id: RM-15-autonomous-maintenance
+    file: RM-15-autonomous-maintenance.md
+    title: "Phase 15: Autonomous Specification Maintenance"
+    status: planned
+  - id: RM-16-product-track
+    file: RM-16-product-track.md
+    title: "Product Track"
+    status: planned
+  - id: RM-17-dependency-status
+    file: RM-17-dependency-status.md
+    title: "Dependency Graph"
+    status: planned

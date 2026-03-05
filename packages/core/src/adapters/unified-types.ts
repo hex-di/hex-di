@@ -243,11 +243,46 @@ export interface BaseUnifiedConfig<
   readonly clonable?: boolean;
 
   /**
+   * Whether the resolved service instance should be `Object.freeze()`d before injection.
+   *
+   * When `true` (or omitted, the default), the container applies `Object.freeze()`
+   * to the service instance after factory invocation, before returning it to consumers.
+   * This prevents capability tampering where one consumer modifies a shared service.
+   *
+   * When `false`, the service instance is returned as-is (mutable). Use this for
+   * services that require mutable internal state (e.g., connection pools, caches).
+   *
+   * @remarks
+   * Freeze is shallow only (consistent with Result/Option freeze behavior).
+   *
+   * @default true
+   */
+  readonly freeze?: boolean;
+
+  /**
    * Optional cleanup function called during disposal.
    *
    * @param instance - The service instance being disposed
    */
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+
+  /**
+   * Optional runtime metadata listing the `_tag` values of error types
+   * this adapter's factory may produce.
+   *
+   * Used by graph inspection to compute transitive error profiles per port.
+   * When omitted, the adapter is considered infallible for inspection purposes.
+   *
+   * @example
+   * ```typescript
+   * const dbAdapter = createAdapter({
+   *   provides: DatabasePort,
+   *   factory: (): Result<Database, DbError> => { ... },
+   *   errorTags: ["ConnectionError"],
+   * });
+   * ```
+   */
+  readonly errorTags?: readonly string[];
 }
 
 /**

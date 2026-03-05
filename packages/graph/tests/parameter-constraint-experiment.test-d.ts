@@ -73,6 +73,7 @@ interface MockLoggerAdapter {
   readonly factoryKind: FactoryKind;
   readonly factory: () => Logger;
   readonly clonable: false;
+  readonly freeze: true;
 }
 
 interface MockDatabaseAdapter {
@@ -82,6 +83,7 @@ interface MockDatabaseAdapter {
   readonly factoryKind: FactoryKind;
   readonly factory: () => Database;
   readonly clonable: false;
+  readonly freeze: true;
 }
 
 // =============================================================================

@@ -62,22 +62,26 @@
     ],
     "__props": "9d86e7fa"
   },
-  "/docs-d28": {
+  "/docs-3bb": {
     "__comp": "5e95c892",
     "__context": {
       "plugin": "aba21aa0"
     }
   },
-  "/docs-cad": {
+  "/docs-532": {
     "__comp": "a7bd4aaa",
     "__props": "0058b4c6"
   },
-  "/docs-600": {
+  "/docs-9f2": {
     "__comp": "a94703ab"
   },
   "/docs/-56e": {
     "__comp": "17896441",
     "content": "c377a04b"
+  },
+  "/docs/advanced/effect-system-1ca": {
+    "__comp": "17896441",
+    "content": "4612400a"
   },
   "/docs/advanced/serialization-465": {
     "__comp": "17896441",
@@ -103,9 +107,17 @@
     "__comp": "17896441",
     "content": "aa89e07a"
   },
+  "/docs/guides/combinators-50b": {
+    "__comp": "17896441",
+    "content": "a1ae17a0"
+  },
   "/docs/guides/generators-1ee": {
     "__comp": "17896441",
     "content": "b1fc473f"
+  },
+  "/docs/guides/tagged-error-handling-19d": {
+    "__comp": "17896441",
+    "content": "e2ceb6dd"
   },
   "/docs/guides/transformations-aa4": {
     "__comp": "17896441",

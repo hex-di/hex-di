@@ -1,0 +1,57 @@
+entity: page
+id: PG-002-chat
+name: "Chat"
+docs: ./chat.md
+tests: ./chat.feature
+
+route:
+  path: "/chat"
+  hash: true
+  guard:
+    store: STR-002-active-session-store
+    condition: "sessionId !== null"
+    redirect: "#home"
+
+layout: single-column
+
+meta:
+  title: "SpecForge — Chat"
+
+components:
+  - $ref: CMP-007-token-budget-bar
+    position: top-fixed
+    description: "Token budget progress bar showing session consumption"
+  - $ref: CMP-008-discovery-status-bar
+    position: below-budget-bar
+    description: "Discovery phase status with brief ready/accepted indicators"
+  - $ref: CMP-009-message-list
+    position: main-content
+    description: "Scrollable message list (flex-grow, overflow-y: auto)"
+  - $ref: CMP-010-chat-input-area
+    position: bottom-fixed
+    description: "Chat input area pinned to bottom of the page"
+
+stores:
+  - $ref: STR-004-chat-store
+  - $ref: STR-002-active-session-store
+
+states:
+  no-session:
+    condition: "STR-002.sessionId === null"
+    display: "Prompt to select or create a session, with link to Home"
+  empty:
+    condition: "STR-004.messages.length === 0 && !STR-004.isProcessing"
+    display: "Prompt to start the conversation"
+  loading:
+    condition: "STR-004.isProcessing === true"
+    display: "Processing indicator in message list, input disabled"
+  error:
+    condition: "STR-004.error !== null"
+    display: "Error banner above input area"
+  active:
+    condition: "STR-004.messages.length > 0 && !STR-004.isProcessing"
+    display: "Messages flowing, input ready"
+
+accessibility:
+  role: "main"
+  label: "Discovery conversation"

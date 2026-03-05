@@ -1,0 +1,79 @@
+entity: component
+id: CMP-019-agent-cost-table
+name: "Agent Cost Table"
+docs: ./agent-cost-table.md
+tests: ./agent-cost-table.feature
+
+props:
+  - name: "byAgent"
+    type: array
+    required: true
+    description: "Array of AgentCost objects showing cost breakdown by agent role"
+
+types:
+  AgentCost:
+    agentRole: string
+    inputTokens: number
+    outputTokens: number
+    cost: number
+    invocations: number
+
+children:
+  - $ref: ELM-066-agent-cost-row
+
+stores:
+  - $ref: STR-010-cost-tracker-store
+    binds:
+      - selector: "byAgent"
+        to: "byAgent"
+  - $ref: STR-001-filter-store
+    binds:
+      - selector: "costs.agentRoles"
+        to: "agentRoleFilter"
+
+layout:
+  display: flex
+  flex-direction: column
+  width: 100%
+
+table:
+  columns:
+    - name: "Agent"
+      field: "agentRole"
+      sortable: true
+      width: "auto"
+      contains-badge: true
+    - name: "Input Tokens"
+      field: "inputTokens"
+      sortable: true
+      align: right
+      format: "###,###"
+    - name: "Output Tokens"
+      field: "outputTokens"
+      sortable: true
+      align: right
+      format: "###,###"
+    - name: "Cost"
+      field: "cost"
+      sortable: true
+      align: right
+      format: "$%.2f"
+    - name: "Invocations"
+      field: "invocations"
+      sortable: true
+      align: right
+  row-style:
+    alternating-background: true
+    even: "transparent"
+    odd: "rgba(0, 240, 255, 0.02)"
+
+empty-state:
+  text: "No agent cost data available."
+  color: "var(--sf-text-muted)"
+  font-size: 13px
+  text-align: center
+  padding: 32px
+
+accessibility:
+  role: "table"
+  label: "Cost breakdown by agent role"

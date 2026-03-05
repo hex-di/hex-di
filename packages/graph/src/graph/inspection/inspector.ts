@@ -17,7 +17,7 @@ import type {
   PortDirection,
 } from "../types/inspection.js";
 
-import { getPortDirection, getPortMetadata, ASYNC } from "@hex-di/core";
+import { getPortDirection, getPortMetadata, ASYNC, auditGraph } from "@hex-di/core";
 import { createCorrelationIdGenerator } from "./correlation.js";
 import {
   computeMaxChainDepth,
@@ -30,6 +30,8 @@ import { computeTypeComplexityScore, getPerformanceRecommendation } from "./comp
 import { detectUnnecessaryLazyPorts } from "./lazy-analysis.js";
 import { generateSuggestions } from "./suggestions.js";
 import { detectCycleAtRuntime } from "./runtime-cycle-detection.js";
+import { computeInitializationOrder } from "./init-order.js";
+import { computeErrorProfile, detectUnhandledErrors } from "./effect-propagation.js";
 
 /**
  * Inspects a built Graph and returns detailed runtime information.
@@ -50,8 +52,11 @@ import { detectCycleAtRuntime } from "./runtime-cycle-detection.js";
  * | Disposal warnings | O(A * D) | For each adapter, scan dependencies |
  * | Complexity score | O(E) | Sum of all dependency edges |
  * | Unnecessary lazy detection | O(L * (A + E)) | L = lazy port count |
+ * | Initialization order | O(A + E) | Kahn's algorithm |
+ * | Capability audit | O(A * S) | S = avg factory source length |
+ * | Effect propagation | O(A * (A + E)) | Transitive walk per port |
  * | Suggestions | O(U + O + D) | U = unsatisfied, O = orphans, D = disposal warnings |
- * | **Total** | **O(A * D + L * (A + E))** | Dominated by lazy analysis |
+ * | **Total** | **O(A * (A + E) + L * (A + E))** | Dominated by effect propagation and lazy analysis |
  *
  * ## Memory Complexity
  *
@@ -73,15 +78,17 @@ import { detectCycleAtRuntime } from "./runtime-cycle-detection.js";
  *
  * | Property                | Order Independent | Notes                           |
  * |-------------------------|-------------------|----------------------------------|
- * | `adapterCount`          | ✓ Yes             | Pure count                       |
- * | `provides`              | ✗ No              | Preserves registration order     |
- * | `unsatisfiedRequirements`| ✓ Yes            | Alphabetically sorted            |
- * | `dependencyMap`         | ✓ Yes             | Map semantics                    |
- * | `overrides`             | ✓ Yes             | Alphabetically sorted            |
- * | `maxChainDepth`         | ✓ Yes             | Computed via DFS, deterministic  |
- * | `orphanPorts`           | ✓ Yes             | Alphabetically sorted            |
- * | `isComplete`            | ✓ Yes             | Boolean derived from sets        |
- * | `typeComplexityScore`   | ✓ Yes             | Computed from structure          |
+ * | `adapterCount`          | Yes               | Pure count                       |
+ * | `provides`              | No                | Preserves registration order     |
+ * | `unsatisfiedRequirements`| Yes              | Alphabetically sorted            |
+ * | `dependencyMap`         | Yes               | Map semantics                    |
+ * | `overrides`             | Yes               | Alphabetically sorted            |
+ * | `maxChainDepth`         | Yes               | Computed via DFS, deterministic  |
+ * | `orphanPorts`           | Yes               | Alphabetically sorted            |
+ * | `isComplete`            | Yes               | Boolean derived from sets        |
+ * | `typeComplexityScore`   | Yes               | Computed from structure          |
+ * | `initializationOrder`   | No                | Stable: ties broken by registration order |
+ * | `errorProfile`          | Yes               | Tags sorted alphabetically       |
  *
  * Arrays derived from sets (`unsatisfiedRequirements`, `overrides`, `orphanPorts`)
  * are **alphabetically sorted** for deterministic output. Direct equality comparison
@@ -225,6 +232,10 @@ export function inspectGraph(
   // Detect unnecessary lazy ports (lazy ports that don't break any cycle)
   const unnecessaryLazyPorts = detectUnnecessaryLazyPorts(graph.adapters, dependencyMap);
 
+  // Compute effect propagation analysis (transitive error profiles and warnings)
+  const errorProfile = computeErrorProfile(graph.adapters, dependencyMap);
+  const effectWarnings = detectUnhandledErrors(graph.adapters, dependencyMap);
+
   // Generate actionable suggestions
   const suggestions = generateSuggestions(
     unsatisfiedRequirements,
@@ -239,6 +250,12 @@ export function inspectGraph(
   // Use provided generator or create an isolated one (no global state)
   const generator = options.generator ?? createCorrelationIdGenerator();
   const correlationId = generator(options.seed);
+
+  // Compute initialization order (stable topological sort with level grouping)
+  const initOrder = computeInitializationOrder(graph.adapters);
+
+  // Run capability audit on all adapters
+  const capabilities = auditGraph(graph);
 
   return Object.freeze({
     adapterCount: graph.adapters.length,
@@ -262,6 +279,10 @@ export function inspectGraph(
     ports: Object.freeze(ports.map(p => Object.freeze(p))),
     directionSummary: Object.freeze(directionSummary),
     actor: options.actor ? Object.freeze({ ...options.actor }) : undefined,
+    initializationOrder: initOrder ?? Object.freeze([]),
+    capabilities,
+    errorProfile,
+    effectWarnings,
   });
 }
 

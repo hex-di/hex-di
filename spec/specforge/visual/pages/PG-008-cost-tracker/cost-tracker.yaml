@@ -1,0 +1,74 @@
+entity: page
+id: PG-008-cost-tracker
+name: "Cost Tracker"
+docs: ./cost-tracker.md
+tests: ./cost-tracker.feature
+
+route:
+  path: "#costs"
+  hash: true
+  guard: null
+
+layout: single-column
+
+meta:
+  title: "SpecForge — Cost Tracker"
+
+components:
+  - $ref: CMP-004-filter-bar
+  - $ref: CMP-017-cost-summary-cards
+  - $ref: CMP-018-phase-cost-table
+  - $ref: CMP-019-agent-cost-table
+
+stores:
+  - $ref: STR-010-cost-tracker-store
+  - $ref: STR-001-filter-store
+  - $ref: STR-002-active-session-store
+
+description: |
+  Token usage and cost analysis with breakdown by phase and agent.
+  Summary cards display total cost, input tokens, output tokens, and budget
+  percentage gauge. A view-mode toggle switches between phase-breakdown and
+  agent-breakdown tables. Budget gauge uses color zones to indicate spending
+  health.
+
+filters:
+  phases:
+    type: multi-select
+    options: [discovery, planning, spec-authoring, review, implementation]
+  agentRoles:
+    type: multi-select
+    options:
+      - spec-author
+      - gxp-reviewer
+      - test-designer
+      - architect
+      - validator
+      - code-reviewer
+      - domain-expert
+      - orchestrator
+  viewMode:
+    type: toggle
+    options: [by-phase, by-agent]
+    default: by-phase
+
+budget-gauge-zones:
+  safe:
+    range: "0-60%"
+    color: "var(--sf-accent)"
+  warning:
+    range: "60-85%"
+    color: "#FF8C00"
+  critical:
+    range: "85-95%"
+    color: "#FF3B3B"
+  exhausted:
+    range: "95-100%"
+    color: "#FF3B3B"
+    animation: "pulsing"
+
+states:
+  - no-session
+  - empty
+  - loading
+  - populated

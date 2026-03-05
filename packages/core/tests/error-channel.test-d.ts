@@ -473,6 +473,7 @@ describe("adapterOrElse requires merge and clonable", () => {
     const primary = createAdapter({
       provides: LoggerPort,
       clonable: true,
+      freeze: true,
       factory: (): FactoryResult<Logger, MyError> => ({
         _tag: "Ok" as const,
         value: { log: () => {} },
@@ -557,6 +558,7 @@ describe("adapterOrHandle narrows TError by handled tags", () => {
       provides: LoggerPort,
       lifetime: "scoped",
       clonable: true,
+      freeze: true,
       factory: (): FactoryResult<Logger, NotFoundError> => ({
         _tag: "Ok" as const,
         value: { log: () => {} },

@@ -49,6 +49,7 @@ type AdapterProvidesShape<TProvides> = {
   readonly lifetime: string;
   readonly factoryKind: FactoryKind;
   readonly clonable: boolean;
+  readonly freeze: boolean;
 };
 
 /**
@@ -265,6 +266,29 @@ export type InferClonable<TAdapter> =
  * ```
  */
 export type IsClonableAdapter<TAdapter> = InferClonable<TAdapter> extends true ? true : false;
+
+/**
+ * Extracts the freeze configuration from an adapter type.
+ *
+ * Returns the `freeze` property type from the adapter.
+ * - `true` means the resolved service will be `Object.freeze()`d (default)
+ * - `false` means the resolved service will be returned as-is (mutable)
+ *
+ * @typeParam TAdapter - The adapter type to extract from
+ * @returns `true` or `false` based on the adapter's freeze config, defaults to `true`
+ *
+ * @example
+ * ```typescript
+ * const FrozenAdapter = createAdapter({ provides: LoggerPort, factory: () => ({ log: () => {} }) });
+ * type IsFrozen = InferFreeze<typeof FrozenAdapter>; // true
+ *
+ * const MutableAdapter = createAdapter({ provides: CachePort, factory: () => new Map(), freeze: false });
+ * type IsFrozenMut = InferFreeze<typeof MutableAdapter>; // false
+ * ```
+ */
+export type InferFreeze<TAdapter> = TAdapter extends { readonly freeze: infer TFreeze }
+  ? TFreeze
+  : true;
 
 // =============================================================================
 // Debug Inference Types

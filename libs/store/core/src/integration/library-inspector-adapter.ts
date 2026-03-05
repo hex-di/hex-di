@@ -44,6 +44,7 @@ export const StoreLibraryInspectorAdapter: Adapter<
   lifetime: "singleton" as const,
   factoryKind: "sync" as const,
   clonable: false as const,
+  freeze: true as const,
   factory: (deps: {
     StoreInspector: InferService<typeof StoreInspectorPort>;
   }): InferService<typeof StoreLibraryInspectorPort> =>

@@ -29,6 +29,7 @@ function createAsyncAdapter(portObj: any, requires: any[] = []) {
     lifetime: "singleton" as const,
     factory: vi.fn(),
     factoryKind: "async" as const,
+    freeze: true,
     clonable: false,
   };
 }

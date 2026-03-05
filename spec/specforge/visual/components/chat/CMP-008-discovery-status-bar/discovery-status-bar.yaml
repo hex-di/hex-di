@@ -1,0 +1,82 @@
+entity: component
+id: CMP-008-discovery-status-bar
+name: "Discovery Status Bar"
+docs: ./discovery-status-bar.md
+tests: ./discovery-status-bar.feature
+
+props:
+  - name: "discoveryStatus"
+    type: object
+    shape:
+      briefAccepted: boolean
+      briefReady: boolean
+    required: true
+  - name: "onAcceptBrief"
+    type: callback
+    signature: "() => void"
+    required: true
+  - name: "onRejectBrief"
+    type: callback
+    signature: "() => void"
+    required: true
+  - name: "onRequestBrief"
+    type: callback
+    signature: "() => void"
+    required: true
+
+children:
+  - $ref: ELM-031-discovery-status-indicator
+  - $ref: ELM-032-accept-brief-button
+  - $ref: ELM-033-reject-brief-button
+  - $ref: ELM-034-request-brief-button
+
+stores:
+  - $ref: STR-004-chat-store
+    binds:
+      - selector: "discoveryStatus"
+        to: "discoveryStatus"
+
+layout:
+  display: flex
+  flex-direction: row
+  align-items: center
+  gap: 8px
+  padding: "8px 12px"
+  width: 100%
+  background: "var(--sf-surface-alt)"
+  border-radius: 6px
+
+states:
+  not-started:
+    condition: "!briefReady && !briefAccepted"
+    visible-children:
+      - ELM-031-discovery-status-indicator
+      - ELM-034-request-brief-button
+    indicator-text: "Discovery not started"
+    indicator-color: "var(--sf-text-muted)"
+  in-progress:
+    condition: "!briefReady && !briefAccepted && discoveryInProgress"
+    visible-children:
+      - ELM-031-discovery-status-indicator
+    indicator-text: "Discovery in progress..."
+    indicator-color: "var(--sf-accent)"
+  brief-ready:
+    condition: "briefReady && !briefAccepted"
+    visible-children:
+      - ELM-031-discovery-status-indicator
+      - ELM-032-accept-brief-button
+      - ELM-033-reject-brief-button
+    indicator-text: "Brief ready for review"
+    indicator-color: "var(--sf-warning)"
+  accepted:
+    condition: "briefAccepted"
+    visible-children:
+      - ELM-031-discovery-status-indicator
+    indicator-text: "Brief Accepted"
+    indicator-color: "var(--sf-success)"
+    indicator-icon: "checkmark"
+
+accessibility:
+  role: "status"
+  label: "Discovery phase status"
+  live: "polite"

@@ -94,6 +94,7 @@ export const StoreInspectorAdapter: Adapter<
   lifetime: "singleton" as const,
   factoryKind: "sync" as const,
   clonable: false as const,
+  freeze: true as const,
   factory: (): InferService<typeof StoreInspectorPort> => createStoreInspectorImpl(),
 });
 
@@ -131,6 +132,7 @@ export const StoreInspectorWithRegistryAdapter: Adapter<
   lifetime: "singleton" as const,
   factoryKind: "sync" as const,
   clonable: false as const,
+  freeze: true as const,
   factory: (deps: {
     StoreRegistry: InferService<typeof StoreRegistryPort>;
   }): InferService<typeof StoreInspectorPort> =>
@@ -161,6 +163,7 @@ export const StoreInspectorInternalAdapter: Adapter<
   lifetime: "singleton" as const,
   factoryKind: "sync" as const,
   clonable: false as const,
+  freeze: true as const,
   factory: (deps: {
     StoreRegistry: InferService<typeof StoreRegistryPort>;
   }): InferService<typeof StoreInspectorInternalPort> =>

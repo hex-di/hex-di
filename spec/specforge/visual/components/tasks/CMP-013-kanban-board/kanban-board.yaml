@@ -1,0 +1,92 @@
+entity: component
+id: CMP-013-kanban-board
+name: "Kanban Board"
+docs: ./kanban-board.md
+tests: ./kanban-board.feature
+
+props:
+  - name: "groups"
+    type: array
+    itemType: TaskGroupView
+    required: true
+    description: "Array of task groups to display across kanban columns"
+
+children:
+  - $ref: ELM-049-task-group-card
+  - $ref: ELM-050-task-status-badge
+  - $ref: ELM-051-task-count-indicator
+
+stores:
+  - $ref: STR-007-task-board-store
+    binds:
+      - selector: "groupsByStatus"
+        to: "groups"
+  - $ref: STR-001-filter-store
+    binds:
+      - selector: "tasks.statuses"
+        to: "filterStatuses"
+      - selector: "tasks.requirementId"
+        to: "filterRequirementId"
+      - selector: "tasks.search"
+        to: "filterSearch"
+
+layout:
+  display: flex
+  flex-direction: row
+  gap: 16px
+  width: 100%
+  overflow-x: auto
+  padding: "16px"
+  min-height: 0
+
+columns:
+  - id: "pending"
+    label: "Pending"
+    status: "pending"
+    header-color: "var(--sf-text-muted)"
+  - id: "in-progress"
+    label: "In Progress"
+    status: "in-progress"
+    header-color: "var(--sf-accent)"
+  - id: "completed"
+    label: "Completed"
+    status: "completed"
+    header-color: "var(--sf-success)"
+  - id: "blocked"
+    label: "Blocked"
+    status: "blocked"
+    header-color: "var(--sf-error)"
+
+column-layout:
+  display: flex
+  flex-direction: column
+  flex: "1 1 0"
+  min-width: 240px
+  gap: 8px
+  background: "var(--sf-surface-alt)"
+  border-radius: 8px
+  padding: 12px
+
+column-header:
+  display: flex
+  flex-direction: row
+  justify-content: space-between
+  align-items: center
+  padding-bottom: 8px
+  border-bottom: "1px solid var(--sf-border)"
+  label-font-size: 13px
+  label-font-weight: 600
+  count-element: { $ref: ELM-051-task-count-indicator }
+
+column-empty-state:
+  message: "No tasks"
+  style:
+    color: "var(--sf-text-muted)"
+    font-size: 12px
+    font-style: italic
+    text-align: center
+    padding: "24px 0"
+
+accessibility:
+  role: "region"
+  label: "Task board"

@@ -13,12 +13,14 @@ A tuple type that guarantees at least one element. The first element is always p
 **Used by**: `zipOrAccumulate` — ensures the error array is non-empty when at least one `Err` is present.
 
 **Behavior**:
+
 - `NonEmptyArray<string>` accepts `["a"]`, `["a", "b"]`, `["a", "b", "c"]`
 - `NonEmptyArray<string>` rejects `[]` at the type level
 - `const arr: NonEmptyArray<number> = [1, 2, 3]` — valid
 - `const arr: NonEmptyArray<number> = []` — type error
 
 **Accessing the first element**:
+
 ```ts
 function head<T>(arr: NonEmptyArray<T>): T {
   return arr[0]; // TypeScript knows arr[0] is T, not T | undefined
@@ -36,6 +38,7 @@ The plain JSON representation of a `Result<T, E>`, as produced by `toJSON()` and
 **Used by**: `toJSON()` return type, `fromJSON()` parameter type.
 
 **Behavior**:
+
 - `ResultJSON<number, string>` → `{ _tag: "Ok"; value: number } | { _tag: "Err"; error: string }`
 
 **Note**: This is a type alias for documentation clarity. The `toJSON()` and `fromJSON()` signatures may inline the union directly rather than referencing this alias.
@@ -51,9 +54,10 @@ Type alias representing the context accumulator in Do notation. Each `bind`/`let
 **Used by**: Do notation (`Result.Do`, `bind`, `let_`). See [12-do-notation.md](../behaviors/12-do-notation.md).
 
 **Behavior**:
+
 ```ts
 // Start: DoContext<{}>
-Result.Do
+Result.Do;
 
 // After bind("user", ...):
 // DoContext<{ user: User }>
@@ -66,3 +70,7 @@ Result.Do
 ```
 
 The error type in the actual chain is the union of all `bind` error types (not `never`). `DoContext` represents only the success-path type accumulation.
+
+## Error Row Utilities
+
+For type-level utilities that operate on tagged error unions (`TaggedError`, `TagsOf`, `HasTag`, `ErrorByTag`, `RemoveTag`, `RemoveTags`, `ExhaustiveHandlerMap`), see [error-row.md](error-row.md).

@@ -1,0 +1,116 @@
+entity: wireframe
+id: WF-002-discovery-conversation
+name: "Discovery Conversation"
+docs: ./discovery-conversation.md
+tests: ./discovery-conversation.feature
+
+viewports:
+  desktop: { min-width: 1024 }
+  tablet: { min-width: 768, max-width: 1023 }
+  mobile: { max-width: 767 }
+
+theme:
+  colors:
+    background: "#020408"
+    surface: "#08101C"
+    surface-elevated: "rgba(8, 16, 28, 0.85)"
+    accent: "#00F0FF"
+    accent-light: "#5FFFFF"
+    accent-dim: "rgba(0, 240, 255, 0.15)"
+    text: "#DAE6F0"
+    text-muted: "#586E85"
+    warning: "#FF5E00"
+    success: "#22C55E"
+    error: "#FF3B3B"
+    info: "#00F0FF"
+  budget-zones:
+    safe: "#22C55E"
+    warning: "#FFD600"
+    critical: "#FF5E00"
+    exhausted: "#FF3B3B"
+  typography:
+    font-body: "'Inter', -apple-system, sans-serif"
+    font-display: "'Rajdhani', 'Inter', sans-serif"
+    font-mono: "'JetBrains Mono', 'Fira Code', monospace"
+    base-size: "14px"
+
+pages:
+  - $ref: PG-002-chat
+
+stores:
+  - $ref: STR-004-chat-store
+  - $ref: STR-002-active-session-store
+
+actions:
+  - $ref: ACT-011-send-message
+  - $ref: ACT-013-accept-brief
+  - $ref: ACT-014-reject-brief
+  - $ref: ACT-015-request-brief
+
+events:
+  - $ref: EVT-008-message-sent
+  - $ref: EVT-009-message-received
+  - $ref: EVT-010-chat-error
+  - $ref: EVT-011-budget-updated
+  - $ref: EVT-012-discovery-status-changed
+  - $ref: EVT-013-brief-action
+
+journey:
+  - step: 1
+    page: PG-002-chat
+    description: "User enters Chat view with an active session"
+    state:
+      discovery-status: "not-started"
+      budget-zone: "safe"
+  - step: 2
+    page: PG-002-chat
+    action: ACT-011-send-message
+    description: "User types a message in CMP-010 and sends it"
+    event: EVT-008-message-sent
+  - step: 3
+    page: PG-002-chat
+    description: "Agent processes the message, isProcessing becomes true"
+    state:
+      discovery-status: "in-progress"
+  - step: 4
+    page: PG-002-chat
+    description: "Agent responds with message and optional tool results"
+    event: EVT-009-message-received
+  - step: 5
+    page: PG-002-chat
+    description: "Token budget updates as tokens are consumed"
+    event: EVT-011-budget-updated
+  - step: 6
+    page: PG-002-chat
+    description: "Conversation continues with multiple message exchanges"
+    loop: "steps 2-5 repeat"
+  - step: 7
+    page: PG-002-chat
+    description: "Discovery completes, brief becomes ready"
+    event: EVT-012-discovery-status-changed
+    state:
+      discovery-status: "brief-ready"
+  - step: 8
+    page: PG-002-chat
+    action: ACT-013-accept-brief
+    description: "User reviews and accepts the generated brief"
+    event: EVT-013-brief-action
+    state:
+      discovery-status: "brief-accepted"
+
+decision-points:
+  - at-step: 4
+    condition: "Agent response contains tool results"
+    branch-a: "Message renders with collapsible tool result sections"
+    branch-b: "Message renders as plain text"
+  - at-step: 5
+    condition: "Budget zone threshold"
+    branch-a: "safe (< 60%): green budget bar"
+    branch-b: "warning (60-85%): yellow budget bar with warning text"
+    branch-c: "critical (85-95%): orange budget bar, input may show caution"
+    branch-d: "exhausted (>= 95%): red pulsing bar, input disabled"
+  - at-step: 7
+    condition: "User decision on brief"
+    branch-a: "Accept brief (ACT-013): pipeline proceeds"
+    branch-b: "Reject brief (ACT-014): return to conversation for refinement"
+    branch-c: "Request brief early (ACT-015): ask agent to generate brief now"

@@ -37,6 +37,7 @@ export const SagaLibraryInspectorAdapter: SagaLibraryInspectorAdapterType =
     lifetime: "singleton",
     factoryKind: "sync",
     clonable: false,
+    freeze: true,
     factory: (deps: {
       SagaInspector: InferService<typeof SagaInspectorPort>;
     }): InferService<typeof SagaLibraryInspectorPort> =>

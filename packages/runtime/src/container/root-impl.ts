@@ -40,6 +40,12 @@ export class RootContainerImpl<
 
     this.containerNameValue = config.containerName;
     this.initializeFromGraph(config);
+
+    // Configure contract checking from safety options
+    const contractChecks = config.safety?.contractChecks;
+    if (contractChecks !== undefined && contractChecks !== "off") {
+      this.setContractCheckMode(contractChecks);
+    }
   }
 
   protected getContainerName(): string {

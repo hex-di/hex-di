@@ -1,0 +1,56 @@
+entity: event
+id: EVT-018-filter-changed
+name: "Filter Changed"
+docs: ./filters.md
+tests: ./filters.feature
+
+payload:
+  - name: "viewId"
+    type: string
+    required: true
+    description: "FilterableViewId -- the view whose filter is being changed"
+  - name: "key"
+    type: string
+    required: true
+    description: "The filter field name within the view's filter shape"
+  - name: "value"
+    type: any
+    required: true
+    description: "The new filter value (string, boolean, array, etc.)"
+
+target-stores:
+  - $ref: STR-001-filter-store
+
+side-effects: []
+
+---
+entity: event
+id: EVT-019-filters-reset
+name: "Filters Reset"
+docs: ./filters.md
+tests: ./filters.feature
+
+payload:
+  - name: "viewId"
+    type: string
+    required: true
+    description: "The view whose filters should be reset to defaults"
+
+target-stores:
+  - $ref: STR-001-filter-store
+
+side-effects: []
+
+---
+entity: event
+id: EVT-020-filters-all-reset
+name: "Filters All Reset"
+docs: ./filters.md
+tests: ./filters.feature
+
+payload: []
+
+target-stores:
+  - $ref: STR-001-filter-store
+
+side-effects: []

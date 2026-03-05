@@ -1,0 +1,61 @@
+entity: store
+id: STR-002-active-session-store
+name: "Active Session Store"
+docs: ./active-session-store.md
+tests: ./active-session-store.feature
+
+initial-state:
+  sessionId: null
+  status: "idle"
+  pipelineMode: null
+  error: null
+
+reducers:
+  EVT-002-session-selected:
+    - field: "sessionId"
+      operation: set
+      value: "payload.sessionId"
+    - field: "status"
+      operation: set
+      value: "payload.status"
+    - field: "pipelineMode"
+      operation: set
+      value: "payload.pipelineMode"
+    - field: "error"
+      operation: clear
+  EVT-003-session-created:
+    - field: "sessionId"
+      operation: set
+      value: "payload.sessionId"
+    - field: "status"
+      operation: set
+      value: "active"
+    - field: "pipelineMode"
+      operation: set
+      value: "payload.pipelineMode"
+    - field: "error"
+      operation: clear
+  EVT-004-session-status-changed:
+    - field: "status"
+      operation: set
+      value: "payload.status"
+  EVT-005-session-error:
+    - field: "status"
+      operation: set
+      value: "error"
+    - field: "error"
+      operation: set
+      value: "payload.error"
+
+selectors:
+  - name: "isSessionActive"
+    compute: "sessionId !== null && status !== 'idle' && status !== 'error'"
+  - name: "hasError"
+    compute: "error !== null"
+
+consumers:
+  - $ref: CMP-002-status-bar
+  - $ref: CMP-005-session-table
+
+persistence:
+  enabled: false

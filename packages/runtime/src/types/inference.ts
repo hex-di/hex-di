@@ -8,8 +8,8 @@
  */
 
 import type { Port, InferService } from "@hex-di/core";
-import type { Container } from "./container.js";
-import type { Scope } from "./scope.js";
+import { ContainerBrand } from "./brands.js";
+import { ScopeBrand } from "./brands.js";
 
 // =============================================================================
 // Type Utility Functions
@@ -18,38 +18,19 @@ import type { Scope } from "./scope.js";
 /**
  * Extracts the TProvides type parameter from a Container type.
  *
- * Uses conditional type inference to extract the port union from Container.
+ * Uses the ContainerBrand property to extract the port union from Container.
+ * Works with both active and disposed containers since both have the brand.
  * Returns `never` if the input type is not a Container.
  *
  * @typeParam T - The type to extract TProvides from
- *
- * @returns The TProvides type parameter, or `never` if T is not a Container
- *
- * @remarks
- * This utility is useful for:
- * - Generic functions that need to work with Container types
- * - Type-level validation that a container provides certain ports
- * - Extracting the available ports from an existing container type
- *
- * @see {@link InferScopeProvides} - Similar utility for Scope types
- * @see {@link Container} - The Container type this utility extracts from
- *
- * @example Basic extraction
- * ```typescript
- * type MyContainer = Container<typeof LoggerPort | typeof DatabasePort>;
- * type Provides = InferContainerProvides<MyContainer>;
- * // typeof LoggerPort | typeof DatabasePort
- * ```
- *
- * @example Child container includes extends
- * ```typescript
- * type ChildContainer = Container<ParentPorts, ExtendPorts>;
- * type Provides = InferContainerProvides<ChildContainer>;
- * // ParentPorts (TProvides only, use InferContainerEffectiveProvides for full)
- * ```
  */
-export type InferContainerProvides<T> =
-  T extends Container<infer P, infer _E, infer _A, infer _Ph> ? P : never;
+export type InferContainerProvides<T> = T extends {
+  readonly [ContainerBrand]: { provides: infer P };
+}
+  ? P extends Port<string, unknown>
+    ? P
+    : never
+  : never;
 
 /**
  * Extracts the effective provides (TProvides | TExtends) from a Container type.
@@ -59,81 +40,32 @@ export type InferContainerProvides<T> =
  *
  * @typeParam T - The Container type to extract from
  */
-export type InferContainerEffectiveProvides<T> =
-  T extends Container<infer P, infer E, infer _A, infer _Ph> ? P | E : never;
+export type InferContainerEffectiveProvides<T> = T extends {
+  readonly [ContainerBrand]: { provides: infer P; extends: infer E };
+}
+  ? (P extends Port<string, unknown> ? P : never) | (E extends Port<string, unknown> ? E : never)
+  : never;
 
 /**
  * Extracts the TProvides type parameter from a Scope type.
  *
- * Uses conditional type inference to extract the port union from Scope.
+ * Uses the ScopeBrand property to extract the port union from Scope.
+ * Works with both active and disposed scopes since both have the brand.
  * Returns `never` if the input type is not a Scope.
  *
  * @typeParam T - The type to extract TProvides from
- *
- * @returns The TProvides type parameter, or `never` if T is not a Scope
- *
- * @remarks
- * This utility is useful for:
- * - Generic functions that need to work with Scope types
- * - Type-level validation that a scope provides certain ports
- * - Extracting the available ports from an existing scope type
- *
- * @see {@link InferContainerProvides} - Similar utility for Container types
- * @see {@link Scope} - The Scope type this utility extracts from
- *
- * @example Basic extraction
- * ```typescript
- * type MyScope = Scope<typeof LoggerPort | typeof DatabasePort>;
- * type Provides = InferScopeProvides<MyScope>;
- * // typeof LoggerPort | typeof DatabasePort
- * ```
- *
- * @example Non-scope type returns never
- * ```typescript
- * type NotScope = { foo: string };
- * type Provides = InferScopeProvides<NotScope>;
- * // never
- * ```
  */
-export type InferScopeProvides<T> = T extends Scope<infer P, infer _A, infer _Ph> ? P : never;
+export type InferScopeProvides<T> = T extends { readonly [ScopeBrand]: { provides: infer P } }
+  ? P extends Port<string, unknown>
+    ? P
+    : never
+  : never;
 
 /**
  * Type predicate that returns `true` if a port is resolvable from a container or scope.
  *
- * Checks whether TPort extends the effective provides of the given container or scope type.
- * Works with both Container and Scope types.
- *
  * @typeParam TContainer - A Container or Scope type to check against
  * @typeParam TPort - The port type to check for resolvability
- *
- * @returns `true` if TPort is in TContainer's effective provides, `false` otherwise
- *
- * @remarks
- * For Container types, this checks against `TProvides | TExtends`.
- * For Scope types, this checks against `TProvides`.
- *
- * @see {@link InferContainerEffectiveProvides} - Extracts TProvides | TExtends from Container
- * @see {@link InferScopeProvides} - Extracts TProvides from Scope
- * @see {@link ServiceFromContainer} - Extracts service type if resolvable
- *
- * @example Container with resolvable port
- * ```typescript
- * type MyContainer = Container<typeof LoggerPort | typeof DatabasePort>;
- *
- * type CanResolveLogger = IsResolvable<MyContainer, typeof LoggerPort>;
- * // true
- *
- * type CanResolveConfig = IsResolvable<MyContainer, typeof ConfigPort>;
- * // false
- * ```
- *
- * @example Works with Scope types
- * ```typescript
- * type MyScope = Scope<typeof LoggerPort>;
- *
- * type CanResolveLogger = IsResolvable<MyScope, typeof LoggerPort>;
- * // true
- * ```
  */
 export type IsResolvable<TContainer, TPort extends Port<string, unknown>> = TPort extends
   | InferContainerEffectiveProvides<TContainer>
@@ -149,41 +81,6 @@ export type IsResolvable<TContainer, TPort extends Port<string, unknown>> = TPor
  *
  * @typeParam TContainer - A Container or Scope type to extract from
  * @typeParam TPort - The port type to get the service type for
- *
- * @returns The service type if TPort is resolvable, `never` otherwise
- *
- * @remarks
- * This utility combines IsResolvable and InferService to provide a safe way
- * to extract service types. It works with both Container and Scope types.
- *
- * @see {@link IsResolvable} - Checks if port is in effective provides
- * @see {@link InferService} - Extracts service type from port
- * @see {@link InferContainerEffectiveProvides} - Extracts TProvides | TExtends from Container
- * @see {@link InferScopeProvides} - Extracts TProvides from Scope
- *
- * @example Resolvable port returns service type
- * ```typescript
- * interface Logger { log(msg: string): void; }
- * const LoggerPort = port<Logger>()({ name: 'Logger' });
- *
- * type MyContainer = Container<typeof LoggerPort>;
- * type LoggerService = ServiceFromContainer<MyContainer, typeof LoggerPort>;
- * // Logger
- * ```
- *
- * @example Non-resolvable port returns never
- * ```typescript
- * type MyContainer = Container<typeof LoggerPort>;
- * type ConfigService = ServiceFromContainer<MyContainer, typeof ConfigPort>;
- * // never
- * ```
- *
- * @example Works with child containers
- * ```typescript
- * type ChildContainer = Container<ParentPorts, ExtendPorts>;
- * type ExtendService = ServiceFromContainer<ChildContainer, typeof ExtendPort>;
- * // ExtendService type
- * ```
  */
 export type ServiceFromContainer<TContainer, TPort extends Port<string, unknown>> =
   IsResolvable<TContainer, TPort> extends true ? InferService<TPort> : never;
@@ -195,12 +92,11 @@ export type ServiceFromContainer<TContainer, TPort extends Port<string, unknown>
  * @returns `true` if root container, `false` if child container
  */
 // NOTE: Using [E] extends [never] to prevent distribution over the never type.
-export type IsRootContainer<T> =
-  T extends Container<infer _P, infer E, infer _A, infer _Ph>
-    ? [E] extends [never]
-      ? true
-      : false
-    : false;
+export type IsRootContainer<T> = T extends { readonly [ContainerBrand]: { extends: infer E } }
+  ? [E] extends [never]
+    ? true
+    : false
+  : false;
 
 /**
  * Checks if a container is a child container (TExtends is not never).
@@ -209,9 +105,8 @@ export type IsRootContainer<T> =
  * @returns `true` if child container, `false` if root container
  */
 // NOTE: Using [E] extends [never] to prevent distribution over the never type.
-export type IsChildContainer<T> =
-  T extends Container<infer _P, infer E, infer _A, infer _Ph>
-    ? [E] extends [never]
-      ? false
-      : true
-    : false;
+export type IsChildContainer<T> = T extends { readonly [ContainerBrand]: { extends: infer E } }
+  ? [E] extends [never]
+    ? false
+    : true
+  : false;

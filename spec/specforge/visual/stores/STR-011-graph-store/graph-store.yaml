@@ -1,0 +1,99 @@
+entity: store
+id: STR-011-graph-store
+name: "Graph Store"
+docs: ./graph-store.md
+tests: ./graph-store.feature
+
+initial-state:
+  nodes: []
+  edges: []
+  connectionStatus: "disconnected"
+
+types:
+  GraphNodeView:
+    id: string
+    type: string
+    label: string
+    sessionId: string
+    properties: "Record<string, unknown>"
+
+  GraphEdgeView:
+    id: string
+    source: string
+    target: string
+    relationship: string
+
+  ConnectionStatus:
+    enum: ["disconnected", "connecting", "connected", "error"]
+
+reducers:
+  EVT-024:
+    description: "graph-nodes-loaded"
+    effects:
+      - field: "nodes"
+        operation: set
+        value: "payload.nodes"
+
+  EVT-025:
+    description: "graph-edges-loaded"
+    effects:
+      - field: "edges"
+        operation: set
+        value: "payload.edges"
+
+  EVT-026:
+    description: "graph-node-added"
+    effects:
+      - field: "nodes"
+        operation: append
+        value: "payload.node"
+
+  EVT-027:
+    description: "graph-edge-added"
+    effects:
+      - field: "edges"
+        operation: append
+        value: "payload.edge"
+
+  EVT-028:
+    description: "graph-connection-status-changed"
+    effects:
+      - field: "connectionStatus"
+        operation: set
+        value: "payload.status"
+
+  EVT-029:
+    description: "graph-cleared"
+    effects:
+      - field: "nodes"
+        operation: clear
+      - field: "edges"
+        operation: clear
+
+selectors:
+  - name: "nodesByType"
+    compute: "nodes.filter(n => n.type === type)"
+    parameters: [type]
+
+  - name: "edgesByRelationship"
+    compute: "edges.filter(e => e.relationship === relationship)"
+    parameters: [relationship]
+
+  - name: "nodeCount"
+    compute: "nodes.length"
+
+  - name: "edgeCount"
+    compute: "edges.length"
+
+  - name: "isConnected"
+    compute: "connectionStatus === 'connected'"
+
+consumers:
+  - $ref: CMP-020-graph-node-list
+  - $ref: CMP-021-graph-edge-list
+  - $ref: CMP-022-connection-status-banner
+
+persistence:
+  enabled: false
+
+hook: useGraph

@@ -28,6 +28,7 @@ import {
   type False,
   type EmptyRequires,
 } from "./constants.js";
+import type { AdapterWithCompletenessCheck } from "./completeness.js";
 
 // Re-export types for use by consumers
 export type {
@@ -336,6 +337,8 @@ export function createAdapter<
   readonly provides: TProvides;
   readonly factory: TFactory;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  readonly freeze?: boolean;
+  readonly errorTags?: readonly string[];
   requires?: undefined;
   lifetime?: undefined;
   clonable?: undefined;
@@ -375,6 +378,8 @@ export function createAdapter<
   readonly requires: TRequires;
   readonly factory: TFactory;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  readonly freeze?: boolean;
+  readonly errorTags?: readonly string[];
   lifetime?: undefined;
   clonable?: undefined;
 }): Adapter<
@@ -418,6 +423,8 @@ export function createAdapter<
   readonly lifetime: TLifetime;
   readonly factory: TFactory;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  readonly freeze?: boolean;
+  readonly errorTags?: readonly string[];
   requires?: undefined;
   clonable?: undefined;
 }): Adapter<
@@ -464,6 +471,8 @@ export function createAdapter<
   readonly lifetime: TLifetime;
   readonly factory: TFactory;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  readonly freeze?: boolean;
+  readonly errorTags?: readonly string[];
   clonable?: undefined;
 }): Adapter<
   TProvides,
@@ -501,6 +510,8 @@ export function createAdapter<
   readonly clonable: TClonable;
   readonly factory: TFactory;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  readonly freeze?: boolean;
+  readonly errorTags?: readonly string[];
   requires?: undefined;
   lifetime?: undefined;
 }): Adapter<
@@ -542,6 +553,8 @@ export function createAdapter<
   readonly clonable: TClonable;
   readonly factory: TFactory;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  readonly freeze?: boolean;
+  readonly errorTags?: readonly string[];
   lifetime?: undefined;
 }): Adapter<
   TProvides,
@@ -587,6 +600,8 @@ export function createAdapter<
   readonly clonable: TClonable;
   readonly factory: TFactory;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  readonly freeze?: boolean;
+  readonly errorTags?: readonly string[];
   requires?: undefined;
 }): Adapter<
   TProvides,
@@ -634,6 +649,8 @@ export function createAdapter<
   readonly clonable: TClonable;
   readonly factory: TFactory;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  readonly freeze?: boolean;
+  readonly errorTags?: readonly string[];
 }): Adapter<
   TProvides,
   TupleToUnion<TRequires>,
@@ -674,6 +691,8 @@ export function createAdapter<
   readonly provides: TProvides;
   readonly class: TClass;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  readonly freeze?: boolean;
+  readonly errorTags?: readonly string[];
   requires?: undefined;
   lifetime?: undefined;
   clonable?: undefined;
@@ -709,6 +728,8 @@ export function createAdapter<
   readonly requires: TRequires;
   readonly class: TClass;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  readonly freeze?: boolean;
+  readonly errorTags?: readonly string[];
   lifetime?: undefined;
   clonable?: undefined;
 }): Adapter<TProvides, TupleToUnion<TRequires>, Singleton, Sync, False, TRequires>;
@@ -742,6 +763,8 @@ export function createAdapter<
   readonly class: TClass;
   readonly lifetime: TLifetime;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  readonly freeze?: boolean;
+  readonly errorTags?: readonly string[];
   requires?: undefined;
   clonable?: undefined;
 }): Adapter<TProvides, never, TLifetime, Sync, False, EmptyRequires>;
@@ -779,6 +802,8 @@ export function createAdapter<
   readonly class: TClass;
   readonly lifetime: TLifetime;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  readonly freeze?: boolean;
+  readonly errorTags?: readonly string[];
   clonable?: undefined;
 }): Adapter<TProvides, TupleToUnion<TRequires>, TLifetime, Sync, False, TRequires>;
 
@@ -811,6 +836,8 @@ export function createAdapter<
   readonly class: TClass;
   readonly clonable: TClonable;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  readonly freeze?: boolean;
+  readonly errorTags?: readonly string[];
   requires?: undefined;
   lifetime?: undefined;
 }): Adapter<TProvides, never, Singleton, Sync, TClonable, EmptyRequires>;
@@ -848,6 +875,8 @@ export function createAdapter<
   readonly class: TClass;
   readonly clonable: TClonable;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  readonly freeze?: boolean;
+  readonly errorTags?: readonly string[];
   lifetime?: undefined;
 }): Adapter<TProvides, TupleToUnion<TRequires>, Singleton, Sync, TClonable, TRequires>;
 
@@ -883,6 +912,8 @@ export function createAdapter<
   readonly lifetime: TLifetime;
   readonly clonable: TClonable;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  readonly freeze?: boolean;
+  readonly errorTags?: readonly string[];
   requires?: undefined;
 }): Adapter<TProvides, never, TLifetime, Sync, TClonable, EmptyRequires>;
 
@@ -922,6 +953,8 @@ export function createAdapter<
   readonly lifetime: TLifetime;
   readonly clonable: TClonable;
   readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+  readonly freeze?: boolean;
+  readonly errorTags?: readonly string[];
 }): Adapter<TProvides, TupleToUnion<TRequires>, TLifetime, Sync, TClonable, TRequires>;
 
 /**
@@ -935,7 +968,9 @@ export function createAdapter(config: {
   requires?: readonly Port<string, unknown>[];
   lifetime?: Lifetime;
   clonable?: boolean;
+  freeze?: boolean;
   finalizer?: (instance: unknown) => void | Promise<void>;
+  errorTags?: readonly string[];
 }): Adapter<
   Port<string, unknown>,
   unknown,
@@ -967,6 +1002,7 @@ export function createAdapter(config: {
   const requires = config.requires ?? EMPTY_REQUIRES;
   const lifetime = config.lifetime ?? SINGLETON;
   const clonable = config.clonable ?? FALSE;
+  const freeze = config.freeze !== false;
 
   // Determine factory function and factoryKind
   let factory: (deps: Record<string, unknown>) => unknown | Promise<unknown>;
@@ -1013,15 +1049,29 @@ export function createAdapter(config: {
     isAsync
   );
 
-  // Build the adapter object
-  const baseAdapter = {
-    provides: config.provides,
-    requires,
-    lifetime: effectiveLifetime,
-    factoryKind,
-    factory,
-    clonable,
-  };
+  // Build the adapter object with optional error tags metadata
+  const errorTags = config.errorTags;
+  const hasErrorTags = errorTags !== undefined && errorTags.length > 0;
+  const baseAdapter = hasErrorTags
+    ? {
+        provides: config.provides,
+        requires,
+        lifetime: effectiveLifetime,
+        factoryKind,
+        factory,
+        clonable,
+        freeze,
+        __errorTags: Object.freeze([...errorTags]),
+      }
+    : {
+        provides: config.provides,
+        requires,
+        lifetime: effectiveLifetime,
+        factoryKind,
+        factory,
+        clonable,
+        freeze,
+      };
 
   // Add finalizer if present
   if (config.finalizer !== undefined) {
@@ -1074,6 +1124,8 @@ interface RuntimeAdapter {
   readonly factoryKind: FactoryKind;
   readonly factory: (deps: Record<string, unknown>) => unknown | Promise<unknown>;
   readonly clonable: boolean;
+  readonly freeze: boolean;
+  readonly __errorTags?: readonly string[];
   finalizer?(instance: never): void | Promise<void>;
 }
 
@@ -1085,14 +1137,19 @@ function cloneAdapterWithFactory(
   adapter: RuntimeAdapter,
   factory: (deps: Record<string, unknown>) => unknown | Promise<unknown>
 ): RuntimeAdapter {
-  const result = {
+  const base = {
     provides: adapter.provides,
     requires: adapter.requires,
     lifetime: adapter.lifetime,
     factoryKind: adapter.factoryKind,
     factory,
     clonable: adapter.clonable,
+    freeze: adapter.freeze,
   };
+
+  // Preserve __errorTags metadata if present
+  const result =
+    adapter.__errorTags !== undefined ? { ...base, __errorTags: adapter.__errorTags } : base;
 
   if (adapter.finalizer !== undefined) {
     return Object.freeze({ ...result, finalizer: adapter.finalizer });
@@ -1285,6 +1342,7 @@ export function adapterOrElse(adapter: RuntimeAdapter, fallback: RuntimeAdapter)
     factoryKind: isAsync ? ASYNC : adapter.factoryKind,
     factory: wrappedFactory,
     clonable: adapter.clonable,
+    freeze: adapter.freeze,
   };
 
   if (adapter.finalizer !== undefined) {

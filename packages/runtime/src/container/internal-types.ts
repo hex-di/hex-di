@@ -8,7 +8,7 @@ import type { Adapter, Lifetime, FactoryKind, AdapterConstraint } from "@hex-di/
 import type { Graph } from "@hex-di/graph";
 import type { ContainerOptions, ResolutionHooks } from "../resolution/hooks.js";
 import type { MemoMap } from "../util/memo-map.js";
-import type { InheritanceMode, RuntimePerformanceOptions } from "../types.js";
+import type { InheritanceMode, RuntimePerformanceOptions, RuntimeSafetyOptions } from "../types.js";
 import { AsyncInitializationRequiredError } from "../errors/index.js";
 import { ADAPTER_ACCESS } from "../inspection/symbols.js";
 
@@ -189,6 +189,10 @@ export interface RootContainerConfig<
    * Performance-related options for runtime behavior.
    */
   performance?: RuntimePerformanceOptions;
+  /**
+   * Safety-related options including contract checking.
+   */
+  safety?: RuntimeSafetyOptions;
 }
 
 /**

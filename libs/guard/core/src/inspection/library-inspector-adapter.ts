@@ -34,6 +34,7 @@ export const GuardLibraryInspectorAdapter: Adapter<
   lifetime: "singleton" as const,
   factoryKind: "sync" as const,
   clonable: false as const,
+  freeze: true as const,
   factory: (deps: {
     GuardInspector: InferService<typeof GuardInspectorPort>;
   }): InferService<typeof GuardLibraryInspectorPort> =>

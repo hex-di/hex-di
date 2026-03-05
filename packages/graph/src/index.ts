@@ -67,6 +67,12 @@ export type {
 } from "./graph/types/graph-inference.js";
 
 // =============================================================================
+// Initialization Order
+// =============================================================================
+
+export type { InitializationOrder } from "./validation/types/init-order.js";
+
+// =============================================================================
 // Result-based Build API
 // =============================================================================
 
@@ -76,10 +82,28 @@ export type {
   CyclicDependencyBuildError,
   CaptiveDependencyBuildError,
   MissingDependencyBuildError,
+  MissingOperationBuildError,
 } from "./errors/index.js";
 
-export { isGraphBuildError } from "./errors/index.js";
+export { isGraphBuildError, isCycleError, isMultipleCyclesError } from "./errors/index.js";
 export { GraphBuildException } from "./errors/index.js";
+
+// =============================================================================
+// Enhanced Cycle Error Types
+// =============================================================================
+
+export type { CycleError, MultipleCyclesError, CycleDetectionError } from "./errors/index.js";
+
+export type { CycleSuggestion, CycleSuggestionTag } from "./errors/index.js";
+
+export { generateCycleDiagram } from "./errors/index.js";
+export { generateCycleSuggestions } from "./errors/index.js";
+
+// =============================================================================
+// Runtime Validation
+// =============================================================================
+
+export { checkOperationCompleteness, getPortMethodNames } from "./validation/runtime/index.js";
 
 // =============================================================================
 // Pretty View Symbol (for IDE type display)

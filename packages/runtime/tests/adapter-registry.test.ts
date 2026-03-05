@@ -33,6 +33,7 @@ function createRuntimeAdapter(
     factory: vi.fn(),
     factoryKind: "sync" as const,
     clonable: false,
+    freeze: true,
   };
 }
 

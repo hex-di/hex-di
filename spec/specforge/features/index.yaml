@@ -1,0 +1,194 @@
+kind: feature-index
+title: Feature Index
+description: Navigation index for all SpecForge features
+
+features:
+  - id: FEAT-SF-001
+    file: FEAT-SF-001-graph-store.md
+    title: Graph-First Knowledge Store
+    roadmap_phases: [RM-01]
+
+  - id: FEAT-SF-002
+    file: FEAT-SF-002-session-composition.md
+    title: Session Composition Pipeline
+    roadmap_phases: [RM-01, RM-03]
+
+  - id: FEAT-SF-003
+    file: FEAT-SF-003-multi-agent-orchestration.md
+    title: Multi-Agent Orchestration
+    roadmap_phases: [RM-02, RM-10]
+
+  - id: FEAT-SF-004
+    file: FEAT-SF-004-flow-engine.md
+    title: Flow Engine
+    roadmap_phases: [RM-01, RM-02]
+
+  - id: FEAT-SF-005
+    file: FEAT-SF-005-acp-protocol.md
+    title: ACP Protocol
+    roadmap_phases: [RM-02]
+
+  - id: FEAT-SF-006
+    file: FEAT-SF-006-desktop-app.md
+    title: Desktop App
+    roadmap_phases: [RM-04]
+
+  - id: FEAT-SF-007
+    file: FEAT-SF-007-web-dashboard.md
+    title: Web Dashboard
+    roadmap_phases: [RM-05]
+
+  - id: FEAT-SF-008
+    file: FEAT-SF-008-vscode-extension.md
+    title: VS Code Extension
+    roadmap_phases: [RM-05]
+
+  - id: FEAT-SF-009
+    file: FEAT-SF-009-cli.md
+    title: CLI
+    roadmap_phases: [RM-06]
+
+  - id: FEAT-SF-010
+    file: FEAT-SF-010-cost-token-management.md
+    title: Cost & Token Management
+    roadmap_phases: [RM-09]
+
+  - id: FEAT-SF-011
+    file: FEAT-SF-011-hook-pipeline.md
+    title: Hook Pipeline & Extensibility
+    roadmap_phases: [RM-08, RM-09]
+
+  - id: FEAT-SF-012
+    file: FEAT-SF-012-import-export.md
+    title: Import / Export
+    roadmap_phases: [RM-08]
+
+  - id: FEAT-SF-013
+    file: FEAT-SF-013-mcp-composition.md
+    title: MCP Composition
+    roadmap_phases: [RM-10]
+
+  - id: FEAT-SF-014
+    file: FEAT-SF-014-permission-governance.md
+    title: Permission Governance
+    roadmap_phases: [RM-11]
+
+  - id: FEAT-SF-015
+    file: FEAT-SF-015-memory-knowledge.md
+    title: Memory & Knowledge
+    roadmap_phases: [RM-10]
+
+  - id: FEAT-SF-016
+    file: FEAT-SF-016-auth-cloud.md
+    title: Authentication & Cloud
+    roadmap_phases: [RM-07]
+
+  - id: FEAT-SF-017
+    file: FEAT-SF-017-collaboration.md
+    title: Collaboration
+    roadmap_phases: [RM-07]
+
+  - id: FEAT-SF-018
+    file: FEAT-SF-018-human-in-the-loop.md
+    title: Human-in-the-Loop
+    roadmap_phases: [RM-06]
+
+  - id: FEAT-SF-019
+    file: FEAT-SF-019-tool-isolation.md
+    title: Tool Isolation & Security
+    roadmap_phases: [RM-06]
+
+  - id: FEAT-SF-020
+    file: FEAT-SF-020-agent-backends.md
+    title: Agent Backends
+    roadmap_phases: [RM-01, RM-02]
+
+  - id: FEAT-SF-021
+    file: FEAT-SF-021-gxp-compliance.md
+    title: GxP Compliance
+    roadmap_phases: [RM-11]
+
+  - id: FEAT-SF-022
+    file: FEAT-SF-022-nlq-interface.md
+    title: Natural Language Queries
+    roadmap_phases: [RM-03]
+
+  - id: FEAT-SF-023
+    file: FEAT-SF-023-structured-output.md
+    title: Structured Output
+    roadmap_phases: [RM-11]
+
+  - id: FEAT-SF-024
+    file: FEAT-SF-024-observability.md
+    title: Observability & Telemetry
+    roadmap_phases: [RM-09]
+
+  - id: FEAT-SF-025
+    file: FEAT-SF-025-health-degraded-mode.md
+    title: Health & Degraded Mode
+    roadmap_phases: [RM-01]
+
+  - id: FEAT-SF-026
+    file: FEAT-SF-026-notification-engine.md
+    title: Notification Engine
+    roadmap_phases: [RM-05, RM-07]
+
+  - id: FEAT-SF-027
+    file: FEAT-SF-027-flow-presets.md
+    title: Flow Presets & Templates
+    roadmap_phases: [RM-02, RM-06]
+
+  - id: FEAT-SF-028
+    file: FEAT-SF-028-configuration.md
+    title: Configuration Management
+    roadmap_phases: [RM-01]
+
+  - id: FEAT-SF-029
+    file: FEAT-SF-029-ci-gate-drift.md
+    title: CI Gate & Drift Detection
+    roadmap_phases: [RM-12]
+
+  - id: FEAT-SF-030
+    file: FEAT-SF-030-event-triggered-flows.md
+    title: Webhook & Event-Triggered Flows
+    roadmap_phases: [RM-12]
+
+  - id: FEAT-SF-031
+    file: FEAT-SF-031-third-party-integrations.md
+    title: Third-Party Integrations
+    roadmap_phases: [RM-13]
+
+  - id: FEAT-SF-032
+    file: FEAT-SF-032-agent-marketplace.md
+    title: Agent Marketplace
+    roadmap_phases: [RM-13]
+
+  - id: FEAT-SF-033
+    file: FEAT-SF-033-predictive-analytics.md
+    title: Predictive Analytics & Intelligence
+    roadmap_phases: [RM-14]
+
+  - id: FEAT-SF-034
+    file: FEAT-SF-034-autonomous-maintenance.md
+    title: Autonomous Maintenance
+    roadmap_phases: [RM-15]
+
+  - id: FEAT-SF-035
+    file: FEAT-SF-035-session-replay.md
+    title: Session Replay & Debugging
+    roadmap_phases: [RM-10]
+
+  - id: FEAT-SF-036
+    file: FEAT-SF-036-compliance-packs.md
+    title: Compliance Packs
+    roadmap_phases: [RM-13]
+
+  - id: FEAT-SF-037
+    file: FEAT-SF-037-skill-management.md
+    title: Skill Management
+    roadmap_phases: [RM-10]
+
+  - id: FEAT-SF-038
+    file: FEAT-SF-038-spec-validation.md
+    title: Spec Validation
+    roadmap_phases: [RM-01]

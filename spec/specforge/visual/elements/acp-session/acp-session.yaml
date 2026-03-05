@@ -1,0 +1,264 @@
+entity: element
+id: ELM-057-session-message-card
+name: "Agent Message Card"
+docs: ./acp-session.md
+tests: ./acp-session.feature
+
+type: container
+
+layout:
+  display: flex
+  flex-direction: column
+  gap: 8px
+  padding: 12px
+  border-radius: 6px
+  background: "var(--sf-surface)"
+  border-left-width: 3px
+  border-left-style: solid
+
+states:
+  default:
+    background: "var(--sf-surface)"
+  hover:
+    background: "rgba(0, 240, 255, 0.03)"
+  critical:
+    border-left-color: "#FF3B3B"
+  major:
+    border-left-color: "#FF8C00"
+  minor:
+    border-left-color: "#FFD600"
+  observation:
+    border-left-color: "#4FC3F7"
+
+content:
+  - name: "header-row"
+    display: flex
+    align-items: center
+    gap: 8px
+    children:
+      - ref: { $ref: ELM-058-agent-role-badge }
+      - ref: { $ref: ELM-060-message-type-icon }
+      - name: "timestamp"
+        font-size: 11px
+        color: "var(--sf-text-muted)"
+        margin-left: auto
+  - name: "message-content"
+    font-size: 13px
+    color: "var(--sf-text)"
+    line-height: 1.5
+  - name: "footer-row"
+    display: flex
+    align-items: center
+    gap: 6px
+    children:
+      - ref: { $ref: ELM-061-phase-tag }
+
+accessibility:
+  role: "article"
+  label: "Message from {agentRole}, severity: {severity}"
+
+---
+entity: element
+id: ELM-058-agent-role-badge
+name: "Agent Role Badge"
+docs: ./acp-session.md
+tests: ./acp-session.feature
+
+type: text
+
+layout:
+  display: inline-flex
+  align-items: center
+  padding: "2px 6px"
+  border-radius: 4px
+  font-size: 10px
+  font-weight: 600
+  text-transform: uppercase
+  letter-spacing: "0.04em"
+
+states:
+  discovery-agent:
+    color: "#FFFFFF"
+    background: "#6366F1"
+  spec-author:
+    color: "#FFFFFF"
+    background: "#8B5CF6"
+  reviewer:
+    color: "#FFFFFF"
+    background: "#EC4899"
+  feedback-synthesizer:
+    color: "#FFFFFF"
+    background: "#F97316"
+  task-decomposer:
+    color: "#FFFFFF"
+    background: "#14B8A6"
+  dev-agent:
+    color: "#FFFFFF"
+    background: "#3B82F6"
+  codebase-analyzer:
+    color: "#FFFFFF"
+    background: "#10B981"
+  coverage-agent:
+    color: "#FFFFFF"
+    background: "#F59E0B"
+
+notes: |
+  Each agent role has a distinct background hue for instant visual identification.
+  8 distinct colors for the 8 agent roles defined in the spec.
+  White text on colored background for maximum contrast.
+
+accessibility:
+  role: "status"
+  label: "Agent: {roleName}"
+
+---
+entity: element
+id: ELM-059-severity-indicator
+name: "Severity Indicator"
+docs: ./acp-session.md
+tests: ./acp-session.feature
+
+type: container
+
+layout:
+  position: absolute
+  left: 0
+  top: 0
+  bottom: 0
+  width: 3px
+  border-radius: "6px 0 0 6px"
+
+states:
+  critical:
+    background: "#FF3B3B"
+  major:
+    background: "#FF8C00"
+  minor:
+    background: "#FFD600"
+  observation:
+    background: "#4FC3F7"
+
+notes: |
+  The severity indicator is the left border of the message card.
+  It is implemented as the border-left of ELM-057 agent message card.
+  The color encodes severity at a glance: red=critical, orange=major, yellow=minor, blue=observation.
+
+accessibility:
+  role: "presentation"
+  label: ""
+
+---
+entity: element
+id: ELM-060-message-type-icon
+name: "Message Type Icon"
+docs: ./acp-session.md
+tests: ./acp-session.feature
+
+type: icon
+
+layout:
+  font-size: 14px
+  line-height: 1
+
+states:
+  finding:
+    icon: "magnifier"
+    color: "var(--sf-text-muted)"
+  clarification:
+    icon: "question"
+    color: "var(--sf-text-muted)"
+  broadcast:
+    icon: "megaphone"
+    color: "var(--sf-text-muted)"
+
+notes: |
+  Small icon indicating the message type.
+  finding = magnifier icon (search/inspect)
+  clarification = question mark icon
+  broadcast = megaphone icon
+  Color is muted to avoid competing with the severity indicator.
+
+accessibility:
+  role: "img"
+  label: "Message type: {messageType}"
+
+---
+entity: element
+id: ELM-061-phase-tag
+name: "Phase Tag"
+docs: ./acp-session.md
+tests: ./acp-session.feature
+
+type: text
+
+layout:
+  display: inline-flex
+  align-items: center
+  padding: "2px 6px"
+  border-radius: 4px
+  font-size: 10px
+  font-weight: 500
+
+states:
+  default:
+    color: "var(--sf-text-muted)"
+    background: "var(--sf-surface-elevated)"
+
+notes: |
+  Small tag showing which flow phase the message was posted in.
+  Uses elevated surface background for subtle contrast.
+
+accessibility:
+  role: "status"
+  label: "Phase: {phaseName}"
+
+---
+entity: element
+id: ELM-062-preset-button
+name: "Preset Button"
+docs: ./acp-session.md
+tests: ./acp-session.feature
+
+type: button
+
+layout:
+  display: inline-flex
+  align-items: center
+  padding: "4px 10px"
+  border-radius: 6px
+  font-size: 12px
+  font-weight: 500
+  cursor: pointer
+  border: "1px solid var(--sf-border)"
+
+states:
+  default:
+    color: "var(--sf-text-muted)"
+    background: "transparent"
+    border-color: "var(--sf-border)"
+  hover:
+    color: "var(--sf-text)"
+    background: "rgba(0, 240, 255, 0.05)"
+    border-color: "var(--sf-text-muted)"
+  active:
+    color: "var(--sf-accent)"
+    background: "var(--sf-accent-dim)"
+    border-color: "var(--sf-accent)"
+
+actions:
+  - trigger: click
+    action: { $ref: ACT-016-set-filter }
+    payload:
+      view: acp-session
+      key: preset
+      value: "{presetName}"
+
+notes: |
+  Preset buttons in the agent messages filter bar for quick filter application.
+  Examples: "Open Critical", "GxP Issues", "By Agent", "All Findings".
+  Clicking applies a preset that sets multiple filter fields at once via ACT-016-set-filter.
+  The active preset is highlighted with accent styling.
+
+accessibility:
+  role: "button"
+  label: "Apply filter preset: {presetName}"

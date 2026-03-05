@@ -36,6 +36,7 @@ export type {
   Scope,
   LazyContainer,
   ContainerPhase,
+  DisposalPhase,
   CreateContainerOptions,
   CreateChildOptions,
   ContainerDevToolsOptions,
@@ -197,3 +198,9 @@ export { inspect } from "./inspect.js";
 export { resolveResult, recordResult } from "./container/result-helpers.js";
 
 export type { ResultStatistics } from "./inspection/types.js";
+
+// =============================================================================
+// Handle-Based Resolution
+// =============================================================================
+
+export { resolveHandle, resolveHandleToActive } from "./resolution/handle-resolver.js";

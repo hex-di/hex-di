@@ -197,6 +197,7 @@ describe("createAdapter with async factory", () => {
       requires: [],
       factory: async () => ({ log: () => {} }),
       clonable: true,
+      freeze: true,
     });
 
     expect(adapter.clonable).toBe(true);

@@ -132,6 +132,7 @@ export const LoggerAdapter = createAdapter({
   requires: [],
   lifetime: "singleton",
   clonable: true,
+  freeze: true,
   factory: () => ({
     log: (message: string): void => {
       console.log(`[ChatApp] ${message}`);

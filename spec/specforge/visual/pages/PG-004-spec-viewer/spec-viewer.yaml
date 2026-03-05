@@ -1,0 +1,60 @@
+entity: page
+id: PG-004-spec-viewer
+name: "Spec Viewer"
+docs: ./spec-viewer.md
+tests: ./spec-viewer.feature
+
+route:
+  path: "/spec"
+  hash: true
+  guard:
+    store: STR-002-active-session-store
+    condition: "sessionId !== null"
+    redirect: "#home"
+
+layout: single-column
+
+meta:
+  title: "SpecForge — Spec"
+
+components:
+  - $ref: CMP-004-filter-bar
+    position: top
+    description: "Filter bar with changes-only toggle and search input"
+  - $ref: CMP-012-markdown-section-renderer
+    position: main-content
+    description: "Full-width rendered markdown content with change tracking"
+
+stores:
+  - $ref: STR-006-spec-content-store
+  - $ref: STR-001-filter-store
+    slice: "spec"
+  - $ref: STR-002-active-session-store
+
+states:
+  no-session:
+    condition: "STR-002.sessionId === null"
+    display: "Prompt to select a session"
+  empty:
+    condition: "STR-006.content === ''"
+    display: "No spec generated message"
+  loading:
+    condition: "isLoading === true"
+    display: "Skeleton content blocks"
+  populated:
+    condition: "STR-006.content !== ''"
+    display: "Rendered markdown with optional change highlights"
+
+filters:
+  - key: "showChangesOnly"
+    type: toggle
+    label: "Show changes only"
+    default: false
+  - key: "search"
+    type: text
+    placeholder: "Search spec content..."
+    default: ""
+
+accessibility:
+  role: "main"
+  label: "Specification viewer"

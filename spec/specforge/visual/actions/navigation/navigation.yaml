@@ -1,0 +1,126 @@
+entity: action
+id: ACT-001-navigate-to-view
+name: "Navigate to View"
+docs: ./navigation.md
+tests: ./navigation.feature
+
+type: navigate
+trigger:
+  element: { $ref: ELM-001-nav-button }
+  interaction: click
+preconditions: []
+events-dispatched:
+  - $ref: EVT-001-view-changed
+
+stores-affected:
+  - $ref: STR-014-router-store
+
+notes: |
+  Clicking a nav rail button navigates to the corresponding view.
+  The target viewId is derived from the clicked button's data attribute.
+  Only one view is active at a time -- the previously active nav button
+  returns to its default state while the clicked button enters active state.
+
+---
+entity: action
+id: ACT-002-navigate-back
+name: "Navigate Back"
+docs: ./navigation.md
+tests: ./navigation.feature
+
+type: navigate-back
+trigger:
+  keyboard:
+    key: "ArrowLeft"
+    modifiers: [Alt]
+preconditions: []
+events-dispatched:
+  - $ref: EVT-001-view-changed
+
+stores-affected:
+  - $ref: STR-014-router-store
+
+notes: |
+  Browser back navigation. Uses Alt+Left keyboard shortcut.
+  Restores the previous view from the browser history stack.
+  If there is no previous view, the action is a no-op.
+
+---
+entity: action
+id: ACT-003-open-search
+name: "Open Search"
+docs: ./navigation.md
+tests: ./navigation.feature
+
+type: open-modal
+trigger:
+  - element: { $ref: ELM-004-nav-search-button }
+    interaction: click
+  - keyboard:
+      key: "/"
+      modifiers: []
+preconditions: []
+events-dispatched:
+  - $ref: EVT-021-search-query-changed
+
+stores-affected:
+  - $ref: STR-012-search-store
+
+notes: |
+  Opens the full-screen search overlay.
+  Can be triggered by clicking the nav search button or pressing the "/" key.
+  The "/" keyboard shortcut is suppressed if an input field has focus.
+  Upon opening, the search input (ELM-010) receives auto-focus.
+
+---
+entity: action
+id: ACT-004-search-query
+name: "Search Query"
+docs: ./navigation.md
+tests: ./navigation.feature
+
+type: search-submit
+trigger:
+  element: { $ref: ELM-010-search-input }
+  interaction: change
+debounce:
+  wait: 300
+preconditions: []
+events-dispatched:
+  - $ref: EVT-021-search-query-changed
+
+stores-affected:
+  - $ref: STR-012-search-store
+
+notes: |
+  Updates the search query text in the search store.
+  Input changes are debounced at 300ms to avoid excessive re-rendering
+  and unnecessary search computations while the user is still typing.
+  An empty query clears the search results.
+
+---
+entity: action
+id: ACT-005-close-search
+name: "Close Search"
+docs: ./navigation.md
+tests: ./navigation.feature
+
+type: close-modal
+trigger:
+  - element: { $ref: ELM-009-search-backdrop }
+    interaction: click
+  - keyboard:
+      key: "Escape"
+      modifiers: []
+preconditions: []
+events-dispatched:
+  - $ref: EVT-023-search-closed
+
+stores-affected:
+  - $ref: STR-012-search-store
+
+notes: |
+  Closes the search overlay and clears the current query.
+  Can be triggered by clicking the backdrop area outside the search panel
+  or by pressing the Escape key.
+  Focus returns to the previously focused element (or the nav rail).

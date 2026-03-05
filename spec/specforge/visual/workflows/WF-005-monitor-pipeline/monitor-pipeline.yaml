@@ -1,0 +1,128 @@
+entity: wireframe
+id: WF-005-monitor-pipeline
+name: "Monitor Pipeline"
+docs: ./monitor-pipeline.md
+tests: ./monitor-pipeline.feature
+
+viewports:
+  desktop: { min-width: 1024 }
+  tablet: { min-width: 768, max-width: 1023 }
+  mobile: { max-width: 767 }
+
+theme:
+  colors:
+    background: "#020408"
+    surface: "#08101C"
+    surface-elevated: "rgba(8, 16, 28, 0.85)"
+    accent: "#00F0FF"
+    accent-light: "#5FFFFF"
+    accent-dim: "rgba(0, 240, 255, 0.15)"
+    text: "#DAE6F0"
+    text-muted: "#586E85"
+    warning: "#FF5E00"
+    success: "#22C55E"
+    error: "#FF3B3B"
+    info: "#00F0FF"
+  phase-states:
+    pending: "#586E85"
+    active: "#00F0FF"
+    completed: "#22C55E"
+    failed: "#FF3B3B"
+  agent-roles:
+    orchestrator: "#00F0FF"
+    analyst: "#A78BFA"
+    writer: "#34D399"
+    reviewer: "#F472B6"
+    architect: "#FBBF24"
+  severity:
+    critical: "#FF3B3B"
+    major: "#FF8C00"
+    minor: "#FFD600"
+    observation: "#4FC3F7"
+  typography:
+    font-body: "'Inter', -apple-system, sans-serif"
+    font-display: "'Rajdhani', 'Inter', sans-serif"
+    font-mono: "'JetBrains Mono', 'Fira Code', monospace"
+    base-size: "14px"
+
+pages:
+  - $ref: PG-003-pipeline
+  - $ref: PG-004-spec-viewer
+  - $ref: PG-005-task-board
+  - $ref: PG-006-coverage-dashboard
+  - $ref: PG-007-acp-session
+
+stores:
+  - $ref: STR-005-pipeline-store
+  - $ref: STR-006-spec-content-store
+  - $ref: STR-007-task-board-store
+  - $ref: STR-008-coverage-store
+  - $ref: STR-009-acp-session-store
+
+actions:
+  - $ref: ACT-001-navigate-to-view
+
+events:
+  - $ref: EVT-001-view-changed
+  - $ref: EVT-004-session-status-changed
+  - $ref: EVT-014-acp-session-message-received
+  - $ref: EVT-015-acp-session-messages-loaded
+
+journey:
+  - step: 1
+    page: PG-003-pipeline
+    description: "User navigates to Pipeline view to see phase progress"
+    event: EVT-001-view-changed
+  - step: 2
+    page: PG-003-pipeline
+    description: "Phase indicator strip (CMP-011) shows all phases with their statuses"
+  - step: 3
+    page: PG-003-pipeline
+    description: "Active phase animates with cyan pulse, completed phases are green, pending are muted"
+    event: EVT-004-session-status-changed
+  - step: 4
+    page: PG-003-pipeline
+    description: "As backend processes, phases transition pending -> active -> completed"
+  - step: 5
+    page: PG-007-acp-session
+    description: "User tabs to ACP Session to see agent messages during active phase"
+    action: ACT-001-navigate-to-view
+  - step: 6
+    page: PG-004-spec-viewer
+    description: "User tabs to Spec Viewer to review generated content"
+    action: ACT-001-navigate-to-view
+  - step: 7
+    page: PG-005-task-board
+    description: "User tabs to Task Board to check extracted tasks"
+    action: ACT-001-navigate-to-view
+  - step: 8
+    page: PG-006-coverage-dashboard
+    description: "User tabs to Coverage to check implementation tracking"
+    action: ACT-001-navigate-to-view
+  - step: 9
+    page: PG-003-pipeline
+    description: "User returns to Pipeline, sees all phases completed"
+
+decision-points:
+  - at-step: 3
+    condition: "Phase status"
+    branch-a: "pending: muted text and muted indicator"
+    branch-b: "active: cyan text with pulse animation"
+    branch-c: "completed: green text with checkmark"
+    branch-d: "failed: red text with error icon"
+  - at-step: 4
+    condition: "Phase fails"
+    branch-a: "Success: next phase becomes active"
+    branch-b: "Failure: phase shows red, pipeline halts"
+
+observation-pattern:
+  description: |
+    The user follows a tab-through observation pattern:
+    Pipeline (overview) -> ACP Session (agent comms) -> Spec (content) -> Tasks (work items) -> Coverage (progress)
+    This cycle can repeat as phases progress. The Pipeline view is the anchor point.
+  views-in-order:
+    - PG-003-pipeline
+    - PG-007-acp-session
+    - PG-004-spec-viewer
+    - PG-005-task-board
+    - PG-006-coverage-dashboard

@@ -1,0 +1,138 @@
+entity: wireframe
+id: WF-006-cost-investigation
+name: "Cost Investigation"
+docs: ./cost-investigation.md
+tests: ./cost-investigation.feature
+
+viewports:
+  desktop: { min-width: 1024 }
+  tablet: { min-width: 768, max-width: 1023 }
+  mobile: { max-width: 767 }
+
+theme:
+  colors:
+    background: "#020408"
+    surface: "#08101C"
+    surface-elevated: "rgba(8, 16, 28, 0.85)"
+    accent: "#00F0FF"
+    accent-light: "#5FFFFF"
+    accent-dim: "rgba(0, 240, 255, 0.15)"
+    text: "#DAE6F0"
+    text-muted: "#586E85"
+    warning: "#FF5E00"
+    success: "#22C55E"
+    error: "#FF3B3B"
+    info: "#00F0FF"
+  budget-zones:
+    safe: "#22C55E"
+    warning: "#FFD600"
+    critical: "#FF5E00"
+    exhausted: "#FF3B3B"
+  agent-roles:
+    orchestrator: "#00F0FF"
+    analyst: "#A78BFA"
+    writer: "#34D399"
+    reviewer: "#F472B6"
+    architect: "#FBBF24"
+  typography:
+    font-body: "'Inter', -apple-system, sans-serif"
+    font-display: "'Rajdhani', 'Inter', sans-serif"
+    font-mono: "'JetBrains Mono', 'Fira Code', monospace"
+    base-size: "14px"
+
+pages:
+  - $ref: PG-008-cost-tracker
+  - $ref: PG-002-chat
+
+stores:
+  - $ref: STR-010-cost-tracker-store
+  - $ref: STR-004-chat-store
+  - $ref: STR-001-filter-store
+
+actions:
+  - $ref: ACT-001-navigate-to-view
+  - $ref: ACT-027-toggle-view-mode
+  - $ref: ACT-016-set-filter
+
+events:
+  - $ref: EVT-001-view-changed
+  - $ref: EVT-018-filter-changed
+  - $ref: EVT-011-budget-updated
+
+journey:
+  - step: 1
+    page: PG-010-app-shell
+    description: "User notices budget warning indicator in status bar (CMP-002)"
+    trigger: "Budget zone transitions from safe to warning"
+  - step: 2
+    page: PG-008-cost-tracker
+    action: ACT-001-navigate-to-view
+    description: "User navigates to Cost Tracker to investigate"
+    event: EVT-001-view-changed
+  - step: 3
+    page: PG-008-cost-tracker
+    description: "Cost summary cards (CMP-017) show total cost, tokens, and budget gauge"
+  - step: 4
+    page: PG-008-cost-tracker
+    description: "Budget gauge shows current zone (warning/critical) with appropriate color"
+  - step: 5
+    page: PG-008-cost-tracker
+    description: "Phase cost table (CMP-018) shows cost breakdown by pipeline phase"
+  - step: 6
+    page: PG-008-cost-tracker
+    action: ACT-027-toggle-view-mode
+    description: "User switches to by-agent view to see per-agent cost breakdown"
+    event: EVT-018-filter-changed
+  - step: 7
+    page: PG-008-cost-tracker
+    description: "Agent cost table (CMP-019) shows cost per agent role"
+  - step: 8
+    page: PG-008-cost-tracker
+    action: ACT-016-set-filter
+    description: "User filters to specific phases or agent roles to isolate the cost driver"
+    event: EVT-018-filter-changed
+  - step: 9
+    page: PG-008-cost-tracker
+    description: "User identifies the highest-cost phase or agent"
+  - step: 10
+    page: PG-002-chat
+    action: ACT-001-navigate-to-view
+    description: "User returns to Chat and observes budget bar status"
+
+decision-points:
+  - at-step: 1
+    condition: "Budget zone"
+    branch-a: "Warning zone: yellow indicator in status bar"
+    branch-b: "Critical zone: orange indicator in status bar"
+    branch-c: "Exhausted zone: red pulsing indicator in status bar"
+  - at-step: 5
+    condition: "View mode"
+    branch-a: "by-phase: phase cost table visible"
+    branch-b: "by-agent: agent cost table visible"
+  - at-step: 9
+    condition: "Cost driver identified"
+    branch-a: "A specific phase is consuming most of the budget"
+    branch-b: "A specific agent is consuming most of the budget"
+    branch-c: "Costs are evenly distributed (no single driver)"
+
+budget-zones:
+  - zone: "safe"
+    range: "0-60%"
+    color: "#22C55E"
+    status-bar-indicator: "Green dot, no label"
+    gauge-appearance: "Green fill, no warning"
+  - zone: "warning"
+    range: "60-85%"
+    color: "#FFD600"
+    status-bar-indicator: "Yellow dot with 'Budget warning' label"
+    gauge-appearance: "Yellow fill, warning text"
+  - zone: "critical"
+    range: "85-95%"
+    color: "#FF5E00"
+    status-bar-indicator: "Orange dot with 'Budget critical' label"
+    gauge-appearance: "Orange fill, critical text"
+  - zone: "exhausted"
+    range: "95-100%"
+    color: "#FF3B3B"
+    status-bar-indicator: "Red pulsing dot with 'Budget exhausted' label"
+    gauge-appearance: "Red pulsing fill, exhausted text"

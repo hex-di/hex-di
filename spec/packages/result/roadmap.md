@@ -108,6 +108,69 @@ Planned future additions to the `@hex-di/result` specification. Each item descri
 
 **Deliverable**: [spec/result/behaviors/14-benchmarks.md](behaviors/14-benchmarks.md), [spec/result/decisions/013-performance-strategy.md](decisions/013-performance-strategy.md)
 
+## Effect-Based Error Handling (Tier 1)
+
+**Status**: Specified.
+
+**Scope**: Per-tag error elimination via `catchTag`, `catchTags`, and `andThenWith`. Enables selective error recovery with type-safe narrowing using `Extract`/`Exclude` on the `_tag` discriminant.
+
+**Deliverable**: [spec/result/behaviors/15-effect-error-handling.md](behaviors/15-effect-error-handling.md), [spec/result/decisions/014-catch-tag-effect-elimination.md](decisions/014-catch-tag-effect-elimination.md), [spec/research/RES-01-type-and-effect-systems.md](../../research/RES-01-type-and-effect-systems.md)
+
+## Adapter Error Handlers (Tier 2)
+
+**Status**: Accepted.
+
+**Scope**: `adapterOrHandle(adapter, handlers)` utility in `@hex-di/core` for handling adapter construction errors at the composition boundary with tag-selective error recovery and type-safe error narrowing.
+
+**Deliverable**: [spec/result/decisions/015-adapter-or-handle.md](decisions/015-adapter-or-handle.md)
+
+## Type-Level Error Utilities (Tier 3)
+
+**Status**: Specified.
+
+**Scope**: Type-level utilities for working with tagged error unions: `TaggedError<Tag, Fields>` for branded error type construction, `TagsOf`, `HasTag`, `ErrorByTag`, `RemoveTag`, `RemoveTags` for error row operations, and `ExhaustiveHandlerMap<E, T>` for compile-time verification that all error tags are handled. All pure types — zero runtime cost.
+
+**Deliverable**: [spec/result/type-system/error-row.md](type-system/error-row.md)
+
+## Property-Based Monad Law Testing (Tier 1)
+
+**Status**: Specified.
+
+**Scope**: Property-based tests using `fast-check` to verify monad, functor, and combinator laws for `Result`, `ResultAsync`, and `Option`. Covers left identity, right identity, associativity, functor identity, and functor composition.
+
+**Deliverable**: [behaviors/16-property-based-laws.md](behaviors/16-property-based-laws.md), [decisions/016-property-based-monad-laws.md](decisions/016-property-based-monad-laws.md)
+
+**Research**: [RES-07 (Category Theory)](../../research/RES-07-category-theory-composition.md)
+
+**Invariants**: [INV-17](invariants.md#inv-17-monad-left-identity), [INV-18](invariants.md#inv-18-monad-right-identity), [INV-19](invariants.md#inv-19-monad-associativity)
+
+## Higher-Order Effect Handlers (Tier 3)
+
+**Status**: Specified.
+
+**Scope**: Composable, first-class effect handlers. `composeHandlers()` combines handlers into reusable error recovery pipelines. Handler composition forms a monoid (associative with identity element).
+
+**Deliverable**: [behaviors/17-higher-order-effects.md](behaviors/17-higher-order-effects.md), [decisions/017-higher-order-effect-handlers.md](decisions/017-higher-order-effect-handlers.md)
+
+**Research**: [RES-01 (Type & Effect Systems)](../../research/RES-01-type-and-effect-systems.md), [RES-07 (Category Theory)](../../research/RES-07-category-theory-composition.md)
+
+## Effect Contracts (Tier 3)
+
+**Status**: Specified.
+
+**Scope**: Type-level function contracts (`EffectContract<In, Out, Effects>`) declaring the effects a function may produce. `SatisfiesContract<Fn, Contract>` verifies implementations at compile time. Contract composition tracks effect accumulation through function pipelines.
+
+**Deliverable**: [behaviors/18-effect-contracts.md](behaviors/18-effect-contracts.md), [decisions/018-effect-contracts.md](decisions/018-effect-contracts.md), [type-system/effect-polymorphism.md](type-system/effect-polymorphism.md)
+
+**Research**: [RES-01 (Type & Effect Systems)](../../research/RES-01-type-and-effect-systems.md)
+
+## Cross-Package Specifications
+
+The following packages also have specification documents:
+
+- **@hex-di/core**: [spec/packages/core/roadmap.md](../core/roadmap.md) — Port freezing, blame contexts, phantom disposal types, capability analysis, protocol state machines
+- **@hex-di/graph**: [spec/packages/graph/roadmap.md](../graph/roadmap.md) — Operation completeness, cycle diagnostics, composition laws, effect propagation
+
 ## RxJS Companion Package
 
 **Scope**: A companion package `@hex-di/result-rxjs` providing RxJS operators for working with `Observable<Result<T, E>>`.

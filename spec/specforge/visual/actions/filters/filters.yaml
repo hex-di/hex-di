@@ -1,0 +1,312 @@
+entity: action
+id: ACT-016-set-filter
+name: "Set Filter"
+docs: ./filters.md
+tests: ./filters.feature
+
+type: data-filter
+trigger:
+  element:
+    - { $ref: ELM-014-filter-dropdown }
+    - { $ref: ELM-017-filter-multi-select-option }
+    - { $ref: ELM-019-filter-text-input }
+  interaction: change
+preconditions: []
+events-dispatched:
+  - $ref: EVT-018-filter-changed
+
+stores-affected:
+  - $ref: STR-001-filter-store
+
+notes: |
+  Sets a single filter value for the current view's filter namespace.
+  Payload shape: { view: ViewId, key: string, value: unknown }.
+  The store reducer updates the filter at [view][key] = value.
+  Used by dropdowns, multi-select options, text inputs, and other
+  filter controls that produce a single key-value change.
+
+---
+entity: action
+id: ACT-017-toggle-filter
+name: "Toggle Filter"
+docs: ./filters.md
+tests: ./filters.feature
+
+type: toggle-select
+trigger:
+  element: { $ref: ELM-018-filter-toggle }
+  interaction: change
+preconditions: []
+events-dispatched:
+  - $ref: EVT-018-filter-changed
+
+stores-affected:
+  - $ref: STR-001-filter-store
+
+notes: |
+  Toggles a boolean filter value (true/false).
+  Payload shape: { view: ViewId, key: string, value: boolean }.
+  Used by checkbox-style toggle filters (e.g., "Show archived").
+
+---
+entity: action
+id: ACT-018-remove-filter
+name: "Remove Filter"
+docs: ./filters.md
+tests: ./filters.feature
+
+type: data-filter
+trigger:
+  element: { $ref: ELM-021-filter-chip-remove }
+  interaction: click
+preconditions: []
+events-dispatched:
+  - $ref: EVT-018-filter-changed
+
+stores-affected:
+  - $ref: STR-001-filter-store
+
+notes: |
+  Removes a specific active filter by resetting it to its default value.
+  Triggered by clicking the "X" button on a filter chip (ELM-021).
+  Payload shape: { view: ViewId, key: string, value: defaultValue }.
+  The corresponding filter chip is removed from the active filters strip.
+
+---
+entity: action
+id: ACT-019-clear-view-filters
+name: "Clear View Filters"
+docs: ./filters.md
+tests: ./filters.feature
+
+type: data-filter
+trigger:
+  element: "clear-all button"
+  interaction: click
+preconditions: []
+events-dispatched:
+  - $ref: EVT-019-filters-reset
+
+stores-affected:
+  - $ref: STR-001-filter-store
+
+notes: |
+  Resets all filters for the current view to their default values.
+  Only affects the filter namespace of the currently active view.
+  All filter chips for the current view are removed.
+  The clear-all button is only visible when at least one filter is active.
+
+---
+entity: action
+id: ACT-020-clear-all-filters
+name: "Clear All Filters"
+docs: ./filters.md
+tests: ./filters.feature
+
+type: data-filter
+trigger:
+  programmatic: true
+preconditions: []
+events-dispatched:
+  - $ref: EVT-020-filters-all-reset
+
+stores-affected:
+  - $ref: STR-001-filter-store
+
+notes: |
+  Resets all filters across all view namespaces to their defaults.
+  Triggered programmatically (e.g., on session change or app reset).
+  Not directly user-triggered -- there is no UI button for this action.
+
+---
+entity: action
+id: ACT-021-apply-preset
+name: "Apply Preset"
+docs: ./filters.md
+tests: ./filters.feature
+
+type: data-filter
+trigger:
+  element: { $ref: ELM-062-preset-button }
+  interaction: click
+preconditions: []
+events-dispatched:
+  - $ref: EVT-018-filter-changed
+
+stores-affected:
+  - $ref: STR-001-filter-store
+
+notes: |
+  Applies a predefined filter preset for the ACP session view.
+  Each preset sets multiple filter fields at once via a batch of
+  EVT-018-filter-changed events (one per field).
+  Example presets: "Open Critical", "GxP Issues", "By Agent", "All Findings".
+  The active preset button is highlighted with accent styling.
+  Clicking an already-active preset deactivates it and resets to defaults.
+
+---
+entity: action
+id: ACT-022-sort-column
+name: "Sort Column"
+docs: ./filters.md
+tests: ./filters.feature
+
+type: data-sort
+trigger:
+  element: "column header"
+  interaction: click
+preconditions: []
+events-dispatched:
+  - $ref: EVT-018-filter-changed
+
+stores-affected:
+  - $ref: STR-001-filter-store
+
+notes: |
+  Sorts a table by the clicked column header.
+  Clicking the same column header toggles the sort direction
+  (ascending -> descending -> ascending).
+  Clicking a different column header sets that column as the sort field
+  with the default direction (descending for dates, ascending for text).
+  The sort state is stored as a filter: { view, key: "sort", value: { field, direction } }.
+
+---
+entity: action
+id: ACT-023-search-in-view
+name: "Search in View"
+docs: ./filters.md
+tests: ./filters.feature
+
+type: search-submit
+trigger:
+  element: { $ref: ELM-019-filter-text-input }
+  interaction: change
+debounce:
+  wait: 300
+preconditions: []
+events-dispatched:
+  - $ref: EVT-018-filter-changed
+
+stores-affected:
+  - $ref: STR-001-filter-store
+
+notes: |
+  Updates the search text filter for the current view.
+  This is the in-view text search (different from the global search overlay).
+  Input changes are debounced at 300ms.
+  Payload shape: { view: ViewId, key: "search", value: string }.
+  An empty value clears the search filter for that view.
+
+---
+entity: action
+id: ACT-024-toggle-multi-select
+name: "Toggle Multi-Select"
+docs: ./filters.md
+tests: ./filters.feature
+
+type: toggle-select
+trigger:
+  element: { $ref: ELM-017-filter-multi-select-option }
+  interaction: change
+preconditions: []
+events-dispatched:
+  - $ref: EVT-018-filter-changed
+
+stores-affected:
+  - $ref: STR-001-filter-store
+
+notes: |
+  Toggles a single option within a multi-select filter dropdown.
+  Adds the value to the selected array if unchecked, or removes it if checked.
+  Payload shape: { view: ViewId, key: string, value: string[] }.
+  The count badge on the multi-select trigger (ELM-016) updates accordingly.
+
+---
+entity: action
+id: ACT-025-select-search-result
+name: "Select Search Result"
+docs: ./filters.md
+tests: ./filters.feature
+
+type: navigate
+trigger:
+  element: { $ref: ELM-012-search-result-item }
+  interaction: click
+preconditions: []
+events-dispatched:
+  - $ref: EVT-022-search-result-selected
+  - $ref: EVT-001-view-changed
+
+stores-affected:
+  - $ref: STR-012-search-store
+  - $ref: STR-014-router-store
+
+side-effects:
+  - type: close-modal
+    description: "Closes the search overlay after navigation."
+
+notes: |
+  Navigates to the view and entity referenced by the selected search result.
+  Dispatches EVT-022-search-result-selected with the result metadata,
+  then EVT-001-view-changed to navigate to the target view.
+  The search overlay closes automatically after selection.
+
+---
+entity: action
+id: ACT-026-navigate-search-results
+name: "Navigate Search Results"
+docs: ./filters.md
+tests: ./filters.feature
+
+type: list-select
+trigger:
+  element: { $ref: ELM-010-search-input }
+  interaction: keydown
+  keys: ["ArrowUp", "ArrowDown"]
+preconditions: []
+events-dispatched:
+  - $ref: EVT-021-search-query-changed
+
+stores-affected:
+  - $ref: STR-012-search-store
+
+notes: |
+  Moves the keyboard selection up or down in the search results list.
+  ArrowDown moves selection to the next result item.
+  ArrowUp moves selection to the previous result item.
+  The selection wraps: Down at the last item moves to the first,
+  Up at the first item moves to the last.
+  Updates the selectedIndex field in the search store.
+
+---
+entity: action
+id: ACT-027-toggle-view-mode
+name: "Toggle View Mode"
+docs: ./filters.md
+tests: ./filters.feature
+
+type: toggle-mode
+trigger:
+  - element: { $ref: ELM-052-view-mode-toggle }
+    interaction: click
+    context: "tasks view: kanban | dag"
+  - element: { $ref: ELM-067-cost-view-mode-toggle }
+    interaction: click
+    context: "ACP session view: by-phase | by-agent"
+  - element: { $ref: ELM-071-graph-view-mode-selector }
+    interaction: click
+    context: "graph view: preset selector"
+preconditions: []
+events-dispatched:
+  - $ref: EVT-018-filter-changed
+
+stores-affected:
+  - $ref: STR-001-filter-store
+
+notes: |
+  Switches between view modes within a specific view.
+  - Tasks view: toggles between "kanban" and "dag" layout modes.
+  - ACP Session view: toggles between "by-phase" and "by-agent" grouping.
+  - Graph view: selects between graph layout presets.
+  Stored as a filter: { view, key: "viewMode", value: string }.
+  Only one mode is active at a time within each view.

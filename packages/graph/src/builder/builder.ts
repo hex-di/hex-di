@@ -34,11 +34,7 @@
 import type { AdapterConstraint } from "@hex-di/core";
 import type { Result } from "@hex-di/result";
 import type { GraphBuildError, GraphValidationError } from "../errors/index.js";
-import {
-  CyclicDependencyBuild,
-  CaptiveDependencyBuild,
-  MissingDependencyBuild,
-} from "../errors/index.js";
+import { CaptiveDependencyBuild, MissingDependencyBuild } from "../errors/index.js";
 import type {
   JoinPortNames,
   UnsatisfiedDependencies,
@@ -59,9 +55,9 @@ import type {
 } from "./types/state.js";
 import {
   inspectGraph,
-  detectCycleAtRuntime,
   detectCaptiveAtRuntime,
   formatCaptiveError,
+  formatEnhancedCycleErrors,
 } from "../graph/inspection/index.js";
 import type {
   GraphInspection,
@@ -685,14 +681,10 @@ export class GraphBuilder<
     }
 
     if (inspection.depthLimitExceeded) {
-      const cycle = detectCycleAtRuntime(this.adapters);
-      if (cycle) {
-        errors.push(
-          CyclicDependencyBuild({
-            cyclePath: cycle,
-            message: `Circular dependency: ${cycle.join(" -> ")}`,
-          })
-        );
+      // Use enhanced cycle error formatting with diagrams and suggestions
+      const cycleError = formatEnhancedCycleErrors(this.adapters);
+      if (cycleError) {
+        errors.push(cycleError);
       }
     }
 

@@ -906,6 +906,7 @@ describe("child-impl.ts - child container edge cases", () => {
       requires: [],
       lifetime: "singleton",
       clonable: true,
+      freeze: true,
       factory: () => ({ log: vi.fn() }),
     });
     const graph = GraphBuilder.create().provide(adapter).build();

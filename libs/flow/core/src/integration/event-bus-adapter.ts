@@ -57,6 +57,7 @@ export const FlowEventBusAdapter: Adapter<
   lifetime: "singleton" as const,
   factoryKind: "sync" as const,
   clonable: false as const,
+  freeze: true as const,
   factory: (): InferService<typeof FlowEventBusPort> => createFlowEventBus(),
   finalizer: (instance: InferService<typeof FlowEventBusPort>): void => {
     if (hasDispose(instance)) {

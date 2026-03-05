@@ -213,6 +213,7 @@ export function createMockAdapter<P extends Port<string, object>, L extends Life
     factoryKind: "sync" as const,
     factory: mockFactory,
     clonable: false as const,
+    freeze: true as const,
   });
 
   return adapter;

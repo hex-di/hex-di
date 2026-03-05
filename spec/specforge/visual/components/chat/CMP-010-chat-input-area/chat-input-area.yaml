@@ -1,0 +1,70 @@
+entity: component
+id: CMP-010-chat-input-area
+name: "Chat Input Area"
+docs: ./chat-input-area.md
+tests: ./chat-input-area.feature
+
+props:
+  - name: "onSendMessage"
+    type: callback
+    signature: "(text: string) => void"
+    required: true
+  - name: "isProcessing"
+    type: boolean
+    required: true
+    description: "Whether the agent is currently processing; disables input when true"
+  - name: "error"
+    type: "string | null"
+    required: true
+    description: "Error message to display, or null if no error"
+
+children:
+  - $ref: ELM-040-chat-input-textarea
+  - $ref: ELM-041-chat-send-button
+  - $ref: ELM-043-chat-error-banner
+
+layout:
+  display: flex
+  flex-direction: column
+  gap: 8px
+  padding: "12px 16px"
+  width: 100%
+  position: "sticky"
+  bottom: 0
+  background: "var(--sf-surface)"
+  border-top: "1px solid var(--sf-border)"
+
+input-row:
+  display: flex
+  flex-direction: row
+  gap: 8px
+  align-items: flex-end
+
+textarea:
+  min-rows: 1
+  max-rows: 4
+  resize: vertical
+  flex-grow: 1
+
+keyboard:
+  enter: "send message (when not empty and not processing)"
+  shift-enter: "insert newline"
+
+disabled-state:
+  condition: "isProcessing === true"
+  effects:
+    - target: ELM-040-chat-input-textarea
+      property: disabled
+      value: true
+    - target: ELM-041-chat-send-button
+      property: disabled
+      value: true
+
+error-display:
+  condition: "error !== null"
+  element: ELM-043-chat-error-banner
+  position: "above input row"
+
+accessibility:
+  role: "form"
+  label: "Send a message"

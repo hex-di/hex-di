@@ -81,7 +81,7 @@ interface ContainerLike<TProvides extends Port<string, unknown>> {
   resolve<P extends TProvides>(port: P): InferService<P>;
   resolveAsync<P extends TProvides>(port: P): Promise<InferService<P>>;
   createScope(name?: string): Resolver<TProvides>;
-  dispose(): Promise<void>;
+  dispose(): Promise<unknown>;
   has(port: Port<string, unknown>): boolean;
   readonly isDisposed: boolean;
   readonly isInitialized: boolean;

@@ -71,5 +71,11 @@ test("tryBuildFragment() always returns Result (no dependency check)", () => {
 
 test("GraphBuildError is exhaustive union", () => {
   type Tags = GraphBuildError["_tag"];
-  expectTypeOf<Tags>().toEqualTypeOf<"CyclicDependency" | "CaptiveDependency">();
+  expectTypeOf<Tags>().toEqualTypeOf<
+    | "CyclicDependency"
+    | "CaptiveDependency"
+    | "MissingOperation"
+    | "CycleDetected"
+    | "MultipleCyclesDetected"
+  >();
 });

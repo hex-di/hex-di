@@ -22,6 +22,21 @@ import { resultExtraction } from "./templates/result-extraction.js";
 import { resultCombinators } from "./templates/result-combinators.js";
 import { resultAsync } from "./templates/result-async.js";
 import { resultSafeTry } from "./templates/result-safe-try.js";
+import { resultEffectfulResult } from "./templates/result-effectful-result.js";
+import { resultEffectContract } from "./templates/result-effect-contract.js";
+import { resultComposeContracts } from "./templates/result-compose-contracts.js";
+import { resultTransformEffects } from "./templates/result-transform-effects.js";
+import { resultComposeHandlers } from "./templates/result-compose-handlers.js";
+import { resultNarrowedError } from "./templates/result-narrowed-error.js";
+import { resultMaskEffects } from "./templates/result-mask-effects.js";
+import { resultLiftEffect } from "./templates/result-lift-effect.js";
+import { resultEffectUnion } from "./templates/result-effect-union.js";
+import { resultCatchTags } from "./templates/result-catch-tags.js";
+import { resultDoNotation } from "./templates/result-do-notation.js";
+import { resultOption } from "./templates/result-option.js";
+import { resultInterop } from "./templates/result-interop.js";
+import { resultAdvancedCombinators } from "./templates/result-advanced-combinators.js";
+import { resultUtilities } from "./templates/result-utilities.js";
 import { flowStateMachine } from "./templates/flow-state-machine.js";
 import { storeStateManagement } from "./templates/store-state-management.js";
 import { queryCachePatterns } from "./templates/query-cache-patterns.js";
@@ -74,6 +89,21 @@ const ALL_TEMPLATES: readonly ExampleTemplate[] = [
   resultCombinators,
   resultAsync,
   resultSafeTry,
+  resultEffectfulResult,
+  resultEffectContract,
+  resultComposeContracts,
+  resultTransformEffects,
+  resultComposeHandlers,
+  resultNarrowedError,
+  resultMaskEffects,
+  resultLiftEffect,
+  resultEffectUnion,
+  resultCatchTags,
+  resultDoNotation,
+  resultOption,
+  resultInterop,
+  resultAdvancedCombinators,
+  resultUtilities,
   // Libraries
   flowStateMachine,
   storeStateManagement,

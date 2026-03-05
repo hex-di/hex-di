@@ -1,0 +1,91 @@
+entity: page
+id: PG-007-acp-session
+name: "Agent Messages"
+docs: ./acp-session.md
+tests: ./acp-session.feature
+
+route:
+  path: "#acp-session"
+  hash: true
+  guard: null
+
+layout: single-column
+
+meta:
+  title: "SpecForge — Agent Messages"
+
+components:
+  - $ref: CMP-004-filter-bar
+  - $ref: CMP-016-message-entry-list
+
+stores:
+  - $ref: STR-009-acp-session-store
+  - $ref: STR-001-filter-store
+  - $ref: STR-002-active-session-store
+
+description: |
+  Real-time feed of agent messages, findings, and clarifications from the
+  ACP session. Messages are displayed as cards with severity-colored
+  left borders, filterable by agent role, message type, severity, phase,
+  and text search. Preset filter buttons provide quick access to common
+  views: Open Critical, GxP Issues, Unresolved Clarifications, Current Phase.
+  Data source: MessageExchangePort.
+
+filters:
+  agentRole:
+    type: dropdown
+    options:
+      - all
+      - spec-author
+      - gxp-reviewer
+      - test-designer
+      - architect
+      - validator
+      - code-reviewer
+      - domain-expert
+      - orchestrator
+  messageTypes:
+    type: multi-select
+    options: [finding, clarification, broadcast]
+  severities:
+    type: multi-select
+    options: [critical, major, minor, observation]
+  phase:
+    type: dropdown
+    options: [all, discovery, planning, spec-authoring, review, implementation]
+  search:
+    type: text
+    placeholder: "Search messages..."
+  preset:
+    type: button-group
+    options:
+      - label: "Open Critical"
+        sets: { severities: [critical], messageTypes: [finding] }
+      - label: "GxP Issues"
+        sets: { agentRole: gxp-reviewer }
+      - label: "Unresolved Clarifications"
+        sets: { messageTypes: [clarification] }
+      - label: "Current Phase"
+        sets: { phase: current }
+
+agent-role-colors:
+  spec-author: "#4FC3F7"
+  gxp-reviewer: "#AB47BC"
+  test-designer: "#66BB6A"
+  architect: "#FF7043"
+  validator: "#FFCA28"
+  code-reviewer: "#26C6DA"
+  domain-expert: "#EC407A"
+  orchestrator: "#78909C"
+
+severity-colors:
+  critical: "#FF3B3B"
+  major: "#FF8C00"
+  minor: "#FFD600"
+  observation: "#4FC3F7"
+
+states:
+  - no-session
+  - empty
+  - loading
+  - populated

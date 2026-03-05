@@ -56,6 +56,14 @@ describe("GraphInspection output snapshots", () => {
       {
         "actor": undefined,
         "adapterCount": 0,
+        "capabilities": {
+          "cleanAdapters": 0,
+          "entries": [],
+          "highConfidenceViolations": 0,
+          "summary": "No adapters to audit",
+          "totalAdapters": 0,
+          "violatingAdapters": 0,
+        },
         "dependencyMap": {},
         "depthLimitExceeded": false,
         "depthWarning": undefined,
@@ -64,6 +72,9 @@ describe("GraphInspection output snapshots", () => {
           "outbound": 0,
         },
         "disposalWarnings": [],
+        "effectWarnings": [],
+        "errorProfile": {},
+        "initializationOrder": [],
         "isComplete": true,
         "maxChainDepth": 0,
         "orphanPorts": [],
@@ -99,6 +110,21 @@ describe("GraphInspection output snapshots", () => {
       {
         "actor": undefined,
         "adapterCount": 1,
+        "capabilities": {
+          "cleanAdapters": 1,
+          "entries": [
+            {
+              "adapterName": "Logger",
+              "detections": [],
+              "isClean": true,
+              "portName": "Logger",
+            },
+          ],
+          "highConfidenceViolations": 0,
+          "summary": "All 1 adapters pass capability audit",
+          "totalAdapters": 1,
+          "violatingAdapters": 0,
+        },
         "dependencyMap": {
           "Logger": [],
         },
@@ -109,6 +135,15 @@ describe("GraphInspection output snapshots", () => {
           "outbound": 1,
         },
         "disposalWarnings": [],
+        "effectWarnings": [],
+        "errorProfile": {
+          "Logger": [],
+        },
+        "initializationOrder": [
+          [
+            "Logger",
+          ],
+        ],
         "isComplete": true,
         "maxChainDepth": 0,
         "orphanPorts": [
@@ -161,6 +196,21 @@ describe("GraphInspection output snapshots", () => {
       {
         "actor": undefined,
         "adapterCount": 1,
+        "capabilities": {
+          "cleanAdapters": 1,
+          "entries": [
+            {
+              "adapterName": "Database",
+              "detections": [],
+              "isClean": true,
+              "portName": "Database",
+            },
+          ],
+          "highConfidenceViolations": 0,
+          "summary": "All 1 adapters pass capability audit",
+          "totalAdapters": 1,
+          "violatingAdapters": 0,
+        },
         "dependencyMap": {
           "Database": [
             "Logger",
@@ -173,6 +223,15 @@ describe("GraphInspection output snapshots", () => {
           "outbound": 1,
         },
         "disposalWarnings": [],
+        "effectWarnings": [],
+        "errorProfile": {
+          "Database": [],
+        },
+        "initializationOrder": [
+          [
+            "Database",
+          ],
+        ],
         "isComplete": false,
         "maxChainDepth": 1,
         "orphanPorts": [
@@ -253,6 +312,39 @@ describe("GraphInspection output snapshots", () => {
       {
         "actor": undefined,
         "adapterCount": 4,
+        "capabilities": {
+          "cleanAdapters": 4,
+          "entries": [
+            {
+              "adapterName": "Logger",
+              "detections": [],
+              "isClean": true,
+              "portName": "Logger",
+            },
+            {
+              "adapterName": "Database",
+              "detections": [],
+              "isClean": true,
+              "portName": "Database",
+            },
+            {
+              "adapterName": "Cache",
+              "detections": [],
+              "isClean": true,
+              "portName": "Cache",
+            },
+            {
+              "adapterName": "UserService",
+              "detections": [],
+              "isClean": true,
+              "portName": "UserService",
+            },
+          ],
+          "highConfidenceViolations": 0,
+          "summary": "All 4 adapters pass capability audit",
+          "totalAdapters": 4,
+          "violatingAdapters": 0,
+        },
         "dependencyMap": {
           "Cache": [
             "Logger",
@@ -273,6 +365,25 @@ describe("GraphInspection output snapshots", () => {
           "outbound": 4,
         },
         "disposalWarnings": [],
+        "effectWarnings": [],
+        "errorProfile": {
+          "Cache": [],
+          "Database": [],
+          "Logger": [],
+          "UserService": [],
+        },
+        "initializationOrder": [
+          [
+            "Logger",
+          ],
+          [
+            "Database",
+            "Cache",
+          ],
+          [
+            "UserService",
+          ],
+        ],
         "isComplete": true,
         "maxChainDepth": 2,
         "orphanPorts": [
@@ -357,6 +468,27 @@ describe("GraphInspection output snapshots", () => {
       {
         "actor": undefined,
         "adapterCount": 2,
+        "capabilities": {
+          "cleanAdapters": 2,
+          "entries": [
+            {
+              "adapterName": "Config",
+              "detections": [],
+              "isClean": true,
+              "portName": "Config",
+            },
+            {
+              "adapterName": "Database",
+              "detections": [],
+              "isClean": true,
+              "portName": "Database",
+            },
+          ],
+          "highConfidenceViolations": 0,
+          "summary": "All 2 adapters pass capability audit",
+          "totalAdapters": 2,
+          "violatingAdapters": 0,
+        },
         "dependencyMap": {
           "Config": [],
           "Database": [
@@ -370,6 +502,19 @@ describe("GraphInspection output snapshots", () => {
           "outbound": 2,
         },
         "disposalWarnings": [],
+        "effectWarnings": [],
+        "errorProfile": {
+          "Config": [],
+          "Database": [],
+        },
+        "initializationOrder": [
+          [
+            "Config",
+          ],
+          [
+            "Database",
+          ],
+        ],
         "isComplete": true,
         "maxChainDepth": 1,
         "orphanPorts": [
@@ -445,6 +590,27 @@ describe("inspectGraph() output snapshots", () => {
       {
         "actor": undefined,
         "adapterCount": 2,
+        "capabilities": {
+          "cleanAdapters": 2,
+          "entries": [
+            {
+              "adapterName": "Logger",
+              "detections": [],
+              "isClean": true,
+              "portName": "Logger",
+            },
+            {
+              "adapterName": "Database",
+              "detections": [],
+              "isClean": true,
+              "portName": "Database",
+            },
+          ],
+          "highConfidenceViolations": 0,
+          "summary": "All 2 adapters pass capability audit",
+          "totalAdapters": 2,
+          "violatingAdapters": 0,
+        },
         "dependencyMap": {
           "Database": [
             "Logger",
@@ -458,6 +624,19 @@ describe("inspectGraph() output snapshots", () => {
           "outbound": 2,
         },
         "disposalWarnings": [],
+        "effectWarnings": [],
+        "errorProfile": {
+          "Database": [],
+          "Logger": [],
+        },
+        "initializationOrder": [
+          [
+            "Logger",
+          ],
+          [
+            "Database",
+          ],
+        ],
         "isComplete": true,
         "maxChainDepth": 1,
         "orphanPorts": [
@@ -520,6 +699,21 @@ describe("inspectGraph() output snapshots", () => {
       {
         "actor": undefined,
         "adapterCount": 1,
+        "capabilities": {
+          "cleanAdapters": 1,
+          "entries": [
+            {
+              "adapterName": "UserService",
+              "detections": [],
+              "isClean": true,
+              "portName": "UserService",
+            },
+          ],
+          "highConfidenceViolations": 0,
+          "summary": "All 1 adapters pass capability audit",
+          "totalAdapters": 1,
+          "violatingAdapters": 0,
+        },
         "dependencyMap": {
           "UserService": [
             "Database",
@@ -533,6 +727,15 @@ describe("inspectGraph() output snapshots", () => {
           "outbound": 1,
         },
         "disposalWarnings": [],
+        "effectWarnings": [],
+        "errorProfile": {
+          "UserService": [],
+        },
+        "initializationOrder": [
+          [
+            "UserService",
+          ],
+        ],
         "isComplete": false,
         "maxChainDepth": 1,
         "orphanPorts": [
@@ -712,6 +915,7 @@ describe("adapter structure snapshots", () => {
       lifetime: adapter.lifetime,
       factoryKind: adapter.factoryKind,
       clonable: adapter.clonable,
+      freeze: adapter.freeze,
       hasFactory: typeof adapter.factory === "function",
       hasProvides: adapter.provides === LoggerPort,
       requiresLength: adapter.requires.length,
@@ -719,6 +923,7 @@ describe("adapter structure snapshots", () => {
       {
         "clonable": false,
         "factoryKind": "sync",
+        "freeze": true,
         "hasFactory": true,
         "hasProvides": true,
         "lifetime": "singleton",
@@ -733,12 +938,14 @@ describe("adapter structure snapshots", () => {
       requires: [LoggerPort],
       factory: async () => ({ query: async () => ({}) }),
       clonable: false,
+      freeze: true,
     });
 
     expect({
       lifetime: adapter.lifetime,
       factoryKind: adapter.factoryKind,
       clonable: adapter.clonable,
+      freeze: adapter.freeze,
       hasFactory: typeof adapter.factory === "function",
       hasProvides: adapter.provides === DatabasePort,
       requiresLength: adapter.requires.length,
@@ -746,6 +953,7 @@ describe("adapter structure snapshots", () => {
       {
         "clonable": false,
         "factoryKind": "async",
+        "freeze": true,
         "hasFactory": true,
         "hasProvides": true,
         "lifetime": "singleton",

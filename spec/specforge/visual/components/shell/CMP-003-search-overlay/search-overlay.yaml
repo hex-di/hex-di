@@ -1,0 +1,88 @@
+entity: component
+id: CMP-003-search-overlay
+name: "Search Overlay"
+docs: ./search-overlay.md
+tests: ./search-overlay.feature
+
+props:
+  - name: "onClose"
+    type: callback
+    required: true
+    description: "Callback invoked to dismiss the search overlay"
+
+children:
+  - $ref: ELM-009-search-backdrop
+    count: 1
+    description: "Full-screen blurred dark backdrop"
+  - $ref: ELM-010-search-input
+    count: 1
+    description: "Text input field for search query"
+  - $ref: ELM-011-search-category-label
+    count: 5
+    description: "Category header labels (Sessions, Specs, Tasks, Messages, Graph Nodes)"
+  - $ref: ELM-012-search-result-item
+    count: "0..n"
+    description: "Individual result items within each category"
+  - $ref: ELM-013-search-hint-text
+    count: 1
+    description: "Keyboard hint footer text"
+
+stores:
+  - $ref: STR-012-search-store
+    binds:
+      - selector: "query"
+        to: "ELM-010 value"
+      - selector: "results"
+        to: "result list"
+      - selector: "selectedIndex"
+        to: "highlighted result index"
+  - $ref: STR-015-keyboard-shortcut-store
+    binds:
+      - selector: "shortcutsForContext"
+        to: "hint text content"
+
+layout:
+  position: fixed
+  top: 0
+  left: 0
+  right: 0
+  bottom: 0
+  display: flex
+  justify-content: center
+  z-index: 100
+
+panel:
+  width: 560px
+  margin-top: 80px
+  max-height: "calc(100vh - 160px)"
+  display: flex
+  flex-direction: column
+  background: "var(--sf-surface)"
+  border-radius: 12px
+  border: "1px solid rgba(0, 240, 255, 0.15)"
+  box-shadow: "0 24px 48px rgba(0, 0, 0, 0.5)"
+  overflow: hidden
+
+backdrop:
+  background: "rgba(0, 0, 0, 0.6)"
+  backdrop-filter: "blur(4px)"
+
+search-categories:
+  - "Sessions"
+  - "Specs"
+  - "Tasks"
+  - "Messages"
+  - "Graph Nodes"
+
+keyboard:
+  open: "/"
+  close: "Escape"
+  navigate-up: "ArrowUp"
+  navigate-down: "ArrowDown"
+  select: "Enter"
+
+visibility:
+  responsive:
+    desktop: true
+    tablet: true
+    mobile: true

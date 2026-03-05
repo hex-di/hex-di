@@ -1,0 +1,19 @@
+entity: event
+id: EVT-001-view-changed
+name: "View Changed"
+docs: ./routing.md
+tests: ./routing.feature
+
+payload:
+  - name: "viewId"
+    type: string
+    required: true
+
+target-stores:
+  - $ref: STR-014-router-store
+
+side-effects:
+  - type: navigation
+    description: "Update URL hash to reflect the new view (e.g., #/pipeline)"
+  - type: analytics
+    description: "Track page view event with the target viewId"

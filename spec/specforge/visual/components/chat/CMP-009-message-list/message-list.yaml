@@ -1,0 +1,58 @@
+entity: component
+id: CMP-009-message-list
+name: "Message List"
+docs: ./message-list.md
+tests: ./message-list.feature
+
+props:
+  - name: "messages"
+    type: array
+    itemType: ChatMessage
+    required: true
+  - name: "isProcessing"
+    type: boolean
+    required: true
+    description: "Whether the agent is currently processing a response"
+
+children:
+  - $ref: ELM-035-message-bubble-user
+  - $ref: ELM-036-message-bubble-agent
+  - $ref: ELM-037-message-timestamp
+  - $ref: ELM-038-tool-result-card
+  - $ref: ELM-039-tool-result-type-badge
+  - $ref: ELM-042-chat-processing-indicator
+
+layout:
+  display: flex
+  flex-direction: column
+  gap: 12px
+  overflow-y: auto
+  padding: "16px"
+  flex-grow: 1
+
+message-alignment:
+  user:
+    align-self: flex-end
+    max-width: "75%"
+  agent:
+    align-self: flex-start
+    max-width: "85%"
+
+auto-scroll:
+  trigger: "new message appended"
+  behavior: "smooth"
+  anchor: "bottom"
+  skip-when: "user has scrolled up more than 100px from bottom"
+
+empty-state:
+  message: "Start a conversation to begin discovery."
+  style:
+    color: "var(--sf-text-muted)"
+    text-align: center
+    padding: "48px 0"
+    font-style: italic
+
+accessibility:
+  role: "log"
+  label: "Chat messages"
+  live: "polite"

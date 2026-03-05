@@ -85,11 +85,22 @@ Functions for working with Option types.
 
 Utilities for creating and handling errors.
 
-| Function                            | Description                                 |
-| ----------------------------------- | ------------------------------------------- |
-| `createError(tag, message?, data?)` | Creates a discriminated error type          |
-| `createErrorGroup(errors)`          | Groups related errors under a shared parent |
-| `assertNever(value)`                | Ensures exhaustive handling at compile time |
+| Function                            | Description                                                               |
+| ----------------------------------- | ------------------------------------------------------------------------- |
+| `createError(tag, message?, data?)` | Creates a discriminated error type                                        |
+| `createErrorGroup(namespace)`       | Creates error families with `_namespace` + `_tag` two-level discriminants |
+| `assertNever(value)`                | Ensures exhaustive handling at compile time                               |
+
+## Tagged Error Handling
+
+Methods for handling specific tagged errors and narrowing the error union.
+
+| Method / Function                   | Description                                               |
+| ----------------------------------- | --------------------------------------------------------- |
+| `.catchTag(tag, handler)`           | Handle a single tagged error, removes it from error union |
+| `.catchTags({ tag: handler, ... })` | Handle multiple tagged errors at once                     |
+| `.andThenWith(onOk, onErr)`         | Chain with both success and error recovery handlers       |
+| `.orDie()`                          | Extract value or throw error — use at program boundaries  |
 
 ## Serialization
 
@@ -113,6 +124,50 @@ The fundamental types provided by the library.
 | `Option<T>`         | Discriminated union of Some\<T\> \| None         |
 | `Some<T>`           | Option variant containing a value                |
 | `None`              | Empty Option variant                             |
+
+## Effect Types
+
+Pure type-level utilities for working with effects (error types). Zero runtime cost.
+
+| Type                       | Description                                                  |
+| -------------------------- | ------------------------------------------------------------ |
+| `PureResult<T>`            | `Result<T, never>` — guaranteed success, no effects          |
+| `EffectfulResult<T, E>`    | Result with effects; returns `never` when E is `never`       |
+| `EffectOf<T>`              | Extracts the error type from a Result or ResultAsync         |
+| `IsEffectFree<R>`          | Boolean type — `true` if the Result has no effects           |
+| `MaskEffects<R, Mask>`     | Removes specific error types from a Result (type-level only) |
+| `LiftEffect<R, NewEffect>` | Adds an error type to a Result's error union                 |
+| `EffectUnion<Rs>`          | Union of all error types from a tuple of Results             |
+
+## Effect Contracts
+
+Type-level function contracts declaring input, output, and effects. Zero runtime cost.
+
+| Type                                  | Description                                                           |
+| ------------------------------------- | --------------------------------------------------------------------- |
+| `EffectContract<In, Out, Effects>`    | Declares a function's input, success output, and error types          |
+| `TaggedError<Tag, Fields>`            | Tagged error base type with `_tag` discriminant                       |
+| `SatisfiesContract<Fn, Contract>`     | Verifies a function satisfies a contract; returns `true` or violation |
+| `ComposeContracts<C1, C2>`            | Sequential composition — merges inputs/outputs/effects                |
+| `EffectViolation<Actual, Expected>`   | Error: function produces undeclared effects                           |
+| `OutputViolation<Actual, Expected>`   | Error: function output type mismatch                                  |
+| `InputViolation<Actual, Expected>`    | Error: function input type mismatch                                   |
+| `ContractCompositionError<Out1, In2>` | Error: contracts cannot compose (output/input mismatch)               |
+
+## Effect Handlers
+
+Composable runtime handlers for processing tagged errors.
+
+| Export                                  | Description                                                       |
+| --------------------------------------- | ----------------------------------------------------------------- |
+| `EffectHandler<TIn, TOut>`              | Handler interface: processes `TIn` errors, produces `TOut` values |
+| `composeHandlers(h1, h2)`               | Combines two handlers; left-biased on overlapping tags            |
+| `identityHandler`                       | No-op handler — identity element for composition                  |
+| `transformEffects(result, ...handlers)` | Applies handler chain to a Result                                 |
+| `NarrowedError<E, Tags>`                | Removes error types whose `_tag` is in `Tags`                     |
+| `InputOf<H>`                            | Extracts the input (error) type of a handler                      |
+| `OutputOf<H>`                           | Extracts the output (recovery value) type of a handler            |
+| `ComposeHandlers<H1, H2>`               | Type-level composed handler type                                  |
 
 ## Type Utilities
 
@@ -148,6 +203,7 @@ All Result instances have these methods:
 **Chaining**
 
 - `andThen(f)`, `orElse(f)`, `andTee(f)`, `orTee(f)`, `andThrough(f)`, `inspect(f)`, `inspectErr(f)`
+- `catchTag(tag, handler)`, `catchTags(handlers)`, `andThenWith(onOk, onErr)`
 
 **Logical**
 
@@ -155,7 +211,7 @@ All Result instances have these methods:
 
 **Extraction**
 
-- `match(onOk, onErr)`, `unwrapOr(default)`, `unwrapOrElse(f)`, `mapOr(default, f)`, `mapOrElse(defaultF, f)`, `contains(value)`, `containsErr(error)`, `expect(message)`, `expectErr(message)`
+- `match(onOk, onErr)`, `unwrapOr(default)`, `unwrapOrElse(f)`, `mapOr(default, f)`, `mapOrElse(defaultF, f)`, `contains(value)`, `containsErr(error)`, `expect(message)`, `expectErr(message)`, `orDie()`
 
 **Conversion**
 
@@ -228,4 +284,32 @@ import { createError, createErrorGroup, assertNever } from "@hex-di/result";
 
 // Type utilities
 import type { InferOk, InferErr, IsResult } from "@hex-di/result";
+
+// Effect types
+import type {
+  PureResult,
+  EffectfulResult,
+  EffectOf,
+  IsEffectFree,
+  MaskEffects,
+  LiftEffect,
+  EffectUnion,
+} from "@hex-di/result";
+
+// Effect contracts
+import type {
+  EffectContract,
+  SatisfiesContract,
+  ComposeContracts,
+  TaggedError,
+} from "@hex-di/result";
+
+// Effect handlers
+import {
+  composeHandlers,
+  identityHandler,
+  transformEffects,
+  type EffectHandler,
+  type NarrowedError,
+} from "@hex-di/result";
 ```

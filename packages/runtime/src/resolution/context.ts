@@ -13,6 +13,7 @@
  * @internal
  */
 
+import { createBlameContext } from "@hex-di/core";
 import { CircularDependencyError } from "../errors/index.js";
 
 /**
@@ -49,7 +50,13 @@ export class ResolutionContext {
     if (this.path.has(portName)) {
       // Circular dependency detected - build the full chain for the error
       const chain = [...this.pathArray, portName];
-      throw new CircularDependencyError(chain);
+      const blame = createBlameContext({
+        adapterFactory: { name: "unknown" },
+        portContract: { name: portName, direction: "inbound" },
+        violationType: { _tag: "MissingDependency", missingPort: portName },
+        resolutionPath: chain,
+      });
+      throw new CircularDependencyError(chain, blame);
     }
 
     this.path.add(portName);

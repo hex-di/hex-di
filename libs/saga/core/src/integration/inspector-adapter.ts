@@ -114,6 +114,7 @@ export function createSagaInspectorAdapter(
     lifetime: "singleton",
     factoryKind: "sync",
     clonable: false,
+    freeze: true,
     factory: (deps: {
       SagaRegistry: InferService<typeof SagaRegistryPort>;
     }): InferService<typeof SagaInspectorPort> => {

@@ -126,6 +126,7 @@ describe("async adapter edge cases", () => {
       provides: ClonableAsyncPort,
       requires: [],
       clonable: true,
+      freeze: true,
       factory: () => ResultAsync.ok({ name: "clonable-async" }),
     });
 

@@ -60,5 +60,6 @@ export function bridgeCreateAdapter(
     factoryKind: SYNC,
     factory: config.factory,
     clonable: FALSE,
+    freeze: true,
   });
 }

@@ -1,0 +1,186 @@
+entity: wireframe
+id: WF-004-filter-refine-observe
+name: "Filter, Refine, Observe"
+docs: ./filter-refine-observe.md
+tests: ./filter-refine-observe.feature
+
+viewports:
+  desktop: { min-width: 1024 }
+  tablet: { min-width: 768, max-width: 1023 }
+  mobile: { max-width: 767 }
+
+theme:
+  colors:
+    background: "#020408"
+    surface: "#08101C"
+    surface-elevated: "rgba(8, 16, 28, 0.85)"
+    accent: "#00F0FF"
+    accent-light: "#5FFFFF"
+    accent-dim: "rgba(0, 240, 255, 0.15)"
+    text: "#DAE6F0"
+    text-muted: "#586E85"
+    warning: "#FF5E00"
+    success: "#22C55E"
+    error: "#FF3B3B"
+    info: "#00F0FF"
+  typography:
+    font-body: "'Inter', -apple-system, sans-serif"
+    font-display: "'Rajdhani', 'Inter', sans-serif"
+    font-mono: "'JetBrains Mono', 'Fira Code', monospace"
+    base-size: "14px"
+
+pages:
+  - $ref: PG-001-home
+  - $ref: PG-005-task-board
+  - $ref: PG-006-coverage-dashboard
+  - $ref: PG-007-acp-session
+  - $ref: PG-008-cost-tracker
+  - $ref: PG-009-graph-explorer
+
+stores:
+  - $ref: STR-001-filter-store
+
+actions:
+  - $ref: ACT-016-set-filter
+  - $ref: ACT-017-toggle-filter
+  - $ref: ACT-018-remove-filter
+  - $ref: ACT-019-clear-view-filters
+  - $ref: ACT-020-clear-all-filters
+  - $ref: ACT-021-apply-preset
+  - $ref: ACT-022-sort-column
+  - $ref: ACT-023-search-in-view
+  - $ref: ACT-024-toggle-multi-select
+  - $ref: ACT-025-select-search-result
+  - $ref: ACT-026-navigate-search-results
+  - $ref: ACT-027-toggle-view-mode
+
+events:
+  - $ref: EVT-018-filter-changed
+  - $ref: EVT-019-filters-reset
+  - $ref: EVT-020-filters-all-reset
+
+journey:
+  - step: 1
+    page: any-filterable-view
+    description: "User is on a view that supports filtering"
+  - step: 2
+    action: ACT-016-set-filter
+    description: "User selects a filter value from a dropdown or multi-select"
+    event: EVT-018-filter-changed
+  - step: 3
+    description: "Filter chip appears in CMP-004 showing the active filter"
+  - step: 4
+    description: "Data in the view re-filters to match the new criteria"
+  - step: 5
+    action: ACT-022-sort-column
+    description: "User removes an individual filter by clicking its chip's X button"
+    event: EVT-018-filter-changed
+  - step: 6
+    action: ACT-018-remove-filter
+    description: "User clicks 'Clear All' to reset all filters for the current view"
+    event: EVT-019-filters-reset
+  - step: 7
+    description: "All chips disappear, data shows unfiltered content"
+
+decision-points:
+  - at-step: 1
+    condition: "Which filterable view"
+    branch-a: "Home: status, pipelineMode, search, sort"
+    branch-b: "Tasks: statuses, requirementId, search, viewMode"
+    branch-c: "Coverage: statuses, specFile, sort, showGapsOnly, fileCategory, showUncoveredOnly"
+    branch-d: "ACP Session: agentRole, messageTypes, severities, phase, search, preset"
+    branch-e: "Costs: phases, agentRoles, viewMode"
+    branch-f: "Graph: nodeTypes, relationshipTypes, viewMode, search"
+  - at-step: 2
+    condition: "Filter type"
+    branch-a: "Dropdown: single-value selection"
+    branch-b: "Multi-select: array of values"
+    branch-c: "Toggle/Boolean: on/off switch"
+    branch-d: "Text search: free-text input"
+    branch-e: "Preset: named filter combination (ACP session only)"
+
+filterable-views:
+  home:
+    filters:
+      - key: "status"
+        type: dropdown
+        options: ["all", "running", "paused", "completed", "failed"]
+      - key: "pipelineMode"
+        type: dropdown
+        options: ["all", "spec-author", "full-pipeline"]
+      - key: "search"
+        type: text
+      - key: "sort"
+        type: dropdown
+        options: ["last-activity", "created", "package"]
+
+  tasks:
+    filters:
+      - key: "statuses"
+        type: multi-select
+        options: ["pending", "in-progress", "completed", "blocked"]
+      - key: "requirementId"
+        type: text
+      - key: "search"
+        type: text
+      - key: "viewMode"
+        type: toggle
+        options: ["kanban", "dag"]
+
+  coverage:
+    filters:
+      - key: "statuses"
+        type: multi-select
+        options: ["covered", "implemented-only", "tested-only", "gap"]
+      - key: "specFile"
+        type: dropdown
+      - key: "sort"
+        type: dropdown
+        options: ["requirement-id", "coverage-percent", "file-name"]
+      - key: "showGapsOnly"
+        type: boolean
+      - key: "fileCategory"
+        type: multi-select
+      - key: "showUncoveredOnly"
+        type: boolean
+
+  ACP session:
+    filters:
+      - key: "agentRole"
+        type: dropdown
+        options: ["all", "orchestrator", "analyst", "writer", "reviewer", "architect"]
+      - key: "messageTypes"
+        type: multi-select
+        options: ["finding", "clarification", "broadcast"]
+      - key: "severities"
+        type: multi-select
+        options: ["critical", "major", "minor", "observation"]
+      - key: "phase"
+        type: dropdown
+      - key: "search"
+        type: text
+      - key: "preset"
+        type: preset
+        options: ["none", "critical-only", "current-phase", "my-agent"]
+
+  costs:
+    filters:
+      - key: "phases"
+        type: multi-select
+      - key: "agentRoles"
+        type: multi-select
+      - key: "viewMode"
+        type: toggle
+        options: ["by-phase", "by-agent"]
+
+  graph:
+    filters:
+      - key: "nodeTypes"
+        type: multi-select
+      - key: "relationshipTypes"
+        type: multi-select
+      - key: "viewMode"
+        type: toggle
+        options: ["full-graph", "session-only"]
+      - key: "search"
+        type: text

@@ -27,6 +27,7 @@ export type {
   InferAdapterLifetime,
   InferClonable,
   IsClonableAdapter,
+  InferFreeze,
   DebugInferAdapterProvides,
   DebugInferAdapterRequires,
   DebugInferAdapterLifetime,
@@ -74,9 +75,31 @@ export type {
   AsyncLifetimeError,
 } from "./unified-types.js";
 
+// Operation completeness types
+export type {
+  VerifyOperationCompleteness,
+  MissingOperationsError,
+  IsMissingOperationsError,
+  UnwrapFactoryOk,
+  AdapterWithCompletenessCheck,
+} from "./completeness.js";
+
 // Lazy port utilities
 export type { LazyPort, IsLazyPort, UnwrapLazyPort } from "./lazy.js";
 export { lazyPort, getOriginalPort, isLazyPort } from "./lazy.js";
 
 // Type guards
-export { isAdapter, isLifetime, isFactoryKind } from "./guards.js";
+export { isAdapter, isLifetime, isFactoryKind, getAdapterFreezeConfig } from "./guards.js";
+
+// Adapter lifecycle types
+export type {
+  AdapterLifecycleState,
+  StateGuardedMethod,
+  ValidTransition,
+  CanTransition,
+  AdapterHandle,
+} from "./lifecycle.js";
+
+// Adapter handle runtime implementation
+export { createAdapterHandle, assertTransition, InvalidTransitionError } from "./handle.js";
+export type { AdapterHandleConfig } from "./handle.js";

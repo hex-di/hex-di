@@ -1,0 +1,241 @@
+entity: element
+id: ELM-068-graph-node-row
+name: "Graph Node Row"
+docs: ./graph.md
+tests: ./graph.feature
+
+type: container
+
+layout:
+  display: flex
+  align-items: center
+  gap: 10px
+  padding: "8px 12px"
+  border-radius: 4px
+  cursor: pointer
+
+states:
+  default:
+    background: "transparent"
+    color: "var(--sf-text)"
+  hover:
+    background: "rgba(0, 240, 255, 0.05)"
+  selected:
+    background: "var(--sf-accent-dim)"
+    color: "var(--sf-accent)"
+
+content:
+  - name: "type-badge"
+    display: inline-flex
+    align-items: center
+    padding: "2px 6px"
+    border-radius: 4px
+    font-size: 10px
+    font-weight: 600
+    text-transform: uppercase
+    states:
+      requirement:
+        color: "#FFFFFF"
+        background: "#6366F1"
+      task:
+        color: "#FFFFFF"
+        background: "#14B8A6"
+      source-file:
+        color: "#FFFFFF"
+        background: "#3B82F6"
+      test-file:
+        color: "#FFFFFF"
+        background: "#10B981"
+      finding:
+        color: "#FFFFFF"
+        background: "#EC4899"
+      agent-session:
+        color: "#FFFFFF"
+        background: "#F97316"
+      session-chunk:
+        color: "#FFFFFF"
+        background: "#F59E0B"
+      package:
+        color: "#FFFFFF"
+        background: "#8B5CF6"
+      decision:
+        color: "#FFFFFF"
+        background: "#EF4444"
+      invariant:
+        color: "#FFFFFF"
+        background: "#64748B"
+  - name: "label"
+    font-size: 13px
+    font-weight: 500
+    color: "var(--sf-text)"
+    flex: 1
+    overflow: hidden
+    text-overflow: ellipsis
+    white-space: nowrap
+  - name: "id"
+    font-size: 11px
+    font-family: "var(--sf-font-mono)"
+    color: "var(--sf-text-muted)"
+
+accessibility:
+  role: "option"
+  label: "Node: {label}, type: {nodeType}, id: {nodeId}"
+
+---
+entity: element
+id: ELM-069-graph-edge-row
+name: "Graph Edge Row"
+docs: ./graph.md
+tests: ./graph.feature
+
+type: container
+
+layout:
+  display: flex
+  align-items: center
+  gap: 8px
+  padding: "6px 12px"
+  border-radius: 4px
+  font-size: 12px
+
+states:
+  default:
+    background: "transparent"
+    color: "var(--sf-text)"
+  hover:
+    background: "rgba(0, 240, 255, 0.03)"
+
+content:
+  - name: "source"
+    font-size: 12px
+    font-weight: 500
+    color: "var(--sf-text)"
+    max-width: 180px
+    overflow: hidden
+    text-overflow: ellipsis
+    white-space: nowrap
+  - name: "arrow"
+    font-size: 12px
+    color: "var(--sf-text-muted)"
+    content: "->"
+  - name: "relationship"
+    font-size: 10px
+    font-weight: 500
+    color: "var(--sf-accent)"
+    text-transform: uppercase
+    letter-spacing: "0.03em"
+  - name: "arrow-end"
+    font-size: 12px
+    color: "var(--sf-text-muted)"
+    content: "->"
+  - name: "target"
+    font-size: 12px
+    font-weight: 500
+    color: "var(--sf-text)"
+    max-width: 180px
+    overflow: hidden
+    text-overflow: ellipsis
+    white-space: nowrap
+
+accessibility:
+  role: "listitem"
+  label: "{source} {relationship} {target}"
+
+---
+entity: element
+id: ELM-070-connection-status-dot
+name: "Connection Status Dot"
+docs: ./graph.md
+tests: ./graph.feature
+
+type: icon
+
+layout:
+  width: 8px
+  height: 8px
+  border-radius: "50%"
+  display: inline-block
+
+states:
+  connected:
+    background: "var(--sf-accent)"
+    animation: "pulse 2s ease-in-out infinite"
+  disconnected:
+    background: "#FF3B3B"
+    animation: "none"
+
+notes: |
+  Small circular indicator in the connection status banner.
+  Green (accent) when connected to the Neo4j graph database.
+  Red (#FF3B3B) when disconnected.
+  A subtle pulse animation plays when connected to show liveness.
+
+accessibility:
+  role: "status"
+  label: "Graph connection: {connectionState}"
+
+---
+entity: element
+id: ELM-071-graph-view-mode-selector
+name: "Graph View Mode Selector"
+docs: ./graph.md
+tests: ./graph.feature
+
+type: button
+
+layout:
+  display: inline-flex
+  align-items: center
+  padding: "6px 12px"
+  border-radius: 6px
+  font-size: 12px
+  font-weight: 500
+  cursor: pointer
+  border: "1px solid var(--sf-border)"
+
+states:
+  default:
+    color: "var(--sf-text-muted)"
+    background: "var(--sf-surface)"
+    border-color: "var(--sf-border)"
+  hover:
+    color: "var(--sf-text)"
+    background: "rgba(0, 240, 255, 0.05)"
+    border-color: "var(--sf-text-muted)"
+  open:
+    color: "var(--sf-accent)"
+    background: "var(--sf-accent-dim)"
+    border-color: "var(--sf-accent)"
+
+actions:
+  - trigger: click
+    action: { $ref: ACT-016-set-filter }
+    payload:
+      view: graph
+      key: viewMode
+      value: "{selectedPreset}"
+
+presets:
+  - id: full-graph
+    label: "Full Graph"
+  - id: by-type
+    label: "By Type"
+  - id: by-relationship
+    label: "By Relationship"
+  - id: requirements-only
+    label: "Requirements Only"
+  - id: traceability-chain
+    label: "Traceability Chain"
+  - id: orphans
+    label: "Orphans"
+  - id: impact-analysis
+    label: "Impact Analysis"
+
+notes: |
+  Dropdown or segmented control providing 7 graph view presets.
+  Selecting a preset triggers ACT-016-set-filter to update the graph viewMode.
+  The currently selected preset is displayed in the control label.
+
+accessibility:
+  role: "listbox"
+  label: "Graph view preset"

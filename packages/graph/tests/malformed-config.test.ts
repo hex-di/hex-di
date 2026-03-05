@@ -96,6 +96,7 @@ describe("createAdapter validation", () => {
         lifetime: "singleton",
         factory: () => ({ name: "test" }),
         clonable: true,
+        freeze: true,
       });
 
       expect(adapter.clonable).toBe(true);
@@ -140,6 +141,7 @@ describe("createAdapter validation", () => {
       requires: [],
       factory: async () => ({ name: "test" }),
       clonable: true,
+      freeze: true,
     });
 
     expect(adapter.clonable).toBe(true);

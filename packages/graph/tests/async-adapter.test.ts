@@ -91,6 +91,7 @@ describe("async adapter creation", () => {
           set: () => {},
         }),
       clonable: true,
+      freeze: true,
     });
 
     const nonClonableAdapter = createAdapter({
@@ -98,6 +99,7 @@ describe("async adapter creation", () => {
       requires: [],
       factory: () => ResultAsync.ok({ query: async () => ({}), isConnected: true }),
       clonable: false,
+      freeze: true,
     });
 
     expect(clonableAdapter.clonable).toBe(true);

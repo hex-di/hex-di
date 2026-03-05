@@ -414,6 +414,7 @@ describe("ChildContainerImpl - forked mode", () => {
       requires: [],
       lifetime: "singleton",
       clonable: true,
+      freeze: true,
       factory: () => ({ log: vi.fn() }),
     });
     const graph = GraphBuilder.create().provide(loggerAdapter).build();

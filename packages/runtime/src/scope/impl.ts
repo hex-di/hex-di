@@ -46,22 +46,7 @@ export type ScopeIdGenerator = (name?: string) => string;
  * This factory function creates a generator that has its own independent state.
  * Each generator produces unique scope IDs in the format "scope-N".
  *
- * ## Use Cases
- *
- * - **Testing**: Each test can create its own generator for isolation
- * - **Dependency injection**: Pass generators as dependencies
- * - **Parallel trees**: Different scope trees get independent counters
- *
  * @returns A new `ScopeIdGenerator` function with its own counter
- *
- * @example Creating a generator for isolation
- * ```typescript
- * const idGenerator = createScopeIdGenerator();
- * idGenerator();           // "scope-0"
- * idGenerator();           // "scope-1"
- * idGenerator("named");    // "named" (explicit name bypasses counter)
- * idGenerator();           // "scope-2" (counter continues)
- * ```
  *
  * @internal
  */
@@ -78,10 +63,6 @@ export function createScopeIdGenerator(): ScopeIdGenerator {
 
 /**
  * Holder for the default scope ID generator.
- *
- * This is an object to allow resetting the generator while maintaining
- * the same reference from `generateScopeId()`.
- *
  * @internal
  */
 const defaultGeneratorHolder = {
@@ -90,11 +71,6 @@ const defaultGeneratorHolder = {
 
 /**
  * Generates a unique ID for a scope.
- *
- * Uses a default generator for backward compatibility.
- * For new code with testing needs, prefer using `createScopeIdGenerator()`
- * to create isolated generators.
- *
  * @param name - Optional explicit name for the scope
  * @returns A scope ID (explicit name or generated "scope-N" format)
  * @internal
@@ -105,13 +81,6 @@ function generateScopeId(name?: string): string {
 
 /**
  * Resets the default scope ID counter.
- *
- * Creates a new generator instance to reset the counter to 0.
- * This is useful for testing to ensure predictable scope IDs.
- *
- * Note: This only resets the default generator used by `generateScopeId()`.
- * Generators created via `createScopeIdGenerator()` are not affected.
- *
  * @internal
  */
 export function resetScopeIdCounter(): void {
@@ -345,7 +314,13 @@ export function createScopeWrapper<
     },
     tryDispose: () => fromPromise(impl.dispose(), mapToDisposalError),
     createScope: (name?: string) => impl.createScope(name),
-    dispose: () => impl.dispose(),
+    dispose: async () => {
+      await impl.dispose();
+      // Return the scope itself typed as disposed.
+      // ActiveScopeMembers extends ScopeBase (= DisposedScopeMembers),
+      // so the active scope satisfies the disposed container contract.
+      return scope;
+    },
     get isDisposed() {
       return impl.isDisposed;
     },

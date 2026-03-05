@@ -1,0 +1,42 @@
+entity: component
+id: CMP-028-cta-section
+name: "CTA Section"
+docs: ./cta-section.md
+tests: ./cta-section.feature
+
+description: |
+  Bottom call-to-action section before the footer on the SpecForge
+  landing page. Displays a bold headline and a large accent CTA button
+  over a subtle gradient background.
+
+props:
+  headline:
+    type: string
+    default: "Ready to Automate Your Specs?"
+  ctaLabel:
+    type: string
+    default: "Start Free"
+
+layout:
+  display: flex
+  flex-direction: column
+  align-items: center
+  justify-content: center
+  text-align: center
+  max-width: 600px
+  margin: 0 auto
+  padding: "80px 24px"
+  position: relative
+
+background:
+  description: "Subtle accent gradient overlay on the base background"
+  gradient: "radial-gradient(ellipse at center, rgba(0, 240, 255, 0.04) 0%, transparent 70%)"
+  base: "var(--sf-bg)"
+
+children:
+  - $ref: ELM-084-cta-headline
+  - $ref: ELM-085-cta-button
+
+accessibility:
+  role: "region"
+  label: "Call to action"

@@ -107,6 +107,7 @@ describe("ASYNC-02: ResultAsync factory with transient lifetime", () => {
       requires: [],
       lifetime: "transient",
       clonable: false,
+      freeze: true,
       factory: () => ResultAsync.ok({ doWork: () => {} }),
     });
 
@@ -137,6 +138,7 @@ describe("ASYNC-03: ResultAsync factory with singleton lifetime", () => {
       requires: [DepPort],
       lifetime: "singleton",
       clonable: true,
+      freeze: true,
       factory: deps => {
         void deps.Dep.getValue();
         return ResultAsync.ok({ doWork: () => {} });

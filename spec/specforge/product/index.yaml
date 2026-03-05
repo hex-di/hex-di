@@ -1,0 +1,10 @@
+kind: product
+package: specforge
+infix: SF
+entries:
+  - id: "competitive-analysis"
+    file: "competitive-analysis.md"
+    title: "SpecForge Competitive Analysis"
+  - id: "pitch"
+    file: "pitch.md"
+    title: "SpecForge"

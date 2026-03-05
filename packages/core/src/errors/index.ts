@@ -1,7 +1,8 @@
 /**
  * Errors Module
  *
- * Provides error codes, error classes, and error parsing utilities for HexDI.
+ * Provides error codes, error classes, error parsing utilities, and
+ * blame-aware error context for HexDI.
  *
  * @packageDocumentation
  */
@@ -12,6 +13,13 @@ export type { NumericErrorCodeType, ErrorCodeType } from "./codes.js";
 
 // Base error class
 export { ContainerError, extractErrorMessage, hasMessageProperty } from "./base.js";
+
+// Blame context
+export type { BlameContext, BlameViolationType } from "./blame.js";
+export { createBlameContext } from "./blame.js";
+
+// Blame-enhanced error formatting
+export { formatBlameError } from "./formatting.js";
 
 // Concrete error classes
 export {

@@ -79,6 +79,12 @@ export {
 } from "./graph/inspection/traversal.js";
 
 // =============================================================================
+// Initialization Order
+// =============================================================================
+
+export { computeInitializationOrder } from "./graph/inspection/init-order.js";
+
+// =============================================================================
 // Error Formatting (Runtime)
 // =============================================================================
 
@@ -218,6 +224,8 @@ export type {
   TransformLazyToOriginal,
   ExtractLazyPorts,
   HasLazyPorts,
+  // Initialization order
+  InitializationOrder,
 } from "./validation/types/index.js";
 
 // =============================================================================
@@ -264,3 +272,15 @@ export { setAuditSink, clearAuditSink, hasAuditSink } from "./audit/index.js";
 
 export type { PortNameValidationResult } from "./validation/port-name-validation.js";
 export { validatePortName } from "./validation/port-name-validation.js";
+
+// =============================================================================
+// Effect Propagation Analysis
+// =============================================================================
+
+export {
+  computeErrorProfile,
+  computeEffectSummaries,
+  detectUnhandledErrors,
+} from "./graph/inspection/effect-propagation.js";
+
+export type { ErrorTagEntry, PortEffectSummary } from "./graph/inspection/effect-propagation.js";

@@ -83,6 +83,7 @@ describe("adapterOrDie", () => {
     const adapter = createAdapter({
       provides: LoggerPort,
       clonable: true,
+      freeze: true,
       factory: () => ({ log: () => {} }),
     });
 
@@ -461,6 +462,7 @@ describe("adapterOrElse", () => {
     const primary = createAdapter({
       provides: LoggerPort,
       clonable: true,
+      freeze: true,
       factory: () => ({ log: () => {} }),
     });
     const fb = createAdapter({
@@ -606,6 +608,7 @@ describe("adapterOrHandle", () => {
     const adapter = createAdapter({
       provides: LoggerPort,
       clonable: true,
+      freeze: true,
       factory: (): FactoryResult<Logger, NotFoundError> => ({
         _tag: "Ok" as const,
         value: defaultLogger,

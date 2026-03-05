@@ -1,0 +1,63 @@
+entity: component
+id: CMP-020-graph-node-list
+name: "Graph Node List"
+docs: ./graph-node-list.md
+tests: ./graph-node-list.feature
+
+props:
+  - name: "nodes"
+    type: array
+    required: true
+    description: "Array of GraphNodeView objects representing knowledge graph nodes"
+
+types:
+  GraphNodeView:
+    id: string
+    type: "'spec' | 'requirement' | 'task' | 'test' | 'finding' | 'agent' | 'phase' | 'entity'"
+    label: string
+    sessionId: string
+    properties: object
+
+  NodeTypeColor:
+    spec: "#4FC3F7"
+    requirement: "#A78BFA"
+    task: "#22C55E"
+    test: "#FFD600"
+    finding: "#FF3B3B"
+    agent: "#F472B6"
+    phase: "#FF8C00"
+    entity: "#60A5FA"
+
+children:
+  - $ref: ELM-068-graph-node-row
+
+stores:
+  - $ref: STR-011-graph-store
+    binds:
+      - selector: "nodesByType"
+        to: "nodesByType"
+      - selector: "nodeCount"
+        to: "nodeCount"
+  - $ref: STR-001-filter-store
+    binds:
+      - selector: "graph.nodeTypes"
+        to: "nodeTypeFilter"
+      - selector: "graph.search"
+        to: "searchFilter"
+
+layout:
+  display: flex
+  flex-direction: column
+  width: 100%
+  overflow-y: auto
+
+empty-state:
+  text: "No graph nodes available."
+  color: "var(--sf-text-muted)"
+  font-size: 13px
+  text-align: center
+  padding: 32px
+
+accessibility:
+  role: "list"
+  label: "Knowledge graph nodes"

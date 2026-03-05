@@ -1,0 +1,7 @@
+kind: plugins
+package: specforge
+infix: SF
+entries:
+  - id: "PLG-gxp"
+    file: "PLG-gxp.md"
+    title: "GxP Compliance Plugin"

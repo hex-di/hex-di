@@ -1,0 +1,21 @@
+---
+id: FM-SF-037
+kind: risk-assessment
+title: Deployment Failure Modes
+status: active
+fm_range: 037--042
+invariants: [INV-SF-11, INV-SF-15, INV-SF-20, INV-SF-5, INV-SF-8, INV-SF-9]
+---
+
+# Deployment Failure Modes
+
+Desktop, SaaS, collaboration, cross-platform, and graph sync failures.
+
+| FM ID     | Failure Mode                                                       | S   | O   | D   | RPN | Risk Level   | Mitigation                                                                                                                                                                                                  | Behaviors                                                                                                                                                                       |
+| --------- | ------------------------------------------------------------------ | --- | --- | --- | --- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FM-SF-037 | Rendering fidelity loss (output diverges from graph state)         | 3   | 3   | 5   | 45  | Acceptable   | Rendering derived from graph query results ([INV-SF-8](../invariants/INV-SF-8-rendering-fidelity.md)); content hash comparison detects drift; re-render from graph recovers fidelity                        | [BEH-SF-016](../behaviors/BEH-SF-009-session-materialization.md)                                                                                                                |
+| FM-SF-038 | Flow non-determinism (same input yields different execution order) | 5   | 3   | 5   | 75  | Conditional  | Deterministic agent scheduling based on dependency order ([INV-SF-9](../invariants/INV-SF-9-flow-determinism.md)); seed-based tie-breaking for parallel agents; execution trace logged for reproducibility  | [BEH-SF-055](../behaviors/BEH-SF-049-flow-definitions.md), [BEH-SF-062](../behaviors/BEH-SF-057-flow-execution.md)                                                              |
+| FM-SF-039 | Session chunk mutation after creation (immutability violation)     | 8   | 2   | 3   | 48  | Acceptable   | Chunks frozen on creation via Object.freeze ([INV-SF-11](../invariants/INV-SF-11-session-chunk-immutability.md)); graph constraints prevent update operations on chunk nodes; integrity check on chunk read | [BEH-SF-011](../behaviors/BEH-SF-009-session-materialization.md), [BEH-SF-015](../behaviors/BEH-SF-009-session-materialization.md)                                              |
+| FM-SF-040 | Graph sync replays duplicate data                                  | 7   | 5   | 4   | 140 | Unacceptable | Content-addressed identity (SHA-256), idempotent upsert-or-skip ([INV-SF-20](../invariants/INV-SF-20-idempotent-graph-sync.md))                                                                             | [BEH-SF-300](../behaviors/BEH-SF-001-graph-operations.md), [BEH-SF-301](../behaviors/BEH-SF-001-graph-operations.md), [BEH-SF-302](../behaviors/BEH-SF-001-graph-operations.md) |
+| FM-SF-041 | Budget zone skips or reverses                                      | 8   | 4   | 5   | 160 | Unacceptable | Optimistic locking, atomic transitions ([INV-SF-15](../invariants/INV-SF-15-budget-zone-monotonicity.md))                                                                                                   | [BEH-SF-303](../behaviors/BEH-SF-057-flow-execution.md), [BEH-SF-304](../behaviors/BEH-SF-057-flow-execution.md), [BEH-SF-305](../behaviors/BEH-SF-057-flow-execution.md)       |
+| FM-SF-042 | Tool isolation bypass via misconfigured permissions                | 8   | 3   | 3   | 72  | Conditional  | Tool permissions enforced per agent role ([INV-SF-5](../invariants/INV-SF-5-tool-isolation.md)); tool access validated against role manifest on every invocation; unauthorized attempts logged              | [BEH-SF-081](../behaviors/BEH-SF-081-tool-isolation.md), [BEH-SF-083](../behaviors/BEH-SF-081-tool-isolation.md)                                                                |

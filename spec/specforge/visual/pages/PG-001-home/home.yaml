@@ -1,0 +1,68 @@
+entity: page
+id: PG-001-home
+name: "Home"
+docs: ./home.md
+tests: ./home.feature
+
+route:
+  path: "/home"
+  hash: true
+  guard: null
+
+layout: single-column
+
+meta:
+  title: "SpecForge — Home"
+
+components:
+  - $ref: CMP-004-filter-bar
+    position: top
+    description: "Filter bar with status, pipeline mode, search, and sort controls"
+  - $ref: CMP-006-new-session-form
+    position: below-filter-bar
+    description: "Inline form to create a new session"
+  - $ref: CMP-005-session-table
+    position: main-content
+    description: "Filterable table of all sessions"
+
+stores:
+  - $ref: STR-001-filter-store
+    slice: "home"
+  - $ref: STR-003-sessions-store
+  - $ref: STR-002-active-session-store
+
+states:
+  empty:
+    condition: "sessions.length === 0 && !isLoading"
+    display: "Welcome message with create form"
+  loading:
+    condition: "isLoading === true"
+    display: "Skeleton rows in session table area"
+  error:
+    condition: "error !== null"
+    display: "Error banner above session table"
+  populated:
+    condition: "sessions.length > 0"
+    display: "Full filter bar, create form, and session table"
+
+filters:
+  - key: "status"
+    type: dropdown
+    options: ["all", "running", "paused", "completed", "failed"]
+    default: "all"
+  - key: "pipelineMode"
+    type: dropdown
+    options: ["all", "spec-author", "full-pipeline"]
+    default: "all"
+  - key: "search"
+    type: text
+    placeholder: "Search sessions..."
+    default: ""
+  - key: "sort"
+    type: dropdown
+    options: ["last-activity", "created", "package"]
+    default: "last-activity"
+
+accessibility:
+  role: "main"
+  label: "Session management"

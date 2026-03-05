@@ -1,0 +1,55 @@
+entity: component
+id: CMP-002-status-bar
+name: "Status Bar"
+docs: ./status-bar.md
+tests: ./status-bar.feature
+
+props: []
+
+children:
+  - $ref: ELM-005-status-dot
+    count: 1
+    description: "Connection status indicator dot"
+  - $ref: ELM-006-session-id-text
+    count: 1
+    description: "Current session identifier"
+  - $ref: ELM-007-session-status-text
+    count: 1
+    description: "Current session status label"
+  - $ref: ELM-008-cost-text
+    count: 1
+    description: "Running total cost display"
+
+stores:
+  - $ref: STR-002-active-session-store
+    binds:
+      - selector: "sessionId"
+        to: "ELM-006 content"
+      - selector: "status"
+        to: "ELM-007 content and color"
+      - selector: "isSessionActive"
+        to: "ELM-005 state"
+  - $ref: STR-010-cost-tracker-store
+    binds:
+      - selector: "summary.totalCost"
+        to: "ELM-008 content"
+
+layout:
+  height: 32px
+  display: flex
+  flex-direction: row
+  align-items: center
+  gap: 16px
+  padding: "0 16px"
+  font-size: 11px
+
+style:
+  background: "var(--sf-surface)"
+  border-top: "1px solid rgba(0, 240, 255, 0.08)"
+  grid-column: 2
+
+visibility:
+  responsive:
+    desktop: true
+    tablet: true
+    mobile: true

@@ -1,0 +1,63 @@
+entity: component
+id: CMP-021-graph-edge-list
+name: "Graph Edge List"
+docs: ./graph-edge-list.md
+tests: ./graph-edge-list.feature
+
+props:
+  - name: "edges"
+    type: array
+    required: true
+    description: "Array of GraphEdgeView objects representing knowledge graph edges (relationships)"
+
+types:
+  GraphEdgeView:
+    id: string
+    source: string
+    target: string
+    relationship: "'defines' | 'implements' | 'tests' | 'covers' | 'uses' | 'produces' | 'consumes'"
+
+children:
+  - $ref: ELM-069-graph-edge-row
+
+stores:
+  - $ref: STR-011-graph-store
+    binds:
+      - selector: "edgesByRelationship"
+        to: "edgesByRelationship"
+      - selector: "edgeCount"
+        to: "edgeCount"
+  - $ref: STR-001-filter-store
+    binds:
+      - selector: "graph.relationshipTypes"
+        to: "relationshipTypeFilter"
+
+layout:
+  display: flex
+  flex-direction: column
+  width: 100%
+  overflow-y: auto
+
+table:
+  columns:
+    - name: "Source"
+      field: "source"
+      width: "auto"
+    - name: "Relationship"
+      field: "relationship"
+      width: 140px
+      align: center
+    - name: "Target"
+      field: "target"
+      width: "auto"
+
+empty-state:
+  text: "No graph edges available."
+  color: "var(--sf-text-muted)"
+  font-size: 13px
+  text-align: center
+  padding: 32px
+
+accessibility:
+  role: "table"
+  label: "Knowledge graph edges"

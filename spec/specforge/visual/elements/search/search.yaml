@@ -1,0 +1,164 @@
+entity: element
+id: ELM-009-search-backdrop
+name: "Search Backdrop"
+docs: ./search.md
+tests: ./search.feature
+
+type: container
+
+layout:
+  position: fixed
+  inset: 0
+  z-index: 1000
+  display: flex
+  align-items: flex-start
+  justify-content: center
+  padding-top: 20vh
+
+states:
+  default:
+    background: "rgba(2, 4, 8, 0.8)"
+    backdrop-filter: "blur(4px)"
+
+actions:
+  - trigger: click
+    action: { $ref: ACT-005-close-search }
+
+accessibility:
+  role: "dialog"
+  label: "Search overlay"
+
+---
+entity: element
+id: ELM-010-search-input
+name: "Search Input"
+docs: ./search.md
+tests: ./search.feature
+
+type: input
+
+layout:
+  width: 100%
+  max-width: 560px
+  font-size: 15px
+  font-family: "var(--sf-font-body)"
+  padding: 12px 16px
+  border: "1px solid rgba(0, 240, 255, 0.15)"
+  border-radius: 8px
+
+states:
+  default:
+    color: "var(--sf-text)"
+    background: "var(--sf-surface)"
+    placeholder-color: "var(--sf-text-muted)"
+  focus:
+    border-color: "var(--sf-accent)"
+    outline: none
+
+placeholder: "Search specs, tasks, messages..."
+
+actions:
+  - trigger: change
+    action: { $ref: ACT-004-search-query }
+    debounce: 300
+
+bindings:
+  - store: { $ref: STR-012-search-store }
+    field: query
+
+accessibility:
+  role: "searchbox"
+  label: "Search input"
+
+---
+entity: element
+id: ELM-011-search-category-label
+name: "Search Category Label"
+docs: ./search.md
+tests: ./search.feature
+
+type: text
+
+layout:
+  font-size: 10px
+  font-family: "var(--sf-font-body)"
+  text-transform: uppercase
+  letter-spacing: 0.05em
+  padding: 8px 16px 4px
+
+states:
+  default:
+    color: "var(--sf-text-muted)"
+
+notes: |
+  Groups search results by type: Sessions, Specs, Tasks, Messages, etc.
+  Rendered above each result group when results are present.
+
+---
+entity: element
+id: ELM-012-search-result-item
+name: "Search Result Item"
+docs: ./search.md
+tests: ./search.feature
+
+type: button
+
+layout:
+  width: 100%
+  display: flex
+  flex-direction: column
+  gap: 2px
+  padding: 8px 16px
+  cursor: pointer
+
+children:
+  title:
+    font-size: 13px
+    color: "var(--sf-text)"
+  subtitle:
+    font-size: 11px
+    color: "var(--sf-text-muted)"
+
+states:
+  default:
+    background: "transparent"
+  hover:
+    background: "var(--sf-accent-dim)"
+  focused:
+    background: "var(--sf-accent-dim)"
+    outline: "1px solid var(--sf-accent)"
+
+actions:
+  - trigger: click
+    action: { $ref: ACT-025-select-search-result }
+  - trigger: keydown.Enter
+    action: { $ref: ACT-025-select-search-result }
+  - trigger: keydown.ArrowUp
+    action: navigate-previous
+  - trigger: keydown.ArrowDown
+    action: navigate-next
+
+accessibility:
+  role: "option"
+  label: "{title}"
+
+---
+entity: element
+id: ELM-013-search-hint-text
+name: "Search Hint Text"
+docs: ./search.md
+tests: ./search.feature
+
+type: text
+
+layout:
+  font-size: 11px
+  font-family: "var(--sf-font-body)"
+  padding: 8px 16px
+  text-align: center
+
+states:
+  default:
+    color: "var(--sf-text-muted)"
+
+content: "Press / to search, Esc to close"

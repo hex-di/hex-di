@@ -17,6 +17,7 @@ import type {
   AsyncInitializationRequiredError,
   NonClonableForkedError,
 } from "./classes.js";
+import type { ContractViolationError } from "../contracts/errors.js";
 
 /**
  * Union of all container resolution errors.
@@ -29,6 +30,7 @@ import type {
  * - `"AsyncFactoryFailed"` — Async factory threw
  * - `"AsyncInitRequired"` — Async port resolved synchronously
  * - `"NonClonableForked"` — Forked inheritance on non-clonable adapter
+ * - `"ContractViolationError"` — Adapter output violates port contract
  */
 export type ResolutionError =
   | CircularDependencyError
@@ -37,7 +39,8 @@ export type ResolutionError =
   | ScopeRequiredError
   | AsyncFactoryError
   | AsyncInitializationRequiredError
-  | NonClonableForkedError;
+  | NonClonableForkedError
+  | ContractViolationError;
 
 /**
  * Checks if an unknown error is a `ResolutionError`.

@@ -18,8 +18,8 @@
   },
   "sidebar": "docs",
   "previous": {
-    "title": "Generators & Do Notation",
-    "permalink": "/docs/guides/generators"
+    "title": "Combinators",
+    "permalink": "/docs/guides/combinators"
   },
   "next": {
     "title": "Serialization & Interop",

@@ -1,0 +1,59 @@
+entity: page
+id: PG-010-app-shell
+name: "App Shell"
+docs: ./app-shell.md
+tests: ./app-shell.feature
+
+route:
+  path: null
+  hash: false
+  guard: null
+  description: "Always rendered -- root layout wrapper for all app views"
+
+layout:
+  type: css-grid
+  grid-template-columns: "64px 1fr"
+  grid-template-rows: "1fr 32px"
+  min-height: "100vh"
+  areas:
+    - "nav-rail main-content"
+    - "nav-rail status-bar"
+
+meta:
+  title: "SpecForge"
+
+components:
+  - $ref: CMP-001-nav-rail
+    grid-area: nav-rail
+    grid-row: "1 / -1"
+    width: 64px
+  - $ref: CMP-002-status-bar
+    grid-area: status-bar
+    grid-column: 2
+    height: 32px
+  - $ref: CMP-003-search-overlay
+    position: fixed
+    z-index: 1000
+
+stores:
+  - $ref: STR-014-router-store
+  - $ref: STR-015-keyboard-shortcut-store
+  - $ref: STR-002-active-session-store
+
+description: |
+  The root app shell layout. Nav rail on the left spanning full height.
+  Main content area fills remaining space. Status bar at bottom spanning
+  content area. Search overlay on top of everything. All in-app views
+  (PG-001 through PG-009) are rendered within the main content slot.
+
+keyboard-shortcuts:
+  - key: "/"
+    action: open-search
+    description: "Opens the search overlay (CMP-003)"
+  - key: "Escape"
+    action: close-search
+    description: "Closes the search overlay"
+
+states:
+  - shell-ready
+  - search-open

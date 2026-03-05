@@ -1,0 +1,40 @@
+entity: store
+id: STR-005-pipeline-store
+name: "Pipeline Store"
+docs: ./pipeline-store.md
+tests: ./pipeline-store.feature
+
+initial-state:
+  phases: []
+  currentPhase: -1
+
+# PhaseProgress shape:
+# {
+#   name: string
+#   status: "pending" | "active" | "completed" | "failed"
+# }
+
+reducers:
+  EVT-004-session-status-changed:
+    - field: "phases"
+      operation: set
+      value: "derived from payload.status — rebuilds full phase array with correct statuses"
+    - field: "currentPhase"
+      operation: set
+      value: "index of the active phase, or -1 if none"
+
+selectors:
+  - name: "activePhase"
+    compute: "phases[currentPhase] or null"
+  - name: "completedCount"
+    compute: "phases.filter(p => p.status === 'completed').length"
+  - name: "progress"
+    compute: "completedCount / phases.length (0 when phases is empty)"
+  - name: "isComplete"
+    compute: "phases.length > 0 && phases.every(p => p.status === 'completed')"
+
+consumers:
+  - $ref: CMP-011-phase-indicator-strip
+
+persistence:
+  enabled: false

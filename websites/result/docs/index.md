@@ -21,6 +21,8 @@ Rust-style `Result<T, E>` for TypeScript. Errors as values — no throws, no sur
 - **`safeTry` generators** — Sequential operations with automatic error propagation
 - **Do notation** — Build up context step-by-step with `bind` and `let_`
 - **Error patterns** — Discriminated error types with exhaustive handling
+- **Tagged error handling** — `catchTag`, `catchTags` for progressive error elimination
+- **Effect system** — Type-level effect tracking, contracts, and composable handlers
 - **Serialization** — JSON serialization and Standard Schema v1 support
 
 ## Installation
@@ -95,3 +97,6 @@ const config = parseConfig
 - Explore [Transformations & Chaining](guides/transformations) for composing operations
 - Discover [Async Results](guides/async-results) for asynchronous workflows
 - Master [Generators & Do Notation](guides/generators) for sequential operations
+- Use [Tagged Error Handling](guides/tagged-error-handling) for `catchTag` and progressive error elimination
+- Learn about [Combinators](guides/combinators) for batch processing patterns
+- Explore the [Effect System](advanced/effect-system) for type-level effect tracking and contracts

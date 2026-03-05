@@ -1,0 +1,51 @@
+entity: store
+id: STR-013-service-context-store
+name: "Service Context Store"
+docs: ./service-context-store.md
+tests: ./service-context-store.feature
+
+initial-state:
+  initialized: false
+  error: null
+
+types:
+  ServiceContextError:
+    _tag: "'ServiceInitError'"
+    message: string
+    service: string
+
+reducers:
+  INIT-001:
+    description: "services-initialized"
+    effects:
+      - field: "initialized"
+        operation: set
+        value: true
+
+  INIT-002:
+    description: "services-initialization-failed"
+    effects:
+      - field: "error"
+        operation: set
+        value: "payload.error"
+
+selectors:
+  - name: "isReady"
+    compute: "initialized === true && error === null"
+
+  - name: "hasError"
+    compute: "error !== null"
+
+consumers:
+  - description: "All connected views (read-only service references)"
+
+persistence:
+  enabled: false
+
+hook: useServices
+
+notes: |
+  This store is write-once at app initialization. It provides singleton
+  service instances (SessionManager, GraphStore, etc.) to all connected
+  views via React context. There are no user-facing events that mutate
+  this store after initialization.

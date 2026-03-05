@@ -45,6 +45,7 @@ export const QueryLibraryInspectorAdapter: Adapter<
   lifetime: "singleton" as const,
   factoryKind: "sync" as const,
   clonable: false as const,
+  freeze: true as const,
   factory: (deps: {
     QueryInspector: InferService<typeof QueryInspectorPort>;
   }): InferService<typeof QueryLibraryInspectorPort> =>

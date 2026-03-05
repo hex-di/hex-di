@@ -3,7 +3,8 @@
  *
  * This internal class manages instance caching with:
  * - Port-keyed Map for O(1) lookup
- * - Creation order tracking for LIFO disposal
+ * - Creation order tracking for LIFO disposal (fallback)
+ * - Dependency-aware disposal ordering via disposal plans
  * - Parent chain for singleton inheritance in scopes
  * - Finalizer support for resource cleanup
  *
@@ -11,7 +12,8 @@
  * @packageDocumentation
  */
 
-import type { Port, InferService } from "@hex-di/core";
+import type { Port, InferService, DependencyEntry, DisposalResult } from "@hex-di/core";
+import { computeDisposalPlan, executeDisposalPlan } from "@hex-di/core";
 import { monotonicNow } from "./monotonic-time.js";
 import { FinalizerTimeoutError } from "../errors/index.js";
 // =============================================================================
@@ -36,6 +38,13 @@ export interface DisposalOptions {
   readonly finalizerTimeoutMs?: number;
   /** Callback invoked when a finalizer exceeds the timeout. */
   readonly onFinalizerTimeout?: (portName: string, timeoutMs: number) => void;
+  /**
+   * Dependency entries for computing disposal order.
+   * When provided, disposal follows reverse topological order.
+   * When omitted, disposal falls back to LIFO (reverse creation order).
+   * @internal
+   */
+  readonly dependencyEntries?: ReadonlyArray<DependencyEntry>;
 }
 
 /**
@@ -148,12 +157,13 @@ function isEntryForPort<P extends Port<string, unknown>>(
 // =============================================================================
 
 /**
- * Internal class for managing instance caching with LIFO disposal ordering.
+ * Internal class for managing instance caching with dependency-aware disposal ordering.
  *
  * MemoMap provides:
  * - Lazy instantiation via getOrElseMemoize
  * - Parent chain lookup for singleton inheritance
- * - Creation order tracking for LIFO disposal
+ * - Dependency-aware disposal (reverse topological order) when dependency info is provided
+ * - LIFO disposal fallback when no dependency info is available
  * - Error aggregation during disposal
  *
  * @internal This class is an implementation detail and should not be exported.
@@ -172,8 +182,10 @@ function isEntryForPort<P extends Port<string, unknown>>(
  * // Create child for scope
  * const scopedMemo = singletonMemo.fork();
  *
- * // Dispose in LIFO order
- * await scopedMemo.dispose();
+ * // Dispose with dependency-aware ordering
+ * await scopedMemo.dispose({ dependencyEntries: [...] });
+ *
+ * // Or fallback to LIFO
  * await singletonMemo.dispose();
  * ```
  */
@@ -219,6 +231,12 @@ export class MemoMap {
    * paths converge before either completes.
    */
   private readonly pendingAsync: Map<Port<string, unknown>, Promise<unknown>> = new Map();
+
+  /**
+   * Stores the last disposal result when dependency-aware disposal is used.
+   * @internal
+   */
+  private _lastDisposalResult: DisposalResult | undefined;
 
   /**
    * Creates a new MemoMap instance.
@@ -522,12 +540,19 @@ export class MemoMap {
   }
 
   /**
-   * Disposes all cached instances in LIFO order.
+   * Disposes all cached instances with dependency-aware ordering.
+   *
+   * When `dependencyEntries` are provided in options, disposal follows
+   * reverse topological order (dependents before dependencies), with
+   * independent adapters in the same phase disposed in parallel.
+   *
+   * When no dependency entries are provided, falls back to LIFO
+   * (reverse creation order) for backward compatibility.
    *
    * Disposal process:
    * 1. Sets disposed flag
-   * 2. Iterates creationOrder in reverse (LIFO)
-   * 3. Calls each finalizer, catching and aggregating errors
+   * 2. Computes disposal plan (if dependency entries provided) or uses LIFO order
+   * 3. Executes disposal phase-by-phase with parallel independent disposal
    * 4. Clears the cache
    * 5. Throws AggregateError if any finalizers failed
    *
@@ -536,21 +561,140 @@ export class MemoMap {
    *
    * @example
    * ```typescript
-   * try {
-   *   await memoMap.dispose();
-   * } catch (error) {
-   *   if (error instanceof AggregateError) {
-   *     console.log(`${error.errors.length} finalizers failed`);
-   *   }
-   * }
+   * // Dependency-aware disposal (preferred when graph info available)
+   * await memoMap.dispose({
+   *   dependencyEntries: [
+   *     { portName: "UserService", dependsOn: ["UserRepo", "Logger"], hasFinalizer: false },
+   *     { portName: "UserRepo", dependsOn: ["Database"], hasFinalizer: true },
+   *     { portName: "Logger", dependsOn: [], hasFinalizer: true },
+   *     { portName: "Database", dependsOn: [], hasFinalizer: true },
+   *   ],
+   * });
+   *
+   * // LIFO fallback (when no dependency info)
+   * await memoMap.dispose();
    * ```
    */
   async dispose(options?: DisposalOptions): Promise<void> {
     // Mark as disposed early to prevent new entries
     this.disposed = true;
 
-    const errors: unknown[] = [];
     const timeoutMs = options?.finalizerTimeoutMs ?? 30_000;
+
+    if (options?.dependencyEntries !== undefined && options.dependencyEntries.length > 0) {
+      // Dependency-aware disposal using topological ordering
+      await this._disposeWithPlan(options.dependencyEntries, timeoutMs, options);
+    } else {
+      // LIFO fallback for backward compatibility
+      await this._disposeLIFO(timeoutMs, options);
+    }
+
+    // Clear cache after disposal
+    this.cache.clear();
+  }
+
+  /**
+   * Disposes using dependency-aware topological ordering.
+   *
+   * Computes a disposal plan from the dependency entries,
+   * then executes it phase-by-phase with parallel disposal
+   * of independent adapters.
+   *
+   * @internal
+   */
+  private async _disposeWithPlan(
+    dependencyEntries: ReadonlyArray<DependencyEntry>,
+    timeoutMs: number,
+    options?: DisposalOptions
+  ): Promise<void> {
+    // Filter entries to only those that are actually cached in this MemoMap
+    const cachedPortNames = new Set<string>();
+    for (const entry of this.creationOrder) {
+      cachedPortNames.add(entry.port.__portName);
+    }
+
+    const relevantEntries = dependencyEntries.filter(entry => cachedPortNames.has(entry.portName));
+
+    // If no relevant entries, nothing to dispose
+    if (relevantEntries.length === 0) {
+      return;
+    }
+
+    // Compute disposal plan
+    const plan = computeDisposalPlan(relevantEntries);
+
+    // Build a port name -> cache entry map for the instance provider
+    const entryByPortName = new Map<string, CacheEntry<Port<string, unknown>>>();
+    for (const entry of this.creationOrder) {
+      entryByPortName.set(entry.port.__portName, entry);
+    }
+
+    // Execute the disposal plan
+    const result = await executeDisposalPlan(
+      plan,
+      {
+        getInstanceForDisposal: (portName: string) => {
+          const entry = entryByPortName.get(portName);
+          if (entry === undefined) return undefined;
+          return {
+            instance: entry.instance,
+            finalizer:
+              entry.finalizer !== undefined
+                ? (instance: unknown) => {
+                    // Call the typed finalizer, narrowing through the bivariant hack
+                    const typedFinalizer = entry.finalizer;
+                    if (typedFinalizer !== undefined) {
+                      return typedFinalizer(instance);
+                    }
+                  }
+                : undefined,
+          };
+        },
+      },
+      { finalizerTimeoutMs: timeoutMs }
+    );
+
+    // Store the result for inspection
+    this._lastDisposalResult = result;
+
+    // Report timeouts through the callback if configured
+    if (options?.onFinalizerTimeout !== undefined) {
+      for (const errorEntry of result.errors) {
+        const err = errorEntry.error;
+        if (
+          typeof err === "object" &&
+          err !== null &&
+          "_tag" in err &&
+          (err as { _tag: unknown })._tag === "FinalizerTimeout"
+        ) {
+          options.onFinalizerTimeout(errorEntry.adapterName, timeoutMs);
+        }
+        if (err instanceof FinalizerTimeoutError) {
+          options.onFinalizerTimeout(errorEntry.adapterName, timeoutMs);
+        }
+      }
+    }
+
+    // Throw aggregated errors if any (matching existing behavior)
+    if (result.errors.length > 0) {
+      const errors = result.errors.map(e => e.error);
+      throw new AggregateError(
+        errors,
+        `${result.errors.length} finalizer(s) failed during disposal`
+      );
+    }
+  }
+
+  /**
+   * Disposes using LIFO (reverse creation) ordering.
+   *
+   * This is the original disposal strategy, used as a fallback
+   * when no dependency information is available.
+   *
+   * @internal
+   */
+  private async _disposeLIFO(timeoutMs: number, options?: DisposalOptions): Promise<void> {
+    const errors: unknown[] = [];
 
     // Iterate in reverse order (LIFO - last created first disposed)
     for (let i = this.creationOrder.length - 1; i >= 0; i--) {
@@ -572,13 +716,22 @@ export class MemoMap {
       }
     }
 
-    // Clear cache after disposal
-    this.cache.clear();
-
     // Throw aggregated errors if any
     if (errors.length > 0) {
       throw new AggregateError(errors, `${errors.length} finalizer(s) failed during disposal`);
     }
+  }
+
+  /**
+   * Returns the result of the last dependency-aware disposal, if any.
+   *
+   * Only populated when `dispose()` is called with `dependencyEntries`.
+   * Returns `undefined` when LIFO fallback was used.
+   *
+   * @internal
+   */
+  get lastDisposalResult(): DisposalResult | undefined {
+    return this._lastDisposalResult;
   }
 
   /**

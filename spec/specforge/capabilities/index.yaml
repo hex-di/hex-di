@@ -1,0 +1,342 @@
+# Capabilities Index — UX-SF-001 through UX-SF-091
+# "What the user can do" layer bridging features (why) and behaviors (how)
+
+groups:
+  - name: Flow Operations
+    capabilities:
+      - id: UX-SF-001
+        file: UX-SF-001-run-predefined-flow.md
+        title: Run a Predefined Flow
+      - id: UX-SF-002
+        file: UX-SF-002-run-flow-with-preset.md
+        title: Run a Flow with Preset
+      - id: UX-SF-003
+        file: UX-SF-003-estimate-flow-cost.md
+        title: Estimate Flow Cost Before Execution
+      - id: UX-SF-004
+        file: UX-SF-004-monitor-running-flow.md
+        title: Monitor a Running Flow in Real-Time
+      - id: UX-SF-005
+        file: UX-SF-005-pause-resume-cancel-flow.md
+        title: Pause, Resume, and Cancel a Flow
+      - id: UX-SF-006
+        file: UX-SF-006-view-flow-history.md
+        title: View Flow History and Compare Runs
+      - id: UX-SF-007
+        file: UX-SF-007-run-batch-flow-in-ci.md
+        title: Run a Batch Flow in CI
+      - id: UX-SF-008
+        file: UX-SF-008-register-custom-flow.md
+        title: Register and Run a Custom Flow
+
+  - name: Graph & Knowledge Queries
+    capabilities:
+      - id: UX-SF-009
+        file: UX-SF-009-query-graph-natural-language.md
+        title: Query Graph Using Natural Language
+      - id: UX-SF-010
+        file: UX-SF-010-run-analytical-graph-queries.md
+        title: Run Analytical Graph Queries
+      - id: UX-SF-011
+        file: UX-SF-011-explore-graph-visually.md
+        title: Explore Graph Visually
+      - id: UX-SF-012
+        file: UX-SF-012-run-ad-hoc-cypher.md
+        title: Run Ad-Hoc Cypher Queries
+
+  - name: Reactive Graph & Pipelines
+    capabilities:
+      - id: UX-SF-070
+        file: UX-SF-070-subscribe-reactive-graph-queries.md
+        title: Subscribe to Reactive Graph Queries
+      - id: UX-SF-071
+        file: UX-SF-071-configure-graph-mutation-pipeline.md
+        title: Configure Graph Mutation Pipeline
+      - id: UX-SF-072
+        file: UX-SF-072-resolve-graph-concurrency-conflicts.md
+        title: Resolve Graph Concurrency Conflicts
+
+  - name: Import & Export
+    capabilities:
+      - id: UX-SF-013
+        file: UX-SF-013-import-markdown-specs.md
+        title: Import Markdown Specs into Graph
+      - id: UX-SF-014
+        file: UX-SF-014-import-openapi-specs.md
+        title: Import OpenAPI Specs into Graph
+      - id: UX-SF-015
+        file: UX-SF-015-export-graph-content.md
+        title: Export Graph Content to Files
+      - id: UX-SF-016
+        file: UX-SF-016-register-custom-import-export-adapters.md
+        title: Register Custom Import/Export Adapters
+
+  - name: Human-in-the-Loop
+    capabilities:
+      - id: UX-SF-017
+        file: UX-SF-017-inject-feedback-into-flow.md
+        title: Inject Feedback into a Running Flow
+      - id: UX-SF-018
+        file: UX-SF-018-approve-reject-phase-transition.md
+        title: Approve or Reject a Phase Transition
+      - id: UX-SF-019
+        file: UX-SF-019-respond-to-agent-clarification.md
+        title: Respond to Agent Clarification Request
+      - id: UX-SF-020
+        file: UX-SF-020-force-convergence-or-extra-iteration.md
+        title: Force Convergence or Extra Iteration
+
+  - name: Collaboration
+    capabilities:
+      - id: UX-SF-021
+        file: UX-SF-021-observe-shared-flow.md
+        title: Observe a Shared Flow with Team
+      - id: UX-SF-022
+        file: UX-SF-022-comment-on-findings.md
+        title: Comment on Findings and Artifacts
+      - id: UX-SF-023
+        file: UX-SF-023-approve-reject-multi-user.md
+        title: Approve or Reject Agent Changes (Multi-User)
+      - id: UX-SF-024
+        file: UX-SF-024-switch-between-projects.md
+        title: Switch Between Projects
+      - id: UX-SF-025
+        file: UX-SF-025-hand-off-flow-ownership.md
+        title: Hand Off Flow Ownership
+
+  - name: Agent Management
+    capabilities:
+      - id: UX-SF-026
+        file: UX-SF-026-register-configure-agent-backends.md
+        title: Register and Configure Agent Backends
+      - id: UX-SF-027
+        file: UX-SF-027-monitor-agent-backend-health.md
+        title: Monitor Agent Backend Health
+      - id: UX-SF-028
+        file: UX-SF-028-configure-mcp-servers-per-role.md
+        title: Configure MCP Servers per Agent Role
+      - id: UX-SF-029
+        file: UX-SF-029-create-dynamic-agent-roles.md
+        title: Create Dynamic Agent Roles from Templates
+      - id: UX-SF-030
+        file: UX-SF-030-view-agent-decision-log.md
+        title: View Agent Decision Log and Tool Calls
+
+  - name: Session & Debugging
+    capabilities:
+      - id: UX-SF-031
+        file: UX-SF-031-inspect-session-context.md
+        title: Inspect Session Context and Composed Chunks
+      - id: UX-SF-032
+        file: UX-SF-032-replay-completed-session.md
+        title: Replay a Completed Session Step-by-Step
+      - id: UX-SF-033
+        file: UX-SF-033-diff-two-sessions.md
+        title: Diff Two Sessions Side-by-Side
+      - id: UX-SF-034
+        file: UX-SF-034-view-token-usage-breakdown.md
+        title: View Token Usage Breakdown per Tool Call
+      - id: UX-SF-035
+        file: UX-SF-035-export-session-replay-report.md
+        title: Export Session Replay as Report
+
+  - name: Configuration & Setup
+    capabilities:
+      - id: UX-SF-036
+        file: UX-SF-036-onboard-new-project.md
+        title: Onboard a New Project
+      - id: UX-SF-037
+        file: UX-SF-037-configure-deployment-mode.md
+        title: Configure Deployment Mode
+      - id: UX-SF-038
+        file: UX-SF-038-set-token-budgets.md
+        title: Set Token Budgets and Cost Limits
+      - id: UX-SF-039
+        file: UX-SF-039-manage-cli-settings.md
+        title: Manage CLI Settings
+      - id: UX-SF-040
+        file: UX-SF-040-configure-notification-preferences.md
+        title: Configure Notification Preferences
+      - id: UX-SF-073
+        file: UX-SF-073-manage-project-lifecycle-states.md
+        title: Manage Project Lifecycle States
+      - id: UX-SF-076
+        file: UX-SF-076-configure-notification-classification-routing.md
+        title: Configure Notification Classification and Routing
+
+  - name: Cost Management
+    capabilities:
+      - id: UX-SF-041
+        file: UX-SF-041-view-cost-analytics.md
+        title: View Cost Analytics and Budget Zones
+      - id: UX-SF-042
+        file: UX-SF-042-configure-model-routing.md
+        title: Configure Model Routing per Role
+      - id: UX-SF-043
+        file: UX-SF-043-review-model-escalation-events.md
+        title: Review Model Escalation Events
+
+  - name: Plugin & Marketplace
+    capabilities:
+      - id: UX-SF-044
+        file: UX-SF-044-install-plugin.md
+        title: Install a Plugin
+      - id: UX-SF-045
+        file: UX-SF-045-enable-disable-manage-plugins.md
+        title: Enable, Disable, and Manage Plugins
+      - id: UX-SF-046
+        file: UX-SF-046-register-flows-agents-via-plugin.md
+        title: Register Custom Flows and Agents via Plugin
+      - id: UX-SF-047
+        file: UX-SF-047-browse-search-marketplace.md
+        title: Browse and Search Agent Marketplace
+      - id: UX-SF-048
+        file: UX-SF-048-publish-custom-agent-pack.md
+        title: Publish a Custom Agent Pack
+      - id: UX-SF-074
+        file: UX-SF-074-configure-plugin-lazy-loading.md
+        title: Configure Plugin Lazy Loading Strategy
+
+  - name: CI/CD & Automation
+    capabilities:
+      - id: UX-SF-049
+        file: UX-SF-049-set-up-ci-gate-drift.md
+        title: Set Up CI Gate for Drift Detection
+      - id: UX-SF-050
+        file: UX-SF-050-configure-webhook-triggers.md
+        title: Configure Webhook Triggers for Flows
+      - id: UX-SF-051
+        file: UX-SF-051-run-drift-check-in-ci.md
+        title: Run Drift Check in CI Pipeline
+      - id: UX-SF-052
+        file: UX-SF-052-schedule-recurring-flows.md
+        title: Schedule Recurring Verification Flows
+
+  - name: Compliance & Governance
+    capabilities:
+      - id: UX-SF-053
+        file: UX-SF-053-activate-gxp-compliance-mode.md
+        title: Activate GxP Compliance Mode
+      - id: UX-SF-054
+        file: UX-SF-054-generate-compliance-audit-report.md
+        title: Generate Compliance Audit Report
+      - id: UX-SF-055
+        file: UX-SF-055-view-audit-trail.md
+        title: View Audit Trail for a Flow
+      - id: UX-SF-056
+        file: UX-SF-056-install-configure-compliance-packs.md
+        title: Install and Configure Compliance Packs
+      - id: UX-SF-057
+        file: UX-SF-057-run-validation-protocol.md
+        title: Run Validation Protocol (IQ/OQ/PQ)
+
+  - name: Permission & Security
+    capabilities:
+      - id: UX-SF-058
+        file: UX-SF-058-configure-access-matrix.md
+        title: Configure Role-Based Access Matrix
+      - id: UX-SF-059
+        file: UX-SF-059-preview-permissions-before-execution.md
+        title: Preview Permissions Before Execution
+      - id: UX-SF-060
+        file: UX-SF-060-approve-elevated-permissions.md
+        title: Approve Elevated Permission Requests
+      - id: UX-SF-061
+        file: UX-SF-061-configure-tool-isolation.md
+        title: Configure Tool Isolation per Role
+      - id: UX-SF-075
+        file: UX-SF-075-configure-scoped-permission-boundaries.md
+        title: Configure Scoped Permission Boundaries
+
+  - name: Memory & Knowledge
+    capabilities:
+      - id: UX-SF-062
+        file: UX-SF-062-view-curate-claude-md.md
+        title: View and Curate Generated CLAUDE.md
+      - id: UX-SF-063
+        file: UX-SF-063-diff-memory-versions.md
+        title: Diff Memory Versions
+      - id: UX-SF-064
+        file: UX-SF-064-transfer-knowledge-across-projects.md
+        title: Transfer Knowledge Across Projects
+
+  - name: Observability
+    capabilities:
+      - id: UX-SF-065
+        file: UX-SF-065-view-structured-logs.md
+        title: View Structured Logs with Correlation
+      - id: UX-SF-066
+        file: UX-SF-066-export-traces-to-external-platform.md
+        title: Export Traces to External Platform
+      - id: UX-SF-067
+        file: UX-SF-067-monitor-system-health.md
+        title: Monitor System Health
+
+  - name: Authentication
+    capabilities:
+      - id: UX-SF-068
+        file: UX-SF-068-login-manage-api-tokens.md
+        title: Log In and Manage API Tokens
+      - id: UX-SF-069
+        file: UX-SF-069-configure-saas-org-billing.md
+        title: Configure SaaS Organization and Billing
+
+  - name: Skill & Workflow Management
+    capabilities:
+      - id: UX-SF-077
+        file: UX-SF-077-browse-manage-skill-registry.md
+        title: Browse and Manage Skill Registry
+      - id: UX-SF-078
+        file: UX-SF-078-author-custom-skills.md
+        title: Author Custom Skills
+      - id: UX-SF-079
+        file: UX-SF-079-explore-skill-orchestration-graph.md
+        title: Explore Skill Orchestration Graph
+      - id: UX-SF-080
+        file: UX-SF-080-define-skill-workflows.md
+        title: Define Skill Workflows
+      - id: UX-SF-081
+        file: UX-SF-081-share-discover-skill-workflows.md
+        title: Share and Discover Skill Workflows
+      - id: UX-SF-082
+        file: UX-SF-082-run-monitor-skill-workflows.md
+        title: Run and Monitor Skill Workflows
+      - id: UX-SF-083
+        file: UX-SF-083-explore-spec-component-traceability-graph.md
+        title: Explore Spec Component Traceability Graph
+
+  - name: Structured Output & Streaming
+    capabilities:
+      - id: UX-SF-084
+        file: UX-SF-084-configure-agent-output-schemas.md
+        title: Configure Agent Output Schemas
+      - id: UX-SF-085
+        file: UX-SF-085-monitor-streaming-agent-output.md
+        title: Monitor Streaming Agent Output
+
+  - name: Third-Party Integrations
+    capabilities:
+      - id: UX-SF-086
+        file: UX-SF-086-connect-third-party-integration.md
+        title: Connect Third-Party Integration
+      - id: UX-SF-087
+        file: UX-SF-087-monitor-integration-sync-status.md
+        title: Monitor Integration Sync Status
+
+  - name: Predictive Analytics & Intelligence
+    capabilities:
+      - id: UX-SF-088
+        file: UX-SF-088-view-architecture-health-score.md
+        title: View Architecture Health Score
+      - id: UX-SF-089
+        file: UX-SF-089-review-predictive-drift-alerts.md
+        title: Review Predictive Drift Alerts
+
+  - name: Autonomous Maintenance
+    capabilities:
+      - id: UX-SF-090
+        file: UX-SF-090-configure-autonomous-maintenance.md
+        title: Configure Autonomous Maintenance
+      - id: UX-SF-091
+        file: UX-SF-091-review-autonomous-update-proposals.md
+        title: Review Autonomous Spec Update Proposals

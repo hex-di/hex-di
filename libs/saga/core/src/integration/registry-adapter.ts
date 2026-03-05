@@ -59,6 +59,7 @@ export const SagaRegistryAdapter: SagaRegistryAdapterType = Object.freeze<SagaRe
   lifetime: "singleton",
   factoryKind: "sync",
   clonable: false,
+  freeze: true,
   factory: (): InferService<typeof SagaRegistryPort> => createSagaRegistry(),
   finalizer: (instance: InferService<typeof SagaRegistryPort>): void => {
     if (hasDispose(instance)) {

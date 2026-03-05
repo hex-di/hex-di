@@ -1,0 +1,64 @@
+entity: store
+id: STR-009-acp-session-store
+name: "Agent Messages Store"
+docs: ./acp-session-store.md
+tests: ./acp-session-store.feature
+
+initial-state:
+  messages: []
+
+types:
+  AgentMessageView:
+    messageId: string
+    agentRole: string
+    content: string
+    timestamp: number
+    messageType: "'finding' | 'clarification' | 'broadcast'"
+    severity: "'critical' | 'major' | 'minor' | 'observation'"
+    phase: string
+
+reducers:
+  EVT-014:
+    description: "session-message-received"
+    effects:
+      - field: "messages"
+        operation: append
+        value: "payload.message"
+
+  EVT-015:
+    description: "session-messages-loaded"
+    effects:
+      - field: "messages"
+        operation: set
+        value: "payload.messages"
+
+  EVT-016:
+    description: "session-message-dismissed"
+    effects:
+      - field: "messages"
+        operation: remove
+        value: "payload.messageId"
+
+  EVT-017:
+    description: "session-subscription-tick"
+    effects: []
+
+selectors:
+  - name: "messagesByPhase"
+    compute: "messages.filter(m => m.phase === phase)"
+    parameters: [phase]
+
+  - name: "messagesBySeverity"
+    compute: "messages.filter(m => m.severity === severity)"
+    parameters: [severity]
+
+  - name: "criticalCount"
+    compute: "messages.filter(m => m.severity === 'critical').length"
+
+consumers:
+  - $ref: CMP-016-message-entry-list
+
+persistence:
+  enabled: false
+
+hook: useAgentMessages

@@ -1,0 +1,62 @@
+entity: page
+id: PG-003-pipeline
+name: "Pipeline"
+docs: ./pipeline.md
+tests: ./pipeline.feature
+
+route:
+  path: "/pipeline"
+  hash: true
+  guard:
+    store: STR-002-active-session-store
+    condition: "sessionId !== null"
+    redirect: "#home"
+
+layout: single-column
+
+meta:
+  title: "SpecForge — Pipeline"
+
+components:
+  - $ref: CMP-011-phase-indicator-strip
+    position: main-content
+    description: "Horizontal phase strip with connected phase nodes and detail panel"
+
+stores:
+  - $ref: STR-005-pipeline-store
+  - $ref: STR-002-active-session-store
+
+phases:
+  - name: "Discovery"
+    index: 0
+  - name: "Spec Authoring"
+    index: 1
+  - name: "Code Analysis"
+    index: 2
+  - name: "Test Design"
+    index: 3
+  - name: "Validation"
+    index: 4
+  - name: "Review"
+    index: 5
+
+states:
+  no-session:
+    condition: "STR-002.sessionId === null"
+    display: "Prompt to select a session"
+  idle:
+    condition: "STR-005.phases.length === 0"
+    display: "No pipeline started message"
+  running:
+    condition: "STR-005.phases.some(p => p.status === 'active')"
+    display: "Active phases with animation, flow lines between nodes"
+  completed:
+    condition: "STR-005.isComplete === true"
+    display: "All phase nodes green with completion checkmarks"
+  failed:
+    condition: "STR-005.phases.some(p => p.status === 'failed')"
+    display: "Failed phase node in red, error detail in panel"
+
+accessibility:
+  role: "main"
+  label: "Pipeline execution progress"
