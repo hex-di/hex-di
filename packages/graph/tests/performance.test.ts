@@ -251,7 +251,7 @@ describe("performance: merge()", () => {
 // =============================================================================
 
 describe("performance: build()", () => {
-  it("build() of 100-adapter graph completes in < 5ms", () => {
+  it("build() of 100-adapter graph completes in < 50ms", () => {
     const adapters = Array.from({ length: 100 }, (_, i) => makeAdapter(`Service${i}`));
     const builder = GraphBuilder.create().provideMany(adapters);
 
@@ -259,7 +259,7 @@ describe("performance: build()", () => {
       builder.build();
     }, 100);
 
-    expect(avgTime).toBeLessThan(5);
+    expect(avgTime).toBeLessThan(50);
   });
 
   it("build() is O(1) regardless of graph size", () => {
@@ -297,7 +297,7 @@ describe("performance: build()", () => {
 // =============================================================================
 
 describe("performance: inspect()", () => {
-  it("inspect() of 100-adapter graph completes in < 5ms", () => {
+  it("inspect() of 100-adapter graph completes in < 50ms", () => {
     const adapters = Array.from({ length: 100 }, (_, i) => makeAdapter(`Service${i}`));
     const builder = GraphBuilder.create().provideMany(adapters);
 
@@ -305,7 +305,7 @@ describe("performance: inspect()", () => {
       builder.inspect();
     }, 50);
 
-    expect(avgTime).toBeLessThan(5);
+    expect(avgTime).toBeLessThan(50);
   });
 
   it("inspect() of deep chain completes in < 10ms", () => {

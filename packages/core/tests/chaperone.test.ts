@@ -36,7 +36,7 @@ describe("chaperoneService", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const config: ChaperoneConfig = { mode: "dev" };
     const wrapped = chaperoneService(service, contract, config);
-    wrapped["error"];
+    void wrapped["error"];
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("error"));
     warnSpy.mockRestore();
   });
@@ -49,7 +49,7 @@ describe("chaperoneService", () => {
       onViolation: v => violations.push(v),
     };
     const wrapped = chaperoneService(service, contract, config);
-    wrapped["error"];
+    void wrapped["error"];
     expect(violations).toHaveLength(1);
     expect(violations[0].member).toBe("error");
   });
@@ -85,7 +85,7 @@ describe("chaperoneService", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const config: ChaperoneConfig = { mode: "warn" };
     const wrapped = chaperoneService(service, contract, config);
-    wrapped["error"];
+    void wrapped["error"];
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining("Port 'Logger' expects 'error' to be a method")
     );
@@ -100,7 +100,7 @@ describe("chaperoneService", () => {
       onViolation: v => violations.push(v),
     };
     const wrapped = chaperoneService(service, contract, config);
-    wrapped["error"];
+    void wrapped["error"];
     expect(violations[0]).toEqual({
       _tag: "ChaperoneViolation",
       portName: "Logger",
@@ -115,7 +115,7 @@ describe("chaperoneService", () => {
     const config: ChaperoneConfig = { mode: "strict" };
     const wrapped = chaperoneService(service, contract, config);
     try {
-      wrapped["warn"];
+      void wrapped["warn"];
       expect.unreachable("Should have thrown");
     } catch (err: unknown) {
       expect(Object.isFrozen(err)).toBe(true);

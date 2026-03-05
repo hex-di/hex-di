@@ -63,7 +63,6 @@ const DbPort = port<DbService>()({
  * detectAmbientAuthority inspects.
  */
 function factoryFromBody(body: string): (...args: never[]) => unknown {
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval -- test helper
   return new Function(`return (${body})`) as (...args: never[]) => unknown;
 }
 

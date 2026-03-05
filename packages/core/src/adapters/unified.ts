@@ -28,7 +28,6 @@ import {
   type False,
   type EmptyRequires,
 } from "./constants.js";
-import type { AdapterWithCompletenessCheck } from "./completeness.js";
 
 // Re-export types for use by consumers
 export type {

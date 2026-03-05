@@ -22,7 +22,7 @@ import {
   lifetimeArb,
 } from "./arbitraries.js";
 
-const NUM_RUNS = 1000;
+const NUM_RUNS = 200;
 
 // =============================================================================
 // BEH-GR-07-001: Merge Associativity

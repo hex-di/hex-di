@@ -18,7 +18,7 @@
 export interface CapabilityError<
   TTag extends string,
   TCapability extends string,
-  TFields extends Record<string, unknown> = Record<string, never>,
+  _TFields extends Record<string, unknown> = Record<string, never>,
 > {
   readonly _tag: TTag;
   readonly _capability: TCapability;

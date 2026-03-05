@@ -186,11 +186,12 @@ async function executePhase(
     disposed.push(task.portName);
 
     if (result.status === "rejected") {
+      const reason: unknown = result.reason;
       errors.push(
         Object.freeze({
           adapterName: task.portName,
-          error: result.reason,
-          blame: createDisposalBlame(task.portName, result.reason),
+          error: reason,
+          blame: createDisposalBlame(task.portName, reason),
         })
       );
     }

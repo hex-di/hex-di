@@ -11,7 +11,7 @@ import {
   ContractViolationError,
   createBlameContext,
 } from "../src/index.js";
-import type { PortMemberSpec, PortMethodSpec, ConformanceCheckResult } from "../src/index.js";
+import type { PortMemberSpec, PortMethodSpec } from "../src/index.js";
 
 // =============================================================================
 // checkConformance
